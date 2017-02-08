@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/vt/typeHeaders.h"
@@ -39,11 +41,12 @@
 #include <boost/preprocessor.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <tbb/spin_mutex.h>
+#include <tbb/concurrent_unordered_map.h>
 
 #include <iostream>
 #include <map>
-#include <mutex>
 #include <string>
+#include <typeindex>
 #include <typeinfo>
 #include <vector>
 
@@ -51,6 +54,8 @@ using std::map;
 using std::string;
 using std::type_info;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<VtValue>();
@@ -84,54 +89,42 @@ class Vt_CastRegistry {
                   type_info const &to,
                   VtValue (*castFn)(VtValue const &))
     {
-        string const &dst = to.name();
-        string const &src = from.name();
+        std::type_index src = from;
+        std::type_index dst = to;
 
-        std::lock_guard<std::mutex> lock(_mutex);
-        _Conversions::iterator c = _conversions.find(dst);
-        if (c != _conversions.end()) {
-            _CastMap::iterator m = c->second.find(src);
-            if (m != c->second.end()) {
-                // This happens at startup if there's a bug in the code.
-                TF_CODING_ERROR("VtValue cast already registered from "
-                                "'%s' to '%s'.  New cast will be ignored.",
-                                ArchGetDemangled(src).c_str(),
-                                ArchGetDemangled(dst).c_str());
-                return;
-            }
+        bool isNewEntry = _conversions.insert(
+            std::make_pair(_ConversionSourceToTarget(src, dst), castFn)).second;
+        if (!isNewEntry) {
+            // This happens at startup if there's a bug in the code.
+            TF_CODING_ERROR("VtValue cast already registered from "
+                            "'%s' to '%s'.  New cast will be ignored.",
+                            ArchGetDemangled(from).c_str(),
+                            ArchGetDemangled(to).c_str());
+            return;
         }
-        _conversions[dst][src] = castFn;
     }
 
     VtValue PerformCast(type_info const &to, VtValue const &val) {
         if (val.IsEmpty())
             return val;
 
-        string const &dst = to.name();
-        string const &src = val.GetTypeid().name();
+        std::type_index src = val.GetTypeid();
+        std::type_index dst = to;
 
         VtValue (*castFn)(VtValue const &) = NULL;
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            _Conversions::iterator c = _conversions.find(dst);
-            if (c != _conversions.end()) {
-                _CastMap::iterator m = c->second.find(src);
-                if (m != c->second.end()) {
-                    castFn = m->second;
-                }
-            }
+
+        _Conversions::iterator c = _conversions.find({src, dst});
+        if (c != _conversions.end()) {
+            castFn = c->second;
         }
         return castFn ? castFn(val) : VtValue();
     }
 
     bool CanCast(type_info const &from, type_info const &to) {
-        string const &dst = to.name();
-        string const &src = from.name();
+        std::type_index src = from;
+        std::type_index dst = to;
 
-        std::lock_guard<std::mutex> lock(_mutex);
-        _Conversions::iterator c = _conversions.find(dst);
-        return c != _conversions.end() and
-            c->second.find(src) != c->second.end();
+        return _conversions.find({src, dst}) != _conversions.end();
     }
 
   private:
@@ -275,11 +268,25 @@ class Vt_CastRegistry {
         VtValue::RegisterCast<std::string, TfToken>(_TfStringToToken);
     } 
 
-    typedef map<string, VtValue (*)(VtValue const &)> _CastMap;
-    typedef map<string, _CastMap> _Conversions;
+    using _ConversionSourceToTarget =
+        std::pair<std::type_index, std::type_index>;
+
+    struct _ConversionSourceToTargetHash
+    {
+        std::size_t operator()(_ConversionSourceToTarget p) const
+        {
+            std::size_t h = p.first.hash_code();
+            boost::hash_combine(h, p.second.hash_code());
+            return h;
+        }
+    };
+
+    using _Conversions = tbb::concurrent_unordered_map<
+        _ConversionSourceToTarget,
+        VtValue (*)(VtValue const &),
+        _ConversionSourceToTargetHash>;
 
     _Conversions _conversions;
-    std::mutex _mutex;
     
 };
 TF_INSTANTIATE_SINGLETON(Vt_CastRegistry);
@@ -292,7 +299,7 @@ TF_EXECUTE_AT_STARTUP() {
 bool
 VtValue::IsArrayValued() const {
     VtValue const *v = _ResolveProxy();
-    return v->_info and v->_info->isArray;
+    return v->_info && v->_info->isArray;
 }
 
 const Vt_Reserved*
@@ -402,12 +409,12 @@ VtValue::_EqualityImpl(VtValue const &rhs) const
         VtValue const *proxy = _IsProxy() ? this : &rhs;
         VtValue const *nonProxy = _IsProxy() ? &rhs : this;
         VtValue const *resolvedProxy = proxy->_ResolveProxy();
-        return not resolvedProxy->IsEmpty() and
+        return !resolvedProxy->IsEmpty() &&
             nonProxy->_info->Equal(nonProxy->_storage, resolvedProxy->_storage);
     }
 
     // Otherwise compare typeids and if they match dispatch to the held type.
-    return TfSafeTypeCompare(GetTypeid(), rhs.GetTypeid()) and
+    return TfSafeTypeCompare(GetTypeid(), rhs.GetTypeid()) &&
         _info->Equal(_storage, rhs._storage);
 }
 
@@ -523,3 +530,4 @@ BOOST_PP_SEQ_FOR_EACH(_VT_IMPLEMENT_ZERO_VALUE_FACTORY,
                       VT_MATRIX_VALUE_TYPES
                       VT_QUATERNION_VALUE_TYPES)
 
+PXR_NAMESPACE_CLOSE_SCOPE

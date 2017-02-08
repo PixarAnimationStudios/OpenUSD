@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
 
+#include "pxr/pxr.h"
+
+#include "pxr/imaging/glf/glew.h"
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
 #include "pxr/base/arch/systemInfo.h"
@@ -55,6 +57,8 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 typedef boost::shared_ptr<class UsdImagingGLEngine> UsdImagingGLEngineSharedPtr;
 
@@ -263,7 +267,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
             }
         }
 
-        if (not GetClipPlanes().empty()) {
+        if (!GetClipPlanes().empty()) {
             params.clipPlanes = GetClipPlanes();
             for (size_t i=0; i<GetClipPlanes().size(); ++i) {
                 glEnable(GL_CLIP_PLANE0 + i);
@@ -275,7 +279,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         std::cout << "totalItemCount " << perfLog.GetCounter(HdTokens->totalItemCount) << std::endl;
 
         std::string imageFilePath = GetOutputFilePath();
-        if (not imageFilePath.empty()) {
+        if (!imageFilePath.empty()) {
             if (time != UsdTimeCode::Default()) {
                 std::stringstream suffix;
                 suffix << "_" << std::setw(3) << std::setfill('0') << params.frame << ".png";

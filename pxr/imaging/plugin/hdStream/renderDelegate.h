@@ -23,7 +23,11 @@
 #ifndef HDSTREAM_RENDER_DELEGATE_H
 #define HDSTREAM_RENDER_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 ///
 /// HdStreamRenderDelegate
@@ -33,14 +37,31 @@
 ///
 class HdStreamRenderDelegate final : public HdRenderDelegate {
 public:
-    HdStreamRenderDelegate()          = default;
+    HdStreamRenderDelegate();
     virtual ~HdStreamRenderDelegate() = default;
 
     virtual TfToken GetDefaultGalId() const override;
 
+    virtual HdRprim *CreateRprim(TfToken const& typeId,
+                                 SdfPath const& rprimId,
+                                 SdfPath const& instancerId) override;
+    virtual void DestroyRprim(HdRprim *rPrim) override;
+
+    virtual HdSprim *CreateSprim(TfToken const& typeId,
+                                 SdfPath const& sprimId) override;
+    virtual void DestroySprim(HdSprim *sPrim) override;
+
+    virtual HdBprim *CreateBprim(TfToken const& typeId,
+                                 SdfPath const& bprimId) override;
+    virtual void DestroyBprim(HdBprim *bPrim) override;
 private:
+    static void _ConfigureReprs();
+
     HdStreamRenderDelegate(const HdStreamRenderDelegate &)             = delete;
     HdStreamRenderDelegate &operator =(const HdStreamRenderDelegate &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDSTREAM_RENDER_DELEGATE_H

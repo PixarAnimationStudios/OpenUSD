@@ -21,10 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/assetPath.h"
-
 #include "pxr/base/vt/valueFromPython.h"
-
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
@@ -38,6 +37,8 @@
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 static std::string
 _Repr(SdfAssetPath const &self)
 {
@@ -46,7 +47,7 @@ _Repr(SdfAssetPath const &self)
          << TfPyRepr(self.GetAssetPath());
 
     const std::string & resolvedPath = self.GetResolvedPath();
-    if (not resolvedPath.empty()) {
+    if (!resolvedPath.empty()) {
         repr << ", " << TfPyRepr(resolvedPath);
     }
     repr << ")";
@@ -55,7 +56,7 @@ _Repr(SdfAssetPath const &self)
 
 static bool _Nonzero(SdfAssetPath const &self)
 {
-    return not self.GetAssetPath().empty();
+    return !self.GetAssetPath().empty();
 }
 
 static size_t _Hash(SdfAssetPath const &self)
@@ -96,3 +97,5 @@ void wrapAssetPath()
     // Let python know about us, to enable assignment from python back to C++
     VtValueFromPython<SdfAssetPath>();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

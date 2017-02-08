@@ -35,6 +35,9 @@
 #include <fstream>
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_CONTEXT_CHECK, 0,
     "Enable GL context sharing validation");
 
@@ -77,7 +80,7 @@ HdGLSLProgram::CompileShader(GLenum type,
                              std::string const &shaderSource)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // early out for empty source.
     // this may not be an error, since glslfx gives empty string
@@ -110,7 +113,7 @@ HdGLSLProgram::CompileShader(GLenum type,
     }
 
     // glew has to be intialized
-    if (not glCreateProgram)
+    if (!glCreateProgram)
         return false;
 
     // create a program if not exists
@@ -128,7 +131,7 @@ HdGLSLProgram::CompileShader(GLenum type,
     glCompileShader(shader);
 
     std::string logString;
-    if (not HdGLUtils::GetShaderCompileStatus(shader, &logString)) {
+    if (!HdGLUtils::GetShaderCompileStatus(shader, &logString)) {
         // XXX:validation
         TF_WARN("Failed to compile shader (%s): \n%s",
                 shaderType, logString.c_str());
@@ -147,9 +150,9 @@ bool
 HdGLSLProgram::Link()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-    if (not glLinkProgram) return false; // glew initialized
+    if (!glLinkProgram) return false; // glew initialized
 
     GLuint program = _program.GetId();
     if (program == 0) {
@@ -167,7 +170,7 @@ HdGLSLProgram::Link()
 
     std::string logString;
     bool success = true;
-    if (not HdGLUtils::GetProgramLinkStatus(program, &logString)) {
+    if (!HdGLUtils::GetProgramLinkStatus(program, &logString)) {
         // XXX:validation
         TF_WARN("Failed to link shader: \n%s", logString.c_str());
         success = false;
@@ -213,7 +216,7 @@ HdGLSLProgram::Validate() const
     GLuint program = _program.GetId();
     if (program == 0) return false;
 
-    if (TfDebug::IsEnabled(HD_SAFE_MODE) or
+    if (TfDebug::IsEnabled(HD_SAFE_MODE) ||
         TfGetEnvSetting(HD_ENABLE_SHARED_CONTEXT_CHECK)) {
 
         HD_TRACE_FUNCTION();
@@ -251,12 +254,12 @@ HdGLSLProgram::GetComputeProgram(TfToken const &shaderToken)
 
             GlfGLSLFX glslfx(HdPackageComputeShader());
             std::string version = "#version 430\n";
-            if (not newProgram->CompileShader(
+            if (!newProgram->CompileShader(
                     GL_COMPUTE_SHADER, version + glslfx.GetSource(shaderToken))) {
                 TF_CODING_ERROR("Fail to compile " + shaderToken.GetString());
                 return HdGLSLProgramSharedPtr();
             }
-            if (not newProgram->Link()) {
+            if (!newProgram->Link()) {
                 TF_CODING_ERROR("Fail to link " + shaderToken.GetString());
                 return HdGLSLProgramSharedPtr();
             }
@@ -265,4 +268,7 @@ HdGLSLProgram::GetComputeProgram(TfToken const &shaderToken)
         return programInstance.GetValue();
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

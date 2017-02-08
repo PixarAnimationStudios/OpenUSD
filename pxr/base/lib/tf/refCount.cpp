@@ -22,4 +22,3 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/tf/refCount.h"
-

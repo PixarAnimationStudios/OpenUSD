@@ -79,7 +79,7 @@ def _resolvePath(baselineDir, fileName):
     return os.path.join(baselineDir, fileName)
 
 def _stripPath(f, path):
-    with open(f, 'rw+') as inputFile:
+    with open(f, 'r+') as inputFile:
         data = inputFile.read()
         data = data.replace(path, "")
         inputFile.seek(0)
@@ -93,9 +93,15 @@ def _cleanOutput(path, fileName, verbose):
     return True
 
 def _diff(fileName, baselineDir, verbose):
-    # Use the diff program, rather than filecmp or similar because it's
-    # possible we might want to specify other diff programs in the future.
-    cmd = ['/usr/bin/diff', _resolvePath(baselineDir, fileName), fileName]
+    # Use the diff program or equivalent, rather than filecmp or similar
+    # because it's possible we might want to specify other diff programs
+    # in the future.
+    import platform
+    if platform.system() == 'Windows':
+        diff = 'fc.exe'
+    else:
+        diff = '/usr/bin/diff'
+    cmd = [diff, _resolvePath(baselineDir, fileName), fileName]
     if verbose:
         print "cmd: {0}".format(cmd)
 
@@ -149,10 +155,19 @@ if __name__ == '__main__':
                     .format(varStr)
             sys.exit(1)
 
+    # Avoid the just-in-time debugger where possible when running tests.
+    env['ARCH_AVOID_JIT'] = '1'
+
+    # Windows command prompt will not split arguments so we do it instead.
+    # args.cmd is a list of strings to split so the inner list comprehension
+    # makes a list of argument lists.  The outer double comprehension flattens
+    # that into a single list.
+    cmd = [arg for tmp in [arg.split() for arg in args.cmd] for arg in tmp]
+
     fout = open(args.stdout_redirect, 'w') if args.stdout_redirect else None
     ferr = open(args.stderr_redirect, 'w') if args.stderr_redirect else None
     try:
-        retcode = subprocess.call(args.cmd, shell=True, env=env,
+        retcode = subprocess.call(cmd, shell=False, env=env,
                 stdout=(fout or sys.stdout), stderr=(ferr or sys.stderr))
     finally:
         if fout:

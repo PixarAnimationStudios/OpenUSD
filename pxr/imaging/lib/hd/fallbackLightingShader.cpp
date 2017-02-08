@@ -28,11 +28,16 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/imaging/glf/glslfx.h"
 
 #include <boost/functional/hash.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 Hd_FallbackLightingShader::Hd_FallbackLightingShader()
 {
@@ -60,7 +65,7 @@ std::string
 Hd_FallbackLightingShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     return _glslfx->GetSource(shaderStageKey);
 }
@@ -93,3 +98,6 @@ Hd_FallbackLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     // no-op
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -41,6 +41,9 @@
 #include <iostream>
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((lightingUB, "Lighting"))
@@ -249,16 +252,16 @@ setMatrix(float *dst, GfMatrix4d const & mat)
 void
 GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
 {
-    if (not _lightingUniformBlock)
+    if (!_lightingUniformBlock)
         _lightingUniformBlock = GlfUniformBlock::New();
-    if (not _shadowUniformBlock)
+    if (!_shadowUniformBlock)
         _shadowUniformBlock = GlfUniformBlock::New();
-    if (not _materialUniformBlock)
+    if (!_materialUniformBlock)
         _materialUniformBlock = GlfUniformBlock::New();
 
     bool shadowExists = false;
-    if ((not _lightingUniformBlockValid or
-         not _shadowUniformBlockValid) and _lights.size() > 0) {
+    if ((!_lightingUniformBlockValid ||
+         !_shadowUniformBlockValid) && _lights.size() > 0) {
         int numLights = GetNumLightsUsed();
 
         // 16byte aligned
@@ -311,7 +314,7 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
         lightingData->useLighting = _useLighting;
         lightingData->useColorMaterialDiffuse = _useColorMaterialDiffuse;
 
-        for (int i = 0; _useLighting and i < numLights; ++i) {
+        for (int i = 0; _useLighting && i < numLights; ++i) {
             GlfSimpleLight const &light = _lights[i];
 
             setVec4(lightingData->lightSource[i].position,
@@ -366,7 +369,7 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
         _shadowUniformBlock->Bind(bindingMap, _tokens->shadowUB);
     }
 
-    if (not _materialUniformBlockValid) {
+    if (!_materialUniformBlockValid) {
         // has to be matched with the definition of simpleLightingShader.glslfx
         struct Material {
             float ambient[4];
@@ -491,3 +494,6 @@ GlfSimpleLightingContext::SetStateFromOpenGL()
     glGetFloatv(GL_LIGHT_MODEL_AMBIENT, &sceneAmbient[0]);
     SetSceneAmbient(sceneAmbient);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

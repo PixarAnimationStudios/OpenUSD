@@ -24,6 +24,7 @@
 #ifndef HD_COMMAND_BUFFER_H
 #define HD_COMMAND_BUFFER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/drawBatch.h"
 #include "pxr/imaging/hd/drawItemInstance.h"
@@ -31,6 +32,9 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdDrawItem;
 class HdDrawItemInstance;
@@ -85,10 +89,13 @@ private:
     std::vector<HdDrawItem const*> _drawItems;
     std::vector<HdDrawItemInstance> _drawItemInstances;
     Hd_DrawBatchSharedPtrVector _drawBatches;
-    HdShaderSharedPtrVector _shaders;
+    HdShaderCodeSharedPtrVector _shaders;
     size_t _visibleSize;
     unsigned _visChangeCount;
     unsigned _shaderBindingsVersion;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_COMMAND_BUFFER_H

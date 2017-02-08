@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stageCache.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -30,6 +31,9 @@
 #include <boost/python.hpp>
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::vector;
 
@@ -160,3 +164,6 @@ void wrapUsdStageCache()
         .def("__hash__", __hash__)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

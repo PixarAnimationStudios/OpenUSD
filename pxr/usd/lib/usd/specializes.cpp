@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -30,11 +31,14 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/schema.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // ------------------------------------------------------------------------- //
 // UsdSpecializes
 // ------------------------------------------------------------------------- //
 bool
-UsdSpecializes::Add(const SdfPath &primPath)
+UsdSpecializes::AppendSpecialize(const SdfPath &primPath)
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
@@ -46,7 +50,7 @@ UsdSpecializes::Add(const SdfPath &primPath)
 }
 
 bool
-UsdSpecializes::Remove(const SdfPath &primPath)
+UsdSpecializes::RemoveSpecialize(const SdfPath &primPath)
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
@@ -58,7 +62,7 @@ UsdSpecializes::Remove(const SdfPath &primPath)
 }
 
 bool
-UsdSpecializes::Clear()
+UsdSpecializes::ClearSpecializes()
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
@@ -69,7 +73,7 @@ UsdSpecializes::Clear()
 }
 
 bool 
-UsdSpecializes::SetItems(const SdfPathVector& items)
+UsdSpecializes::SetSpecializes(const SdfPathVector& items)
 {
     // Proxy editor has no clear way of setting explicit items in a single
     // call, so instead, just set the field directly.
@@ -85,7 +89,7 @@ UsdSpecializes::SetItems(const SdfPathVector& items)
 SdfPrimSpecHandle
 UsdSpecializes::_CreatePrimSpecForEditing()
 {
-    if (not _prim) {
+    if (!_prim) {
         TF_CODING_ERROR("Invalid prim.");
         return SdfPrimSpecHandle();
     }
@@ -94,4 +98,7 @@ UsdSpecializes::_CreatePrimSpecForEditing()
 }
 
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

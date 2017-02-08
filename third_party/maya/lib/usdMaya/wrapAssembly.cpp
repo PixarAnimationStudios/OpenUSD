@@ -21,16 +21,24 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/referenceAssembly.h"
+
+#include "usdMaya/util.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
 
 #include <maya/MFnAssembly.h>
 #include <maya/MObject.h>
-#include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
 #include <boost/python/def.hpp>
+
+#include <map>
+#include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -40,13 +48,9 @@ std::map<std::string, std::string>
 _GetVariantSetSelections(const std::string& assemblyName) {
     std::map<std::string, std::string> emptyResult;
 
-    MStatus status;
-    MSelectionList selectionList;
-    status = selectionList.add(assemblyName.c_str());
-    CHECK_MSTATUS_AND_RETURN(status, emptyResult);
-
     MObject assemblyObj;
-    status = selectionList.getDependNode(0, assemblyObj);
+    MStatus status = PxrUsdMayaUtil::GetMObjectByName(assemblyName,
+                                                      assemblyObj);
     CHECK_MSTATUS_AND_RETURN(status, emptyResult);
 
     MFnAssembly assemblyFn(assemblyObj, &status);
@@ -54,7 +58,7 @@ _GetVariantSetSelections(const std::string& assemblyName) {
 
     UsdMayaReferenceAssembly* assembly =
         dynamic_cast<UsdMayaReferenceAssembly*>(assemblyFn.userNode());
-    if (not assembly) {
+    if (!assembly) {
         return emptyResult;
     }
 
@@ -67,3 +71,6 @@ void wrapAssembly()
         &_GetVariantSetSelections,
         arg("assemblyName"));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

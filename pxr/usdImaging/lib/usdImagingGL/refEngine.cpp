@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/usdImaging/usdImagingGL/refEngine.h"
@@ -70,6 +71,9 @@
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/tf/stl.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // Sentinel value for prim restarts, so that multiple prims can be lumped into a
 // single draw call, if the hardware supports it.
 #define _PRIM_RESTART_INDEX 0xffffffff 
@@ -105,13 +109,13 @@ UsdImagingGLRefEngine::InvalidateBuffers()
 {
     TRACE_FUNCTION();
 
-    if (not _attribBuffer) {
+    if (!_attribBuffer) {
         return;
     }
 
     // There is no sensible configuration that would have an attribBuffer but
     // not an indexBuffer.
-    if (not TF_VERIFY(_indexBuffer)) {
+    if (!TF_VERIFY(_indexBuffer)) {
         return;
     }
 
@@ -224,7 +228,7 @@ UsdImagingGLRefEngine::_DrawPolygons(bool drawID)
                                      _lineColors.size());
     glColorPointer(3, GL_FLOAT, 0, (GLvoid*)offset);
 
-    if (not _SupportsPrimitiveRestartIndex()) {
+    if (!_SupportsPrimitiveRestartIndex()) {
         glMultiDrawElements(GL_POLYGON,
                             (GLsizei*)(&(_numVerts[0])),
                             GL_UNSIGNED_INT,
@@ -258,7 +262,7 @@ UsdImagingGLRefEngine::_DrawLines(bool drawID)
         offset += sizeof(GLfloat) * (_lineColors.size() + _IDColors.size());
     glColorPointer(3, GL_FLOAT, 0, (GLvoid*)offset);
 
-    if (not _SupportsPrimitiveRestartIndex()) {
+    if (!_SupportsPrimitiveRestartIndex()) {
         glMultiDrawElements(GL_LINE_STRIP,
                             (GLsizei*)(&(_numLineVerts[0])),
                             GL_UNSIGNED_INT,
@@ -280,7 +284,7 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
 
     // Invalidate existing buffers if we are drawing from a different root or
     // frame.
-    if (_root != root or _params.frame != params.frame or
+    if (_root != root || _params.frame != params.frame ||
         _params.gammaCorrectColors != params.gammaCorrectColors) {
         InvalidateBuffers();
 
@@ -315,8 +319,8 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
         glCullFace(USD_2_GL_CULL_FACE[params.cullStyle]);
     }
 
-    if (_params.drawMode != DRAW_GEOM_ONLY and
-        _params.drawMode != DRAW_GEOM_SMOOTH and
+    if (_params.drawMode != DRAW_GEOM_ONLY      &&
+        _params.drawMode != DRAW_GEOM_SMOOTH    &&
         _params.drawMode != DRAW_GEOM_FLAT) {
         glEnable(GL_COLOR_MATERIAL);
         glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE); 
@@ -345,7 +349,7 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
         glEnableClientState( GL_PRIMITIVE_RESTART_NV );
     }
 
-    if (not _attribBuffer) {
+    if (!_attribBuffer) {
 
         _ctm = GfMatrix4d(1.0);
         TfReset(_xformStack);
@@ -371,7 +375,7 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
 
     TF_VERIFY(_xformStack.empty());
 
-    if (not _attribBuffer) {
+    if (!_attribBuffer) {
         _PopulateBuffers();
     } else {
         glBindBuffer(GL_ARRAY_BUFFER, _attribBuffer);
@@ -557,9 +561,9 @@ UsdImagingGLRefEngine_ComputeSmoothNormals(const VtVec3fArray &points,
 
             // Make sure that we don't read or write using an out-of-bounds
             // index.
-            if (a >= 0 and static_cast<size_t>(a) < pointsCount and
-                b >= 0 and static_cast<size_t>(b) < pointsCount and
-                c >= 0 and static_cast<size_t>(c) < pointsCount) {
+            if (a >= 0 && static_cast<size_t>(a) < pointsCount &&
+                b >= 0 && static_cast<size_t>(b) < pointsCount &&
+                c >= 0 && static_cast<size_t>(c) < pointsCount) {
 
                 GfVec3f p0 = pointsPtr[a] - pointsPtr[b];
                 GfVec3f p1 = pointsPtr[c] - pointsPtr[b];
@@ -575,7 +579,7 @@ UsdImagingGLRefEngine_ComputeSmoothNormals(const VtVec3fArray &points,
 
                 // Make sure we compute some normal for all points that are
                 // in bounds.
-                if (b >= 0 and static_cast<size_t>(b) < pointsCount)
+                if (b >= 0 && static_cast<size_t>(b) < pointsCount)
                     normalsPtr[b] = GfVec3f(0);
             }
         }
@@ -598,7 +602,7 @@ _ShouldCullDueToOpacity(const UsdGeomGprim *gprimSchema, const UsdTimeCode &fram
     gprimSchema->GetDisplayOpacityPrimvar().ComputeFlattened(&opacityArray, frame);
     // XXX display opacity can vary on the surface, just using the first value
     //     for testing (the opacity is likely constant anyway)
-    return opacityArray.size() > 0 and opacityArray[0] < OPACITY_THRESHOLD;
+    return opacityArray.size() > 0 && opacityArray[0] < OPACITY_THRESHOLD;
 }
 
 void
@@ -612,7 +616,7 @@ UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
 
     // Traverse the stage to extract data for drawing.
     while (primIt) {
-        if (not primIt.IsPostVisit()) {
+        if (!primIt.IsPostVisit()) {
 
             if (_excludedSet.find(primIt->GetPath()) != _excludedSet.end()) {
                 primIt.PruneChildren();
@@ -625,23 +629,28 @@ UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
             // Because we are pruning invisible subtrees, we can assume all
             // parent prims have "inherited" visibility.
             TfToken visibility;
-            if (*primIt != pseudoRoot and
+            if (*primIt != pseudoRoot &&
                 primIt->GetAttribute(UsdGeomTokens->visibility)
-                                        .Get(&visibility, _params.frame) and
+                                        .Get(&visibility, _params.frame) &&
                 visibility == UsdGeomTokens->invisible) {
                 
                 visible = false;
             }
 
-            // Guides and Rendering Guides are not displayed by default.
+            // Treat only the purposes we've been asked to show as visible
             TfToken purpose;
             if (*primIt != pseudoRoot
-                and primIt->GetAttribute(UsdGeomTokens->purpose)
+                && primIt->GetAttribute(UsdGeomTokens->purpose)
                                             .Get(&purpose, _params.frame)
-                and ((
-                   (purpose == UsdGeomTokens->guide and not _params.showGuides))
-                or (purpose == UsdGeomTokens->render
-                        and not _params.showRenderGuides))) {
+                && purpose != UsdGeomTokens->default_  // fast/common out
+                && (
+                     (purpose == UsdGeomTokens->guide 
+                       && !_params.showGuides)
+                     || (purpose == UsdGeomTokens->render
+                         && !_params.showRender)
+                     || (purpose == UsdGeomTokens->proxy
+                         && !_params.showProxy))
+                ) {
                 visible = false;
             }
 
@@ -672,7 +681,7 @@ UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
             }
 
         } else {
-            if (not _xformStack.empty()) {
+            if (!_xformStack.empty()) {
                 const std::pair<UsdPrim, GfMatrix4d> &entry =
                     _xformStack.back();
                 if (entry.first == *primIt) {
@@ -733,7 +742,7 @@ UsdImagingGLRefEngine::_HandleXform(const UsdPrim &prim)
     // Should do GfIsClose for each element.
     if (xform != IDENTITY) {
         _xformStack.push_back(std::make_pair(prim, _ctm));
-        if (not resetsXformStack)
+        if (!resetsXformStack)
             _ctm = xform * _ctm;
         else
             _ctm = xform;
@@ -746,7 +755,7 @@ UsdImagingGLRefEngine::_IssueID(SdfPath const& path)
     _PrimID::ValueType maxId = (1 << 24) - 1;
     // Notify the user (failed verify) and return an invalid ID.
     // Picking will fail, but execution can continue.
-    if (not TF_VERIFY(_primIDCounter < maxId))
+    if (!TF_VERIFY(_primIDCounter < maxId))
         return GfVec4f(0);
 
     _PrimID::ValueType id = _primIDCounter++;
@@ -838,7 +847,7 @@ UsdImagingGLRefEngine::_HandleCurves(const UsdPrim& prim)
         for(int idx=0; idx < *itr; idx++) {
             _lineVerts.push_back(idx + _lineVertCount);
         }
-        if (not _SupportsPrimitiveRestartIndex()) {
+        if (!_SupportsPrimitiveRestartIndex()) {
             // If prim restart is not supported, we need to keep track of the
             // number of vertices per line segment, as well as the byte-offsets
             // into the element array buffer containing the vertex indices for
@@ -1064,7 +1073,7 @@ UsdImagingGLRefEngine::_RenderPrimitive(const UsdPrim &prim,
 
     VtVec3fArray normals;
 
-    if (not _SupportsPrimitiveRestartIndex()) {
+    if (!_SupportsPrimitiveRestartIndex()) {
         // If prim restart is not supported, we need to keep track of the number
         // of vertices per polygon, as well as the byte-offsets for where the
         // indices in the element array buffer start for each polygon.
@@ -1085,7 +1094,7 @@ UsdImagingGLRefEngine::_RenderPrimitive(const UsdPrim &prim,
             
             // Append a primitive restart index at the end of each numVerts
             // index boundary.
-            if (k < nmvts.size() and ++j == static_cast<size_t>(nmvts[k])) {
+            if (k < nmvts.size() && ++j == static_cast<size_t>(nmvts[k])) {
                 _verts.push_back(_PRIM_RESTART_INDEX);
                 j=0, k++;
             }
@@ -1140,7 +1149,7 @@ UsdImagingGLRefEngine::_RenderPrimitive(const UsdPrim &prim,
             index++;
         }
 
-        if (not _SupportsPrimitiveRestartIndex()) {
+        if (!_SupportsPrimitiveRestartIndex()) {
             int indexCount = _verts.size();
             for (int i=nmvts.size()-1; i>=0; --i) {
                 _vertIdxOffsets.push_back((GLvoid*)(indexCount * sizeof(GLuint)));
@@ -1156,7 +1165,7 @@ UsdImagingGLRefEngine::_RenderPrimitive(const UsdPrim &prim,
                 
                 // Append a primitive restart index at the end of each numVerts
                 // index boundary.
-                if (k >= 0  and ++j == nmvts[k]) {
+                if (k >= 0  && ++j == nmvts[k]) {
                     _verts.push_back(_PRIM_RESTART_INDEX);
                     j=0, k--;
                 }
@@ -1172,3 +1181,6 @@ UsdImagingGLRefEngine::_RenderPrimitive(const UsdPrim &prim,
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

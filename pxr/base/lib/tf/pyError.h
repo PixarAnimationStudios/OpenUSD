@@ -27,9 +27,13 @@
 /// \file tf/error.h
 /// Provide facilities for error handling in script.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/errorMark.h"
 
 #include <boost/python/default_call_policies.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Converts any \a TfError objects in \a m into python exceptions.  User code
 /// should generally not have to call this.  User code should generally not
@@ -105,5 +109,7 @@ struct Tf_PyErrorClearer {
     TfErrorMark mark;
     bool clearOnDestruction;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYERROR_H

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
@@ -41,6 +43,8 @@
 #include <boost/python/detail/api_placeholder.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Converter from std::vector<VtValue> to python list
 struct VtValueArrayToPython
@@ -179,7 +183,7 @@ struct _VtDictionaryFromPython {
     // Returns p if p can convert to a dictionary, NULL otherwise.
     // If result is non-NULL, does the conversion into *result.
     static PyObject *convert(PyObject *p, VtDictionary *result) {
-        if (not PyDict_Check(p)) {
+        if (!PyDict_Check(p)) {
             return NULL;
         }
 
@@ -275,7 +279,7 @@ _CanVtValueFromPython(object pVal)
         return true;
 
     extract<VtValue> e(pVal);
-    return e.check() and not e().IsHolding<TfPyObjWrapper>();
+    return e.check() && !e().IsHolding<TfPyObjWrapper>();
 }
 
 
@@ -301,3 +305,5 @@ void wrapDictionary()
     def("DictionaryPrettyPrint",
         (std::string(*)(const VtDictionary &)) VtDictionaryPrettyPrint);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

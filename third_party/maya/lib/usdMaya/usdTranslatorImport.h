@@ -27,6 +27,7 @@
 
 /// \file usdTranslatorImport.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/JobArgs.h"
 
 #include <maya/MFileObject.h>
@@ -35,6 +36,9 @@
 #include <maya/MString.h>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 const char* const usdTranslatorImportDefaults =
@@ -86,5 +90,8 @@ class usdTranslatorImport : public MPxFileTranslator
         const std::string _assemblyTypeName;
         const std::string _proxyShapeTypeName;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_TRANSLATOR_IMPORT_H

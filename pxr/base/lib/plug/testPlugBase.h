@@ -24,6 +24,7 @@
 #ifndef TEST_PLUGBASE_H
 #define TEST_PLUGBASE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/plug/api.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -31,6 +32,8 @@
 #include "pxr/base/tf/weakBase.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <int M>
 class _TestPlugBase : public TfRefBase, public TfWeakBase {
@@ -75,5 +78,7 @@ typedef _TestPlugBase<1> _TestPlugBase1;
 typedef _TestPlugBase<2> _TestPlugBase2;
 typedef _TestPlugBase<3> _TestPlugBase3;
 typedef _TestPlugBase<4> _TestPlugBase4;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TEST_PLUGBASE_H

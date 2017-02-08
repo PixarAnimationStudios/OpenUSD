@@ -22,12 +22,85 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-include(Options)
+# Enable exception handling.
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /EHsc")
 
-# Set a decent warning level
-add_definitions("/W3")
+# Standards compliant.
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast
+                                      /Zc:strictStrings
+                                      /Zc:inline")
 
+# Turn on all but informational warnings.
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /W3")
+
+# Warnings are errors in strict build mode.
 if (${PXR_STRICT_BUILD_MODE})
-    # Treat all warnings as errors
-    add_definitions("/WX")
+    set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /WX")
 endif()
+
+# truncation from 'double' to 'float' due to matrix and vector classes in `Gf`
+_disable_warning("4244")
+_disable_warning("4305")
+
+# conversion from size_t to int. While we don't want this enabled
+# it's in the Python headers. So all the Python wrap code is affected.
+_disable_warning("4267")
+
+# no definition for inline function
+# this affects Glf only
+_disable_warning("4506")
+
+# 'typedef ': ignored on left of '' when no variable is declared
+# XXX:figure out why we need this
+_disable_warning("4091")
+
+# c:\python27\include\pymath.h(22): warning C4273: 'round': inconsistent dll linkage 
+# XXX:figure out real fix
+_disable_warning("4273")
+
+# qualifier applied to function type has no meaning; ignored
+# tbb/parallel_for_each.h
+_disable_warning("4180")
+
+# '<<': result of 32-bit shift implicitly converted to 64 bits
+# tbb/enumerable_thread_specific.h
+_disable_warning("4334")
+
+# Disable warning C4996 regarding unchecked iterators for std::transform,
+# std::copy, std::equal, et al.
+_add_define("_SCL_SECURE_NO_WARNINGS")
+
+# Make sure WinDef.h does not define min and max macros which
+# will conflict with std::min() and std::max().
+_add_define("NOMINMAX")
+
+# Defining TF_NO_GNU_EXT disables using the gnu hash_set and  hash_map
+# containers on platforms where we can't. The implementation will
+# substitute C++11 containers with equivalent semantics in this case.
+_add_define("TF_NO_GNU_EXT")
+
+# Needed to prevent YY files trying to include unistd.h
+# (which doesn't exist on Windows)
+_add_define("YY_NO_UNISTD_H")
+
+# Forces all libraries that have separate source to be linked as
+# DLL's rather than static libraries on Microsoft Windows.
+_add_define("BOOST_ALL_DYN_LINK")
+
+# Need half::_toFloat and half::_eLut.
+_add_define("OPENEXR_DLL")
+
+# These files require /bigobj compiler flag
+#   Vt/arrayPyBuffer.cpp
+#   Usd/crateFile.cpp
+#   Usd/stage.cpp
+# Until we can set the flag on a per file basis, we'll have to enable it
+# for all translation units.
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /bigobj")
+
+# Enable PDB generation.
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zi")
+
+# Enable multiprocessor builds.
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /MP")
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Gm-")

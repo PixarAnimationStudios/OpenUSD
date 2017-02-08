@@ -24,6 +24,7 @@
 #ifndef USD_REFERENCES_H
 #define USD_REFERENCES_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -32,6 +33,9 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/base/vt/value.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SDF_DECLARE_HANDLES(SdfPrimSpec);
 
@@ -128,41 +132,41 @@ public:
     // XXX: should we hide SdfReference here? it seems helpful for
     // Sd/Mf compatibility
 
-    /// Add a reference to the reference listOp at the current EditTarget.
+    /// Appends a reference to the reference listOp at the current EditTarget.
     /// \sa \ref Usd_Failing_References "Why adding references may fail" for
     /// explanation of expectations on \p ref and what return values and errors
     /// to expect, and \ref Usd_OM_ListOps for details on list editing and
     /// composition of listOps.
-    bool Add(const SdfReference& ref);
+    bool AppendReference(const SdfReference& ref);
 
     /// \overload 
-    bool Add(const std::string &identifier,
-             const SdfPath &primPath,
-             const SdfLayerOffset &layerOffset = SdfLayerOffset());
+    bool AppendReference(const std::string &identifier,
+                         const SdfPath &primPath,
+                         const SdfLayerOffset &layerOffset = SdfLayerOffset());
 
     /// \overload
     /// \sa \ref Usd_DefaultPrim_References "References Without Prim Paths"
-    bool Add(const std::string &identifier,
-             const SdfLayerOffset &layerOffset = SdfLayerOffset());
+    bool AppendReference(const std::string &identifier,
+                         const SdfLayerOffset &layerOffset = SdfLayerOffset());
 
     /// Add an internal reference to the specified prim.
     /// \sa \ref Usd_Internal_References "Internal References"
-    bool AddInternal(const SdfPath &primPath,
-                     const SdfLayerOffset &layerOffset = SdfLayerOffset());
+    bool AppendInternalReference(const SdfPath &primPath,
+                         const SdfLayerOffset &layerOffset = SdfLayerOffset());
 
     /// Removes the specified reference from the references listOp at the
     /// current EditTarget.  This does not necessarily eliminate the 
     /// reference completely, as it may be added or set in another layer in
     /// the same LayerStack as the current EditTarget.
     /// \sa \ref Usd_OM_ListOps 
-    bool Remove(const SdfReference& ref);
+    bool RemoveReference(const SdfReference& ref);
 
     /// Removes the authored reference listOp edits at the current EditTarget.
     /// The same caveats for Remove() apply to Clear().  In fact, Clear() may
     /// actually increase the number of composed references, if the listOp
     /// being cleared contained the "remove" operator.
     /// \sa \ref Usd_OM_ListOps 
-    bool Clear();
+    bool ClearReferences();
 
     /// Explicitly set the references, potentially blocking weaker opinions
     /// that add or remove items.
@@ -170,7 +174,7 @@ public:
     /// explanation of expectations on \p ref and what return values and errors
     /// to expect, and \ref Usd_OM_ListOps for details on list editing and
     /// composition of listOps.
-    bool SetItems(const SdfReferenceVector& items);
+    bool SetReferences(const SdfReferenceVector& items);
 
     /// Return the prim this object is bound to.
     const UsdPrim &GetPrim() const { return _prim; }
@@ -179,13 +183,15 @@ public:
     /// \overload
     UsdPrim GetPrim() { return _prim; }
 
-    // TODO: use safe bool idiom
-    operator bool() { return bool(_prim); }
+    explicit operator bool() { return bool(_prim); }
 
 private:
 
     SdfPrimSpecHandle _CreatePrimSpecForEditing();
     UsdPrim _prim;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_REFERENCES_H

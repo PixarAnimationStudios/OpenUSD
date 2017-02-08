@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/inherits.h"
+#include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/resolver.h"
 #include "pxr/usd/usd/schemaBase.h"
@@ -33,14 +35,24 @@
 #include "pxr/usd/usd/variantSets.h"
 
 #include "pxr/usd/pcp/primIndex.h"
-#include "pxr/base/plug/registry.h"
-
 #include "pxr/usd/sdf/primSpec.h"
+
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/loops.h"
+#include "pxr/base/work/singularTask.h"
 
 #include "pxr/base/tf/ostreamMethods.h"
 
+#include <boost/foreach.hpp>
+#include <boost/functional/hash.hpp>
+
 #include <algorithm>
+#include <functional>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 UsdPrim
 UsdPrim::GetChild(const TfToken &name) const
@@ -54,11 +66,11 @@ UsdPrim::GetPrimDefinition() const
     const TfToken &typeName = GetTypeName();
     SdfPrimSpecHandle definition;
 
-    if (not typeName.IsEmpty()) {
+    if (!typeName.IsEmpty()) {
         // Look up definition from prim type name.
         definition = UsdSchemaRegistry::GetPrimDefinition(typeName);
 
-        if (not definition) {
+        if (!definition) {
             // Issue a diagnostic for unknown prim types.
             TF_WARN("No definition for prim type '%s', <%s>",
                     typeName.GetText(), GetPath().GetText());
@@ -80,7 +92,7 @@ UsdPrim::_IsA(const TfType& schemaType) const
     // Get Prim TfType
     const std::string &typeName = GetTypeName().GetString();
 
-    return not typeName.empty() and
+    return !typeName.empty() &&
         PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(typeName).
         IsA(schemaType);
 }
@@ -91,16 +103,14 @@ UsdPrim::_MakeProperties(const TfTokenVector &names) const
     std::vector<UsdProperty> props;
     UsdStage *stage = _GetStage();
     props.reserve(names.size());
-    for (const auto& propName : names) {
-        SdfSpecType specType =
-            stage->_GetDefiningSpecType(*this, propName);
+    for (auto const &propName : names) {
+        SdfSpecType specType = stage->_GetDefiningSpecType(*this, propName);
         if (specType == SdfSpecTypeAttribute) {
             props.push_back(GetAttribute(propName));
         } else if (TF_VERIFY(specType == SdfSpecTypeRelationship)) {
             props.push_back(GetRelationship(propName));
         }
     }
-
     return props;
 }
 
@@ -111,7 +121,7 @@ static void
 _ApplyOrdering(const TfTokenVector &order, TfTokenVector *names)
 {
     // If order is empty or names is empty, nothing to do.
-    if (order.empty() or names->empty())
+    if (order.empty() || names->empty())
         return;
 
     // Perf note: this walks 'order' and linear searches 'names' to find each
@@ -148,6 +158,13 @@ UsdPrim::RemoveProperty(const TfToken &propName)
 UsdProperty
 UsdPrim::GetProperty(const TfToken &propName) const
 {
+    SdfSpecType specType = _GetStage()->_GetDefiningSpecType(*this, propName);
+    if (specType == SdfSpecTypeAttribute) {
+        return GetAttribute(propName);
+    }
+    else if (specType == SdfSpecTypeRelationship) {
+        return GetRelationship(propName);
+    }
     return UsdProperty(UsdTypeProperty, _Prim(), propName);
 }
 
@@ -178,7 +195,7 @@ UsdPrim::_GetPropertyNames(bool onlyAuthored, bool applyOrder) const
 
     // If we're including unauthored properties, take names from definition, if
     // present.
-    if (not onlyAuthored) {
+    if (!onlyAuthored) {
         UsdSchemaRegistry::HasField(GetTypeName(), TfToken(),
                                     SdfChildrenKeys->PropertyChildren, &names);
     }
@@ -239,8 +256,8 @@ UsdPrim::_GetPropertiesInNamespace(const std::string &namespaces,
     size_t insertionPt = 0;
     for (const auto& name : names) {
         const std::string &s = name.GetString();
-        if (s.size() > terminator and
-            TfStringStartsWith(s, namespaces) and
+        if (s.size() > terminator               &&
+            TfStringStartsWith(s, namespaces)   && 
             s[terminator] == delim) {
 
             names[insertionPt++] = name;
@@ -377,9 +394,9 @@ UsdPrim::CreateRelationship(const std::vector<std::string> &nameElts,
 }
 
 UsdRelationshipVector
-UsdPrim::_GetRelationships(bool onlyAuthored) const
+UsdPrim::_GetRelationships(bool onlyAuthored, bool applyOrder) const
 {
-    const TfTokenVector names = _GetPropertyNames(onlyAuthored);
+    const TfTokenVector names = _GetPropertyNames(onlyAuthored, applyOrder);
     UsdRelationshipVector rels;
 
     // PERFORMANCE: This is sloppy, since property names are a superset of
@@ -417,6 +434,121 @@ bool
 UsdPrim::HasRelationship(const TfToken& relName) const
 {
     return GetRelationship(relName);
+}
+
+struct UsdPrim_TargetFinder
+{
+    static SdfPathVector
+    Find(UsdPrim const &prim,
+         std::function<bool (UsdRelationship const &)> const &pred,
+         bool recurseOnTargets) {
+        UsdPrim_TargetFinder tf(prim, pred, recurseOnTargets);
+        tf._Find();
+        return std::move(tf._result);
+    }
+
+private:
+    explicit UsdPrim_TargetFinder(
+        UsdPrim const &prim,
+        std::function<bool (UsdRelationship const &)> const &pred,
+        bool recurseOnTargets)
+        : _prim(prim)
+        , _consumerTask(_dispatcher,
+                        std::bind(&UsdPrim_TargetFinder::_ConsumerTask, this))
+        , _predicate(pred)
+        , _recurseOnTargets(recurseOnTargets) {}
+
+    void _VisitRel(UsdRelationship const &rel) {
+        SdfPathVector targets;
+        rel._GetForwardedTargets(&targets,
+                                 /*includeForwardingRels=*/true,
+                                 /*forwardToObjectsInMasters=*/true);
+        
+        if (!targets.empty()) {
+            for (SdfPath const &p: targets) {
+                _workQueue.push(p);
+            }
+            _consumerTask.Wake();
+        }
+        
+        if (_recurseOnTargets) {
+            WorkParallelForEach(
+                targets.begin(), targets.end(),
+                [this](SdfPath const &path) {
+                    if (!path.HasPrefix(_prim.GetPath())) {
+                        if (UsdPrim owningPrim = _prim.GetStage()->
+                            GetPrimAtPath(path.GetPrimPath())) {
+                            _VisitSubtree(owningPrim);
+                        }
+                    }
+                });
+        }
+    }    
+
+    void _VisitPrim(UsdPrim const &prim) {
+        if (_seenPrims.insert(prim).second) {
+            auto rels = prim._GetRelationships(/*onlyAuthored=*/true,
+                                               /*applyOrder=*/false);
+            for (auto const &rel: rels) {
+                if (!_predicate || _predicate(rel)) {
+                    _dispatcher.Run([this, rel]() { _VisitRel(rel); });
+                }
+            }
+        }
+    };
+
+    void _VisitSubtree(UsdPrim const &prim) {
+        _VisitPrim(prim);
+        auto range = prim.GetDescendants();
+        WorkParallelForEach(range.begin(), range.end(),
+                            [this](UsdPrim const &desc) { _VisitPrim(desc); });
+    }
+
+    void _Find() {
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+        _dispatcher.Run([this]() { _VisitSubtree(_prim); });
+        _dispatcher.Wait();
+
+        // (We run this parallel_sort in the arena dispatcher to avoid the TBB
+        // deadlock issue).
+        _dispatcher.Run([this]() {
+                tbb::parallel_sort(_result.begin(), _result.end(),
+                                   SdfPath::FastLessThan());
+            });
+        _dispatcher.Wait();
+
+        _result.erase(unique(_result.begin(), _result.end()), _result.end());
+    }
+
+    void _ConsumerTask() {
+        SdfPath path;
+        while (_workQueue.try_pop(path)) {
+            _result.push_back(path);
+        }
+    }
+
+    UsdPrim _prim;
+
+    WorkArenaDispatcher _dispatcher;
+    WorkSingularTask _consumerTask;
+
+    std::function<bool (UsdRelationship const &)> const &_predicate;
+
+    tbb::concurrent_queue<SdfPath> _workQueue;
+    tbb::concurrent_unordered_set<UsdPrim, boost::hash<UsdPrim> > _seenPrims;
+
+    SdfPathVector _result;
+
+    bool _recurseOnTargets;
+};
+
+SdfPathVector
+UsdPrim::FindAllRelationshipTargetPaths(
+    std::function<bool (UsdRelationship const &)> const &predicate,
+    bool recurseOnTargets) const
+{
+    return UsdPrim_TargetFinder::Find(*this, predicate, recurseOnTargets);
 }
 
 bool
@@ -530,15 +662,15 @@ UsdPrim::Unload() const
 UsdPrim
 UsdPrim::GetNextSibling() const
 {
-    return GetFilteredNextSibling(UsdPrimIsActive and UsdPrimIsDefined and
-                                  UsdPrimIsLoaded and not UsdPrimIsAbstract);
+    return GetFilteredNextSibling(UsdPrimIsActive && UsdPrimIsDefined &&
+                                  UsdPrimIsLoaded && !UsdPrimIsAbstract);
 }
 
 UsdPrim
 UsdPrim::GetFilteredNextSibling(const Usd_PrimFlagsPredicate &pred) const
 {
     Usd_PrimDataPtr s = _Prim()->GetNextSibling();
-    while (s and not pred(s))
+    while (s && !pred(s))
         s = s->GetNextSibling();
 
     return UsdPrim(s);
@@ -569,3 +701,6 @@ UsdPrim::GetPrimStack() const
 
     return primStack;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

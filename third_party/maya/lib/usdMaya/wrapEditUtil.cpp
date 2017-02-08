@@ -21,7 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/editUtil.h"
+
+#include "usdMaya/util.h"
 
 #include <boost/python/args.hpp>
 #include <boost/python/def.hpp>
@@ -30,10 +33,15 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 
-#include <maya/MObject.h>
-#include <maya/MSelectionList.h>
-#include <maya/MString.h>
 #include <maya/MFnAssembly.h>
+#include <maya/MObject.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+#include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace std;
 using namespace boost::python;
@@ -41,63 +49,62 @@ using namespace boost;
 
 #define BOOST_PYTHON_NONE boost::python::object()
 
-static boost::python::object
+static
+boost::python::object
 _GetEditFromString(
-    const std::string &assemblyPath,
-    const std::string &editString )
+        const std::string& assemblyPath,
+        const std::string& editString)
 {
-    MSelectionList selList;
-    selList.add( MString(assemblyPath.c_str()) );
-
     MObject assemblyObj;
-    if( !selList.getDependNode(0, assemblyObj) )
-    {
-        TF_CODING_ERROR( "EditUtil.GetEditFromString:"
-                         " assembly dag path expected, not found!" );
+    MStatus status = PxrUsdMayaUtil::GetMObjectByName(assemblyPath,
+                                                      assemblyObj);
+    if (status != MS::kSuccess) {
+        TF_CODING_ERROR("EditUtil.GetEditFromString: "
+                        "assembly dag path expected, not found!");
         return BOOST_PYTHON_NONE;
     }
-    
-    MStatus status;
-    MFnAssembly assemblyFn(assemblyObj,&status);
-    if( !status )
-    {
-        TF_CODING_ERROR( "EditUtil.GetEditFromString:"
-                         " assembly dag path expected, not found!" );
+
+    MFnAssembly assemblyFn(assemblyObj, &status);
+    if (status != MS::kSuccess) {
+        TF_CODING_ERROR("EditUtil.GetEditFromString: "
+                        "assembly dag path expected, not found!");
         return BOOST_PYTHON_NONE;
     }
-    
+
     SdfPath editPath;
     PxrUsdMayaEditUtil::RefEdit refEdit;
-    if( !PxrUsdMayaEditUtil::GetEditFromString( assemblyFn, editString,
-                                                &editPath, &refEdit) )
-    {
-        TF_CODING_ERROR( "EditUtil.GetEditFromString: invalid edit" );
+    if (!PxrUsdMayaEditUtil::GetEditFromString(assemblyFn,
+                                               editString,
+                                               &editPath,
+                                               &refEdit)) {
+        TF_CODING_ERROR("EditUtil.GetEditFromString: invalid edit");
         return BOOST_PYTHON_NONE;
     }
-    
-    return boost::python::make_tuple(editPath,refEdit);
+
+    return boost::python::make_tuple(editPath, refEdit);
 }
 
-static boost::python::object
+static
+boost::python::object
 _GetEditsForAssembly(
-    const std::string &assemblyPath )
+        const std::string& assemblyPath)
 {
     PxrUsdMayaEditUtil::PathEditMap refEdits;
     std::vector< std::string > invalidEdits;
 
-    MSelectionList selList;
-    selList.add( MString(assemblyPath.c_str()) );
-
     MObject assemblyObj;
-    if( !selList.getDependNode(0, assemblyObj) )
-    {
-        TF_CODING_ERROR( "EditUtil.GetEditsForAssembly:"
-                         " assembly dag path expected, not found!" );
+    MStatus status = PxrUsdMayaUtil::GetMObjectByName(assemblyPath,
+                                                      assemblyObj);
+    if (status != MS::kSuccess) {
+        TF_CODING_ERROR("EditUtil.GetEditsForAssembly: "
+                        "assembly dag path expected, not found!");
         return BOOST_PYTHON_NONE;
     }
-    
-    PxrUsdMayaEditUtil::GetEditsForAssembly(assemblyObj,&refEdits,&invalidEdits);
-    
+
+    PxrUsdMayaEditUtil::GetEditsForAssembly(assemblyObj,
+                                            &refEdits,
+                                            &invalidEdits);
+
     boost::python::dict editDict;
     TF_FOR_ALL( pathEdits, refEdits )
     {
@@ -106,7 +113,7 @@ _GetEditsForAssembly(
         {
             editList.append( *edit );
         }
-        
+
         editDict[ pathEdits->first ] = editList;
     }
 
@@ -260,3 +267,6 @@ void wrapEditUtil()
         ;
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

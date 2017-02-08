@@ -21,10 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/instancing.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tracelite/trace.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
     PCP_OVERRIDE_INSTANCEABLE, -1,
@@ -49,7 +52,7 @@ struct Pcp_FindInstanceableDataVisitor
         // We're just looking for instanceable data anywhere in the prim
         // index, so if we've found we can return false to cut off the
         // traversal.
-        return not hasInstanceableData;
+        return !hasInstanceableData;
     }
 
     bool hasInstanceableData;
@@ -65,8 +68,8 @@ Pcp_PrimIndexIsInstanceable(
     // unless the special env var is set for testing.
     static const int instancing(TfGetEnvSetting(PCP_OVERRIDE_INSTANCEABLE));
 
-    if ((instancing == 0) or
-        ((not primIndex.IsUsd() and (instancing == -1)))) {
+    if ((instancing == 0) ||
+        ((!primIndex.IsUsd() && (instancing == -1)))) {
         return false;
     }
 
@@ -79,7 +82,7 @@ Pcp_PrimIndexIsInstanceable(
     // not introduce instanceable data.
     Pcp_FindInstanceableDataVisitor visitor;
     Pcp_TraverseInstanceableStrongToWeak(primIndex, &visitor);
-    if (not visitor.hasInstanceableData) {
+    if (!visitor.hasInstanceableData) {
         return false;
     }
 
@@ -115,3 +118,5 @@ Pcp_PrimIndexIsInstanceable(
     _Helper::ComposeInstance(primIndex.GetRootNode(), &isInstance);
     return isInstance;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

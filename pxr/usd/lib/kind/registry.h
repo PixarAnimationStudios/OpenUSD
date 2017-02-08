@@ -21,11 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef AMBER_KIND_REGISTRY_H
-#define AMBER_KIND_REGISTRY_H
+#ifndef KIND_REGISTRY_H
+#define KIND_REGISTRY_H
 
 /// \file kind/registry.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -33,6 +34,8 @@
 
 #include <boost/noncopyable.hpp>
 #include "pxr/base/tf/hashmap.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \hideinitializer
 #define KIND_TOKENS \
@@ -124,5 +127,7 @@ private:
     _KindMap _kindMap;
 };
 
-#endif
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // KIND_REGISTRY_H

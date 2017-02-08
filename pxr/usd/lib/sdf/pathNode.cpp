@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/tokens.h"
-
 #include "pxr/base/tf/bitUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
@@ -43,6 +44,8 @@
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Size of path nodes is important, so we want the compiler to tell us if it
 // changes.
@@ -103,7 +106,7 @@ template <class T>
 struct _HashParentAnd
 {
     inline bool equal(const T &l, const T &r) const {
-        return l.parent == r.parent and l.value == r.value;
+        return l.parent == r.parent && l.value == r.value;
     }
 
     inline size_t hash(const T &t) const {
@@ -145,7 +148,7 @@ _FindOrCreate(Table &table,
               const Arg &arg)
 {
     typename Table::accessor accessor;
-    if (table.insert(accessor, _MakeParentAnd(parent.get(), arg)) or
+    if (table.insert(accessor, _MakeParentAnd(parent.get(), arg)) ||
         Access::GetRefCount(accessor->second).fetch_and_increment() == 0) {
         // Either there was no entry in the table, or there was but it had begun
         // dying (another client dropped its refcount to 0).  We have to create
@@ -164,7 +167,7 @@ inline Sdf_PathNodeConstRefPtr
 _FindOrCreate(Table &table, const Sdf_PathNodeConstRefPtr &parent)
 {
     typename Table::accessor accessor;
-    if (table.insert(accessor, _MakeParentAnd(parent.get())) or
+    if (table.insert(accessor, _MakeParentAnd(parent.get())) ||
         Access::GetRefCount(accessor->second).fetch_and_increment() == 0) {
         // Either there was no entry in the table, or there was but it had begun
         // dying (another client dropped its refcount to 0).  We have to create
@@ -188,7 +191,7 @@ _Remove(const Sdf_PathNode *pathNode,
     // have been created since we decremented our refcount and started being
     // destroyed.  If it is this node, we remove it.
     typename Table::accessor accessor;
-    if (table.find(accessor, _MakeParentAnd(parent.get(), arg)) and
+    if (table.find(accessor, _MakeParentAnd(parent.get(), arg)) &&
         accessor->second == pathNode) {
         table.erase(accessor);
     }
@@ -204,7 +207,7 @@ _Remove(const Sdf_PathNode *pathNode,
     // have been created since we decremented our refcount and started being
     // destroyed.  If it is this node, we remove it.
     typename Table::accessor accessor;
-    if (table.find(accessor, _MakeParentAnd(parent.get())) and
+    if (table.find(accessor, _MakeParentAnd(parent.get())) &&
         accessor->second == pathNode) {
         table.erase(accessor);
     }
@@ -335,7 +338,7 @@ Sdf_PathNode::RemoveCommonSuffix(
     const Sdf_PathNodeConstRefPtr& b,
     bool stopAtRootPrim)
 {
-    if (not a or not b) {
+    if (!a || !b) {
         return std::make_pair(a, b);
     }
 
@@ -348,8 +351,8 @@ Sdf_PathNode::RemoveCommonSuffix(
     // elements counts of 1.
     const Sdf_PathNode* aScan = boost::get_pointer(a);
     const Sdf_PathNode* bScan = boost::get_pointer(b);
-    while (aScan->GetElementCount() > 1 and bScan->GetElementCount() > 1) {
-        if (not aScan->Compare<_Equal>(*bScan)) {
+    while (aScan->GetElementCount() > 1 && bScan->GetElementCount() > 1) {
+        if (!aScan->Compare<_Equal>(*bScan)) {
             return std::make_pair(Sdf_PathNodeConstRefPtr(aScan),
                                   Sdf_PathNodeConstRefPtr(bScan));
         }
@@ -359,9 +362,9 @@ Sdf_PathNode::RemoveCommonSuffix(
 
     // If stopAtRootPrim is not true and neither path is a root then we
     // can scan upwards one more level.
-    if (not stopAtRootPrim and
-        aScan->GetElementCount() >= 1 and
-        bScan->GetElementCount() >= 1 and
+    if (!stopAtRootPrim &&
+        aScan->GetElementCount() >= 1 &&
+        bScan->GetElementCount() >= 1 &&
         aScan->Compare<_Equal>(*bScan)) {
         return std::make_pair(aScan->GetParentNode(), bScan->GetParentNode());
     }
@@ -417,7 +420,7 @@ Sdf_PathNode::_CreatePathToken() const
 
     std::vector<const Sdf_PathNode *> nodes;
     nodes.reserve(GetElementCount());
-    while (curNode and (curNode != root)) {
+    while (curNode && (curNode != root)) {
         nodes.push_back(curNode);
         curNode = boost::get_pointer(curNode->GetParentNode());
     }
@@ -433,8 +436,8 @@ Sdf_PathNode::_CreatePathToken() const
     TF_REVERSE_FOR_ALL(i, nodes) {
         const Sdf_PathNode * const node = *i;
         Sdf_PathNode::NodeType curNodeType = node->GetNodeType();
-        if (prevNodeType == Sdf_PathNode::PrimNode and
-            (curNodeType == Sdf_PathNode::PrimNode or
+        if (prevNodeType == Sdf_PathNode::PrimNode && 
+            (curNodeType == Sdf_PathNode::PrimNode ||
              // This covers cases like '../.property'
              prevElem == SdfPathTokens->parentPathElement)) {
             str.append(SdfPathTokens->childDelimiter.GetString());
@@ -672,3 +675,5 @@ void Sdf_DumpPathStats()
 
     printf("\n");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

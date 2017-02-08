@@ -27,6 +27,7 @@
 /// \file tf/enum.h
 /// \ingroup group_tf_RuntimeTyping
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -41,6 +42,8 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfEnum
 /// \ingroup group_tf_RuntimeTyping
@@ -160,7 +163,7 @@ public:
 
     /// True if \c *this and \c t have both the same type and value.
     bool operator==(const TfEnum& t) const {
-        return t._value == _value and
+        return t._value == _value &&
             TfSafeTypeCompare(*t._typeInfo, *_typeInfo);
     }
 
@@ -169,22 +172,22 @@ public:
     /// different types are ordered in a consistent but arbitrary way which
     /// may vary between program runs.
     bool operator<(const TfEnum& t) const {
-        return _typeInfo->before(*t._typeInfo) or
-            (not t._typeInfo->before(*_typeInfo) and _value < t._value);
+        return _typeInfo->before(*t._typeInfo) ||
+            (!t._typeInfo->before(*_typeInfo) && _value < t._value);
     }
 
     /// True if \c *this has been assigned with \c value.
     template <class T>
     typename boost::enable_if<boost::is_enum<T>, bool>::type
     operator==(T value) const {
-        return int(value) == _value and IsA<T>();
+        return int(value) == _value && IsA<T>();
     }
 
     /// False if \c *this has been assigned with \c value.
     template <class T>
     typename boost::enable_if<boost::is_enum<T>, bool>::type
     operator!=(T value) const {
-        return int(value) != _value or not IsA<T>();
+        return int(value) != _value || !IsA<T>();
     }
 
     /// Compare a literal enum value \a val of enum type \a T with TfEnum \a e.
@@ -389,7 +392,6 @@ private:
     int _value;
 };
 
-
 /// Output a TfEnum value.
 /// \ingroup group_tf_DebuggingOutput
 std::ostream& operator<<(std::ostream& out, const TfEnum & e);
@@ -425,4 +427,6 @@ std::ostream& operator<<(std::ostream& out, const TfEnum & e);
                      BOOST_PP_COMMA_IF(TF_NUM_ARGS(__VA_ARGS__))        \
                      __VA_ARGS__)
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_ENUM_H

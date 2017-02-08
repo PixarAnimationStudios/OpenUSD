@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "px_vp20/utils_legacy.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -29,6 +30,9 @@
 
 #include "pxr/imaging/garch/gl.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 /* static */
 void px_LegacyViewportUtils::GetViewSelectionMatrices(
@@ -36,7 +40,7 @@ void px_LegacyViewportUtils::GetViewSelectionMatrices(
         GfMatrix4d* viewMatrix,
         GfMatrix4d* projectionMatrix)
 {
-    if (not viewMatrix and not projectionMatrix) {
+    if (!viewMatrix && !projectionMatrix) {
         return;
     }
 
@@ -64,4 +68,7 @@ void px_LegacyViewportUtils::GetViewSelectionMatrices(
 
     view.endSelect();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

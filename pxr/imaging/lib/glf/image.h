@@ -26,6 +26,7 @@
 
 /// \file glf/image.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/garch/gl.h"
 
 #include "pxr/base/tf/token.h"
@@ -37,6 +38,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
@@ -154,7 +158,7 @@ bool
 GlfImage::GetMetadata(TfToken const & key, T * value) const
 {
     VtValue any;
-    if (not GetMetadata(key, &any) or not any.IsHolding<T>()) {
+    if (!GetMetadata(key, &any) || !any.IsHolding<T>()) {
         return false;
     }
     *value = any.UncheckedGet<T>();
@@ -166,7 +170,7 @@ bool
 GlfImage::GetSamplerMetadata(GLenum pname, T * param) const
 {
     VtValue any;
-    if (not GetSamplerMetadata(pname, &any) or not any.IsHolding<T>()) {
+    if (!GetSamplerMetadata(pname, &any) || !any.IsHolding<T>()) {
         return false;
     }
     *param = any.UncheckedGet<T>();
@@ -186,5 +190,8 @@ public:
         return GlfImageSharedPtr(new T);
     }
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GLF_IMAGE_H

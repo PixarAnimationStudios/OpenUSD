@@ -24,9 +24,13 @@
 #ifndef HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
 #define HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/drawTargetAttachmentDesc.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdxDrawTargetAttachmentDescArray
 ///
@@ -54,10 +58,27 @@ public:
     /// Pushes a new attachment onto the end of the list of attachments.
     void AddAttachment(const std::string &name,
                        HdFormat           format,
-                       const VtValue      &clearColor);
+                       const VtValue      &clearColor,
+                       HdWrap             wrapS,
+                       HdWrap             wrapT,
+                       HdMinFilter        minFilter,
+                       HdMagFilter        magFilter);
+
 
     size_t GetNumAttachments() const;
     const HdxDrawTargetAttachmentDesc &GetAttachment(size_t idx) const;
+
+    /// Sampler State for Depth attachment
+    void SetDepthSampler(HdWrap      depthWrapS,
+                         HdWrap      depthWrapT,
+                         HdMinFilter depthMinFilter,
+                         HdMagFilter depthMagFilter);
+
+
+    HdWrap      GetDepthWrapS()     const { return _depthWrapS;     }
+    HdWrap      GetDepthWrapT()     const { return _depthWrapT;     }
+    HdMinFilter GetDepthMinFilter() const { return _depthMinFilter; }
+    HdMagFilter GetDepthMagFilter() const { return _depthMagFilter; }
 
 
     // VtValue requirements
@@ -70,9 +91,18 @@ private:
     typedef std::vector<HdxDrawTargetAttachmentDesc> _AttachmentDescArray;
 
     _AttachmentDescArray _attachments;
+
+    // Sampler State for Depth attachment
+    HdWrap      _depthWrapS;
+    HdWrap      _depthWrapT;
+    HdMinFilter _depthMinFilter;
+    HdMagFilter _depthMagFilter;
 };
 
 size_t hash_value(const HdxDrawTargetAttachmentDescArray &attachments);
 std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDescArray &pv);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H

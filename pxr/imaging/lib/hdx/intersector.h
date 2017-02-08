@@ -24,6 +24,7 @@
 #ifndef HDX_INTERSECTOR
 #define HDX_INTERSECTOR
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -41,6 +42,9 @@
 #include <unordered_set>
 #include <iosfwd>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class HdEngine;
 class HdRenderIndex;
 class HdRprimCollection;
@@ -57,7 +61,7 @@ class HdxIntersector {
 public:
     struct Params;
     class Result;
-    class Hit;
+    struct Hit;
 
     HdxIntersector(HdRenderIndexSharedPtr index);
     ~HdxIntersector() = default;
@@ -115,7 +119,7 @@ public:
         float ndcDepth;
 
         inline bool IsValid() const {
-            return not objectId.IsEmpty();
+            return !objectId.IsEmpty();
         }
 
         size_t GetHash() const;
@@ -160,7 +164,7 @@ public:
 
         inline bool IsValid() const
         {
-            return _viewport[2] > 0 and _viewport[3] > 0;
+            return _viewport[2] > 0 && _viewport[3] > 0;
         }
 
         /// Return the nearest single hit point. Not that this method may be
@@ -207,5 +211,8 @@ private:
 };
 
 std::ostream& operator<<(std::ostream& out, HdxIntersector::Hit const & h);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_INTERSECTOR

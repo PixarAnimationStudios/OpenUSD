@@ -35,6 +35,9 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class Hd_BindlessSamplerBufferSource : public HdBufferSource {
 public:
     Hd_BindlessSamplerBufferSource(TfToken const &name, GLenum type, size_t value)
@@ -68,7 +71,7 @@ public:
         specs->push_back(HdBufferSpec(_name, _type, 1));
     }
     virtual bool Resolve() {
-        if (not _TryLock()) return false;
+        if (!_TryLock()) return false;
         _SetResolved();
         return true;
     }
@@ -85,9 +88,9 @@ private:
 };
 
 
-HdSurfaceShader::HdSurfaceShader(HdSceneDelegate* delegate, SdfPath const& id)
-    : _delegate(delegate)
-    , _id(id)
+HdSurfaceShader::HdSurfaceShader(SdfPath const& id)
+ : HdShaderCode()
+ , _id(id)
 {
 }
 
@@ -96,27 +99,24 @@ HdSurfaceShader::~HdSurfaceShader()
 }
 
 void
-HdSurfaceShader::Sync()
+HdSurfaceShader::Sync(HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
- 
-    // _delegate might be null in certain conditions including when
-    // Hydra is using a fallback surface shader
-    if (not _delegate) {
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;  
     }
 
     SdfPath const& id = GetID();
-    HdSceneDelegate* delegate = GetDelegate();
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
     HdChangeTracker& changeTracker = 
-                                delegate->GetRenderIndex().GetChangeTracker();
+                            sceneDelegate->GetRenderIndex().GetChangeTracker();
     HdChangeTracker::DirtyBits bits = changeTracker.GetShaderDirtyBits(id);
 
     if(bits & HdChangeTracker::DirtySurfaceShader) {
-        _fragmentSource = delegate->GetSurfaceShaderSource(id);
-        _geometrySource = delegate->GetDisplacementShaderSource(id);
+        _fragmentSource = sceneDelegate->GetSurfaceShaderSource(id);
+        _geometrySource = sceneDelegate->GetDisplacementShaderSource(id);
 
         // XXX Forcing collections to be dirty to reload everything
         //     Something more efficient can be done here
@@ -126,15 +126,18 @@ HdSurfaceShader::Sync()
     if(bits & HdChangeTracker::DirtyParams) {
         HdBufferSourceVector sources;
         TextureDescriptorVector textures;
-        _params = delegate->GetSurfaceShaderParams(id);
+        _params = sceneDelegate->GetSurfaceShaderParams(id);
         TF_FOR_ALL(paramIt, _params) {
             if (paramIt->IsPrimvar()) {
                 // skip -- maybe not necessary, but more memory efficient
                 continue;
             } else if (paramIt->IsFallback()) {
-                HdBufferSourceSharedPtr source(new HdVtBufferSource(
-                                                   paramIt->GetName(),
-                   delegate->GetSurfaceShaderParamValue(id, paramIt->GetName())));
+                VtValue paramVt =
+                        sceneDelegate->GetSurfaceShaderParamValue(id,
+                                                            paramIt->GetName());
+                HdBufferSourceSharedPtr source(
+                             new HdVtBufferSource(paramIt->GetName(), paramVt));
+
                 sources.push_back(source);
             } else if (paramIt->IsTexture()) {
                 bool bindless = HdRenderContextCaps::GetInstance()
@@ -142,7 +145,7 @@ HdSurfaceShader::Sync()
                 // register bindless handle
 
                 HdTextureResource::ID texID =
-                    delegate->GetTextureResourceID(paramIt->GetConnection());
+                  sceneDelegate->GetTextureResourceID(paramIt->GetConnection());
 
                 HdTextureResourceSharedPtr texResource;
                 {
@@ -153,14 +156,14 @@ HdSurfaceShader::Sync()
                     std::unique_lock<std::mutex> regLock =
                         resourceRegistry->FindTextureResource
                         (texID, &texInstance, &textureResourceFound);
-                    if (not TF_VERIFY(textureResourceFound, 
+                    if (!TF_VERIFY(textureResourceFound, 
                             "No texture resource found with path %s",
                             paramIt->GetConnection().GetText())) {
                         continue;
                     }
 
                     texResource = texInstance.GetValue();
-                    if (not TF_VERIFY(texResource, 
+                    if (!TF_VERIFY(texResource, 
                             "Incorrect texture resource with path %s",
                             paramIt->GetConnection().GetText())) {
                         continue;
@@ -224,7 +227,7 @@ HdSurfaceShader::Sync()
             return;
 
         // Allocate a new uniform buffer if not exists.
-        if (not _paramArray) {
+        if (!_paramArray) {
             // establish a buffer range
             HdBufferSpecVector bufferSpecs;
             TF_FOR_ALL(srcIt, sources) {
@@ -234,12 +237,12 @@ HdSurfaceShader::Sync()
             HdBufferArrayRangeSharedPtr range =
                             resourceRegistry->AllocateShaderStorageBufferArrayRange(
                                         HdTokens->surfaceShaderParams, bufferSpecs);
-            if (not TF_VERIFY(range->IsValid()))
+            if (!TF_VERIFY(range->IsValid()))
                 return;
             _paramArray = range;
         }
 
-        if (not (TF_VERIFY(_paramArray->IsValid())))
+        if (!(TF_VERIFY(_paramArray->IsValid())))
             return;
 
         resourceRegistry->AddSources(_paramArray, sources);
@@ -285,7 +288,7 @@ HdSurfaceShader::GetShaderData() const
     return _paramArray;
 }
 /*virtual*/
-HdShader::TextureDescriptorVector 
+HdShaderCode::TextureDescriptorVector
 HdSurfaceShader::GetTextures() const
 {
     return _textureDescriptors;
@@ -358,7 +361,7 @@ HdSurfaceShader::AddBindings(HdBindingRequestVector *customBindings)
 }
 
 /*virtual*/
-HdShader::ID
+HdShaderCode::ID
 HdSurfaceShader::ComputeHash() const
 {
     size_t hash = 0;
@@ -376,8 +379,8 @@ HdSurfaceShader::ComputeHash() const
 
 /*static*/
 bool
-HdSurfaceShader::CanAggregate(HdShaderSharedPtr const &shaderA,
-                              HdShaderSharedPtr const &shaderB)
+HdSurfaceShader::CanAggregate(HdShaderCodeSharedPtr const &shaderA,
+                              HdShaderCodeSharedPtr const &shaderB)
 {
     bool bindlessTexture = HdRenderContextCaps::GetInstance()
                                                 .bindlessTextureEnabled;
@@ -398,3 +401,6 @@ HdSurfaceShader::CanAggregate(HdShaderSharedPtr const &shaderA,
     }
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

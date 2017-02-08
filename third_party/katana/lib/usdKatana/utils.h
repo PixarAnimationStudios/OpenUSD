@@ -24,6 +24,7 @@
 #ifndef PXRUSDKATANA_ATTRUTILS_H
 #define PXRUSDKATANA_ATTRUTILS_H
 
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/usdInPrivateData.h"
 
@@ -39,6 +40,8 @@
 #include <vector>
 
 namespace FnKat = Foundry::Katana;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct PxrUsdKatanaUtils {
 
@@ -155,6 +158,9 @@ struct PxrUsdKatanaUtils {
             const UsdStageRefPtr& stage);
     
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SGG_USD_UTILS_H
 

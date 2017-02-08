@@ -23,12 +23,15 @@
 //
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/blindDataObject.h"
 #include "usdKatana/readBlindData.h"
 #include "usdKatana/readMaterial.h"
 #include "usdKatana/utils.h"
 
 #include "pxr/usd/usdShade/material.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LooksGroupOp, privateData, interface)
 {
@@ -47,7 +50,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LooksGroupOp, privateData, interfa
     TF_FOR_ALL(childIter, privateData.GetUsdPrim().GetChildren()) {
         const UsdPrim& child = *childIter;
         UsdShadeMaterial materialSchema(child);
-        if (not materialSchema) {
+        if (!materialSchema) {
             continue;
         }
 

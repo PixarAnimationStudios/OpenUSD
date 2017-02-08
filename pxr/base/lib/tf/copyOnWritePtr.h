@@ -75,6 +75,7 @@
 /// checked for null, but do not need to be checked for null.  Copy-on-write
 /// pointers will allocate on demand if necessary.
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/refPtr.h"
 
@@ -82,6 +83,8 @@
 #include <boost/operators.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_base_of.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // General case -- use shared_ptr.
 template <typename Pointee>
@@ -232,5 +235,7 @@ class TfCopyOnWritePtr : boost::equality_comparable<TfCopyOnWritePtr<T> >
 
     mutable PtrType _ptr;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_COPY_ON_WRITE_PTR

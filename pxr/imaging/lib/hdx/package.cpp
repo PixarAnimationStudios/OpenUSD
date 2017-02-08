@@ -30,13 +30,16 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static TfToken
 _GetShaderPath(char const * shader)
 {
     static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
     const std::string path =
         PlugFindPluginResource(plugin, TfStringCatPaths("shaders", shader));
-    TF_VERIFY(not path.empty(), "Could not find shader: %s\n", shader);
+    TF_VERIFY(!path.empty(), "Could not find shader: %s\n", shader);
 
     return TfToken(path);
 }
@@ -69,3 +72,6 @@ HdxPackageSimpleLightingShader()
         _GetShaderPath("simpleLightingShader.glslfx");
     return simpleLightingShader;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,7 +24,12 @@
 #ifndef PCP_STATISTICS_H
 #define PCP_STATISTICS_H
 
+#include "pxr/pxr.h"
+
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 class PcpCache;
 class PcpPrimIndex;
 
@@ -39,5 +44,7 @@ Pcp_PrintCacheStatistics(
 void
 Pcp_PrintPrimIndexStatistics(
     const PcpPrimIndex& primIndex, std::ostream& out = std::cout);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_STATISTICS_H

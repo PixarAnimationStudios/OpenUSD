@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_EDITUTIL_H
 #define PXRUSDMAYA_EDITUTIL_H
 
+#include "pxr/pxr.h"
 #include <maya/MObject.h>
 
 #include "pxr/base/vt/value.h"
@@ -35,7 +36,10 @@
 #include <vector>
 #include <map>
 
+
 class MFnAssembly;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Utility class for handling edits on Assemblies in Maya.
 ///
@@ -129,5 +133,8 @@ private:
             AvarValueMap *valueMap );
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_EDITUTIL_H

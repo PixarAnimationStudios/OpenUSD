@@ -27,6 +27,8 @@
 /// \file tf/pyPtrHelpers.h
 /// Enables wrapping of Weak or Ref & Weak held types to python.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyIdentity.h"
 #include "pxr/base/tf/pyObjectFinder.h"
@@ -51,6 +53,8 @@
 #include <boost/python/implicit.hpp>
 #include <boost/python/to_python_converter.hpp>
 #include <boost/type_traits/is_abstract.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // Boost.Python def visitors for wrapping objects held by weak pointers.  This
@@ -439,5 +443,7 @@ struct RefAndWeakPtr : def_visitor<RefAndWeakPtr> {
 
 struct TfPyWeakPtr : Tf_PyDefHelpers::WeakPtr {};
 struct TfPyRefAndWeakPtr : Tf_PyDefHelpers::RefAndWeakPtr {};
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYPTRHELPERS_H

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -30,6 +32,7 @@
 
 using std::map;
 using std::string;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TfStaticData<string> _str1;
 TfStaticData<string> _str2;
@@ -72,27 +75,27 @@ static bool
 Test_TfStaticData()
 {
     // none should exist yet.
-    TF_AXIOM(not _str1.IsInitialized() and
-             not _str2.IsInitialized() and
-             not _str3.IsInitialized());
-    TF_AXIOM(not (_str1.IsInitialized() or
-                  _str2.IsInitialized() or
-                  _str3.IsInitialized()));
+    TF_AXIOM(!_str1.IsInitialized() && 
+             !_str2.IsInitialized() && 
+             !_str3.IsInitialized());
+    TF_AXIOM(!(_str1.IsInitialized() || 
+               _str2.IsInitialized() || 
+               _str3.IsInitialized()));
     TF_AXIOM(Count::count == 0);
 
     (void) *_str1;  // force creation
-    TF_AXIOM(_str1.IsInitialized() and
-             not _str2.IsInitialized() and
-             not _str3.IsInitialized());
+    TF_AXIOM(_str1.IsInitialized() &&
+             !_str2.IsInitialized() &&
+             !_str3.IsInitialized());
     TF_AXIOM(_str1->empty());
 
-    TF_AXIOM(_str2->empty() and
-             _str1->empty() and
-             not _str3.IsInitialized());
+    TF_AXIOM(_str2->empty() &&
+             _str1->empty() &&
+             !_str3.IsInitialized());
 
     // arrow dereference, should default construct.
-    TF_AXIOM(_str3->empty() and
-             _str2.IsInitialized() and
+    TF_AXIOM(_str3->empty() &&
+             _str2.IsInitialized() &&
              _str1.IsInitialized());
 
     // Dereference, should default construct.  NOTE: please don't replace
@@ -100,11 +103,11 @@ Test_TfStaticData()
     TF_AXIOM((*_str4).empty());
 
     // Test a static data obj with an initializer.
-    TF_AXIOM(not _initStr.IsInitialized());
+    TF_AXIOM(!_initStr.IsInitialized());
     TF_AXIOM(*_initStr == "initialized");
 
     // test a static data obj for a templated type with an initializer.
-    TF_AXIOM(not _initMap.IsInitialized());
+    TF_AXIOM(!_initMap.IsInitialized());
     TF_AXIOM(_initMap->size() == 2);
     TF_AXIOM((*_initMap)[1] == 11);
     TF_AXIOM((*_initMap)[2] == 22);

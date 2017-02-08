@@ -23,9 +23,11 @@
 //
 /// \file ProxyPolicies.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/proxyPolicies.h"
 #include "pxr/usd/sdf/mapperSpec.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // SdfConnectionMapperViewPredicate
@@ -47,7 +49,7 @@ SdfRelocatesMapProxyValuePolicy::CanonicalizeType(
     const SdfSpecHandle& spec,
     const Type& x)
 {
-    if (not TF_VERIFY(spec)) {
+    if (!TF_VERIFY(spec)) {
         return x;
     }
 
@@ -81,7 +83,7 @@ SdfRelocatesMapProxyValuePolicy::CanonicalizePair(
     const SdfSpecHandle& spec,
     const value_type& x)
 {
-    if (not TF_VERIFY(spec)) {
+    if (!TF_VERIFY(spec)) {
         return x;
     }
 
@@ -109,3 +111,5 @@ SdfRelationshipViewPredicate::SdfRelationshipViewPredicate() :
 {
     // Do nothing.
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

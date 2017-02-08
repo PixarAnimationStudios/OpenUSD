@@ -38,6 +38,9 @@
 
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingMeshAdapter Adapter;
@@ -100,7 +103,7 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
 
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         // Discover time-varying topology.
-        if (not _IsVarying(prim,
+        if (!_IsVarying(prim,
                            UsdGeomTokens->faceVertexCounts,
                            HdChangeTracker::DirtyTopology,
                            UsdImagingTokens->usdVaryingTopology,
@@ -108,7 +111,7 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                            /*isInherited*/false)) {
             // Only do this check if the faceVertexCounts is not already known
             // to be varying.
-            if (not _IsVarying(prim,
+            if (!_IsVarying(prim,
                                UsdGeomTokens->faceVertexIndices,
                                HdChangeTracker::DirtyTopology,
                                UsdImagingTokens->usdVaryingTopology,
@@ -208,7 +211,7 @@ UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
                                          UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     TfToken schemeToken;
     _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);
     if (schemeToken == UsdGeomTokens->none)
@@ -228,8 +231,8 @@ UsdImagingMeshAdapter::_GetPoints(UsdPrim const& prim,
                                    UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-    if (not prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
+    HF_MALLOC_TAG_FUNCTION();
+    if (!prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
         *value = VtVec3fArray();
     }
 }
@@ -241,9 +244,9 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
                                        UsdTimeCode time)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-    if(not prim.IsA<UsdGeomMesh>())
+    if(!prim.IsA<UsdGeomMesh>())
         return;
 
     TfToken token; VtIntArray iarray; VtFloatArray farray;
@@ -282,4 +285,7 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
     _GetPtr(prim, UsdGeomTokens->holeIndices, time, &iarray);
     tags->SetHoleIndices(iarray);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

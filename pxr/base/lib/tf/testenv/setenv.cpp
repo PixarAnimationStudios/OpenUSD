@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/setenv.h"
 
 #include "pxr/base/tf/errorMark.h"
@@ -38,6 +40,7 @@
 
 using std::string;
 using namespace boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static unsigned int
 _CheckResultInEnv(const string & envName, const string & envVal)
@@ -67,14 +70,14 @@ _CheckResultInOsEnviron(const string & envName, const string & envVal)
     string cmd = TfStringPrintf("os.environ['%s']", envName.c_str());
     handle<> wrappedResult = TfPyRunString(cmd, Py_eval_input);
 
-    if (not wrappedResult) {
+    if (!wrappedResult) {
         printf("ERROR: Python returned no result.\n");
         return 1;
     }
 
     extract<string> getString(wrappedResult.get());
 
-    if (not getString.check()) {
+    if (!getString.check()) {
         printf("ERROR: Python returned non-string result.\n");
         return 1;
     }
@@ -104,20 +107,20 @@ _CheckResultNotInOsEnviron(const string & envName)
     string cmd = TfStringPrintf("'%s' not in os.environ", envName.c_str());
     handle<> wrappedResult = TfPyRunString(cmd, Py_eval_input);
 
-    if (not wrappedResult) {
+    if (!wrappedResult) {
         printf("ERROR: Python returned no result.\n");
         return 1;
     }
 
     extract<bool> getBool(wrappedResult.get());
 
-    if (not getBool.check()) {
+    if (!getBool.check()) {
         printf("ERROR: Python returned non-string result.\n");
         return 1;
     }
 
     bool result = getBool();
-    if (not result) {
+    if (!result) {
         printf("ERROR: Expected key '%s' not appear in os.environ.\n",
                envName.c_str());
 
@@ -220,7 +223,7 @@ _TestSetenvNoInit()
     {
         TfErrorMark m;
 
-        if (not TfSetenv(envName, envVal)) {
+        if (!TfSetenv(envName, envVal)) {
             numErrors += 1;
             printf("ERROR: Setenv failed\n");
         }
@@ -240,7 +243,7 @@ _TestSetenvNoInit()
 
     numErrors += _CheckResultInEnv(envName, envVal);
 
-    if (not TfUnsetenv(envName)) {
+    if (!TfUnsetenv(envName)) {
         numErrors += 1;
         printf("ERROR: Unsetenv failed\n");
     }

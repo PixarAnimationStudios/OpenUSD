@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
 
 #include "pxr/usd/usd/conversions.h"
 
@@ -32,6 +34,9 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -48,6 +53,21 @@ bool _SetRecipient0(
     return self.SetRecipient(renderTarget, recipientPath);
 }
 
+static object
+_GetConnectedSource(const UsdShadeInterfaceAttribute &self)
+{
+    UsdShadeConnectableAPI source;
+    TfToken                sourceName;
+    UsdShadeAttributeType  sourceType;
+    
+    if (self.GetConnectedSource(&source, &sourceName, &sourceType)){
+        return make_tuple(source, sourceName, sourceType);
+    }
+    else {
+        return object();
+    }
+}
+
 bool _SetRecipient1(
         UsdShadeInterfaceAttribute& self,
         const TfToken& renderTarget,
@@ -59,6 +79,18 @@ bool _SetRecipient1(
 void wrapUsdShadeInterfaceAttribute()
 {
     typedef UsdShadeInterfaceAttribute InterfaceAttribute;
+
+    bool (InterfaceAttribute::*ConnectToSource_1)(UsdShadeConnectableAPI const &,
+                                   TfToken const &,
+                                   UsdShadeAttributeType const) const = &InterfaceAttribute::ConnectToSource;
+    bool (InterfaceAttribute::*ConnectToSource_2)(UsdShadeParameter const &) const =
+                                    &InterfaceAttribute::ConnectToSource;
+    bool (InterfaceAttribute::*ConnectToSource_3)(UsdShadeOutput const &) const =
+                                    &InterfaceAttribute::ConnectToSource;
+    bool (InterfaceAttribute::*ConnectToSource_4)(UsdShadeInterfaceAttribute const &) const =
+                                    &InterfaceAttribute::ConnectToSource;
+    bool (InterfaceAttribute::*ConnectToSource_5)(SdfPath const &) const =
+                                    &InterfaceAttribute::ConnectToSource;
 
     class_<InterfaceAttribute>("InterfaceAttribute")
         .def(init<UsdAttribute>(arg("attr")))
@@ -75,6 +107,23 @@ void wrapUsdShadeInterfaceAttribute()
         .def("SetDisplayGroup", &InterfaceAttribute::SetDisplayGroup)
         .def("GetDisplayGroup", &InterfaceAttribute::GetDisplayGroup)
 
+        .def("ConnectToSource", ConnectToSource_1,
+             (arg("source"), arg("sourceName"), 
+              arg("sourceType")=UsdShadeAttributeType::Output))
+        .def("ConnectToSource", ConnectToSource_2,
+             (arg("param")))
+        .def("ConnectToSource", ConnectToSource_3,
+             (arg("output")))
+        .def("ConnectToSource", ConnectToSource_4,
+             (arg("interfaceAttribute")))
+        .def("ConnectToSource", ConnectToSource_5,
+             (arg("path")))
+
+        .def("DisconnectSource", &InterfaceAttribute::DisconnectSource)
+        .def("ClearSource", &InterfaceAttribute::ClearSource)
+
+        .def("GetConnectedSource", _GetConnectedSource)
+
         .def("GetAttr", &InterfaceAttribute::GetAttr,
                 return_value_policy<return_by_value>())
         ;
@@ -84,4 +133,7 @@ void wrapUsdShadeInterfaceAttribute()
         std::vector<InterfaceAttribute>,
         TfPySequenceToPython<std::vector<InterfaceAttribute> > >();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

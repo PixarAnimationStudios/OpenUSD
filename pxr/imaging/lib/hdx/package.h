@@ -24,12 +24,19 @@
 #ifndef HDX_PACKAGE_H
 #define HDX_PACKAGE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TfToken HdxPackageRenderPassShader();
 TfToken HdxPackageRenderPassIdShader();
 TfToken HdxPackageRenderPassShadowShader();
 TfToken HdxPackageSimpleLightingShader();
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

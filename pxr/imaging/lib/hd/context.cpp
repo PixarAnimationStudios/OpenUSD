@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hd/context.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdContext::HdContext(HdRenderDelegate *renderDelegate,
                      GalDelegate      *galDelegate,
                      HdRenderIndex    *index)
@@ -54,3 +57,6 @@ HdContext::GetRenderIndex()
 {
     return _renderIndex;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,11 +24,15 @@
 #ifndef PXRUSDKATANA_USDIN_PRIVATEDATA_H
 #define PXRUSDKATANA_USDIN_PRIVATEDATA_H
 
+#include "pxr/pxr.h"
 #include "usdKatana/usdInArgs.h"
 
 #include "pxr/usd/usd/prim.h"
 #include <FnGeolib/op/FnGeolibOp.h>
 #include <memory>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \brief Private data for each non-root invocation of \c PxrUsdIn. 
 ///
@@ -95,5 +99,8 @@ private:
 
     std::shared_ptr<const MaterialHierarchy> _materialHierarchy;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDKATANA_USDIN_PRIVATEDATA_H

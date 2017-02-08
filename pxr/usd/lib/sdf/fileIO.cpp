@@ -24,7 +24,7 @@
 ///
 /// \file Sdf/fileIO.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
@@ -55,6 +55,8 @@ using std::map;
 using std::ostream;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
 // Local shorthand
@@ -97,7 +99,7 @@ bool
 Sdf_WriteVariantSet(const SdfVariantSetSpec &spec, ostream &out, size_t indent)
 {
     SdfVariantSpecHandleVector variants = spec.GetVariantList();
-    std::sort(variants.begin(), variants.end(), &::_VariantNameLess);
+    std::sort(variants.begin(), variants.end(), &_VariantNameLess);
 
     if (!variants.empty()) {
         _Write(out, indent, "variantSet ");
@@ -155,3 +157,5 @@ Sdf_WriteToStream(const SdfSpec &baseSpec, std::ostream& out, size_t indent)
                     TfStringify(type).c_str());
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

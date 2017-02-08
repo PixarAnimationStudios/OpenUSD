@@ -24,7 +24,11 @@
 #ifndef _usdExport_MayaNurbsCurveWriter_h_
 #define _usdExport_MayaNurbsCurveWriter_h_
 
+#include "pxr/pxr.h"
 #include "usdMaya/MayaTransformWriter.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdGeomNurbsCurves;
 
@@ -45,5 +49,8 @@ class MayaNurbsCurveWriter : public MayaTransformWriter
 };
 
 typedef shared_ptr < MayaNurbsCurveWriter > MayaNurbsCurveWriterPtr;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // _usdExport_MayaNurbsCurveWriter_h_

@@ -25,6 +25,9 @@
 
 #include <boost/python/class.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 
 void wrapSimpleLight()
@@ -119,3 +122,6 @@ void wrapSimpleLight()
                       &This::SetID)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

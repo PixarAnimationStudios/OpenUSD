@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/sdf/reference.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/reference.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -34,6 +35,7 @@
 using namespace boost::python;
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 static string
 _Repr(const SdfReference &self)
@@ -41,19 +43,19 @@ _Repr(const SdfReference &self)
     string args;
     bool useKeywordArgs = false;
 
-    if (not self.GetAssetPath().empty()) {
+    if (!self.GetAssetPath().empty()) {
         args += TfPyRepr(self.GetAssetPath());
     } else {
         useKeywordArgs = true;
     }
-    if (not self.GetPrimPath().IsEmpty()) {
+    if (!self.GetPrimPath().IsEmpty()) {
         args += (args.empty() ? "": ", ");
         args += (useKeywordArgs ? "primPath=" : "") +
             TfPyRepr(self.GetPrimPath());
     } else {
         useKeywordArgs = true;
     }
-    if (not self.GetLayerOffset().IsIdentity()) {
+    if (!self.GetLayerOffset().IsIdentity()) {
         args += (args.empty() ? "": ", ");
         args += (useKeywordArgs ? "layerOffset=" : "") +
             TfPyRepr(self.GetLayerOffset());
@@ -61,7 +63,7 @@ _Repr(const SdfReference &self)
         useKeywordArgs = true;
     }
     // Always use keyword args for custom data (for readability).
-    if (not self.GetCustomData().empty()) {
+    if (!self.GetCustomData().empty()) {
         args += (args.empty() ? "": ", ");
         args += "customData=" + TfPyRepr(self.GetCustomData());
     }
@@ -124,3 +126,5 @@ void wrapReference()
         ;
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

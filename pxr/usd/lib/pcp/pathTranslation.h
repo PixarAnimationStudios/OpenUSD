@@ -27,6 +27,10 @@
 /// \file pcp/pathTranslation.h
 /// Path translation.
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 class PcpMapFunction;
 class PcpNodeRef;
 class SdfPath;
@@ -100,5 +104,7 @@ PcpTranslatePathFromNodeToRootUsingFunction(
     const PcpMapFunction &mapToRoot,
     const SdfPath &pathInNodeNamespace,
     bool *pathWasTranslated = 0);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_PATH_TRANSLATION_H

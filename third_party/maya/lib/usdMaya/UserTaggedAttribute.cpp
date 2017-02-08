@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/UserTaggedAttribute.h"
 
 #include "pxr/base/js/json.h"
@@ -34,6 +35,9 @@
 
 #include <set>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaUserTaggedAttributeTokens,
     PXRUSDMAYA_ATTR_TOKENS);
 
@@ -42,6 +46,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (USD_UserExportedAttributesJson)
     (usdAttrName)
     (usdAttrType)
+    (translateMayaDoubleToUsdSinglePrecision)
     ((UserPropertiesNamespace, "userProperties:"))
 );
 
@@ -49,8 +54,14 @@ PxrUsdMayaUserTaggedAttribute::PxrUsdMayaUserTaggedAttribute(
         const MPlug plug,
         const std::string& name,
         const TfToken& type,
-        const TfToken& interpolation)
-        : _plug(plug), _name(name), _type(type), _interpolation(interpolation)
+        const TfToken& interpolation,
+        const bool translateMayaDoubleToUsdSinglePrecision)
+        : _plug(plug),
+          _name(name),
+          _type(type),
+          _interpolation(interpolation),
+          _translateMayaDoubleToUsdSinglePrecision(
+              translateMayaDoubleToUsdSinglePrecision)
 {
 }
 
@@ -85,7 +96,14 @@ PxrUsdMayaUserTaggedAttribute::GetUsdInterpolation() const
     return _interpolation;
 }
 
-static std::string
+bool
+PxrUsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision() const
+{
+    return _translateMayaDoubleToUsdSinglePrecision;
+}
+
+static
+std::string
 _GetExportAttributeMetadata(
         const JsObject& attrMetadata,
         const TfToken& keyToken)
@@ -94,6 +112,22 @@ _GetExportAttributeMetadata(
     JsObject::const_iterator attrMetadataIter = attrMetadata.find(keyToken);
     if (attrMetadataIter != attrMetadata.end()) {
         value = attrMetadataIter->second.GetString();
+    }
+
+    return value;
+}
+
+static
+bool
+_GetExportAttributeMetadata(
+        const JsObject& attrMetadata,
+        const TfToken& keyToken,
+        const bool defaultValue)
+{
+    bool value = defaultValue;
+    JsObject::const_iterator attrMetadataIter = attrMetadata.find(keyToken);
+    if (attrMetadataIter != attrMetadata.end()) {
+        value = attrMetadataIter->second.GetBool();
     }
 
     return value;
@@ -124,7 +158,7 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
 
     JsParseError jsError;
     JsValue jsValue = JsParseString(exportedAttrsJsonString, &jsError);
-    if (not jsValue) {
+    if (!jsValue) {
         MString errorMsg(TfStringPrintf(
             "Failed to parse USD exported attributes JSON on node at"
             " dagPath '%s' at line %d, column %d: %s",
@@ -168,13 +202,22 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
             _GetExportAttributeMetadata(attrMetadata,
                                         UsdGeomTokens->interpolation));
 
+        // Check whether it was specified that the double precision Maya
+        // attribute type should be mapped to a single precision USD type.
+        // If it wasn't specified, use the fallback value.
+        bool translateMayaDoubleToUsdSinglePrecision(
+            _GetExportAttributeMetadata(
+                attrMetadata,
+                _tokens->translateMayaDoubleToUsdSinglePrecision,
+                GetFallbackTranslateMayaDoubleToUsdSinglePrecision()));
+
         // Check whether the USD attribute name should be different than the
         // Maya attribute name.
         std::string usdAttrName =
             _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrName);
         if (usdAttrName.empty()) {
             const auto& tokens = PxrUsdMayaUserTaggedAttributeTokens;
-            if (usdAttrType == tokens->USDAttrTypePrimvar or
+            if (usdAttrType == tokens->USDAttrTypePrimvar || 
                     usdAttrType == tokens->USDAttrTypeUsdRi) {
                 // Primvars and UsdRi attributes will be given a type-specific
                 // namespace, so just use the Maya attribute name.
@@ -189,7 +232,7 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
         }
 
         const auto& insertIter = processedAttributeNames.emplace(usdAttrName);
-        if (not insertIter.second) {
+        if (!insertIter.second) {
             MString errorMsg(TfStringPrintf(
                 "Ignoring duplicate USD export tag for attribute '%s' on node"
                 " at dagPath '%s'",
@@ -198,8 +241,15 @@ PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
             continue;
         }
 
-        result.emplace_back(attrPlug, usdAttrName, usdAttrType, interpolation);
+        result.emplace_back(attrPlug,
+                            usdAttrName,
+                            usdAttrType,
+                            interpolation,
+                            translateMayaDoubleToUsdSinglePrecision);
     }
 
     return result;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

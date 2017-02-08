@@ -26,6 +26,7 @@
 
 /// \file usdShade/subgraph.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -35,6 +36,7 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/output.h"
 
 
 #include "pxr/base/vt/value.h"
@@ -46,6 +48,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
@@ -56,7 +60,7 @@ class SdfAssetPath;
 ///
 /// A subgraph is a container for shading nodes, as well as other 
 /// subgraphs. It has a public input interface and provides a list of public 
-/// outputs, called terminals.
+/// outputs.
 /// 
 /// <b>Subgraph Interfaces</b>
 /// 
@@ -66,10 +70,10 @@ class SdfAssetPath;
 /// explanation of what the interface provides, and how to construct and
 /// use it to effectively share/instance shader networks.
 /// 
-/// <b>Terminals</b>
+/// <b>Subgraph Outputs</b>
 /// 
-/// Analogous to the public interface, these are relationships that each point 
-/// to a single internal shader output.
+/// These behave like outputs on a shader and are typically connected to an 
+/// output on a shader inside the subgraph.
 /// 
 ///
 class UsdShadeSubgraph : public UsdTyped
@@ -159,10 +163,17 @@ public:
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
     //
-    // Just remember to close the class delcaration with }; and complete the
-    // include guard with #endif
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Allow UsdShadeSubgraph to auto-convert to UsdShadeConnectableAPI, so 
+    /// you can pass in a UsdShadeSubgraph to any function that accepts 
+    /// a UsdShadeConnectableAPI.
+    operator UsdShadeConnectableAPI () const;
 
     /// \anchor UsdShadeSubgraph_Interfaces
     /// \name Interface Attributes
@@ -230,20 +241,29 @@ public:
 
     /// @}
 
-    /// Create and set a custom terminal of a subgraph
+    /// \anchor UsdShadeSubgraph_Outputs
+    /// \name Outputs of a subgraph.
     /// 
-    UsdRelationship CreateTerminal(
-        const TfToken& terminalName,
-        const SdfPath& targetPath) const;
+    /// @{
 
-    /// Get a terminal of a subgraph
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace.
     /// 
-    UsdRelationship GetTerminal(
-        const TfToken& terminalName) const;
+    UsdShadeOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName);
 
-    /// Get all terminals of a subgraph
+    /// Return the requested output if it exists.
     /// 
-    UsdRelationshipVector GetTerminals() const;
+    UsdShadeOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs" namespace.
+    /// 
+    std::vector<UsdShadeOutput> GetOutputs() const;
+    
+    /// @}
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

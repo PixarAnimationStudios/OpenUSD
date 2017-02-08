@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/translatorModelAssembly.h"
 
 #include "usdMaya/primReaderArgs.h"
@@ -31,6 +32,7 @@
 #include "usdMaya/stageCache.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/translatorXformable.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/kind/registry.h"
@@ -64,6 +66,9 @@
 #include <string>
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((FilePathPlugName, "filePath"))
     ((PrimPathPlugName, "primPath"))
@@ -94,7 +99,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
     context->SetPruneChildren(true);
 
     UsdPrim prim = stage->DefinePrim(authorPath);
-    if (not prim) {
+    if (!prim) {
         MString errorMsg("Failed to create prim for USD reference assembly at path: ");
         errorMsg += MString(authorPath.GetText());
         MGlobal::displayError(errorMsg);
@@ -102,7 +107,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
     }
 
     // only write references when time is default
-    if (not usdTime.IsDefault()) {
+    if (!usdTime.IsDefault()) {
         return true;
     }
 
@@ -123,7 +128,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
         std::string resolvedRefPath =
             stage->ResolveIdentifierToEditTarget(refAssetPath);
 
-        if (not resolvedRefPath.empty()) {
+        if (!resolvedRefPath.empty()) {
             std::string refPrimPathStr;
             MPlug usdRefPrimPathPlg = assemblyNode.findPlug(
                 _tokens->PrimPathPlugName.GetText(), &status);
@@ -132,12 +137,12 @@ PxrUsdMayaTranslatorModelAssembly::Create(
             }
 
             if (refPrimPathStr.empty()) {
-                refs.Add(refAssetPath);
+                refs.AppendReference(refAssetPath);
             } else {
                 SdfPath refPrimPath(refPrimPathStr);
 
                 if (refPrimPath.IsRootPrimPath()) {
-                    refs.Add(SdfReference(refAssetPath, refPrimPath));
+                    refs.AppendReference(SdfReference(refAssetPath, refPrimPath));
                 } else {
                     MString errorMsg("Not creating reference for assembly node '");
                     errorMsg += assemblyNode.fullPathName();
@@ -158,7 +163,7 @@ PxrUsdMayaTranslatorModelAssembly::Create(
     }
 
     auto registeredVariantSets = UsdUtilsGetRegisteredVariantSets();
-    if (not registeredVariantSets.empty()) {
+    if (!registeredVariantSets.empty()) {
         // import variant selections: we only import the "persistent" ones.
         for (const auto& regVarSet: registeredVariantSets) {
             switch (regVarSet.selectionExportPolicy) {
@@ -201,8 +206,8 @@ PxrUsdMayaTranslatorModelAssembly::Create(
         // on the referenceAssembly!
         TfToken kind;
         UsdModelAPI(prim).GetKind(&kind);
-        if (not prim.HasAuthoredInstanceable() and
-            not KindRegistry::GetInstance().IsA(kind, KindTokens->group)) {
+        if (!prim.HasAuthoredInstanceable() &&
+            !KindRegistry::GetInstance().IsA(kind, KindTokens->group)) {
             prim.SetInstanceable(true);
         }
     }
@@ -216,7 +221,7 @@ _HasAssetInfo(const UsdPrim& prim)
 {
     UsdModelAPI usdModel(prim);
     SdfAssetPath identifier;
-    if (not usdModel.GetAssetIdentifier(&identifier)) {
+    if (!usdModel.GetAssetIdentifier(&identifier)) {
         return false;
     }
 
@@ -231,10 +236,10 @@ _HasReferenceInfo(const UsdPrim& prim)
     prim.GetMetadata(SdfFieldKeys->References, &refs);
 
     // this logic is not robust.  awaiting bug 99278.
-    if (not refs.GetAddedItems().empty()) {
+    if (!refs.GetAddedItems().empty()) {
         return true;
     }
-    if (not refs.GetExplicitItems().empty()) {
+    if (!refs.GetExplicitItems().empty()) {
         return true;
     }
 
@@ -247,11 +252,11 @@ PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
     const UsdPrim& usdImportRootPrim,
     const UsdPrim& prim)
 {
-    if (not prim) {
+    if (!prim) {
         return false;
     }
 
-    if (not prim.IsModel()) {
+    if (!prim.IsModel()) {
         return false;
     }
 
@@ -283,7 +288,7 @@ _GetVariantSelections(const UsdPrim& prim)
     TF_FOR_ALL(iter, varSetNames) {
         const std::string& varSetName = *iter;
         std::string varSel = varSets.GetVariantSelection(varSetName);
-        if (not varSel.empty()) {
+        if (!varSel.empty()) {
             varSels[varSetName] = varSel;
         }
     }
@@ -304,49 +309,47 @@ PxrUsdMayaTranslatorModelAssembly::Read(
 {
     UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get());
     UsdStageRefPtr usdStage = UsdStage::Open(assetIdentifier);
-    if (not usdStage) {
+    if (!usdStage) {
         MGlobal::displayError("Cannot open USD file " +
             MString(assetIdentifier.c_str()));
         return false;
     }
 
     UsdPrim modelPrim;
-    if (not assetPrimPath.IsEmpty()) {
+    if (!assetPrimPath.IsEmpty()) {
         modelPrim = usdStage->GetPrimAtPath(assetPrimPath);
     } else {
         modelPrim = usdStage->GetDefaultPrim();
     }
 
-    if (not modelPrim) {
+    if (!modelPrim) {
         MGlobal::displayError("Could not find model prim in USD file " +
             MString(assetIdentifier.c_str()));
         return false;
     }
 
-    MStatus status;
+    // We have to create the new assembly node with the assembly command as
+    // opposed to using MDagModifier's createNode() or any other method. That
+    // seems to be the only way to ensure that the assembly's namespace and
+    // container are setup correctly.
+    const std::string assemblyCmd =
+        TfStringPrintf("cmds.assembly(name=\'%s\', type=\'%s\')",
+                       prim.GetName().GetText(),
+                       assemblyTypeName.c_str());
+    MString newAssemblyName;
+    MStatus status = MGlobal::executePythonCommand(assemblyCmd.c_str(),
+                                                   newAssemblyName);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    // Now we get the MObject for the assembly node we just created.
+    MObject assemblyObj;
+    status = PxrUsdMayaUtil::GetMObjectByName(newAssemblyName.asChar(),
+                                              assemblyObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    // Re-parent the assembly node underneath parentNode.
     MDagModifier dagMod;
-
-    // Create the assembly node under its parent node.
-    MObject assemblyObj = dagMod.createNode(assemblyTypeName.c_str(), parentNode, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // XXX: This is kind of unfortunate. There doesn't seem to be any API for
-    // specifying both a node type AND a node name when creating nodes using
-    // the MDagModifier. Creating assembly nodes has the side effect of creating
-    // a namespace with the same name as the node in which the members of the
-    // assembly will go. Maya does not allow you to change namespaces associated
-    // with nested assembly nodes, and trying to add a renameNode operation to
-    // the MDagModifier will result in only the node being renamed, not it's
-    // associated namespace. As a result, we change the name of the node even
-    // before the createNode on the MDagModifier has been executed, and that
-    // seems to ensure that both the node and the namespace are named as we
-    // want them to be. If we don't do this, we end up with namespaces such as
-    // "NS_dagAsset1" which are based off of the default assembly node's name
-    // before we've had a chance to rename it.
-    MFnDagNode dagNodeFn(assemblyObj, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    const MString newAssemblyName(prim.GetName().GetText());
-    dagNodeFn.setName(newAssemblyName, false, &status);
+    status = dagMod.reparentNode(assemblyObj, parentNode);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Read xformable attributes from the UsdPrim on to the assembly node.
@@ -372,7 +375,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     // Set the kind attribute.
     TfToken modelKind;
     UsdModelAPI usdModel(modelPrim);
-    if (not usdModel.GetKind(&modelKind) or modelKind.IsEmpty()) {
+    if (!usdModel.GetKind(&modelKind) || modelKind.IsEmpty()) {
         modelKind = KindTokens->component;
     }
 
@@ -416,7 +419,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     }
 
     // If a representation was supplied, activate it.
-    if (not assemblyRep.empty()) {
+    if (!assemblyRep.empty()) {
         MFnAssembly assemblyFn(assemblyObj, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
         if (assemblyFn.canActivate(&status)) {
@@ -442,7 +445,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
     PxrUsdMayaPrimReaderContext* context,
     const std::string& proxyShapeTypeName)
 {
-    if (not prim) {
+    if (!prim) {
         return false;
     }
 
@@ -452,7 +455,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     // Create a transform node for the proxy node under its parent node.
     MObject transformObj;
-    if (not PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                           parentNode,
                                                           args,
                                                           context,
@@ -469,7 +472,7 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
-    TF_VERIFY(not proxyObj.isNull());
+    TF_VERIFY(!proxyObj.isNull());
     const std::string proxyShapeNodeName = TfStringPrintf("%s%s",
             prim.GetName().GetText(), _tokens->MayaProxyShapeNameSuffix.GetText());
     status = dagMod.renameNode(proxyObj, proxyShapeNodeName.c_str());
@@ -519,3 +522,6 @@ PxrUsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

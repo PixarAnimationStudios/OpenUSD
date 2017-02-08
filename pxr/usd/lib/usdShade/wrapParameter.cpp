@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdShade/parameter.h"
-#include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
 
 #include "pxr/usd/usd/conversions.h"
 
@@ -36,6 +38,9 @@
 
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using std::vector;
 using namespace boost::python;
 
@@ -47,66 +52,64 @@ _Set(const UsdShadeParameter &self, object val, const UsdTimeCode &time) {
 static object
 _GetConnectedSource(const UsdShadeParameter &self)
 {
-    UsdShadeShader  source;
-    TfToken         outputName;
-    
-    if (self.GetConnectedSource(&source, &outputName)){
-        return make_tuple(source, outputName);
+    UsdShadeConnectableAPI source;
+    TfToken                sourceName;
+    UsdShadeAttributeType  sourceType;
+
+    if (self.GetConnectedSource(&source, &sourceName, &sourceType)){
+        return make_tuple(source, sourceName, sourceType);
     }
     else {
         return object();
     }
 }
-
-static object
-_GetConnectedSources(const UsdShadeParameter &self)
-{
-    vector<UsdShadeShader>  sources;
-    vector<TfToken>         outputNames;
-    
-    self.GetConnectedSources(&sources, &outputNames);
-    if (not sources.empty()){
-        return make_tuple(TfPyCopySequenceToList(sources), 
-                          TfPyCopySequenceToList(outputNames));
-    }
-    else {
-        return object();
-    }
-}
-
 
 void wrapUsdShadeParameter()
 {
     typedef UsdShadeParameter Parameter;
+
+    bool (Parameter::*ConnectToSource_1)(UsdShadeConnectableAPI const &,
+                                   TfToken const &,
+                                   UsdShadeAttributeType const) const = &Parameter::ConnectToSource;
+    bool (Parameter::*ConnectToSource_2)(UsdShadeOutput const &) const =
+                                    &Parameter::ConnectToSource;
+    bool (Parameter::*ConnectToSource_3)(UsdShadeParameter const &) const =
+                                    &Parameter::ConnectToSource;
+    bool (Parameter::*ConnectToSource_4)(UsdShadeInterfaceAttribute const &) const =
+                                    &Parameter::ConnectToSource;
+    bool (Parameter::*ConnectToSource_5)(SdfPath const &) const =
+                                    &Parameter::ConnectToSource;
 
     class_<Parameter>("Parameter")
         .def(init<UsdAttribute>(arg("attr")))
         .def(!self)
 
         .def("GetName", &Parameter::GetName)
+        .def("GetTypeName", &Parameter::GetTypeName)
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
         .def("SetRenderType", &Parameter::SetRenderType,
              (arg("renderType")))
         .def("GetRenderType", &Parameter::GetRenderType)
         .def("HasRenderType", &Parameter::HasRenderType)
 
-        .def("IsArray", &Parameter::IsArray)
         .def("IsConnected", &Parameter::IsConnected)
-        .def("SetConnectedArraySize", &Parameter::SetConnectedArraySize,
-             (arg("numElements")))
-        .def("GetConnectedArraySize", &Parameter::GetConnectedArraySize)
-        .def("ConnectToSource", &Parameter::ConnectToSource,
-             (arg("source"), arg("outputName"), arg("outputIsParameter")=false))
-        .def("ConnectElementToSource", &Parameter::ConnectElementToSource,
-             (arg("elementIndex"), arg("source"), arg("outputName"), 
-              arg("outputIsParameter")=false))
-        .def("DisconnectElement", &Parameter::DisconnectElement,
-             (arg("elementIndex")))
-        .def("DisconnectSources", &Parameter::DisconnectSources)
-        .def("ClearSources", &Parameter::ClearSources)
+
+        .def("ConnectToSource", ConnectToSource_1,
+             (arg("source"), arg("sourceName"), 
+              arg("sourceType")=UsdShadeAttributeType::Output))
+        .def("ConnectToSource", ConnectToSource_2,
+             (arg("output")))
+        .def("ConnectToSource", ConnectToSource_3,
+             (arg("param")))
+        .def("ConnectToSource", ConnectToSource_4,
+             (arg("interfaceAttribute")))
+        .def("ConnectToSource", ConnectToSource_5,
+             (arg("path")))
+
+        .def("DisconnectSource", &Parameter::DisconnectSource)
+        .def("ClearSource", &Parameter::ClearSource)
 
         .def("GetConnectedSource", _GetConnectedSource)
-        .def("GetConnectedSources", _GetConnectedSources)
         .def("GetAttr", &Parameter::GetAttr,
                 return_value_policy<return_by_value>())
         ;
@@ -116,4 +119,7 @@ void wrapUsdShadeParameter()
         std::vector<Parameter>,
         TfPySequenceToPython<std::vector<Parameter> > >();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

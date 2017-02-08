@@ -41,6 +41,18 @@ function(pxr_python_bins)
             DESTINATION ${installDir}
             RENAME ${file}
         )
+
+        # Windows by default cannot execute Python files so here
+        # we create a batch file wrapper that invokes the python
+        # files.
+        if(WIN32)
+            file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@python \"%~dp0${file}\" %*")
+            install(PROGRAMS
+                "${CMAKE_BINARY_DIR}/${pyFile}.cmd"
+                DESTINATION ${installDir}
+                RENAME "${file}.cmd"
+            )
+        endif()
     endforeach()
 endfunction() # pxr_install_python_bins
 
@@ -60,7 +72,6 @@ function(pxr_cpp_bin BIN_NAME)
     )
 
     add_executable(${BIN_NAME} ${BIN_NAME}.cpp)
-    add_dependencies(${BIN_NAME} ${cb_LIBRARIES})
 
     # Install and include headers from the build directory.
     get_filename_component(
@@ -125,6 +136,9 @@ function(pxr_shared_library LIBRARY_NAME)
     _classes(${LIBRARY_NAME} ${sl_PRIVATE_CLASSES} PRIVATE)
     _classes(${LIBRARY_NAME} ${sl_PUBLIC_CLASSES} PUBLIC)
 
+    # Generate namespace header for pxr
+    _pxrNamespace_subst()
+
     set(PXR_ALL_LIBS
         "${PXR_ALL_LIBS} ${LIBRARY_NAME}"
         CACHE
@@ -138,6 +152,14 @@ function(pxr_shared_library LIBRARY_NAME)
         ${sl_PUBLIC_HEADERS} ${${LIBRARY_NAME}_PUBLIC_HEADERS}
         ${sl_PRIVATE_HEADERS} ${${LIBRARY_NAME}_PRIVATE_HEADERS}
     )
+
+    if(WIN32)
+        if(MSVC)
+            set_target_properties(
+                ${LIBRARY_NAME}
+                PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+        endif()
+    endif()
 
     # Set prefix  here after the library add; ahead of python so that python lib prefix is reset to correct
     set_target_properties(${LIBRARY_NAME} PROPERTIES PREFIX "${PXR_LIB_PREFIX}")
@@ -177,7 +199,7 @@ function(pxr_shared_library LIBRARY_NAME)
 	# XXX: Only do this on Linux for now, since $ORIGIN only exists
 	# on that platform. We will need to figure out the correct thing
 	# to do here for other platforms.
-	if (LINUX)
+	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
             file(RELATIVE_PATH
                 PYTHON_RPATH
                 "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}"
@@ -188,12 +210,13 @@ function(pxr_shared_library LIBRARY_NAME)
         # Python modules must be suffixed with .pyd on Windows and .so on
         # other platforms.
         if(WIN32)
+            add_definitions(-D_BUILDING_PYD=1)
             set_target_properties(${LIBRARY_NAME}
                 PROPERTIES
                     PREFIX ""
                     SUFFIX ".pyd"
                     FOLDER "${PXR_PREFIX}/_python"
-                    INSTALL_RPATH ${rpath}
+                    INSTALL_RPATH "${rpath}"
                     LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
             )
         else()
@@ -202,7 +225,7 @@ function(pxr_shared_library LIBRARY_NAME)
                     PREFIX ""
                     SUFFIX ".so"
                     FOLDER "${PXR_PREFIX}/_python"
-                    INSTALL_RPATH ${rpath}
+                    INSTALL_RPATH "${rpath}"
             )
         endif()
     else()
@@ -231,9 +254,29 @@ function(pxr_shared_library LIBRARY_NAME)
         set(installLocation ${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX})
     endif()
 
+    # Compute relative paths between lib install location and
+    # install locations for plugInfo.json files needed by the
+    # plugin system. Using relative paths allows for relocating
+    # the build (so long as the entire build structure is moved
+    # together).
+    file(RELATIVE_PATH 
+        LIB_PLUGINFO_PATH
+        ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}
+        ${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX})
+
+    file(RELATIVE_PATH 
+        PLUGIN_PLUGINFO_PATH
+        ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}
+        ${CMAKE_INSTALL_PREFIX}/plugin/usd)
+
+    # Convert backslash to slash for strings in compile definitions.
+    string(REGEX REPLACE "\\\\" "/" installLocation ${installLocation})
+    string(REGEX REPLACE "\\\\" "/" LIB_PLUGINFO_PATH ${LIB_PLUGINFO_PATH})
+    string(REGEX REPLACE "\\\\" "/" PLUGIN_PLUGINFO_PATH ${PLUGIN_PLUGINFO_PATH})
+
     set_target_properties(${LIBRARY_NAME}
         PROPERTIES COMPILE_DEFINITIONS 
-            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_USER_LOCATION=/usr/local/share/usd/plugins;PXR_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/${PLUGINS_PREFIX};PXR_PLUGIN_BUILD_LOCATION=${CMAKE_INSTALL_PREFIX}/plugin/usd;PXR_INSTALL_LOCATION=${installLocation}"
+            "MFB_PACKAGE_NAME=${PXR_PACKAGE};MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE};MFB_PACKAGE_MODULE=${pyModuleName};PXR_BUILD_LOCATION=${LIB_PLUGINFO_PATH};PXR_PLUGIN_BUILD_LOCATION=${PLUGIN_PLUGINFO_PATH};PXR_INSTALL_LOCATION=${installLocation}"
     )
 
     # Always bake the rpath.
@@ -289,6 +332,7 @@ function(pxr_shared_library LIBRARY_NAME)
         EXPORT pxrTargets
         LIBRARY DESTINATION ${LIB_INSTALL_PREFIX}
         ARCHIVE DESTINATION ${LIB_INSTALL_PREFIX}
+        RUNTIME DESTINATION ${LIB_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${HEADER_INSTALL_PREFIX}
     )
 
@@ -528,6 +572,13 @@ function(pxr_plugin PLUGIN_NAME)
     # Plugins do not have a lib* prefix like usual shared libraries
     set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
 
+    # MAYA plugins require .mll extension on Windows
+    if(WIN32)
+        if(${PLUGIN_NAME} STREQUAL "pxrUsd")
+            set_target_properties(${PLUGIN_NAME} PROPERTIES SUFFIX ".mll")
+        endif()
+    endif()
+
     if (PXR_INSTALL_SUBDIR)
         set(PLUGIN_INSTALL_PREFIX "${PXR_INSTALL_SUBDIR}/plugin")
         set(HEADER_INSTALL_PREFIX 
@@ -550,7 +601,7 @@ function(pxr_plugin PLUGIN_NAME)
 
         set_target_properties(${PLUGIN_NAME} 
             PROPERTIES 
-                INSTALL_RPATH ${rpath}
+                INSTALL_RPATH "${rpath}"
         )
     else()
         # Ensure this plugin can find the libs for its matching component.
@@ -563,7 +614,7 @@ function(pxr_plugin PLUGIN_NAME)
         # packages), add an rpath pointing to lib/ within it.
 	#
 	# XXX: See comment about $ORIGIN in pxr_shared_library
-	if (LINUX)
+	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
             if (PXR_INSTALL_SUBDIR)
                 file(RELATIVE_PATH
                     PLUGIN_RPATH
@@ -603,11 +654,15 @@ function(pxr_plugin PLUGIN_NAME)
         PREFIX ${PXR_PREFIX}
     )
 
+    string(TOUPPER ${PLUGIN_NAME} ucPluginName)
+
     set_target_properties(${PLUGIN_NAME}
         PROPERTIES
             PUBLIC_HEADER
                 "${sl_PUBLIC_HEADERS};${${PLUGIN_NAME}_PUBLIC_HEADERS}"
             INTERFACE_INCLUDE_DIRECTORIES ""
+            DEFINE_SYMBOL
+                "${ucPluginName}_EXPORTS"
     )
 
     # Install and include headers from the build directory.
@@ -637,6 +692,7 @@ function(pxr_plugin PLUGIN_NAME)
         EXPORT pxrTargets
         LIBRARY DESTINATION ${PLUGIN_INSTALL_PREFIX}
         ARCHIVE DESTINATION ${PLUGIN_INSTALL_PREFIX}
+        RUNTIME DESTINATION ${PLUGIN_INSTALL_PREFIX}
         PUBLIC_HEADER DESTINATION ${HEADER_INSTALL_PREFIX}
     )
 
@@ -913,9 +969,17 @@ function(pxr_register_test TEST_NAME)
             endforeach()
         endif()
 
-        # Ensure that Python imports the Python files built by this build
+        # Ensure that Python imports the Python files built by this build.
+        # On Windows convert backslash to slash and don't change semicolons
+        # to colons.
+	set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PYTHONPATH}")
+        if(WIN32)
+            string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
+        else()
+            string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
+        endif()
         set(testWrapperCmd ${testWrapperCmd}
-            --env-var=PYTHONPATH=${CMAKE_INSTALL_PREFIX}/lib/python:${PYTHON_PATH})
+            "--env-var=PYTHONPATH=${_testPythonPath}")
 
         # Ensure we run with the python executable known to the build
         if (bt_PYTHON)

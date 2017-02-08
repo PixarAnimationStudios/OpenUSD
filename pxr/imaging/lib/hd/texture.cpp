@@ -32,9 +32,12 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-HdTexture::HdTexture(HdSceneDelegate* delegate, SdfPath const& id)
-    : _delegate(delegate)
-    , _id(id)
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+HdTexture::HdTexture(SdfPath const& id)
+  : HdBprim(id)
+  , _textureResource()
 {
 }
 
@@ -43,26 +46,23 @@ HdTexture::~HdTexture()
 }
 
 void
-HdTexture::Sync()
+HdTexture::Sync(HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
  
     SdfPath const& id = GetID();
-    HdSceneDelegate* delegate = GetDelegate();
     HdChangeTracker& changeTracker = 
-                                delegate->GetRenderIndex().GetChangeTracker();    
-    HdChangeTracker::DirtyBits bits = changeTracker.GetTextureDirtyBits(id);
+                            sceneDelegate->GetRenderIndex().GetChangeTracker();
+    HdChangeTracker::DirtyBits bits = changeTracker.GetBprimDirtyBits(id);
 
     // XXX : DirtyParams and DirtyTexture are currently the same but they
     //       can be separated functionally and have different 
     //       delegate methods.
-    if (bits & HdChangeTracker::DirtyParams or 
-        bits & HdChangeTracker::DirtyTexture) {
-
+    if ((bits & (DirtyParams | DirtyTexture)) != 0) {
         HdResourceRegistry *resourceRegistry = 
                                             &HdResourceRegistry::GetInstance();
-        HdTextureResource::ID texID = delegate->GetTextureResourceID(id);
+        HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
         {
             HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 
                 texInstance;
@@ -71,17 +71,16 @@ HdTexture::Sync()
                 resourceRegistry->RegisterTextureResource(texID, &texInstance);
 
             if (texInstance.IsFirstInstance()) {
-                HdTextureResourceSharedPtr texResource;
                 if (texID == HdTextureResource::ComputeFallbackUVHash()) {
                     GlfUVTextureStorageRefPtr texPtr = 
                         GlfUVTextureStorage::New(1,1,VtValue(GfVec3d(0.0, 0.0, 0.0))); 
                     GlfTextureHandleRefPtr texture =
                         GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
                     texture->AddMemoryRequest(0); 
-                    texResource = HdTextureResourceSharedPtr(
+                    _textureResource = HdTextureResourceSharedPtr(
                         new HdSimpleTextureResource(texture, false));
                 } else if (texID == HdTextureResource::ComputeFallbackPtexHash()) {
-                    texResource = delegate->GetTextureResource(id);
+                    _textureResource = sceneDelegate->GetTextureResource(id);
                     // Hacky Ptex Fallback Implementation (nonfunctional)
                     // For future reference
                     /*if (texResource->GetTexelsTextureId() == 0) {
@@ -98,14 +97,25 @@ HdTexture::Sync()
                         }
                     }*/
                 } else {
-                    texResource =
-                        delegate->GetTextureResource(id);
+                    _textureResource = sceneDelegate->GetTextureResource(id);
                 }
 
-                texInstance.SetValue(texResource);
+                texInstance.SetValue(_textureResource);
+            }
+            else
+            {
+                // Take a reference to the texture to ensure it lives as long
+                // as this class.
+                _textureResource = texInstance.GetValue();
             }
         }
     }
+}
+
+int
+HdTexture::GetInitialDirtyBitsMask() const
+{
+    return AllDirty;
 }
 
 bool
@@ -119,3 +129,6 @@ HdTexture::ShouldGenerateMipMaps() const
 {
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,6 +24,8 @@
 #ifndef TF_PYRESULTCONVERSIONS_H
 #define TF_PYRESULTCONVERSIONS_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyUtils.h"
 
 #include <boost/python/tuple.hpp>
@@ -32,6 +34,8 @@
 
 #include <boost/type_traits/add_reference.hpp>
 #include <boost/type_traits/remove_reference.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename T> struct Tf_PySequenceToListConverter;
 template <typename T> struct Tf_PyMapToDictionaryConverter;
@@ -159,5 +163,7 @@ struct Tf_PyPairToTupleConverter {
         return &PyTuple_Type;
     }
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_RESULT_CONVERSIONS_H

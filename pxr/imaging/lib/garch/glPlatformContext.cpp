@@ -25,4 +25,10 @@
 
 #include "pxr/imaging/garch/glPlatformContext.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // nothing
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

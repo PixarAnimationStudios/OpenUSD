@@ -22,11 +22,15 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyContainerConversions.h"
 
 #include <boost/python/to_python_converter.hpp>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename CONTAINER_TYPE>
 struct Set_ToPython
@@ -157,3 +161,4 @@ void wrapPyContainerConversions()
     _RegisterToAndFromSetConversions<std::string>();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

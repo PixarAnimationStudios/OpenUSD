@@ -26,6 +26,7 @@
 
 /// \file work/dispatcher.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/errorMark.h"
@@ -37,6 +38,8 @@
 #include <functional>
 #include <type_traits>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class WorkDispatcher
 ///
@@ -95,11 +98,7 @@ public:
 
     template <class Callable>
     inline void Run(Callable &&c) {
-        if (WorkGetConcurrencyLimit() != 1) {
-            _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
-        } else {
-            std::forward<Callable>(c)();
-        }
+        _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
     }
 
     template <class Callable, class A0, class ... Args>
@@ -143,7 +142,7 @@ private:
         virtual tbb::task* execute() {
             TfErrorMark m;
             _fn();
-            if (not m.IsClean())
+            if (!m.IsClean())
                 WorkDispatcher::_TransportErrors(m, _errors);
             return NULL;
         }
@@ -177,5 +176,7 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // WORK_DISPATCHER_H

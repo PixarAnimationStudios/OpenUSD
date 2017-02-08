@@ -24,11 +24,15 @@
 #ifndef USD_INHERITS_H
 #define USD_INHERITS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SDF_DECLARE_HANDLES(SdfPrimSpec);
 
@@ -44,28 +48,27 @@ class UsdInherits {
 
 public:
 
-    /// Add a path to the inheritPaths listOp at the current EditTarget.
-    bool Add(const SdfPath &primPath);
+    /// Appends a path to the inheritPaths listOp at the current EditTarget.
+    bool AppendInherit(const SdfPath &primPath);
 
     /// Removes the specified path from the inheritPaths listOp at the
     /// current EditTarget.
-    bool Remove(const SdfPath &primPath);
+    bool RemoveInherit(const SdfPath &primPath);
 
     /// Removes the authored inheritPaths listOp edits at the current edit
     /// target.
-    bool Clear();
+    bool ClearInherits();
 
     /// Explicitly set the inherited paths, potentially blocking weaker opinions
     /// that add or remove items, returning true on success, false if the edit
     /// could not be performed.
-    bool SetItems(const SdfPathVector& items);
+    bool SetInherits(const SdfPathVector& items);
 
     /// Return the prim this object is bound to.
     const UsdPrim &GetPrim() const { return _prim; }
     UsdPrim GetPrim() { return _prim; }
 
-    // TODO: use safe bool idiom
-    operator bool() { return bool(_prim); }
+    explicit operator bool() { return bool(_prim); }
 
     // ---------------------------------------------------------------------- //
     // Private Methods and Members
@@ -75,5 +78,8 @@ private:
     SdfPrimSpecHandle _CreatePrimSpecForEditing();
     UsdPrim _prim;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_INHERITS_H

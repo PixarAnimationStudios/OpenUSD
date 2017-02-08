@@ -24,8 +24,12 @@
 #ifndef GF_GAMMA_H
 #define GF_GAMMA_H
 
+#include "pxr/pxr.h"
+
 /// \file gf/gamma.h
 /// Utilities to map colors between gamma spaces.
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GfVec3f;
 class GfVec3d;
@@ -63,4 +67,6 @@ T GfConvertLinearToDisplay(const T& v);
 template <class T>
 T GfConvertDisplayToLinear(const T& v);
 
-#endif /* GF_GAMMA_H */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // GF_GAMMA_H 

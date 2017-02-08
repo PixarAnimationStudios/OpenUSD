@@ -22,6 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 include(Version)
+include(CXXDefaults)
 
 function(_install_headers LIBRARY_NAME)
     set(options  "")
@@ -88,6 +89,18 @@ function(_plugInfo_subst libTarget plugInfoPath)
         ${CMAKE_CURRENT_BINARY_DIR}/${plugInfoPath}
     )
 endfunction() # _plugInfo_subst
+
+# Generate a namespace declaration header, pxr.h at the top level of pxr.
+function(_pxrNamespace_subst)
+    # Generate the pxr.h file at configuration time
+    configure_file(${CMAKE_SOURCE_DIR}/pxr/pxr.h.in
+        ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
+    )  
+
+    install(FILES ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
+            DESTINATION include/pxr
+    )
+endfunction()
 
 # Install compiled python files alongside the python object,
 # e.g. lib/python/pxr/Ar/__init__.pyc

@@ -24,6 +24,7 @@
 #ifndef HDX_UNIT_TEST_DELEGATE
 #define HDX_UNIT_TEST_DELEGATE
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/glf/simpleLight.h"
@@ -36,6 +37,9 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define HDX_UNIT_TEST_TOKENS                             \
     (geometryAndGuides)
@@ -70,6 +74,7 @@ public:
     void AddShadowTask(SdfPath const &id);
     void AddSelectionTask(SdfPath const &id);
     void AddDrawTargetTask(SdfPath const &id);
+    void AddDrawTargetResolveTask(SdfPath const &id);
 
     void SetTaskParam(SdfPath const &id, TfToken const &name, VtValue val);
     VtValue GetTaskParam(SdfPath const &id, TfToken const &name);
@@ -190,5 +195,8 @@ private:
 
     SdfPath _cameraId;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HDX_UNIT_TEST_DELEGATE

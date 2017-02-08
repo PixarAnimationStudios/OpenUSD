@@ -24,7 +24,11 @@
 #ifndef GARCH_GLPLATFORMCONTEXT_GLX_H
 #define GARCH_GLPLATFORMCONTEXT_GLX_H
 
+#include "pxr/pxr.h"
 #include <GL/glx.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GarchGLXContextState {
 public:
@@ -60,5 +64,8 @@ private:
 
 // Hide the platform specific type name behind a common name.
 typedef GarchGLXContextState GarchGLPlatformContextState;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GARCH_GLPLATFORMCONTEXT_GLX_H

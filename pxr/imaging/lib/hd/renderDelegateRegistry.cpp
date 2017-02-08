@@ -26,6 +26,9 @@
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON( HdRenderDelegateRegistry );
 
 HdRenderDelegateRegistry &
@@ -51,4 +54,7 @@ HdRenderDelegateRegistry::GetRenderDelegate(const TfToken &delegateId)
 {
     return static_cast<HdRenderDelegate *>(GetDelegate(delegateId));
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
 #include "pxr/usd/usdGeom/constraintTarget.h"
 
@@ -38,6 +39,9 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/python.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -92,7 +96,7 @@ _GetExtentsHint(
         const UsdTimeCode &time)
 {
     VtVec3fArray extents;
-    if (not self.GetExtentsHint(&extents, time)) {
+    if (!self.GetExtentsHint(&extents, time)) {
         return object();
     }
 
@@ -106,7 +110,7 @@ _SetExtentsHint(
         const UsdTimeCode &timeVal)
 {
     VtValue value = UsdPythonToSdfType(pyVal, SdfValueTypeNames->Float3Array);
-    if (not value.IsHolding<VtVec3fArray>()) {
+    if (!value.IsHolding<VtVec3fArray>()) {
         TF_CODING_ERROR("Improper value for 'extentsHint' on %s",
                         UsdDescribe(self.GetPrim()).c_str());
         return false;
@@ -133,3 +137,6 @@ WRAP_CUSTOM {
             return_value_policy<TfPySequenceToList>())
     ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

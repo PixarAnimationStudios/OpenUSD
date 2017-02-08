@@ -25,8 +25,15 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/smoothNormals.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/work/loops.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 Hd_VertexAdjacency::Hd_VertexAdjacency()
     : _stride(0)
@@ -151,10 +158,12 @@ Hd_VertexAdjacency::GetSmoothNormalsComputation(
 HdComputationSharedPtr
 Hd_VertexAdjacency::GetSmoothNormalsComputationGPU(TfToken const &srcName,
                                                    TfToken const &dstName,
+                                                   GLenum srcDataType,
                                                    GLenum dstDataType)
 {
     return HdComputationSharedPtr(new Hd_SmoothNormalsComputationGPU(
-                                      this, srcName, dstName, dstDataType));
+                                      this, srcName, dstName,
+                                      srcDataType, dstDataType));
 }
 
 
@@ -208,10 +217,10 @@ Hd_AdjacencyBuilderComputation::Hd_AdjacencyBuilderComputation(
 bool
 Hd_AdjacencyBuilderComputation::Resolve()
 {
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // compute adjacency
 
@@ -231,7 +240,7 @@ Hd_AdjacencyBuilderComputation::Resolve()
         int nv = numVertsPtr[i];
         for (int j=0; j<nv; ++j) {
             int index = vertsPtr[vertIndex++];
-            if (index < 0 or index >= numPoints) {
+            if (index < 0 || index >= numPoints) {
                 TF_CODING_ERROR("vertex index out of range "
                                 "index: %d numPoints: %d", index, numPoints);
                 return false;
@@ -290,11 +299,11 @@ Hd_AdjacencyBuilderForGPUComputation::Hd_AdjacencyBuilderForGPUComputation(
 bool
 Hd_AdjacencyBuilderForGPUComputation::Resolve()
 {
-    if (not _adjacencyBuilder->IsResolved()) return false;
-    if (not _TryLock()) return false;
+    if (!_adjacencyBuilder->IsResolved()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // prepare buffer source to be transferred.
     std::vector<int> const &adjacency = _adjacency->GetEntry();
@@ -322,3 +331,6 @@ Hd_AdjacencyBuilderForGPUComputation::_CheckValid() const
 {
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

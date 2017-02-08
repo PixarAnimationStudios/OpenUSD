@@ -24,12 +24,16 @@
 #ifndef GLF_UVTEXTURE_DATA_H
 #define GLF_UVTEXTURE_DATA_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
@@ -49,16 +53,16 @@ public:
 
         bool operator==(const Params& rhs) const
         {
-            return (targetMemory == rhs.targetMemory and
-                    cropTop == rhs.cropTop and
-                    cropBottom == rhs.cropBottom and
-                    cropLeft == rhs.cropLeft and
+            return (targetMemory == rhs.targetMemory &&
+                    cropTop == rhs.cropTop           && 
+                    cropBottom == rhs.cropBottom     && 
+                    cropLeft == rhs.cropLeft         && 
                     cropRight == rhs.cropRight);
         }
 
         bool operator!=(const Params& rhs) const
         {
-            return not (*this == rhs);
+            return !(*this == rhs);
         }
 
         size_t targetMemory;
@@ -192,5 +196,8 @@ private:
     boost::scoped_ptr<unsigned char> _rawBuffer;
     std::vector<Mip> _rawBufferMips;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_UVTEXTURE_DATA_H

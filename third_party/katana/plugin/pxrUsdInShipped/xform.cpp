@@ -23,8 +23,11 @@
 //
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readXformable.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_XformOp, privateData, interface)
 {

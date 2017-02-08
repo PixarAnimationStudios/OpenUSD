@@ -21,16 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
+
 #include <boost/python/def.hpp>
 
 #include "pxr/base/tf/envSetting.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 extern boost::python::object Tf_GetEnvSettingByName(std::string const& name);
 extern boost::python::object Tf_GetEnvSettingDictionary();
 
-using namespace boost::python;
-
 void wrapEnvSetting() {
-    def("GetEnvSetting", &::Tf_GetEnvSettingByName);
-    def("GetEnvSettingDictionary", &::Tf_GetEnvSettingDictionary);
+    def("GetEnvSetting", &Tf_GetEnvSettingByName);
+    def("GetEnvSettingDictionary", &Tf_GetEnvSettingDictionary);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

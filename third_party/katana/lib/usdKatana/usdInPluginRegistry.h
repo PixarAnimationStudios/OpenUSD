@@ -24,12 +24,16 @@
 #ifndef PXRUSDKATANA_USDIN_PLUGINREGISTRY_H
 #define PXRUSDKATANA_USDIN_PLUGINREGISTRY_H
 
+#include "pxr/pxr.h"
 #include "usdKatana/usdInPrivateData.h"
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/base/tf/type.h"
 
 #include <FnGeolib/op/FnGeolibOp.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \brief Maintains the registry for usd types and kind.
 class PxrUsdKatanaUsdInPluginRegistry
@@ -162,5 +166,8 @@ void T::cook(FnKat::GeolibCookInterface& interface) \
 void _PxrUsdKatana_PrimReaderFn_##T(\
         const PxrUsdKatanaUsdInPrivateData& argsName,\
         Foundry::Katana::GeolibCookInterface &interfaceName )\
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDKATANA_USDIN_PLUGINREGISTRY_H

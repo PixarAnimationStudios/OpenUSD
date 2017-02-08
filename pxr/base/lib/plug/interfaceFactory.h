@@ -26,9 +26,12 @@
 
 /// \file plug/interfaceFactory.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/type.h"
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_abstract.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // For use by \c PLUG_REGISTER_INTERFACE_SINGLETON_TYPE.
 class Plug_InterfaceFactory {
@@ -70,4 +73,6 @@ TF_REGISTRY_FUNCTION(TfType)                                                \
             Interface, Implementation> >();                                 \
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PLUG_INTERFACEFACTORY_H

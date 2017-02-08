@@ -27,7 +27,11 @@
 /// \file tf/typeFunctions.h
 /// \ingroup group_tf_Internal
 
+#include "pxr/pxr.h"
+
 #include <memory>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfTypeFunctions
 /// \ingroup group_tf_Internal
@@ -149,4 +153,6 @@ struct TfCopyIfNotReference<T&>
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_TYPEFUNCTIONS_H

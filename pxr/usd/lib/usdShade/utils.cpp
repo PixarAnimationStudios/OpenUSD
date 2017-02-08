@@ -21,9 +21,55 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdShade/utils.h"
-#include <vector>
+#include "pxr/usd/usdShade/tokens.h"
+
+#include "pxr/base/tf/stringUtils.h"
+
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::vector;
 using std::string;
+
+string 
+UsdShadeUtilsGetPrefixForAttributeType(UsdShadeAttributeType sourceType)
+{
+    switch (sourceType) {
+        case UsdShadeAttributeType::Parameter: 
+            return string();
+        case UsdShadeAttributeType::Output:
+            return UsdShadeTokens->outputs.GetString();
+        case UsdShadeAttributeType::InterfaceAttribute:
+            return UsdShadeTokens->interface.GetString();
+        default:
+            return string();
+    }
+}
+
+std::pair<TfToken, UsdShadeAttributeType> 
+UsdShadeUtilsGetBaseNameAndType(const TfToken &fullName)
+{
+    static const size_t outputsPrefixLen = 
+        UsdShadeTokens->outputs.GetString().size();
+    static const size_t interfaceAttrPrefixLen = 
+        UsdShadeTokens->interface.GetString().size();
+
+    if (TfStringStartsWith(fullName, UsdShadeTokens->outputs)) {
+        TfToken sourceName(fullName.GetString().substr(outputsPrefixLen));
+        return std::make_pair(sourceName, UsdShadeAttributeType::Output);
+    } else if (TfStringStartsWith(fullName, UsdShadeTokens->interface)) {
+        TfToken sourceName(fullName.GetString().substr(interfaceAttrPrefixLen));
+        return std::make_pair(sourceName, 
+                              UsdShadeAttributeType::InterfaceAttribute);
+    } else {
+        return std::make_pair(fullName, 
+                              UsdShadeAttributeType::Parameter);
+    }
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

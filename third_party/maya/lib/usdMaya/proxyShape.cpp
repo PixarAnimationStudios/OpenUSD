@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/query.h"
 #include "usdMaya/stageCache.h"
@@ -52,6 +53,9 @@
 #include <maya/MTime.h>
 
 #include <mutex>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Hydra performs its own high-performance frustum culling, so
 // we don't want to rely on Maya to do it on the CPU. AS such, the best
@@ -410,7 +414,7 @@ MStatus UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
         //
         std::string fileString = TfStringTrimRight(file.asChar());
 
-        if (not TfStringStartsWith(fileString, "./")) {
+        if (!TfStringStartsWith(fileString, "./")) {
             fileString = PxrUsdMayaQuery::ResolvePath(fileString);
         }
 
@@ -443,7 +447,7 @@ MStatus UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
             SdfLayerRefPtr sessionLayer;
             std::vector<std::pair<std::string, std::string> > variantSelections;
             std::string variantKeyString = variantKey.asChar();
-            if (not variantKeyString.empty()) {
+            if (!variantKeyString.empty()) {
                 variantSelections.push_back(
                     std::make_pair("modelingVariant",variantKeyString));
 
@@ -628,20 +632,20 @@ MBoundingBox UsdMayaProxyShape::boundingBox() const
         UsdGeomImageable imageablePrim( prim );
         bool showGuides = displayGuides();
         bool showRenderGuides = displayRenderGuides();
-        if (showGuides and showRenderGuides) {
+        if (showGuides && showRenderGuides) {
             allBox = imageablePrim.ComputeUntransformedBound(
                 currTime,
                 UsdGeomTokens->default_, 
                 UsdGeomTokens->proxy,
                 UsdGeomTokens->guide, 
                 UsdGeomTokens->render);
-        } else if (showGuides and not showRenderGuides) {
+        } else if (showGuides && !showRenderGuides) {
             allBox = imageablePrim.ComputeUntransformedBound(
                 currTime,
                 UsdGeomTokens->default_, 
                 UsdGeomTokens->proxy,
                 UsdGeomTokens->guide);
-        } else if (not showGuides and showRenderGuides) {
+        } else if (!showGuides && showRenderGuides) {
             allBox = imageablePrim.ComputeUntransformedBound(
                 currTime,
                 UsdGeomTokens->default_, 
@@ -935,9 +939,12 @@ UsdMayaProxyShape::_CanBeSoftSelected() const
     MDataBlock dataBlock = nonConstThis->forceCache();
     MStatus status;
     MDataHandle softSelHandle = dataBlock.inputValue(_psData.softSelectable, &status);
-    if (not status) {
+    if (!status) {
         return false;
     }
     return softSelHandle.asBool();
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

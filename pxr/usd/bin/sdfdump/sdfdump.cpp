@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/vsnprintf.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -38,6 +39,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 using std::vector;
@@ -76,7 +80,7 @@ void Print(char const *fmt, ...) {
 bool IsClose(double a, double b, double tol)
 {
     double absDiff = fabs(a-b);
-    return absDiff <= fabs(tol*a) or absDiff < fabs(tol*b);
+    return absDiff <= fabs(tol*a) || absDiff < fabs(tol*b);
 }
 
 struct SortKey {
@@ -91,7 +95,7 @@ void validate(boost::any& v, const vector<string> &values, SortKey*, int) {
     using namespace boost::program_options;
     validators::check_first_occurrence(v);
     string const &s = validators::get_single_string(values);
-    if (s == "path" or s == "field") {
+    if (s == "path" || s == "field") {
         v = SortKey(s);
     } else {
         throw validation_error(validation_error::invalid_option_value);
@@ -188,7 +192,7 @@ CollectFields(SdfLayerHandle const &layer, SdfPath const &path,
     vector<TfToken> fields = layer->ListFields(path);
     fields.erase(remove_if(fields.begin(), fields.end(),
                            [&p](TfToken const &f) {
-                               return not p.fieldMatcher->Match(f.GetString());
+                               return !p.fieldMatcher->Match(f.GetString());
                            }),
                  fields.end());
     return fields;
@@ -197,7 +201,7 @@ CollectFields(SdfLayerHandle const &layer, SdfPath const &path,
 string
 GetValueString(VtValue const &value, ReportParams const &p)
 {
-    return (not p.fullArrays and value.IsArrayValued()) ?
+    return (!p.fullArrays && value.IsArrayValued()) ?
         TfStringPrintf("%s size %zu", value.GetTypeName().c_str(),
                        value.GetArraySize()) :
         TfStringPrintf("%s = %s", value.GetTypeName().c_str(),
@@ -211,7 +215,7 @@ GetTimeSamplesValueString(SdfLayerHandle const &layer,
     // Pull all the sample times for the given path, then collect up by p's
     // literalTimes and timeRanges, then if we're pulling values we'll do that
     // for each sample, and format.
-    bool takeAllTimes = p.literalTimes.empty() and p.timeRanges.empty();
+    bool takeAllTimes = p.literalTimes.empty() && p.timeRanges.empty();
     auto times = layer->ListTimeSamplesForPath(path);
     vector<double> selectedTimes;
     selectedTimes.reserve(times.size());
@@ -232,7 +236,7 @@ GetTimeSamplesValueString(SdfLayerHandle const &layer,
 
             // Check ranges.
             for (auto const &range: p.timeRanges) {
-                if (range.first <= time and time <= range.second)
+                if (range.first <= time && time <= range.second)
                     selectedTimes.push_back(time);
             }
         }
@@ -356,10 +360,13 @@ void Report(SdfLayerHandle layer, ReportParams const &p)
 
 } // anon
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 int
 main(int argc, char const *argv[])
 {
     namespace po = boost::program_options;
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     progName = TfGetBaseName(argv[0]);
 
@@ -415,20 +422,20 @@ main(int argc, char const *argv[])
         ErrExit("%s", e.what());
     }
 
-    if (vm.count("help") or inputFiles.empty()) {
+    if (vm.count("help") || inputFiles.empty()) {
         fprintf(stderr, "Usage: %s [options] <input file>\n", progName.c_str());
         fprintf(stderr, "%s\n", TfStringify(argOpts).c_str());
         exit(1);
     }
 
     TfPatternMatcher pathMatcher(pathRegex);
-    if (not pathMatcher.IsValid()) {
+    if (!pathMatcher.IsValid()) {
         ErrExit("path regex '%s' : %s", pathRegex.c_str(),
                 pathMatcher.GetInvalidReason().c_str());
     }
 
     TfPatternMatcher fieldMatcher(fieldRegex);
-    if (not fieldMatcher.IsValid()) {
+    if (!fieldMatcher.IsValid()) {
         ErrExit("field regex '%s' : %s", fieldRegex.c_str(),
                 fieldMatcher.GetInvalidReason().c_str());
     }
@@ -440,13 +447,13 @@ main(int argc, char const *argv[])
     params.sortKey = sortKey;
     params.literalTimes = literalTimes;
     params.timeRanges = timeRanges;
-    params.showValues = not noValues;
+    params.showValues = !noValues;
     params.fullArrays = fullArrays;
     params.timeTolerance = timeTolerance;
 
     for (auto const &file: inputFiles) {
         auto layer = SdfLayer::FindOrOpen(file);
-        if (not layer) {
+        if (!layer) {
             Err("failed to open layer <%s>", file.c_str());
             continue;
         }

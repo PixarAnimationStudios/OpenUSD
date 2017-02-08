@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -51,7 +53,7 @@ UsdShadeSubgraph::~UsdShadeSubgraph()
 UsdShadeSubgraph
 UsdShadeSubgraph::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeSubgraph();
     }
@@ -64,7 +66,7 @@ UsdShadeSubgraph::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Subgraph");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeSubgraph();
     }
@@ -109,20 +111,24 @@ UsdShadeSubgraph::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdShade/connectableAPI.h"
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (subgraph)
-    ((TerminalNamespaceName, "terminal"))
-    ((TerminalNamespacePrefix, "terminal:"))
-);
+PXR_NAMESPACE_OPEN_SCOPE
 
+UsdShadeSubgraph::operator UsdShadeConnectableAPI () const {
+    return UsdShadeConnectableAPI(GetPrim());
+}
 
 UsdShadeInterfaceAttribute
 UsdShadeSubgraph::CreateInterfaceAttribute(
@@ -180,57 +186,23 @@ UsdShadeSubgraph::GetInterfaceAttributes(
     return ret;
 }
 
-
-static TfToken 
-_GetTerminalRelName(const TfToken& name)
+UsdShadeOutput
+UsdShadeSubgraph::CreateOutput(const TfToken& name,
+                             const SdfValueTypeName& typeName)
 {
-    return TfToken(_tokens->TerminalNamespacePrefix.GetString() + name.GetString());
+    return UsdShadeConnectableAPI(GetPrim()).CreateOutput(name, typeName);
 }
 
-UsdRelationship 
-UsdShadeSubgraph::CreateTerminal(
-    const TfToken& terminalName,
-    const SdfPath& targetPath) const
+UsdShadeOutput
+UsdShadeSubgraph::GetOutput(const TfToken &name) const
 {
-    if (not targetPath.IsPropertyPath()) {
-        TF_CODING_ERROR("A terminal needs to be pointing to a property");
-        return UsdRelationship();
-    }
-    const UsdPrim& prim = GetPrim();
-    const TfToken& relName = _GetTerminalRelName(terminalName);
-    UsdRelationship rel = prim.GetRelationship(relName);
-    if (!rel) {
-        rel = prim.CreateRelationship(relName, /* custom = */ false);
-    }
-
-    SdfPathVector  target(1, targetPath);
-    rel.SetTargets(target);
-    return rel;
+    return UsdShadeConnectableAPI(GetPrim()).GetOutput(name);
 }
 
-UsdRelationship
-UsdShadeSubgraph::GetTerminal(
-    const TfToken& terminalName) const
+std::vector<UsdShadeOutput>
+UsdShadeSubgraph::GetOutputs() const
 {
-    const UsdPrim& prim = GetPrim();
-    const TfToken& relName = _GetTerminalRelName(terminalName);
-    return prim.GetRelationship(relName);
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
 }
 
-UsdRelationshipVector
-UsdShadeSubgraph::GetTerminals() const
-{
-    UsdRelationshipVector terminals;
-
-    const UsdPrim& prim = GetPrim();
-    const std::vector<UsdProperty>& terminalNamespaceProperties =
-        prim.GetPropertiesInNamespace(_tokens->TerminalNamespaceName.GetString());
-
-    for (const UsdProperty& property : terminalNamespaceProperties) {
-        if (const UsdRelationship& relationship = property.As<UsdRelationship>()) {
-            terminals.push_back(relationship);
-        }
-    }
-
-    return terminals;
-}
+PXR_NAMESPACE_CLOSE_SCOPE

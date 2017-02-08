@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/MayaCameraWriter.h"
 
 #include "usdMaya/JobArgs.h"
@@ -34,6 +35,9 @@
 
 #include <maya/MDagPath.h>
 #include <maya/MFnCamera.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 MayaCameraWriter::MayaCameraWriter(MDagPath & iDag, UsdStageRefPtr stage, const JobExportArgs & iArgs) :
@@ -122,3 +126,6 @@ bool MayaCameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime, UsdGeomCamer
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

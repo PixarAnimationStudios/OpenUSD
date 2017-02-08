@@ -26,6 +26,7 @@
 
 /// \file sdf/spec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/identity.h"
 #include "pxr/usd/sdf/declareSpec.h"
@@ -34,9 +35,13 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/utility/enable_if.hpp>
+
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfSpec
 ///
@@ -176,7 +181,7 @@ public:
     template <class T>
     bool HasField(const TfToken &name, T* value) const
     {
-        if (not value) {
+        if (!value) {
             return HasField(name);
         }
         
@@ -194,7 +199,7 @@ public:
     T GetFieldAs(const TfToken & name, const T& defaultValue = T()) const
     {
         VtValue v = GetField(name);
-        if (v.IsEmpty() or not v.IsHolding<T>())
+        if (v.IsEmpty() || !v.IsHolding<T>())
             return defaultValue;
         return v.UncheckedGet<T>();
     }
@@ -222,6 +227,11 @@ public:
 
     /// @}
 
+    /// Hash.
+    friend size_t hash_value(const SdfSpec &x) {
+        return hash_value(x._id);
+    }
+
 private:
     bool _HasField(const TfToken& name, SdfAbstractDataValue* value) const;
 
@@ -233,4 +243,6 @@ private:
     Sdf_IdentityRefPtr _id;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_SPEC_H

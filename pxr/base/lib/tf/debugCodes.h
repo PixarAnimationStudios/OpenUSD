@@ -24,7 +24,10 @@
 #ifndef TF_TFDEBUGCODES_H
 #define TF_TFDEBUGCODES_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // Note that this is a private header file to lib/tf.
@@ -48,5 +51,7 @@ TF_DEBUG_CODES(
     TF_ATTACH_DEBUGGER_ON_WARNING
 
 );
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

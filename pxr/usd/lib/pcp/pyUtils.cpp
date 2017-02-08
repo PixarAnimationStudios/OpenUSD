@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/pyUtils.h"
 
 using namespace boost::python;
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Given a python object and a pointer to a variable, 
 // attempts to extract a value of the variable's type out of the object
@@ -67,3 +71,5 @@ PcpVariantFallbackMapFromPython( const dict& d,
     }
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

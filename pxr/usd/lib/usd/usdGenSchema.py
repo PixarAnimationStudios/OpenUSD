@@ -500,7 +500,8 @@ def GatherTokens(classes, libName, libTokens):
     return sorted(tokenDict.values(), key=lambda token: token.id.lower())
 
 
-def GenerateCode(codeGenPath, tokenData, classes, env):
+def GenerateCode(codeGenPath, tokenData, classes, 
+                 namespaceOpen, namespaceClose, env):
     #
     # Load Templates
     #
@@ -543,7 +544,8 @@ def GenerateCode(codeGenPath, tokenData, classes, env):
 
         # header file
         clsHFilePath = os.path.join(codeGenPath, cls.GetHeaderFile())
-        customCode = _ExtractCustomCode(clsHFilePath, default='};\n\n#endif\n')
+        customCode = _ExtractCustomCode(clsHFilePath,
+                default='};\n\n%s\n\n#endif\n' % namespaceClose)
         _WriteFile(clsHFilePath,
                    headerTemplate.render(
                        cls=cls, hasTokenAttrs=hasTokenAttrs) + customCode)
@@ -556,8 +558,11 @@ def GenerateCode(codeGenPath, tokenData, classes, env):
         
         # wrap file
         clsWrapFilePath = os.path.join(codeGenPath, cls.GetWrapFile())
-        customCode = _ExtractCustomCode(clsWrapFilePath, default=
-                                        '\nWRAP_CUSTOM {\n}\n')
+        customCode = _ExtractCustomCode(clsWrapFilePath, default=(
+                                        '\n%s\n'
+                                        '\nWRAP_CUSTOM {\n}\n'
+                                        '\n%s' % (namespaceOpen, 
+                                                  namespaceClose)))
         _WriteFile(clsWrapFilePath,
                    wrapTemplate.render(cls=cls) + customCode)
 
@@ -725,6 +730,13 @@ if __name__ == '__main__':
         default='.',
         help='The target directory where the code should be generated. '
         '[Default: %(default)s]')
+    parser.add_argument('-n', '--namespace',
+        nargs='+',
+        type=str,
+        help='Wrap code in this specified namespace. Multiple arguments '
+             'will be interpreted as a nested namespace. The leftmost '
+             'argument will be treated as the outermost namespace, with '
+             'the rightmost argument as the innermost.')
 
     defaultTemplateDir = os.path.join(
         os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))),
@@ -741,6 +753,13 @@ if __name__ == '__main__':
     codeGenPath = os.path.abspath(args.codeGenPath)
     schemaPath = os.path.abspath(args.schemaPath)
     templatePath = os.path.abspath(args.templatePath)
+
+    if args.namespace:
+        namespaceOpen  = ' '.join('namespace %s {' % n for n in args.namespace)
+        namespaceClose = '}'*len(args.namespace) 
+    else:
+        namespaceOpen  = 'PXR_NAMESPACE_OPEN_SCOPE'
+        namespaceClose = 'PXR_NAMESPACE_CLOSE_SCOPE'
 
     #
     # Error Checking
@@ -782,11 +801,14 @@ if __name__ == '__main__':
                               Proper=_ProperCase,
                               Upper=_UpperCase,
                               Lower=_LowerCase,
+                              namespaceOpen=namespaceOpen,
+                              namespaceClose=namespaceClose,
                               libraryName=libName,
                               libraryPath=libPath,
                               libraryPrefix=libPrefix,
                               tokensPrefix=tokensPrefix)
-        GenerateCode(codeGenPath, tokenData, classes, j2_env)
+        GenerateCode(codeGenPath, tokenData, classes,
+                     namespaceOpen, namespaceClose, j2_env)
         GenerateRegistry(codeGenPath, schemaPath, classes, j2_env)
     
     except Exception as e:

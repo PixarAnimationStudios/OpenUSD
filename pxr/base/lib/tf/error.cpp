@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/error.h"
 
 #include "pxr/base/tf/diagnosticMgr.h"
@@ -28,6 +30,8 @@
 #include <string>
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfError::TfError(TfEnum errorCode, const char* errorCodeString,
                  TfCallContext const &context, const string& commentary, 
@@ -39,4 +43,4 @@ TfError::TfError(TfEnum errorCode, const char* errorCodeString,
         TfDiagnosticMgr::GetInstance()._nextSerial.fetch_and_increment();
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

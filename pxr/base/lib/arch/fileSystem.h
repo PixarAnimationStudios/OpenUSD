@@ -28,6 +28,7 @@
 /// \ingroup group_arch_SystemFunctions
 /// Architecture dependent file system access
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
@@ -41,18 +42,129 @@
 #include <sys/stat.h>
 
 #if defined(ARCH_OS_LINUX)
+#include <unistd.h>
 #include <sys/statfs.h>
+#include <glob.h>
 #elif defined(ARCH_OS_DARWIN)
+#include <unistd.h>
 #include <sys/mount.h>
+#include <glob.h>
+#elif defined(ARCH_OS_WINDOWS)
+#include <io.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_SystemFunctions
 ///@{
+#if !defined(ARCH_OS_WINDOWS)
+    #ifdef _POSIX_VERSION
+        #include <limits.h>                     /* for PATH_MAX */
+    #else
+        #include <sys/param.h>                  /* for MAXPATHLEN */
+    #endif
+#else
+    // XXX -- Should probably have ARCH_ macro for this.
+    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+
+    // See https://msdn.microsoft.com/en-us/library/1w06ktdy.aspx
+    // XXX -- Should probably have Arch enum for these.
+    #define F_OK    0       // Test for existence.
+    #define W_OK    2       // Test for write permission.
+    #define R_OK    4       // Test for read permission.
+#endif
+
+#if !defined(ARCH_OS_WINDOWS)
+    #define ARCH_GLOB_DEFAULT   GLOB_NOCHECK|GLOB_MARK
+#else
+    #define ARCH_GLOB_DEFAULT   0
+#endif
+
+#ifndef ARCH_PATH_MAX
+    #ifdef _POSIX_VERSION
+        #define ARCH_PATH_MAX _POSIX_PATH_MAX
+    #else
+        #ifdef MAXPATHLEN
+            #define ARCH_PATH_MAX MAXPATHLEN
+        #else
+            #ifdef _MAX_PATH
+                #define ARCH_PATH_MAX _MAX_PATH
+            #else
+                #define ARCH_PATH_MAX 1024
+            #endif
+        #endif
+    #endif
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
+    #define ARCH_PATH_SEP       "\\"
+    #define ARCH_PATH_LIST_SEP  ";"
+    #define ARCH_REL_PATH_IDENT ".\\"
+#else
+    #define ARCH_PATH_SEP       "/"
+    #define ARCH_PATH_LIST_SEP  ":"
+    #define ARCH_REL_PATH_IDENT "./"
+#endif
+
+/// \file fileSystem.h
+/// Architecture dependent file system access
+/// \ingroup group_arch_SystemFunctions
+///
+
+/// Opens a file.
+///
+/// Opens the file that is specified by filename.
+/// Returning true if the file was opened successfully; false otherwise.
+///
+ARCH_API FILE*
+ArchOpenFile(char const* fileName, char const* mode);
+
+#if defined(ARCH_OS_WINDOWS)
+#   define ArchCloseFile(fd)            _close(fd)
+#else
+#   define ArchCloseFile(fd)            close(fd)
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
+#   define ArchUnlinkFile(path)         _unlink(path)
+#else
+#   define ArchUnlinkFile(path)         unlink(path)
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
+    ARCH_API int ArchFileAccess(const char* path, int mode);
+#else
+#   define ArchFileAccess(path, mode)   access(path, mode)
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
+#   define ArchFdOpen(fd, mode)         _fdopen(fd, mode)
+#else
+#   define ArchFdOpen(fd, mode)         fdopen(fd, mode)
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
+#   define ArchFileNo(stream)           _fileno(stream)
+#else
+#   define ArchFileNo(stream)           fileno(stream)
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
+#   define ArchFileIsaTTY(stream)       _isatty(stream)
+#else
+#   define ArchFileIsaTTY(stream)       isatty(stream)
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
+    ARCH_API int ArchRmDir(const char* path);
+#else
+#   define ArchRmDir(path)   rmdir(path)
+#endif
 
 /// Return the length of a file in bytes.
 ///
 /// Returns -1 if the file cannot be opened/read.
-ARCH_API int64_t ArchGetFileLength(const char *fileName);
+ARCH_API int64_t ArchGetFileLength(const char* fileName);
 ARCH_API int64_t ArchGetFileLength(FILE *file);
 
 /// Returns true if the data in \c stat struct \p st indicates that the target
@@ -95,7 +207,7 @@ ARCH_API const char *ArchGetTmpDir();
 /// favor of \c ArchMakeTmpFile().
 ARCH_API
 std::string ArchMakeTmpFileName(const std::string& prefix,
-    	    	    	    	const std::string& suffix = std::string());
+                                const std::string& suffix = std::string());
 
 /// Create a temporary file, in a system-determined temporary directory.
 ///
@@ -195,6 +307,11 @@ int64_t ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset);
 ARCH_API
 int64_t ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset);
 
+/// Returns the value of the symbolic link at \p path.  Returns the empty
+/// string on error or if \p path does not refer to a symbolic link.
+ARCH_API
+std::string ArchReadLink(const char* path);
+
 enum ArchFileAdvice {
     ArchFileAdviceWillNeed, // OS may prefetch this range.
     ArchFileAdviceDontNeed  // OS may free resources related to this range.
@@ -209,5 +326,7 @@ void ArchFileAdvise(FILE *file, int64_t offset, size_t count,
                     ArchFileAdvice adv);
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_FILESYSTEM_H

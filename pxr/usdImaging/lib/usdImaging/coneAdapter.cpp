@@ -39,6 +39,9 @@
 
 #include <cmath>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingConeAdapter Adapter;
@@ -92,7 +95,7 @@ UsdImagingConeAdapter::TrackVariability(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyPoints) {
         UsdGeomCone cone(prim);
 
-        if (not _IsVarying(prim, 
+        if (!_IsVarying(prim, 
                            UsdGeomTokens->radius,
                            HdChangeTracker::DirtyPoints,
                            UsdImagingTokens->usdVaryingPrimVar,
@@ -284,7 +287,7 @@ _GenerateConeMeshTopology()
         p += _slices;
     }
 
-    TF_VERIFY(face == numCounts and index == numIndices);
+    TF_VERIFY(face == numCounts && index == numIndices);
 
     return HdMeshTopology(PxOsdOpenSubdivTokens->catmark,
                           HdTokens->rightHanded,
@@ -300,3 +303,6 @@ UsdImagingConeAdapter::GetMeshTopology()
 
     return VtValue(coneTopo);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -115,6 +115,7 @@
 // the unload code is safe to call at this time.
 //
 
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/debugCodes.h"
@@ -145,6 +146,8 @@ using std::set;
 using std::string;
 using std::type_info;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -311,7 +314,7 @@ Tf_RegistryManagerImpl::~Tf_RegistryManagerImpl()
 void
 Tf_RegistryManagerImpl::ClearActiveLibrary(const char* libraryName)
 {
-    TF_AXIOM(libraryName and libraryName[0]);
+    TF_AXIOM(libraryName && libraryName[0]);
 
     // If the name doesn't match then libraryName has already been processed.
     if (_active.local().name == libraryName) {
@@ -326,12 +329,12 @@ Tf_RegistryManagerImpl::AddRegistrationFunction(
     RegistrationFunction func,
     const char* typeName)
 {
-    if (not TF_VERIFY(libraryName and libraryName[0],
+    if (!TF_VERIFY(libraryName && libraryName[0],
                       "TfRegistryManager: "
                       "Ignoring library with no name")) {
         return;
     }
-    else if (not TF_VERIFY(typeName and typeName[0],
+    else if (!TF_VERIFY(typeName && typeName[0],
                       "TfRegistryManager: "
                       "Ignoring registration with no type in %s",
                       libraryName)) {
@@ -348,7 +351,7 @@ Tf_RegistryManagerImpl::AddRegistrationFunction(
         _ProcessLibraryNoLock();
     }
 
-    if (not active.identifier) {
+    if (!active.identifier) {
         TF_DEBUG(TF_DISCOVERY_TERSE).
             Msg("TfRegistryManager: "
                 "Library %s\n",
@@ -384,7 +387,7 @@ Tf_RegistryManagerImpl::AddFunctionForUnload(const UnloadFunction& func)
 void
 Tf_RegistryManagerImpl::UnloadLibrary(const char* libraryName)
 {
-    if (Tf_DlCloseIsActive() or runUnloadersAtExit) {
+    if (Tf_DlCloseIsActive() || runUnloadersAtExit) {
         std::lock_guard<std::recursive_mutex> lock(_mutex);
         _UnloadNoLock(libraryName);
     }
@@ -456,7 +459,7 @@ Tf_RegistryManagerImpl::_TransferActiveLibraryNoLock()
     // Move active library functions to non-thread local storage type by type.
     _ActiveLibraryState& active = _active.local();
     for(auto& v : active.registrationFunctions) {
-        if (not movedAny and not v.second.empty()) {
+        if (!movedAny && !v.second.empty()) {
             movedAny = (_subscriptions.count(v.first) != 0);
         }
         MoveToBack(_registrationFunctions[v.first], v.second);
@@ -519,7 +522,7 @@ Tf_RegistryManagerImpl::_UnloadNoLock(const char* libraryName)
                                      "unloading '%s'\n", 
                                      libraryName);
 
-    TF_AXIOM(libraryName and libraryName[0]);
+    TF_AXIOM(libraryName && libraryName[0]);
 
     LibraryIdentifier identifier   = _RegisterLibraryNoLock(libraryName);
     _UnloadFunctionMap::iterator i = _unloadFunctions.find(identifier);
@@ -631,3 +634,5 @@ Tf_RegistryInit::Add(
     Tf_RegistryManagerImpl::GetInstance().
             AddRegistrationFunction(libName, func, typeName);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

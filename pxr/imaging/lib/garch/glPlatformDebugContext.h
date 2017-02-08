@@ -24,10 +24,14 @@
 #ifndef GARCH_GLPLATFORM_DEBUG_CONTEXT_H
 #define GARCH_GLPLATFORM_DEBUG_CONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/weakBase.h"
 
 #include <boost/scoped_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GarchGLPlatformDebugContextPrivate;
 
@@ -55,5 +59,8 @@ public:
     boost::scoped_ptr<GarchGLPlatformDebugContextPrivate> _private;
     bool _coreProfile;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GARCH_GLPLATFORM_DEBUG_CONTEXT_H

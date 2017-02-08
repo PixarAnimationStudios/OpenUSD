@@ -28,6 +28,8 @@
 /// \ingroup group_tf_String
 /// Definitions of basic string utilities in tf.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/tf/enum.h"
@@ -42,6 +44,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_tf_String
 ///@{
@@ -189,7 +193,7 @@ inline bool
 Tf_StringStartsWithImpl(char const *s, size_t slen,
                         char const *prefix, size_t prelen)
 {
-    return slen >= prelen and strncmp(s, prefix, prelen) == 0;
+    return slen >= prelen && strncmp(s, prefix, prelen) == 0;
 }
 
 /// Returns true if \p s starts with \p prefix.
@@ -213,7 +217,7 @@ inline bool
 Tf_StringEndsWithImpl(char const *s, size_t slen,
                       char const *suffix, size_t suflen)
 {
-    return slen >= suflen and strcmp(s + (slen - suflen), suffix) == 0;
+    return slen >= suflen && strcmp(s + (slen - suflen), suffix) == 0;
 }
 
 /// Returns true if \p s ends with \p suffix.
@@ -581,16 +585,16 @@ inline bool
 TfIsValidIdentifier(const std::string &identifier)
 {
     char const *p = identifier.c_str();
-    if (not *p or (not (('a' <= *p and *p <= 'z') or
-                        ('A' <= *p and *p <= 'Z') or 
+    if (!*p || (!(('a' <= *p && *p <= 'z') || 
+                        ('A' <= *p && *p <= 'Z') || 
                         *p == '_')))
         return false;
 
     for (++p; *p; ++p) {
-        if (not (('a' <= *p and *p <= 'z') or
-                 ('A' <= *p and *p <= 'Z') or
-                 ('0' <= *p and *p <= '9') or
-                 *p == '_')) {
+        if (!(('a' <= *p && *p <= 'z') || 
+              ('A' <= *p && *p <= 'Z') || 
+              ('0' <= *p && *p <= '9') || 
+              *p == '_')) {
             return false;
         }
     }
@@ -610,4 +614,6 @@ std::string TfGetXmlEscapedString(const std::string &in);
 
 ///@}
 
-#endif /* TF_STRINGUTILS_H */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_STRINGUTILS_H 

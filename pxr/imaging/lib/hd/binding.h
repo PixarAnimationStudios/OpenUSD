@@ -24,10 +24,14 @@
 #ifndef HD_BINDING_H
 #define HD_BINDING_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef std::vector<class HdBinding> HdBindingVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
@@ -158,7 +162,7 @@ public:
     /// buffer will be bound individually and exposed as independent arrays in
     /// the shader.
     bool IsBufferArray() const {
-        return _bar and not _isInterleaved;
+        return _bar && !_isInterleaved;
     }
 
     /// Like BufferArray binding requests, struct bindings have several buffers,
@@ -166,13 +170,13 @@ public:
     /// This type of binding request is exposed in the shader an array of
     ///  structs.
     bool IsInterleavedBufferArray() const {
-        return _bar and _isInterleaved;
+        return _bar && _isInterleaved;
     }
 
     /// This binding is typelss. CodeGen only allocate location and
     /// skip emitting declarations and accessors.
     bool IsTypeless() const {
-        return (not _bar) and (not _resource) and _glTypeName.IsEmpty();
+        return (!_bar) && (!_resource) && _glTypeName.IsEmpty();
     }
 
     // ---------------------------------------------------------------------- //
@@ -238,5 +242,8 @@ private:
     // GL type name used by CodeGen
     TfToken _glTypeName;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_BINDING_H

@@ -29,6 +29,9 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 //
 // Plugin Metadata Keys
 //
@@ -231,3 +234,6 @@ HfPluginDelegateRegistry::_GetEntryForDelegate(HfPluginDelegateBase *delegate)
 
     return &entry;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

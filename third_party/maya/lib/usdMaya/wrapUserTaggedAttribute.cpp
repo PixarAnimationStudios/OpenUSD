@@ -21,7 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/UserTaggedAttribute.h"
+
+#include "usdMaya/util.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -29,7 +32,6 @@
 #include "pxr/base/tf/token.h"
 
 #include <maya/MDagPath.h>
-#include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
 #include <boost/python.hpp>
@@ -37,19 +39,18 @@
 
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static std::vector<PxrUsdMayaUserTaggedAttribute>
 _GetUserTaggedAttributesForNode(
         const std::string& dagString)
 {
-    MStatus status;
     std::vector<PxrUsdMayaUserTaggedAttribute> wrappedAttrs;
 
-    MSelectionList selList;
-    status = selList.add(MString(dagString.c_str()));
-    CHECK_MSTATUS_AND_RETURN(status, wrappedAttrs);
-
     MDagPath dagPath;
-    status = selList.getDagPath(0, dagPath);
+    MStatus status = PxrUsdMayaUtil::GetDagPathByName(dagString,
+                                                      dagPath);
     CHECK_MSTATUS_AND_RETURN(status, wrappedAttrs);
 
     return PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
@@ -74,10 +75,18 @@ void wrapUserTaggedAttribute() {
             .def("GetUsdName", &PxrUsdMayaUserTaggedAttribute::GetUsdName)
             .def("GetUsdType", &PxrUsdMayaUserTaggedAttribute::GetUsdType)
             .def("GetUsdInterpolation",
-                    &PxrUsdMayaUserTaggedAttribute::GetUsdInterpolation)
+                 &PxrUsdMayaUserTaggedAttribute::GetUsdInterpolation)
+            .def("GetTranslateMayaDoubleToUsdSinglePrecision",
+                 &PxrUsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision)
+            .def("GetFallbackTranslateMayaDoubleToUsdSinglePrecision",
+                 &PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision)
+            .staticmethod("GetFallbackTranslateMayaDoubleToUsdSinglePrecision")
             .def("GetUserTaggedAttributesForNode",
-                    _GetUserTaggedAttributesForNode,
-                    return_value_policy<TfPySequenceToList>())
+                 _GetUserTaggedAttributesForNode,
+                 return_value_policy<TfPySequenceToList>())
             .staticmethod("GetUserTaggedAttributesForNode")
     ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

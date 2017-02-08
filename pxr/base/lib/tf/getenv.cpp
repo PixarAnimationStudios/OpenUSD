@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <cstdlib>
@@ -31,8 +33,7 @@
 
 using std::string;
 
-
-
+PXR_NAMESPACE_OPEN_SCOPE
 
 string
 TfGetenv(const string& envName, const string& defaultValue)
@@ -64,9 +65,9 @@ TfGetenvBool(const string& envName, bool defaultValue)
     if (!value || value[0] == '\0')
         return defaultValue;
     else {
-        return strcasecmp(value, "true") == 0 or
-            strcasecmp(value, "yes") == 0 or
-            strcasecmp(value, "on") == 0 or
+        return strcasecmp(value, "true") == 0 ||
+            strcasecmp(value, "yes") == 0     ||
+            strcasecmp(value, "on") == 0      ||
             strcmp(value, "1") == 0;
     }
 }
@@ -81,3 +82,5 @@ TfGetenvDouble(const string& envName, double defaultValue)
     else
         return TfStringToDouble(string(value));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

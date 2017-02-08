@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/attributeQuery.h"
 
 #include "pxr/usd/usd/conversions.h"
@@ -30,6 +31,9 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <boost/preprocessor/seq/for_each.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 UsdAttributeQuery::UsdAttributeQuery(
     const UsdAttribute& attr)
@@ -41,7 +45,7 @@ UsdAttributeQuery::UsdAttributeQuery(
     const UsdPrim& prim, const TfToken& attrName)
 {
     UsdAttribute attr = prim.GetAttribute(attrName);
-    if (not attr) {
+    if (!attr) {
         TF_CODING_ERROR(
             "Invalid attribute '%s' on prim <%s>",
             attrName.GetText(), prim.GetPath().GetString().c_str());
@@ -73,7 +77,7 @@ UsdAttributeQuery::_Initialize(const UsdAttribute& attr)
 {
     TRACE_FUNCTION();
 
-    if (not attr) {
+    if (!attr) {
         TF_CODING_ERROR("Invalid attribute");
         return;
     }
@@ -136,7 +140,7 @@ UsdAttributeQuery::Get(VtValue* value, UsdTimeCode time) const
     bool foundValue = stage->_GetValueFromResolveInfo(_resolveInfo, time, 
                                                       _attr, value);
 
-    if (foundValue and value) {
+    if (foundValue && value) {
         stage->_MakeResolvedAssetPaths(time, _attr, value);
     }
 
@@ -211,4 +215,7 @@ UsdAttributeQuery::ValueMightBeTimeVarying() const
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

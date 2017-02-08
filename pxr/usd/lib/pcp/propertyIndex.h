@@ -24,6 +24,7 @@
 #ifndef PCP_PROPERTY_INDEX_H
 #define PCP_PROPERTY_INDEX_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/iterator.h"
 #include "pxr/usd/pcp/node.h"
@@ -32,6 +33,8 @@
 #include "pxr/usd/sdf/propertySpec.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Forward declarations:
 class PcpCache;
@@ -119,5 +122,7 @@ PcpBuildPrimPropertyIndex( const SdfPath& propertyPath,
                            const PcpPrimIndex& owningPrimIndex,
                            PcpPropertyIndex *propertyIndex,
                            PcpErrorVector *allErrors );
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_PROPERTY_INDEX_H

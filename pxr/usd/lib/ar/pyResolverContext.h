@@ -32,6 +32,7 @@
 #include <boost/python/extract.hpp>
 #include <boost/python/object.hpp>
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolverContext.h"
 
@@ -39,6 +40,8 @@
 #include "pxr/base/tf/pyObjWrapper.h"
 
 #include <boost/function.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class Context>
 bool
@@ -103,5 +106,7 @@ ArWrapResolverContextForPython()
         Ar_ConvertResolverContextFromPython<Context>,
         Ar_ConvertResolverContextToPython<Context>);
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // AR_PY_RESOLVER_CONTEXT_H

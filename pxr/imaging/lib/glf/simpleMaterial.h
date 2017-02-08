@@ -26,12 +26,16 @@
 
 /// \file glf/simpleMaterial.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/vec4f.h"
 
-class GlfSimpleMaterial {
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+class GlfSimpleMaterial final {
 public:
     GlfSimpleMaterial();
-    virtual ~GlfSimpleMaterial();
+    ~GlfSimpleMaterial();
 
     GfVec4f const & GetAmbient() const;
     void SetAmbient(GfVec4f const & ambient);
@@ -48,9 +52,6 @@ public:
     double GetShininess() const;
     void SetShininess(double specular);
 
-    virtual void Bind();
-    virtual void Unbind();
-
     bool operator ==(GlfSimpleMaterial const & other) const;
     bool operator !=(GlfSimpleMaterial const & other) const;
 
@@ -61,5 +62,8 @@ private:
     GfVec4f _emission;
     double _shininess;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -27,10 +27,14 @@
 
 #define TF_INSTANTIATE_STACKED_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/stacked.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define TF_INSTANTIATE_STACKED(Derived)                \
     template <>                                        \
     std::atomic<Derived::_StackedType::_StackStorage*> \
     Derived::_StackedType::_stackStorage(nullptr)
 
+PXR_NAMESPACE_CLOSE_SCOPE

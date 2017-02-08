@@ -21,16 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/registryHelper.h"
 #include "usdMaya/debugCodes.h"
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 
+#include "pxr/base/tf/scriptModuleLoader.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 
 #include <maya/MGlobal.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, 
     (mayaPlugin)
@@ -41,7 +46,7 @@ template <typename T>
 bool
 _GetData(const JsValue& any, T* val)
 {
-    if (not any.Is<T>()) {
+    if (!any.Is<T>()) {
         TF_CODING_ERROR("bad plugInfo.json");
         return false;
     }
@@ -54,7 +59,7 @@ template <typename T>
 bool
 _GetData(const JsValue& any, std::vector<T>* val)
 {
-    if (not any.IsArrayOf<T>()) {
+    if (!any.IsArrayOf<T>()) {
         TF_CODING_ERROR("bad plugInfo.json");
         return false;
     }
@@ -73,11 +78,11 @@ _ReadNestedDict(
     TF_FOR_ALL(iter, keys) {
         const TfToken& currKey = *iter;
         JsValue any;
-        if (not TfMapLookup(currDict, currKey, &any)) {
+        if (!TfMapLookup(currDict, currKey, &any)) {
             return false;
         }
 
-        if (not any.IsObject()) {
+        if (!any.IsObject()) {
             TF_CODING_ERROR("bad plugInfo data.");
             return false;
         }
@@ -97,16 +102,16 @@ _ProvidesForType(
 
     JsObject metadata = plug->GetMetadata();
     JsObject mayaTranslatorMetadata;
-    if (not _ReadNestedDict(metadata, scope, &mayaTranslatorMetadata)) {
+    if (!_ReadNestedDict(metadata, scope, &mayaTranslatorMetadata)) {
         return false;
     }
 
     JsValue any;
-    if (not TfMapLookup(mayaTranslatorMetadata, _tokens->providesTranslator, &any)) {
+    if (!TfMapLookup(mayaTranslatorMetadata, _tokens->providesTranslator, &any)) {
         return false;
     }
     std::vector<std::string> usdTypes;
-    if (not _GetData(any, &usdTypes)) {
+    if (!_GetData(any, &usdTypes)) {
         return false;
     }
 
@@ -145,7 +150,7 @@ PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
     TF_FOR_ALL(plugIter, plugins) {
         PlugPluginPtr plug = *plugIter;
         if (_ProvidesForType(plug, scope, value, &mayaPlugin)) {
-            if (not mayaPlugin.empty()) {
+            if (!mayaPlugin.empty()) {
                 TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
                         "Found usdMaya plugin %s:  %s = %s.  Loading maya plugin %s.\n", 
                         plug->GetName().c_str(),
@@ -154,7 +159,13 @@ PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
                         mayaPlugin.c_str());
                 std::string loadPluginCmd = TfStringPrintf(
                         "loadPlugin -quiet %s", mayaPlugin.c_str());
-                if (not MGlobal::executeCommand(loadPluginCmd.c_str())) {
+                if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
+                    // Need to ensure Python script modules are loaded
+                    // properly for this library (Maya's loadPlugin will not
+                    // load script modules like TfDlopen would).
+                    TfScriptModuleLoader::GetInstance().LoadModules();
+                }
+                else {
                     TF_CODING_ERROR("Unable to load mayaplugin %s\n",
                             mayaPlugin.c_str());
                 }
@@ -170,3 +181,6 @@ PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

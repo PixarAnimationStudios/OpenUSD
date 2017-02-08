@@ -26,6 +26,7 @@
  * \brief file translator for USD files
  */
 
+#include "pxr/pxr.h"
 #include "usdMaya/usdTranslatorExport.h"
 
 #include "usdMaya/JobArgs.h"
@@ -38,6 +39,9 @@
 #include <maya/MString.h>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 void* usdTranslatorExport::creator() {
@@ -59,6 +63,7 @@ usdTranslatorExport::writer(const MFileObject &file,
     std::string fileName(file.fullName().asChar());
     JobExportArgs jobArgs;
     double startTime=1, endTime=1;
+    std::set<double> frameSamples;
     bool append=false;
     
     // Get the options 
@@ -140,6 +145,9 @@ usdTranslatorExport::writer(const MFileObject &file,
             if (theOption[0] == MString("endTime")) {
                 endTime = theOption[1].asDouble();
             }
+            if (theOption[0] == MString("frameSample")) {
+                frameSamples.insert(theOption[1].asDouble());
+            }
         }
         // Now resync start and end frame based on animation mode
         if (jobArgs.exportAnimation) {
@@ -148,6 +156,10 @@ usdTranslatorExport::writer(const MFileObject &file,
             startTime=MAnimControl::currentTime().value();
             endTime=startTime;
         }
+    }
+
+    if (frameSamples.empty()) {
+        frameSamples.insert(0.0);
     }
 
     MSelectionList objSelList;
@@ -172,8 +184,11 @@ usdTranslatorExport::writer(const MFileObject &file,
         usdWriteJob writeJob(jobArgs);
         if (writeJob.beginJob(fileName, append, startTime, endTime)) {
             for (double i=startTime;i<(endTime+1);i++) {
-                MGlobal::viewFrame(i);
-                writeJob.evalJob(i);
+                for (double sampleTime : frameSamples) {
+                    double actualTime = i + sampleTime;
+                    MGlobal::viewFrame(actualTime);
+                    writeJob.evalJob(actualTime);
+                }
             }
             writeJob.endJob();
             MGlobal::viewFrame(oldCurTime);
@@ -198,17 +213,20 @@ usdTranslatorExport::identifyFile(
     const int lastIndex = fileName.length() - 1;
 
     const int periodIndex = fileName.rindex('.');
-    if (periodIndex < 0 or periodIndex >= lastIndex) {
+    if (periodIndex < 0 || periodIndex >= lastIndex) {
         return retValue;
     }
 
     const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
 
-    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() or
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() or
+    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() || 
+        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText()   || 
         fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
         retValue = kIsMyFileType;
     }
 
     return retValue;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

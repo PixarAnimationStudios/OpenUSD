@@ -26,8 +26,11 @@
 
 /// \file sdf/cleanupTracker.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/spec.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfSpec);
 
@@ -63,5 +66,7 @@ private:
     
     friend class TfSingleton<Sdf_CleanupTracker>;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_CLEANUP_TRACKER_H

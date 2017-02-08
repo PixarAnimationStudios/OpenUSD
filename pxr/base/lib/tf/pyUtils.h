@@ -27,6 +27,8 @@
 /// \file tf/pyUtils.h
 /// Miscellaneous Utilities for dealing with script.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/diagnosticLite.h"
@@ -41,6 +43,8 @@
 #include <boost/python/extract.hpp>
 #include <boost/python/object.hpp>
 #include <boost/python/type_id.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// A macro which expands to the proper __repr__ prefix for a library.  This is
 /// the "canonical" name of the module that the system uses to identify it
@@ -340,5 +344,7 @@ bool TfPyEvaluateAndExtract(const std::string & expr, T * t)
 /// If the error is a KeyboardInterrupt then this does nothing.  Call this
 /// function only when the error indicator is set.
 void TfPyPrintError();
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYUTILS_H

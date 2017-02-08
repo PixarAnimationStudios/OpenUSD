@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/resolver.h"
 
 #include "pxr/usd/usd/debugCodes.h"
@@ -28,6 +29,9 @@
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/layerStack.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 void
 Usd_Resolver::_Init() {
@@ -48,8 +52,8 @@ Usd_Resolver::_Init() {
 void
 Usd_Resolver::_SkipEmptyNodes()
 {
-    while (IsValid() and 
-           ((_skipEmptyNodes and not _curNode->HasSpecs()) or
+    while (IsValid() &&
+           ((_skipEmptyNodes && !_curNode->HasSpecs()) ||
             _curNode->IsInert())) {
         _curNode++;
     }
@@ -65,7 +69,7 @@ Usd_Resolver::Usd_Resolver(const PcpPrimIndex* index, bool skipEmptyNodes)
 PcpNodeRef
 Usd_Resolver::GetNode() const
 {
-    if (not IsValid())
+    if (!IsValid())
         return PcpNodeRef();
     return *_curNode;
 }
@@ -73,7 +77,7 @@ Usd_Resolver::GetNode() const
 const SdfLayerRefPtr&
 Usd_Resolver::GetLayer() const
 {
-    if (not IsValid()) {
+    if (!IsValid()) {
         static const SdfLayerRefPtr _NULL_LAYER;
         return _NULL_LAYER;
     }
@@ -83,7 +87,7 @@ Usd_Resolver::GetLayer() const
 const SdfPath&
 Usd_Resolver::GetLocalPath() const
 {
-    if (not IsValid())
+    if (!IsValid())
         return SdfPath::EmptyPath();
     return _curNode->GetPath(); 
 }
@@ -111,7 +115,7 @@ Usd_Resolver::NextNode()
 
 bool 
 Usd_Resolver::NextLayer() {
-    if (not IsValid())
+    if (!IsValid())
         return true;
 
     if (++_curLayer == _lastLayer) {
@@ -121,4 +125,7 @@ Usd_Resolver::NextLayer() {
     }
     return false;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

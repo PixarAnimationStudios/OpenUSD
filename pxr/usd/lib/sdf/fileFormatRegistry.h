@@ -26,6 +26,7 @@
 
 /// \file sdf/fileFormatRegistry.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
@@ -37,6 +38,8 @@
 #include <atomic>
 #include <mutex>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfFileFormat);
 TF_DECLARE_WEAK_PTRS(PlugPlugin);
@@ -137,5 +140,7 @@ private:
     std::atomic<bool> _registeredFormatPlugins;
     std::mutex _mutex;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_FILE_FORMAT_REGISTRY_H

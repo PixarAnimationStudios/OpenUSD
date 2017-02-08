@@ -48,6 +48,9 @@
 #include "pxr/imaging/glf/info.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 UsdImagingGLHdEngine::UsdImagingGLHdEngine(
         const SdfPath& rootPath,
         const SdfPathVector& excludedPrimPaths,
@@ -97,23 +100,23 @@ _GetRefineLevel(float c)
     // to avoid floating point inaccuracy (e.g. 1.3 > 1.3f)
     c = std::min(c + 0.01f, 2.0f);
 
-    if (1.0f <= c and c < 1.1f) { 
+    if (1.0f <= c && c < 1.1f) { 
         refineLevel = 0;
-    } else if (1.1f <= c and c < 1.2f) { 
+    } else if (1.1f <= c && c < 1.2f) { 
         refineLevel = 1;
-    } else if (1.2f <= c and c < 1.3f) { 
+    } else if (1.2f <= c && c < 1.3f) { 
         refineLevel = 2;
-    } else if (1.3f <= c and c < 1.4f) { 
+    } else if (1.3f <= c && c < 1.4f) { 
         refineLevel = 3;
-    } else if (1.4f <= c and c < 1.5f) { 
+    } else if (1.4f <= c && c < 1.5f) { 
         refineLevel = 4;
-    } else if (1.5f <= c and c < 1.6f) { 
+    } else if (1.5f <= c && c < 1.6f) { 
         refineLevel = 5;
-    } else if (1.6f <= c and c < 1.7f) { 
+    } else if (1.6f <= c && c < 1.7f) { 
         refineLevel = 6;
-    } else if (1.7f <= c and c < 1.8f) { 
+    } else if (1.7f <= c && c < 1.8f) { 
         refineLevel = 7;
-    } else if (1.8f <= c and c <= 2.0f) { 
+    } else if (1.8f <= c && c <= 2.0f) { 
         refineLevel = 8;
     } else {
         TF_CODING_ERROR("Invalid complexity %f, expected range is [1.0,2.0]\n", 
@@ -128,10 +131,10 @@ UsdImagingGLHdEngine::_CanPrepareBatch(const UsdPrim& root,
 {
     HD_TRACE_FUNCTION();
 
-    if (not TF_VERIFY(root, "Attempting to draw an invalid/null prim\n")) 
+    if (!TF_VERIFY(root, "Attempting to draw an invalid/null prim\n")) 
         return false;
 
-    if (not root.GetPath().HasPrefix(_rootPath)) {
+    if (!root.GetPath().HasPrefix(_rootPath)) {
         TF_CODING_ERROR("Attempting to draw path <%s>, but HdEngine is rooted"
                     "at <%s>\n",
                     root.GetPath().GetText(),
@@ -187,7 +190,7 @@ UsdImagingGLHdEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
     HD_TRACE_FUNCTION();
 
     if (_CanPrepareBatch(root, params)) {
-        if (not _isPopulated) {
+        if (!_isPopulated) {
             _delegate.Populate(root.GetStage()->GetPrimAtPath(_rootPath), 
                                _excludedPrimPaths);
             _delegate.SetInvisedPrimPaths(_invisedPrimPaths);
@@ -211,7 +214,7 @@ UsdImagingGLHdEngine::PrepareBatch(
 {
     HD_TRACE_FUNCTION();
 
-    if (not (engines.size() == rootPrims.size() and
+    if (!(engines.size() == rootPrims.size() &&
              engines.size() == times.size())) {
         TF_CODING_ERROR("Mismatched parameters");
         return;
@@ -220,7 +223,7 @@ UsdImagingGLHdEngine::PrepareBatch(
     // Do some initial error checking.
     std::set<size_t> skipped;
     for (size_t i = 0; i < engines.size(); ++i) {
-        if (not engines[i]->_CanPrepareBatch(rootPrims[i], params)) {
+        if (!engines[i]->_CanPrepareBatch(rootPrims[i], params)) {
             skipped.insert(i);
         }
     }
@@ -300,7 +303,7 @@ UsdImagingGLHdEngine::_Populate(const UsdImagingGLHdEngineSharedPtrVector& engin
     pathsToInvis.reserve(engines.size());
 
     for (size_t i = 0; i < engines.size(); ++i) {
-        if (not engines[i]->_isPopulated) {
+        if (!engines[i]->_isPopulated) {
             delegatesToPopulate.push_back(&engines[i]->_delegate);
             primsToPopulate.push_back(
                 rootPrims[i].GetStage()->GetPrimAtPath(engines[i]->_rootPath));
@@ -357,12 +360,12 @@ UsdImagingGLHdEngine::TestIntersection(
     SdfPath *outHitInstancerPath,
     int *outHitInstanceIndex)
 {
-    if (not HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
 
        return false;
     }
-    if (not TF_VERIFY(_intersector)) {
+    if (!TF_VERIFY(_intersector)) {
         return false;
     }
 
@@ -380,10 +383,10 @@ UsdImagingGLHdEngine::TestIntersection(
     HdxIntersector::Result result;
     HdxIntersector::Hit hit;
 
-    if (not _intersector->Query(qparams, col, &_engine, &result)) {
+    if (!_intersector->Query(qparams, col, &_engine, &result)) {
         return false;
     }
-    if (not result.ResolveNearest(&hit)) {
+    if (!result.ResolveNearest(&hit)) {
         return false;
     }
     if (outHitPoint) {
@@ -415,11 +418,11 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
 {
-    if (not HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
        return false;
     }
-    if (not TF_VERIFY(_intersector)) {
+    if (!TF_VERIFY(_intersector)) {
         return false;
     }
 
@@ -449,13 +452,13 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     HdxIntersector::Result result;
     HdxIntersector::HitSet hits;
 
-    if (not _intersector->Query(qparams, col, &_engine, &result)) {
+    if (!_intersector->Query(qparams, col, &_engine, &result)) {
         return false;
     }
-    if (not result.ResolveUnique(&hits)) {
+    if (!result.ResolveUnique(&hits)) {
         return false;
     }
-    if (not outHit) {
+    if (!outHit) {
         return true;
     }
 
@@ -478,7 +481,7 @@ void
 UsdImagingGLHdEngine::Render(HdRenderIndex& index, RenderParams params)
 {
     // User is responsible for initalizing GL contenxt and glew
-    if (not HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
         return;
     }
@@ -518,7 +521,7 @@ UsdImagingGLHdEngine::Render(HdRenderIndex& index, RenderParams params)
 
     // TODO:
     //  * forceRefresh
-    //  * showGuides, showRenderGuides
+    //  * showGuides, showRender, showProxy
     //  * gammaCorrectColors
 
     if (params.applyRenderState) {
@@ -593,7 +596,7 @@ UsdImagingGLHdEngine::GetPrimPathFromInstanceIndex(
 void
 UsdImagingGLHdEngine::SetLightingStateFromOpenGL()
 {
-    if (not _lightingContextForOpenGLState) {
+    if (!_lightingContextForOpenGLState) {
         _lightingContextForOpenGLState = GlfSimpleLightingContext::New();
     }
     _lightingContextForOpenGLState->SetStateFromOpenGL();
@@ -613,7 +616,7 @@ UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightVector const &lights,
 {
     // we still use _lightingContextForOpenGLState for convenience, but
     // set the values directly.
-    if (not _lightingContextForOpenGLState) {
+    if (!_lightingContextForOpenGLState) {
         _lightingContextForOpenGLState = GlfSimpleLightingContext::New();
     }
     _lightingContextForOpenGLState->SetLights(lights);
@@ -684,7 +687,7 @@ void
 UsdImagingGLHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
     HdxSelectionSharedPtr selection = _selTracker->GetSelectionMap();
-    if (not selection) {
+    if (!selection) {
         selection.reset(new HdxSelection(&*_renderIndex));
     }
 
@@ -716,14 +719,14 @@ std::vector<TfType>
 UsdImagingGLHdEngine::GetRenderGraphPlugins()
 {
     // discover plugins
-    if (not _pluginDiscovered) {
+    if (!_pluginDiscovered) {
         _pluginDiscovered = true;
 
         std::set<TfType> pluginTaskTypes;
         PlugRegistry::GetAllDerivedTypes(
             TfType::Find<UsdImagingGLTaskDelegate>(), &pluginTaskTypes);
 
-        // create entries (not load plugins yet)
+        // create entries (!load plugins yet)
         TF_FOR_ALL (it, pluginTaskTypes) {
             _pluginTaskDelegates[*it] = UsdImagingGLTaskDelegateSharedPtr();
         }
@@ -743,7 +746,7 @@ bool
 UsdImagingGLHdEngine::SetRenderGraphPlugin(TfType const &type)
 {
     _currentPluginTaskDelegate.reset();
-    if (not type) {
+    if (!type) {
         // revert to default task delegate.
         return true;
     }
@@ -775,14 +778,14 @@ UsdImagingGLHdEngine::SetRenderGraphPlugin(TfType const &type)
 
     UsdImagingGLTaskDelegateFactoryBase* factory =
         type.GetFactory<UsdImagingGLTaskDelegateFactoryBase>();
-    if (not factory) {
+    if (!factory) {
         TF_WARN("Plugin type not manufacturable: %s\n", type.GetTypeName().c_str());
         return false;
     }
 
     UsdImagingGLTaskDelegateSharedPtr taskDelegate =
         factory->New(_renderIndex, _delegate.GetDelegateID()/*=shareId*/);
-    if (not taskDelegate) {
+    if (!taskDelegate) {
         TF_WARN("Fail to manufacture plugin %s\n", type.GetTypeName().c_str());
         return false;
     }
@@ -799,3 +802,6 @@ UsdImagingGLHdEngine::GetResourceAllocation() const
 {
     return HdResourceRegistry::GetInstance().GetResourceAllocation();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

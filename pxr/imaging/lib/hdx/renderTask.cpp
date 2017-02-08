@@ -34,6 +34,9 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // --------------------------------------------------------------------------- //
 
 HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
@@ -46,7 +49,7 @@ void
 HdxRenderTask::_Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdRenderPassStateSharedPtr renderPassState;
 
@@ -57,7 +60,7 @@ HdxRenderTask::_Execute(HdTaskContext* ctx)
         // otherwise, extract from TaskContext
         _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
     }
-    if (not TF_VERIFY(renderPassState)) return;
+    if (!TF_VERIFY(renderPassState)) return;
 
     // Can't use GetTaskContextData because the lightingShader
     // is optional.
@@ -79,7 +82,7 @@ HdxRenderTask::_Execute(HdTaskContext* ctx)
     HdRenderPassShaderSharedPtr renderPassShader
         = renderPassState->GetRenderPassShader();
 
-    if (not vo.IsEmpty() and not vu.IsEmpty()) {
+    if (!vo.IsEmpty() && !vu.IsEmpty()) {
         HdBufferArrayRangeSharedPtr obar
             = vo.Get<HdBufferArrayRangeSharedPtr>();
         HdBufferArrayRangeSharedPtr ubar
@@ -156,7 +159,7 @@ HdxRenderTask::_Sync(HdTaskContext* ctx)
             params = valueVt.UncheckedGet<HdxRenderTaskParams>();
 
             // this is in compatibility path. delegate to _setupTask
-            if (not _setupTask) {
+            if (!_setupTask) {
                 // note that _setupTask should have same Id, since sceneDelegate
                 // thinks this HdxRenderTask is asking the parameters.
                 _setupTask.reset(new HdxRenderSetupTask(GetDelegate(), GetId()));
@@ -179,3 +182,6 @@ HdxRenderTask::_Sync(HdTaskContext* ctx)
         pass->Sync();
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/baseMaterialHelpers.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node.h"
@@ -29,6 +30,9 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // This tests if a given node represents a "live" base material,
 // i.e. once that hasn't been "flattened out" due to being
@@ -109,3 +113,6 @@ PxrUsdKatana_AreRelTargetsFromBaseMaterial(const UsdRelationship &rel)
     }
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

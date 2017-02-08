@@ -31,6 +31,9 @@
 
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTextureStorageData);
 
 GlfUVTextureStorageDataRefPtr
@@ -115,10 +118,6 @@ bool GlfUVTextureStorageData::Read(int degradeLevel, bool generateMipmap) {
     }    
 
     _rawBuffer = new unsigned char[_size];
-    if (_rawBuffer == nullptr) {
-        TF_RUNTIME_ERROR("Unable to allocate buffer.");
-        return false;
-    }
 
     // Transfer value from Storage Data into raw buffer
     for (int y=0; y < _resizedHeight; ++y) {
@@ -157,3 +156,6 @@ GlfUVTextureStorageData::GlfUVTextureStorageData(
 {
     /* nothing */
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

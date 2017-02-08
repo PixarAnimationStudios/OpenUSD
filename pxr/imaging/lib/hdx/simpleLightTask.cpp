@@ -41,6 +41,9 @@
 
 #include <boost/bind.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static const GfVec2i _defaultShadowRes = GfVec2i(1024, 1024);
 
 // -------------------------------------------------------------------------- //
@@ -65,7 +68,7 @@ void
 HdxSimpleLightTask::_Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 }
 
 void
@@ -94,27 +97,33 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         _collectionVersion = dirtyState.collectionVersion;
 
         HdxSimpleLightTaskParams params;
-        if (not _GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
             return;
         }
 
         HdSceneDelegate* delegate = GetDelegate();
-        _camera = delegate->GetRenderIndex().GetSprim(params.cameraPath);
+        const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+        _camera = static_cast<const HdxCamera *>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->camera,
+                                         params.cameraPath));
 
         // XXX: This is inefficient, need to be optimized
-        SdfPathVector sprimPaths = delegate->GetRenderIndex().GetSprimSubtree(
-            SdfPath::AbsoluteRootPath());
+        SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
+                                                   HdPrimTypeTokens->light,
+                                                   SdfPath::AbsoluteRootPath());
+
         SdfPathVector lights = ComputeIncludedLights(sprimPaths,
                                                      params.lightIncludePaths,
                                                      params.lightExcludePaths);
         _lights.clear();
         _lights.reserve(lights.size());
         TF_FOR_ALL (it, lights) {
-            HdSprimSharedPtr const &sprim = delegate->GetRenderIndex().GetSprim(*it);
-            // XXX: or we could say instead of downcast,
-            //      if sprim->Has(HdxLightInterface) ?
-            if (boost::dynamic_pointer_cast<HdxLight>(sprim)) {
-                _lights.push_back(sprim);
+            HdxLight const *light = static_cast<const HdxLight *>(
+                                   renderIndex.GetSprim(HdPrimTypeTokens->light,
+                                                        *it));
+
+            if (light != nullptr) {
+                _lights.push_back(light);
             }
         }
 
@@ -128,13 +137,13 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         _viewport = params.viewport;
     }
 
-    if (not TF_VERIFY(_camera)) {
+    if (!TF_VERIFY(_camera)) {
         return;
     }
 
     GlfSimpleLightingContextRefPtr const& lightingContext = 
                                     _lightingShader->GetLightingContext(); 
-    if (not TF_VERIFY(lightingContext)) {
+    if (!TF_VERIFY(lightingContext)) {
         return;
     }
 
@@ -214,7 +223,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         // we treat this light as if it had the shadow disabled
         // doing so we guarantee that shadowIndex will be -1
         // which will not create memory for the shadow maps 
-        if (not _enableShadows or not lightShadowParams.enabled) {
+        if (!_enableShadows || !lightShadowParams.enabled) {
             glfl.SetHasShadow(false);
         } 
 
@@ -223,7 +232,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         if (glfl.HasShadow()) {
             // Extract the window policy to adjust the frustum correctly
             VtValue windowPolicy = _camera->Get(HdxCameraTokens->windowPolicy);
-            if (not TF_VERIFY(windowPolicy.IsHolding<CameraUtilConformWindowPolicy>())) {
+            if (!TF_VERIFY(windowPolicy.IsHolding<CameraUtilConformWindowPolicy>())) {
                 return;
             }
 
@@ -261,7 +270,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
 
     if (shadowIndex > -1) {
         for (size_t lightId = 0; lightId < numLights; ++lightId) {
-            if (not _glfSimpleLights[lightId].HasShadow()) {
+            if (!_glfSimpleLights[lightId].HasShadow()) {
                 continue;
             }
 
@@ -306,7 +315,7 @@ HdxSimpleLightTask::ComputeIncludedLights(
                 break;
             }
         }
-        if (not included) {
+        if (!included) {
             continue;
         }
         TF_FOR_ALL(excludePathIt, excludedPaths) {
@@ -344,18 +353,18 @@ bool operator==(const HdxSimpleLightTaskParams& lhs,
                 const HdxSimpleLightTaskParams& rhs) 
 {
     return lhs.cameraPath == rhs.cameraPath
-        and lhs.lightIncludePaths == rhs.lightIncludePaths
-        and lhs.lightExcludePaths == rhs.lightExcludePaths
-        and lhs.material == rhs.material
-        and lhs.sceneAmbient == rhs.sceneAmbient
-        and lhs.enableShadows == rhs.enableShadows
+        && lhs.lightIncludePaths == rhs.lightIncludePaths
+        && lhs.lightExcludePaths == rhs.lightExcludePaths
+        && lhs.material == rhs.material
+        && lhs.sceneAmbient == rhs.sceneAmbient
+        && lhs.enableShadows == rhs.enableShadows
        ;
 }
 
 bool operator!=(const HdxSimpleLightTaskParams& lhs, 
                 const HdxSimpleLightTaskParams& rhs) 
 {
-    return not(lhs == rhs);
+    return !(lhs == rhs);
 }
 
 // -------------------------------------------------------------------------- //
@@ -377,14 +386,17 @@ bool
 operator==(const HdxShadowParams& lhs, const HdxShadowParams& rhs)
 {
     return lhs.shadowMatrix == rhs.shadowMatrix
-       and lhs.resolution == rhs.resolution
-       and lhs.bias == rhs.bias
-       and lhs.blur == rhs.blur
-       and lhs.enabled == rhs.enabled;
+       && lhs.resolution == rhs.resolution
+       && lhs.bias == rhs.bias
+       && lhs.blur == rhs.blur
+       && lhs.enabled == rhs.enabled;
 }
 
 bool
 operator!=(const HdxShadowParams& lhs, const HdxShadowParams& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

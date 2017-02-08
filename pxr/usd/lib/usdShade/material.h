@@ -24,6 +24,9 @@
 #ifndef USDSHADE_GENERATED_MATERIAL_H
 #define USDSHADE_GENERATED_MATERIAL_H
 
+/// \file usdShade/material.h
+
+#include "pxr/pxr.h"
 #include "pxr/usd/usdShade/subgraph.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -41,12 +44,16 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
 // MATERIAL                                                                   //
 // -------------------------------------------------------------------------- //
 
+/// \class UsdShadeMaterial
+///
 /// A Material provides a container into which multiple "render targets"
 /// can add data that defines a "shading material" for a renderer.  Typically
 /// this consists of one or more UsdRelationship properties that target
@@ -126,7 +133,7 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// \brief Return a UsdShadeMaterial holding the prim adhering to this
+    /// Return a UsdShadeMaterial holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
@@ -138,7 +145,7 @@ public:
     static UsdShadeMaterial
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
     /// If a prim adhering to this schema at \p path is already defined on this
@@ -178,8 +185,10 @@ public:
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
     //
-    // Just remember to close the class delcaration with }; and complete the
-    // include guard with #endif
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
@@ -423,32 +432,8 @@ public:
 
     /// @}
 
-    // --------------------------------------------------------------------- //
-    /// \anchor UsdShadeMaterial_Terminals
-    /// 
-    /// API to create and query the existence of standard terminals
-    //
-    /// @{
-    // --------------------------------------------------------------------- //
-
-    /// Get the main terminal of a Material: the surface. Different renderers
-    /// will interpret this terminal in their own way
-    /// 
-    UsdRelationship GetSurfaceTerminal() const;
-
-    /// Create and set the main terminal of a Material: the surface. Different renderers
-    /// will interpret this terminal in their own way
-    /// 
-    UsdRelationship CreateSurfaceTerminal(const SdfPath& targetPath) const;
-
-    /// Get the displacement terminal of a Material
-    /// 
-    UsdRelationship GetDisplacementTerminal() const;
-
-    /// Create and set the displacement terminal of a Material
-    /// 
-    UsdRelationship CreateDisplacementTerminal(const SdfPath& targetPath) const;
-    /// @}
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

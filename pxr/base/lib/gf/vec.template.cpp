@@ -27,6 +27,7 @@
 
 #include "pxr/base/gf/vec{{ SUFFIX }}.h"
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
@@ -40,6 +41,8 @@
 #include <vector>
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<{{ VEC }}>();
 }
@@ -51,20 +54,12 @@ operator<<(std::ostream &out, {{ VEC }} const &v)
         << {{ LIST("Gf_OstreamHelperP(v[%(i)s])", sep=' << \", \" \n        << ') }} << ')';
 }
 
-{% if IS_FLOATING_POINT(SCL) %}
-{% for S in SCALARS if S != SCL %}
-{{ VEC }}::{{ VEC }}(class {{ VECNAME(DIM, S) }} const &other)
-{
-    {{ LIST("_data[%(i)s] = other[%(i)s];", sep='\n    ') }}
-}
-{% endfor %}
-{% endif %}
 
 {% for S in SCALARS if S != SCL %}
 bool
 {{ VEC }}::operator==({{ VECNAME(DIM, S) }} const &other) const
 {
-    return {{ LIST("_data[%(i)s] == other[%(i)s]", sep=' and\n           ') }};
+    return {{ LIST("_data[%(i)s] == other[%(i)s]", sep=' &&\n           ') }};
 }
 {% endfor %}
 
@@ -260,3 +255,4 @@ GfSlerp(double alpha, const {{ VEC }} &v0, const {{ VEC }} &v1)
 
 {% endif %}
 
+PXR_NAMESPACE_CLOSE_SCOPE

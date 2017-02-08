@@ -24,8 +24,8 @@
 #ifndef SDF_PATHTABLE_H
 #define SDF_PATHTABLE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
-
 #include "pxr/base/tf/pointerAndBits.h"
 
 #include <boost/iterator/iterator_facade.hpp>
@@ -34,6 +34,8 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfPathTable
 ///
@@ -282,13 +284,13 @@ public:
              i != end; ++i) {
             iterator j = _InsertInTable(*i).first;
             // Ensure first child and next sibling links are created.
-            if (i._entry->firstChild and not j._entry->firstChild) {
+            if (i._entry->firstChild && !j._entry->firstChild) {
                 j._entry->firstChild =
                     _InsertInTable(i._entry->firstChild->value).first._entry;
             }
             // Ensure the nextSibling/parentLink is created.
-            if (i._entry->nextSiblingOrParent.Get() and not
-                j._entry->nextSiblingOrParent.Get()) {
+            if (i._entry->nextSiblingOrParent.Get() &&  
+                !j._entry->nextSiblingOrParent.Get()) {
                 j._entry->nextSiblingOrParent.Set(
                     _InsertInTable(i._entry->nextSiblingOrParent.
                                    Get()->value).first._entry,
@@ -368,7 +370,7 @@ public:
     /// Return an iterator to the element corresponding to \a path, or \a end()
     /// if there is none.
     iterator find(SdfPath const &path) {
-        if (not empty()) {
+        if (!empty()) {
             // Find the item in the list.
             for (_Entry *e = _buckets[_Hash(path)]; e; e = e->next) {
                 if (e->value.first == path)
@@ -381,7 +383,7 @@ public:
     /// Return a const_iterator to the element corresponding to \a path, or
     /// \a end() if there is none.
     const_iterator find(SdfPath const &path) const {
-        if (not empty()) {
+        if (!empty()) {
             // Find the item in the list.
             for (_Entry const *e = _buckets[_Hash(path)]; e; e = e->next) {
                 if (e->value.first == path)
@@ -422,7 +424,7 @@ public:
     inline size_t size() const { return _size; }
 
     /// Return true if this table is empty.
-    inline bool empty() const { return not size(); }
+    inline bool empty() const { return !size(); }
 
     /// Insert \a value into the table, and additionally insert default entries
     /// for all ancestral paths of \a value.first that do not already exist in
@@ -442,7 +444,7 @@ public:
             // New element -- make sure the parent is inserted.
             _Entry * const newEntry = result.first._entry;
             SdfPath const &parentPath = _GetParentPath(value.first);
-            if (not parentPath.IsEmpty()) {
+            if (!parentPath.IsEmpty()) {
                 iterator parIter =
                     insert(value_type(parentPath, mapped_type())).first;
                 // Add the new entry to the parent's children.
@@ -658,5 +660,6 @@ private:
 
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PATHTABLE_H

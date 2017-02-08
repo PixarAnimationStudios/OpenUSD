@@ -28,6 +28,7 @@
 #ifndef PXRUSDMAYAGL_SOFTSELECTHELPER_H
 #define PXRUSDMAYAGL_SOFTSELECTHELPER_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/hash.h"
 
 #include <maya/MColor.h>
@@ -36,6 +37,9 @@
 #include <maya/MString.h>
 
 #include <unordered_map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdMayaGLSoftSelectHelper
 /// \brief Helper class to store soft ("rich") selection state while
@@ -89,5 +93,8 @@ private:
     MColor _wireColor;
     bool _populated;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYAGL_SOFTSELECTHELPER_H

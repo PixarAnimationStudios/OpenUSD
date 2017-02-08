@@ -27,12 +27,16 @@
 
 /// \file usdTranslatorExport.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/JobArgs.h"
 
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 const char* const usdTranslatorExportDefaults = 
@@ -88,5 +92,8 @@ class usdTranslatorExport : public MPxFileTranslator
         ~usdTranslatorExport();
         usdTranslatorExport& operator=(const usdTranslatorExport&);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_TRANSLATOR_EXPORT_H

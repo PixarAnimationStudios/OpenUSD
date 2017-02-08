@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/mallocTag.h"
 
 #include "pxr/base/tf/fileUtils.h"
@@ -44,6 +45,7 @@ using std::string;
 using std::vector;
 
 using namespace boost::python;
+PXR_NAMESPACE_OPEN_SCOPE
 
 static bool
 _Initialize()
@@ -216,3 +218,5 @@ void wrapMallocTag()
 }
                  
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

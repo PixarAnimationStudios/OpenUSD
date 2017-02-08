@@ -23,6 +23,7 @@
 //
 /// \file wrapVariantSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/variantSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/pySpec.h"
@@ -31,6 +32,8 @@
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef SdfPyChildrenProxy<SdfVariantSetView> VariantSetProxy;
 
@@ -61,7 +64,9 @@ void wrapVariantSpec()
                           return_value_policy<return_by_value>()),
             "The variant's name.")
         .add_property("variantSets",
-            &::_WrapGetVariantSetsProxy)
+            &_WrapGetVariantSetsProxy)
         .def("GetVariantNames", &This::GetVariantNames)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

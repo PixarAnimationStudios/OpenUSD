@@ -24,11 +24,16 @@
 #ifndef HD_DEBUGCODES_H
 #define HD_DEBUGCODES_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/debug.h"
 
-TF_DEBUG_CODES(
+PXR_NAMESPACE_OPEN_SCOPE
 
+
+TF_DEBUG_CODES(
+    HD_BPRIM_ADDED,
+    HD_BPRIM_REMOVED,
     HD_BUFFER_ARRAY_INFO,
     HD_BUFFER_ARRAY_RANGE_CLEANED,
     HD_CACHE_HITS,
@@ -68,5 +73,8 @@ TF_DEBUG_CODES(
     HD_TEXTURE_REMOVED,
     HD_VARYING_STATE
 );
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_DEBUGCODES_H

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformOp.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
@@ -33,6 +34,9 @@
 #include "pxr/base/gf/vec4d.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PUBLIC_TOKENS(UsdGeomXformOpTypes, USDGEOM_XFORM_OP_TYPES);
 
@@ -110,7 +114,7 @@ UsdGeomXformOp::UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp)
     : _attr(attr),
       _isInverseOp(isInverseOp)
 {
-    if (not attr) {
+    if (!attr) {
         TF_CODING_ERROR("UsdGeomXformOp created with invalid UsdAttribute.");
         return;
     }
@@ -138,7 +142,7 @@ UsdGeomXformOp::GetOpName() const
 bool 
 UsdGeomXformOp::IsXformOp(const UsdAttribute &attr)
 {
-    if (not attr)
+    if (!attr)
         return false;
 
     return IsXformOp(attr.GetName());
@@ -332,7 +336,7 @@ UsdGeomXformOp::UsdGeomXformOp(
     // Determine the typeName of the xformOp attribute to be created.
     const SdfValueTypeName &typeName = GetValueTypeName(opType, precision);
 
-    if (not typeName) { 
+    if (!typeName) { 
         TF_CODING_ERROR("Invalid xform-op: incompatible combination of "
             "opType (%s) and precision (%s).", 
             TfEnum::GetName(opType).c_str(),
@@ -345,7 +349,7 @@ UsdGeomXformOp::UsdGeomXformOp(
         /*isInverseOp*/ false);
 
     // attrName can never be empty.
-    TF_VERIFY(not attrName.IsEmpty());
+    TF_VERIFY(!attrName.IsEmpty());
 
     // Create an  attribute in the xformOp: namespace with the
     // computed typeName.
@@ -370,7 +374,7 @@ UsdGeomXformOp::GetOpName(
 {
     TfToken opName = _MakeNamespaced(GetOpTypeToken(opType));
 
-    if (not opSuffix.IsEmpty())
+    if (!opSuffix.IsEmpty())
         opName = TfToken(opName.GetString() + ":" + opSuffix.GetString());
 
     if (isInverseOp)
@@ -408,7 +412,7 @@ UsdGeomXformOp::GetOpTransform(UsdGeomXformOp::Type const opType,
             return GfMatrix4d(1.);
         } 
 
-        if (isMatrixVal and isInverseOp) {
+        if (isMatrixVal && isInverseOp) {
             double determinant=0;
             mat = mat.GetInverse(&determinant);
 
@@ -482,27 +486,27 @@ UsdGeomXformOp::GetOpTransform(UsdGeomXformOp::Type const opType,
                 switch (opType) {
                     case TypeRotateXYZ: 
                         // Inv(ABC) = Inv(C) * Inv(B) * Inv(A)
-                        rotationMat = not isInverseOp ? (xRot * yRot * zRot) 
+                        rotationMat = !isInverseOp ? (xRot * yRot * zRot) 
                                                       : (zRot * yRot * xRot);
                         break;
                     case TypeRotateXZY: 
-                        rotationMat = not isInverseOp ? (xRot * zRot * yRot)
+                        rotationMat = !isInverseOp ? (xRot * zRot * yRot)
                                                       : (yRot * zRot * xRot);
                         break;
                     case TypeRotateYXZ: 
-                        rotationMat = not isInverseOp ? (yRot * xRot * zRot)
+                        rotationMat = !isInverseOp ? (yRot * xRot * zRot)
                                                       : (zRot * xRot * yRot);
                         break;
                     case TypeRotateYZX: 
-                        rotationMat = not isInverseOp ? (yRot * zRot * xRot)
+                        rotationMat = !isInverseOp ? (yRot * zRot * xRot)
                                                       : (xRot * zRot * yRot);
                         break;
                     case TypeRotateZXY:
-                        rotationMat = not isInverseOp ? (zRot * xRot * yRot)
+                        rotationMat = !isInverseOp ? (zRot * xRot * yRot)
                                                       : (yRot * xRot * zRot);
                         break;
                     case TypeRotateZYX: 
-                        rotationMat = not isInverseOp ? (zRot * yRot * xRot)
+                        rotationMat = !isInverseOp ? (zRot * yRot * xRot)
                                                       : (xRot * yRot * zRot);
                         break;
                     default:
@@ -549,10 +553,13 @@ UsdGeomXformOp::GetOpTransform(UsdTimeCode time) const
     GfMatrix4d result(1);
 
     VtValue opVal;
-    if (not Get(&opVal, time))
+    if (!Get(&opVal, time))
         return result;
 
     result = GetOpTransform(GetOpType(), opVal, _isInverseOp); 
 
     return result;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

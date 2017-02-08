@@ -39,6 +39,11 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(HdInterleavedUBOMemoryManager);
 TF_INSTANTIATE_SINGLETON(HdInterleavedSSBOMemoryManager);
 
@@ -170,7 +175,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer
 
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     /*
        interleaved uniform buffer layout (for example)
@@ -255,7 +260,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer
 HdInterleavedMemoryManager::_StripedInterleavedBuffer::~_StripedInterleavedBuffer()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // invalidate buffer array ranges in range list
     // (these ranges may still be held by drawItems)
@@ -274,7 +279,7 @@ bool
 HdInterleavedMemoryManager::_StripedInterleavedBuffer::GarbageCollect()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (_needsCompaction) {
         RemoveUnusedRanges();
@@ -304,7 +309,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     HdBufferArraySharedPtr const &curRangeOwner)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // XXX: make sure glcontext
 
@@ -314,7 +319,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     size_t elementCount = 0;
     TF_FOR_ALL (it, ranges) {
         HdBufferArrayRangeSharedPtr const &range = *it;
-        if (not range) {
+        if (!range) {
             TF_CODING_ERROR("Expired range found in the reallocation list");
         }
         elementCount += (*it)->GetNumElements();
@@ -367,7 +372,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
             for (size_t rangeIdx = 0; rangeIdx < rangeCount; ++rangeIdx) {
                 _StripedInterleavedBufferRangeSharedPtr range = _GetRangeSharedPtr(rangeIdx);
 
-                if (not range) {
+                if (!range) {
                     TF_CODING_ERROR("_StripedInterleavedBufferRange expired "
                                     "unexpectedly.");
                     continue;
@@ -396,7 +401,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
             size_t rangeCount = GetRangeCount();
             for (size_t rangeIdx = 0; rangeIdx < rangeCount; ++rangeIdx) {
                 _StripedInterleavedBufferRangeSharedPtr range = _GetRangeSharedPtr(rangeIdx);
-                if (not range) {
+                if (!range) {
                     TF_CODING_ERROR("_StripedInterleavedBufferRange expired "
                                     "unexpectedly.");
                     continue;
@@ -486,9 +491,9 @@ bool
 HdInterleavedMemoryManager::_StripedInterleavedBufferRange::Resize(int numElements)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(_stripedBuffer)) return false;
+    if (!TF_VERIFY(_stripedBuffer)) return false;
 
     // interleaved BAR never needs to be resized, since numElements in buffer
     // resources is always 1. Note that the arg numElements of this function
@@ -506,25 +511,25 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     HdBufferSourceSharedPtr const &bufferSource)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(_stripedBuffer)) return;
+    if (!TF_VERIFY(_stripedBuffer)) return;
 
     HdBufferResourceSharedPtr VBO =
         _stripedBuffer->GetResource(bufferSource->GetName());
 
-    if (not VBO or VBO->GetId() == 0) {
+    if (!VBO || VBO->GetId() == 0) {
         TF_CODING_ERROR("VBO doesn't exist for %s",
                         bufferSource->GetName().GetText());
         return;
     }
 
     // overrun check
-    if (not TF_VERIFY(bufferSource->GetNumElements() == VBO->GetArraySize())) return;
+    if (!TF_VERIFY(bufferSource->GetNumElements() == VBO->GetArraySize())) return;
 
     // datatype of bufferSource has to match with bufferResource
-    if (not TF_VERIFY(bufferSource->GetGLComponentDataType() == VBO->GetGLDataType()) or
-        not TF_VERIFY(bufferSource->GetNumComponents() == VBO->GetNumComponents())) return;
+    if (!TF_VERIFY(bufferSource->GetGLComponentDataType() == VBO->GetGLDataType()) ||
+        !TF_VERIFY(bufferSource->GetNumComponents() == VBO->GetNumComponents())) return;
 
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
     if (glBufferSubData != NULL) {
@@ -542,7 +547,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
             // using glNamedBuffer against UBO randomly triggers a crash at
             // glXSwapBuffers on driver 319.32. It doesn't occur on 331.49.
             // XXX: move this workaround into renderContextCaps.
-            if (false and caps.directStateAccessEnabled) {
+            if (false && caps.directStateAccessEnabled) {
                 glNamedBufferSubDataEXT(VBO->GetId(), vboOffset, dataSize, data);
             } else {
                 glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId());
@@ -560,14 +565,14 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::ReadData(
     TfToken const &name) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     VtValue result;
-    if (not TF_VERIFY(_stripedBuffer)) return result;
+    if (!TF_VERIFY(_stripedBuffer)) return result;
 
     HdBufferResourceSharedPtr VBO = _stripedBuffer->GetResource(name);
 
-    if (not VBO or VBO->GetId() == 0) {
+    if (!VBO || VBO->GetId() == 0) {
         TF_CODING_ERROR("VBO doesn't exist for %s", name.GetText());
         return result;
     }
@@ -592,7 +597,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::GetMaxNumElements() 
 HdBufferResourceSharedPtr
 HdInterleavedMemoryManager::_StripedInterleavedBufferRange::GetResource() const
 {
-    if (not TF_VERIFY(_stripedBuffer)) return HdBufferResourceSharedPtr();
+    if (!TF_VERIFY(_stripedBuffer)) return HdBufferResourceSharedPtr();
 
     return _stripedBuffer->GetResource();
 }
@@ -601,7 +606,7 @@ HdBufferResourceSharedPtr
 HdInterleavedMemoryManager::_StripedInterleavedBufferRange::GetResource(
     TfToken const& name)
 {
-    if (not TF_VERIFY(_stripedBuffer))
+    if (!TF_VERIFY(_stripedBuffer))
         return HdBufferResourceSharedPtr();
 
     // don't use GetResource(void) as a shortcut even an interleaved buffer
@@ -613,7 +618,7 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::GetResource(
 HdBufferResourceNamedList const&
 HdInterleavedMemoryManager::_StripedInterleavedBufferRange::GetResources() const
 {
-    if (not TF_VERIFY(_stripedBuffer)) {
+    if (!TF_VERIFY(_stripedBuffer)) {
         static HdBufferResourceNamedList empty;
         return empty;
     }
@@ -639,3 +644,6 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::_GetAggregation() co
 {
     return _stripedBuffer;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -21,9 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/ar/resolverContextBinder.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/ar/resolver.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ArResolverContextBinder::ArResolverContextBinder(
     ArResolver* resolver,
@@ -52,3 +55,5 @@ ArResolverContextBinder::~ArResolverContextBinder()
         _resolver->_UnbindContext(_context, &_bindingData);
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

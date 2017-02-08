@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
@@ -62,6 +64,8 @@
 #include <string>
 #include <memory>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Vt_WrapArray {
 
@@ -122,7 +126,7 @@ setArraySlice(VtArray<T> &self, S value,
     const size_t length = len(value);
     if (length == 0)
         TfPyThrowValueError("No values with which to set array slice.");
-    if (not tile and length < setSize) {
+    if (!tile && length < setSize) {
         string msg = TfStringPrintf
             ("Not enough values to set slice.  Expected %zu, got %zu.",
              setSize, length);
@@ -146,7 +150,7 @@ setArraySlice(VtArray<T> &self, S value,
 
     // We're fine, go through and set them.  Handle common case as a fast
     // path.
-    if (range.step == 1 and length >= setSize) {
+    if (range.step == 1 && length >= setSize) {
         std::copy(extracted.begin(), extracted.begin() + setSize, range.start);
     }
     else {
@@ -180,7 +184,7 @@ setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
         const size_t length = val.size();
         if (length == 0)
             TfPyThrowValueError("No values with which to set array slice.");
-        if (not tile and length < setSize) {
+        if (!tile && length < setSize) {
             string msg = TfStringPrintf
                 ("Not enough values to set slice.  Expected %zu, got %zu.",
                  setSize, length);
@@ -195,7 +199,7 @@ setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
 
     // Copy from scalar.
     else if (extract<T>(value).check()) {
-        if (not tile) {
+        if (!tile) {
             // XXX -- We're allowing implicit tiling;  do we want to?
             //TfPyThrowValueError("can only assign an iterable.");
         }
@@ -517,13 +521,13 @@ Vt_ConvertFromPySequence(TfPyObjWrapper const &obj)
         ElemType *elem = result.data();
         for (size_t i = 0; i != len; ++i) {
             boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
-            if (not h) {
+            if (!h) {
                 if (PyErr_Occurred())
                     PyErr_Clear();
                 return VtValue();
             }
             boost::python::extract<ElemType> e(h.get());
-            if (not e.check())
+            if (!e.check())
                 return VtValue();
             *elem++ = e();
         }
@@ -575,3 +579,5 @@ void VtRegisterValueCastsFromPythonSequencesToArray()
     VtWrapArray< VtArray< VT_TYPE(elem) > >();
 #define VT_WRAP_COMPARISON(r, unused, elem)        \
     VtWrapComparisonFunctions< VtArray< VT_TYPE(elem) > >();
+
+PXR_NAMESPACE_CLOSE_SCOPE

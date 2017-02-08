@@ -27,11 +27,17 @@
 /// \file tf/pyInterpreter.h
 /// Python runtime utilities.
 
+#include "pxr/pxr.h"
+
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 /// Starts up the python runtime.
+/// IMPORTANT: The GIL will NOT be held when this returns.
+/// (If Python is already initialized, the GIL will be unchanged)
 ///
 /// The program name and arguments are set automatically. sys.argv has no
 /// arguments other than an argv[0] matching the program name.
@@ -78,5 +84,7 @@ TfPyRunFile(const std::string &filename, int start,
 /// Starts the interpreter if necessary. Deals with necessary thread state
 /// setup.
 extern std::string TfPyGetModulePath(const std::string & moduleName);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYINTERPRETER_H

@@ -28,6 +28,9 @@
 
 #include <climits>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<GlfTexture>();
@@ -120,3 +123,6 @@ GlfTexture::_UpdateContentsID()
 {
     _contentsID = _GetNewContentsID();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

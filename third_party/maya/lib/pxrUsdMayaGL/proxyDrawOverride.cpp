@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxrUsdMayaGL/proxyDrawOverride.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -37,6 +38,9 @@
 #include <maya/MPxDrawOverride.h>
 #include <maya/MString.h>
 #include <maya/MUserData.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 MString UsdMayaProxyDrawOverride::sm_drawDbClassification("drawdb/geometry/usdMaya");
@@ -102,7 +106,7 @@ UsdMayaProxyDrawOverride::getShape(const MDagPath& objPath)
     }
 
     UsdMayaProxyShape* pShape = static_cast<UsdMayaProxyShape*>(dnNode.userNode());
-    if (not pShape) {
+    if (!pShape) {
         MGlobal::displayError("Failed getting userNode");
         return NULL;
     }
@@ -185,3 +189,6 @@ UsdMayaProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUs
 {
     _GetBatchRenderer().Draw( context, data );
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

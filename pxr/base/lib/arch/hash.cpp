@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/hash.h"
 
 //
@@ -53,6 +55,8 @@
 
 #include <cstring>
 #include <cstddef>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef  uint64_t  uint64;
 typedef  uint32_t  uint32;
@@ -458,7 +462,7 @@ void SpookyHash::Hash128(
         while (u.p64 < end)
         { 
             Mix(u.p64, h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11);
-	    u.p64 += sc_numVars;
+            u.p64 += sc_numVars;
         }
     }
     else
@@ -467,7 +471,7 @@ void SpookyHash::Hash128(
         {
             memcpy(buf, u.p64, sc_blockSize);
             Mix(buf, h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11);
-	    u.p64 += sc_numVars;
+            u.p64 += sc_numVars;
         }
     }
 
@@ -475,7 +479,7 @@ void SpookyHash::Hash128(
     remainder = (length - ((const uint8 *)end-(const uint8 *)message));
     memcpy(buf, end, remainder);
     memset(((uint8 *)buf)+remainder, 0, sc_blockSize-remainder);
-    ((uint8 *)buf)[sc_blockSize-1] = remainder;
+    ((uint8 *)buf)[sc_blockSize-1] = static_cast<uint8>(remainder);
     
     // do some final mixing 
     End(buf, h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11);
@@ -563,7 +567,7 @@ void SpookyHash::Update(const void *message, size_t length)
         while (u.p64 < end)
         { 
             Mix(u.p64, h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11);
-	    u.p64 += sc_numVars;
+            u.p64 += sc_numVars;
         }
     }
     else
@@ -572,7 +576,7 @@ void SpookyHash::Update(const void *message, size_t length)
         { 
             memcpy(m_data, u.p8, sc_blockSize);
             Mix(m_data, h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11);
-	    u.p64 += sc_numVars;
+            u.p64 += sc_numVars;
         }
     }
 
@@ -661,7 +665,9 @@ uint64_t ArchHash64(const char *data, size_t len)
     return SpookyHash::Hash64(data, len, /*seed=*/0);
 }
 
-uint64_t ArchHash64(const char *data, size_t len, uint32_t seed)
+uint64_t ArchHash64(const char *data, size_t len, uint64_t seed)
 {
     return SpookyHash::Hash64(data, len, seed);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

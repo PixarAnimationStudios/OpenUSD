@@ -24,12 +24,16 @@
 #ifndef PCP_TYPES_H
 #define PCP_TYPES_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/pcp/site.h"
 
 #include <limits>
 #include <vector>
+
 #include <boost/operators.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \enum PcpArcType
 ///
@@ -86,7 +90,7 @@ enum PcpRangeType {
 inline bool 
 PcpIsInheritArc(PcpArcType arcType)
 {
-    return (arcType == PcpArcTypeLocalInherit or
+    return (arcType == PcpArcTypeLocalInherit ||
             arcType == PcpArcTypeGlobalInherit);
 }
 
@@ -95,7 +99,7 @@ PcpIsInheritArc(PcpArcType arcType)
 inline bool 
 PcpIsSpecializesArc(PcpArcType arcType)
 {
-    return (arcType == PcpArcTypeLocalSpecializes or
+    return (arcType == PcpArcTypeLocalSpecializes ||
             arcType == PcpArcTypeGlobalSpecializes);
 }
 
@@ -108,7 +112,7 @@ PcpIsSpecializesArc(PcpArcType arcType)
 inline bool
 PcpIsClassBasedArc(PcpArcType arcType)
 {
-    return PcpIsInheritArc(arcType) or PcpIsSpecializesArc(arcType);
+    return PcpIsInheritArc(arcType) || PcpIsSpecializesArc(arcType);
 }
 
 /// Returns true if \p arcType represents a local class-based
@@ -116,7 +120,7 @@ PcpIsClassBasedArc(PcpArcType arcType)
 inline bool
 PcpIsLocalClassBasedArc(PcpArcType arcType)
 {
-    return (arcType == PcpArcTypeLocalInherit or
+    return (arcType == PcpArcTypeLocalInherit ||
             arcType == PcpArcTypeLocalSpecializes);
 }
 
@@ -150,8 +154,8 @@ struct Pcp_SdSiteRef : boost::totally_ordered<Pcp_SdSiteRef> {
 
     bool operator<(const Pcp_SdSiteRef& other) const
     {
-        return layer < other.layer or
-               (not (other.layer < layer) and path < other.path);
+        return layer < other.layer ||
+               (!(other.layer < layer) && path < other.path);
     }
 
     // These are held by reference for performance,
@@ -189,5 +193,7 @@ typedef std::map<std::string, std::vector<std::string>> PcpVariantFallbackMap;
 /// either -1 or numeric_limits::max() (which are equivalent for size_t). 
 /// for better clarity.
 constexpr size_t PCP_INVALID_INDEX = std::numeric_limits<size_t>::max();
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_TYPES_H

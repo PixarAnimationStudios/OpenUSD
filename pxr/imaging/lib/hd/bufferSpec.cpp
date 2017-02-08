@@ -27,6 +27,9 @@
 
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 /*static*/
 bool
 HdBufferSpec::IsSubset(HdBufferSpecVector const &subset,
@@ -77,4 +80,7 @@ HdBufferSpec::Dump(HdBufferSpecVector const &specs)
                   << specs[i].arraySize << "\n";
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

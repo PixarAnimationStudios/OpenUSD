@@ -24,7 +24,11 @@
 #ifndef USDKATANA_DEBUGCODES_H
 #define USDKATANA_DEBUGCODES_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEBUG_CODES(
     USDKATANA_CACHE_RENDERER,
@@ -33,5 +37,8 @@ TF_DEBUG_CODES(
 
     USDKATANA_MESH_IMPORT
 );
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

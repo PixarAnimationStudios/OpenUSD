@@ -28,6 +28,9 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/diagnostic.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // ---------------------------------------------------------------------------
 Garch_GLPlatformDebugWindow::_className = _T("GarchGLDebugWindow");
 
@@ -136,7 +139,7 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
 {
     Garch_GLPlatformDebugWindow *window
         = Garch_GLPlatformDebugWindow::GetWindowByHandle(hWnd);
-    if (not TF_VERIFY(window)) {
+    if (!TF_VERIFY(window)) {
         return 0;
     }
 
@@ -185,12 +188,12 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
 void
 Garch_GLPlatformDebugWindow::Run()
 {
-    if (not _display) return;
+    if (!_display) return;
 
     _running = true;
 
     MSG msg = {0};
-    while (_running and message != WM_QUIT) {
+    while (_running && message != WM_QUIT) {
         if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
@@ -221,3 +224,6 @@ Garch_GLPlatformDebugWindow::ExitApp()
 {
     _running = false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

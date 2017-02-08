@@ -23,6 +23,7 @@
 //
 /// \file wrapStitchClips.cpp
 
+#include "pxr/pxr.h"
 #include <boost/python/def.hpp>
 #include <boost/python/extract.hpp>
 
@@ -31,13 +32,16 @@
 
 #include <limits>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 
 template <typename T>
 T
 _ConvertWithDefault(const object obj, const T& def)
 {
-    if (not TfPyIsNone(obj)) {
+    if (!TfPyIsNone(obj)) {
         return extract<T>(obj);
     } 
         
@@ -115,3 +119,6 @@ wrapStitchClips()
         _ConvertGenerateClipTopologyName,
         (arg("rootLayerName")));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

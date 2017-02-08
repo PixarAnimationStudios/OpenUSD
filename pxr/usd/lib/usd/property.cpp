@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/property.h"
 #include "pxr/usd/usd/resolver.h"
 #include "pxr/usd/usd/stage.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SdfPropertySpecHandleVector 
 UsdProperty::GetPropertyStack(UsdTimeCode time) const
@@ -37,7 +41,7 @@ UsdProperty::GetBaseName() const
     std::string const &fullName = _PropName().GetString();
     size_t delim = fullName.rfind(GetNamespaceDelimiter());
 
-    if (not TF_VERIFY(delim != fullName.size()-1))
+    if (!TF_VERIFY(delim != fullName.size()-1))
         return TfToken();
 
     return ((delim == std::string::npos) ?
@@ -51,7 +55,7 @@ UsdProperty::GetNamespace() const
     std::string const &fullName = _PropName().GetString();
     size_t delim = fullName.rfind(GetNamespaceDelimiter());
 
-    if (not TF_VERIFY(delim != fullName.size()-1))
+    if (!TF_VERIFY(delim != fullName.size()-1))
         return TfToken();
 
     return ((delim == std::string::npos) ?
@@ -166,9 +170,12 @@ UsdProperty::IsAuthoredAt(const UsdEditTarget &editTarget) const
 {
     if (editTarget.IsValid()) {
         SdfPath mappedPath = editTarget.MapToSpecPath(GetPrimPath());
-        return not mappedPath.IsEmpty() and
+        return !mappedPath.IsEmpty() &&
             editTarget.GetLayer()->HasSpec(
                 SdfAbstractDataSpecId(&mappedPath, &_PropName()));
     }
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

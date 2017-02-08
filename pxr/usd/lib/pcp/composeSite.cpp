@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/site.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/primSpec.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Implementation notes:
 //
@@ -100,7 +104,7 @@ PcpComposeSitePayload( const PcpLayerStackSite & site,
     static const TfToken field = SdfFieldKeys->Payload;
 
     TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field, result) and *result) {
+        if ((*layer)->HasField(site.path, field, result) && *result) {
             *sourceLayer = *layer;
             return;
         }
@@ -133,7 +137,7 @@ bool
 PcpComposeSiteHasSymmetry( const PcpLayerStackSite & site )
 {
     TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, SdfFieldKeys->SymmetryFunction) or
+        if ((*layer)->HasField(site.path, SdfFieldKeys->SymmetryFunction) ||
             (*layer)->HasField(site.path, SdfFieldKeys->SymmetryArguments)) {
             return true;
         }
@@ -285,3 +289,5 @@ PcpComposeSiteHasVariantSelections( const PcpLayerStackSite & site )
     
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

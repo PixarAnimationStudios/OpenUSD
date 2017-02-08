@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/work/loops.h"
 
 #include "pxr/base/work/arenaDispatcher.h"
@@ -34,6 +36,8 @@
 
 #include <cstdio>
 #include <iostream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static void
 _Double(size_t begin, size_t end, std::vector<int> *v)
@@ -162,7 +166,7 @@ _DoSignatureTest()
 int
 main(int argc, char **argv)
 {
-    const bool perfMode = ((argc > 1) and !strcmp(argv[1], "--perf")); 
+    const bool perfMode = ((argc > 1) && !strcmp(argv[1], "--perf")); 
     const size_t arraySize = 1000000;
     const size_t numIterations = perfMode ? 1000 : 1;
 
@@ -172,14 +176,14 @@ main(int argc, char **argv)
         WorkGetPhysicalConcurrencyLimit() << " cores..." << std::endl;
 
 
-    double tbbSeconds = _DoTBBTest(not perfMode, arraySize, numIterations);
+    double tbbSeconds = _DoTBBTest(!perfMode, arraySize, numIterations);
 
     std::cout << "TBB parallel_for took: " << tbbSeconds << " seconds" 
         << std::endl;
 
 
     double tbbForEachSeconds = _DoTBBTestForEach(
-        not perfMode, arraySize, numIterations);
+        !perfMode, arraySize, numIterations);
 
     std::cout << "TBB parallel_for_each took: " << tbbForEachSeconds
         << " seconds" << std::endl;

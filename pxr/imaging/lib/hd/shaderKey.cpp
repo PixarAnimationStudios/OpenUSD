@@ -27,11 +27,14 @@
 #include "pxr/base/tf/token.h"
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static
 std::string
 _JoinTokens(const char *stage, TfToken const *tokens, bool *firstStage)
 {
-    if ((not tokens) or tokens->IsEmpty()) return std::string();
+    if ((!tokens) || tokens->IsEmpty()) return std::string();
 
     std::stringstream ss;
 
@@ -42,7 +45,7 @@ _JoinTokens(const char *stage, TfToken const *tokens, bool *firstStage)
        << "\"source\" : [";
 
     bool first = true;
-    while (not tokens->IsEmpty()) {
+    while (!tokens->IsEmpty()) {
         if (first == false) ss << ", ";
         ss << "\"" << tokens->GetText() << "\"";
         ++tokens;
@@ -69,23 +72,23 @@ HdShaderKey::ComputeHash(TfToken const &glslfxFile,
 {
     ID hash = glslfxFile.Hash();
 
-    while (VS and (not VS->IsEmpty())) {
+    while (VS && (!VS->IsEmpty())) {
         boost::hash_combine(hash, VS->Hash());
         ++VS;
     }
-    while (TCS and (not TCS->IsEmpty())) {
+    while (TCS && (!TCS->IsEmpty())) {
         boost::hash_combine(hash, TCS->Hash());
         ++TCS;
     }
-    while (TES and (not TES->IsEmpty())) {
+    while (TES && (!TES->IsEmpty())) {
         boost::hash_combine(hash, TES->Hash());
         ++TES;
     }
-    while (GS and (not GS->IsEmpty())) {
+    while (GS && (!GS->IsEmpty())) {
         boost::hash_combine(hash, GS->Hash());
         ++GS;
     }
-    while (FS and (not FS->IsEmpty())) {
+    while (FS && (!FS->IsEmpty())) {
         boost::hash_combine(hash, FS->Hash());
         ++FS;
     }
@@ -110,7 +113,7 @@ HdShaderKey::GetGLSLFXString(TfToken const &glslfxFile,
 
     ss << "-- glslfx version 0.1\n";
 
-    if (not glslfxFile.IsEmpty())
+    if (!glslfxFile.IsEmpty())
         ss << "#import $TOOLS/hd/shaders/" << glslfxFile.GetText() << "\n";
 
     ss << "-- configuration\n"
@@ -126,3 +129,6 @@ HdShaderKey::GetGLSLFXString(TfToken const &glslfxFile,
 
     return ss.str();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

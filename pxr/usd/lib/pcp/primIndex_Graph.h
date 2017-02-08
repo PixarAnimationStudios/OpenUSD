@@ -24,6 +24,7 @@
 #ifndef PCP_PRIM_INDEX_GRAPH_H
 #define PCP_PRIM_INDEX_GRAPH_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/iterator.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node.h"
@@ -39,6 +40,8 @@
 
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpArc;
 class PcpLayerStackSite;
@@ -408,5 +411,7 @@ private:
     // the shared node pool.
     std::vector<bool> _nodeHasSpecs;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_PRIM_INDEX_GRAPH_H

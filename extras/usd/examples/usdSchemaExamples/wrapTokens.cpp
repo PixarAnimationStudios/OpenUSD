@@ -23,11 +23,14 @@
 //
 // GENERATED FILE.  DO NOT EDIT.
 #include "./tokens.h"
-
 #include "pxr/base/tf/pyStaticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapUsdSchemaExamplesTokens()
 {
     TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdSchemaExamplesTokens,
                              USDSCHEMAEXAMPLES_TOKENS);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

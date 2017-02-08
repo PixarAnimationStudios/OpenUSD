@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <boost/lexical_cast.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -142,7 +146,7 @@ PcpErrorArcCycle::ToString() const
             }
         }
         msg += TfStringPrintf("%s\n", TfStringify(segment.site).c_str());
-        if ((i > 0) and (i + 1 < cycle.size())) 
+        if ((i > 0) && (i + 1 < cycle.size())) 
             msg += "which ";
     }    
     return msg;
@@ -477,7 +481,7 @@ PcpErrorInvalidInstanceTargetPath::~PcpErrorInvalidInstanceTargetPath()
 std::string
 PcpErrorInvalidInstanceTargetPath::ToString() const
 {
-    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute or
+    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute ||
               ownerSpecType == SdfSpecTypeRelationship);
     return TfStringPrintf(
         "The %s <%s> from <%s> in layer @%s@ is authored in a class "
@@ -512,7 +516,7 @@ PcpErrorInvalidExternalTargetPath::~PcpErrorInvalidExternalTargetPath()
 std::string
 PcpErrorInvalidExternalTargetPath::ToString() const
 {
-    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute or
+    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute ||
               ownerSpecType == SdfSpecTypeRelationship);
     return TfStringPrintf("The %s <%s> from <%s> in layer @%s@ refers "
                           "to a path outside the scope of the %s from <%s>.  "
@@ -549,7 +553,7 @@ PcpErrorInvalidTargetPath::~PcpErrorInvalidTargetPath()
 std::string
 PcpErrorInvalidTargetPath::ToString() const
 {
-    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute or
+    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute ||
               ownerSpecType == SdfSpecTypeRelationship);
     return TfStringPrintf(
         "The %s <%s> from <%s> in layer @%s@ is invalid.  This may be "
@@ -848,7 +852,7 @@ PcpErrorTargetPermissionDenied::~PcpErrorTargetPermissionDenied()
 std::string
 PcpErrorTargetPermissionDenied::ToString() const
 {
-    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute or
+    TF_VERIFY(ownerSpecType == SdfSpecTypeAttribute ||
               ownerSpecType == SdfSpecTypeRelationship);
     return TfStringPrintf(
         "The %s <%s> from <%s> in layer @%s@ targets an object that is "
@@ -899,3 +903,5 @@ PcpRaiseErrors(const PcpErrorVector &errors)
         TF_RUNTIME_ERROR("%s", (*err)->ToString().c_str());
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,6 +24,7 @@
 #ifndef USDKATANA_CACHE_H
 #define USDKATANA_CACHE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/singleton.h"
@@ -32,6 +33,11 @@
 
 #include <map>
 #include <string>
+
+#include <FnAttribute/FnAttribute.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Forward declare pointers.
 SDF_DECLARE_HANDLES(SdfLayer);
@@ -51,9 +57,11 @@ class UsdKatanaCache : public TfSingleton<UsdKatanaCache>
 
     UsdKatanaCache();
 
-    /// Find a session layer with a given variant selection, or create a new
-    /// session layer and apply the variant selection to it before returning.
-    SdfLayerRefPtr& _FindOrCreateSessionLayer(std::string variantString);
+    /// Construct a session layer from the groupAttr encoding of variants
+    /// and deactivations -- or return a previously created one
+    SdfLayerRefPtr& _FindOrCreateSessionLayer(
+            FnAttribute::GroupAttribute sessionAttr, std::string rootLocation);
+
 
     /// Mute layers by name
     static void _SetMutedLayers(
@@ -73,41 +81,30 @@ public:
     /// Clear all caches
     void Flush();
 
-    /// Get (or create) a cached usd stage with a sessionlayer containing the
-    /// specified variant selections
+    
+    /// Get (or create) a cached usd stage with a sessionLayer containing
+    /// variant selections and activations (so far)
     UsdStageRefPtr GetStage(std::string const& fileName, 
-                            std::string const& variantSelections,
-                            std::string const& ignoreLayerRegex,
-                            bool forcePopulate);
-
-    /// Same as above, variant selections as an std::set<SdfPath> instead of str
-    UsdStageRefPtr GetStage(std::string const& fileName, 
-                            std::set<SdfPath> const& variantSelections,
+                            FnAttribute::GroupAttribute sessionAttr,
+                            const std::string & sessionRootLocation,
                             std::string const& ignoreLayerRegex,
                             bool forcePopulate);
     
     // Equivalent to GetStage above but without caching
     UsdStageRefPtr GetUncachedStage(std::string const& fileName, 
-                            std::string const& variantSelections,
+                            FnAttribute::GroupAttribute sessionAttr,
+                            const std::string & sessionRootLocation,
                             std::string const& ignoreLayerRegex,
                             bool forcePopulate);
-    
-    // Equivalent to GetStage above but without caching
-    UsdStageRefPtr GetUncachedStage(std::string const& fileName, 
-                            std::set<SdfPath> const& variantSelections,
-                            std::string const& ignoreLayerRegex,
-                            bool forcePopulate);
-
-
 
     /// Get (or create) a cached renderer for a given prim path.
     UsdImagingGLSharedPtr const& GetRenderer(UsdStageRefPtr const& stage,
                                              UsdPrim const& root,
-                                             std::string const& variants);
+                                             std::string const& sessionKey);
 
-    /// Converts std::set<SdfPath> variant selections into string
-    static std::string 
-    GetVariantSelectionString(std::set<SdfPath> const& variantSelections);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDKATANA_CACHE_H

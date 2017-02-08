@@ -21,14 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "debugCodes.h"
 
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(KATANA_USDBAKE_CONNECTIONS,
             "Diagnostics about connecting shader parameters");
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

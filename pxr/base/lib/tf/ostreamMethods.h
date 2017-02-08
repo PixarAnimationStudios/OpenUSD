@@ -38,7 +38,9 @@
 /// human-readable display; the formats described herein are subject to change
 /// without notice.
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/hashmap.h"
+
 #include <iostream>
 #include <vector>
 #include <list>
@@ -48,11 +50,15 @@
 
 #include <boost/type_traits/has_left_shift.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 template <class T>
 constexpr bool Tf_IsOstreamable() {
     return boost::has_left_shift<
         std::ostream &, /* << */ T, /* -> */ std::ostream &>::value;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 // These operator<< overloads need to go in the std namespace for
 // Koenig lookup to work.
@@ -61,7 +67,7 @@ namespace std {
 /// Output an STL vector using [ ] as delimiters.
 /// \ingroup group_tf_DebuggingOutput
 template <class T>
-typename std::enable_if<Tf_IsOstreamable<T>(), std::ostream &>::type
+typename std::enable_if<PXR_NS::Tf_IsOstreamable<T>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::vector<T> &v)
 {
     out << "[ ";
@@ -75,7 +81,7 @@ operator<<(std::ostream &out, const std::vector<T> &v)
 /// Output an STL set using ( ) as delimiters.
 /// \ingroup group_tf_DebuggingOutput
 template <class T>
-typename std::enable_if<Tf_IsOstreamable<T>(), std::ostream &>::type
+typename std::enable_if<PXR_NS::Tf_IsOstreamable<T>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::set<T> &v)
 {
     out << "( ";
@@ -89,7 +95,7 @@ operator<<(std::ostream &out, const std::set<T> &v)
 /// Output an STL list using { } as delimiters.
 /// \ingroup group_tf_DebuggingOutput
 template <class T>
-typename std::enable_if<Tf_IsOstreamable<T>(), std::ostream &>::type
+typename std::enable_if<PXR_NS::Tf_IsOstreamable<T>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::list<T> &l)
 {
     out << "{ ";
@@ -104,7 +110,7 @@ operator<<(std::ostream &out, const std::list<T> &l)
 /// \ingroup group_tf_DebuggingOutput
 template <class K, class M, class H, class C, class A>
 typename std::enable_if<
-    Tf_IsOstreamable<K>() and Tf_IsOstreamable<M>(), std::ostream &>::type
+    PXR_NS::Tf_IsOstreamable<K>() && PXR_NS::Tf_IsOstreamable<M>(), std::ostream &>::type
 operator<<(std::ostream &out, const TfHashMap<K, M, H, C, A> &h)
 {
     out << "< ";
@@ -118,7 +124,7 @@ operator<<(std::ostream &out, const TfHashMap<K, M, H, C, A> &h)
 /// \ingroup group_tf_DebuggingOutput
 template <class K, class M>
 typename std::enable_if<
-    Tf_IsOstreamable<K>() and Tf_IsOstreamable<M>(), std::ostream &>::type
+    PXR_NS::Tf_IsOstreamable<K>() && PXR_NS::Tf_IsOstreamable<M>(), std::ostream &>::type
 operator<<(std::ostream &out, const std::map<K, M> &h)
 {
     out << "< ";
@@ -130,4 +136,4 @@ operator<<(std::ostream &out, const std::map<K, M> &h)
 
 } // namespace std
 
-#endif /* TF_OSTREAMMETHODS_H */
+#endif // TF_OSTREAMMETHODS_H 

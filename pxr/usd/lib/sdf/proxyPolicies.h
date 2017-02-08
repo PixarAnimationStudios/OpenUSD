@@ -26,9 +26,12 @@
 
 /// \file sdf/proxyPolicies.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/spec.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfReference;
 class SdfMapperSpec;
@@ -127,7 +130,7 @@ private:
 template <>
 struct Vt_DefaultValueFactory<SdfPathKeyPolicy> {
     static Vt_DefaultValueHolder Invoke() {
-        TF_AXIOM(false and "Failed VtValue::Get<SdfPathKeyPolicy> not allowed");
+        TF_AXIOM(false && "Failed VtValue::Get<SdfPathKeyPolicy> not allowed");
         return Vt_DefaultValueHolder::Create((void*)0);
     }
 };
@@ -156,7 +159,7 @@ public:
 template <>
 struct Vt_DefaultValueFactory<SdfReferenceTypePolicy> {
     static Vt_DefaultValueHolder Invoke() {
-        TF_AXIOM(false and "Failed VtValue::Get<SdfReferenceTypePolicy> not allowed");
+        TF_AXIOM(false && "Failed VtValue::Get<SdfReferenceTypePolicy> not allowed");
         return Vt_DefaultValueHolder::Create((void*)0);
     }
 };
@@ -262,4 +265,6 @@ public:
     SdfRelationshipViewPredicate();
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PROXYPOLICIES_H

@@ -40,6 +40,9 @@
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/ptexTexture.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (rotate)
@@ -85,7 +88,7 @@ Hd_UnitTestDelegate::AddMesh(SdfPath const &id)
     TfToken scheme = PxOsdOpenSubdivTokens->catmullClark;
 
     AddMesh(id, transform, points, numVerts, verts, guide, instancerId, scheme);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -112,7 +115,7 @@ Hd_UnitTestDelegate::AddMesh(SdfPath const &id,
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, PxOsdSubdivTags(),
                         VtValue(GfVec4f(1)), CONSTANT, guide, doubleSided);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -142,7 +145,7 @@ Hd_UnitTestDelegate::AddMesh(SdfPath const &id,
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, subdivTags,
                         color, colorInterpolation, guide, doubleSided);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -171,7 +174,7 @@ Hd_UnitTestDelegate::AddBasisCurves(SdfPath const &id,
                           basis,
                           color, colorInterpolation,
                           width, widthInterpolation);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -195,7 +198,7 @@ Hd_UnitTestDelegate::AddPoints(SdfPath const &id,
     _points[id] = _Points(points,
                           color, colorInterpolation,
                           width, widthInterpolation);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -213,7 +216,7 @@ Hd_UnitTestDelegate::AddInstancer(SdfPath const &id,
     _instancers[id] = _Instancer();
     _instancers[id].rootTransform = rootTransform;
 
-    if (not parentId.IsEmpty()) {
+    if (!parentId.IsEmpty()) {
         _instancers[parentId].prototypes.push_back(id);
     }
 }
@@ -227,9 +230,9 @@ Hd_UnitTestDelegate::SetInstancerProperties(SdfPath const &id,
 {
     HD_TRACE_FUNCTION();
 
-    if (not TF_VERIFY(prototypeIndex.size() == scale.size()) or
-        not TF_VERIFY(prototypeIndex.size() == rotate.size()) or
-        not TF_VERIFY(prototypeIndex.size() == translate.size())) {
+    if (!TF_VERIFY(prototypeIndex.size() == scale.size())   || 
+        !TF_VERIFY(prototypeIndex.size() == rotate.size())  ||
+        !TF_VERIFY(prototypeIndex.size() == translate.size())) {
         return;
     }
 
@@ -254,7 +257,7 @@ Hd_UnitTestDelegate::AddTexture(SdfPath const& id,
                                 GlfTextureRefPtr const& texture)
 {
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertTexture<HdTexture>(this, id);
+    index.InsertBprim(HdPrimTypeTokens->texture, this, id);
     _textures[id] = _Texture(texture);
 }
 
@@ -405,15 +408,15 @@ Hd_UnitTestDelegate::IsInCollection(SdfPath const& id,
     // Visible collection.
     if (collectionName == HdTokens->geometry) {
         if (_Mesh *mesh = TfMapLookupPtr(_meshes, id)) {
-            return not mesh->guide;
+            return !mesh->guide;
         } else if (_curves.count(id) > 0) {
             return true;
         } else if (_points.count(id) > 0) {
             return true;
         }
     } else if (collectionName == Hd_UnitTestTokens->geometryAndGuides) {
-        return (_meshes.count(id) > 0 or
-                _curves.count(id) > 0 or
+        return (_meshes.count(id) > 0 ||
+                _curves.count(id) > 0 ||
                 _points.count(id));
     }
 
@@ -848,7 +851,7 @@ Hd_UnitTestDelegate::GetPrimVarInstanceNames(SdfPath const &id)
     HD_TRACE_FUNCTION();
 
     TfTokenVector names;
-    if (not _hasInstancePrimVars) return names;
+    if (!_hasInstancePrimVars) return names;
     if (_instancers.find(id) != _instancers.end()) {
         names.push_back(_tokens->scale);
         names.push_back(_tokens->rotate);
@@ -1009,6 +1012,7 @@ _CreateGrid(int nx, int ny, std::vector<GfVec3f> *points,
             std::vector<int> *numVerts, std::vector<int> *verts,
             GfMatrix4f const &transform)
 {
+    if (nx == 0 && ny == 0) return;
     // create a unit plane (-1 ~ 1)
     for (int y = 0; y <= ny; ++y) {
         for (int x = 0; x <= nx; ++x) {
@@ -1604,3 +1608,6 @@ Hd_UnitTestDelegate::PopulateInvalidPrimsSet()
 
     return GfVec3f(0);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

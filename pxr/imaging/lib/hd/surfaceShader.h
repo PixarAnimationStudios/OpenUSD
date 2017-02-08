@@ -24,7 +24,8 @@
 #ifndef HD_SURFACESHADER_H
 #define HD_SURFACESHADER_H
 
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/pxr.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -36,6 +37,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdSceneDelegate;
 
@@ -52,15 +56,11 @@ typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 /// can use this object to express these surface shaders in Hydra. In addition
 /// to the shader itself, a binding from the Rprim to the SurfaceShader must be
 /// expressed as well.
-class HdSurfaceShader : public HdShader {
+class HdSurfaceShader : public HdShaderCode {
 public:
-    HdSurfaceShader(HdSceneDelegate* delegate,
-                    SdfPath const & id);
+    HdSurfaceShader(SdfPath const & id);
 
     virtual ~HdSurfaceShader();
-
-    /// Returns the HdSceneDelegate which backs this shader.
-    HdSceneDelegate* GetDelegate() const { return _delegate; }
 
     /// Returns the identifer by which this surface shader is known. This
     /// identifier is a common associative key used by the SceneDelegate,
@@ -69,7 +69,7 @@ public:
 
     /// Synchronizes state from the delegate to Hydra, for example, allocating
     /// parameters into GPU memory.
-    void Sync();
+    void Sync(HdSceneDelegate *sceneDelegate);
 
     // ---------------------------------------------------------------------- //
     /// \name HdShader Virtual Interface                                      //
@@ -84,8 +84,8 @@ public:
     virtual ID ComputeHash() const;
 
     /// Returns if the two shaders can be aggregated in a same drawbatch or not.
-    static bool CanAggregate(HdShaderSharedPtr const &shaderA,
-                             HdShaderSharedPtr const &shaderB);
+    static bool CanAggregate(HdShaderCodeSharedPtr const &shaderA,
+                             HdShaderCodeSharedPtr const &shaderB);
 
 protected:
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
@@ -101,6 +101,14 @@ private:
     HdShaderParamVector _params;
 
     TextureDescriptorVector _textureDescriptors;
+
+    // No copying
+    HdSurfaceShader(const HdSurfaceShader &)                     = delete;
+    HdSurfaceShader &operator =(const HdSurfaceShader &)         = delete;
+
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_SURFACESHADER_H

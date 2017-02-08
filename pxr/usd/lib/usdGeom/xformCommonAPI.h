@@ -24,6 +24,7 @@
 #ifndef USDGEOM_GENERATED_XFORMCOMMONAPI_H
 #define USDGEOM_GENERATED_XFORMCOMMONAPI_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/stage.h"
@@ -35,6 +36,9 @@
 #include "pxr/base/tf/type.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // -------------------------------------------------------------------------- //
 // XFORMCOMMONAPI                                                             //
@@ -255,22 +259,22 @@ private:
 
     // Convenience functions 
     bool _HasTranslateOp() const {
-        return TF_VERIFY(_computedOpIndices) and 
+        return TF_VERIFY(_computedOpIndices) &&
                _translateOpIndex != _InvalidIndex;
     }
 
     bool _HasRotateOp() const {
-        return TF_VERIFY(_computedOpIndices) and 
+        return TF_VERIFY(_computedOpIndices) &&
                _rotateOpIndex != _InvalidIndex;
     }
     
     bool _HasScaleOp() const {
-        return TF_VERIFY(_computedOpIndices) and 
+        return TF_VERIFY(_computedOpIndices) &&
                _scaleOpIndex != _InvalidIndex;
     }
 
     bool _HasPivotOp () const {
-        return TF_VERIFY(_computedOpIndices) and 
+        return TF_VERIFY(_computedOpIndices) &&
                _pivotOpIndex != _InvalidIndex;
     }
 
@@ -294,5 +298,8 @@ private:
     int _scaleOpIndex;
     int _pivotOpIndex;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

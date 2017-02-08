@@ -24,8 +24,8 @@
 #ifndef SDF_PARSER_HELPERS_H
 #define SDF_PARSER_HELPERS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/types.h"
-
 #include "pxr/base/arch/inttypes.h"
 
 #include <boost/function.hpp>
@@ -41,6 +41,8 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Sdf_ParserHelpers {
 
@@ -93,10 +95,10 @@ struct _GetImpl<
     T operator()(uint64_t in) { return _Cast(in); }
     T operator()(int64_t in) { return _Cast(in); }
 
-    // Static cast finite doubles, throw otherwise.
+    // Attempt to cast finite doubles, throw otherwise.
     T operator()(double in) {
         if (std::isfinite(in))
-            return static_cast<T>(in);
+            return _Cast(in);
         throw boost::bad_get();
     }
 
@@ -194,7 +196,7 @@ struct _GetImpl<bool> : public boost::static_visitor<bool>
     bool operator()(const std::string &str) {
         bool parseOK = false;
         bool result = SdfBoolFromString(str, &parseOK);
-        if (not parseOK)
+        if (!parseOK)
             throw boost::bad_get();
         return result;
     }
@@ -341,5 +343,6 @@ ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
 std::string Sdf_EvalQuotedString(const char* x, size_t n, size_t trimBothSides,
                                  unsigned int* numLines = NULL);
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PARSER_HELPERS_H

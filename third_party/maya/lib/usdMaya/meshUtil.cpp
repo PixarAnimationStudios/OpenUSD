@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/meshUtil.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -35,6 +36,9 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
     PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
@@ -63,17 +67,20 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 // This can be customized for specific pipeline
 // We read the USD bool attribute, if not present we look for the mojito bool attribute
-bool PxrUsdMayaMeshUtil::getEmitNormals(const MFnMesh &mesh)
+bool PxrUsdMayaMeshUtil::getEmitNormals(const MFnMesh &mesh, const TfToken& subdivScheme)
 {
     MPlug plug = mesh.findPlug(MString(_meshTokens->USD_EmitNormals.GetText()));
     if (plug.isNull()) {
         plug = mesh.findPlug(MString("mjtoMeshVtxNormals"));
     }
-    if (not plug.isNull() and plug.asBool()) {
-        return true;
+    if (!plug.isNull()) { 
+        return plug.asBool();
     }
 
-    return false;
+    // We only emit normals by default if it wasn't explicitly set (above) and
+    // the subdiv scheme is "polygonal".  note, we currently only ever call this
+    // function with subdivScheme == none...
+    return subdivScheme == UsdGeomTokens->none;
 }
 
 TfToken PxrUsdMayaMeshUtil::setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue)
@@ -276,12 +283,12 @@ TfToken PxrUsdMayaMeshUtil::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
         sdFVLinearInterpolation = _getSubdivFVInterpBoundary(mesh);
     }
 
-    if (not sdFVLinearInterpolation.IsEmpty() and
-            sdFVLinearInterpolation != UsdGeomTokens->all and
-            sdFVLinearInterpolation != UsdGeomTokens->none and
-            sdFVLinearInterpolation != UsdGeomTokens->boundaries and
-            sdFVLinearInterpolation != UsdGeomTokens->cornersOnly and
-            sdFVLinearInterpolation != UsdGeomTokens->cornersPlus1 and
+    if (!sdFVLinearInterpolation.IsEmpty()                      && 
+            sdFVLinearInterpolation != UsdGeomTokens->all          && 
+            sdFVLinearInterpolation != UsdGeomTokens->none         && 
+            sdFVLinearInterpolation != UsdGeomTokens->boundaries   && 
+            sdFVLinearInterpolation != UsdGeomTokens->cornersOnly  && 
+            sdFVLinearInterpolation != UsdGeomTokens->cornersPlus1 && 
             sdFVLinearInterpolation != UsdGeomTokens->cornersPlus2) {
         MGlobal::displayError("Unsupported Face Varying Linear Interpolation Attribute: " +
             MString(sdFVLinearInterpolation.GetText()) + " on mesh: " + MString(mesh.fullPathName()));
@@ -364,3 +371,6 @@ TfToken PxrUsdMayaMeshUtil::setSubdivFVLinearInterpolation(const UsdGeomMesh &pr
 
     return fvLinearInterpolation;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -21,18 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/tf/patternMatcher.h"
-#include "pxr/base/tf/stringUtils.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/tf/patternMatcher.h"
 
 using namespace std;
 
-
-
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfPatternMatcher::TfPatternMatcher() :
     _caseSensitive( false ),
-    _invalidReason( "uncompiled pattern" ),
     _isGlob( false ),
     _recompile( true )
 {
@@ -42,7 +40,6 @@ TfPatternMatcher::TfPatternMatcher() :
 TfPatternMatcher::TfPatternMatcher( const string &pattern,
                                     bool caseSensitive, bool isGlob ) :
     _caseSensitive( caseSensitive ),
-    _invalidReason( "uncompiled pattern" ),
     _isGlob( isGlob ),
     _pattern( pattern ),
     _recompile( true )
@@ -52,39 +49,39 @@ TfPatternMatcher::TfPatternMatcher( const string &pattern,
 
 TfPatternMatcher::~TfPatternMatcher()
 {
-    _CleanUp();
+    // Do nothing.
 }
 
+
+string
+TfPatternMatcher::GetInvalidReason() const
+{
+    _Compile();
+    return _regex.GetError();
+}
 
 bool
 TfPatternMatcher::IsValid() const
 {
     _Compile();
-    return _invalidReason.empty();
+    return static_cast<bool>(_regex);
 }
 
 bool
 TfPatternMatcher::Match( const string &query, string *errorMsg ) const
 {
-    bool matches = false;
     if( IsValid() ) {
-        int result = regexec( &_regex, query.c_str(), 0, NULL, 0 );
-        if( (result == 0) || (result == REG_NOMATCH) ) {
-            matches = (result == 0);
-            if( errorMsg ) {
-                errorMsg->clear();
-            }
-        } else {
-            if( errorMsg ) {
-                *errorMsg = _GetRegErrorMessage( result );
-            }
+        if( errorMsg ) {
+            errorMsg->clear();
         }
+
+        return _regex.Match(query);
     } else {
         if( errorMsg ) {
-            *errorMsg = GetInvalidReason();
+            *errorMsg = _regex.GetError();
         }
+        return false;
     }
-    return matches;
 }
 
 
@@ -117,18 +114,7 @@ TfPatternMatcher::SetPattern( const string &pattern )
 }
 
 
-
-
-
 ////////////////////////////////// Private ////////////////////////////////
-
-void
-TfPatternMatcher::_CleanUp() const {
-    if( _invalidReason.empty() ) {
-        regfree( &_regex );
-        _invalidReason = "uncompiled pattern";
-    }
-}
 
 
 void
@@ -138,54 +124,13 @@ TfPatternMatcher::_Compile() const
 
         _recompile = false;
 
-        _CleanUp();
+        const auto flags =
+            (IsCaseSensitive() ? 0 : ArchRegex::CASE_INSENSITIVE) |
+            (IsGlobPattern()   ? ArchRegex::GLOB : 0);
 
-        _invalidReason.clear();
-        
-        // According to POSIX, empty patterns are not valid.  This test is here
-        // because some implemenations (Linux) are a bit sloppy about this.
-        if( _pattern.empty() ) {
-            _invalidReason = "empty (sub)expression";
-            return;
-        }
-
-        string pattern = _ConvertPatternToRegex();
-
-        int flags =
-            REG_EXTENDED | REG_NEWLINE | (IsCaseSensitive() ? 0 : REG_ICASE);
-        int result = regcomp( &_regex, pattern.c_str(), flags );
-        if( result != 0 ) {
-            _invalidReason = _GetRegErrorMessage( result );
-            if( _invalidReason.empty() ) {
-                // CODE_COVERAGE_OFF - this should never happen
-                _invalidReason = "unknown reason";
-                // CODE_COVERAGE_ON
-            }
-            return;
-        }
-
+        _regex = ArchRegex(_pattern, flags);
     }
 }
 
 
-string
-TfPatternMatcher::_ConvertPatternToRegex() const
-{
-    return IsGlobPattern() ? TfStringGlobToRegex(_pattern) : _pattern;
-}
-
-
-string
-TfPatternMatcher::_GetRegErrorMessage( int code ) const
-{
-    string ret;
-    if( code != 0 ) {
-        char error[256];
-        error[0] = '\0';
-        regerror( code, &_regex, error, sizeof(error)/sizeof(error[0]) );
-        ret = error;
-    }
-    return ret;
-}
-
-
+PXR_NAMESPACE_CLOSE_SCOPE

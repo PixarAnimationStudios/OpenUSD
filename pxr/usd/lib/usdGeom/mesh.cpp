@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -51,7 +53,7 @@ UsdGeomMesh::~UsdGeomMesh()
 UsdGeomMesh
 UsdGeomMesh::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomMesh();
     }
@@ -64,7 +66,7 @@ UsdGeomMesh::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Mesh");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomMesh();
     }
@@ -322,11 +324,18 @@ UsdGeomMesh::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 const float UsdGeomMesh::SHARPNESS_INFINITE = 1e38;
 
@@ -363,3 +372,4 @@ TfToken UsdGeomMesh::GetFaceVaryingLinearInterpolation(UsdTimeCode time) const
     return UsdGeomTokens->cornersPlus1;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

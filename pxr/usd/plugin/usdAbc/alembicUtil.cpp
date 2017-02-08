@@ -23,10 +23,14 @@
 //
 /// \file alembicUtil.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicUtil.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include <Alembic/Abc/IArrayProperty.h>
 #include <Alembic/Abc/IScalarProperty.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PUBLIC_TOKENS(UsdAbc_AlembicContextFlagNames,
                         USDABC_ALEMBIC_CONTEXT_FLAG_NAMES);
@@ -75,8 +79,8 @@ UsdAbc_AlembicType::Stringify() const
 bool
 UsdAbc_AlembicType::operator==(const UsdAbc_AlembicType& rhs) const
 {
-    return pod    == rhs.pod and
-           extent == rhs.extent and
+    return pod    == rhs.pod &&
+           extent == rhs.extent &&
            array  == rhs.array;
 }
 
@@ -254,7 +258,7 @@ UsdAbc_AlembicDataConversion::GetToUsdConverter(
     const SdfValueTypeName &usdType) const
 {
     for (const auto& c : _typeConverters) {
-        if (c.usdType == usdType and c.abcType == alembicType) {
+        if (c.usdType == usdType && c.abcType == alembicType) {
             return c.toUsdFn;
         }
     }
@@ -353,3 +357,6 @@ UsdAbc_AlembicConversions::UsdAbc_AlembicConversions()
 }
 
 } // namespace UsdAbc_AlembicUtil
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

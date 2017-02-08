@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/plug/info.h"
 #include "pxr/base/plug/debugCodes.h"
 #include "pxr/base/js/json.h"
@@ -36,6 +38,8 @@
 #include <fstream>
 #include <regex>
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -83,7 +87,7 @@ _MergePaths(
     bool keepTrailingSlash = false)
 {
     // Return absolute or empty path as is.
-    if (subpathname.empty() or subpathname[0] == '/') {
+    if (subpathname.empty() || subpathname[0] == '/') {
         return subpathname;
     }
 
@@ -92,7 +96,7 @@ _MergePaths(
         TfStringCatPaths(TfGetPathName(ownerPathname), subpathname);
 
     // Retain trailing slash if request and if any.
-    return (keepTrailingSlash and *subpathname.rbegin() == '/')
+    return (keepTrailingSlash && *subpathname.rbegin() == '/')
            ? result + "/"
            : result;
 }
@@ -146,7 +150,7 @@ _ReadPlugInfoObject(const std::string& pathname, JsObject* result)
     // The file may not exist or be readable.
     std::ifstream ifs;
     ifs.open(pathname.c_str());
-    if (not ifs.is_open()) {
+    if (!ifs.is_open()) {
         TF_DEBUG(PLUG_INFO_SEARCH).
             Msg("Failed to open plugin info %s\n", pathname.c_str());
         return false;
@@ -176,7 +180,7 @@ _ReadPlugInfoObject(const std::string& pathname, JsObject* result)
                          "(line %d, col %d): %s", pathname.c_str(),
                          error.line, error.column, error.reason.c_str());
     }
-    else if (not plugInfo.IsObject()) {
+    else if (!plugInfo.IsObject()) {
         // The contents didn't evaluate to a json object....
         TF_RUNTIME_ERROR("Plugin info file %s did not contain a JSON object",
                          pathname.c_str());
@@ -204,7 +208,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     }
 
     // Ignore redundant reads.  This also prevents infinite recursion.
-    if (not context->addVisitedPath(pathname)) {
+    if (!context->addVisitedPath(pathname)) {
         TF_DEBUG(PLUG_INFO_SEARCH).
             Msg("Ignore already read plugin info %s\n", pathname.c_str());
         return true;
@@ -214,7 +218,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     TF_DEBUG(PLUG_INFO_SEARCH).
         Msg("Will read plugin info %s\n", pathname.c_str());
     JsObject top;
-    if (not _ReadPlugInfoObject(pathname, &top)) {
+    if (!_ReadPlugInfoObject(pathname, &top)) {
         return false;
     }
     TF_DEBUG(PLUG_INFO_SEARCH).
@@ -224,7 +228,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     JsObject::const_iterator i;
     i = top.find(_Tokens->PluginsKey);
     if (i != top.end()) {
-        if (not i->second.IsArray()) {
+        if (!i->second.IsArray()) {
             TF_RUNTIME_ERROR("Plugin info file %s key '%s' "
                              "doesn't hold an array",
                              pathname.c_str(), i->first.c_str());
@@ -238,7 +242,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     }
     i = top.find(_Tokens->IncludesKey);
     if (i != top.end()) {
-        if (not i->second.IsArray()) {
+        if (!i->second.IsArray()) {
             TF_RUNTIME_ERROR("Plugin info file %s key '%s' "
                              "doesn't hold an array",
                              pathname.c_str(), i->first.c_str());
@@ -246,7 +250,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
         else {
             const JsArray& includes = i->second.GetJsArray();
             for (size_t j = 0, n = includes.size(); j != n; ++j) {
-                if (not includes[j].IsString()) {
+                if (!includes[j].IsString()) {
                     TF_RUNTIME_ERROR("Plugin info file %s key '%s' "
                                      "index %zd doesn't hold a string",
                                      pathname.c_str(), i->first.c_str(), j);
@@ -267,7 +271,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     // Report unexpected keys.
     for (const auto& v : top) {
         const JsObject::key_type& key = v.first;
-        if (key != _Tokens->PluginsKey and
+        if (key != _Tokens->PluginsKey && 
             key != _Tokens->IncludesKey) {
             TF_RUNTIME_ERROR("Plugin info file %s has unknown key %s",
                              pathname.c_str(), key.c_str());
@@ -294,7 +298,7 @@ _TranslateWildcardToRegex(const std::string& wildcard)
             break;
 
         case '*':
-            if (i + 1 != n and wildcard[i + 1] == '*') {
+            if (i + 1 != n && wildcard[i + 1] == '*') {
                 // ** => match anything
                 result.append(".*", 2);
 
@@ -398,7 +402,7 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
     // Append implied filename and build full regex string.
     pattern = TfStringPrintf("%s/%s%s",
                              dirname.c_str(), pattern.c_str(),
-                             not pattern.empty() and *pattern.rbegin() == '/'
+                             !pattern.empty() && *pattern.rbegin() == '/'
                              ? _Tokens->PlugInfoName.GetText() : "");
 
     std::shared_ptr<std::regex> re;
@@ -526,7 +530,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     JsObject::const_iterator i;
 
     // Validate
-    if (not value.IsObject()) {
+    if (!value.IsObject()) {
         TF_RUNTIME_ERROR("Plugin info %s doesn't hold an object; "
                          "plugin ignored",
                          locationForErrorReporting.c_str());
@@ -538,7 +542,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     key = &_Tokens->TypeKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
-        if (not i->second.IsString()) {
+        if (!i->second.IsString()) {
             errorMessage = "doesn't hold a string";
             goto error;
         }
@@ -568,7 +572,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     key = &_Tokens->NameKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
-        if (not i->second.IsString()) {
+        if (!i->second.IsString()) {
             errorMessage = "doesn't hold a string";
             goto error;
         }
@@ -589,7 +593,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     key = &_Tokens->RootKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
-        if (not i->second.IsString()) {
+        if (!i->second.IsString()) {
             errorMessage = "doesn't hold a string";
             goto error;
         }
@@ -609,7 +613,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     key = &_Tokens->LibraryPathKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
-        if (not i->second.IsString()) {
+        if (!i->second.IsString()) {
             errorMessage = "doesn't hold a string";
             goto error;
         }
@@ -630,7 +634,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     key = &_Tokens->ResourcePathKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
-        if (not i->second.IsString()) {
+        if (!i->second.IsString()) {
             errorMessage = "doesn't hold a string";
             goto error;
         }
@@ -650,7 +654,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     key = &_Tokens->InfoKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
-        if (not i->second.IsObject()) {
+        if (!i->second.IsObject()) {
             errorMessage = "doesn't hold an object";
             goto error;
         }
@@ -666,11 +670,11 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     // Report unexpected keys.
     for (const auto& v : topInfo) {
         const JsObject::key_type& subkey = v.first;
-        if (subkey != _Tokens->TypeKey and
-            subkey != _Tokens->NameKey and
-            subkey != _Tokens->InfoKey and
-            subkey != _Tokens->RootKey and
-            subkey != _Tokens->LibraryPathKey and
+        if (subkey != _Tokens->TypeKey && 
+            subkey != _Tokens->NameKey && 
+            subkey != _Tokens->InfoKey && 
+            subkey != _Tokens->RootKey && 
+            subkey != _Tokens->LibraryPathKey &&
             subkey != _Tokens->ResourcePathKey) {
             TF_RUNTIME_ERROR("Plugin info %s: ignoring unknown key '%s'",
                              locationForErrorReporting.c_str(),
@@ -701,7 +705,7 @@ Plug_ReadPlugInfo(
         // don't end in "/" to be handled as directories.  Includes in
         // plugInfo files must still explicitly append '/' to be handled
         // as directories.
-        if (not pathname.empty() and *pathname.rbegin() != '/') {
+        if (!pathname.empty() && *pathname.rbegin() != '/') {
             context.taskArena.Run(
                 boost::bind(_ReadPlugInfoWithWildcards, &context,
                             pathname + "/"));
@@ -714,3 +718,5 @@ Plug_ReadPlugInfo(
     context.taskArena.Wait();
     TF_DEBUG(PLUG_INFO_SEARCH).Msg("Did check plugin info paths\n");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

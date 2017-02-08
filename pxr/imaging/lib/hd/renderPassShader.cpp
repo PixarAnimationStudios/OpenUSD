@@ -29,6 +29,8 @@
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -37,13 +39,17 @@
 
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((_uint, "uint"))
 );
 
 HdRenderPassShader::HdRenderPassShader()
-    : _glslfxFile(HdPackageRenderPassShader())
+    : HdShaderCode()
+    , _glslfxFile(HdPackageRenderPassShader())
     , _hash(0)
     , _hashValid(false)
     , _cullStyle(HdCullStyleNothing)
@@ -52,7 +58,8 @@ HdRenderPassShader::HdRenderPassShader()
 }
 
 HdRenderPassShader::HdRenderPassShader(TfToken const &glslfxFile)
-    : _glslfxFile(glslfxFile)   // user-defined
+    : HdShaderCode()
+    , _glslfxFile(glslfxFile)   // user-defined
     , _hash(0)
     , _hashValid(false)
     , _cullStyle(HdCullStyleNothing)
@@ -93,7 +100,7 @@ std::string
 HdRenderPassShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     return _glslfx->GetSource(shaderStageKey);
 }
@@ -180,3 +187,6 @@ HdRenderPassShader::AddBindings(HdBindingRequestVector *customBindings)
         HdBindingRequest(HdBinding::UNIFORM,
                          HdShaderTokens->cullStyle, _tokens->_uint));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

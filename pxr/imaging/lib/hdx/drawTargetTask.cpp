@@ -23,6 +23,8 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/cameraUtil/conformWindow.h"
+
 #include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
@@ -36,10 +38,14 @@
 
 #include "pxr/imaging/glf/drawTarget.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
                                      SdfPath const& id)
  : HdSceneTask(delegate, id)
  , _currentDrawTargetSetVersion(0)
+ , _renderPassesInfo()
  , _renderPasses()
  , _depthBiasUseDefault(true)
  , _depthBiasEnable(false)
@@ -53,7 +59,7 @@ void
 HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     TRACE_FUNCTION();
     TfAutoMallocTag2 tag("GlimRg", __PRETTY_FUNCTION__);
@@ -63,7 +69,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     if (bits & HdChangeTracker::DirtyParams) {
         HdxDrawTargetTaskParams params;
 
-        if (not _GetSceneDelegateValue(HdTokens->params, &params)) {
+        if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
             return;
         }
 
@@ -101,23 +107,25 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         = changeTracker.GetStateVersion(HdxDrawTargetTokens->drawTargetSet);
 
     if (_currentDrawTargetSetVersion != drawTargetVersion) {
-        HdxDrawTargetSharedPtrVector drawTargets;
+        HdxDrawTargetPtrConstVector drawTargets;
         HdxDrawTarget::GetDrawTargets(delegate, &drawTargets);
 
+        _renderPassesInfo.clear();
         _renderPasses.clear();
 
         size_t numDrawTargets = drawTargets.size();
+        _renderPassesInfo.reserve(numDrawTargets);
         _renderPasses.reserve(numDrawTargets);
 
         for (size_t drawTargetNum = 0;
              drawTargetNum < numDrawTargets;
              ++drawTargetNum) {
 
-            HdxDrawTargetSharedPtr drawTarget = drawTargets[drawTargetNum];
+            const HdxDrawTarget *drawTarget = drawTargets[drawTargetNum];
             if (drawTarget) {
                 if (drawTarget->IsEnabled()) {
                     HdxDrawTargetRenderPassUniquePtr pass(
-                                      new HdxDrawTargetRenderPass(&renderIndex));
+                                    new HdxDrawTargetRenderPass(&renderIndex));
 
                     pass->SetDrawTarget(drawTarget->GetGlfDrawTarget());
                     pass->SetRenderPassState(drawTarget->GetRenderPassState());
@@ -127,37 +135,40 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
                     HdxSimpleLightingShaderSharedPtr simpleLightingShader(
                         new HdxSimpleLightingShader());
 
-                    _renderPasses.emplace_back(
+                    _renderPassesInfo.emplace_back(
                             RenderPassInfo {
-                                    std::move(pass),
                                     renderPassState,
                                     simpleLightingShader,
                                     drawTarget,
                                     drawTarget->GetVersion()
                              });
+                    _renderPasses.emplace_back(std::move(pass));
                 }
             }
         }
         _currentDrawTargetSetVersion = drawTargetVersion;
     } else {
-        size_t numRenderPasses = _renderPasses.size();
+        size_t numRenderPasses = _renderPassesInfo.size();
 
         // Need to look for changes in individual draw targets.
         for (size_t renderPassIdx = 0;
              renderPassIdx < numRenderPasses;
              ++renderPassIdx) {
-            RenderPassInfo &renderPassInfo =  _renderPasses[renderPassIdx];
-            HdxDrawTargetSharedPtr target = renderPassInfo.target.lock();
+            RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
+
+            const HdxDrawTarget *target = renderPassInfo.target;
             unsigned int targetVersion = target->GetVersion();
 
             if (renderPassInfo.version != targetVersion) {
-
-                renderPassInfo.pass->SetDrawTarget(target->GetGlfDrawTarget());
-
+                _renderPasses[renderPassIdx]->SetDrawTarget(target->GetGlfDrawTarget());
                 renderPassInfo.version = targetVersion;
             }
         }
     }
+
+    // Store the draw targets in the task context so the resolve 
+    // task does not have to extract them again.
+    (*ctx)[HdxTokens->drawTargetRenderPasses] = &_renderPasses;
 
     ///----------------------
     static const GfMatrix4d yflip = GfMatrix4d().SetScale(
@@ -167,41 +178,50 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     GlfSimpleLightingContextRefPtr lightingContext;
     _GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext);
 
-    size_t numRenderPasses = _renderPasses.size();
+    size_t numRenderPasses = _renderPassesInfo.size();
     for (size_t renderPassIdx = 0;
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        RenderPassInfo &renderPassInfo =  _renderPasses[renderPassIdx];
-        HdxDrawTargetRenderPass *renderPass = renderPassInfo.pass.get();
+        RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
+        HdxDrawTargetRenderPass *renderPass = _renderPasses[renderPassIdx].get();
         HdRenderPassStateSharedPtr &renderPassState = renderPassInfo.renderPassState;
-        HdxDrawTargetSharedPtr drawTarget = renderPassInfo.target.lock();
+        const HdxDrawTarget *drawTarget = renderPassInfo.target;
 
         const SdfPath &cameraId = drawTarget->GetRenderPassState()->GetCamera();
 
         // XXX: Need to detect when camera changes and only update if
         // needed
-        HdSprimSharedPtr camera
-            = GetDelegate()->GetRenderIndex().GetSprim(cameraId);
+        const HdxCamera *camera = static_cast<const HdxCamera *>(
+                                  renderIndex.GetSprim(HdPrimTypeTokens->camera,
+                                                       cameraId));
 
-        if (!camera) {
+        if (camera == nullptr) {
             // Render pass should not have been added to task list.
             TF_CODING_ERROR("Invalid camera for render pass: %s",
                             cameraId.GetText());
             return;
         }
 
+        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
+
         VtValue viewMatrixVt  = camera->Get(HdxCameraTokens->worldToViewMatrix);
         VtValue projMatrixVt  = camera->Get(HdxCameraTokens->projectionMatrix);
         GfMatrix4d viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
+
+        // XXX : If you need to change the following code that generates a 
+        //       draw target capture, remember you will also need to change
+        //       how draw target camera matrices are passed to shaders. 
         const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
-        GfMatrix4d projectionMatrix = projMatrix * yflip;
+        GfMatrix4d projectionMatrix = CameraUtilConformedWindow(projMatrix, 
+            CameraUtilFit,
+            resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0);
+        projectionMatrix = projectionMatrix * yflip;
 
         const VtValue &vClipPlanes = camera->Get(HdxCameraTokens->clipPlanes);
         const HdRenderPassState::ClipPlanesVector &clipPlanes =
                         vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 
-        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
         GfVec4d viewport(0, 0, resolution[0], resolution[1]);
 
         // Update Raster States
@@ -214,7 +234,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         renderPassState->SetCullStyle(_cullStyle);
 
         HdxSimpleLightingShaderSharedPtr &simpleLightingShader
-            = _renderPasses[renderPassIdx].simpleLightingShader;
+            = _renderPassesInfo[renderPassIdx].simpleLightingShader;
         GlfSimpleLightingContextRefPtr const& simpleLightingContext =
             simpleLightingShader->GetLightingContext();
 
@@ -246,11 +266,10 @@ void
 HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Apply polygon offset to whole pass.
     // XXX TODO: Move to an appropriate home
-    glPushAttrib(GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
     if (!_depthBiasUseDefault) {
         if (_depthBiasEnable) {
             glEnable(GL_POLYGON_OFFSET_FILL);
@@ -263,56 +282,49 @@ HdxDrawTargetTask::_Execute(HdTaskContext* ctx)
     // to the library
     glDepthFunc(HdConversions::GetGlDepthFunc(_depthFunc));
 
-    // XXX:  Long-term ALpha to Coverage will be a render style on the
+    // XXX: Long-term Alpha to Coverage will be a render style on the
     // task.  However, as there isn't a fallback we current force it
     // enabled, unless a client chooses to manage the setting itself (aka usdImaging).
-    GLboolean oldAlphaToCoverage = glIsEnabled(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
+    // XXX: When rendering draw targets we need alpha to coverage
+    // at least until we support a transparency pass
+    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
     if (GetDelegate()->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage)) {
-        if (not TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
+        if (!TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
             glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
         } else {
             glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
         }
     }
 
-
-    // XXX: Do we ever want to disable this?
-    GLboolean oldPointSizeEnabled = glIsEnabled(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     // XXX: We "Known" Hydra is always using CCW fase winding
     // which we need to flip.  This is a hack for now, but belongs in Hydra's
     // PSO.
-    glFrontFace(GL_CW);  // Restored by GL_POLYGON_BIT
+    glFrontFace(GL_CW);
 
-    size_t numRenderPasses = _renderPasses.size();
+    size_t numRenderPasses = _renderPassesInfo.size();
     for (size_t renderPassIdx = 0;
          renderPassIdx < numRenderPasses;
          ++renderPassIdx) {
 
-        HdxDrawTargetRenderPass *renderPass =
-            _renderPasses[renderPassIdx].pass.get();
+        HdxDrawTargetRenderPass *renderPass = 
+            _renderPasses[renderPassIdx].get();
         HdRenderPassStateSharedPtr renderPassState =
-            _renderPasses[renderPassIdx].renderPassState;
+            _renderPassesInfo[renderPassIdx].renderPassState;
         renderPassState->Bind();
         renderPass->Execute(renderPassState);
         renderPassState->Unbind();
     }
 
-    if (oldAlphaToCoverage) {
-        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    } else {
-        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    }
-
-    if (!oldPointSizeEnabled)
-    {
-        glDisable(GL_PROGRAM_POINT_SIZE);
-    }
-
-    glPopAttrib();
+    // Restore to GL defaults
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    glDisable(GL_PROGRAM_POINT_SIZE);
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    glFrontFace(GL_CCW);
 }
-
 
 // --------------------------------------------------------------------------- //
 // VtValue Requirements
@@ -344,27 +356,28 @@ std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv)
 bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)
 {
     return 
-        lhs.overrideColor == rhs.overrideColor and 
-        lhs.wireframeColor == rhs.wireframeColor and
-        lhs.enableLighting == rhs.enableLighting and
-        lhs.alphaThreshold == rhs.alphaThreshold and
-        lhs.tessLevel == rhs.tessLevel and
-        lhs.drawingRange == rhs.drawingRange and
-        lhs.depthBiasUseDefault == rhs.depthBiasUseDefault and
-        lhs.depthBiasEnable == rhs.depthBiasEnable and
-        lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor and
-        lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor and
-        lhs.depthFunc == rhs.depthFunc and
-        lhs.cullStyle == rhs.cullStyle and
-        lhs.geomStyle == rhs.geomStyle and
-        lhs.complexity == rhs.complexity and
-        lhs.hullVisibility == rhs.hullVisibility and
+        lhs.overrideColor == rhs.overrideColor                      && 
+        lhs.wireframeColor == rhs.wireframeColor                    &&  
+        lhs.enableLighting == rhs.enableLighting                    && 
+        lhs.alphaThreshold == rhs.alphaThreshold                    && 
+        lhs.tessLevel == rhs.tessLevel                              && 
+        lhs.drawingRange == rhs.drawingRange                        && 
+        lhs.depthBiasUseDefault == rhs.depthBiasUseDefault          && 
+        lhs.depthBiasEnable == rhs.depthBiasEnable                  && 
+        lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor  && 
+        lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor        && 
+        lhs.depthFunc == rhs.depthFunc                              && 
+        lhs.cullStyle == rhs.cullStyle                              &&
+        lhs.geomStyle == rhs.geomStyle                              && 
+        lhs.complexity == rhs.complexity                            && 
+        lhs.hullVisibility == rhs.hullVisibility                    && 
         lhs.surfaceVisibility == rhs.surfaceVisibility;
 }
 
 bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs)
 {
-    return not(lhs == rhs);
+    return !(lhs == rhs);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
 

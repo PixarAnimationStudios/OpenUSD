@@ -23,8 +23,8 @@
 //
 /// \file wrapPrimSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/primSpec.h"
-
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/pyChildrenProxy.h"
@@ -44,6 +44,8 @@
 #include <boost/function.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
 // Wrappers for constructors and proxy constructors
@@ -220,15 +222,15 @@ wrapPrimSpec()
         ("PrimSpec", no_init)
         .def(SdfPySpec())
 
-        .def(SdfMakePySpecConstructor(&::_NewFromLayer))
-        .def(SdfMakePySpecConstructor(&::_NewTypelessFromLayer))
-        .def(SdfMakePySpecConstructor(&::_NewPrim))
-        .def(SdfMakePySpecConstructor(&::_NewTypelessPrim))
+        .def(SdfMakePySpecConstructor(&_NewFromLayer))
+        .def(SdfMakePySpecConstructor(&_NewTypelessFromLayer))
+        .def(SdfMakePySpecConstructor(&_NewPrim))
+        .def(SdfMakePySpecConstructor(&_NewTypelessPrim))
 
         .add_property("name",
             make_function(&This::GetName,
                           return_value_policy<return_by_value>()),
-            &::_WrapSetName,
+            &_WrapSetName,
             "The prim's name.")
 
         .add_property("comment",
@@ -287,7 +289,7 @@ wrapPrimSpec()
 
         .add_property("symmetryArguments",
             &This::GetSymmetryArguments,
-            &::_SetSymmetryArguments,
+            &_SetSymmetryArguments,
             "Dictionary with prim symmetry arguments.\n\n"
             "Although this property is marked read-only, you can "
             "modify the contents to add, change, and clear symmetry "
@@ -300,7 +302,7 @@ wrapPrimSpec()
 
         .add_property("customData",
             &This::GetCustomData,
-            &::_SetCustomData,
+            &_SetCustomData,
             "The custom data for this prim.\n\n"
             "The default value for custom data is an empty dictionary.\n\n"
             "Custom data is for use by plugins or other non-tools supplied \n"
@@ -313,7 +315,7 @@ wrapPrimSpec()
 
         .add_property("assetInfo",
             &This::GetAssetInfo,
-            &::_SetAssetInfo,
+            &_SetAssetInfo,
             "Returns the asset info dictionary for this prim.\n\n"
             "The default value is an empty dictionary.\n\n"
             "The asset info dictionary is used to annotate prims representing "
@@ -373,6 +375,16 @@ wrapPrimSpec()
             &This::SetPrefixSubstitutions,
             "Dictionary of prefix substitutions.")
 
+        .add_property("suffix",
+            &This::GetSuffix,
+            &This::SetSuffix,
+            "The prim's suffix.")
+
+        .add_property("suffixSubstitutions",
+            &This::GetSuffixSubstitutions,
+            &This::SetSuffixSubstitutions,
+            "Dictionary of prefix substitutions.")
+
         .add_property("variantSetNameList",
             &This::GetVariantSetNameList,
             "A StringListEditor for the names of the variant \n"
@@ -386,7 +398,7 @@ wrapPrimSpec()
             "is modifiable.")
 
         .add_property("variantSets",
-            &::_WrapGetVariantSetsProxy,
+            &_WrapGetVariantSetsProxy,
             "The VariantSetSpecs for this prim indexed by name.\n\n"
             "Although this property is marked as read-only, you can \n"
             "modify the contents to remove variant sets.  New variant sets \n"
@@ -400,7 +412,7 @@ wrapPrimSpec()
             "The type of this prim.")
 
         .add_property("nameChildren",
-            &::_WrapGetNameChildrenProxy,
+            &_WrapGetNameChildrenProxy,
             "The prim name children of this prim, as an ordered "
             "dictionary.\n\n"
             "Note that although this property is described as being "
@@ -414,7 +426,7 @@ wrapPrimSpec()
             "nameChildren' statement.")
 
         .add_property("properties",
-            &::_WrapGetPropertiesProxy,
+            &_WrapGetPropertiesProxy,
             "The properties of this prim, as an ordered dictionary.\n\n"
             "Note that although this property is described as being "
             "read-only, you can modify the contents to add, "
@@ -472,7 +484,7 @@ wrapPrimSpec()
 
         .add_property("relocates",
             &This::GetRelocates,
-            &::_SetRelocates,
+            &_SetRelocates,
             "An editing proxy for the prim's map of relocation paths.\n\n"
             "The map of source-to-target paths specifying namespace "
             "relocation may be set or cleared whole, or individual map "
@@ -482,11 +494,11 @@ wrapPrimSpec()
             &This::ClearReferenceList,
             "Clears the references for this prim.")
 
-        .def("CanSetName", &::_WrapCanSetName)
+        .def("CanSetName", &_WrapCanSetName)
 
-        .def("ApplyNameChildrenOrder", &::_ApplyNameChildrenOrder,
+        .def("ApplyNameChildrenOrder", &_ApplyNameChildrenOrder,
              return_value_policy<TfPySequenceToList>())
-        .def("ApplyPropertyOrder", &::_ApplyPropertyOrder,
+        .def("ApplyPropertyOrder", &_ApplyPropertyOrder,
              return_value_policy<TfPySequenceToList>())
 
         .setattr("ActiveKey", SdfFieldKeys->Active)
@@ -515,3 +527,5 @@ wrapPrimSpec()
         .setattr("VariantSetNamesKey", SdfFieldKeys->VariantSetNames)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

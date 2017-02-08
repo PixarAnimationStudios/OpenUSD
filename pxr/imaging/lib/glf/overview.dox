@@ -1,5 +1,9 @@
 /*!
-\mainpage
+\page glf_page_front Glf: Utility classes for OpenGL output.
+\if ( PIXAR_MFB_BUILD )
+\mainpage  Glf: Utility classes for OpenGL output.
+\publicLib
+\endif
 
 Utility classes for OpenGL output.
 */

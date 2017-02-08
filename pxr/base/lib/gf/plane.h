@@ -27,9 +27,12 @@
 /// \file gf/plane.h
 /// \ingroup group_gf_BasicGeometry
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/vec3d.h"
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GfRange3d;
 class GfMatrix4d;
@@ -164,5 +167,7 @@ class GfPlane
 /// Output a GfPlane using the format [(nx ny nz) distance].
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream&, const GfPlane&);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_PLANE_H

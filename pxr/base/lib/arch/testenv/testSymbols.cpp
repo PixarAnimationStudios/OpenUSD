@@ -21,9 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/symbols.h"
-#include <stdio.h>
-#include <assert.h>
+#include "pxr/base/arch/error.h"
+
+#include <cstdlib>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static void Code() { }
 static int data = 1;
@@ -36,10 +41,21 @@ static bool _GetLibraryPath(void* address, std::string* result)
 
 static std::string GetBasename(const std::string& path)
 {
+#if defined(ARCH_OS_WINDOWS)
+    std::string::size_type i = path.find_last_of("/\\");
+    if (i != std::string::npos) {
+        std::string::size_type j = path.find(".exe");
+        if (j != std::string::npos) {
+            return path.substr(i + 1, j - i - 1);
+        }
+        return path.substr(i + 1);
+    }
+#else
     std::string::size_type i = path.rfind('/');
     if (i != std::string::npos) {
         return path.substr(i + 1);
     }
+#endif
     return path;
 }
 
@@ -48,26 +64,26 @@ int main()
     std::string path;
 
     // Invalid pointer.
-    assert(not _GetLibraryPath(0, &path));
+    ARCH_AXIOM(!_GetLibraryPath(0, &path));
 
     // Pointer to a local non-function.
-    assert(not _GetLibraryPath(&path, &path));
+    ARCH_AXIOM(!_GetLibraryPath(&path, &path));
 
     // Pointer into the DATA section.
-    assert(_GetLibraryPath(&data, &path));
-    assert(GetBasename(path) == "testArchSymbols");
+    ARCH_AXIOM(_GetLibraryPath(&data, &path));
+    ARCH_AXIOM(GetBasename(path) == "testArchSymbols");
 
     // Pointer into the BSS section.
-    assert(_GetLibraryPath(&bss, &path));
-    assert(GetBasename(path) == "testArchSymbols");
+    ARCH_AXIOM(_GetLibraryPath(&bss, &path));
+    ARCH_AXIOM(GetBasename(path) == "testArchSymbols");
 
     // Find this library.
-    assert(_GetLibraryPath((void*)&Code, &path));
-    assert(GetBasename(path) == "testArchSymbols");
+    ARCH_AXIOM(_GetLibraryPath((void*)&Code, &path));
+    ARCH_AXIOM(GetBasename(path) == "testArchSymbols");
 
     // Find another library.
-    assert(_GetLibraryPath((void*)&exit, &path));
-    assert(GetBasename(path) != "testArchSymbols");
+    ARCH_AXIOM(_GetLibraryPath((void*)&exit, &path));
+    ARCH_AXIOM(GetBasename(path) != "testArchSymbols");
 
     return 0;
 }

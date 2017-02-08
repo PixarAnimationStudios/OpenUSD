@@ -28,6 +28,11 @@
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdCopyComputationGPU::HdCopyComputationGPU(
     HdBufferArrayRangeSharedPtr const &src, TfToken const &name)
     : _src(src), _name(name)
@@ -38,7 +43,7 @@ void
 HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (not glBufferSubData) {
         return;
@@ -121,3 +126,6 @@ HdCopyComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
                                   resource->GetGLDataType(),
                                   resource->GetNumComponents()));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -32,11 +32,17 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/vt/array.h"
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 Hd_SmoothNormalsComputation::Hd_SmoothNormalsComputation(
     Hd_VertexAdjacency const *adjacency,
@@ -79,17 +85,17 @@ Hd_SmoothNormalsComputation::Resolve()
 {
     // dependency check first
     if (_adjacencyBuilder) {
-        if (not _adjacencyBuilder->IsResolved()) return false;
+        if (!_adjacencyBuilder->IsResolved()) return false;
     }
     if (_points) {
-        if (not _points->IsResolved()) return false;
+        if (!_points->IsResolved()) return false;
     }
-    if (not _TryLock()) return false;
+    if (!_TryLock()) return false;
 
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-    if (not TF_VERIFY(_adjacency)) return true;
+    if (!TF_VERIFY(_adjacency)) return true;
 
     int numPoints = _points->GetNumElements();
 
@@ -157,12 +163,22 @@ Hd_SmoothNormalsComputation::_CheckValid() const
 Hd_SmoothNormalsComputationGPU::Hd_SmoothNormalsComputationGPU(
     Hd_VertexAdjacency const *adjacency,
     TfToken const &srcName, TfToken const &dstName,
-    GLenum dstDataType)
-    : _adjacency(adjacency), _srcName(srcName), _dstName(dstName),
-      _dstDataType(dstDataType)
+    GLenum srcDataType, GLenum dstDataType)
+    : _adjacency(adjacency), _srcName(srcName), _dstName(dstName)
+    , _srcDataType(srcDataType), _dstDataType(dstDataType)
 {
-    if (dstDataType != GL_FLOAT and dstDataType != GL_DOUBLE) {
-        TF_CODING_ERROR("Unsupported points type for computing smooth normals");
+    if (srcDataType != GL_FLOAT && srcDataType != GL_DOUBLE) {
+        TF_CODING_ERROR(
+            "Unsupported points type %x for computing smooth normals",
+            srcDataType);
+        srcDataType = GL_FLOAT;
+    }
+    if (dstDataType != GL_FLOAT && dstDataType != GL_DOUBLE &&
+        dstDataType != GL_INT_2_10_10_10_REV) {
+        TF_CODING_ERROR(
+            "Unsupported normals type %x for computing smooth normals",
+            dstDataType);
+        dstDataType = GL_FLOAT;
     }
 }
 
@@ -171,16 +187,10 @@ Hd_SmoothNormalsComputationGPU::Execute(
     HdBufferArrayRangeSharedPtr const &range)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-    if (not glDispatchCompute)
+    if (!glDispatchCompute)
         return;
-
-    // XXX: workaround until the shading stuff is implemeted.
-    // The drawing program is owned and set by testHdBasicDrawing now,
-    // so it has to be restored if it's changed in hd.
-    GLint restoreProgram = 0;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &restoreProgram);
 
     int numPoints = range->GetNumElements();
 
@@ -189,12 +199,29 @@ Hd_SmoothNormalsComputationGPU::Execute(
     TF_VERIFY(adjacencyRange);
 
     // select shader by datatype
-    TfToken shaderToken = (_dstDataType == GL_FLOAT ?
-                           HdGLSLProgramTokens->smoothNormalsFloat :
-                           HdGLSLProgramTokens->smoothNormalsDouble);
+    TfToken shaderToken;
+    if (_srcDataType == GL_FLOAT) {
+        if (_dstDataType == GL_FLOAT) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsFloatToFloat;
+        } else if (_dstDataType == GL_DOUBLE) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsFloatToDouble;
+        } else if (_dstDataType == GL_INT_2_10_10_10_REV) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsFloatToPacked;
+        }
+    } else if (_srcDataType == GL_DOUBLE) {
+        if (_dstDataType == GL_FLOAT) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToFloat;
+        } else if (_dstDataType == GL_DOUBLE) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToDouble;
+        } else if (_dstDataType == GL_INT_2_10_10_10_REV) {
+            shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToPacked;
+        }
+    }
+    if (not TF_VERIFY(!shaderToken.IsEmpty())) return;
 
-    HdGLSLProgramSharedPtr computeProgram = HdGLSLProgram::GetComputeProgram(shaderToken);
-    if (not computeProgram) return;
+    HdGLSLProgramSharedPtr computeProgram
+        = HdGLSLProgram::GetComputeProgram(shaderToken);
+    if (!computeProgram) return;
 
     GLuint program = computeProgram->GetProgram().GetId();
 
@@ -229,15 +256,15 @@ Hd_SmoothNormalsComputationGPU::Execute(
     uniform.pointsOffset = points->GetOffset() / points->GetComponentSize();
     uniform.pointsStride = points->GetStride() / points->GetComponentSize();
     // interleaved offset/stride to normals
-    uniform.normalsOffset = normals->GetOffset() / points->GetComponentSize();
-    uniform.normalsStride = normals->GetStride() / points->GetComponentSize();
+    uniform.normalsOffset = normals->GetOffset() / normals->GetComponentSize();
+    uniform.normalsStride = normals->GetStride() / normals->GetComponentSize();
 
     // transfer uniform buffer
     GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
     // XXX: workaround for 319.xx driver bug of glNamedBufferDataEXT on UBO
     // XXX: move this workaround to renderContextCaps
-    if (false and caps.directStateAccessEnabled) {
+    if (false && caps.directStateAccessEnabled) {
         glNamedBufferDataEXT(ubo, sizeof(uniform), &uniform, GL_STATIC_DRAW);
     } else {
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
@@ -256,19 +283,24 @@ Hd_SmoothNormalsComputationGPU::Execute(
     glDispatchCompute(numPoints, 1, 1);
 
     glUseProgram(0);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, 0);
-
-    // XXX: workaround until shading stuff implemeted.
-    glUseProgram(restoreProgram);
 }
 
 void
 Hd_SmoothNormalsComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    specs->push_back(HdBufferSpec(_dstName, _dstDataType, 3));
+    if (_dstDataType == GL_INT_2_10_10_10_REV) {
+        specs->push_back(HdBufferSpec(_dstName, _dstDataType, 1));
+    } else {
+        specs->push_back(HdBufferSpec(_dstName, _dstDataType, 3));
+    }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

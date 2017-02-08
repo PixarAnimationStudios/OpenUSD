@@ -24,11 +24,15 @@
 #ifndef USDOBJ_STREAM_H
 #define USDOBJ_STREAM_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdObjStream
 ///
@@ -282,5 +286,8 @@ private:
     std::vector<SequenceElem> _sequence;
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDOBJ_STREAM_H

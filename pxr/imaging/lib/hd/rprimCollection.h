@@ -24,12 +24,16 @@
 #ifndef HD_RPRIM_COLLECTION_H
 #define HD_RPRIM_COLLECTION_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdRprimCollection
 ///
@@ -95,11 +99,6 @@ public:
         _forcedRepr = flag;
     }
 
-    /// Returns dirty bits which this collection uses.
-    int GetDirtyBitsMask() const {
-        return _dirtyBitsMask;
-    }
-
     /// Returns the paths at which all Rprims must be rooted to be included in
     /// this collection. Defaults to a vector containing only
     /// SdfPath::AbsoluteRootPath().
@@ -141,17 +140,11 @@ private:
     friend std::ostream & operator <<(std::ostream &out, 
         HdRprimCollection const & v);
 
-    void _ComputeDirtyBitsMask();
-
     TfToken _name;
     TfToken _reprName;
     bool _forcedRepr;
     SdfPathVector _rootPaths;
     SdfPathVector _excludePaths;
-
-    // A mask of all possible dirty bits that can affect prims in this
-    // collection
-    int _dirtyBitsMask;
 };
 
 typedef std::vector<HdRprimCollection> HdRprimCollectionVector;
@@ -161,5 +154,8 @@ std::ostream& operator<<(std::ostream& out, HdRprimCollection const & v);
 
 // Overload hash_value for HdRprimCollection.  Used by things like boost::hash.
 size_t hash_value(HdRprimCollection const &col);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RPRIM_COLLECTION_H

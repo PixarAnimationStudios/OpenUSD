@@ -24,6 +24,7 @@
 #ifndef USD_RELATIONSHIPS_H
 #define USD_RELATIONSHIPS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/property.h"
 
@@ -32,6 +33,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdRelationship;
 
@@ -152,7 +156,7 @@ public:
     // validate those objects since it is easy to create a UsdAttribute
     // or UsdRelationship object not backed by scene description).
 
-    /// Adds \p target to the list of targets.
+    /// Appends \p target to the list of targets.
     ///
     /// Passing paths to master prims or any other objects in masters will 
     /// cause an error to be issued. It is not valid to author targets to
@@ -161,7 +165,7 @@ public:
     /// What data this actually authors depends on what data is currently
     /// authored in the authoring layer, with respect to list-editing
     /// semantics, which we will document soon 
-    bool AddTarget(const SdfPath& target) const;
+    bool AppendTarget(const SdfPath& target) const;
 
     /// Removes \p target from the list of targets.
     ///
@@ -194,8 +198,8 @@ public:
     /// relationship)
     bool ClearTargets(bool removeSpec) const;
 
-    /// Compose this relationship's targets and return the result as a
-    /// vector of SdfPath.
+    /// Compose this relationship's targets and fill \p targets with the result.
+    /// All preexisting elements in \p targets are lost.
     ///
     /// By default, any relationship targets that point to a child prim or
     /// a property of a child prim beneath an instanceable prim will be
@@ -216,10 +220,10 @@ public:
     bool GetTargets(SdfPathVector* targets,
                     bool forwardToObjectsInMasters = true) const;
 
-    /// Compose this relationship's \em ultimate targets, taking into
-    /// account "relationship forwarding", and return the result as a vector
-    /// of SdfPath. This method never returns relationship paths in the targets
-    /// vector.
+    /// Compose this relationship's \em ultimate targets, taking into account
+    /// "relationship forwarding", and fill \p targets with the result.  All
+    /// preexisting elements in \p targets are lost.  This method never inserts
+    /// relationship paths in \p targets.
     ///
     /// See documentation on GetTargets for information on the 
     /// \p forwardToObjectsInMasters parameter. Note that setting this
@@ -259,6 +263,7 @@ private:
     friend class UsdObject;
     friend class UsdPrim;
     friend class Usd_PrimData;
+    friend struct UsdPrim_TargetFinder;
 
     UsdRelationship(const Usd_PrimDataHandle &prim,
                     const TfToken& relName)
@@ -271,13 +276,22 @@ private:
 
     SdfRelationshipSpecHandle _CreateSpec(bool fallbackCustom=true) const;
     bool _Create(bool fallbackCustom) const;
+
+    bool _GetForwardedTargets(SdfPathVector* targets,
+                              bool includeForwardingRels,
+                              bool forwardToObjectsInMasters) const;
+
     bool _GetForwardedTargets(SdfPathSet* visited, 
                               SdfPathSet* uniqueTargets,
                               SdfPathVector* targets,
+                              bool includeForwardingRels,
                               bool forwardToObjectsInMasters) const;
 
     SdfPath _GetTargetForAuthoring(const SdfPath &targetPath,
                                    std::string* whyNot = 0) const;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_RELATIONSHIPS_H

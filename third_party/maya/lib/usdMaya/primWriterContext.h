@@ -24,8 +24,12 @@
 #ifndef PXRUSDMAYA_PRIMWRITERCONTEXT_H
 #define PXRUSDMAYA_PRIMWRITERCONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class PxrUsdMayaPrimReaderContext
 /// \brief This class provides an interface for writer plugins to communicate
@@ -107,6 +111,9 @@ private:
     bool _exportsReferences;
     bool _pruneChildren;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_PRIMWRITERCONTEXT_H
 

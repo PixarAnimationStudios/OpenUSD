@@ -21,15 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/sdf/markerUtils.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/markerUtils.h"
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
-
+#include "pxr/usd/sdf/relationshipSpec.h"
+#include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // Sdf_MarkerUtilsPolicy<Spec>
@@ -96,14 +100,14 @@ Sdf_MarkerUtils<Spec>::SetMarker(
     }
 
     SdfAllowed allowed;
-    if (not owner->PermissionToEdit()) {
+    if (!owner->PermissionToEdit()) {
         allowed = SdfAllowed("Permission denied.");
     }
     else {
         allowed = _MarkerPolicy::IsValidConnectionPath(connectionPath);
     }
 
-    if (not allowed) {
+    if (!allowed) {
         TF_CODING_ERROR("Set %s: %s", 
                         _MarkerPolicy::GetMarkerDescription(),
                         allowed.GetWhyNot().c_str());
@@ -112,7 +116,7 @@ Sdf_MarkerUtils<Spec>::SetMarker(
 
     SdfSpecHandle connectionSpec = 
         owner->_FindOrCreateChildSpecForMarker(connectionPath);
-    if (not connectionSpec) {
+    if (!connectionSpec) {
         TF_CODING_ERROR("Set %s: Could not find or create child for marker.",
             _MarkerPolicy::GetMarkerDescription());
         return;
@@ -128,7 +132,7 @@ Sdf_MarkerUtils<Spec>::SetMarkers(
 {
     // Explicitly check permission here to ensure that any editing operation
     // (even no-ops) trigger an error.
-    if (not owner->PermissionToEdit()) {
+    if (!owner->PermissionToEdit()) {
         TF_CODING_ERROR("Set %s: Permission denied", 
                         _MarkerPolicy::GetMarkerDescription());
         return;
@@ -139,7 +143,7 @@ Sdf_MarkerUtils<Spec>::SetMarkers(
     TF_FOR_ALL(newMarker, markers) {
         const SdfAllowed isValidPath = 
             _MarkerPolicy::IsValidConnectionPath(newMarker->first);
-        if (not isValidPath) {
+        if (!isValidPath) {
             TF_CODING_ERROR("Set %s: %s",
                             _MarkerPolicy::GetMarkerDescription(),
                             isValidPath.GetWhyNot().c_str());
@@ -168,7 +172,7 @@ void
 Sdf_MarkerUtils<Spec>::ClearMarker(
     Spec* owner, const SdfPath& connectionPath)
 {
-    if (not owner->PermissionToEdit()) {
+    if (!owner->PermissionToEdit()) {
         TF_CODING_ERROR("Clear %s: Permission denied.", 
                         _MarkerPolicy::GetMarkerDescription());
         return;
@@ -237,3 +241,5 @@ public:
 };
 
 template class Sdf_MarkerUtils<SdfRelationshipSpec>;
+
+PXR_NAMESPACE_CLOSE_SCOPE

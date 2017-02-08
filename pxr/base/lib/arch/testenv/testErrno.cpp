@@ -21,15 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/errno.h"
-#include <cassert>
+#include "pxr/base/arch/error.h"
+
 #include <cstdio>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 int main(int argc, char *argv[])
 {
     for (int i = -1; i < 10; i++) {
         const std::string msg = ArchStrerror(i);
-        assert(not msg.empty());
+        ARCH_AXIOM(!msg.empty());
         printf("%d -> '%s'\n", i, msg.c_str());
     }
 

@@ -33,6 +33,8 @@
 #ifndef TF_HASHMAP_H
 #define TF_HASHMAP_H
 
+#include "pxr/pxr.h"
+
 #if !defined(TF_NO_GNU_EXT)
 // Use GNU extension.
 #include <ext/hash_map>
@@ -655,7 +657,7 @@ inline bool
 operator!=(const TfHashMap<Key, Mapped, HashFn, EqualKey, Alloc>& lhs,
            const TfHashMap<Key, Mapped, HashFn, EqualKey, Alloc>& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 template<class Key, class Mapped, class HashFn, class EqualKey, class Alloc>
@@ -680,7 +682,7 @@ inline bool
 operator!=(const TfHashMultiMap<Key, Mapped, HashFn, EqualKey, Alloc>& lhs,
            const TfHashMultiMap<Key, Mapped, HashFn, EqualKey, Alloc>& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
-#endif
+#endif // TF_HASHMAP_H

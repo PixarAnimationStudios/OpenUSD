@@ -32,6 +32,8 @@
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_INSTANTIATE_NOTICE_WRAPPER(TfDiagnosticNotice::Base, TfNotice);
 TF_INSTANTIATE_NOTICE_WRAPPER(TfDiagnosticNotice::IssuedError,
     TfDiagnosticNotice::Base);
@@ -83,3 +85,5 @@ void wrapDiagnosticNotice() {
             return_value_policy<return_by_value>()))
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

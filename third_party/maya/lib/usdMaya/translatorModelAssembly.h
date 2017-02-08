@@ -26,6 +26,7 @@
 
 /// \file translatorModelAssembly.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primWriterArgs.h"
@@ -40,6 +41,7 @@
 #include <map>
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct PxrUsdMayaTranslatorModelAssembly
 {
@@ -85,5 +87,8 @@ struct PxrUsdMayaTranslatorModelAssembly
         const std::string& proxyShapeTypeName);
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_TRANSLATOR_MODELASSEMBLY_H

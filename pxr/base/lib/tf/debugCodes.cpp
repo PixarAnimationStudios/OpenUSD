@@ -21,10 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/debugCodes.h"
 #include "pxr/base/tf/registryManager.h"
 
-
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(TF_SCRIPT_MODULE_LOADER,
@@ -38,4 +40,4 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "attach/stop in a debugger for all warnings");
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -26,6 +26,7 @@
 
 /// \file vt/valueFromPython.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/tf/hash.h"
@@ -40,21 +41,23 @@
 #include <type_traits>
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 /// \class Vt_ValueFromPythonRegistry
 ///
 class Vt_ValueFromPythonRegistry : boost::noncopyable {
 public:
 
     static bool HasConversions() {
-	return not _GetInstance()._lvalueExtractors.empty() and
-            not _GetInstance()._rvalueExtractors.empty();
+	return !_GetInstance()._lvalueExtractors.empty() &&
+           !_GetInstance()._rvalueExtractors.empty();
     }
     
     static VtValue Invoke(PyObject *obj);
 
     template <class T>
     static void Register(bool registerRvalue) {
-	if (not TfPyIsInitialized()) {
+	if (!TfPyIsInitialized()) {
 	    TF_FATAL_ERROR("Tried to register a VtValue from python conversion "
 			   "but python is not initialized!");
 	}
@@ -172,5 +175,7 @@ template <class T>
 void VtValueFromPythonLValue() {
     Vt_ValueFromPythonRegistry::Register<T>(/* registerRvalue = */ false);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // VT_VALUE_FROM_PYTHON_H

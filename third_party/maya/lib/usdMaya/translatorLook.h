@@ -24,14 +24,18 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_LOOK_H
 #define PXRUSDMAYA_TRANSLATOR_LOOK_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/util.h"
 
 #include <maya/MObject.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define PXRUSDMAYA_TRANSLATOR_LOOK_TOKENS \
     ((LookNamespace, "USD_Looks"))
@@ -39,7 +43,7 @@
 TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorLookTokens,
     PXRUSDMAYA_TRANSLATOR_LOOK_TOKENS);
 
-/// \brief Provides helper functions for reading UsdShadeLook
+/// \brief Provides helper functions for reading UsdShadeMaterial
 struct PxrUsdMayaTranslatorLook
 {
     /// \brief Reads \p look according to \p shadingMode .  Some shading modes
@@ -47,12 +51,12 @@ struct PxrUsdMayaTranslatorLook
     /// maya shadingEngine that correspondes to \p look.
     static MObject Read(
             const TfToken& shadingMode,
-            const UsdShadeLook& look,
+            const UsdShadeMaterial& look,
             const UsdGeomGprim& boundPrim,
             PxrUsdMayaPrimReaderContext* context);
 
     /// \brief Given a \p prim, assigns a look to it according to \p
-    /// shadingMode.  This will see which UsdShadeLook is bound to \p prim.  If
+    /// shadingMode.  This will see which UsdShadeMaterial is bound to \p prim.  If
     /// the look has not been read already, it will read it.  The
     /// created/retrieved shadingEngine will be assigned to \p shapeObj.
     static bool AssignLook(
@@ -73,6 +77,9 @@ struct PxrUsdMayaTranslatorLook
             bool mergeTransformAndShape,
             SdfPath overrideRootPath);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_TRANSLATOR_LOOK_H
 

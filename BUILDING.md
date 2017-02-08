@@ -59,7 +59,7 @@ when invoking cmake. This plugin is compatible with Maya 2016. The additional de
 
 | Dependency Name   | Description                                                                                     | Version   |
 | ----------------- | -----------------------------------                                                             | --------- |
-| MAYA_LOCATION     | The root path to a Maya SDK install                                                             | Maya 2016 |
+| MAYA_LOCATION     | The root path to a Maya SDK install                                                             | Maya 2016 EXT2 SP2 |
 | MAYA_tbb_LIBRARY  | The location of TBB, this should be the same as TBB_tbb_LIBRARY provided to the core USD build  |           |
 
 For further information see the documentation on the Maya plugin [here](http://openusd.org/docs/Maya-USD-Plugins.html).
@@ -111,6 +111,27 @@ pxrusdGeom.dylib on Mac for the usdGeom component.
 > Note: This prefix does not apply to shared objects used for Python bindings.
 
 ## USD Developer Options
+
+##### C++ Namespace Configuration
+
+USD comes with options to enable and customize C++ namespaces via the following
+flags:
+
+| Option Name                    | Description                             | Default |
+| ------------------------------ |-----------------------------------------| ------- |
+| PXR_SET_EXTERNAL_NAMESPACE     | The outer namespace identifier          | ```pxr```     |
+| PXR_SET_INTERNAL_NAMESPACE     | The internal namespace identifier       | ```pxrInternal_v_x_y``` (for version x.y.z) |
+| PXR_ENABLE_NAMESPACES          | Enable namespaces                       | ```OFF```    |
+
+When enabled, there are a set of macros provided in a generated header, 
+pxr/pxr.h, which facilitates using namespaces:
+
+| Macro Name                     | Description                             | 
+| ------------------------------ |-----------------------------------------| 
+| PXR_NAMESPACE_OPEN_SCOPE       | Opens the namespace scope.                                           |
+| PXR_NAMESPACE_CLOSE_SCOPE      | Closes the namespace.                                                |
+| PXR_NS                         | Explicit qualification on items, e.g. ```PXR_NS::TfToken foo = ...```|
+| PXR_NAMESPACE_USING_DIRECTIVE  | Enacts a using-directive, e.g. ```using namespace PXR_NS;```         |
 
 ##### ASCII Parser Editing/Validation
 

@@ -24,11 +24,14 @@
 #include <boost/python/class.hpp>
 #include <boost/python/object.hpp>
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
@@ -57,7 +60,7 @@ public:
     }
 
 private:
-    boost::scoped_ptr<ArResolverScopedCache> _scopedCache;
+    std::unique_ptr<ArResolverScopedCache> _scopedCache;
 };
 
 };
@@ -73,3 +76,5 @@ wrapResolverScopedCache()
         .def("__exit__", &This::Exit)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

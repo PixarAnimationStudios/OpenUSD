@@ -21,18 +21,22 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderRegistry.h"
 #include "usdMaya/translatorLook.h"
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
-PXRUSDMAYA_DEFINE_READER(UsdShadeLook, args, context)
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+PXRUSDMAYA_DEFINE_READER(UsdShadeMaterial, args, context)
 {
     bool importUnboundShaders = args.ShouldImportUnboundShaders();
     if (importUnboundShaders) {
         const UsdPrim& usdPrim = args.GetUsdPrim();
         PxrUsdMayaTranslatorLook::Read(args.GetShadingMode(), 
-                UsdShadeLook(usdPrim), 
+                UsdShadeMaterial(usdPrim), 
                 UsdGeomGprim(), 
                 context);
         context->SetPruneChildren(true);
@@ -40,4 +44,7 @@ PXRUSDMAYA_DEFINE_READER(UsdShadeLook, args, context)
     return true;
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

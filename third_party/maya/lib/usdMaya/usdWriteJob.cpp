@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/usdWriteJob.h"
 
 #include "usdMaya/JobArgs.h"
@@ -69,6 +70,9 @@
 #include <map>
 #include <unordered_set>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 usdWriteJob::usdWriteJob(const JobExportArgs & iArgs) :
     mArgs(iArgs), mModelKindWriter(iArgs)
 {
@@ -105,8 +109,8 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
 
     // Make sure the file name is a valid one with a proper USD extension.
     const std::string iFileExtension = TfStringGetSuffix(iFileName, '.');
-    if (iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault or
-            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII or
+    if (iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault   || 
+            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII || 
             iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate) {
         mFileName = iFileName;
     } else {
@@ -264,26 +268,27 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
                 mArgs.mergeTransformAndShape,
                 mArgs.usdModelRootOverridePath);
 
-    if (not mModelKindWriter.MakeModelHierarchy(mStage)) {
+    if (!mModelKindWriter.MakeModelHierarchy(mStage)) {
         return false;
     }
 
     // now we populate the chasers and run export default
     mChasers.clear();
     PxrUsdMayaChaserRegistry::FactoryContext ctx(mStage, mDagPathToUsdPathMap, mArgs);
-    for (const std::string& chaserName: mArgs.chaserNames) {
+    for (const std::string& chaserName : mArgs.chaserNames) {
         if (PxrUsdMayaChaserRefPtr fn = 
                 PxrUsdMayaChaserRegistry::GetInstance().Create(chaserName, ctx)) {
             mChasers.push_back(fn);
         }
         else {
-            std::string error = TfStringPrintf("chaser %s failed\n", chaserName.c_str());
+            std::string error = TfStringPrintf("Failed to create chaser: %s",
+                                               chaserName.c_str());
             MGlobal::displayError(MString(error.c_str()));
         }
     }
 
     for (const PxrUsdMayaChaserRefPtr& chaser : mChasers) {
-        if (not chaser->ExportDefault()) {
+        if (!chaser->ExportDefault()) {
             return false;
         }
     }
@@ -381,7 +386,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
     //   This is done for reasons as described above under mArgs.usdModelRootOverridePath
     UsdPrim usdVariantRootPrim = mStage->DefinePrim(usdVariantRootPrimPath);
     TfToken defaultPrim = usdVariantRootPrim.GetName();
-    usdVariantRootPrim.GetReferences().AddInternal(usdRootPrim.GetPath());
+    usdVariantRootPrim.GetReferences().AppendInternalReference(usdRootPrim.GetPath());
     usdVariantRootPrim.SetActive(true);
     usdRootPrim.SetActive(false);
 
@@ -430,8 +435,8 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
         if (!tableOfActivePaths.empty()) {
             { // == BEG: Scope for Variant EditContext
                 // Create the variantSet and variant
-                UsdVariantSet modelingVariantSet = usdVariantRootPrim.GetVariantSets().FindOrCreate("modelingVariant");
-                modelingVariantSet.FindOrCreateVariant(variantName);
+                UsdVariantSet modelingVariantSet = usdVariantRootPrim.GetVariantSets().AppendVariantSet("modelingVariant");
+                modelingVariantSet.AppendVariant(variantName);
                 modelingVariantSet.SetVariantSelection(variantName);
                 // Set the Edit Context
                 UsdEditTarget editTarget = modelingVariantSet.GetVariantEditTarget();
@@ -596,4 +601,7 @@ void usdWriteJob::postCallback()
     }
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

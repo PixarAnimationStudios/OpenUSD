@@ -21,7 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/daemon.h"
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
@@ -32,11 +35,17 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
+#endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Fork the current process and close all undesired file descriptors.
 //
-int ArchCloseAllFiles(int nExcept, const int* exceptFds)
+int
+ArchCloseAllFiles(int nExcept, const int* exceptFds)
 {
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+
     int status, retStatus, retErrno;
     int i, j, maxfd, maxExcept = -1;
     struct rlimit limits;
@@ -108,4 +117,14 @@ int ArchCloseAllFiles(int nExcept, const int* exceptFds)
     errno = retErrno;
 
     return retStatus;
+
+#else
+
+    // Not supported
+    errno = EINVAL;
+    return -1;
+
+#endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

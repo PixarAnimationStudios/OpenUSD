@@ -24,6 +24,9 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/conversions.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdBufferSource::~HdBufferSource()
 {
 }
@@ -69,7 +72,7 @@ HdBufferSource::IsValid() const
 TfToken const &
 HdComputedBufferSource::GetName() const
 {
-    if (not _result) {
+    if (!_result) {
         static TfToken empty;
         return empty;
     }
@@ -79,7 +82,7 @@ HdComputedBufferSource::GetName() const
 void const*
 HdComputedBufferSource::GetData() const
 {
-    if (not _result) {
+    if (!_result) {
         TF_CODING_ERROR("HdComputedBufferSource::GetData() called without "
                         "setting the result.");
         return NULL;
@@ -90,7 +93,7 @@ HdComputedBufferSource::GetData() const
 int
 HdComputedBufferSource::GetGLComponentDataType() const
 {
-    if (not _result) {
+    if (!_result) {
         TF_CODING_ERROR("HdComputedBufferSource::GetGLComponentDataType() "
                         "called without setting the result.");
         return 0;
@@ -101,7 +104,7 @@ HdComputedBufferSource::GetGLComponentDataType() const
 int
 HdComputedBufferSource::GetGLElementDataType() const
 {
-    if (not _result) {
+    if (!_result) {
         TF_CODING_ERROR("HdComputedBufferSource::GetGLElementDataType() "
                         "called without setting the result.");
         return 0;
@@ -173,3 +176,6 @@ HdNullBufferSource::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

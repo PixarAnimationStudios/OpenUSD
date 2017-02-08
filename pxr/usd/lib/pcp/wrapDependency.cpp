@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/dependency.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/makePyConstructor.h"
@@ -29,6 +31,8 @@
 
 using namespace boost::python;
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static string
 _DependencyRepr(const PcpDependency &dep)
@@ -63,3 +67,5 @@ wrapDependency()
 
     TfPyWrapEnum<PcpDependencyType>();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

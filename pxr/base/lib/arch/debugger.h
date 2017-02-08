@@ -27,8 +27,11 @@
 /// \file arch/debugger.h
 /// Routines for interacting with a debugger.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/attributes.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Stop in a debugger.
 ///
@@ -83,6 +86,13 @@ bool ArchDebuggerAttach() ARCH_NOINLINE;
 ARCH_API
 bool ArchDebuggerIsAttached() ARCH_NOINLINE;
 
+/// Abort.  This will try to avoid the JIT debugger if any if ARCH_AVOID_JIT
+/// is in the environment and the debugger isn't already attached.  In that
+/// case it will _exit(134).  If \p logging is \c false then this will
+/// attempt to bypass any crash logging.
+ARCH_API
+void ArchAbort(bool logging = true);
+
 /// Stop in the debugger.
 ///
 /// This macro expands to \c ArchDebuggerTrap() and, if necessary and
@@ -94,5 +104,7 @@ bool ArchDebuggerIsAttached() ARCH_NOINLINE;
 #else
 #define ARCH_DEBUGGER_TRAP do { ArchDebuggerTrap(); } while (0)
 #endif
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_DEBUGGER_H

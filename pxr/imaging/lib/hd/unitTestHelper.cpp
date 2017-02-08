@@ -37,6 +37,9 @@
 #include <string>
 #include <sstream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (l0dir)
@@ -60,7 +63,7 @@ Hd_TestDriver::Hd_TestDriver()
     : _renderPassState(new HdRenderPassState())
 {
     TfToken reprName = HdTokens->hull;
-    if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" or
+    if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
         TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
         reprName = HdTokens->smoothHull;
     }
@@ -126,7 +129,7 @@ HdRenderPassSharedPtr const &
 Hd_TestDriver::GetRenderPass(bool withGuides)
 {
     if (withGuides) {
-        if (not _geomAndGuidePass) 
+        if (!_geomAndGuidePass) 
             _geomAndGuidePass = HdRenderPassSharedPtr(
                 new HdRenderPass(&_delegate.GetRenderIndex(),
                                  HdRprimCollection(
@@ -134,7 +137,7 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
                                      _reprName)));
         return _geomAndGuidePass;
     } else {
-        if (not _geomPass)
+        if (!_geomPass)
             _geomPass = HdRenderPassSharedPtr(
                 new HdRenderPass(&_delegate.GetRenderIndex(),
                                  HdRprimCollection(
@@ -206,7 +209,7 @@ std::string
 Hd_TestLightingShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     std::string source = _glslfx->GetSource(shaderStageKey);
     return source;
@@ -274,4 +277,7 @@ Hd_TestLightingShader::SetLight(int light,
         _lights[light].color = color;
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

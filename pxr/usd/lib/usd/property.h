@@ -24,6 +24,7 @@
 #ifndef USD_PROPERTY_H
 #define USD_PROPERTY_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/prim.h"
@@ -31,6 +32,9 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/base/vt/value.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdProperty;
 
@@ -222,5 +226,8 @@ private:
         : UsdObject(objType, prim, propName) {}
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_PROPERTY_H

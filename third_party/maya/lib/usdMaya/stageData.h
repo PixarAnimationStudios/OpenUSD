@@ -24,12 +24,16 @@
 #ifndef PXRUSDMAYA_STAGEDATA_H
 #define PXRUSDMAYA_STAGEDATA_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 
 #include <maya/MPxGeometryData.h>
 #include <maya/MTypeId.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MString.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdMayaStageData : public MPxGeometryData {
 
@@ -104,4 +108,7 @@ class UsdMayaStageData : public MPxGeometryData {
 
         MCallbackId _exitCallbackId;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // PXRUSDMAYA_STAGEDATA_H

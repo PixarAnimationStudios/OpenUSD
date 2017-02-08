@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderRegistry.h"
 #include "usdMaya/debugCodes.h"
 #include "usdMaya/registryHelper.h"
@@ -33,6 +34,9 @@
 #include "pxr/base/tf/type.h"
 
 #include <boost/assign.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     (UsdMaya)
@@ -53,7 +57,7 @@ PxrUsdMayaPrimReaderRegistry::Register(
             "Registering UsdMayaPrimReader for TfType %s.\n", tfTypeName.GetText());
     std::pair< _Registry::iterator, bool> insertStatus = 
         _reg.insert(std::make_pair(tfTypeName, fn));
-    if (not insertStatus.second) {
+    if (!insertStatus.second) {
         TF_CODING_ERROR("Multiple readers for type %s", tfTypeName.GetText());
         insertStatus.first->second = fn;
     }
@@ -82,7 +86,7 @@ PxrUsdMayaPrimReaderRegistry::Find(
 
     // ideally something just registered itself.  if not, we at least put it in
     // the registry in case we encounter it again.
-    if (not TfMapLookup(_reg, typeName, &ret)) {
+    if (!TfMapLookup(_reg, typeName, &ret)) {
         TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
                 "No usdMaya reader plugin for TfType %s.  No maya plugin.\n", 
                 typeName.GetText());
@@ -90,3 +94,6 @@ PxrUsdMayaPrimReaderRegistry::Find(
     }
     return ret;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

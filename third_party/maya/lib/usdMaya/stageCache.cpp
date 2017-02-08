@@ -21,11 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/stageCache.h"
 
 #include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 static
 void
@@ -60,3 +62,6 @@ UsdMayaStageCache::Clear()
     UsdMayaStageCache::Get(true).Clear();
     UsdMayaStageCache::Get(false).Clear();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

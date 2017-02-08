@@ -24,11 +24,15 @@
 #ifndef GLF_UVTEXTURESTORAGE_DATA_H
 #define GLF_UVTEXTURESTORAGE_DATA_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include "pxr/base/vt/value.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTextureStorageData);
 
@@ -111,4 +115,7 @@ private:
 
     unsigned char *_rawBuffer;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // GLF_UVTEXTURESTORAGE_DATA_H

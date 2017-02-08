@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/getenv.h"
@@ -35,6 +37,8 @@
 #include <csignal>
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(TF_DIAGNOSTIC_CODING_ERROR_TYPE,"Coding Error");
@@ -71,7 +75,7 @@ Tf_FailedVerifyHelper(const TfCallContext &context,
     std::string errorMsg =
         std::string("Failed verification: ' ") + condition + " '";
 
-    if (not msg.empty())
+    if (!msg.empty())
         errorMsg += " -- " + msg;
 
     if (TfGetenvBool("TF_FATAL_VERIFY", false)) {
@@ -122,7 +126,7 @@ Tf_TerminateHandler()
         /*
          * If there's no exception, we'll end up in the handler above.
          */
-        std::set_terminate(::_BadThrowHandler);
+        std::set_terminate(_BadThrowHandler);
         throw;
     }
     catch (std::bad_alloc& exc) {
@@ -237,3 +241,5 @@ TfInstallTerminateAndCrashHandlers()
     sigaction(SIGFPE,  &act, NULL);
     sigaction(SIGABRT, &act, NULL);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

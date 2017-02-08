@@ -27,6 +27,7 @@
 /// \file gf/frustum.h
 /// \ingroup group_gf_BasicGeometry
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/plane.h"
@@ -41,6 +42,8 @@
 
 #include <iosfwd>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class GfFrustum
 /// \ingroup group_gf_BasicGeometry
@@ -609,4 +612,6 @@ class GfFrustum {
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream& out, const GfFrustum& f);
 
-#endif /* GF_FRUSTUM_H */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // GF_FRUSTUM_H 

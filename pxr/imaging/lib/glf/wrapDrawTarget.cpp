@@ -32,6 +32,9 @@
 #include <boost/python/class.hpp>
 #include <boost/python/overloads.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 
 static GlfDrawTargetRefPtr _NewDrawTarget(
@@ -67,3 +70,6 @@ void wrapDrawTarget()
         
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

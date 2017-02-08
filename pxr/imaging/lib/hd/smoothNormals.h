@@ -24,6 +24,7 @@
 #ifndef HD_SMOOTH_NORMALS_H
 #define HD_SMOOTH_NORMALS_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
@@ -32,6 +33,9 @@
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class Hd_VertexAdjacency;
 
@@ -74,6 +78,7 @@ public:
     Hd_SmoothNormalsComputationGPU(Hd_VertexAdjacency const *adjacency,
                                  TfToken const &srcName,
                                  TfToken const &dstName,
+                                 GLenum srcDataType,
                                  GLenum dstDataType);
 
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
@@ -87,7 +92,11 @@ private:
     Hd_VertexAdjacency const *_adjacency;
     TfToken _srcName;
     TfToken _dstName;
+    GLenum _srcDataType;
     GLenum _dstDataType;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_SMOOTH_NORMALS_H

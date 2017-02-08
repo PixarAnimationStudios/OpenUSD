@@ -28,6 +28,7 @@
 #ifndef PXRUSDMAYAGL_HDRENDERER_H
 #define PXRUSDMAYAGL_HDRENDERER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usdImaging/usdImagingGL/gl.h"
 #include <boost/scoped_ptr.hpp>
@@ -38,6 +39,8 @@
 
 class M3dView;
 class MPxSurfaceShape;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief This is an helper object that shapes can hold to get consistent usd
 /// drawing in maya.
@@ -141,5 +144,8 @@ private:
     SdfPathVector _excludePrimPaths;
     boost::scoped_ptr<UsdImagingGL> _renderer;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYAGL_HDRENDERER_H

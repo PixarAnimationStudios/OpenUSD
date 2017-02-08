@@ -28,11 +28,15 @@
 /// \ingroup group_tf_String
 /// A simple glob and regex matching utility.
 
+#include "pxr/pxr.h"
+#include "pxr/base/tf/api.h"
+#include "pxr/base/arch/regex.h"
+
+#include <string>
+
 #include <boost/noncopyable.hpp>
 
-#include <sys/types.h>
-#include <regex.h>
-#include <string>
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPatternMatcher
 /// \ingroup group_tf_String
@@ -48,22 +52,21 @@ class TfPatternMatcher : public boost::noncopyable {
   public:
 
     /// Construct an empty (invalid) TfPatternMatcher.
-    TfPatternMatcher();
+    TF_API TfPatternMatcher();
 
     /// Construct a TfPatternMatcher with a default configuration.  Note that
     /// pattern compilation will not occur until the first call to \a Match()
     /// or \a IsValid().
+    TF_API
     TfPatternMatcher( const std::string &pattern,
                       bool caseSensitive = false,
                       bool isGlob = false );
 
     /// Destructor.
-    ~TfPatternMatcher();
+    TF_API ~TfPatternMatcher();
 
     /// If \a IsValid() returns true, this will return the reason why (if any).
-    std::string GetInvalidReason() const {
-        return _invalidReason;
-    }
+    TF_API std::string GetInvalidReason() const;
 
     /// Returns true if the matcher has been set to be case sensitive, false
     /// otherwise.
@@ -79,7 +82,7 @@ class TfPatternMatcher : public boost::noncopyable {
 
     /// Returns true if the matcher has a valid pattern.  Note that empty
     /// patterns are considered invalid.  This will cause a compile of
-    bool IsValid() const;
+    TF_API bool IsValid() const;
 
     /// Returns true if \a query matches the matcher's pattern.
     ///
@@ -87,34 +90,32 @@ class TfPatternMatcher : public boost::noncopyable {
     /// set with the error message. If the matcher is not valid, this will
     /// return false. Note that this will cause a compile of the matcher's
     /// pattern if it was not already compiled.
-    bool Match( const std::string &query, std::string *errorMsg = NULL ) const;
+    TF_API bool Match( const std::string &query,
+                       std::string *errorMsg = NULL ) const;
 
     /// Set this matcher to match case-sensitively or not.
-    void SetIsCaseSensitive( bool sensitive );
+    TF_API void SetIsCaseSensitive( bool sensitive );
 
     /// Set this matcher to treat its pattern as a glob pattern. Currently,
     /// this means that the pattern will be transformed by replacing all
     /// instances of '.' with '\.', '*' with '.*', and '?' with '.', in that
     /// order before being compiled as a normal regular expression.
-    void SetIsGlobPattern( bool isGlob );
+    TF_API void SetIsGlobPattern( bool isGlob );
 
     /// Set the pattern that this matcher will use to match against.
-    void SetPattern( const std::string &pattern );
+    TF_API void SetPattern( const std::string &pattern );
     
   private:
-
-    void _CleanUp() const;
     void _Compile() const;
-    std::string _ConvertPatternToRegex() const;
-    std::string _GetRegErrorMessage( int code ) const;
 
     bool _caseSensitive;
-    mutable std::string _invalidReason;
     bool _isGlob;
     std::string _pattern;
     mutable bool _recompile;
-    mutable regex_t _regex;
+    mutable ArchRegex _regex;
         
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PATTERNMATCHER_H

@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#pragma once
+#ifndef USDIMAGINGGL_TASK_DELEGATE_H
+#define USDIMAGINGGL_TASK_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/imaging/hd/version.h"
@@ -32,6 +34,8 @@
 #include "pxr/base/tf/type.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 //
 // Render-graph delegate base
@@ -98,3 +102,7 @@ public:
         return UsdImagingGLTaskDelegateSharedPtr(new T(renderIndex, delegateID));
     }
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // USDIMAGINGGL_TASK_DELEGATE_H

@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/locks.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 boost::upgrade_mutex& UsdKatanaGetStageLock()
@@ -44,4 +48,7 @@ boost::upgrade_mutex& UsdKatanaGetSessionCacheLock()
     static boost::upgrade_mutex _rwLock;
     return _rwLock;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

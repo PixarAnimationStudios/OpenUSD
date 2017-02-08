@@ -23,6 +23,7 @@
 //
 /// \file alembicData.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicData.h"
 #include "pxr/usd/usdAbc/alembicReader.h"
 #include "pxr/usd/usdAbc/alembicUtil.h"
@@ -31,6 +32,9 @@
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Note: The Alembic translator has a few major parts.  Here's a
 //       quick description.
@@ -82,7 +86,7 @@
 //     method for writing an Alembic file.
 //
 
-using namespace ::UsdAbc_AlembicUtil;
+using namespace UsdAbc_AlembicUtil;
 
 TF_DEFINE_ENV_SETTING(USD_ABC_EXPAND_INSTANCES, false,
                       "Force Alembic instances to be expanded.");
@@ -168,7 +172,7 @@ UsdAbc_AlembicData::Write(
     TRACE_FUNCTION();
 
     std::string finalComment = comment;
-    if (data and finalComment.empty()) {
+    if (data && finalComment.empty()) {
         SdfAbstractDataSpecId id(&SdfPath::AbsoluteRootPath());
         VtValue value = data->Get(id, SdfFieldKeys->Comment);
         if (value.IsHolding<std::string>()) {
@@ -182,7 +186,7 @@ UsdAbc_AlembicData::Write(
 
     // Write the archive.
     if (writer.Open(filePath, finalComment)) {
-        if (writer.Write(data) and writer.Close()) {
+        if (writer.Write(data) && writer.Close()) {
             return true;
         }
         TfDeleteFile(filePath);
@@ -334,7 +338,7 @@ UsdAbc_AlembicData::QueryTimeSample(
     SdfAbstractDataValue* value) const
 {
     UsdAbc_AlembicDataReader::Index index;
-    return _reader->ListTimeSamplesForPath(id).FindIndex(time, &index) and
+    return _reader->ListTimeSamplesForPath(id).FindIndex(time, &index) && 
            _reader->HasValue(id, index, value);
 }
 
@@ -345,7 +349,7 @@ UsdAbc_AlembicData::QueryTimeSample(
     VtValue* value) const
 {
     UsdAbc_AlembicDataReader::Index index;
-    return _reader->ListTimeSamplesForPath(id).FindIndex(time, &index) and
+    return _reader->ListTimeSamplesForPath(id).FindIndex(time, &index) && 
            _reader->HasValue(id, index, value);
 }
 
@@ -363,3 +367,6 @@ UsdAbc_AlembicData::EraseTimeSample(const SdfAbstractDataSpecId& id, double time
 {
     XXX_UNSUPPORTED(EraseTimeSample);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

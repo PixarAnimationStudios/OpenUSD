@@ -28,16 +28,19 @@
 ///
 /// Collection of utilities for sequencing multiple layers each holding
 /// sequential time-varying data into
-/// \ref Usd_ClipsOverview "USD Value Clips".
+/// \ref Usd_AdvancedFeatures_ClipsOverview "USD Value Clips".
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
-SDF_DECLARE_HANDLES(SdfLayer);
-
 #include <limits>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+SDF_DECLARE_HANDLES(SdfLayer);
+
 /// A function that creates layers that use
-/// \ref Usd_ClipsOverview "USD Value Clips"
+/// \ref Usd_AdvancedFeatures_ClipsOverview "USD Value Clips"
 /// to effectively merge the time samples in the given \p clipLayers under \p
 /// clipPath without copying the samples into a separate layer.
 ///
@@ -167,5 +170,8 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
 ///                       our topology layer name.
 std::string
 UsdUtilsGenerateClipTopologyName(const std::string& rootLayerName);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // _USDUTILS_STITCH_CLIPS_H_

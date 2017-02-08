@@ -39,6 +39,9 @@
 
 #include <cmath>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingCylinderAdapter Adapter;
@@ -91,7 +94,7 @@ UsdImagingCylinderAdapter::TrackVariability(UsdPrim const& prim,
     // container during update.
     
     if (requestedBits & HdChangeTracker::DirtyPoints) {
-        if (not _IsVarying(prim, 
+        if (!_IsVarying(prim, 
                            UsdGeomTokens->radius,
                            HdChangeTracker::DirtyPoints,
                            UsdImagingTokens->usdVaryingPrimVar,
@@ -302,7 +305,7 @@ _GenerateCylinderMeshTopology()
         indices[index++] = top;
     }
 
-    TF_VERIFY(face == numCounts and index == numIndices);
+    TF_VERIFY(face == numCounts && index == numIndices);
 
     return HdMeshTopology(PxOsdOpenSubdivTokens->catmark,
                           HdTokens->rightHanded,
@@ -318,3 +321,6 @@ UsdImagingCylinderAdapter::GetMeshTopology()
 
     return VtValue(cylinderTopo);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

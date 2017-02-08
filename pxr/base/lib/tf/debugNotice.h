@@ -26,7 +26,10 @@
 
 /// \file tf/debugNotice.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/notice.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDebugSymbolsChangedNotice
 ///
@@ -47,5 +50,7 @@ public:
     TfDebugSymbolEnableChangedNotice() {}
     virtual ~TfDebugSymbolEnableChangedNotice();
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

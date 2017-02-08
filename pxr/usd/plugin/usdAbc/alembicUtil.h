@@ -26,6 +26,7 @@
 
 /// \file usdAbc/alembicUtil.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicReader.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/schema.h"
@@ -51,6 +52,9 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class SdfAbstractDataValue;
 
@@ -425,7 +429,7 @@ public:
     /// Returns \c false iff the data is valid.
     bool operator!() const
     {
-        return not _IsValid();
+        return !_IsValid();
     }
 
     /// Returns the raw data.
@@ -1037,7 +1041,7 @@ UsdAbc_ReverseOrderImpl(
         const int count = counts[k];
 
         // Bail out with failure if we run out of items.
-        if (not TF_VERIFY(j + count <= n)) {
+        if (!TF_VERIFY(j + count <= n)) {
             return false;
         }
 
@@ -1051,5 +1055,8 @@ UsdAbc_ReverseOrderImpl(
 }
 
 } // namespace UsdAbc_AlembicUtil
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDABC_ALEMBICUTIL_H

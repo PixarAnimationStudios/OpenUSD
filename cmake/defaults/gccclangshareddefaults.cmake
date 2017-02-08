@@ -27,25 +27,30 @@
 # to remain minimal, marking the points where divergence is required.
 include(Options)
 
-# By default, Release flavor builds in cmake set NDEBUG, which
-# breaks things internally.  Turn it off.
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+# Turn on C++11; pxr won't build without it. 
+set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -std=c++11")
 
-# Enable all warnings
-_add_warning_flag("all")
+# Enable all warnings.
+set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Wall")
+
+# Errors are warnings in strict build mode.
+if (${PXR_STRICT_BUILD_MODE})
+    set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Werror")
+endif()
+
 # We use hash_map, suppress deprecation warning.
-_add_warning_flag("no-deprecated")
-_add_warning_flag("no-deprecated-declarations")
-# Suppress unused typedef warnings eminating from boost.
-_add_warning_flag("no-unused-local-typedefs")
+_disable_warning("deprecated")
+_disable_warning("deprecated-declarations")
 
-# Turn on C++11, pxr won't build without it. 
-set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "-std=c++11")
+# Suppress unused typedef warnings emanating from boost.
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+    NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6)
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR
+        NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6.1)
+            _disable_warning("unused-local-typedefs")
+    endif()
+endif()
 
 if (${PXR_MAYA_TBB_BUG_WORKAROUND})
     set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Wl,-Bsymbolic")
-endif()
-
-if (${PXR_STRICT_BUILD_MODE})
-    _add_warning_flag("error")
 endif()

@@ -26,6 +26,7 @@
 
 /// \file referenceAssembly.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/usdPrimProvider.h"
 
@@ -46,6 +47,9 @@
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/stage.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 extern TfEnvSetting<bool> PIXMAYA_USE_USD_ASSEM_NAMESPACE;
 
@@ -180,6 +184,20 @@ public:
     /// are included in the returned map.
     std::map<std::string, std::string> GetVariantSetSelections() const;
 
+    /// Connect Maya's global time to the assembly's time attribute
+    ///
+    /// This function is called when the assembly's Playback representation is
+    /// activated to enable scrubbing through animation using the timeline,
+    /// since we also create a connection from the assembly to its proxies.
+    void ConnectMayaTimeToAssemblyTime();
+
+    /// Disconnect the assembly's time attribute from Maya's global time
+    ///
+    /// This function is called when the assembly's Playback representation is
+    /// deactivated so that we do not incur the performance overhead of
+    /// propagating Maya's global time to the assembly and its proxies.
+    /// This also disables scrubbing through animation.
+    void DisconnectAssemblyTimeFromMayaTime();
 
   private:
 
@@ -299,6 +317,9 @@ class UsdMayaRepresentationPlayback : public UsdMayaRepresentationProxyBase
 
     virtual MString getType () const { return UsdMayaRepresentationPlayback::_assemblyType; };
 
+    virtual bool activate();
+    virtual bool inactivate();
+
   protected:
     virtual void _OverrideProxyPlugs(MFnDependencyNode &shapeFn,
                                      MDGModifier &dgMod);
@@ -361,5 +382,8 @@ class UsdMayaRepresentationFull : public UsdMayaRepresentationHierBase
 
     virtual MString getType () const { return UsdMayaRepresentationFull::_assemblyType; };
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_REFERENCEASSEMBLY_H

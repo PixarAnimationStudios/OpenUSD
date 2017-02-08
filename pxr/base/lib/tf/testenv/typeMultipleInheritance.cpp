@@ -21,11 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/regTest.h"
+#include "pxr/base/arch/error.h"
 
 using namespace std;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 class A {
 public:
@@ -76,11 +79,11 @@ Test_TfType_MultipleInheritance()
 
     vector<TfType> types;
 
-    assert(m.IsClean());
+    TF_AXIOM(m.IsClean());
 
     TfType::Find<Z>().GetAllAncestorTypes(&types);
 
-    assert(not m.IsClean());
+    TF_AXIOM(!m.IsClean());
     m.Clear();
 
     return true;

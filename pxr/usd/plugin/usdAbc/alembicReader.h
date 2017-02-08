@@ -26,6 +26,7 @@
 
 /// \file usdAbc/alembicReader.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/base/tf/token.h"
 #include <boost/noncopyable.hpp>
@@ -33,6 +34,9 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Note -- Even though this header is private we try to keep Alembic headers
 //         out of it anyway for simplicity's sake.
@@ -156,5 +160,8 @@ private:
     boost::scoped_ptr<class UsdAbc_AlembicDataReaderImpl> _impl;
     std::string _errorLog;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

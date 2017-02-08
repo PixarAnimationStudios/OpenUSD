@@ -32,11 +32,12 @@
 
 #define TF_INSTANTIATETYPE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/refPtr.h"
 
-// legacy 2x-style type instantiation.
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename T, bool AS_REF_PTR>
 struct Tf_TypeFactoryType {
@@ -83,3 +84,4 @@ struct Tf_MakeTypeManufacturable<T, false> {
         Tf_MakeTypeManufacturable<Type, flags&TfType::MANUFACTURABLE>::Doit(t1); \
     }
 
+PXR_NAMESPACE_CLOSE_SCOPE

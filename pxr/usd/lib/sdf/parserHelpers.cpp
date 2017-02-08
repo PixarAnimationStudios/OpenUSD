@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/parserHelpers.h"
 #include "pxr/usd/sdf/schema.h"
-
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -55,6 +56,8 @@
 #include <boost/mpl/for_each.hpp>
 
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Sdf_ParserHelpers {
 
@@ -360,7 +363,7 @@ struct _MakeFactoryMap {
 
         _ValueFactoryMap &f = *_factories;
         f[scalarName] =
-            ValueFactory(scalarName, scalar.GetDimensions(), not isShaped,
+            ValueFactory(scalarName, scalar.GetDimensions(), !isShaped,
                          boost::bind(MakeScalarValueTemplate<CppType>,
                                      _1, _2, _3, _4));
         f[arrayName] =
@@ -544,3 +547,5 @@ Sdf_EvalQuotedString(const char* x, size_t n, size_t trimBothSides,
     
     return ret;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

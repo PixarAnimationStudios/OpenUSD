@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/diagnostic.h"
 
+#include "pxr/pxr.h"
+
+#include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/debugCodes.h"
@@ -42,6 +44,8 @@
 #include <boost/assign/list_of.hpp>
 #include <fstream>
 #include <sstream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef std::set<PcpNodeRef> Pcp_NodeSet;
 
@@ -162,7 +166,7 @@ std::string PcpDump(
     bool includeInheritOriginInfo,
     bool includeMaps)
 {
-    if (not rootNode) {
+    if (!rootNode) {
         return std::string();
     }
 
@@ -195,7 +199,7 @@ std::string PcpDump(
     bool includeInheritOriginInfo,
     bool includeMaps)
 {
-    if (not primIndex.GetRootNode()) {
+    if (!primIndex.GetRootNode()) {
         return std::string();
     }
 
@@ -233,7 +237,7 @@ _WriteGraph(
     const Pcp_NodeSet& nodesToHighlight = Pcp_NodeSet(),
     int count = 0)
 {
-    if (not node) {
+    if (!node) {
         // This usually happens if we don't have a root node yet. To
         // ensure we see something in the graph, just write out an empty
         // node.
@@ -258,11 +262,11 @@ _WriteGraph(
     }
 
     std::string nodeDesc;
-    if (not status.empty()) {
+    if (!status.empty()) {
         nodeDesc = "\\n" + TfStringJoin(status, ", ");
     }
 
-    if (not node.CanContributeSpecs()) {
+    if (!node.CanContributeSpecs()) {
         nodeDesc += "\\nCANNOT contribute specs";
     }
     nodeDesc += TfStringPrintf("\\ndepth: %i", node.GetNamespaceDepth());
@@ -287,8 +291,8 @@ _WriteGraph(
         msg += TfStringPrintf("\n");
         msg += "-- mapToParent:\n" + node.GetMapToParent().GetString() + "\n";
 
-        if (not node.GetMapToRoot().IsNull() and 
-            not node.GetMapToRoot().IsIdentity()) {
+        if (!node.GetMapToRoot().IsNull() &&
+            !node.GetMapToRoot().IsIdentity()) {
             msg += "-- mapToRoot:\n" + node.GetMapToRoot().GetString() + "\n";
         }
         // Replace newlines with escape sequence graphviz uses for newlines.
@@ -335,15 +339,15 @@ _WriteGraph(
         TF_CODING_ERROR("Invalid arc type");
         break;
     }
-    if (node.GetOriginNode() and 
+    if (node.GetOriginNode() &&
         node.GetOriginNode() != node.GetParentNode()) {
-        if (not style.empty()) 
+        if (!style.empty()) 
             style += ", ";
         style += "style=dashed";
     }
 
 // XXX should we include the sibling #?
-//        if (not style.empty()) 
+//        if (!style.empty()) 
 //            style += ", ";
 //        style += TfStringPrintf("label=\"%i\"", edge.siblingNumAtOrigin);
 
@@ -357,8 +361,8 @@ _WriteGraph(
     }
 
     // Origin arc
-    if (includeInheritOriginInfo and
-        node.GetOriginNode() and 
+    if (includeInheritOriginInfo &&
+        node.GetOriginNode()     &&
         node.GetOriginNode() != node.GetParentNode()) {
         out << TfStringPrintf(
                    "\t%zu -> %zu [style=dotted label=\"origin\" "
@@ -401,7 +405,7 @@ PcpDumpDotGraph(
     bool includeInheritOriginInfo,
     bool includeMaps)
 {
-    if (not node) {
+    if (!node) {
         return;
     }
 
@@ -524,11 +528,11 @@ Pcp_GraphOutputManager::_OutputToTerminal(const std::string& msg) const
 void 
 Pcp_GraphOutputManager::_OutputGraph() const
 {
-    if (not TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
+    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
         return;
     }
 
-    if (not TF_VERIFY(not _graphs.empty())) {
+    if (!TF_VERIFY(!_graphs.empty())) {
         return;
     }
 
@@ -543,7 +547,7 @@ Pcp_GraphOutputManager::_OutputGraph() const
 
     std::ofstream f(
         filename.c_str(), std::ofstream::out | std::ofstream::trunc);
-    if (not f) {
+    if (!f) {
         TF_RUNTIME_ERROR("Unable to open %s to write graph", filename.c_str());
         return;
     }
@@ -563,12 +567,12 @@ Pcp_GraphOutputManager::_OutputGraph() const
 void 
 Pcp_GraphOutputManager::_UpdateCurrentDotGraph()
 {
-    if (not TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
+    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
         return;
     }
 
-    if (not TF_VERIFY(not _graphs.empty()) or
-        not TF_VERIFY(not _graphs.back().phases.empty())) {
+    if (!TF_VERIFY(!_graphs.empty()) ||
+        !TF_VERIFY(!_graphs.back().phases.empty())) {
         return;
     }
 
@@ -591,12 +595,12 @@ Pcp_GraphOutputManager::_UpdateCurrentDotGraph()
 void 
 Pcp_GraphOutputManager::_UpdateCurrentDotGraphLabel()
 {
-    if (not TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
+    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
         return;
     }
 
-    if (not TF_VERIFY(not _graphs.empty()) or
-        not TF_VERIFY(not _graphs.back().phases.empty())) {
+    if (!TF_VERIFY(!_graphs.empty()) ||
+        !TF_VERIFY(!_graphs.back().phases.empty())) {
         return;
     }
 
@@ -670,7 +674,7 @@ Pcp_GraphOutputManager::_UpdateCurrentDotGraphLabel()
 void 
 Pcp_GraphOutputManager::_FlushGraphIfNeedsOutput()
 {
-    if (not _graphs.empty() and _graphs.back().needsOutput) {
+    if (!_graphs.empty() && _graphs.back().needsOutput) {
         _OutputGraph();
 
         // Clear dirtied flags from our phase and graph structures.
@@ -694,8 +698,8 @@ Pcp_GraphOutputManager::BeginGraph(PcpPrimIndex* index,
 void 
 Pcp_GraphOutputManager::EndGraph()
 {
-    if (not TF_VERIFY(not _graphs.empty()) or
-        not TF_VERIFY(not _graphs.back().phases.empty())) {
+    if (!TF_VERIFY(!_graphs.empty()) ||
+        !TF_VERIFY(!_graphs.back().phases.empty())) {
         return;
     }
 
@@ -719,7 +723,7 @@ void
 Pcp_GraphOutputManager::BeginPhase(
     const std::string& msg, const PcpNodeRef& nodeForPhase)
 {
-    if (not TF_VERIFY(not _graphs.empty())) {
+    if (!TF_VERIFY(!_graphs.empty())) {
         return;
     }
 
@@ -741,8 +745,8 @@ Pcp_GraphOutputManager::BeginPhase(
 void 
 Pcp_GraphOutputManager::EndPhase()
 {
-    if (not TF_VERIFY(not _graphs.empty()) or
-        not TF_VERIFY(not _graphs.back().phases.empty())) {
+    if (!TF_VERIFY(!_graphs.empty()) ||
+        !TF_VERIFY(!_graphs.back().phases.empty())) {
         return;
     }
 
@@ -751,7 +755,7 @@ Pcp_GraphOutputManager::EndPhase()
     _FlushGraphIfNeedsOutput();
 
     _graphs.back().phases.pop_back();
-    if (not _graphs.back().phases.empty()) {
+    if (!_graphs.back().phases.empty()) {
         _UpdateCurrentDotGraph();
         _UpdateCurrentDotGraphLabel();
         _graphs.back().needsOutput = false;
@@ -762,8 +766,8 @@ void
 Pcp_GraphOutputManager::Update(
     const std::string& msg, const PcpNodeRef& updatedNode)
 {
-    if (not TF_VERIFY(not _graphs.empty()) or
-        not TF_VERIFY(not _graphs.back().phases.empty())) {
+    if (!TF_VERIFY(!_graphs.empty()) ||
+        !TF_VERIFY(!_graphs.back().phases.empty())) {
         return;
     }
 
@@ -784,8 +788,8 @@ void
 Pcp_GraphOutputManager::Msg(
     const std::string& msg, const Pcp_NodeSet& nodes)
 {
-    if (not TF_VERIFY(not _graphs.empty()) or
-        not TF_VERIFY(not _graphs.back().phases.empty())) {
+    if (!TF_VERIFY(!_graphs.empty()) ||
+        !TF_VERIFY(!_graphs.back().phases.empty())) {
         return;
     }
 
@@ -885,3 +889,5 @@ void Pcp_GraphMsg(                                                      \
 
 #include BOOST_PP_LOCAL_ITERATE()
 #undef _ADD_TO_NODES
+
+PXR_NAMESPACE_CLOSE_SCOPE

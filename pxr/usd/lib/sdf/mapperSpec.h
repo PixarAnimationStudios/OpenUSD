@@ -26,11 +26,15 @@
 
 /// \file sdf/mapperSpec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/types.h"
+
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfMapperSpec 
 ///
@@ -108,4 +112,6 @@ public:
     /// @}
 };
 
-#endif /* SDF_MAPPERSPEC_H */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_MAPPERSPEC_H 

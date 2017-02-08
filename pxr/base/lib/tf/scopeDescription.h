@@ -24,6 +24,8 @@
 #ifndef TF_SCOPEDESCRIPTION_H
 #define TF_SCOPEDESCRIPTION_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -32,6 +34,8 @@
 
 #include <vector>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfScopeDescription
 ///
@@ -58,7 +62,7 @@ public:
     void SetDescription(std::string const &description);
 
 private:
-    static void *operator new(size_t);
+    static void *operator new(::std::size_t);
     static void operator delete (void *);
 
     void _Dismiss();
@@ -80,5 +84,7 @@ TfGetCurrentScopeDescriptionStack();
     TfScopeDescription __scope_description__                                   \
     (BOOST_PP_IF(TF_NUM_ARGS(__VA_ARGS__),                                     \
                  TfStringPrintf(fmt, __VA_ARGS__), fmt))
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_SCOPEDESCRIPTION_H

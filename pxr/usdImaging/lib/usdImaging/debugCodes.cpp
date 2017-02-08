@@ -25,6 +25,9 @@
 
 #include "pxr/base/tf/registryManager.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_COLLECTIONS, "Report collection queries");
@@ -40,3 +43,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_POINT_INSTANCER_PROTO_CULLING,
                                 "Report PI culling debug info");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

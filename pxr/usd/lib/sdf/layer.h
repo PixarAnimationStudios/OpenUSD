@@ -26,6 +26,7 @@
 
 /// \file sdf/layer.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/identity.h"
@@ -47,6 +48,8 @@
 #include <set>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(SdfFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerStateDelegateBase);
@@ -456,7 +459,7 @@ public:
     bool HasField(const SdfAbstractDataSpecId& id, const TfToken &name, 
         T* value) const
     {
-        if (not value) {
+        if (!value) {
             return HasField(id, name, static_cast<VtValue *>(NULL));
         }
 
@@ -465,10 +468,10 @@ public:
             id, name, static_cast<SdfAbstractDataValue *>(&outValue));
 
         if (std::is_same<T, SdfValueBlock>::value) {
-            return hasValue and outValue.isValueBlock;
+            return hasValue && outValue.isValueBlock;
         }
 
-        return hasValue and (not outValue.isValueBlock);
+        return hasValue && (!outValue.isValueBlock);
     }
 
     /// Return whether a value exists for the given \a id and \a fieldName and
@@ -491,7 +494,7 @@ public:
     bool HasFieldDictKey(const SdfAbstractDataSpecId& id, const TfToken &name,
                          const TfToken &keyPath, T* value) const
     {
-        if (not value) {
+        if (!value) {
             return HasFieldDictKey(id, name, keyPath,
                                    static_cast<VtValue *>(NULL));
         }
@@ -1114,7 +1117,7 @@ public:
     bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time, 
                          T* data) const
     {
-        if (not data) {
+        if (!data) {
             return QueryTimeSample(id, time);
         }
 
@@ -1123,10 +1126,10 @@ public:
             id, time, static_cast<SdfAbstractDataValue *>(&outValue));
 
         if (std::is_same<T, SdfValueBlock>::value) {
-            return hasValue and outValue.isValueBlock;
+            return hasValue && outValue.isValueBlock;
         }
 
-        return hasValue and (not outValue.isValueBlock);
+        return hasValue && (!outValue.isValueBlock);
     }
 
     void SetTimeSample(const SdfAbstractDataSpecId& id, double time, 
@@ -1221,7 +1224,7 @@ private:
     bool _WaitForInitializationAndCheckIfSuccessful();
 
     // Returns whether or not this menv layer should post change 
-    // notification.  This simply returns (not _GetIsLoading())
+    // notification.  This simply returns (!_GetIsLoading())
     bool _ShouldNotify() const;
 
     // This function keeps track of the last state of IsDirty() before
@@ -1352,10 +1355,11 @@ private:
     enum _ReloadResult { _ReloadFailed, _ReloadSucceeded, _ReloadSkipped };
     _ReloadResult _Reload(bool force);
 
-    // Reads content from the specified path into the target layer.
-    bool _ReadFromFile(const std::string& identifier, 
-                       const std::string& resolvedPath, 
-                       bool metadataOnly);
+    // Reads contents of asset specified by \p identifier with resolved
+    // path \p resolvedPath into this layer.
+    bool _Read(const std::string& identifier, 
+               const std::string& resolvedPath, 
+               bool metadataOnly);
     
     // Saves this layer if it is dirty or the layer doesn't already exist
     // on disk. If \p force is true, the layer will be written out
@@ -1401,6 +1405,17 @@ private:
                                      const T& value,
                                      const VtValue *oldValue = NULL,
                                      bool useDelegate = true);
+
+    // Primitive for appending a child to the list of children.
+    template <class T>
+    void _PrimPushChild(const SdfPath& parentPath,
+                        const TfToken& fieldName,
+                        const T& value,
+                        bool useDelegate = true);
+    template <class T>
+    void _PrimPopChild(const SdfPath& parentPath,
+                       const TfToken& fieldName,
+                       bool useDelegate = true);
 
     // Move all the fields at all paths at or below \a oldPath to be
     // at a corresponding location at or below \a newPath. This does
@@ -1650,5 +1665,7 @@ SdfLayer::EraseTimeSample(const SdfPath& path, double time)
 {
     EraseTimeSample(SdfAbstractDataSpecId(&path), time);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_LAYER_H

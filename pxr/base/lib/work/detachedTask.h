@@ -26,12 +26,15 @@
 
 /// \file work/detachedTask.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/errorMark.h"
 
 #include <tbb/task.h>
 
 #include <type_traits>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class Fn>
 struct Work_DetachedInvoker : public tbb::task {
@@ -59,5 +62,7 @@ void WorkRunDetachedTask(Fn &&fn)
         *new (tbb::task::allocate_root(Work_GetDetachedTaskGroupContext()))
         Work_DetachedInvoker<FnType>(std::forward<Fn>(fn)));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // WORK_DETACHEDTASK_H

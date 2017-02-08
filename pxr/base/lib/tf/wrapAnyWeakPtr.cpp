@@ -28,9 +28,9 @@
 
 #include <boost/python/to_python_converter.hpp>
 
-
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 // put this in the presto namespace so that we can declare it a friend in
 // AnyweakPtr.h
@@ -38,10 +38,6 @@ using namespace boost::python;
 object Tf_GetPythonObjectFromAnyWeakPtr(TfAnyWeakPtr const &self) {
     return self._GetPythonObject();
 }
-
-
-
-
 
 struct Tf_AnyWeakPtrToPython {
 
@@ -63,4 +59,4 @@ void wrapAnyWeakPtr()
         TfPyContainerConversions::set_policy>();
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

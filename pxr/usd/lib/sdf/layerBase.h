@@ -26,12 +26,17 @@
 
 /// \file sdf/layerBase.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
+
 #include <boost/noncopyable.hpp>
+
 #include <map>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfFileFormat);
@@ -71,5 +76,7 @@ private:
     SdfFileFormatConstPtr _fileFormat;
     FileFormatArguments _fileFormatArgs;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_LAYER_BASE_H

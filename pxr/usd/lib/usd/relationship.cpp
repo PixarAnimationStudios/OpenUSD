@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/prim.h"
@@ -38,6 +39,9 @@
 #include <algorithm>
 #include <set>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // ------------------------------------------------------------------------- //
 // UsdRelationship
@@ -95,7 +99,7 @@ UsdRelationship::_GetTargetForAuthoring(const SdfPath &target,
 }
 
 bool
-UsdRelationship::AddTarget(const SdfPath& target) const
+UsdRelationship::AppendTarget(const SdfPath& target) const
 {
     std::string errMsg;
     const SdfPath targetToAuthor = _GetTargetForAuthoring(target, &errMsg);
@@ -114,7 +118,7 @@ UsdRelationship::AddTarget(const SdfPath& target) const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     relSpec->GetTargetPathList().Add(targetToAuthor);
@@ -141,7 +145,7 @@ UsdRelationship::RemoveTarget(const SdfPath& target) const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     relSpec->GetTargetPathList().Remove(targetToAuthor);
@@ -160,7 +164,7 @@ UsdRelationship::BlockTargets() const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
@@ -192,7 +196,7 @@ UsdRelationship::SetTargets(const SdfPathVector& targets) const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
@@ -215,7 +219,7 @@ UsdRelationship::ClearTargets(bool removeSpec) const
     SdfChangeBlock block;
     SdfRelationshipSpecHandle relSpec = _CreateSpec();
 
-    if (not relSpec)
+    if (!relSpec)
         return false;
 
     if (removeSpec){
@@ -267,7 +271,7 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
         SdfPath masterPath;
         if (relationshipInMaster) {
             masterPath = _Prim()->GetPath();
-            while (not masterPath.IsRootPrimPath()) { 
+            while (!masterPath.IsRootPrimPath()) { 
                 masterPath = masterPath.GetParentPath();
             }
         }
@@ -277,7 +281,7 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
             const SdfPath& primPath = path.GetPrimPath();
             const SdfPath& primInMasterPath = 
                 instanceCache->GetPrimInMasterForPrimIndexAtPath(primPath);
-            const bool pathIsObjectInMaster = not primInMasterPath.IsEmpty();
+            const bool pathIsObjectInMaster = !primInMasterPath.IsEmpty();
 
             if (pathIsObjectInMaster) {
                 path = path.ReplacePrefix(primPath, primInMasterPath);
@@ -316,7 +320,7 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
     }
 
     // TODO: handle errors
-    const bool hasErrors = not (pcpErrors.empty() and otherErrors.empty());
+    const bool hasErrors = !(pcpErrors.empty() && otherErrors.empty());
     if (hasErrors) {
         stage->_ReportErrors(
             pcpErrors, otherErrors,
@@ -324,68 +328,71 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
                            GetPath().GetText()));
     }
 
-    return not hasErrors;
+    return !hasErrors;
 }
 
 bool
 UsdRelationship::_GetForwardedTargets(SdfPathSet* visited,
                                       SdfPathSet* uniqueTargets,
                                       SdfPathVector* targets,
+                                      bool includeForwardingRels,
                                       bool forwardToObjectsInMasters) const
 {
-    if (not visited->insert(GetPath()).second) {
-        // Cycle or dag fan-in detected.
-        // We're not sure if it's a cycle or a closed-loop in the dag, so
-        // silently continue.
-        return true;
-    }
-
-    SdfPathVector curTargets;
     // Track recursive composition errors, starting with the first batch of
     // targets.
+    SdfPathVector curTargets;
     bool success = GetTargets(&curTargets, forwardToObjectsInMasters);
 
     // Process all targets at this relationship.
-    for (const auto& target : curTargets) {
-        UsdPrim nextPrim = GetStage()->GetPrimAtPath(target.GetPrimPath());
-
-        if (nextPrim) {
-            if (UsdRelationship rel =
-                        nextPrim.GetRelationship(target.GetNameToken())) {
-                // It doesn't matter if we fail here, just track the error
-                // state and continue attempting to gather targets.
-                success = success and 
-                      rel._GetForwardedTargets(visited, uniqueTargets, targets,
-                                               forwardToObjectsInMasters);
-                // Never append paths that target a relationship.
-                continue;
-            } 
-        }
-        
-        if (uniqueTargets->insert(target).second) {
+    for (SdfPath const &target: curTargets) {
+        if (target.IsPrimPropertyPath()) {
+            // Resolve forwarding if this target points at a relationship.
+            if (UsdPrim prim = GetStage()->GetPrimAtPath(target.GetPrimPath())) {
+                if (UsdRelationship rel =
+                    prim.GetRelationship(target.GetNameToken())) {
+                    if (visited->insert(rel.GetPath()).second) {
+                        // Only do this rel if we've not yet seen it.
+                        success &= rel._GetForwardedTargets(
+                            visited, uniqueTargets, targets,
+                            includeForwardingRels,
+                            forwardToObjectsInMasters);
+                    }
+                    if (!includeForwardingRels)
+                        continue;
+                }
+            }
+        }            
+        if (uniqueTargets->insert(target).second)
             targets->push_back(target);
-        }
     }
 
     return success;
 }
 
 bool
+UsdRelationship::_GetForwardedTargets(
+    SdfPathVector *targets,
+    bool includeForwardingRels,
+    bool forwardToObjectsInMasters) const
+{
+    SdfPathSet visited, uniqueTargets;
+    return _GetForwardedTargets(&visited, &uniqueTargets, targets,
+                                includeForwardingRels,
+                                forwardToObjectsInMasters);
+}
+
+bool
 UsdRelationship::GetForwardedTargets(SdfPathVector* targets,
                                      bool forwardToObjectsInMasters) const
 {
-    if (not targets) {
-        TF_CODING_ERROR("Received null target pointer while processing <%s>\n",
-                GetPath().GetText());
+    if (!targets) {
+        TF_CODING_ERROR("Passed null pointer for targets on <%s>",
+                        GetPath().GetText());
         return false;
-    } else if (not targets->empty()) {
-        TF_CODING_ERROR("Received non-empty targets while processing <%s>\n",
-                GetPath().GetText());
-        targets->clear();
     }
-
-    SdfPathSet visited, uniqueTargets;
-    return _GetForwardedTargets(&visited, &uniqueTargets, targets,
+    targets->clear();
+    return _GetForwardedTargets(targets,
+                                /*includeForwardingRels=*/false,
                                 forwardToObjectsInMasters);
 }
 
@@ -426,3 +433,6 @@ UsdRelationship::_Create(bool fallbackCustom) const
 {
     return bool(_CreateSpec(fallbackCustom));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

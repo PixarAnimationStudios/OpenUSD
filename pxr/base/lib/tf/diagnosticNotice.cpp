@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticNotice.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/status.h"
@@ -29,6 +31,8 @@
 #include "pxr/base/tf/type.h"
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 bool TfDiagnosticNotice::_stderrOutputState = true;
 
@@ -136,3 +140,5 @@ TfDiagnosticNotice::IssuedFatalError::SetData(TfDiagnosticBase const& data)
 
 /* virtual */
 TfDiagnosticNotice::IssuedFatalError::~IssuedFatalError() {}
+
+PXR_NAMESPACE_CLOSE_SCOPE

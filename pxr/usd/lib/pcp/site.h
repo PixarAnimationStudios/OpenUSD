@@ -24,6 +24,7 @@
 #ifndef PCP_SITE_H
 #define PCP_SITE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
@@ -31,6 +32,8 @@
 
 #include <boost/operators.hpp>
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 class PcpLayerStackSite;
@@ -101,4 +104,6 @@ hash_value(const PcpLayerStackSite& site)
     return PcpLayerStackSite::Hash()(site);
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_SITE_H

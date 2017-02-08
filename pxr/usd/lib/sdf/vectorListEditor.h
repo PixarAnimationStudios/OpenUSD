@@ -24,13 +24,15 @@
 #ifndef SDF_VECTOR_LIST_EDITOR_H
 #define SDF_VECTOR_LIST_EDITOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/listEditor.h"
-
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/listOp.h"
 
 #include "pxr/base/tf/ostreamMethods.h"
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Various adapter classes used by Sdf_VectorListEditor to allow for
 // conversions between the publicly exposed value type and the underlying 
@@ -135,17 +137,17 @@ private:
 
     void _UpdateFieldData(const value_vector_type& newData)
     {
-        if (not _GetOwner()) {
+        if (!_GetOwner()) {
             TF_CODING_ERROR("Invalid owner.");
             return;
         }
 
-        if (not _GetOwner()->GetLayer()->PermissionToEdit()) {
+        if (!_GetOwner()->GetLayer()->PermissionToEdit()) {
             TF_CODING_ERROR("Layer is not editable.");
             return;
         }
 
-        if (newData == _data or not _ValidateEdit(_op, _data, newData)) {
+        if (newData == _data || !_ValidateEdit(_op, _data, newData)) {
             return;
         }
 
@@ -211,7 +213,7 @@ bool
 Sdf_VectorListEditor<TP, FST>::CopyEdits(const Sdf_ListEditor<TP>& rhs)
 {
     const This* rhsEdit = dynamic_cast<const This*>(&rhs);
-    if (not rhsEdit) {
+    if (!rhsEdit) {
         TF_CODING_ERROR("Cannot copy from list editor of different type");
         return false;
     }
@@ -298,7 +300,7 @@ Sdf_VectorListEditor<TP, FST>::ReplaceEdits(
 
     SdfListOp<value_type> fieldListOp;
     fieldListOp.SetItems(_data, op);
-    if (not fieldListOp.ReplaceOperations(
+    if (!fieldListOp.ReplaceOperations(
             op, index, n, _GetTypePolicy().Canonicalize(elems))) {
         return false;
     }
@@ -313,12 +315,12 @@ Sdf_VectorListEditor<TP, FST>::ApplyList(
     SdfListOpType op, const Sdf_ListEditor<TP>& rhs)
 {
     const This* rhsEdit = dynamic_cast<const This*>(&rhs);
-    if (not rhsEdit) {
+    if (!rhsEdit) {
         TF_CODING_ERROR("Cannot apply from list editor of different type");
         return;
     }
     
-    if (op != _op and op != rhsEdit->_op) {
+    if (op != _op && op != rhsEdit->_op) {
         return;
     }
 
@@ -344,5 +346,7 @@ Sdf_VectorListEditor<TP, FST>::_GetOperations(SdfListOpType op) const
     
     return _data;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_VECTOR_LIST_EDITOR_H

@@ -24,7 +24,7 @@
 // Reference.cpp
 //
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/reference.h"
 
 #include "pxr/base/tf/registryManager.h"
@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <ostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -68,19 +69,19 @@ SdfReference::SetCustomData(const std::string &name, const VtValue &value)
 bool
 SdfReference::operator==(const SdfReference &rhs) const
 {
-    return _assetPath   == rhs._assetPath and
-           _primPath    == rhs._primPath and
-           _layerOffset == rhs._layerOffset and
+    return _assetPath   == rhs._assetPath   &&
+           _primPath    == rhs._primPath    &&
+           _layerOffset == rhs._layerOffset &&
            _customData  == rhs._customData;
 }
 
 bool
 SdfReference::operator<(const SdfReference &rhs) const
 {
-    return (_assetPath   <  rhs._assetPath) or (
-           (_assetPath   == rhs._assetPath and _primPath    <rhs._primPath) or (
-           (_primPath    == rhs._primPath  and _layerOffset <rhs._layerOffset) or(
-           (_layerOffset == rhs._layerOffset) and
+    return (_assetPath   <  rhs._assetPath) || (
+           (_assetPath   == rhs._assetPath && _primPath    <rhs._primPath)    || (
+           (_primPath    == rhs._primPath  && _layerOffset <rhs._layerOffset) || (
+           (_layerOffset == rhs._layerOffset) &&
                (_customData.size() < rhs._customData.size()))));
 }
 
@@ -107,3 +108,5 @@ std::ostream & operator<<( std::ostream &out,
         << reference.GetLayerOffset() << ", "
         << reference.GetCustomData() << ")";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

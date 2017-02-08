@@ -24,12 +24,14 @@
 #ifndef SDF_CONNECTION_LIST_EDITOR_H
 #define SDF_CONNECTION_LIST_EDITOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/listOpListEditor.h"
-
 #include "pxr/usd/sdf/childrenPolicies.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/proxyPolicies.h"
 #include "pxr/usd/sdf/types.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfSpec);
 class TfToken;
@@ -52,7 +54,7 @@ protected:
         const TfToken& connectionListField,             
         const SdfPathKeyPolicy& typePolicy = SdfPathKeyPolicy());
     
-    void _OnEdit(SdfListOpType op,
+    void _OnEditShared(SdfListOpType op,
         SdfSpecType specType,
         const std::vector<SdfPath>& oldItems,
         const std::vector<SdfPath>& newItems) const;
@@ -102,5 +104,7 @@ public:
 private:
     typedef Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy> Parent;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_CONNECTION_LIST_EDITOR_H

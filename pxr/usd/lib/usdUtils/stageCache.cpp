@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/stageCache.h"
 
 #include "pxr/usd/sdf/layer.h"
@@ -29,6 +30,9 @@
 #include "pxr/base/tf/hashmap.h"
 #include <algorithm>
 #include <mutex>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 namespace {
 
@@ -76,7 +80,7 @@ UsdUtilsStageCache::GetSessionLayerForVariantSelections(
         _SessionLayerMap::iterator itr = sessionLayerMap.find(sessionKey);
         if (itr == sessionLayerMap.end()) {
             SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
-            if (not variantSelections.empty()) {
+            if (!variantSelections.empty()) {
                 SdfPrimSpecHandle over = SdfPrimSpec::New(
                     layer,
                     modelName,
@@ -95,4 +99,7 @@ UsdUtilsStageCache::GetSessionLayerForVariantSelections(
     }
     return ret;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

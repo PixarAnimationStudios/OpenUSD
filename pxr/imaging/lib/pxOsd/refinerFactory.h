@@ -26,11 +26,15 @@
 
 /// \file pxOsd/refinerFactory.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/pxOsd/meshTopology.h"
 #include "pxr/base/vt/array.h"
 
 #include <opensubdiv/far/topologyRefiner.h>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class OpenSubdiv::Far::TopologyRefiner> PxOsdTopologyRefinerSharedPtr;
 
@@ -49,5 +53,8 @@ public:
         TfToken name=TfToken());
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXOSD_REFINER_FACTORY_H

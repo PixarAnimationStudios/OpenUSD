@@ -26,6 +26,9 @@
 
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<GlfImage>();
@@ -50,7 +53,7 @@ GlfImage::OpenForReading(std::string const & filename, int subimage)
     GlfImageRegistry & registry = GlfImageRegistry::GetInstance();
 
     GlfImageSharedPtr image = registry._ConstructImage(filename);
-    if (not image or not image->_OpenForReading(filename, subimage)) {
+    if (!image || !image->_OpenForReading(filename, subimage)) {
         return GlfImageSharedPtr();
     }
 
@@ -64,9 +67,12 @@ GlfImage::OpenForWriting(std::string const & filename)
     GlfImageRegistry & registry = GlfImageRegistry::GetInstance();
 
     GlfImageSharedPtr image = registry._ConstructImage(filename);
-    if (not image or not image->_OpenForWriting(filename)) {
+    if (!image || !image->_OpenForWriting(filename)) {
         return GlfImageSharedPtr();
     }
 
     return image;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

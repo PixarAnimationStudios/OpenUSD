@@ -24,6 +24,7 @@
 #ifndef USD_VARIANTSETS_H
 #define USD_VARIANTSETS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/prim.h"
@@ -32,6 +33,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfPrimSpec);
@@ -50,10 +54,6 @@ class SdfPath;
 ///
 class UsdVariantSet {
 public:
-#ifndef doxygen
-    typedef const std::string UsdVariantSet::*_UnspecifiedBoolType;
-#endif
-
     /// Author a variant spec for \a variantName in this VariantSet at the
     /// stage's current EditTarget.  Return true if the spec was successfully
     /// authored, false otherwise.
@@ -62,7 +62,7 @@ public:
     /// UsdPrim "prim" is valid, the following should always work:
     /// \code
     /// UsdVariantSet vs = prim.GetVariantSet("myVariantSet");
-    /// vs.FindOrCreateVariant("myFirstVariation");
+    /// vs.AppendVariant("myFirstVariation");
     /// vs.SetVariantSelection("myFirstVariation");
     /// {
     ///     UsdEditContext ctx(vs.GetVariantEditContext());
@@ -70,7 +70,7 @@ public:
     ///     // 'myFirstVariation' variant of 'myVariantSet'
     /// }
     /// \endcode
-    bool FindOrCreateVariant(const std::string& variantName);
+    bool AppendVariant(const std::string& variantName);
 
     /// Return the composed variant names for this VariantSet, ordered
     /// lexicographically.
@@ -157,14 +157,10 @@ public:
         return _prim;
     }
 
-#ifdef doxygen
-    /// Safe bool-conversion operator.  Equivalent to IsValid().
-    operator unspecified-bool-type() const();
-#else
-    operator _UnspecifiedBoolType() const {
-        return IsValid() ? &UsdVariantSet::_variantSetName : NULL;
+    /// Equivalent to IsValid().
+    explicit operator bool() const {
+        return IsValid();
     }
-#endif // doxygen
 
 private:
     UsdVariantSet(const UsdPrim &prim,
@@ -175,7 +171,7 @@ private:
     }
 
     SdfPrimSpecHandle _CreatePrimSpecForEditing(const SdfPath &path);
-    SdfVariantSetSpecHandle _FindOrCreateVariantSet();
+    SdfVariantSetSpecHandle _AppendVariantSet();
 
     UsdPrim _prim;
     std::string _variantSetName;
@@ -209,12 +205,12 @@ public:
     /// This step is not always necessary, because if this UsdVariantSets
     /// object is valid, then 
     /// \code
-    /// varSetsObj.GetVariantSet(variantSetName).FindOrCreateVariant(variantName);
+    /// varSetsObj.GetVariantSet(variantSetName).AppendVariant(variantName);
     /// \endcode
     /// will always succeed, creating the VariantSet first, if necessary.  This
     /// method exists for situations in which you want to create a VariantSet
     /// without necessarily populating it with variants.
-    UsdVariantSet FindOrCreate(const std::string& variantSetName);
+    UsdVariantSet AppendVariantSet(const std::string& variantSetName);
 
     // TODO: don't we want remove and reorder, clear, etc. also?
 
@@ -234,14 +230,8 @@ public:
     /// the originating prim is invalid
     UsdVariantSet GetVariantSet(const std::string& variantSetName) const;
 
-    /// Does a VariantSet named \p variantSetName exist on the originating
-    /// prim?
-    ///
-    /// Note that VariantSet membership can be list-edited across composition
-    /// arcs, so a return value of \c false indicates only that 
-    /// \p variantSetName is not present in the stage's composed view - it
-    /// may have been defined in referenced/inherited scene description, but
-    /// pruned from consideration in stronger layers/arcs.
+    /// Returns true if a VariantSet named \p variantSetName exists on
+    /// the originating prim.
     bool HasVariantSet(const std::string& variantSetName) const;
 
     /// Return the composed variant selection for the VariantSet named
@@ -263,5 +253,8 @@ private:
 
     friend class UsdPrim;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_VARIANTSETS_H

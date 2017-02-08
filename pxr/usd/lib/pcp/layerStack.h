@@ -26,6 +26,7 @@
 
 /// \file pcp/layerStack.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/pcp/mapExpression.h"
@@ -36,6 +37,8 @@
 #include <iosfwd>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_REF_PTRS(SdfLayer);
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
@@ -240,4 +243,6 @@ Pcp_ComputeRelocationsForLayerStack( const SdfLayerRefPtrVector & layers,
                                      SdfRelocatesMap *relocatesTargetToSource,
                                      SdfPathVector *relocatesPrimPaths);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_LAYER_STACK_H

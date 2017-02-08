@@ -24,162 +24,99 @@
 #ifndef HD_MESH_H
 #define HD_MESH_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/drawingCoord.h"
-#include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/rprim.h"
-#include "pxr/imaging/hd/topology.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/pxOsd/subdivTags.h"
 
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/array.h"
+PXR_NAMESPACE_OPEN_SCOPE
 
-#include <boost/shared_ptr.hpp>
 
-class HdSceneDelegate;
-
-typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
-typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
-
-/// \class HdMeshReprDesc
-///
-/// descriptor to configure a drawItem for a repr
-///
-struct HdMeshReprDesc {
-    HdMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
-                   HdCullStyle cullStyle = HdCullStyleDontCare,
-                   bool lit = false,
-                   bool smoothNormals = false,
-                   bool blendWireframeColor = true)
-        : geomStyle(geomStyle)
-        , cullStyle(cullStyle)
-        , lit(lit)
-        , smoothNormals(smoothNormals)
-        , blendWireframeColor(blendWireframeColor)
-        {}
-
-    HdMeshGeomStyle geomStyle:3;
-    HdCullStyle     cullStyle:3;
-    bool            lit:1;
-    bool            smoothNormals:1;
-    bool            blendWireframeColor:1;
-};
-
-/// A subdivision surface or poly-mesh object.
+/// Hydra Schema for a subdivision surface or poly-mesh object.
 ///
 class HdMesh : public HdRprim {
 public:
+    virtual ~HdMesh();
 
-    HD_MALLOC_TAG_NEW("new HdMesh");
+    ///
+    /// Render State
+    ///
+    inline bool        IsDoubleSided(HdSceneDelegate* delegate) const;
+    inline HdCullStyle GetCullStyle(HdSceneDelegate* delegate)  const;
 
-    /// Constructor. instancerId, if specified, is the instancer which uses
-    /// this mesh as a prototype.
-    HdMesh(HdSceneDelegate* delegate, SdfPath const& id,
-           SdfPath const& instancerId = SdfPath());
+    ///
+    /// Topology
+    ///
+    inline HdMeshTopology  GetMeshTopology(HdSceneDelegate* delegate) const;
+    inline int             GetRefineLevel(HdSceneDelegate* delegate)  const;
+    inline PxOsdSubdivTags GetSubdivTags(HdSceneDelegate* delegate)   const;
 
-    /// Returns whether computation of smooth normals is enabled on GPU.
-    static bool IsEnabledSmoothNormalsGPU();
 
-    /// Returns whether quadrangulation is enabled.
-    /// This is used temporarily for testing.
-    static bool IsEnabledQuadrangulationCPU();
-
-    /// Returns whether quadrangulation is enabled.
-    /// This is used temporarily for testing.
-    static bool IsEnabledQuadrangulationGPU();
-
-    static bool IsEnabledQuadrangulation() {
-        return IsEnabledQuadrangulationCPU() or IsEnabledQuadrangulationGPU();
-    }
-
-    /// Returns whether GPU refinement is enabled or not.
-    static bool IsEnabledRefineGPU();
-
-    /// Returns whether packed (10_10_10 bits) normals to be used
-    static bool IsEnabledPackedNormals();
-
-    /// Configure geometric style of drawItems for \p reprName
-    /// HdMesh can have up to 2 descriptors for some complex styling
-    /// (FeyRay, Outline)
-    static void ConfigureRepr(TfToken const &reprName,
-                              HdMeshReprDesc desc1,
-                              HdMeshReprDesc desc2=HdMeshReprDesc());
-
-    /// Return the dirtyBits mask to be tracked for \p reprName
-    static int GetDirtyBitsMask(TfToken const &reprName);
+    ///
+    /// Primvars Accessors
+    ///
+    inline VtValue GetPoints(HdSceneDelegate* delegate)  const;
+    inline VtValue GetNormals(HdSceneDelegate* delegate) const;
 
 protected:
-    virtual HdReprSharedPtr const & _GetRepr(
-        TfToken const &reprName, HdChangeTracker::DirtyBits *dirtyBitsState);
-
-    HdChangeTracker::DirtyBits _PropagateDirtyBits(
-        HdChangeTracker::DirtyBits dirtyBits);
-
-    bool _UsePtexIndices() const;
-
-    void _UpdateDrawItem(HdDrawItem *drawItem,
-                         HdChangeTracker::DirtyBits *dirtyBits,
-                         bool isNew,
-                         HdMeshReprDesc desc,
-                         bool requireSmoothNormals);
-
-    void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                                        HdMeshReprDesc desc);
-
-    void _SetGeometricShaders();
-
-    void _ResetGeometricShaders();
-
-    void _PopulateTopology(HdDrawItem *drawItem,
-                           HdChangeTracker::DirtyBits *dirtyBits,
-                           HdMeshReprDesc desc);
-
-    void _PopulateAdjacency();
-
-    void _PopulateVertexPrimVars(HdDrawItem *drawItem,
-                                 HdChangeTracker::DirtyBits *dirtyBits,
-                                 bool isNew,
-                                 HdMeshReprDesc desc,
-                                 bool requireSmoothNormals);
-
-    void _PopulateFaceVaryingPrimVars(HdDrawItem *drawItem,
-                                      HdChangeTracker::DirtyBits *dirtyBits,
-                                      HdMeshReprDesc desc);
-
-    void _PopulateElementPrimVars(HdDrawItem *drawItem,
-                                  HdChangeTracker::DirtyBits *dirtyBits,
-                                  TfTokenVector const &primVarNames);
-
-    int _GetRefineLevelForDesc(HdMeshReprDesc desc);
-
-    virtual HdChangeTracker::DirtyBits _GetInitialDirtyBits() const final override;
+    /// Constructor. instancerId, if specified, is the instancer which uses
+    /// this mesh as a prototype.
+    HdMesh(SdfPath const& id,
+           SdfPath const& instancerId = SdfPath());
 
 private:
-    enum DrawingCoord {
-        HullTopology = HdDrawingCoord::CustomSlotsBegin,
-        PointsTopology,
-        InstancePrimVar // has to be at the very end
-    };
 
-    enum DirtyBits {
-        DirtySmoothNormals  = HdChangeTracker::CustomBitsBegin,
-        DirtyIndices        = (DirtySmoothNormals << 1),
-        DirtyHullIndices    = (DirtyIndices       << 1),
-        DirtyPointsIndices  = (DirtyHullIndices   << 1)
-    };
-
-    HdMeshTopologySharedPtr _topology;
-    Hd_VertexAdjacencySharedPtr _vertexAdjacency;
-
-    HdTopology::ID _topologyId;
-    int _customDirtyBitsInUse;
-    bool _doubleSided;
-    bool _packedNormals;
-    HdCullStyle _cullStyle;
-
-    typedef _ReprDescConfigs<HdMeshReprDesc, /*max drawitems=*/2> _MeshReprConfig;
-    static _MeshReprConfig _reprDescConfig;
+    // Class can not be default constructed or copied.
+    HdMesh()                           = delete;
+    HdMesh(const HdMesh &)             = delete;
+    HdMesh &operator =(const HdMesh &) = delete;
 };
+
+inline bool
+HdMesh::IsDoubleSided(HdSceneDelegate* delegate) const
+{
+    return delegate->GetDoubleSided(GetId());
+}
+
+inline HdCullStyle
+HdMesh::GetCullStyle(HdSceneDelegate* delegate) const
+{
+    return delegate->GetCullStyle(GetId());
+}
+
+inline HdMeshTopology
+HdMesh::GetMeshTopology(HdSceneDelegate* delegate) const
+{
+    return delegate->GetMeshTopology(GetId());
+}
+
+inline int
+HdMesh::GetRefineLevel(HdSceneDelegate* delegate) const
+{
+    return delegate->GetRefineLevel(GetId());
+}
+
+inline PxOsdSubdivTags
+HdMesh::GetSubdivTags(HdSceneDelegate* delegate) const
+{
+    return delegate->GetSubdivTags(GetId());
+}
+
+inline VtValue
+HdMesh::GetPoints(HdSceneDelegate* delegate) const
+{
+    return GetPrimVar(delegate, HdTokens->points);
+}
+
+inline VtValue
+HdMesh::GetNormals(HdSceneDelegate* delegate) const
+{
+    return GetPrimVar(delegate, HdTokens->normals);
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_MESH_H

@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/PluginPrimWriter.h"
 #include "pxr/usd/usdGeom/xformable.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 PxrUsdExport_PluginPrimWriter::PxrUsdExport_PluginPrimWriter(
         MDagPath& iDag,
@@ -57,7 +61,7 @@ PxrUsdExport_PluginPrimWriter::write(
     _pruneChildren = ctx.GetPruneChildren();
 
     UsdPrim prim = stage->GetPrimAtPath(authorPath);
-    if (not prim) {
+    if (!prim) {
         return prim;
     }
 
@@ -87,4 +91,7 @@ PxrUsdExport_PluginPrimWriter::shouldPruneChildren() const
 {
     return _pruneChildren;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

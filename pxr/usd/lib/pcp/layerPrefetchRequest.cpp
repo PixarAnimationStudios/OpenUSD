@@ -21,12 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerPrefetchRequest.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/threadLimits.h"
+
 #include <tbb/spin_mutex.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -111,3 +116,5 @@ PcpLayerPrefetchRequest::Run(const Pcp_MutedLayers& mutedLayers)
     TF_FOR_ALL(req, requests)
         opener.OpenSublayers(req->first, req->second);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

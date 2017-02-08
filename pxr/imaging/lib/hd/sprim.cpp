@@ -26,12 +26,17 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
-HdSprim::HdSprim(HdSceneDelegate *delegate, SdfPath const &id)
-    : _delegate(delegate)
-    , _id(id)
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+HdSprim::HdSprim(SdfPath const &id)
+ : _id(id)
 {
 }
 
 HdSprim::~HdSprim()
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

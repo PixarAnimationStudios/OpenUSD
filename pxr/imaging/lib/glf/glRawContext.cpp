@@ -26,6 +26,9 @@
 #include "pxr/imaging/glf/glRawContext.h"
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 //
 // GlfGLRawContext
 //
@@ -81,3 +84,6 @@ GlfGLRawContext::_IsEqual(const GlfGLContextSharedPtr& rhs) const
     }
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

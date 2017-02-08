@@ -24,12 +24,16 @@
 #ifndef HD_REPR_H
 #define HD_REPR_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include <vector>
 
-class HdRprimSharedData;
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+struct HdRprimSharedData;
 
 /// \class HdRepr
 ///
@@ -62,5 +66,8 @@ public:
 private:
     std::vector<HdDrawItem> _drawItems;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_REPR_H

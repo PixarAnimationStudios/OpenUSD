@@ -21,10 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/plug/notice.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/plug/notice.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -52,3 +55,5 @@ PlugNotice::
 DidRegisterPlugins::~DidRegisterPlugins()
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

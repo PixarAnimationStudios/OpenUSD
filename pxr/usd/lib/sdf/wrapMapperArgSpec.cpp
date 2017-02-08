@@ -23,13 +23,15 @@
 //
 /// \file wrapMapperArgSpec.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/mapperArgSpec.h"
 #include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapMapperArgSpec()
 {
@@ -64,3 +66,5 @@ void wrapMapperArgSpec()
         ;
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

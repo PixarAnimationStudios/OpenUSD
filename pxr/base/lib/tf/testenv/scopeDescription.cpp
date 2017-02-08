@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/scopeDescription.h"
 
@@ -29,6 +31,7 @@
 
 using std::string;
 using std::vector;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static bool
 Test_TfScopeDescription()
@@ -41,28 +44,28 @@ Test_TfScopeDescription()
         TF_DESCRIBE_SCOPE("one");
         
         stack = TfGetCurrentScopeDescriptionStack();
-        TF_AXIOM(stack.size() == 1 and stack.back() == "one");
+        TF_AXIOM(stack.size() == 1 && stack.back() == "one");
         
         {
             TF_DESCRIBE_SCOPE("two");
             
             stack = TfGetCurrentScopeDescriptionStack();
-            TF_AXIOM(stack.size() == 2 and stack.back() == "two");
+            TF_AXIOM(stack.size() == 2 && stack.back() == "two");
             
         }
         
         stack = TfGetCurrentScopeDescriptionStack();
-        TF_AXIOM(stack.size() == 1 and stack.back() == "one");
+        TF_AXIOM(stack.size() == 1 && stack.back() == "one");
         {
             TF_DESCRIBE_SCOPE("%s", "three");
             
             stack = TfGetCurrentScopeDescriptionStack();
-            TF_AXIOM(stack.size() == 2 and stack.back() == "three");
+            TF_AXIOM(stack.size() == 2 && stack.back() == "three");
             
         }
         
         stack = TfGetCurrentScopeDescriptionStack();
-        TF_AXIOM(stack.size() == 1 and stack.back() == "one");
+        TF_AXIOM(stack.size() == 1 && stack.back() == "one");
         
     }
     

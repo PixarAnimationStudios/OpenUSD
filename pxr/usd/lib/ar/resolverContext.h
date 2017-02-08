@@ -24,14 +24,17 @@
 #ifndef AR_RESOLVER_CONTEXT_H
 #define AR_RESOLVER_CONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 
-#include <boost/shared_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
 
+#include <memory>
 #include <string>
 #include <typeinfo>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class ArIsContextObject
 ///
@@ -102,7 +105,7 @@ public:
     /// Returns whether this context object is empty.
     bool IsEmpty() const
     {
-        return not _context;
+        return !_context;
     }
 
     /// Return pointer to the context object held in this asset resolver
@@ -111,7 +114,7 @@ public:
     template <class Context>
     const Context* Get() const
     {
-        return _context and _context->IsHolding(typeid(Context)) ? 
+        return _context && _context->IsHolding(typeid(Context)) ? 
             &_GetTyped<Context>(*_context)._context : NULL;
     }
 
@@ -125,31 +128,31 @@ public:
     /// @{
     bool operator==(const ArResolverContext& rhs) const
     {
-        if (_context and rhs._context) {
+        if (_context && rhs._context) {
             return (_context->IsHolding(rhs._context->GetTypeid())
-                    and _context->Equals(*rhs._context));
+                    && _context->Equals(*rhs._context));
         }
-        return (not _context and not rhs._context);
+        return (!_context && !rhs._context);
     }
 
     bool operator!=(const ArResolverContext& rhs) const
     {
-        return not (*this == rhs);
+        return !(*this == rhs);
     }
 
     bool operator<(const ArResolverContext& rhs) const
     {
-        if (_context and rhs._context) {
+        if (_context && rhs._context) {
             if (_context->IsHolding(rhs._context->GetTypeid())) {
                 return _context->LessThan(*rhs._context);
             }
             return (std::string(_context->GetTypeid().name()) <
                     std::string(rhs._context->GetTypeid().name()));
         }
-        else if (_context and not rhs._context) {
+        else if (_context && !rhs._context) {
             return false;
         }
-        else if (not _context and rhs._context) {
+        else if (!_context && rhs._context) {
             return true;
         }
         return false;
@@ -176,6 +179,8 @@ private:
 
     struct _Untyped 
     {
+        virtual ~_Untyped();
+
         bool IsHolding(const std::type_info& ti) const
         {
             return TfSafeTypeCompare(ti, GetTypeid());
@@ -191,6 +196,8 @@ private:
     template <class Context>
     struct _Typed : public _Untyped
     {
+        virtual ~_Typed() { }
+
         _Typed(const Context& context) : _context(context)
         { 
         }
@@ -223,7 +230,7 @@ private:
         Context _context;
     };
 
-    boost::shared_ptr<_Untyped> _context;
+    std::shared_ptr<_Untyped> _context;
 };
 
 
@@ -237,5 +244,7 @@ std::string ArGetDebugString(const Context& context)
     return Ar_GetDebugString(typeid(Context),
                              static_cast<void const*>(&context));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // AR_RESOLVER_CONTEXT_H

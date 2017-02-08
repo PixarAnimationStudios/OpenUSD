@@ -23,11 +23,14 @@
 //
 // GENERATED FILE.  DO NOT EDIT.
 #include "pxr/usd/usdGeom/tokens.h"
-
 #include "pxr/base/tf/pyStaticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapUsdGeomTokens()
 {
     TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdGeomTokens,
                              USDGEOM_TOKENS);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

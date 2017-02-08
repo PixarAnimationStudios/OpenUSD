@@ -23,10 +23,13 @@
 //
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readNurbsPatch.h"
 
 #include "pxr/usd/usdGeom/nurbsPatch.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_NurbsPatchOp, privateData, interface)
 {

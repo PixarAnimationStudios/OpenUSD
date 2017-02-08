@@ -26,9 +26,13 @@
 
 /// \file sdf/layerOffset.h
 
+#include "pxr/pxr.h"
+
 #include <boost/operators.hpp>
 #include <iosfwd>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfLayerOffset 
 ///
@@ -139,4 +143,6 @@ typedef std::vector<SdfLayerOffset> SdfLayerOffsetVector;
 std::ostream & operator<<( std::ostream &out,
                            const SdfLayerOffset &layerOffset );
 
-#endif /* SDF_LAYER_OFFSET */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_LAYER_OFFSET

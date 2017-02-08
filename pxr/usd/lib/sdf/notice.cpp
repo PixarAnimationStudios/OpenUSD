@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -79,3 +83,5 @@ SdfNotice::LayerDidReloadContent::~LayerDidReloadContent() { }
 SdfNotice::LayerDidSaveLayerToFile::~LayerDidSaveLayerToFile() { }
 SdfNotice::LayerDirtinessChanged::~LayerDirtinessChanged() { }
 SdfNotice::LayerMutenessChanged::~LayerMutenessChanged() { }
+
+PXR_NAMESPACE_CLOSE_SCOPE

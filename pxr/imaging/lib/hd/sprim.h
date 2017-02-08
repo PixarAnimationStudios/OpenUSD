@@ -24,6 +24,7 @@
 #ifndef HD_SPRIM_H
 #define HD_SPRIM_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -31,9 +32,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class HdSceneDelegate;
-typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
-typedef std::vector<HdSprimSharedPtr> HdSprimSharedPtrVector;
 
 /// \class HdSprim
 ///
@@ -49,11 +51,8 @@ typedef std::vector<HdSprimSharedPtr> HdSprimSharedPtrVector;
 ///
 class HdSprim {
 public:
-    HdSprim(HdSceneDelegate* delegate, SdfPath const & id);
+    HdSprim(SdfPath const & id);
     virtual ~HdSprim();
-
-    /// Returns the HdSceneDelegate which backs this state
-    HdSceneDelegate* GetDelegate() const { return _delegate; }
 
     /// Returns the identifer by which this state is known. This
     /// identifier is a common associative key used by the SceneDelegate,
@@ -61,15 +60,22 @@ public:
     SdfPath const& GetID() const { return _id; }
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync() = 0;
+    virtual void Sync(HdSceneDelegate *sceneDelegate) = 0;
 
     /// Accessor for tasks to get the parameter cached in this sprim object.
     /// Don't communicate back to scene delegate within this function.
     virtual VtValue Get(TfToken const &token) const = 0;
 
+    /// Returns the minimal set of dirty bits to place in the
+    /// change tracker for use in the first sync of this prim.
+    /// Typically this would be all dirty bits.
+    virtual int GetInitialDirtyBitsMask() const = 0;
+
 private:
-    HdSceneDelegate* _delegate;
     SdfPath _id;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_SPRIM_H

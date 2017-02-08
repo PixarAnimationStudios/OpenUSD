@@ -24,8 +24,12 @@
 #ifndef HDX_DRAW_TARGET_RENDER_PASS_STATE_H
 #define HDX_DRAW_TARGET_RENDER_PASS_STATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hd/rprimCollection.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class VtValue;
 
@@ -108,5 +112,8 @@ private:
     HdxDrawTargetRenderPassState(const HdxDrawTargetRenderPassState &) = delete;
     HdxDrawTargetRenderPassState &operator =(const HdxDrawTargetRenderPassState &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDX_DRAW_TARGET_RENDER_PASS_STATE_H

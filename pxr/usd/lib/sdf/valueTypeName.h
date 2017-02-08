@@ -24,11 +24,14 @@
 #ifndef SDF_VALUETYPENAME_H
 #define SDF_VALUETYPENAME_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include <boost/operators.hpp>
 #include <iosfwd>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfEnum;
 class TfType;
@@ -146,7 +149,7 @@ public:
     /// Returns \c true iff this is a valid type.
     operator _UnspecifiedBoolType() const
     {
-        return (not *this) ? 0 : &SdfValueTypeName::_impl;
+        return (!*this) ? 0 : &SdfValueTypeName::_impl;
     }
 
     /// Returns all aliases of the type name as tokens.  These should not
@@ -179,4 +182,6 @@ hash_value(const SdfValueTypeName& typeName)
 
 std::ostream& operator<<(std::ostream&, const SdfValueTypeName& typeName);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_VALUETYPENAME_H

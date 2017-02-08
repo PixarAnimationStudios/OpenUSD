@@ -26,6 +26,7 @@
 
 /// \file usdKatana/lookAPI.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -40,6 +41,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
@@ -48,7 +51,7 @@ class SdfAssetPath;
 
 /// \class UsdKatanaLookAPI
 ///
-/// Katana-specific extensions of UsdShadeLook.
+/// Katana-specific extensions of UsdShadeMaterial.
 ///
 class UsdKatanaLookAPI : public UsdSchemaBase
 {
@@ -136,19 +139,20 @@ public:
     // --------------------------------------------------------------------- //
     // PRIMNAME 
     // --------------------------------------------------------------------- //
-    /// When a Look derives from another, "base" Look (see
-    /// \ref UsdShadeLook::SetBaseLook() "SetBaseLook()"), it seems natural to
-    /// think about a "child" that inherits from its base Look "parent".
-    /// However, in USD, the derived Look cannot be a child of the base Look
+    /// When a Material derives from another, "base" Material (see
+    /// \ref UsdShadeMaterial::SetBaseMaterial() "SetBaseMaterial()"), it seems 
+    /// natural to think about a "child" that inherits from its base Material 
+    /// "parent".
+    /// However, in USD, the derived Material cannot be a child of the base Material
     /// because the \em derives relationship would cause an infinite
-    /// recursion in the composition graph (because the derived Look must
-    /// inherit not just the base Look prim itself, but all of the shader and
-    /// other prims scoped underneath it, which would include the derived Look
+    /// recursion in the composition graph (because the derived Material must
+    /// inherit not just the base Material prim itself, but all of the shader and
+    /// other prims scoped underneath it, which would include the derived Material
     /// itself).
     /// 
     /// For UI's that want to present the hierarchy that derivation implies,
-    /// we provide \em primName, which specifies the derived Look's 
-    /// "relative name" with respect to the base Look.
+    /// we provide \em primName, which specifies the derived Material's 
+    /// "relative name" with respect to the base Material.
     /// 
     /// For example, a structure that looks like:
     /// - Metal
@@ -183,10 +187,14 @@ public:
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
     //
-    // Just remember to close the class delcaration with }; and complete the
-    // include guard with #endif
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

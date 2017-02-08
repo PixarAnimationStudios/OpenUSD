@@ -25,6 +25,9 @@
 #include "pxr/imaging/hd/conversions.h"
 #include "pxr/base/tf/iterator.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 struct _FormatDesc {
     GLenum format;
     GLenum type;
@@ -60,6 +63,13 @@ size_t
 HdConversions::GetComponentSize(int glDataType)
 {
     switch (glDataType) {
+        case GL_BOOL:
+            // Note that we don't use GLboolean here because according to
+            // code in vtBufferSource, everything gets rounded up to 
+            // size of single value in interleaved struct rounds up to
+            // sizeof(GLint) according to GL spec.
+            //      _size = std::max(sizeof(T), sizeof(GLint));
+            return sizeof(GLint);
         case GL_BYTE:
             return sizeof(GLbyte);
         case GL_UNSIGNED_BYTE:
@@ -178,3 +188,6 @@ HdConversions::GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType
     *outType           = desc.type;
     *outInternalFormat = desc.internalFormat;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

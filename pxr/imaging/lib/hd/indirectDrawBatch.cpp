@@ -36,7 +36,7 @@
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/shaderKey.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -49,6 +49,9 @@
 #include "pxr/base/tf/iterator.h"
 
 #include <limits>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static const GLuint64 HD_CULL_RESULT_TIMEOUT_NS = 5e9; // XXX how long to wait?
 
@@ -87,14 +90,14 @@ Hd_IndirectDrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
     _bufferArraysHash = drawItem->GetBufferArraysHash();
 
     // determine gpu culling program by the first drawitem
-    _useDrawArrays  = not drawItem->GetTopologyRange();
+    _useDrawArrays  = !drawItem->GetTopologyRange();
     _useInstancing = static_cast<bool>(drawItem->GetInstanceIndexRange());
     _useGpuCulling = IsEnabledGPUFrustumCulling();
 
     // note: _useInstancing condition is not necessary. it can be removed
     //       if we decide always to use instance culling instead of XFB.
-    _useGpuInstanceCulling = _useInstancing and
-        _useGpuCulling and IsEnabledGPUInstanceFrustumCulling();
+    _useGpuInstanceCulling = _useInstancing &&
+        _useGpuCulling && IsEnabledGPUInstanceFrustumCulling();
 
     if (_useGpuCulling) {
         _cullingProgram.Initialize(
@@ -105,7 +108,7 @@ Hd_IndirectDrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
 Hd_IndirectDrawBatch::_CullingProgram &
 Hd_IndirectDrawBatch::_GetCullingProgram()
 {
-    if (not _cullingProgram.GetGLSLProgram()) {
+    if (!_cullingProgram.GetGLSLProgram()) {
         // create a culling shader key
         Hd_CullingShaderKey shaderKey(_useGpuInstanceCulling,
                                       IsEnabledGPUTinyPrimCulling(),
@@ -134,10 +137,10 @@ Hd_IndirectDrawBatch::IsEnabledGPUFrustumCulling()
     // GPU XFB frustum culling should work since GL 4.0, but for now
     // the shader frustumCull.glslfx requires explicit uniform location
     static bool isEnabledGPUFrustumCulling =
-        TfGetEnvSetting(HD_ENABLE_GPU_FRUSTUM_CULLING) and
+        TfGetEnvSetting(HD_ENABLE_GPU_FRUSTUM_CULLING) &&
         (caps.explicitUniformLocation);
-    return isEnabledGPUFrustumCulling and
-       not TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING);
+    return isEnabledGPUFrustumCulling &&
+       !TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING);
 }
 
 /* static */
@@ -167,8 +170,8 @@ Hd_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
     // GPU instance frustum culling requires SSBO of bindless buffer
 
     static bool isEnabledGPUInstanceFrustumCulling =
-        TfGetEnvSetting(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING) and
-        (caps.shaderStorageBufferEnabled or
+        TfGetEnvSetting(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING) &&
+        (caps.shaderStorageBufferEnabled ||
          caps.bindlessBufferEnabled);
     return isEnabledGPUInstanceFrustumCulling;
 }
@@ -177,7 +180,7 @@ void
 Hd_IndirectDrawBatch::_CompileBatch()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     int drawCount = _drawItemInstances.size();
     if (_drawItemInstances.empty()) return;
@@ -395,7 +398,7 @@ Hd_IndirectDrawBatch::_CompileBatch()
         GLuint instanceCount = instanceIndexBar
             ? instanceIndexBar->GetNumElements()/instanceIndexWidth
             : 1;
-        if (not instance->IsVisible()) instanceCount = 0;
+        if (!instance->IsVisible()) instanceCount = 0;
         GLuint firstIndex = indexBar ? indexBar->GetOffset() * numIndicesPerPrimitive : 0;
 
         if (_useDrawArrays) {
@@ -728,7 +731,7 @@ Hd_IndirectDrawBatch::_CompileBatch()
 bool
 Hd_IndirectDrawBatch::Validate(bool deepValidation)
 {
-    if (not TF_VERIFY(not _drawItemInstances.empty())) return false;
+    if (!TF_VERIFY(!_drawItemInstances.empty())) return false;
 
     // check the hash to see they've been reallocated/migrated or not.
     // note that we just need to compare the hash of the first item,
@@ -755,7 +758,7 @@ Hd_IndirectDrawBatch::Validate(bool deepValidation)
             HdDrawItem const * drawItem
                 = _drawItemInstances[item]->GetDrawItem();
 
-            if (not _IsAggregated(batchItem, drawItem)) {
+            if (!_IsAggregated(batchItem, drawItem)) {
                 return false;
             }
         }
@@ -781,35 +784,35 @@ Hd_IndirectDrawBatch::_ValidateCompatibility(
     for (HdDrawItemInstance const* itemInstance : _drawItemInstances) {
         HdDrawItem const* itm = itemInstance->GetDrawItem();
 
-        if (constantBar and not TF_VERIFY(constantBar 
+        if (constantBar && !TF_VERIFY(constantBar 
                         ->IsAggregatedWith(itm->GetConstantPrimVarRange())))
                         { failed = itm; break; }
-        if (indexBar and not TF_VERIFY(indexBar
+        if (indexBar && !TF_VERIFY(indexBar
                         ->IsAggregatedWith(itm->GetTopologyRange())))
                         { failed = itm; break; }
-        if (elementBar and not TF_VERIFY(elementBar
+        if (elementBar && !TF_VERIFY(elementBar
                         ->IsAggregatedWith(itm->GetElementPrimVarRange())))
                         { failed = itm; break; }
-        if (fvarBar and not TF_VERIFY(fvarBar
+        if (fvarBar && !TF_VERIFY(fvarBar
                         ->IsAggregatedWith(itm->GetFaceVaryingPrimVarRange())))
                         { failed = itm; break; }
-        if (vertexBar and not TF_VERIFY(vertexBar
+        if (vertexBar && !TF_VERIFY(vertexBar
                         ->IsAggregatedWith(itm->GetVertexPrimVarRange())))
                         { failed = itm; break; }
-        if (not TF_VERIFY(instancerNumLevels
+        if (!TF_VERIFY(instancerNumLevels
                         == itm->GetInstancePrimVarNumLevels()))
                         { failed = itm; break; }
-        if (instanceIndexBar and not TF_VERIFY(instanceIndexBar
+        if (instanceIndexBar && !TF_VERIFY(instanceIndexBar
                         ->IsAggregatedWith(itm->GetInstanceIndexRange())))
                         { failed = itm; break; }
-        if (not TF_VERIFY(instancerNumLevels == (int)instanceBars.size()))
+        if (!TF_VERIFY(instancerNumLevels == (int)instanceBars.size()))
                         { failed = itm; break; }
 
         std::vector<HdBufferArrayRangeSharedPtr> itmInstanceBars(
                                                             instancerNumLevels);
         if (instanceIndexBar) {
             for (int i = 0; i < instancerNumLevels; ++i) {
-                if (itmInstanceBars[i] and not TF_VERIFY(itmInstanceBars[i] 
+                if (itmInstanceBars[i] && !TF_VERIFY(itmInstanceBars[i] 
                             ->IsAggregatedWith(itm->GetInstancePrimVarRange(i)),
                         "%d", i)) { failed = itm; break; }
             }
@@ -826,29 +829,29 @@ Hd_IndirectDrawBatch::PrepareDraw(
     HdRenderPassStateSharedPtr const &renderPassState)
 {
     HD_TRACE_FUNCTION();
-    if (not glBindBuffer) return; // glew initialized
+    if (!glBindBuffer) return; // glew initialized
 
     //
     // compile
     //
 
-    if (not _dispatchBuffer) {
+    if (!_dispatchBuffer) {
         _CompileBatch();
     }
 
     // there is no non-zero draw items.
-    if ((    _useDrawArrays and _numTotalVertices == 0) or
-        (not _useDrawArrays and _numTotalElements == 0)) return;
+    if ((    _useDrawArrays && _numTotalVertices == 0) ||
+        (!_useDrawArrays && _numTotalElements == 0)) return;
 
     HdDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
 
     // Bypass freezeCulling if the command buffer is dirty.
     bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)
-                                and not _drawCommandBufferDirty;
+                                && !_drawCommandBufferDirty;
 
     bool gpuCulling = _useGpuCulling;
 
-    if (gpuCulling and not _useGpuInstanceCulling) {
+    if (gpuCulling && !_useGpuInstanceCulling) {
         // disable GPU culling when instancing enabled and
         // not using instance culling.
         if (batchItem->GetInstanceIndexRange()) gpuCulling = false;
@@ -872,7 +875,7 @@ Hd_IndirectDrawBatch::PrepareDraw(
     // cull
     //
 
-    if (gpuCulling and not freezeCulling) {
+    if (gpuCulling && !freezeCulling) {
         if (_useGpuInstanceCulling) {
             _GPUFrustumCulling(batchItem, renderPassState);
         } else {
@@ -909,7 +912,7 @@ Hd_IndirectDrawBatch::PrepareDraw(
             HdDrawItemInstance const * drawItemInstance =
                 _drawItemInstances[item];
 
-            if(not drawItemInstance->IsVisible()) {
+            if(!drawItemInstance->IsVisible()) {
                 continue;
             }
 
@@ -923,7 +926,7 @@ Hd_IndirectDrawBatch::PrepareDraw(
                         + item*dispatchBufferStride);
 
                 bool isVisible = (*instanceCount > 0);
-                if (not isVisible) {
+                if (!isVisible) {
                     continue;
                 }
             }
@@ -946,7 +949,7 @@ Hd_IndirectDrawBatch::PrepareDraw(
         }
     }
 
-    if (gpuCulling and not freezeCulling) {
+    if (gpuCulling && !freezeCulling) {
         if (IsEnabledGPUCountVisibleInstances()) {
             _EndGPUCountVisibleInstances(_cullResultSync, &_numVisibleItems);
             glDeleteSync(_cullResultSync);
@@ -961,19 +964,19 @@ Hd_IndirectDrawBatch::ExecuteDraw(
 {
     HD_TRACE_FUNCTION();
 
-    if (not glBindBuffer) return; // glew initialized
+    if (!glBindBuffer) return; // glew initialized
 
-    if (not TF_VERIFY(not _drawItemInstances.empty())) return;
+    if (!TF_VERIFY(!_drawItemInstances.empty())) return;
 
     HdDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
 
-    if (not TF_VERIFY(batchItem)) return;
+    if (!TF_VERIFY(batchItem)) return;
 
-    if (not TF_VERIFY(_dispatchBuffer)) return;
+    if (!TF_VERIFY(_dispatchBuffer)) return;
 
     // there is no non-zero draw items.
-    if ((    _useDrawArrays and _numTotalVertices == 0) or
-        (not _useDrawArrays and _numTotalElements == 0)) return;
+    if ((    _useDrawArrays && _numTotalVertices == 0) ||
+        (!_useDrawArrays && _numTotalElements == 0)) return;
 
     //
     // draw
@@ -983,8 +986,8 @@ Hd_IndirectDrawBatch::ExecuteDraw(
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
                                                    /*indirect=*/true);
     HdGLSLProgramSharedPtr const &glslProgram = program.GetGLSLProgram();
-    if (not TF_VERIFY(glslProgram)) return;
-    if (not TF_VERIFY(glslProgram->Validate())) return;
+    if (!TF_VERIFY(glslProgram)) return;
+    if (!TF_VERIFY(glslProgram->Validate())) return;
 
     GLuint programId = glslProgram->GetProgram().GetId();
     TF_VERIFY(programId);
@@ -992,7 +995,7 @@ Hd_IndirectDrawBatch::ExecuteDraw(
     glUseProgram(programId);
 
     const Hd_ResourceBinder &binder = program.GetBinder();
-    const HdShaderSharedPtrVector &shaders = program.GetComposedShaders();
+    const HdShaderCodeSharedPtrVector &shaders = program.GetComposedShaders();
 
     // XXX: for surfaces shader, we need to iterate all drawItems to
     //      make textures resident, instead of just the first batchItem
@@ -1037,7 +1040,7 @@ Hd_IndirectDrawBatch::ExecuteDraw(
         binder.BindBufferArray(instanceIndexBar);
     }
 
-    if (false and ARCH_UNLIKELY(TfDebug::IsEnabled(HD_SAFE_MODE))) {
+    if (false && ARCH_UNLIKELY(TfDebug::IsEnabled(HD_SAFE_MODE))) {
         _ValidateCompatibility(constantBar,
                                indexBar,
                                elementBar,
@@ -1157,8 +1160,8 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
     HdGLSLProgramSharedPtr const &
         glslProgram = cullingProgram.GetGLSLProgram();
 
-    if (not TF_VERIFY(glslProgram)) return;
-    if (not TF_VERIFY(glslProgram->Validate())) return;
+    if (!TF_VERIFY(glslProgram)) return;
+    if (!TF_VERIFY(glslProgram->Validate())) return;
 
     // We perform frustum culling on the GPU using transform feedback,
     // stomping the instanceCount of each drawing command in the
@@ -1206,7 +1209,7 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
     // XXX: should we cache cull command offset?
     HdBufferResourceSharedPtr cullCommandBuffer =
         _dispatchBufferCullInput->GetResource(HdTokens->drawDispatch);
-    if (not TF_VERIFY(cullCommandBuffer)) {
+    if (!TF_VERIFY(cullCommandBuffer)) {
         validProgram = false;
     }
 
@@ -1285,8 +1288,8 @@ Hd_IndirectDrawBatch::_GPUFrustumCullingXFB(
 
     HdGLSLProgramSharedPtr const &
         glslProgram = cullingProgram.GetGLSLProgram();
-    if (not TF_VERIFY(glslProgram)) return;
-    if (not TF_VERIFY(glslProgram->Validate())) return;
+    if (!TF_VERIFY(glslProgram)) return;
+    if (!TF_VERIFY(glslProgram->Validate())) return;
 
     // We perform frustum culling on the GPU using transform feedback,
     // stomping the instanceCount of each drawing command in the
@@ -1385,7 +1388,7 @@ Hd_IndirectDrawBatch::DrawItemInstanceChanged(HdDrawItemInstance const* instance
 void
 Hd_IndirectDrawBatch::_BeginGPUCountVisibleInstances()
 {
-    if (not _resultBuffer) {
+    if (!_resultBuffer) {
         HdResourceRegistry *resourceRegistry =
                 &HdResourceRegistry::GetInstance();
 
@@ -1423,7 +1426,7 @@ Hd_IndirectDrawBatch::_EndGPUCountVisibleInstances(GLsync resultSync, size_t * r
     GLenum status = glClientWaitSync(resultSync,
             GL_SYNC_FLUSH_COMMANDS_BIT, HD_CULL_RESULT_TIMEOUT_NS);
 
-    if (status != GL_ALREADY_SIGNALED and status != GL_CONDITION_SATISFIED) {
+    if (status != GL_ALREADY_SIGNALED && status != GL_CONDITION_SATISFIED) {
         // We could loop, but we don't expect to timeout.
         TF_RUNTIME_ERROR("Unexpected ClientWaitSync timeout");
         *result = 0;
@@ -1458,8 +1461,8 @@ void
 Hd_IndirectDrawBatch::_CullingProgram::Initialize(
     bool useDrawArrays, bool useInstanceCulling, size_t bufferArrayHash)
 {
-    if (useDrawArrays      != _useDrawArrays or
-        useInstanceCulling != _useInstanceCulling or
+    if (useDrawArrays      != _useDrawArrays      ||
+        useInstanceCulling != _useInstanceCulling ||
         bufferArrayHash    != _bufferArrayHash) {
         // reset shader
         Reset();
@@ -1476,8 +1479,8 @@ Hd_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
     HdBindingRequestVector *customBindings,
     bool *enableInstanceDraw) const
 {
-    if (not TF_VERIFY(enableInstanceDraw) or
-        not TF_VERIFY(customBindings)) return;
+    if (!TF_VERIFY(enableInstanceDraw) ||
+        !TF_VERIFY(customBindings)) return;
 
     customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
                                   HdTokens->drawIndirectResult));
@@ -1516,10 +1519,10 @@ bool
 Hd_IndirectDrawBatch::_CullingProgram::_Link(
         HdGLSLProgramSharedPtr const & glslProgram)
 {
-    if (not TF_VERIFY(glslProgram)) return false;
-    if (not glTransformFeedbackVaryings) return false; // glew initialized
+    if (!TF_VERIFY(glslProgram)) return false;
+    if (!glTransformFeedbackVaryings) return false; // glew initialized
 
-    if (not _useInstanceCulling) {
+    if (!_useInstanceCulling) {
         // This must match the layout of draw command.
         // (WBN to encode this in the shader using GL_ARB_enhanced_layouts
         // but that's not supported in 319.32)
@@ -1560,3 +1563,6 @@ Hd_IndirectDrawBatch::_CullingProgram::_Link(
 
     return Hd_DrawBatch::_DrawingProgram::_Link(glslProgram);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

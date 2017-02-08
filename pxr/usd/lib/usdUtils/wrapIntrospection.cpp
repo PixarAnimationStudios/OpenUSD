@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include <boost/python/def.hpp>
 
 #include "pxr/usd/usdUtils/introspection.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -52,3 +56,6 @@ void wrapIntrospection()
     def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_1);
     def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_2);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

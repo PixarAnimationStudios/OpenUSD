@@ -100,9 +100,14 @@
 ///
 /// \ingroup group_tf_Initialization
 /// \hideinitializer
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #define TF_EXECUTE_AT_STARTUP()                                         \
     static void Tf_ExecuteAtStartupFunction(int);                       \
     static int Tf_ExecuteAtStartupObject =                              \
         (Tf_ExecuteAtStartupFunction(Tf_ExecuteAtStartupObject), 0);    \
     static void Tf_ExecuteAtStartupFunction(int)
 
+PXR_NAMESPACE_CLOSE_SCOPE

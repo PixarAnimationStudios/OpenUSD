@@ -33,6 +33,9 @@
 #include <iostream>
 #include <mutex>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(HdRenderContextCaps);
 
 TF_DEFINE_ENV_SETTING(HD_ENABLE_SHADER_STORAGE_BUFFER, true,
@@ -51,6 +54,18 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_COPY_BUFFER, true,
 TF_DEFINE_ENV_SETTING(HD_GLSL_VERSION, 0,
                       "GLSL version");
 
+// To enable GPU compute features, OpenSubdiv must be configured to support
+// GLSL compute kernel.
+#if OPENSUBDIV_HAS_GLSL_COMPUTE
+// default to GPU
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, true,
+                      "Enable GPU smooth, quadrangulation and refinement");
+#else
+// default to CPU
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, false,
+                      "Enable GPU smooth, quadrangulation and refinement");
+#endif
+
 // Initialize members to ensure a sane starting state.
 HdRenderContextCaps::HdRenderContextCaps()
     : glVersion(0)
@@ -68,6 +83,7 @@ HdRenderContextCaps::HdRenderContextCaps()
     , explicitUniformLocation(false)
     , shadingLanguage420pack(false)
     , copyBufferEnabled(true)
+    , gpuComputeEnabled(false)
 {
 }
 
@@ -127,7 +143,7 @@ HdRenderContextCaps::_LoadCaps()
     if (glVersionStr == NULL) return;
 
     const char *dot = strchr(glVersionStr, '.');
-    if (TF_VERIFY((dot and dot != glVersionStr),
+    if (TF_VERIFY((dot && dot != glVersionStr),
                   "Can't parse GL_VERSION %s", glVersionStr)) {
         // GL_VERSION = "4.5.0 <vendor> <version>"
         //              "4.1 <vendor-os-ver> <version>"
@@ -139,7 +155,7 @@ HdRenderContextCaps::_LoadCaps()
     const char *glslVersionStr =
         (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
     dot = strchr(glslVersionStr, '.');
-    if (TF_VERIFY((dot and dot != glslVersionStr),
+    if (TF_VERIFY((dot && dot != glslVersionStr),
                   "Can't parse GL_SHADING_LANGUAGE_VERSION %s",
                   glslVersionStr)) {
         // GL_SHADING_LANGUAGE_VERSION = "4.10"
@@ -176,10 +192,10 @@ HdRenderContextCaps::_LoadCaps()
     }
 
     // initialize by individual exntention.
-    if (GLEW_ARB_bindless_texture and glMakeTextureHandleResidentNV) {
+    if (GLEW_ARB_bindless_texture && glMakeTextureHandleResidentNV) {
         bindlessTextureEnabled = true;
     }
-    if (GLEW_NV_shader_buffer_load and glMakeNamedBufferResidentNV) {
+    if (GLEW_NV_shader_buffer_load && glMakeNamedBufferResidentNV) {
         bindlessBufferEnabled = true;
     }
     if (GLEW_ARB_explicit_uniform_location) {
@@ -201,19 +217,19 @@ HdRenderContextCaps::_LoadCaps()
     }
 
     // Environment variable overrides (only downgrading is possible)
-    if (not TfGetEnvSetting(HD_ENABLE_SHADER_STORAGE_BUFFER)) {
+    if (!TfGetEnvSetting(HD_ENABLE_SHADER_STORAGE_BUFFER)) {
         shaderStorageBufferEnabled = false;
     }
-    if (not TfGetEnvSetting(HD_ENABLE_BINDLESS_TEXTURE)) {
+    if (!TfGetEnvSetting(HD_ENABLE_BINDLESS_TEXTURE)) {
         bindlessTextureEnabled = false;
     }
-    if (not TfGetEnvSetting(HD_ENABLE_BINDLESS_BUFFER)) {
+    if (!TfGetEnvSetting(HD_ENABLE_BINDLESS_BUFFER)) {
         bindlessBufferEnabled = false;
     }
-    if (not TfGetEnvSetting(HD_ENABLE_MULTI_DRAW_INDIRECT)) {
+    if (!TfGetEnvSetting(HD_ENABLE_MULTI_DRAW_INDIRECT)) {
         multiDrawIndirectEnabled = false;
     }
-    if (not TfGetEnvSetting(HD_ENABLE_DIRECT_STATE_ACCESS)) {
+    if (!TfGetEnvSetting(HD_ENABLE_DIRECT_STATE_ACCESS)) {
         directStateAccessEnabled = false;
     }
 
@@ -232,8 +248,23 @@ HdRenderContextCaps::_LoadCaps()
     }
 
     // For driver issues workaround
-    if (not TfGetEnvSetting(HD_ENABLE_COPY_BUFFER)) {
+    if (!TfGetEnvSetting(HD_ENABLE_COPY_BUFFER)) {
         copyBufferEnabled = false;
+    }
+
+    // GPU Compute
+    if (TfGetEnvSetting(HD_ENABLE_GPU_COMPUTE)) {
+#if OPENSUBDIV_HAS_GLSL_COMPUTE
+        if (glslVersion >= 430 && shaderStorageBufferEnabled) {
+            gpuComputeEnabled = true;
+        } else {
+            TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
+                    "(OpenGL 4.3 required).\n");
+        }
+#else
+        TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
+                "(OpenSubdiv hasn't been configured with GLSL compute).\n");
+#endif
     }
 
     if (TfDebug::IsEnabled(HD_RENDER_CONTEXT_CAPS)) {
@@ -267,11 +298,17 @@ HdRenderContextCaps::_LoadCaps()
             <<    shadingLanguage420pack << "\n"
             << "  NV_shader_buffer_load              = "
             <<    bindlessBufferEnabled << "\n"
+
+            << "  GPU Compute                        = "
+            <<    gpuComputeEnabled << "\n"
             ;
 
-        if (not copyBufferEnabled) {
+        if (!copyBufferEnabled) {
             std::cout << "  CopyBuffer : disabled\n";
         }
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

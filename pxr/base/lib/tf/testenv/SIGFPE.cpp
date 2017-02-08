@@ -21,9 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/tf/diagnostic.h"
+
 #include <stdio.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 /**
  * This executable performs an integer divide by zero (SIGFPE)
@@ -40,8 +45,9 @@ main(int argc, char **argv)
     // as we leave them off by default.
     TfInstallTerminateAndCrashHandlers();
 
-    int a = 1;
-    int b = 0;
+    // Avoid compiler doing the constant math expression
+    volatile int a = 1;
+    volatile int b = 0;
     int c = a/b;
     printf("%d",c);
 }

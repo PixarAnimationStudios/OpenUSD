@@ -30,6 +30,7 @@
 /// Future additions might include full-on dependency extraction, queries like
 /// "Does this stage contain this asset?", "usd grep" functionality, etc.
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -37,6 +38,9 @@
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/vt/dictionary.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -112,5 +116,8 @@ UsdStageRefPtr UsdUtilsComputeUsdStageStats(const std::string &rootLayerPath,
 /// 
 size_t UsdUtilsComputeUsdStageStats(const UsdStageWeakPtr &stage, 
                                     VtDictionary *stats);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif /* _USDUTILS_INTROSPECTION_H_ */

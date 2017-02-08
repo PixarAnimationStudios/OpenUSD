@@ -24,6 +24,7 @@
 #ifndef HDX_SIMPLE_LIGHTING_SHADER_H
 #define HDX_SIMPLE_LIGHTING_SHADER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/hd/resource.h"
@@ -41,6 +42,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 
@@ -77,5 +81,8 @@ private:
     bool _useLighting;
     boost::scoped_ptr<GlfGLSLFX> _glslfx;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDX_SIMPLE_LIGHTING_SHADER_H

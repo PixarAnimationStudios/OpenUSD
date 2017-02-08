@@ -21,8 +21,34 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "px_vp20/utils.h"
+
+#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/glf/simpleLight.h"
+#include "pxr/imaging/glf/simpleLightingContext.h"
+#include "pxr/imaging/glf/simpleMaterial.h"
+
+#include <maya/MColor.h>
+#include <maya/MDrawContext.h>
+#include <maya/MFloatArray.h>
+#include <maya/MFloatPoint.h>
+#include <maya/MFloatPointArray.h>
+#include <maya/MFloatVector.h>
+#include <maya/MIntArray.h>
+#include <maya/MString.h>
+#include <maya/MStringArray.h>
+#include <maya/MStatus.h>
+
+#include <cmath>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 bool px_vp20Utils::setupLightingGL( const MHWRender::MDrawContext& context)
 {
@@ -237,4 +263,366 @@ void px_vp20Utils::unsetLightingGL( const MHWRender::MDrawContext& context)
     }
 }
 
+static
+bool
+_GetLightingParam(
+        const MIntArray& intValues,
+        const MFloatArray& floatValues,
+        bool& paramValue)
+{
+    bool gotParamValue = false;
+
+    if (intValues.length() > 0) {
+        paramValue = (intValues[0] == 1);
+        gotParamValue = true;
+    } else if (floatValues.length() > 0) {
+        paramValue = GfIsClose(floatValues[0], 1.0f, 1e-5);
+        gotParamValue = true;
+    }
+
+    return gotParamValue;
+}
+
+static
+bool
+_GetLightingParam(
+        const MIntArray& intValues,
+        const MFloatArray& floatValues,
+        float& paramValue)
+{
+    bool gotParamValue = false;
+
+    if (floatValues.length() > 0) {
+        paramValue = floatValues[0];
+        gotParamValue = true;
+    }
+
+    return gotParamValue;
+}
+
+static
+bool
+_GetLightingParam(
+        const MIntArray& intValues,
+        const MFloatArray& floatValues,
+        GfVec2f& paramValue)
+{
+    bool gotParamValue = false;
+
+    if (intValues.length() >= 2) {
+        paramValue[0] = intValues[0];
+        paramValue[1] = intValues[1];
+        gotParamValue = true;
+    } else if (floatValues.length() >= 2) {
+        paramValue[0] = floatValues[0];
+        paramValue[1] = floatValues[1];
+        gotParamValue = true;
+    }
+
+    return gotParamValue;
+}
+
+static
+bool
+_GetLightingParam(
+        const MIntArray& intValues,
+        const MFloatArray& floatValues,
+        GfVec3f& paramValue)
+{
+    bool gotParamValue = false;
+
+    if (intValues.length() >= 3) {
+        paramValue[0] = intValues[0];
+        paramValue[1] = intValues[1];
+        paramValue[2] = intValues[2];
+        gotParamValue = true;
+    } else if (floatValues.length() >= 3) {
+        paramValue[0] = floatValues[0];
+        paramValue[1] = floatValues[1];
+        paramValue[2] = floatValues[2];
+        gotParamValue = true;
+    }
+
+    return gotParamValue;
+}
+
+static
+bool
+_GetLightingParam(
+        const MIntArray& intValues,
+        const MFloatArray& floatValues,
+        GfVec4f& paramValue)
+{
+    bool gotParamValue = false;
+
+    if (intValues.length() >= 3) {
+        paramValue[0] = intValues[0];
+        paramValue[1] = intValues[1];
+        paramValue[2] = intValues[2];
+        if (intValues.length() > 3) {
+            paramValue[3] = intValues[3];
+        }
+        gotParamValue = true;
+    } else if (floatValues.length() >= 3) {
+        paramValue[0] = floatValues[0];
+        paramValue[1] = floatValues[1];
+        paramValue[2] = floatValues[2];
+        if (floatValues.length() > 3) {
+            paramValue[3] = floatValues[3];
+        }
+        gotParamValue = true;
+    }
+
+    return gotParamValue;
+}
+
+/* static */
+GlfSimpleLightingContextRefPtr
+px_vp20Utils::GetLightingContextFromDrawContext(
+        const MHWRender::MDrawContext& context)
+{
+    const GfVec4f blackColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const GfVec4f whiteColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    GlfSimpleLightingContextRefPtr lightingContext =
+        GlfSimpleLightingContext::New();
+
+    MStatus status;
+
+    unsigned int numMayaLights =
+        context.numberOfActiveLights(MHWRender::MDrawContext::kFilteredToLightLimit,
+                                     &status);
+    if (status != MS::kSuccess || numMayaLights < 1) {
+        return lightingContext;
+    }
+
+    bool viewDirectionAlongNegZ = context.viewDirectionAlongNegZ(&status);
+    if (status != MS::kSuccess) {
+        // If we fail to find out the view direction for some reason, assume
+        // that it's along the negative Z axis (OpenGL).
+        viewDirectionAlongNegZ = true;
+    }
+
+    GlfSimpleLightVector lights;
+
+    for (unsigned int i = 0; i < numMayaLights; ++i) {
+        MHWRender::MLightParameterInformation* mayaLightParamInfo =
+            context.getLightParameterInformation(i);
+
+        if (!mayaLightParamInfo) {
+            continue;
+        }
+
+        // Setup some default values before we read the light parameters.
+        bool lightEnabled = true;
+
+        bool    lightHasPosition = false;
+        GfVec4f lightPosition(0.0f, 0.0f, 0.0f, 1.0f);
+        bool    lightHasDirection = false;
+        GfVec3f lightDirection(0.0f, 0.0f, -1.0f);
+        if (!viewDirectionAlongNegZ) {
+            // The convention for DirectX is positive Z.
+            lightDirection[2] = 1.0f;
+        }
+
+        float   lightIntensity = 1.0f;
+        GfVec4f lightColor = blackColor;
+        bool    lightEmitsDiffuse = true;
+        bool    lightEmitsSpecular = false;
+        float   lightDecayRate = 0.0f;
+        float   lightDropoff = 0.0f;
+        // The cone angle is 180 degrees by default.
+        GfVec2f lightCosineConeAngle(-1.0f);
+        float   lightShadowBias = 0.0f;
+        bool    lightShadowOn = false;
+
+        bool globalShadowOn = false;
+
+        MStringArray paramNames;
+        mayaLightParamInfo->parameterList(paramNames);
+
+        for (unsigned int paramIndex = 0; paramIndex < paramNames.length(); ++paramIndex) {
+            const MString paramName = paramNames[paramIndex];
+            const MHWRender::MLightParameterInformation::ParameterType paramType =
+                mayaLightParamInfo->parameterType(paramName);
+            const MHWRender::MLightParameterInformation::StockParameterSemantic paramSemantic =
+                mayaLightParamInfo->parameterSemantic(paramName);
+
+            MIntArray intValues;
+            MFloatArray floatValues;
+
+            switch (paramType) {
+                case MHWRender::MLightParameterInformation::kBoolean:
+                case MHWRender::MLightParameterInformation::kInteger:
+                    mayaLightParamInfo->getParameter(paramName, intValues);
+                    break;
+                case MHWRender::MLightParameterInformation::kFloat:
+                case MHWRender::MLightParameterInformation::kFloat2:
+                case MHWRender::MLightParameterInformation::kFloat3:
+                case MHWRender::MLightParameterInformation::kFloat4:
+                    mayaLightParamInfo->getParameter(paramName, floatValues);
+                    break;
+                default:
+                    // Unsupported paramType.
+                    continue;
+                    break;
+            }
+
+            switch (paramSemantic) {
+                case MHWRender::MLightParameterInformation::kLightEnabled:
+                    _GetLightingParam(intValues, floatValues, lightEnabled);
+                    break;
+                case MHWRender::MLightParameterInformation::kWorldPosition:
+                    if (_GetLightingParam(intValues, floatValues, lightPosition)) {
+                        lightHasPosition = true;
+                    }
+                    break;
+                case MHWRender::MLightParameterInformation::kWorldDirection:
+                    if (_GetLightingParam(intValues, floatValues, lightDirection)) {
+                        lightHasDirection = true;
+                    }
+                    break;
+                case MHWRender::MLightParameterInformation::kIntensity:
+                    _GetLightingParam(intValues, floatValues, lightIntensity);
+                    break;
+                case MHWRender::MLightParameterInformation::kColor:
+                    _GetLightingParam(intValues, floatValues, lightColor);
+                    break;
+                case MHWRender::MLightParameterInformation::kEmitsDiffuse:
+                    _GetLightingParam(intValues, floatValues, lightEmitsDiffuse);
+                    break;
+                case MHWRender::MLightParameterInformation::kEmitsSpecular:
+                    _GetLightingParam(intValues, floatValues, lightEmitsSpecular);
+                    break;
+                case MHWRender::MLightParameterInformation::kDecayRate:
+                    _GetLightingParam(intValues, floatValues, lightDecayRate);
+                    break;
+                case MHWRender::MLightParameterInformation::kDropoff:
+                    _GetLightingParam(intValues, floatValues, lightDropoff);
+                    break;
+                case MHWRender::MLightParameterInformation::kCosConeAngle:
+                    _GetLightingParam(intValues, floatValues, lightCosineConeAngle);
+                    break;
+                case MHWRender::MLightParameterInformation::kShadowBias:
+                    _GetLightingParam(intValues, floatValues, lightShadowBias);
+                    break;
+                case MHWRender::MLightParameterInformation::kShadowOn:
+                    _GetLightingParam(intValues, floatValues, lightShadowOn);
+                    break;
+                case MHWRender::MLightParameterInformation::kGlobalShadowOn:
+                    _GetLightingParam(intValues, floatValues, globalShadowOn);
+                    break;
+                default:
+                    // Unsupported paramSemantic.
+                    continue;
+                    break;
+            }
+
+            if (!lightEnabled) {
+                // Stop reading light parameters if the light is disabled.
+                break;
+            }
+        }
+
+        if (!lightEnabled) {
+            // Skip to the next light if this light is disabled.
+            continue;
+        }
+
+        lightColor[0] *= lightIntensity;
+        lightColor[1] *= lightIntensity;
+        lightColor[2] *= lightIntensity;
+
+        // Populate a GlfSimpleLight from the light information from Maya.
+        GlfSimpleLight light;
+
+        GfVec4f lightAmbient = blackColor;
+        GfVec4f lightDiffuse = blackColor;
+        GfVec4f lightSpecular = blackColor;
+
+        // We receive the cone angle from Maya as a pair of floats which
+        // includes the penumbra, but GlfSimpleLights don't currently support
+        // that, so we only use the primary cone angle value.
+        float lightCutoff = GfRadiansToDegrees(std::acos(lightCosineConeAngle[0]));
+        float lightFalloff = lightDropoff;
+
+        // decayRate is actually an enum in Maya that we receive as a float:
+        // - 0.0 = no attenuation
+        // - 1.0 = linear attenuation
+        // - 2.0 = quadratic attenuation
+        // - 3.0 = cubic attenuation (not supported by GlfSimpleLight)
+        GfVec3f lightAttenuation(0.0f);
+        if (lightDecayRate > 1.5) {
+            // Quadratic attenuation.
+            lightAttenuation[2] = 1.0f;
+        } else if (lightDecayRate > 0.5f) {
+            // Linear attenuation.
+            lightAttenuation[1] = 1.0f;
+        } else {
+            // No/constant attenuation.
+            lightAttenuation[0] = 1.0f;
+        }
+
+        if (lightHasDirection && !lightHasPosition) {
+            // This is a directional light. Set the direction as its position.
+            lightPosition[0] = -lightDirection[0];
+            lightPosition[1] = -lightDirection[1];
+            lightPosition[2] = -lightDirection[2];
+            lightPosition[3] = 0.0f;
+
+            // Revert direction to the default value.
+            lightDirection = GfVec3f(0.0f, 0.0f, -1.0f);
+            if (!viewDirectionAlongNegZ) {
+                lightDirection[2] = 1.0f;
+            }
+        }
+
+        if (!lightHasPosition && !lightHasDirection) {
+            // This is an ambient light.
+            lightAmbient = lightColor;
+        } else {
+            if (lightEmitsDiffuse) {
+                lightDiffuse = lightColor;
+            }
+            if (lightEmitsSpecular) {
+                // XXX: It seems that the specular color cannot be specified
+                // separately from the diffuse color on Maya lights.
+                lightSpecular = lightColor;
+            }
+        }
+
+        light.SetAmbient(lightAmbient);
+        light.SetDiffuse(lightDiffuse);
+        light.SetSpecular(lightSpecular);
+        light.SetPosition(lightPosition);
+        light.SetSpotDirection(lightDirection);
+        light.SetSpotCutoff(lightCutoff);
+        light.SetSpotFalloff(lightFalloff);
+        light.SetAttenuation(lightAttenuation);
+        light.SetShadowBias(lightShadowBias);
+        light.SetHasShadow(lightShadowOn && globalShadowOn);
+
+        lights.push_back(light);
+    }
+
+    lightingContext->SetLights(lights);
+
+    // XXX: These material settings match what we used to get when we read the
+    // material from OpenGL. This should probably eventually be something more
+    // sophisticated.
+    GlfSimpleMaterial material;
+    material.SetAmbient(whiteColor);
+    material.SetDiffuse(whiteColor);
+    material.SetSpecular(blackColor);
+    material.SetEmission(blackColor);
+    material.SetShininess(0.0001f);
+
+    lightingContext->SetMaterial(material);
+
+    lightingContext->SetSceneAmbient(blackColor);
+
+    return lightingContext;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

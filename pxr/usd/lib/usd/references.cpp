@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -30,11 +31,14 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/schema.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 bool
 _ValidateNoSubRootReferences(const SdfReference &ref)
 {
-    if (not ref.GetPrimPath().IsEmpty() and 
-        not ref.GetPrimPath().IsRootPrimPath()) {
+    if (!ref.GetPrimPath().IsEmpty() &&
+        !ref.GetPrimPath().IsRootPrimPath()) {
         TF_CODING_ERROR("Cannot make a reference to a non-root prim: "
                         "@%s@<%s>",
                         ref.GetAssetPath().c_str(), ref.GetPrimPath().GetText());
@@ -47,9 +51,9 @@ _ValidateNoSubRootReferences(const SdfReference &ref)
 // UsdReferences
 // ------------------------------------------------------------------------- //
 bool
-UsdReferences::Add(const SdfReference& ref)
+UsdReferences::AppendReference(const SdfReference& ref)
 {
-    if (not _ValidateNoSubRootReferences(ref))
+    if (!_ValidateNoSubRootReferences(ref))
         return false;
     
     SdfChangeBlock block;
@@ -69,29 +73,29 @@ UsdReferences::Add(const SdfReference& ref)
 }
 
 bool
-UsdReferences::Add(const std::string &assetPath,
-                   const SdfPath &primPath,
-                   const SdfLayerOffset &layerOffset)
+UsdReferences::AppendReference(const std::string &assetPath,
+                               const SdfPath &primPath,
+                               const SdfLayerOffset &layerOffset)
 {
-    return Add(SdfReference(assetPath, primPath, layerOffset));
+    return AppendReference(SdfReference(assetPath, primPath, layerOffset));
 }
 
 bool
-UsdReferences::Add(const std::string &assetPath,
-                   const SdfLayerOffset &layerOffset)
+UsdReferences::AppendReference(const std::string &assetPath,
+                               const SdfLayerOffset &layerOffset)
 {
-    return Add(assetPath, SdfPath(), layerOffset);
+    return AppendReference(assetPath, SdfPath(), layerOffset);
 }
 
 bool 
-UsdReferences::AddInternal(const SdfPath &primPath,
-                           const SdfLayerOffset &layerOffset)
+UsdReferences::AppendInternalReference(const SdfPath &primPath,
+                                       const SdfLayerOffset &layerOffset)
 {
-    return Add(std::string(), primPath, layerOffset);
+    return AppendReference(std::string(), primPath, layerOffset);
 }
 
 bool
-UsdReferences::Remove(const SdfReference& ref)
+UsdReferences::RemoveReference(const SdfReference& ref)
 {
     SdfChangeBlock block;
     TfErrorMark mark;
@@ -107,7 +111,7 @@ UsdReferences::Remove(const SdfReference& ref)
 }
 
 bool
-UsdReferences::Clear()
+UsdReferences::ClearReferences()
 {
     SdfChangeBlock block;
     TfErrorMark mark;
@@ -115,14 +119,14 @@ UsdReferences::Clear()
 
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfReferencesProxy refs = spec->GetReferenceList();
-        success = refs.ClearEdits() and mark.IsClean();
+        success = refs.ClearEdits() && mark.IsClean();
     }
     mark.Clear();
     return success;
 }
 
 bool 
-UsdReferences::SetItems(const SdfReferenceVector& items)
+UsdReferences::SetReferences(const SdfReferenceVector& items)
 {
     SdfChangeBlock block;
     TfErrorMark mark;
@@ -132,7 +136,7 @@ UsdReferences::SetItems(const SdfReferenceVector& items)
     // call, so instead, just set the field directly.
     SdfReferenceListOp refs;
     refs.SetExplicitItems(items);
-    success = GetPrim().SetMetadata(SdfFieldKeys->References, refs) and 
+    success = GetPrim().SetMetadata(SdfFieldKeys->References, refs) && 
         mark.IsClean();
 
     mark.Clear();
@@ -147,7 +151,7 @@ UsdReferences::SetItems(const SdfReferenceVector& items)
 SdfPrimSpecHandle
 UsdReferences::_CreatePrimSpecForEditing()
 {
-    if (not _prim) {
+    if (!_prim) {
         TF_CODING_ERROR("Invalid prim.");
         return SdfPrimSpecHandle();
     }
@@ -156,4 +160,7 @@ UsdReferences::_CreatePrimSpecForEditing()
 }
 
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

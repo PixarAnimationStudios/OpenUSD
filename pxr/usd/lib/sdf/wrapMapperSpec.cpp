@@ -23,9 +23,8 @@
 //
 /// \file wrapMapperSpec.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/mapperSpec.h"
-
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/mapperArgSpec.h"
 #include "pxr/usd/sdf/pyChildrenProxy.h"
@@ -33,6 +32,8 @@
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static SdfPyChildrenProxy<SdfMapperArgSpecView>
 WrapGetArgs(const SdfMapperSpec& self)
@@ -73,7 +74,7 @@ void wrapMapperSpec()
             "will be chosen based on this type name.")
 
         .add_property("args", 
-            &::WrapGetArgs, 
+            &WrapGetArgs, 
             "The mapper's args.\n\n"
             "The returned object is a proxy through which the args can be accessed\n"
             "or deleted.  It is not allowed to assign new arguments into the\n"
@@ -85,3 +86,5 @@ void wrapMapperSpec()
             "The mapper's symmetry args.")
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,6 +24,7 @@
 #ifndef USD_CRATEINFO_H
 #define USD_CRATEINFO_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 
 #include <cstddef>
@@ -31,6 +32,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdCrateInfo
 ///
@@ -80,5 +84,8 @@ private:
     struct _Impl;
     std::shared_ptr<_Impl> _impl;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_CRATEINFO_H

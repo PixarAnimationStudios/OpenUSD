@@ -24,10 +24,13 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/object.hpp>
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/pyResolverContext.h"
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Ar_ResolverContextToPython
 {
@@ -54,7 +57,7 @@ struct Ar_ResolverContextFromPython
 
     static void* _convertible(PyObject* obj_ptr) 
     {
-        if (obj_ptr == Py_None or 
+        if (obj_ptr == Py_None ||
             Ar_CanConvertResolverContextFromPython(obj_ptr)) {
             return obj_ptr;
         }
@@ -83,3 +86,5 @@ wrapResolverContext()
     Ar_ResolverContextToPython();
     Ar_ResolverContextFromPython();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

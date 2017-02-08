@@ -31,7 +31,7 @@
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -41,6 +41,9 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <boost/functional/hash.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -105,7 +108,7 @@ void
 HdRenderPassState::Sync()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 
@@ -115,7 +118,7 @@ HdRenderPassState::Sync()
     }
 
     // allocate bar if not exists
-    if (not _renderPassStateBar) {
+    if (!_renderPassStateBar) {
         HdBufferSpecVector bufferSpecs;
 
         // note: InterleavedMemoryManager computes the offsets in the packed
@@ -206,7 +209,7 @@ HdRenderPassState::SetCamera(GfMatrix4d const &worldToViewMatrix,
     _viewport = GfVec4f((float)viewport[0], (float)viewport[1],
                         (float)viewport[2], (float)viewport[3]);
 
-    if(not TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
+    if(!TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
         _cullMatrix = _worldToViewMatrix * _projectionMatrix;
     }
 }
@@ -261,7 +264,7 @@ HdRenderPassState::SetClipPlanes(ClipPlanesVector const & clipPlanes)
 {
     if (_clipPlanes != clipPlanes) {
         _clipPlanes = clipPlanes;
-        if (not TF_VERIFY(_clipPlanes.size() < GL_MAX_CLIP_PLANES)) {
+        if (!TF_VERIFY(_clipPlanes.size() < GL_MAX_CLIP_PLANES)) {
             _clipPlanes.resize(GL_MAX_CLIP_PLANES);
         }
         _renderPassStateBar.reset();
@@ -301,15 +304,15 @@ HdRenderPassState::SetRenderPassShader(HdRenderPassShaderSharedPtr const &render
 }
 
 void 
-HdRenderPassState::SetOverrideShader(HdShaderSharedPtr const &overrideShader)
+HdRenderPassState::SetOverrideShader(HdShaderCodeSharedPtr const &overrideShader)
 {
     _overrideShader = overrideShader;
 }
 
-HdShaderSharedPtrVector
+HdShaderCodeSharedPtrVector
 HdRenderPassState::GetShaders() const
 {
-    HdShaderSharedPtrVector shaders;
+    HdShaderCodeSharedPtrVector shaders;
     shaders.reserve(2);
     shaders.push_back(_lightingShader);
     shaders.push_back(_renderPassShader);
@@ -356,13 +359,16 @@ HdRenderPassState::SetAlphaToCoverageEnabled(bool enabled)
 void
 HdRenderPassState::Bind()
 {
-    // XXX: in future, RenderPassState::Bind() and Unbind() can be a part of
-    // command buffer. At that point we should not rely on GL attribute stack.
+    // XXX: this states set will be refactored as hdstream PSO.
 
-    glPushAttrib(GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT);
+    // XXX: viewport should be set.
+    // glViewport((GLint)_viewport[0], (GLint)_viewport[1],
+    //            (GLsizei)_viewport[2], (GLsizei)_viewport[3]);
+
+    // when adding another GL state change here, please document
+    // which states to be altered at the comment in the header file
 
     // Apply polygon offset to whole pass.
-    // Restored by GL_POLYGON_BIT|GL_ENABLE_BIT
     if (!_depthBiasUseDefault) {
         if (_depthBiasEnabled) {
             glEnable(GL_POLYGON_OFFSET_FILL);
@@ -372,10 +378,8 @@ HdRenderPassState::Bind()
         }
     }
 
-    // Restored by GL_DEPTH_BUFFER_BIT
     glDepthFunc(HdConversions::GetGlDepthFunc(_depthFunc));
 
-    // Restored by GL_ENABLE_BIT pop attrib
     if (!_alphaToCoverageUseDefault) {
         if (_alphaToCoverageEnabled) {
             glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -392,7 +396,17 @@ HdRenderPassState::Bind()
 void
 HdRenderPassState::Unbind()
 {
-    glPopAttrib();
+    // restore back to the GL defaults
+
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    glDisable(GL_PROGRAM_POINT_SIZE);
+    glDepthFunc(GL_LESS);
+    glPolygonOffset(0, 0);
+
+    for (size_t i = 0; i < _clipPlanes.size(); ++i) {
+        glDisable(GL_CLIP_DISTANCE0 + i);
+    }
 }
 
 size_t
@@ -403,4 +417,7 @@ HdRenderPassState::GetShaderHash() const
     boost::hash_combine(hash, _clipPlanes.size());
     return hash;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

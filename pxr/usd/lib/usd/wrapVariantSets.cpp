@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usd/editContext.h"
 
@@ -33,6 +34,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 using std::vector;
@@ -64,7 +68,7 @@ _GetVariantEditContext(const UsdVariantSet &self, const SdfLayerHandle &layer) {
 void wrapUsdVariantSets()
 {
     class_<UsdVariantSet>("VariantSet", no_init)
-        .def("FindOrCreateVariant", &UsdVariantSet::FindOrCreateVariant,
+        .def("AppendVariant", &UsdVariantSet::AppendVariant,
              arg("variantName"))
         .def("GetVariantNames", &UsdVariantSet::GetVariantNames,
              return_value_policy<TfPySequenceToList>())
@@ -87,7 +91,7 @@ void wrapUsdVariantSets()
         ;
 
     class_<UsdVariantSets>("VariantSets", no_init)
-        .def("FindOrCreate", &UsdVariantSets::FindOrCreate,
+        .def("AppendVariantSet", &UsdVariantSets::AppendVariantSet,
              arg("variantSetName"))
         .def("GetNames", _GetNames, return_value_policy<TfPySequenceToList>())
         .def("GetVariantSet", &UsdVariantSets::GetVariantSet,
@@ -100,4 +104,7 @@ void wrapUsdVariantSets()
              (arg("variantSetName"), arg("variantName")))
         ;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

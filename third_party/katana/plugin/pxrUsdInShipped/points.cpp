@@ -23,10 +23,13 @@
 //
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readPoints.h"
 
 #include "pxr/usd/usdGeom/points.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointsOp, privateData, interface)
 {

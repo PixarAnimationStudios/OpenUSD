@@ -26,6 +26,10 @@
 // as RIS patter objects. The conversion allows to write in USD a fully working shader graph
 // We use this table both for export and for import when RIS mode is active.
 // XXX This should probably live in a xml or json file that can be easily updated without recompile
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static const std::vector<std::pair<std::string, std::string> > _RFM_RISNODE_TABLE = boost::assign::list_of
     ( std::make_pair("blendColors", "PxrMayaBlendColors") )
@@ -74,3 +78,5 @@ static const std::vector<std::pair<std::string, std::string> > _RFM_RISNODE_TABL
     ( std::make_pair("volumeFog", "PxrMayaVolumeFog") )
     ( std::make_pair("volumeNoise", "PxrMayaVolumeNoise") )
     ( std::make_pair("wood", "PxrMayaWood") );
+
+PXR_NAMESPACE_CLOSE_SCOPE

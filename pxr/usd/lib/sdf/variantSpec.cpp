@@ -23,6 +23,7 @@
 //
 /// \file VariantSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/variantSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/childrenUtils.h"
@@ -36,6 +37,8 @@
 
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 SDF_DEFINE_SPEC(SdfVariantSpec, SdfSpec);
 
 SdfVariantSpecHandle
@@ -44,12 +47,12 @@ SdfVariantSpec::New(
 {
     TRACE_FUNCTION();
 
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner variant set");
         return TfNullPtr;
     }
 
-    if (not SdfSchema::IsValidVariantIdentifier(name)) {
+    if (!SdfSchema::IsValidVariantIdentifier(name)) {
         TF_CODING_ERROR("Invalid variant name: %s", name.c_str());
         return TfNullPtr;
     }
@@ -58,7 +61,7 @@ SdfVariantSpec::New(
         Sdf_VariantChildPolicy::GetChildPath(owner->GetPath(), TfToken(name));
 
     SdfLayerHandle layer = owner->GetLayer();
-    if (not Sdf_ChildrenUtils<Sdf_VariantChildPolicy>::CreateSpec(
+    if (!Sdf_ChildrenUtils<Sdf_VariantChildPolicy>::CreateSpec(
             layer, childPath, SdfSpecTypeVariant)) {
         return TfNullPtr;
     }
@@ -147,3 +150,5 @@ SdfCreateVariantInLayer(
     return TfStatic_cast<SdfVariantSpecHandle>(
         layer->GetObjectAtPath(variantPath));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

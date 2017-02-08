@@ -26,6 +26,7 @@
 
 /// \file sdf/pyChildrenProxy.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/childrenProxy.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyError.h"
@@ -33,6 +34,8 @@
 #include "pxr/base/tf/stringUtils.h"
 #include <boost/python.hpp>
 #include <boost/python/slice.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class _View>
 class SdfPyChildrenProxy {
@@ -384,4 +387,6 @@ private:
     template <class E> friend class _Iterator;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PYCHILDRENPROXY_H

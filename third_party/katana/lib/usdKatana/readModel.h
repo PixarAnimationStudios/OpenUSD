@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #ifndef PXRUSDKATANA_READMODEL_H
 #define PXRUSDKATANA_READMODEL_H
 
@@ -34,5 +38,8 @@ PxrUsdKatanaReadModel(
         const UsdPrim& model,
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDKATANA_READMODEL_H

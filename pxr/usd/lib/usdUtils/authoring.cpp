@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/authoring.h"
 
 #include "pxr/usd/sdf/layer.h"
@@ -30,12 +31,15 @@
 #include <vector>
 #include <algorithm>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 bool 
 UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
                           const SdfLayerHandle &destination,
                           bool skipSublayers)
 {
-    if (not TF_VERIFY(source and destination))
+    if (!TF_VERIFY(source && destination))
         return false;
 
     SdfPrimSpecHandle sourcePseudo = source->GetPseudoRoot();
@@ -46,7 +50,7 @@ UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
     
     if (skipSublayers){
         last = std::remove_if(infoKeys.begin(), last,
-                              [](TfToken key) { return (key == SdfFieldKeys->SubLayers or key == SdfFieldKeys->SubLayerOffsets); });
+                              [](TfToken key) { return (key == SdfFieldKeys->SubLayers || key == SdfFieldKeys->SubLayerOffsets); });
     }
 
     for (auto key = infoKeys.begin(); key != last; ++key){
@@ -55,4 +59,7 @@ UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
 
     return true;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

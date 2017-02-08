@@ -29,6 +29,9 @@
 
 #include <stdio.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class Glf_TestGLContextPrivate {
 public:
     Glf_TestGLContextPrivate( Glf_TestGLContextPrivate const * other=NULL );
@@ -82,7 +85,7 @@ Glf_TestGLContextPrivate::Glf_TestGLContextPrivate( Glf_TestGLContextPrivate con
 	
     _sharedContext=other ? other : this;
 
-    if (not _win) {
+    if (!_win) {
         XVisualInfo * vi = glXGetVisualFromFBConfig( _dpy, fbConfigs[0] );
 
 	XSetWindowAttributes  swa;
@@ -184,7 +187,7 @@ GlfTestGLContextSharedPtr
 GlfTestGLContext::Create( GlfTestGLContextSharedPtr const & share )
 {
     Glf_TestGLContextPrivate * ctx = new Glf_TestGLContextPrivate( 
-        share and share->_context ? share->_context : NULL );
+        share && share->_context ? share->_context : NULL );
     return GlfTestGLContextSharedPtr( new GlfTestGLContext( ctx ) );
 }
 
@@ -202,7 +205,7 @@ GlfTestGLContext::GlfTestGLContext(Glf_TestGLContextPrivate const * context) :
 bool
 GlfTestGLContext::IsValid() const
 {
-    return (_context and _context->isValid());
+    return (_context && _context->isValid());
 }
 
 void
@@ -217,7 +220,7 @@ GlfTestGLContext::_IsSharing(GlfGLContextSharedPtr const & otherContext)const
 #ifdef MENV30
     GlfTestGLContextSharedPtr otherGlfTestGLContext =
         boost::dynamic_pointer_cast<GlfTestGLContext>(otherContext);
-    return (otherGlfTestGLContext and
+    return (otherGlfTestGLContext &&
             Glf_TestGLContextPrivate::areSharing(_context, otherGlfTestGLContext->_context));
 #else
     TF_CODING_ERROR("Glf_TestGLContextPrivate::areSharing() is not supported outside of Presto.");
@@ -234,3 +237,6 @@ GlfTestGLContext::_IsEqual(GlfGLContextSharedPtr const &rhs) const
     }
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

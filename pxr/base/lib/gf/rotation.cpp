@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/rotation.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/math.h"
@@ -32,6 +33,8 @@
 #include "pxr/base/tf/type.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // CODE_COVERAGE_OFF_GCOV_BUG
 TF_REGISTRY_FUNCTION(TfType) {
@@ -189,7 +192,7 @@ GfRotation::RotateOntoProjected(const GfVec3d &v1,
     double sinTheta = GfDot(crossAxis, axis);
     double cosTheta = GfDot(v1Proj, v2Proj);
     double theta = 0;
-    if (not (fabs(sinTheta) < _GetEpsilon() && fabs(cosTheta) < _GetEpsilon()))
+    if (!(fabs(sinTheta) < _GetEpsilon() && fabs(cosTheta) < _GetEpsilon()))
         theta = atan2(sinTheta, cosTheta);
 
     const double toDeg = (180.0)/M_PI;
@@ -310,7 +313,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         thetaSw = &angleStandin;
     }
 
-    if (swShift and zeroAngle != ZERO_NONE) {
+    if (swShift && zeroAngle != ZERO_NONE) {
         TF_WARN("A swing shift was provided but we're not decomposing into"
                 " four angles.  The swing shift will be ignored.");
     }
@@ -612,3 +615,5 @@ operator<<(std::ostream& out, const GfRotation& r)
     return out << '[' << Gf_OstreamHelperP(r.GetAxis()) << " " 
         << Gf_OstreamHelperP(r.GetAngle()) << ']';
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,6 +24,7 @@
 #ifndef HD_INSTANCER_H
 #define HD_INSTANCER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/usd/sdf/path.h"
@@ -31,6 +32,9 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <mutex>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
@@ -95,5 +99,8 @@ private:
                          HdBufferArrayRangeSharedPtr,
                          SdfPath::Hash> _instanceIndexRangeMap;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_INSTANCER_H

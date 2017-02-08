@@ -24,6 +24,8 @@
 #ifndef TF_PYSINGLETON_H
 #define TF_PYSINGLETON_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -39,6 +41,8 @@
 #include <boost/python/raw_function.hpp>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_PySingleton {
 
@@ -104,5 +108,7 @@ private:
 
 Tf_PySingleton::Visitor TfPySingleton();
 Tf_PySingleton::Visitor TfPySingleton(std::string const &reprPrefix);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYSINGLETON_H

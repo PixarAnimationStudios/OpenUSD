@@ -23,5 +23,5 @@
 #
 # Versioning information
 set(PXR_MAJOR_VERSION "0")
-set(PXR_MINOR_VERSION "9")
-set(PXR_PATCH_VERSION "0")
+set(PXR_MINOR_VERSION "7")
+set(PXR_PATCH_VERSION "2")

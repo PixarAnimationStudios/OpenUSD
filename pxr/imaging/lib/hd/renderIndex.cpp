@@ -24,18 +24,21 @@
 #include "pxr/imaging/hd/renderIndex.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/glslfxShader.h"
+#include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
+#include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderDelegateRegistry.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/surfaceShader.h"
@@ -48,14 +51,20 @@
 #include "pxr/base/work/loops.h"
 #include "pxr/base/tf/pyLock.h"
 
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/concurrent_vector.h>
-
 #include <iostream>
 #include <mutex>
 #include <unordered_set>
 
+#include <tbb/concurrent_unordered_map.h>
+#include <tbb/concurrent_vector.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
+typedef tbb::concurrent_unordered_map<TfToken, 
+                        tbb::concurrent_vector<HdDrawItem const*>, 
+                        TfToken::HashFunctor > _ConcurrentDrawItemView; 
 
 HdRenderIndex::HdRenderIndex()
     : _delegateRprimMap()
@@ -64,15 +73,15 @@ HdRenderIndex::HdRenderIndex()
     , _rprimPrimIdMap()
     , _shaderMap()
     , _taskMap()
-    , _textureMap()
-    , _sprimMap()
-    , _sprimIDSet()
+    , _sprimTypeMap()
+    , _bprimTypeMap()
     , _tracker()
     , _nextPrimId(1)
     , _instancerMap()
     , _surfaceFallback()
     , _syncQueue()
-   , _renderDelegateTypeId()
+    , _renderDelegate(nullptr)
+    , _ownsDelegateXXX(false)
 {
     // Creating the fallback shader
     ReloadFallbackShader();
@@ -82,97 +91,104 @@ HdRenderIndex::HdRenderIndex()
     //      leave geometry collection for a while.
     _tracker.AddCollection(HdTokens->geometry);
 
-    // pre-defined reprs (to be deprecated or minimalized)
-    static std::once_flag reprsOnce;
-    std::call_once(reprsOnce, [](){
-        HdMesh::ConfigureRepr(HdTokens->hull,
-                              HdMeshReprDesc(HdMeshGeomStyleHull,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/false,
-                                             /*blendWireframeColor=*/false));
-        HdMesh::ConfigureRepr(HdTokens->smoothHull,
-                              HdMeshReprDesc(HdMeshGeomStyleHull,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/false));
-        HdMesh::ConfigureRepr(HdTokens->wire,
-                              HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/true));
-        HdMesh::ConfigureRepr(HdTokens->wireOnSurf,
-                              HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/true));
-
-        HdMesh::ConfigureRepr(HdTokens->refined,
-                              HdMeshReprDesc(HdMeshGeomStyleSurf,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/false));
-        HdMesh::ConfigureRepr(HdTokens->refinedWire,
-                              HdMeshReprDesc(HdMeshGeomStyleEdgeOnly,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/true));
-        HdMesh::ConfigureRepr(HdTokens->refinedWireOnSurf,
-                              HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
-                                             HdCullStyleDontCare,
-                                             /*lit=*/true,
-                                             /*smoothNormals=*/true,
-                                             /*blendWireframeColor=*/true));
-
-
-        HdBasisCurves::ConfigureRepr(HdTokens->hull,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->smoothHull,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->wire,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->wireOnSurf,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->refined,
-                                     HdBasisCurvesGeomStyleRefined);
-        // XXX: draw coarse line for refinedWire (filed as bug 129550)
-        HdBasisCurves::ConfigureRepr(HdTokens->refinedWire,
-                                     HdBasisCurvesGeomStyleLine);
-        HdBasisCurves::ConfigureRepr(HdTokens->refinedWireOnSurf,
-                                     HdBasisCurvesGeomStyleRefined);
-
-        HdPoints::ConfigureRepr(HdTokens->hull,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->smoothHull,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->wire,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->wireOnSurf,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->refined,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->refinedWire,
-                                HdPointsGeomStylePoints);
-        HdPoints::ConfigureRepr(HdTokens->refinedWireOnSurf,
-                                HdPointsGeomStylePoints);
-    });
 }
 
 HdRenderIndex::~HdRenderIndex()
 {
     HD_TRACE_FUNCTION();
     Clear();
+
+    {
+        // XXX: Transitional Code - to be removed.
+        // If the render index created the render delegate, it needs
+        // to release it.
+        if (_ownsDelegateXXX)
+        {
+            HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+
+            renderRegistry.ReleaseDelegate(_renderDelegate);
+            _renderDelegate = nullptr;
+        }
+    }
+
+}
+
+void
+HdRenderIndex::InsertRprim(TfToken const& typeId,
+                 HdSceneDelegate* sceneDelegate,
+                 SdfPath const& rprimId,
+                 SdfPath const& instancerId /*= SdfPath()*/)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+#if 0
+    // TODO: enable this after patching.
+    if (!id.IsAbsolutePath()) {
+        TF_CODING_ERROR("All Rprim IDs must be absolute paths <%s>\n",
+                id.GetText());
+        return;
+    }
+#endif
+
+    if (ARCH_UNLIKELY(TfMapLookupPtr(_rprimMap, rprimId)))
+        return;
+
+    {
+        // XXX: Transitional code.
+        // If the application didn't use the new context api to
+        // create a render delegate, create one on its behalf.
+        //
+        // In the future, this would be an error condition as the context api
+        // would create the delegate and provide it to the render index..
+        if (_renderDelegate == nullptr)
+        {
+            HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+            const TfToken &defaultRenderDelegateId =
+                                          renderRegistry.GetDefaultDelegateId();
+             _renderDelegate =
+                      renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
+             _ownsDelegateXXX = true;
+        }
+    }
+
+    HdRprim *rprim = _renderDelegate->CreateRprim(typeId,
+                                                  rprimId,
+                                                  instancerId);
+    if (rprim == nullptr) {
+        return;
+    }
+
+    SdfPath const &sceneDelegateId = sceneDelegate->GetDelegateID();
+
+    _rprimIDSet.insert(rprimId);
+    _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask());
+    _AllocatePrimId(rprim);
+
+    SdfPathVector* vec = &_delegateRprimMap[sceneDelegateId];
+    vec->push_back(rprimId);
+
+    _RprimInfo info = {
+      sceneDelegate,
+      vec->size()-1,
+      rprim
+    };
+    _rprimMap[rprimId] = std::move(info);
+
+    SdfPath instanceId = rprim->GetInstancerId();
+
+    if (!instanceId.IsEmpty()) {
+        _tracker.InstancerRPrimInserted(instanceId, rprimId);
+    }
 }
 
 void
 HdRenderIndex::RemoveRprim(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
+
 
     _RprimMap::iterator rit = _rprimMap.find(id);
     if (rit == _rprimMap.end())
@@ -182,8 +198,9 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
 
     SdfPath instancerId = rprimInfo.rprim->GetInstancerId();
 
-    _DelegateRprimMap::iterator dit = _delegateRprimMap.find(
-                                                    rit->second.delegateID);
+    SdfPath const &sceneDelegateId = rprimInfo.sceneDelegate->GetDelegateID();
+
+    _DelegateRprimMap::iterator dit = _delegateRprimMap.find(sceneDelegateId);
     SdfPathVector* vec = &dit->second;
     size_t rem = rprimInfo.childIndex;
 
@@ -210,11 +227,16 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
         _delegateRprimMap.erase(dit);
     }
 
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _tracker.InstancerRPrimRemoved(instancerId, id);
     }
 
     _tracker.RprimRemoved(id);
+
+    // Ask delegate to actually delete the rprim
+    _renderDelegate->DestroyRprim(rprimInfo.rprim);
+    rprimInfo.rprim = nullptr;
+
     _rprimIDSet.erase(id);
     _rprimMap.erase(rit);
 }
@@ -225,6 +247,9 @@ HdRenderIndex::Clear()
     HD_TRACE_FUNCTION();
     TF_FOR_ALL(it, _rprimMap) {
         _tracker.RprimRemoved(it->first);
+        _RprimInfo &rprimInfo = it->second;
+        _renderDelegate->DestroyRprim(rprimInfo.rprim);
+        rprimInfo.rprim = nullptr;
     }
     // Clear Rprims, Rprim IDs, and delegate mappings.
     _rprimIDSet.clear();
@@ -232,8 +257,27 @@ HdRenderIndex::Clear()
     _delegateRprimMap.clear();
 
     // Clear Sprims
-    _sprimIDSet.clear();
-    _sprimMap.clear();
+    TF_FOR_ALL(typeIt, _sprimTypeMap) {
+        TF_FOR_ALL(primIt, typeIt->second.sprimMap) {
+            _tracker.SprimRemoved(primIt->first);
+            _SprimInfo &sprimInfo = primIt->second;
+            _renderDelegate->DestroySprim(sprimInfo.sprim);
+            sprimInfo.sprim = nullptr;
+        }
+    }
+    _sprimTypeMap.clear();
+
+    // Clear Bprims
+    TF_FOR_ALL(typeIt, _bprimTypeMap) {
+        TF_FOR_ALL(primIt, typeIt->second.bprimMap) {
+            _tracker.BprimRemoved(primIt->first);
+            _BprimInfo &bprimInfo = primIt->second;
+            _renderDelegate->DestroyBprim(bprimInfo.bprim);
+            bprimInfo.bprim = nullptr;
+        }
+    }
+    _bprimTypeMap.clear();
+
 
     // Clear instancers.
     TF_FOR_ALL(it, _instancerMap) {
@@ -252,12 +296,6 @@ HdRenderIndex::Clear()
         _tracker.TaskRemoved(it->first);
     }
     _taskMap.clear();
-
-    // Clear textures.
-    TF_FOR_ALL(it, _textureMap) {
-        _tracker.TextureRemoved(it->first);
-    }
-    _textureMap.clear();
 
     // After clearing the index, all collections must be invalidated to force
     // any dependent state to be updated.
@@ -278,7 +316,7 @@ HdRenderIndex::GetDelegateIDsWithDirtyRprims(int dirtyMask,
     TF_FOR_ALL(delegateIt, _delegateRprimMap) {
         SdfPathVector const& rprimChildren = delegateIt->second;
         TF_FOR_ALL(rprimIt, rprimChildren) {
-            if (dirtyMask == 0 or tracker.GetRprimDirtyBits(*rprimIt) & dirtyMask) {
+            if (dirtyMask == 0 || tracker.GetRprimDirtyBits(*rprimIt) & dirtyMask) {
                 SdfPath const& delegateID = delegateIt->first;
                 IDs->push_back(delegateID);
                 break;
@@ -298,41 +336,24 @@ HdRenderIndex::GetDelegateRprimIDs(SdfPath const& delegateID) const
     return it->second;
 }
 
-void 
-HdRenderIndex::_TrackDelegateRprim(HdSceneDelegate* delegate, 
-                                   SdfPath const& rprimID,
-                                   HdRprimSharedPtr const& rprim)
-{
-    _rprimIDSet.insert(rprimID);
-    _tracker.RprimInserted(rprimID, rprim->GetInitialDirtyBitsMask());
-    _AllocatePrimId(rprim);
-
-    SdfPathVector* vec = &_delegateRprimMap[delegate->GetDelegateID()];
-    vec->push_back(rprimID);
-
-    _RprimInfo info = { delegate->GetDelegateID(), vec->size()-1, rprim };
-    _rprimMap[rprimID] = info;
-
-    SdfPath instanceId = rprim->GetInstancerId();
-
-    if (not instanceId.IsEmpty()) {
-        _tracker.InstancerRPrimInserted(instanceId, rprimID);
-    }
-}
-
 // -------------------------------------------------------------------------- //
 /// \name Shader Support
 // -------------------------------------------------------------------------- //
 
 void 
-HdRenderIndex::_TrackDelegateShader(HdSceneDelegate* delegate, 
+HdRenderIndex::_TrackDelegateShader(HdSceneDelegate* sceneDelegate,
                                     SdfPath const& shaderId,
                                     HdSurfaceShaderSharedPtr const& shader)
 {
     if (shaderId == SdfPath())
         return;
     _tracker.ShaderInserted(shaderId);
-    _shaderMap.insert(std::make_pair(shaderId, shader));
+
+    _ShaderInfo shaderInfo;
+    shaderInfo.sceneDelegate = sceneDelegate;
+    shaderInfo.shader        = shader;
+
+    _shaderMap.insert(std::make_pair(shaderId, shaderInfo));
 }
 
 HdSurfaceShaderSharedPtr const& 
@@ -342,7 +363,7 @@ HdRenderIndex::GetShader(SdfPath const& id) const {
 
     _ShaderMap::const_iterator it = _shaderMap.find(id);
     if (it != _shaderMap.end())
-        return it->second;
+        return it->second.shader;
 
     return _surfaceFallback;
 }
@@ -351,7 +372,7 @@ void
 HdRenderIndex::RemoveShader(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _ShaderMap::iterator it = _shaderMap.find(id);
     if (it == _shaderMap.end())
@@ -399,7 +420,7 @@ void
 HdRenderIndex::RemoveTask(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _TaskMap::iterator it = _taskMap.find(id);
     if (it == _taskMap.end())
@@ -410,116 +431,313 @@ HdRenderIndex::RemoveTask(SdfPath const& id)
 }
 
 // -------------------------------------------------------------------------- //
-/// \name Texture Support
-// -------------------------------------------------------------------------- //
-
-void 
-HdRenderIndex::_TrackDelegateTexture(HdSceneDelegate* delegate, 
-                                    SdfPath const& textureId,
-                                    HdTextureSharedPtr const& texture)
-{
-    if (textureId == SdfPath())
-        return;
-    _tracker.TextureInserted(textureId);
-    _textureMap.insert(std::make_pair(textureId, texture));
-}
-
-HdTextureSharedPtr const& 
-HdRenderIndex::GetTexture(SdfPath const& id) const {
-    _TextureMap::const_iterator it = _textureMap.find(id);
-    if (it != _textureMap.end())
-        return it->second;
-
-    static HdTextureSharedPtr EMPTY;
-    return EMPTY;
-}
-
-void
-HdRenderIndex::RemoveTexture(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-
-    _TextureMap::iterator it = _textureMap.find(id);
-    if (it == _textureMap.end())
-        return;
-
-    _tracker.TextureRemoved(id);
-    _textureMap.erase(it);
-}
-
-// -------------------------------------------------------------------------- //
 /// \name Sprim Support (scene state prim: light, camera...)
 // -------------------------------------------------------------------------- //
 
 void
-HdRenderIndex::_TrackDelegateSprim(HdSceneDelegate* delegate,
-                                   SdfPath const& id,
-                                   HdSprimSharedPtr const& sprim,
-                                   int initialDirtyState)
+HdRenderIndex::InsertSprim(TfToken const& typeId,
+                           HdSceneDelegate* sceneDelegate,
+                           SdfPath const& sprimId)
 {
-    if (id == SdfPath()) {
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (sprimId.IsEmpty()) {
         return;
     }
-    _tracker.SprimInserted(id, initialDirtyState);
-    _sprimIDSet.insert(id);
-    _sprimMap.insert(std::make_pair(id, sprim));
-}
 
-HdSprimSharedPtr const& 
-HdRenderIndex::GetSprim(SdfPath const& id) const
-{
-    _SprimMap::const_iterator it = _sprimMap.find(id);
-    if (it != _sprimMap.end()) {
-        return it->second;
+    {
+        // XXX: Transitional code.
+        // If the application didn't use the new context api to
+        // create a render delegate, create one on its behalf.
+        //
+        // In the future, this would be an error condition as the context api
+        // would create the delegate and provide it to the render index..
+        if (_renderDelegate == nullptr)
+        {
+            HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+            const TfToken &defaultRenderDelegateId =
+                                          renderRegistry.GetDefaultDelegateId();
+             _renderDelegate =
+                      renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
+             _ownsDelegateXXX = true;
+        }
     }
 
-    static HdSprimSharedPtr EMPTY;
-    return EMPTY;
+    HdSprim *sprim = _renderDelegate->CreateSprim(typeId,
+                                                  sprimId);
+    if (sprim == nullptr) {
+        return;
+    }
+
+
+    int initialDirtyState = sprim->GetInitialDirtyBitsMask();
+
+    _tracker.SprimInserted(sprimId, initialDirtyState);
+
+    _SprimTypeIndex &typeIndex = _sprimTypeMap[typeId];
+
+    typeIndex.sprimIDSet.insert(sprimId);
+
+    _SprimInfo sprimInfo;
+    sprimInfo.sceneDelegate = sceneDelegate;
+    sprimInfo.sprim         = sprim;
+
+    typeIndex.sprimMap.insert(std::make_pair(sprimId, sprimInfo));
 }
 
 void
-HdRenderIndex::RemoveSprim(SdfPath const& id)
+HdRenderIndex::RemoveSprim(TfToken const& typeId, SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-    _SprimMap::iterator it = _sprimMap.find(id);
-    if (it == _sprimMap.end()) {
+    _SprimTypeMap::iterator typeIt = _sprimTypeMap.find(typeId);
+    if (typeIt == _sprimTypeMap.end()) {
+        TF_CODING_ERROR("Unknown type %s", typeId.GetText());
+        return;
+    }
+
+    _SprimTypeIndex &typeIndex = typeIt->second;
+    _SprimMap::iterator it = typeIndex.sprimMap.find(id);
+    if (it == typeIndex.sprimMap.end()) {
         return;
     }
 
     _tracker.SprimRemoved(id);
-    _sprimMap.erase(it);
-    _sprimIDSet.erase(id);
+    _SprimInfo &sprimInfo = it->second;
+
+    // Ask delegate to actually delete the sprim
+    _renderDelegate->DestroySprim(sprimInfo.sprim);
+    sprimInfo.sprim = nullptr;
+
+    typeIndex.sprimMap.erase(it);
+    typeIndex.sprimIDSet.erase(id);
+}
+
+HdSprim const*
+HdRenderIndex::GetSprim(TfToken const& typeId, SdfPath const& id) const
+{
+    _SprimTypeMap::const_iterator typeIt = _sprimTypeMap.find(typeId);
+    if (typeIt == _sprimTypeMap.end()) {
+        TF_CODING_ERROR("Unknown type %s", typeId.GetText());
+        return nullptr;
+    }
+
+    const _SprimTypeIndex &typeIndex = typeIt->second;
+
+    _SprimMap::const_iterator it = typeIndex.sprimMap.find(id);
+    if (it != typeIndex.sprimMap.end()) {
+        return it->second.sprim;
+    }
+
+    return nullptr;
 }
 
 SdfPathVector
-HdRenderIndex::GetSprimSubtree(SdfPath const& rootPath) const
+HdRenderIndex::GetSprimSubtree(TfToken const& typeId,
+                               SdfPath const& rootPath) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-    SdfPathVector paths;
-    paths.reserve(1024);
-    for (auto p = _sprimIDSet.lower_bound(rootPath);
-            p != _sprimIDSet.end() and p->HasPrefix(rootPath); ++p)
-    {
-        paths.push_back(*p);
+    _SprimTypeMap::const_iterator typeIt = _sprimTypeMap.find(typeId);
+    if (typeIt == _sprimTypeMap.end()) {
+        // Maybe requested for a type that never got added
+        return SdfPathVector();
     }
+
+    const _SprimTypeIndex &typeIndex = typeIt->second;
+
+    // Over-allocate paths, assuming worse-case all paths are going to be
+    // returned.
+    SdfPathVector paths;
+    paths.reserve(typeIndex.sprimIDSet.size());
+
+    _SprimIDSet::const_iterator pathIt =
+                                     typeIndex.sprimIDSet.lower_bound(rootPath);
+     while ((pathIt != typeIndex.sprimIDSet.end()) &&
+            (pathIt->HasPrefix(rootPath))) {
+         paths.push_back(*pathIt);
+         ++pathIt;
+    }
+
     return paths;
 }
 
+// -------------------------------------------------------------------------- //
+/// \name Bprim Support (Buffer prim: texture, buffers...)
+// -------------------------------------------------------------------------- //
+
 void
-HdRenderIndex::SetRenderDelegateType(const TfToken &typeId)
+HdRenderIndex::InsertBprim(TfToken const& typeId,
+                           HdSceneDelegate* sceneDelegate,
+                           SdfPath const& bprimId)
 {
-    _renderDelegateTypeId = typeId;
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (bprimId.IsEmpty()) {
+        return;
+    }
+
+    {
+        // XXX: Transitional code.
+        // If the application didn't use the new context api to
+        // create a render delegate, create one on its behalf.
+        //
+        // In the future, this would be an error condition as the context api
+        // would create the delegate and provide it to the render index..
+        if (_renderDelegate == nullptr)
+        {
+            HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+            const TfToken &defaultRenderDelegateId =
+                                          renderRegistry.GetDefaultDelegateId();
+             _renderDelegate =
+                      renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
+             _ownsDelegateXXX = true;
+        }
+    }
+
+    HdBprim *bprim = _renderDelegate->CreateBprim(typeId,
+                                                  bprimId);
+    if (bprim == nullptr) {
+        return;
+    }
+
+
+    int initialDirtyState = bprim->GetInitialDirtyBitsMask();
+
+    _tracker.BprimInserted(bprimId, initialDirtyState);
+
+    _BprimTypeIndex &typeIndex = _bprimTypeMap[typeId];
+
+    typeIndex.bprimIDSet.insert(bprimId);
+
+    _BprimInfo bprimInfo;
+    bprimInfo.sceneDelegate = sceneDelegate;
+    bprimInfo.bprim         = bprim;
+
+    typeIndex.bprimMap.insert(std::make_pair(bprimId, bprimInfo));
 }
 
-const TfToken &
+void
+HdRenderIndex::RemoveBprim(TfToken const& typeId, SdfPath const& id)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _BprimTypeMap::iterator typeIt = _bprimTypeMap.find(typeId);
+    if (typeIt == _bprimTypeMap.end()) {
+        TF_CODING_ERROR("Unknown type %s", typeId.GetText());
+        return;
+    }
+
+    _BprimTypeIndex &typeIndex = typeIt->second;
+    _BprimMap::iterator it = typeIndex.bprimMap.find(id);
+    if (it == typeIndex.bprimMap.end()) {
+        return;
+    }
+
+    _BprimInfo &bprimInfo = it->second;
+
+    _tracker.BprimRemoved(id);
+
+    // Ask delegate to actually delete the bprim
+    _renderDelegate->DestroyBprim(bprimInfo.bprim);
+    bprimInfo.bprim = nullptr;
+
+    typeIndex.bprimMap.erase(it);
+    typeIndex.bprimIDSet.erase(id);
+}
+
+HdBprim const*
+HdRenderIndex::GetBprim(TfToken const& typeId, SdfPath const& id) const
+{
+    _BprimTypeMap::const_iterator typeIt = _bprimTypeMap.find(typeId);
+    if (typeIt == _bprimTypeMap.end()) {
+        TF_CODING_ERROR("Unknown type %s", typeId.GetText());
+        return nullptr;
+    }
+
+    const _BprimTypeIndex &typeIndex = typeIt->second;
+
+    _BprimMap::const_iterator it = typeIndex.bprimMap.find(id);
+    if (it != typeIndex.bprimMap.end()) {
+        return it->second.bprim;
+    }
+
+    return nullptr;
+}
+
+SdfPathVector
+HdRenderIndex::GetBprimSubtree(TfToken const& typeId,
+                               SdfPath const& rootPath) const
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _BprimTypeMap::const_iterator typeIt = _bprimTypeMap.find(typeId);
+    if (typeIt == _bprimTypeMap.end()) {
+        // Maybe requested for a type that never got added
+        return SdfPathVector();
+    }
+
+    const _BprimTypeIndex &typeIndex = typeIt->second;
+
+    // Over-allocate paths, assuming worse-case all paths are going to be
+    // returned.
+    SdfPathVector paths;
+    paths.reserve(typeIndex.bprimIDSet.size());
+
+    _BprimIDSet::const_iterator pathIt =
+                                     typeIndex.bprimIDSet.lower_bound(rootPath);
+     while ((pathIt != typeIndex.bprimIDSet.end()) &&
+            (pathIt->HasPrefix(rootPath))) {
+         paths.push_back(*pathIt);
+         ++pathIt;
+     }
+
+      return paths;
+}
+
+
+void
+HdRenderIndex::SetRenderDelegate(HdRenderDelegate *renderDelegate)
+{
+    if (_renderDelegate != nullptr && _renderDelegate != renderDelegate) {
+        TF_CODING_ERROR("Render Delegate already set on render index and "
+                        "switching render delegates is not supported");
+        return;
+    }
+
+    _renderDelegate = renderDelegate;
+    {
+        // Small hack until applications migrate to using new
+        // context API.
+        // XXX: To be removed
+
+        HdRenderDelegateRegistry &renderRegistry =
+                                        HdRenderDelegateRegistry::GetInstance();
+
+        renderRegistry.AddDelegateReference(_renderDelegate);
+    }
+
+}
+
+TfToken
 HdRenderIndex::GetRenderDelegateType() const
 {
-    return _renderDelegateTypeId;
+    if (_renderDelegate == nullptr) {
+        return TfToken();
+    }
+
+    TfType const &type = TfType::Find(_renderDelegate);
+
+    const std::string &typeName  = type.GetTypeName();
+    return TfToken(typeName);
 }
 
 // -------------------------------------------------------------------------- //
@@ -528,21 +746,25 @@ HdRenderIndex::GetRenderDelegateType() const
 
 static
 void
-_AppendDrawItem(HdRprimSharedPtr const& rprim,
+_AppendDrawItem(HdSceneDelegate* delegate,
+                HdRprim* rprim,
                 TfToken const& collectionName,
                 TfToken const& reprName,
                 bool forcedRepr,
-                tbb::concurrent_vector<HdDrawItem const*>* result)
+                _ConcurrentDrawItemView* result)
 {
-    if (rprim->IsInCollection(collectionName)) {
-        TF_FOR_ALL(drawItemIt, *rprim->GetDrawItems(reprName, forcedRepr)) {
-            result->push_back(&(*drawItemIt));
+    if (rprim->IsInCollection(delegate, collectionName)) {
+        std::vector<HdDrawItem> *drawItems =
+                rprim->GetDrawItems(delegate, reprName, forcedRepr);
+
+        TF_FOR_ALL(drawItemIt, *drawItems) {
+            TfToken t =  rprim->GetRenderTag(delegate);
+            (*result)[t].push_back(&(*drawItemIt));
         }
     }
 }
 
-// XXX: Remove
-HdRenderIndex::HdDrawItemView
+HdRenderIndex::HdDrawItemView 
 HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 {
     HD_TRACE_FUNCTION();
@@ -558,10 +780,10 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     TfToken const& reprName = collection.GetReprName();
     bool forcedRepr = collection.IsForcedRepr();
 
-    // We could hold this vector persistently to avoid
-    // reallocating and copying on every request.
-    tbb::concurrent_vector<HdDrawItem const*> result;
-    result.reserve(_rprimMap.size());
+    _ConcurrentDrawItemView result;
+
+    // Structure that will hold the values to be returned
+    HdDrawItemView finalResult;
 
     // Here we are going to leverage a common pattern: often a delegate will be
     // created and its root will be used to filter the items being drawn, as a
@@ -583,7 +805,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
         SdfPathVector const* children = 
                                 TfMapLookupPtr(_delegateRprimMap, rootPath);
 
-        if (not children) {
+        if (!children) {
             remainingRootPaths.push_back(rootPath);
             continue;
         }
@@ -600,19 +822,24 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
             _RprimInfo const* info = TfMapLookupPtr(_rprimMap, *pathIt);
             pathIt++;
 
+
             // Main loop.
             for (; pathIt != children->end(); pathIt++) {
                 // Grab the current item.
-                HdRprimSharedPtr const& rprim = info->rprim;
+                HdRprim*         rprim         = info->rprim;
+                HdSceneDelegate *sceneDelegate = info->sceneDelegate;
+
                 // Prefetch the next item.
                 info = TfMapLookupPtr(_rprimMap, *pathIt);
 
                 // Process the current item.
-                _AppendDrawItem(rprim, collectionName, reprName, forcedRepr, &result);
+                _AppendDrawItem(sceneDelegate, rprim, collectionName, reprName,
+                                forcedRepr, &result);
             }
 
             // Process the last item.
-            _AppendDrawItem(info->rprim, collectionName, reprName, forcedRepr, &result);
+            _AppendDrawItem(info->sceneDelegate, info->rprim, collectionName,
+                            reprName, forcedRepr, &result);
         });
     }
 
@@ -621,9 +848,13 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 
     // If we had all delegate roots in the rootPaths vector, we're done.
     if (remainingRootPaths.empty()) {
-        HdRenderIndex::HdDrawItemView finalResult;
-        finalResult.reserve(result.size());
-        finalResult.insert(finalResult.begin(), result.begin(), result.end());
+        for (_ConcurrentDrawItemView::iterator it = result.begin(); 
+                                              it != result.end(); ++it) {
+            finalResult[it->first].reserve(it->second.size());
+            finalResult[it->first].insert(
+                finalResult[it->first].begin(), 
+                it->second.begin(), it->second.end());
+        }
         return finalResult;
     }
 
@@ -636,7 +867,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     while (pathIt != _rprimIDSet.end()) {
         // Precondition: rootIt is either a prefix of the current prim or we've
         // passed that prefix in the iteration.
-        if (not pathIt->HasPrefix(*rootIt)) {
+        if (!pathIt->HasPrefix(*rootIt)) {
             // continue to next root prefix
             rootIt++;
             if (rootIt == remainingRootPaths.end())
@@ -670,13 +901,20 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
         }
 
         _RprimInfo const* info = TfMapLookupPtr(_rprimMap, *pathIt);
-        _AppendDrawItem(info->rprim, collectionName, reprName, forcedRepr, &result);
+        _AppendDrawItem(info->sceneDelegate, info->rprim, collectionName,
+                        reprName, forcedRepr, &result);
         pathIt++;
     }
 
-    HdRenderIndex::HdDrawItemView finalResult;
-    finalResult.reserve(result.size());
-    finalResult.insert(finalResult.begin(), result.begin(), result.end());
+    // Copy results to the output data structure
+    for (_ConcurrentDrawItemView::iterator it = result.begin(); 
+                                           it != result.end(); ++it) {
+        finalResult[it->first].reserve(it->second.size());
+        finalResult[it->first].insert(
+            finalResult[it->first].begin(), 
+            it->second.begin(), it->second.end());
+    }
+
     return finalResult;
 }
 
@@ -685,7 +923,12 @@ HdRenderIndex::IsInCollection(SdfPath const& id,
                               TfToken const& collectionName) const 
 {
     _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
-    return info and info->rprim->IsInCollection(collectionName);
+    if (info == nullptr) {
+        return false;
+    }
+
+    return info->rprim->IsInCollection(info->sceneDelegate,
+                                       collectionName);
 }
 
 SdfPathVector
@@ -696,7 +939,7 @@ HdRenderIndex::GetRprimSubtree(SdfPath const& rootPath) const
     SdfPathVector paths;
     paths.reserve(1024);
     for (auto p = _rprimIDSet.lower_bound(rootPath); 
-            p != _rprimIDSet.end() and p->HasPrefix(rootPath); ++p)
+            p != _rprimIDSet.end() && p->HasPrefix(rootPath); ++p)
     {
         paths.push_back(*p);
     }
@@ -705,14 +948,16 @@ HdRenderIndex::GetRprimSubtree(SdfPath const& rootPath) const
 
 namespace {
     struct _RprimSyncRequestVector {
-        void PushBack(HdRprimSharedPtr const* rprim,
+        void PushBack(HdSceneDelegate *sceneDelegate,
+                      HdRprim *rprim,
                       size_t reprsMask,
                       int dirtyBits, 
                       int maskedDirtyBits)
         {
+            sceneDelegates.push_back(sceneDelegate);
             rprims.push_back(rprim);
             reprsMasks.push_back(reprsMask);
-            request.IDs.push_back((*rprim)->GetId());
+            request.IDs.push_back(rprim->GetId());
             request.allDirtyBits.push_back(dirtyBits);
             request.maskedDirtyBits.push_back(maskedDirtyBits);
         }
@@ -727,7 +972,8 @@ namespace {
             request.textureIDs.push_back(textureID);
         }
 
-        std::vector<HdRprimSharedPtr const*> rprims;
+        std::vector<HdSceneDelegate *> sceneDelegates;
+        std::vector<HdRprim *> rprims;
         std::vector<size_t> reprsMasks;
         HdSyncRequestVector request;
     };
@@ -764,11 +1010,11 @@ namespace {
         bool forcedRepr;
 
         bool operator < (_ReprSpec const &other) const {
-            return reprName < other.reprName or
-                (reprName == other.reprName and (forcedRepr and (not other.forcedRepr)));
+            return reprName < other.reprName ||
+                (reprName == other.reprName && (forcedRepr && (!other.forcedRepr)));
         }
         bool operator == (_ReprSpec const &other) const {
-            return  (reprName == other.reprName) and
+            return  (reprName == other.reprName) &&
                     (forcedRepr == other.forcedRepr);
         }
     };
@@ -793,21 +1039,23 @@ namespace {
         {
             for (size_t i = begin; i < end; ++i)
             {
-                HdRprimSharedPtr const& rprim = *_r.rprims[i];
+                HdSceneDelegate *sceneDelegate = _r.sceneDelegates[i];
+                HdRprim &rprim = *_r.rprims[i];
                 size_t reprsMask = _r.reprsMasks[i];
 
                 int dirtyBits = _r.request.allDirtyBits[i];
 
                 TF_FOR_ALL(it, _reprs) {
                     if (reprsMask & 1) {
-                        rprim->Sync(it->reprName,
+                        rprim.Sync(sceneDelegate,
+                                    it->reprName,
                                     it->forcedRepr,
                                     &dirtyBits);
                     }
                     reprsMask >>= 1;
                 }
 
-                _tracker.MarkRprimClean(rprim->GetId(), dirtyBits);
+                _tracker.MarkRprimClean(rprim.GetId(), dirtyBits);
             }
         }
     };
@@ -859,7 +1107,7 @@ HdRenderIndex::SyncAll()
             // XXX: WBN to iterate SyncAll if there are more than 64 reprs
             //      in the extreme case.
             //
-            if (not TF_VERIFY(reprIndex < 64)) {
+            if (!TF_VERIFY(reprIndex < 64)) {
                 break;
             }
 
@@ -872,6 +1120,8 @@ HdRenderIndex::SyncAll()
 
     _RprimSyncRequestMap syncMap;
     bool resetVaryingState = false;
+    const _BprimMap &textureMap =
+                              _bprimTypeMap[HdPrimTypeTokens->texture].bprimMap;
 
     {
         TRACE_SCOPE("Build Sync Map: Textures");
@@ -879,12 +1129,15 @@ HdRenderIndex::SyncAll()
         // We could/should try to be more sparse here, however finding the
         // intersection of textures used by prims in this RenderPass is currently
         // more expensive than just updating all textures.
-        TF_FOR_ALL(it, _textureMap) {
-            if (HdChangeTracker::IsClean(_tracker.GetTextureDirtyBits(it->first)))
+
+        TF_FOR_ALL(it, textureMap) {
+            if (HdChangeTracker::IsClean(_tracker.GetBprimDirtyBits(it->first)))
                 continue;
-            syncMap[it->second->GetDelegate()].PushBackTexture(it->first);
+            syncMap[it->second.sceneDelegate].PushBackTexture(it->first);
         }
-    } {
+    }
+
+    {
         TRACE_SCOPE("Build Sync Map: Shaders");
         // Collect dirty shader IDs.
         // We could/should try to be more sparse here, however finding the
@@ -893,9 +1146,11 @@ HdRenderIndex::SyncAll()
         TF_FOR_ALL(it, _shaderMap) {
             if (HdChangeTracker::IsClean(_tracker.GetShaderDirtyBits(it->first)))
                 continue;
-            syncMap[it->second->GetDelegate()].PushBackShader(it->first);
+            syncMap[it->second.sceneDelegate].PushBackShader(it->first);
         }
-    } {
+    }
+
+    {
         TRACE_SCOPE("Build Sync Map: Rprims");
         // Collect dirty Rprim IDs.
         HdSceneDelegate* curdel = nullptr;
@@ -905,12 +1160,14 @@ HdRenderIndex::SyncAll()
         int numSkipped = 0;
         TF_FOR_ALL(idIt, dirtyIds) {
             _RprimMap::const_iterator it = _rprimMap.find(idIt->first);
-            if (not TF_VERIFY(it != _rprimMap.end())) {
+            if (!TF_VERIFY(it != _rprimMap.end())) {
                 continue;
             }
 
-            int dirtyBits = _tracker.GetRprimDirtyBits(
-                    it->second.rprim->GetId());
+            const _RprimInfo &rprimInfo = it->second;
+
+            int dirtyBits =
+                           _tracker.GetRprimDirtyBits(rprimInfo.rprim->GetId());
             size_t reprsMask = idIt->second;
 
             if (HdChangeTracker::IsClean(dirtyBits)) {
@@ -920,12 +1177,13 @@ HdRenderIndex::SyncAll()
 
             // PERFORMANCE: This loop is constrained by memory access, avoid
             // re-fetching the sync request vector if possible.
-            if (curdel != it->second.rprim->GetDelegate()) {
-                curdel = it->second.rprim->GetDelegate();
+            if (curdel != rprimInfo.sceneDelegate) {
+                curdel = rprimInfo.sceneDelegate;
                 curvec = &syncMap[curdel];
             }
             // XXX: maskedDirtyBits (the last argument) can be removed.
-            curvec->PushBack(&it->second.rprim, reprsMask, dirtyBits, dirtyBits);
+            curvec->PushBack(curdel, rprimInfo.rprim,
+                             reprsMask, dirtyBits, dirtyBits);
         }
 
         // Use a heuristic to determine whether or not to destroy the entire
@@ -934,7 +1192,7 @@ HdRenderIndex::SyncAll()
         // list.  This leads to performance improvements after many rprims
         // get dirty and then cleaned one, and the steady state becomes a 
         // small number of dirty items.
-        if (not dirtyIds.empty()) {
+        if (!dirtyIds.empty()) {
             resetVaryingState = 
                 ((float )numSkipped / (float)dirtyIds.size()) > 0.25f;
 
@@ -962,34 +1220,34 @@ HdRenderIndex::SyncAll()
     // Collect results and synchronize.
     WorkArenaDispatcher dispatcher;
     TF_FOR_ALL(dlgIt, syncMap) {
-        HdSceneDelegate* delegate = dlgIt->first;
+        HdSceneDelegate* sceneDelegate = dlgIt->first;
         _RprimSyncRequestVector& r = dlgIt->second;
 
-        TF_FOR_ALL(textureID, r.request.textureIDs) {
-            HdTextureSharedPtr const* tex = 
-                                      TfMapLookupPtr(_textureMap, *textureID);
-            if (not tex)
-                continue;
 
-            (*tex)->Sync();
-            _tracker.MarkTextureClean(*textureID, HdChangeTracker::Clean);
+        TF_FOR_ALL(textureID, r.request.textureIDs) {
+            const _BprimInfo *bprimInfo = TfMapLookupPtr(textureMap, *textureID);
+
+            if (bprimInfo != nullptr) {
+                bprimInfo->bprim->Sync(sceneDelegate);
+                _tracker.MarkBprimClean(*textureID, HdTexture::Clean);
+            }
         }
 
         TF_FOR_ALL(shaderID, r.request.surfaceShaderIDs) {
-            HdSurfaceShaderSharedPtr const* shd = 
+            const _ShaderInfo *shaderInfo =
                                           TfMapLookupPtr(_shaderMap, *shaderID);
-            if (not shd)
-                continue;
 
-            (*shd)->Sync();
-            _tracker.MarkShaderClean(*shaderID, HdChangeTracker::Clean);
+            if (shaderInfo != nullptr) {
+                shaderInfo->shader->Sync(sceneDelegate);
+                _tracker.MarkShaderClean(*shaderID, HdChangeTracker::Clean);
+            }
         }
 
         {
             _SyncRPrims workerState(r, reprs, _tracker);
 
-            if (not TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) and
-                       delegate->IsEnabled(HdOptionTokens->parallelRprimSync)) {
+            if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
+                  sceneDelegate->IsEnabled(HdOptionTokens->parallelRprimSync)) {
                 TRACE_SCOPE("Parallel Rprim Sync");
                 dispatcher.Run([&r, workerState]() {
                     WorkParallelForN(r.rprims.size(),
@@ -1031,13 +1289,18 @@ HdRenderIndex::SyncAll()
 void
 HdRenderIndex::SyncSprims()
 {
-    TF_FOR_ALL(it, _sprimMap) {
-        if (_tracker.GetSprimDirtyBits(it->first) != HdChangeTracker::Clean) {
-            it->second->Sync();
+    TF_FOR_ALL(typeIt, _sprimTypeMap) {
+        TF_FOR_ALL(primIt, typeIt->second.sprimMap) {
+            const SdfPath &primPath = primIt->first;
 
-            _tracker.MarkSprimClean(it->first);
+            if (_tracker.GetSprimDirtyBits(primPath) != HdChangeTracker::Clean) {
+                _SprimInfo &sprimInfo = primIt->second;
+
+                sprimInfo.sprim->Sync(sprimInfo.sceneDelegate);
+
+                _tracker.MarkSprimClean(primPath);
+            }
         }
-
     }
 }
 
@@ -1058,7 +1321,7 @@ HdRenderIndex::_CompactPrimIds()
 }
 
 void
-HdRenderIndex::_AllocatePrimId(HdRprimSharedPtr prim)
+HdRenderIndex::_AllocatePrimId(HdRprim *prim)
 {
     HD_TRACE_FUNCTION();
     int32_t maxId = (1 << 24) - 1;
@@ -1104,11 +1367,11 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
                                SdfPath const &parentId)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
 #if 0
     // TODO: enable this after patching.
-    if (not id.IsAbsolutePath()) {
+    if (!id.IsAbsolutePath()) {
         TF_CODING_ERROR("All Rprim IDs must be absolute paths <%s>\n",
                 id.GetText());
         return;
@@ -1126,7 +1389,7 @@ void
 HdRenderIndex::RemoveInstancer(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _InstancerMap::iterator it = _instancerMap.find(id);
     if (it == _instancerMap.end())
@@ -1140,7 +1403,7 @@ HdInstancerSharedPtr
 HdRenderIndex::GetInstancer(SdfPath const &id) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdInstancerSharedPtr instancer;
     TfMapLookup(_instancerMap, id, &instancer);
@@ -1148,16 +1411,56 @@ HdRenderIndex::GetInstancer(SdfPath const &id) const
     return instancer;
 }
 
-HdRprimSharedPtr const &
+HdRprim const *
 HdRenderIndex::GetRprim(SdfPath const &id) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     _RprimMap::const_iterator it = _rprimMap.find(id);
-    if (it != _rprimMap.end())
+    if (it != _rprimMap.end()) {
         return it->second.rprim;
+    }
 
-    static HdRprimSharedPtr EMPTY;
-    return EMPTY;
+    return nullptr;
 }
+
+HdSceneDelegate *
+HdRenderIndex::GetSceneDelegateForRprim(SdfPath const &id) const
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _RprimMap::const_iterator it = _rprimMap.find(id);
+    if (it != _rprimMap.end()) {
+        const _RprimInfo &rprimInfo = it->second;
+
+        return rprimInfo.sceneDelegate;
+    }
+
+    return nullptr;
+}
+
+bool
+HdRenderIndex::GetSceneDelegateAndInstancerIds(SdfPath const &id,
+                                               SdfPath* delegateId,
+                                               SdfPath* instancerId) const
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _RprimMap::const_iterator it = _rprimMap.find(id);
+    if (it != _rprimMap.end()) {
+        const _RprimInfo &rprimInfo = it->second;
+
+        *delegateId  = rprimInfo.sceneDelegate->GetDelegateID();
+        *instancerId = rprimInfo.rprim->GetInstancerId();
+
+        return true;
+    }
+
+    return false;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

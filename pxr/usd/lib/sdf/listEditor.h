@@ -24,8 +24,8 @@
 #ifndef SDF_LIST_EDITOR_H
 #define SDF_LIST_EDITOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
-
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -43,6 +43,8 @@
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfSpec);
@@ -75,12 +77,12 @@ public:
 
     bool IsValid() const
     {
-        return (not IsExpired() and not IsNullEditor());
+        return (!IsExpired() && !IsNullEditor());
     }
 
     virtual bool IsExpired() const
     {
-        return not _owner;
+        return !_owner;
     }
 
     virtual bool IsNullEditor() const
@@ -94,12 +96,12 @@ public:
             return true;
         }
         else if (IsOrderedOnly()) {
-            return not _GetOperations(SdfListOpTypeOrdered).empty();
+            return !_GetOperations(SdfListOpTypeOrdered).empty();
         }
         else {
-            return (not _GetOperations(SdfListOpTypeAdded).empty() or
-                    not _GetOperations(SdfListOpTypeDeleted).empty() or
-                    not _GetOperations(SdfListOpTypeOrdered).empty());
+            return (!_GetOperations(SdfListOpTypeAdded).empty()   ||
+                    !_GetOperations(SdfListOpTypeDeleted).empty() ||
+                    !_GetOperations(SdfListOpTypeOrdered).empty());
         }
     }
 
@@ -108,11 +110,11 @@ public:
 
     virtual SdfAllowed PermissionToEdit(SdfListOpType op) const
     {
-        if (not _owner) {
+        if (!_owner) {
             return SdfAllowed("List editor is expired");
         }
 
-        if (not _owner->PermissionToEdit()) {
+        if (!_owner->PermissionToEdit()) {
             return SdfAllowed("Permission denied");
         }
 
@@ -259,7 +261,7 @@ protected:
         // Ensure that all new values are valid for this field.
         const SdfSchema::FieldDefinition* fieldDef = 
             _owner->GetSchema().GetFieldDefinition(_field);
-        if (not fieldDef) {
+        if (!fieldDef) {
             TF_CODING_ERROR("No field definition for field '%s'", 
                             _field.GetText());
         }
@@ -312,7 +314,7 @@ operator<<(std::ostream& s, const Sdf_ListEditor<TypePolicy>& x)
         }
     };
 
-    if (not x.IsValid()) {
+    if (!x.IsValid()) {
         return s;
     }
     else if (x.IsExplicit()) {
@@ -321,7 +323,7 @@ operator<<(std::ostream& s, const Sdf_ListEditor<TypePolicy>& x)
     }
     else {
         s << "{ ";
-        if (not x.IsOrderedOnly()) {
+        if (!x.IsOrderedOnly()) {
             s << "'added': ";
             Util::_Write(s, x.GetVector(SdfListOpTypeAdded));
             s << ", 'deleted': ";
@@ -333,5 +335,7 @@ operator<<(std::ostream& s, const Sdf_ListEditor<TypePolicy>& x)
         return s << " }";
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_LIST_EDITOR_H

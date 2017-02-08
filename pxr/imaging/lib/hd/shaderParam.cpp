@@ -42,8 +42,12 @@
 
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    ((_bool, "bool"))
     ((_float, "float"))
     (vec2)
     (vec3)
@@ -147,6 +151,8 @@ _GLDataType _GetGLType(VtValue const& value)
         return _GLDataType(GL_FLOAT, GL_FLOAT_MAT4);
     else if (value.IsHolding<GfMatrix4d>())
         return _GLDataType(GL_DOUBLE, GL_DOUBLE_MAT4);
+    else if (value.IsHolding<bool>())
+        return _GLDataType(GL_BOOL, GL_BOOL);
     else
         TF_CODING_ERROR("Unknown type held by VtValue in ShaderParam");
 
@@ -184,6 +190,8 @@ TfToken _GetGLTypeName(GLenum elementType)
         return _tokens->ivec3;
     } else if (elementType == GL_INT_VEC4) {
         return _tokens->ivec4;
+    } else if (elementType == GL_BOOL) {
+        return _tokens->_bool;
     } else {
         TF_CODING_ERROR("unsupported type: 0x%x", elementType);
         return TfToken();
@@ -222,3 +230,6 @@ HdShaderParam::IsPtex() const
 {
     return _isPtex;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

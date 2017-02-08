@@ -35,6 +35,8 @@
 #include <cfloat>
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<GfRange2f>();
 }
@@ -101,3 +103,5 @@ GfRange2f::GetQuadrant(size_t i) const
 }
 
 const GfRange2f GfRange2f::UnitSquare(GfVec2f(0,0), GfVec2f(1,1));
+
+PXR_NAMESPACE_CLOSE_SCOPE

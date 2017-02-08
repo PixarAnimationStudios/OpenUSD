@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/dispatcher.h"
 
@@ -37,6 +39,7 @@
 #include <iostream>
 #include <fstream>
 
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static const int numLevels =100; 
 static const int numNodesPerLevel = 1000;
@@ -423,7 +426,7 @@ main(int argc, char **argv)
         graph.reset(LoadGraph(argv[1]));
     }
 
-    if (not graph) {
+    if (!graph) {
         std::cerr << "Error getting a graph" << std::endl;
         return 1;
     }
@@ -431,11 +434,11 @@ main(int argc, char **argv)
     // Test the general dispatcher.
     {
         std::cout << "Using the general dispatcher" << std::endl;
-        if (not _TestDispatcher<WorkDispatcher>(graph.get())) {
+        if (!_TestDispatcher<WorkDispatcher>(graph.get())) {
             return 1;
         }
 
-        if (not _TestDispatcherCancellation<WorkDispatcher>(graph.get())) {
+        if (!_TestDispatcherCancellation<WorkDispatcher>(graph.get())) {
             return 1;
         }
     }
@@ -443,11 +446,11 @@ main(int argc, char **argv)
     // Test the arena dispatcher.
     {
         std::cout << "Using the arena dispatcher" << std::endl;
-        if (not _TestDispatcher<WorkArenaDispatcher>(graph.get())) {
+        if (!_TestDispatcher<WorkArenaDispatcher>(graph.get())) {
             return 1;
         }
 
-        if (not _TestDispatcherCancellation<WorkArenaDispatcher>(graph.get())) {
+        if (!_TestDispatcherCancellation<WorkArenaDispatcher>(graph.get())) {
             return 1;
         }
     }

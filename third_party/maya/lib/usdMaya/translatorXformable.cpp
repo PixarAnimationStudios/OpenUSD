@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/translatorXformable.h"
 
 #include "usdMaya/translatorPrim.h"
@@ -43,6 +44,9 @@
 
 #include <boost/assign/list_of.hpp>
 #include <algorithm>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static const std::vector<std::string> _MAYA_OPS = boost::assign::list_of
     ("translate")
@@ -130,7 +134,7 @@ static void _setAnimPlugData(MPlug plg, std::vector<double> &value, MTimeArray &
     MStatus status;
     MFnAnimCurve animFn;
     // Make the plug keyable before attaching an anim curve
-    if (not plg.isKeyable()) {
+    if (!plg.isKeyable()) {
         plg.setKeyable(true);
     }
     MObject animObj = animFn.create(plg, NULL, &status);
@@ -343,7 +347,7 @@ static bool _pushUSDXformOpToMayaXform(
         PxrUsdMayaTranslatorUtil::GetTimeSamples(xformop, args, &timeSamples);
     }
     MTimeArray timeArray;
-    if (not timeSamples.empty()) {
+    if (!timeSamples.empty()) {
         timeArray.setLength(timeSamples.size());
         xValue.resize(timeSamples.size());
         yValue.resize(timeSamples.size());
@@ -403,7 +407,7 @@ static bool _isIdentityMatrix(GfMatrix4d m)
     bool isIdentity=true;
     for (unsigned int i=0; i<4; i++) {
         for (unsigned int j=0; j<4; j++) {
-            if ((i==j && GfIsClose(m[i][j], 1.0, 1e-9)==false) or
+            if ((i==j && GfIsClose(m[i][j], 1.0, 1e-9)==false) ||
                 (i!=j && GfIsClose(m[i][j], 0.0, 1e-9)==false)) {
                 isIdentity=false; break;
             }
@@ -429,7 +433,7 @@ static bool _pushUSDXformToMayaXform(
     std::vector<double> tSamples;
     PxrUsdMayaTranslatorUtil::GetTimeSamples(xformSchema, args, &tSamples);
     MTimeArray timeArray;
-    if (not tSamples.empty()) {
+    if (!tSamples.empty()) {
         timeArray.setLength(tSamples.size());
         TxVal.resize(tSamples.size()); TyVal.resize(tSamples.size()); TzVal.resize(tSamples.size());
         RxVal.resize(tSamples.size()); RyVal.resize(tSamples.size()); RzVal.resize(tSamples.size());
@@ -440,7 +444,7 @@ static bool _pushUSDXformToMayaXform(
                                                    &resetsXformStack,
                                                    time)) {
                 xlate=GfVec3d(0); rotate=GfVec3d(0); scale=GfVec3d(1);
-                if (not _isIdentityMatrix(localXform)) {
+                if (!_isIdentityMatrix(localXform)) {
                      MGlobal::displayWarning("Decomposing non identity 4X4 matrix at: " 
                     + MString(xformSchema.GetPath().GetText()) + " At sample: " + tSamples[ti]);
                      PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
@@ -459,7 +463,7 @@ static bool _pushUSDXformToMayaXform(
     else {
         if (xformSchema.GetLocalTransformation(&localXform, &resetsXformStack)) {
             xlate=GfVec3d(0); rotate=GfVec3d(0); scale=GfVec3d(1);
-            if (not _isIdentityMatrix(localXform)) {
+            if (!_isIdentityMatrix(localXform)) {
                 MGlobal::displayWarning("Decomposing non identity 4X4 matrix at: " 
                     + MString(xformSchema.GetPath().GetText()));
                 PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
@@ -537,7 +541,7 @@ PxrUsdMayaTranslatorXformable::Read(
 
     bool importedPivots = false;
     MFnDagNode MdagNode(mayaNode);
-    if (not opNames.empty()) {
+    if (!opNames.empty()) {
         // make sure opNames.size() == xformops.size()
         for (unsigned int i=0; i < opNames.size(); i++) {
             const UsdGeomXformOp& xformop(xformops[i]);
@@ -568,13 +572,13 @@ PxrUsdMayaTranslatorXformable::Read(
     // XXX:bug 117525
     // We support UsdGeomXformable.pivotPosition until we have robust
     // interchange with pivots encoded as xformOps.
-    if (not importedPivots) {
+    if (!importedPivots) {
         GfVec3f pivotPosition(0.);
         static const GfVec3f origin(0.);
         static const TfToken pivotPosTok("pivotPosition");
         if (xformSchema.GetPrim().GetAttribute(pivotPosTok).Get(
                 &pivotPosition, UsdTimeCode::Default())
-            and not GfIsClose(pivotPosition, origin, 1e-6)) {
+            && !GfIsClose(pivotPosition, origin, 1e-6)) {
             MTimeArray timeArray;
             std::vector<double> xValue(1, pivotPosition[0]);
             std::vector<double> yValue(1, pivotPosition[1]);
@@ -594,4 +598,7 @@ PxrUsdMayaTranslatorXformable::Read(
     }
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

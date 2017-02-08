@@ -26,6 +26,7 @@
 
 /// \file usd/prim.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/primFlags.h"
@@ -47,6 +48,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdTreeIterator;
 class Usd_PrimData;
@@ -714,6 +718,17 @@ public:
     /// otherwise.
     bool HasRelationship(const TfToken& relName) const;
 
+    /// Search the prim subtree rooted at this prim for relationships for which
+    /// \p predicate returns true, collect their target paths and return them in
+    /// an arbitrary order.  If \p recurseOnTargets is true, act as if this
+    /// function was invoked on the targeted prims and owning prims of targeted
+    /// properties also (but not of forwarding relationships) and return the
+    /// union.
+    SdfPathVector
+    FindAllRelationshipTargetPaths(
+        std::function<bool (UsdRelationship const &)> const &pred = nullptr,
+        bool recurseOnTargets = false) const;
+
     // --------------------------------------------------------------------- //
     /// \name Payloads, Load and Unload 
     // --------------------------------------------------------------------- //
@@ -814,7 +829,7 @@ public:
     /// instanceable data.
     bool IsInstanceable() const { 
         bool instanceable = false;
-        return GetMetadata(SdfFieldKeys->Instanceable, &instanceable) and
+        return GetMetadata(SdfFieldKeys->Instanceable, &instanceable) &&
             instanceable;
     }
 
@@ -867,6 +882,7 @@ private:
     friend class UsdTreeIterator;
     friend class Usd_PrimData;
     friend class Usd_PrimFlagsPredicate;
+    friend struct UsdPrim_TargetFinder;
 
     // Private implicit conversion.
     UsdPrim(const Usd_PrimDataHandle &primData) : UsdObject(primData) {}
@@ -901,7 +917,8 @@ private:
     std::vector<UsdAttribute> _GetAttributes(bool onlyAuthored) const;
 
     // Helper for Get(Authored)Relationships.
-    std::vector<UsdRelationship> _GetRelationships(bool onlyAuthored) const;
+    std::vector<UsdRelationship>
+    _GetRelationships(bool onlyAuthored, bool applyOrder=false) const;
 
     // Return a const reference to the source PcpPrimIndex for this prim.
     //
@@ -1032,15 +1049,15 @@ private:
         , _end(end)
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
-        if (base() != end and not _predicate(base()))
+        if (base() != end && !_predicate(base()))
             increment();
     }
 
     // Core implementation invoked by iterator_adaptor.
     friend class boost::iterator_core_access;
     bool equal(const UsdPrimSiblingIterator &other) const {
-        return base() == other.base() and
-            _end == other._end and _predicate == other._predicate;
+        return base() == other.base() &&
+            _end == other._end && _predicate == other._predicate;
     }
 
     void increment() {
@@ -1048,7 +1065,7 @@ private:
         // Advance base until end is encountered or the predicate succeeds.
         do {
             base = base->GetNextSibling();
-        } while (base != _end and not _predicate(base));
+        } while (base != _end && !_predicate(base));
     }
 
     reference dereference() const {
@@ -1088,8 +1105,8 @@ UsdPrim::GetAllChildren() const
 UsdPrimSiblingRange
 UsdPrim::GetChildren() const
 {
-    return GetFilteredChildren(UsdPrimIsActive and UsdPrimIsDefined and
-                               UsdPrimIsLoaded and not UsdPrimIsAbstract);
+    return GetFilteredChildren(UsdPrimIsActive && UsdPrimIsDefined &&
+                               UsdPrimIsLoaded && !UsdPrimIsAbstract);
 }
 
 // Helper to make a sibling range.
@@ -1217,7 +1234,7 @@ private:
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
         base_type &base = base_reference();
-        if (base != _end and not _predicate(base)) {
+        if (base != _end && !_predicate(base)) {
             if (Usd_MoveToNextSiblingOrParent(base, _end, _predicate))
                 base = _end;
         }
@@ -1226,13 +1243,13 @@ private:
     // Core implementation invoked by iterator_adaptor.
     friend class boost::iterator_core_access;
     bool equal(const UsdPrimSubtreeIterator &other) const {
-        return base() == other.base() and
-            _end == other._end and _predicate == other._predicate;
+        return base() == other.base() && 
+            _end == other._end && _predicate == other._predicate;
     }
 
     void increment() {
         base_type &base = base_reference();
-        if (not Usd_MoveToChild(base, _end, _predicate)) {
+        if (!Usd_MoveToChild(base, _end, _predicate)) {
             while (Usd_MoveToNextSiblingOrParent(base, _end, _predicate)) {}
         }
     }
@@ -1273,16 +1290,18 @@ UsdPrim::GetAllDescendants() const
 UsdPrimSubtreeRange
 UsdPrim::GetDescendants() const
 {
-    return GetFilteredDescendants(UsdPrimIsActive and UsdPrimIsDefined and
-                                  UsdPrimIsLoaded and not UsdPrimIsAbstract);
+    return GetFilteredDescendants(UsdPrimIsActive && UsdPrimIsDefined &&
+                                  UsdPrimIsLoaded && !UsdPrimIsAbstract);
 }
 
 // Helper to make a sibling range.
 UsdPrim::SubtreeRange
 UsdPrim::_MakeDescendantsRange(const Usd_PrimFlagsPredicate &pred) const {
+    auto firstChild = _Prim()->GetFirstChild();
     return SubtreeRange(
-        SubtreeIterator(_Prim()->GetFirstChild(), NULL, pred),
-        SubtreeIterator(_Prim()->GetNextPrim(), NULL, pred));
+        SubtreeIterator(firstChild, NULL, pred),
+        SubtreeIterator(firstChild ? _Prim()->GetNextPrim() : firstChild,
+                        NULL, pred));
 }
 
 
@@ -1294,6 +1313,9 @@ UsdObject::GetPrim() const
 {
     return UsdPrim(_prim);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_PRIM_H
 

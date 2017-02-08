@@ -273,10 +273,10 @@ def GetEnclosingModelPrim(prim):
 
     return prim
 
-# This should be codified in UsdShadeLook API
-def GetClosestBoundLook(prim):
-    """If 'prim' or any of its ancestors are bound to a Look, return the
-    *closest in namespace* bound Look prim, as well as the prim on which the
+# This should be codified in UsdShadeMaterial API
+def GetClosestBoundMaterial(prim):
+    """If 'prim' or any of its ancestors are bound to a Material, return the
+    *closest in namespace* bound Material prim, as well as the prim on which the
     binding was found.  If none of 'prim's ancestors has a binding, return
     (None, None)"""
     from pxr import UsdShade
@@ -286,12 +286,9 @@ def GetClosestBoundLook(prim):
     # bug/122473 is addressed
     psr = prim.GetStage().GetPseudoRoot()
     while prim and prim != psr:
-        # We use Kind here instead of prim.IsModel because point instancer
-        # prototypes currently don't register as models in IsModel. See
-        # bug: http://bugzilla.pixar.com/show_bug.cgi?id=117137 
-        look = UsdShade.Look.GetBoundLook(prim)
-        if look:
-            return (look.GetPrim(), prim)
+        material = UsdShade.Material.GetBoundMaterial(prim)
+        if material:
+            return (material.GetPrim(), prim)
         prim = prim.GetParent()
 
     return (None, None)
@@ -375,16 +372,17 @@ def DumpMallocTags(stage, contextStr):
         callTree = Tf.MallocTag.GetCallTree()
         memInMb = Tf.MallocTag.GetTotalBytes() / (1024.0 * 1024.0)
         
-        import tempfile
         import os.path as path
+        import tempfile
         layerName = path.basename(stage.GetRootLayer().identifier)
         # CallTree.Report() gives us the most informative (and processable)
         # form of output, but it only accepts a fileName argument.  So we
-        # use tempfile just to get a filename.
+        # use NamedTemporaryFile just to get a filename.
         statsFile = tempfile.NamedTemporaryFile(prefix=layerName+'.',
-                                                suffix='.mallocTag')
-        reportName = statsFile.name
+                                                suffix='.mallocTag',
+                                                delete=False)
         statsFile.close()
+        reportName = statsFile.name
         callTree.Report(reportName)
         print "Memory consumption of %s for %s is %d Mb" % (contextStr,
                                                             layerName,

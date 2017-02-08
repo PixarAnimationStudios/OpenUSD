@@ -26,6 +26,7 @@
 
 /// \file PluginPrimWriter.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/JobArgs.h"
 
@@ -33,6 +34,9 @@
 
 #include "pxr/usd/usd/stage.h"
 #include <boost/smart_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class PxrUsdExport_PluginPrimWriter
 /// \brief This class is scaffolding to hold the writer plugin and to adapt it
@@ -68,4 +72,7 @@ private:
     bool _exportsReferences;
     bool _pruneChildren;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // PXRUSDMAYA_PLUGINPRIMWRITER_H

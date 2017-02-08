@@ -2,10 +2,15 @@
 // index page produced by doxygen.
 
 /*!
-\mainpage
+\page hd_page_front Hd : The Hydra render engine
+\if ( PIXAR_MFB_BUILD )
+\mainpage  Hd : The Hydra render engine
+\publicLib
+\endif
+
 \anchor hd_mainpage
 
-libHd is a scenegraph agnostic, OpenGL render engine designed for high
+libHd is a scenegraph agnostic, render engine designed for high
 performance playback.
 
 Hd provides a uniform drawing framework that can combine multiple scenegraph

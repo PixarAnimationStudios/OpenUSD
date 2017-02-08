@@ -103,8 +103,8 @@
 
 // sdf/path.ypp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/pathParser.h"
-
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 
@@ -118,6 +118,8 @@ using std::pair;
 using std::string;
 using std::vector;
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 //--------------------------------------------------------------------
 // Extern declarations to scanner data and functions
 //--------------------------------------------------------------------
@@ -129,7 +131,7 @@ static void pathYyerror(Sdf_PathParserContext *context, const char *msg);
 
 
 /* Line 189 of yacc.c  */
-#line 110 "pxr/usd/sdf/path.tab.cpp"
+#line 112 "pxr/usd/sdf/path.tab.cpp"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -181,7 +183,7 @@ typedef int YYSTYPE;
 
 
 /* Line 264 of yacc.c  */
-#line 162 "pxr/usd/sdf/path.tab.cpp"
+#line 164 "pxr/usd/sdf/path.tab.cpp"
 
 #ifdef short
 # undef short
@@ -485,12 +487,12 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,    69,    69,    74,    75,    82,    83,    87,    88,    92,
-      95,    98,    99,   100,   104,   109,   116,   117,   121,   125,
-     129,   132,   135,   141,   141,   158,   159,   163,   171,   172,
-     176,   179,   185,   186,   187,   190,   196,   197,   198,   199,
-     200,   201,   202,   206,   210,   214,   218,   225,   228,   235,
-     244,   251,   254,   261,   264,   270,   276,   279,   284,   286
+       0,    71,    71,    76,    77,    84,    85,    89,    90,    94,
+      97,   100,   101,   102,   106,   111,   118,   119,   123,   127,
+     131,   134,   137,   143,   143,   160,   161,   165,   173,   174,
+     178,   181,   187,   188,   189,   192,   198,   199,   200,   201,
+     202,   203,   204,   208,   212,   216,   220,   227,   230,   237,
+     246,   253,   256,   263,   266,   272,   278,   281,   286,   288
 };
 #endif
 
@@ -1461,7 +1463,7 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 69 "pxr/usd/sdf/path.yy"
+#line 71 "pxr/usd/sdf/path.yy"
     {
         context->node.swap((yyvsp[(1) - (1)]).path);
     ;}
@@ -1470,7 +1472,7 @@ yyreduce:
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 92 "pxr/usd/sdf/path.yy"
+#line 94 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::GetRelativeRootNode();
         ;}
@@ -1479,7 +1481,7 @@ yyreduce:
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 95 "pxr/usd/sdf/path.yy"
+#line 97 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::GetAbsoluteRootNode();
         ;}
@@ -1488,7 +1490,7 @@ yyreduce:
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 104 "pxr/usd/sdf/path.yy"
+#line 106 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrim(
                         Sdf_PathNode::GetRelativeRootNode(),
@@ -1499,7 +1501,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 109 "pxr/usd/sdf/path.yy"
+#line 111 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrim(
                         ((yyvsp[(1) - (3)])).path, SdfPathTokens->parentPathElement);
@@ -1509,7 +1511,7 @@ yyreduce:
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 121 "pxr/usd/sdf/path.yy"
+#line 123 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrim(
                         Sdf_PathNode::GetRelativeRootNode(), ((yyvsp[(1) - (1)])).token );
@@ -1519,7 +1521,7 @@ yyreduce:
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 125 "pxr/usd/sdf/path.yy"
+#line 127 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrim(
                         Sdf_PathNode::GetAbsoluteRootNode(), ((yyvsp[(2) - (2)])).token );
@@ -1529,7 +1531,7 @@ yyreduce:
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 129 "pxr/usd/sdf/path.yy"
+#line 131 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrim( ((yyvsp[(1) - (3)])).path, ((yyvsp[(3) - (3)])).token );
         ;}
@@ -1538,7 +1540,7 @@ yyreduce:
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 132 "pxr/usd/sdf/path.yy"
+#line 134 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrim( ((yyvsp[(1) - (3)])).path, ((yyvsp[(3) - (3)])).token );
         ;}
@@ -1547,7 +1549,7 @@ yyreduce:
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 135 "pxr/usd/sdf/path.yy"
+#line 137 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrim( ((yyvsp[(1) - (2)])).path, ((yyvsp[(2) - (2)])).token );
         ;}
@@ -1556,7 +1558,7 @@ yyreduce:
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 141 "pxr/usd/sdf/path.yy"
+#line 143 "pxr/usd/sdf/path.yy"
     {
             context->variantSelectionStack.push_back(Sdf_PathVariantSelections());
         ;}
@@ -1565,7 +1567,7 @@ yyreduce:
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 144 "pxr/usd/sdf/path.yy"
+#line 146 "pxr/usd/sdf/path.yy"
     {
             Sdf_PathNodeConstRefPtr node = (yyvsp[(1) - (5)]).path;
             const Sdf_PathVariantSelections& selections =
@@ -1582,7 +1584,7 @@ yyreduce:
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 164 "pxr/usd/sdf/path.yy"
+#line 166 "pxr/usd/sdf/path.yy"
     {
             context->variantSelectionStack.back().push_back(
                 std::make_pair( (yyvsp[(3) - (8)]).token, (yyvsp[(7) - (8)]).token ) );
@@ -1592,7 +1594,7 @@ yyreduce:
   case 30:
 
 /* Line 1455 of yacc.c  */
-#line 176 "pxr/usd/sdf/path.yy"
+#line 178 "pxr/usd/sdf/path.yy"
     {
         (yyval).token = TfToken();
     ;}
@@ -1601,7 +1603,7 @@ yyreduce:
   case 31:
 
 /* Line 1455 of yacc.c  */
-#line 179 "pxr/usd/sdf/path.yy"
+#line 181 "pxr/usd/sdf/path.yy"
     {
         (yyval).token = (yyvsp[(1) - (2)]).token;
     ;}
@@ -1610,7 +1612,7 @@ yyreduce:
   case 34:
 
 /* Line 1455 of yacc.c  */
-#line 187 "pxr/usd/sdf/path.yy"
+#line 189 "pxr/usd/sdf/path.yy"
     {
             (yyval).token = TfToken('.' + (yyvsp[(2) - (2)]).token.GetString());
         ;}
@@ -1619,7 +1621,7 @@ yyreduce:
   case 35:
 
 /* Line 1455 of yacc.c  */
-#line 190 "pxr/usd/sdf/path.yy"
+#line 192 "pxr/usd/sdf/path.yy"
     {
             (yyval).token = TfToken('.' + (yyvsp[(2) - (2)]).token.GetString());
         ;}
@@ -1628,7 +1630,7 @@ yyreduce:
   case 43:
 
 /* Line 1455 of yacc.c  */
-#line 206 "pxr/usd/sdf/path.yy"
+#line 208 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrimProperty(
                         Sdf_PathNode::GetRelativeRootNode(), (yyvsp[(2) - (2)]).token );
@@ -1638,7 +1640,7 @@ yyreduce:
   case 44:
 
 /* Line 1455 of yacc.c  */
-#line 210 "pxr/usd/sdf/path.yy"
+#line 212 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrimProperty(
                         (yyvsp[(1) - (3)]).path, (yyvsp[(3) - (3)]).token );
@@ -1648,7 +1650,7 @@ yyreduce:
   case 45:
 
 /* Line 1455 of yacc.c  */
-#line 214 "pxr/usd/sdf/path.yy"
+#line 216 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreatePrimProperty(
                         (yyvsp[(1) - (4)]).path, (yyvsp[(4) - (4)]).token );
@@ -1658,7 +1660,7 @@ yyreduce:
   case 46:
 
 /* Line 1455 of yacc.c  */
-#line 218 "pxr/usd/sdf/path.yy"
+#line 220 "pxr/usd/sdf/path.yy"
     { 
             yyerror(context, "expected property name after '.'");
             YYABORT;
@@ -1668,7 +1670,7 @@ yyreduce:
   case 47:
 
 /* Line 1455 of yacc.c  */
-#line 225 "pxr/usd/sdf/path.yy"
+#line 227 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreateTarget( (yyvsp[(1) - (4)]).path, (yyvsp[(3) - (4)]).path );
         ;}
@@ -1677,7 +1679,7 @@ yyreduce:
   case 48:
 
 /* Line 1455 of yacc.c  */
-#line 228 "pxr/usd/sdf/path.yy"
+#line 230 "pxr/usd/sdf/path.yy"
     {
             yyerror(context, "expected a path within [ ]"); 
             YYABORT;
@@ -1687,7 +1689,7 @@ yyreduce:
   case 49:
 
 /* Line 1455 of yacc.c  */
-#line 235 "pxr/usd/sdf/path.yy"
+#line 237 "pxr/usd/sdf/path.yy"
     {
             // The grammar does not know if the target path is already on
             // a relational attribute (ie is the connection target of a rel attr)
@@ -1702,7 +1704,7 @@ yyreduce:
   case 50:
 
 /* Line 1455 of yacc.c  */
-#line 244 "pxr/usd/sdf/path.yy"
+#line 246 "pxr/usd/sdf/path.yy"
     { 
             yyerror(context, "expected a property for relationship target"); 
             YYABORT;
@@ -1712,7 +1714,7 @@ yyreduce:
   case 51:
 
 /* Line 1455 of yacc.c  */
-#line 251 "pxr/usd/sdf/path.yy"
+#line 253 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreateTarget( (yyvsp[(1) - (4)]).path, (yyvsp[(3) - (4)]).path );
         ;}
@@ -1721,7 +1723,7 @@ yyreduce:
   case 52:
 
 /* Line 1455 of yacc.c  */
-#line 254 "pxr/usd/sdf/path.yy"
+#line 256 "pxr/usd/sdf/path.yy"
     { 
             yyerror(context, "expected a path within [ ]"); 
             YYABORT;
@@ -1731,7 +1733,7 @@ yyreduce:
   case 53:
 
 /* Line 1455 of yacc.c  */
-#line 261 "pxr/usd/sdf/path.yy"
+#line 263 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreateMapper((yyvsp[(1) - (6)]).path, (yyvsp[(5) - (6)]).path);
         ;}
@@ -1740,7 +1742,7 @@ yyreduce:
   case 54:
 
 /* Line 1455 of yacc.c  */
-#line 264 "pxr/usd/sdf/path.yy"
+#line 266 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreateMapper((yyvsp[(1) - (6)]).path, (yyvsp[(5) - (6)]).path);
         ;}
@@ -1749,7 +1751,7 @@ yyreduce:
   case 55:
 
 /* Line 1455 of yacc.c  */
-#line 270 "pxr/usd/sdf/path.yy"
+#line 272 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreateMapperArg( (yyvsp[(1) - (3)]).path, (yyvsp[(3) - (3)]).token );
         ;}
@@ -1758,7 +1760,7 @@ yyreduce:
   case 56:
 
 /* Line 1455 of yacc.c  */
-#line 276 "pxr/usd/sdf/path.yy"
+#line 278 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreateExpression( (yyvsp[(1) - (3)]).path );
         ;}
@@ -1767,7 +1769,7 @@ yyreduce:
   case 57:
 
 /* Line 1455 of yacc.c  */
-#line 279 "pxr/usd/sdf/path.yy"
+#line 281 "pxr/usd/sdf/path.yy"
     {
             (yyval).path = Sdf_PathNode::FindOrCreateExpression( (yyvsp[(1) - (3)]).path );
         ;}
@@ -1776,7 +1778,7 @@ yyreduce:
 
 
 /* Line 1455 of yacc.c  */
-#line 1757 "pxr/usd/sdf/path.tab.cpp"
+#line 1759 "pxr/usd/sdf/path.tab.cpp"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1988,7 +1990,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 289 "pxr/usd/sdf/path.yy"
+#line 291 "pxr/usd/sdf/path.yy"
 
 
 static void 
@@ -2000,4 +2002,5 @@ pathYyerror(Sdf_PathParserContext *context, const char *msg)
     context->errStr = msg;
     context->variantSelectionStack.clear();
 }
+
 

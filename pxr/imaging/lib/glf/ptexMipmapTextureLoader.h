@@ -24,10 +24,14 @@
 #ifndef GLF_OPENSUBDIV_EXAMPLES_PTEX_MIPMAP_TEXTURE_LOADER_H
 #define GLF_OPENSUBDIV_EXAMPLES_PTEX_MIPMAP_TEXTURE_LOADER_H
 
+#include "pxr/pxr.h"
 #include <Ptexture.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GlfPtexMipmapTextureLoader {
 public:
@@ -116,8 +120,8 @@ private:
                        unsigned char *pptr, int bpp, int stride);
 
         static bool sort(const Block *a, const Block *b) {
-            return (a->height > b->height) or
-                   ((a->height == b->height) and (a->width > b->width));
+            return (a->height > b->height) ||
+                   ((a->height == b->height) && (a->width > b->width));
         }
     };
 
@@ -148,5 +152,8 @@ private:
 
     size_t _memoryUsage;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_OPENSUBDIV_EXAMPLES_PTEX_MIPMAP_TEXTURE_LOADER_H

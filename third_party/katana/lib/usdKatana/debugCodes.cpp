@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/registryManager.h"
 
 #include "debugCodes.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
@@ -35,3 +39,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDKATANA_LAYER_MUTING,
                 "USD layer muting");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

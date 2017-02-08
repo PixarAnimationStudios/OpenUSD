@@ -26,6 +26,7 @@
 
 /// \file glf/simpleShadowArray.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
@@ -36,6 +37,9 @@
 
 #include <boost/noncopyable.hpp>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GlfSimpleShadowArray : public TfRefBase,
                              public TfWeakBase,
@@ -65,8 +69,6 @@ public:
     void BeginCapture(size_t index, bool clear);
     void EndCapture(size_t index);
 
-    virtual void Draw(size_t index) const;
-
 private:
     void _AllocTextureArray();
     void _FreeTextureArray();
@@ -89,6 +91,11 @@ private:
 
     GLuint _unbindRestoreDrawFramebuffer;
     GLuint _unbindRestoreReadFramebuffer;
+
+    GLint  _unbindRestoreViewport[4];
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

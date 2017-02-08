@@ -24,11 +24,14 @@
 #ifndef SDF_PARSERVALUECONTEXT_H
 #define SDF_PARSERVALUECONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/parserHelpers.h"
 #include "pxr/base/vt/array.h"
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Parses nested arrays of atomic values or tuples of atomic values. Validity
 // checks are done while parsing to make sure arrays are "square" and tuples
@@ -134,4 +137,6 @@ private:
     std::string _recordedString;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PARSERVALUECONTEXT_H

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/align.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
@@ -33,7 +35,12 @@
 #include <unistd.h>
 #elif defined(ARCH_OS_DARWIN)
 #include <sys/sysctl.h>
+#elif defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#include <memory>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static size_t
 Arch_ObtainCacheLineSize()
@@ -45,6 +52,34 @@ Arch_ObtainCacheLineSize()
     size_t cacheLineSizeSize = sizeof(cacheLineSize);
     sysctlbyname("hw.cachelinesize", &cacheLineSize, &cacheLineSizeSize, 0, 0);
     return cacheLineSize;
+#elif defined(ARCH_OS_WINDOWS)
+    DWORD bufferSize = 0;
+    using INFO = SYSTEM_LOGICAL_PROCESSOR_INFORMATION;
+
+    // Get the number of bytes required.
+    ::GetLogicalProcessorInformation(nullptr, &bufferSize);
+
+    // Get the count of structures
+    size_t total = bufferSize / sizeof(INFO);
+
+    // Allocate the array of processor INFOs.
+    std::unique_ptr<INFO[]> buffer(new INFO[total]);
+
+    size_t lineSize = 0;
+    if (::GetLogicalProcessorInformation(&buffer[0], &bufferSize))
+    {
+        for (size_t current = 0; current != total; ++current)
+        {
+            if (buffer[current].Relationship == RelationCache &&
+                1 == buffer[current].Cache.Level)
+            {
+                lineSize = buffer[current].Cache.LineSize;
+                break;
+            }
+        }
+    }
+
+    return lineSize;
 #else
 #error Arch_ObtainCacheLineSize not implemented for OS.
 #endif
@@ -61,27 +96,10 @@ Arch_ValidateAssumptions()
      * so we are assuming that an enum is the same size as an int.
      */
     if (sizeof(SomeEnum) != sizeof(int))
-	ARCH_ERROR("sizeof(enum) != sizeof(int)");
+        ARCH_ERROR("sizeof(enum) != sizeof(int)");
 
     if (sizeof(int) != 4)
-	ARCH_ERROR("sizeof(int) != 4");
-
-    /*
-     * Some lib/tf coding depends on size_t and long being the same size.
-     */
-    if (sizeof(size_t) != sizeof(unsigned long))
-	ARCH_ERROR("size_t and unsigned long are different sizes");
-    /*
-     * endian.h needs to know how big various types are for its
-     * swabbing routines.
-     */
-#if defined(ARCH_BITS_64)
-    if (sizeof(long) != 8)
-	ARCH_ERROR("sizeof(long) != 8 [64-bit mode]");
-#else
-    if (sizeof(long) != 4)
-	ARCH_ERROR("sizeof(long) != 4 [32-bit mode]");
-#endif
+        ARCH_ERROR("sizeof(int) != 4");
 
     /*
      * Verify that the exponent and significand of float and double are
@@ -138,3 +156,5 @@ Arch_ValidateAssumptions()
         // CODE_COVERAGE_ON  
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

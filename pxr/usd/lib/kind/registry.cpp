@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(KindRegistry);
 TF_DEFINE_PUBLIC_TOKENS(KindTokens, KIND_TOKENS);
@@ -57,7 +61,7 @@ void
 KindRegistry::_Register(const TfToken& kind,
                         const TfToken& baseKind)
 {
-    if (not TfIsValidIdentifier(kind.GetString())) {
+    if (!TfIsValidIdentifier(kind.GetString())) {
         TF_CODING_ERROR("Invalid kind: '%s'", kind.GetText());
         return;
     }
@@ -215,3 +219,4 @@ KindRegistry::_RegisterDefaults()
     }
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

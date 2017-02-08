@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/pluginStaticData.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // NOTE: Since we have assets already with the typeid baked in,
 // we aren't changing them.  For future usd development, we've blocked
@@ -50,3 +54,6 @@ PxrUsdMayaPluginStaticData::PxrUsdMayaPluginStaticData(
         stageData(stageDataId, stageDataName)
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

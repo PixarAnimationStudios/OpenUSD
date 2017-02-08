@@ -26,6 +26,7 @@
 
 /// \file glf/drawTarget.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/gf/vec2i.h"
@@ -39,6 +40,9 @@
 #include <map>
 #include <set>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
@@ -65,7 +69,8 @@ public:
 public:
     
     /// Returns a new instance.
-    static GlfDrawTargetRefPtr New( GfVec2i const & size );
+    static GlfDrawTargetRefPtr New( GfVec2i const & size, 
+                                    bool requestMSAA = false );
 
     /// Returns a new instance.
     /// GL framebuffers cannot be shared across contexts, but texture
@@ -82,12 +87,16 @@ public:
         typedef TfDeclarePtrs<class Attachment>::RefPtr AttachmentRefPtr;
 
         static AttachmentRefPtr New(int glIndex, GLenum format, GLenum type,
-                                    GLenum internalFormat, GfVec2i size);
+                                    GLenum internalFormat, GfVec2i size,
+                                    unsigned int numSamples);
 
         virtual ~Attachment();
 
         /// Returns the GL texture index (can be used as any regular GL texture)
         GLuint GetGlTextureName() const { return _textureName; }
+
+        /// Returns the GL texture index multisampled of this attachment
+        GLuint GetGlTextureMSName() const { return _textureNameMS; }
 
         /// Returns the GL format of the texture (GL_RGB, GL_DEPTH_COMPONENT...)
         GLenum GetFormat() const { return _format; }
@@ -97,7 +106,8 @@ public:
 
         /// Returns the GL attachment point index in the framebuffer.
         int GetAttach() const { return _glIndex; }
-    
+
+        /// Resize the attachment recreating the texture
         void ResizeTexture(const GfVec2i &size);
 
         // GlfTexture overrides
@@ -112,12 +122,14 @@ public:
 
     private:
         Attachment(int glIndex, GLenum format, GLenum type,
-                   GLenum internalFormat, GfVec2i size);
+                   GLenum internalFormat, GfVec2i size, 
+                   unsigned int numSamples);
 
-        GLuint _GenTexture();
-        void _DeleteTexture(GLuint & id);
+        void _GenTexture();
+        void _DeleteTexture();
 
         GLuint       _textureName;
+        GLuint       _textureNameMS;
 
         GLenum       _format,
                      _type,
@@ -126,6 +138,8 @@ public:
         int          _glIndex;
 
         GfVec2i      _size;
+
+        unsigned int _numSamples;
     };
 
     typedef TfDeclarePtrs<class Attachment>::RefPtr AttachmentRefPtr;
@@ -161,13 +175,17 @@ public:
     void SetSize( GfVec2i );    
 
     /// Returns the size of the DrawTarget.
-    GfVec2i const & GetSize() const {
-        return _size;
-    }
+    GfVec2i const & GetSize() const { return _size; }
+
+    /// Returns if the draw target uses msaa
+    bool HasMSAA() const { return (_numSamples > 1); }
 
     /// Returns the framebuffer object Id.
     GLuint GetFramebufferId() const;
     
+    /// Returns the id of the framebuffer object with MSAA buffers.
+    GLuint GetFramebufferMSId() const;
+
     /// Binds the framebuffer.
     void Bind();
 
@@ -176,6 +194,10 @@ public:
 
     /// Returns whether the framebuffer is currently bound.
     bool IsBound() const;
+
+    /// Resolve the MSAA framebuffer to a regular framebuffer. If there
+    /// is no MSAA enabled, this function does nothing.
+    void Resolve();
 
     /// Updates the contents signature for attached textures
     /// to allow downstream consumers to know that the texture image
@@ -197,7 +219,7 @@ protected:
         AttachmentsMap attachments;
     };
 
-    GlfDrawTarget( GfVec2i const & size );
+    GlfDrawTarget( GfVec2i const & size, bool requestMSAA );
 
     GlfDrawTarget( GlfDrawTargetPtr const & drawtarget );
 
@@ -223,6 +245,7 @@ private:
     void _RestoreBindingState();
 
     GLuint _framebuffer;
+    GLuint _framebufferMS;
     
     GLuint _unbindRestoreReadFB,
            _unbindRestoreDrawFB;
@@ -230,9 +253,14 @@ private:
     int _bindDepth;
 
     GfVec2i _size;
+    
+    unsigned int _numSamples;
 
     TfRefPtr<AttachmentsContainer> _attachmentsPtr;
     GlfGLContextSharedPtr _owningContext;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GLF_DRAW_TARGET_H

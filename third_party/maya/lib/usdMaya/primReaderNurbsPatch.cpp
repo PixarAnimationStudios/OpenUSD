@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderRegistry.h"
 #include "usdMaya/translatorNurbsPatch.h"
 
@@ -28,6 +29,9 @@
 #include "pxr/usd/usdGeom/nurbsPatch.h"
 
 #include <maya/MObject.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 PXRUSDMAYA_DEFINE_READER(UsdGeomNurbsPatch, args, context)
@@ -40,3 +44,6 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomNurbsPatch, args, context)
             args,
             context);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -26,10 +26,13 @@
 
 /// \file sdf/specType.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/types.h"
 
 #include <typeinfo>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfSpec;
 class TfType;
@@ -96,4 +99,6 @@ public:
     static bool CanCast(SdfSpecType from, const std::type_info& to);
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_SPECTYPE_H

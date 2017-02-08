@@ -31,6 +31,8 @@
 /// \file gf/matrix4f.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/traits.h"
@@ -43,6 +45,8 @@
 
 #include <iosfwd>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfMatrix<class GfMatrix4f> { static const bool value = true; };
@@ -337,8 +341,8 @@ public:
         // XXX Should add GfAreOrthogonal(v0, v1, v2) (which also
         //     GfRotation::Decompose() could use).
         GfVec3f axis0(GetRow3(0)), axis1(GetRow3(1)), axis2(GetRow3(2));
-        return (GfAbs(GfDot(axis0, axis1)) < GF_MIN_ORTHO_TOLERANCE and
-                GfAbs(GfDot(axis0, axis2)) < GF_MIN_ORTHO_TOLERANCE and
+        return (GfAbs(GfDot(axis0, axis1)) < GF_MIN_ORTHO_TOLERANCE && 
+                GfAbs(GfDot(axis0, axis2)) < GF_MIN_ORTHO_TOLERANCE && 
                 GfAbs(GfDot(axis1, axis2)) < GF_MIN_ORTHO_TOLERANCE);
     }
 
@@ -472,5 +476,7 @@ private:
 /// Output a GfMatrix4f
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfMatrix4f const &);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_MATRIX4F_H

@@ -26,6 +26,7 @@
 
 /// \file usdGeom/xformOp.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -37,6 +38,9 @@
 #include <boost/variant.hpp>
 
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \hideinitializer
 #define USDGEOM_XFORM_OP_TYPES \
@@ -249,7 +253,7 @@ public:
     template <typename T>
     bool GetAs(T* value, UsdTimeCode time) const {
         VtValue v;
-        if (not Get(&v, time)) {
+        if (!Get(&v, time)) {
             return false;
         }
         v.Cast<T>();
@@ -530,5 +534,8 @@ private:
 
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_XFORMOP_H

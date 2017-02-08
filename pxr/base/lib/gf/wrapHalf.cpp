@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/half.h"
 
 #include <boost/python/def.hpp>
@@ -29,6 +31,8 @@
 #include <boost/python/converter/from_python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -50,7 +54,7 @@ private:
     // from-python
     static void *_convertible(PyObject *obj_ptr) {
         // Must be number-like.
-        if (not PyNumber_Check(obj_ptr))
+        if (!PyNumber_Check(obj_ptr))
             return NULL;
         // Try to convert to python float: if we can, then we can make a half.
         if (PyObject *flt = PyNumber_Float(obj_ptr))
@@ -87,3 +91,4 @@ void wrapHalf()
     boost::python::def("_HalfRoundTrip", _HalfRoundTrip);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

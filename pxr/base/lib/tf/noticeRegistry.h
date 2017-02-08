@@ -27,6 +27,7 @@
 /// \file tf/noticeRegistry.h
 /// \ingroup group_tf_Notification
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/hash.h"
@@ -39,6 +40,8 @@
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
 #include <atomic>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class Tf_NoticeRegistry
 /// \ingroup group_tf_Notification
@@ -155,7 +158,7 @@ private:
              TfNotice::_DelivererBase* item) {
         _Lock lock(c->_mutex);
 
-        TF_DEV_AXIOM(not item->_list);
+        TF_DEV_AXIOM(!item->_list);
 
         _DelivererList *dlist;
         if (sender)
@@ -241,4 +244,6 @@ private:
     tbb::enumerable_thread_specific<size_t> _perThreadBlockCount;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_NOTICE_REGISTRY_H

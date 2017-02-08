@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/xform.h"
 
 #include "pxr/base/tracelite/trace.h"
 
 #include "pxr/base/tf/diagnostic.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 UsdGeomXformCache::UsdGeomXformCache(const UsdTimeCode time)
@@ -45,7 +49,7 @@ GfMatrix4d
 UsdGeomXformCache::GetLocalToWorldTransform(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
-    if (not prim.GetPath().HasPrefix(_worldPath)) {
+    if (!prim.GetPath().HasPrefix(_worldPath)) {
         TF_CODING_ERROR("Attempt to get transform for: %s "
                         "which is not within the specified world: %s",
                         prim.GetPath().GetString().c_str(),
@@ -59,7 +63,7 @@ GfMatrix4d
 UsdGeomXformCache::GetParentToWorldTransform(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
-    if (not prim.GetPath().HasPrefix(_worldPath)) {
+    if (!prim.GetPath().HasPrefix(_worldPath)) {
         TF_CODING_ERROR("Attempt to get transform for: %s "
                         "which is not within the specified world: %s",
                         prim.GetPath().GetString().c_str(),
@@ -150,7 +154,7 @@ UsdGeomXformCache::_GetCtm(const UsdPrim& prim)
 
     // Base case: check for the pseudo root, which is always implicitly
     // identity.
-    if (not prim or prim.GetPath() == _worldPath)
+    if (!prim || prim.GetPath() == _worldPath)
         return &IDENTITY;
 
     // Check for a cached matrix.
@@ -163,7 +167,7 @@ UsdGeomXformCache::_GetCtm(const UsdPrim& prim)
     entry->query.GetLocalTransformation(&xform, _time);
     bool resetsXformStack = entry->query.GetResetXformStack();
     
-    xform = not resetsXformStack ? (xform * (*_GetCtm(prim.GetParent())))
+    xform = !resetsXformStack ? (xform * (*_GetCtm(prim.GetParent())))
                                  : xform;
 
     // Return the address of the inserted Matrix.
@@ -195,7 +199,7 @@ UsdGeomXformCache::Clear() {
 void
 UsdGeomXformCache::SetWorldPath(const SdfPath& rootPath)
 {
-    if (not rootPath.IsAbsolutePath()) {
+    if (!rootPath.IsAbsolutePath()) {
         TF_CODING_ERROR("Invalid root path: %s", rootPath.GetString().c_str());
         return;
     }
@@ -215,3 +219,6 @@ UsdGeomXformCache::Swap(UsdGeomXformCache& other)
     std::swap(_time, other._time);
     std::swap(_worldPath, other._worldPath);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -23,6 +23,9 @@
 //
 // Do not include pyModule.h or we'd need an implementation of WrapModule().
 //#include "pxr/base/tf/pyModule.h"
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/hash.h"
@@ -64,6 +67,7 @@ using std::vector;
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Tf_ModuleProcessor {
 public:
@@ -421,3 +425,5 @@ void Tf_PyInitWrapModule(
     // Notify that a module has been loaded.
     TfPyModuleWasLoaded(packageName).Send();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

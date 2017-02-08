@@ -21,6 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #ifndef GARCH_GLPLATFORM_DEBUG_WINDOW_DARWIN_H
 #define GARCH_GLPLATFORM_DEBUG_WINDOW_DARWIN_H
 
@@ -40,5 +44,8 @@ public:
 private:
     GarchGLDebugWindow *_callback;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GARCH_GLPLATFORM_DEBUG_WINDOW_DARWIN_H

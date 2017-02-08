@@ -23,9 +23,12 @@
 //
 #include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/drawTargetAttachmentDescArray.h"
+#include "pxr/imaging/hdx/drawTargetTextureResource.h"
+#include "pxr/imaging/hdx/camera.h"
 
 #include "pxr/imaging/hd/conversions.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -33,12 +36,15 @@
 
 #include "pxr/base/tf/stl.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static const std::string DEPTH_ATTACHMENT_NAME = "depth";
 
 TF_DEFINE_PUBLIC_TOKENS(HdxDrawTargetTokens, HDX_DRAW_TARGET_TOKENS);
 
-HdxDrawTarget::HdxDrawTarget(HdSceneDelegate *delegate, SdfPath const &id)
-    : HdSprim(delegate, id)
+HdxDrawTarget::HdxDrawTarget(SdfPath const &id)
+    : HdSprim(id)
     , _version(1) // Clients tacking start at 0.
     , _enabled(true)
     , _cameraId()
@@ -57,37 +63,37 @@ HdxDrawTarget::~HdxDrawTarget()
 
 /*virtual*/
 void
-HdxDrawTarget::Sync()
+HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const &id = GetID();
-    HdSceneDelegate *delegate = GetDelegate();
-    if (!TF_VERIFY(delegate)) {
+    if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
     }
 
     HdChangeTracker& changeTracker = 
-                                delegate->GetRenderIndex().GetChangeTracker();
+                             sceneDelegate->GetRenderIndex().GetChangeTracker();
     HdChangeTracker::DirtyBits bits = changeTracker.GetSprimDirtyBits(id);
 
 
     if (bits & DirtyDTEnable) {
-        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->enable);
+        VtValue vtValue =  sceneDelegate->Get(id, HdxDrawTargetTokens->enable);
 
         // Optional attribute.
         _enabled = vtValue.GetWithDefault<bool>(true);
     }
 
     if (bits & DirtyDTCamera) {
-        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->camera);
+        VtValue vtValue =  sceneDelegate->Get(id, HdxDrawTargetTokens->camera);
         _cameraId = vtValue.Get<SdfPath>();
         _renderPassState.SetCamera(_cameraId);
     }
 
     if (bits & DirtyDTResolution) {
-        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->resolution);
+        VtValue vtValue =
+                        sceneDelegate->Get(id, HdxDrawTargetTokens->resolution);
 
         _resolution = vtValue.Get<GfVec2i>();
 
@@ -100,19 +106,21 @@ HdxDrawTarget::Sync()
 
     if (bits & DirtyDTAttachment) {
         // Depends on resolution being set correctly.
-        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->attachments);
+        VtValue vtValue =
+                       sceneDelegate->Get(id, HdxDrawTargetTokens->attachments);
 
 
         const HdxDrawTargetAttachmentDescArray &attachments =
             vtValue.GetWithDefault<HdxDrawTargetAttachmentDescArray>(
                     HdxDrawTargetAttachmentDescArray());
 
-        _SetAttachments(attachments);
+        _SetAttachments(sceneDelegate, attachments);
     }
 
 
     if (bits & DirtyDTDepthClearValue) {
-        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->depthClearValue);
+        VtValue vtValue =
+                   sceneDelegate->Get(id, HdxDrawTargetTokens->depthClearValue);
 
         float depthClearValue = vtValue.GetWithDefault<float>(1.0f);
 
@@ -120,7 +128,8 @@ HdxDrawTarget::Sync()
     }
 
     if (bits & DirtyDTCollection) {
-        VtValue vtValue =  delegate->Get(id, HdxDrawTargetTokens->collection);
+        VtValue vtValue =
+                        sceneDelegate->Get(id, HdxDrawTargetTokens->collection);
 
         const HdRprimCollectionVector &collections =
                 vtValue.GetWithDefault<HdRprimCollectionVector>(
@@ -151,7 +160,7 @@ HdxDrawTarget::Sync()
     }
 }
 
-/*virtual*/
+// virtual
 VtValue
 HdxDrawTarget::Get(TfToken const &token) const
 {
@@ -161,9 +170,17 @@ HdxDrawTarget::Get(TfToken const &token) const
     return VtValue();
 }
 
+// virtual
+int
+HdxDrawTarget::GetInitialDirtyBitsMask() const
+{
+    return AllDirty;
+}
+
 bool
-HdxDrawTarget::WriteToFile(const std::string &attachment,
-                          const std::string &path)
+HdxDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
+                           const std::string &attachment,
+                           const std::string &path) const
 {
     // Check the draw targets been allocated
     if (!_drawTarget || !_drawTargetContext) {
@@ -181,8 +198,8 @@ HdxDrawTarget::WriteToFile(const std::string &attachment,
         return false;
     }
 
-    HdSprimSharedPtr camera = _GetCamera();
-    if (!camera) {
+    const HdxCamera *camera = _GetCamera(renderIndex);
+    if (camera == nullptr) {
         TF_WARN("Missing camera\n");
         return false;
     }
@@ -207,14 +224,19 @@ HdxDrawTarget::WriteToFile(const std::string &attachment,
     return result;
 }
 
-
 void
-HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachments)
+HdxDrawTarget::_SetAttachments(HdSceneDelegate *sceneDelegate,
+                            const HdxDrawTargetAttachmentDescArray &attachments)
 {
     if (!_drawTargetContext) {
         // Use one of the shared contexts as the master.
         _drawTargetContext = GlfGLContext::GetSharedGLContext();
     }
+
+    // Clear out old texture resources for the attachments.
+    _colorTextureResources.clear();
+    _depthTextureResource.reset();
+
 
     // Make sure all draw target operations happen on the same
     // context.
@@ -225,12 +247,17 @@ HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachmen
     // XXX: Discard old draw target and create a new one
     // This is necessary because a we have to clone the draw target into each
     // gl context.
-    _drawTarget = GlfDrawTarget::New(_resolution);
+    // XXX : All draw targets in Hydra are currently trying to create MSAA
+    // buffers (as long as they are allowed by the environment variables) 
+    // because we need alpha to coverage for transparent object.
+    _drawTarget = GlfDrawTarget::New(_resolution, /* MSAA */ true);
 
     size_t numAttachments = attachments.GetNumAttachments();
     _renderPassState.SetNumColorAttachments(numAttachments);
 
     _drawTarget->Bind();
+
+    _colorTextureResources.resize(numAttachments);
 
     for (size_t attachmentNum = 0; attachmentNum < numAttachments;
                                                               ++attachmentNum) {
@@ -243,13 +270,28 @@ HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachmen
         HdConversions::GetGlFormat(desc.GetFormat(),
                                    &format, &type, &internalFormat);
 
-
-        _drawTarget->AddAttachment(desc.GetName(),
+        const std::string &name = desc.GetName();
+        _drawTarget->AddAttachment(name,
                                    format,
                                    type,
                                    internalFormat);
 
         _renderPassState.SetColorClearValue(attachmentNum, desc.GetClearColor());
+
+        _RegisterTextureResource(sceneDelegate,
+                                 name,
+                                 &_colorTextureResources[attachmentNum]);
+
+        Hdx_DrawTargetTextureResource *resource =
+                static_cast<Hdx_DrawTargetTextureResource *>(
+                                 _colorTextureResources[attachmentNum].get());
+
+        resource->SetAttachment(_drawTarget->GetAttachment(name));
+        resource->SetSampler(desc.GetWrapS(),
+                             desc.GetWrapT(),
+                             desc.GetMinFilter(),
+                             desc.GetMagFilter());
+
     }
 
     // Always add depth texture
@@ -260,6 +302,20 @@ HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachmen
                                GL_FLOAT,
                                GL_DEPTH_COMPONENT32F);
 
+    _RegisterTextureResource(sceneDelegate,
+                             DEPTH_ATTACHMENT_NAME,
+                             &_depthTextureResource);
+
+
+    Hdx_DrawTargetTextureResource *depthResource =
+                    static_cast<Hdx_DrawTargetTextureResource *>(
+                                                  _depthTextureResource.get());
+
+    depthResource->SetAttachment(_drawTarget->GetAttachment(DEPTH_ATTACHMENT_NAME));
+    depthResource->SetSampler(attachments.GetDepthWrapS(),
+                              attachments.GetDepthWrapT(),
+                              attachments.GetDepthMinFilter(),
+                              attachments.GetDepthMagFilter());
    _drawTarget->Unbind();
 
    GlfGLContext::MakeCurrent(oldContext);
@@ -269,10 +325,11 @@ HdxDrawTarget::_SetAttachments(const HdxDrawTargetAttachmentDescArray &attachmen
 }
 
 
-HdSprimSharedPtr
-HdxDrawTarget::_GetCamera() const
+const HdxCamera *
+HdxDrawTarget::_GetCamera(const HdRenderIndex &renderIndex) const
 {
-    return GetDelegate()->GetRenderIndex().GetSprim(_cameraId);
+    return static_cast<const HdxCamera *>(
+            renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
 }
 
 void
@@ -294,20 +351,55 @@ HdxDrawTarget::_ResizeDrawTarget()
     GlfGLContext::MakeCurrent(oldContext);
 }
 
+void
+HdxDrawTarget::_RegisterTextureResource(HdSceneDelegate *sceneDelegate,
+                                        const std::string &name,
+                                        HdTextureResourceSharedPtr *resourcePtr)
+{
+    HdResourceRegistry &resourceRegistry = HdResourceRegistry::GetInstance();
+
+    // Create Path for the texture resource
+    SdfPath resourcePath = GetID().AppendProperty(TfToken(name));
+
+    // Ask delegate for an ID for this tex
+    HdTextureResource::ID texID =
+                              sceneDelegate->GetTextureResourceID(resourcePath);
+
+    // Add to resource registry
+    HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> texInstance;
+    std::unique_lock<std::mutex> regLock =
+                  resourceRegistry.RegisterTextureResource(texID, &texInstance);
+
+    if (texInstance.IsFirstInstance()) {
+        texInstance.SetValue(HdTextureResourceSharedPtr(
+                                          new Hdx_DrawTargetTextureResource()));
+    }
+
+    *resourcePtr =  texInstance.GetValue();
+}
+
+
 /*static*/
 void
-HdxDrawTarget::GetDrawTargets(HdSceneDelegate *delegate,
-                              HdxDrawTargetSharedPtrVector *drawTargets)
+HdxDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
+                              HdxDrawTargetPtrConstVector *drawTargets)
 {
-    SdfPathVector sprimPaths = delegate->GetRenderIndex().GetSprimSubtree(
-        SdfPath::AbsoluteRootPath());
+    const HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+
+    SdfPathVector sprimPaths =
+            renderIndex.GetSprimSubtree(HdPrimTypeTokens->drawTarget,
+                                        SdfPath::AbsoluteRootPath());
+
     TF_FOR_ALL (it, sprimPaths) {
-        // XXX: same downcast problem as in simpleLight and shadow.
-        HdSprimSharedPtr const &sprim
-            = delegate->GetRenderIndex().GetSprim(*it);
-        if (HdxDrawTargetSharedPtr drawTarget
-            = boost::dynamic_pointer_cast<HdxDrawTarget>(sprim)) {
-            drawTargets->push_back(drawTarget);
+        HdSprim const *drawTarget =
+                        renderIndex.GetSprim(HdPrimTypeTokens->drawTarget, *it);
+
+        if (drawTarget != nullptr)
+        {
+            drawTargets->push_back(static_cast<HdxDrawTarget const *>(drawTarget));
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

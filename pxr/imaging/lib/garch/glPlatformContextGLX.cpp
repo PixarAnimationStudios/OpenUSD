@@ -26,6 +26,9 @@
 #include "pxr/imaging/garch/glPlatformContext.h"
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 //
 // GarchGLXContextState
 //
@@ -50,8 +53,8 @@ GarchGLXContextState::GarchGLXContextState(
 bool
 GarchGLXContextState::operator==(const GarchGLXContextState& rhs) const
 {
-    return display  == rhs.display and
-           drawable == rhs.drawable and
+    return display  == rhs.display  &&
+           drawable == rhs.drawable &&
            context  == rhs.context;
 }
 
@@ -68,7 +71,7 @@ GarchGLXContextState::GetHash() const
 bool
 GarchGLXContextState::IsValid() const
 {
-    return display and drawable and context;
+    return display && drawable && context;
 }
 
 void
@@ -95,3 +98,6 @@ GarchGetNullGLPlatformContextState()
 {
     return GarchGLXContextState(NULL, None, NULL);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

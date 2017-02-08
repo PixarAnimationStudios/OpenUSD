@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -51,7 +53,7 @@ UsdShadeShader::~UsdShadeShader()
 UsdShadeShader
 UsdShadeShader::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeShader();
     }
@@ -64,7 +66,7 @@ UsdShadeShader::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Shader");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdShadeShader();
     }
@@ -142,11 +144,29 @@ UsdShadeShader::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdShade/connectableAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (outputs)
+);
+
+UsdShadeShader::operator UsdShadeConnectableAPI () const {
+        return UsdShadeConnectableAPI(GetPrim());
+}
 
 UsdShadeParameter
 UsdShadeShader::CreateParameter(const TfToken& name,
@@ -179,3 +199,23 @@ UsdShadeShader::GetParameters() const
     return ret;
 }
 
+UsdShadeOutput
+UsdShadeShader::CreateOutput(const TfToken& name,
+                             const SdfValueTypeName& typeName)
+{
+    return UsdShadeConnectableAPI(GetPrim()).CreateOutput(name, typeName);
+}
+
+UsdShadeOutput
+UsdShadeShader::GetOutput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutput(name);
+}
+
+std::vector<UsdShadeOutput>
+UsdShadeShader::GetOutputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

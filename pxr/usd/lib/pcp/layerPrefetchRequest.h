@@ -24,10 +24,13 @@
 #ifndef PCP_LAYER_PREFETCH_REQUEST_H
 #define PCP_LAYER_PREFETCH_REQUEST_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <set>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Pcp_MutedLayers;
 
@@ -61,4 +64,6 @@ private:
     std::set<SdfLayerRefPtr> _retainedLayers;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_LAYER_PREFETCH_REQUEST_H

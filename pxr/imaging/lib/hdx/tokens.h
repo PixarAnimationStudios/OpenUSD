@@ -24,8 +24,12 @@
 #ifndef HDX_TOKENS_H
 #define HDX_TOKENS_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define HDX_TOKENS              \
     (hdxSelectionBuffer)        \
@@ -43,7 +47,8 @@
     (selMaskColor)              \
     (selOffset)                 \
     (selOffsetMinMax)           \
-    (selValue)
+    (selValue)                  \
+    (drawTargetRenderPasses)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_TOKENS);
 
@@ -56,7 +61,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_TOKENS);
     (renderSetupTask)           \
     (simpleLightTask)           \
     (shadowTask)                \
-    (drawTargetTask)
+    (drawTargetTask)            \
+    (drawTargetResolveTask)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_PRIMITIVE_TOKENS);
 
@@ -64,5 +70,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_PRIMITIVE_TOKENS);
     (taskSetAlphaToCoverage)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxOptionTokens, HDX_OPTION_TOKENS);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_TOKENS_H

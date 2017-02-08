@@ -36,7 +36,10 @@
 /// \ingroup group_tf_Initialization
 /// Construct for executing arbitrary code on TfDlClose.
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/dl.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // All this structure does is execute a function at destruction time,
 // if destruction occurs in the call-chain of TfDlclose().
@@ -106,3 +109,4 @@ private:
         tf__localUnloadFunctionObject(Tf__LocalUnloadFunction);         \
     static void Tf__LocalUnloadFunction()
 
+PXR_NAMESPACE_CLOSE_SCOPE

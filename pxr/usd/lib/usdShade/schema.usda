@@ -10,7 +10,73 @@ over "GLOBAL" (
     customData = {
         string libraryName      = "usdShade"
         string libraryPath      = "pxr/usd/usdShade"
-        # dictionary libraryTokens = {}
+        dictionary libraryTokens = {
+            dictionary materialBinding = {
+                string value = "material:binding"
+                string doc = """
+                The relationship name on non-shading prims to
+                denote a binding to a UsdShadeMaterial.
+                """
+            }
+            dictionary lookBinding = {
+                string value = "look:binding"
+                string doc = """The relationship name on non shading prims to
+                denote a binding to a UsdShadeLook. This is a deprecated
+                relationship and is superceded by material:binding.
+                """
+            }
+            dictionary materialVariant = {
+                string doc = """The variant name of material variation
+                described on a UsdShadeMaterial.
+                """
+            }
+            dictionary derivesFrom  = {
+                string doc = """A legacy relationship name specifying a
+                specializes composition on a UsdShadeMaterial.
+                """
+            }
+            dictionary surface = {
+                string doc = """Describes the surface relationship terminal on
+                a UsdShadeMaterial. Used to find the terminal UsdShadeShader
+                describing the surface of a UsdShadeMaterial.
+                """
+            }
+            dictionary displacement = {
+                string doc = """Describes the displacement relationship
+                terminal on a UsdShadeMaterial. Used to find the terminal
+                UsdShadeShader describing the displacement of a
+                UsdShadeMaterial.
+                """
+            }
+            dictionary connectedSourceFor = {
+                string value = "connectedSourceFor:"
+                string doc = """The prefix on UsdShadeShader relationships
+                associated with a Parameter.
+
+                This prefixed relationship has a suffix matching the associated
+                attribute name, and denotes a logical shader connection between
+                UsdShadeShaders.
+                """
+            }
+            dictionary outputs = {
+                string value = "outputs:"
+                string doc = """The prefix on UsdShadeShader attributes
+                denoting an output.
+                """
+            }
+            dictionary interface = {
+                string value = "interface:"
+                string doc = """The prefix on UsdShadeSubgraph attributes 
+                denoting an interface attribute.
+                """
+            }
+            dictionary interfaceRecipientsOf = {
+                string value = "interfaceRecipientsOf:"
+                string doc = """The prefix on UsdShadeSubgraph relationships
+                denoting the target of an interface attribute.
+                """
+            }
+        }
     }
 )
 {
@@ -32,7 +98,7 @@ class Subgraph "Subgraph" (
     inherits = </Typed>
     doc = """A subgraph is a container for shading nodes, as well as other 
     subgraphs. It has a public input interface and provides a list of public 
-    outputs, called terminals.
+    outputs.
 
     <b>Subgraph Interfaces</b>
     
@@ -42,10 +108,10 @@ class Subgraph "Subgraph" (
     explanation of what the interface provides, and how to construct and
     use it to effectively share/instance shader networks.
 
-    <b>Terminals</b>
+    <b>Subgraph Outputs</b>
 
-    Analogous to the public interface, these are relationships that each point 
-    to a single internal shader output.
+    These behave like outputs on a shader and are typically connected to an 
+    output on a shader inside the subgraph.
     """
     customData = {
         string extraIncludes = """
@@ -54,6 +120,7 @@ class Subgraph "Subgraph" (
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/output.h"
 """
     }
 ) {
@@ -191,6 +258,7 @@ class Shader "Shader" (
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/output.h"
     """
     }
 ) {
@@ -207,3 +275,18 @@ class Shader "Shader" (
     )
 }
 
+class "ConnectableAPI"
+(
+    doc = """UsdShadeConnectableAPI is an API schema that provides a common
+    interface for creating outputs and making connections between shading 
+    parameters and outputs.
+    """ 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/subgraph.h"
+    """
+    }
+)
+{
+}

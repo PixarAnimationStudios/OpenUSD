@@ -21,10 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/sdf/valueTypePrivate.h"
+
 #include <boost/functional/hash.hpp>
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -53,10 +58,10 @@ SdfTupleDimensions::operator==(const SdfTupleDimensions& rhs) const
     if (size != rhs.size) {
         return false;
     }
-    if (size >= 1 and d[0] != rhs.d[0]) {
+    if (size >= 1 && d[0] != rhs.d[0]) {
         return false;
     }
-    if (size >= 2 and d[1] != rhs.d[1]) {
+    if (size >= 2 && d[1] != rhs.d[1]) {
         return false;
     }
     return true;
@@ -123,13 +128,13 @@ SdfValueTypeName::GetArrayType() const
 bool
 SdfValueTypeName::IsScalar() const
 {
-    return *this and _impl == _impl->scalar;
+    return *this && _impl == _impl->scalar;
 }
 
 bool
 SdfValueTypeName::IsArray() const
 {
-    return *this and _impl == _impl->array;
+    return *this && _impl == _impl->array;
 }
 
 SdfTupleDimensions
@@ -145,7 +150,7 @@ SdfValueTypeName::operator==(const SdfValueTypeName& rhs) const
     // equivalent type names from different registries compare
     // equal. The registry ensures that type and role are
     // the only things we need to look at here.
-    return (_impl->type->type == rhs._impl->type->type and
+    return (_impl->type->type == rhs._impl->type->type && 
             _impl->type->role == rhs._impl->type->role);
 }
 
@@ -188,3 +193,5 @@ operator<<(std::ostream& s, const SdfValueTypeName& typeName)
 {
     return s << typeName.GetAsToken().GetString();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

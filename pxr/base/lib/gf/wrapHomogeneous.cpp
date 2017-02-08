@@ -23,11 +23,12 @@
 //
 #include <boost/python/def.hpp>
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/homogeneous.h"
 
 using namespace boost::python;
 
-
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapHomogeneous()
 {    
@@ -40,3 +41,5 @@ void wrapHomogeneous()
     def("Project", (GfVec3d (*)(const GfVec4d &)) GfProject);
     def("Project", (GfVec3f (*)(const GfVec4f &)) GfProject);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

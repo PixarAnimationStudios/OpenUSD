@@ -28,10 +28,13 @@
 /// \ingroup group_arch_Diagnostics
 /// Low-level fatal error reporting.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/functionLite.h"
 #include <stddef.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Print message to standard error and abort program.
 ///
@@ -79,5 +82,7 @@ void Arch_Warning(const char* msg, const char* funcName,
 #define ARCH_AXIOM(cond)   if (!(cond)) ARCH_ERROR("[" #cond "] axiom failed")
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_ERROR_H

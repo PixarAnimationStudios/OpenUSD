@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_REFENGINE_H
-#define USDIMAGING_REFENGINE_H
+#ifndef USDIMAGINGGL_REFENGINE_H
+#define USDIMAGINGGL_REFENGINE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/garch/gl.h"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
@@ -35,6 +36,9 @@
 
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_PTRS(UsdImagingGLRefEngine);
 
@@ -222,4 +226,7 @@ private:
     TfNotice::Key _objectsChangedNoticeKey;
 };
 
-#endif // USDIMAGING_REFENGINE_H
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // USDIMAGINGGL_REFENGINE_H

@@ -27,13 +27,18 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdPersistentBuffer::HdPersistentBuffer(
     TfToken const &role, size_t dataSize, void* data)
     : HdResource(role)
     , _mappedAddress(0)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
 
@@ -73,3 +78,6 @@ HdPersistentBuffer::~HdPersistentBuffer()
     glDeleteBuffers(1, &id);
     SetAllocation(0, 0);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

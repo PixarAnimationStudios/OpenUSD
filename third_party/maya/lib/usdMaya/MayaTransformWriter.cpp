@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/util.h"
 
@@ -32,6 +33,9 @@
 #include <maya/MFnTransform.h>
 #include <maya/MPoint.h>
 #include <maya/MMatrix.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 template <typename GfVec3_T>
 static void
@@ -130,8 +134,8 @@ computeXFormOps(
         //
         // This to make sure static channels are setting their default while
         // animating ones are actually animating
-        if ((usdTime == UsdTimeCode::Default() and hasStatic and not hasAnimated) or
-            (usdTime != UsdTimeCode::Default() and hasAnimated)) {
+        if ((usdTime == UsdTimeCode::Default() && hasStatic && !hasAnimated) ||
+            (usdTime != UsdTimeCode::Default() && hasAnimated)) {
             setXformOp(xformops[channelIdx], value, usdTime);
         }
     }
@@ -188,12 +192,12 @@ _GatherAnimChannel(
         // If we allow animation and either the parentsample or local sample is
         // not 0 then we havea ANIMATED sample else we have a scale and the
         // value is NOT 1 or if the value is NOT 0 then we have a static xform
-        if ((parentSample != 0 or PxrUsdMayaUtil::getSampledType(chan.plug[i], true) != 0) and
+        if ((parentSample != 0 || PxrUsdMayaUtil::getSampledType(chan.plug[i], true) != 0) && 
              isWritingAnimation) {
             chan.sampleType[i] = ANIMATED; 
             validComponents++;
         } 
-        else if (not GfIsClose(chan.defValue[i], nullValue[i], 1e-7)) {
+        else if (!GfIsClose(chan.defValue[i], nullValue[i], 1e-7)) {
             chan.sampleType[i] = STATIC; 
             validComponents++;
         }
@@ -277,8 +281,8 @@ void MayaTransformWriter::pushTransformStack(
     
     // Check if the Maya prim inheritTransform
     MPlug inheritPlug = iTrans.findPlug("inheritsTransform");
-    if (not inheritPlug.isNull()) {
-        if(not inheritPlug.asBool()) {
+    if (!inheritPlug.isNull()) {
+        if(!inheritPlug.asBool()) {
             usdXformable.SetResetXformStack(true);
         }
     }
@@ -351,26 +355,26 @@ void MayaTransformWriter::pushTransformStack(
         conformsToCommonAPI = false;
     }
 
-    if (conformsToCommonAPI and hasRotatePivot and hasScalePivot) {
+    if (conformsToCommonAPI && hasRotatePivot && hasScalePivot) {
         AnimChannel rotPivChan, scalePivChan;
         rotPivChan = mAnimChanList[rotPivotIdx];
         scalePivChan = mAnimChanList[scalePivotIdx];
         // If they have different sampleType or are ANIMATED, does not conformsToCommonAPI anymore
         for (unsigned int i = 0;i<3;i++) {
-            if (rotPivChan.sampleType[i] != scalePivChan.sampleType[i] or 
+            if (rotPivChan.sampleType[i] != scalePivChan.sampleType[i] ||
                     rotPivChan.sampleType[i] == ANIMATED) {
                 conformsToCommonAPI = false;
             }
         }
 
         // If The defaultValue is not the same, does not conformsToCommonAPI anymore
-        if (not GfIsClose(rotPivChan.defValue, scalePivChan.defValue, 1e-9)) {
+        if (!GfIsClose(rotPivChan.defValue, scalePivChan.defValue, 1e-9)) {
             conformsToCommonAPI = false;
         }
 
         // If opType, usdType or precision are not the same, does not conformsToCommonAPI anymore
-        if (rotPivChan.opType != scalePivChan.opType or 
-                rotPivChan.usdOpType != scalePivChan.usdOpType or 
+        if (rotPivChan.opType != scalePivChan.opType           || 
+                rotPivChan.usdOpType != scalePivChan.usdOpType || 
                 rotPivChan.precision != scalePivChan.precision) {
             conformsToCommonAPI = false;
         }
@@ -481,4 +485,7 @@ bool MayaTransformWriter::writeTransformAttrs(
     computeXFormOps(xformSchema, mAnimChanList, usdTime);
     return true;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -24,6 +24,7 @@
 #ifndef HD_CODE_GEN_H
 #define HD_CODE_GEN_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/resourceBinder.h"
@@ -34,9 +35,12 @@
 #include <vector>
 #include <sstream>
 
-typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderPtr;
-typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
+typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
 
 /// \class Hd_CodeGen
 ///
@@ -50,7 +54,7 @@ public:
 
     /// Constructor.
     Hd_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
-               HdShaderSharedPtrVector const &shaders);
+               HdShaderCodeSharedPtrVector const &shaders);
 
     /// Return the hash value of glsl shader to be generated.
     ID ComputeHash() const;
@@ -88,7 +92,7 @@ private:
 
     Hd_ResourceBinder::MetaData _metaData;
     Hd_GeometricShaderPtr _geometricShader;
-    HdShaderSharedPtrVector _shaders;
+    HdShaderCodeSharedPtrVector _shaders;
 
     // source buckets
     std::stringstream _genCommon, _genVS, _genTCS, _genTES, _genGS, _genFS;
@@ -102,5 +106,8 @@ private:
     std::string _fsSource;
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_CODE_GEN_H

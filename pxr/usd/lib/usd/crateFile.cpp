@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "crateFile.h"
 
 #include "pxr/base/arch/demangle.h"
@@ -77,6 +78,8 @@
 #include <tuple>
 #include <type_traits>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
 }
@@ -121,6 +124,11 @@ struct _IsBitwiseReadWrite {
 
 namespace {
 
+// We use type char and a deleter for char[] instead of just using
+// type char[] due to a (now fixed) bug in libc++ in LLVM.  See
+// https://llvm.org/bugs/show_bug.cgi?id=18350.
+typedef std::unique_ptr<char, std::default_delete<char[]> > RawDataPtr;
+
 using namespace Usd_CrateFile;
 
 // To add a new section, add a name here and add that name to _KnownSections
@@ -140,11 +148,11 @@ constexpr _SectionName _KnownSections[] = {
 template <class T>
 constexpr bool _IsInlinedType() {
     using std::is_same;
-    return is_same<T, string>::value or
-        is_same<T, TfToken>::value or
-        is_same<T, SdfPath>::value or
-        is_same<T, SdfAssetPath>::value or
-        (sizeof(T) <= sizeof(uint32_t) and _IsBitwiseReadWrite<T>::value);
+    return is_same<T, string>::value    ||
+        is_same<T, TfToken>::value      ||
+        is_same<T, SdfPath>::value      ||
+        is_same<T, SdfAssetPath>::value ||
+        (sizeof(T) <= sizeof(uint32_t)  && _IsBitwiseReadWrite<T>::value);
 }
 
 template <class T>
@@ -430,7 +438,7 @@ public:
         _Buffer(_Buffer &&) = default;
         _Buffer &operator=(_Buffer &&) = default;
 
-        unique_ptr<char []> bytes { new char[BufferCap] };
+        RawDataPtr bytes { new char[BufferCap] };
         int64_t size = 0;
     };
 
@@ -583,7 +591,7 @@ struct CrateFile::_PackingContext
         // Read in any unknown sections so we can rewrite them later.
         wd.Run([this, crate]() {
                 for (auto const &sec: crate->_toc.sections) {
-                    if (not _IsKnownSection(sec.name)) {
+                    if (!_IsKnownSection(sec.name)) {
                         unknownSections.emplace_back(
                             sec.name, _ReadSectionBytes(sec, crate), sec.size);
                     }
@@ -639,9 +647,9 @@ struct CrateFile::_PackingContext
 
     // Read the bytes of some unknown section into memory so we can rewrite them
     // out later (to preserve it).
-    unique_ptr<char[]>
+    RawDataPtr
     _ReadSectionBytes(_Section const &sec, CrateFile *crate) const {
-        unique_ptr<char[]> result(new char[sec.size]);
+        RawDataPtr result(new char[sec.size]);
         crate->_ReadRawBytes(sec.start, sec.size, result.get());
         return result;
     }
@@ -657,7 +665,7 @@ struct CrateFile::_PackingContext
                   FieldSetIndex, _Hasher> fieldsToFieldSetIndex;
     
     // Unknown sections we're moving to the new structural area.
-    vector<tuple<string, unique_ptr<char[]>, size_t>> unknownSections;
+    vector<tuple<string, RawDataPtr, size_t>> unknownSections;
 
     // Filename we're writing to.
     std::string fileName;
@@ -894,7 +902,7 @@ public:
     }
 
     template <class T>
-    typename std::enable_if<not _IsBitwiseReadWrite<T>::value>::type
+    typename std::enable_if<!_IsBitwiseReadWrite<T>::value>::type
     ReadContiguous(T *values, size_t sz) {
         std::for_each(values, values + sz, [this](T &v) { v = Read<T>(); });
     }
@@ -1061,7 +1069,7 @@ public:
     }
 
     template <class T>
-    typename std::enable_if<not _IsBitwiseReadWrite<T>::value>::type
+    typename std::enable_if<!_IsBitwiseReadWrite<T>::value>::type
     WriteContiguous(T const *values, size_t sz) {
         std::for_each(values, values + sz, [this](T const &v) { Write(v); });
     }
@@ -1092,7 +1100,7 @@ struct CrateFile::_ScalarValueHandlerBase : _ValueHandlerBase
         }
 
         // Otherwise dedup and/or write...
-        if (not _valueDedup) {
+        if (!_valueDedup) {
             _valueDedup.reset(
                 new typename decltype(_valueDedup)::element_type);
         }
@@ -1170,7 +1178,7 @@ struct CrateFile::_ArrayValueHandlerBase<
         if (array.empty())
             return result;
 
-        if (not _arrayDedup) {
+        if (!_arrayDedup) {
             _arrayDedup.reset(
                 new typename decltype(_arrayDedup)::element_type);
         }
@@ -1240,7 +1248,7 @@ CrateFile::CanRead(string const &fileName) {
     // Create a unique_ptr with a functor that fclose()s for a deleter.
     _UniqueFILE in(fopen(fileName.c_str(), "rb"));
 
-    if (not in)
+    if (!in)
         return false;
 
     TfErrorMark m;
@@ -1248,14 +1256,14 @@ CrateFile::CanRead(string const &fileName) {
 
     // Clear any issued errors again to avoid propagation, and return true if
     // there were no errors issued.
-    return not m.Clear();
+    return !m.Clear();
 }
 
 /* static */
 std::unique_ptr<CrateFile>
 CrateFile::CreateNew()
 {
-    bool useMmap = not TfGetenvBool("USDC_USE_PREAD", false);
+    bool useMmap = !TfGetenvBool("USDC_USE_PREAD", false);
     return std::unique_ptr<CrateFile>(new CrateFile(useMmap));
 }
 
@@ -1264,7 +1272,7 @@ ArchConstFileMapping
 CrateFile::_MmapFile(char const *fileName, FILE *file)
 {
     ArchConstFileMapping map = ArchMapFileReadOnly(file);
-    if (not map)
+    if (!map)
         TF_RUNTIME_ERROR("Couldn't map file '%s'", fileName);
     return map;
 }
@@ -1280,13 +1288,13 @@ CrateFile::Open(string const &fileName)
     // Create a unique_ptr with a functor that fclose()s for a deleter.
     _UniqueFILE inputFile(fopen(fileName.c_str(), "rb"));
 
-    if (not inputFile) {
+    if (!inputFile) {
         TF_RUNTIME_ERROR("Failed to open file '%s'", fileName.c_str());
         return result;
     }
 
     auto fileSize = ArchGetFileLength(inputFile.get());
-    if (not TfGetenvBool("USDC_USE_PREAD", false)) {
+    if (!TfGetenvBool("USDC_USE_PREAD", false)) {
         // Map the file.
         auto mapStart = _MmapFile(fileName.c_str(), inputFile.get());
         result.reset(new CrateFile(fileName, std::move(mapStart), fileSize));
@@ -1336,7 +1344,7 @@ CrateFile::CrateFile(
         auto reader = _MakeReader(_MmapStream(_mapStart.get()));
         TfErrorMark m;
         _ReadStructuralSections(reader, fileSize);
-        if (not m.IsClean())
+        if (!m.IsClean())
             _fileName.clear();
     } else {
         _fileName.clear();
@@ -1354,7 +1362,7 @@ CrateFile::CrateFile(
     auto reader = _MakeReader(_PreadStream(_inputFile.get()));
     TfErrorMark m;
     _ReadStructuralSections(reader, fileSize);
-    if (not m.IsClean())
+    if (!m.IsClean())
         _fileName.clear();
 }
 
@@ -1366,11 +1374,11 @@ CrateFile::~CrateFile()
 CrateFile::Packer
 CrateFile::StartPacking(string const &fileName)
 {
-    TF_VERIFY(_fileName.empty() or _fileName == fileName);
+    TF_VERIFY(_fileName.empty() || _fileName == fileName);
     // We open the file for read/write (update) here in case we already have the
     // file, since we're not rewriting the whole thing.
     _UniqueFILE out(fopen(fileName.c_str(), _fileName.empty() ? "w+b" : "r+b"));
-    if (not out) {
+    if (!out) {
         TF_RUNTIME_ERROR("Failed to open '%s' for writing", fileName.c_str());
     } else {
         // Create a packing context so we can start writing.
@@ -1383,13 +1391,13 @@ CrateFile::StartPacking(string const &fileName)
 }
 
 CrateFile::Packer::operator bool() const {
-    return _crate and _crate->_packCtx;
+    return _crate && _crate->_packCtx;
 }
 
 bool
 CrateFile::Packer::Close()
 {
-    if (not TF_VERIFY(_crate))
+    if (!TF_VERIFY(_crate))
         return false;
 
     if (FILE *fp = _crate->_packCtx->GetFile()) {
@@ -1405,7 +1413,7 @@ CrateFile::Packer::Close()
         _UniqueFILE file(fp);
         _crate->_packCtx.reset();
 
-        if (not writeResult)
+        if (!writeResult)
             return false;
 
         // Reset the mapping or file so we can read values from the newly
@@ -1414,7 +1422,7 @@ CrateFile::Packer::Close()
             // Must remap the file.
             _crate->_mapStart =
                 _MmapFile(_crate->_fileName.c_str(), file.get());
-            if (not _crate->_mapStart)
+            if (!_crate->_mapStart)
                 return false;
         } else {
             // Must adopt the file handle if we don't already have one.
@@ -1745,10 +1753,10 @@ CrateFile::_WritePathTree(_Writer &w, Iter cur, Iter end)
         Iter nextSubtree = cur.GetNextSubtree();
         ++next;
 
-        bool hasChild = next != nextSubtree and
+        bool hasChild = next != nextSubtree &&
             next->first.GetParentPath() == cur->first;
 
-        bool hasSibling = nextSubtree != end and
+        bool hasSibling = nextSubtree != end &&
             nextSubtree->first.GetParentPath() == cur->first.GetParentPath();
 
         bool isPrimPropertyPath = cur->first.IsPrimPropertyPath();
@@ -1781,7 +1789,7 @@ CrateFile::_WritePathTree(_Writer &w, Iter cur, Iter end)
         // If there's both a child and a sibling, make space for the sibling
         // offset.
         int64_t siblingPtrOffset = -1;
-        if (hasSibling and hasChild) {
+        if (hasSibling && hasChild) {
             siblingPtrOffset = w.Tell();
             // Temporarily write a bogus value just to make space.
             w.WriteAs<int64_t>(-1);
@@ -1792,14 +1800,14 @@ CrateFile::_WritePathTree(_Writer &w, Iter cur, Iter end)
 
         // If we have a sibling, then fill in the offset that it will be
         // written at (it will be written next).
-        if (hasSibling and hasChild) {
+        if (hasSibling && hasChild) {
             int64_t cur = w.Tell();
             w.Seek(siblingPtrOffset);
             w.Write(cur);
             w.Seek(cur);
         }
 
-        if (not hasSibling)
+        if (!hasSibling)
             return next;
     }
     return end;
@@ -1947,7 +1955,7 @@ CrateFile::_ReadTokens(Reader reader)
     TfAutoMallocTag tag("_ReadTokens");
 
     auto tokensSection = _toc.GetSection(_TokensSectionName);
-    if (not tokensSection)
+    if (!tokensSection)
         return;
 
     reader.Seek(tokensSection->start);
@@ -1960,7 +1968,7 @@ CrateFile::_ReadTokens(Reader reader)
     // can just construct from the chars directly.
     auto tokensNumBytes = reader.template Read<uint64_t>();
 
-    std::unique_ptr<char[]> chars(new char[tokensNumBytes]);
+    RawDataPtr chars(new char[tokensNumBytes]);
     reader.ReadContiguous(chars.get(), tokensNumBytes);
 
     // Now we read that many null-terminated strings into _tokens.
@@ -1992,7 +2000,7 @@ CrateFile::_ReadPaths(Reader reader)
     TfAutoMallocTag tag("_ReadPaths");
 
     auto pathsSection = _toc.GetSection(_PathsSectionName);
-    if (not pathsSection)
+    if (!pathsSection)
         return;
 
     reader.Seek(pathsSection->start);
@@ -2020,7 +2028,7 @@ CrateFile::_ReadPaths(Reader reader)
     // Should never have a sibling on the root.  XXX: probably not true with
     // relative paths.
     auto siblingOffset =
-        (hasChild and hasSibling) ? reader.template Read<int64_t>() : 0;
+        (hasChild && hasSibling) ? reader.template Read<int64_t>() : 0;
 
     WorkArenaDispatcher dispatcher;
 
@@ -2043,7 +2051,7 @@ CrateFile::_ReadPaths(Reader reader)
     }
 
     if (root.bits & _PathItemHeader::HasSiblingBit) {
-        if (hasChild and hasSibling)
+        if (hasChild && hasSibling)
             reader.Seek(siblingOffset);
         if (fileVer == Version(0,0,1)) {
             auto siblingHeader = reader.template Read<_PathItemHeader_0_0_1>();
@@ -2091,7 +2099,7 @@ CrateFile::_ReadPathsRecursively(Reader reader,
 
     // If this one has a sibling, read out the pointer.
     auto siblingOffset =
-        (hasSibling and hasChild) ? reader.template Read<int64_t>() : 0;
+        (hasSibling && hasChild) ? reader.template Read<int64_t>() : 0;
 
     // If we have either a child or a sibling but not both, then just continue
     // to the neighbor.  If we have both then spawn a task for the sibling and
@@ -2214,7 +2222,7 @@ TokenIndex
 CrateFile::_GetIndexForToken(const TfToken &token) const
 {
     auto iter = _packCtx->tokenToTokenIndex.find(token);
-    if (not TF_VERIFY(iter != _packCtx->tokenToTokenIndex.end()))
+    if (!TF_VERIFY(iter != _packCtx->tokenToTokenIndex.end()))
         return TokenIndex();
     return iter->second;
 }
@@ -2269,7 +2277,7 @@ CrateFile::_PackValue(VtValue const &v)
     // from the file, we can return its held rep and continue.
     if (v.IsHolding<TimeSamples>()) {
         auto const &ts = v.UncheckedGet<TimeSamples>();
-        if (not ts.IsInMemory())
+        if (!ts.IsInMemory())
             return ts.valueRep;
     }
 
@@ -2314,7 +2322,7 @@ void
 CrateFile::_UnpackValue(ValueRep rep, VtValue *result) const {
     // Look up the function for the type enum, and invoke it.
     auto repType = rep.GetType();
-    if (repType == TypeEnum::Invalid or repType >= TypeEnum::NumTypes) {
+    if (repType == TypeEnum::Invalid || repType >= TypeEnum::NumTypes) {
         TF_CODING_ERROR("Attempted to unpack unsupported type enum value %d",
                         static_cast<int>(repType));
         return;
@@ -2333,7 +2341,7 @@ struct _EnumToTfTypeTablePopulater {
     static void _Set(Table &table, TypeEnum typeEnum) {
         auto index = static_cast<int>(typeEnum);
         auto tfType = TfType::Find<T>();
-        TF_VERIFY(not tfType.IsUnknown(),
+        TF_VERIFY(!tfType.IsUnknown(),
                   "%s not registered with TfType",
                   ArchGetDemangled<T>().c_str());
         table[index] = tfType;
@@ -2341,7 +2349,7 @@ struct _EnumToTfTypeTablePopulater {
 
     template <class T, class Table>
     static typename
-    std::enable_if<not ValueTypeTraits<T>::supportsArray>::type
+    std::enable_if<!ValueTypeTraits<T>::supportsArray>::type
     Populate(Table &scalarTable, Table &) {
         _Set<T>(scalarTable, TypeEnumFor<T>());
     }
@@ -2389,7 +2397,9 @@ CrateFile::_DoAllTypeRegistrations() {
     TfAutoMallocTag tag("Usd_CrateFile::CrateFile::_DoAllTypeRegistrations");
 #define xx(_unused1, _unused2, CPPTYPE, _unused3)       \
     _DoTypeRegistration<CPPTYPE>();
+
 #include "crateDataTypes.h"
+
 #undef xx
 }
 
@@ -2398,7 +2408,9 @@ CrateFile::_DeleteValueHandlers() {
 #define xx(_unused1, _unused2, T, _unused3)                                    \
     delete static_cast<_ValueHandler<T> *>(                                    \
         _valueHandlers[static_cast<int>(TypeEnumFor<T>())]);
+
 #include "crateDataTypes.h"
+
 #undef xx
 }
 
@@ -2475,4 +2487,6 @@ static_assert(sizeof(_PathItemHeader_0_0_1) == 16, "");
 } // Usd_CrateFile
 
 
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

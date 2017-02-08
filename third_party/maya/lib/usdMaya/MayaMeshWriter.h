@@ -24,11 +24,15 @@
 #ifndef PXRUSDMAYA_MAYAMESHWRITER_H
 #define PXRUSDMAYA_MAYAMESHWRITER_H
 
+#include "pxr/pxr.h"
 #include "usdMaya/MayaTransformWriter.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MFnMesh.h>
 #include <maya/MString.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdGeomMesh;
 class UsdGeomGprim;
@@ -138,5 +142,8 @@ class MayaMeshWriter : public MayaTransformWriter
 };
 
 typedef shared_ptr < MayaMeshWriter > MayaMeshWriterPtr;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // PXRUSDMAYA_MAYAMESHWRITER_H

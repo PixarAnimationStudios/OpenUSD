@@ -34,6 +34,9 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // Custom factory to handle UVTexture and ArrayTexture for same types.
 class Glf_UVTextureFactory : public GlfTextureFactoryBase {
 public:
@@ -147,3 +150,6 @@ GlfUVTexture::_GetImageFilePath() const
 {
     return _imageFilePath;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

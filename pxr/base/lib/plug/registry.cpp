@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/plug/registry.h"
 
 #include "pxr/base/plug/notice.h"
@@ -44,6 +46,8 @@
 using std::pair;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON( PlugRegistry );
 
@@ -125,7 +129,7 @@ PlugPluginPtrVector
 PlugRegistry::RegisterPlugins(const std::vector<std::string> & pathsToPlugInfo)
 {
     PlugPluginPtrVector result = _RegisterPlugins(pathsToPlugInfo);
-    if (not result.empty()) {
+    if (!result.empty()) {
         PlugNotice::DidRegisterPlugins(result).Send(TfCreateWeakPtr(this));
     }
     return result;
@@ -152,7 +156,7 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo)
                           _dispatcher.get());
     }
 
-    if (not newPlugins.empty()) {
+    if (!newPlugins.empty()) {
         PlugPluginPtrVector v(newPlugins.begin(), newPlugins.end());
         for (const auto& plug : v) {
             plug->_DeclareTypes();
@@ -271,7 +275,7 @@ PlugPlugin::_RegisterAllPlugins()
 
     // Send a notice outside of the call_once.  We don't want to be holding
     // a lock (even an implicit one) when sending a notice.
-    if (not result.empty()) {
+    if (!result.empty()) {
         PlugNotice::DidRegisterPlugins(result).Send(
             TfCreateWeakPtr(&PlugRegistry::GetInstance()));
     }
@@ -281,3 +285,5 @@ TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<PlugRegistry>();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

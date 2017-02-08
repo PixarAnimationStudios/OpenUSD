@@ -24,6 +24,7 @@
 #ifndef HD_BUFFER_RESOURCE_H
 #define HD_BUFFER_RESOURCE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/conversions.h"
@@ -33,6 +34,9 @@
 #include <boost/shared_ptr.hpp>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdBufferResource;
 
@@ -102,5 +106,8 @@ private:
     uint64_t _gpuAddr;
     GLuint _texId;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_BUFFER_RESOURCE_H

@@ -24,11 +24,15 @@
 #ifndef USD_WRAPUTILS_H
 #define USD_WRAPUTILS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/object.h"
 
 #include <boost/python/def_visitor.hpp>
 #include <boost/python/type_id.hpp>
 #include <boost/python/converter/to_python_function_type.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // This boost.python def_visitor is used to wrap UsdObject and its subclasses.
 // It replaces boost.python's to_python converter with one that downcasts to the
@@ -78,5 +82,8 @@ private:
     // Non-template helper function for _Convert.
     static PyObject *_ConvertHelper(const UsdObject *obj);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_WRAPUTILS_H

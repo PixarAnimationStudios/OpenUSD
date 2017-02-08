@@ -22,41 +22,45 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/basisCurvesTopology.h"
-#include "pxr/imaging/hd/basisCurvesComputations.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 HdBasisCurvesTopology::HdBasisCurvesTopology()
-    : _curveType(HdTokens->linear)
-    , _curveBasis(HdTokens->bezier)
-    , _curveWrap(HdTokens->nonperiodic)
-    , _curveVertexCounts()
-    , _curveIndices()
+  : HdTopology()
+  , _curveType(HdTokens->linear)
+  , _curveBasis(HdTokens->bezier)
+  , _curveWrap(HdTokens->nonperiodic)
+  , _curveVertexCounts()
+  , _curveIndices()
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
 }
 
 HdBasisCurvesTopology::HdBasisCurvesTopology(const HdBasisCurvesTopology& src)
-    : _curveType(src._curveType)
-    , _curveBasis(src._curveBasis)
-    , _curveWrap(src._curveWrap)
-    , _curveVertexCounts(src._curveVertexCounts)
-    , _curveIndices(src._curveIndices)
+  : HdTopology(src)
+  , _curveType(src._curveType)
+  , _curveBasis(src._curveBasis)
+  , _curveWrap(src._curveWrap)
+  , _curveVertexCounts(src._curveVertexCounts)
+  , _curveIndices(src._curveIndices)
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
 }
 
-HdBasisCurvesTopology::HdBasisCurvesTopology(TfToken curveType,
-                                             TfToken curveBasis,
-                                             TfToken curveWrap,
+HdBasisCurvesTopology::HdBasisCurvesTopology(const TfToken &curveType,
+                                             const TfToken &curveBasis,
+                                             const TfToken &curveWrap,
                                              const VtIntArray &curveVertexCounts,
                                              const VtIntArray &curveIndices)
-    : _curveType(curveType)
-    , _curveBasis(curveBasis)
-    , _curveWrap(curveWrap)
-    , _curveVertexCounts(curveVertexCounts)
-    , _curveIndices(curveIndices)
+  : HdTopology()
+  , _curveType(curveType)
+  , _curveBasis(curveBasis)
+  , _curveWrap(curveWrap)
+  , _curveVertexCounts(curveVertexCounts)
+  , _curveIndices(curveIndices)
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
 }
@@ -72,10 +76,10 @@ HdBasisCurvesTopology::operator==(HdBasisCurvesTopology const &other) const
     HD_TRACE_FUNCTION();
 
     // no need to compare _adajency and _quadInfo
-    return (_curveType == other._curveType and
-            _curveBasis == other._curveBasis and
-            _curveWrap == other._curveWrap and
-            _curveVertexCounts == other._curveVertexCounts and
+    return (_curveType == other._curveType                  &&
+            _curveBasis == other._curveBasis                &&
+            _curveWrap == other._curveWrap                  &&
+            _curveVertexCounts == other._curveVertexCounts  &&
             _curveIndices == other._curveIndices);
 }
 
@@ -111,13 +115,6 @@ operator << (std::ostream &out, HdBasisCurvesTopology const &topo)
         topo.GetCurveVertexCounts() << "), (" <<
         topo.GetCurveIndices() << "))";
     return out;
-}
-
-HdBufferSourceSharedPtr
-HdBasisCurvesTopology::GetIndexBuilderComputation(bool supportSmoothCurves)
-{
-    return HdBufferSourceSharedPtr(
-        new Hd_BasisCurvesIndexBuilderComputation(this, supportSmoothCurves));
 }
 
 size_t
@@ -171,3 +168,6 @@ HdBasisCurvesTopology::CalculateNeededNumberOfVaryingControlPoints() const
 
     return numVerts;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

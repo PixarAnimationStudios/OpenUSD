@@ -24,6 +24,7 @@
 ///
 /// \file Tf/AtomicOfstreamWrapper.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
 
 #include "pxr/base/arch/fileSystem.h"
@@ -36,6 +37,8 @@
 #include <iostream>
 #include <cerrno>
 #include <cstdio>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 using std::string;
 
@@ -138,7 +141,7 @@ TfAtomicOfstreamWrapper::Open(
 
     _stream.open(_tmpFilePath.c_str(),
         std::fstream::out|std::fstream::binary|std::fstream::trunc);
-    if (not _stream) {
+    if (!_stream) {
         if (reason) {
             *reason = TfStringPrintf(
                 "Unable to open '%s' for writing",
@@ -154,7 +157,7 @@ bool
 TfAtomicOfstreamWrapper::Commit(
     string* reason)
 {
-    if (not _stream.is_open()) {
+    if (!_stream.is_open()) {
         if (reason) {
             *reason = "Stream is not open";
         }
@@ -207,7 +210,7 @@ bool
 TfAtomicOfstreamWrapper::Cancel(
     string* reason)
 {
-    if (not _stream.is_open()) {
+    if (!_stream.is_open()) {
         if (reason) {
             *reason = "Buffer is not open";
         }
@@ -234,3 +237,4 @@ TfAtomicOfstreamWrapper::Cancel(
     return success;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

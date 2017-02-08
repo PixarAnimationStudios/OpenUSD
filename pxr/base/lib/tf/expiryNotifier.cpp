@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/expiryNotifier.h"
 #include "pxr/base/tf/diagnostic.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void (*Tf_ExpiryNotifier::_func)(void const *) = 0;
 void (*Tf_ExpiryNotifier::_func2)(void const *) = 0;
@@ -55,3 +59,4 @@ void Tf_ExpiryNotifier::SetNotifier2(void (*func)(void const *))
     _func2 = func;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

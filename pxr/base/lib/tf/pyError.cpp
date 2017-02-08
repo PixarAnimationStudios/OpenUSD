@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
@@ -38,6 +41,8 @@
 using namespace boost::python;
 using std::vector;
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m) {
     // If there is a python exception somewhere in here, restore that, otherwise
@@ -110,3 +115,5 @@ TfPyConvertPythonExceptionToTfErrors()
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

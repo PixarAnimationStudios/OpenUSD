@@ -26,8 +26,11 @@
 
 /// \file tf/diagnosticNotice.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/diagnosticBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfWarning;
 class TfStatus;
@@ -132,4 +135,6 @@ private:
     static bool _stderrOutputState;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_DIAGNOSTIC_NOTICE_H

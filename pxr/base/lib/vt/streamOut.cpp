@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -31,6 +33,8 @@
 #include <double-conversion/utils.h>
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 std::ostream &
 Vt_StreamOutGeneric(std::type_info const &type,
@@ -73,7 +77,7 @@ _GetDoubleToStringConverter() {
                   "nan",
                   'e',
                   /* decimal_in_shortest_low */ -6,
-                  /* deciaml_in_shortest_high */ 21,
+                  /* decimal_in_shortest_high */ 15,
                   /* max_leading_padding_zeroes_in_precision_mode */ 0,
                   /* max_trailing_padding_zeroes_in_precision_mode */ 0);
     return converter;
@@ -146,3 +150,5 @@ VtStreamOutArray(
 {
     _vtStreamArray(i, size, reserved, out);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

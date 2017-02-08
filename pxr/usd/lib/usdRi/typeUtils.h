@@ -24,10 +24,17 @@
 #ifndef USDRI_TYPEUTILS_H
 #define USDRI_TYPEUTILS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 std::string UsdRi_GetRiType(const SdfValueTypeName &usdType);
 SdfValueTypeName UsdRi_GetUsdType(const std::string &riType);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDRI_TYPEUTILS_H

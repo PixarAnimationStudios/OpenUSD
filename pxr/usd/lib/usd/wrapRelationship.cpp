@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/wrapUtils.h"
 
@@ -30,6 +31,9 @@
 
 #include <boost/python/class.hpp>
 #include <boost/python/tuple.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 
@@ -70,7 +74,7 @@ void wrapUsdRelationship()
     class_<UsdRelationship, bases<UsdProperty> >("Relationship")
         .def(Usd_ObjectSubclass())
         .def("__repr__", __repr__)
-        .def("AddTarget", &UsdRelationship::AddTarget, arg("target"))
+        .def("AppendTarget", &UsdRelationship::AppendTarget, arg("target"))
         .def("RemoveTarget", &UsdRelationship::RemoveTarget, arg("target"))
         .def("BlockTargets", &UsdRelationship::BlockTargets)
         .def("SetTargets", &UsdRelationship::SetTargets, arg("targets"))
@@ -85,4 +89,7 @@ void wrapUsdRelationship()
         ;
     TfPyRegisterStlSequencesFromPython<UsdRelationship>();
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

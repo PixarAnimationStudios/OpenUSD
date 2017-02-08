@@ -23,7 +23,11 @@
 //
 #include "pxr/imaging/hd/lightingShader.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdLightingShader::HdLightingShader()
+ : HdShaderCode()
 {
     /*NOTHING*/
 }
@@ -32,3 +36,6 @@ HdLightingShader::~HdLightingShader()
 {
     /*NOTHING*/
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

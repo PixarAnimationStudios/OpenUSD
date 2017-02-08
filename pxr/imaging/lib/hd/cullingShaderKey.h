@@ -24,10 +24,14 @@
 #ifndef HD_CULLING_SHADER_KEY_H
 #define HD_CULLING_SHADER_KEY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 struct Hd_CullingShaderKey
 {
@@ -49,5 +53,8 @@ struct Hd_CullingShaderKey
     TfToken glslfx;
     TfToken VS[6];
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_CULLING_SHADER_KEY_H

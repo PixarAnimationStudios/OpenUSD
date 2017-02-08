@@ -26,6 +26,7 @@
 
 /// \file ModelKindWriter.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "usdMaya/JobArgs.h"
@@ -34,6 +35,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// This class encapsulates all of the logic for writing model kinds from
 /// usdWriteJob. It is a "black box" that reads each newly-written prim, one
@@ -94,5 +98,8 @@ private:
             UsdStageRefPtr& stage,
             const SdfPathBoolMap& rootPrimIsComponent);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_MODELKINDWRITER_H

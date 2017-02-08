@@ -21,13 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerStateDelegate.h"
-
 #include "pxr/usd/sdf/layer.h"
-
 #include "pxr/base/tf/staticData.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SdfLayerStateDelegateBase::SdfLayerStateDelegateBase()
 {
@@ -136,6 +138,48 @@ SdfLayerStateDelegateBase::MoveSpec(
 {
     _OnMoveSpec(oldPath, newPath);
     _layer->_PrimMoveSpec(oldPath, newPath, /* useDelegate = */ false);
+}
+
+void 
+SdfLayerStateDelegateBase::PushChild(
+    const SdfPath& parentPath,
+    const TfToken& field,
+    const TfToken& value)
+{
+    _OnPushChild(parentPath, field, value);
+    _layer->_PrimPushChild(parentPath, field, value, /* useDelegate = */ false);
+}
+
+void 
+SdfLayerStateDelegateBase::PushChild(
+    const SdfPath& parentPath,
+    const TfToken& field,
+    const SdfPath& value)
+{
+    _OnPushChild(parentPath, field, value);
+    _layer->_PrimPushChild(parentPath, field, value, /* useDelegate = */ false);
+}
+
+void 
+SdfLayerStateDelegateBase::PopChild(
+    const SdfPath& parentPath,
+    const TfToken& field,
+    const TfToken& oldValue)
+{
+    _OnPopChild(parentPath, field, oldValue);
+    _layer->_PrimPopChild<TfToken>(parentPath, field,
+                                   /* useDelegate = */ false);
+}
+
+void 
+SdfLayerStateDelegateBase::PopChild(
+    const SdfPath& parentPath,
+    const TfToken& field,
+    const SdfPath& oldValue)
+{
+    _OnPopChild(parentPath, field, oldValue);
+    _layer->_PrimPopChild<SdfPath>(parentPath, field,
+                                   /* useDelegate = */ false);
 }
 
 void 
@@ -274,3 +318,41 @@ SdfSimpleLayerStateDelegate::_OnMoveSpec(
 {
     _dirty = true;
 }
+
+void
+SdfSimpleLayerStateDelegate::_OnPushChild(
+    const SdfPath& parentPath,
+    const TfToken& fieldName,
+    const TfToken& value)
+{
+    _dirty = true;
+}
+
+void 
+SdfSimpleLayerStateDelegate::_OnPushChild(
+    const SdfPath& parentPath,
+    const TfToken& fieldName,
+    const SdfPath& value)
+{
+    _dirty = true;
+}
+
+void
+SdfSimpleLayerStateDelegate::_OnPopChild(
+    const SdfPath& parentPath,
+    const TfToken& fieldName,
+    const TfToken& oldValue)
+{
+    _dirty = true;
+}
+
+void 
+SdfSimpleLayerStateDelegate::_OnPopChild(
+    const SdfPath& parentPath,
+    const TfToken& fieldName,
+    const SdfPath& oldValue)
+{
+    _dirty = true;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

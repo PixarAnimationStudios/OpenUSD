@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_DELEGATE_H
 #define USDIMAGING_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
@@ -57,6 +58,9 @@
 #include <tbb/spin_rw_mutex.h>
 #include <map>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_PTRS(UsdImagingDelegate);
 typedef std::vector<UsdPrim> UsdPrimVector;
@@ -404,7 +408,7 @@ private:
     friend class UsdImagingShaderAdapter;
 
     bool _ValidateRefineLevel(int level) {
-        if (not (0 <= level and level <= 8)) {
+        if (!(0 <= level && level <= 8)) {
             TF_CODING_ERROR("Invalid refinement level(%d), "
                             "expected range is [0,8]",
                             level);
@@ -437,7 +441,7 @@ private:
     UsdPrim _GetPrim(SdfPath const& usdPath) {
         UsdPrim const& p = 
                     _stage->GetPrimAtPath(usdPath.GetAbsoluteRootOrPrimPath());
-        if (not TF_VERIFY(p))
+        if (!TF_VERIFY(p))
             TF_CODING_ERROR("No prim found for id: %s", 
                                 usdPath.GetAbsoluteRootOrPrimPath().GetText());
         return p;
@@ -531,6 +535,9 @@ private:
     //
     // This will never return a nullptr.  
     _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
+
+    // Innitialization shared by ctors
+    void _InitializeCollectionsByPurpose(HdChangeTracker &tracker);
 
     // XXX: These maps could be store as individual member paths on the Rprim
     // itself, which seems like a much nicer way of maintaining the mapping.
@@ -702,5 +709,8 @@ private:
     SdfPathVector _instancersToRemove;
     SdfPathVector _depsToRemove;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USDIMAGING_DELEGATE_H

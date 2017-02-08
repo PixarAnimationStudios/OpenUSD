@@ -30,6 +30,9 @@
 #include <boost/python/class.hpp>
 #include <boost/python/overloads.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 
 static GlfUVTextureRefPtr _NewUVTexture(
@@ -66,3 +69,6 @@ void wrapUVTexture()
         ;
 }
     
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

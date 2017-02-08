@@ -26,6 +26,9 @@
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON( GalDelegateRegistry );
 
 GalDelegateRegistry &
@@ -51,3 +54,6 @@ GalDelegateRegistry::GetGalDelegate(const TfToken &delegateId)
 {
     return static_cast<GalDelegate *>(GetDelegate(delegateId));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

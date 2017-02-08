@@ -26,12 +26,16 @@
 
 /// \file glf/arrayTexture.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/uvTexture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfArrayTexture);
 
@@ -97,5 +101,8 @@ private:
     TfTokenVector _imageFilePaths;
     const unsigned int _arraySize;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_ARRAYTEXTURE_H

@@ -23,6 +23,7 @@
 //
 #include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
 
+#include "pxr/pxr.h"
 #include "usdKatana/blindDataObject.h"
 #include "usdKatana/cache.h"
 #include "usdKatana/locks.h"
@@ -52,12 +53,15 @@
 
 FnLogSetup("PxrUsdIn")
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace FnKat = Foundry::Katana;
 
 // convenience macro to report an error.
 #define ERROR(...)\
     interface.setAttr("type", Foundry::Katana::StringAttribute("error"));\
-    interface.setAttr("errorMesssage", Foundry::Katana::StringAttribute(TfStringPrintf(__VA_ARGS__)));
+    interface.setAttr("errorMessage", Foundry::Katana::StringAttribute(\
+        TfStringPrintf(__VA_ARGS__)));
 
 // Give these types some shorter names.
 typedef PxrUsdKatanaUsdInPrivateData::MaterialHierarchy MaterialHierarchy;
@@ -73,8 +77,9 @@ typedef std::shared_ptr<const MaterialHierarchy> MaterialHierarchyPtr;
 // different branches of the scene.
 //
 static void
-_UpdateMaterialHierarchyForChildPrims(const UsdPrim &parentPrim,
-                                      MaterialHierarchyPtr &materials)
+_UpdateMaterialHierarchyForChildPrims(
+        const UsdPrim &parentPrim,
+        MaterialHierarchyPtr &materials)
 {
     const UsdStageWeakPtr stage = parentPrim.GetStage();
 
@@ -85,7 +90,7 @@ _UpdateMaterialHierarchyForChildPrims(const UsdPrim &parentPrim,
     // specialize other materials.
     for (const auto& childPrim : parentPrim.GetChildren()) {
         // If childPrim is not a material, skip it.
-        if (not UsdShadeMaterial(childPrim)) {
+        if (!UsdShadeMaterial(childPrim)) {
             continue;
         }
         // Check if childPrim has an immediate specializes arc,
@@ -105,7 +110,7 @@ _UpdateMaterialHierarchyForChildPrims(const UsdPrim &parentPrim,
                 const SdfPath basePath = node.GetPath();
                 const UsdPrim basePrim = stage->GetPrimAtPath(basePath);
                 // If the base is anything but a material, ignore it.
-                if (not UsdShadeMaterial(basePrim)) {
+                if (!UsdShadeMaterial(basePrim)) {
                     continue;
                 }
                 // The childPrim material derives from the basePrim material.
@@ -158,7 +163,8 @@ public:
 
 
         PxrUsdKatanaUsdInPrivateData* privateData = 
-            static_cast<PxrUsdKatanaUsdInPrivateData*>(interface.getPrivateData());
+            static_cast<PxrUsdKatanaUsdInPrivateData*>(
+                interface.getPrivateData());
 
         FnKat::GroupAttribute opArgs = interface.getOpArg();
         
@@ -175,12 +181,12 @@ public:
                 .build();
         }
         // Validate usdInArgs.
-        if (not usdInArgs) {
+        if (!usdInArgs) {
             ERROR("Could not initialize PxrUsdIn usdInArgs.");
             return;
         }
         
-        if (not usdInArgs->GetErrorMessage().empty())
+        if (!usdInArgs->GetErrorMessage().empty())
         {
             ERROR(usdInArgs->GetErrorMessage().c_str());
             return;
@@ -191,7 +197,7 @@ public:
             ? usdInArgs->GetRootPrim()
             : privateData->GetUsdPrim();
         // Validate usd prim.
-        if (not prim) {
+        if (!prim) {
             ERROR("No prim at %s",
                   interface.getRelativeOutputLocationPath().c_str());
             return;
@@ -211,7 +217,8 @@ public:
 
         // A flag to force the use of default motion samples. This is only set
         // when at root and an isolate path is specified. In this case, we must
-        // check whether the isolated path starts with any of the user-specified
+        // check whether the isolated path starts with any of the 
+        // user-specified
         // paths that should use the default motion sample times.
         //
         bool useDefaultMotion = false;
@@ -219,7 +226,7 @@ public:
         if (interface.atRoot()) {
             interface.stopChildTraversal();
 
-            if (not usdInArgs->GetIsolatePath().empty())
+            if (!usdInArgs->GetIsolatePath().empty())
             {
                 useDefaultMotion = GetDefaultMotionAtRoot(usdInArgs);
             }
@@ -229,20 +236,24 @@ public:
             // recorded until we have no more USD z-Up assets and the katana
             // assets have no more prerotate camera nodes.
             interface.setAttr("info.usd.stageIsZup",
-                    FnKat::IntAttribute(UsdUtilsGetCamerasAreZup(usdInArgs->GetStage())));
+                    FnKat::IntAttribute(UsdUtilsGetCamerasAreZup(
+                        usdInArgs->GetStage())));
 
             // Construct the global camera list at the USD scene root.
             //
             FnKat::StringBuilder cameraListBuilder;
 
-            SdfPathVector cameraPaths = PxrUsdKatanaUtils::FindCameraPaths(prim.GetStage());
+            SdfPathVector cameraPaths = PxrUsdKatanaUtils::FindCameraPaths(
+                prim.GetStage());
 
             TF_FOR_ALL(cameraPathIt, cameraPaths)
             {
                 const std::string path = (*cameraPathIt).GetString();
 
-                // only add cameras to the camera list that are beneath the isolate prim path
-                if (path.find(usdInArgs->GetIsolatePath()) != std::string::npos)
+                // only add cameras to the camera list that are beneath 
+                // the isolate prim path
+                if (path.find(usdInArgs->GetIsolatePath()) != 
+                    std::string::npos)
                 {
                     cameraListBuilder.push_back(
                         TfNormPath(usdInArgs->GetRootLocationPath()+"/"+
@@ -283,7 +294,8 @@ public:
                     
                     sscb.createEmptyLocation(katanaPath, "instance source");
                     sscb.setAttrAtLocation(katanaPath,
-                            "tabs.scenegraph.stopExpand", FnKat::IntAttribute(1));
+                            "tabs.scenegraph.stopExpand", 
+                            FnKat::IntAttribute(1));
                     sscb.setAttrAtLocation(katanaPath, "childPrimPath",
                             FnKat::StringAttribute(masterName));
                 }
@@ -306,12 +318,12 @@ public:
 
         bool verbose = usdInArgs->IsVerbose();
 
-        if (not prim.IsLoaded()) {
+        if (!prim.IsLoaded()) {
             SdfPath pathToLoad = prim.GetPath();
             UsdStageRefPtr stage = prim.GetStage();
             readerLock.unlock();
             prim = _LoadPrim(stage, pathToLoad, verbose);
-            if (not prim) {
+            if (!prim) {
                 ERROR("load prim %s failed", pathToLoad.GetText());
                 return;
             }
@@ -340,7 +352,7 @@ public:
             std::string opName;
             if (PxrUsdKatanaUsdInPluginRegistry::FindUsdType(
                     prim.GetTypeName(), &opName)) {
-                if (not opName.empty()) {
+                if (!opName.empty()) {
                     interface.execOp(opName, opArgs);
                 }
             }
@@ -354,7 +366,7 @@ public:
             std::string opName;
             if (PxrUsdKatanaUsdInPluginRegistry::FindUsdTypeForSite(
                     prim.GetTypeName(), &opName)) {
-                if (not opName.empty()) {
+                if (!opName.empty()) {
                     interface.execOp(opName, opArgs);
                 }
             }
@@ -365,7 +377,7 @@ public:
         //
 
         bool execKindOp = FnKat::IntAttribute(
-                interface.getOutputAttr("__UsdIn.execKindOp")).getValue(1, false);
+            interface.getOutputAttr("__UsdIn.execKindOp")).getValue(1, false);
 
         if (execKindOp)
         {
@@ -373,7 +385,7 @@ public:
             if (UsdModelAPI(prim).GetKind(&kind)) {
                 std::string opName;
                 if (PxrUsdKatanaUsdInPluginRegistry::FindKind(kind, &opName)) {
-                    if (not opName.empty()) {
+                    if (!opName.empty()) {
                         interface.execOp(opName, opArgs);
                     }
                 }
@@ -381,15 +393,17 @@ public:
         }
 
         //
-        // Find and execute the site-specific kind op that handles the model kind.
+        // Find and execute the site-specific kind op that handles 
+        // the model kind.
         //
 
         if (_hasSiteKinds) {
             TfToken kind;
             if (UsdModelAPI(prim).GetKind(&kind)) {
                 std::string opName;
-                if (PxrUsdKatanaUsdInPluginRegistry::FindKindForSite(kind, &opName)) {
-                    if (not opName.empty()) {
+                if (PxrUsdKatanaUsdInPluginRegistry::FindKindForSite(
+                        kind, &opName)) {
+                    if (!opName.empty()) {
                         interface.execOp(opName, opArgs);
                     }
                 }
@@ -397,7 +411,8 @@ public:
         }
 
         //
-        // Read blind data. This is last because blind data opinions should always win.
+        // Read blind data. This is last because blind data opinions 
+        // should always win.
         //
 
         PxrUsdKatanaAttrMap attrs;
@@ -405,18 +420,21 @@ public:
         attrs.toInterface(interface);
 
         bool skipAllChildren = FnKat::IntAttribute(
-                interface.getOutputAttr("__UsdIn.skipAllChildren")).getValue(0, false);
+                interface.getOutputAttr("__UsdIn.skipAllChildren")).getValue(
+                0, false);
 
         if (prim.IsInstance())
         {
             UsdPrim master = prim.GetMaster();
             interface.setAttr("info.usd.masterPrimPath",
-                    FnAttribute::StringAttribute(master.GetPrimPath().GetString()));
+                    FnAttribute::StringAttribute(
+                        master.GetPrimPath().GetString()));
             
             
             FnAttribute::StringAttribute masterPathAttr = 
                     opArgs.getChildByName("masterMapping." +
-                            FnKat::DelimiterEncode(master.GetPrimPath().GetString()));
+                            FnKat::DelimiterEncode(
+                                master.GetPrimPath().GetString()));
             if (masterPathAttr.isValid())
             {
                 std::string masterPath = masterPathAttr.getValue("", false);
@@ -427,10 +445,12 @@ public:
                             "type", FnKat::StringAttribute("instance"));
                     interface.setAttr("geometry.instanceSource",
                             FnAttribute::StringAttribute(
-                                usdInArgs->GetRootLocationPath() + "/Masters/" + masterPath));
+                                usdInArgs->GetRootLocationPath() + 
+                                "/Masters/" + masterPath));
                     
-                    // XXX, ConstraintGroups are still made for models that became
-                    //      instances. Need to suppress creation of that stuff
+                    // XXX, ConstraintGroups are still made for models 
+                    //      that became instances. Need to suppress creation 
+                    //      of that stuff
                     interface.deleteChildren();
                     skipAllChildren = true;
                 }
@@ -468,10 +488,10 @@ public:
             if (i != materialHierarchy->derivedMaterialPaths.end()) {
                 // We found some derived materials.
                 const std::vector<SdfPath> &derivedMaterialPaths = i->second;
-                for (const SdfPath &derivedMaterialPath: derivedMaterialPaths) {
+                for (const SdfPath &derivedMaterialPath: derivedMaterialPaths){
                     UsdPrim derivedMaterial =
                         prim.GetStage()->GetPrimAtPath(derivedMaterialPath);
-                    if (not TF_VERIFY(derivedMaterial)) {
+                    if (!TF_VERIFY(derivedMaterial)) {
                         // This shouldn't happen: we confirmed the prim
                         // exists when building the hierarchy.
                         continue;
@@ -491,14 +511,16 @@ public:
             }
         }
 
-        if (not skipAllChildren) {
+        if (!skipAllChildren) {
 
             std::set<std::string> childrenToSkip;
-            FnKat::GroupAttribute childOps = interface.getOutputAttr("__UsdIn.skipChild");
+            FnKat::GroupAttribute childOps = interface.getOutputAttr(
+                "__UsdIn.skipChild");
             if (childOps.isValid()) {
                 for (int64_t i = 0; i < childOps.getNumberOfChildren(); i++) {
                     std::string childName = childOps.getChildName(i);
-                    bool shouldSkip = FnKat::IntAttribute(childOps.getChildByIndex(i)).getValue(0, false);
+                    bool shouldSkip = FnKat::IntAttribute(
+                        childOps.getChildByIndex(i)).getValue(0, false);
                     if (shouldSkip) {
                         childrenToSkip.insert(childName);
                     }
@@ -509,12 +531,13 @@ public:
             // we replace the current prim with the master prim before 
             // iterating on the children.
             //
-            if (prim.IsInstance() and not privateData->GetMasterPath().IsEmpty())
+            if (prim.IsInstance() && !privateData->GetMasterPath().IsEmpty())
             {
                 const UsdPrim& masterPrim = prim.GetMaster();
-                if (not masterPrim)
+                if (!masterPrim)
                 {
-                    ERROR("USD Prim is advertised as an instance but master prim cannot be found.");
+                    ERROR("USD Prim is advertised as an instance "
+                        "but master prim cannot be found.");
                 }
                 else
                 {
@@ -523,7 +546,8 @@ public:
             }
 
             // create children
-            TF_FOR_ALL(childIter, prim.GetFilteredChildren(UsdPrimIsDefined and UsdPrimIsActive and not UsdPrimIsAbstract))
+            TF_FOR_ALL(childIter, prim.GetFilteredChildren(
+                UsdPrimIsDefined && UsdPrimIsActive && !UsdPrimIsAbstract))
             {
                 const UsdPrim& child = *childIter;
                 const std::string& childName = child.GetName();
@@ -554,124 +578,11 @@ public:
         }
 
         // keep things around if we are verbose
-        if (not verbose) {
+        if (!verbose) {
             interface.deleteAttr("__UsdIn");
         }
     }
 
-    // TODO, consider caching this conversion
-    static
-    std::string GetVariantStringFromSession(
-            FnAttribute::GroupAttribute sessionAttr,
-                    const std::string & rootLocation)
-    {
-        FnAttribute::GroupAttribute variantsAttr =
-                sessionAttr.getChildByName("variants");
-        if (variantsAttr.getNumberOfChildren() == 0)
-        {
-            return "";
-        }
-        
-        std::string rootLocationPlusSlash = rootLocation + "/";
-        
-        std::ostringstream buffer;
-        
-        for (int64_t i = 0, e = variantsAttr.getNumberOfChildren(); i != e;
-                ++i)
-        {
-            std::string entryName = FnAttribute::DelimiterDecode(
-                    variantsAttr.getChildName(i));
-            
-            FnAttribute::GroupAttribute entryVariantSets =
-                    variantsAttr.getChildByIndex(i);
-            
-            if (entryVariantSets.getNumberOfChildren() == 0)
-            {
-                continue;
-            }
-            
-            if (!pystring::startswith(entryName, rootLocationPlusSlash))
-            {
-                continue;
-            }
-            
-            std::string primPath = pystring::slice(entryName,
-                    rootLocation.size());
-            
-            for (int64_t i = 0, e = entryVariantSets.getNumberOfChildren();
-                    i != e; ++i)
-            {
-                std::string variantSetName = entryVariantSets.getChildName(i);
-                
-                FnAttribute::StringAttribute variantValueAttr =
-                        entryVariantSets.getChildByIndex(i);
-                if (!variantValueAttr.isValid())
-                {
-                    continue;
-                }
-                
-                buffer << ' ' << SdfPath(primPath).AppendVariantSelection(
-                        variantSetName, variantValueAttr.getValue("", false)
-                                ).GetString();
-            }
-        }
-        
-        return buffer.str();
-    }
-
-    
-    // utility to make it easier to exit earlier from InitUsdInArgs
-    struct ArgsBuilder
-    {
-        UsdStageRefPtr stage;
-        std::string rootLocation;
-        std::string isolatePath;
-        SdfPathSet variantSelections;
-        std::string ignoreLayerRegex;
-        double currentTime;
-        double shutterOpen;
-        double shutterClose;
-        std::vector<double> motionSampleTimes;
-        std::set<std::string> defaultMotionPaths;
-        PxrUsdKatanaUsdInArgs::StringListMap extraAttributesOrNamespaces;
-        bool verbose;
-        const char * errorMessage;
-        
-        
-        ArgsBuilder()
-        : currentTime(0.0)
-        , shutterOpen(0.0)
-        , shutterClose(0.0)
-        , verbose(false)
-        , errorMessage(0)
-        {
-        }
-        
-        PxrUsdKatanaUsdInArgsRefPtr build()
-        {
-            return PxrUsdKatanaUsdInArgs::New(
-                stage,
-                rootLocation,
-                isolatePath,
-                variantSelections,
-                ignoreLayerRegex,
-                currentTime,
-                shutterOpen,
-                shutterClose,
-                motionSampleTimes,
-                defaultMotionPaths,
-                extraAttributesOrNamespaces,
-                verbose,
-                errorMessage);
-        }
-        
-        PxrUsdKatanaUsdInArgsRefPtr buildWithError(std::string errorStr)
-        {
-            errorMessage = errorStr.c_str();
-            return build();
-        }
-        
-    };
     
 
     static PxrUsdKatanaUsdInArgsRefPtr
@@ -681,7 +592,7 @@ public:
         ArgsBuilder ab;
         
         FnKat::StringAttribute usdFileAttr = interface.getOpArg("fileName");
-        if (not usdFileAttr.isValid()) {
+        if (!usdFileAttr.isValid()) {
             return ab.buildWithError("PxrUsdIn: USD fileName not specified.");
         }
 
@@ -691,8 +602,6 @@ public:
                 interface.getOpArg("location")).getValue(
                         interface.getRootLocationPath(), false);
         
-        std::string variants = FnKat::StringAttribute(
-                interface.getOpArg("variants")).getValue("", false);
         
         std::string sessionLocation = ab.rootLocation;
         FnKat::StringAttribute sessionLocationAttr = 
@@ -701,25 +610,54 @@ public:
             sessionLocation = sessionLocationAttr.getValue();
         }
         
-        FnAttribute::GroupAttribute sessionAttr = interface.getOpArg("session");
+        FnAttribute::GroupAttribute sessionAttr = 
+            interface.getOpArg("session");
 
-        variants += GetVariantStringFromSession(sessionAttr, sessionLocation);
-
+        
+        
+        // XXX BEGIN convert the legacy variant string to the session
+        // TODO: decide how long to do this as this form has been deprecated
+        //       for some time but may still be present in secondary uses
+        FnAttribute::GroupBuilder legacyVariantsGb;
+        
+        std::string variants = FnKat::StringAttribute(
+                interface.getOpArg("variants")).getValue("", false);
         std::set<std::string> selStrings = TfStringTokenizeToSet(variants);
         TF_FOR_ALL(selString, selStrings) {
             std::string errMsg;
             if (SdfPath::IsValidPathString(*selString, &errMsg)) {
                 SdfPath varSelPath(*selString);
                 if (varSelPath.IsPrimVariantSelectionPath()) {
-                    ab.variantSelections.insert( SdfPath(*selString) );
+                    
+                    std::string entryPath = FnAttribute::DelimiterEncode(
+                            sessionLocation + 
+                            varSelPath.GetPrimPath().GetString());
+                    std::pair<std::string, std::string> sel =
+                            varSelPath.GetVariantSelection();
+                    
+                    legacyVariantsGb.set(entryPath + "." + sel.first,
+                            FnAttribute::StringAttribute(sel.second));
                     continue;
-                }   
+                }
             }
             
             return ab.buildWithError(
                     TfStringPrintf("PxrUsdIn: Bad variant selection \"%s\"",
                             selString->c_str()).c_str());
         }
+        
+        FnAttribute::GroupAttribute legacyVariants = legacyVariantsGb.build();
+        
+        if (legacyVariants.getNumberOfChildren() > 0)
+        {
+            sessionAttr = FnAttribute::GroupBuilder()
+                .set("variants", legacyVariants)
+                .deepUpdate(sessionAttr)
+                .build();
+        }
+        // XXX END
+
+        ab.sessionAttr = sessionAttr;
 
         ab.ignoreLayerRegex = FnKat::StringAttribute(
                 interface.getOpArg("ignoreLayerRegex")).getValue("", false);
@@ -751,7 +689,7 @@ public:
         // If motion samples was specified, convert the string of values
         // into a vector of doubles to store with the root args.
         //
-        if (numSamples < 2 or motionSampleStr.empty())
+        if (numSamples < 2 || motionSampleStr.empty())
         {
             ab.motionSampleTimes.push_back(0);
         }
@@ -760,7 +698,8 @@ public:
             std::vector<std::string> tokens;
             pystring::split(motionSampleStr, tokens, " ");
 
-            for (std::vector<std::string>::iterator it = tokens.begin(); it != tokens.end(); ++it)
+            for (std::vector<std::string>::iterator it = tokens.begin(); 
+                it != tokens.end(); ++it)
             {
                 ab.motionSampleTimes.push_back(std::stod(*it));
             }
@@ -772,42 +711,46 @@ public:
                 sessionAttr.getChildByName("defaultMotionPaths");
         if (defaultMotionPathsAttr.isValid())
         {
-            for (size_t i = 0, e = defaultMotionPathsAttr.getNumberOfChildren();
+            for (size_t i = 0, e = 
+                    defaultMotionPathsAttr.getNumberOfChildren();
                     i != e; ++i)
             {
                 ab.defaultMotionPaths.insert(pystring::replace(
-                    FnAttribute::DelimiterDecode(defaultMotionPathsAttr.getChildName(i)),
+                    FnAttribute::DelimiterDecode(
+                        defaultMotionPathsAttr.getChildName(i)),
                         sessionLocation, "", 1));
             }
         }
 
-        ab.stage = 
-            UsdKatanaCache::GetInstance().GetStage(
+        ab.stage =  UsdKatanaCache::GetInstance().GetStage(
                 fileName, 
-                ab.variantSelections, 
+                sessionAttr, sessionLocation,
                 ab.ignoreLayerRegex, 
                 true /* forcePopulate */);
 
-        if (not ab.stage) {
+        if (!ab.stage) {
             return ab.buildWithError("PxrUsdIn: USD Stage cannot be loaded.");
         }
 
         if (FnAttribute::StringAttribute(
                 interface.getOpArg("instanceMode")
-                        ).getValue("expanded", false) == "as sources and instances")
+                    ).getValue("expanded", false) == 
+                "as sources and instances")
         {
             additionalOpArgs = FnKat::GroupAttribute("masterMapping",
-                    PxrUsdKatanaUtils::BuildInstanceMasterMapping(ab.stage), true);
+                PxrUsdKatanaUtils::BuildInstanceMasterMapping(ab.stage), true);
         }
         
         ab.isolatePath = FnKat::StringAttribute(
             interface.getOpArg("isolatePath")).getValue("", false);
 
         // if the specified isolatePath is not a valid prim, clear it out
-        if (not ab.isolatePath.empty() and not ab.stage->GetPrimAtPath(SdfPath(ab.isolatePath)))
+        if (!ab.isolatePath.empty() && !ab.stage->GetPrimAtPath(
+            SdfPath(ab.isolatePath)))
         {
             std::ostringstream errorBuffer;
-            errorBuffer << "PxrUsdIn: Invalid isolatePath: " << ab.isolatePath << ".";
+            errorBuffer << "PxrUsdIn: Invalid isolatePath: " << 
+                ab.isolatePath << ".";
             return ab.buildWithError(errorBuffer.str());
         }
 
@@ -870,7 +813,8 @@ public:
         const std::set<std::string>& defaultMotionPaths =
                 usdInArgs->GetDefaultMotionPaths();
 
-        for (std::set<std::string>::const_iterator I = defaultMotionPaths.begin(),
+        for (std::set<std::string>::const_iterator I = 
+                defaultMotionPaths.begin(),
                 E = defaultMotionPaths.end(); I != E; ++I)
         {
             if (pystring::startswith(rootPrimPath, (*I) + "/"))
@@ -914,11 +858,14 @@ private:
             return FnKat::DoubleAttribute();
         }
         std::vector<GfBBox3d> bounds = usdInArgs->ComputeBounds(prim);
-        const std::vector<double>& motionSampleTimes = usdInArgs->GetMotionSampleTimes();
+        const std::vector<double>& motionSampleTimes = 
+            usdInArgs->GetMotionSampleTimes();
 
         bool hasInfiniteBounds = false;
-        FnKat::DoubleAttribute boundsAttr = PxrUsdKatanaUtils::ConvertBoundsToAttribute(
-                bounds, motionSampleTimes, usdInArgs->IsMotionBackward(), &hasInfiniteBounds);
+        FnKat::DoubleAttribute boundsAttr = 
+            PxrUsdKatanaUtils::ConvertBoundsToAttribute(
+                bounds, motionSampleTimes, usdInArgs->IsMotionBackward(), 
+                &hasInfiniteBounds);
 
         // Report infinite bounds as a warning.
         if (hasInfiniteBounds) {
@@ -936,11 +883,12 @@ bool PxrUsdInOp::_hasSiteKinds = false;
 //-----------------------------------------------------------------------------
 
 /*
- * This op bootstraps the primary PxrUsdIn op in order to have GeolibPrivateData
- * available at the root op location in PxrUsdIn. Since the GeolibCookInterface
- * API does not currently have the ability to pass GeolibPrivateData via execOp,
- * and we must exec all of the registered plugins to process USD prims, we instead
- * pre-build the GeolibPrivateData for the root location to ensure it is available.
+ * This op bootstraps the primary PxrUsdIn op in order to have
+ * GeolibPrivateData available at the root op location in PxrUsdIn. Since the 
+ * GeolibCookInterface API does not currently have the ability to pass 
+ * GeolibPrivateData via execOp, and we must exec all of the registered plugins
+ * to process USD prims, we instead pre-build the GeolibPrivateData for the
+ * root location to ensure it is available.
  */
 class PxrUsdInBootstrapOp : public FnKat::GeolibOp
 {
@@ -964,12 +912,12 @@ public:
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs =
                 PxrUsdInOp::InitUsdInArgs(interface, additionalOpArgs);
         
-        if (not usdInArgs) {
+        if (!usdInArgs) {
             ERROR("Could not initialize PxrUsdIn usdInArgs.");
             return;
         }
         
-        if (not usdInArgs->GetErrorMessage().empty())
+        if (!usdInArgs->GetErrorMessage().empty())
         {
             ERROR(usdInArgs->GetErrorMessage().c_str());
             return;
@@ -989,7 +937,8 @@ public:
 
         if (tokens.empty())
         {
-            ERROR("Could not initialize PxrUsdIn op with PxrUsdIn.Bootstrap op.");
+            ERROR("Could not initialize PxrUsdIn op with "
+                "PxrUsdIn.Bootstrap op.");
             return;
         }
 
@@ -1023,7 +972,8 @@ public:
     static void cook(FnKat::GeolibCookInterface &interface)
     {
         PxrUsdKatanaUsdInPrivateData* privateData = 
-            static_cast<PxrUsdKatanaUsdInPrivateData*>(interface.getPrivateData());
+            static_cast<PxrUsdKatanaUsdInPrivateData*>(
+                interface.getPrivateData());
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs = privateData->GetUsdInArgs();
         
         FnKat::GroupAttribute staticScene =
@@ -1049,8 +999,8 @@ public:
                         SdfPath(childPrimName));
                 TF_FOR_ALL(childIter, prim.GetFilteredChildren(
                         UsdPrimIsDefined
-                        and UsdPrimIsActive
-                        and not UsdPrimIsAbstract))
+                        && UsdPrimIsActive
+                        && !UsdPrimIsAbstract))
                 {
                     const UsdPrim& child = *childIter;
                     const std::string& childName = child.GetName();
@@ -1072,7 +1022,8 @@ public:
         }
         else
         {
-            FnKat::GroupAttribute childrenGroup = staticScene.getChildByName("c");
+            FnKat::GroupAttribute childrenGroup = 
+                staticScene.getChildByName("c");
             for (size_t i = 0, e = childrenGroup.getNumberOfChildren(); i != e;
                      ++i)
             {
@@ -1122,5 +1073,6 @@ void registerPlugins()
 {
     REGISTER_PLUGIN(PxrUsdInOp, "PxrUsdIn", 0, 1);
     REGISTER_PLUGIN(PxrUsdInBootstrapOp, "PxrUsdIn.Bootstrap", 0, 1);
-    REGISTER_PLUGIN(PxrUsdInMasterIntermediateOp, "PxrUsdIn.MasterIntermediate", 0, 1);
+    REGISTER_PLUGIN(PxrUsdInMasterIntermediateOp, 
+        "PxrUsdIn.MasterIntermediate", 0, 1);
 }

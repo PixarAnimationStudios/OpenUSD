@@ -32,6 +32,9 @@
 #include <boost/weak_ptr.hpp>
 #include <map>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 typedef boost::weak_ptr<class GlfGLContext> GlfGLContextWeakPtr;
 
 static GlfGLContextSharedPtr _nullContext;
@@ -75,7 +78,7 @@ GlfGLContextRegistry::~GlfGLContextRegistry()
 bool
 GlfGLContextRegistry::IsInitialized() const
 {
-    return not _interfaces.empty();
+    return !_interfaces.empty();
 }
 
 void
@@ -89,7 +92,7 @@ GlfGLContextRegistry::Add(GlfGLContextRegistrationInterface* iface)
 GlfGLContextSharedPtr
 GlfGLContextRegistry::GetShared()
 {
-    if (not _shared) {
+    if (!_shared) {
         // Don't do this again.
         _shared = GlfGLContextSharedPtr();
 
@@ -187,3 +190,6 @@ GlfGLContextRegistrationInterface::~GlfGLContextRegistrationInterface()
 {
     // Do nothing
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

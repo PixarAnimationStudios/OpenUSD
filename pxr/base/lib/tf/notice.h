@@ -27,6 +27,7 @@
 /// \file tf/notice.h
 /// \ingroup group_tf_Notification
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/anyWeakPtr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
@@ -37,6 +38,8 @@
 
 #include <list>
 #include <typeinfo>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Tf_NoticeRegistry;
 
@@ -258,7 +261,7 @@ public:
         /// \c IsValid will return true if this key refers to a currently
         /// active notification.  Revoking the key will make it invalid again.
         bool IsValid() const {
-            return _deliverer and _deliverer->_IsActive();
+            return _deliverer && _deliverer->_IsActive();
         }
 
         /// Does this key refer to a valid notification?
@@ -553,9 +556,9 @@ private:
         virtual bool Delivers(TfType const &noticeType,
                               TfWeakBase const *sender) const {
             Derived const *derived = this->AsDerived();
-            return noticeType.IsA(GetNoticeType()) and
-                not derived->_sender.IsInvalid() and
-                sender and derived->_sender.GetWeakBase() == sender;
+            return noticeType.IsA(GetNoticeType()) &&
+                !derived->_sender.IsInvalid() &&
+                sender && derived->_sender.GetWeakBase() == sender;
         }
 
         virtual TfWeakBase const *GetSenderWeakBase() const {
@@ -584,8 +587,8 @@ private:
             typedef typename Derived::NoticeType NoticeType;
             ListenerType *listener = get_pointer(derived->_listener);
 
-            if (listener and not derived->_sender.IsInvalid()) {
-                if (ARCH_UNLIKELY(not probes.empty())) {
+            if (listener && !derived->_sender.IsInvalid()) {
+                if (ARCH_UNLIKELY(!probes.empty())) {
                     TfWeakBase const *senderWeakBase = GetSenderWeakBase(),
                         *listenerWeakBase = derived->_listener.GetWeakBase();
                     _BeginDelivery(notice, senderWeakBase,
@@ -601,7 +604,7 @@ private:
                                           noticeType, sender,
                                           senderUniqueId, senderType);
                 
-                if (ARCH_UNLIKELY(not probes.empty()))
+                if (ARCH_UNLIKELY(!probes.empty()))
                     _EndDelivery(probes);
 
                 return true;
@@ -769,4 +772,6 @@ TfNotice::Send(SenderPtr const &s) const
                  typeid(typename SenderPtr::DataType) : typeid(void));
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_NOTICE_H

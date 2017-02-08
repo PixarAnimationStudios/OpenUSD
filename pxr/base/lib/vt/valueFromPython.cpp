@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/valueFromPython.h"
 
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(Vt_ValueFromPythonRegistry);
 
@@ -49,14 +53,14 @@ Vt_ValueFromPythonRegistry::Invoke(PyObject *obj) {
     if (i != self._lvalueExtractorCache.end()) {
         // attempt conversion.
         VtValue result = i->second.Invoke(obj);
-        if (not result.IsEmpty())
+        if (!result.IsEmpty())
             return result;
     }
 
     // Fall back to trying extractors in reverse registration order.
     for (size_t i = self._lvalueExtractors.size(); i != 0; --i) {
         VtValue result = self._lvalueExtractors[i-1].Invoke(obj);
-        if (not result.IsEmpty()) {
+        if (!result.IsEmpty()) {
             // Cache the result.
             self._lvalueExtractorCache[PyObject_Type(obj)] =
                 self._lvalueExtractors[i-1];
@@ -67,7 +71,7 @@ Vt_ValueFromPythonRegistry::Invoke(PyObject *obj) {
     // No lvalue extraction worked -- try rvalue conversions.
     for (size_t i = self._rvalueExtractors.size(); i != 0; --i) {
         VtValue result = self._rvalueExtractors[i-1].Invoke(obj);
-        if (not result.IsEmpty())
+        if (!result.IsEmpty())
             return result;
     }
     return VtValue();
@@ -84,4 +88,4 @@ Vt_ValueFromPythonRegistry::_RegisterRValue(_Extractor const &e) {
     _rvalueExtractors.push_back(e);
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

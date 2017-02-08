@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/error.h"
@@ -35,6 +37,8 @@ using std::string;
     ARCH_COMPILER_GCC_MAJOR > 3 || defined(ARCH_COMPILER_CLANG)
 #define _AT_LEAST_GCC_THREE_ONE_OR_CLANG
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /*
  * The define below allows you to run both the old and new mangling schemes, 
@@ -66,105 +70,52 @@ _FixupStringNames(string* name)
 
     string::size_type pos = 0;
     while ((pos = name->find(*from, pos)) != string::npos) {
-	name->replace(pos, from->size(), *to);
-	pos += to->size();
+        name->replace(pos, from->size(), *to);
+        pos += to->size();
     }
 
     pos = 0;
     while ((pos = name->find("std::", pos)) != string::npos) {
-	name->erase(pos, 5);
+        name->erase(pos, 5);
     }
+
+#if defined(ARCH_OS_WINDOWS)
+    pos = 0;
+    while ((pos = name->find("class", pos)) != string::npos) {
+        name->erase(pos, 6);
+    }
+
+    pos = 0;
+    while ((pos = name->find("struct", pos)) != string::npos) {
+        name->erase(pos, 7);
+    }
+
+    pos = 0;
+    while ((pos = name->find("enum", pos)) != string::npos) {
+        name->erase(pos, 5);
+    }
+#endif
 }
 
-#if defined(ARCH_COMPILER_ICC)
-/*
-** icc's demangler is broken, and libiberty only seems to work for
-** primitive types. Use what we know about demangling to write our
-** own to cover at least the types we care about. This doesn't work
-** for methods, but it does work for embedded enums, which is what
-** brought about the necessity for this change in the first place.
-**
-** The 64-bit Sparc gcc's demangler also seems broken, so we'll use
-** this for that too.
-*/
-static string
-iccAndSparc64Demangle(const string &mangled)
+#if PXR_USE_NAMESPACES
+#include <boost/preprocessor/stringize.hpp>
+
+static void
+_StripPxrInternalNamespace(string* name)
 {
-    string name;
-    size_t i(0);
-
-    while (i < mangled.size()) {
-	while ((i < mangled.size()) && !isdigit(mangled[i]))
-	    ++i;
-	if (i == mangled.size())
-	    break;
-
-	size_t n(mangled[i++] - '0');
-	while (isdigit(mangled[i]))
-	    n = ((n * 10) + (mangled[i++] - '0'));
-	if (mangled.size() > (i + n))
-	{
-	    if (name.size())
-		name += "::";
-	    name += mangled.substr(i, n);
-	}
-	i += n;
+    // Note that this assumes PXR_INTERNAL_NS to be non-empty
+    constexpr const char nsQualifier[] = BOOST_PP_STRINGIZE(PXR_INTERNAL_NS) "::";
+    constexpr const auto nsQualifierSize = sizeof(nsQualifier);
+    size_t lastNsQualifierEndPos = name->find(nsQualifier);
+    while (lastNsQualifierEndPos != std::string::npos) {
+        name->erase(lastNsQualifierEndPos, nsQualifierSize-1);
+        lastNsQualifierEndPos = name->find(nsQualifier);
     }
-
-    return name;
 }
+#endif
 
-extern "C" {
-    /* This is from gcc's libiberty. */
-    char* cplus_demangle(const char*, int);
-};
-
-
-bool
-ArchDemangle(string* mangledTypeName)
-{
-    /*
-     * The libiberty mangler doesn't seem to like very simple
-     * types: so we'll fool it by feeding it the type that corresponds to
-     * @<blah> where "blah" is the type we're try to code back to.
-     * The mangled name "__t1@1Z" + mangledTypeName decodes to
-     *       @<blah>::@
-     * where "blah" is what we're really after.
-     */
-
-    string input = string("__t1@1Z") + *mangledTypeName;
-    const char* output = cplus_demangle(input.c_str(), 0);
-
-    if (output) {
-	string decoded(output);
-	const size_t len = decoded.size();
-	if (decoded.find("@<", 0) == 0 &&
-	    decoded.rfind(">::@", len - 4) != string::npos) {
-	    decoded.erase(len - 4);
-	    decoded.erase(0, 2);
-
-	    *mangledTypeName = decoded;
-	    _FixupStringNames(mangledTypeName);
-
-            // On Suns, template types end up with a space at the end of
-            // the name.  This should get rid of that.
-            size_t lastChar = mangledTypeName->find_last_not_of(" ");
-            mangledTypeName->erase(lastChar + 1);
-
-	    return true;
-	}
-    }
-    else {        
-	*mangledTypeName = iccAndSparc64Demangle(*mangledTypeName);
-	return true;
-    }
-
-    return false;
-}
-
-#elif defined(_AT_LEAST_GCC_THREE_ONE_OR_CLANG)
+#if defined(_AT_LEAST_GCC_THREE_ONE_OR_CLANG)
 #include <cxxabi.h>
-
 
 /*
  * This routine doesn't work when you get to gcc3.4.
@@ -174,12 +125,12 @@ _DemangleOld(string* mangledTypeName)
 {
     int status;
     if (char* realName =
-	    abi::__cxa_demangle(mangledTypeName->c_str(), NULL, NULL, &status))
+        abi::__cxa_demangle(mangledTypeName->c_str(), NULL, NULL, &status))
     {
-	*mangledTypeName = string(realName);
-	free(realName);	    
-	_FixupStringNames(mangledTypeName);
-	return true;
+        *mangledTypeName = string(realName);
+        free(realName);    
+        _FixupStringNames(mangledTypeName);
+        return true;
     }
 
     return false;
@@ -208,18 +159,17 @@ _DemangleNew(string* mangledTypeName)
 
     int status;
     bool ok = false;
-		 
+
     if (char* realName =
-	abi::__cxa_demangle(input.c_str(), NULL, NULL, &status))
-    {
-	size_t len = strlen(realName);
-	if (len > 1 && realName[len-1] == '*') {
-	    *mangledTypeName = string(&realName[0], len-1);
-	    _FixupStringNames(mangledTypeName);
-	    ok = true;
-	}
-	
-	free(realName);	    
+            abi::__cxa_demangle(input.c_str(), NULL, NULL, &status)) {
+        size_t len = strlen(realName);
+        if (len > 1 && realName[len-1] == '*') {
+            *mangledTypeName = string(&realName[0], len-1);
+            _FixupStringNames(mangledTypeName);
+            ok = true;
+        }
+
+        free(realName);    
     }
 
     return ok;
@@ -230,53 +180,53 @@ ArchDemangle(string* mangledTypeName)
 {
 #if defined(_PARANOID_CHECK_MODE)
     string copy = *mangledTypeName;
-
     if (_DemangleNew(mangledTypeName)) {
-	if (_DemangleOld(&copy) && copy != *mangledTypeName) {
-	    fprintf(stderr, "ArchDemangle: disagreement between old and new\n"
-		    "demangling schemes: '%s' (old way) vs '%s' (new way)\n", 
-		    copy.c_str(), mangledTypeName->c_str());
-	}
-	return true;
+        if (_DemangleOld(&copy) && copy != *mangledTypeName) {
+            fprintf(stderr, "ArchDemangle: disagreement between old and new\n"
+                    "demangling schemes: '%s' (old way) vs '%s' (new way)\n", 
+                    copy.c_str(), mangledTypeName->c_str());
+        }
+
+        #if PXR_USE_NAMESPACES
+        _StripPxrInternalNamespace(mangledTypeName);
+        #endif
+        return true;
     }
     return false;
 #else
-    return _DemangleNew(mangledTypeName);
-#endif
+    if(_DemangleNew(mangledTypeName)) {
+        #if PXR_USE_NAMESPACES
+        _StripPxrInternalNamespace(mangledTypeName);
+        #endif
+        return true;
+    }
+
+    return false;
+#endif // _PARANOID_CHECK_MODE
 }
-
-#else
-
-bool
-ArchDemangle(string* mangledTypeName)
-{
-    _FixupStringNames(mangledTypeName);
-    return true;
-}
-
-
-#endif
-
-#if defined(ARCH_COMPILER_ICC) || defined(_AT_LEAST_GCC_THREE_ONE_OR_CLANG)
-
 
 void
 Arch_DemangleFunctionName(string* mangledFunctionName)
 {
     if (mangledFunctionName->size() > 2 &&
-	(*mangledFunctionName)[0] == '_' && (*mangledFunctionName)[1] == 'Z') {
-
-#if defined(_AT_LEAST_GCC_THREE_ONE_OR_CLANG)
-	// Note: _DemangleNew isn't doing the correct thing with
-	//       function names, use the old codepath. 
-	_DemangleOld(mangledFunctionName);
-#else
-	ArchDemangle(mangledFunctionName);
-#endif
+        (*mangledFunctionName)[0] == '_' && (*mangledFunctionName)[1] == 'Z') {
+        // Note: _DemangleNew isn't doing the correct thing with
+        //       function names, use the old codepath. 
+        _DemangleOld(mangledFunctionName);
     }
 }
 
-#else
+#elif defined(ARCH_OS_WINDOWS)
+
+bool
+ArchDemangle(string* mangledTypeName)
+{
+    _FixupStringNames(mangledTypeName);
+    #if PXR_USE_NAMESPACES
+    _StripPxrInternalNamespace(mangledTypeName);
+    #endif
+    return true;
+}
 
 void
 Arch_DemangleFunctionName(string* mangledFunctionName)
@@ -284,4 +234,6 @@ Arch_DemangleFunctionName(string* mangledFunctionName)
     ArchDemangle(mangledFunctionName);
 }
 
-#endif
+#endif // _AT_LEAST_GCC_THREE_ONE_OR_CLANG
+
+PXR_NAMESPACE_CLOSE_SCOPE

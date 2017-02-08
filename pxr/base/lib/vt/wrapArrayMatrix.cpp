@@ -23,10 +23,15 @@
 //
 #define NUMERIC_OPERATORS
 #define DOUBLE_MULT_OPERATOR
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapArrayMatrix() {
     BOOST_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~, VT_MATRIX_VALUE_TYPES);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

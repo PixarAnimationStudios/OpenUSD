@@ -26,8 +26,11 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/glf/glslfx.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdGLSLFXShader::HdGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx)
-    : HdSurfaceShader(nullptr, SdfPath())
+    : HdSurfaceShader(SdfPath())
     , _glslfx(glslfx)
 {
     _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());
@@ -37,3 +40,6 @@ HdGLSLFXShader::HdGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx)
 HdGLSLFXShader::~HdGLSLFXShader()
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

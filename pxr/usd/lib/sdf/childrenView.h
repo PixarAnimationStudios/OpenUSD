@@ -26,14 +26,18 @@
 
 /// \file sdf/childrenView.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/children.h"
 #include "pxr/base/tf/iterator.h"
+
 #include <boost/compressed_pair.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <algorithm>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfChildrenViewTrivialPredicate
 ///
@@ -351,7 +355,7 @@ public:
     /// Finds element \p x, if present in this view.
     const_iterator find(const value_type& x) const {
         const_iterator i = find(key(x));
-        return (i != end() and *i == x) ? i : end();
+        return (i != end() && *i == x) ? i : end();
     }
 
     /// Returns the key for an element.
@@ -456,7 +460,7 @@ public:
     /// list edits are not identical or the keys don't contain the same
     /// elements.
     bool operator!=(const This& other) const {
-        return not _children.IsEqualTo(other._children);
+        return !_children.IsEqualTo(other._children);
     }
 
     // Return true if this object is valid
@@ -527,4 +531,6 @@ struct Tf_IteratorInterface<SdfChildrenView<C, P, A>, true> {
     static IteratorType End(Type const &c) { return c.rend(); }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_CHILDRENVIEW_H

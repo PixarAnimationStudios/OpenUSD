@@ -21,7 +21,28 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/work/dispatcher.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+struct DummyTask : public tbb::task {
+    virtual tbb::task *execute() { return nullptr; }
+};
+}
+static int _ForceWorkerImpl()
+{
+    static tbb::task_group_context ctx(tbb::task_group_context::isolated);
+    tbb::task::enqueue(*new (tbb::task::allocate_root(ctx)) DummyTask);
+    return 0;
+}
+static inline void _ForceWorkerExistence()
+{
+    static int forceWorker = _ForceWorkerImpl();
+    (void)forceWorker;
+}
 
 WorkDispatcher::WorkDispatcher()
     : _context(
@@ -29,11 +50,11 @@ WorkDispatcher::WorkDispatcher()
         tbb::task_group_context::concurrent_wait | 
         tbb::task_group_context::default_traits)
 {
-    _rootTask = new(tbb::task::allocate_root(_context)) tbb::empty_task;
-
+    _ForceWorkerExistence();
     // The concurrent_wait flag used with the task_group_context ensures
     // the ref count will remain at 1 after all predecessor tasks are
     // completed, so we don't need to keep resetting it in Wait().
+    _rootTask = new(tbb::task::allocate_root(_context)) tbb::empty_task;
     _rootTask->set_ref_count(1);
 }
 
@@ -73,3 +94,5 @@ WorkDispatcher::_TransportErrors(const TfErrorMark &mark,
     TfErrorTransport transport = mark.Transport();
     errors->grow_by(1)->swap(transport);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

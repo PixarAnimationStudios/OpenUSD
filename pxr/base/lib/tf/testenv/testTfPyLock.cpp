@@ -24,8 +24,11 @@
 // testTfPyLock.mm
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyInterpreter.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static unsigned int
 testLock(bool verbose)

@@ -24,14 +24,18 @@
 #ifndef HD_GEOMETRIC_SHADER_H
 #define HD_GEOMETRIC_SHADER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/shaderKey.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/glf/glslfx.h"
 
 #include <boost/scoped_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 
@@ -39,7 +43,7 @@ typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 ///
 /// A geometric shader -- hydra internal use
 ///
-class Hd_GeometricShader : public HdShader {
+class Hd_GeometricShader : public HdShaderCode {
 public:
     Hd_GeometricShader(std::string const &glslfxString,
                        int16_t primitiveMode, /*=GLenum*/
@@ -115,6 +119,13 @@ private:
     boost::scoped_ptr<GlfGLSLFX> _glslfx;
     bool _cullingPass;
     ID _hash;
+
+    // No copying
+    Hd_GeometricShader(const Hd_GeometricShader &)                     = delete;
+    Hd_GeometricShader &operator =(const Hd_GeometricShader &)         = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_GEOMETRIC_SHADER_H

@@ -26,6 +26,7 @@
 
 /// \file sdf/primSpec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/path.h"
@@ -38,6 +39,8 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class TypePolicy> class Sdf_ListEditor;
 
@@ -402,6 +405,14 @@ public:
     /// Sets the prefix string for this prim spec.
     void SetPrefix(const std::string& value);
 
+    /// Returns the suffix string for this prim spec.
+    ///
+    /// The default value for suffix is "".
+    std::string GetSuffix() const;
+
+    /// Sets the suffix string for this prim spec.
+    void SetSuffix(const std::string& value);
+
     /// Returns the custom data for this prim.
     ///
     /// The default value for custom data is an empty dictionary.
@@ -460,6 +471,14 @@ public:
 
     /// Sets the \p prefixSubstitutions dictionary for this prim spec.
     void SetPrefixSubstitutions(const VtDictionary& prefixSubstitutions);
+
+    /// Returns the suffixSubstitutions dictionary for this prim spec.
+    ///
+    /// The default value for suffixSubstitutions is an empty VtDictionary.
+    VtDictionary GetSuffixSubstitutions() const;
+
+    /// Sets the \p suffixSubstitutions dictionary for this prim spec.
+    void SetSuffixSubstitutions(const VtDictionary& suffixSubstitutions);
 
     /// Sets the value for the prim's instanceable flag.
     void SetInstanceable(bool instanceable);
@@ -643,5 +662,7 @@ private:
 /// primPath must be a valid prim path.
 SdfPrimSpecHandle SdfCreatePrimInLayer(const SdfLayerHandle& layer,
                                        const SdfPath& primPath);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PRIMSPEC_H

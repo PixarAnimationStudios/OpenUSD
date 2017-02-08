@@ -23,6 +23,7 @@
 //
 /// \file VariantSetSpec.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
@@ -34,6 +35,8 @@
 #include "pxr/base/tracelite/trace.h"
 #include <ostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 SDF_DEFINE_SPEC(SdfVariantSetSpec, SdfSpec);
 
 SdfVariantSetSpecHandle 
@@ -41,12 +44,12 @@ SdfVariantSetSpec::New(const SdfPrimSpecHandle& owner, const std::string& name)
 {
     TRACE_FUNCTION();
 
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner prim");
         return TfNullPtr;
     }
 
-    if (not Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::IsValidName(name)) {
+    if (!Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::IsValidName(name)) {
         TF_CODING_ERROR("Cannot create variant set spec with invalid "
             "identifier: '%s'", name.c_str());
         return TfNullPtr;
@@ -57,13 +60,13 @@ SdfVariantSetSpec::New(const SdfPrimSpecHandle& owner, const std::string& name)
     SdfLayerHandle layer = owner->GetLayer();
     SdfPath path = owner->GetPath().AppendVariantSelection(name, "");
 
-    if (not path.IsPrimVariantSelectionPath()) {
+    if (!path.IsPrimVariantSelectionPath()) {
         TF_CODING_ERROR("Cannot create variant set spec at invalid "
             "path <%s{%s=}>", owner->GetPath().GetText(), name.c_str());
         return TfNullPtr;
     }
 
-    if (not Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::CreateSpec(
+    if (!Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::CreateSpec(
             layer, path, SdfSpecTypeVariantSet))
         return TfNullPtr;
     
@@ -76,12 +79,12 @@ SdfVariantSetSpec::New(const SdfVariantSpecHandle& owner,
 {
     TRACE_FUNCTION();
 
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner variant");
         return TfNullPtr;
     }
 
-    if (not Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::IsValidName(name)) {
+    if (!Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::IsValidName(name)) {
         TF_CODING_ERROR("Cannot create variant set spec with invalid "
             "identifier: '%s'", name.c_str());
         return TfNullPtr;
@@ -92,13 +95,13 @@ SdfVariantSetSpec::New(const SdfVariantSpecHandle& owner,
     SdfLayerHandle layer = owner->GetLayer();
     SdfPath path = owner->GetPath().AppendVariantSelection(name, "");
 
-    if (not path.IsPrimVariantSelectionPath()) {
+    if (!path.IsPrimVariantSelectionPath()) {
         TF_CODING_ERROR("Cannot create variant set spec at invalid "
             "path <%s{%s=}>", owner->GetPath().GetText(), name.c_str());
         return TfNullPtr;
     }
 
-    if (not Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::CreateSpec(
+    if (!Sdf_ChildrenUtils<Sdf_VariantSetChildPolicy>::CreateSpec(
             layer, path, SdfSpecTypeVariantSet))
         return TfNullPtr;
     
@@ -157,15 +160,17 @@ SdfVariantSetSpec::RemoveVariant(const SdfVariantSpecHandle& variant)
 
     SdfPath parentPath = 
         Sdf_VariantChildPolicy::GetParentPath(variant->GetPath());
-    if (variant->GetLayer() != layer or parentPath != path) {
+    if (variant->GetLayer() != layer || parentPath != path) {
         TF_CODING_ERROR("Cannot remove a variant that does not belong to "
             "this variant set.");
         return;
     }
 
-    if (not Sdf_ChildrenUtils<Sdf_VariantChildPolicy>::RemoveChild(
+    if (!Sdf_ChildrenUtils<Sdf_VariantChildPolicy>::RemoveChild(
             layer, path, variant->GetNameToken())) {
         TF_CODING_ERROR("Unable to remove child: %s",
             variant->GetName().c_str());
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

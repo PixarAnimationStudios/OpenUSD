@@ -27,10 +27,13 @@
 /// \file gf/transform.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3d.h"
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GfMatrix4d;
 
@@ -236,5 +239,7 @@ class GfTransform {
 /// [scale, scaleorientation, rotation, center, translation].
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream&, const GfTransform&);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_TRANSFORM_H

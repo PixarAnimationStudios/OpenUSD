@@ -24,6 +24,10 @@
 #ifndef ARCH_DEFINES_H
 #define ARCH_DEFINES_H
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 //
 // OS
 //
@@ -88,29 +92,6 @@
 // Features
 //
 
-// XXX -- This is an interim solution during the port to C++11.  We want to
-//        use pure C++11 so we don't want to use the __typeof__ extension.
-//        Once we don't require backward compatibility we can find and fix
-//        anyplace using this macro.
-//
-//        __typeof__ drops references while decltype preserves them and
-//        __typeof__ returns the type of the given expression, not its
-//        declared type.  We emulate that behavior by converting the
-//        expression to an lvalue by adding a pair of parentheses around
-//        it then stripping any reference.  Arch_TypeOfRemoveReference is
-//        just std::remove_reference but without adding a #include.  Note
-//        that typename outside of a template is valid C++11.
-//
-//        Note that this is a macro taking an argument:  you can't pass
-//        an expression with a comma in it!  However, since we're going
-//        to add parentheses around the expression anyway, it's okay for
-//        clients to do that too to get past the preprocessor.
-
-#ifdef __cplusplus
-template <typename T> struct Arch_TypeOfRemoveReference { typedef T type; };
-template <typename T> struct Arch_TypeOfRemoveReference<T&> { typedef T type; };
-#define ARCH_TYPEOF(x) typename Arch_TypeOfRemoveReference<decltype((x))>::type
-#endif
 
 // The current version of Apple clang does not support the thread_local
 // keyword.
@@ -122,5 +103,7 @@ template <typename T> struct Arch_TypeOfRemoveReference<T&> { typedef T type; };
 #if defined(ARCH_OS_LINUX)
 #define ARCH_HAS_MMAP_MAP_POPULATE
 #endif
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_DEFINES_H 

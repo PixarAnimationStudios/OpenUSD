@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/size2.h"
 #include "pxr/base/tf/type.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<GfSize2>();
@@ -34,3 +38,5 @@ TF_REGISTRY_FUNCTION(TfType) {
 std::ostream &operator<<(std::ostream &o, GfSize2 const &v) {
     return o << "( " << v._vec[0] << " " << v._vec[1] << " )";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

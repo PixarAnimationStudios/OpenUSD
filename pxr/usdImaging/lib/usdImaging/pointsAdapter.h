@@ -24,8 +24,12 @@
 #ifndef USDIMAGING_POINTS_ADAPTER_H
 #define USDIMAGING_POINTS_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdImagingPointsAdapter
 ///
@@ -81,5 +85,8 @@ public:
 private:
     void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_POINTS_ADAPTER_H

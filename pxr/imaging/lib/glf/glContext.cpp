@@ -25,6 +25,9 @@
 #include "pxr/imaging/glf/glContextRegistry.h"
 #include "pxr/imaging/garch/glPlatformContext.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 //
 // GlfGLContext
 //
@@ -54,7 +57,7 @@ GlfGLContext::GetSharedGLContext()
 void
 GlfGLContext::MakeCurrent(const GlfGLContextSharedPtr& context)
 {
-    if (context and context->IsValid()) {
+    if (context && context->IsValid()) {
         context->_MakeCurrent();
 
         // Now that this context is current add it to the registry for
@@ -70,7 +73,7 @@ bool
 GlfGLContext::AreSharing(GlfGLContextSharedPtr const & context1,
                          GlfGLContextSharedPtr const & context2)
 {
-    return (context1 and context1->IsSharing(context2));
+    return (context1 && context1->IsSharing(context2));
 }
 
 bool
@@ -82,7 +85,7 @@ GlfGLContext::IsInitialized()
 bool
 GlfGLContext::IsCurrent() const
 {
-    return IsValid() and _IsEqual(GetCurrentGLContext());
+    return IsValid() && _IsEqual(GetCurrentGLContext());
 }
 
 void
@@ -102,8 +105,8 @@ GlfGLContext::DoneCurrent()
 bool
 GlfGLContext::IsSharing(GlfGLContextSharedPtr const & otherContext)
 {
-    return otherContext and IsValid() and
-           otherContext->IsValid() and _IsSharing(otherContext);
+    return otherContext && IsValid() &&
+           otherContext->IsValid() && _IsSharing(otherContext);
 }
 
 //
@@ -140,3 +143,6 @@ GlfGLContextScopeHolder::_RestoreOldContext()
         GlfGLContext::MakeCurrent(_oldContext);
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

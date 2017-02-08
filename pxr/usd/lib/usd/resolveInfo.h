@@ -24,6 +24,9 @@
 #ifndef USD_RESOLVE_INFO_H
 #define USD_RESOLVE_INFO_H
 
+/// \file usd/resolveInfo.h
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
@@ -33,27 +36,34 @@
 
 #include <limits>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
 /// \enum UsdResolveInfoSource
 ///
 /// Describes the various sources of attribute values.
 ///
+/// For more details, see \ref Usd_ValueResolution.
+///
 enum UsdResolveInfoSource
 {
-    UsdResolveInfoSourceNone,            //< No value
+    UsdResolveInfoSourceNone,            ///< No value
 
-    UsdResolveInfoSourceFallback,        //< Built-in fallback value
-    UsdResolveInfoSourceDefault,         //< Attribute default value
-    UsdResolveInfoSourceTimeSamples,     //< Attribute time samples
-    UsdResolveInfoSourceValueClips,      //< Value clips
-    UsdResolveInfoSourceIsTimeDependent, //< Source may vary over time
+    UsdResolveInfoSourceFallback,        ///< Built-in fallback value
+    UsdResolveInfoSourceDefault,         ///< Attribute default value
+    UsdResolveInfoSourceTimeSamples,     ///< Attribute time samples
+    UsdResolveInfoSourceValueClips,      ///< Value clips
+    UsdResolveInfoSourceIsTimeDependent, ///< Source may vary over time
 };
 
 /// \class UsdResolveInfo
 ///
 /// Container for information about the source of an attribute's value, i.e.
 /// the 'resolved' location of the attribute.
+///
+/// For more details, see \ref Usd_ValueResolution.
 ///
 class UsdResolveInfo
 {
@@ -87,7 +97,7 @@ public:
         return _node;
     }
 
-    /// Return true if thhis UsdResolveInfo represents an attribute whose
+    /// Return true if this UsdResolveInfo represents an attribute whose
     /// value is blocked.
     ///
     /// \see UsdAttribute::Block()
@@ -151,5 +161,8 @@ private:
     friend class UsdStage_ResolveInfoAccess;
     friend class UsdAttributeQuery;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_RESOLVE_INFO_H

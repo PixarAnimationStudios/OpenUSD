@@ -21,13 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/plug/testPlugBase.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/plug/testPlugBase.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <int N>
 TfRefPtr< _TestPlugBase<N> >
@@ -89,3 +92,5 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define< _TestPlugDerived0, TfType::Bases<_TestPlugBase1> >()
         .SetFactory<_TestPlugFactory<_TestPlugDerived0> >();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

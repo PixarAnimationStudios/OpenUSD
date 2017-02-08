@@ -21,9 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/ar/resolverScopedCache.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/usd/ar/resolver.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ArResolverScopedCache::ArResolverScopedCache()
 {
@@ -40,3 +43,5 @@ ArResolverScopedCache::~ArResolverScopedCache()
 {
     ArGetResolver()._EndCacheScope(&_cacheScopeData);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

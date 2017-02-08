@@ -28,10 +28,13 @@
 /// \ingroup group_arch_Memory
 /// Routines for controlling malloc behavior.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 
 #include <stdlib.h>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Return true if ptmalloc is being used as the memory allocator
 ///
@@ -151,5 +154,7 @@ private:
     void* (*_underlyingMemalignFunc)(size_t, size_t);
     void  (*_underlyingFreeFunc)(void*);
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_MALLOCHOOK_H

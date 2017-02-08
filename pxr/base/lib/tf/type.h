@@ -24,6 +24,8 @@
 #ifndef TF_TYPE_H
 #define TF_TYPE_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/cxxCast.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/registryManager.h"
@@ -41,6 +43,8 @@
 #include <type_traits>
 #include <typeinfo>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfPyObjWrapper;
 class TfType;
@@ -400,7 +404,7 @@ public:
 
     /// Boolean not operator -- return true if this type is unknown, false
     /// otherwise.
-    bool operator !() const { return not bool(*this); }
+    bool operator !() const { return !bool(*this); }
 
     /// Return true if this is the root type.
     ///
@@ -637,8 +641,8 @@ private:
     // Polymorphic.
     template <class T>
     static typename std::enable_if<
-        std::is_polymorphic<T>::value and
-        not std::is_base_of<PyPolymorphicBase, T>::value, TfType const &>::type
+        std::is_polymorphic<T>::value &&
+        !std::is_base_of<PyPolymorphicBase, T>::value, TfType const &>::type
     _FindImpl(T const *rawPtr) {
         if (auto ptr = dynamic_cast<PyPolymorphicBase const *>(rawPtr))
             return _FindImplPyPolymorphic(ptr);
@@ -647,7 +651,7 @@ private:
 
     template <class T>
     static typename std::enable_if<
-        not std::is_polymorphic<T>::value, TfType const &>::type
+        !std::is_polymorphic<T>::value, TfType const &>::type
     _FindImpl(T const *rawPtr) {
         return Find(typeid(T));
     }
@@ -725,6 +729,8 @@ TfType::_TypeDefiner<T>::_TypeDefiner(TfType const& type)
     _type = &type;
     _type->_DefineCppType(typeid(T), sizeofType, isPodType, isEnumType);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 // Implementation details are put in this header.
 #include "pxr/base/tf/type_Impl.h"

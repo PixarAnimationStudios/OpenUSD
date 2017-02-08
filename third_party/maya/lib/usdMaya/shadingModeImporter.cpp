@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/shadingModeImporter.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -28,18 +29,21 @@
 
 #include <maya/MObject.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 bool
 PxrUsdMayaShadingModeImportContext::GetCreatedObject(
         const UsdPrim& prim,
         MObject* obj) const
 {
-    if (not prim) {
+    if (!prim) {
         return false;
     }
 
     MObject node = _context->GetMayaNode(prim.GetPath(), false);
-    if (not node.isNull()) {
+    if (!node.isNull()) {
         *obj = node;
         return true;
     }
@@ -63,9 +67,12 @@ PxrUsdMayaShadingModeImportContext::AddCreatedObject(
         const SdfPath& path,
         const MObject& obj)
 {
-    if (not path.IsEmpty()) {
+    if (!path.IsEmpty()) {
         _context->RegisterNewMayaNode(path.GetString(), obj);
     }
 
     return obj;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,6 +24,7 @@
 #ifndef SDF_ABSTRACTDATA_H
 #define SDF_ABSTRACTDATA_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -37,6 +38,8 @@
 
 #include <boost/optional.hpp>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfAbstractData);
 class SdfAbstractDataSpecVisitor;
@@ -94,7 +97,7 @@ public:
     /// Returns the full path to the spec identified by this object.
     const SdfPath& GetFullSpecPath() const
     {
-        return (not _propertyName ? *_path : _ComputeFullSpecPath());
+        return (!_propertyName ? *_path : _ComputeFullSpecPath());
     }
 
     /// If this object identifies a property, returns the path to the spec
@@ -104,7 +107,7 @@ public:
     /// This path and the property name together form the full spec path.
     const SdfPath& GetPropertyOwningSpecPath() const
     {
-        return (_propertyName or not _path->IsPropertyPath() ? 
+        return (_propertyName || !_path->IsPropertyPath() ? 
             *_path : _ComputePropertyOwningSpecPath());
     }
 
@@ -439,7 +442,7 @@ public:
             return true;
         }
 
-        if (not v.IsHolding<T>()) {
+        if (!v.IsHolding<T>()) {
             return false;
         }
 
@@ -510,7 +513,7 @@ public:
 
     virtual bool IsEqual(const VtValue& v) const
     {
-        return (v.IsHolding<T>() and v.UncheckedGet<T>() == _GetValue());
+        return (v.IsHolding<T>() && v.UncheckedGet<T>() == _GetValue());
     }
 
 private:
@@ -558,5 +561,7 @@ public:
     /// complete, even if some \c VisitSpec() returned \c false.
     virtual void Done(const SdfAbstractData& data) = 0;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SD_ABSTRACTDATA_H

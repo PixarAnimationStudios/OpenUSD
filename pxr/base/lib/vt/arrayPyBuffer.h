@@ -24,9 +24,13 @@
 #ifndef VT_ARRAY_PYBUFFER_H
 #define VT_ARRAY_PYBUFFER_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/pyObjWrapper.h"
+
 #include <boost/optional.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Convert \p obj which should support the python buffer protocol (e.g. a
 /// numpy array) to a VtArray if possible and return it.  Return empty
@@ -49,5 +53,7 @@ VtArrayFromPyBuffer(TfPyObjWrapper const &obj, std::string *err=nullptr);
     ((GfQuatf, Quatf))                          \
     ((GfQuatd, Quatd))
 
-#endif // VT_ARRAY_PYBUFFER_H
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // VT_ARRAY_PYBUFFER_H

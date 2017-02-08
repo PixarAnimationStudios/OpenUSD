@@ -30,6 +30,9 @@
 
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static void
 _FilterByRootPaths(SdfPathVector* paths, HdRenderIndex const& index, 
                    HdRprimCollection const& collection)
@@ -52,7 +55,7 @@ _FilterByRootPaths(SdfPathVector* paths, HdRenderIndex const& index,
     bool absoluteRoot = (*rootIt == SdfPath::AbsoluteRootPath());
 
     idIt = paths->begin();
-    if (not absoluteRoot) {
+    if (!absoluteRoot) {
         // Sort dirty item lists for efficient exclusion.
         HD_TRACE_SCOPE("Sort dirty paths");
 
@@ -86,12 +89,12 @@ _FilterByRootPaths(SdfPathVector* paths, HdRenderIndex const& index,
         //   and idIt will proceed until !(*idIt < *rootIt), which is /D/c0.
         //   Then it starts over to the outer while loop.
         //
-        if (not (absoluteRoot or
+        if (!(absoluteRoot ||
                  idIt->HasPrefix(*rootIt))) {
             // next root prefix
             ++rootIt;
-            while (idIt != idEnd and
-                   (rootIt == rootItEnd or *idIt < *rootIt)) {
+            while (idIt != idEnd &&
+                   (rootIt == rootItEnd || *idIt < *rootIt)) {
                 // this id doesn't belong to rootPaths of the collection.
                 idIt++;
             }
@@ -132,7 +135,7 @@ HdDirtyList::HdDirtyList(HdRprimCollection const& collection,
 HdDirtyList::~HdDirtyList()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HD_PERF_COUNTER_DECR(HdPerfTokens->dirtyLists);
 }
@@ -176,12 +179,12 @@ HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdChangeTracker::DirtyBits mask)
                 HD_TRACE_SCOPE("walk");
                 // Walk together instead of lower_bound to increase cache
                 // coherency.
-                while (root != roots.end() and less(*root, *it)) {
+                while (root != roots.end() && less(*root, *it)) {
                     root++;
                 }
             }
             // Expand prims in two-phases to increase cache coherency.
-            if (root != roots.end() and *root == *it) {
+            if (root != roots.end() && *root == *it) {
                 directAdd.push_back(*it);
             } else {
                 mustFilter.push_back(*it);
@@ -195,7 +198,7 @@ HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdChangeTracker::DirtyBits mask)
         HD_TRACE_SCOPE("build direct list");
         TF_FOR_ALL(it, directAdd) {
             TF_FOR_ALL(rprimID, _renderIndex.GetDelegateRprimIDs(*it)) {
-                if (mask == 0 or tracker.GetRprimDirtyBits(*rprimID) & mask) {
+                if (mask == 0 || tracker.GetRprimDirtyBits(*rprimID) & mask) {
                     if (_renderIndex.IsInCollection(*rprimID,
                                                     _collection.GetName()))
                         ids->push_back(*rprimID);
@@ -208,7 +211,7 @@ HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdChangeTracker::DirtyBits mask)
         HD_TRACE_SCOPE("build filter list");
         TF_FOR_ALL(it, mustFilter) {
             TF_FOR_ALL(rprimID, _renderIndex.GetDelegateRprimIDs(*it)) {
-                if (mask == 0 or tracker.GetRprimDirtyBits(*rprimID) & mask) {
+                if (mask == 0 || tracker.GetRprimDirtyBits(*rprimID) & mask) {
                     toBeFiltered.push_back(*rprimID);
                 }
             }
@@ -262,8 +265,8 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
     // when repr changes, don't reuse the dirty list, since the required
     // DirtyBits may change.
     if (col.GetName() != _collection.GetName()
-        or col.GetReprName() != _collection.GetReprName()
-        or col.IsForcedRepr() != _collection.IsForcedRepr()) {
+        || col.GetReprName() != _collection.GetReprName()
+        || col.IsForcedRepr() != _collection.IsForcedRepr()) {
         return false;
     }
 
@@ -296,8 +299,8 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
         }
     }
 
-    while (newI != newEnd or oldI != oldEnd) {
-        if (newI != newEnd and oldI != oldEnd and *newI == *oldI) {
+    while (newI != newEnd || oldI != oldEnd) {
+        if (newI != newEnd && oldI != oldEnd && *newI == *oldI) {
             ++newI;
             ++oldI;
             continue;
@@ -306,16 +309,16 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
         // below doesn't work, since the subtree has to be fixed up (it's not
         // just a simple prefix scan). In these cases, we'll just rebuild the
         // entire list.
-        if (newI != newEnd and oldI != oldEnd and newI->HasPrefix(*oldI)) {
+        if (newI != newEnd && oldI != oldEnd && newI->HasPrefix(*oldI)) {
             return false;          
         }
-        if (newI != newEnd and oldI != oldEnd and oldI->HasPrefix(*newI)) {
+        if (newI != newEnd && oldI != oldEnd && oldI->HasPrefix(*newI)) {
             return false;          
         }
-        if (newI != newEnd and (oldI == oldEnd or *newI < *oldI)) {
+        if (newI != newEnd && (oldI == oldEnd || *newI < *oldI)) {
             // Item added in the new list
             SdfPathVector const& d = index.GetDelegateRprimIDs(*newI);
-            if (not d.empty()) {
+            if (!d.empty()) {
                 _dirtyIds.reserve(_dirtyIds.size() + d.size());
                 for (auto const& path : d) {
                     if (index.IsInCollection(path, col.GetName())) {
@@ -365,7 +368,7 @@ SdfPathVector const&
 HdDirtyList::GetDirtyRprims()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     /*
        HdDirtyList has 3-states:
@@ -405,7 +408,7 @@ HdDirtyList::GetDirtyRprims()
         = changeTracker.GetChangeCount();
 
     // if nothing changed, and if it's clean, returns empty.
-    if (_isEmpty and _changeCount == currentChangeCount) {
+    if (_isEmpty && _changeCount == currentChangeCount) {
         static SdfPathVector _EMPTY;
         return _EMPTY;
     }
@@ -472,3 +475,6 @@ HdDirtyList::GetDirtyRprims()
 
     return _dirtyIds;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

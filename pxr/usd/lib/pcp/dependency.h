@@ -24,9 +24,13 @@
 #ifndef PCP_DEPENDENCY_H
 #define PCP_DEPENDENCY_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/sdf/path.h"
+
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpNodeRef;
 
@@ -128,4 +132,6 @@ PcpDependencyFlags PcpClassifyNodeDependency(const PcpNodeRef &n);
 
 std::string PcpDependencyFlagsToString(const PcpDependencyFlags flags);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_DEPENDENCY_H

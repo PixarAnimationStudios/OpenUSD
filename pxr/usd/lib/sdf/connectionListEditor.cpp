@@ -21,11 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/connectionListEditor.h"
-
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
+
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class ChildPolicy>
 Sdf_ConnectionListEditor<ChildPolicy>::Sdf_ConnectionListEditor(
@@ -38,13 +41,13 @@ Sdf_ConnectionListEditor<ChildPolicy>::Sdf_ConnectionListEditor(
 
 template <class ChildPolicy>
 void 
-Sdf_ConnectionListEditor<ChildPolicy>::_OnEdit(
+Sdf_ConnectionListEditor<ChildPolicy>::_OnEditShared(
     SdfListOpType op,
     SdfSpecType specType,
     const std::vector<SdfPath>& oldItems, 
     const std::vector<SdfPath>& newItems) const
 {
-    if (op != SdfListOpTypeAdded and op != SdfListOpTypeExplicit) {
+    if (op != SdfListOpTypeAdded && op != SdfListOpTypeExplicit) {
         return;
     }
 
@@ -59,7 +62,7 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEdit(
                         newItemSet.begin(), newItemSet.end(), 
                         std::back_inserter(childrenToRemove));
     TF_FOR_ALL(child, childrenToRemove) {
-        if (not Sdf_ChildrenUtils<ChildPolicy>::RemoveChild(
+        if (!Sdf_ChildrenUtils<ChildPolicy>::RemoveChild(
                 layer, propertyPath, *child)) {
 
             const SdfPath specPath = 
@@ -79,7 +82,7 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEdit(
             continue;
         }
 
-        if (not Sdf_ChildrenUtils<ChildPolicy>::CreateSpec(layer, specPath,
+        if (!Sdf_ChildrenUtils<ChildPolicy>::CreateSpec(layer, specPath,
                 specType)) {
             TF_CODING_ERROR("Failed to create spec at <%s>", specPath.GetText());
         }
@@ -108,7 +111,7 @@ Sdf_AttributeConnectionListEditor::_OnEdit(
     const std::vector<SdfPath>& oldItems, 
     const std::vector<SdfPath>& newItems) const
 {
-    return Sdf_ConnectionListEditor<Sdf_AttributeConnectionChildPolicy>::_OnEdit(
+    return Sdf_ConnectionListEditor<Sdf_AttributeConnectionChildPolicy>::_OnEditShared(
         op, SdfSpecTypeConnection, oldItems, newItems);
 }
 
@@ -131,6 +134,8 @@ Sdf_RelationshipTargetListEditor::_OnEdit(
     const std::vector<SdfPath>& oldItems, 
     const std::vector<SdfPath>& newItems) const
 {
-    return Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy>::_OnEdit(
+    return Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy>::_OnEditShared(
         op, SdfSpecTypeRelationshipTarget, oldItems, newItems);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

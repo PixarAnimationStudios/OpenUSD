@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usd/usdRi/lookAPI.h"
-
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -38,6 +37,8 @@
 #include <string>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -110,6 +111,8 @@ void wrapUsdRiLookAPI()
     _CustomWrapCode(cls);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
 // the code generator.  The entry point for your custom code should look
@@ -122,8 +125,14 @@ void wrapUsdRiLookAPI()
 // }
 //
 // Of course any other ancillary or support code may be provided.
+// 
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
+//
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 _SetInterfaceRecipient0(
@@ -146,7 +155,7 @@ _SetInterfaceRecipient1(
 WRAP_CUSTOM {
     typedef UsdRiLookAPI This;
     _class
-        .def(init<UsdShadeLook>(arg("look")))
+        .def(init<UsdShadeMaterial>(arg("material")))
 
         .def("GetSurface", &This::GetSurface)
         .def("GetDisplacement", &This::GetDisplacement)
@@ -162,3 +171,5 @@ WRAP_CUSTOM {
         .def("GetInterfaceRecipientParameters", &This::GetInterfaceRecipientParameters)
     ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

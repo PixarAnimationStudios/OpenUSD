@@ -28,6 +28,9 @@
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 int
 GlfGetNumElements(GLenum format)
 {
@@ -153,3 +156,6 @@ size_t GlfGetCompressedTextureSize(int width, int height, GLenum format, GLenum 
                        ((height + alignSize)/tileSize);
     return numPixels * blockSize;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

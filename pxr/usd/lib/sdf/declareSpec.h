@@ -24,10 +24,13 @@
 #ifndef SDF_DECLARE_SPEC_H
 #define SDF_DECLARE_SPEC_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/specType.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfSpec;
 
@@ -65,11 +68,11 @@ public:                                                                    \
     { return typeid(SchemaType); }                                         \
 
 #define SDF_DEFINE_ABSTRACT_SPEC(SpecType, BaseSpecType)                   \
-TF_REGISTRY_FUNCTION(TfType)                                               \
+TF_REGISTRY_FUNCTION_WITH_TAG(TfType, Type)                                \
 {                                                                          \
     TfType::Define<SpecType, TfType::Bases<BaseSpecType> >();              \
 }                                                                          \
-TF_REGISTRY_FUNCTION(SdfSpecTypeRegistration)                              \
+TF_REGISTRY_FUNCTION_WITH_TAG(SdfSpecTypeRegistration, Registration)       \
 {                                                                          \
     SdfSpecTypeRegistration::RegisterAbstractSpecType<SpecType>();         \
 }
@@ -82,11 +85,11 @@ public:                                                                    \
     static SdfSpecType GetStaticSpecType() { return SpecTypeEnum; }        \
 
 #define SDF_DEFINE_SPEC(SpecType, BaseSpecType)                            \
-TF_REGISTRY_FUNCTION(TfType)                                               \
+TF_REGISTRY_FUNCTION_WITH_TAG(TfType, Type)                                \
 {                                                                          \
     TfType::Define<SpecType, TfType::Bases<BaseSpecType> >();              \
 }                                                                          \
-TF_REGISTRY_FUNCTION(SdfSpecTypeRegistration)                              \
+TF_REGISTRY_FUNCTION_WITH_TAG(SdfSpecTypeRegistration, Registration)       \
 {                                                                          \
     SdfSpecTypeRegistration::RegisterSpecType<SpecType>();                 \
 }
@@ -104,13 +107,15 @@ public:                                                                    \
     { return typeid(SchemaType); }                                         \
 
 #define SDF_DEFINE_BASE_SPEC(SpecType)                                     \
-TF_REGISTRY_FUNCTION(TfType)                                               \
+TF_REGISTRY_FUNCTION_WITH_TAG(TfType, Type)                                \
 {                                                                          \
     TfType::Define<SpecType>();                                            \
 }                                                                          \
-TF_REGISTRY_FUNCTION(SdfSpecTypeRegistration)                              \
+TF_REGISTRY_FUNCTION_WITH_TAG(SdfSpecTypeRegistration, Registration)       \
 {                                                                          \
     SdfSpecTypeRegistration::RegisterAbstractSpecType<SpecType>();         \
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_DECLARE_SPEC_H

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/translatorNurbsPatch.h"
 
 #include "usdMaya/primReaderArgs.h"
@@ -46,6 +47,9 @@
 #include <maya/MTimeArray.h>
 #include <maya/MTrimBoundaryArray.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 /* static */
 bool 
@@ -55,7 +59,7 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context)
 {
-    if (not usdNurbsPatch) {
+    if (!usdNurbsPatch) {
         return false;
     }
 
@@ -65,12 +69,12 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
 
     // Create the transform node for the patch.
     MObject mayaNode;
-    if (not PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
-                                                          parentNode,
-                                                          args,
-                                                          context,
-                                                          &status,
-                                                          &mayaNode)) {
+    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+                                                       parentNode,
+                                                       args,
+                                                       context,
+                                                       &status,
+                                                       &mayaNode)) {
         return false;
     }
 
@@ -464,3 +468,6 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
          
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

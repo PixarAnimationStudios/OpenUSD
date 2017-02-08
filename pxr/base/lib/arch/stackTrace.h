@@ -28,6 +28,7 @@
 /// \ingroup group_arch_Diagnostics
 /// Architecture-specific call-stack tracing routines.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 
@@ -37,6 +38,8 @@
 #include <vector>
 #include <string>
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_Diagnostics
 ///@{
@@ -203,13 +206,16 @@ void ArchSetProgramInfoForErrors( const std::string& key, const std::string& val
 ARCH_API
 std::string ArchGetProgramInfoForErrors(const std::string& key);
 
-/// Stores (or removes if \p text is NULL) a pointer to additional log data
+/// Stores (or removes if \p lines is nullptr) a pointer to additional log data
 /// that will be output in the stack trace log in case of a fatal error. Note
-/// that the pointer \p text is copied, not the pointed-to text.  Thus it is
-/// the caller's responsibility to ensure that \p text is valid until the
-/// caller removes it by invoking this function again with text==NULL.
+/// that the pointer \p lines is copied, not the pointed-to data.  In addition,
+/// Arch might read the data pointed to by \p lines concurrently at any time.
+/// Thus it is the caller's responsibility to ensure that \p lines is both valid
+/// and not mutated until replacing or removing it by invoking this function
+/// again with the same \p key and different \p lines.
 ARCH_API
-void ArchSetExtraLogInfoForErrors(const std::string &key, char const *text);
+void ArchSetExtraLogInfoForErrors(const std::string &key,
+                                  std::vector<std::string> const *lines);
 
 /// Logs a stack trace to a file in /var/tmp.
 ///
@@ -314,5 +320,7 @@ void ArchTestCrash(bool spawnthread);
 #endif  // end ARCH_OS_DARWIN
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // ARCH_STACKTRACE_H

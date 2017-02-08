@@ -36,6 +36,9 @@
 
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 Hd_GeometricShader::Hd_GeometricShader(std::string const &glslfxString,
                                        int16_t primitiveMode,
                                        int16_t primitiveIndexSize,
@@ -43,7 +46,8 @@ Hd_GeometricShader::Hd_GeometricShader(std::string const &glslfxString,
                                        HdPolygonMode polygonMode,
                                        bool cullingPass,
                                        SdfPath const &debugId)
-    : _primitiveMode(primitiveMode)
+    : HdShaderCode()
+    , _primitiveMode(primitiveMode)
     , _primitiveIndexSize(primitiveIndexSize)
     , _cullStyle(cullStyle)
     , _polygonMode(polygonMode)
@@ -51,11 +55,11 @@ Hd_GeometricShader::Hd_GeometricShader(std::string const &glslfxString,
     , _hash(0)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // XXX
     // we will likely move this (the constructor or the entire class) into
-    // the base class (HdShader) at the end of refactoring, to be able to
+    // the base class (HdShaderCode) at the end of refactoring, to be able to
     // use same machinery other than geometric shaders.
 
     if (TfDebug::IsEnabled(HD_DUMP_GLSLFX_CONFIG)) {
@@ -81,7 +85,7 @@ Hd_GeometricShader::~Hd_GeometricShader()
 }
 
 /* virtual */
-HdShader::ID
+HdShaderCode::ID
 Hd_GeometricShader::ComputeHash() const
 {
     return _hash;
@@ -127,3 +131,6 @@ Hd_GeometricShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     // no-op
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

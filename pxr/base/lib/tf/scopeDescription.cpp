@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
@@ -31,6 +34,8 @@
 
 using std::vector;
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Static description stack
 
@@ -88,3 +93,5 @@ TfGetCurrentScopeDescriptionStack()
     tbb::spin_mutex::scoped_lock lock(*_descriptionStackMutex);
     return *_descriptionStack;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

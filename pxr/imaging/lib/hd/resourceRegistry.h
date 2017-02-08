@@ -24,6 +24,7 @@
 #ifndef HD_RESOURCE_REGISTRY_H
 #define HD_RESOURCE_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -45,9 +46,14 @@
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/textureResource.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
@@ -66,7 +72,7 @@ typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 ///
 class HdResourceRegistry : public boost::noncopyable  {
 public:
-    HD_MALLOC_TAG_NEW("new HdResourceRegistry");
+    HF_MALLOC_TAG_NEW("new HdResourceRegistry");
 
     /// Returns an instance of resource registry
     static HdResourceRegistry& GetInstance() {
@@ -346,5 +352,8 @@ private:
     _PersistentBufferRegistry _persistentBufferRegistry;
 
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RESOURCE_REGISTRY_H

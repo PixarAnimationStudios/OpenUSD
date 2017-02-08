@@ -24,7 +24,7 @@
 // Types.cpp
 //
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/connectionListEditor.h"
 #include "pxr/usd/sdf/listOpListEditor.h"
@@ -33,6 +33,8 @@
 #include "pxr/base/tf/registryManager.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -105,3 +107,5 @@ SdfGetReferenceEditorProxy(const SdfSpecHandle& o, const TfToken & n)
 {
     return SdfGetListEditorProxy<SdfReferenceEditorProxy>(o, n);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

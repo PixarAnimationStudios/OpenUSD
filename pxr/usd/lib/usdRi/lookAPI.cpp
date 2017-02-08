@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -45,7 +47,7 @@ UsdRiLookAPI::~UsdRiLookAPI()
 UsdRiLookAPI
 UsdRiLookAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiLookAPI();
     }
@@ -168,13 +170,20 @@ UsdRiLookAPI::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -187,7 +196,7 @@ UsdRiLookAPI_GetSingleTargetShaderObject(const UsdRelationship &rel)
     if (rel) {
         SdfPathVector targetPaths;
         rel.GetForwardedTargets(&targetPaths);
-        if ((targetPaths.size() == 1) and targetPaths.front().IsPrimPath()) {
+        if ((targetPaths.size() == 1) && targetPaths.front().IsPrimPath()) {
             return UsdRiRslShader(
                 rel.GetStage()->GetPrimAtPath(targetPaths.front()));
         }
@@ -240,7 +249,7 @@ UsdRiLookAPI::GetBxdf()
     if (UsdRelationship rel = GetBxdfRel()) {
         SdfPathVector targetPaths;
         rel.GetForwardedTargets(&targetPaths);
-        if (targetPaths.size() == 1 and targetPaths.front().IsPrimPath()) {
+        if (targetPaths.size() == 1 && targetPaths.front().IsPrimPath()) {
             return UsdRiRisBxdf(
                 GetPrim().GetStage()->GetPrimAtPath(targetPaths.front()));
         }
@@ -299,6 +308,8 @@ UsdRiLookAPI::GetInterfaceRecipientParameters(
 std::vector<UsdShadeInterfaceAttribute> 
 UsdRiLookAPI::GetInterfaceAttributes() const
 {
-    return UsdShadeLook(GetPrim()).GetInterfaceAttributes(_tokens->ri);
+    return UsdShadeMaterial(GetPrim()).GetInterfaceAttributes(_tokens->ri);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

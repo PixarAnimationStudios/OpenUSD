@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 
 #include "pxr/base/arch/defines.h"
@@ -44,6 +47,8 @@
 using namespace boost::python;
 namespace boost_pt = boost::posix_time;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 static const unsigned short usecNumDigits = 6;
 
 static void _ImportPyDateTimeModuleOnce();
@@ -54,7 +59,7 @@ struct BoostPtimeToPyDateTime
 
         _ImportPyDateTimeModuleOnce();
 
-        if (not ptime.is_special()) {
+        if (!ptime.is_special()) {
             const boost::gregorian::date date = ptime.date();
             const boost_pt::time_duration time = ptime.time_of_day();
             // Convert fractional seconds to microseconds.
@@ -100,7 +105,7 @@ struct Tf_BoostPtimeFromPyDateTime
     }
     static void *convertible(PyObject *obj) {
         _ImportPyDateTimeModuleOnce();
-        return (obj and PyDateTime_Check(obj)) ? obj : 0;
+        return (obj && PyDateTime_Check(obj)) ? obj : 0;
     }
     static void construct(PyObject *src,
                           boost::python::converter::
@@ -170,3 +175,5 @@ _ImportPyDateTimeModuleOnce()
         PyDateTime_IMPORT;
     });
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

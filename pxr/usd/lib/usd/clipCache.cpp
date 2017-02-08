@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/clipCache.h"
 
 #include "pxr/usd/usd/debugCodes.h"
@@ -39,6 +40,9 @@
 #include "pxr/base/tf/ostreamMethods.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 Usd_ClipCache::Usd_ClipCache()
 {
@@ -83,12 +87,12 @@ _ValidateClipFields(
 
     // The 'clipPrimPath' field identifies a prim from which clip data
     // will be read.
-    if (not SdfPath::IsValidPathString(clipPrimPath, errMsg)) {
+    if (!SdfPath::IsValidPathString(clipPrimPath, errMsg)) {
         return false;
     }
     
     const SdfPath path(clipPrimPath);
-    if (not (path.IsAbsolutePath() and path.IsPrimPath())) {
+    if (!(path.IsAbsolutePath() && path.IsPrimPath())) {
         *errMsg = TfStringPrintf(
             "Path '%s' in metadata '%s' must be an absolute path to a prim",
             clipPrimPath.c_str(),
@@ -99,7 +103,7 @@ _ValidateClipFields(
     // Each Vec2d in the 'clipActive' array is a (start frame, clip index)
     // tuple. Ensure the clip index points to a valid clip.
     for (const auto& startFrameAndClipIndex : clipActive) {
-        if (startFrameAndClipIndex[1] < 0 or
+        if (startFrameAndClipIndex[1] < 0 ||
             startFrameAndClipIndex[1] >= numClips) {
 
             *errMsg = TfStringPrintf(
@@ -119,7 +123,7 @@ _ValidateClipFields(
             activeClipMap.insert(std::make_pair(
                     startFrameAndClipIndex[0], startFrameAndClipIndex[1]));
         
-        if (not status.second) {
+        if (!status.second) {
             *errMsg = TfStringPrintf(
                 "Clip %d cannot be active at time %.3f in metadata '%s' "
                 "because clip %d was already specified as active at this time.",
@@ -145,15 +149,15 @@ _AddClipsFromNode(
     // If we haven't found all of the required clip metadata we can just 
     // bail out. Note that clipTimes and clipManifestAssetPath are *not* 
     // required.
-    if (not clipInfo.clipAssetPaths or not clipInfo.clipPrimPath 
-        or not clipInfo.clipActive) {
+    if (!clipInfo.clipAssetPaths || !clipInfo.clipPrimPath 
+        || !clipInfo.clipActive) {
         return;
     }
 
     // The clip manifest is currently optional but can greatly improve
     // performance if specified. For debugging performance problems,
     // issue a message indicating if one hasn't been specified.
-    if (not clipInfo.clipManifestAssetPath) {
+    if (!clipInfo.clipManifestAssetPath) {
         TF_DEBUG(USD_CLIPS).Msg(
             "No clip manifest specified for prim <%s> in LayerStack "
             "%s at spec <%s>. Performance may be improved if a "
@@ -166,7 +170,7 @@ _AddClipsFromNode(
     // XXX: Possibly want a better way to inform consumers of the error
     //      message..
     std::string error;
-    if (not _ValidateClipFields(
+    if (!_ValidateClipFields(
             *clipInfo.clipAssetPaths, *clipInfo.clipPrimPath, 
             *clipInfo.clipActive, &error)) {
 
@@ -234,7 +238,7 @@ _AddClipsFromNode(
                 const Usd_Clip::ExternalTime extTime = clipTime[0];
                 const Usd_Clip::InternalTime intTime = clipTime[1];
                 
-                if (clipStartTime <= extTime and extTime < clipEndTime) {
+                if (clipStartTime <= extTime && extTime < clipEndTime) {
                     timeMapping.push_back(
                         Usd_Clip::TimeMapping(extTime, intTime));
                 }
@@ -268,12 +272,12 @@ Usd_ClipCache::PopulateClipsForPrim(
     for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextNode()) {
         Clips clipsFromNode;
         _AddClipsFromNode(res.GetNode(), &clipsFromNode);
-        if (not clipsFromNode.valueClips.empty()) {
+        if (!clipsFromNode.valueClips.empty()) {
             allClips.push_back(clipsFromNode);
         }
     };
 
-    const bool primHasClips = not allClips.empty();
+    const bool primHasClips = !allClips.empty();
     if (primHasClips) {
         tbb::mutex::scoped_lock lock(_mutex);
 
@@ -290,6 +294,30 @@ Usd_ClipCache::PopulateClipsForPrim(
     }
 
     return primHasClips;
+}
+
+SdfLayerHandleSet
+Usd_ClipCache::GetUsedLayers() const
+{
+    SdfLayerHandleSet layers;
+
+    tbb::mutex::scoped_lock lock(_mutex);
+
+    for (_ClipTable::iterator::value_type const &clipsListIter : _table){
+        for (Clips const &clipSet : clipsListIter.second){
+            if (SdfLayerHandle layer = clipSet.manifestClip ?
+                clipSet.manifestClip->GetLayerIfOpen() : SdfLayerHandle()){
+                layers.insert(layer);
+            }
+            for (Usd_ClipRefPtr const &clip : clipSet.valueClips){
+                if (SdfLayerHandle layer = clip->GetLayerIfOpen()){
+                    layers.insert(layer);
+                }
+            }
+        }
+    }
+
+    return layers;
 }
 
 const std::vector<Usd_ClipCache::Clips>&
@@ -329,3 +357,6 @@ Usd_ClipCache::InvalidateClipsForPrim(const SdfPath& path, Lifeboat* lifeboat)
 
     _table.erase(path);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

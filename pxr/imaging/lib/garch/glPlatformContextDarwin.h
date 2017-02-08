@@ -24,7 +24,11 @@
 #ifndef GARCH_GLPLATFORMCONTEXT_DARWIN_H
 #define GARCH_GLPLATFORMCONTEXT_DARWIN_H
 
+#include "pxr/pxr.h"
 #include <memory>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GarchNSGLContextState {
 public:
@@ -57,5 +61,8 @@ private:
 
 // Hide the platform specific type name behind a common name.
 typedef GarchNSGLContextState GarchGLPlatformContextState;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GARCH_GLPLATFORMCONTEXT_DARWIN_H

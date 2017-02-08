@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/mallocTag.h"
@@ -29,26 +31,25 @@
 
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 extern void Tf_DebugInitFromEnvironment();
 
 namespace {
 
-ARCH_CONSTRUCTOR(102)
-static
-void
-Tf_InitConfig()
+ARCH_CONSTRUCTOR(Tf_InitConfig, 2, void)
 {
     std::string capture = TfGetenv("TF_MALLOC_TAG_CAPTURE");
     std::string debug   = TfGetenv("TF_MALLOC_TAG_DEBUG");
-    if (not capture.empty() or not debug.empty() or
-            TfGetenvBool("TF_MALLOC_TAG", false)) {
+    if (!capture.empty() || !debug.empty() ||
+        TfGetenvBool("TF_MALLOC_TAG", false)) {
         std::string errMsg;
 
         /*
          * Only the most basic error output can be done this early...
          */
         
-        if (not TfMallocTag::Initialize(&errMsg)) {
+        if (!TfMallocTag::Initialize(&errMsg)) {
             fprintf(stderr, "%s: TF_MALLOC_TAG environment variable set, but\n"
                     "            malloc tag initialization failed: %s\n",
                     ArchGetExecutablePath().c_str(), errMsg.c_str());
@@ -65,12 +66,11 @@ Tf_InitConfig()
 // descriptions and exits.  If we call this before registry functions were
 // executed we would not see any added inside TF_REGISTRY_FUNCTION, which is
 // most of them.
-ARCH_CONSTRUCTOR(302)
-static
-void
-Tf_InitConfigPost()
+ARCH_CONSTRUCTOR(Tf_InitConfigPost, 202, void)
 {
     Tf_DebugInitFromEnvironment();
 }
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

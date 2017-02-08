@@ -24,9 +24,13 @@
 #ifndef PXRUSDMAYA_PRIMREADERCONTEXT_H
 #define PXRUSDMAYA_PRIMREADERCONTEXT_H
 
+#include "pxr/pxr.h"
 #include <maya/MObject.h>
 
 #include "pxr/usd/usd/prim.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class PxrUsdMayaPrimReaderContext
 /// \brief This class provides an interface for reader plugins to communicate
@@ -83,5 +87,8 @@ private:
     // for undo/redo
     ObjectRegistry* _pathNodeMap;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_PRIMREADERCONTEXT_H

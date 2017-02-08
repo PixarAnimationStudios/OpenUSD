@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyWeakObject.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(Tf_PyWeakObjectRegistry);
 
@@ -31,3 +35,5 @@ Tf_PyWeakObjectRegistry::~Tf_PyWeakObjectRegistry()
 // CODE_COVERAGE_ON_GCOV_BUG
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

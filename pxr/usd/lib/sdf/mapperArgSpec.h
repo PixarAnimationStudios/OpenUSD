@@ -26,10 +26,14 @@
 
 /// \file sdf/mapperArgSpec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/base/vt/value.h"
+
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfMapperArgSpec);
 SDF_DECLARE_HANDLES(SdfMapperSpec);
@@ -89,4 +93,6 @@ public:
     /// @}
 };
 
-#endif /* SDF_MAPPERARGSPEC_H */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_MAPPERARGSPEC_H 

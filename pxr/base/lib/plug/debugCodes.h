@@ -24,7 +24,10 @@
 #ifndef PLUG_DEBUGCODES_H
 #define PLUG_DEBUGCODES_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEBUG_CODES(
 
@@ -35,4 +38,6 @@ TF_DEBUG_CODES(
 
 );
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PLUG_DEBUGCODES_H

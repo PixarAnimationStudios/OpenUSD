@@ -24,11 +24,14 @@
 #ifndef SDF_VALUETYPEPRIVATE_H
 #define SDF_VALUETYPEPRIVATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/vt/value.h"
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Sdf_ValueTypeImpl;
 
@@ -70,4 +73,6 @@ public:
     const Sdf_ValueTypeImpl* array;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_VALUETYPEPRIVATE_H

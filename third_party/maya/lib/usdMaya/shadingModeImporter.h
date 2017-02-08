@@ -24,26 +24,30 @@
 #ifndef PXRUSDMAYA_SHADINGMODEIMPORTER_H 
 #define PXRUSDMAYA_SHADINGMODEIMPORTER_H 
 
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderContext.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/material.h"
 
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 class PxrUsdMayaShadingModeImportContext
 {
 public:
 
-    const UsdShadeLook& GetShadeLook() const { return _shadeLook; }
+    const UsdShadeMaterial& GetShadeLook() const { return _shadeLook; }
     const UsdGeomGprim& GetBoundPrim() const { return _boundPrim; }
 
     PxrUsdMayaShadingModeImportContext(
-            const UsdShadeLook& shadeLook,
+            const UsdShadeMaterial& shadeLook,
             const UsdGeomGprim& boundPrim,
             PxrUsdMayaPrimReaderContext* context) :
         _shadeLook(shadeLook),
@@ -80,10 +84,13 @@ public:
     /// @}
 
 private:
-    const UsdShadeLook& _shadeLook;
+    const UsdShadeMaterial& _shadeLook;
     const UsdGeomGprim& _boundPrim;
     PxrUsdMayaPrimReaderContext* _context;
 };
 typedef boost::function< MPlug (PxrUsdMayaShadingModeImportContext*) > PxrUsdMayaShadingModeImporter;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_SHADINGMODEIMPORTER_H 

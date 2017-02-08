@@ -36,6 +36,9 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace std;
 using namespace boost::python;
 using namespace boost;
@@ -149,7 +152,8 @@ void wrapGL()
             .def_readwrite("complexity", &Params::complexity)
             .def_readwrite("drawMode", &Params::drawMode)
             .def_readwrite("showGuides", &Params::showGuides)
-            .def_readwrite("showRenderGuides", &Params::showRenderGuides)
+            .def_readwrite("showRender", &Params::showRender)
+            .def_readwrite("showProxy", &Params::showProxy)
             .def_readwrite("forceRefresh", &Params::forceRefresh)
             .def_readwrite("cullStyle", &Params::cullStyle)
             .def_readwrite("enableIdRender", &Params::enableIdRender)
@@ -169,3 +173,6 @@ void wrapGL()
                 TfPyContainerConversions::variable_capacity_policy>();
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -21,11 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/cleanupEnabler.h"
-
 #include "pxr/usd/sdf/cleanupTracker.h"
-
 #include "pxr/base/tf/instantiateStacked.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_STACKED(SdfCleanupEnabler);
 
@@ -47,5 +48,7 @@ SdfCleanupEnabler::~SdfCleanupEnabler()
 bool
 SdfCleanupEnabler::IsCleanupEnabled()
 {
-    return not GetStack().empty();
+    return !GetStack().empty();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

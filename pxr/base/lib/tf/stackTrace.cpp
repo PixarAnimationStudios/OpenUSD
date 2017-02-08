@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/stackTrace.h"
 
 #include "pxr/base/arch/fileSystem.h"
@@ -38,6 +40,8 @@
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 TfPrintStackTrace(FILE *file, const string &reason)
@@ -130,7 +134,7 @@ TfLogCrash(
         ArchGetProgramNameForErrors(), reason.c_str(), message.c_str(),
         context.GetFunction(), context.GetLine(), context.GetFile());
 
-    if (not additionalInfo.empty()) {
+    if (!additionalInfo.empty()) {
         fullMessage += additionalInfo + "\n";
     }
 
@@ -145,3 +149,5 @@ TfGetAppLaunchTime()
         TF_RUNTIME_ERROR("Could not determine application launch time.");
     return launchTime;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

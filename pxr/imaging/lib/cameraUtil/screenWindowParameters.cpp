@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/cameraUtil/screenWindowParameters.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 CameraUtilScreenWindowParameters::CameraUtilScreenWindowParameters(
     const GfCamera &camera, GfCamera::FOVDirection fitDirection)
     : _screenWindow(
@@ -50,3 +53,6 @@ CameraUtilScreenWindowParameters::CameraUtilScreenWindowParameters(
     static const GfMatrix4d zFlip(GfVec4d(1,1,-1,1));
     _zFacingViewMatrix = (zFlip * camera.GetTransform()).GetInverse();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

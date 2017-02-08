@@ -62,6 +62,9 @@
 
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // ------------------------------------------------------------------------- //
 // Generic helpers for extracting data from VtValue into char[]
 // ------------------------------------------------------------------------- //
@@ -95,6 +98,8 @@ struct _GLDataType {
     int elementType;
 };
 template<typename T> _GLDataType _GetGLType();
+template<> _GLDataType _GetGLType<bool>()
+        { return _GLDataType(GL_BOOL, GL_BOOL); }
 template<> _GLDataType _GetGLType<char>()
         { return _GLDataType(GL_BYTE, GL_BYTE); }
 template<> _GLDataType _GetGLType<short>()
@@ -490,3 +495,6 @@ std::ostream &operator <<(std::ostream &out,
     out << "    Component Size: "        << self.GetComponentSize() << "\n";
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

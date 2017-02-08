@@ -24,9 +24,13 @@
 #ifndef TF_PYERRORINTERNAL_H
 #define TF_PYERRORINTERNAL_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyExceptionState.h"
 #include <boost/python/handle.hpp>
 #include <boost/python/object_fwd.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 enum Tf_PyExceptionErrorCode {
     TF_PYTHON_EXCEPTION
@@ -55,5 +59,7 @@ public:
 private:
     TfPyExceptionState _state;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYERRORINTERNAL_H

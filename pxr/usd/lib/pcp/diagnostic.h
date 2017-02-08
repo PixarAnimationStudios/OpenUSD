@@ -27,12 +27,15 @@
 /// \file pcp/diagnostic.h
 /// Diagnostic helpers.
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/iteration/local.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpLayerStackSite;
 class PcpNodeRef;
@@ -84,14 +87,14 @@ void PcpDumpDotGraph(const PcpNodeRef& node,
 /// Indicates that the prim index currently being constructed has been
 /// updated.
 #define PCP_GRAPH_UPDATE(...)                                           \
-    if (not TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
+    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
     else {                                                              \
         Pcp_GraphUpdate(__VA_ARGS__);                                   \
     }
 
 /// Annotates the current phase of prim indexing with the given message.
 #define PCP_GRAPH_MSG(...)                                              \
-    if (not TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
+    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
     else {                                                              \
         Pcp_GraphMsg(__VA_ARGS__);                                      \
     }
@@ -138,4 +141,6 @@ Pcp_FormatSite(const PcpSite& site);
 std::string
 Pcp_FormatSite(const PcpLayerStackSite& site);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_DIAGNOSTIC_H

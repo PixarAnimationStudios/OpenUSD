@@ -26,10 +26,13 @@
 
 /// \file plug/staticInterface.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/plug/api.h"
 #include <typeinfo>
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_abstract.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Base class for common stuff.
 class PLUG_API Plug_StaticInterfaceBase {
@@ -164,7 +167,7 @@ public:
     /// \c true otherwise.
     bool operator!() const
     {
-        return not *this;
+        return !*this;
     }
 
     /// Returns the interface pointer, loading the plugin if necessary.
@@ -193,7 +196,7 @@ private:
     Interface* _GetPtr() const
     {
         // XXX: Broken double-checked locking.
-        if (not _initialized) {
+        if (!_initialized) {
             _LoadAndInstantiate(typeid(Interface));
         }
 
@@ -203,4 +206,6 @@ private:
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PLUG_STATICINTERFACE_H

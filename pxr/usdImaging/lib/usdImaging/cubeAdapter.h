@@ -24,8 +24,12 @@
 #ifndef USDIMAGING_CUBE_ADAPTER_H
 #define USDIMAGING_CUBE_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdGeomCube;
 
@@ -88,5 +92,8 @@ public:
     static GfMatrix4d GetMeshTransform(UsdPrim const& prim, 
                                        UsdTimeCode time);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_CUBE_ADAPTER_H

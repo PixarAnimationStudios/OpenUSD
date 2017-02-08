@@ -23,14 +23,15 @@
 //
 /// \file SubLayerListEditor.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/subLayerListEditor.h"
-
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/mallocTag.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 Sdf_SubLayerListEditor::Sdf_SubLayerListEditor(
     const SdfLayerHandle& owner)
@@ -54,8 +55,8 @@ Sdf_SubLayerListEditor::_OnEdit(
 
     // If this is ever the case, bad things will probably happen as code
     // in SdfLayer assumes the two vectors are in sync.
-    if (not TF_VERIFY(oldValues.size() == oldLayerOffsets.size(),
-                      "Sublayer offsets do not match sublayer paths")) {
+    if (!TF_VERIFY(oldValues.size() == oldLayerOffsets.size(),
+                  "Sublayer offsets do not match sublayer paths")) {
         return;
     }
 
@@ -77,3 +78,5 @@ Sdf_SubLayerListEditor::_OnEdit(
     
     _GetOwner()->SetField(SdfFieldKeys->SubLayerOffsets, newLayerOffsets);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

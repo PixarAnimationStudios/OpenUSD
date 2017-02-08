@@ -26,6 +26,8 @@
 
 // XXX: Include pyLock.h after pyObjWrapper.h to work around
 // Python include ordering issues.
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyLock.h"
 
@@ -62,6 +64,8 @@
 #include <iostream>
 #include <memory>
 #include <typeinfo>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Make a default value.
 /// VtValue uses this to create values to be returned from failed calls to \a
@@ -215,7 +219,7 @@ class VtValue
     // should be stored remotely.
     template <class T>
     struct _UsesLocalStore : boost::mpl::bool_<
-        (sizeof(T) <= sizeof(_Storage)) and
+        (sizeof(T) <= sizeof(_Storage)) &&
         VtValueTypeHasCheapCopy<T>::value > {};
 
     // Type information base class.
@@ -417,7 +421,7 @@ class VtValue
         typedef boost::intrusive_ptr<_Counted<T> > Ptr;
         // Get returns object stored in the pointed-to _Counted<T>.
         static T &_GetMutableObj(Ptr &ptr) {
-            if (not ptr->IsUnique())
+            if (!ptr->IsUnique())
                 ptr.reset(new _Counted<T>(ptr->Get()));
             return ptr->GetMutable();
         }
@@ -459,7 +463,7 @@ class VtValue
     friend struct _HoldAside;
     struct _HoldAside {
         explicit _HoldAside(VtValue *val)
-            : info((val->IsEmpty() or val->_IsLocalAndTriviallyCopyable())
+            : info((val->IsEmpty() || val->_IsLocalAndTriviallyCopyable())
                    ? static_cast<_TypeInfo const *>(NULL) : val->_info) {
             if (info)
                 info->Move(val->_storage, storage);
@@ -554,7 +558,7 @@ public:
     template <class T>
     inline
     typename boost::enable_if_c<
-        _TypeInfoFor<T>::Type::IsLocal and
+        _TypeInfoFor<T>::Type::IsLocal &&
         _TypeInfoFor<T>::Type::HasTrivialCopy,
     VtValue &>::type
     operator=(T obj) {
@@ -566,7 +570,7 @@ public:
     /// Assignment operator from any type.
     template <class T>
     typename boost::disable_if_c<
-        _TypeInfoFor<T>::Type::IsLocal and
+        _TypeInfoFor<T>::Type::IsLocal &&
         _TypeInfoFor<T>::Type::HasTrivialCopy,
     VtValue &>::type
     operator=(T const &obj) {
@@ -591,7 +595,7 @@ public:
     /// Swap this with \a rhs.
     VtValue &Swap(VtValue &rhs) {
         // Do nothing if both empty.  Otherwise general swap.
-        if (not IsEmpty() or not rhs.IsEmpty()) {
+        if (!IsEmpty() || !rhs.IsEmpty()) {
             VtValue tmp;
             _Move(*this, tmp);
             _Move(rhs, *this);
@@ -611,7 +615,7 @@ public:
     typename boost::enable_if<
         boost::is_same<T, typename Vt_ValueGetStored<T>::Type> >::type
     Swap(T &rhs) {
-        if (not IsHolding<T>())
+        if (!IsHolding<T>())
             *this = T();
         UncheckedSwap(rhs);
     }
@@ -657,7 +661,7 @@ public:
     /// otherwise.
     template <class T>
     bool IsHolding() const {
-        return _info and _TypeIs<T>();
+        return _info && _TypeIs<T>();
     }
 
     /// Returns true iff this is holding an array type (see VtIsArray<>).
@@ -700,7 +704,7 @@ public:
 
         // In the unlikely case that the types don't match, we obtain a default
         // value to return and issue an error via _FailGet.
-        if (ARCH_UNLIKELY(not IsHolding<T>())) {
+        if (ARCH_UNLIKELY(!IsHolding<T>())) {
             return *(static_cast<T const *>(
                          _FailGet(Factory::Invoke, typeid(T))));
         }
@@ -836,7 +840,7 @@ public:
     }
 
     /// Returns true iff this value is empty.
-    bool IsEmpty() const { return not _info; }
+    bool IsEmpty() const { return !_info; }
 
     /// Return a hash code for the held object by calling VtHashValue() on it.
     size_t GetHash() const;
@@ -849,7 +853,7 @@ public:
     template <typename T>
     friend bool operator == (VtValue const &lhs, T const &rhs) {
         typedef typename Vt_ValueGetStored<T>::Type Stored;
-        return lhs.IsHolding<Stored>() and lhs.UncheckedGet<Stored>() == rhs;
+        return lhs.IsHolding<Stored>() && lhs.UncheckedGet<Stored>() == rhs;
     }
     template <typename T>
     friend bool operator == (T const &lhs, VtValue const &rhs) {
@@ -859,23 +863,23 @@ public:
     /// Tests for inequality.
     template <typename T>
     friend bool operator != (VtValue const &lhs, T const &rhs) {
-        return not (lhs == rhs);
+        return !(lhs == rhs);
     }
     template <typename T>
     friend bool operator != (T const &lhs, VtValue const &rhs) {
-        return not (lhs == rhs);
+        return !(lhs == rhs);
     }
 
     /// Test two values for equality.
     bool operator == (const VtValue &rhs) const {
         bool empty = IsEmpty(), rhsEmpty = rhs.IsEmpty();
-        if (empty or rhsEmpty)
+        if (empty || rhsEmpty)
             return empty == rhsEmpty;
         if (_info == rhs._info)
             return _info->Equal(_storage, rhs._storage);
         return _EqualityImpl(rhs);
     }
-    bool operator != (const VtValue &rhs) const { return not (*this == rhs); }
+    bool operator != (const VtValue &rhs) const { return !(*this == rhs); }
 
     /// Calls through to operator << on the held object.
     friend std::ostream &operator << (std::ostream &out, const VtValue &self);
@@ -926,7 +930,7 @@ private:
     inline bool _TypeIs() const {
         std::type_info const &t = typeid(T);
         bool cmp = TfSafeTypeCompare(_info->typeInfo, t);
-        return ARCH_UNLIKELY(_IsProxy() and not cmp) ? _TypeIsImpl(t) : cmp;
+        return ARCH_UNLIKELY(_IsProxy() && !cmp) ? _TypeIsImpl(t) : cmp;
     }
 
     bool _TypeIsImpl(std::type_info const &queriedType) const;
@@ -972,7 +976,7 @@ private:
 
     inline void _Clear() {
         // optimize for local types not to deref _info.
-        if (_info and not _IsLocalAndTriviallyCopyable())
+        if (_info && !_IsLocalAndTriviallyCopyable())
             _info->Destroy(_storage);
         _info.Set(nullptr, 0);
     }
@@ -1013,6 +1017,8 @@ private:
     _Storage _storage;
     TfPointerAndBits<const _TypeInfo> _info;
 };
+
+#if !defined(doxygen)
 
 /// Make a default value.  VtValue uses this to create values to be returned
 /// from failed calls to \a Get.  Clients may specialize this for their own
@@ -1087,5 +1093,9 @@ inline bool
 VtValue::IsHolding<void>() const {
     return false;
 }
+
+#endif // !doxygen
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // VT_VALUE_H

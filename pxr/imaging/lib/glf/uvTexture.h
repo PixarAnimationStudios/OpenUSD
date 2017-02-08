@@ -26,12 +26,16 @@
 
 /// \file glf/uvTexture.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/baseTexture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTexture);
 
@@ -94,5 +98,8 @@ private:
     const unsigned int _cropLeft;
     const unsigned int _cropRight;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_UVTEXTURE_H

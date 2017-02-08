@@ -71,10 +71,12 @@ pxr_test_scripts(
     testenv/testVtValue.py
     testenv/testVtFunctions.py
 )
-pxr_register_test(testVtvalue
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtValue"
-)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    pxr_register_test(testVtValue
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtValue"
+    )
+endif()
 pxr_register_test(testVtArray
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArray"

@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -45,7 +47,7 @@ UsdRiStatements::~UsdRiStatements()
 UsdRiStatements
 UsdRiStatements::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRiStatements();
     }
@@ -123,18 +125,24 @@ UsdRiStatements::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
-
 
 #include "typeUtils.h"
 #include "pxr/usd/sdf/types.h"
 #include <string>
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -245,7 +253,7 @@ std::string
 UsdRiStatements::MakeRiAttributePropertyName(const std::string &attrName)
 {
     std::vector<string> names = TfStringTokenize(attrName, ":");
-    if (names.size() == 4 and TfStringStartsWith(attrName, _tokens->fullAttributeNamespace)) {
+    if (names.size() == 4 && TfStringStartsWith(attrName, _tokens->fullAttributeNamespace)) {
         return attrName;
     }
     if (names.size() == 1) {
@@ -277,14 +285,14 @@ UsdRiStatements::SetCoordinateSystem(const std::string &coordSysName)
         attr.Set(coordSysName);
 
         UsdPrim currPrim = GetPrim();
-        while (currPrim and currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
-            if (currPrim.IsModel() and not currPrim.IsGroup() and
+        while (currPrim && currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
+            if (currPrim.IsModel() && !currPrim.IsGroup() &&
                 currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
                 UsdRelationship rel =
                     currPrim.CreateRelationship(_tokens->modelCoordsys,
                                                 /* custom = */ false);
                 if (TF_VERIFY(rel)) {
-                    rel.AddTarget(GetPrim().GetPath());
+                    rel.AppendTarget(GetPrim().GetPath());
                 }
                 break;
             }
@@ -327,13 +335,13 @@ UsdRiStatements::SetScopedCoordinateSystem(const std::string &coordSysName)
 
         UsdPrim currPrim = GetPrim();
         while (currPrim) {
-            if (currPrim.IsModel() and not currPrim.IsGroup() and
+            if (currPrim.IsModel() && !currPrim.IsGroup() &&
                 currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
                 UsdRelationship rel =
                     currPrim.CreateRelationship(_tokens->modelScopedCoordsys,
                                                 /* custom = */ false);
                 if (TF_VERIFY(rel)) {
-                    rel.AddTarget(GetPrim().GetPath());
+                    rel.AppendTarget(GetPrim().GetPath());
                 }
                 break;
             }
@@ -371,7 +379,7 @@ UsdRiStatements::GetModelCoordinateSystems(SdfPathVector *targets) const
     if (GetPrim().IsModel()) {
         UsdRelationship rel =
             GetPrim().GetRelationship(_tokens->modelCoordsys);
-        return rel and rel.GetForwardedTargets(targets);
+        return rel && rel.GetForwardedTargets(targets);
     }
 
     return true;
@@ -383,8 +391,10 @@ UsdRiStatements::GetModelScopedCoordinateSystems(SdfPathVector *targets) const
     if (GetPrim().IsModel()) {
         UsdRelationship rel =
             GetPrim().GetRelationship(_tokens->modelScopedCoordsys);
-        return rel and rel.GetForwardedTargets(targets);
+        return rel && rel.GetForwardedTargets(targets);
     }
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

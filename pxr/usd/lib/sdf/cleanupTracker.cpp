@@ -21,14 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/cleanupTracker.h"
-
 #include "pxr/usd/sdf/cleanupEnabler.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/spec.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/weakPtr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef Sdf_CleanupTracker This;
 
@@ -59,7 +61,7 @@ void This::AddSpecIfTracking(SdfSpecHandle const &spec)
         // than using a set. Still, we make a quick check for the common case of
         // adding the same spec multiple times in a row to avoid obvious 
         // duplicates without having to search through the vector.
-        if (_specs.empty() or not _specs.back() or not (_specs.back() == spec)) {
+        if (_specs.empty() || !_specs.back() || !(_specs.back() == spec)) {
             _specs.push_back(spec);
         }
     }
@@ -70,7 +72,7 @@ void This::CleanupSpecs()
     // Instead of iterating through the vector then clearing it, we pop the back
     // element off until the vector is empty. This way if any more specs are 
     // added to the vector we don't end up with invalid iterators.
-    while (not _specs.empty()) {
+    while (!_specs.empty()) {
 
         SdfSpecHandle spec = _specs.back();
 
@@ -83,3 +85,5 @@ void This::CleanupSpecs()
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

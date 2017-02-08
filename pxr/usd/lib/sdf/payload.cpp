@@ -24,14 +24,14 @@
 // Payload.cpp
 //
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/payload.h"
-
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
 #include <ostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -49,21 +49,21 @@ SdfPayload::SdfPayload(
 
 SdfPayload::operator bool() const
 {
-    return not _assetPath.empty();
+    return !_assetPath.empty();
 }
 
 bool
 SdfPayload::operator==(const SdfPayload &rhs) const
 {
-    return _assetPath   == rhs._assetPath and
+    return _assetPath   == rhs._assetPath &&
            _primPath    == rhs._primPath;
 }
 
 bool
 SdfPayload::operator<(const SdfPayload &rhs) const
 {
-    return _assetPath   <  rhs._assetPath or
-        (_assetPath == rhs._assetPath and _primPath < rhs._primPath);
+    return _assetPath   <  rhs._assetPath ||
+        (_assetPath == rhs._assetPath && _primPath < rhs._primPath);
 }
 
 std::ostream & operator<<( std::ostream &out,
@@ -73,3 +73,5 @@ std::ostream & operator<<( std::ostream &out,
         << payload.GetAssetPath() << ", "
         << payload.GetPrimPath() << ")";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

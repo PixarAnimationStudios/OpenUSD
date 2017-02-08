@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/usdcFileFormat.h"
 
 #include "pxr/usd/usd/usdFileFormat.h"
@@ -37,6 +38,9 @@
 #include "crateData.h"
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 
@@ -81,20 +85,20 @@ UsdUsdcFileFormat::CanRead(const string& filePath) const
 }
 
 bool
-UsdUsdcFileFormat::ReadFromFile(const SdfLayerBasePtr& layerBase,
-                                const string& filePath,
-                                bool metadataOnly) const
+UsdUsdcFileFormat::Read(const SdfLayerBasePtr& layerBase,
+                        const string& resolvedPath,
+                        bool metadataOnly) const
 {
     TRACE_FUNCTION();
 
     auto layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (not TF_VERIFY(layer))
+    if (!TF_VERIFY(layer))
         return false;
 
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
     auto crateData = TfDynamic_cast<Usd_CrateDataRefPtr>(data);
 
-    if (not crateData or not crateData->Open(filePath))
+    if (!crateData || !crateData->Open(resolvedPath))
         return false;
 
     // Just swap out the data - unlike text layers fully populated into memory,
@@ -122,7 +126,7 @@ UsdUsdcFileFormat::WriteToFile(const SdfLayerBase* layerBase,
 {
     auto layer = dynamic_cast<const SdfLayer*>(layerBase);
 
-    if (not TF_VERIFY(layer))
+    if (!TF_VERIFY(layer))
         return false;
 
     SdfAbstractDataConstPtr dataSource =
@@ -176,3 +180,6 @@ UsdUsdcFileFormat::_IsStreamingLayer(const SdfLayerBase& layer) const
 {
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -34,6 +34,9 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<GlfBaseTexture, TfType::Bases<GlfTexture> >();
@@ -105,7 +108,7 @@ void
 GlfBaseTexture::_UpdateTexture(GlfBaseTextureDataConstPtr texData)
 {
     // Copy or clear fields required for tracking/reporting.
-    if (texData and texData->HasRawBuffer()) {
+    if (texData && texData->HasRawBuffer()) {
         _currentWidth  = texData->ResizedWidth();
         _currentHeight = texData->ResizedHeight();
         _format        = texData->GLFormat();
@@ -136,7 +139,7 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
 {
     TRACE_FUNCTION();
     
-    if (texData and texData->HasRawBuffer()) {
+    if (texData && texData->HasRawBuffer()) {
         glBindTexture(GL_TEXTURE_2D, _textureName);
 
         // Check if mip maps have been requested, if so, it will either
@@ -148,9 +151,9 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
             
             // When we are using uncompressed textures and late cropping
             // we won't use cpu loaded mips.
-            if (not texData->IsCompressed() and 
-                (unpackCropRight or unpackCropLeft or 
-                unpackCropTop or unpackCropBottom)) {
+            if (!texData->IsCompressed() &&
+                (unpackCropRight || unpackCropLeft ||
+                unpackCropTop || unpackCropBottom)) {
                     numMipLevels = 1;
             }
             if (numMipLevels > 1) {
@@ -194,24 +197,24 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
                 int unpackSkipPixels = 0;
                 int unpackSkipRows = 0;
 
-                if (unpackCropTop < 0 or unpackCropTop > texDataHeight) {
+                if (unpackCropTop < 0 || unpackCropTop > texDataHeight) {
                     return;
                 } else if (unpackCropTop > 0) {
                     unpackSkipRows = unpackCropTop;
                     texDataHeight -= unpackCropTop;
                 }
-                if (unpackCropBottom < 0 or unpackCropBottom > texDataHeight) {
+                if (unpackCropBottom < 0 || unpackCropBottom > texDataHeight) {
                     return;
                 } else if (unpackCropBottom) {
                     texDataHeight -= unpackCropBottom;
                 }
-                if (unpackCropLeft < 0 or unpackCropLeft > texDataWidth) {
+                if (unpackCropLeft < 0 || unpackCropLeft > texDataWidth) {
                     return;
                 } else {
                     unpackSkipPixels = unpackCropLeft;
                     texDataWidth -= unpackCropLeft;
                 }
-                if (unpackCropRight < 0 or unpackCropRight > texDataWidth) {
+                if (unpackCropRight < 0 || unpackCropRight > texDataWidth) {
                     return;
                 } else if (unpackCropRight > 0) {
                     texDataWidth -= unpackCropRight;
@@ -254,3 +257,6 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
         _SetMemoryUsed(texData->ComputeBytesUsed());
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

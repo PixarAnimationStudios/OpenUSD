@@ -28,6 +28,8 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/imaging/glf/glslfx.h"
 #include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -36,6 +38,9 @@
 
 #include <string>
 #include <sstream>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 HdxSimpleLightingShader::HdxSimpleLightingShader() 
     : _lightingContext(GlfSimpleLightingContext::New())
@@ -77,7 +82,7 @@ std::string
 HdxSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     std::string source = _glslfx->GetSource(shaderStageKey);
 
@@ -142,7 +147,7 @@ HdxSimpleLightingShader::SetLightingState(
 {
     if (src) {
         _useLighting = true;
-        _lightingContext->SetUseLighting(not src->GetLights().empty());
+        _lightingContext->SetUseLighting(!src->GetLights().empty());
         _lightingContext->SetLights(src->GetLights());
         _lightingContext->SetMaterial(src->GetMaterial());
         _lightingContext->SetSceneAmbient(src->GetSceneAmbient());
@@ -154,3 +159,6 @@ HdxSimpleLightingShader::SetLightingState(
         _useLighting = false;
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

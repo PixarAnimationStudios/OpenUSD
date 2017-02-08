@@ -26,10 +26,14 @@
 
 /// \file primReaderRegistry.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 
 #include "pxr/base/tf/registryManager.h" 
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class PxrUsdMayaPrimReaderRegistry
 /// \brief Provides functionality to register and lookup usd Maya reader
@@ -93,5 +97,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, T) \
     PxrUsdMayaPrimReaderRegistry::Register<T>(PxrUsdMaya_PrimReader_##T);\
 }\
 bool PxrUsdMaya_PrimReader_##T(const PxrUsdMayaPrimReaderArgs& argsVarName, PxrUsdMayaPrimReaderContext* ctxVarName)
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_PRIMREADERREGISTRY_H

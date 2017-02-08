@@ -27,8 +27,12 @@
 /// \file tf/refCount.h
 /// \ingroup group_tf_Memory
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/arch/inttypes.h"
 #include <atomic>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename T> class TfRefPtr;
 
@@ -103,4 +107,6 @@ private:
     friend struct Tf_RefPtr_Counter;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_REFCOUNT_H

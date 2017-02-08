@@ -33,6 +33,9 @@
 #include "pxr/usd/usd/treeIterator.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static 
 bool _IsA(UsdPrim const& prim, TfType const& schemaType)
 {
@@ -50,7 +53,7 @@ bool _IsA(UsdPrim const& prim, TfType const& schemaType)
     // Get Prim TfType
     const std::string &typeName = prim.GetTypeName().GetString();
 
-    return not typeName.empty() and                                              
+    return !typeName.empty() &&                                              
         PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(typeName).            
         IsA(schemaType); 
 }
@@ -79,10 +82,10 @@ UsdviewqUtils::GetPrimInfo(UsdPrim prim, UsdTimeCode time)
 {
     PrimInfo info;
 
-    info.hasCompositionArcs = (prim.HasAuthoredReferences() or
-                               prim.HasPayload() or
-                               prim.HasAuthoredInherits() or
-                               prim.HasAuthoredSpecializes() or
+    info.hasCompositionArcs = (prim.HasAuthoredReferences()    ||
+                               prim.HasPayload()               ||
+                               prim.HasAuthoredInherits()      ||
+                               prim.HasAuthoredSpecializes()   ||
                                prim.HasVariantSets());
     info.isActive = prim.IsActive();
     UsdGeomImageable img(prim);
@@ -108,3 +111,6 @@ UsdviewqUtils::GetPrimInfo(UsdPrim prim, UsdTimeCode time)
     
     return info;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,12 +24,16 @@
 #ifndef _usdExport_MayaTransformWriter_h_
 #define _usdExport_MayaTransformWriter_h_
 
+#include "pxr/pxr.h"
 #include "usdMaya/MayaPrimWriter.h"
 
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformOp.h"
 #include <maya/MFnTransform.h>
 #include <maya/MPlugArray.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdGeomXformable;
 class UsdTimeCode;
@@ -89,5 +93,8 @@ class MayaTransformWriter : public MayaPrimWriter
 };
 
 typedef shared_ptr < MayaTransformWriter > MayaTransformWriterPtr;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // _usdExport_MayaTransformWriter_h_

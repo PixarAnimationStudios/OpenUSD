@@ -24,6 +24,7 @@
 #ifndef HD_RENDER_PASS_STATE_H
 #define HD_RENDER_PASS_STATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -35,14 +36,17 @@
 
 #include <boost/shared_ptr.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdShader> HdShaderSharedPtr;
+typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassShader>
                 HdRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class Hd_FallbackLightingShader>
                 Hd_FallbackLightingShaderSharedPtr;
-typedef std::vector<HdShaderSharedPtr> HdShaderSharedPtrVector;
+typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
 
 /// \class HdRenderPassState
 ///
@@ -114,13 +118,13 @@ public:
     }
 
     /// override shader
-    void SetOverrideShader(HdShaderSharedPtr const &overrideShader);
-    HdShaderSharedPtr const &GetOverrideShader() const {
+    void SetOverrideShader(HdShaderCodeSharedPtr const &overrideShader);
+    HdShaderCodeSharedPtr const &GetOverrideShader() const {
         return _overrideShader;
     }
 
     /// returns shaders (lighting/renderpass)
-    HdShaderSharedPtrVector GetShaders() const;
+    HdShaderCodeSharedPtrVector GetShaders() const;
 
     GfMatrix4d const &GetCullMatrix() const {
         return _cullMatrix;
@@ -143,6 +147,14 @@ public:
     void SetAlphaToCoverageEnabled(bool enabled);
     bool GetAlphaToCoverageEnabled() const { return _alphaToCoverageEnabled; }
 
+    /// Apply the GL states.
+    /// Following states may be changed and restored to
+    /// the GL default at Unbind().
+    ///   glEnable(GL_POLYGON_OFFSET_FILL)
+    ///   glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE)
+    ///   glEnable(GL_PROGRAM_POINT_SIZE);
+    ///   glPolygonOffset()
+    ///   glDepthFunc()
     void Bind();
     void Unbind();
 
@@ -155,7 +167,7 @@ private:
     HdRenderPassShaderSharedPtr _renderPassShader;
     Hd_FallbackLightingShaderSharedPtr _fallbackLightingShader;
     HdLightingShaderSharedPtr _lightingShader;
-    HdShaderSharedPtr _overrideShader;
+    HdShaderCodeSharedPtr _overrideShader;
 
     // ---------------------------------------------------------------------- //
     // Camera State 
@@ -195,5 +207,8 @@ private:
 
     ClipPlanesVector _clipPlanes;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_RENDER_PASS_STATE_H

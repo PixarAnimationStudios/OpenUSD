@@ -26,9 +26,16 @@
 
 /// \file glf/glew.h
 
+#include "pxr/pxr.h"
 #include <GL/glew.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// A thread safe wrapper around glewInit().
 void GlfGlewInit();
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -24,12 +24,15 @@
 #ifndef SDF_SITE_H
 #define SDF_SITE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <set>
 #include <vector>
 #include <boost/operators.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfSite
 ///
@@ -49,13 +52,13 @@ public:
 
     bool operator==(const SdfSite& other) const
     {
-        return layer == other.layer and path == other.path;
+        return layer == other.layer && path == other.path;
     }
 
     bool operator<(const SdfSite& other) const
     {
-        return layer < other.layer or
-               (not (other.layer < layer) and path < other.path);
+        return layer < other.layer ||
+               (!(other.layer < layer) && path < other.path);
     }
 
 #if !defined(doxygen)
@@ -66,7 +69,7 @@ public:
     /// This does NOT imply that there are opinions in the layer at that path.
     operator UnspecifiedBoolType() const
     {
-        return (layer and not path.IsEmpty()) ? &SdfSite::path : 0;
+        return (layer && !path.IsEmpty()) ? &SdfSite::path : 0;
     }
 
 public:
@@ -76,5 +79,7 @@ public:
 
 typedef std::set<SdfSite> SdfSiteSet;
 typedef std::vector<SdfSite> SdfSiteVector;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_SITE_H

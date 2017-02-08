@@ -28,7 +28,10 @@
 /// \ingroup group_arch_Multithreading
 /// Create background or daemon processes.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Close all file descriptors (with possible exceptions)
 ///
@@ -59,5 +62,7 @@
 /// \ingroup group_arch_Multithreading
 ARCH_API 
 int ArchCloseAllFiles(int nExcept, const int* exceptFds);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_DAEMON_H 

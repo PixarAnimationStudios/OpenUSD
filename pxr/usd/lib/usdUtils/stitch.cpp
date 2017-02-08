@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/stitch.h"
 
 #include "pxr/base/vt/value.h"
@@ -38,6 +39,9 @@
 #include <set>
 #include <string>
 #include <algorithm>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
  
 
 // utility functions, not to be exposed as public facing API
@@ -141,13 +145,13 @@ namespace {
     _StitchFrameRanges(const SdfLayerHandle& strongLayer,
                        const SdfLayerHandle& weakLayer) 
     {
-        if (weakLayer->HasStartTimeCode() or _HasStartFrame(weakLayer)) {
+        if (weakLayer->HasStartTimeCode() || _HasStartFrame(weakLayer)) {
             double startTimeCode = std::min(_GetStartTimeCode(weakLayer), 
                                             _GetStartTimeCode(strongLayer));
             strongLayer->SetStartTimeCode(startTimeCode);
         }
         
-        if (weakLayer->HasEndTimeCode() or _HasEndFrame(weakLayer)) {
+        if (weakLayer->HasEndTimeCode() || _HasEndFrame(weakLayer)) {
             double endTimeCode = std::max(_GetEndTimeCode(weakLayer),
                                           _GetEndTimeCode(strongLayer));
             strongLayer->SetEndTimeCode(endTimeCode);
@@ -200,7 +204,7 @@ namespace {
 
             // if we don't have a matching prim in the strong layer
             // we can simply insert a copy of the weak's prim
-            if (not strongPrimHandle) {
+            if (!strongPrimHandle) {
                 _MakePrimCopy(strongPrim, weakPrimIter, ignoreTimeSamples); 
             } else {
                 // Passing corresponding prims through
@@ -234,7 +238,7 @@ namespace {
             SdfAttributeSpecHandle strongAttrHandle
                 = strongPrim->GetAttributeAtPath(pathToChildAttr);
 
-            if (not strongAttrHandle) {
+            if (!strongAttrHandle) {
                 _MakeAttributeCopy(strongPrim, childAttribute, 
                                    ignoreTimeSamples);
             } else {
@@ -256,7 +260,7 @@ namespace {
                         : weakParent->ListTimeSamplesForPath(currAttrPath)) {
                     // if the parent doesn't contain the time
                     // sample point key in its dict
-                    if (not strongParent->QueryTimeSample(pathToChildAttr,
+                    if (!strongParent->QueryTimeSample(pathToChildAttr,
                                                           timeSamplePoint)) {
                         VtValue timeSampleValue; 
                         weakParent->QueryTimeSample(pathToChildAttr,
@@ -282,7 +286,7 @@ namespace {
             SdfRelationshipSpecHandle strongRelHandle
                 = strongPrim->GetRelationshipAtPath(pathToChildRel);
 
-            if (not strongRelHandle) {
+            if (!strongRelHandle) {
                 _MakeRelationshipCopy(strongPrim, childRelationship,
                                       ignoreTimeSamples);
             } else {
@@ -374,12 +378,12 @@ namespace {
         bool hasEndTimeCode = strongLayer->HasEndTimeCode();
         std::set<double> timeSamples = strongLayer->ListAllTimeSamples();
 
-        if (hasStartTimeCode and not hasEndTimeCode) {
+        if (hasStartTimeCode && !hasEndTimeCode) {
             TF_WARN("Missing endTimeCode in %s", strongFileName.c_str());
-        } else if (not hasStartTimeCode and hasEndTimeCode) {
+        } else if (!hasStartTimeCode && hasEndTimeCode) {
             TF_WARN("Missing startTimeCode in %s", strongFileName.c_str());
-        } else if (not timeSamples.empty() 
-                    and (hasStartTimeCode and hasEndTimeCode)) {
+        } else if (!timeSamples.empty() 
+                   && (hasStartTimeCode && hasEndTimeCode)) {
             if (*timeSamples.begin() < strongLayer->GetStartTimeCode()) {
                 TF_WARN("Result has time sample point before startTimeCode");
             }
@@ -443,14 +447,14 @@ UsdUtilsStitchInfo(const SdfSpecHandle& strongObj,
             strongObj->SetInfo(key, mergedDict);
 
         // XXX used by stitchmodelclips for ignoring time samples
-        } else if(ignoreTimeSamples and key == SdfFieldKeys->TimeSamples) {
+        } else if(ignoreTimeSamples && key == SdfFieldKeys->TimeSamples) {
            continue; 
 
         // if the info is a target path, we need to copy via the 
         // targetpath API as set-info would cause a read-only failure
         // by simply using SetInfo as we do below
         } else if (key == SdfFieldKeys->TargetPaths) { 
-            if (not strongObj->HasInfo(key)) {
+            if (!strongObj->HasInfo(key)) {
                 // we can safely create relationship handles here as we 
                 // know target paths will only pop up on relationships
                 SdfRelationshipSpecHandle strongRelHandle 
@@ -459,7 +463,7 @@ UsdUtilsStitchInfo(const SdfSpecHandle& strongObj,
                     = TfDynamic_cast<SdfRelationshipSpecHandle>(weakObj);
 
                 // ensure proper prim handles were obtained
-                if (not TF_VERIFY(strongRelHandle and weakRelHandle)) {
+                if (!TF_VERIFY(strongRelHandle && weakRelHandle)) {
                     // if they weren't skip this iteration
                     continue;
                 }
@@ -472,7 +476,7 @@ UsdUtilsStitchInfo(const SdfSpecHandle& strongObj,
         } else {
             // if its not a dictionary type, insert as normal
             // so long as it isn't contained in the strong object 
-            if (not strongObj->HasInfo(key)) {
+            if (!strongObj->HasInfo(key)) {
                 strongObj->SetInfo(key, weakObj->GetInfo(key));
             }
         }
@@ -501,3 +505,6 @@ UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer,
     // Send warnings if erroneous generation occurs
     _VerifyLayerIntegrity(strongLayer);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

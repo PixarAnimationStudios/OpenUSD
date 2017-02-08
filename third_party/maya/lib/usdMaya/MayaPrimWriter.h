@@ -23,11 +23,15 @@
 //
 #ifndef PXRUSDMAYA_MAYAPRIMWRITER_H
 #define PXRUSDMAYA_MAYAPRIMWRITER_H
+#include "pxr/pxr.h"
 #include "usdMaya/JobArgs.h"
 
 #include "pxr/usd/usd/stage.h"
 
 #include <boost/smart_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using boost::shared_ptr;
 
@@ -89,4 +93,7 @@ protected:
 };
 
 typedef shared_ptr < MayaPrimWriter > MayaPrimWriterPtr;
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // PXRUSDMAYA_MAYAPRIMWRITER_H

@@ -24,6 +24,7 @@
 #ifndef HD_PERF_H
 #define HD_PERF_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/debugCodes.h"
 
@@ -38,6 +39,9 @@
 
 #include <mutex>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class SdfPath;
 
 // XXX: it would be nice to move this into Trace or use the existing Trace
@@ -51,17 +55,6 @@ class SdfPath;
 #define HD_TRACE_FUNCTION() TRACE_FUNCTION()
 // Emits a trace scope with the specified tag.
 #define HD_TRACE_SCOPE(tag) TRACE_SCOPE(tag)
-
-// Creates an auto-mallocTag with the function, including template params.
-#define HD_MALLOC_TAG_FUNCTION() \
-    TfAutoMallocTag2 tagFunc("Hd", __PRETTY_FUNCTION__);
-// Creates an auto-mallocTag with the given named tag.
-#define HD_MALLOC_TAG(x) \
-    TfAutoMallocTag2 tag2("Hd", x);
-
-// Overrides operator new/delete and injects malloc tags.
-#define HD_MALLOC_TAG_NEW(x) \
-    TF_MALLOC_TAG_NEW("Hd", x);
 
 // Adds a cache hit for the given cache name, the id is provided for debugging,
 // see HdPerfLog for details.
@@ -200,5 +193,8 @@ private:
     std::mutex _mutex;
     typedef std::lock_guard<std::mutex> _Lock;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_PERF_H

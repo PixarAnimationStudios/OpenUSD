@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_UNIT_TEST_DRAWING_GL
-#define USDIMAGING_UNIT_TEST_DRAWING_GL
+#ifndef USDIMAGINGGL_UNIT_TEST_GL_DRAWING_H
+#define USDIMAGINGGL_UNIT_TEST_GL_DRAWING_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/vec4d.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -32,6 +33,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdImagingGL_UnitTestWindow;
 
@@ -104,4 +108,7 @@ private:
     GfVec3f _translate;
 };
 
-#endif // USDIMAGING_UNIT_TEST_DRAWING_GL
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // USDIMAGINGGL_UNIT_TEST_GL_DRAWING_H

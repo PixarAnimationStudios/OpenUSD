@@ -23,6 +23,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/textParserContext.h"
 #include "pxr/usd/sdf/parserHelpers.h"
@@ -32,6 +33,8 @@
 
 using std::map;
 using std::vector;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 #define YYSTYPE Sdf_ParserHelpers::Value
 
@@ -111,6 +114,7 @@ using std::vector;
 "rootPrims"           { (*yylval_param) = std::string(yytext, yyleng); return TOK_ROOTPRIMS; }
 "scale"               { (*yylval_param) = std::string(yytext, yyleng); return TOK_SCALE; }
 "subLayers"           { (*yylval_param) = std::string(yytext, yyleng); return TOK_SUBLAYERS; }
+"suffixSubstitutions" { (*yylval_param) = std::string(yytext, yyleng); return TOK_SUFFIX_SUBSTITUTIONS; }
 "specializes"         { (*yylval_param) = std::string(yytext, yyleng); return TOK_SPECIALIZES; }
 "symmetryArguments"   { (*yylval_param) = std::string(yytext, yyleng); return TOK_SYMMETRYARGUMENTS; }
 "symmetryFunction"    { (*yylval_param) = std::string(yytext, yyleng); return TOK_SYMMETRYFUNCTION; }
@@ -192,21 +196,35 @@ using std::vector;
         return TOK_NUMBER;
    }
 
-    /* Positive integers: store as unsigned long. */
+    /* Positive integers: store as uint64_t if in range, otherwise double. */
 [[:digit:]]+ {
         bool outOfRange = false;
-        (*yylval_param) = TfStringToULong(yytext, &outOfRange);
-        if (outOfRange)
-            return TOK_SYNTAX_ERROR;
+        (*yylval_param) = TfStringToUInt64(yytext, &outOfRange);
+        if (outOfRange) {
+           TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
+                   "as double.  Consider exponential notation for large "
+                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   yyextra->fileContext.empty() ? "" : " in file ",
+                   yyextra->fileContext.empty() ? "" :
+                   yyextra->fileContext.c_str());
+           (*yylval_param) = TfStringToDouble(yytext);
+        }
         return TOK_NUMBER;
     }
 
     /* Negative integers: store as long. */
 -[[:digit:]]+ {
         bool outOfRange = false;
-        (*yylval_param) = TfStringToLong(yytext, &outOfRange);
-        if (outOfRange)
-            return TOK_SYNTAX_ERROR;
+        (*yylval_param) = TfStringToInt64(yytext, &outOfRange);
+        if (outOfRange) {
+           TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
+                   "as double.  Consider exponential notation for large "
+                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   yyextra->fileContext.empty() ? "" : " in file ",
+                   yyextra->fileContext.empty() ? "" :
+                   yyextra->fileContext.c_str());
+           (*yylval_param) = TfStringToDouble(yytext);
+        }
         return TOK_NUMBER;
     }
 

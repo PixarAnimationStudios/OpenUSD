@@ -23,4 +23,8 @@
 //
 #include "pxr/usd/usd/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DEFINE_PUBLIC_TOKENS(UsdTokens, USD_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE

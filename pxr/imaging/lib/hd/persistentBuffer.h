@@ -24,10 +24,14 @@
 #ifndef HD_PERSISTENT_BUFFER_H
 #define HD_PERSISTENT_BUFFER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resource.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdPersistentBuffer> HdPersistentBufferSharedPtr;
 
@@ -47,5 +51,8 @@ public:
 private:
     void * _mappedAddress;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_PERSISTENT_BUFFER_H

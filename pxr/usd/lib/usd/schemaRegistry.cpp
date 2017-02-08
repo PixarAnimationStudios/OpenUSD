@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/schemaBase.h"
 
@@ -42,6 +43,9 @@
 #include <utility>
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using std::make_pair;
 using std::set;
 using std::string;
@@ -61,14 +65,14 @@ _AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
     // data.
     static TfToken allowedTokens("allowedTokens");
     for (SdfPrimSpecHandle const &prim: source->GetRootPrims()) {
-        if (not target->GetPrimAtPath(prim->GetPath())) {
+        if (!target->GetPrimAtPath(prim->GetPath())) {
 
             SdfPrimSpecHandle targetPrim =
                 SdfPrimSpec::New(target, prim->GetName(), prim->GetSpecifier(),
                                  prim->GetTypeName());
 
             string doc = prim->GetDocumentation();
-            if (not doc.empty())
+            if (!doc.empty())
                 targetPrim->SetDocumentation(doc);
 
             for (SdfAttributeSpecHandle const &attr: prim->GetAttributes()) {
@@ -82,13 +86,13 @@ _AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
                     newAttr->SetInfo(allowedTokens,
                                      attr->GetInfo(allowedTokens));
                 string doc = attr->GetDocumentation();
-                if (not doc.empty())
+                if (!doc.empty())
                     newAttr->SetDocumentation(doc);
                 string displayName = attr->GetDisplayName();
-                if (not displayName.empty())
+                if (!displayName.empty())
                     newAttr->SetDisplayName(displayName);
                 string displayGroup = attr->GetDisplayGroup();
-                if (not displayGroup.empty())
+                if (!displayGroup.empty())
                     newAttr->SetDisplayGroup(displayGroup);
                 if (attr->GetHidden())
                     newAttr->SetHidden(true);
@@ -100,7 +104,7 @@ _AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
                     SdfRelationshipSpec::New(
                         targetPrim, rel->GetName(), rel->IsCustom());
                 string doc = rel->GetDocumentation();
-                if (not doc.empty())
+                if (!doc.empty())
                     newRel->SetDocumentation(doc);
             }
         }
@@ -124,7 +128,7 @@ UsdSchemaRegistry::_BuildPrimTypePropNameToSpecIdMap(
     // propertyName are intentionally leaked.  It's okay, since there's a fixed
     // set that we'd like to persist forever.
     SdfPrimSpecHandle prim = _schematics->GetPrimAtPath(primPath);
-    if (not prim or prim->GetTypeName().IsEmpty())
+    if (!prim || prim->GetTypeName().IsEmpty())
         return;
 
     _primTypePropNameToSpecIdMap[make_pair(typeName, TfToken())] = 
@@ -286,3 +290,6 @@ UsdSchemaRegistry::_GetPrimDefinitionAtPath(const SdfPath &path)
 {
     return Usd_SchemaRegistryGetPrimDefinitionAtPath(path);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -37,6 +37,9 @@
 
 #include <sstream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 void
 GlfPostPendingGLErrors(std::string const & where)
 {
@@ -49,7 +52,7 @@ GlfPostPendingGLErrors(std::string const & where)
         std::ostringstream errorMessage;
         errorMessage << "GL error: " << errorString;
 
-        if (not where.empty()) {
+        if (!where.empty()) {
             errorMessage << ", reported from " << where;
         }
 
@@ -164,7 +167,7 @@ GlfGLQueryObject::GlfGLQueryObject()
 GlfGLQueryObject::~GlfGLQueryObject()
 {
     GlfSharedGLContextScopeHolder sharedGLContextScopeHolder;
-    if (glDeleteQueries and _id) {
+    if (glDeleteQueries && _id) {
         glDeleteQueries(1, &_id);
     }
 }
@@ -190,7 +193,7 @@ void
 GlfGLQueryObject::Begin(GLenum target)
 {
     _target = target;
-    if (glBeginQuery and _id) {
+    if (glBeginQuery && _id) {
         glBeginQuery(_target, _id);
     }
 }
@@ -198,7 +201,7 @@ GlfGLQueryObject::Begin(GLenum target)
 void
 GlfGLQueryObject::End()
 {
-    if (glEndQuery and _target) {
+    if (glEndQuery && _target) {
         glEndQuery(_target);
     }
     _target = 0;
@@ -208,7 +211,7 @@ GLint64
 GlfGLQueryObject::GetResult()
 {
     GLint64 value = 0;
-    if (glGetQueryObjecti64v and _id) {
+    if (glGetQueryObjecti64v && _id) {
         glGetQueryObjecti64v(_id, GL_QUERY_RESULT, &value);
     }
     return value;
@@ -218,7 +221,7 @@ GLint64
 GlfGLQueryObject::GetResultNoWait()
 {
     GLint64 value = 0;
-    if (glGetQueryObjecti64v and _id) {
+    if (glGetQueryObjecti64v && _id) {
         glGetQueryObjecti64v(_id, GL_QUERY_RESULT_AVAILABLE, &value);
         if (value == GL_TRUE) {
             glGetQueryObjecti64v(_id, GL_QUERY_RESULT, &value);
@@ -226,3 +229,6 @@ GlfGLQueryObject::GetResultNoWait()
     }
     return value;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

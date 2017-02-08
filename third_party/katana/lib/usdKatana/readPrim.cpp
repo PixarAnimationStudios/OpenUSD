@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readPrim.h"
 #include "usdKatana/usdInPrivateData.h"
@@ -57,6 +58,9 @@
 #include <pystring/pystring.h>
 #include <FnLogging/FnLogging.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 FnLogSetup("PxrUsdKatanaReadPrim");
 
 static FnKat::Attribute
@@ -64,7 +68,7 @@ _GetMaterialAssignAttr(
         const UsdPrim& prim,
         const PxrUsdKatanaUsdInPrivateData& data)
 {
-    if (not prim or prim.GetPath() == SdfPath::AbsoluteRootPath()) {
+    if (!prim || prim.GetPath() == SdfPath::AbsoluteRootPath()) {
         // Special-case to pre-empt coding errors.
         return FnKat::Attribute();
     }
@@ -75,7 +79,7 @@ _GetMaterialAssignAttr(
         SdfPathVector targetPaths;
         usdRel.GetForwardedTargets(&targetPaths);
         if (targetPaths.size() > 0) {
-            if (not targetPaths[0].IsPrimPath()) {
+            if (!targetPaths[0].IsPrimPath()) {
                 FnLogWarn("Target path " << prim.GetPath().GetString() <<
                           " is not a prim");
                 return FnKat::Attribute();
@@ -91,9 +95,9 @@ _GetMaterialAssignAttr(
             //     is available as the provided prim will automatically
             //     retarget (or provide enough context to retarget without
             //     tracking manually).
-            if (targetPrim and targetPrim.IsInMaster()) {
-                if (not data.GetInstancePath().IsEmpty() and 
-                        not data.GetMasterPath().IsEmpty()) {
+            if (targetPrim && targetPrim.IsInMaster()) {
+                if (!data.GetInstancePath().IsEmpty() &&
+                    !data.GetMasterPath().IsEmpty()) {
 
                     // Check if the source and the target of the relationship 
                     // belong to the same master.
@@ -186,7 +190,7 @@ _GatherRibAttributes(
             VtValue vtValue;
             UsdAttribute usdAttr = prim.GetAttribute(prop.GetName());
             if (usdAttr) {
-                if (not usdAttr.Get(&vtValue, currentTime)) 
+                if (!usdAttr.Get(&vtValue, currentTime)) 
                     continue;
 
                 // XXX asShaderParam really means:
@@ -243,7 +247,7 @@ PxrUsdKatanaReadPrimPrmanStatements(
     if (UsdGeomGprim gprim = UsdGeomGprim(prim))
     {
         bool doubleSided = false;
-        if (gprim.GetDoubleSidedAttr().Get(&doubleSided) and doubleSided)
+        if (gprim.GetDoubleSidedAttr().Get(&doubleSided) && doubleSided)
         {
             statements.set("sides", FnKat::IntAttribute(2));
         }
@@ -287,7 +291,7 @@ _BuildScopedCoordinateSystems(
     // scopedCooordinateSystems, but emit them as a relative coordinate system
     // on this (parent) so they are applicable to all children of this node.
 
-    if (not prim) {
+    if (!prim) {
         return false;
     }
 
@@ -297,7 +301,7 @@ _BuildScopedCoordinateSystems(
 
         UsdRiStatements riStmts(*childIt);
 
-        if (not riStmts.HasCoordinateSystem()) {
+        if (!riStmts.HasCoordinateSystem()) {
             continue;
         }
 
@@ -441,7 +445,7 @@ _AddExtraAttributesOrNamespaces(
                 UsdAttribute & usdAttr = (*I);
                 
                 VtValue vtValue;
-                if (not usdAttr.Get(&vtValue, currentTime))
+                if (!usdAttr.Get(&vtValue, currentTime))
                 {
                     continue;
                 }
@@ -467,7 +471,7 @@ _AddExtraAttributesOrNamespaces(
                 FnKat::StringAttribute attr = 
                     PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(
                         usdRelationship, true);
-                if (not attr.isValid())
+                if (!attr.isValid())
                 {
                     continue;
                 }
@@ -526,13 +530,13 @@ _AddCustomProperties(
     for (size_t i = 0; i < usdAttributes.size(); ++i)
     {
         const UsdAttribute& usdAttr = usdAttributes[i];
-        if (not usdAttr.IsCustom())
+        if (!usdAttr.IsCustom())
         {
             continue;
         }
         
         VtValue vtValue;
-        if (not usdAttr.Get(&vtValue, currentTime))
+        if (!usdAttr.Get(&vtValue, currentTime))
         {
             continue;
         }
@@ -540,7 +544,7 @@ _AddCustomProperties(
         FnKat::Attribute attr =
             PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true);
 
-        if (not attr.isValid())
+        if (!attr.isValid())
         {
             continue;
         }
@@ -570,7 +574,7 @@ PxrUsdKatanaGeomGetPrimvarGroup(
                                         primvar->GetBaseName().GetString());
         if (blindAttr) {
             VtValue vtValue;
-            if (!blindAttr.Get(&vtValue) and blindAttr.HasAuthoredValueOpinion()) {
+            if (!blindAttr.Get(&vtValue) && blindAttr.HasAuthoredValueOpinion()) {
                 continue;
             }
         }
@@ -603,7 +607,7 @@ PxrUsdKatanaGeomGetPrimvarGroup(
 
         // Resolve the value
         VtValue vtValue;
-        if (not primvar->ComputeFlattened(
+        if (!primvar->ComputeFlattened(
                 &vtValue, data.GetUsdInArgs()->GetCurrentTime()))
         {
             continue;
@@ -682,7 +686,7 @@ PxrUsdKatanaReadPrim(
 
     TfToken visibility;
     UsdGeomImageable imageable = UsdGeomImageable(prim);
-    if (imageable and imageable.GetVisibilityAttr().Get(&visibility, currentTime))
+    if (imageable && imageable.GetVisibilityAttr().Get(&visibility, currentTime))
     {
         if (visibility == UsdGeomTokens->invisible)
         {
@@ -697,7 +701,7 @@ PxrUsdKatanaReadPrim(
     //
 
     TfToken purpose;
-    if (imageable and UsdGeomImageable(prim).GetPurposeAttr().Get(&purpose))
+    if (imageable && UsdGeomImageable(prim).GetPurposeAttr().Get(&purpose))
     {
         if (purpose != UsdGeomTokens->default_)
         {
@@ -760,3 +764,6 @@ PxrUsdKatanaReadPrim(
 
     _AddExtraAttributesOrNamespaces(prim, data, attrs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stageCache.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdMayaStageCache {
 public:
@@ -33,3 +37,5 @@ public:
     // Clear the cache
     static void Clear();
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE

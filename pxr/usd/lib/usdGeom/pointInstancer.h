@@ -26,6 +26,7 @@
 
 /// \file usdGeom/pointInstancer.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/boundable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -39,6 +40,8 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfAssetPath;
 
@@ -568,8 +571,10 @@ public:
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
     //
-    // Just remember to close the class delcaration with }; and complete the
-    // include guard with #endif
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
     
@@ -680,7 +685,7 @@ public:
     /// and must match the length of \em protoIndices at \p time . 
     /// If NULL, we will call GetIdsAttr().Get(time)
     ///
-    /// \note If all "live" isntances at timeCode \p time pass the mask,
+    /// \note If all "live" instances at UsdTimeCode \p time pass the mask,
     /// we will return an <b>empty</b> mask so that clients can trivially
     /// recognize the common "no masking" case.
     ///
@@ -710,6 +715,78 @@ public:
     /// @}
     // --------------------------------------------------------------------- //
  
+    /// \enum ProtoXformInclusion
+    /// 
+    /// Encodes whether to include each prototype's root prim's transformation
+    /// as the most-local component of computed instance transforms.
+    enum ProtoXformInclusion {
+        IncludeProtoXform, //!< Include the transform on the proto's root
+        ExcludeProtoXform  //!< Exclude the transform on the proto's root
+    };
+
+    
+    /// \enum MaskApplication
+    /// 
+    /// Encodes whether to evaluate and apply the PointInstancer's
+    /// mask to computed results.
+    /// \sa ComputeMaskAtTime()
+    enum MaskApplication {
+        ApplyMask,    //!< Compute and apply the PointInstancer mask
+        IgnoreMask    //!< Ignore the PointInstancer mask
+    };
+
+    
+    /// Compute the per-instance, "PointInstancer relative" transforms given
+    /// the positions, scales, orientations, velocities and angularVelocities
+    /// at \p time, as described in \ref UsdGeomPointInstancer_transform .
+    ///
+    /// This will return \c false and leave \p xforms untouched if \p xforms
+    /// is NULL, if there is no authored \em protoIndices attribute, or
+    /// if the size of any of the per-instance attributes does not match the
+    /// size of \em protoIndices.
+    ///
+    /// If there is no error, we will return \c true and \p xforms will contain
+    /// the computed transformations.
+    /// 
+    /// \param xforms - the out parameter for the transformations.  Its size
+    ///                 will depend on the authored data and \p applyMask
+    /// \param time - UsdTimeCode at which we want to evaluate the transforms
+    /// \param baseTime - required for correct interpolation between samples
+    ///                   when \em velocities or \em angularVelocities are
+    ///                   present. If there are samples for \em positions and
+    ///                   \em velocities at t1 and t2, normal value resolution
+    ///                   would attempt to interpolate between the two samples,
+    ///                   and if they could not be interpolated because they
+    ///                   differ in size (common in cases where velocity is
+    ///                   authored), will choose the sample at t1.  When
+    ///                   sampling for the purposes of motion-blur, for example,
+    ///                   it is common, when rendering the frame at t2, to 
+    ///                   sample at [ t2-shutter/2, t2+shutter/2 ] for a
+    ///                   shutter interval of \em shutter.  The first sample
+    ///                   falls between t1 and t2, but we must sample at t2
+    ///                   and apply velocity-based interpolation based on those
+    ///                   samples to get a correct result.  In such scenarios,
+    ///                   one should provide a \p baseTime of t2 when querying
+    ///                   \em both samples. If your application does not care
+    ///                   about off-sample interpolation, it can supply the
+    ///                   same value for \p baseTime that it does for \p time.
+    ///                   When \p baseTime is less than or equal to \p time,
+    ///                   we will choose the lower bracketing timeSample.
+    /// \param doProtoXforms - specifies whether to include the root 
+    ///                   transformation of each instance's prototype in the
+    ///                   instance's transform.  Default is to include it, but
+    ///                   some clients may want to apply the proto transform as
+    ///                   part of the prototype itself, so they can specify
+    ///                   \c ExcludeProtoXform instead.
+    /// \param applyMask - specifies whether to apply ApplyMaskToArray() to the
+    ///                    computed result.  The default is \c ApplyMask.
+    bool
+    ComputeInstanceTransformsAtTime(
+                        VtArray<GfMatrix4d>* xforms,
+                        UsdTimeCode time,
+                        UsdTimeCode baseTime,
+                        ProtoXformInclusion doProtoXforms = IncludeProtoXform,
+                        MaskApplication applyMask = ApplyMask) const;
 
 };
 
@@ -719,12 +796,12 @@ UsdGeomPointInstancer::ApplyMaskToArray(std::vector<bool> const &mask,
                                         VtArray<T> *dataArray,
                                         const int elementSize)
 {
-    if (not dataArray){
+    if (!dataArray){
         TF_CODING_ERROR("NULL dataArray.");
         return false;
     }
     size_t size = mask.size();
-    if (size == 0 or dataArray->size() == elementSize){
+    if (size == 0 || dataArray->size() == elementSize){
         return true;
     }
     else if ((size * elementSize) != dataArray->size()){
@@ -752,5 +829,7 @@ UsdGeomPointInstancer::ApplyMaskToArray(std::vector<bool> const &mask,
     }
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

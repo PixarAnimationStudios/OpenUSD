@@ -24,10 +24,14 @@
 ///
 /// \file usdUtils/wrapDependencies.cpp
 
+#include "pxr/pxr.h"
 #include <boost/python/def.hpp>
 #include <boost/python/tuple.hpp>
 
 #include "pxr/usd/usdUtils/dependencies.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 namespace bp = boost::python;
 
@@ -46,3 +50,6 @@ wrapDependencies()
 {
     bp::def("ExtractExternalReferences", _ExtractExternalReferences);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

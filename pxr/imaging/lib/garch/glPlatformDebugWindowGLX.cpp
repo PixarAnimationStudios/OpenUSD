@@ -29,6 +29,9 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/diagnostic.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 typedef GLXContext (*GLXCREATECONTEXTATTRIBSARBPROC)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
 // ---------------------------------------------------------------------------
@@ -65,13 +68,13 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
     // X window
     int fbcount;
     GLXFBConfig *fbc = glXChooseFBConfig(_display, screen, attrib, &fbcount);
-    if (not fbc) {
+    if (!fbc) {
         TF_FATAL_ERROR("glXChooseFBConfig failed");
         exit(1);
     }
 
     XVisualInfo *visinfo = glXGetVisualFromFBConfig(_display, fbc[0]);
-    if (not visinfo) {
+    if (!visinfo) {
         TF_FATAL_ERROR("glXGetVisualFromFBConfig failed");
         exit(1);
     }
@@ -137,7 +140,7 @@ Garch_GetModifierKeys(int state)
 void
 Garch_GLPlatformDebugWindow::Run()
 {
-    if (not _display) return;
+    if (!_display) return;
 
     XMapWindow(_display, _window);
 
@@ -216,3 +219,6 @@ Garch_GLPlatformDebugWindow::ExitApp()
 {
     _running = false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

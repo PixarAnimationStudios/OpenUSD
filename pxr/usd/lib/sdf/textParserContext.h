@@ -24,6 +24,7 @@
 #ifndef SDF_TEXTPARSERCONTEXT_H
 #define SDF_TEXTPARSERCONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -38,6 +39,8 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Lexical scanner type.
 typedef void *yyscan_t;
@@ -160,5 +163,7 @@ public:
     // Used by flex for reentrant parsing
     yyscan_t scanner;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_TEXTPARSERCONTEXT_H

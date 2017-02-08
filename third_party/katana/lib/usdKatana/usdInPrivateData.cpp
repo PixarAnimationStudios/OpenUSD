@@ -21,11 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/usdInPrivateData.h"
 #include "usdKatana/utils.h"
 
 #include "pxr/base/gf/interval.h"
 #include "pxr/usd/usdGeom/xform.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         const UsdPrim& prim,
@@ -42,7 +46,7 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     //
     if (prim.IsInstance())
     {
-        if (prim.IsInMaster() and parentData)
+        if (prim.IsInMaster() && parentData)
         {
             SdfPath descendentPrimPath = 
                 prim.GetPath().ReplacePrefix(
@@ -65,12 +69,12 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     {
         // Pass along instance and master paths to children.
         //
-        if (not parentData->GetInstancePath().IsEmpty())
+        if (!parentData->GetInstancePath().IsEmpty())
         {
             _instancePath = parentData->GetInstancePath();
         }
 
-        if (not parentData->GetMasterPath().IsEmpty())
+        if (!parentData->GetMasterPath().IsEmpty())
         {
             _masterPath = parentData->GetMasterPath();
         }
@@ -83,7 +87,7 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     const std::set<std::string>& defaultMotionPaths = usdInArgs->GetDefaultMotionPaths();
 
     _useDefaultMotionSampleTimes =
-            useDefaultMotion or (parentData and parentData->UseDefaultMotionSampleTimes()) or
+            useDefaultMotion || (parentData && parentData->UseDefaultMotionSampleTimes()) ||
                 defaultMotionPaths.find(prim.GetPath().GetString()) != defaultMotionPaths.end();
 
     if (materialHierarchy) {
@@ -98,7 +102,7 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
 
     double currentTime = _usdInArgs->GetCurrentTime();
 
-    if (attr and not PxrUsdKatanaUtils::IsAttributeVarying(attr, currentTime))
+    if (attr && !PxrUsdKatanaUtils::IsAttributeVarying(attr, currentTime))
     {
         return noMotion;
     }
@@ -107,7 +111,7 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
 
     // early exit if we don't have a valid attribute, aren't asking for
     // multiple samples, or this prim has been forced to use default motion
-    if (not attr or motionSampleTimes.size() < 2 or _useDefaultMotionSampleTimes)
+    if (!attr || motionSampleTimes.size() < 2 || _useDefaultMotionSampleTimes)
     {
         return motionSampleTimes;
     }
@@ -135,13 +139,13 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
 
     // get the time samples for our frame interval
     std::vector<double> result;
-    if (not attr.GetTimeSamplesInInterval(
+    if (!attr.GetTimeSamplesInInterval(
             GfInterval(shutterStartTime, shutterCloseTime), &result))
     {
         return motionSampleTimes;
     }
 
-    bool foundSamplesInInterval = not result.empty();
+    bool foundSamplesInInterval = !result.empty();
 
     double firstSample, lastSample;
 
@@ -158,7 +162,7 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
 
     // If no samples were found or the first sample is later than the 
     // shutter start time then attempt to get the previous sample in time.
-    if (not foundSamplesInInterval or (firstSample-shutterStartTime) > epsilon)
+    if (!foundSamplesInInterval || (firstSample-shutterStartTime) > epsilon)
     {
         double lower, upper;
         bool hasTimeSamples;
@@ -183,7 +187,7 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
 
     // If no samples were found or the last sample is earlier than the
     // shutter close time then attempt to get the next sample in time.
-    if (not foundSamplesInInterval or (shutterCloseTime-lastSample) > epsilon)
+    if (!foundSamplesInInterval || (shutterCloseTime-lastSample) > epsilon)
     {
         double lower, upper;
         bool hasTimeSamples;
@@ -215,3 +219,6 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
 
     return result;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

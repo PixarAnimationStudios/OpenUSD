@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/primvar.h"
 
 #include "pxr/usd/usd/conversions.h"
@@ -30,6 +31,9 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -134,3 +138,6 @@ void wrapUsdGeomPrimvar()
 
     implicitly_convertible<Primvar, UsdAttribute>();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

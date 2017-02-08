@@ -28,6 +28,8 @@
 /// \ingroup group_tf_RuntimeTyping
 /// \ingroup group_tf_Containers
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/iterator.h"
 
@@ -37,6 +39,8 @@
 #include <typeinfo>
 #include <string>
 #include <list>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfTypeInfoMap
 /// \ingroup group_tf_RuntimeTyping
@@ -221,4 +225,6 @@ private:
     mutable _StringCache _stringCache;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_TYPEINFO_MAP_H

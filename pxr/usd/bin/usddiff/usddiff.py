@@ -100,7 +100,8 @@ def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
     _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
 
 def _runDiff(baseline, comparison, compose, noeffect):
-    from tempfile import NamedTemporaryFile
+    from pxr import Tf
+
     diffResult = 0
 
     # Generate recognizable suffixes for our files in the temp dir
@@ -112,8 +113,8 @@ def _runDiff(baseline, comparison, compose, noeffect):
     tempComparisonFileName = ("__" +     
         os.path.splitext(os.path.basename(comparison))[0] + '.usda')
 
-    with NamedTemporaryFile(suffix=tempBaselineFileName) as tempBaseline, \
-         NamedTemporaryFile(suffix=tempComparisonFileName) as tempComparison:
+    with Tf.NamedTemporaryFile(suffix=tempBaselineFileName) as tempBaseline, \
+         Tf.NamedTemporaryFile(suffix=tempComparisonFileName) as tempComparison:
 
         usdcatCmd, diffCmd = _findDiffTools()
         baselineFileType = _getFileFormat(baseline)

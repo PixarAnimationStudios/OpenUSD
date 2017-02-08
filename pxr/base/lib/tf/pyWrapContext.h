@@ -24,12 +24,16 @@
 #ifndef TF_PYWRAPCONTEXT_H
 #define TF_PYWRAPCONTEXT_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/singleton.h"
 
 #include <boost/noncopyable.hpp>
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // This is used internally by the Tf python wrapping infrastructure.
 
@@ -63,5 +67,7 @@ class Tf_PyWrapContextManager : public boost::noncopyable {
 
     std::vector<std::string> _contextStack;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYWRAPCONTEXT_H

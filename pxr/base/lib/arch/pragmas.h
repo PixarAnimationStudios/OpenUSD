@@ -35,18 +35,154 @@
 
 #if defined(ARCH_COMPILER_GCC)
 
-/// Convert errors about variables that may be used before initialization into
-/// warnings. A warning is emitted, but won't cause a build failure with
-/// -Werror enabled.
-#define ARCH_PRAGMA_PUSH_NOERROR_MAYBE_UNINITIALIZED \
-    _Pragma("GCC diagnostic push"); \
-    _Pragma("GCC diagnostic warning \"-Wmaybe-uninitialized\"");
-#define ARCH_PRAGMA_POP_NOERROR_MAYBE_UNINITIALIZED \
-    _Pragma("GCC diagnostic pop");
+    #define ARCH_PRAGMA_PUSH \
+        _Pragma("GCC diagnostic push")
 
-#else
-#define ARCH_PRAGMA_PUSH_NOERROR_MAYBE_UNINITIALIZED
-#define ARCH_PRAGMA_POP_NOERROR_MAYBE_UNINITIALIZED
+    #define ARCH_PRAGMA_POP \
+        _Pragma("GCC diagnostic pop")
+
+    // Convert errors about variables that may be used before initialization
+    // into warnings.
+    //
+    // This works around GCC bug 47679.
+    #define ARCH_PRAGMA_MAYBE_UNINITIALIZED \
+        _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
+
+    #define ARCH_PRAGMA_MACRO_REDEFINITION \
+        _Pragma("GCC diagnostic ignored \"-Wbuiltin-macro-redefined\"")
+
+    #define ARCH_PRAGMA_WRITE_STRINGS \
+        _Pragma("GCC diagnostic ignored \"-Wwrite-strings\"")
+
+#elif defined(ARCH_COMPILER_CLANG)
+
+    #define ARCH_PRAGMA_PUSH \
+        _Pragma("clang diagnostic push")
+
+    #define ARCH_PRAGMA_POP \
+        _Pragma("clang diagnostic pop")
+
+    #define ARCH_PRAGMA_MACRO_REDEFINITION \
+        _Pragma("clang diagnostic ignored \"-Wbuiltin-macro-redefined\"")
+
+    #define ARCH_PRAGMA_WRITE_STRINGS \
+        _Pragma("clang diagnostic ignored \"-Wwrite-strings\"")
+
+#elif defined(ARCH_COMPILER_MSVC)
+
+    #define ARCH_PRAGMA_PUSH \
+        __pragma(warning(push)) 
+
+    #define ARCH_PRAGMA_POP \
+        __pragma(warning(pop)) 
+
+    #define ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS \
+        __pragma(warning(disable:4003)) 
+
+    #define ARCH_PRAGMA_MACRO_REDEFINITION \
+        __pragma(warning(disable:4005)) 
+
+    #define ARCH_PRAGMA_QUALIFIER_HAS_NO_MEANING \
+        __pragma(warning(disable:4180)) 
+
+    #define ARCH_PRAGMA_ZERO_SIZED_STRUCT \
+        __pragma(warning(disable:4200)) 
+
+    #define ARCH_PRAGMA_NEEDS_EXPORT_INTERFACE \
+        __pragma(warning(disable:4251)) 
+
+    #define ARCH_PRAGMA_CONVERSION_FROM_SIZET \
+        __pragma(warning(disable:4267)) 
+
+    #define ARCH_PRAGMA_MAY_NOT_BE_ALIGNED \
+        __pragma(warning(disable:4316)) 
+
+    #define ARCH_PRAGMA_SHIFT_TO_64_BITS \
+        __pragma(warning(disable:4334)) 
+
+    #define ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE \
+        __pragma(warning(disable:4624))
+
+    #define ARCH_PRAGMA_DEPRECATED_POSIX_NAME \
+        __pragma(warning(disable:4996)) 
+
+    #define ARCH_PRAGMA_FORCING_TO_BOOL \
+        __pragma(warning(disable:4800)) 
+
+    #define ARCH_PRAGMA_UNSAFE_USE_OF_BOOL \
+        __pragma(warning(disable:4804)) 
+
+    #define ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED \
+        __pragma(warning(disable:4146)) 
+
+#endif
+
+#if !defined ARCH_PRAGMA_PUSH
+    #define ARCH_PRAGMA_PUSH
+#endif
+
+#if !defined ARCH_PRAGMA_POP
+    #define ARCH_PRAGMA_POP
+#endif
+
+#if !defined ARCH_PRAGMA_MAYBE_UNINITIALIZED
+    #define ARCH_PRAGMA_MAYBE_UNINITIALIZED
+#endif
+
+#if !defined ARCH_PRAGMA_MACRO_REDEFINITION
+    #define ARCH_PRAGMA_MACRO_REDEFINITION
+#endif
+
+#if !defined ARCH_PRAGMA_WRITE_STRINGS
+    #define ARCH_PRAGMA_WRITE_STRINGS
+#endif
+
+#if !defined ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
+    #define ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
+#endif
+
+#if !defined ARCH_PRAGMA_QUALIFIER_HAS_NO_MEANING
+    #define ARCH_PRAGMA_QUALIFIER_HAS_NO_MEANING
+#endif
+
+#if !defined ARCH_PRAGMA_ZERO_SIZED_STRUCT
+    #define ARCH_PRAGMA_ZERO_SIZED_STRUCT
+#endif
+
+#if !defined ARCH_PRAGMA_NEEDS_EXPORT_INTERFACE
+    #define ARCH_PRAGMA_NEEDS_EXPORT_INTERFACE
+#endif
+
+#if !defined ARCH_PRAGMA_CONVERSION_FROM_SIZET
+    #define ARCH_PRAGMA_CONVERSION_FROM_SIZET
+#endif
+
+#if !defined ARCH_PRAGMA_MAY_NOT_BE_ALIGNED
+    #define ARCH_PRAGMA_MAY_NOT_BE_ALIGNED
+#endif
+
+#if !defined ARCH_PRAGMA_SHIFT_TO_64_BITS
+    #define ARCH_PRAGMA_SHIFT_TO_64_BITS
+#endif
+
+#if !defined ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
+    #define ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
+#endif
+
+#if !defined ARCH_PRAGMA_DEPRECATED_POSIX_NAME
+    #define ARCH_PRAGMA_DEPRECATED_POSIX_NAME
+#endif
+
+#if !defined ARCH_PRAGMA_FORCING_TO_BOOL
+    #define ARCH_PRAGMA_FORCING_TO_BOOL
+#endif
+
+#if !defined ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
+    #define ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
+#endif
+
+#if !defined ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
+    #define ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
 #endif
 
 #endif // ARCH_PRAGMAS_H

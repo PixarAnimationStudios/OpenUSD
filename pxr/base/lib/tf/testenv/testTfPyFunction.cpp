@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -35,6 +37,7 @@
 #include <functional>
 
 using namespace boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static const char VoidFuncSource[] = "def VoidFunc(): pass\n";
 static const char BoolFuncSource[] = "def BoolFunc(): return True\n";
@@ -82,6 +85,8 @@ int
 main(int argc, char **argv)
 {
     TfPyInitialize();
+
+    TfPyLock lock;
 
     // Import Tf to make sure that we get the function wrappings defined in
     // wrapFunction.cpp.

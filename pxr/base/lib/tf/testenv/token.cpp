@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/diagnostic.h"
+
 #include <iostream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static bool
 Test_TfToken()
@@ -47,13 +51,13 @@ Test_TfToken()
     // Test swapping.
     empty1.Swap(nonEmpty3);
     TF_AXIOM(nonEmpty3.IsEmpty());
-    TF_AXIOM(not empty1.IsEmpty());
+    TF_AXIOM(!empty1.IsEmpty());
     TF_AXIOM(empty1 == "nonEmpty");
     TF_AXIOM(nonEmpty3 == "");
 
     std::swap(nonEmpty3, empty1);
     TF_AXIOM(empty1.IsEmpty());
-    TF_AXIOM(not nonEmpty3.IsEmpty());
+    TF_AXIOM(!nonEmpty3.IsEmpty());
     TF_AXIOM(empty1 == "");
     TF_AXIOM(nonEmpty3 == "nonEmpty");
     

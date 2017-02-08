@@ -26,6 +26,9 @@
 #include "pxr/imaging/glf/baseTextureData.h"
 #include "pxr/imaging/glf/utils.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfBaseTextureData::~GlfBaseTextureData()
 {
     /* nothing */
@@ -54,4 +57,7 @@ GlfBaseTextureData::_GLInternalFormatFromImageData(
                                : (isSRGB ? GL_SRGB : GL_RGB));
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

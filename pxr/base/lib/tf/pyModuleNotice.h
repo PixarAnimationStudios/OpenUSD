@@ -24,9 +24,13 @@
 #ifndef TF_PYMODULENOTICE_H
 #define TF_PYMODULENOTICE_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/notice.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPyModuleWasLoaded
 ///
@@ -47,5 +51,6 @@ private:
     std::string _name;
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYMODULENOTICE_H

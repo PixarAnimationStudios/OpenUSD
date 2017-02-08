@@ -27,10 +27,15 @@
 /// \file tf/weakBase.h
 /// \ingroup group_tf_Memory
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/expiryNotifier.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/traits.h"
+
 #include <atomic>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // The _Remnant structure is simply a persisent memory of an object's
 // address. When the object dies, the pointer is set to NULL.  A _Remnant
@@ -211,5 +216,7 @@ public:
 private:
     Tf_WeakBaseAccess();
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_WEAKBASE_H

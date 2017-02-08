@@ -21,52 +21,56 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/testArchAbi.h"
+#include "pxr/base/arch/error.h"
+#include "pxr/base/arch/library.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/vsnprintf.h"
-#include <cassert>
+
 #include <iostream>
 #include <typeinfo>
-#ifdef _WIN32
-#include <windows.h>
-#define GETSYM GetProcAddress
+#ifdef ARCH_OS_WINDOWS
+#include <Windows.h>
+#define GETSYM(handle, name) GetProcAddress((HMODULE)handle, name)
 #else
 #include <dlfcn.h>
 #define WINAPI
-#define GETSYM dlsym
+#define GETSYM(handle, name) dlsym(handle, name)
 #endif
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 typedef ArchAbiBase2* (WINAPI *NewDerived)();
 
 int
 main(int argc, char** argv)
 {
-    // Load the plugin and get the factory function.
-    std::string error;
-#ifdef _WIN32
-    HMODULE plugin = LoadLibrary(".\\libtestArchAbiPlugin.dll");
-    if (not plugin) {
-        error = ArchStringPrintf("%ld", (long)GetLastError());
-    }
-#else
+    // Compute the plugin directory.
     std::string path = ArchGetExecutablePath();
-    // Up two directories.
-    path = path.substr(0, path.rfind('/', path.rfind('/') - 1));
-    path += "/tests/lib/libtestArchAbiPlugin.so";
-    void* plugin = dlopen(path.c_str(), RTLD_LAZY);
-    if (not plugin) {
-        error += dlerror();
-    }
+    // Get directories.
+    path = path.substr(0, path.find_last_of("/\\"));
+
+    // Load the plugin and get the factory function.
+#if defined(ARCH_OS_WINDOWS)
+    path += "\\testArchAbiPlugin.dll";
+#elif defined(ARCH_OS_DARWIN)
+    path += "/lib/libtestArchAbiPlugin.dylib";
+#else
+    path += "/lib/libtestArchAbiPlugin.so";
 #endif
-    if (not plugin) {
+    auto plugin = ArchLibraryOpen(path, ARCH_LIBRARY_LAZY);
+    if (!plugin) {
+        std::string error = ArchLibraryError();
         std::cerr << "Failed to load plugin: " << error << std::endl;
-        assert(plugin);
+        ARCH_AXIOM(plugin);
     }
 
     NewDerived newPluginDerived = (NewDerived)GETSYM(plugin, "newDerived");
-    if (not newPluginDerived) {
+    if (!newPluginDerived) {
         std::cerr << "Failed to find factory symbol" << std::endl;
-        assert(newPluginDerived);
+        ARCH_AXIOM(newPluginDerived);
     }
 
     // Create a derived object in this executable and in the plugin.
@@ -81,8 +85,8 @@ main(int argc, char** argv)
         << ", cast: " << pluginDerived
         << "->" << dynamic_cast<ArchAbiDerived<int>*>(pluginDerived)
         << std::endl;
-    assert(typeid(*mainDerived) == typeid(*pluginDerived));
-    assert(pluginDerived == dynamic_cast<ArchAbiDerived<int>*>(pluginDerived));
+    ARCH_AXIOM(typeid(*mainDerived) == typeid(*pluginDerived));
+    ARCH_AXIOM(pluginDerived == dynamic_cast<ArchAbiDerived<int>*>(pluginDerived));
 
     return 0;
 }

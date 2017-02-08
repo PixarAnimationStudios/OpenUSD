@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/usdImport.h"
 
 #include "usdMaya/JobArgs.h"
@@ -36,6 +37,9 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 usdImport::usdImport(const std::string& assemblyTypeName,
@@ -147,9 +151,7 @@ MStatus usdImport::doIt(const MArgList & args)
 
     if (argData.isFlagSet("readAnimData"))
     {   
-        bool tmpBool = false;
-        argData.getFlagArgument("readAnimData", 0, tmpBool);
-        jobArgs.readAnimData = tmpBool;
+        argData.getFlagArgument("readAnimData", 0, jobArgs.readAnimData);
     }
 
     // Specify usd PrimPath.  Default will be "/<useFileBasename>"
@@ -180,7 +182,7 @@ MStatus usdImport::doIt(const MArgList & args)
         MString stringVal;
         argData.getFlagArgument("assemblyRep", 0, stringVal);
         std::string assemblyRep = stringVal.asChar();
-        if (not assemblyRep.empty()) {
+        if (!assemblyRep.empty()) {
             jobArgs.assemblyRep = TfToken(assemblyRep);
         }
     }
@@ -259,3 +261,6 @@ MStatus usdImport::undoIt()
 
     return (success) ? MS::kSuccess : MS::kFailure;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

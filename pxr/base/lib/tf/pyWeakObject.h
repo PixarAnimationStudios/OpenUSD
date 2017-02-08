@@ -24,6 +24,8 @@
 #ifndef TF_PYWEAKOBJECT_H
 #define TF_PYWEAKOBJECT_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyIdentity.h"
 
 #include "pxr/base/tf/hash.h"
@@ -36,6 +38,8 @@
 #include <boost/python/object.hpp>
 
 #include "pxr/base/tf/hashmap.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef TfWeakPtr<struct Tf_PyWeakObject> Tf_PyWeakObjectPtr;
 
@@ -144,5 +148,7 @@ struct Tf_PyWeakObject : public TfWeakBase
     boost::python::handle<> _weakRef;
     
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYWEAKOBJECT_H

@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/quaternion.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/quaternion.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -40,7 +41,7 @@ using namespace boost::python;
 
 using std::string;
 
-
+PXR_NAMESPACE_OPEN_SCOPE
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( GetNormalized_overloads,
                                         GetNormalized, 0, 1 );
@@ -110,3 +111,5 @@ void wrapQuaternion()
         TfPySequenceToPython<std::vector<This> > >();
     
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

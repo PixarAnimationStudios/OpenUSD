@@ -27,6 +27,9 @@
 
 #include "pxr/imaging/garch/gl.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfSimpleMaterial::GlfSimpleMaterial() :
     _ambient(0.2, 0.2, 0.2, 1),
     _diffuse(0.8, 0.8, 0.8, 1),
@@ -102,33 +105,21 @@ GlfSimpleMaterial::SetShininess(double shininess)
     _shininess = shininess;
 }
 
-void
-GlfSimpleMaterial::Bind()
-{
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, GetAmbient().GetArray());
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, GetDiffuse().GetArray());
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, GetSpecular().GetArray());
-    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, GetEmission().GetArray());
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, GetShininess());
-}
-
-void
-GlfSimpleMaterial::Unbind()
-{
-}
-
 bool
 GlfSimpleMaterial::operator ==(GlfSimpleMaterial const & other) const
 {
     return (_ambient == other._ambient
-        and _diffuse == other._diffuse
-        and _specular == other._specular
-        and _emission == other._emission
-        and _shininess == other._shininess);
+        && _diffuse == other._diffuse
+        && _specular == other._specular
+        && _emission == other._emission
+        && _shininess == other._shininess);
 }
 
 bool
 GlfSimpleMaterial::operator !=(GlfSimpleMaterial const & other) const
 {
-    return not (*this == other);
+    return !(*this == other);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

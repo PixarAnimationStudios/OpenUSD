@@ -26,6 +26,7 @@
 
 /// \file util.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -39,8 +40,14 @@
 #include <maya/MFnMesh.h>
 #include <maya/MFnNumericData.h>
 #include <maya/MGlobal.h>
+#include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 
+#include <map>
+#include <set>
+#include <string>
 
 namespace PxrUsdMayaUtil
 {
@@ -123,6 +130,27 @@ ConvertInchesToMM(double inches) {
 // seconds per frame
 double spf();
 
+/// Gets the Maya MObject for the node named \p nodeName.
+MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
+
+/// Gets the Maya MDagPath for the node named \p nodeName.
+MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
+
+/// Get the MPlug for the output time attribute of Maya's global time object
+///
+/// The Maya API does not appear to provide any facilities for getting a handle
+/// to the global time object (e.g. "time1"). We need to find this object in
+/// order to make connections between its "outTime" attribute and the input
+/// "time" attributes on assembly nodes when their "Playback" representation is
+/// activated.
+///
+/// This function makes a best effort attempt to find "time1" by looking through
+/// all MFn::kTime function set objects in the scene and returning the one whose
+/// outTime attribute matches the current time. If no such object can be found,
+/// an invalid plug is returned.
+MPlug
+GetMayaTimePlug();
+
 bool isAncestorDescendentRelationship(const MDagPath & path1,
     const MDagPath & path2);
 
@@ -164,10 +192,10 @@ std::string SanitizeColorSetName(const std::string& name);
 ///
 bool GetLinearShaderColor(
         const MFnDagNode& node,
-        VtArray<GfVec3f> *RGBData,
-        VtArray<float> *AlphaData,
-        TfToken *interpolation,
-        VtArray<int> *assignmentIndices);
+        PXR_NS::VtArray<PXR_NS::GfVec3f> *RGBData,
+        PXR_NS::VtArray<float> *AlphaData,
+        PXR_NS::TfToken *interpolation,
+        PXR_NS::VtArray<int> *assignmentIndices);
 
 /// Get the base colors and opacities from the shader(s) bound to \p mesh.
 /// Returned colors will be in linear color space.
@@ -184,34 +212,34 @@ bool GetLinearShaderColor(
 ///
 bool GetLinearShaderColor(
         const MFnMesh& mesh,
-        VtArray<GfVec3f> *RGBData,
-        VtArray<float> *AlphaData,
-        TfToken *interpolation,
-        VtArray<int> *assignmentIndices);
+        PXR_NS::VtArray<PXR_NS::GfVec3f> *RGBData,
+        PXR_NS::VtArray<float> *AlphaData,
+        PXR_NS::TfToken *interpolation,
+        PXR_NS::VtArray<int> *assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
 void MergeEquivalentIndexedValues(
-        VtArray<float>* valueData,
-        VtArray<int>* assignmentIndices);
+        PXR_NS::VtArray<float>* valueData,
+        PXR_NS::VtArray<int>* assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
 void MergeEquivalentIndexedValues(
-        VtArray<GfVec2f>* valueData,
-        VtArray<int>* assignmentIndices);
+        PXR_NS::VtArray<PXR_NS::GfVec2f>* valueData,
+        PXR_NS::VtArray<int>* assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
 void MergeEquivalentIndexedValues(
-        VtArray<GfVec3f>* valueData,
-        VtArray<int>* assignmentIndices);
+        PXR_NS::VtArray<PXR_NS::GfVec3f>* valueData,
+        PXR_NS::VtArray<int>* assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
 void MergeEquivalentIndexedValues(
-        VtArray<GfVec4f>* valueData,
-        VtArray<int>* assignmentIndices);
+        PXR_NS::VtArray<PXR_NS::GfVec4f>* valueData,
+        PXR_NS::VtArray<int>* assignmentIndices);
 
 /// Attempt to compress faceVarying primvar indices to uniform, vertex, or
 /// constant interpolation if possible. This will potentially shrink the
@@ -219,8 +247,8 @@ void MergeEquivalentIndexedValues(
 /// possible.
 void CompressFaceVaryingPrimvarIndices(
         const MFnMesh& mesh,
-        TfToken *interpolation,
-        VtArray<int>* assignmentIndices);
+        PXR_NS::TfToken *interpolation,
+        PXR_NS::VtArray<int>* assignmentIndices);
 
 /// If any components in \p assignmentIndices are unassigned (-1), the given
 /// default value will be added to uvData and all of those components will be
@@ -228,10 +256,10 @@ void CompressFaceVaryingPrimvarIndices(
 /// Returns true if unassigned values were added and indices were updated, or
 /// false otherwise.
 bool AddUnassignedUVIfNeeded(
-        VtArray<GfVec2f>* uvData,
-        VtArray<int>* assignmentIndices,
+        PXR_NS::VtArray<PXR_NS::GfVec2f>* uvData,
+        PXR_NS::VtArray<int>* assignmentIndices,
         int* unassignedValueIndex,
-        const GfVec2f& defaultUV);
+        const PXR_NS::GfVec2f& defaultUV);
 
 /// If any components in \p assignmentIndices are unassigned (-1), the given
 /// default values will be added to RGBData and AlphaData and all of those
@@ -240,11 +268,11 @@ bool AddUnassignedUVIfNeeded(
 /// Returns true if unassigned values were added and indices were updated, or
 /// false otherwise.
 bool AddUnassignedColorAndAlphaIfNeeded(
-        VtArray<GfVec3f>* RGBData,
-        VtArray<float>* AlphaData,
-        VtArray<int>* assignmentIndices,
+        PXR_NS::VtArray<PXR_NS::GfVec3f>* RGBData,
+        PXR_NS::VtArray<float>* AlphaData,
+        PXR_NS::VtArray<int>* assignmentIndices,
         int* unassignedValueIndex,
-        const GfVec3f& defaultRGB,
+        const PXR_NS::GfVec3f& defaultRGB,
         const float defaultAlpha);
 
 MPlug GetConnected(const MPlug& plug);
@@ -261,10 +289,10 @@ void Connect(
 ///
 /// Elements of the path will be sanitized such that it is a valid SdfPath.
 /// This means it will replace ':' with '_'.
-SdfPath MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape);
+PXR_NS::SdfPath MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape);
 
 /// Conveniency function to retreive custom data
-bool GetBoolCustomData(UsdAttribute obj, TfToken key, bool defaultValue);
+bool GetBoolCustomData(PXR_NS::UsdAttribute obj, PXR_NS::TfToken key, bool defaultValue);
 
 // Compute the value of \p attr, returning true upon success.
 //
@@ -293,7 +321,7 @@ bool getPlugValue(MFnDependencyNode const &depNode,
 /// gamma corrected (display in maya).
 /// Returns true if the value was set on the plug successfully, false otherwise.
 bool setPlugValue(
-        const UsdAttribute& attr,
+        const PXR_NS::UsdAttribute& attr,
         MPlug& attrPlug);
 
 /// Given an \p usdAttr , extract the value at timecode \p time and write it
@@ -302,8 +330,8 @@ bool setPlugValue(
 /// gamma corrected (display in maya).
 /// Returns true if the value was set on the plug successfully, false otherwise.
 bool setPlugValue(
-        const UsdAttribute& attr,
-        UsdTimeCode time,
+        const PXR_NS::UsdAttribute& attr,
+        PXR_NS::UsdTimeCode time,
         MPlug& attrPlug);
 
 /// \brief sets \p attr to have value \p val, assuming it exists on \p

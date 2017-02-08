@@ -32,19 +32,24 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/debug.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 PxOsdMeshTopology::PxOsdMeshTopology() :
     _scheme(PxOsdOpenSubdivTokens->bilinear),
     _orientation(PxOsdOpenSubdivTokens->rightHanded),
     _faceVertexCounts(),
     _faceVertexIndices(),
-    _holeIndices() { }
+    _holeIndices(),
+    _subdivTags() { }
 
 PxOsdMeshTopology::PxOsdMeshTopology(PxOsdMeshTopology const & src) :
     _scheme(src._scheme),
     _orientation(src._orientation),
     _faceVertexCounts(src._faceVertexCounts),
     _faceVertexIndices(src._faceVertexIndices),
-    _holeIndices(src._holeIndices) { }
+    _holeIndices(src._holeIndices),
+    _subdivTags(src._subdivTags) { }
 
 PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
                                      TfToken orientation,
@@ -53,7 +58,9 @@ PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
     _scheme(scheme),
     _orientation(orientation),
     _faceVertexCounts(faceVertexCounts),
-    _faceVertexIndices(faceVertexIndices) { }
+    _faceVertexIndices(faceVertexIndices),
+    _holeIndices(),
+    _subdivTags() { }
 
 PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
                                      TfToken orientation,
@@ -63,8 +70,10 @@ PxOsdMeshTopology::PxOsdMeshTopology(TfToken scheme,
     _scheme(scheme),
     _orientation(orientation),
     _faceVertexCounts(faceVertexCounts),
-    _faceVertexIndices(faceVertexIndices) {
-
+    _faceVertexIndices(faceVertexIndices),
+    _holeIndices(),
+    _subdivTags()
+{
     SetHoleIndices(holeIndices);
 }
 
@@ -95,11 +104,11 @@ PxOsdMeshTopology::operator==(PxOsdMeshTopology const &other) const {
 
     TRACE_FUNCTION();
 
-    return (_scheme == other._scheme and
-            _orientation == other._orientation and
-            _faceVertexCounts == other._faceVertexCounts and
-            _faceVertexIndices == other._faceVertexIndices and
-            _subdivTags == other._subdivTags and
+    return (_scheme == other._scheme                        && 
+            _orientation == other._orientation              && 
+            _faceVertexCounts == other._faceVertexCounts    && 
+            _faceVertexIndices == other._faceVertexIndices  && 
+            _subdivTags == other._subdivTags                && 
             _holeIndices == other._holeIndices);
 }
 
@@ -133,5 +142,8 @@ operator << (std::ostream &out, PxOsdMeshTopology const &topo)
 
 bool operator!=(const PxOsdMeshTopology& lhs, const PxOsdMeshTopology& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

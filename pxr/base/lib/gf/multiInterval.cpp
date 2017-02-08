@@ -21,14 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/multiInterval.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/multiInterval.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/type.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -58,7 +61,7 @@ GfMultiInterval::Hash() const
 GfInterval
 GfMultiInterval::GetBounds() const
 {
-    if (not _set.empty()) {
+    if (!_set.empty()) {
         const GfInterval & first = *_set.begin();
         const GfInterval & last = *_set.rbegin();
         return GfInterval(first.GetMin(), last.GetMax(),
@@ -75,11 +78,11 @@ GfMultiInterval::Contains(double d) const
     const_iterator i = lower_bound(d);
 
     // Case 1: i is the first interval after d.
-    if (i != end() and i->Contains(d))
+    if (i != end() && i->Contains(d))
         return true;
 
     // Case 2: the previous interval, (i-1), contains d.
-    if (i != begin() and (--i)->Contains(d))
+    if (i != begin() && (--i)->Contains(d))
         return true;
 
     return false;
@@ -95,11 +98,11 @@ GfMultiInterval::Contains(const GfInterval & a) const
     const_iterator i = _set.lower_bound(a);
 
     // Case 1: i is the first interval at-or-after a and contains a.
-    if (i != end() and i->Contains(a))
+    if (i != end() && i->Contains(a))
         return true;
 
     // Case 2: the previous interval, (i-1), contains a.
-    if (i != begin() and (--i)->Contains(a))
+    if (i != begin() && (--i)->Contains(a))
         return true;
 
     return false;
@@ -112,7 +115,7 @@ GfMultiInterval::Contains(const GfMultiInterval & s) const
         return false;
     }
     TF_FOR_ALL(i, s) {
-        if (not Contains(*i)) {
+        if (!Contains(*i)) {
             return false;
         }
     }
@@ -155,7 +158,7 @@ GfMultiInterval::GetPriorNonContainingInterval( double x ) const
         return _set.end();
     }
     --i;
-    if (not i->Contains(x)) {
+    if (!i->Contains(x)) {
         // Found prior non-overlapping interval.
         return i;
     }
@@ -163,7 +166,7 @@ GfMultiInterval::GetPriorNonContainingInterval( double x ) const
         // Return prior interval, which we know does not contain x
         // because intervals in a set never overlap.
         --i;
-        TF_AXIOM(not i->Contains(x));
+        TF_AXIOM(!i->Contains(x));
         return i;
     } else {
         // No prior intervals left.
@@ -210,7 +213,7 @@ GfMultiInterval::Add( const GfInterval & interval )
     const_iterator i = _set.lower_bound(merged);
 
     // Merge with subsequent intervals.
-    while (i != _set.end() and merged.Intersects(*i)) {
+    while (i != _set.end() && merged.Intersects(*i)) {
         merged |= *i;
         _set.erase(i++);
     }
@@ -218,8 +221,8 @@ GfMultiInterval::Add( const GfInterval & interval )
     // matches the max of the merged interval if either of these intervals 
     // has that boundary open.  So we need to merge in the next interval if our
     // end points match up and either of the these end points is closed 
-    if (i != _set.end() and merged.GetMax() == (*i).GetMin() and
-        not (merged.IsMaxOpen() and (*i).IsMinOpen()) ) {
+    if (i != _set.end() && merged.GetMax() == (*i).GetMin() &&
+        !(merged.IsMaxOpen() && (*i).IsMinOpen()) ) {
         merged |= *i;
         _set.erase(i++);
     }
@@ -229,9 +232,9 @@ GfMultiInterval::Add( const GfInterval & interval )
         // If our merged interval intersects the previous interval or it's min
         // matches the previous interval's max with either one of the ends being
         // close, then merged the previous interval in
-        if (merged.Intersects(*i) or 
-                (merged.GetMin() == (*i).GetMax() and
-                 not (merged.IsMinOpen() and (*i).IsMaxOpen()))) {
+        if (merged.Intersects(*i) || 
+                (merged.GetMin() == (*i).GetMax() && 
+                 !(merged.IsMinOpen() && (*i).IsMaxOpen()))) {
             merged |= *i;
             _set.erase(i);
 
@@ -258,17 +261,17 @@ static void
 _RemoveInterval( const GfMultiInterval::Set::iterator i, const GfInterval & j,
                  GfMultiInterval::Set *set )
 {
-    if (not i->Intersects(j))
+    if (!i->Intersects(j))
         return;
 
     GfInterval lo( i->GetMin(),         j.GetMin(),
-                   i->IsMinClosed(),    not j.IsMinClosed() );
+                   i->IsMinClosed(),    !j.IsMinClosed() );
     GfInterval hi( j.GetMax(),          i->GetMax(),
-                   not j.IsMaxClosed(), i->IsMaxClosed() );
+                   !j.IsMaxClosed(), i->IsMaxClosed() );
 
-    if (not lo.IsEmpty())
+    if (!lo.IsEmpty())
         set->insert(/* hint */ i, lo);
-    if (not hi.IsEmpty())
+    if (!hi.IsEmpty())
         set->insert(/* hint */ i, hi);
 
     set->erase(i);
@@ -284,7 +287,7 @@ GfMultiInterval::Remove( const GfInterval & intervalToRemove )
 
     // Remove from subsequent intersecting intervals.
     i = _set.lower_bound(intervalToRemove);
-    while (i != _set.end() and intervalToRemove.Intersects(*i))
+    while (i != _set.end() && intervalToRemove.Intersects(*i))
         _RemoveInterval( i++, intervalToRemove, &_set );
 
     // Remove from prior interval.  Need to handle at most one.
@@ -303,16 +306,16 @@ GfMultiInterval::GetComplement() const
     GfInterval workingInterval = GfInterval::GetFullInterval();
     TF_FOR_ALL(i, _set) {
         // Insert interval prior to *i.
-        workingInterval.SetMax( i->GetMin(), not i->IsMinClosed() );
-        if (not workingInterval.IsEmpty()) {
+        workingInterval.SetMax( i->GetMin(), !i->IsMinClosed() );
+        if (!workingInterval.IsEmpty()) {
             r._set.insert(/* hint */ r._set.end(), workingInterval);
         }
 
         // Set up next interval.
         workingInterval = GfInterval::GetFullInterval();
-        workingInterval.SetMin( i->GetMax(), not i->IsMaxClosed() );
+        workingInterval.SetMin( i->GetMax(), !i->IsMaxClosed() );
     }
-    if (not workingInterval.IsEmpty()) {
+    if (!workingInterval.IsEmpty()) {
         r._set.insert(/* hint */ r._set.end(), workingInterval);
     }
     return r;
@@ -338,12 +341,12 @@ GfMultiInterval::_AssertInvariants() const
     for (const_iterator i = _set.begin(), iEnd = _set.end(); i != iEnd; ++i)
     {
         // Verify no empty intervals
-        TF_AXIOM(not i->IsEmpty());
+        TF_AXIOM(!i->IsEmpty());
 
         // Verify that intervals increase monotonically and do not overlap
         if (last) {
             TF_AXIOM( *last < *i );
-            TF_AXIOM( not last->Intersects(*i) );
+            TF_AXIOM( !last->Intersects(*i) );
         }
 
         last = &(*i);
@@ -367,7 +370,7 @@ operator<<(std::ostream &out, const GfMultiInterval &s)
     out << "[";
     bool first = true;
     TF_FOR_ALL(interval, s) {
-        if (not first)
+        if (!first)
             out << ", ";
         out << Gf_OstreamHelperP(*interval);
         first = false;
@@ -375,3 +378,5 @@ operator<<(std::ostream &out, const GfMultiInterval &s)
     out << "]";
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,9 +24,12 @@
 #ifndef AR_ASSET_INFO_H
 #define AR_ASSET_INFO_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/base/vt/value.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class ArAssetInfo
 ///
@@ -57,5 +60,7 @@ operator==(const ArAssetInfo& lhs, const ArAssetInfo& rhs);
 AR_API
 bool 
 operator!=(const ArAssetInfo& lhs, const ArAssetInfo& rhs);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // AR_ASSET_INFO_H

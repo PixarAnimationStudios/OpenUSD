@@ -24,12 +24,14 @@
 #ifndef SDF_PYLISTOP_H
 #define SDF_PYLISTOP_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/listOp.h"
-
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <boost/python.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfPyWrapListOp<T>
 ///
@@ -110,5 +112,7 @@ private:
     }
 
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PYLISTOP_H

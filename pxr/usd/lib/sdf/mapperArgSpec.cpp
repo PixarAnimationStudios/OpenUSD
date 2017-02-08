@@ -22,8 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \fild MapperArgSpec.cpp
-#include "pxr/usd/sdf/mapperArgSpec.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/mapperArgSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/childrenPolicies.h"
 #include "pxr/usd/sdf/childrenUtils.h"
@@ -34,6 +35,8 @@
 #include "pxr/base/tf/type.h"
 
 #include "pxr/base/tracelite/trace.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define SDF_ACCESSOR_CLASS                   SdfMapperArgSpec
 #define SDF_ACCESSOR_READ_PREDICATE(key_)    SDF_NO_PREDICATE
@@ -49,12 +52,12 @@ SdfMapperArgSpec::New(
 {
     TRACE_FUNCTION();
 
-    if (not owner) {
+    if (!owner) {
         TF_CODING_ERROR("NULL owner mapper");
         return TfNullPtr;
     }
 
-    if (not Sdf_ChildrenUtils<Sdf_MapperArgChildPolicy>::IsValidName(name)) {
+    if (!Sdf_ChildrenUtils<Sdf_MapperArgChildPolicy>::IsValidName(name)) {
         TF_CODING_ERROR("Cannot create mapper arg on %s with "
             "invalid name: '%s'", owner->GetPath().GetText(), name.c_str());
         return TfNullPtr;
@@ -76,7 +79,7 @@ SdfMapperArgSpec::New(
 
     SdfChangeBlock block;
 
-    if (not Sdf_ChildrenUtils<Sdf_MapperArgChildPolicy>::CreateSpec(
+    if (!Sdf_ChildrenUtils<Sdf_MapperArgChildPolicy>::CreateSpec(
 	    owner->GetLayer(), argPath, SdfSpecTypeMapperArg)) {
         return TfNullPtr;
     }
@@ -128,3 +131,5 @@ SDF_DEFINE_GET_SET(Value, SdfFieldKeys->MapperArgValue, VtValue)
 #undef SDF_ACCESSOR_CLASS
 #undef SDF_ACCESSOR_READ_PREDICATE
 #undef SDF_ACCESSOR_WRITE_PREDICATE
+
+PXR_NAMESPACE_CLOSE_SCOPE

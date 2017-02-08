@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/flyweight.h"
 
 #include <string>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Flyweight pools must be globally unique across the whole system.  We can't
 // just put static data members in the template, since there may be one instance
@@ -46,3 +50,5 @@ Tf_TrySetFlyweightData(std::string const &poolName, Tf_FlyweightDataBase *data)
     _globalDataMap.insert(acc, make_pair(poolName, data));
     return acc->second;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

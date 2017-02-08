@@ -33,6 +33,9 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdImagingPrimAdapter>();
@@ -110,11 +113,25 @@ UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 /*virtual*/
 SdfPath 
 UsdImagingPrimAdapter::GetPathForInstanceIndex(
-    SdfPath const &path,
+    SdfPath const &protoPath,
     int instanceIndex,
     int *instanceCount,
     int *absoluteInstanceIndex,
-    SdfPath * rprimPath,
+    SdfPath *resolvedPrimPath,
+    SdfPathVector *instanceContext)
+{
+    if (absoluteInstanceIndex) {
+        *absoluteInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+    }
+    return SdfPath();
+}
+
+/*virtual*/
+SdfPath
+UsdImagingPrimAdapter::GetPathForInstanceIndex(
+    SdfPath const &instancerPath, SdfPath const &protoPath,
+    int instanceIndex, int *instanceCount,
+    int *absoluteInstanceIndex, SdfPath *resolvedPrimPath,
     SdfPathVector *instanceContext)
 {
     if (absoluteInstanceIndex) {
@@ -200,13 +217,13 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
                                   bool isInherited)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Unset the bit initially.
     (*dirtyFlags) &= ~dirtyFlag;
 
-    for (bool prime = true;prime or 
-          (isInherited and prim.GetPath() != SdfPath::AbsoluteRootPath());
+    for (bool prime = true;prime ||
+          (isInherited && prim.GetPath() != SdfPath::AbsoluteRootPath());
           prime = false) 
     {
         UsdAttribute attr = prim.GetAttribute(attrName);
@@ -229,7 +246,7 @@ UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
                                            int* dirtyFlags)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Unset the bit initially.
     (*dirtyFlags) &= ~dirtyFlag;
@@ -237,7 +254,7 @@ UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
     UsdImaging_XformCache &xfCache = _delegate->_xformCache;
 
     for (bool prime = true; 
-         prime or (prim.GetPath() != SdfPath::AbsoluteRootPath());
+         prime || (prim.GetPath() != SdfPath::AbsoluteRootPath());
          prime = false) 
     {
         bool mayXformVary = 
@@ -266,12 +283,12 @@ UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim, UsdTimeCode time,
                                     bool ignoreRootTransform)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     
     UsdImaging_XformCache &xfCache = _delegate->_xformCache;
     GfMatrix4d ctm(1.0);
 
-    if (_IsEnabledXformCache() and xfCache.GetTime() == time) {
+    if (_IsEnabledXformCache() && xfCache.GetTime() == time) {
         ctm = xfCache.GetValue(prim);
     } else {
         ctm = UsdImaging_XfStrategy::ComputeTransform(
@@ -290,7 +307,7 @@ UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time)
     if (_delegate->IsInInvisedPaths(prim.GetPath())) return false;
 
     UsdImaging_VisCache &visCache = _delegate->_visCache;
-    if (_IsEnabledVisCache() and visCache.GetTime() == time)
+    if (_IsEnabledVisCache() && visCache.GetTime() == time)
     {
         return visCache.GetValue(prim)
                     == UsdGeomTokens->inherited;
@@ -331,3 +348,23 @@ UsdImagingPrimAdapter::GetDependPaths(SdfPath const &path) const
 {
     return SdfPathVector();
 }
+
+/*virtual*/
+VtIntArray
+UsdImagingPrimAdapter::GetInstanceIndices(SdfPath const &instancerPath,
+                                          SdfPath const &protoRprimPath)
+{
+    return VtIntArray();
+}
+
+/*virtual*/
+GfMatrix4d
+UsdImagingPrimAdapter::GetRelativeInstancerTransform(
+    SdfPath const &instancerPath,
+    SdfPath const &protoInstancerPath, UsdTimeCode time)
+{
+    return GfMatrix4d(1);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

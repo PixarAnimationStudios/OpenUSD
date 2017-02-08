@@ -26,15 +26,19 @@
 
 /// \file glf/simpleLight.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/usd/sdf/path.h"
 
-class GlfSimpleLight {
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+class GlfSimpleLight final {
 public:
     GlfSimpleLight(GfVec4f const & position = GfVec4f(0.0, 0.0, 0.0, 1.0));
-    virtual ~GlfSimpleLight();
+    ~GlfSimpleLight();
 
     GfMatrix4d const & GetTransform() const;
     void SetTransform(GfMatrix4d const & mat);
@@ -87,8 +91,6 @@ public:
     SdfPath const & GetID() const;
     void SetID(SdfPath const & id);
 
-    virtual void Draw() const;
-
     bool operator ==(GlfSimpleLight const & other) const;
     bool operator !=(GlfSimpleLight const & other) const;
 
@@ -124,5 +126,8 @@ typedef std::vector<class GlfSimpleLight> GlfSimpleLightVector;
 
 // VtValue requirements
 std::ostream& operator<<(std::ostream& out, const GlfSimpleLightVector& pv);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

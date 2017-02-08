@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/assetInfo.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 bool 
 operator==(
@@ -29,9 +33,9 @@ operator==(
     const ArAssetInfo& rhs)
 {
     return (lhs.version == rhs.version) 
-        and (lhs.assetName == rhs.assetName)
-        and (lhs.repoPath == rhs.repoPath)
-        and (lhs.resolverInfo == rhs.resolverInfo);
+        && (lhs.assetName == rhs.assetName)
+        && (lhs.repoPath == rhs.repoPath)
+        && (lhs.resolverInfo == rhs.resolverInfo);
 }
 
 bool 
@@ -39,5 +43,7 @@ operator!=(
     const ArAssetInfo& lhs, 
     const ArAssetInfo& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

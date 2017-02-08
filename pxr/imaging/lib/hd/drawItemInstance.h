@@ -24,13 +24,15 @@
 #ifndef _HD_DRAW_ITEM_INSTANCE_H_
 #define _HD_DRAW_ITEM_INSTANCE_H_
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
+#include "boost/shared_ptr.hpp"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class Hd_DrawBatch;
 class HdDrawItem;
 class HdDrawItemInstance;
-
-#include "boost/shared_ptr.hpp"
 
 typedef boost::shared_ptr<Hd_DrawBatch> HdDrawBatchSharedPtr;
 typedef boost::shared_ptr<HdDrawItem> HdDrawItemSharedPtr;
@@ -82,6 +84,9 @@ private:
     size_t _batchIndex;
     bool _visible;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // _HD_DRAW_ITEM_INSTANCE_H_
 

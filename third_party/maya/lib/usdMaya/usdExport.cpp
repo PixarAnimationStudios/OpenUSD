@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/usdExport.h"
 
 #include "usdMaya/usdWriteJob.h"
@@ -39,6 +40,9 @@
 #include <maya/MTime.h>
 
 #include "pxr/usd/usdGeom/tokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 usdExport::usdExport()
 {
@@ -68,6 +72,8 @@ MSyntax usdExport::createSyntax()
 
     syntax.addFlag("-fr" , "-frameRange"   , MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag("-pr" , "-preRoll"   , MSyntax::kDouble);
+    syntax.addFlag("-fs" , "-frameSample", MSyntax::kDouble);
+    syntax.makeFlagMultiUse("-frameSample");
 
     syntax.addFlag("-ro"  , "-renderableOnly", MSyntax::kNoArg);
     syntax.addFlag("-sl"  , "-selection", MSyntax::kNoArg);
@@ -117,21 +123,15 @@ try
     JobExportArgs jobArgs;
 
     if (argData.isFlagSet("mergeTransformAndShape")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("mergeTransformAndShape", 0, tmpBool);
-        jobArgs.mergeTransformAndShape = tmpBool;
+        argData.getFlagArgument("mergeTransformAndShape", 0, jobArgs.mergeTransformAndShape);
     }
 
     if (argData.isFlagSet("exportRefsAsInstanceable")) {
-        bool tmpBool = false;
-        argData.getFlagArgument("exportRefsAsInstanceable", 0, tmpBool);
-        jobArgs.exportRefsAsInstanceable = tmpBool;
+        argData.getFlagArgument("exportRefsAsInstanceable", 0, jobArgs.exportRefsAsInstanceable);
     }
 
     if (argData.isFlagSet("exportDisplayColor")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("exportDisplayColor", 0, tmpBool);
-        jobArgs.exportDisplayColor = tmpBool;
+        argData.getFlagArgument("exportDisplayColor", 0, jobArgs.exportDisplayColor);
     }
     
     if (argData.isFlagSet("shadingMode")) {
@@ -157,22 +157,16 @@ try
     }
 
     if (argData.isFlagSet("exportUVs")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("exportUVs", 0, tmpBool);
-        jobArgs.exportMeshUVs = tmpBool;
-        jobArgs.exportNurbsExplicitUV = tmpBool;
+        argData.getFlagArgument("exportUVs", 0, jobArgs.exportMeshUVs);
+        jobArgs.exportNurbsExplicitUV = jobArgs.exportMeshUVs;
     }
 
     if (argData.isFlagSet("normalizeMeshUVs")) {
-        bool tmpBool = false;
-        argData.getFlagArgument("normalizeMeshUVs", 0, tmpBool);
-        jobArgs.normalizeMeshUVs = tmpBool;
+        argData.getFlagArgument("normalizeMeshUVs", 0, jobArgs.normalizeMeshUVs);
     }
 
     if (argData.isFlagSet("normalizeNurbs")) {
-        bool tmpBool = false;
-        argData.getFlagArgument("normalizeNurbs", 0, tmpBool);
-        jobArgs.normalizeNurbs = tmpBool;
+        argData.getFlagArgument("normalizeNurbs", 0, jobArgs.normalizeNurbs);
     }
 
     if (argData.isFlagSet("nurbsExplicitUVType")) {
@@ -184,9 +178,7 @@ try
     }
 
     if (argData.isFlagSet("exportColorSets")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("exportColorSets", 0, tmpBool);
-        jobArgs.exportColorSets = tmpBool;
+        argData.getFlagArgument("exportColorSets", 0, jobArgs.exportColorSets);
     }
 
     if (argData.isFlagSet("defaultMeshScheme")) {
@@ -208,9 +200,7 @@ try
     }
 
     if (argData.isFlagSet("exportVisibility")) {
-        bool tmpBool = true;
-        argData.getFlagArgument("exportVisibility", 0, tmpBool);
-        jobArgs.exportVisibility = tmpBool;
+        argData.getFlagArgument("exportVisibility", 0, jobArgs.exportVisibility);
     }
 
     bool append = false;
@@ -250,7 +240,8 @@ try
     double startTime=1;
     double endTime=1;
     double preRoll=0;
-    
+    std::set<double> frameSamples;
+
     // If you provide a frame range we consider this an anim
     // export even if start and end are the same
     if (argData.isFlagSet("frameRange")) {
@@ -264,7 +255,18 @@ try
     if (argData.isFlagSet("preRoll")) {
         argData.getFlagArgument("preRoll", 0, preRoll);
     }
-    
+
+    unsigned int numFrameSamples = argData.numberOfFlagUses("frameSample");
+    for (unsigned int i = 0; i < numFrameSamples; ++i) {
+        MArgList tmpArgList;
+        argData.getFlagArgumentList("frameSample", i, tmpArgList);
+        frameSamples.insert(tmpArgList.asDouble(0));
+    }
+
+    if (frameSamples.empty()) {
+        frameSamples.insert(0.0);
+    }
+
     jobArgs.excludeInvisible = argData.isFlagSet("renderableOnly");
     jobArgs.exportDefaultCameras = argData.isFlagSet("defaultCameras");
 
@@ -386,16 +388,19 @@ try
         if (jobArgs.exportAnimation) {
             MTime oldCurTime = MAnimControl::currentTime();
             for (double i=startTime;i<(endTime+1);i++) {
-                if (verbose) {
-                    MString info;
-                    info = i;
-                    MGlobal::displayInfo(info);
-                }
-                MGlobal::viewFrame(i);
-                // Process per frame data
-                usdWriteJob.evalJob(i);
-                if (computation.isInterruptRequested()) {
-                    break;
+                for (double sampleTime : frameSamples) {
+                    double actualTime = i + sampleTime;
+                    if (verbose) {
+                        MString info;
+                        info = actualTime;
+                        MGlobal::displayInfo(info);
+                    }
+                    MGlobal::viewFrame(actualTime);
+                    // Process per frame data
+                    usdWriteJob.evalJob(actualTime);
+                    if (computation.isInterruptRequested()) {
+                        break;
+                    }
                 }
             }
             // set the time back
@@ -421,3 +426,6 @@ catch (std::exception & e)
     return MS::kFailure;
 }
 } // end of function
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

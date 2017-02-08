@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/types.h"
 
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
@@ -52,3 +56,5 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(PcpRangeTypeStrongerThanPayload, "stronger than payload");
     TF_ADD_ENUM_NAME(PcpRangeTypeInvalid, "invalid");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

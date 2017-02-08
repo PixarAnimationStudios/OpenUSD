@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/cache.h"
 #include "usdKatana/readModel.h"
@@ -34,6 +35,9 @@
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include <FnLogging/FnLogging.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 FnLogSetup("PxrUsdKatanaReadModel");
 
@@ -69,10 +73,8 @@ _GetViewerProxyAttr(const PxrUsdKatanaUsdInPrivateData& data)
     proxiesBuilder.set("viewer.load.opArgs.a.rootLocation", 
         FnKat::StringAttribute(data.GetUsdInArgs()->GetRootLocationPath()));
 
-    proxiesBuilder.set("viewer.load.opArgs.a.variants", 
-        FnKat::StringAttribute(
-            UsdKatanaCache::GetVariantSelectionString(
-                data.GetUsdInArgs()->GetVariantSelections())));
+    proxiesBuilder.set("viewer.load.opArgs.a.session",
+            data.GetUsdInArgs()->GetSessionAttr());
 
     proxiesBuilder.set("viewer.load.opArgs.a.ignoreLayerRegex",
        FnKat::StringAttribute(data.GetUsdInArgs()->GetIgnoreLayerRegex()));
@@ -101,7 +103,7 @@ _BuildGlobalCoordinateSystems(
         UsdRiStatements riStatements(prim);
         SdfPathVector coordSysPaths;
         if (riStatements.GetModelCoordinateSystems(&coordSysPaths)
-                and not coordSysPaths.empty())
+            && !coordSysPaths.empty())
         {
             TF_FOR_ALL(itr, coordSysPaths)
             {
@@ -120,7 +122,7 @@ _BuildGlobalCoordinateSystems(
 
     TF_FOR_ALL(itr, prim.GetFilteredChildren(UsdPrimIsModel))
     {
-        result = result or _BuildGlobalCoordinateSystems(
+        result = result || _BuildGlobalCoordinateSystems(
             *itr, rootLocation, coordSysBuilder);
     }
 
@@ -156,7 +158,7 @@ PxrUsdKatanaReadModel(
     // groups or kinds that need a proxy.
     //
 
-    if (not isGroup or PxrUsdKatanaUtils::ModelGroupNeedsProxy(prim))
+    if (!isGroup || PxrUsdKatanaUtils::ModelGroupNeedsProxy(prim))
     {
         attrs.set("proxies", _GetViewerProxyAttr(data));
     }
@@ -194,8 +196,11 @@ PxrUsdKatanaReadModel(
         if (UsdVariantSet variant = prim.GetVariantSet(varSetName)) {
             variantSel = variant.GetVariantSelection();
         }
-        if (not variantSel.empty()) {
+        if (!variantSel.empty()) {
             attrs.set(varSetName, FnKat::StringAttribute(variantSel));
         }
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -45,7 +47,7 @@ UsdModelAPI::~UsdModelAPI()
 UsdModelAPI
 UsdModelAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdModelAPI();
     }
@@ -90,9 +92,14 @@ UsdModelAPI::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 #include "pxr/usd/sdf/schema.h"
@@ -101,6 +108,8 @@ UsdModelAPI::GetSchemaAttributeNames(bool includeInherited)
 
 #include <string>
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdModelAPIAssetInfoKeys, USDMODEL_ASSET_INFO_KEYS);
 
@@ -212,3 +221,4 @@ UsdModelAPI::SetAssetInfo(const VtDictionary &info) const
     GetPrim().SetAssetInfo(info);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

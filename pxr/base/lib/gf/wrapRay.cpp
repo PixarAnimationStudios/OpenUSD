@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/ray.h"
 #include "pxr/base/gf/line.h"
 #include "pxr/base/gf/lineSeg.h"
@@ -43,7 +45,7 @@ using namespace boost::python;
 
 using std::string;
 
-
+PXR_NAMESPACE_OPEN_SCOPE
 
 static void
 SetStartPointHelper( GfRay &self, const GfVec3d &startPoint ) {
@@ -289,3 +291,5 @@ void wrapRay()
         ;
     
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

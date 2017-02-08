@@ -26,6 +26,7 @@
  * \brief file translator for USD files
  */
 
+#include "pxr/pxr.h"
 #include "usdMaya/usdTranslatorImport.h"
 
 #include "usdMaya/JobArgs.h"
@@ -39,6 +40,9 @@
 
 #include <map>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 void* usdTranslatorImport::creator(const std::string& assemblyTypeName,
@@ -124,17 +128,20 @@ usdTranslatorImport::identifyFile(
     const int lastIndex = fileName.length() - 1;
 
     const int periodIndex = fileName.rindex('.');
-    if (periodIndex < 0 or periodIndex >= lastIndex) {
+    if (periodIndex < 0 || periodIndex >= lastIndex) {
         return retValue;
     }
 
     const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
 
-    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() or
-        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() or
+    if (fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() || 
+        fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() || 
         fileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
         retValue = kIsMyFileType;
     }
 
     return retValue;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

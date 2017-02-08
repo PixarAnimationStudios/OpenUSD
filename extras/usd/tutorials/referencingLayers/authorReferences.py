@@ -43,7 +43,7 @@ refSphere = refStage.OverridePrim('/refSphere')
 print refStage.GetRootLayer().ExportToString()
 
 # Reference in the layer.
-refSphere.GetReferences().Add('./HelloWorld.usda')
+refSphere.GetReferences().AppendReference('./HelloWorld.usda')
 print refStage.GetRootLayer().ExportToString()
 refStage.GetRootLayer().Save()
 
@@ -54,7 +54,7 @@ print refStage.GetRootLayer().ExportToString()
 
 # Reference in the layer again, on another over.
 refSphere2 = refStage.OverridePrim('/refSphere2')
-refSphere2.GetReferences().Add('./HelloWorld.usda')
+refSphere2.GetReferences().AppendReference('./HelloWorld.usda')
 print refStage.GetRootLayer().ExportToString()
 refStage.GetRootLayer().Save()
 

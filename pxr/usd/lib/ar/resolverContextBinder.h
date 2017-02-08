@@ -24,9 +24,12 @@
 #ifndef AR_RESOLVER_CONTEXT_BINDER_H
 #define AR_RESOLVER_CONTEXT_BINDER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/vt/value.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class ArResolver;
 
@@ -58,5 +61,7 @@ private:
     ArResolverContext _context;
     VtValue _bindingData;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // AR_RESOLVER_CONTEXT_BINDER_H

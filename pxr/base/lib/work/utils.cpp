@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/work/utils.h"
 #include "pxr/base/tf/envSetting.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(WORK_SYNCHRONIZE_ASYNC_DESTROY_CALLS, false,
                       "Make WorkSwapDestroyAsync and WorkMoveDestroyAsync "
@@ -34,3 +38,5 @@ Work_ShouldSynchronizeAsyncDestroyCalls()
 {
     return TfGetEnvSetting(WORK_SYNCHRONIZE_ASYNC_DESTROY_CALLS);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -26,16 +26,20 @@
 
 /// \file sdf/childrenProxy.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
+
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <boost/operators.hpp>
 #include <iterator>
 #include <map>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class _View>
 class SdfChildrenProxy : boost::equality_comparable<SdfChildrenProxy<_View> > {
@@ -363,7 +367,7 @@ public:
     /// \c true otherwise.
     bool operator!() const
     {
-        return not _view.IsValid();
+        return !_view.IsValid();
     }
 
 private:
@@ -400,7 +404,7 @@ private:
 
     bool _Validate(int permission)
     {
-        if (not _Validate()) {
+        if (!_Validate()) {
             return false;
         }
         if ((_permission & permission) == permission) {
@@ -477,9 +481,11 @@ struct Tf_ShouldIterateOverCopy<SdfChildrenProxy<_View> > : boost::true_type
 template <class _View>
 struct Vt_DefaultValueFactory<SdfChildrenProxy<_View> > {
     static Vt_DefaultValueHolder Invoke() {
-        TF_AXIOM(false and "Failed VtValue::Get<SdfChildrenProxy> not allowed");
+        TF_AXIOM(false && "Failed VtValue::Get<SdfChildrenProxy> not allowed");
         return Vt_DefaultValueHolder::Create((void*)0);
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_CHILDRENPROXY_H

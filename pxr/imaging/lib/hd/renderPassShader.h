@@ -24,11 +24,12 @@
 #ifndef HD_RENDER_PASS_SHADER_H
 #define HD_RENDER_PASS_SHADER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/resourceBinder.h"
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -36,13 +37,16 @@
 
 #include <boost/shared_ptr.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
 
 /// \class HdRenderPassShader
 ///
 /// A shader that supports common renderPass functionality.
 ///
-class HdRenderPassShader : public HdShader {
+class HdRenderPassShader : public HdShaderCode {
 public:
     HdRenderPassShader();
     HdRenderPassShader(TfToken const &glslfxFile);
@@ -80,6 +84,14 @@ private:
 
     TfHashMap<TfToken, HdBindingRequest, TfToken::HashFunctor> _customBuffers;
     HdCullStyle _cullStyle;
+
+
+    // No copying
+    HdRenderPassShader(const HdRenderPassShader &)                     = delete;
+    HdRenderPassShader &operator =(const HdRenderPassShader &)         = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_RENDER_PASS_SHADER_H

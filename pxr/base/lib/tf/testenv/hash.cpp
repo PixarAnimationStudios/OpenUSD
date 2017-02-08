@@ -21,11 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/weakPtr.h"
 #include <boost/functional/hash.hpp>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 class Dolly : public TfRefBase, public TfWeakBase {
 public:

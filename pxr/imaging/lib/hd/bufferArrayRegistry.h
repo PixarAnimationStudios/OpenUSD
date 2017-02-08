@@ -24,6 +24,7 @@
 #ifndef HD_BUFFER_ARRAY_REGISTRY_H
 #define HD_BUFFER_ARRAY_REGISTRY_H
 
+#include "pxr/pxr.h"
 #include <condition_variable>
 #include <mutex>
 
@@ -38,8 +39,13 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/strategyBase.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 
@@ -49,7 +55,7 @@ typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 ///
 class HdBufferArrayRegistry : public boost::noncopyable {
 public:
-    HD_MALLOC_TAG_NEW("new HdBufferArrayRegistry");
+    HF_MALLOC_TAG_NEW("new HdBufferArrayRegistry");
 
     HdBufferArrayRegistry();
     ~HdBufferArrayRegistry()   = default;
@@ -110,7 +116,7 @@ private:
         _EntryIsNotEmpty(const _Entry &entry) : _entry(entry) {}
 
         bool operator()() {
-            return (not (_entry.bufferArrays.empty()));
+            return (!(_entry.bufferArrays.empty()));
         }
 
     private:
@@ -135,4 +141,7 @@ private:
                                HdBufferSpecVector const &bufferSpecs);
 };
     
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // HD_BUFFER_ARRAY_REGISTRY_H

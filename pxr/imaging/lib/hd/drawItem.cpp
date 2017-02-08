@@ -24,7 +24,7 @@
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/geometricShader.h"
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 
 #include "pxr/imaging/garch/gl.h"
@@ -33,10 +33,13 @@
 #include <boost/functional/hash.hpp>
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdDrawItem::HdDrawItem(HdRprimSharedData const *sharedData)
     : _sharedData(sharedData)
 {
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 }
 
 HdDrawItem::~HdDrawItem()
@@ -52,10 +55,10 @@ HdDrawItem::GetPrimitiveMode() const
         : GL_POINTS;
 }
 
-HdShaderSharedPtr
+HdShaderCodeSharedPtr
 HdDrawItem::GetSurfaceShader() const
 {
-    return boost::static_pointer_cast<HdShader>(_sharedData->surfaceShader);
+    return boost::static_pointer_cast<HdShaderCode>(_sharedData->surfaceShader);
 }
 
 size_t
@@ -125,3 +128,6 @@ std::ostream &operator <<(std::ostream &out,
     }
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

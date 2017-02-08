@@ -125,12 +125,15 @@
 /// ignored.  If the file itself cannot be read, no error is printed; however,
 /// if the file is malformed, errors are printed to stderr.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/registryManager.h"
 
 #include <atomic>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // POD, statically initialized.
 //
@@ -169,7 +172,7 @@ TfGetEnvSetting(TfEnvSetting<T>& setting) {
     Tf_InitEnvSettings();
 
     T *val = setting._value->load();
-    if (ARCH_UNLIKELY(not val)) {
+    if (ARCH_UNLIKELY(!val)) {
         Tf_InitializeEnvSetting(&setting);
         val = setting._value->load();
     }
@@ -183,6 +186,8 @@ bool Tf_ChooseEnvSettingType(bool);
 int Tf_ChooseEnvSettingType(int);
 std::string Tf_ChooseEnvSettingType(char const *);
 
+class Tf_EnvSettingRegistry;
+
 /// Define an env setting named \p envVar with default value \p defValue and a
 /// descriptive string \p description.
 /// \hideinitializer
@@ -194,5 +199,7 @@ std::string Tf_ChooseEnvSettingType(char const *);
     TF_REGISTRY_FUNCTION_WITH_TAG(Tf_EnvSettingRegistry, envVar) {            \
         (void)TfGetEnvSetting(envVar);                                        \
     }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_ENVSETTING_H

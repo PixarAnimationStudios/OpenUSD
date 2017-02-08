@@ -24,12 +24,16 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H
 #define PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H
 
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 
 #include "pxr/usd/usdGeom/nurbsPatch.h"
 
 #include <maya/MObject.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 struct PxrUsdMayaTranslatorNurbsPatch
@@ -41,5 +45,8 @@ struct PxrUsdMayaTranslatorNurbsPatch
             PxrUsdMayaPrimReaderContext* context);
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H

@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+#include "pxr/base/arch/nap.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -28,10 +31,8 @@
 #include <iostream>
 #include <algorithm>
 
-#include <unistd.h>
-#include <time.h>
-
 using namespace std;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static void
 Pause(double seconds)
@@ -42,14 +43,8 @@ Pause(double seconds)
     //
     static TfStopwatch pauseWatch("pwatch", true);
 
-    struct timespec delay;
-
-    int64_t nanoseconds = (int64_t)(seconds * 1000000000);
-    delay.tv_sec  = nanoseconds / 1000000000;
-    delay.tv_nsec = nanoseconds % 1000000000;
-
     pauseWatch.Start();
-    nanosleep(&delay, 0);
+    ArchNap(static_cast<size_t>(seconds * 100.0));
     pauseWatch.Stop();
 }
 
@@ -79,20 +74,16 @@ Test_TfStopwatch()
     }
 
     // Test the timer
-    struct timespec delay;
 
     // Delay .5 seconds (500 million nanoseconds)
     //
-    delay.tv_sec  = 0;
-    delay.tv_nsec = 500000000;
-
     watch1.Start();
-    nanosleep(&delay, 0);
+    ArchNap(50);
     watch1.Stop();
 
     // The value of watch1 should be "near" 0.5 seconds
     if (fabs(watch1.GetSeconds() - 0.5) > 0.05) {
-        cout << "nanosleep for .5 seconds but measured time was "
+        cout << "Sleep for .5 seconds but measured time was "
              << watch1.GetSeconds()
              << " seconds."
              << endl;
@@ -102,12 +93,12 @@ Test_TfStopwatch()
     // Delay another .5 seconds and see if watch is near 1
     //
     watch1.Start();
-    nanosleep(&delay, 0);
+    ArchNap(50);
     watch1.Stop();
 
     // The value of watch1 should be "near" 1.0 seconds
     if (fabs(watch1.GetSeconds() - 1.0) > 0.1) {
-        cout << "nanosleep for 1.0 seconds but measured time was "
+        cout << "Sleep for 1.0 seconds but measured time was "
              << watch1.GetSeconds()
              << " seconds."
              << endl;
@@ -195,16 +186,13 @@ Test_TfStopwatch()
     // Test the timer
     // Delay .5 seconds (500 million nanoseconds)
     //
-    delay.tv_sec  = 0;
-    delay.tv_nsec = 500000000;
-
     swatch1.Start();
-    nanosleep(&delay, 0);
+    ArchNap(50);
     swatch1.Stop();
 
     // The value of swatch1 should be "near" 0.5 seconds
     if (fabs(swatch1.GetSeconds() - 0.5) > 0.05) {
-        cout << "nanosleep for .5 seconds but measured time was "
+        cout << "Sleep for .5 seconds but measured time was "
              << swatch1.GetSeconds()
              << " seconds."
              << endl;
@@ -214,12 +202,12 @@ Test_TfStopwatch()
     // Delay another .5 seconds and see if swatch is near 1
     //
     swatch1.Start();
-    nanosleep(&delay, 0);
+    ArchNap(50);
     swatch1.Stop();
 
     // The value of swatch1 should be "near" 1.0 seconds
     if (fabs(swatch1.GetSeconds() - 1.0) > 0.1) {
-        cout << "nanosleep for 1.0 seconds but measured time was "
+        cout << "Sleep for 1.0 seconds but measured time was "
              << swatch1.GetSeconds()
              << " seconds."
              << endl;

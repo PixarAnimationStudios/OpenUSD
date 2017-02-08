@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/renderPassState.h"
@@ -34,6 +35,8 @@
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 class My_TestGLDrawing : public Hd_UnitTestGLDrawing {
 public:
@@ -136,7 +139,7 @@ My_TestGLDrawing::OffscreenTest()
 {
     DrawTest();
 
-    if (not _outputFilePath.empty()) {
+    if (!_outputFilePath.empty()) {
         WriteToFile("color", _outputFilePath);
     }
 }
@@ -169,7 +172,7 @@ My_TestGLDrawing::ParseArgs(int argc, char *argv[])
             }
         } else if (arg == "--lighting") {
             _testLighting = true;
-        } else if (arg == "--clipPlane" and i+4<argc) {
+        } else if (arg == "--clipPlane" && i+4<argc) {
             GfVec4d clipPlane;
             clipPlane[0] = std::strtod(argv[++i], NULL);
             clipPlane[1] = std::strtod(argv[++i], NULL);

@@ -23,6 +23,12 @@
 //
 #include "pxr/imaging/hd/computation.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdComputation::~HdComputation()
 {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

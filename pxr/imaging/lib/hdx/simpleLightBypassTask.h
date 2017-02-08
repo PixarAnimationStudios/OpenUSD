@@ -24,11 +24,15 @@
 #ifndef HDX_SIMPLE_LIGHT_BYPASS_TASK_H
 #define HDX_SIMPLE_LIGHT_BYPASS_TASK_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 //
 //  This class exists to isolate code churn of Hd/Hdx/UsdImaging from exisiting
@@ -42,6 +46,7 @@
 
 class HdRenderIndex;
 class HdSceneDelegate;
+class HdxCamera;
 
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 
@@ -58,7 +63,7 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
-    HdSprimSharedPtr _camera;
+    const HdxCamera *_camera;
     HdxSimpleLightingShaderSharedPtr _lightingShader;
 
     GlfSimpleLightingContextRefPtr _simpleLightingContext;
@@ -77,5 +82,8 @@ bool operator==(const HdxSimpleLightBypassTaskParams& lhs,
                 const HdxSimpleLightBypassTaskParams& rhs);
 bool operator!=(const HdxSimpleLightBypassTaskParams& lhs,
                 const HdxSimpleLightBypassTaskParams& rhs);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_SIMPLE_LIGHT_BYPASS_TASK_H

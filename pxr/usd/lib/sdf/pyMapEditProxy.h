@@ -26,12 +26,15 @@
 
 /// \file sdf/pyMapEditProxy.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <boost/python.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class T>
 class SdfPyWrapMapEditProxy {
@@ -367,4 +370,6 @@ private:
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PYMAPEDITPROXY_H

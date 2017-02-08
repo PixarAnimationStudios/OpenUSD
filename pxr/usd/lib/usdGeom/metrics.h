@@ -24,8 +24,12 @@
 #ifndef USDGEOM_METRICS_H
 #define USDGEOM_METRICS_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usd/common.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \file usdGeom/metrics.h
 ///
@@ -111,5 +115,8 @@ bool UsdGeomSetStageUpAxis(const UsdStageWeakPtr &stage, const TfToken &axis);
 TfToken UsdGeomGetFallbackUpAxis();
 
 /// @}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDGEOM_METRICS_H

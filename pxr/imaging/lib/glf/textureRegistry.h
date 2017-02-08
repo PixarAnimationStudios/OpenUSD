@@ -26,6 +26,7 @@
 
 /// \file glf/textureRegistry.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/singleton.h"
@@ -36,6 +37,9 @@
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfTextureHandle);
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfTexture);
@@ -119,5 +123,8 @@ private:
 
     bool _requiresGarbageCollection;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GLF_TEXTURE_REGISTRY_H

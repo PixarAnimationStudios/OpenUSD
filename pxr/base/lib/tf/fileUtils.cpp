@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -54,6 +56,8 @@ using std::set;
 using std::string;
 using std::vector;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 static bool
 Tf_Stat(string const& path, bool resolveSymlinks, struct stat* st = 0)
 {
@@ -62,7 +66,7 @@ Tf_Stat(string const& path, bool resolveSymlinks, struct stat* st = 0)
     }
 
     struct stat unused;
-    if (not st) {
+    if (!st) {
         st = &unused;
     }
 
@@ -120,7 +124,7 @@ TfIsWritable(string const& path)
 bool
 TfIsDirEmpty(string const& path)
 {
-    if (not TfIsDir(path))
+    if (!TfIsDir(path))
         return false;
 
     if (DIR *dirp = opendir(path.c_str()))
@@ -128,8 +132,8 @@ TfIsDirEmpty(string const& path)
         struct dirent *dent;
         while ((dent = readdir(dirp)) != NULL)
         {
-            if ((dent->d_ino > 0) and
-                (strcmp(dent->d_name, ".") != 0) and
+            if ((dent->d_ino > 0) &&
+                (strcmp(dent->d_name, ".") != 0) &&
                 (strcmp(dent->d_name, "..") != 0)) {
                 (void) closedir(dirp);
                 return false;
@@ -178,12 +182,12 @@ Tf_MakeDirsRec(string const& path, int mode)
 
     string tail = TfGetBaseName(path);
 
-    if (not head.empty() and not tail.empty()) {
+    if (!head.empty() && !tail.empty()) {
 
         struct stat st;
         if (stat(head.c_str(), &st) != -1) {
             // Path exists
-            if (not S_ISDIR(st.st_mode)) {
+            if (!S_ISDIR(st.st_mode)) {
                 TF_RUNTIME_ERROR("Path %s exists, and is not a directory",
                         head.c_str());
                 return false;
@@ -191,7 +195,7 @@ Tf_MakeDirsRec(string const& path, int mode)
         }
         else {
             // Path does not exist
-            if (not Tf_MakeDirsRec(head, mode)) {
+            if (!Tf_MakeDirsRec(head, mode)) {
                 return false;
             }
         }
@@ -203,7 +207,7 @@ Tf_MakeDirsRec(string const& path, int mode)
 bool
 TfMakeDirs(string const& path, int mode)
 {
-    if (path.empty() or TfIsDir(path)) {
+    if (path.empty() || TfIsDir(path)) {
         return false;
     }
     return Tf_MakeDirsRec(TfNormPath(path), mode);
@@ -233,7 +237,7 @@ TfReadDir(
          result && rc == 0;
          rc = readdir_r(dir, &entry, &result)) {
 
-        if (strcmp(entry.d_name, ".") == 0 or
+        if (strcmp(entry.d_name, ".") == 0 || 
             strcmp(entry.d_name, "..") == 0)
             continue;
 
@@ -287,13 +291,13 @@ Tf_ReadDir(
     vector<string>* filenames,
     vector<string>* symlinknames)
 {
-    if (not (TF_VERIFY(dirnames) and
-             TF_VERIFY(filenames) and
-             TF_VERIFY(symlinknames)))
+    if (!(TF_VERIFY(dirnames) &&
+          TF_VERIFY(filenames) &&
+          TF_VERIFY(symlinknames)))
         return;
 
     string errMsg;
-    if (not TfReadDir(dirPath, dirnames, filenames, symlinknames, &errMsg))
+    if (!TfReadDir(dirPath, dirnames, filenames, symlinknames, &errMsg))
         if (onError) {
             onError(dirPath, errMsg);
         }
@@ -305,7 +309,7 @@ struct Tf_FileId {
     { }
 
     bool operator==(const Tf_FileId& other) const {
-        return dev == other.dev and ino == other.ino;
+        return dev == other.dev && ino == other.ino;
     }
 
     dev_t dev;
@@ -330,7 +334,7 @@ Tf_WalkDirsRec(
     bool followLinks,
     Tf_FileIdSet* linkTargets)
 {
-    if (not TF_VERIFY(linkTargets))
+    if (!TF_VERIFY(linkTargets))
         return false;
 
     vector<string> dirnames, filenames, symlinknames;
@@ -361,16 +365,16 @@ Tf_WalkDirsRec(
         filenames.insert(filenames.end(),
             symlinknames.begin(), symlinknames.end());
 
-    if (topDown and not func(dirpath, &dirnames, filenames))
+    if (topDown && !func(dirpath, &dirnames, filenames))
        return false;
 
     for (const auto& name : dirnames) {
-        if (not Tf_WalkDirsRec(dirpath + "/" + name,
+        if (!Tf_WalkDirsRec(dirpath + "/" + name,
                 func, topDown, onError, followLinks, linkTargets))
             return false;
     }
 
-    if (not topDown and not func(dirpath, &dirnames, filenames))
+    if (!topDown && !func(dirpath, &dirnames, filenames))
        return false;
 
     return true;
@@ -384,7 +388,7 @@ TfWalkDirs(
     TfWalkErrorHandler onError,
     bool followLinks)
 {
-    if (not TfIsDir(top, /* followSymlinks */ true)) {
+    if (!TfIsDir(top, /* followSymlinks */ true)) {
         if (onError)
             onError(top, TfStringPrintf("%s is not a directory", top.c_str()));
         return;
@@ -493,3 +497,5 @@ TfTouchFile(string const &fileName, bool create)
     // the current time, with millisecond precision.
     return utimes(fileName.c_str(), /* times */ NULL) == 0;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

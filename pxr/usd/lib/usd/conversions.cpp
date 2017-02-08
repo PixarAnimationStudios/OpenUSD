@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/conversions.h"
 
 #include "pxr/base/vt/dictionary.h"
@@ -38,6 +39,9 @@
 
 #include <boost/python/object.hpp>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // XXX: This function is no longer required -- remove.
 TfPyObjWrapper
@@ -64,13 +68,13 @@ UsdPythonToSdfType(TfPyObjWrapper pyVal, SdfValueTypeName const &targetType)
     // attribute's type name.
     VtValue defVal = targetType.GetDefaultValue();
 
-    // Attempt to cast the given value to the shaped type -- this will convert
-    // python buffer protocol objects (e.g. numpy arrays) to the appropriate
-    // typed VtArray when possible.  If casting fails, attempt to continue with
-    // the given value.  Deeper in the 'Set()' implementation, we'll issue a
-    // detailed type mismatch error.
+    // Attempt to cast the given value to the default value's type -- this
+    // will convert python buffer protocol objects (e.g. numpy arrays) to the
+    // appropriate typed VtArray when possible.  If casting fails, attempt to
+    // continue with the given value.  Deeper in the 'Set()' implementation,
+    // we'll issue a detailed type mismatch error.
     VtValue cast = VtValue::CastToTypeOf(val, defVal);
-    if (not cast.IsEmpty())
+    if (!cast.IsEmpty())
         cast.Swap(val);
 
     return val;
@@ -84,11 +88,11 @@ UsdPythonToMetadataValue(
     using namespace boost::python;
 
     VtValue fallback;
-    if (not SdfSchema::GetInstance().IsRegistered(key, &fallback)) {
+    if (!SdfSchema::GetInstance().IsRegistered(key, &fallback)) {
         TF_CODING_ERROR("Unregistered metadata key: %s", key.GetText());
         return false;
     }
-    if (not keyPath.IsEmpty() and fallback.IsHolding<VtDictionary>()) {
+    if (!keyPath.IsEmpty() && fallback.IsHolding<VtDictionary>()) {
         // Extract fallback element from fallback dict if present.
         if (VtValue const *fb = fallback.UncheckedGet<VtDictionary>().
             GetValueAtPath(keyPath.GetString())) {
@@ -104,7 +108,7 @@ UsdPythonToMetadataValue(
     }
     // We have to handle a few things as special cases to disambiguate
     // types from Python.
-    if (not fallback.IsEmpty()) {
+    if (!fallback.IsEmpty()) {
         if (fallback.IsHolding<SdfPath>()) {
             value = extract<SdfPath>(pyVal.Get())();
         }
@@ -139,3 +143,6 @@ UsdPythonToMetadataValue(
     result->Swap(value);
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

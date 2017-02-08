@@ -24,9 +24,11 @@
 #ifndef HDX_DRAW_TARGET_H
 #define HDX_DRAW_TARGET_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hdx/drawTargetRenderPassState.h"
 #include "pxr/imaging/glf/drawTarget.h"
 
@@ -36,6 +38,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define HDX_DRAW_TARGET_TOKENS                  \
     (attachments)                               \
@@ -49,13 +54,14 @@
 TF_DECLARE_PUBLIC_TOKENS(HdxDrawTargetTokens, HDX_DRAW_TARGET_TOKENS);
 
 class HdSceneDelegate;
+class HdRenderIndex;
+class HdxCamera;
 class HdxDrawTargetAttachmentDescArray;
 
-typedef boost::shared_ptr<class HdxDrawTarget> HdxDrawTargetSharedPtr;
-typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
+
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
-typedef std::vector<HdxDrawTargetSharedPtr> HdxDrawTargetSharedPtrVector;
+typedef std::vector<class HdxDrawTarget const *> HdxDrawTargetPtrConstVector;
 
 /// \class HdxDrawTarget
 ///
@@ -66,7 +72,7 @@ typedef std::vector<HdxDrawTargetSharedPtr> HdxDrawTargetSharedPtrVector;
 ///
 class HdxDrawTarget : public HdSprim {
 public:
-    HdxDrawTarget(HdSceneDelegate* delegate, SdfPath const & id);
+    HdxDrawTarget(SdfPath const & id);
     virtual ~HdxDrawTarget();
 
     /// Dirty bits for the HdxDrawTarget object
@@ -95,25 +101,36 @@ public:
     unsigned int GetVersion() const { return _version; }
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync();
+    virtual void Sync(HdSceneDelegate *sceneDelegate) override;
 
     /// Accessor for tasks to get the parameters cached in this object.
-    virtual VtValue Get(TfToken const &token) const;
+    virtual VtValue Get(TfToken const &token) const override;
+
+    /// Returns the minimal set of dirty bits to place in the
+    /// change tracker for use in the first sync of this prim.
+    /// Typically this would be all dirty bits.
+    virtual int GetInitialDirtyBitsMask() const override;
+
 
     // ---------------------------------------------------------------------- //
     /// \name Draw Target API
     // ---------------------------------------------------------------------- //
     bool                         IsEnabled()        const { return  _enabled;    }
     const GlfDrawTargetRefPtr   &GetGlfDrawTarget() const { return  _drawTarget; }
-    HdxDrawTargetRenderPassState *GetRenderPassState()     { return &_renderPassState; }
+    const HdxDrawTargetRenderPassState *GetRenderPassState() const
+    {
+        return &_renderPassState;
+    }
 
     /// Debug api to output the contents of the draw target to a png file.
-    bool                WriteToFile(const std::string &attachment,
-                                    const std::string &path);
+    bool WriteToFile(const HdRenderIndex &renderIndex,
+                     const std::string &attachment,
+                     const std::string &path) const;
 
     /// returns all HdxDrawTargets in the render index
-    static void GetDrawTargets(HdSceneDelegate *delegate,
-                               HdxDrawTargetSharedPtrVector *drawTargets);
+    static void GetDrawTargets(HdSceneDelegate *sceneDelegate,
+                               HdxDrawTargetPtrConstVector *drawTargets);
+
 
 private:
     unsigned int     _version;
@@ -124,22 +141,32 @@ private:
     HdRprimCollectionVector _collections;
 
     HdxDrawTargetRenderPassState _renderPassState;
+    std::vector<HdTextureResourceSharedPtr> _colorTextureResources;
+    HdTextureResourceSharedPtr              _depthTextureResource;
 
     /// The context which owns the draw target object.
     GlfGLContextSharedPtr  _drawTargetContext;
     GlfDrawTargetRefPtr    _drawTarget;
 
-    void _SetAttachments(const HdxDrawTargetAttachmentDescArray &attachments);
+    void _SetAttachments(HdSceneDelegate *sceneDelegate,
+                         const HdxDrawTargetAttachmentDescArray &attachments);
+
     void _SetCamera(const SdfPath &cameraPath);
 
-    HdSprimSharedPtr _GetCamera() const;
+    const HdxCamera *_GetCamera(const HdRenderIndex &renderIndex) const;
 
     void _ResizeDrawTarget();
+    void _RegisterTextureResource(HdSceneDelegate *sceneDelegate,
+                                  const std::string &name,
+                                  HdTextureResourceSharedPtr *resourcePtr);
 
     // No copy
     HdxDrawTarget()                                 = delete;
     HdxDrawTarget(const HdxDrawTarget &)             = delete;
     HdxDrawTarget &operator =(const HdxDrawTarget &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HDX_DRAW_TARGET_H

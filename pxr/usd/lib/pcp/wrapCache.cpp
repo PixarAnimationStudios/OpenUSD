@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/changes.h"
 #include "pxr/usd/pcp/errors.h"
@@ -38,6 +40,8 @@
 
 using namespace boost::python;
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static std::auto_ptr<PcpCache>
 _New(const PcpLayerStackIdentifier& identifier,
@@ -303,3 +307,5 @@ wrapCache()
         .def("Reload", &_Reload)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

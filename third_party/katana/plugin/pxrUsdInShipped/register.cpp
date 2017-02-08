@@ -25,6 +25,7 @@
 
 #include <FnGeolib/op/FnGeolibOp.h>
 
+#include "pxr/pxr.h"
 #include "usdKatana/usdInPluginRegistry.h"
 
 #include "pxr/usd/kind/registry.h"
@@ -36,6 +37,11 @@
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdShade/look.h"
+
+#include "pxrUsdInShipped/attrfnc_materialReference.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 
 void registerPxrUsdInShippedUiUtils();
 
@@ -52,6 +58,9 @@ DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_CameraOp)
 
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_ConstraintsOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_LooksGroupOp)
+
+DEFINE_ATTRIBUTEFUNCTION_PLUGIN(MaterialReferenceAttrFnc);
+DEFINE_ATTRIBUTEFUNCTION_PLUGIN(LibraryMaterialNamesAttrFnc);
 
 void registerPlugins()
 {
@@ -85,4 +94,7 @@ void registerPlugins()
     PxrUsdKatanaUsdInPluginRegistry::RegisterKind(KindTokens->subcomponent, "PxrUsdInCore_ModelOp");
     
     registerPxrUsdInShippedUiUtils();
+
+    REGISTER_PLUGIN(MaterialReferenceAttrFnc, "PxrUsdInMaterialReference", 0, 1);
+    REGISTER_PLUGIN(LibraryMaterialNamesAttrFnc, "PxrUsdInLibraryMaterialNames", 0, 1);
 }

@@ -27,6 +27,7 @@
 
 #include "pxr/base/gf/vec2i.h"
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
@@ -39,6 +40,8 @@
 
 #include <vector>
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<GfVec2i>();
@@ -56,19 +59,21 @@ operator<<(std::ostream &out, GfVec2i const &v)
 bool
 GfVec2i::operator==(GfVec2d const &other) const
 {
-    return _data[0] == other[0] and
+    return _data[0] == other[0] &&
            _data[1] == other[1];
 }
 bool
 GfVec2i::operator==(GfVec2f const &other) const
 {
-    return _data[0] == other[0] and
+    return _data[0] == other[0] &&
            _data[1] == other[1];
 }
 bool
 GfVec2i::operator==(GfVec2h const &other) const
 {
-    return _data[0] == other[0] and
+    return _data[0] == other[0] &&
            _data[1] == other[1];
 }
 
+
+PXR_NAMESPACE_CLOSE_SCOPE

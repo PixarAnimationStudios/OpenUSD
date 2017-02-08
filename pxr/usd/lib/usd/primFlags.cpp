@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/prim.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 bool
 Usd_PrimFlagsPredicate::operator()(const UsdPrim &prim) const
@@ -39,4 +43,7 @@ Usd_PrimFlagsDisjunction
 Usd_PrimFlagsConjunction::operator!() const {
     return Usd_PrimFlagsDisjunction(_GetNegated());
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -24,6 +24,7 @@
 #ifndef HD_SHADER_PARAM_H
 #define HD_SHADER_PARAM_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
@@ -32,6 +33,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef std::vector<class HdShaderParam> HdShaderParamVector;
 
@@ -69,10 +73,10 @@ public:
     SdfPath const& GetConnection() const { return _connection; }
 
     bool IsTexture() const {
-        return not IsFallback() and _connection.IsAbsolutePath();
+        return !IsFallback() && _connection.IsAbsolutePath();
     }
     bool IsPrimvar() const {
-        return not IsFallback() and not IsTexture();
+        return !IsFallback() && !IsTexture();
     }
     bool IsFallback() const {
         return _connection.IsEmpty();
@@ -90,5 +94,8 @@ private:
     TfTokenVector _samplerCoords;
     bool _isPtex;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_SHADER_PARAM_H

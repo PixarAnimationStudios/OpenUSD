@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix2f.h"
@@ -37,6 +39,8 @@
 
 #include "pxr/base/tf/diagnostic.h"
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 int
 main(int argc, char *argv[])
 {
@@ -46,7 +50,7 @@ main(int argc, char *argv[])
         GfVec2f v(vals);
         TF_AXIOM(v == GfVec2f(1,2));
         float const *f = v.GetArray();
-        TF_AXIOM(f[0] == 1 and f[1] == 2);
+        TF_AXIOM(f[0] == 1 && f[1] == 2);
     }
 
     // GfVec2i
@@ -55,7 +59,7 @@ main(int argc, char *argv[])
         GfVec2i v(vals);
         TF_AXIOM(v == GfVec2i(1,2));
         int const *i = v.GetArray();
-        TF_AXIOM(i[0] == 1 and i[1] == 2);
+        TF_AXIOM(i[0] == 1 && i[1] == 2);
         v.Set(0, 1);
         TF_AXIOM(v == GfVec2i(0,1));
     }
@@ -66,7 +70,7 @@ main(int argc, char *argv[])
         GfVec3i v(vals);
         TF_AXIOM(v == GfVec3i(1,2,3));
         int const *i = v.GetArray();
-        TF_AXIOM(i[0] == 1 and i[1] == 2 and i[2] == 3);
+        TF_AXIOM(i[0] == 1 && i[1] == 2 && i[2] == 3);
         v.Set(0, 1, 2);
         TF_AXIOM(v == GfVec3i(0,1,2));
     }
@@ -77,7 +81,7 @@ main(int argc, char *argv[])
         GfVec4i v(vals);
         TF_AXIOM(v == GfVec4i(1,2,3,4));
         int const *i = v.GetArray();
-        TF_AXIOM(i[0] == 1 and i[1] == 2 and i[2] == 3 and i[3] == 4);
+        TF_AXIOM(i[0] == 1 && i[1] == 2 && i[2] == 3 && i[3] == 4);
         v.Set(0, 1, 2, 3);
         TF_AXIOM(v == GfVec4i(0,1,2,3));
     }
@@ -88,7 +92,7 @@ main(int argc, char *argv[])
         GfVec3f v(vals);
         TF_AXIOM(v == GfVec3f(1,2,3));
         float const *f = v.GetArray();
-        TF_AXIOM(f[0] == 1 and f[1] == 2 and f[2] == 3);
+        TF_AXIOM(f[0] == 1 && f[1] == 2 && f[2] == 3);
     }
 
     // GfVec4f
@@ -97,7 +101,7 @@ main(int argc, char *argv[])
         GfVec4f v(vals);
         TF_AXIOM(v == GfVec4f(1,2,3,4));
         float const *f = v.GetArray();
-        TF_AXIOM(f[0] == 1 and f[1] == 2 and f[2] == 3 and f[3] == 4);
+        TF_AXIOM(f[0] == 1 && f[1] == 2 && f[2] == 3 && f[3] == 4);
     }
 
     // GfSize2, GfSize3
@@ -114,8 +118,8 @@ main(int argc, char *argv[])
         TF_AXIOM(GfMatrix2d(vals) == GfMatrix2d(1));
         GfMatrix2d m(vals);
         double const *d = m.GetArray();
-        TF_AXIOM(d[0] == 1 and d[1] == 0 and
-                 d[2] == 0 and d[3] == 1);
+        TF_AXIOM(d[0] == 1 && d[1] == 0 &&
+                 d[2] == 0 && d[3] == 1);
     }
 
     // GfMatrix2f
@@ -125,8 +129,8 @@ main(int argc, char *argv[])
         TF_AXIOM(GfMatrix2f(vals) == GfMatrix2f(1));
         GfMatrix2f m(vals);
         float const *f = m.GetArray();
-        TF_AXIOM(f[0] == 1 and f[1] == 0 and
-                 f[2] == 0 and f[3] == 1);
+        TF_AXIOM(f[0] == 1 && f[1] == 0 &&
+                 f[2] == 0 && f[3] == 1);
     }
 
     // GfMatrix3d
@@ -137,9 +141,9 @@ main(int argc, char *argv[])
         TF_AXIOM(GfMatrix3d(vals) == GfMatrix3d(1));
         GfMatrix3d m(vals);
         double const *d = m.GetArray();
-        TF_AXIOM(d[0] == 1 and d[1] == 0 and d[2] == 0 and
-                 d[3] == 0 and d[4] == 1 and d[5] == 0 and
-                 d[6] == 0 and d[7] == 0 and d[8] == 1);
+        TF_AXIOM(d[0] == 1 && d[1] == 0 && d[2] == 0 &&
+                 d[3] == 0 && d[4] == 1 && d[5] == 0 &&
+                 d[6] == 0 && d[7] == 0 && d[8] == 1);
     }
 
     // GfMatrix4d
@@ -151,20 +155,20 @@ main(int argc, char *argv[])
         TF_AXIOM(GfMatrix4d(vals) == GfMatrix4d(1));
         GfMatrix4d m(vals);
         double const *d = m.GetArray();
-        TF_AXIOM(d[ 0] == 1 and d[ 1] == 0 and d[ 2] == 0 and d[ 3] == 0 and
-                 d[ 4] == 0 and d[ 5] == 1 and d[ 6] == 0 and d[ 7] == 0 and
-                 d[ 8] == 0 and d[ 9] == 0 and d[10] == 1 and d[11] == 0 and
-                 d[12] == 0 and d[13] == 0 and d[14] == 0 and d[15] == 1);
+        TF_AXIOM(d[ 0] == 1 && d[ 1] == 0 && d[ 2] == 0 && d[ 3] == 0 &&
+                 d[ 4] == 0 && d[ 5] == 1 && d[ 6] == 0 && d[ 7] == 0 &&
+                 d[ 8] == 0 && d[ 9] == 0 && d[10] == 1 && d[11] == 0 &&
+                 d[12] == 0 && d[13] == 0 && d[14] == 0 && d[15] == 1);
     }
     
     // half
     {
         float halfPosInf = half::posInf();
-        TF_AXIOM(not std::isfinite(halfPosInf));
+        TF_AXIOM(!std::isfinite(halfPosInf));
         TF_AXIOM(std::isinf(halfPosInf));
 
         float halfNegInf = half::negInf();
-        TF_AXIOM(not std::isfinite(halfNegInf));
+        TF_AXIOM(!std::isfinite(halfNegInf));
         TF_AXIOM(std::isinf(halfNegInf));
 
         float halfqNan = half::qNan();

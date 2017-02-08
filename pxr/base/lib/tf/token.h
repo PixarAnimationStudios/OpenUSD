@@ -29,6 +29,8 @@
 /// \c TfToken class for efficient string referencing and hashing, plus
 /// conversions to and from stl string containers.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pointerAndBits.h"
@@ -41,6 +43,8 @@
 #include <vector>
 #include <map>
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfToken
 /// \ingroup group_tf_String
@@ -288,7 +292,7 @@ private:
     void _AddRef() const {
         if (_rep.BitsAs<bool>()) {
             // We believe this rep is refCounted.
-            if (not _rep->IncrementIfCounted()) {
+            if (!_rep->IncrementIfCounted()) {
                 // Our belief is wrong, update our cache of countedness.
                 _rep.SetBits(false);
             }
@@ -395,4 +399,6 @@ inline size_t hash_value(const TfToken& x) { return x.Hash(); }
 /// Convenience types.
 typedef std::vector<TfToken> TfTokenVector;
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_TOKEN_H

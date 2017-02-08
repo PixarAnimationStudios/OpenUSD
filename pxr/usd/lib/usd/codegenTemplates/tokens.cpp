@@ -23,4 +23,8 @@
 //
 #include "{{ libraryPath }}/tokens.h"
 
+{{ namespaceOpen }}
+
 TF_DEFINE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {{ Upper(tokensPrefix) }}_TOKENS);
+
+{{ namespaceClose }}

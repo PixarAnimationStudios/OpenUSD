@@ -24,6 +24,7 @@
 #ifndef SDF_LIST_OP_H
 #define SDF_LIST_OP_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/function.hpp>
@@ -35,6 +36,8 @@
 #include <map>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \enum SdfListOpType
 ///
@@ -84,7 +87,7 @@ public:
         if (IsExplicit()) {
             return true;
         }
-        if (_addedItems.size() != 0 or
+        if (_addedItems.size() != 0 ||
             _deletedItems.size() != 0) {
             return true;
         }
@@ -240,5 +243,7 @@ typedef class SdfListOp<std::string> SdfStringListOp;
 typedef class SdfListOp<class SdfPath> SdfPathListOp;
 typedef class SdfListOp<class SdfReference> SdfReferenceListOp;
 typedef class SdfListOp<class SdfUnregisteredValue> SdfUnregisteredValueListOp;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_LIST_OP_H

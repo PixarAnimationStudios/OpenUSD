@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 
 #include "usdMaya/meshUtil.h"
@@ -34,6 +35,9 @@
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MUintArray.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 const GfVec2f MayaMeshWriter::_DefaultUV = GfVec2f(-1.0e30);
@@ -83,7 +87,15 @@ _GetMeshNormals(
 
     // Sanity check first to make sure we can get this mesh's normals.
     int numNormals = mesh.numNormals(&status);
-    if (status != MS::kSuccess or numNormals == 0) {
+    if (status != MS::kSuccess || numNormals == 0) {
+        return false;
+    }
+
+    // using itFV.getNormal() does not always give us the right answer, so
+    // instead, we have to use itFV.normalId() and use that to index into the
+    // normals.
+    MFloatVectorArray mayaNormals;
+    if (mesh.getNormals(mayaNormals) != MS::kSuccess) {
         return false;
     }
 
@@ -97,13 +109,13 @@ _GetMeshNormals(
 
     MItMeshFaceVertex itFV(mesh.object());
     unsigned int fvi = 0;
-    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
-        MVector normal;
-        status = itFV.getNormal(normal);
-        if (status != MS::kSuccess) {
+    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
+        int normalId = itFV.normalId();
+        if (normalId < 0 || static_cast<size_t>(normalId) >= mayaNormals.length()) {
             return false;
         }
 
+        MVector normal = mayaNormals[normalId];
         (*normalsArray)[fvi][0] = normal[0];
         (*normalsArray)[fvi][1] = normal[1];
         (*normalsArray)[fvi][2] = normal[2];
@@ -181,7 +193,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     // Polygonal Mesh Case
     if (sdScheme == UsdGeomTokens->none) {
         // Support for standard USD bool and Mojito bool tags.
-        if (PxrUsdMayaMeshUtil::getEmitNormals(lMesh)) {
+        if (PxrUsdMayaMeshUtil::getEmitNormals(lMesh, sdScheme)) {
             VtArray<GfVec3f> meshNormals;
             TfToken normalInterp;
 
@@ -199,7 +211,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         TfToken sdFVLinearInterpolation =
             PxrUsdMayaMeshUtil::getSubdivFVLinearInterpolation(lMesh);
 
-        if (not sdFVLinearInterpolation.IsEmpty()) {
+        if (!sdFVLinearInterpolation.IsEmpty()) {
             primSchema.CreateFaceVaryingLinearInterpolationAttr(
                 VtValue(sdFVLinearInterpolation), true);
         }
@@ -228,7 +240,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         TfToken interpolation;
         VtArray<int> assignmentIndices;
 
-        if (not _GetMeshUVSetData(lMesh,
+        if (!_GetMeshUVSetData(lMesh,
                                   uvSetNames[i],
                                   &uvValues,
                                   &interpolation,
@@ -274,7 +286,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     // opacities from the shaders assigned to the mesh and/or its faces.
     // If we find a displayColor color set, the shader colors and opacities
     // will be used to fill in unauthored/unpainted faces in the color set.
-    if (getArgs().exportDisplayColor or colorSetNames.length() > 0) {
+    if (getArgs().exportDisplayColor || colorSetNames.length() > 0) {
         PxrUsdMayaUtil::GetLinearShaderColor(lMesh,
                                              &shadersRGBData,
                                              &shadersAlphaData,
@@ -287,7 +299,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         bool isDisplayColor = false;
 
         if (colorSetNames[i] == PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText()) {
-            if (not getArgs().exportDisplayColor) {
+            if (!getArgs().exportDisplayColor) {
                 continue;
             }
             isDisplayColor=true;
@@ -309,7 +321,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         MFnMesh::MColorRepresentation colorSetRep;
         bool clamped = false;
 
-        if (not _GetMeshColorSetData(lMesh,
+        if (!_GetMeshColorSetData(lMesh,
                                      colorSetNames[i],
                                      isDisplayColor,
                                      shadersRGBData,
@@ -450,3 +462,6 @@ MayaMeshWriter::exportsGprims() const
     return true;
 }
     
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

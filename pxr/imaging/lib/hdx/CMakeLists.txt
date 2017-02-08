@@ -28,6 +28,7 @@ pxr_shared_library(hdx
         drawTargetRenderPass
         drawTargetRenderPassState
         drawTargetTask
+        drawTargetResolveTask
         intersector
         light
         package
@@ -47,6 +48,7 @@ pxr_shared_library(hdx
         version.h
 
     PRIVATE_CLASSES
+        drawTargetTextureResource
         unitTestDelegate
 
     RESOURCE_FILES

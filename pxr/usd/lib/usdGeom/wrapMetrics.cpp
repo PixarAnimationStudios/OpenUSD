@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/metrics.h"
 
 #include "pxr/usd/usd/stage.h"
@@ -28,6 +29,9 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/def.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using namespace boost::python;
 
@@ -38,3 +42,6 @@ void wrapMetrics()
         (arg("stage"), arg("upAxis")));
     def("GetFallbackUpAxis", UsdGeomGetFallbackUpAxis);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

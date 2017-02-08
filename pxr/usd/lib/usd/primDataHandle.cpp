@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/primDataHandle.h"
 #include "pxr/usd/usd/primData.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // defined in primData.cpp.
 std::string Usd_DescribePrimData(const Usd_PrimData *p);
@@ -32,4 +36,7 @@ Usd_PrimDataHandle::GetDescription() const
 {
     return Usd_DescribePrimData(_p.get());
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

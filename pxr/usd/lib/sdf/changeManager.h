@@ -26,14 +26,18 @@
 
 /// \file sdf/changeManager.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/singleton.h"
+
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <tbb/enumerable_thread_specific.h>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -103,4 +107,6 @@ private:
     friend class TfSingleton<Sdf_ChangeManager>;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_CHANGEMANAGER_H

@@ -23,6 +23,7 @@
 //
 // Some header #define's Bool as int, which breaks stuff in sdf/types.h.
 // Include it first to sidestep the problem. :-/
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/types.h"
 
 // Make sure to include glew first before any header that might include
@@ -45,12 +46,15 @@
 #include <maya/MViewport2Renderer.h>
 #include <maya/MHWGeometryUtilities.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 void
 UsdMayaGLHdRenderer::CheckRendererSetup(
         const UsdPrim& usdPrim,
         const SdfPathVector& excludePaths)
 {
-    if (usdPrim != _renderedPrim or excludePaths != _excludePrimPaths) {
+    if (usdPrim != _renderedPrim || excludePaths != _excludePrimPaths) {
         _excludePrimPaths = excludePaths;
         boost::scoped_ptr<UsdImagingGL> tmpRenderer( new UsdImagingGL(usdPrim.GetPath(), _excludePrimPaths) );
 
@@ -263,7 +267,7 @@ UsdMayaGLHdRenderer::Render(
         M3dView& view,
         UsdImagingGL::RenderParams params) const
 {
-    if (not _renderedPrim.IsValid()) {
+    if (!_renderedPrim.IsValid()) {
         return;
     }
     view.beginGL();
@@ -329,7 +333,7 @@ UsdMayaGLHdRenderer::Render(
             const MPxSurfaceShape* shape = static_cast<const MPxSurfaceShape*>(
                     drawData.geometry());
 
-            if (not shape) {
+            if (!shape) {
                 break;
             }
             if( !shape->isBounded() )
@@ -365,11 +369,11 @@ UsdMayaGLHdRenderer::TestIntersection(
         GfVec3d* hitPoint) const
 {
     // Guard against user clicking in viewer before renderer is setup
-    if (not _renderer) {
+    if (!_renderer) {
         return false;
     }
 
-    if (not _renderedPrim.IsValid()) {
+    if (!_renderedPrim.IsValid()) {
         return false;
     }
 
@@ -414,4 +418,7 @@ UsdMayaGLHdRenderer::SubdLevelToComplexity(int subdLevel)
     //
     return 1.0+(float(subdLevel)*0.1f);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

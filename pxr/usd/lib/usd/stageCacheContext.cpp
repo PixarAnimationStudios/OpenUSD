@@ -21,11 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/instantiateStacked.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::vector;
 
@@ -87,12 +91,15 @@ UsdStageCacheContext::_GetWritableCaches()
     caches.reserve(stack.size());
     for (auto ctxIter = stack.rbegin(); ctxIter != stack.rend(); ++ctxIter) {
         const auto& ctx = *ctxIter;
-        if (ctx->_blockType == UsdBlockStageCaches or
+        if (ctx->_blockType == UsdBlockStageCaches ||
             ctx->_blockType == UsdBlockStageCachePopulation) {
             break;
-        } else if (not ctx->_isReadOnlyCache) {
+        } else if (!ctx->_isReadOnlyCache) {
             caches.push_back(ctx->_rwCache);
         }
     }
     return caches;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

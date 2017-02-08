@@ -26,6 +26,7 @@
 
 /// \file work/arenaDispatcher.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/threadLimits.h"
 
@@ -34,6 +35,8 @@
 #include <functional>
 #include <type_traits>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class WorkArenaDispatcher
 ///
@@ -123,5 +126,7 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // WORK_ARENA_DISPATCHER_H

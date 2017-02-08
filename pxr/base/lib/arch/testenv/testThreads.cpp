@@ -21,13 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/arch/threads.h"
 
-#include <assert.h>
+#include "pxr/pxr.h"
+#include "pxr/base/arch/threads.h"
+#include "pxr/base/arch/error.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 int main()
 {
-    assert(ArchIsMainThread());
+    ARCH_AXIOM(ArchIsMainThread());
 
     return 0;
 }

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicFileFormat.h"
 
 #include "pxr/usd/usdAbc/alembicData.h"
@@ -37,6 +38,9 @@
 
 #include <boost/assign.hpp>
 #include <ostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 
@@ -83,21 +87,21 @@ UsdAbcAlembicFileFormat::CanRead(const string& filePath) const
 }
 
 bool
-UsdAbcAlembicFileFormat::ReadFromFile(
+UsdAbcAlembicFileFormat::Read(
     const SdfLayerBasePtr& layerBase,
-    const string& filePath,
+    const string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();
 
     SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return false;
     }
 
     SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
     UsdAbc_AlembicDataRefPtr abcData = TfStatic_cast<UsdAbc_AlembicDataRefPtr>(data);
-    if (not abcData->Open(filePath)) {
+    if (!abcData->Open(resolvedPath)) {
         return false;
     }
 
@@ -119,14 +123,14 @@ UsdAbcAlembicFileFormat::WriteToFile(
     const FileFormatArguments& args) const
 {
     const SdfLayer* layer = dynamic_cast<const SdfLayer*>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return false;
     }
 
     // Write.
     SdfAbstractDataConstPtr data = 
         _GetLayerData(SdfCreateNonConstHandle(layer));
-    return TF_VERIFY(data) and UsdAbc_AlembicData::Write(data, filePath, comment);
+    return TF_VERIFY(data) && UsdAbc_AlembicData::Write(data, filePath, comment);
 }
 
 bool 
@@ -169,3 +173,6 @@ UsdAbcAlembicFileFormat::_IsStreamingLayer(
 {
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

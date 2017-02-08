@@ -26,6 +26,7 @@
 
 /// \file glf/glContextRegistry.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/singleton.h"
 #include <boost/noncopyable.hpp>
@@ -33,6 +34,9 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class GlfGLContextRegistry_Data;
 
@@ -79,5 +83,8 @@ private:
     boost::optional<GlfGLContextSharedPtr> _shared;
     boost::scoped_ptr<GlfGLContextRegistry_Data> _data;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // GLF_GLCONTEXTREGISTRY_H

@@ -36,7 +36,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -47,10 +47,14 @@
 
 #include <boost/bind.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdRenderPass::HdRenderPass(HdRenderIndex *index)
     : _renderIndex(index)
     , _collectionVersion(0)
     , _collectionChanged(false)
+    , _renderTags()
     , _lastCullingDisabledState(false)
 {
 }
@@ -60,6 +64,7 @@ HdRenderPass::HdRenderPass(HdRenderIndex *index,
     : _renderIndex(index)
     , _collectionVersion(0)
     , _collectionChanged(false)
+    , _renderTags()
     , _lastCullingDisabledState(false)
 {
     // initialize
@@ -87,7 +92,7 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
     // update dirty list subscription for the new collection.
     // holding shared_ptr for the lifetime of the dirty list.
     bool isMinorChange = true;
-    if (not _dirtyList or not _dirtyList->ApplyEdit(col)) {
+    if (!_dirtyList || !_dirtyList->ApplyEdit(col)) {
         _dirtyList.reset(new HdDirtyList(_collection, *_renderIndex));
         isMinorChange = false;
     }
@@ -134,15 +139,15 @@ HdRenderPass::_PrepareCommandBuffer(
     const int shaderBindingsVersion = tracker.GetShaderBindingsVersion();
 
     const bool 
-       skipCulling = TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING) or
+       skipCulling = TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING) ||
            (caps.multiDrawIndirectEnabled
-               and Hd_IndirectDrawBatch::IsEnabledGPUFrustumCulling());
+               && Hd_IndirectDrawBatch::IsEnabledGPUFrustumCulling());
 
     const bool 
        cameraChanged = true,
        extentsChanged = true,
        collectionChanged = _collectionChanged 
-                           or (_collectionVersion != collectionVersion);
+                           || (_collectionVersion != collectionVersion);
 
     const bool cullingStateJustChanged = 
                                     skipCulling != _lastCullingDisabledState;
@@ -165,34 +170,62 @@ HdRenderPass::_PrepareCommandBuffer(
                                              _collection.GetName().GetText(),
                                              _collectionVersion,
                                              collectionVersion);
-        HdRenderIndex::HdDrawItemView items = _renderIndex->GetDrawItems(_collection);
-        _cmdBuffer.SwapDrawItems(&items, shaderBindingsVersion);
+
+        HdRenderIndex::HdDrawItemView items = 
+                                       _renderIndex->GetDrawItems(_collection);
+
+        // This loop will extract the tags and bucket the geometry in 
+        // the different command buffers.
+        size_t itemCount = 0;
+        _renderTags.clear();
+        _cmdBuffers.clear();
+        for (HdRenderIndex::HdDrawItemView::iterator it = items.begin();
+                                                    it != items.end(); it++ ) {
+            _renderTags.push_back(it->first);
+            _cmdBuffers[it->first].SwapDrawItems(&it->second, 
+                                                 shaderBindingsVersion);
+            itemCount += _cmdBuffers[it->first].GetTotalSize();
+        }
+
         _collectionVersion = collectionVersion;
         _collectionChanged = false;
-        HD_PERF_COUNTER_SET(HdTokens->totalItemCount, 
-                            _cmdBuffer.GetTotalSize());
+        HD_PERF_COUNTER_SET(HdTokens->totalItemCount, itemCount);
     } else {
         // validate command buffer to not include expired drawItems,
         // which could be produced by migrating BARs at the new repr creation.
-        _cmdBuffer.RebuildDrawBatchesIfNeeded(shaderBindingsVersion);
+        for (_HdCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
+                                           it != _cmdBuffers.end(); it++) {
+            it->second.RebuildDrawBatchesIfNeeded(shaderBindingsVersion);
+        }
     }
 
     if(skipCulling) {
         // Since culling state is stored across renders,
         // we need to update all items visible state
-        _cmdBuffer.SyncDrawItemVisibility(tracker.GetVisibilityChangeCount());
+        for (_HdCommandBufferMap::iterator it = _cmdBuffers.begin(); 
+                                           it != _cmdBuffers.end(); it++) {
+            it->second.SyncDrawItemVisibility(tracker.GetVisibilityChangeCount());
+        }
+
         TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: skipped\n");
     }
     else {
         // XXX: this process should be moved to Hd_DrawBatch::PrepareDraw
         //      to be consistent with GPU culling.
-        if((not freezeCulling)
-            and (collectionChanged or cameraChanged or extentsChanged)) {
+        if((!freezeCulling)
+            && (collectionChanged || cameraChanged || extentsChanged)) {
             // Re-cull the command buffer. 
-            _cmdBuffer.FrustumCull(renderPassState->GetCullMatrix());
+            for (_HdCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
+                                               it != _cmdBuffers.end(); it++) {
+                it->second.FrustumCull(renderPassState->GetCullMatrix());
+            }
         }
-        TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: %zu drawItems\n", 
-                                             _cmdBuffer.GetCulledSize());
+
+        for (_HdCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
+                                           it != _cmdBuffers.end(); it++) {
+            TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: %zu drawItems\n", 
+                                                 it->second.GetCulledSize());
+        }
     }
 }
 
@@ -200,23 +233,78 @@ void
 HdRenderPass::Execute(HdRenderPassStateSharedPtr const &renderPassState)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // CPU frustum culling (if chosen)
     _PrepareCommandBuffer(renderPassState);
 
     // GPU frustum culling (if chosen)
-    _cmdBuffer.PrepareDraw(renderPassState);
+    for (_HdCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
+                                       it != _cmdBuffers.end(); it++) {
+        it->second.PrepareDraw(renderPassState);
 
-    _cmdBuffer.ExecuteDraw(renderPassState);
+        it->second.ExecuteDraw(renderPassState);
+    }
+}
+
+/*virtual*/
+void 
+HdRenderPass::Execute(HdRenderPassStateSharedPtr const &renderPassState, 
+                      TfToken const &renderTag) 
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // CPU frustum culling (if chosen)
+    _PrepareCommandBuffer(renderPassState);
+
+    // Check if the render tag has a command buffer associated with it
+    if( _cmdBuffers.count(renderTag)==0 ) {
+        return;
+    }
+
+    // GPU frustum culling (if chosen)
+    _cmdBuffers[renderTag].PrepareDraw(renderPassState);
+
+    _cmdBuffers[renderTag].ExecuteDraw(renderPassState);
 }
 
 void
 HdRenderPass::Sync()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Sync the dirty list of prims
     _renderIndex->Sync(_dirtyList);
 }
+
+TfTokenVector const &
+HdRenderPass::GetRenderTags()
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // If this function is called after changing a collection and 
+    // before Execute, it is pretty expensive since it needs to 
+    // go through the rprims to figure out the bucketing everytime
+    HdChangeTracker& tracker = _renderIndex->GetChangeTracker();
+    const int  collectionVersion = 
+                            tracker.GetCollectionVersion(_collection.GetName());
+    
+    if (_collectionChanged || (_collectionVersion != collectionVersion)) {
+        HdRenderIndex::HdDrawItemView items = 
+                          _renderIndex->GetDrawItems(_collection);
+
+        _renderTags.clear();
+        for (HdRenderIndex::HdDrawItemView::iterator it = items.begin();
+                                                    it != items.end(); it++ ) {
+            _renderTags.push_back(it->first);
+        }
+    }
+
+    return _renderTags;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

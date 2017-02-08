@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/types.h"
 
@@ -38,6 +40,8 @@
 #include <boost/type_traits/is_same.hpp>
 
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // The following preprocessor code generates specializations for free functions
 // that produce
@@ -187,3 +191,4 @@ TF_REGISTRY_FUNCTION(VtValue)
     _RegisterRangeArrayCasts<VtRange3fArray, VtRange3dArray>();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

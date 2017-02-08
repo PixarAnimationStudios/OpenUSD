@@ -24,6 +24,7 @@
 #ifndef HD_CHANGE_TRACKER_H
 #define HD_CHANGE_TRACKER_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
@@ -34,6 +35,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/weak_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class TfToken;
 class HdRprimCollection;
@@ -79,14 +83,13 @@ public:
         CustomBitsEnd         = 1 << 30,
     };
 
-    // Dirty bits for Tasks, Textures
+    // Dirty bits for Tasks
     enum NonRprimDirtyBits {
         //Varying               = 1 << 0,
         DirtyType             = 1 << 1,
         DirtyChildren         = 1 << 2,
         DirtyParams           = 1 << 3,
         DirtyCollection       = 1 << 4,
-        DirtyTexture          = 1 << 5,
     };
 
     typedef int DirtyBits;
@@ -306,27 +309,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name Texture Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Texture with the given \p id.
-    void TextureInserted(SdfPath const& id);
-
-    /// Stop tracking Texture with the given \p id.
-    void TextureRemoved(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-    void MarkTextureDirty(SdfPath const& id, DirtyBits bits=AllDirty);
-
-    /// Get the dirty bits for Texture with the given \p id.
-    DirtyBits GetTextureDirtyBits(SdfPath const& id);
-
-    /// Set the dirty flags to \p newBits.
-    void MarkTextureClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    // ---------------------------------------------------------------------- //
-    /// @}
     /// \name Instancer State Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -361,6 +343,28 @@ public:
 
     /// Set the dirty flags to \p newBits.
     void MarkSprimClean(SdfPath const& id, DirtyBits newBits=Clean);
+
+    // ---------------------------------------------------------------------- //
+    /// @}
+    /// \name Bprim (buffer prim: texture, buffer, ...) state Tracking
+    /// @{
+    // ---------------------------------------------------------------------- //
+
+    /// Start tracking bprim with the given \p id.
+    void BprimInserted(SdfPath const& id, int initialDirtyState);
+
+    /// Stop tracking bprim with the given \p id.
+    void BprimRemoved(SdfPath const& id);
+
+    /// Get the dirty bits for bprim with the given \p id.
+    DirtyBits GetBprimDirtyBits(SdfPath const& id);
+
+    /// Set the dirty flags to \p bits.
+    void MarkBprimDirty(SdfPath const& id, DirtyBits bits);
+
+    /// Set the dirty flags to \p newBits.
+    void MarkBprimClean(SdfPath const& id, DirtyBits newBits=Clean);
+
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -468,8 +472,8 @@ private:
     _IDStateMap _instancerState;
     _IDStateMap _shaderState;
     _IDStateMap _taskState;
-    _IDStateMap _textureState;
     _IDStateMap _sprimState;
+    _IDStateMap _bprimState;
     _GeneralStateMap _generalState;
 
     // Collection versions / state.
@@ -498,5 +502,8 @@ private:
     // Used to validate shader bindings (to validate draw batches)
     std::atomic_uint _shaderBindingsVersion;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_CHANGE_TRACKER_H

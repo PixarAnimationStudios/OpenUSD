@@ -27,6 +27,9 @@
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 PxOsdSubdivTags::ID
 PxOsdSubdivTags::ComputeHash() const {
 
@@ -86,19 +89,22 @@ bool
 operator==(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs)
 {
     return  lhs.GetVertexInterpolationRule() == rhs.GetVertexInterpolationRule() 
-        and lhs.GetFaceVaryingInterpolationRule() == rhs.GetFaceVaryingInterpolationRule()
-        and lhs.GetCreaseMethod() == rhs.GetCreaseMethod()
-        and lhs.GetTriangleSubdivision() == rhs.GetTriangleSubdivision()
-        and lhs.GetCreaseIndices() == rhs.GetCreaseIndices()
-        and lhs.GetCreaseLengths() == rhs.GetCreaseLengths()
-        and lhs.GetCreaseWeights() == rhs.GetCreaseWeights()
-        and lhs.GetCornerIndices() == rhs.GetCornerIndices()
-        and lhs.GetCornerWeights() == rhs.GetCornerWeights()
-        and lhs.GetHoleIndices() == rhs.GetHoleIndices();
+        && lhs.GetFaceVaryingInterpolationRule() == rhs.GetFaceVaryingInterpolationRule()
+        && lhs.GetCreaseMethod() == rhs.GetCreaseMethod()
+        && lhs.GetTriangleSubdivision() == rhs.GetTriangleSubdivision()
+        && lhs.GetCreaseIndices() == rhs.GetCreaseIndices()
+        && lhs.GetCreaseLengths() == rhs.GetCreaseLengths()
+        && lhs.GetCreaseWeights() == rhs.GetCreaseWeights()
+        && lhs.GetCornerIndices() == rhs.GetCornerIndices()
+        && lhs.GetCornerWeights() == rhs.GetCornerWeights()
+        && lhs.GetHoleIndices() == rhs.GetHoleIndices();
 }
 
 bool 
 operator!=(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

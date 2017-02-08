@@ -29,8 +29,11 @@
 /// A collection of private helper utilities to support instancing
 /// functionality.
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Helper function to determine whether the given prim index is
 /// instanceable. An instanceable prim index must have instanceable
@@ -103,15 +106,15 @@ Pcp_TraverseInstanceableStrongToWeakHelper(
     // Locally-defined variant sets are exceptions to this rule, as the
     // variants they define cannot be shared among prim indexes.
     const bool nodeIsInstanceable = 
-        (not nodeIsLocallyDefinedVariant and not node.IsDueToAncestor());
-    if (not visitor->Visit(node, nodeIsInstanceable)) {
+        (!nodeIsLocallyDefinedVariant && !node.IsDueToAncestor());
+    if (!visitor->Visit(node, nodeIsInstanceable)) {
         return;
     }
 
     TF_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
         const PcpNodeRef& childNode = *childIt;
         const bool childNodeIsLocallyDefinedVariant = 
-            (nodeIsLocallyDefinedVariant and 
+            (nodeIsLocallyDefinedVariant &&
                 childNode.GetArcType() == PcpArcTypeVariant);
 
         Pcp_TraverseInstanceableStrongToWeakHelper(
@@ -126,7 +129,7 @@ Pcp_TraverseInstanceableStrongToWeak(
     Visitor* visitor)
 {
     const PcpNodeRef& rootNode = primIndex.GetRootNode();
-    if (not visitor->Visit(rootNode, /* nodeIsInstanceable = */ false)) {
+    if (!visitor->Visit(rootNode, /* nodeIsInstanceable = */ false)) {
         return;
     }
 
@@ -157,8 +160,8 @@ Pcp_TraverseInstanceableWeakToStrongHelper(
     TF_REVERSE_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
         const PcpNodeRef& childNode = *childIt;
         const bool childNodeIsLocallyDefinedVariant = 
-            (nodeIsLocallyDefinedVariant and 
-                childNode.GetArcType() == PcpArcTypeVariant);
+            (nodeIsLocallyDefinedVariant &&
+             childNode.GetArcType() == PcpArcTypeVariant);
 
         Pcp_TraverseInstanceableWeakToStrongHelper(
             childNode, visitor, childNodeIsLocallyDefinedVariant);
@@ -166,7 +169,7 @@ Pcp_TraverseInstanceableWeakToStrongHelper(
 
     // See comment in Pcp_TraverseInstanceableStrongToWeakHelper.
     const bool nodeIsInstanceable =
-        (not nodeIsLocallyDefinedVariant and not node.IsDueToAncestor());
+        (!nodeIsLocallyDefinedVariant && !node.IsDueToAncestor());
     visitor->Visit(node, nodeIsInstanceable);
 }
 
@@ -188,5 +191,7 @@ Pcp_TraverseInstanceableWeakToStrong(
 
     visitor->Visit(rootNode, /* nodeIsInstanceable = */ false);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_INSTANCING_H

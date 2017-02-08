@@ -27,9 +27,13 @@
 /// \file tf/timeStamp.h
 /// \ingroup group_tf_Multithreading
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/arch/inttypes.h"
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfTimeStamp
 /// \ingroup group_tf_Multithreading
@@ -128,5 +132,7 @@ private:
 std::ostream& operator<<(std::ostream& out, const TfTimeStamp& t);
 
 /// @}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_TIME_STAMP_H

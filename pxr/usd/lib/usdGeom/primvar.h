@@ -24,11 +24,15 @@
 #ifndef USDGEOM_PRIMVAR_H
 #define USDGEOM_PRIMVAR_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdGeomPrimvar
 ///
@@ -63,7 +67,7 @@
 ///     classification that any renderer should use to locate potential
 ///     overrides.  Do please note that primvars override parameters on
 ///     UsdShadeShader objects, \em not 
-///     \ref UsdShadeLook_Interfaces "Interface Attributes" on UsdShadeLook
+///     \ref UsdShadeSubgraph_Interfaces "Interface Attributes" on UsdShadeMaterial
 ///     prims.
 ///
 /// \section Usd_Creating_and_Accessing_Primvars Creating and Accessing Primvars
@@ -599,16 +603,16 @@ bool
 UsdGeomPrimvar::ComputeFlattened(VtArray<ScalarType> *value, UsdTimeCode time) const
 {
     VtArray<ScalarType> authored;
-    if (not Get(&authored, time))
+    if (!Get(&authored, time))
         return false;
 
-    if (not IsIndexed()) {
+    if (!IsIndexed()) {
         *value = authored;
         return true;
     }
 
     VtIntArray indices;
-    if (not GetIndices(&indices, time)) {
+    if (!GetIndices(&indices, time)) {
         TF_WARN("No indices authored for indexed primvar <%s>.", 
                 _attr.GetPath().GetText());
         return false;
@@ -632,7 +636,7 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
     bool success = true;
     for(size_t i=0; i < indices.size(); i++) {
         int index = indices[i];
-        if (index >= 0 and index < authored.size()) {
+        if (index >= 0 && index < authored.size()) {
             (*value)[i] = authored[index];
         } else {
             TF_WARN("Index %d is out of range [0,%ld)", index, 
@@ -642,5 +646,8 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
     }
     return success;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_PRIMVAR_H

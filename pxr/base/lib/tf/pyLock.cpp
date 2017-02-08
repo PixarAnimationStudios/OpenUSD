@@ -21,8 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/diagnosticLite.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfPyLock::TfPyLock()
     : _acquired(false)
@@ -124,9 +129,14 @@ TfPyLock::EndAllowThreads()
     _allowingThreads = false;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // See https://github.com/pankajp/pygilstate_check
 //
 extern PyThreadState *_PyThreadState_Current;
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 TfPyEnsureGILUnlockedObj::TfPyEnsureGILUnlockedObj()
     : _lock(TfPyLock::_ConstructUnlocked)
 {
@@ -139,3 +149,5 @@ TfPyEnsureGILUnlockedObj::TfPyEnsureGILUnlockedObj()
         _lock.BeginAllowThreads();
     }        
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

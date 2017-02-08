@@ -27,6 +27,7 @@
 
 #include "pxr/base/gf/vec4f.h"
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
@@ -39,6 +40,8 @@
 
 #include <vector>
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<GfVec4f>();
@@ -54,50 +57,31 @@ operator<<(std::ostream &out, GfVec4f const &v)
         << Gf_OstreamHelperP(v[3]) << ')';
 }
 
-GfVec4f::GfVec4f(class GfVec4d const &other)
-{
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
-}
-GfVec4f::GfVec4f(class GfVec4h const &other)
-{
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
-}
-GfVec4f::GfVec4f(class GfVec4i const &other)
-{
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-    _data[3] = other[3];
-}
 
 bool
 GfVec4f::operator==(GfVec4d const &other) const
 {
-    return _data[0] == other[0] and
-           _data[1] == other[1] and
-           _data[2] == other[2] and
+    return _data[0] == other[0] &&
+           _data[1] == other[1] &&
+           _data[2] == other[2] &&
            _data[3] == other[3];
 }
 bool
 GfVec4f::operator==(GfVec4h const &other) const
 {
-    return _data[0] == other[0] and
-           _data[1] == other[1] and
-           _data[2] == other[2] and
+    return _data[0] == other[0] &&
+           _data[1] == other[1] &&
+           _data[2] == other[2] &&
            _data[3] == other[3];
 }
 bool
 GfVec4f::operator==(GfVec4i const &other) const
 {
-    return _data[0] == other[0] and
-           _data[1] == other[1] and
-           _data[2] == other[2] and
+    return _data[0] == other[0] &&
+           _data[1] == other[1] &&
+           _data[2] == other[2] &&
            _data[3] == other[3];
 }
 
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,6 +24,10 @@
 #include "usdMaya/translatorModelAssembly.h"
 #include "usdMaya/primWriterRegistry.h"
 
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 PXRUSDMAYA_DEFINE_WRITER(pxrUsdReferenceAssembly, args, context)
 {
     return PxrUsdMayaTranslatorModelAssembly::Create(args, context);
@@ -34,3 +38,5 @@ PXRUSDMAYA_DEFINE_WRITER(pxrUsdProxyShape, args, context)
 {
     return PxrUsdMayaTranslatorModelAssembly::Create(args, context);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

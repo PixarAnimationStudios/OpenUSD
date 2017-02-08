@@ -24,6 +24,8 @@
 #ifndef PCP_ERRORS_H
 #define PCP_ERRORS_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/usd/pcp/site.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/sdf/layer.h"
@@ -37,6 +39,8 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Forward declaration:
 class PcpCache;
@@ -844,5 +848,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////// Raise the given errors as runtime errors.
 void PcpRaiseErrors(const PcpErrorVector &errors);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_ERRORS_H

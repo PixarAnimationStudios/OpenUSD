@@ -24,6 +24,7 @@
 #ifndef USDGEOM_GENERATED_MODEL_H
 #define USDGEOM_GENERATED_MODEL_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 
 #include "pxr/usd/usd/modelAPI.h"
@@ -37,11 +38,13 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
-class SdfAssetPath;
-class UsdGeomConstraintTarget;
-
 #include <vector>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class SdfAssetPath;
+class UsdGeomConstraintTarget;
 
 /// \class UsdGeomModelAPI
 ///
@@ -106,7 +109,7 @@ public:
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
     //
-    // Just remember to close the class delcaration with }; and complete the
+    // Just remember to close the class declaration with }; and complete the
     // include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
@@ -215,5 +218,8 @@ public:
 
     /// @}
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

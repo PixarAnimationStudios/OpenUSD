@@ -37,6 +37,9 @@
 
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using std::vector;
 
 boost::shared_ptr<const OpenSubdiv::Far::LimitStencilTable>
@@ -56,7 +59,7 @@ PxOsdStencilPerVertex::GetStencilPerVertex(
         PxOsdRefinerCache::GetInstance().GetOrCreateRefiner(
             topology, bilinearStencils, level, &cvStencils, &patchTable);
 
-    if (not refiner) {
+    if (!refiner) {
         return boost::shared_ptr<OpenSubdiv::Far::LimitStencilTable>();
     }
 
@@ -117,7 +120,7 @@ PxOsdStencilPerVertex::GetStencilPerVertex(
                 *refiner, locs, cvStencils.get(), patchTable.get());
     }
 
-    if (not stencilTablePtr) {
+    if (!stencilTablePtr) {
         TF_WARN("Failed to get valid stencilTablePtr");
         return boost::shared_ptr<OpenSubdiv::Far::LimitStencilTable>();
     }
@@ -126,4 +129,7 @@ PxOsdStencilPerVertex::GetStencilPerVertex(
     return boost::shared_ptr<const OpenSubdiv::Far::LimitStencilTable>(stencilTablePtr);
 
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

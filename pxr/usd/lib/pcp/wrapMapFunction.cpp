@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -33,6 +35,8 @@
 using namespace boost::python;
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 static string
 _Repr(const PcpMapFunction &f)
 {
@@ -40,7 +44,7 @@ _Repr(const PcpMapFunction &f)
         return "Pcp.MapFunction.Identity()";
     }
     string s = "Pcp.MapFunction(";
-    if (not f.IsNull()) {
+    if (!f.IsNull()) {
         const boost::python::dict sourceToTargetMap = 
             TfPyCopyMapToDictionary(f.GetSourceToTargetMap());
 
@@ -132,3 +136,5 @@ void wrapMapFunction()
         .def(self != self)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

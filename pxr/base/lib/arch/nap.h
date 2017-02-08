@@ -28,12 +28,11 @@
 /// \ingroup group_arch_Multithreading
 /// Routines for very brief pauses in execution.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/inttypes.h"
 
-#if defined(ARCH_OS_WINDOWS)
-#include <windows.h>
-#endif
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \addtogroup group_arch_Multithreading
 ///@{
@@ -59,16 +58,11 @@ void ArchThreadYield();
 /// operating system scheduler. This function can be used as a means of
 /// gracefully spin waiting while potentially yielding CPU resouces to
 /// hyper-threads.
-inline void ArchThreadPause() {
-#if defined (ARCH_CPU_INTEL) && defined(ARCH_COMPILER_GCC)
-    __asm__ __volatile__ ("pause");
-#elif defined(ARCH_OS_WINDOWS)
-    YieldProcessor();
-#else
-#warning Unknown architecture. Pause instruction skipped.
-#endif
-}
+ARCH_API
+void ArchThreadPause();
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_NAP_H

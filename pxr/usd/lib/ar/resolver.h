@@ -24,9 +24,12 @@
 #ifndef AR_RESOLVER_H
 #define AR_RESOLVER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include <boost/noncopyable.hpp>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class ArResolverContext;
 class ArAssetInfo;
@@ -296,5 +299,7 @@ protected:
 /// Returns the configured asset resolver.
 AR_API
 ArResolver& ArGetResolver();
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // AR_RESOLVER_H

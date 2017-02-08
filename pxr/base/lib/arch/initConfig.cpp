@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/systemInfo.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void Arch_InitDebuggerAttach();
 void Arch_InitTmpDir();
@@ -33,10 +37,7 @@ void Arch_InitTickTimer();
 
 namespace {
 
-ARCH_CONSTRUCTOR(102)
-static
-void
-Arch_InitConfig()
+ARCH_CONSTRUCTOR(Arch_InitConfig, 2, void)
 {
     // Initialize the application start time.  First so it's a close as
     // possible to the real start time.
@@ -67,3 +68,6 @@ Arch_InitConfig()
 }
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

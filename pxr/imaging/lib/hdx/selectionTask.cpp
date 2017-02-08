@@ -34,6 +34,9 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // -------------------------------------------------------------------------- //
 
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
@@ -55,7 +58,7 @@ void
 HdxSelectionTask::_Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Note that selectionTask comes after renderTask.
 }
@@ -82,14 +85,14 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
         sel->Sync(&index);
     }
 
-    if (sel and (paramsChanged or sel->GetVersion() != _lastVersion)) {
+    if (sel && (paramsChanged || sel->GetVersion() != _lastVersion)) {
 
         _lastVersion = sel->GetVersion();
         VtIntArray offsets;
         VtIntArray values;
         
         _hasSelection = sel->GetBuffers(&index, &offsets);
-        if (not _selOffsetBar) {
+        if (!_selOffsetBar) {
 
             HdBufferSpecVector offsetSpecs;
             offsetSpecs.push_back(HdBufferSpec(
@@ -134,7 +137,7 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
         resourceRegistry->AddSource(_selOffsetBar, offsetSource);
     }
 
-    if (_params.enableSelection and _hasSelection) {
+    if (_params.enableSelection && _hasSelection) {
         (*ctx)[HdxTokens->selectionOffsets] = _selOffsetBar;
         (*ctx)[HdxTokens->selectionUniforms] = _selUniformBar;
     } else {
@@ -167,5 +170,8 @@ bool operator==(const HdxSelectionTaskParams& lhs,
 
 bool operator!=(const HdxSelectionTaskParams& lhs,
                 const HdxSelectionTaskParams& rhs) {
-    return not(lhs == rhs);
+    return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

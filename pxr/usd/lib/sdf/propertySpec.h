@@ -26,6 +26,7 @@
 
 /// \file sdf/propertySpec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/declareHandles.h"
@@ -39,6 +40,8 @@
 
 #include <iosfwd>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfPropertySpec
 ///
@@ -187,6 +190,14 @@ public:
     /// Sets the prefix string for this property spec.
     void SetPrefix(const std::string &value);
 
+    /// Returns the suffix string for this property spec.
+    ///
+    /// The default value for suffix is "".
+    std::string GetSuffix() const;
+
+    /// Sets the suffix string for this property spec.
+    void SetSuffix(const std::string &value);
+
     /// Returns the property's symmetric peer.
     ///
     /// The default value for the symmetric peer is an empty string.
@@ -317,5 +328,7 @@ public:
 private:
     TfToken _GetAttributeValueTypeName() const;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // #ifndef SDF_PROPERTYSPEC_H

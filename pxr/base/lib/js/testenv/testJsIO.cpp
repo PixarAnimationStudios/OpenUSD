@@ -24,9 +24,13 @@
 ///
 /// \file testenv/testJsIO.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/js/json.h"
+
 #include <iostream>
 #include <fstream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 int main(int argc, char const *argv[])
 {
@@ -36,7 +40,7 @@ int main(int argc, char const *argv[])
     }
 
     std::ifstream ifs(argv[1]);
-    if (not ifs) {
+    if (!ifs) {
         fprintf(stderr, "Error: failed to open input file '%s'", argv[1]);
         return 2;
     }
@@ -54,7 +58,7 @@ int main(int argc, char const *argv[])
         JsWriteToStream(value, std::cout);
     } else {
         std::ofstream ofs(argv[2]);
-        if (not ofs) {
+        if (!ofs) {
             fprintf(stderr, "Error: failed to open output file '%s'", argv[2]);
             return 2;
         }

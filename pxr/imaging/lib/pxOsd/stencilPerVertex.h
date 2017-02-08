@@ -26,10 +26,14 @@
 
 /// \file pxOsd/stencilPerVertex.h
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/pxOsd/meshTopology.h"
 
 #include <boost/shared_ptr.hpp>
 #include <opensubdiv/far/stencilTable.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class PxOsdStencilPerVertex {
 public:    
@@ -43,5 +47,8 @@ public:
     GetStencilPerVertex(const PxOsdMeshTopology &topology,
                         const int level);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif 

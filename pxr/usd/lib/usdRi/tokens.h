@@ -33,7 +33,10 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \hideinitializer
 #define USDRI_TOKENS \
@@ -85,5 +88,7 @@
 /// \li <b>riLookSurface</b> - UsdRiLookAPI
 /// \li <b>riLookVolume</b> - UsdRiLookAPI
 TF_DECLARE_PUBLIC_TOKENS(UsdRiTokens, USDRI_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

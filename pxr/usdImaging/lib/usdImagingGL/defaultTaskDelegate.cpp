@@ -43,6 +43,9 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (idRenderTask)
@@ -61,7 +64,7 @@ _ShouldEnableLighting(UsdImagingGLEngine::RenderParams params)
     case UsdImagingGLEngine::DRAW_POINTS:
         return false;
     default:
-        return params.enableLighting and not params.enableIdRender;
+        return params.enableLighting && !params.enableIdRender;
     }
 }
 
@@ -92,10 +95,8 @@ UsdImagingGL_DefaultTaskDelegate::UsdImagingGL_DefaultTaskDelegate(
     {
         renderIndex.InsertSprim<HdxCamera>(this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
-        cache[HdxCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
-        cache[HdxCameraTokens->projectionMatrix]  = VtValue(GfMatrix4d(1));
-        cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-        cache[HdxCameraTokens->windowPolicy] = VtValue();  // we don't use window policy.
+        cache[HdxCameraTokens->windowPolicy] = VtValue(); // no window policy.
+        cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices());
     }
 
     // selection task
@@ -152,7 +153,7 @@ UsdImagingGL_DefaultTaskDelegate::~UsdImagingGL_DefaultTaskDelegate()
 {
     // remove the render graph entities from the renderIndex
     HdRenderIndex &renderIndex = GetRenderIndex();
-    renderIndex.RemoveSprim(_cameraId);
+    renderIndex.RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
     renderIndex.RemoveTask(_selectionTaskId);
     renderIndex.RemoveTask(_simpleLightTaskId);
     renderIndex.RemoveTask(_simpleLightBypassTaskId);
@@ -160,7 +161,7 @@ UsdImagingGL_DefaultTaskDelegate::~UsdImagingGL_DefaultTaskDelegate()
     renderIndex.RemoveTask(_idRenderTaskId);
 
     TF_FOR_ALL (id, _lightIds) {
-        renderIndex.RemoveSprim(*id);
+        renderIndex.RemoveSprim(HdPrimTypeTokens->light, *id);
     }
 }
 
@@ -195,7 +196,7 @@ UsdImagingGL_DefaultTaskDelegate::GetRenderTasks(
     tasks.reserve(3);
 
     // light
-    if (not _activeSimpleLightTaskId.IsEmpty()) {
+    if (!_activeSimpleLightTaskId.IsEmpty()) {
         tasks.push_back(GetRenderIndex().GetTask(_activeSimpleLightTaskId));
     }
 
@@ -207,7 +208,7 @@ UsdImagingGL_DefaultTaskDelegate::GetRenderTasks(
     }
 
     // selection highlighting (selectionTask comes after renderTask)
-    if (not params.enableIdRender) {
+    if (!params.enableIdRender) {
         tasks.push_back(GetRenderIndex().GetTask(_selectionTaskId));
     }
 
@@ -223,7 +224,7 @@ UsdImagingGL_DefaultTaskDelegate::SetCollectionAndRenderParams(
     TfToken repr = HdTokens->smoothHull;
     bool refined = params.complexity > 1.0;
 
-    if (params.drawMode == UsdImagingGLEngine::DRAW_GEOM_FLAT or
+    if (params.drawMode == UsdImagingGLEngine::DRAW_GEOM_FLAT ||
         params.drawMode == UsdImagingGLEngine::DRAW_SHADED_FLAT) {
         repr = HdTokens->hull;
     } else if (params.drawMode == UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE) {
@@ -246,16 +247,24 @@ UsdImagingGL_DefaultTaskDelegate::SetCollectionAndRenderParams(
         }
     }
 
-    // By default, don't show any guides.
+    // By default, show only default geometry, and default is *always* included
     TfToken colName = HdTokens->geometry;
 
-    // Pickup guide geometry if requested:
-    if (params.showGuides and not params.showRenderGuides) {
-        colName = UsdImagingCollectionTokens->geometryAndInteractiveGuides;
-    } else if (not params.showGuides and params.showRenderGuides) {
-        colName = UsdImagingCollectionTokens->geometryAndRenderGuides;
-    } else if (params.showGuides and params.showRenderGuides) {
-        colName = UsdImagingCollectionTokens->geometryAndGuides;
+    // Pickup proxy, guide, and render geometry if requested:
+    if (params.showGuides && !params.showRender) {
+        colName = params.showProxy ?
+            UsdImagingCollectionTokens->geometryAndProxyAndGuides :
+            UsdImagingCollectionTokens->geometryAndGuides;
+    } else if (!params.showGuides && params.showRender) {
+        colName = params.showProxy ?
+            UsdImagingCollectionTokens->geometryAndProxyAndRender :
+            UsdImagingCollectionTokens->geometryAndRender;
+    } else if (params.showGuides && params.showRender) {
+        colName = params.showProxy ?
+            UsdImagingCollectionTokens->geometryAllPurposes :
+            UsdImagingCollectionTokens->geometryAndRenderAndGuides;
+    } else if (params.showProxy){
+        colName = UsdImagingCollectionTokens->geometryAndProxy;
     }
 
     _UpdateCollection(&_rprims, colName, repr, roots,
@@ -288,8 +297,8 @@ UsdImagingGL_DefaultTaskDelegate::_UpdateCollection(
     // inexpensive comparison first
     bool match
           = rprims->GetName() == colName
-        and oldRoots.size() == roots.size()
-        and rprims->GetReprName() == reprName;
+        && oldRoots.size() == roots.size()
+        && rprims->GetReprName() == reprName;
 
     // Only take the time to compare root paths if everything else matches.
     if (match) {
@@ -299,7 +308,7 @@ UsdImagingGL_DefaultTaskDelegate::_UpdateCollection(
             if (oldRoots[i] == roots[i])
                 continue;
             // Binary search to find the current root.
-            if (not std::binary_search(oldRoots.begin(), oldRoots.end(),
+            if (!std::binary_search(oldRoots.begin(), oldRoots.end(),
                                        roots[i])) 
             {
                 match = false;
@@ -406,7 +415,7 @@ void
 UsdImagingGL_DefaultTaskDelegate::SetLightingState(
     const GlfSimpleLightingContextPtr &src)
 {
-    if (not TF_VERIFY(src)) return;
+    if (!TF_VERIFY(src)) return;
 
     // cache the GlfSimpleLight vector
     GlfSimpleLightVector const &lights = src->GetLights();
@@ -425,7 +434,7 @@ UsdImagingGL_DefaultTaskDelegate::SetLightingState(
     }
     // Remove unused light Ids from HdRenderIndex
     while (_lightIds.size() > lights.size()) {
-        GetRenderIndex().RemoveSprim(_lightIds.back());
+        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->light, _lightIds.back());
         _lightIds.pop_back();
         hasNumLightsChanged = true;
     }
@@ -491,10 +500,9 @@ UsdImagingGL_DefaultTaskDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache &cache = _valueCacheMap[_cameraId];
-    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
-    cache[HdxCameraTokens->projectionMatrix]  = VtValue(projectionMatrix);
-    cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-    cache[HdxCameraTokens->windowPolicy]  = VtValue(); // we don't use window policy.
+    cache[HdxCameraTokens->windowPolicy]  = VtValue(); // no window policy.
+    cache[HdxCameraTokens->matrices] = 
+        VtValue(HdxCameraMatrices(viewMatrix, projectionMatrix));
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
@@ -544,7 +552,7 @@ UsdImagingGL_DefaultTaskDelegate::Get(SdfPath const& id, TfToken const& key)
 {
     _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
     VtValue ret;
-    if (vcache and TfMapLookup(*vcache, key, &ret)) {
+    if (vcache && TfMapLookup(*vcache, key, &ret)) {
         return ret;
     }
     TF_CODING_ERROR("%s:%s doesn't exist in the value cache\n",
@@ -585,3 +593,6 @@ UsdImagingGL_DefaultTaskDelegate::GetClipPlanes(SdfPath const& cameraId)
 {
     return _clipPlanes;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

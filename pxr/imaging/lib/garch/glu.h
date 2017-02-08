@@ -24,12 +24,19 @@
 #ifndef GARCH_GLU_H
 #define GARCH_GLU_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 // Apple installs OpenGL headers in a non-standard location.
 #include <OpenGL/glu.h>
 #else
 #include <GL/glu.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #endif
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GARCH_GLU_H

@@ -26,7 +26,11 @@
 
 /// \file glf/info.h
 
+#include "pxr/pxr.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// Tests for GL extension support.
 ///
@@ -37,5 +41,8 @@ bool GlfHasExtensions(std::string const & extensions);
 /// Tests whether the current GL context only has minimal graphics support.
 /// This is true for NX clients at least.
 bool GlfHasLegacyGraphics();
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

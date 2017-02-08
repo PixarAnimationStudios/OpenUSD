@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/gamma.h"
 
 #include "pxr/base/gf/math.h"
@@ -28,6 +30,8 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Display colors (such as colors for UI elements) are always gamma 2.2
 // and aspects of interactive rendering such as OpenGL's sRGB texture
@@ -75,3 +79,4 @@ template GfVec3d GfConvertDisplayToLinear<GfVec3d>(const GfVec3d&);
 template GfVec4f GfConvertDisplayToLinear<GfVec4f>(const GfVec4f&);
 template GfVec4d GfConvertDisplayToLinear<GfVec4d>(const GfVec4d&);
 
+PXR_NAMESPACE_CLOSE_SCOPE

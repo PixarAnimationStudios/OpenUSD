@@ -26,6 +26,8 @@
 
 /// \file tf/refPtrTracker.h
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/weakBase.h"
@@ -34,6 +36,8 @@
 #include <iosfwd>
 #include <mutex>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfRefBase;
 template <class T> class TfRefPtr;
@@ -227,7 +231,7 @@ inline void Tf_RefPtrTracker_Assign(const void* owner, T* obj, T* oldObj);
 
 #define TF_DEFINE_REFPTR_TRACK(T, COND)                                     \
 inline void Tf_RefPtrTracker_FirstRef(const void*, T* obj) {                \
-    if (obj and COND(obj)) Tf_RefPtrTrackerUtil::Watch(obj);                \
+    if (obj && COND(obj)) Tf_RefPtrTrackerUtil::Watch(obj);                \
 }                                                                           \
 inline void Tf_RefPtrTracker_LastRef(const void*, T* obj) {                 \
     Tf_RefPtrTrackerUtil::Unwatch(obj);                                     \
@@ -243,5 +247,7 @@ inline void Tf_RefPtrTracker_Assign(const void* owner, T* obj, T* oldObj) { \
         Tf_RefPtrTrackerUtil::AddTrace(owner, obj, TfRefPtrTracker::Assign);\
     }                                                                       \
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

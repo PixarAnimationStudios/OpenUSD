@@ -24,36 +24,14 @@
 // Written by dhl (10 Jul 2006)
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/error.h"
+#include "pxr/base/arch/testArchUtil.h"
 
-#include <cstdio>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <assert.h>
-#include <unistd.h>
+PXR_NAMESPACE_USING_DIRECTIVE
 
-void
-crash(int sig) {
-        printf("crashed!\n");
-        exit(sig);
-}
-
-int main()
-{   
-    (void) signal(SIGABRT,crash);
-
-    int childPid;
-
-    if ( (childPid = fork()) == 0 )   {
-        printf("Should print error message:\n");
-        ARCH_ERROR("TESTING ARCH ERROR");
-        exit(0);
-    }
-    int status;
-
-    assert(childPid == wait(&status));
-    assert(status != 0);
-
-    return 0;
+int main(int argc, char** argv)
+{
+    ArchTestCrashArgParse(argc, argv);
+    ArchTestCrash(ArchTestCrashMode::Error);
 }

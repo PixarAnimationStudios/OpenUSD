@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file wrapNamespaceEdit.cpp
+
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -34,6 +36,8 @@
 #include <boost/python/tuple.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static
 std::string
@@ -187,7 +191,7 @@ _TranslateCanEdit(
             return false;
         }
     }
-    if (not extract<bool>(result)) {
+    if (!extract<bool>(result)) {
         // Need a string on failure.
         TfPyThrowValueError("expected a 2-tuple");
     }
@@ -323,3 +327,5 @@ wrapNamespaceEdit()
     wrapNamespaceEditDetail();
     wrapBatchNamespaceEdit();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

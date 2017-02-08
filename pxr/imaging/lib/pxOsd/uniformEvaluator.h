@@ -24,6 +24,7 @@
 #ifndef PXOSDUTIL_UNIFORM_EVALUATOR_H
 #define PXOSDUTIL_UNIFORM_EVALUATOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/pxOsd/refinerFactory.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -31,6 +32,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class PxOsdUniformEvaluator
 ///
@@ -110,5 +114,8 @@ class PxOsdUniformEvaluator {
     std::vector<float> _subfaceUvs;
     std::vector<int> _ptexIndices;    
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif /* PXOSDUTIL_UNIFORM_EVALUATOR_H */

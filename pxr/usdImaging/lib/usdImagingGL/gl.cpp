@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/usdImaging/usdImagingGL/gl.h"
@@ -34,6 +35,9 @@
 
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/textureRegistry.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 namespace {
 
@@ -131,7 +135,7 @@ UsdImagingGL::PrepareBatch(
     const std::vector<UsdTimeCode>& times,
     RenderParams params)
 {
-    if (not IsBatchingSupported()) {
+    if (!IsBatchingSupported()) {
         return;
     }
 
@@ -350,3 +354,6 @@ UsdImagingGL::GetResourceAllocation() const
     dict["textureMemoryUsed"] = texMem;
     return dict;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

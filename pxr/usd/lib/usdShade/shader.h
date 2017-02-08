@@ -26,12 +26,14 @@
 
 /// \file usdShade/shader.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdShade/tokens.h"
 
 #include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/output.h"
     
 
 #include "pxr/base/vt/value.h"
@@ -42,6 +44,8 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfAssetPath;
 
@@ -183,16 +187,20 @@ public:
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
     //
-    // Just remember to close the class delcaration with }; and complete the
-    // include guard with #endif
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
+    /// Allow UsdShadeShader to auto-convert to UsdShadeConnectableAPI, so 
+    /// you can pass in a UsdShadeShader to any function that accepts 
+    /// a UsdShadeConnectableAPI.
+    operator UsdShadeConnectableAPI () const;
+
     /// Create a parameter which can either have a value or can be
     /// connected.
-    ///
-    /// This will infer whether the parameter should be scalar or array from
-    /// the \p typeName.
     ///
     /// \note parameter names should not be namespaced, as, to keep things
     /// simple, the criterion we use to enumerate parameters on a Shader is
@@ -207,6 +215,25 @@ public:
     /// All attributes are considered parameters if they are not scoped with 
     /// a namespace
     std::vector<UsdShadeParameter> GetParameters() const;
+
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace. Outputs on a shader cannot be connected, as their 
+    /// value is assumed to be computed externally.
+    /// 
+    UsdShadeOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName);
+
+    /// Return the requested output if it exists.
+    /// 
+    UsdShadeOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs" namespace.
+    /// 
+    std::vector<UsdShadeOutput> GetOutputs() const;
+
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -26,9 +26,12 @@
 
 /// \file sdf/subLayerListEditor.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/vectorListEditor.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/proxyPolicies.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -53,4 +56,6 @@ private:
         const std::vector<std::string>& newValues) const;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_SUBLAYERLISTEDITOR_H

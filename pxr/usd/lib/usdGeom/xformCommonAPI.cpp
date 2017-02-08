@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 #include "pxr/base/gf/rotation.h"
@@ -28,6 +29,9 @@
 
 #include <boost/assign/list_of.hpp>
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::vector;
 
@@ -83,7 +87,7 @@ UsdGeomXformCommonAPI::~UsdGeomXformCommonAPI()
 UsdGeomXformCommonAPI
 UsdGeomXformCommonAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomXformCommonAPI();
     }
@@ -103,7 +107,7 @@ UsdGeomXformCommonAPI::_IsCompatible(const UsdPrim &prim) const
 bool
 UsdGeomXformCommonAPI::_IsCompatible() const
 {
-    if (not _xformable)
+    if (!_xformable)
         return false;
 
     if (_computedOpIndices)
@@ -139,7 +143,7 @@ _ConvertMatrixToComponents(const GfMatrix4d &matrix,
 
     *scale = GfVec3f(doubleScale[0], doubleScale[1], doubleScale[2]);
 
-    if (not rotMat.Orthonormalize(/* issueWarning */ false))
+    if (!rotMat.Orthonormalize(/* issueWarning */ false))
         TF_WARN("Failed to orthonormalize rotation matrix.");
 
     _RotMatToRotXYZ(rotMat, rotation);
@@ -154,14 +158,14 @@ UsdGeomXformCommonAPI::SetXformVectors(
     RotationOrder rotOrder,
     const UsdTimeCode time)
 {
-    if (not _VerifyCompatibility())
+    if (!_VerifyCompatibility())
         return false;
 
     // SetRotate is called first, so that the rotation order compatibility is 
     // checked before any data is authored.
-    return SetRotate(rotation, rotOrder, time) and 
-           SetTranslate(translation, time) and
-           SetScale(scale, time) and 
+    return SetRotate(rotation, rotOrder, time) &&
+           SetTranslate(translation, time)     &&
+           SetScale(scale, time)               &&
            SetPivot(pivot, time);
 }
 
@@ -172,9 +176,9 @@ _IsMatrixIdentity(const GfMatrix4d& matrix)
     const GfMatrix4d IDENTITY(1.0);
     const double TOLERANCE = 1e-6;
 
-    if (GfIsClose(matrix.GetRow(0), IDENTITY.GetRow(0), TOLERANCE) and
-            GfIsClose(matrix.GetRow(1), IDENTITY.GetRow(1), TOLERANCE) and
-            GfIsClose(matrix.GetRow(2), IDENTITY.GetRow(2), TOLERANCE) and
+    if (GfIsClose(matrix.GetRow(0), IDENTITY.GetRow(0), TOLERANCE)      &&
+            GfIsClose(matrix.GetRow(1), IDENTITY.GetRow(1), TOLERANCE)  &&
+            GfIsClose(matrix.GetRow(2), IDENTITY.GetRow(2), TOLERANCE)  &&
             GfIsClose(matrix.GetRow(3), IDENTITY.GetRow(3), TOLERANCE)) {
         return true;
     }
@@ -198,7 +202,7 @@ _GetRotateOpType(const vector<UsdGeomXformOp>& ops,
     TF_FOR_ALL(it, ops) {
         if (_validRotateTypes->count(it->GetOpType()))
             return it->GetOpType();
-        if (includeSingleAxisTypes and
+        if (includeSingleAxisTypes &&
                 _validSingleAxisRotateTypes->count(it->GetOpType()))
             return it->GetOpType();
     }
@@ -234,7 +238,7 @@ static
 UsdGeomXformCommonAPI::RotationOrder
 _GetRotationOrderFromRotateOp(const UsdGeomXformOp& rotateOp)
 {
-    if (not rotateOp) {
+    if (!rotateOp) {
         return UsdGeomXformCommonAPI::RotationOrderXYZ;
     }
 
@@ -259,13 +263,13 @@ _GetCommonOpTypesForOpOrder(const vector<UsdGeomXformOp>& xformOps,
     size_t numInverseTranslateOps = 0;
 
     TF_FOR_ALL(it, xformOps) {
-        if (_validRotateTypes->count(it->GetOpType()) or
+        if (_validRotateTypes->count(it->GetOpType()) ||
                 _validSingleAxisRotateTypes->count(it->GetOpType())) {
             hasRotateOp = true;
             rotateOpType = it->GetOpType();
         } else if (it->GetOpType() == UsdGeomXformOp::TypeScale) {
             hasScaleOp = true;
-        } else if (it->GetOpType() == UsdGeomXformOp::TypeTranslate and
+        } else if (it->GetOpType() == UsdGeomXformOp::TypeTranslate &&
                    it->IsInverseOp()) {
             ++numInverseTranslateOps;
         }
@@ -321,7 +325,7 @@ UsdGeomXformCommonAPI::GetXformVectors(
 {
     // Handle incompatible xform case first.
     // It's ok for an xform to be incompatible when extracting xform vectors. 
-    if (not _IsCompatible()) {
+    if (!_IsCompatible()) {
         GfMatrix4d localXform(1.);
 
         // Do we want to be able to use a UsdGeomXformCache for this?
@@ -339,8 +343,8 @@ UsdGeomXformCommonAPI::GetXformVectors(
         return true;
     }
 
-    if (not _computedOpIndices and 
-        not TF_VERIFY(_ComputeOpIndices(), "XformCommonAPI: Failed to"
+    if (!_computedOpIndices &&
+        !TF_VERIFY(_ComputeOpIndices(), "XformCommonAPI: Failed to"
             "initialize xformOps on a compatible xformable <%s>.",
             _xformable.GetPath().GetText())) {
         return false;
@@ -349,26 +353,26 @@ UsdGeomXformCommonAPI::GetXformVectors(
     // If any of the ops don't exist or if no value is authored, then returning
     // identity values.
 
-    if (not _HasTranslateOp() or 
-        not _xformOps[_translateOpIndex].Get(translation, time)) 
+    if (!_HasTranslateOp() ||
+        !_xformOps[_translateOpIndex].Get(translation, time)) 
     {
         *translation = GfVec3d(0.);
     }
 
-    if (not _HasRotateOp() or 
-        not _xformOps[_rotateOpIndex].Get(rotation, time)) 
+    if (!_HasRotateOp() ||
+        !_xformOps[_rotateOpIndex].Get(rotation, time)) 
     {
         *rotation = GfVec3f(0.);
     }
 
-    if (not _HasScaleOp() or 
-        not _xformOps[_scaleOpIndex].Get(scale, time)) 
+    if (!_HasScaleOp() ||
+        !_xformOps[_scaleOpIndex].Get(scale, time)) 
     {
         *scale = GfVec3f(1.);
     }
 
-    if (not _HasPivotOp() or 
-        not _xformOps[_pivotOpIndex].Get(pivot, time)) 
+    if (!_HasPivotOp() ||
+        !_xformOps[_pivotOpIndex].Get(pivot, time)) 
     {
         *pivot = GfVec3f(0.);
     }
@@ -424,7 +428,7 @@ UsdGeomXformCommonAPI::GetXformVectorsByAccumulation(
     int xformOpIndex = _xformOps.size() - 1;
     int commonOpTypeIndex = commonOpTypes.size() - 1;
 
-    while (xformOpIndex >= 0 and commonOpTypeIndex >= translateIndex) {
+    while (xformOpIndex >= 0 && commonOpTypeIndex >= translateIndex) {
         const UsdGeomXformOp xformOp = _xformOps[xformOpIndex];
         UsdGeomXformOp::Type commonOpType = commonOpTypes[commonOpTypeIndex];
 
@@ -449,7 +453,7 @@ UsdGeomXformCommonAPI::GetXformVectorsByAccumulation(
                 // inverse translate, we can assume that a valid order will
                 // have its pair farther towards the front.
                 --commonOpTypeIndex;
-            } else if (commonOpTypeIndex == translatePivotIndex and
+            } else if (commonOpTypeIndex == translatePivotIndex &&
                        _MatricesAreInverses(
                            commonOpMatrices[translatePivotIndex],
                            commonOpMatrices[translatePivotInvertIndex])) {
@@ -470,8 +474,8 @@ UsdGeomXformCommonAPI::GetXformVectorsByAccumulation(
 
     // Make sure that any translates between the rotate and scale ops
     // accumulated to identity.
-    if (translateIdentityIndex >= 0 and
-            not _IsMatrixIdentity(commonOpMatrices[translateIdentityIndex])) {
+    if (translateIdentityIndex >= 0 &&
+            !_IsMatrixIdentity(commonOpMatrices[translateIdentityIndex])) {
         reducible = false;
     }
 
@@ -485,12 +489,12 @@ UsdGeomXformCommonAPI::GetXformVectorsByAccumulation(
 
     // Verify that the translate pivot and inverse translate pivot are inverses
     // of each other. If there is no pivot, these should both still be identity.
-    if (not _MatricesAreInverses(commonOpMatrices[translatePivotIndex],
+    if (!_MatricesAreInverses(commonOpMatrices[translatePivotIndex],
                                  commonOpMatrices[translatePivotInvertIndex])) {
         reducible = false;
     }
 
-    if (not reducible) {
+    if (!reducible) {
         return GetXformVectors(translation, rotation, scale, pivot,
                                rotOrder, time);
     }
@@ -661,7 +665,7 @@ bool
 UsdGeomXformCommonAPI::_ComputeOpIndices()
 {
     int translateOpIndex, pivotOpIndex, rotateOpIndex, scaleOpIndex;
-    if (not _ValidateAndComputeXformOpIndices(&translateOpIndex, &pivotOpIndex,
+    if (!_ValidateAndComputeXformOpIndices(&translateOpIndex, &pivotOpIndex,
                                               &rotateOpIndex, &scaleOpIndex)) {
         return false;
     }
@@ -680,10 +684,10 @@ bool
 UsdGeomXformCommonAPI::_VerifyCompatibility()
 {
     // Can't set xform op on an xformable with incompatible schema.
-    if (not _IsCompatible())
+    if (!_IsCompatible())
         return false;
 
-    if (not _computedOpIndices) 
+    if (!_computedOpIndices) 
         _ComputeOpIndices();
 
     return TF_VERIFY(_computedOpIndices);
@@ -695,20 +699,20 @@ UsdGeomXformCommonAPI::SetTranslate(
     const UsdTimeCode time/*=UsdTimeCode::Default()*/)
 {
     // Can't set translate on an xformable with incompatible schema.
-    if (not _VerifyCompatibility()) {
+    if (!_VerifyCompatibility()) {
         TF_WARN("XformCommonAPI: Attempted to SetTranslate on an incompatible "
             "xformable <%s>.", _xformable.GetPath().GetText());    
         return false;
     }
 
     if (_HasTranslateOp()) {
-        if (not TF_VERIFY(static_cast<size_t>(_translateOpIndex) < _xformOps.size()))
+        if (!TF_VERIFY(static_cast<size_t>(_translateOpIndex) < _xformOps.size()))
             return false;
         return _xformOps[_translateOpIndex].Set(translation, time);
     }
 
     UsdGeomXformOp translateOp = _xformable.AddTranslateOp();
-    if (not TF_VERIFY(translateOp))
+    if (!TF_VERIFY(translateOp))
         return false;
 
     translateOp.Set(translation, time);
@@ -735,14 +739,14 @@ UsdGeomXformCommonAPI::SetPivot(
     const UsdTimeCode time/*=UsdTimeCode::Default()*/)
 {
     // Can't set pivot on an xformable with incompatible schema.
-    if (not _VerifyCompatibility()) {
+    if (!_VerifyCompatibility()) {
         TF_WARN("XformCommonAPI: Attempted to SetPivot on an incompatible "
             "xformable <%s>.", _xformable.GetPath().GetText());    
         return false;
     }
 
     if (_HasPivotOp()) {
-        if (not TF_VERIFY(static_cast<size_t>(_pivotOpIndex) < _xformOps.size()))
+        if (!TF_VERIFY(static_cast<size_t>(_pivotOpIndex) < _xformOps.size()))
             return false;
         return _xformOps[_pivotOpIndex].Set(pivot, time);
     }
@@ -750,7 +754,7 @@ UsdGeomXformCommonAPI::SetPivot(
     // Add scale-rotate pivot.
     UsdGeomXformOp pivotOp = _xformable.AddTranslateOp(
         UsdGeomXformOp::PrecisionFloat, /* opSuffix */ _tokens->pivot);
-    if (not TF_VERIFY(pivotOp))
+    if (!TF_VERIFY(pivotOp))
         return false;
 
     pivotOp.Set(pivot, time);
@@ -783,14 +787,14 @@ UsdGeomXformCommonAPI::SetRotate(
     const UsdTimeCode time/*=UsdTimeCode::Default()*/)
 {
     // Can't set rotate on an xformable with incompatible schema.
-    if (not _VerifyCompatibility()) {
+    if (!_VerifyCompatibility()) {
         TF_WARN("XformCommonAPI: Attempted to SetRotate on an incompatible "
             "xformable <%s>.", _xformable.GetPath().GetText());    
         return false;
     }
 
     if (_HasRotateOp()) {
-        if (not TF_VERIFY(static_cast<size_t>(_rotateOpIndex) < _xformOps.size()))
+        if (!TF_VERIFY(static_cast<size_t>(_rotateOpIndex) < _xformOps.size()))
             return false;
 
         RotationOrder existingRotOrder =
@@ -809,7 +813,7 @@ UsdGeomXformCommonAPI::SetRotate(
     UsdGeomXformOp rotateOp = _xformable.AddXformOp(
         _GetXformOpTypeForRotationOrder(rotOrder), 
         UsdGeomXformOp::PrecisionFloat);
-    if (not TF_VERIFY(rotateOp))
+    if (!TF_VERIFY(rotateOp))
         return false;
 
     rotateOp.Set(rotation, time);
@@ -836,21 +840,21 @@ UsdGeomXformCommonAPI::SetScale(
     const UsdTimeCode time/*=UsdTimeCode::Default()*/)
 {
     // Can't set scale on an xformable with incompatible schema.
-    if (not _VerifyCompatibility()) {
+    if (!_VerifyCompatibility()) {
         TF_WARN("XformCommonAPI: Attempted to SetScale on an incompatible "
             "xformable <%s>.", _xformable.GetPath().GetText());    
         return false;
     }
 
     if (_HasScaleOp()) {
-        if (not TF_VERIFY(static_cast<size_t>(_scaleOpIndex) < _xformOps.size()))
+        if (!TF_VERIFY(static_cast<size_t>(_scaleOpIndex) < _xformOps.size()))
             return false;
 
         return _xformOps[_scaleOpIndex].Set(scale, time);
     }
 
     UsdGeomXformOp scaleOp = _xformable.AddScaleOp();
-    if (not TF_VERIFY(scaleOp))
+    if (!TF_VERIFY(scaleOp))
         return false;
 
     scaleOp.Set(scale, time);
@@ -868,3 +872,6 @@ UsdGeomXformCommonAPI::SetScale(
 
     return _xformable.SetXformOpOrder(_xformOps, GetResetXformStack());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

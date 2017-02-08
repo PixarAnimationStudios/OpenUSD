@@ -24,8 +24,12 @@
 #ifndef USDIMAGING_BASIS_CURVES_ADAPTER_H
 #define USDIMAGING_BASIS_CURVES_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdImagingBasisCurvesAdapter
 ///
@@ -84,5 +88,8 @@ private:
                                  VtValue* topoHolder, 
                                  UsdTimeCode time);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_BASIS_CURVES_ADAPTER_H

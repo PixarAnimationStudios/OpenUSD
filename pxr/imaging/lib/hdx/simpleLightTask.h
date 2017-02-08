@@ -24,6 +24,7 @@
 #ifndef HDX_SIMPLE_LIGHT_TASK_H
 #define HDX_SIMPLE_LIGHT_TASK_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hdx/light.h"
 
@@ -39,8 +40,12 @@
 
 #include <boost/shared_ptr.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class HdRenderIndex;
 class HdSceneDelegate;
+class HdxCamera;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
@@ -66,9 +71,10 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
+    const HdxCamera *_camera;
+    HdxLightPtrConstVector _lights;
+
     // Should be weak ptrs
-    HdSprimSharedPtr _camera;
-    HdSprimSharedPtrVector _lights;
     HdxSimpleLightingShaderSharedPtr _lightingShader;
     int _collectionVersion;
     bool _enableShadows;
@@ -135,5 +141,8 @@ struct HdxShadowParams
 std::ostream& operator<<(std::ostream& out, const HdxShadowParams& pv);
 bool operator==(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
 bool operator!=(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_SIMPLE_LIGHT_TASK_H

@@ -24,11 +24,15 @@
 #ifndef PXRUSDMAYA_USD_IMPORT_H
 #define PXRUSDMAYA_USD_IMPORT_H
 
+#include "pxr/pxr.h"
 #include <maya/MArgList.h>
 #include <maya/MPxCommand.h>
 #include <maya/MSyntax.h>
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class usdReadJob;
 
@@ -55,5 +59,8 @@ class usdImport : public MPxCommand
     const std::string _assemblyTypeName;
     const std::string _proxyShapeTypeName;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // PXRUSDMAYA_USD_IMPORT_H

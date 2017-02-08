@@ -24,6 +24,7 @@
 #ifndef USD_CLIP_H
 #define USD_CLIP_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/node.h"
 
 #include "pxr/usd/sdf/assetPath.h"
@@ -44,6 +45,9 @@
 #include <utility>
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 /// Returns true if the given scene description metadata \p fieldName is
 /// associated with value clip functionality.
 bool
@@ -60,17 +64,17 @@ struct Usd_ResolvedClipInfo
     bool operator==(const Usd_ResolvedClipInfo& rhs) const
     {
         return (clipAssetPaths == rhs.clipAssetPaths
-            and clipManifestAssetPath == rhs.clipManifestAssetPath
-            and clipPrimPath == rhs.clipPrimPath
-            and clipActive == rhs.clipActive
-            and clipTimes == rhs.clipTimes
-            and indexOfLayerWhereAssetPathsFound 
+            && clipManifestAssetPath == rhs.clipManifestAssetPath
+            && clipPrimPath == rhs.clipPrimPath
+            && clipActive == rhs.clipActive
+            && clipTimes == rhs.clipTimes
+            && indexOfLayerWhereAssetPathsFound 
                     == rhs.indexOfLayerWhereAssetPathsFound);
     }
 
     bool operator!=(const Usd_ResolvedClipInfo& rhs) const
     {
-        return not (*this == rhs);
+        return !(*this == rhs);
     }
 
     size_t GetHash() const
@@ -222,6 +226,14 @@ public:
         return false;
     }
 
+    /// Return the layer associated with this clip iff it has already been
+    /// opened successfully.
+    ///
+    /// USD tries to be as lazy as possible about opening clip layers to
+    /// avoid unnecessary latency and memory bloat; however, once a layer is
+    /// open, it will generally be kept open for the life of the stage.
+    SdfLayerHandle GetLayerIfOpen() const;
+
     /// Node in the composed prim index and index of layer in its LayerStack
     /// where this clip was introduced.
     PcpNodeRef sourceNode;
@@ -276,5 +288,8 @@ typedef std::vector<Usd_ClipRefPtr> Usd_ClipRefPtrVector;
 
 std::ostream&
 operator<<(std::ostream& out, const Usd_ClipRefPtr& clip);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_CLIP_H

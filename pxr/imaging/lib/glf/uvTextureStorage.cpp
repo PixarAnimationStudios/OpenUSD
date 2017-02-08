@@ -27,6 +27,9 @@
 #include "pxr/imaging/glf/uvTextureStorage.h"
 #include "pxr/imaging/glf/uvTextureStorageData.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<GlfUVTextureStorage, TfType::Bases<GlfBaseTexture> >();
@@ -71,3 +74,6 @@ GlfUVTextureStorage::_GenerateMipmap() const
 {
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

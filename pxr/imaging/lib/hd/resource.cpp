@@ -23,6 +23,9 @@
 //
 #include "pxr/imaging/hd/resource.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdResource::HdResource(TfToken const & role) 
     : _role(role)
     , _id(0)
@@ -42,3 +45,6 @@ HdResource::SetAllocation(GLuint id, GLsizeiptr size)
     _id = id;
     _size = size;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,9 +24,13 @@
 #ifndef HF_PLUGN_DELEGATE_DESC_H
 #define HF_PLUGN_DELEGATE_DESC_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 ///
 /// Common structure used to report registered delegates in one of the delegate
@@ -47,5 +51,8 @@ struct HfPluginDelegateDesc {
 };
 
 typedef std::vector<HfPluginDelegateDesc> HfPluginDelegateDescVector;
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HF_PLUGN_DELEGATE_DESC_H

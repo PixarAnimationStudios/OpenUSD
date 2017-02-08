@@ -24,12 +24,16 @@
 #ifndef USD_EDITCONTEXT_H
 #define USD_EDITCONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <utility>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_PTRS(UsdStage);
 
@@ -110,5 +114,8 @@ private:
     UsdEditTarget _editTarget;
     boost::shared_ptr<UsdEditContext> _editContext;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_EDITCONTEXT_H

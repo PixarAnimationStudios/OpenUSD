@@ -26,6 +26,7 @@
 
 /// \file tf/diagnosticMgr.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/copyOnWritePtr.h"
 #include "pxr/base/tf/debug.h"
@@ -50,6 +51,8 @@
 #include <cstdarg>
 #include <list>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEBUG_CODES(
     TF_LOG_STACK_TRACE_ON_ERROR,
@@ -352,10 +355,7 @@ private:
     void _RebuildErrorLogText();
 
     // Helper to actually publish log text into the Arch crash handler.
-    void _SetLogInfoForErrors(const std::string &logText) const;
-
-    // Helper to write error text from all errors in [i, end) to out.
-    void _AppendErrorTextToString(ErrorIterator i, std::string &out);
+    void _SetLogInfoForErrors(std::vector<std::string> const &logText) const;
 
     // The current diagnostic delegate.
     DelegateWeakPtr _delegate;
@@ -367,8 +367,18 @@ private:
     tbb::enumerable_thread_specific<ErrorList> _errorList;
 
     // Thread-specific diagnostic log text for pending errors.
-    tbb::enumerable_thread_specific<
-        boost::scoped_ptr<std::string> > _logText;
+    struct _LogText {
+        void AppendAndPublish(ErrorIterator i, ErrorIterator end);
+        void RebuildAndPublish(ErrorIterator i, ErrorIterator end);
+        
+        std::pair<std::vector<std::string>,
+                  std::vector<std::string>> texts;
+        bool parity = false;
+    private:
+        void _AppendAndPublishImpl(bool clear,
+                                   ErrorIterator i, ErrorIterator end);
+    };
+    tbb::enumerable_thread_specific<_LogText> _logText;
 
     // Thread-specific error mark counts.  Use a native key for best performance
     // here.
@@ -382,5 +392,7 @@ private:
     friend class TfErrorTransport;
     friend class TfErrorMark;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_DIAGNOSTIC_MGR_H

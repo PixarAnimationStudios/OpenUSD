@@ -24,11 +24,14 @@
 #ifndef SDF_CHILDREN_H
 #define SDF_CHILDREN_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 class SdfSpec;
@@ -102,4 +105,6 @@ private:
     mutable bool _childNamesValid;
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_CHILDREN_H

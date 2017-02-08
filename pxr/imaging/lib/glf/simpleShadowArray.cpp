@@ -32,6 +32,9 @@
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec4d.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfSimpleShadowArray::GlfSimpleShadowArray(GfVec2i const & size,
                                            size_t numLayers) :
     _size(size),
@@ -43,7 +46,8 @@ GlfSimpleShadowArray::GlfSimpleShadowArray(GfVec2i const & size,
     _shadowDepthSampler(0),
     _shadowCompareSampler(0),
     _unbindRestoreDrawFramebuffer(0),
-    _unbindRestoreReadFramebuffer(0)
+    _unbindRestoreReadFramebuffer(0),
+    _unbindRestoreViewport{0,0,0,0}
 {
 }
 
@@ -87,7 +91,7 @@ GlfSimpleShadowArray::SetNumLayers(size_t numLayers)
 GfMatrix4d
 GlfSimpleShadowArray::GetViewMatrix(size_t index) const
 {
-    if (not TF_VERIFY(index < _viewMatrix.size())) {
+    if (!TF_VERIFY(index < _viewMatrix.size())) {
         return GfMatrix4d(1.0);
     }
 
@@ -97,7 +101,7 @@ GlfSimpleShadowArray::GetViewMatrix(size_t index) const
 void
 GlfSimpleShadowArray::SetViewMatrix(size_t index, GfMatrix4d const & matrix)
 {
-    if (not TF_VERIFY(index < _viewMatrix.size())) {
+    if (!TF_VERIFY(index < _viewMatrix.size())) {
         return;
     }
 
@@ -107,7 +111,7 @@ GlfSimpleShadowArray::SetViewMatrix(size_t index, GfMatrix4d const & matrix)
 GfMatrix4d
 GlfSimpleShadowArray::GetProjectionMatrix(size_t index) const
 {
-    if (not TF_VERIFY(index < _projectionMatrix.size())) {
+    if (!TF_VERIFY(index < _projectionMatrix.size())) {
         return GfMatrix4d(1.0);
     }
 
@@ -117,7 +121,7 @@ GlfSimpleShadowArray::GetProjectionMatrix(size_t index) const
 void
 GlfSimpleShadowArray::SetProjectionMatrix(size_t index, GfMatrix4d const & matrix)
 {
-    if (not TF_VERIFY(index < _projectionMatrix.size())) {
+    if (!TF_VERIFY(index < _projectionMatrix.size())) {
         return;
     }
 
@@ -159,6 +163,9 @@ GlfSimpleShadowArray::BeginCapture(size_t index, bool clear)
         glClear(GL_DEPTH_BUFFER_BIT);
     }
 
+    // save the current viewport
+    glGetIntegerv(GL_VIEWPORT, _unbindRestoreViewport);
+
     glViewport(0, 0, GetSize()[0], GetSize()[1]);
 
     // depth 1.0 means infinity (no occluders).
@@ -172,52 +179,19 @@ GlfSimpleShadowArray::BeginCapture(size_t index, bool clear)
 void
 GlfSimpleShadowArray::EndCapture(size_t)
 {
+    // reset to GL default, except viewport
+    glDepthRange(0, 1.0);
     glDisable(GL_DEPTH_CLAMP);
 
     _UnbindFramebuffer();
 
+    // restore viewport
+    glViewport(_unbindRestoreViewport[0],
+               _unbindRestoreViewport[1],
+               _unbindRestoreViewport[2],
+               _unbindRestoreViewport[3]);
+
     GLF_POST_PENDING_GL_ERRORS();
-}
-
-void
-GlfSimpleShadowArray::Draw(size_t index) const
-{
-    GfVec4d nearPlane[4] = {
-        GfVec4d( 1.0, 1.0, -1.0, 1.0), GfVec4d(-1.0, 1.0, -1.0, 1.0),
-        GfVec4d(-1.0,-1.0, -1.0, 1.0), GfVec4d( 1.0,-1.0, -1.0, 1.0)
-    };
-    GfVec4d farPlane[4] = {
-        GfVec4d( 1.0, 1.0, 1.0, 1.0), GfVec4d(-1.0, 1.0, 1.0, 1.0),
-        GfVec4d(-1.0,-1.0, 1.0, 1.0), GfVec4d( 1.0,-1.0, 1.0, 1.0)
-    };
-
-    glColor3f(1.0, 0.0, 0.0);
-    glBegin(GL_LINE_LOOP);
-    glVertex3dv(nearPlane[0].GetArray());
-    glVertex3dv(nearPlane[1].GetArray());
-    glVertex3dv(nearPlane[2].GetArray());
-    glVertex3dv(nearPlane[3].GetArray());
-    glEnd();
-
-    glColor3f(0.0, 0.0, 1.0);
-    glBegin(GL_LINE_LOOP);
-    glVertex3dv(farPlane[0].GetArray());
-    glVertex3dv(farPlane[1].GetArray());
-    glVertex3dv(farPlane[2].GetArray());
-    glVertex3dv(farPlane[3].GetArray());
-    glEnd();
-
-    glColor3f(0.5, 0.5, 0.5);
-    glBegin(GL_LINES);
-    glVertex3dv(nearPlane[0].GetArray());
-    glVertex3dv(farPlane[0].GetArray());
-    glVertex3dv(nearPlane[1].GetArray());
-    glVertex3dv(farPlane[1].GetArray());
-    glVertex3dv(nearPlane[2].GetArray());
-    glVertex3dv(farPlane[2].GetArray());
-    glVertex3dv(nearPlane[3].GetArray());
-    glVertex3dv(farPlane[3].GetArray());
-    glEnd();
 }
 
 void
@@ -291,7 +265,7 @@ GlfSimpleShadowArray::_BindFramebuffer(size_t index)
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,
                   (GLint*)&_unbindRestoreReadFramebuffer);
 
-    if (not _framebuffer or not _texture) {
+    if (!_framebuffer || !_texture) {
         _AllocTextureArray();
     }
 
@@ -306,3 +280,6 @@ GlfSimpleShadowArray::_UnbindFramebuffer()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _unbindRestoreDrawFramebuffer);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _unbindRestoreReadFramebuffer);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

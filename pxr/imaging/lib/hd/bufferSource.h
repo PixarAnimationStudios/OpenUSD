@@ -24,6 +24,7 @@
 #ifndef HD_BUFFER_SOURCE_H
 #define HD_BUFFER_SOURCE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/token.h"
@@ -34,6 +35,9 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdBufferSource;
 typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
@@ -211,5 +215,8 @@ public:
     virtual short GetNumComponents() const;
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_BUFFER_SOURCE_H

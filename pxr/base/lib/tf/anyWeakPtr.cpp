@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/anyWeakPtr.h"
 
 using std::string;
 using std::type_info;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfAnyWeakPtr::_EmptyHolder::~_EmptyHolder()
 {
@@ -125,7 +129,7 @@ TfAnyWeakPtr::operator bool() const
 bool
 TfAnyWeakPtr::operator !() const
 {
-    return not bool(*this);
+    return !bool(*this);
 
 }
 
@@ -162,3 +166,5 @@ TfAnyWeakPtr::_GetPythonObject() const
 
 TfAnyWeakPtr::_PointerHolderBase::~_PointerHolderBase() {
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

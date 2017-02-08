@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/usdInArgs.h"
 #include "usdKatana/utils.h"
 
@@ -28,11 +29,14 @@
 
 #include <FnAttribute/FnDataBuilder.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
         UsdStageRefPtr stage,
         const std::string& rootLocation,
         const std::string& isolatePath,
-        const SdfPathSet& variantSelections,
+        FnAttribute::GroupAttribute sessionAttr,
         const std::string& ignoreLayerRegex,
         double currentTime,
         double shutterOpen,
@@ -45,7 +49,7 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
     _stage(stage),
     _rootLocation(rootLocation),
     _isolatePath(isolatePath),
-    _variantSelections(variantSelections),
+    _sessionAttr(sessionAttr),
     _ignoreLayerRegex(ignoreLayerRegex),
     _currentTime(currentTime),
     _shutterOpen(shutterOpen),
@@ -55,7 +59,7 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
     _extraAttributesOrNamespaces(extraAttributesOrNamespaces),
     _verbose(verbose)
 {
-    _isMotionBackward = _motionSampleTimes.size() > 1 and
+    _isMotionBackward = _motionSampleTimes.size() > 1 &&
         _motionSampleTimes.front() > _motionSampleTimes.back();
 
     if (errorMessage)
@@ -102,7 +106,7 @@ PxrUsdKatanaUsdInArgs::ComputeBounds(
     FnKat::DoubleBuilder boundBuilder(6);
 
     // There must be one bboxCache per motion sample, for efficiency purposes.
-    if (not TF_VERIFY(bboxCaches.size() == _motionSampleTimes.size()))
+    if (!TF_VERIFY(bboxCaches.size() == _motionSampleTimes.size()))
     {
         return ret;
     }
@@ -125,3 +129,6 @@ PxrUsdKatanaUsdInArgs::GetRootPrim() const
         return _stage->GetPrimAtPath(SdfPath(_isolatePath));
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

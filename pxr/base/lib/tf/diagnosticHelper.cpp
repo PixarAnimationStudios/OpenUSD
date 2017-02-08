@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticHelper.h"
 
 #include "pxr/base/tf/callContext.h"
@@ -30,6 +32,8 @@
 #include <stdarg.h>
 
 using std::string;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper functions for posting an error with TF_ERROR.
 bool
@@ -374,3 +378,5 @@ Tf_DiagnosticLiteHelper::IssueStatus(char const *fmt, ...) const
         Post(TfVStringPrintf(fmt, ap));
     va_end(ap);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

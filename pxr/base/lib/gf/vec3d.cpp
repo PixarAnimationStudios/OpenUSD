@@ -27,6 +27,7 @@
 
 #include "pxr/base/gf/vec3d.h"
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
@@ -39,6 +40,8 @@
 
 #include <vector>
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<GfVec3d>();
@@ -53,44 +56,26 @@ operator<<(std::ostream &out, GfVec3d const &v)
         << Gf_OstreamHelperP(v[2]) << ')';
 }
 
-GfVec3d::GfVec3d(class GfVec3f const &other)
-{
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-}
-GfVec3d::GfVec3d(class GfVec3h const &other)
-{
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-}
-GfVec3d::GfVec3d(class GfVec3i const &other)
-{
-    _data[0] = other[0];
-    _data[1] = other[1];
-    _data[2] = other[2];
-}
 
 bool
 GfVec3d::operator==(GfVec3f const &other) const
 {
-    return _data[0] == other[0] and
-           _data[1] == other[1] and
+    return _data[0] == other[0] &&
+           _data[1] == other[1] &&
            _data[2] == other[2];
 }
 bool
 GfVec3d::operator==(GfVec3h const &other) const
 {
-    return _data[0] == other[0] and
-           _data[1] == other[1] and
+    return _data[0] == other[0] &&
+           _data[1] == other[1] &&
            _data[2] == other[2];
 }
 bool
 GfVec3d::operator==(GfVec3i const &other) const
 {
-    return _data[0] == other[0] and
-           _data[1] == other[1] and
+    return _data[0] == other[0] &&
+           _data[1] == other[1] &&
            _data[2] == other[2];
 }
 
@@ -283,3 +268,5 @@ GfSlerp(double alpha, const GfVec3d &v0, const GfVec3d &v1)
         v1 * (sin(     alpha *angle) * oneOverSinAngle);
 }
 
+
+PXR_NAMESPACE_CLOSE_SCOPE

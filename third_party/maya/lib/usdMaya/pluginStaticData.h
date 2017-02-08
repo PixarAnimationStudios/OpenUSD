@@ -24,11 +24,15 @@
 #ifndef PXRUSDMAYA_PLUGINSTATICDATA_H
 #define PXRUSDMAYA_PLUGINSTATICDATA_H
 
+#include "pxr/pxr.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
 #include "usdMaya/stageData.h"
 
 #include <boost/noncopyable.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \brief This class is solely here to coordinate between the various Usd
 /// plugin node typeIds and typeNames.  The constructor makes sure that all the
@@ -65,5 +69,8 @@ public:
     // Should not be used until the pxrUsd class is initialized.
     static PxrUsdMayaPluginStaticData pxrUsd;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_PLUGINSTATICDATA_H

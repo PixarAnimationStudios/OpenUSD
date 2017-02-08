@@ -21,10 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/function.h"
 #include "pxr/base/arch/defines.h"
 
-#include <ciso646>
+PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace std;
 
@@ -52,7 +54,7 @@ _GetFunctionName(string function, string prettyFunction)
     // First search to see if function is a member function.  If it's not,
     // then we bail out early, returning 'function'.
     std::string::size_type functionStart = prettyFunction.find(memberFunction);
-    if (functionStart == string::npos or functionStart == 0)
+    if (functionStart == string::npos || functionStart == 0)
         return function;
 
     // The +2 is because of the '::' we prepended.
@@ -262,3 +264,5 @@ ArchGetPrettierFunctionName(const string &function,
     return function;
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

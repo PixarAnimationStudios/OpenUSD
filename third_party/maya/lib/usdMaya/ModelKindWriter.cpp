@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "ModelKindWriter.h"
 
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/kind/registry.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 PxrUsdMaya_ModelKindWriter::PxrUsdMaya_ModelKindWriter(
     const JobExportArgs& args)
@@ -46,7 +50,7 @@ PxrUsdMaya_ModelKindWriter::OnWritePrim(
     if (path.IsRootPrimPath()) {
         TfToken kind;
         UsdModelAPI(prim).GetKind(&kind);
-        if (_rootIsAssembly or KindRegistry::IsA(kind, KindTokens->assembly)) {
+        if (_rootIsAssembly || KindRegistry::IsA(kind, KindTokens->assembly)) {
             _pathsToExportedGprimsMap.emplace(path, std::vector<SdfPath>());
         }
     }
@@ -100,11 +104,11 @@ PxrUsdMaya_ModelKindWriter::MakeModelHierarchy(UsdStageRefPtr& stage)
     SdfPathBoolMap rootPrimIsComponent;
 
     // One pass through root prims to fill in root-kinds.
-    if (not _AuthorRootPrimKinds(stage, rootPrimIsComponent)) {
+    if (!_AuthorRootPrimKinds(stage, rootPrimIsComponent)) {
         return false;
     }
 
-    if (not _FixUpPrimKinds(stage, rootPrimIsComponent)) {
+    if (!_FixUpPrimKinds(stage, rootPrimIsComponent)) {
         return false;
     }
 
@@ -129,13 +133,13 @@ PxrUsdMaya_ModelKindWriter::_AuthorRootPrimKinds(
         // should cause an error.
         // An existing kind that derives from rootKind is acceptable, and will
         // be preserved.
-        if (not _args.rootKind.IsEmpty()) {
+        if (!_args.rootKind.IsEmpty()) {
             if (kind.IsEmpty()) {
                 // If no existing kind, author based on rootKind job arg.
                 kind = _args.rootKind;
                 usdRootModel.SetKind(kind);
             }
-            else if (not KindRegistry::IsA(kind, _args.rootKind)) {
+            else if (!KindRegistry::IsA(kind, _args.rootKind)) {
                 // If existing kind is not derived from rootKind, then error.
                 MString errorMsg = primPath.GetText();
                 errorMsg += " has kind '";
@@ -161,7 +165,7 @@ PxrUsdMaya_ModelKindWriter::_AuthorRootPrimKinds(
             usdRootModel.SetKind(kind);
         } else {
             // Verify kind based on hasExportedGprims.
-            if (hasExportedGprims and
+            if (hasExportedGprims &&
                     KindRegistry::IsA(kind, KindTokens->assembly)) {
                 MString errorMsg = primPath.GetText();
                 errorMsg += " has kind '";
@@ -200,14 +204,14 @@ PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
         // The kind of the root prim under which each reference was authored
         // informs how we will fix-up/fill-in kind on it and its ancestors.
         UsdPrim prim = stage->GetPrimAtPath(path);
-        if (not prim) {
+        if (!prim) {
             continue;
         }
         UsdModelAPI usdModel(prim);
         TfToken kind;
         
         // Nothing to fix if there's no resolved kind.
-        if (not usdModel.GetKind(&kind) or kind.IsEmpty()) {
+        if (!usdModel.GetKind(&kind) || kind.IsEmpty()) {
             continue;
         }
         
@@ -218,7 +222,7 @@ PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
         }
 
         auto iter = rootPrimIsComponent.find(ancestorPaths[0]);
-        if (iter != rootPrimIsComponent.end() and iter->second) {
+        if (iter != rootPrimIsComponent.end() && iter->second) {
             // Override any authored kind below the root to subcomponent
             // to avoid broken model-hierarchy.
             usdModel.SetKind(KindTokens->subcomponent);
@@ -227,13 +231,13 @@ PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
             // can do the authoring in batch Sdf API for efficiency.
             for (size_t i = 1; i < ancestorPaths.size(); ++i) {
                 UsdPrim ancestorPrim = stage->GetPrimAtPath(ancestorPaths[i]);
-                if (not ancestorPrim)
+                if (!ancestorPrim)
                     continue;
                 UsdModelAPI ancestorModel(ancestorPrim);
                 TfToken  kind;
                 
-                if (not usdModel.GetKind(&kind) or 
-                    not KindRegistry::IsA(kind, KindTokens->group)) {
+                if (!usdModel.GetKind(&kind) || 
+                    !KindRegistry::IsA(kind, KindTokens->group)) {
                     pathsToBeGroup.insert(ancestorPaths[i]);
                 }
             }
@@ -250,7 +254,7 @@ PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
 
         for (SdfPath const &path : pathsToBeGroup) {
             SdfPrimSpecHandle primSpec = SdfCreatePrimInLayer(layer, path);
-            if (not primSpec) {
+            if (!primSpec) {
                 MGlobal::displayError("Failed to create primSpec for setting "
                         "kind at path:" + MString(path.GetText()));
             }
@@ -270,3 +274,6 @@ PxrUsdMaya_ModelKindWriter::Reset()
     _pathsToExportedGprimsMap.clear();
     _pathsWithExportedGprims.clear();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

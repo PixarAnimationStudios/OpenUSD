@@ -24,6 +24,7 @@
 ///
 /// LayerOffset.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/base/gf/math.h"
 
@@ -37,6 +38,8 @@
 #include <vector>
 
 #define EPSILON (1e-6)
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<SdfLayerOffset>();
@@ -63,7 +66,7 @@ SdfLayerOffset::SdfLayerOffset(double offset, double scale) :
 bool
 SdfLayerOffset::IsValid() const
 {
-    return std::isfinite(_offset) and std::isfinite(_scale);
+    return std::isfinite(_offset) && std::isfinite(_scale);
 }
 
 SdfLayerOffset SdfLayerOffset::GetInverse() const
@@ -98,18 +101,18 @@ bool
 SdfLayerOffset::operator==(const SdfLayerOffset &rhs) const
 {
     // Use EPSILON so that 0 == -0, for example.
-    return (not IsValid() and not rhs.IsValid()) or
-           (GfIsClose(_offset, rhs._offset, EPSILON) and
+    return (!IsValid() && !rhs.IsValid()) ||
+           (GfIsClose(_offset, rhs._offset, EPSILON) &&
             GfIsClose(_scale, rhs._scale, EPSILON));
 }
 
 bool
 SdfLayerOffset::operator<(const SdfLayerOffset &rhs) const
 {
-    if (not IsValid()) {
+    if (!IsValid()) {
         return false;
     }
-    if (not rhs.IsValid()) {
+    if (!rhs.IsValid()) {
         return true;
     }
     if (GfIsClose(_scale, rhs._scale, EPSILON)) {
@@ -141,3 +144,5 @@ std::ostream & operator<<( std::ostream &out,
         << layerOffset.GetOffset() << ", "
         << layerOffset.GetScale() << ")";
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

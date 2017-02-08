@@ -26,6 +26,7 @@
 
 /// \file sdf/pyListProxy.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/listProxy.h"
 #include "pxr/base/arch/demangle.h"
@@ -36,6 +37,8 @@
 #include <stdexcept>
 #include <boost/python.hpp>
 #include <boost/python/slice.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class T>
 class SdfPyWrapListProxy {
@@ -257,4 +260,6 @@ private:
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PYLISTPROXY_H

@@ -13,7 +13,7 @@ pxr_shared_library(usd
         vt
         work
         ${Boost_PYTHON_LIBRARY}
-        ${TBB_LIBRARY}
+        ${TBB_LIBRARIES}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
@@ -49,6 +49,7 @@ pxr_shared_library(usd
         stage
         stageCache
         stageCacheContext
+        stagePopulationMask
         timeCode
         tokens
         treeIterator
@@ -101,6 +102,7 @@ pxr_shared_library(usd
         wrapStage.cpp
         wrapStageCache.cpp
         wrapStageCacheContext.cpp
+        wrapStagePopulationMask.cpp
         wrapTimeCode.cpp
         wrapTreeIterator.cpp
         wrapTyped.cpp

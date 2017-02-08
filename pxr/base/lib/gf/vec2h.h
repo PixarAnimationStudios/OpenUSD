@@ -31,6 +31,7 @@
 /// \file gf/vec2h.h
 /// \ingroup group_gf_LinearAlgebra
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -43,6 +44,8 @@
 #include <cmath>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <>
 struct GfIsGfVec<class GfVec2h> { static const bool value = true; };
@@ -148,7 +151,7 @@ public:
 
     /// Equality comparison.
     bool operator==(GfVec2h const &other) const {
-        return _data[0] == other[0] and
+        return _data[0] == other[0] &&
                _data[1] == other[1];
     }
     bool operator!=(GfVec2h const &other) const {
@@ -277,9 +280,33 @@ private:
 /// \ingroup group_gf_DebuggingOutput
 std::ostream& operator<<(std::ostream &, GfVec2h const &);
 
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2i.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+inline
+GfVec2h::GfVec2h(class GfVec2d const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+}
+inline
+GfVec2h::GfVec2h(class GfVec2f const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+}
+inline
+GfVec2h::GfVec2h(class GfVec2i const &other)
+{
+    _data[0] = other[0];
+    _data[1] = other[1];
+}
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
 inline GfVec2h
@@ -362,4 +389,6 @@ GfIsClose(GfVec2h const &v1, GfVec2h const &v2, double tolerance)
 
  
  
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // GF_VEC2H_H

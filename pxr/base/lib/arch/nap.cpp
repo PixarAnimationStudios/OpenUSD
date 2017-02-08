@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_WINDOWS)
@@ -32,6 +34,8 @@
 #else
 #error Unknown architecture.
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 ArchNap(size_t hundredths)
@@ -50,10 +54,10 @@ ArchNap(size_t hundredths)
     // Note: neither tv_sec and tv_nsec can be negative,
     // because hundredths is unsigned and tv_nsec is big enough to avoid
     // overflow if hundredths == 99.
-    
+
     if (rec.tv_sec == 0 && rec.tv_nsec == 0) {
-	rec.tv_sec = 0;
-	rec.tv_nsec = 1;
+        rec.tv_sec = 0;
+        rec.tv_nsec = 1;
     }
     nanosleep(&rec, 0);
 #else
@@ -72,3 +76,18 @@ ArchThreadYield()
 #error Unknown architecture.
 #endif
 }
+
+void
+ArchThreadPause()
+{
+#if defined (ARCH_CPU_INTEL) && (defined(ARCH_COMPILER_GCC) || \
+                                 defined(ARCH_COMPILER_CLANG))
+    __asm__ __volatile__ ("pause");
+#elif defined(ARCH_OS_WINDOWS)
+    YieldProcessor();
+#else
+#warning Unknown architecture. Pause instruction skipped.
+#endif
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

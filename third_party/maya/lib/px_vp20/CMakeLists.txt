@@ -4,6 +4,7 @@ pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
 	garch
         gf
+        glf
         ${MAYA_OpenMaya_LIBRARY}
         ${MAYA_OpenMayaUI_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}

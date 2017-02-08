@@ -31,6 +31,9 @@
 #include <cstring>
 #include <cassert>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // sample neighbor pixels and populate around blocks
 void
 GlfPtexMipmapTextureLoader::Block::guttering(
@@ -44,7 +47,7 @@ GlfPtexMipmapTextureLoader::Block::guttering(
     unsigned char * lineBuffer = new unsigned char[lineBufferSize];
 
     for (int edge = 0; edge < 4; edge++) {
-        int len = (edge == 0 or edge == 2) ? wid : hei;
+        int len = (edge == 0 || edge == 2) ? wid : hei;
         loader->sampleNeighbor(lineBuffer, this->index, edge, len, bpp);
 
         unsigned char *s = lineBuffer, *d;
@@ -174,11 +177,11 @@ GlfPtexMipmapTextureLoader::Block::Generate(
     // instead of nothing.
     limit = std::min(std::min(limit, ulog2_), vlog2_);
 
-    while (ulog2_ >= limit and vlog2_ >= limit
-           and (maxLevels == -1 or level <= maxLevels)) {
+    while (ulog2_ >= limit && vlog2_ >= limit
+           && (maxLevels == -1 || level <= maxLevels)) {
         if (level % 2 == 1)
             uofs += (1<<(ulog2_+1))+2;
-        if ((level > 0) and (level % 2 == 0))
+        if ((level > 0) && (level % 2 == 0))
             vofs += (1<<(vlog2_+1)) + 2;
 
         unsigned char *dst = destination + vofs * stride + uofs * bpp;
@@ -230,7 +233,7 @@ struct GlfPtexMipmapTextureLoader::Page
 
         // returns true if a block can fit in this slot
         bool Fits(const Block *block) {
-            return (block->width <= width) and (block->height <= height);
+            return (block->width <= width) && (block->height <= height);
         }
     };
 
@@ -376,8 +379,8 @@ public:
                 _currentFace = _ptex->getFaceInfo(_currentFace).adjface(2);
                 _currentEdge = 1;
                 _mid = false;
-            } else if (info.isSubface() and
-                (not _ptex->getFaceInfo(_currentFace).isSubface()) and
+            } else if (info.isSubface() && 
+                (!_ptex->getFaceInfo(_currentFace).isSubface()) &&
                 _currentEdge == 3) {
                 _mid = true;
                 _currentEdge = info.adjedge(_currentEdge);
@@ -406,8 +409,8 @@ public:
             }
         }
         Ptex::FaceInfo nextFaceInfo = _ptex->getFaceInfo(_currentFace);
-        if ((not _clockWise) and
-            (not info.isSubface()) and (nextFaceInfo.isSubface())) {
+        if ((!_clockWise) && 
+            (!info.isSubface()) && (nextFaceInfo.isSubface())) {
              // needs tricky traverse for boundary subface...
              if (_currentEdge == 3) {
                  _currentFace = nextFaceInfo.adjface(2);
@@ -681,7 +684,7 @@ GlfPtexMipmapTextureLoader::getCornerPixel(float *resultPixel, int numchannels,
           +------+-------+
         */
         int adjface = fi.adjface(edge);
-        if (adjface != -1 and !_ptex->getFaceInfo(adjface).isSubface()) {
+        if (adjface != -1 && !_ptex->getFaceInfo(adjface).isSubface()) {
             int adjedge = fi.adjedge(edge);
 
             Ptex::Res res(std::min((int)_blocks[adjface].ulog2, reslog2+1),
@@ -723,7 +726,7 @@ GlfPtexMipmapTextureLoader::getCornerPixel(float *resultPixel, int numchannels,
                    but the edge 0 is an adjacent edge to get D pixel.
         */
         int adjface = fi.adjface(0);
-        if (adjface != -1 and !_ptex->getFaceInfo(adjface).isSubface()) {
+        if (adjface != -1 && !_ptex->getFaceInfo(adjface).isSubface()) {
             int adjedge = fi.adjedge(0);
             Ptex::Res res(std::min((int)_blocks[adjface].ulog2, reslog2+1),
                           std::min((int)_blocks[adjface].vlog2, reslog2+1));
@@ -757,7 +760,7 @@ GlfPtexMipmapTextureLoader::getCornerPixel(float *resultPixel, int numchannels,
     // iterate faces around the vertex
     int numFaces = 0;
     CornerIterator it(_ptex, face, edge, reslog2);
-    for (; not it.IsDone(); it.Next(), ++numFaces) {
+    for (; !it.IsDone(); it.Next(), ++numFaces) {
         it.GetPixel(pixel);
 
         // accumulate pixel value
@@ -770,7 +773,7 @@ GlfPtexMipmapTextureLoader::getCornerPixel(float *resultPixel, int numchannels,
         }
     }
     // if regular corner, returns diagonal pixel without averaging
-    if (numFaces == 4 and (not it.IsBoundary())) {
+    if (numFaces == 4 && (!it.IsBoundary())) {
         return true;
     }
 
@@ -794,7 +797,7 @@ GlfPtexMipmapTextureLoader::getLevelDiff(int face, int edge)
 
     int maxDiff = 0;
     CornerIterator it(_ptex, face, edge, baseRes);
-    for (; not it.IsDone(); it.Next()) {
+    for (; !it.IsDone(); it.Next()) {
         int res = _blocks[it.GetCurrentFace()].ulog2;
         if (it.IsSubface()) ++res;
         maxDiff = std::max(maxDiff, baseRes - res);
@@ -821,12 +824,12 @@ GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
     blocks.sort(Block::sort);
 
     // try to fit into the target memory size if specified
-    if (targetMemory != 0 and _bpp * numTexels > targetMemory) {
+    if (targetMemory != 0 && _bpp * numTexels > targetMemory) {
         size_t numTargetTexels = targetMemory / _bpp;
         while (numTexels > numTargetTexels) {
             Block *block = blocks.front();
 
-            if (block->ulog2 < 2 or block->vlog2 < 2) break;
+            if (block->ulog2 < 2 || block->vlog2 < 2) break;
 
             // pick a smaller mipmap
             numTexels -= block->GetNumTexels();
@@ -901,7 +904,7 @@ GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
         }
 
         // adjust the page flag to the first page with open slots
-        if (_pages.size() > (firstslot+1) and
+        if (_pages.size() > (firstslot+1) && 
             _pages[firstslot+1]->IsFull()) ++firstslot;
     }
 
@@ -993,3 +996,6 @@ GlfPtexMipmapTextureLoader::generateBuffers()
     fclose(fp);
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

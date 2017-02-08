@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -28,6 +29,8 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include <iostream>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(Node);
 
@@ -148,10 +151,10 @@ static void TestNullptrComparisons()
     NodeRefPtr p;
 
     TF_AXIOM(p == nullptr);
-    TF_AXIOM(not (p != nullptr));
-    TF_AXIOM(not (p < nullptr));
+    TF_AXIOM(!(p != nullptr));
+    TF_AXIOM(!(p < nullptr));
     TF_AXIOM(p <= nullptr);
-    TF_AXIOM(not (p > nullptr));
+    TF_AXIOM(!(p > nullptr));
     TF_AXIOM(p >= nullptr);
 
     // These should be exactly the same as the above comparisons to nullptr,

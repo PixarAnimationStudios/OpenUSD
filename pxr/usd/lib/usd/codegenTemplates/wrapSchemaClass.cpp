@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "{{ libraryPath }}/{{ cls.GetHeaderFile() }}"
-
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -38,6 +37,8 @@
 #include <string>
 
 using namespace boost::python;
+
+{{ namespaceOpen }}
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -109,6 +110,8 @@ void wrap{{ cls.cppClassName }}()
     _CustomWrapCode(cls);
 }
 
+{{ namespaceClose }}
+
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
 // the code generator.  The entry point for your custom code should look
@@ -121,6 +124,10 @@ void wrap{{ cls.cppClassName }}()
 // }
 //
 // Of course any other ancillary or support code may be provided.
+// 
+// Just remember to wrap code in the appropriate delimiters:
+// '{{ namespaceOpen }}', '{{ namespaceClose }}'.
+//
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 

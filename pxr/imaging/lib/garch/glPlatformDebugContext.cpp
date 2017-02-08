@@ -28,6 +28,8 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/arch/defines.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 /* static */
 bool
 GarchGLPlatformDebugContext::IsEnabledDebugOutput()
@@ -46,6 +48,7 @@ GarchGLPlatformDebugContext::IsEnabledCoreProfile()
     return isEnabledCoreProfile;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 ////////////////////////////////////////////////////////////
 #if defined(ARCH_OS_LINUX)
@@ -53,6 +56,8 @@ GarchGLPlatformDebugContext::IsEnabledCoreProfile()
 #include <GL/glx.h>
 #include <GL/glxtokens.h>
 #include <X11/Xlib.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GarchGLPlatformDebugContextPrivate {
 public:
@@ -88,7 +93,7 @@ GarchGLPlatformDebugContextPrivate::GarchGLPlatformDebugContextPrivate(
     GLXFBConfig *configs = NULL;
     int configCount = 0;
     configs = glXChooseFBConfig(shareDisplay, screen, configSpec, &configCount);
-    if (not TF_VERIFY(configCount > 0)) {
+    if (!TF_VERIFY(configCount > 0)) {
         return;
     }
 
@@ -121,7 +126,7 @@ GarchGLPlatformDebugContextPrivate::GarchGLPlatformDebugContextPrivate(
         _ctx = glXCreateContext(shareDisplay, vis,
                                 shareContext, directRendering);
     }
-    if (not TF_VERIFY(_ctx)) {
+    if (!TF_VERIFY(_ctx)) {
         return;
     }
 
@@ -130,7 +135,7 @@ GarchGLPlatformDebugContextPrivate::GarchGLPlatformDebugContextPrivate(
 
 GarchGLPlatformDebugContextPrivate::~GarchGLPlatformDebugContextPrivate()
 {
-    if (_dpy and _ctx) {
+    if (_dpy && _ctx) {
         glXDestroyContext(_dpy, _ctx);
     }
 }
@@ -146,11 +151,15 @@ void *GarchSelectCoreProfileMacVisual()
     return nullptr;
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // ARCH_OS_LINUX
 
 ////////////////////////////////////////////////////////////
 
 #if defined(ARCH_OS_DARWIN)
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // XXX: implement debug context
 class GarchGLPlatformDebugContextPrivate {
@@ -165,12 +174,16 @@ public:
 
 void *GarchSelectCoreProfileMacVisual();  // extern obj-c
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // ARCH_OS_DARWIN
 
 
 ////////////////////////////////////////////////////////////
 
 #if defined(ARCH_OS_WINDOWS)
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // XXX: implement debug context
 class GarchGLPlatformDebugContextPrivate {
@@ -188,10 +201,13 @@ void *GarchSelectCoreProfileMacVisual()
     return nullptr;
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif // ARCH_OS_WINDOWS
 
 ////////////////////////////////////////////////////////////
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 GarchGLPlatformDebugContext::GarchGLPlatformDebugContext(int majorVersion,
                                                        int minorVersion,
@@ -201,7 +217,7 @@ GarchGLPlatformDebugContext::GarchGLPlatformDebugContext(int majorVersion,
     , _coreProfile(coreProfile)
 
 {
-    if (not GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
+    if (!GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }
     _private.reset(new GarchGLPlatformDebugContextPrivate(majorVersion,
@@ -220,11 +236,11 @@ void
 GarchGLPlatformDebugContext::makeCurrent()
 {
     // note: if not enabled, returns without making context current.
-    if (not GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
+    if (!GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
         return;
     }
 
-    if (not TF_VERIFY(_private)) {
+    if (!TF_VERIFY(_private)) {
         return;
     }
 
@@ -234,7 +250,7 @@ GarchGLPlatformDebugContext::makeCurrent()
 void*
 GarchGLPlatformDebugContext::chooseMacVisual()
 {
-    if (_coreProfile or
+    if (_coreProfile ||
         GarchGLPlatformDebugContext::IsEnabledCoreProfile()) {
         return GarchSelectCoreProfileMacVisual();
     } else {
@@ -242,3 +258,6 @@ GarchGLPlatformDebugContext::chooseMacVisual()
     }
     return nullptr;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -21,7 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/plug/testPlugBase.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // This plugin is coded correctly, but will be incomplete
 // because it won't have a plugInfo.json
@@ -50,3 +54,5 @@ TF_REGISTRY_FUNCTION(TfType)
         .SetFactory<_TestPlugFactory<TestPlugIncomplete> >()
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

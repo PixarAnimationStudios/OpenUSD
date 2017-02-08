@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/clip.h"
 
 #include "pxr/usd/ar/resolver.h"
@@ -46,6 +47,9 @@
 // XXX: Work around GCC 4.8's inability to see that we're using
 //      boost::optional safely.  See GCC bug 47679.
 #include "pxr/base/arch/defines.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #if ARCH_COMPILER_GCC_MAJOR == 4 && ARCH_COMPILER_GCC_MINOR == 8
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
@@ -491,7 +495,7 @@ Usd_Clip::Usd_Clip(
 { 
     // Sort the time mappings and add sentinel values to the beginning and
     // end for convenience in other functions.
-    if (not times.empty()) {
+    if (!times.empty()) {
         std::sort(times.begin(), times.end(), Usd_SortByExternalTime());
         times.insert(times.begin(), times.front());
         times.insert(times.end(), times.back());
@@ -548,8 +552,8 @@ _GetBracketingTimeSegment(
     }
 
     TF_VERIFY(*m1 < *m2);
-    TF_VERIFY(0 <= *m1 and *m1 < times.size());
-    TF_VERIFY(0 <= *m2 and *m2 < times.size());
+    TF_VERIFY(0 <= *m1 && *m1 < times.size());
+    TF_VERIFY(0 <= *m2 && *m2 < times.size());
     
     return true;
 }
@@ -561,7 +565,7 @@ _GetBracketingTimeSegment(
     Usd_Clip::TimeMapping* m1, Usd_Clip::TimeMapping* m2)
 {
     size_t index1, index2;
-    if (not _GetBracketingTimeSegment(times, time, &index1, &index2)) {
+    if (!_GetBracketingTimeSegment(times, time, &index1, &index2)) {
         return false;
     }
 
@@ -580,7 +584,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     const InternalTime timeInClip = _TranslateTimeToInternal(time);
 
     InternalTime lowerInClip, upperInClip;
-    if (not clip->GetBracketingTimeSamplesForPath(
+    if (!clip->GetBracketingTimeSamplesForPath(
             idInClip.id, timeInClip, &lowerInClip, &upperInClip)) { 
         return false;
     }
@@ -622,7 +626,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     // s2, since s2 is in the range of (m2, m3), we use those mappings to map
     // s2 to e2. So, our final answer is (e1, e2).
     size_t m1, m2;
-    if (not _GetBracketingTimeSegment(times, time, &m1, &m2)) {
+    if (!_GetBracketingTimeSegment(times, time, &m1, &m2)) {
         *tLower = lowerInClip;
         *tUpper = upperInClip;
         return true;
@@ -640,7 +644,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         const double lower = std::min(map1.internalTime, map2.internalTime);
         const double upper = std::max(map1.internalTime, map2.internalTime);
 
-        if (lower <= timeInClip and timeInClip <= upper) {
+        if (lower <= timeInClip && timeInClip <= upper) {
             if (map1.internalTime != map2.internalTime) {
                 translated.reset(
                     this->_TranslateTimeToExternal(timeInClip, map1, map2));
@@ -662,21 +666,21 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         return static_cast<bool>(translated);
     };
 
-    for (int i1 = m1, i2 = m2; i1 >= 0 and i2 >= 0; --i1, --i2) {
+    for (int i1 = m1, i2 = m2; i1 >= 0 && i2 >= 0; --i1, --i2) {
          if (_CanTranslate(times[i1], times[i2], /*lower=*/true)) { break; }
     }
         
-    for (size_t i1 = m1, i2 = m2, sz = times.size(); i1 < sz and i2 < sz; ++i1, ++i2) {
+    for (size_t i1 = m1, i2 = m2, sz = times.size(); i1 < sz && i2 < sz; ++i1, ++i2) {
          if (_CanTranslate(times[i1], times[i2], /*lower=*/false)) { break; }
     }
 
-    if (translatedLower and not translatedUpper) {
+    if (translatedLower && !translatedUpper) {
         translatedUpper = translatedLower;
     }
-    else if (not translatedLower and translatedUpper) {
+    else if (!translatedLower && translatedUpper) {
         translatedLower = translatedUpper;
     }
-    else if (not translatedLower and not translatedUpper) {
+    else if (!translatedLower && !translatedUpper) {
         // If we haven't been able to translate either internal time, it's
         // because they are outside the range of the clip time mappings. We
         // clamp them to the nearest external time to match the behavior of
@@ -738,7 +742,7 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
             const TimeMapping& m1 = times[i];
             const TimeMapping& m2 = times[i+1];
 
-            if (m1.internalTime <= t and t <= m2.internalTime) {
+            if (m1.internalTime <= t && t <= m2.internalTime) {
                 if (m1.internalTime == m2.internalTime) {
                     timeSamples.insert(m1.externalTime);
                     timeSamples.insert(m2.externalTime);
@@ -840,6 +844,12 @@ Usd_Clip::GetPropertyAtPath(const SdfAbstractDataSpecId &id) const
     return _GetLayerForClip()->GetPropertyAtPath(path);
 }
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (dummy_clip)
+    ((dummy_clipFormat, "dummy_clip.%s"))
+    );
+
 SdfLayerRefPtr
 Usd_Clip::_GetLayerForClip() const
 {
@@ -859,7 +869,7 @@ Usd_Clip::_GetLayerForClip() const
             &resolvedPath);
     }
 
-    if (not layer) {
+    if (!layer) {
         // If we failed to open the specified layer, report an error
         // and use a dummy anonymous layer instead, to avoid having
         // to check layer validity everywhere and to avoid reissuing
@@ -868,15 +878,30 @@ Usd_Clip::_GetLayerForClip() const
         TF_WARN("Unable to open clip layer @%s@", 
                 assetPath.GetAssetPath().c_str());
         layer = SdfLayer::CreateAnonymous(TfStringPrintf(
-                "dummy_clip.%s", UsdUsdaFileFormatTokens->Id.GetText()));
+                     _tokens->dummy_clipFormat.GetText(), 
+                     UsdUsdaFileFormatTokens->Id.GetText()));
     }
 
     std::lock_guard<std::mutex> lock(_layerMutex);
-    if (not _layer) { 
+    if (!_layer) { 
         _layer = layer;
         _hasLayer = true;
     }
 
     return _layer;
 }
+
+SdfLayerHandle
+Usd_Clip::GetLayerIfOpen() const
+{
+    if (_hasLayer){
+        return TfStringStartsWith(_layer->GetIdentifier(), 
+                                  _tokens->dummy_clip.GetString()) ?
+            SdfLayerHandle() : SdfLayerHandle(_layer);
+    }
+
+    return SdfLayerHandle();
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

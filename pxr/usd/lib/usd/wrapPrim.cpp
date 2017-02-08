@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/relationship.h"
@@ -35,6 +36,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/class.hpp>
@@ -42,6 +44,9 @@
 
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 using std::vector;
@@ -54,6 +59,19 @@ _GetPayload(const UsdPrim &self)
     SdfPayload result;
     self.GetPayload(&result);
     return result;
+}
+
+static SdfPathVector
+_FindAllRelationshipTargetPaths(
+    UsdPrim const &self,
+    boost::python::object pypred,
+    bool recurseOnTargets)
+{
+    using Predicate = std::function<bool (UsdRelationship const &)>;
+    Predicate pred;
+    if (pypred != boost::python::object())
+        pred = boost::python::extract<Predicate>(pypred);
+    return self.FindAllRelationshipTargetPaths(pred, recurseOnTargets);
 }
 
 static string
@@ -69,6 +87,9 @@ __repr__(const UsdPrim &self)
 
 void wrapUsdPrim()
 {
+    // Predicate signature for FindAllRelationshipTargetPaths().
+    TfPyFunctionFromPython<bool (UsdRelationship const &)>();
+
     class_<UsdPrim, bases<UsdObject> >("Prim")
         .def(Usd_ObjectSubclass())
         .def("__repr__", __repr__)
@@ -204,6 +225,9 @@ void wrapUsdPrim()
         .def("GetRelationship", &UsdPrim::GetRelationship, arg("relName"))
         .def("HasRelationship", &UsdPrim::HasRelationship, arg("relName"))
 
+        .def("FindAllRelationshipTargetPaths",
+             &_FindAllRelationshipTargetPaths,
+             (arg("predicate")=object(), arg("recurseOnTargets")=false))
 
         .def("HasPayload", &UsdPrim::HasPayload)
         .def("GetPayload", _GetPayload)
@@ -253,4 +277,7 @@ void wrapUsdPrim()
 }
 
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

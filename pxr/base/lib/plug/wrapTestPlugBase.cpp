@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/plug/testPlugBase.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/plug/testPlugBase.h"
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -30,6 +31,8 @@
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class T>
 void wrap_TestPlugBase(const std::string & name)
@@ -55,3 +58,5 @@ void wrap_TestPlugBase()
     wrap_TestPlugBase<_TestPlugBase3>("_TestPlugBase3");
     wrap_TestPlugBase<_TestPlugBase4>("_TestPlugBase4");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

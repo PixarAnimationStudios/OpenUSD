@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usdRi/rmanUtilities.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 int
 UsdRiConvertToRManInterpolateBoundary(TfToken const& token)
@@ -61,21 +65,21 @@ int
 UsdRiConvertToRManFaceVaryingLinearInterpolation(TfToken const& token)
 { 
     if(token == UsdGeomTokens->bilinear 
-       or token == UsdGeomTokens->all) {
+       || token == UsdGeomTokens->all) {
         return 0;
     }
     else if(token == UsdGeomTokens->edgeAndCorner 
-            or token == UsdGeomTokens->cornersOnly
-            or token == UsdGeomTokens->cornersPlus1
-            or token == UsdGeomTokens->cornersPlus2) {
+            || token == UsdGeomTokens->cornersOnly
+            || token == UsdGeomTokens->cornersPlus1
+            || token == UsdGeomTokens->cornersPlus2) {
         return 1;
     }
     else if(token == UsdGeomTokens->edgeOnly
-            or token == UsdGeomTokens->none) {
+            || token == UsdGeomTokens->none) {
         return 2;
     }
     else if(token == UsdGeomTokens->alwaysSharp
-            or token == UsdGeomTokens->boundaries) {
+            || token == UsdGeomTokens->boundaries) {
         return 3;
     }
 
@@ -103,4 +107,7 @@ UsdRiConvertFromRManFaceVaryingLinearInterpolation(int i)
         return UsdGeomTokens->none;
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

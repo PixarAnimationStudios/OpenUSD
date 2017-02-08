@@ -21,9 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/staticData.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_MAKE_STATIC_DATA((TfHashMap<int, int>), _emptyHashMap) {
     *_emptyHashMap = TfHashMap<int, int>(0);
@@ -43,3 +47,5 @@ Tf_GetEmptyHashSetBucketCount()
 {
     return _emptyHashSet->bucket_count();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

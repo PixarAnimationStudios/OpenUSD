@@ -21,12 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/treeIterator.h"
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/base/tf/diagnostic.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 UsdTreeIterator
 UsdTreeIterator::Stage(const UsdStagePtr &stage,
@@ -47,7 +51,7 @@ UsdTreeIterator::Stage(const UsdStagePtr &stage,
 void
 UsdTreeIterator::PruneChildren()
 {
-    if (not *this) {
+    if (!*this) {
         TF_CODING_ERROR("Iterator past-the-end");
         return;
     }
@@ -74,7 +78,7 @@ UsdTreeIterator::increment()
                 base = _end;
             }
         }
-    } else if (not _pruneChildrenFlag and
+    } else if (!_pruneChildrenFlag &&
                Usd_MoveToChild(base, _end, _predicate)) {
         ++_depth;
     } else {
@@ -93,3 +97,6 @@ UsdTreeIterator::increment()
         _pruneChildrenFlag = false;
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

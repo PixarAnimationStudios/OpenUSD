@@ -23,6 +23,7 @@
 #
 include(CXXHelpers)
 include(Version)
+include(Options)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
@@ -49,6 +50,10 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     _add_define(BUILD_OPTLEVEL_OPT)
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    _add_define(BUILD_OPTLEVEL_OPT)
+elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    _add_define(BUILD_OPTLEVEL_OPT)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
     _add_define(BUILD_OPTLEVEL_DEV)
 endif()
@@ -58,3 +63,21 @@ set(_PXR_CXX_FLAGS ${_PXR_CXX_FLAGS} ${_PXR_CXX_WARNING_FLAGS})
 # CMake list to string.
 string(REPLACE ";" " "  _PXR_CXX_FLAGS "${_PXR_CXX_FLAGS}")
 
+# Set namespace configuration.
+if (PXR_ENABLE_NAMESPACES)
+    set(PXR_USE_NAMESPACES "1")
+
+    if (PXR_SET_EXTERNAL_NAMESPACE)
+        set(PXR_EXTERNAL_NAMESPACE ${PXR_SET_EXTERNAL_NAMESPACE})
+    else()
+        set(PXR_EXTERNAL_NAMESPACE "pxr")
+    endif()
+
+    if (PXR_SET_INTERNAL_NAMESPACE)
+        set(PXR_INTERNAL_NAMESPACE ${PXR_SET_INTERNAL_NAMESPACE})
+    else()
+        set(PXR_INTERNAL_NAMESPACE "pxrInternal_v${PXR_MAJOR_VERSION}_${PXR_MINOR_VERSION}")
+    endif()
+else()
+    set(PXR_USE_NAMESPACES "0")
+endif()

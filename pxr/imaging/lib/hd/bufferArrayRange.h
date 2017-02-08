@@ -24,6 +24,7 @@
 #ifndef HD_BUFFER_ARRAY_RANGE_H
 #define HD_BUFFER_ARRAY_RANGE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
@@ -32,9 +33,12 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class HdBufferArray;
 
-typedef std::vector<class HdBufferSpec> HdBufferSpecVector;
+typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 
@@ -108,7 +112,7 @@ public:
 
     /// Returns true if the underlying buffer array is aggregated to other's
     bool IsAggregatedWith(HdBufferArrayRangeSharedPtr const &other) const {
-        return (other and (_GetAggregation() == other->_GetAggregation()));
+        return (other && (_GetAggregation() == other->_GetAggregation()));
     }
 
     /// Sets the bufferSpecs for all resources.
@@ -144,5 +148,8 @@ public:
 private:
     std::vector<HdBufferArrayRangeSharedPtr> _ranges;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_BUFFER_ARRAY_RANGE_H

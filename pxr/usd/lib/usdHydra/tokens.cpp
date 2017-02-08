@@ -23,4 +23,8 @@
 //
 #include "pxr/usd/usdHydra/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DEFINE_PUBLIC_TOKENS(UsdHydraTokens, USDHYDRA_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE

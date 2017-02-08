@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/rect2i.h"
 
 #include "pxr/base/gf/ostreamHelpers.h"
@@ -28,6 +30,8 @@
 #include "pxr/base/tf/type.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // CODE_COVERAGE_OFF_GCOV_BUG
 TF_REGISTRY_FUNCTION(TfType) {
@@ -67,3 +71,5 @@ operator<<(std::ostream& out, const GfRect2i& r)
     return out << '[' << Gf_OstreamHelperP(r.GetLower()) << ":" 
         << Gf_OstreamHelperP(r.GetHigher()) << ']';
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

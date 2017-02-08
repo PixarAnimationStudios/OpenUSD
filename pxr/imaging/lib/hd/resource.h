@@ -24,12 +24,16 @@
 #ifndef HD_RESOURCE_H
 #define HD_RESOURCE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdResource> HdResourceSharedPtr;
 
@@ -56,5 +60,8 @@ private:
     GLuint _id;
     GLsizeiptr _size;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_RESOURCE_H

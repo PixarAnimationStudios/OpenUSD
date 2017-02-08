@@ -26,10 +26,14 @@
 
 /// \file usd/interpolation.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/declare.h"
 
 #include <boost/preprocessor/seq/for_each.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \enum UsdInterpolationType
 ///
@@ -39,8 +43,8 @@
 ///
 enum UsdInterpolationType
 {
-    UsdInterpolationTypeHeld,  //< Held interpolation
-    UsdInterpolationTypeLinear //< Linear interpolation
+    UsdInterpolationTypeHeld,  ///< Held interpolation
+    UsdInterpolationTypeLinear ///< Linear interpolation
 };
 
 /// Sequence of value types that support linear interpolation.
@@ -110,5 +114,8 @@ BOOST_PP_SEQ_FOR_EACH(_USD_DECLARE_INTERPOLATION_TRAITS, ~,
 
 #undef _USD_DECLARE_INTERPOLATION_TRAITS
 /// \endcond
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_INTERPOLATION_H

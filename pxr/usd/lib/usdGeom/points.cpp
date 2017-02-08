@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -51,7 +53,7 @@ UsdGeomPoints::~UsdGeomPoints()
 UsdGeomPoints
 UsdGeomPoints::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomPoints();
     }
@@ -64,7 +66,7 @@ UsdGeomPoints::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("Points");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomPoints();
     }
@@ -160,11 +162,18 @@ UsdGeomPoints::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 UsdGeomPoints::ComputeExtent(const VtVec3fArray& points, 
@@ -195,3 +204,5 @@ UsdGeomPoints::ComputeExtent(const VtVec3fArray& points,
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/writeUtil.h"
 
 #include <maya/MFnDependencyNode.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 PxrUsdMayaPrimWriterArgs::PxrUsdMayaPrimWriterArgs(
         const MDagPath& dagPath,
@@ -91,4 +95,7 @@ PxrUsdMayaPrimWriterArgs::ReadAttribute(
             MFnDependencyNode(GetMObject()), 
             MString(name.c_str()), val);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

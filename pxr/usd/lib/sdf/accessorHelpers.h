@@ -26,6 +26,7 @@
 
 /// \file sdf/accessorHelpers.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
@@ -48,6 +49,8 @@
 // Also, please observe good form and #undef the symbols after instancing the
 // accessor macros.
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // "Helper" macros
 #define _GET_KEY_(key_)     key_
 #define SDF_NO_PREDICATE    true
@@ -56,8 +59,8 @@
     {                                                                          \
         typedef Sdf_AccessorHelpers<SDF_ACCESSOR_CLASS> _Helper;               \
         const VtValue& value = _Helper::GetField(this, key_);                  \
-        if (value.IsEmpty() or not value.IsHolding<heldType_>()) {             \
-            const SdfSchemaBase& schema = _Helper::GetSchema(this);                \
+        if (value.IsEmpty() || !value.IsHolding<heldType_>()) {                \
+            const SdfSchemaBase& schema = _Helper::GetSchema(this);            \
             return schema.GetFallback(_GET_KEY_(key_)).Get<heldType_>();       \
         }                                                                      \
         else {                                                                 \
@@ -83,7 +86,7 @@ SDF_ACCESSOR_CLASS::Get ## name_() const                                       \
 bool                                                                           \
 SDF_ACCESSOR_CLASS::Is ## name_() const                                        \
 {                                                                              \
-    if (not SDF_ACCESSOR_READ_PREDICATE(_GET_KEY_(key_))) {                    \
+    if (!SDF_ACCESSOR_READ_PREDICATE(_GET_KEY_(key_))) {                       \
         return false;                                                          \
     }                                                                          \
                                                                                \
@@ -248,5 +251,7 @@ struct Sdf_AccessorHelpers<T, false>
     static SdfSpecHandle GetSpecHandle(const T* spec)
     { return SdfCreateNonConstHandle(&(spec->_GetSpec())); }
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // #ifndef SDF_ACCESSORHELPERS_H

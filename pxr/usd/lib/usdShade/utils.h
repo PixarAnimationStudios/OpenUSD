@@ -24,8 +24,38 @@
 #ifndef USD_SHD_UTILS_H
 #define USD_SHD_UTILS_H
 
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/relationship.h"
+#include "pxr/pxr.h"
+#include <string>
+#include <utility>
+
+#include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+/// \enum UsdShadeAttributeType
+/// 
+/// Specifies the type of a shading attribute.
+/// 
+/// Pretty soon, we'll be adding "Input" to the list of source types and 
+/// deprecating "Parameter" and "InterfaceAttribute".
+/// 
+enum class UsdShadeAttributeType {
+    Parameter,
+    Output,
+    InterfaceAttribute
+};
+
+/// Returns the namespace prefix of the USD attribute associated with the given
+/// shading attribute type.
+std::string UsdShadeUtilsGetPrefixForAttributeType(
+    UsdShadeAttributeType sourceType);
+
+/// Given the full name of a shading property, returns it's base name and type.
+std::pair<TfToken, UsdShadeAttributeType> 
+    UsdShadeUtilsGetBaseNameAndType(const TfToken &fullName);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

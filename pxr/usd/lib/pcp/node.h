@@ -24,15 +24,17 @@
 #ifndef PCP_NODE_H
 #define PCP_NODE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/sdf/types.h"
-
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/hashset.h"
 
 #include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpArc;
 class PcpLayerStackSite;
@@ -43,7 +45,7 @@ class PcpNodeRef_ChildrenReverseIterator;
 
 TF_DECLARE_WEAK_PTRS(PcpPrimIndex_Graph);
 
-/// \class PcpNode
+/// \class PcpNodeRef
 ///
 /// PcpNode represents a node in an expression tree for compositing
 /// scene description.
@@ -76,12 +78,12 @@ public:
     /// Returns true if this is a valid node reference, false otherwise.
     typedef size_t PcpNodeRef::*UnspecifiedBoolType;
     inline operator UnspecifiedBoolType() const {
-        return (_graph and _nodeIdx != PCP_INVALID_INDEX) ? &PcpNodeRef::_nodeIdx : 0;
+        return (_graph && _nodeIdx != PCP_INVALID_INDEX) ? &PcpNodeRef::_nodeIdx : 0;
     }        
     
     /// Returns true if this references the same node as \p rhs.
     inline bool operator==(const PcpNodeRef& rhs) const {
-        return _nodeIdx == rhs._nodeIdx and _graph == rhs._graph;
+        return _nodeIdx == rhs._nodeIdx && _graph == rhs._graph;
     }
 
     /// Returns true if this node is 'less' than \p rhs. 
@@ -303,7 +305,7 @@ private:
     {
         // Note: The default constructed iterator is *not* equal to any
         //       other iterator.
-        return (_node == other._node and _index == other._index);
+        return (_node == other._node && _index == other._index);
     }
     reference dereference() const
     {
@@ -351,7 +353,7 @@ private:
     {
         // Note: The default constructed iterator is *not* equal to any
         //       other iterator.
-        return (_node == other._node and _index == other._index);
+        return (_node == other._node && _index == other._index);
     }
     reference dereference() const
     {
@@ -401,4 +403,6 @@ struct Tf_ShouldIterateOverCopy<PcpNodeRef::child_const_range> :
 // this method avoids constructing a new SdfPath value.
 int PcpNode_GetNonVariantPathElementCount(const SdfPath &path);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_NODE_H

@@ -24,11 +24,15 @@
 #ifndef USD_INTERPOLATORS_H
 #define USD_INTERPOLATORS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class SdfAbstractDataSpecId;
 class UsdAttribute;
@@ -226,10 +230,10 @@ private:
         // because the provided time samples should all have valid values.
         // So this call fails because our <T> is not an SdfValueBlock,
         // which is the type of the contained value.
-        if (not src->QueryTimeSample(specId, lower, &lowerValue)) {
+        if (!src->QueryTimeSample(specId, lower, &lowerValue)) {
             return false;
         } 
-        else if (not src->QueryTimeSample(specId, upper, &upperValue)) {
+        else if (!src->QueryTimeSample(specId, upper, &upperValue)) {
             upperValue = lowerValue; 
         }
 
@@ -243,7 +247,7 @@ private:
 };
 
 // Specialization to linearly interpolate each element for
-// shaped types.
+// array types.
 template <class T>
 class Usd_LinearInterpolator<VtArray<T> >
     : public Usd_InterpolatorBase
@@ -283,17 +287,17 @@ private:
         // because the provided time samples should all have valid values.
         // So this call fails because our <T> is not an SdfValueBlock,
         // which is the type of the contained value.
-        if (not src->QueryTimeSample(specId, lower, &lowerValue)) {
+        if (!src->QueryTimeSample(specId, lower, &lowerValue)) {
             return false;
         } 
-        else if (not src->QueryTimeSample(specId, upper, &upperValue)) {
+        else if (!src->QueryTimeSample(specId, upper, &upperValue)) {
             upperValue = lowerValue;
         }
 
         _result->swap(lowerValue);
 
         // Fall back to held interpolation (_result is set to lowerValue above)
-        // if shapes don't match. We don't consider this an error because
+        // if sizes don't match. We don't consider this an error because
         // that would be too restrictive. Consumers will be responsible for
         // implementing their own interpolation in cases where this occurs
         // (e.g. meshes with varying topology)
@@ -313,5 +317,8 @@ private:
 private:
     VtArray<T>* _result;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_INTERPOLATORS_H

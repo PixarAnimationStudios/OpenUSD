@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/gf/ray.h"
 
+#include "pxr/pxr.h"
+#include "pxr/base/gf/ray.h"
 #include "pxr/base/gf/line.h"
 #include "pxr/base/gf/lineSeg.h"
 #include "pxr/base/gf/math.h"
@@ -34,6 +35,8 @@
 #include "pxr/base/tf/type.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Tolerance for GfIsClose
 static const double tolerance = 1e-6;
@@ -403,7 +406,7 @@ GfRay::Intersect(const GfVec3d &origin,
     double b = 2.0 * (cos2 * GfDot(u, v) - sin2 * p * q);
     double c = cos2 * GfDot(v, v) - sin2 * GfSqr(q);
     
-    if (not _SolveQuadratic(a, b, c, enterDistance, exitDistance)) {
+    if (!_SolveQuadratic(a, b, c, enterDistance, exitDistance)) {
         return false;
     }
     
@@ -411,16 +414,16 @@ GfRay::Intersect(const GfVec3d &origin,
     bool enterValid = GfDot(unitAxis, GetPoint(*enterDistance) - apex) <= 0.0;
     bool exitValid = GfDot(unitAxis, GetPoint(*exitDistance) - apex) <= 0.0;
     
-    if ((not enterValid) and (not exitValid)) {
+    if ((!enterValid) && (!exitValid)) {
         
         // Solutions lie only on double cone
         return false;
     }
     
-    if (not enterValid) {
+    if (!enterValid) {
         *enterDistance = *exitDistance;
     }
-    else if (not exitValid) {
+    else if (!exitValid) {
         *exitDistance = *enterDistance;
     }
         
@@ -518,3 +521,5 @@ operator<<(std::ostream& out, const GfRay& r)
     return out << '[' << Gf_OstreamHelperP(r.GetStartPoint()) << " >> " 
                << Gf_OstreamHelperP(r.GetDirection()) << ']';
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

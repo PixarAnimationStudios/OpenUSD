@@ -26,6 +26,9 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON( Hd_RenderIndexManager );
 
 Hd_RenderIndexManager &
@@ -101,3 +104,6 @@ Hd_RenderIndexManager::ReleaseRenderIndex(HdRenderIndex *renderIndex)
         delete renderIndex;
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

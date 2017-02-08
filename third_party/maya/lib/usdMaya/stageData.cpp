@@ -21,11 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/stageData.h"
 
 #include "pxr/base/gf/bbox3d.h"
 
 #include <maya/MGlobal.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /* This exists solely to make sure that the usdStage instance
  * gets discarded when Maya exits, so that an temporary files
@@ -96,4 +100,7 @@ UsdMayaStageData::~UsdMayaStageData() {
     unregisterExitCallback();
 }
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

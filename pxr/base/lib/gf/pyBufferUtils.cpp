@@ -21,8 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/pyBufferUtils.h"
 #include "pxr/base/gf/half.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
@@ -60,3 +64,5 @@ template char *Gf_GetPyBufferFmtFor<unsigned long>();
 template char *Gf_GetPyBufferFmtFor<half>();
 template char *Gf_GetPyBufferFmtFor<float>();
 template char *Gf_GetPyBufferFmtFor<double>();
+
+PXR_NAMESPACE_CLOSE_SCOPE

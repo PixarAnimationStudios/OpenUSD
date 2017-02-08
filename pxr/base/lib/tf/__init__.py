@@ -149,4 +149,41 @@ def Fatal(msg):
     """Raise a fatal error to the Tf Diagnostic system."""
     codeInfo = GetCodeLocation(framesUp=1)
     _Fatal(msg, codeInfo[0], codeInfo[1], codeInfo[2], codeInfo[3])
-    
+
+
+class NamedTemporaryFile(object):
+    """A named temporary file which keeps the internal file handle closed. 
+       A class which constructs a temporary file(that isn't open) on __enter__,
+       provides its name as an attribute, and deletes it on __exit__. 
+       
+       Note: The constructor args for this object match those of 
+       python's tempfile.mkstemp() function, and will have the same effect on
+       the underlying file created."""
+
+    def __init__(self, suffix='', prefix='', dir=None, text=False):
+        # Note that we defer creation until the enter block to 
+        # prevent users from unintentionally creating a bunch of
+        # temp files that don't get cleaned up.
+        self._args = (suffix,  prefix, dir, text)
+
+    def __enter__(self):
+        from tempfile import mkstemp
+        from os import close
+        
+        fd, path = mkstemp(*self._args)
+        close(fd) 
+
+        # XXX: We currently only expose the name attribute
+        # more can be added based on client needs in the future.
+        self._name = path
+
+        return self
+
+    def __exit__(self, *args):
+        import os
+        os.remove(self.name)
+
+    @property
+    def name(self):
+        """The path for the temporary file created.""" 
+        return self._name

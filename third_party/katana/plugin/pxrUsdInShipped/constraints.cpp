@@ -23,6 +23,7 @@
 //
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readConstraintTarget.h"
 #include "usdKatana/usdInPrivateData.h"
@@ -30,6 +31,8 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/property.h"
 #include "pxr/usd/usdGeom/constraintTarget.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_ConstraintsOp, privateData, interface)
 {

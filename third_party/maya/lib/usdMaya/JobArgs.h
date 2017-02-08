@@ -26,10 +26,14 @@
 
 /// \file JobArgs.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define PXRUSDMAYA_TRANSLATOR_TOKENS \
     ((UsdFileExtensionDefault, "usd")) \
@@ -113,5 +117,8 @@ struct JobImportArgs
     bool importWithProxyShapes;
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_JOBARGS_H

@@ -21,22 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/base/arch/mallocHook.h"
-#include "pxr/base/arch/defines.h"
-#include "pxr/base/arch/attributes.h"
 
-#include <dlfcn.h>
-#include <string.h>
+#include "pxr/pxr.h"
+#include "pxr/base/arch/mallocHook.h"
+#include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/env.h"
+
+#if !defined(ARCH_OS_WINDOWS)
+#   include <dlfcn.h>
+#endif
+#include <cstring>
 
 #if defined(ARCH_OS_DARWIN)
-#include <sys/malloc.h>
+#   include <sys/malloc.h>
 #else
-#include <malloc.h>
+#   include <malloc.h>
 #endif /* defined(ARCH_OS_DARWIN) */
 
-#if not defined(__MALLOC_HOOK_VOLATILE)
-#define __MALLOC_HOOK_VOLATILE
-#endif /* not defined(__MALLOC_HOOK_VOLATILE) */
+#if !defined(__MALLOC_HOOK_VOLATILE)
+#   define __MALLOC_HOOK_VOLATILE
+#endif /* !defined(__MALLOC_HOOK_VOLATILE) */
 
 using std::string;
 
@@ -49,6 +54,8 @@ extern void* (*__MALLOC_HOOK_VOLATILE __malloc_hook)(size_t __size,  const void*
 extern void* (*__MALLOC_HOOK_VOLATILE __realloc_hook)(void* __ptr, size_t __size, const void*);
 extern void* (*__MALLOC_HOOK_VOLATILE __memalign_hook)(size_t __alignment, size_t __size, const void*);
 extern void (*__MALLOC_HOOK_VOLATILE __free_hook)(void* __ptr,  const void*);
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /*
  * ArchMallocHook requires allocators to provide some specific functionality
@@ -81,59 +88,63 @@ static bool
 _MallocProvidedBySameLibraryAs(const char* functionName,
                                bool skipMallocCheck)
 {
+#if !defined(ARCH_OS_WINDOWS)
     const void* function = dlsym(RTLD_DEFAULT, functionName);
     if (!function) {
         return false;
     }
 
     Dl_info functionInfo, mallocInfo;
-    if (!dladdr(function, &functionInfo) or
+    if (!dladdr(function, &functionInfo) || 
         !dladdr((void *)malloc, &mallocInfo)) {
         return false;
     }
 
     return (skipMallocCheck || mallocInfo.dli_fbase == functionInfo.dli_fbase);
+#else
+    return false;
+#endif
 }
 
 static inline bool
-_CheckMallocTagImpl(const char* impl, const char* libname)
+_CheckMallocTagImpl(const std::string& impl, const char* libname)
 {
-    return (impl                                    == 0 ||
-            strcmp (impl, "auto")                   == 0 ||
-            strcmp (impl, "agnostic")               == 0 ||
-            strncmp(impl, libname, strlen(libname)) == 0);
+    return (impl.empty()       ||
+            impl == "auto"     ||
+            impl == "agnostic" ||
+            std::strncmp(impl.c_str(), libname, strlen(libname)) == 0);
 }
 
 bool
 ArchIsPxmallocActive()
 {
-    const char* impl = getenv("TF_MALLOC_TAG_IMPL");
+    const std::string impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
     if (!_CheckMallocTagImpl(impl, "pxmalloc")) {
         return false;
     }
-    bool skipMallocCheck = (impl && (strcmp(impl, "pxmalloc force") == 0));
+    bool skipMallocCheck = (impl == "pxmalloc force");
     return _MallocProvidedBySameLibraryAs("__pxmalloc_malloc", skipMallocCheck);
 }
 
 bool
 ArchIsPtmallocActive()
 {
-    const char* impl = getenv("TF_MALLOC_TAG_IMPL");
+    const std::string impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
     if (!_CheckMallocTagImpl(impl, "ptmalloc")) {
         return false;
     }
-    bool skipMallocCheck = (impl && (strcmp(impl, "ptmalloc force") == 0));
+    bool skipMallocCheck = (impl == "ptmalloc force");
     return _MallocProvidedBySameLibraryAs("__ptmalloc3_malloc", skipMallocCheck);
 }
 
 bool
 ArchIsJemallocActive()
 {
-    const char* impl = getenv("TF_MALLOC_TAG_IMPL");
+    const std::string impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
     if (!_CheckMallocTagImpl(impl, "jemalloc")) {
         return false;
     }
-    bool skipMallocCheck = (impl && (strcmp(impl, "jemalloc force") == 0));
+    bool skipMallocCheck = (impl == "jemalloc force");
     return _MallocProvidedBySameLibraryAs("__jemalloc_malloc", skipMallocCheck);
 }
 
@@ -152,7 +163,7 @@ ArchIsStlAllocatorOff()
      * isn't, it's just a preference, not behavior that has to correct
      * to avoid a crash.
      */
-    static bool isOff = bool(getenv("GLIBCXX_FORCE_NEW"));
+    static bool isOff = ArchHasEnv("GLIBCXX_FORCE_NEW");
     return isOff;
 #else
     return false;
@@ -163,19 +174,19 @@ bool
 ArchMallocHook::IsInitialized()
 {
     return _underlyingMallocFunc || _underlyingReallocFunc ||
-	   _underlyingMemalignFunc || _underlyingFreeFunc;
+       _underlyingMemalignFunc || _underlyingFreeFunc;
 }
 
 #if defined(ARCH_OS_LINUX)
 template <typename T>
 static bool _GetSymbol(T* addr, const char* name, string* errMsg) {
     if (void* symbol = dlsym(RTLD_DEFAULT, name)) {
-	*addr = (T) symbol;
-	return true;
+        *addr = (T) symbol;
+        return true;
     }
     else {
-	*errMsg = "lookup for symbol '" + string(name) + "' failed";
-	return false;
+        *errMsg = "lookup for symbol '" + string(name) + "' failed";
+        return false;
     }
 }
 #endif
@@ -183,8 +194,8 @@ static bool _GetSymbol(T* addr, const char* name, string* errMsg) {
 static bool
 _MallocHookAvailable()
 {
-    return (ArchIsPxmallocActive() or
-            ArchIsPtmallocActive() or
+    return (ArchIsPxmallocActive() ||
+            ArchIsPtmallocActive() ||
             ArchIsJemallocActive());
 }
 
@@ -235,8 +246,8 @@ ArchMallocHook::Initialize(
     return false;
 #else
     if (IsInitialized()) {
-	*errMsg = "ArchMallocHook already initialized";
-	return false;
+        *errMsg = "ArchMallocHook already initialized";
+        return false;
     }
 
     if (!_MallocHookAvailable()) {
@@ -254,10 +265,10 @@ ArchMallocHook::Initialize(
     free(memalign(sizeof(void*), sizeof(void*)));
 
     if (__malloc_hook || __realloc_hook || __memalign_hook || __free_hook) {
-	*errMsg = "One or more malloc/realloc/free hook variables are already set.\n"
-		  "This probably means another entity in the program is trying to\n"
-		  "do its own profiling, pre-empting yours.";
-	return false;
+        *errMsg = "One or more malloc/realloc/free hook variables are already set.\n"
+              "This probably means another entity in the program is trying to\n"
+              "do its own profiling, pre-empting yours.";
+    return false;
     }
 
     /*
@@ -274,17 +285,19 @@ ArchMallocHook::Initialize(
     }
 
     if (mallocWrapper)
-	__malloc_hook = mallocWrapper;
+        __malloc_hook = mallocWrapper;
 
     if (reallocWrapper)
-	__realloc_hook = reallocWrapper;
+        __realloc_hook = reallocWrapper;
 
     if (memalignWrapper)
-	__memalign_hook = memalignWrapper;
+        __memalign_hook = memalignWrapper;
 
     if (freeWrapper)
-	__free_hook = freeWrapper;
+        __free_hook = freeWrapper;
 
     return true;
 #endif
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -38,6 +38,8 @@
 #include "pxr/imaging/hd/vboSimpleMemoryManager.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 
+#include "pxr/imaging/glf/textureRegistry.h"
+
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/work/loops.h"
@@ -47,6 +49,9 @@
 #include <algorithm>
 #include <iostream>
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_INSTANTIATE_SINGLETON(HdResourceRegistry);
 
@@ -132,14 +137,14 @@ HdResourceRegistry::MergeBufferArrayRange(
 {
     HD_TRACE_FUNCTION();
 
-    if (not TF_VERIFY(range)) return HdBufferArrayRangeSharedPtr();
+    if (!TF_VERIFY(range)) return HdBufferArrayRangeSharedPtr();
 
     // get existing buffer specs
     HdBufferSpecVector oldBufferSpecs;
     range->AddBufferSpecs(&oldBufferSpecs);
 
     // compare bufferspec
-    if (not HdBufferSpec::IsSubset(newBufferSpecs, oldBufferSpecs)) {
+    if (!HdBufferSpec::IsSubset(newBufferSpecs, oldBufferSpecs)) {
         // create / moveto the new buffer array.
 
         HdComputationVector computations;
@@ -165,7 +170,7 @@ HdResourceRegistry::MergeBufferArrayRange(
             strategy, role, bufferSpecs);
 
         // register copy computation.
-        if (not computations.empty()) {
+        if (!computations.empty()) {
             TF_FOR_ALL(it, computations) {
                 AddComputation(result, *it);
             }
@@ -228,7 +233,7 @@ HdResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
                                HdBufferSourceVector &sources)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     if (ARCH_UNLIKELY(sources.empty()))
     {
@@ -237,7 +242,7 @@ HdResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
     }
 
     // range has to be valid
-    if (ARCH_UNLIKELY(not (range and range->IsValid())))
+    if (ARCH_UNLIKELY(!(range && range->IsValid())))
     {
         TF_RUNTIME_ERROR("range is null or invalid");
         return;
@@ -267,7 +272,7 @@ HdResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
     }
 
     // Check for no-valid buffer case
-    if (not sources.empty()) {
+    if (!sources.empty()) {
         _PendingSourceList::iterator it = _pendingSources.emplace_back(range);
         TF_VERIFY(range.use_count() >=2);
 
@@ -281,21 +286,21 @@ void
 HdResourceRegistry::AddSource(HdBufferArrayRangeSharedPtr const &range,
                               HdBufferSourceSharedPtr const &source)
 {
-    if (ARCH_UNLIKELY((not source) or (not range)))
+    if (ARCH_UNLIKELY((!source) || (!range)))
     {
         TF_RUNTIME_ERROR("An input pointer is null");
         return;
     }
 
     // range has to be valid
-    if (ARCH_UNLIKELY(not range->IsValid()))
+    if (ARCH_UNLIKELY(!range->IsValid()))
     {
         TF_RUNTIME_ERROR("range is invalid");
         return;
     }
 
     // Buffer has to be valid
-    if (ARCH_UNLIKELY(not source->IsValid()))
+    if (ARCH_UNLIKELY(!source->IsValid()))
     {
         TF_RUNTIME_ERROR("source buffer for %s is invalid", source->GetName().GetText());
         return;
@@ -309,8 +314,8 @@ void
 HdResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
-    if (ARCH_UNLIKELY(not source))
+    HF_MALLOC_TAG_FUNCTION();
+    if (ARCH_UNLIKELY(!source))
     {
         TF_RUNTIME_ERROR("source pointer is null");
         return;
@@ -318,7 +323,7 @@ HdResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
 
 
     // Buffer has to be valid
-    if (ARCH_UNLIKELY(not source->IsValid()))
+    if (ARCH_UNLIKELY(!source->IsValid()))
     {
         TF_RUNTIME_ERROR("source buffer for %s is invalid", source->GetName().GetText());
         return;
@@ -335,7 +340,7 @@ HdResourceRegistry::AddComputation(HdBufferArrayRangeSharedPtr const &range,
                                    HdComputationSharedPtr const &computation)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // if the computation is buffer source computation, it will be appended
     // into pendingBufferSourceComputations, which is executed right after
@@ -351,7 +356,7 @@ void
 HdResourceRegistry::Commit()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // TODO: requests should be sorted by resource, and range.
     {
@@ -378,14 +383,14 @@ HdResourceRegistry::Commit()
                         // execute computation.
                         // call IsResolved first since Resolve is virtual and
                         // could be costly.
-                        if (not (*sourceIt)->IsResolved()) {
+                        if (!(*sourceIt)->IsResolved()) {
                             if ((*sourceIt)->Resolve()) {
                                 TF_VERIFY((*sourceIt)->IsResolved());
 
                                 ++numBufferSourcesResolved;
 
                                 // call resize if it's the first source in sources.
-                                if (reqIt->range and
+                                if (reqIt->range &&
                                     (sourceIt.base() == reqIt->sources.begin())) {
                                     reqIt->range->Resize(
                                         (*sourceIt)->GetNumElements());
@@ -454,7 +459,7 @@ HdResourceRegistry::Commit()
 
         TF_FOR_ALL(reqIt, _pendingSources) {
             // CPU computation may not have a range. (e.g. adjacency)
-            if (not reqIt->range) continue;
+            if (!reqIt->range) continue;
 
             // CPU computation may result in an empty buffer source
             // (e.g. GPU quadrangulation table could be empty for quad only
@@ -527,7 +532,7 @@ void
 HdResourceRegistry::GarbageCollect()
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->garbageCollected);
 
@@ -566,6 +571,13 @@ HdResourceRegistry::GarbageCollect()
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
 
+    // Cleanup Shader registries
+    _geometricShaderRegistry.GarbageCollect();
+    _glslProgramRegistry.GarbageCollect();
+
+    // Cleanup texture registries
+    _textureResourceRegistry.GarbageCollect();
+
     GarbageCollectDispatchBuffers();
     GarbageCollectPersistentBuffers();
 }
@@ -578,15 +590,25 @@ HdResourceRegistry::GetResourceAllocation() const
     size_t gpuMemoryUsed = 0;
 
     // buffer array allocation
-    gpuMemoryUsed += _nonUniformBufferArrayRegistry.GetResourceAllocation(result);
-    gpuMemoryUsed += _uniformUboBufferArrayRegistry.GetResourceAllocation(result);
-    gpuMemoryUsed += _uniformSsboBufferArrayRegistry.GetResourceAllocation(result);
-    gpuMemoryUsed += _singleBufferArrayRegistry.GetResourceAllocation(result);
+
+    size_t nonUniformSize   = _nonUniformBufferArrayRegistry.GetResourceAllocation(result);
+    size_t uboSize          = _uniformUboBufferArrayRegistry.GetResourceAllocation(result);
+    size_t ssboSize         = _uniformSsboBufferArrayRegistry.GetResourceAllocation(result);
+    size_t singleBufferSize = _singleBufferArrayRegistry.GetResourceAllocation(result);
+
+    result[HdPerfTokens->nonUniformSize]   = VtValue(nonUniformSize);
+    result[HdPerfTokens->uboSize]          = VtValue(uboSize);
+    result[HdPerfTokens->ssboSize]         = VtValue(ssboSize);
+    result[HdPerfTokens->singleBufferSize] = VtValue(singleBufferSize);
+    gpuMemoryUsed += nonUniformSize +
+                     uboSize        +
+                     ssboSize       +
+                     singleBufferSize;
 
     // glsl program & ubo allocation
     TF_FOR_ALL (progIt, _glslProgramRegistry) {
         HdGLSLProgramSharedPtr const &program = progIt->second;
-        if (not program) continue;
+        if (!program) continue;
         size_t size =
             program->GetProgram().GetSize() +
             program->GetGlobalUniformBuffer().GetSize();
@@ -606,7 +628,7 @@ HdResourceRegistry::GetResourceAllocation() const
     // dispatch buffers
     TF_FOR_ALL (bufferIt, _dispatchBufferRegistry) {
         HdDispatchBufferSharedPtr buffer = (*bufferIt);
-        if (not TF_VERIFY(buffer)) {
+        if (!TF_VERIFY(buffer)) {
             continue;
         }
 
@@ -626,7 +648,7 @@ HdResourceRegistry::GetResourceAllocation() const
     // persistent buffers
     TF_FOR_ALL (bufferIt, _persistentBufferRegistry) {
         HdPersistentBufferSharedPtr buffer = (*bufferIt);
-        if (not TF_VERIFY(buffer)) {
+        if (!TF_VERIFY(buffer)) {
             continue;
         }
 
@@ -642,6 +664,30 @@ HdResourceRegistry::GetResourceAllocation() const
 
         gpuMemoryUsed += size;
     }
+
+    // textures
+    size_t hydraTexturesMemory = 0;
+
+    TF_FOR_ALL (textureResourceIt, _textureResourceRegistry) {
+        HdTextureResourceSharedPtr textureResource = (textureResourceIt->second);
+        if (not TF_VERIFY(textureResource)) {
+            continue;
+        }
+
+        hydraTexturesMemory += textureResource->GetMemoryUsed();
+    }
+    result[HdPerfTokens->textureResourceMemory] = VtValue(hydraTexturesMemory);
+    gpuMemoryUsed += hydraTexturesMemory;
+
+    GlfTextureRegistry &textureReg = GlfTextureRegistry::GetInstance();
+    std::vector<VtDictionary> textureInfo = textureReg.GetTextureInfos();
+    size_t textureMemory = 0;
+    TF_FOR_ALL (textureIt, textureInfo) {
+        VtDictionary &info = (*textureIt);
+        textureMemory += info["memoryUsed"].Get<size_t>();
+    }
+    result[HdPerfTokens->textureMemory] = VtValue(textureMemory);
+
 
     result[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
 
@@ -815,3 +861,6 @@ HdResourceRegistry::GarbageCollectPersistentBuffers()
             boost::bind(&HdPersistentBufferSharedPtr::unique, _1)),
         _persistentBufferRegistry.end());
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

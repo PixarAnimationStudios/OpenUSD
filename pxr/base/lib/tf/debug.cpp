@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/debugCodes.h"
 #include "pxr/base/tf/debugNotice.h"
@@ -53,6 +55,7 @@ using std::set;
 using std::vector;
 using std::map;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 static FILE*&
 _GetOutputFile()
@@ -369,7 +372,7 @@ TfDebug::GetDebugSymbolDescription(const string& name)
 void
 TfDebug::SetOutputFile(FILE *file)
 {
-    if (file == stdout or file == stderr) {
+    if (file == stdout || file == stderr) {
         tbb::spin_mutex::scoped_lock lock(*_outputFileMutex);
         _GetOutputFile() = file;
     } else {
@@ -550,3 +553,5 @@ Tf_DebugInitFromEnvironment()
     // Simply creating the registry forces the initialization we need.
     (void) Tf_DebugSymbolRegistry::_GetInstance();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

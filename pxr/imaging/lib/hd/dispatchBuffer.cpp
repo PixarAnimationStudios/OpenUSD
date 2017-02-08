@@ -27,6 +27,11 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class Hd_DispatchBufferArrayRange : public HdBufferArrayRange {
 public:
     /// Constructor.
@@ -149,7 +154,7 @@ HdDispatchBuffer::HdDispatchBuffer(TfToken const &role, int count,
     : HdBufferArray(role, TfToken()), _count(count), _commandNumUints(commandNumUints)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
 
@@ -188,7 +193,7 @@ HdDispatchBuffer::~HdDispatchBuffer()
 void
 HdDispatchBuffer::CopyData(std::vector<GLuint> const &data)
 {
-    if (not TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
+    if (!TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
         return;
 
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
@@ -242,3 +247,6 @@ HdDispatchBuffer::DebugDump(std::ostream &out) const
 {
     /*nothing*/
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -34,6 +34,9 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<GlfArrayTexture, TfType::Bases<GlfUVTexture> >();
@@ -120,7 +123,7 @@ GlfArrayTexture::_OnSetMemoryRequested(size_t targetMemory)
 
         _UpdateTexture(texData);
 
-        if (texData and texData->HasRawBuffer()) {
+        if (texData && texData->HasRawBuffer()) {
             texDataVec[i] = texData;
         } else {
             TF_WARN("Invalid texture data for texture file: %s",
@@ -160,8 +163,8 @@ GlfArrayTexture::_CreateTexture(
 {
     TRACE_FUNCTION();
 
-    if (texDataVec.empty() or
-        not texDataVec[0]) {
+    if (texDataVec.empty() || 
+        !texDataVec[0]) {
         TF_WARN("No texture data for array texture.");
         return;
     }
@@ -198,7 +201,7 @@ GlfArrayTexture::_CreateTexture(
     int memUsed = 0;
     for (size_t i = 0; i < _arraySize; ++i) {
         GlfBaseTextureDataConstPtr texData = texDataVec[i];
-        if (texData and texData->HasRawBuffer()) {
+        if (texData && texData->HasRawBuffer()) {
 
             glTexSubImage3D(
                 GL_TEXTURE_2D_ARRAY,         /* target         */
@@ -224,3 +227,6 @@ GlfArrayTexture::_CreateTexture(
 
     _SetMemoryUsed(memUsed);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

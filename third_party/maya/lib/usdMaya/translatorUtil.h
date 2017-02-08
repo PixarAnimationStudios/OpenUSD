@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_UTIL_H
 #define PXRUSDMAYA_TRANSLATOR_UTIL_H
 
+#include "pxr/pxr.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 
@@ -31,6 +32,9 @@
 
 #include <maya/MObject.h>
 #include <maya/MString.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 /// \brief Provides helper functions for other readers to use.
@@ -99,5 +103,8 @@ struct PxrUsdMayaTranslatorUtil
     }
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_TRANSLATOR_UTIL_H

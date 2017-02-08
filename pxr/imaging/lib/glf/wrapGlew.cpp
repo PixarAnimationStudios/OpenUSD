@@ -25,6 +25,9 @@
 
 #include <boost/python/def.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 
 void wrapGlew()
@@ -32,4 +35,7 @@ void wrapGlew()
     def("GlewInit", &GlfGlewInit);
 }
     
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

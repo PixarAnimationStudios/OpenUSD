@@ -28,6 +28,9 @@
 
 #include <boost/python/class.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using namespace boost::python;
 
 static GarchGLPlatformDebugContextPtr
@@ -49,3 +52,6 @@ void wrapPlatformDebugContext()
         .def("makeCurrent", &This::makeCurrent)
     ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -51,7 +53,7 @@ UsdGeomPointInstancer::~UsdGeomPointInstancer()
 UsdGeomPointInstancer
 UsdGeomPointInstancer::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomPointInstancer();
     }
@@ -64,7 +66,7 @@ UsdGeomPointInstancer::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("PointInstancer");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdGeomPointInstancer();
     }
@@ -299,11 +301,28 @@ UsdGeomPointInstancer::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/base/tf/enum.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdGeomPointInstancer::IncludeProtoXform);
+    TF_ADD_ENUM_NAME(UsdGeomPointInstancer::ExcludeProtoXform);
+    TF_ADD_ENUM_NAME(UsdGeomPointInstancer::ApplyMask);
+    TF_ADD_ENUM_NAME(UsdGeomPointInstancer::IgnoreMask);
+}
 
 static
 bool 
@@ -351,6 +370,20 @@ _SetOrMergeOverOp(std::vector<int64_t> const &items, SdfListOpType op,
                 }
                 if (newAdded.size() != addedItems.size())
                     current.SetAddedItems(newAdded);
+            }
+        }
+        else if (op == SdfListOpTypeAdded){
+            std::vector<int64_t> deletedItems = current.GetDeletedItems();
+            if (!deletedItems.empty()){
+                std::set<int64_t> toAdd(items.begin(), items.end());
+                std::vector<int64_t> newDeleted;
+                newDeleted.reserve(deletedItems.size());
+                for (auto elt : deletedItems){
+                    if (!toAdd.count(elt))
+                        newDeleted.push_back(elt);
+                }
+                if (newDeleted.size() != deletedItems.size())
+                    current.SetDeletedItems(newDeleted);
             }
         }
     }
@@ -470,11 +503,13 @@ std::vector<bool>
 UsdGeomPointInstancer::ComputeMaskAtTime(UsdTimeCode time, 
                                          VtInt64Array const *ids) const
 {
-    VtInt64Array       idVals, inactiveIds, invisedIds;
+    VtInt64Array       idVals, invisedIds;
     std::vector<bool>  mask;
-    
+    SdfInt64ListOp     inactiveIdsListOp;
+
     // XXX Note we could be doing all three fetches in parallel
-    GetPrim().GetMetadata(UsdGeomTokens->inactiveIds, &inactiveIds);
+    GetPrim().GetMetadata(UsdGeomTokens->inactiveIds, &inactiveIdsListOp);
+    std::vector<int64_t> inactiveIds = inactiveIdsListOp.GetExplicitItems();
     GetInvisibleIdsAttr().Get(&invisedIds, time);
     if (inactiveIds.size() > 0 || invisedIds.size() > 0){
         bool anyPruned = false;
@@ -514,3 +549,25 @@ UsdGeomPointInstancer::ComputeMaskAtTime(UsdTimeCode time,
 
     return mask;
 }
+
+bool
+UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
+    VtArray<GfMatrix4d>* xforms,
+    UsdTimeCode time,
+    UsdTimeCode baseTime,
+    ProtoXformInclusion doProtoXforms,
+    MaskApplication applyMask) const
+{
+    /// XXX STUB!
+    (void)xforms;
+    (void)time;
+    (void)baseTime;
+    (void)doProtoXforms;
+    (void)applyMask;
+
+    printf("Computing Instance transforms\n");
+
+    return true;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

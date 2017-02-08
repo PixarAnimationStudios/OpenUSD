@@ -24,8 +24,11 @@
 #ifndef PLUG_THISPLUGIN_H
 #define PLUG_THISPLUGIN_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/plug/registry.h"
 #include <boost/preprocessor/stringize.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Returns a plugin registered with the name of the current library (uses the
 /// define for MFB_PACKAGE_NAME). Note that plugin registration occurs as a
@@ -34,5 +37,7 @@
 #define PLUG_THIS_PLUGIN \
     PlugRegistry::GetInstance().GetPluginWithName(\
         BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME))
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PLUG_THISPLUGIN_H

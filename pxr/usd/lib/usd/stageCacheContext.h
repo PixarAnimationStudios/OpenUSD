@@ -24,12 +24,16 @@
 #ifndef USD_STAGECACHECONTEXT_H
 #define USD_STAGECACHECONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/stacked.h"
 
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_const.hpp>
 
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class UsdStageCache;
 
@@ -151,5 +155,8 @@ private:
     bool _isReadOnlyCache;
     UsdStageCacheContextBlockType _blockType;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_STAGECACHECONTEXT_H

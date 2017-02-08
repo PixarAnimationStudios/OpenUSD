@@ -24,8 +24,10 @@
 ///
 /// \file js/json.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/tf/diagnostic.h"
+
 #include <iostream>
 #include <vector>
 
@@ -44,6 +46,8 @@
 namespace rj = RAPIDJSON_NAMESPACE;
 
 namespace {
+PXR_NAMESPACE_USING_DIRECTIVE
+
 struct _InputHandler : public rj::BaseReaderHandler<rj::UTF8<>, _InputHandler>
 {
     bool Null() {
@@ -117,6 +121,8 @@ public:
 };
 }
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 template <typename Allocator>
 static rj::Value
 _ToImplObjectValue(
@@ -187,7 +193,7 @@ JsParseStream(
     std::istream& istr,
     JsParseError* error)
 {
-    if (not istr) {
+    if (!istr) {
         TF_CODING_ERROR("Stream error");
         return JsValue();
     }
@@ -217,7 +223,7 @@ JsParseString(
     rj::ParseResult result =
         reader.Parse<rj::kParseStopWhenDoneFlag>(ss, handler);
 
-    if (not result) {
+    if (!result) {
         if (error) {
             // Rapidjson only provides a character offset for errors, not
             // line/column information like other parsers (like json_spirit,
@@ -249,7 +255,7 @@ JsWriteToStream(
     const JsValue& value,
     std::ostream& ostr)
 {
-    if (not ostr) {
+    if (!ostr) {
         TF_CODING_ERROR("Stream error");
         return;
     }
@@ -271,3 +277,5 @@ JsWriteToString(
 
     return buffer.GetString();
 } 
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -33,6 +34,7 @@
 #include <unistd.h>
 
 using namespace std;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static bool
 TestTfRealPath()
@@ -42,13 +44,13 @@ TestTfRealPath()
     TF_AXIOM(TfRealPath("/./etc/./../etc/passwd") == "/etc/passwd");
 
     // Create a nest of links for testing.
-    TF_AXIOM(TfIsDir("subdir/e") or TfMakeDirs("subdir/e"));
-    TF_AXIOM(TfIsLink("b") or TfSymlink("subdir", "b"));
-    TF_AXIOM(TfIsLink("c") or TfSymlink("b", "c"));
-    TF_AXIOM(TfIsLink("d") or TfSymlink("c", "d"));
-    TF_AXIOM(TfIsLink("e") or TfSymlink("missing", "e"));
-    TF_AXIOM(TfIsLink("f") or TfSymlink("e", "f"));
-    TF_AXIOM(TfIsLink("g") or TfSymlink("f", "g"));
+    TF_AXIOM(TfIsDir("subdir/e") || TfMakeDirs("subdir/e"));
+    TF_AXIOM(TfIsLink("b") || TfSymlink("subdir", "b"));
+    TF_AXIOM(TfIsLink("c") || TfSymlink("b", "c"));
+    TF_AXIOM(TfIsLink("d") || TfSymlink("c", "d"));
+    TF_AXIOM(TfIsLink("e") || TfSymlink("missing", "e"));
+    TF_AXIOM(TfIsLink("f") || TfSymlink("e", "f"));
+    TF_AXIOM(TfIsLink("g") || TfSymlink("f", "g"));
 
     // No symlinks
     TF_AXIOM(TfRealPath("subdir", true) == TfAbsPath("subdir"));

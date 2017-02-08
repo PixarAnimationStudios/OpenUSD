@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usd/usdShade/material.h"
-
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -38,6 +37,8 @@
 #include <string>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -82,6 +83,8 @@ void wrapUsdShadeMaterial()
     _CustomWrapCode(cls);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
 // the code generator.  The entry point for your custom code should look
@@ -94,10 +97,16 @@ void wrapUsdShadeMaterial()
 // }
 //
 // Of course any other ancillary or support code may be provided.
+// 
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
+//
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/usd/usd/editContext.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static UsdPyEditContext
 _GetEditContextForVariant(const UsdShadeMaterial &self,
@@ -148,17 +157,7 @@ WRAP_CUSTOM {
 
         .def("HasMaterialFaceSet", &UsdShadeMaterial::HasMaterialFaceSet)
             .staticmethod("HasMaterialFaceSet")
-
-        .def("CreateSurfaceTerminal", 
-             &UsdShadeMaterial::CreateSurfaceTerminal,
-             (arg("targetPath")))
-        .def("GetSurfaceTerminal",
-             &UsdShadeMaterial::GetSurfaceTerminal)
-
-        .def("CreateDisplacementTerminal", 
-             &UsdShadeMaterial::CreateDisplacementTerminal,
-             (arg("targetPath")))
-        .def("GetDisplacementTerminal",
-             &UsdShadeMaterial::GetDisplacementTerminal)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

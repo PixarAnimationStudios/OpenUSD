@@ -23,12 +23,17 @@
 //
 ///
 /// \file Tf/TemplateString.cpp
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/templateString.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define _ERROR(ptr, ...) \
     if (ptr) { ptr->push_back(TfStringPrintf(__VA_ARGS__)); }
@@ -102,7 +107,7 @@ TfTemplateString::IsValid() const
 {
     _ParseTemplate();
     tbb::spin_mutex::scoped_lock lock(_data->mutex);
-    return _data->template_.empty() or _data->parseErrors.empty();
+    return _data->template_.empty() || _data->parseErrors.empty();
 }
 
 vector<string>
@@ -153,7 +158,7 @@ _FindNextPlaceHolder(size_t* pos, vector<string>* errors) const
             // len includes the sigil and quote characters.
             size_t len = endpos - *pos + 1;
             string name = _data->template_.substr(nextpos + 1, len - 3);
-            if (not name.empty()) {
+            if (!name.empty()) {
                 _data->placeholders.push_back(_PlaceHolder(name, *pos, len));
             } else {
                 _ERROR(errors, "Empty placeholder at pos %zu", *pos);
@@ -168,7 +173,7 @@ _FindNextPlaceHolder(size_t* pos, vector<string>* errors) const
         size_t len = (endpos == string::npos ?
                       _data->template_.length() : endpos) - *pos;
         string name = _data->template_.substr(nextpos, len - 1);
-        if (not name.empty()) {
+        if (!name.empty()) {
             _data->placeholders.push_back(_PlaceHolder(name, *pos, len));
         } else {
             // If we find what appears to be a place holder, but the next
@@ -184,7 +189,7 @@ void
 TfTemplateString::_ParseTemplate() const
 {
     tbb::spin_mutex::scoped_lock lock(_data->mutex);
-    if (not _data->parsed) {
+    if (!_data->parsed) {
         size_t pos = 0;
         while (_FindNextPlaceHolder(&pos, &_data->parseErrors));
         _data->parsed = true;
@@ -234,3 +239,4 @@ _Evaluate(const Mapping& mapping, vector<string>* errors) const
     return result;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

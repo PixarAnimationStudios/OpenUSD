@@ -23,13 +23,17 @@
 //
 /// \file wrapLayerStackIdentifier.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
+
 #include <boost/python.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static
 std::string
@@ -66,9 +70,9 @@ void wrapLayerStackIdentifier()
                       make_getter(&This::pathResolverContext, 
                                   return_value_policy<return_by_value>()))
 
-        .def("__repr__", &::_Repr)
+        .def("__repr__", &_Repr)
         .def("__hash__", &This::GetHash)
-        .def(not self)
+        .def(!self)
         .def(self == self)
         .def(self != self)
         .def(self <  self)
@@ -77,3 +81,5 @@ void wrapLayerStackIdentifier()
         .def(self >= self)
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

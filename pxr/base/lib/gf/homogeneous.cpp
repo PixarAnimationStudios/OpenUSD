@@ -21,9 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/homogeneous.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec4d.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 GfVec4f GfGetHomogenized(const GfVec4f &v)
 {
@@ -64,3 +70,5 @@ GfVec4d GfHomogeneousCross(const GfVec4d &a, const GfVec4d &b)
     
     return GfVec4d(prod[0], prod[1], prod[2], 1);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,6 +24,7 @@
 #ifndef HD_BASIS_CURVES_TOPOLOGY_H
 #define HD_BASIS_CURVES_TOPOLOGY_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/topology.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -33,19 +34,19 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <vector>
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdBasisCurvesTopology> HdBasisCurvesTopologySharedPtr;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
 
 /// \class HdBasisCurvesTopology
 ///
 /// Topology data for basisCurves.
 ///
-/// HtBasisCurvesTopology holds the raw input topology data for basisCurves
+/// HdBasisCurvesTopology holds the raw input topology data for basisCurves
 ///
 /// The Type, Basis and Wrap mode combined describe the curve and it's
 /// segments.
@@ -83,12 +84,11 @@ public:
     HdBasisCurvesTopology();
     HdBasisCurvesTopology(const HdBasisCurvesTopology &src);
 
-    HdBasisCurvesTopology(
-        TfToken curveType,
-        TfToken curveBasis,
-        TfToken curveWrap,
-        const VtIntArray &curveVertexCounts,
-        const VtIntArray &curveIndices);
+    HdBasisCurvesTopology(const TfToken &curveType,
+                          const TfToken &curveBasis,
+                          const TfToken &curveWrap,
+                          const VtIntArray &curveVertexCounts,
+                          const VtIntArray &curveIndices);
     virtual ~HdBasisCurvesTopology();
 
 
@@ -117,8 +117,6 @@ public:
     bool operator==(HdBasisCurvesTopology const &other) const;
     bool operator!=(HdBasisCurvesTopology const &other) const;
 
-    HdBufferSourceSharedPtr GetIndexBuilderComputation(bool supportSmoothCurves);
-
     /// Figure out how many vertices / control points this topology references
     size_t CalculateNeededNumberOfControlPoints() const;
 
@@ -134,5 +132,8 @@ private:
 };
 
 std::ostream& operator << (std::ostream &out, HdBasisCurvesTopology const &topo);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_BASIS_CURVES_TOPOLOGY_H

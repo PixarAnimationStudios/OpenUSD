@@ -24,9 +24,13 @@
 #ifndef PCP_PAYLOAD_DECORATOR_H
 #define PCP_PAYLOAD_DECORATOR_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/declarePtrs.h"
+
 #include <boost/noncopyable.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpPayloadContext;
 class SdfPayload;
@@ -115,5 +119,7 @@ protected:
         const TfToken& field,
         const std::pair<VtValue, VtValue>& oldAndNewValues) = 0;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_PAYLOAD_DECORATOR_H

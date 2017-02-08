@@ -26,6 +26,9 @@
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdHydra/lookAPI.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 // TODO: We should centralize this logic in a UsdImaging ShaderAdapter.
 
 /*static*/
@@ -34,7 +37,7 @@ UsdImaging_MaterialStrategy::GetTargetedShader(UsdPrim const& materialPrim,
                                         UsdRelationship const& materialRel)
 {
     SdfPathVector targets;
-    if (not materialRel.GetForwardedTargets(&targets))
+    if (!materialRel.GetForwardedTargets(&targets))
         return UsdPrim();
 
     if (targets.size() != 1) {
@@ -48,7 +51,7 @@ UsdImaging_MaterialStrategy::GetTargetedShader(UsdPrim const& materialPrim,
         return UsdPrim();
     }
 
-    if (not targets[0].IsPrimPath()) {
+    if (!targets[0].IsPrimPath()) {
         // XXX: This should really be a validation error once USD gets that
         // feature.
         TF_WARN("We expect the target of the relationship %s of prim <%s> "
@@ -102,3 +105,6 @@ UsdImaging_MaterialStrategy::GetBinding(UsdShadeMaterial const& material)
 
     return SdfPath::EmptyPath();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

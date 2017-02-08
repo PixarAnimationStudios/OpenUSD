@@ -21,21 +21,24 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/debugCodes.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/dl.h"
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/library.h"
 #include "pxr/base/arch/symbols.h"
 
-#include <unistd.h>
-
 using std::string;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static bool
 Test_TfDl()
 {
-    // we should not be in the process of opening/closing a DL right now
+    // We should not be in the process of opening/closing a DL right now
     TF_AXIOM(!Tf_DlOpenIsActive());
     TF_AXIOM(!Tf_DlCloseIsActive());
 
@@ -44,24 +47,26 @@ Test_TfDl()
     TfDebug::Enable(TF_DLCLOSE);
 
     // Check that opening a non-existing shared library fails
-    TF_AXIOM(!TfDlopen("nonexisting.so", RTLD_NOW));
+    TF_AXIOM(!TfDlopen("nonexisting" ARCH_LIBRARY_SUFFIX, ARCH_LIBRARY_NOW));
 
-    // check that TfDlopen fills in our error string with something
+    // Check that TfDlopen fills in our error string with something
     string dlerror;
-    TfDlopen("nonexisting.so", RTLD_NOW, &dlerror);
+    TfDlopen("nonexisting" ARCH_LIBRARY_SUFFIX, ARCH_LIBRARY_NOW, &dlerror);
     TF_AXIOM(!dlerror.empty());
 
     // Compute path to test library.
     string dlname;
     TF_AXIOM(ArchGetAddressInfo((void*)Test_TfDl, &dlname, NULL, NULL, NULL));
-    dlname = TfGetPathName(dlname) + "lib/libTestTfDl.so";
+    dlname = TfGetPathName(dlname) +
+        "lib" ARCH_PATH_SEP "libTestTfDl" ARCH_LIBRARY_SUFFIX;
 
-    // make sure that this .so does indeed exist first
+    // Make sure that this .so does indeed exist first
     printf("Checking test shared lib: %s\n", dlname.c_str());
-    TF_AXIOM(!access(dlname.c_str(), R_OK));
+    TF_AXIOM(!ArchFileAccess(dlname.c_str(), R_OK));
 
-    // check that we can open the existing .so
-    void *handle = TfDlopen(dlname, RTLD_LAZY|RTLD_LOCAL, &dlerror);
+    // Check that we can open the existing library.
+    void *handle =
+        TfDlopen(dlname, ARCH_LIBRARY_LAZY|ARCH_LIBRARY_LOCAL, &dlerror);
     TF_AXIOM(handle);
     TF_AXIOM(dlerror.empty());
     TF_AXIOM(!TfDlclose(handle));

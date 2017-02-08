@@ -24,6 +24,7 @@
 #ifndef USD_STAGECACHE_H
 #define USD_STAGECACHE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/declarePtrs.h"
 
@@ -34,6 +35,9 @@
 #include <memory>
 #include <mutex>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SDF_DECLARE_HANDLES(SdfLayer);
 TF_DECLARE_REF_PTRS(UsdStage);
@@ -356,5 +360,8 @@ private:
     struct _DataDeleter { void operator()(_Data *); };
     std::unique_ptr<_Data, _DataDeleter> _data;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_STAGECACHE_H

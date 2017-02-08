@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_XFORMABLE_H
 #define PXRUSDMAYA_TRANSLATOR_XFORMABLE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/usd/usdGeom/xformable.h"
@@ -32,6 +33,9 @@
 #include "usdMaya/primReaderArgs.h"
 
 #include <maya/MObject.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \brief Provides helper functions for reading UsdGeomXformable.  
 struct PxrUsdMayaTranslatorXformable
@@ -51,5 +55,8 @@ struct PxrUsdMayaTranslatorXformable
             GfVec3d *rot,
             GfVec3d *scale);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSD_TRANSLATOR_XFORMABLE_H

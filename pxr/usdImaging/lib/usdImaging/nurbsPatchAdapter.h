@@ -24,8 +24,12 @@
 #ifndef USDIMAGING_NURBS_PATCH_ADAPTER_H
 #define USDIMAGING_NURBS_PATCH_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdImagingNurbsPatchAdapter
 ///
@@ -84,5 +88,8 @@ public:
     static VtValue GetMeshTopology(UsdPrim const& prim, 
                                  UsdTimeCode time);
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_NURBS_PATCH_ADAPTER_H

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/vt/array.h"
@@ -60,6 +62,7 @@ using namespace boost::python;
 using std::string;
 using std::map;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfPyObjWrapper
 Vt_GetPythonObjectFromHeldValue(VtValue const &self)
@@ -180,7 +183,7 @@ struct Vt_ValueFromPython {
             // Python long -> either c++ int or long or unsigned long or long
             // long or unsigned long long or fail, depending on range.
             long long val = PyLong_AsLongLong(obj_ptr);
-            if (not PyErr_Occurred()) {
+            if (!PyErr_Occurred()) {
                 if (std::numeric_limits<int>::min() <= val && 
                     val <= std::numeric_limits<int>::max()) {
                     new (storage) VtValue(boost::numeric_cast<int>(val));
@@ -196,7 +199,7 @@ struct Vt_ValueFromPython {
                 PyErr_Clear();
                 // Try as unsigned long long.
                 unsigned long long uval = PyLong_AsUnsignedLongLong(obj_ptr);
-                if (not PyErr_Occurred()) {
+                if (!PyErr_Occurred()) {
                     new (storage) VtValue(uval);
                     data->convertible = storage;
                     return;
@@ -211,7 +214,7 @@ struct Vt_ValueFromPython {
             data->convertible = storage;
             return;
         }
-        if (PyString_Check(obj_ptr) or PyUnicode_Check(obj_ptr)) {
+        if (PyString_Check(obj_ptr) || PyUnicode_Check(obj_ptr)) {
             // Py string or unicode -> std::string.
             new (storage) VtValue(std::string(extract<std::string>(obj_ptr)));
             data->convertible = storage;
@@ -221,7 +224,7 @@ struct Vt_ValueFromPython {
         // Attempt a registered conversion via the registry.
         VtValue v = Vt_ValueFromPythonRegistry::Invoke(obj_ptr);
 
-        if (not v.IsEmpty()) {
+        if (!v.IsEmpty()) {
             new (storage) VtValue(v);
             data->convertible = storage;
             return;
@@ -326,3 +329,5 @@ void wrapValue()
     TfPyFunctionFromPython<VtValue ()>();
     
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

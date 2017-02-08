@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/pcp/layerStack.h"
@@ -28,6 +30,8 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <tbb/concurrent_hash_map.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Pcp_VariableImpl;
 
@@ -55,7 +59,7 @@ PcpMapExpression::PcpMapExpression()
 bool
 PcpMapExpression::IsNull() const
 {
-    return not _node;
+    return !_node;
 }
 
 void
@@ -95,7 +99,7 @@ PcpMapExpression::Compose(const PcpMapExpression &f) const
     if (f.IsConstantIdentity()) {
         return *this;
     }
-    if (_node->key.op == _OpConstant and f._node->key.op == _OpConstant) {
+    if (_node->key.op == _OpConstant && f._node->key.op == _OpConstant) {
         // Apply constant folding
         return Constant( Evaluate().Compose( f.Evaluate() ) );
     }
@@ -226,14 +230,14 @@ PcpMapExpression::_Node::_ExpressionTreeAlwaysHasIdentity(const Key& key)
         //
         // In this case, the expression tree will only have an identity
         // mapping if *both* subtrees being composed have an identity.
-        return (key.arg1 and key.arg1->expressionTreeAlwaysHasIdentity and
-                key.arg2 and key.arg2->expressionTreeAlwaysHasIdentity);
+        return (key.arg1 && key.arg1->expressionTreeAlwaysHasIdentity &&
+                key.arg2 && key.arg2->expressionTreeAlwaysHasIdentity);
 
     default:
         // For any other operation, if either of the subtrees has an
         // identity mapping, so does this tree.
-        return (key.arg1 and key.arg1->expressionTreeAlwaysHasIdentity) or
-               (key.arg2 and key.arg2->expressionTreeAlwaysHasIdentity);
+        return (key.arg1 && key.arg1->expressionTreeAlwaysHasIdentity) ||
+               (key.arg2 && key.arg2->expressionTreeAlwaysHasIdentity);
     }
 }
 
@@ -249,7 +253,7 @@ PcpMapExpression::_Node::New( _Op op_,
     if (key.op != _OpVariable) {
         // Check for existing instance to re-use
         _NodeMap::accessor accessor;
-        if (_nodeRegistry->map.insert(accessor, key) or
+        if (_nodeRegistry->map.insert(accessor, key) ||
             accessor->second->_refCount.fetch_and_increment() == 0) {
             // Either there was no node in the table, or there was but it had
             // begun dying (another client dropped its refcount to 0).  We have
@@ -295,7 +299,7 @@ PcpMapExpression::_Node::~_Node()
     if (key.op != _OpVariable) {
         // Remove from node map if present.
         _NodeMap::accessor accessor;
-        if (_nodeRegistry->map.find(accessor, key) and
+        if (_nodeRegistry->map.find(accessor, key) &&
             accessor->second == this) {
             _nodeRegistry->map.erase(accessor);
         }
@@ -305,7 +309,7 @@ PcpMapExpression::_Node::~_Node()
 const PcpMapExpression::Value &
 PcpMapExpression::_Node::EvaluateAndCache() const
 {
-    if (not _cachedValue) {
+    if (!_cachedValue) {
         TRACE_SCOPE("PcpMapExpression::_Node::EvaluateAndCache - cache miss");
         _cachedValue.reset(_EvaluateUncached());
     }
@@ -373,9 +377,9 @@ bool
 PcpMapExpression::_Node::Key::operator==(const Key &key) const
 {
     return op == key.op
-        and arg1 == key.arg1
-        and arg2 == key.arg2
-        and valueForConstant == key.valueForConstant;
+        && arg1 == key.arg1
+        && arg2 == key.arg2
+        && valueForConstant == key.valueForConstant;
 }
 
 void
@@ -390,3 +394,5 @@ intrusive_ptr_release(PcpMapExpression::_Node* p)
     if (p->_refCount.fetch_and_decrement() == 1)
         delete p;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

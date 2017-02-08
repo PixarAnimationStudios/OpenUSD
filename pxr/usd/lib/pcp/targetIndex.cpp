@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/targetIndex.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/pcp/targetIndex.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node_Iterator.h"
@@ -37,6 +38,8 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <boost/optional.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper structure for deferring the computation of a prim index
 // until needed, then caching the result to avoid multiple lookups
@@ -58,7 +61,7 @@ struct Pcp_TargetIndexContext
 
     const PcpPrimIndex& GetTargetObjectPrimIndex()
     {
-        if (not _index) {
+        if (!_index) {
             _index = &_cache->ComputePrimIndex(
                 _targetObjectPath.GetPrimPath(), _allErrors);
         }
@@ -83,7 +86,7 @@ _TargetInClassAndTargetsInstance(
     // Connections authored in an inherited class may not target
     // an object in an instance of that class, as doing so would
     // break reverse path translation.
-    if (not PcpIsInheritArc(nodeWhereConnectionWasAuthored.GetArcType())) {
+    if (!PcpIsInheritArc(nodeWhereConnectionWasAuthored.GetArcType())) {
         return false;
     }
 
@@ -100,7 +103,7 @@ _TargetInClassAndTargetsInstance(
         connectionPathInNodeNS.HasPrefix(
             nodeWhereConnectionWasAuthored.GetPathAtIntroduction());
 
-    if (not connectionPathInsideInheritedClass) {
+    if (!connectionPathInsideInheritedClass) {
         const PcpPrimIndex& targetPrimIndex = context.GetTargetObjectPrimIndex();
         const PcpLayerStackPtr& layerStackWhereConnectionWasAuthored = 
             nodeWhereConnectionWasAuthored.GetLayerStack();
@@ -109,8 +112,8 @@ _TargetInClassAndTargetsInstance(
 
         for (const PcpNodeRef &n: targetPrimIndex.GetNodeRange()) {
             if (PcpIsInheritArc(n.GetArcType())
-                and (n.GetLayerStack() == layerStackWhereConnectionWasAuthored)
-                and (n.GetPath().HasPrefix(inheritedClassPath))) {
+                && (n.GetLayerStack() == layerStackWhereConnectionWasAuthored)
+                && (n.GetPath().HasPrefix(inheritedClassPath))) {
                 return true;
             }
         }
@@ -141,7 +144,7 @@ _CheckTargetPermittedBeneathNode(
 
         // If the prim has been marked private at this node, the
         // target is pointing at a restricted object, which is invalid.
-        if (child.IsRestricted() or 
+        if (child.IsRestricted() ||
             child.GetPermission() == SdfPermissionPrivate) {
             return PermissionDenied;
         }
@@ -169,12 +172,12 @@ _CheckTargetPermittedBeneathNode(
                 // is a relational attribute; in this case, we'd need to check
                 // not only the attribute, but its owning relationship.
                 for (SdfPath p = pathInChildNS; 
-                     not p.IsPrimPath(); p = p.GetParentPath()) {
+                     !p.IsPrimPath(); p = p.GetParentPath()) {
 
                     if (p.IsPropertyPath()) {
                         SdfPropertySpecHandle propSpec =
                             (*layerIt)->GetPropertyAtPath(p);
-                        if (propSpec and
+                        if (propSpec &&
                             propSpec->GetPermission() == SdfPermissionPrivate) {
                             return PermissionDenied;
                         }
@@ -275,7 +278,7 @@ _TargetIsPermitted(
     //
     // If culling is disabled, we definitely expect to find the node, so
     // issue an error if we don't.
-    if (not owningPrimNodeWhereConnectionWasAuthored) {
+    if (!owningPrimNodeWhereConnectionWasAuthored) {
         TF_VERIFY(context.GetCache()->GetPrimIndexInputs().cull, 
             "Could not find expected node for site %s in prim index for <%s>",
             TfStringify(owningPrimSiteWhereConnectionWasAuthored).c_str(),
@@ -338,14 +341,14 @@ _PathTranslateCallback(
     // This is similar to handling for explicit list operations
     // in PcpBuildFilteredTargetIndex.
     if (opType == SdfListOpTypeDeleted) {
-        if (pathIsMappable and not translatedPath.IsEmpty()) {
+        if (pathIsMappable && !translatedPath.IsEmpty()) {
             _RemoveTargetPathErrorsForPath(translatedPath, targetPathErrors);
             return translatedPath;
         }
         return boost::optional<SdfPath>();
     }
     
-    if (not pathIsMappable) {
+    if (!pathIsMappable) {
         PcpErrorInvalidExternalTargetPathPtr err =
             PcpErrorInvalidExternalTargetPath::New();
         err->rootSite = propSite;
@@ -386,7 +389,7 @@ _PathTranslateCallback(
         // Check if the connection is invalid due to permissions or
         // relocates. We do not do this check for Usd caches, since Usd 
         // does not use either feature.
-        if (not cacheForValidation->IsUsd()) {
+        if (!cacheForValidation->IsUsd()) {
 
             switch (_TargetIsPermitted(translatedPath, inPath, node, context)) {
             case PermissionDenied:
@@ -441,7 +444,7 @@ PcpBuildFilteredTargetIndex(
 {
     TRACE_FUNCTION();
 
-    if (not (relOrAttrType == SdfSpecTypeRelationship or
+    if (!(relOrAttrType == SdfSpecTypeRelationship ||
              relOrAttrType == SdfSpecTypeAttribute)) {
         TF_CODING_ERROR("relOrAttrType msut be either SdfSpecTypeRelationship"
                         "or SdfSpecTypeAttribute");
@@ -459,7 +462,7 @@ PcpBuildFilteredTargetIndex(
     // we expect. We only need to check the first spec in the stack since all
     // other specs should have the same type. This is enforced in the
     // population of the property index.
-    if (not TF_VERIFY(
+    if (!TF_VERIFY(
             (*propertyRange.first)->GetSpecType() == relOrAttrType,
             "<%s> is not %s", 
             propSite.path.GetText(),
@@ -479,12 +482,12 @@ PcpBuildFilteredTargetIndex(
     // operations with the appropriate path translations to targetPaths.
     TF_REVERSE_FOR_ALL(propIt, propertyRange) {
         const SdfPropertySpecHandle& property = *propIt;
-        if (not includeStopProperty and property == stopProperty) {
+        if (!includeStopProperty && property == stopProperty) {
             break;
         }
         const VtValue& pathValue = property->GetField(fieldName);
-        if (pathValue.IsEmpty() or 
-            not TF_VERIFY(pathValue.IsHolding<SdfPathListOp>())) {
+        if (pathValue.IsEmpty() ||
+            !TF_VERIFY(pathValue.IsHolding<SdfPathListOp>())) {
             continue;
         }
         const SdfPathListOp& pathListOps =
@@ -537,3 +540,5 @@ PcpBuildTargetIndex(
         /* cacheForValidation = */ 0,
         targetIndex, allErrors );
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

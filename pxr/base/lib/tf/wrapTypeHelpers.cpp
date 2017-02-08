@@ -21,16 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/python/extract.hpp>
 #include <boost/python/object.hpp>
 #include <boost/python/detail/api_placeholder.hpp>      // for len()
 
-
-
 using namespace std;
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TfType
 TfType_DefinePythonTypeAndBases( const boost::python::object & classObj )
@@ -62,4 +65,4 @@ TfType_DefinePythonTypeAndBases( const boost::python::object & classObj )
     return newType;
 }
 
-
+PXR_NAMESPACE_CLOSE_SCOPE

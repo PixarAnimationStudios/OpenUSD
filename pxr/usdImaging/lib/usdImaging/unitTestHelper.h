@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_UNIT_TEST_HELPER
 #define USDIMAGING_UNIT_TEST_HELPER
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
@@ -34,6 +35,9 @@
 
 #include <string>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
 
@@ -46,13 +50,17 @@ typedef boost::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
 /// is performed as usual.
 ///
 class UsdImaging_TestDriver {
-    void _Init(UsdStageRefPtr const& usdStage, TfToken const &reprName);
+    void _Init(UsdStageRefPtr const& usdStage,
+               TfToken const &collectionName,
+               TfToken const &reprName);
 public:
     UsdImaging_TestDriver(std::string const& usdFilePath);
-    UsdImaging_TestDriver(std::string const& usdFilePath, 
+    UsdImaging_TestDriver(std::string const& usdFilePath,
+                          TfToken const &collectioName,
                           TfToken const &reprName);
     UsdImaging_TestDriver(UsdStageRefPtr const& usdStage);
-    UsdImaging_TestDriver(UsdStageRefPtr const& usdStage, 
+    UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,
+                          TfToken const &collectioName,
                           TfToken const &reprName);
 
     void Draw();
@@ -86,5 +94,8 @@ private:
     HdRenderPassStateSharedPtr _renderPassState;
     UsdStageRefPtr _stage;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USDIMAGING_UNIT_TEST_HELPER

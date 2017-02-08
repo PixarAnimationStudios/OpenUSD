@@ -25,8 +25,8 @@
 %{
 // sdf/path.ypp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/pathParser.h"
-
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 
@@ -39,6 +39,8 @@ using boost::get;
 using std::pair;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 //--------------------------------------------------------------------
 // Extern declarations to scanner data and functions
@@ -297,3 +299,4 @@ pathYyerror(Sdf_PathParserContext *context, const char *msg)
     context->errStr = msg;
     context->variantSelectionStack.clear();
 }
+

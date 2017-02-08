@@ -27,6 +27,7 @@
 /// \file gf/interval.h
 /// \ingroup group_gf_BasicMath
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/math.h"
 
 #include <boost/functional/hash.hpp>
@@ -34,6 +35,8 @@
 #include <float.h>
 #include <iosfwd>
 #include <limits>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class GfInterval
 /// \ingroup group_gf_BasicMath
@@ -72,7 +75,7 @@ public:
 
     /// Equality operator.
     bool operator==(const GfInterval &rhs) const {
-        return _min == rhs._min and _max == rhs._max;
+        return _min == rhs._min && _max == rhs._max;
     }
 
     /// Inequality operator.
@@ -138,33 +141,33 @@ public:
     bool IsMaxClosed() const { return _max.closed; }
 
     /// Minimum boundary condition
-    bool IsMinOpen() const { return not _min.closed; }
+    bool IsMinOpen() const { return ! _min.closed; }
 
     /// Maximum boundary condition
-    bool IsMaxOpen() const { return not _max.closed; }
+    bool IsMaxOpen() const { return ! _max.closed; }
 
     /// Returns true if the maximum value is finite.
     bool IsMaxFinite() const {
         return (_max.value != -std::numeric_limits<double>::infinity()
-            and _max.value !=  std::numeric_limits<double>::infinity());
+            && _max.value !=  std::numeric_limits<double>::infinity());
     }
 
     /// Returns true if the minimum value is finite.
     bool IsMinFinite() const {
         return (_min.value != -std::numeric_limits<double>::infinity()
-            and _min.value !=  std::numeric_limits<double>::infinity());
+            && _min.value !=  std::numeric_limits<double>::infinity());
     }
 
     /// Returns true if both the maximum and minimum value are finite.
     bool IsFinite() const {
-        return IsMaxFinite() and IsMinFinite();
+        return IsMaxFinite() && IsMinFinite();
     }
 
     /// Return true iff the interval is empty.
     bool IsEmpty() const {
-        return (_min.value > _max.value) or
+        return (_min.value > _max.value) ||
             ((_min.value == _max.value)
-             and (not _min.closed or not _max.closed));
+             && (! _min.closed || !_max.closed));
     }
 
     /// Width of the interval.
@@ -179,8 +182,8 @@ public:
     /// Return true iff the value d is contained in the interval.
     /// An empty interval contains no values.
     bool Contains(double d) const {
-        return ((d > _min.value) or (d == _min.value and _min.closed))
-           and ((d < _max.value) or (d == _max.value and _max.closed));
+        return ((d > _min.value) || (d == _min.value && _min.closed))
+           &&  ((d < _max.value) || (d == _max.value && _max.closed));
     }
 
     // For 2x compatibility
@@ -195,7 +198,7 @@ public:
 
     /// Return true iff the given interval i intersects this interval.
     bool Intersects(const GfInterval &i) const {
-        return not (*this & i).IsEmpty();
+        return !(*this & i).IsEmpty();
     }
 
     /// \name Math operations
@@ -248,7 +251,7 @@ public:
 
     /// Interval addition.
     GfInterval & operator+=(const GfInterval &rhs) {
-        if (not rhs.IsEmpty()) {
+        if (!rhs.IsEmpty()) {
             _min.value += rhs._min.value;
             _max.value += rhs._max.value;
             _min.closed &= rhs._min.closed;
@@ -360,14 +363,14 @@ private:
         {
             // Closed boundaries on infinite values do not make sense so
             // force the bound to be open
-            if (value == -std::numeric_limits<double>::infinity() or
+            if (value == -std::numeric_limits<double>::infinity() ||
                 value == std::numeric_limits<double>::infinity()) {
                 closed = false;
             }
         }
 
         bool operator==(const _Bound &rhs) const {
-            return value == rhs.value and closed == rhs.closed;
+            return value == rhs.value && closed == rhs.closed;
         }
 
         bool operator!=(const _Bound &rhs) const {
@@ -375,7 +378,7 @@ private:
         }
 
         bool operator<(const _Bound &rhs) const {
-            return value < rhs.value or (value == rhs.value and closed and not rhs.closed);
+            return value < rhs.value || (value == rhs.value && closed && !rhs.closed);
         }
 
         _Bound & operator=(const _Bound &rhs) {
@@ -398,7 +401,7 @@ private:
     inline static const _Bound &
     _Min( const _Bound &a, const _Bound &b ) {
         return (a.value < b.value
-            or ((a.value == b.value) and a.closed and not b.closed)) ?
+            || ((a.value == b.value) && a.closed && !b.closed)) ?
             a : b;
     }
 
@@ -406,7 +409,7 @@ private:
     inline static const _Bound &
     _Max( const _Bound &a, const _Bound &b ) {
         return (a.value < b.value
-            or ((a.value == b.value) and not a.closed and b.closed)) ?
+            || ((a.value == b.value) && !a.closed && b.closed)) ?
             b : a;
     }
 
@@ -418,4 +421,6 @@ private:
 /// \ingroup group_gf_DebuggingOutput
 std::ostream &operator<<(std::ostream&, const GfInterval&);
 
-#endif /* GF_INTERVAL_H */
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // GF_INTERVAL_H 

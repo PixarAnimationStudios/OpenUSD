@@ -21,7 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/refPtr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 int
 Tf_RefPtr_UniqueChangedCounter::_AddRef(TfRefBase const *refBase,
@@ -47,3 +52,5 @@ Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase,
     listener.unlock();
     return oldValue == 1;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

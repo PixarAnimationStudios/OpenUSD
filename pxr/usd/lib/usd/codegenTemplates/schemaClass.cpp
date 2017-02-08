@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+{{ namespaceOpen }}
+
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -53,7 +55,7 @@ TF_REGISTRY_FUNCTION(TfType)
 {{ cls.cppClassName }}
 {{ cls.cppClassName }}::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return {{ cls.cppClassName }}();
     }
@@ -67,7 +69,7 @@ TF_REGISTRY_FUNCTION(TfType)
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("{{ cls.usdPrimTypeName }}");
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return {{ cls.cppClassName }}();
     }
@@ -176,9 +178,14 @@ const TfTokenVector&
         return localNames;
 }
 
+{{ namespaceClose }}
+
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// '{{ namespaceOpen }}', '{{ namespaceClose }}'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 

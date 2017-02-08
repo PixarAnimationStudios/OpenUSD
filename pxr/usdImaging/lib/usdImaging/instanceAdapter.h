@@ -24,6 +24,7 @@
 #ifndef USDIMAGING_INSTANCE_ADAPTER_H
 #define USDIMAGING_INSTANCE_ADAPTER_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 #include "pxr/base/tf/hashmap.h"
@@ -33,6 +34,9 @@
 #include <boost/enable_shared_from_this.hpp> 
 
 #include <mutex>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class UsdImagingInstanceAdapter
 ///
@@ -111,6 +115,18 @@ public:
     virtual SdfPath GetInstancer(SdfPath const &cachePath);
 
     // ---------------------------------------------------------------------- //
+    /// \name Nested instancing support
+    // ---------------------------------------------------------------------- //
+
+    virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
+                                          SdfPath const &protoRprimPath);
+
+    virtual GfMatrix4d GetRelativeInstancerTransform(
+        SdfPath const &parentInstancerPath,
+        SdfPath const &instancerPath,
+        UsdTimeCode time);
+
+    // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
     virtual bool PopulateSelection(SdfPath const &path,
@@ -124,7 +140,6 @@ public:
     /// Returns the depending rprim paths which don't exist in descendants.
     /// Used for change tracking over subtree boundary (e.g. instancing)
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
-
 
 private:
 
@@ -347,5 +362,8 @@ private:
         _MasterToInstancerMap;
     _MasterToInstancerMap _masterToInstancerMap;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDIMAGING_INSTANCE_ADAPTER_H

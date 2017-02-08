@@ -26,8 +26,11 @@
 
 /// \file pcp/node_Iterator.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/primIndex_Graph.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // These classes exist because we want to optimize the iteration of a
 // node's children while not exposing the PcpPrimIndex_Graph implementation
@@ -193,4 +196,6 @@ Pcp_GetChildren(const PcpNodeRef& node)
                             IteratorType(node, /* end = */ true));
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_NODE_ITERATOR_H

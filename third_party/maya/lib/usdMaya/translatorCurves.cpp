@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/translatorCurves.h"
 
 #include "usdMaya/translatorUtil.h"
@@ -40,6 +41,9 @@
 #include <maya/MTime.h>
 #include <maya/MTimeArray.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 /* static */
 bool
@@ -49,7 +53,7 @@ PxrUsdMayaTranslatorCurves::Create(
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context)
 {
-    if (not curves) {
+    if (!curves) {
         return false;
     }
 
@@ -59,7 +63,7 @@ PxrUsdMayaTranslatorCurves::Create(
 
     // Create node (transform)
     MObject mayaNodeTransformObj;
-    if (not PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                           parentNode,
                                                           args,
                                                           context,
@@ -284,3 +288,6 @@ PxrUsdMayaTranslatorCurves::Create(
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

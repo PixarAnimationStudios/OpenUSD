@@ -240,9 +240,11 @@ class MainWindow(QtGui.QMainWindow):
         print "INFO: Settings restored to default"
 
     def _configurePlugins(self):
+        from plugContext import PlugContext
+        plugCtx = PlugContext(self)
         try:
             from pixar import UsdviewPlug
-            UsdviewPlug.ConfigureView(self)
+            UsdviewPlug.ConfigureView(plugCtx)
 
         except ImportError:
             pass
@@ -284,7 +286,8 @@ class MainWindow(QtGui.QMainWindow):
         self.installEventFilter(self)
 
         # read the stage here
-        self._stage = self._openStage(self._parserData.usdFile)
+        self._stage = self._openStage(self._parserData.usdFile,
+                                      self._parserData.populationMask)
         if not self._stage:
             sys.exit(0)
 
@@ -713,13 +716,17 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('triggered()'),
                                self._adjustComplexity)
         
-        QtCore.QObject.connect(self._ui.actionDisplay_Guides,
+        QtCore.QObject.connect(self._ui.actionDisplay_Guide,
                                QtCore.SIGNAL('toggled(bool)'),
-                               self._toggleDisplayGuides)
+                               self._toggleDisplayGuide)
 
-        QtCore.QObject.connect(self._ui.actionDisplay_Rendering_Guides,
+        QtCore.QObject.connect(self._ui.actionDisplay_Proxy,
                                QtCore.SIGNAL('toggled(bool)'),
-                               self._toggleDisplayRenderingGuides)
+                               self._toggleDisplayProxy)
+
+        QtCore.QObject.connect(self._ui.actionDisplay_Render,
+                               QtCore.SIGNAL('toggled(bool)'),
+                               self._toggleDisplayRender)
 
         QtCore.QObject.connect(self._ui.actionDisplay_Camera_Oracles,
                                QtCore.SIGNAL('toggled(bool)'),
@@ -924,9 +931,9 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('triggered()'),
                                self.jumpToEnclosingModelSelectedPrims)
 
-        QtCore.QObject.connect(self._ui.actionJump_to_Bound_Look,
+        QtCore.QObject.connect(self._ui.actionJump_to_Bound_Material,
                                QtCore.SIGNAL('triggered()'),
-                               self.jumpToBoundLookSelectedPrims)
+                               self.jumpToBoundMaterialSelectedPrims)
 
         QtCore.QObject.connect(self._ui.actionJump_to_Master,
                                QtCore.SIGNAL('triggered()'),
@@ -1060,7 +1067,7 @@ class MainWindow(QtGui.QMainWindow):
         if self._printTiming:
             t.PrintTime("'%s'" % msg)
 
-    def _openStage(self, usdFilePath):
+    def _openStage(self, usdFilePath, populationMaskPaths):
         # Attempt to do specialized asset resolution based on the
         # UsdviewPlug installed plugin, otherwise use the configured
         # Ar instance for asset resolution.
@@ -1085,9 +1092,16 @@ class MainWindow(QtGui.QMainWindow):
 
         with Timer() as t:
             loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
-            stage = Usd.Stage.Open(usdFilePath, 
-                                   self._pathResolverContext, 
-                                   loadSet)
+            popMask = (None if populationMaskPaths is None else
+                       Usd.StagePopulationMask())
+            if popMask:
+                for p in populationMaskPaths:
+                    popMask.Add(p)
+                stage = Usd.Stage.OpenMasked(
+                    usdFilePath, self._pathResolverContext, popMask, loadSet)
+            else:
+                stage = Usd.Stage.Open(
+                    usdFilePath, self._pathResolverContext, loadSet)
 
             # no point in optimizing for editing if we're not redrawing
             if stage and not self._noRender:
@@ -1855,13 +1869,17 @@ class MainWindow(QtGui.QMainWindow):
         self._stageView.showBBoxes = self._settings.get("ShowBBoxes", True) 
         self._ui.showBBoxes.setChecked(self._stageView.showBBoxes)
 
-        displayGuides = self._settings.get("DisplayGuides", False)
-        self._ui.actionDisplay_Guides.setChecked(displayGuides)
-        self._stageView.setDisplayGuides(displayGuides)
+        displayGuide = self._settings.get("DisplayGuide", False)
+        self._ui.actionDisplay_Guide.setChecked(displayGuide)
+        self._stageView.setDisplayGuide(displayGuide)
 
-        displayRenderingGuides = self._settings.get("DisplayRenderingGuides", False)
-        self._ui.actionDisplay_Rendering_Guides.setChecked(displayRenderingGuides)
-        self._stageView.setDisplayRenderingGuides(displayRenderingGuides)
+        displayProxy = self._settings.get("DisplayProxy", True)
+        self._ui.actionDisplay_Proxy.setChecked(displayProxy)
+        self._stageView.setDisplayProxy(displayProxy)
+
+        displayRender = self._settings.get("DisplayRender", False)
+        self._ui.actionDisplay_Render.setChecked(displayRender)
+        self._stageView.setDisplayRender(displayRender)
 
         displayCameraOracles = self._settings.get("DisplayCameraOracles", False)
         self._ui.actionDisplay_Camera_Oracles.setChecked(displayCameraOracles)
@@ -2177,16 +2195,23 @@ class MainWindow(QtGui.QMainWindow):
                                 self._currentFrame,
                                 forceComputeBBox=True)
 
-    def _toggleDisplayGuides(self, checked):
-        self._settings.setAndSave(DisplayGuides=checked)
-        self._stageView.setDisplayGuides(checked)
+    def _toggleDisplayGuide(self, checked):
+        self._settings.setAndSave(DisplayGuide=checked)
+        self._stageView.setDisplayGuide(checked)
         self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
         self._stageView.update()
 
-    def _toggleDisplayRenderingGuides(self, checked):
-        self._settings.setAndSave(DisplayRenderingGuides=checked)
-        self._stageView.setDisplayRenderingGuides(checked)
+    def _toggleDisplayProxy(self, checked):
+        self._settings.setAndSave(DisplayProxy=checked)
+        self._stageView.setDisplayProxy(checked)
+        self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
+        self._updateAttributeView()
+        self._stageView.update()
+
+    def _toggleDisplayRender(self, checked):
+        self._settings.setAndSave(DisplayRender=checked)
+        self._stageView.setDisplayRender(checked)
         self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
         self._stageView.update()
@@ -2195,12 +2220,6 @@ class MainWindow(QtGui.QMainWindow):
         self._settings.setAndSave(DisplayCameraGuides=checked)
         self._stageView.setDisplayCameraOracles(checked)
         self._stageView.update()
-
-    def _IsDisplayGuidesEnabled(self):
-        return self._ui.actionDisplay_Guides.isChecked()
-
-    def _IsDisplayRenderingGuidesEnabled(self):
-        return self._ui.actionDisplay_Rendering_Guides.isChecked()
 
     def _toggleDisplayPrimId(self, checked):
         self._settings.setAndSave(DisplayPrimId=checked)
@@ -2372,7 +2391,8 @@ class MainWindow(QtGui.QMainWindow):
             self._currentProp = None
 
             self._stage.Close()
-            self._stage = self._openStage(self._parserData.usdFile)
+            self._stage = self._openStage(self._parserData.usdFile,
+                                          self._parserData.populationMask)
             # We need this for layers which were cached in memory but changed on
             # disk. The additional Reload call should be cheap when nothing
             # actually changed.
@@ -2729,12 +2749,18 @@ class MainWindow(QtGui.QMainWindow):
     def resetSelectionToPseudoroot(self):
         self.selectNodeByPath("/", UsdImagingGL.GL.ALL_INSTANCES, "replace")
 
-    def selectNodeByPath(self, path, instanceIndex, updateMode):
+    def selectNodeByPath(self, path, instanceIndex, updateMode, 
+                         applyPickMode=False):
         """Modifies selection by a stage prim based on a prim path,
         which can be empty.
           path - Sdf.Path to select
+          instanceIndex - PointInstancer protoIndices index to select, if
+                          'applyPickMode' is True.
           updateMode - one of "add", "replace", or "toggle", determines
                        how path should modify current selection.
+          applyPickMode - consult the controller's "Pick Mode" to see if we
+                          should apply model or instance selection modes.  If
+                          False (the default), we will select the path given.
           If path is empty and updateMode is "replace", we reset the entire
           selection to the pseudoRoot.
           
@@ -2746,17 +2772,18 @@ class MainWindow(QtGui.QMainWindow):
                 return None
             path = self._stage.GetPseudoRoot().GetPath()
         
-        # If model picking on, find model and select instead
-        if self._ui.actionPick_Models.isChecked():
+        # If model picking on, find model and select instead, IFF we are
+        # requested to apply picking modes
+        if applyPickMode and self._ui.actionPick_Models.isChecked():
             from common import GetEnclosingModelPrim
-
+            
             prim = self._stage.GetPrimAtPath(str(path))
             model = prim if prim.IsModel() else GetEnclosingModelPrim(prim)
             if model:
                 path = model.GetPath()
 
         # If not in instances picking mode, select all instances.
-        if not self._ui.actionPick_Instances.isChecked():
+        if not (applyPickMode and self._ui.actionPick_Instances.isChecked()):
             self._stageView.clearInstanceSelection()
             instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
 
@@ -2851,7 +2878,7 @@ class MainWindow(QtGui.QMainWindow):
                 if self._primShouldBeShown(prim):
                     instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
                     item = self.selectNodeByPath(prim.GetPath(), instanceIndex,
-                                          "replace" if first else "add")
+                                                 "replace" if first else "add")
                     first = False
                     # selectNodeByPath expands all of item's parents,
                     # but that doesn't seem to work if you have manually closed
@@ -3603,7 +3630,7 @@ class MainWindow(QtGui.QMainWindow):
         """Make the Edit Prim menu items enabled or disabled depending on the
         selected prim."""
         from common import HasSessionVis, GetEnclosingModelPrim, \
-            GetPrimsLoadability, GetClosestBoundLook
+            GetPrimsLoadability, GetClosestBoundMaterial
 
         # Use the descendent-pruned selection set to avoid redundant
         # traversal of the stage to answer isLoaded...
@@ -3611,7 +3638,7 @@ class MainWindow(QtGui.QMainWindow):
         removeEnabled = False
         anyImageable = False
         anyModels = False
-        anyBoundLooks = False
+        anyBoundMaterials = False
         anyActive = False
         anyInactive = False
         anyInstances = False
@@ -3621,8 +3648,8 @@ class MainWindow(QtGui.QMainWindow):
                 anyImageable = anyImageable or bool(imageable)
                 removeEnabled = removeEnabled or HasSessionVis(prim)
             anyModels = anyModels or GetEnclosingModelPrim(prim) is not None
-            look, bound = GetClosestBoundLook(prim)
-            anyBoundLooks = anyBoundLooks or look is not None
+            material, bound = GetClosestBoundMaterial(prim)
+            anyBoundMaterials = anyBoundMaterials or material is not None
             anyInstances = anyInstances or prim.IsInstance()
             if prim.IsActive():
                 anyActive = True
@@ -3630,7 +3657,7 @@ class MainWindow(QtGui.QMainWindow):
                 anyInactive = True
 
         self._ui.actionJump_to_Model_Root.setEnabled(anyModels)
-        self._ui.actionJump_to_Bound_Look.setEnabled(anyBoundLooks)
+        self._ui.actionJump_to_Bound_Material.setEnabled(anyBoundMaterials)
         self._ui.actionJump_to_Master.setEnabled(anyInstances)
 
         self._ui.actionRemove_Session_Visibility.setEnabled(removeEnabled)
@@ -3669,16 +3696,16 @@ class MainWindow(QtGui.QMainWindow):
                 newSel.append(prim)
         self._setSelectionFromPrimList(newSel)
 
-    def jumpToBoundLookSelectedPrims(self):
-        from common import GetClosestBoundLook
+    def jumpToBoundMaterialSelectedPrims(self):
+        from common import GetClosestBoundMaterial
         newSel = []
         added = set()
         # We don't expect this to take long, so no BusyContext
         for prim in self._currentNodes:
-            look, bound = GetClosestBoundLook(prim)
-            if not (look in added):
-                added.add(look)
-                newSel.append(look)
+            material, bound = GetClosestBoundMaterial(prim)
+            if not (material in added):
+                added.add(material)
+                newSel.append(material)
         self._setSelectionFromPrimList(newSel)
 
     def jumpToMasterSelectedPrims(self):
@@ -3811,7 +3838,8 @@ class MainWindow(QtGui.QMainWindow):
                         doSelection = False
                         break
             if doSelection:
-                item = self.selectNodeByPath(path, instanceIndex, updateMode)
+                item = self.selectNodeByPath(path, instanceIndex, updateMode,
+                                             applyPickMode=True)
                 if item and item.node.GetPath() != Sdf.Path.absoluteRootPath:
                     # Scroll the node view widget to show the newly selected
                     # item, unless it's the pseudoRoot, which represents "no
@@ -3834,13 +3862,13 @@ class MainWindow(QtGui.QMainWindow):
                 QtGui.QApplication.sendEvent(self._stageView, mrEvent)
 
     def onRollover(self, path, instanceIndex, modifiers):
-        from common import GetEnclosingModelPrim, GetClosestBoundLook
+        from common import GetEnclosingModelPrim, GetClosestBoundMaterial
         
         prim = self._stage.GetPrimAtPath(path)
         if prim:
             headerStr = ""
             propertyStr = ""
-            lookStr = ""
+            materialStr = ""
             aiStr = ""
             vsStr = ""
             model = GetEnclosingModelPrim(prim)
@@ -3927,20 +3955,20 @@ class MainWindow(QtGui.QMainWindow):
                 propertyStr += "<br> -- <em>subdivisionScheme</em> = %s" %\
                     mesh.GetSubdivisionSchemeAttr().Get()
     
-            # Look info - this IS expected
-            lookStr = "<hr><b>Look assignment:</b><br>"
-            look, bound = GetClosestBoundLook(prim)
-            if look:
-                lookPath = look.GetPath()
-                # if the look is in the same model, make path model-relative
-                lookStr += _MakeModelRelativePath(lookPath, model)
+            # Material info - this IS expected
+            materialStr = "<hr><b>Material assignment:</b><br>"
+            material, bound = GetClosestBoundMaterial(prim)
+            if material:
+                materialPath = material.GetPath()
+                # if the material is in the same model, make path model-relative
+                materialStr += _MakeModelRelativePath(materialPath, model)
                 
                 if bound != prim:
                     boundPath = _MakeModelRelativePath(bound.GetPath(),
                                                        model)
-                    lookStr += "<br><small><em>Look binding inherited from ancestor:</em></small><br> %s" % str(boundPath)
+                    materialStr += "<br><small><em>Material binding inherited from ancestor:</em></small><br> %s" % str(boundPath)
             else:
-                lookStr += "<small><em>No assigned Look!</em></small>"
+                materialStr += "<small><em>No assigned Material!</em></small>"
 
             # Instance / master info, if this prim is an instance
             instanceStr = ""
@@ -3953,7 +3981,7 @@ class MainWindow(QtGui.QMainWindow):
             # non-default purpose, doubleSided)
 
             # Then put it all together
-            tip = headerStr + propertyStr + lookStr + instanceStr + aiStr + vsStr
+            tip = headerStr + propertyStr + materialStr + instanceStr + aiStr + vsStr
             
         else:
             tip = ""

@@ -24,9 +24,13 @@
 #ifndef HDX_COMPUTE_SHADOW_MATRIX_H
 #define HDX_COMPUTE_SHADOW_MATRIX_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 #include "pxr/base/gf/matrix4d.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Interface class for computing the shadow matrix
 // for a given viewport.
@@ -43,5 +47,8 @@ private:
     HdxShadowMatrixComputation(const HdxShadowMatrixComputation &)             = delete;
     HdxShadowMatrixComputation &operator =(const HdxShadowMatrixComputation &) = delete;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HDX_COMPUTE_SHADOW_MATRIX_H

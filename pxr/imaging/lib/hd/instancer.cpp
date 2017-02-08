@@ -29,6 +29,9 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdInstancer::HdInstancer(HdSceneDelegate* delegate,
                          SdfPath const& id,
                          SdfPath const &parentId)
@@ -43,7 +46,7 @@ HdBufferArrayRangeSharedPtr
 HdInstancer::GetInstancePrimVars(int level)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     HdChangeTracker &changeTracker = 
         _delegate->GetRenderIndex().GetChangeTracker();
@@ -84,7 +87,7 @@ HdInstancer::GetInstancePrimVars(int level)
                     VtValue value = _delegate->Get(instancerId, *nameIt);
                     if (!value.IsEmpty()) {
                         HdBufferSourceSharedPtr source;
-                        if (*nameIt == HdTokens->instanceTransform and
+                        if (*nameIt == HdTokens->instanceTransform &&
                             TF_VERIFY(value.IsHolding<VtArray<GfMatrix4d> >())) {
                             // Explicitly invoke the c'tor taking a
                             // VtArray<GfMatrix4d> to ensure we properly convert to
@@ -130,9 +133,9 @@ HdInstancer::GetInstancePrimVars(int level)
                 }
             }
 
-            if (not sources.empty()) {
+            if (!sources.empty()) {
                 // if the instance BAR has not been allocated, create new one
-                if (not _instancePrimVarRange) {
+                if (!_instancePrimVarRange) {
                     HdBufferSpecVector bufferSpecs;
                     HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
 
@@ -197,7 +200,7 @@ HdInstancer::_GetInstanceIndices(SdfPath const &prototypeId,
     }
 
     // backtrace the instancer hierarchy to gather all instance indices.
-    if (not _parentId.IsEmpty()) {
+    if (!_parentId.IsEmpty()) {
         HdInstancerSharedPtr parentInstancer =
             _delegate->GetRenderIndex().GetInstancer(_parentId);
         if (TF_VERIFY(parentInstancer)) {
@@ -211,7 +214,7 @@ HdBufferArrayRangeSharedPtr
 HdInstancer::GetInstanceIndices(SdfPath const &prototypeId)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // Note: this function is called from the prototype HdRprm only if
     // the prototype has DirtyInstanceIndex. There's no need to guard using
@@ -224,7 +227,7 @@ HdInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     _GetInstanceIndices(prototypeId, &instanceIndicesArray);
     int instancerNumLevels = (int)instanceIndicesArray.size();
 
-    if (not TF_VERIFY(instancerNumLevels > 0)) {
+    if (!TF_VERIFY(instancerNumLevels > 0)) {
         return HdBufferArrayRangeSharedPtr();
     }
 
@@ -232,7 +235,7 @@ HdInstancer::GetInstanceIndices(SdfPath const &prototypeId)
 
     {
         std::lock_guard<std::mutex> lock(_instanceLock);
-        if (not TfMapLookup(_instanceIndexRangeMap, prototypeId, &indexRange)) {
+        if (!TfMapLookup(_instanceIndexRangeMap, prototypeId, &indexRange)) {
             TF_DEBUG(HD_INSTANCER_UPDATED).Msg("Allocating new instanceIndex "
                     "range for <%s>\n",
                     GetId().GetText());
@@ -321,3 +324,6 @@ HdInstancer::GetInstanceIndices(SdfPath const &prototypeId)
 
     return indexRange;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

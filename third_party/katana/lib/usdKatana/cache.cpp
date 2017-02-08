@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/cache.h"
 #include "usdKatana/locks.h"
 #include "usdKatana/debugCodes.h"
@@ -42,57 +43,133 @@
 #include <set>
 #include <regex.h>
 
+#include <pystring/pystring.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_INSTANTIATE_SINGLETON(UsdKatanaCache);
 
 SdfLayerRefPtr&
-UsdKatanaCache::_FindOrCreateSessionLayer(std::string variantString)
+UsdKatanaCache::_FindOrCreateSessionLayer(
+        FnAttribute::GroupAttribute sessionAttr, std::string rootLocation)
 {
     // Grab a reader lock for reading the _sessionKeyCache
     boost::upgrade_lock<boost::upgrade_mutex>
                 readerLock(UsdKatanaGetSessionCacheLock());
-
+    
+    
+    std::string cacheKey = FnAttribute::GroupAttribute("s", sessionAttr,
+            "r", FnAttribute::StringAttribute(rootLocation),
+                    true).getHash().str();
+    
     // Open the usd stage
     SdfLayerRefPtr sessionLayer;
-
-    // There is similar logic in lava/lib/usdUtils/stageCache.h , but that 
-    // convenience function only handles variant selections for one model
-    if (_sessionKeyCache.find(variantString) == _sessionKeyCache.end()) {
-        // We are making a new entry in the _sessionKeyCache, grab a writer lock
+    
+    if (_sessionKeyCache.find(cacheKey) == _sessionKeyCache.end())
+    {
         boost::upgrade_to_unique_lock<boost::upgrade_mutex>
                     writerLock(readerLock);
-    
-        // session layer not found in the cache, create new
         sessionLayer = SdfLayer::CreateAnonymous();
-        _sessionKeyCache[variantString] = sessionLayer;
-
-        // Set variant selections in the session layer.
-        std::set<SdfPath> variantSelections;
-        std::set<std::string> variants = TfStringTokenizeToSet(variantString, " ");
-        TF_FOR_ALL(variant, variants) {
-            std::string errMsg;
-            if (SdfPath::IsValidPathString(*variant, &errMsg)) {
-                SdfPath varSelPath(*variant);
-                if (varSelPath.IsPrimVariantSelectionPath()) {
-                    variantSelections.insert( SdfPath(*variant) );
+        _sessionKeyCache[cacheKey] = sessionLayer;
+        
+        
+        std::string rootLocationPlusSlash = rootLocation + "/";
+        
+        
+        FnAttribute::GroupAttribute variantsAttr =
+                sessionAttr.getChildByName("variants");
+        for (int64_t i = 0, e = variantsAttr.getNumberOfChildren(); i != e;
+                ++i)
+        {
+            std::string entryName = FnAttribute::DelimiterDecode(
+                    variantsAttr.getChildName(i));
+            
+            FnAttribute::GroupAttribute entryVariantSets =
+                    variantsAttr.getChildByIndex(i);
+            
+            if (entryVariantSets.getNumberOfChildren() == 0)
+            {
+                continue;
+            }
+            
+            if (!pystring::startswith(entryName, rootLocationPlusSlash))
+            {
+                continue;
+            }
+            
+            
+            std::string primPath = pystring::slice(entryName,
+                    rootLocation.size());
+            
+            for (int64_t i = 0, e = entryVariantSets.getNumberOfChildren();
+                    i != e; ++i)
+            {
+                std::string variantSetName = entryVariantSets.getChildName(i);
+                
+                FnAttribute::StringAttribute variantValueAttr =
+                        entryVariantSets.getChildByIndex(i);
+                if (!variantValueAttr.isValid())
+                {
+                    continue;
+                }
+                
+                std::string variantSetSelection =
+                        variantValueAttr.getValue("", false);
+                
+                SdfPath varSelPath(primPath);
+                
+                
+                SdfPrimSpecHandle spec = SdfCreatePrimInLayer(
+                        sessionLayer, varSelPath.GetPrimPath());
+                if (spec)
+                {
+                    std::pair<std::string, std::string> sel = 
+                            varSelPath.GetVariantSelection();
+                    spec->SetVariantSelection(variantSetName,
+                            variantSetSelection);
                 }
             }
         }
-        TF_FOR_ALL(varSelPath, variantSelections) {
-            SdfPrimSpecHandle spec =
-                SdfCreatePrimInLayer(sessionLayer, varSelPath->GetPrimPath() );
-            if (spec) {
-                std::pair<std::string, std::string> sel = 
-                    varSelPath->GetVariantSelection();
-                spec->SetVariantSelection(sel.first, sel.second);
+        
+        
+        FnAttribute::GroupAttribute activationsAttr =
+                sessionAttr.getChildByName("activations");
+        for (int64_t i = 0, e = activationsAttr.getNumberOfChildren(); i != e;
+                ++i)
+        {
+            std::string entryName = FnAttribute::DelimiterDecode(
+                    activationsAttr.getChildName(i));
+            
+            FnAttribute::IntAttribute stateAttr =
+                    activationsAttr.getChildByIndex(i);
+            
+            if (stateAttr.getNumberOfValues() != 1)
+            {
+                continue;
             }
+            
+            if (!pystring::startswith(entryName, rootLocationPlusSlash))
+            {
+                continue;
+            }
+            
+            std::string primPath = pystring::slice(entryName,
+                    rootLocation.size());
+            
+            SdfPath varSelPath(primPath);
+            
+            SdfPrimSpecHandle spec = SdfCreatePrimInLayer(
+                        sessionLayer, varSelPath.GetPrimPath());
+            spec->SetActive(stateAttr.getValue());
         }
-
-        // Enforce the read-only-ness of session layers here.
-        sessionLayer->SetPermissionToEdit(false);
+        
     }
-
-    return _sessionKeyCache[variantString];
+    
+    return _sessionKeyCache[cacheKey];
+    
 }
+
 
 /* static */
 void
@@ -115,7 +192,7 @@ UsdKatanaCache::_SetMutedLayers(
     TF_FOR_ALL(stageLayer, stageLayers)
     {
         SdfLayerHandle layer = *stageLayer;
-        if (not layer) {
+        if (!layer) {
             continue;
         }
         std::string layerPath = layer->GetRepositoryPath();
@@ -134,14 +211,14 @@ UsdKatanaCache::_SetMutedLayers(
             }
         }
         
-        if (not match and stage->IsLayerMuted(layerIdentifier)) {
+        if (!match && stage->IsLayerMuted(layerIdentifier)) {
             TF_DEBUG(USDKATANA_CACHE_RENDERER).Msg("{USD RENDER CACHE} "
                                 "Unmuting Layer: '%s'\n",
                                 layerIdentifier.c_str());
             stage->UnmuteLayer(layerIdentifier);
         }
 
-        if (match and not stage->IsLayerMuted(layerIdentifier)) {
+        if (match && !stage->IsLayerMuted(layerIdentifier)) {
             TF_DEBUG(USDKATANA_CACHE_RENDERER).Msg("{USD RENDER CACHE} "
                     "Muting Layer: '%s'\n",
                     layerIdentifier.c_str());
@@ -169,27 +246,6 @@ UsdKatanaCache::Flush()
     _rendererCache.clear();
 }
 
-/*static*/
-std::string
-UsdKatanaCache::GetVariantSelectionString(std::set<SdfPath> const& 
-                                                            variantSelections)
-{
-    std::string variantString = "";
-    TF_FOR_ALL(varSelPath, variantSelections) {
-        // for each variant selection
-        std::string oneSelection;
-        std::pair<std::string, std::string> sel 
-                                            = varSelPath->GetVariantSelection();
-        oneSelection = TfStringPrintf(
-                                "%s{%s=%s}",
-                                varSelPath->GetPrimPath().GetString().c_str(),
-                                sel.first.c_str(), 
-                                sel.second.c_str());
-
-        variantString += oneSelection + " ";
-    }
-    return variantString;
-}
 
 static std::string
 _ResolvePath(const std::string& path)
@@ -197,17 +253,18 @@ _ResolvePath(const std::string& path)
     return ArGetResolver().Resolve(path);
 }
 
-UsdStageRefPtr
-UsdKatanaCache::GetStage(std::string const& fileName,
-                         std::string const& variantSelections,
-                         std::string const& ignoreLayerRegex,
-                         bool forcePopulate)
+UsdStageRefPtr UsdKatanaCache::GetStage(
+        std::string const& fileName, 
+        FnAttribute::GroupAttribute sessionAttr,
+        const std::string & sessionRootLocation,
+        std::string const& ignoreLayerRegex,
+        bool forcePopulate)
 {
     bool givenAbsPath = TfStringStartsWith(fileName, "/");
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) : ArchGetCwd();
 
-    std::string path = not givenAbsPath ? _ResolvePath(fileName) : fileName;
+    std::string path = !givenAbsPath ? _ResolvePath(fileName) : fileName;
 
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating and caching UsdStage for "
@@ -216,7 +273,7 @@ UsdKatanaCache::GetStage(std::string const& fileName,
 
     if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(path)) {
         SdfLayerRefPtr& sessionLayer =
-                _FindOrCreateSessionLayer(variantSelections);
+                _FindOrCreateSessionLayer(sessionAttr, sessionRootLocation);
 
         UsdStageCache& stageCache = UsdUtilsStageCache::Get();
         UsdStageCacheContext cacheCtx(stageCache);
@@ -226,13 +283,13 @@ UsdKatanaCache::GetStage(std::string const& fileName,
                 ArGetResolver().GetCurrentContext(),
                 load);
 
-        TF_DEBUG(USDKATANA_CACHE_STAGE).Msg("{USD STAGE CACHE} Fetched stage "
-                                    "(%s, %s, forcePopulate=%s) "
-                                    "with UsdStage address '%lx'\n",
-                                    fileName.c_str(),
-                                    variantSelections.c_str(),
-                                    forcePopulate?"true":"false",
-                                    (size_t)stage.operator->());
+        // TF_DEBUG(USDKATANA_CACHE_STAGE).Msg("{USD STAGE CACHE} Fetched stage "
+        //                             "(%s, %s, forcePopulate=%s) "
+        //                             "with UsdStage address '%lx'\n",
+        //                             fileName.c_str(),
+        //                             variantSelections.c_str(),
+        //                             forcePopulate?"true":"false",
+        //                             (size_t)stage.operator->());
 
         // Mute layers according to a regex.
         _SetMutedLayers(stage, ignoreLayerRegex);
@@ -240,34 +297,24 @@ UsdKatanaCache::GetStage(std::string const& fileName,
         return stage;
 
     }
+    
     static UsdStageRefPtr NULL_STAGE;
     return NULL_STAGE;
-
 }
 
-UsdStageRefPtr 
-UsdKatanaCache::GetStage(std::string const& fileName,
-                         std::set<SdfPath> const& variantSelections,
-                         std::string const& ignoreLayerRegex,
-                         bool forcePopulate)
-{
-    std::string varSelStr = GetVariantSelectionString(variantSelections);
-    return GetStage(fileName, varSelStr, ignoreLayerRegex, forcePopulate);
-}
 
-// XXX, largely pasted from equivalent GetStage
-// doesn't place stageCache/context on stack
 UsdStageRefPtr
 UsdKatanaCache::GetUncachedStage(std::string const& fileName, 
-                             std::string const& variantSelections,
-                             std::string const& ignoreLayerRegex,
-                             bool forcePopulate)
+                            FnAttribute::GroupAttribute sessionAttr,
+                            const std::string & sessionRootLocation,
+                            std::string const& ignoreLayerRegex,
+                            bool forcePopulate)
 {
     bool givenAbsPath = TfStringStartsWith(fileName, "/");
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) : ArchGetCwd();
 
-    std::string path = not givenAbsPath ? _ResolvePath(fileName) : fileName;
+    std::string path = !givenAbsPath ? _ResolvePath(fileName) : fileName;
 
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating UsdStage for "
@@ -276,7 +323,7 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
 
     if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(path)) {
         SdfLayerRefPtr& sessionLayer =
-                _FindOrCreateSessionLayer(variantSelections);
+                _FindOrCreateSessionLayer(sessionAttr, sessionRootLocation);
         
         // No cache!
         //UsdStageCache stageCache;
@@ -288,13 +335,13 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
                 ArGetResolver().GetCurrentContext(),
                 load);
 
-        TF_DEBUG(USDKATANA_CACHE_STAGE).Msg("{USD STAGE CACHE} Fetched uncached stage "
-                                    "(%s, %s, forcePopulate=%s) "
-                                    "with UsdStage address '%lx'\n",
-                                    fileName.c_str(),
-                                    variantSelections.c_str(),
-                                    forcePopulate?"true":"false",
-                                    (size_t)stage.operator->());
+        // TF_DEBUG(USDKATANA_CACHE_STAGE).Msg("{USD STAGE CACHE} Fetched uncached stage "
+        //                             "(%s, %s, forcePopulate=%s) "
+        //                             "with UsdStage address '%lx'\n",
+        //                             fileName.c_str(),
+        //                             variantSelections.c_str(),
+        //                             forcePopulate?"true":"false",
+        //                             (size_t)stage.operator->());
 
         // Mute layers according to a regex.
         _SetMutedLayers(stage, ignoreLayerRegex);
@@ -305,28 +352,17 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
     
     return UsdStageRefPtr();
     
-    //static UsdStageRefPtr NULL_UNCACHED_STAGE;
-    //return NULL_UNCACHED_STAGE;
+    
 }
 
-    
-UsdStageRefPtr
-UsdKatanaCache::GetUncachedStage(std::string const& fileName, 
-                         std::set<SdfPath> const& variantSelections,
-                         std::string const& ignoreLayerRegex,
-                         bool forcePopulate)
-{
-    
-    std::string varSelStr = GetVariantSelectionString(variantSelections);
-    return GetUncachedStage(fileName, varSelStr, ignoreLayerRegex, forcePopulate);
-}
+
 
 
 
 UsdImagingGLSharedPtr const& 
 UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
                             UsdPrim const& root,
-                            std::string const& variants)
+                            std::string const& sessionKey)
 {
     // Grab a reader lock for reading the _rendererCache
     boost::upgrade_lock<boost::upgrade_mutex>
@@ -334,7 +370,7 @@ UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
 
     // First look for a parent renderer object first.
     std::string const prefix = stage->GetRootLayer()->GetIdentifier() 
-                             + "::" + variants + "::";
+                             + "::" + sessionKey + "::";
 
     std::string key = prefix + root.GetPath().GetString();
     {
@@ -386,4 +422,7 @@ UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
                                                           excludedPaths))));
     return res.first->second;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

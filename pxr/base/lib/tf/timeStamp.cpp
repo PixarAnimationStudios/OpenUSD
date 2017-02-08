@@ -21,11 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/timeStamp.h"
 #include <ostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 std::ostream&
 operator<<(std::ostream& out, const TfTimeStamp& t)
 {
     return out << t.Get();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

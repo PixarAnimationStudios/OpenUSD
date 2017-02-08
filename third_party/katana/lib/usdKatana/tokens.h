@@ -33,7 +33,10 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \hideinitializer
 #define USDKATANA_TOKENS \
@@ -71,5 +74,7 @@
 /// \li <b>katanaType</b> - UsdKatanaBlindDataObject
 /// \li <b>katanaVisible</b> - UsdKatanaBlindDataObject
 TF_DECLARE_PUBLIC_TOKENS(UsdKatanaTokens, USDKATANA_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

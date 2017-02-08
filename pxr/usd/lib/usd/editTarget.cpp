@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/editTarget.h"
 
 #include "pxr/usd/pcp/layerStack.h"
@@ -35,6 +36,9 @@
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 ////////////////////////////////////////////////////////////////////////
 // UsdEditTarget
@@ -122,7 +126,7 @@ UsdEditTarget
 UsdEditTarget::ForLocalDirectVariant(const SdfLayerHandle &layer,
                                      const SdfPath &varSelPath)
 {
-    if (not varSelPath.IsPrimVariantSelectionPath()) {
+    if (!varSelPath.IsPrimVariantSelectionPath()) {
         TF_CODING_ERROR("Provided varSelPath <%s> must be a prim variant "
                         "selection path.", varSelPath.GetText());
         return UsdEditTarget();
@@ -140,7 +144,7 @@ UsdEditTarget::ForLocalDirectVariant(const SdfLayerHandle &layer,
 bool
 UsdEditTarget::operator==(const UsdEditTarget &o) const
 {
-    return _layer == o._layer and _mapping == o._mapping;
+    return _layer == o._layer && _mapping == o._mapping;
 }
 
 SdfPath
@@ -194,6 +198,9 @@ UsdEditTarget
 UsdEditTarget::ComposeOver(const UsdEditTarget &weaker) const
 {
     return UsdEditTarget(
-        not _layer ? weaker._layer : _layer,
+        !_layer ? weaker._layer : _layer,
         _mapping.Compose(weaker._mapping));
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

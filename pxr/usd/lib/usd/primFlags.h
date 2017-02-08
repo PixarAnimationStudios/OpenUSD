@@ -72,12 +72,16 @@
 /// The following variables provide the clauses that can be combined and 
 /// negated to produce predicates:
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/bitUtils.h"
 
 #include <boost/functional/hash.hpp>
 
 #include <bitset>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // Enum for cached flags on prims.
 enum Usd_PrimFlags {
@@ -109,7 +113,7 @@ struct Usd_Term {
     Usd_Term(Usd_PrimFlags flag, bool negated) : flag(flag), negated(negated) {}
     Usd_Term operator!() const { return Usd_Term(flag, !negated); }
     bool operator==(Usd_Term other) const {
-        return flag == other.flag and negated == other.negated;
+        return flag == other.flag && negated == other.negated;
     }
     bool operator!=(Usd_Term other) const {
         return !(*this == other);
@@ -175,7 +179,7 @@ public:
     Usd_PrimFlagsPredicate(Usd_Term term)
         : _negate(false) {
         _mask[term.flag] = 1;
-        _values[term.flag] = not term.negated;
+        _values[term.flag] = !term.negated;
     }
 
     // Convenience to produce a tautological predicate.  Returns a
@@ -217,7 +221,7 @@ protected:
 
     // Negate this predicate.
     Usd_PrimFlagsPredicate &_Negate() {
-        _negate = not _negate;
+        _negate = !_negate;
         return *this;
     }
 
@@ -237,15 +241,15 @@ private:
     friend bool
     operator==(const Usd_PrimFlagsPredicate &lhs,
                const Usd_PrimFlagsPredicate &rhs) {
-        return lhs._mask == rhs._mask and
-            lhs._values == rhs._values and
+        return lhs._mask == rhs._mask   && 
+            lhs._values == rhs._values  &&
             lhs._negate == rhs._negate;
     }
     // Inequality comparison.
     friend bool
     operator!=(const Usd_PrimFlagsPredicate &lhs,
                const Usd_PrimFlagsPredicate &rhs) {
-        return not (lhs == rhs);
+        return !(lhs == rhs);
     }
 
     // hash overload.
@@ -289,10 +293,10 @@ public:
             return *this;
 
         // If we don't have the bit, set it in _mask and _values (if needed).
-        if (not _mask[term.flag]) {
+        if (!_mask[term.flag]) {
             _mask[term.flag] = 1;
-            _values[term.flag] = not term.negated;
-        } else if (_values[term.flag] != not term.negated) {
+            _values[term.flag] = !term.negated;
+        } else if (_values[term.flag] != !term.negated) {
             // If we do have the bit and the values disagree, then this entire
             // conjunction becomes a contradiction.  If the values agree, it's
             // redundant and we do nothing.
@@ -305,14 +309,14 @@ public:
     /// For instance:
     ///
     /// \code
-    /// not (UsdPrimIsLoaded and UsdPrimIsModel)
+    /// !(UsdPrimIsLoaded && UsdPrimIsModel)
     /// \endcode
     ///
     /// Will negate the conjunction in parens to produce a disjunction
     /// equivalent to:
     ///
     /// \code
-    /// (not UsdPrimIsLoaded or not UsdPrimIsModel)
+    /// (!UsdPrimIsLoaded || !UsdPrimIsModel)
     /// \endcode
     ///
     /// Every expression may be formulated as either a disjunction or a
@@ -370,7 +374,7 @@ operator&&(Usd_PrimFlags lhs, Usd_PrimFlags rhs) {
 /// predicate terms.  For example:
 /// \code
 /// // Get all deactivated or undefined children.
-/// prim.GetFilteredChildren(not UsdPrimIsActive or not UsdPrimIsDefined)
+/// prim.GetFilteredChildren(!UsdPrimIsActive || !UsdPrimIsDefined)
 /// \endcode
 ///
 /// See primFlags.h for more details.
@@ -392,7 +396,7 @@ public:
             return *this;
 
         // If we don't have the bit, set it in _mask and _values (if needed).
-        if (not _mask[term.flag]) {
+        if (!_mask[term.flag]) {
             _mask[term.flag] = 1;
             _values[term.flag] = term.negated;
         } else if (_values[term.flag] != term.negated) {
@@ -408,14 +412,14 @@ public:
     /// For instance:
     ///
     /// \code
-    /// not (UsdPrimIsLoaded or UsdPrimIsModel)
+    /// !(UsdPrimIsLoaded || UsdPrimIsModel)
     /// \endcode
     ///
     /// Will negate the disjunction in parens to produce a conjunction
     /// equivalent to:
     ///
     /// \code
-    /// (not UsdPrimIsLoaded and not UsdPrimIsModel)
+    /// (!UsdPrimIsLoaded && !UsdPrimIsModel)
     /// \endcode
     ///
     /// Every expression may be formulated as either a disjunction or a
@@ -461,5 +465,8 @@ inline Usd_PrimFlagsDisjunction
 operator||(Usd_PrimFlags lhs, Usd_PrimFlags rhs) {
     return Usd_Term(lhs) || Usd_Term(rhs);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_PRIMFLAGS_H

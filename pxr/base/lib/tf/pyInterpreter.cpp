@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
@@ -43,6 +46,8 @@
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 TfPyInitialize()
@@ -101,8 +106,19 @@ TfPyInitialize()
         // TfPyInitialize().
         TfScriptModuleLoader::GetInstance().LoadModules();
 
-        // Release the GIL.
-        PyEval_ReleaseLock();
+        // Release the GIL and restore thread state.
+        // When TfPyInitialize returns, we expect GIL is released 
+        // and python's internal PyThreadState is NULL
+        // Previously this only released the GIL without resetting the ThreadState
+        // This can lead to a situation where python executes without the GIL
+        // PyGILState_Ensure checks the current thread state and decides
+        // to take the lock based on that; so if the GIL is released but the
+        // current thread is valid it leads to cases where python executes
+        // without holding the GIL and mismatched lock/release calls in TfPyLock 
+        // (See the discussion in 141041)
+        
+        PyThreadState* currentState = PyGILState_GetThisThreadState();
+        PyEval_ReleaseThread(currentState);
 
         // Say we're done initializing python.
         initialized = true;
@@ -207,3 +223,4 @@ TfPyGetModulePath(const std::string & moduleName)
     return getString.check() ? getString() : string();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

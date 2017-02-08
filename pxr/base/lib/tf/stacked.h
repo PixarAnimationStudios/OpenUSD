@@ -24,6 +24,7 @@
 #ifndef TF_STACKED_H
 #define TF_STACKED_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/demangle.h"
 
@@ -34,6 +35,8 @@
 
 #include <atomic>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfStackedAccess
 ///
@@ -133,7 +136,7 @@ private:
         _StackHolder() : _initialized(false) { }
 
         Stack &Get() {
-            if (not _initialized) {
+            if (!_initialized) {
                 _initialized = true;
                 Access::InitializeStack<Derived>();
             }
@@ -184,7 +187,7 @@ private:
 
     static Stack &_GetStack() {
         // Technically unsafe double-checked lock to intitialize the stack.
-        if (ARCH_UNLIKELY(not _stackStorage)) {
+        if (ARCH_UNLIKELY(!_stackStorage)) {
             // Make a new stack and try to set it.
             _StackStorage *old = nullptr;
             _StackStorage *tmp = new _StackStorage;
@@ -208,5 +211,7 @@ private:
     // Holds the objects in the stack.
     static std::atomic<_StackStorage*> _stackStorage;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_STACKED_H

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readGprim.h"
 #include "usdKatana/readXformable.h"
@@ -34,6 +35,9 @@
 #include "pxr/base/gf/gamma.h"
 
 #include <FnLogging/FnLogging.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 FnLogSetup("PxrUsdKatanaReadGprim");
 
@@ -54,8 +58,8 @@ PxrUsdKatanaGeomGetDisplayColorAttr(
 {
     // Eval color.
     VtArray<GfVec3f> color;
-    if (not gprim.GetDisplayColorPrimvar().ComputeFlattened(
-            &color, data.GetUsdInArgs()->GetCurrentTime())) {
+    if (!gprim.GetDisplayColorPrimvar().ComputeFlattened(
+        &color, data.GetUsdInArgs()->GetCurrentTime())) {
         return FnKat::Attribute();
     }
 
@@ -118,7 +122,7 @@ _ConvertGeomAttr(
     const int tupleSize,
     const PxrUsdKatanaUsdInPrivateData& data)
 {
-    if (not usdAttr.HasValue())
+    if (!usdAttr.HasValue())
     {
         return FnKat::Attribute();
     }
@@ -205,3 +209,6 @@ PxrUsdKatanaGeomGetVelocityAttr(
             points.GetVelocitiesAttr(), 3, data);
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

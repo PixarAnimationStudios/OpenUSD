@@ -26,11 +26,14 @@
 
 /// \file sdf/pyChildrenView.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/childrenView.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <boost/python.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class _View>
 class SdfPyWrapChildrenView {
@@ -276,4 +279,6 @@ private:
     }
 };
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PYCHILDRENVIEW_H

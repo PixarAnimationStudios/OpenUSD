@@ -21,13 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/pcp/instanceKey.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/pcp/instanceKey.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/instancing.h"
 
 #include "pxr/base/tracelite/trace.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct PcpInstanceKey::_Collector
 {
@@ -39,7 +42,7 @@ struct PcpInstanceKey::_Collector
             // arc in the node graph -- but otherwise we must continue,
             // since payload arcs can be optionally included, and
             // therefore affect instance sharing.
-            if (not indexHasPayload) {
+            if (!indexHasPayload) {
                 return false;
             }
         }
@@ -61,7 +64,7 @@ PcpInstanceKey::PcpInstanceKey(const PcpPrimIndex& primIndex)
     TRACE_FUNCTION();
 
     // Instance keys only apply to instanceable prim indexes.
-    if (not primIndex.IsInstanceable()) {
+    if (!primIndex.IsInstanceable()) {
         return;
     }
 
@@ -91,14 +94,14 @@ PcpInstanceKey::PcpInstanceKey(const PcpPrimIndex& primIndex)
 bool 
 PcpInstanceKey::operator==(const PcpInstanceKey& rhs) const
 {
-    return _variantSelection == rhs._variantSelection and
+    return _variantSelection == rhs._variantSelection &&
         _arcs == rhs._arcs;
 }
 
 bool 
 PcpInstanceKey::operator!=(const PcpInstanceKey& rhs) const
 {
-    return not (*this == rhs);
+    return !(*this == rhs);
 }
 
 std::string 
@@ -137,3 +140,5 @@ PcpInstanceKey::GetString() const
 
     return s;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

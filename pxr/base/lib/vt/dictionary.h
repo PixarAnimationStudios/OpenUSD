@@ -28,6 +28,7 @@
 
 /// \file vt/dictionary.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/vt/keyValue.h"
 #include "pxr/base/vt/value.h"
 
@@ -43,6 +44,8 @@
 
 #include <iosfwd>
 #include <memory>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // This constant will only be defined if not defined already. This is because
 // many files need a higher limit and define this constant themselves before
@@ -419,7 +422,7 @@ T VtDictionaryGet( const VtDictionary &dictionary,
                    Vt_DefaultHolder<U> const &def )
 {
     VtDictionary::const_iterator i = dictionary.find(key);
-    if (i == dictionary.end() or not i->second.IsHolding<T>())
+    if (i == dictionary.end() || !i->second.IsHolding<T>())
         return def.val;
     return i->second.Get<T>();
 }
@@ -589,6 +592,8 @@ bool VtDictionaryPrettyPrintToFile(
 /* comment needed for scons dependency scanner
 #include "pxr/base/vt/dictionary.h"
 */
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif /* VT_DICTIONARY_H */
 

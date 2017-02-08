@@ -24,8 +24,11 @@
 ///
 /// \file js/utils.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/js/utils.h"
 #include "pxr/base/tf/diagnostic.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 JsOptionalValue
 JsFindValue(
@@ -44,3 +47,5 @@ JsFindValue(
 
     return defaultValue;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

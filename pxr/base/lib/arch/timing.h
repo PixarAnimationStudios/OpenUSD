@@ -28,6 +28,7 @@
 /// \ingroup group_arch_SystemFunctions
 /// High-resolution, low-cost timing routines.
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
@@ -35,11 +36,15 @@
 /// \addtogroup group_arch_SystemFunctions
 ///@{
 
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+#if defined(ARCH_OS_LINUX)
 #include <x86intrin.h>
+#elif defined(ARCH_OS_DARWIN)
+#include <mach/mach_time.h>
 #elif defined(ARCH_OS_WINDOWS)
 #include <intrin.h>
 #endif
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Macro that defines the clocks per second
 ///
@@ -53,28 +58,20 @@
 /// The current time is returned as a number of "ticks", where each tick
 /// represents some system-dependent amount of time.  The resolution of the
 /// timing routines varies, but on all systems, it is well under one
-/// microsecond.  The cost of this routine is approximately 40 nanoseconds on
-/// a 900 Mhz Pentium III Linux box, 300 nanoseconds on a 400 Mhz Sun, and 200
-/// nanoseconds on a 250 Mhz SGI, and 200 nanoseconds on a 500 MHz PowerMac
-/// G4.
-///
-/// On SGIs and Linux x86 and Apple PPC systems, the time is queried by
-/// reading from a hardware register, which is very fast; on the SUNS, a
-/// standard system call (gethrtime()) is used, which accounts for the
-/// slowness of the operation.
-///
-/// By contrast, the standard system call \c gettimeofday() takes,
-/// respectively, 540, 4900 nanoseconds, and 370 nanoseconds on the same
-/// Linux, SGI and SUN workstations.
+/// microsecond.  The cost of this routine is in the tens of nanoseconds
+/// on GHz class machines.
 inline uint64_t
 ArchGetTickTime()
 {
-// On Intel, we'll use the rdtsc instruction
-#if defined(ARCH_CPU_INTEL)
+#if defined(ARCH_OS_DARWIN)
+    // On Darwin we'll use mach_absolute_time().
+    return mach_absolute_time();
+#elif defined(ARCH_CPU_INTEL)
+    // On Intel we'll use the rdtsc instruction.
     return __rdtsc();
 #else
 #error Unknown architecture.
-#endif // defined(ARCH_CPU_INTEL)
+#endif
 }
 
 /// Convert a duration measured in "ticks", as returned by
@@ -109,5 +106,7 @@ ARCH_API
 double ArchGetNanosecondsPerTick();
 
 ///@}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_TIMING_H

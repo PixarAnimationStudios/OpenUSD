@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/conversions.h"
 #include "pxr/usd/usd/treeIterator.h"
@@ -39,6 +40,9 @@
 
 #include <boost/python/class.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 using std::string;
 
 using namespace boost::python;
@@ -49,8 +53,8 @@ _Export(const UsdStagePtr &self, const std::string& filename,
 {
     SdfLayer::FileFormatArguments args;
     std::string errMsg;
-    if (not SdfFileFormatArgumentsFromPython(dict, &args, &errMsg)) {
-        TF_CODING_ERROR(errMsg.c_str());
+    if (!SdfFileFormatArgumentsFromPython(dict, &args, &errMsg)) {
+        TF_CODING_ERROR("%s", errMsg.c_str());
         return false;
     }
 
@@ -73,7 +77,7 @@ __repr__(const UsdStagePtr &self)
         TfPyRepr(self->GetRootLayer()).c_str(),
         TfPyRepr(self->GetSessionLayer()).c_str());
         
-    if (not self->GetPathResolverContext().IsEmpty()) {
+    if (!self->GetPathResolverContext().IsEmpty()) {
         result += TfStringPrintf(
             ", pathResolverContext=%s",
             TfPyRepr(self->GetPathResolverContext()).c_str());
@@ -95,7 +99,7 @@ _GetMetadata(const UsdStagePtr &self, const TfToken &key)
 static bool _SetMetadata(const UsdStagePtr &self, const TfToken& key,
                          object obj) {
     VtValue value;
-    return UsdPythonToMetadataValue(key, /*keyPath*/TfToken(), obj, &value) and
+    return UsdPythonToMetadataValue(key, /*keyPath*/TfToken(), obj, &value) &&
         self->SetMetadata(key, value);
 }
 
@@ -113,7 +117,7 @@ _GetMetadataByDictKey(const UsdStagePtr &self,
 static bool _SetMetadataByDictKey(const UsdStagePtr &self, const TfToken& key,
                                   const TfToken &keyPath, object obj) {
     VtValue value;
-    return UsdPythonToMetadataValue(key, keyPath, obj, &value) and
+    return UsdPythonToMetadataValue(key, keyPath, obj, &value) &&
         self->SetMetadataByDictKey(key, keyPath, value);
 }
 
@@ -137,6 +141,16 @@ _GetEditTargetForLocalLayer(const UsdStagePtr &self,
                             const SdfLayerHandle &layer)
 {
     return self->GetEditTargetForLocalLayer(layer);
+}
+
+static void
+_ExpandPopulationMask(UsdStage &self, boost::python::object pypred)
+{
+    using Predicate = std::function<bool (UsdRelationship const &)>;
+    Predicate pred;
+    if (pypred != boost::python::object())
+        pred = boost::python::extract<Predicate>(pypred);
+    return self.ExpandPopulationMask(pred);
 }
 
 void wrapUsdStage()
@@ -259,6 +273,66 @@ void wrapUsdStage()
              return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("Open")
 
+        .def("OpenMasked", (UsdStageRefPtr (*)(const string &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("filePath"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const string &,
+                                               const ArResolverContext &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("filePath"),
+              arg("pathResolverContext"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("rootLayer"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
+                                               const SdfLayerHandle &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("rootLayer"),
+              arg("sessionLayer"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
+                                               const ArResolverContext &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("rootLayer"),
+              arg("pathResolverContext"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
+                                               const SdfLayerHandle &,
+                                               const ArResolverContext &, 
+                                               const UsdStagePopulationMask &,
+                                               UsdStage::InitialLoadSet))
+             &UsdStage::OpenMasked,
+             (arg("rootLayer"),
+              arg("sessionLayer"),
+              arg("pathResolverContext"),
+              arg("mask"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .staticmethod("OpenMasked")
+        
         .def("Close", &UsdStage::Close)
         .def("Reload", &UsdStage::Reload)
 
@@ -284,6 +358,11 @@ void wrapUsdStage()
         .def("FindLoadable", &UsdStage::FindLoadable,
              arg("rootPath")=SdfPath::AbsoluteRootPath(),
              return_value_policy<TfPySequenceToList>())
+
+        .def("GetPopulationMask", &UsdStage::GetPopulationMask)
+        .def("SetPopulationMask", &UsdStage::SetPopulationMask, arg("mask"))
+        .def("ExpandPopulationMask", &_ExpandPopulationMask,
+             arg("predicate")=object())
 
         .def("GetPseudoRoot", &UsdStage::GetPseudoRoot)
 
@@ -316,6 +395,7 @@ void wrapUsdStage()
              arg("includeSessionLayers")=true,
              return_value_policy<TfPySequenceToList>())
         .def("GetUsedLayers", &UsdStage::GetUsedLayers,
+             arg("includeClipLayers")=true,
              return_value_policy<TfPySequenceToList>())
 
         .def("HasLocalLayer", &UsdStage::HasLocalLayer, arg("layer"))
@@ -387,3 +467,6 @@ void wrapUsdStage()
              return_value_policy<TfPySequenceToList>())
         ;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

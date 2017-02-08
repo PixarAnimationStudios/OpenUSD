@@ -23,6 +23,7 @@
 //
 #include <boost/python/def.hpp>
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
@@ -39,6 +40,8 @@
 
 using namespace boost::python;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapMath()
 {    
@@ -170,3 +173,5 @@ void wrapMath()
     TfPyContainerConversions::from_python_sequence< std::vector< std::vector<double> >, TfPyContainerConversions::variable_capacity_policy>();
  
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

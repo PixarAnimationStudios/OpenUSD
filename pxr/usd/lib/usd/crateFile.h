@@ -24,6 +24,7 @@
 #ifndef USD_CRATEFILE_H
 #define USD_CRATEFILE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/crateData.h"
 
 #include "shared.h"
@@ -50,6 +51,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Usd_CrateFile {
 
@@ -120,7 +123,7 @@ struct ValueRep {
         return data == other.data;
     }
     bool operator!=(ValueRep other) const {
-        return not (*this == other);
+        return !(*this == other);
     }
 
     friend inline size_t hash_value(ValueRep v) {
@@ -168,9 +171,9 @@ struct TimeSamples {
     // Note that equality does a very shallow equality check since otherwise
     // we'd have to pull all the values from the file.
     bool operator==(TimeSamples const &other) const {
-        return valueRep == other.valueRep and
-            times == other.times and
-            values == other.values and
+        return valueRep == other.valueRep   && 
+            times == other.times            &&
+            values == other.values          &&
             valuesFileOffset == other.valuesFileOffset;
     }
 
@@ -201,7 +204,9 @@ enum class TypeEnum {
     Invalid = 0,
 #define xx(ENUMNAME, ENUMVALUE, _unused1, _unused2)     \
     ENUMNAME = ENUMVALUE,
+
 #include "crateDataTypes.h"
+
 #undef xx
     NumTypes
 };
@@ -213,7 +218,7 @@ struct Index {
     Index() : value(~0) {}
     explicit Index(uint32_t value) : value(value) {}
     bool operator==(const Index &other) const { return value == other.value; }
-    bool operator!=(const Index &other) const { return not (*this == other); }
+    bool operator!=(const Index &other) const { return !(*this == other); }
     uint32_t value;
 };
 
@@ -260,7 +265,7 @@ struct _Hasher {
 class CrateFile
 {
 public:
-    class Version;
+    struct Version;
 
 private:
     struct _Fcloser {
@@ -317,7 +322,7 @@ public:
         Field() {}
         Field(TokenIndex ti, ValueRep v) : tokenIndex(ti), valueRep(v) {}
         bool operator==(const Field &other) const {
-            return tokenIndex == other.tokenIndex and
+            return tokenIndex == other.tokenIndex &&
                 valueRep == other.valueRep;
         }
         friend size_t hash_value(const Field &f) {
@@ -338,12 +343,12 @@ public:
             : pathIndex(pi), fieldSetIndex(fsi), specType(type) {}
         Spec(Spec_0_0_1 const &);
         bool operator==(const Spec &other) const {
-            return pathIndex == other.pathIndex and
-                fieldSetIndex == other.fieldSetIndex and
+            return pathIndex == other.pathIndex      &&
+                fieldSetIndex == other.fieldSetIndex &&
                 specType == other.specType;
         }
         bool operator!=(const Spec &other) const {
-            return not (*this == other);
+            return !(*this == other);
         }
         friend size_t hash_value(Spec const &s) {
             _Hasher h;
@@ -375,12 +380,12 @@ public:
             : pathIndex(pi), fieldSetIndex(fsi), specType(type) {}
         Spec_0_0_1(Spec const &);
         bool operator==(const Spec_0_0_1 &other) const {
-            return pathIndex == other.pathIndex and
-                fieldSetIndex == other.fieldSetIndex and
+            return pathIndex == other.pathIndex      &&
+                fieldSetIndex == other.fieldSetIndex &&
                 specType == other.specType;
         }
         bool operator!=(const Spec_0_0_1 &other) const {
-            return not (*this == other);
+            return !(*this == other);
         }
         friend size_t hash_value(Spec_0_0_1 const &s) {
             _Hasher h;
@@ -501,7 +506,7 @@ public:
     // Make \p ts mutable so that individual sample values may be modified, but
     // not the number of samples.
     inline void MakeTimeSampleValuesMutable(TimeSamples &ts) const {
-        if (not ts.IsInMemory()) {
+        if (!ts.IsInMemory()) {
             _MakeTimeSampleValuesMutableImpl(ts);
         }
     }
@@ -723,5 +728,8 @@ struct _IsBitwiseReadWrite<CrateFile::Spec_0_0_1> : std::true_type {};
 
 
 } // Usd_CrateFile
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_CRATEFILE_H

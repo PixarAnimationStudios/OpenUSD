@@ -26,14 +26,19 @@
 
 /// \file sdf/layerRegistry.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/hash.h"
+
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/noncopyable.hpp>
+
 #include <string>
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -157,5 +162,7 @@ private:
 
 std::ostream&
 operator<<(std::ostream& ostr, const Sdf_LayerRegistry& registry);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_LAYER_REGISTRY_H

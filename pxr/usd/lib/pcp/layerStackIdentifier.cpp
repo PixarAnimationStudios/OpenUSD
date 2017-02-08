@@ -23,13 +23,16 @@
 //
 /// \file LayerStackIdentifier.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/stringUtils.h"
+
 #include <boost/functional/hash.hpp>
 #include <ostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 PcpLayerStackIdentifier::PcpLayerStackIdentifier() : _hash(0)
 {
@@ -69,9 +72,9 @@ PcpLayerStackIdentifier::operator UnspecifiedBoolType() const
 bool
 PcpLayerStackIdentifier::operator==(const This &rhs) const
 {
-    return _hash           == rhs._hash and
-           rootLayer       == rhs.rootLayer and
-           sessionLayer    == rhs.sessionLayer and
+    return _hash           == rhs._hash         &&
+           rootLayer       == rhs.rootLayer     &&
+           sessionLayer    == rhs.sessionLayer  &&
            pathResolverContext == rhs.pathResolverContext;
 }
 
@@ -115,7 +118,7 @@ Pcp_IdentifierFormatIndex()
 static std::string
 Pcp_FormatIdentifier(std::ostream& os, const SdfLayerHandle& layer)
 {
-    if (not layer) {
+    if (!layer) {
         return std::string("<expired>");
     }
 
@@ -164,3 +167,5 @@ operator<<(std::ostream& s, const PcpLayerStackIdentifier& x)
                  << PcpIdentifierFormatIdentifier;
     }
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

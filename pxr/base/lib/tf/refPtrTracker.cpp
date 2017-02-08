@@ -23,12 +23,16 @@
 //
 /// \file refPtrTracker.h
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/refPtrTracker.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/stackTrace.h"
 #include <ostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper function for reporting.
 static
@@ -224,3 +228,5 @@ TfRefPtrTracker::ReportTracesForWatched(
     stream << "=============================================================="
            << std::endl;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

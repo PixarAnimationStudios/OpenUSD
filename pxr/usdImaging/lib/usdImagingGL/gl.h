@@ -22,13 +22,18 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-/// \file gl.h
+/// \file usdImagingGL/gl.h
 
-#pragma once
+#ifndef USDIMAGINGGL_GL_H
+#define USDIMAGINGGL_GL_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 class SdfPath;
 
@@ -178,3 +183,7 @@ private:
     UsdImagingGLEngineSharedPtr _engine;
 };
 
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // USDIMAGINGGL_GL_H

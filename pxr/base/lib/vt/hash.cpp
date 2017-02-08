@@ -21,18 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/hash.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/diagnostic.h"
 
 #include <string>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 namespace Vt_HashDetail {
 
 void
 _IssueUnimplementedHashError(std::type_info const &t)
 {
-    std::string typeStr = ArchGetDemangled(t);
     TF_CODING_ERROR("Invoked VtHashValue on an object of type <%s>, which "
                     "is not hashable by boost::hash<>() or TfHash().  Consider "
                     "providing an overload of hash_value().",
@@ -40,3 +43,5 @@ _IssueUnimplementedHashError(std::type_info const &t)
 }
 
 } // Vt_HashDetail
+
+PXR_NAMESPACE_CLOSE_SCOPE

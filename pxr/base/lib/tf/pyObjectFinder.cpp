@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/staticData.h"
@@ -30,6 +33,7 @@ using std::type_info;
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 static TfStaticData<TfTypeInfoMap<Tf_PyObjectFinderBase const *> > _finders;
 
@@ -50,3 +54,5 @@ object Tf_FindPythonObject(void const *objPtr, std::type_info const &type) {
     
 
 Tf_PyObjectFinderBase::~Tf_PyObjectFinderBase() {}
+
+PXR_NAMESPACE_CLOSE_SCOPE

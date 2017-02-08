@@ -24,6 +24,7 @@
 #ifndef HD_VT_BUFFER_SOURCE_H
 #define HD_VT_BUFFER_SOURCE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -48,6 +49,9 @@
 #include <boost/mpl/vector/vector40.hpp>
 
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdVtBufferSource
 ///
@@ -76,7 +80,8 @@ public:
     };
 
     // The valid types a HdBufferSource can be constructed from.
-    typedef boost::mpl::vector31<
+    typedef boost::mpl::vector32<
+            THolder<bool>,
             THolder<int>,
             THolder<float>,
             THolder<double>,
@@ -174,7 +179,7 @@ public:
 
     /// Prepare the access of GetData().
     virtual bool Resolve() {
-        if (not _TryLock()) return false;
+        if (!_TryLock()) return false;
 
         // nothing. just marks as resolved, and returns _data in GetData()
         _SetResolved();
@@ -206,5 +211,8 @@ private:
     short _numComponents;
     bool _staticArray;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_VT_BUFFER_SOURCE_H

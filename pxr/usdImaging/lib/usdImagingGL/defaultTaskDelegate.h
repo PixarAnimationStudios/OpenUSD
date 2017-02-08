@@ -21,8 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#pragma once
+#ifndef USDIMAGINGGL_DEFAULT_TASK_DELEGATE_H
+#define USDIMAGINGGL_DEFAULT_TASK_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/usdImaging/usdImagingGL/taskDelegate.h"
 
@@ -30,6 +32,9 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 // ---------------------------------------------------------------------------
 // Task Delegate for built-in render graph
@@ -135,3 +140,7 @@ private:
 
     std::vector<GfVec4d> _clipPlanes;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // USDIMAGINGGL_DEFAULT_TASK_DELEGATE_H

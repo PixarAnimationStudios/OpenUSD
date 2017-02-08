@@ -35,6 +35,7 @@
 #include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hdx/drawTargetTask.h"
+#include "pxr/imaging/hdx/drawTargetResolveTask.h"
 #include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
@@ -43,6 +44,9 @@
 #include "pxr/imaging/hdx/shadowMatrixComputation.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/pxOsd/tokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -142,6 +146,10 @@ public:
         return 0;
     }
 
+    virtual size_t GetMemoryUsed() {
+        return 0;
+    }
+
 private:
     GlfDrawTargetRefPtr _drawTarget;
 };
@@ -195,10 +203,9 @@ Hdx_UnitTestDelegate::SetCamera(SdfPath const &cameraId,
                                 GfMatrix4d const &projMatrix)
 {
     _ValueCache &cache = _valueCacheMap[cameraId];
-    cache[HdxCameraTokens->cameraFrustum] = VtValue();
     cache[HdxCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
-    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
-    cache[HdxCameraTokens->projectionMatrix] = VtValue(projMatrix);
+    cache[HdxCameraTokens->matrices] = 
+        VtValue(HdxCameraMatrices(viewMatrix, projMatrix));
 
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(cameraId,
                                                        HdxCamera::AllDirty);
@@ -210,11 +217,8 @@ Hdx_UnitTestDelegate::AddCamera(SdfPath const &id)
     // add a camera
     GetRenderIndex().InsertSprim<HdxCamera>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
-
-    cache[HdxCameraTokens->cameraFrustum] = VtValue();
     cache[HdxCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
-    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
-    cache[HdxCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1));
+    cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices());
 }
 
 void
@@ -271,7 +275,13 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
     _ValueCache &cache = _valueCacheMap[id];
 
     HdxDrawTargetAttachmentDescArray attachments;
-    attachments.AddAttachment("color", HdFormatR8G8B8A8UNorm, VtValue(GfVec4f(1,1,0,1)));
+    attachments.AddAttachment("color",
+                              HdFormatR8G8B8A8UNorm,
+                              VtValue(GfVec4f(1,1,0,1)),
+                              HdWrapRepeat,
+                              HdWrapRepeat,
+                              HdMinFilterLinear,
+                              HdMagFilterLinear);
 
     cache[HdxDrawTargetTokens->enable]          = VtValue(true);
     cache[HdxDrawTargetTokens->camera]          = VtValue(SdfPath());
@@ -281,7 +291,7 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
     cache[HdxDrawTargetTokens->collection]      =
         VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull));
 
-    GetRenderIndex().InsertTexture<HdTexture>(this, id);
+    GetRenderIndex().InsertBprim(HdPrimTypeTokens->texture, this, id);
     _drawTargets[id] = _DrawTarget();
 
     GetRenderIndex().GetChangeTracker().MarkStateDirty(
@@ -382,7 +392,14 @@ Hdx_UnitTestDelegate::AddDrawTargetTask(SdfPath const &id)
     HdxDrawTargetTaskParams params;
     params.enableLighting = true;
     cache[HdTokens->params] = params;
+}
 
+void
+Hdx_UnitTestDelegate::AddDrawTargetResolveTask(SdfPath const &id)
+{
+    GetRenderIndex().InsertTask<HdxDrawTargetResolveTask>(this, id);
+    _ValueCache &cache = _valueCacheMap[id];
+    cache[HdTokens->children] = VtValue(SdfPathVector());
 }
 
 void
@@ -420,7 +437,7 @@ Hdx_UnitTestDelegate::AddInstancer(SdfPath const &id,
     _instancers[id] = _Instancer();
     _instancers[id].rootTransform = rootTransform;
 
-    if (not parentId.IsEmpty()) {
+    if (!parentId.IsEmpty()) {
         _instancers[parentId].prototypes.push_back(id);
     }
 }
@@ -434,9 +451,9 @@ Hdx_UnitTestDelegate::SetInstancerProperties(SdfPath const &id,
 {
     HD_TRACE_FUNCTION();
 
-    if (not TF_VERIFY(prototypeIndex.size() == scale.size()) or
-        not TF_VERIFY(prototypeIndex.size() == rotate.size()) or
-        not TF_VERIFY(prototypeIndex.size() == translate.size())) {
+    if (!TF_VERIFY(prototypeIndex.size() == scale.size())  ||
+        !TF_VERIFY(prototypeIndex.size() == rotate.size()) || 
+        !TF_VERIFY(prototypeIndex.size() == translate.size())) {
         return;
     }
 
@@ -459,7 +476,7 @@ Hdx_UnitTestDelegate::AddGrid(SdfPath const &id, GfMatrix4d const &transform,
     SdfPath shaderId;
     TfMapLookup(_surfaceShaderBindings, id, &shaderId);
     GetRenderIndex().InsertRprim<HdMesh>(this, id, shaderId, instancerId);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -498,7 +515,7 @@ Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform,
     SdfPath shaderId;
     TfMapLookup(_surfaceShaderBindings, id, &shaderId);
     GetRenderIndex().InsertRprim<HdMesh>(this, id, shaderId, instancerId);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -550,7 +567,7 @@ Hdx_UnitTestDelegate::AddTet(SdfPath const &id, GfMatrix4d const &transform,
     SdfPath shaderId;
     TfMapLookup(_surfaceShaderBindings, id, &shaderId);
     GetRenderIndex().InsertRprim<HdMesh>(this, id, shaderId, instancerId);
-    if (not instancerId.IsEmpty()) {
+    if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -610,7 +627,7 @@ Hdx_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
     // tasks
     _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
     VtValue ret;
-    if (vcache and TfMapLookup(*vcache, key, &ret)) {
+    if (vcache && TfMapLookup(*vcache, key, &ret)) {
         return ret;
     }
 
@@ -693,7 +710,7 @@ Hdx_UnitTestDelegate::IsInCollection(SdfPath const& id,
     // Visible collection.
     if (collectionName == HdTokens->geometry) {
         if (_Mesh *mesh = TfMapLookupPtr(_meshes, id)) {
-            return not mesh->guide;
+            return !mesh->guide;
         }
     } else if (collectionName == Hdx_UnitTestTokens->geometryAndGuides) {
         return (_meshes.count(id));
@@ -819,10 +836,11 @@ HdTextureResourceSharedPtr
 Hdx_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
 {
     if (_drawTargets.find(textureId) != _drawTargets.end()) {
-        HdSprimSharedPtr const &sprim = GetRenderIndex().GetSprim(textureId);
-        if (HdxDrawTargetSharedPtr drawTarget
-            = boost::dynamic_pointer_cast<HdxDrawTarget>(sprim)) {
+        HdxDrawTarget const *drawTarget = static_cast<HdxDrawTarget const *> (
+                        GetRenderIndex().GetSprim(HdPrimTypeTokens->drawTarget,
+                                                  textureId));
 
+        if (drawTarget != nullptr) {
             HdTextureResourceSharedPtr texResource(
                 new DrawTargetTextureResource(
                     drawTarget->GetGlfDrawTarget()));
@@ -837,3 +855,6 @@ Hdx_UnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
 {
     return SdfPath::Hash()(textureId);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -31,10 +31,12 @@
 
 #include <boost/functional/hash.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 HdRprimCollection::HdRprimCollection()
     : _forcedRepr(false)
     , _rootPaths(1, SdfPath::AbsoluteRootPath())
-    , _dirtyBitsMask(HdChangeTracker::Clean)
 {
     /*NOTHING*/
 }
@@ -46,9 +48,7 @@ HdRprimCollection::HdRprimCollection(TfToken const& name,
     , _reprName(reprName)
     , _forcedRepr(forcedRepr)
     , _rootPaths(1, SdfPath::AbsoluteRootPath())
-    , _dirtyBitsMask(HdChangeTracker::Clean)
 {
-    _ComputeDirtyBitsMask();
 }
 
 HdRprimCollection::HdRprimCollection(TfToken const& name,
@@ -58,15 +58,13 @@ HdRprimCollection::HdRprimCollection(TfToken const& name,
     : _name(name)
     , _reprName(reprName)
     , _forcedRepr(forcedRepr)
-    , _dirtyBitsMask(HdChangeTracker::Clean)
 {
-    if (not rootPath.IsAbsolutePath()) {
+    if (!rootPath.IsAbsolutePath()) {
         TF_CODING_ERROR("Root path must be absolute");
         _rootPaths.push_back(SdfPath::AbsoluteRootPath());
     } else {
         _rootPaths.push_back(rootPath);
     }
-    _ComputeDirtyBitsMask();
 }
 
 HdRprimCollection::~HdRprimCollection()
@@ -74,17 +72,6 @@ HdRprimCollection::~HdRprimCollection()
     /*NOTHING*/
 }
 
-void
-HdRprimCollection::_ComputeDirtyBitsMask()
-{
-    // Gather dirtyBits to be tracked on given reprs for each prim type.
-    _dirtyBitsMask = HdChangeTracker::Clean;
-
-    _dirtyBitsMask |= HdRprim::GetDirtyBitsMask(_reprName);
-    _dirtyBitsMask |= HdMesh::GetDirtyBitsMask(_reprName);
-    _dirtyBitsMask |= HdBasisCurves::GetDirtyBitsMask(_reprName);
-    _dirtyBitsMask |= HdPoints::GetDirtyBitsMask(_reprName);
-}
 
 SdfPathVector const& 
 HdRprimCollection::GetRootPaths() const
@@ -96,7 +83,7 @@ void
 HdRprimCollection::SetRootPaths(SdfPathVector const& rootPaths)
 {
     TF_FOR_ALL(pit, rootPaths) {
-        if (not pit->IsAbsolutePath()) {
+        if (!pit->IsAbsolutePath()) {
             TF_CODING_ERROR("Root path must be absolute (<%s>)",
                     pit->GetText());
             return;
@@ -110,7 +97,7 @@ HdRprimCollection::SetRootPaths(SdfPathVector const& rootPaths)
 void 
 HdRprimCollection::SetRootPath(SdfPath const& rootPath)
 {
-    if (not rootPath.IsAbsolutePath()) {
+    if (!rootPath.IsAbsolutePath()) {
         TF_CODING_ERROR("Root path must be absolute");
         return;
     }
@@ -122,7 +109,7 @@ void
 HdRprimCollection::SetExcludePaths(SdfPathVector const& excludePaths)
 {
     TF_FOR_ALL(pit, excludePaths) {
-        if (not pit->IsAbsolutePath()) {
+        if (!pit->IsAbsolutePath()) {
             TF_CODING_ERROR("Exclude path must be absolute (<%s>)",
                     pit->GetText());
             return;
@@ -148,7 +135,6 @@ HdRprimCollection::ComputeHash() const
     TF_FOR_ALL(pathIt, _rootPaths) {
         boost::hash_combine(h, SdfPath::Hash()(*pathIt));
     }
-    boost::hash_combine(h, _dirtyBitsMask);
     TF_FOR_ALL(pathIt, _excludePaths) {
         boost::hash_combine(h, SdfPath::Hash()(*pathIt));
     }
@@ -158,15 +144,15 @@ HdRprimCollection::ComputeHash() const
 bool HdRprimCollection::operator==(HdRprimCollection const & other) const 
 {
     return _name == other._name
-       and _reprName == other._reprName
-       and _forcedRepr == other._forcedRepr
-       and _rootPaths == other._rootPaths
-       and _excludePaths == other._excludePaths;
+       && _reprName == other._reprName
+       && _forcedRepr == other._forcedRepr
+       && _rootPaths == other._rootPaths
+       && _excludePaths == other._excludePaths;
 }
 
 bool HdRprimCollection::operator!=(HdRprimCollection const & other) const 
 {
-    return not(*this == other);
+    return !(*this == other);
 }
 
 // -------------------------------------------------------------------------- //
@@ -183,3 +169,6 @@ std::ostream& operator<<(std::ostream& out, HdRprimCollection const & v)
 size_t hash_value(HdRprimCollection const &v) {
     return v.ComputeHash();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

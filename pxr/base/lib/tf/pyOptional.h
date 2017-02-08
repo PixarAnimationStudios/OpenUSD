@@ -26,6 +26,8 @@
 
 /// \file tf/pyOptional.h
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/pyUtils.h"
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -33,6 +35,8 @@
 #include <boost/python/extract.hpp>
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/to_python_value.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Adapted from original at:
 // http://mail.python.org/pipermail/cplusplus-sig/2007-May/012003.html
@@ -111,5 +115,7 @@ struct python_optional : public boost::noncopyable
 };
 
 } // namespace TfPyOptional
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYOPTIONAL_H

@@ -37,6 +37,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 using std::vector;
 using std::string;
@@ -44,17 +47,27 @@ using std::string;
 
 TF_INSTANTIATE_SINGLETON(PxOsdRefinerCache);
 
-
-bool
-PxOsdRefinerCache::CacheEntry::CreateRefiner()
+PxOsdTopologyRefinerSharedPtr
+PxOsdRefinerCache::GetOrCreateRefiner(
+    PxOsdMeshTopology topology,
+    bool bilinearStencils,
+    int level,
+    StencilTableSharedPtr *cvStencils,
+    PatchTableSharedPtr *patchTable)
 {
-    TRACE_FUNCTION();
-    
-    if (refiner) {
-        TF_WARN("Expected NULL refiner, memory leak?");
+    TRACE_FUNCTION();    
+
+    if ((topology.GetScheme() != PxOsdOpenSubdivTokens->catmullClark
+         && topology.GetScheme() != PxOsdOpenSubdivTokens->catmark)
+         && !bilinearStencils) {
+        // XXX: This refiner will be adaptively refined, so we need to ensure
+        // we're using catmull-clark subdivision scheme, since that's the only
+        // option currently. Once OpenSubdiv supports adaptive loop subdivision,
+        // we should remove this hack.
+        topology.SetScheme(PxOsdOpenSubdivTokens->catmullClark);
     }
-    
-    refiner = PxOsdRefinerFactory::Create(topology);
+
+    PxOsdTopologyRefinerSharedPtr refiner = PxOsdRefinerFactory::Create(topology);
 
     if (bilinearStencils) {
         OpenSubdiv::Far::TopologyRefiner::UniformOptions options(level);
@@ -71,12 +84,10 @@ PxOsdRefinerCache::CacheEntry::CreateRefiner()
         options.useSingleCreasePatch = false;
         refiner->RefineAdaptive(options);
     }
-    
-    
-    // Not that we've refined, generate and cache information used
+
+    // Not that we've refined, generate information used
     // later to extract limit stencils from arbitrary parametric
-    // positions. Data cached here are CV stencils and patch
-    // tables.
+    // positions: CV stencils and a patch tables.
     //
     // Options here copied from: LimitStencilTableFactory::Create
     // implementation in OpenSubdiv::Far from:
@@ -86,7 +97,7 @@ PxOsdRefinerCache::CacheEntry::CreateRefiner()
     cvStencilOptions.generateOffsets = true;
     cvStencilOptions.generateIntermediateLevels = true;
     cvStencilOptions.generateControlVerts = true;
-    
+
     OpenSubdiv::Far::StencilTable const* cvStencilsRaw =
         OpenSubdiv::Far::StencilTableFactory::Create(
             *refiner, cvStencilOptions);
@@ -94,13 +105,12 @@ PxOsdRefinerCache::CacheEntry::CreateRefiner()
     OpenSubdiv::Far::PatchTableFactory::Options patchTableOptions;
     patchTableOptions.SetEndCapType(
         OpenSubdiv::Far::PatchTableFactory::Options::ENDCAP_GREGORY_BASIS);
-        
+
     OpenSubdiv::Far::PatchTable *patchTableRaw =
         OpenSubdiv::Far::PatchTableFactory::Create(
             *refiner, patchTableOptions);        
-    patchTable = PatchTableSharedPtr(patchTableRaw);
 
-    if (not bilinearStencils) {    
+    if (!bilinearStencils) {    
         // Append endcap stencils
         OpenSubdiv::Far::StencilTable const* localPointStencilTable =
             patchTableRaw->GetLocalPointStencilTable();
@@ -113,57 +123,12 @@ PxOsdRefinerCache::CacheEntry::CreateRefiner()
             cvStencilsRaw = stencilTableWithEndcapsRaw;
         }
     }
-    
-    cvStencils = StencilTableSharedPtr(cvStencilsRaw);
-    
-    return true;
-}
 
-PxOsdTopologyRefinerSharedPtr
-PxOsdRefinerCache::GetOrCreateRefiner(
-    PxOsdMeshTopology topology,
-    bool bilinearStencils,
-    int level,
-    StencilTableSharedPtr *cvStencils,
-    PatchTableSharedPtr *patchTable)
-{
-    TRACE_FUNCTION();    
-    std::lock_guard<std::mutex> lock(_mutex);    
-
-    if ((topology.GetScheme() != PxOsdOpenSubdivTokens->catmullClark
-                and topology.GetScheme() != PxOsdOpenSubdivTokens->catmark)
-          and not bilinearStencils) {
-        // XXX: This refiner will be adaptively refined, so we need to ensure
-        // we're using catmull-clark subdivision scheme, since that's the only
-        // option currently. Once OpenSubdiv supports adaptive loop subdivision,
-        // we should remove this hack.
-        topology.SetScheme(PxOsdOpenSubdivTokens->catmullClark);
-    }
-
-    // This is quick, just compute the hash
-    CacheEntry entry = CacheEntry(topology, bilinearStencils, level);
-
-    _CacheEntrySet::iterator iter = _cachedEntries.find(entry);
-
-    if (iter != _cachedEntries.end()) {
-        // Cache hit, return the refiner already constructed
-        if (cvStencils)
-            *cvStencils = iter->cvStencils;
-        if (patchTable)
-            *patchTable = iter->patchTable;
-        return iter->refiner;
-    }
-
-    // Cache miss, do the expensive work of creating a new refiner
-    entry.CreateRefiner();
-
-    if (cvStencils)    
-        *cvStencils = entry.cvStencils;
-    if (patchTable)
-        *patchTable = entry.patchTable;
-    PxOsdTopologyRefinerSharedPtr refiner = entry.refiner;
-
-    _cachedEntries.insert(entry);    
+    if (cvStencils) *cvStencils = StencilTableSharedPtr(cvStencilsRaw);
+    if (patchTable) *patchTable = PatchTableSharedPtr(patchTableRaw);
 
     return refiner;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

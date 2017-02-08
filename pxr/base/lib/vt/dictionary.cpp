@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/dictionary.h"
 
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
@@ -46,6 +48,8 @@ using std::make_pair;
 using std::pair;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<VtDictionary>();
@@ -174,7 +178,7 @@ VtDictionary::GetValueAtPath(vector<string> const &keyElems) const
     VtDictionary const *dict = this;
     for (vector<string>::const_iterator i = start; i != last; ++i) {
         const_iterator j = dict->find(*i);
-        if (j == dict->end() or not j->second.IsHolding<VtDictionary>())
+        if (j == dict->end() || !j->second.IsHolding<VtDictionary>())
             return NULL;
         dict = &j->second.UncheckedGet<VtDictionary>();
     }
@@ -253,7 +257,7 @@ VtDictionary::_EraseValueAtPathImpl(vector<string>::const_iterator curKeyElem,
     // Otherwise we'll descend into an existing subdictionary at key *curKeyElem
     // if one exists.
     iterator i = find(*curKeyElem);
-    if (i != end() and i->second.IsHolding<VtDictionary>()) {
+    if (i != end() && i->second.IsHolding<VtDictionary>()) {
         VtDictionary newDict;
         i->second.Swap(newDict);
         newDict._EraseValueAtPathImpl(nextKeyElem, keyElemEnd);
@@ -400,7 +404,7 @@ VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak,
             // Insert will set strong with value from weak only if 
             // strong does not already have a value for that key.
             std::pair<VtDictionary::iterator, bool> result =strong->insert(*it);
-            if (not result.second and coerceToWeakerOpinionType) {
+            if (!result.second && coerceToWeakerOpinionType) {
                 result.first->second.CastToTypeOf(it->second);
             }
         }
@@ -475,7 +479,7 @@ bool operator==(VtDictionary const &lhs, VtDictionary const &rhs)
 
 bool operator!=(VtDictionary const &lhs, VtDictionary const &rhs)
 {
-    return not (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 std::ostream &
@@ -611,7 +615,7 @@ VtDictionaryFromPythonString(
     }
 
     VtDictionary dict;
-    if (not VtDictionaryFromPythonString(content, &dict)) {
+    if (!VtDictionaryFromPythonString(content, &dict)) {
         TF_RUNTIME_ERROR("Failed to extract VtDictionary from input: '%s'",
                          content.c_str());
         return VtDictionary();
@@ -656,7 +660,7 @@ VtDictionaryPrettyPrint(
 VtDictionary
 VtDictionaryFromFile(const string& fpath)
 {
-    if (not fpath.empty() and TfIsFile(fpath, /* resolveSymlinks */ true)) {
+    if (!fpath.empty() && TfIsFile(fpath, /* resolveSymlinks */ true)) {
         std::ifstream ifs(fpath.c_str());
         if (ifs.good()) {
             std::stringstream sstream;
@@ -681,7 +685,7 @@ VtDictionaryPrettyPrintToFile(const VtDictionary& vtdict,
     TfAtomicOfstreamWrapper wrapper(fpath);
 
     string reason;
-    if (not wrapper.Open(&reason)) {
+    if (!wrapper.Open(&reason)) {
         TF_RUNTIME_ERROR(reason);
         return false;
     }
@@ -691,7 +695,7 @@ VtDictionaryPrettyPrintToFile(const VtDictionary& vtdict,
     bool ok = wrapper.GetStream().good();
 
     if (ok) {
-        if (not wrapper.Commit(&reason)) {
+        if (!wrapper.Commit(&reason)) {
             TF_RUNTIME_ERROR(reason);
             ok = false;
         }
@@ -699,4 +703,6 @@ VtDictionaryPrettyPrintToFile(const VtDictionary& vtdict,
 
     return ok;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

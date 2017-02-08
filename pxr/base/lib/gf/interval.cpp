@@ -21,11 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
 
 #include <iostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // CODE_COVERAGE_OFF_GCOV_BUG  you know the drill.
 TF_REGISTRY_FUNCTION(TfType) {
@@ -43,3 +47,4 @@ operator<<(std::ostream &out, const GfInterval &i)
     return out;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

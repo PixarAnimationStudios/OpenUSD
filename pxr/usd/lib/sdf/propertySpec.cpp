@@ -21,8 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/sdf/propertySpec.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/accessorHelpers.h"
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
@@ -37,6 +38,8 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <ostream>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DEFINE_ABSTRACT_SPEC(SdfPropertySpec, SdfSpec);
 
@@ -114,6 +117,7 @@ SDF_DEFINE_GET_SET(DisplayName,      SdfFieldKeys->DisplayName,      std::string
 SDF_DEFINE_GET_SET(Documentation,    SdfFieldKeys->Documentation,    std::string)
 SDF_DEFINE_GET_SET(Hidden,           SdfFieldKeys->Hidden,           bool)
 SDF_DEFINE_GET_SET(Prefix,           SdfFieldKeys->Prefix,           std::string)
+SDF_DEFINE_GET_SET(Suffix,           SdfFieldKeys->Suffix,           std::string)
 SDF_DEFINE_GET_SET(SymmetricPeer,    SdfFieldKeys->SymmetricPeer,    std::string)
 SDF_DEFINE_GET_SET(SymmetryFunction, SdfFieldKeys->SymmetryFunction, TfToken)
 
@@ -253,3 +257,5 @@ SdfPropertySpec::HasOnlyRequiredFields() const
     return GetLayer()->_IsInert(GetPath(), true /*ignoreChildren*/, 
                        true /* requiredFieldOnlyPropertiesAreInert */);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

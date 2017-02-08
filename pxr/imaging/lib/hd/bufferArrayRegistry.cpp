@@ -25,6 +25,9 @@
 
 #include "pxr/imaging/hd/bufferArray.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 
 HdBufferArrayRegistry::HdBufferArrayRegistry()
  : _entries()
@@ -38,14 +41,14 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
         HdBufferSpecVector const &bufferSpecs)
 {
     HD_TRACE_FUNCTION();
-    HD_MALLOC_TAG_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     // early out for empty source
-    if (not TF_VERIFY(not bufferSpecs.empty())) {
+    if (!TF_VERIFY(!bufferSpecs.empty())) {
         return HdBufferArrayRangeSharedPtr();
     }
 
-    if (not strategy) {
+    if (!strategy) {
         TF_CODING_ERROR("Aggregation strategy is set to null");
         return HdBufferArrayRangeSharedPtr();
     }
@@ -86,7 +89,7 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
     do {
         HdBufferArraySharedPtr currentArray = *it;
 
-        if (not currentArray->TryAssignRange(range)) {
+        if (!currentArray->TryAssignRange(range)) {
             _HdBufferArraySharedPtrList::iterator prev = it;
             ++it;
 
@@ -101,7 +104,7 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
                 ++it;
             }
         }        
-    } while (not range->IsAssigned());
+    } while (!range->IsAssigned());
 
     return range;
 }
@@ -116,7 +119,7 @@ HdBufferArrayRegistry::ReallocateAll(HdAggregationStrategy *strategy)
              bufferIt != e; ++bufferIt) {
 
             HdBufferArraySharedPtr const &bufferArray = *bufferIt;
-            if (not bufferArray->NeedsReallocation()) continue;
+            if (!bufferArray->NeedsReallocation()) continue;
 
             // in case of over aggregation, split the buffer
 
@@ -133,12 +136,12 @@ HdBufferArrayRegistry::ReallocateAll(HdAggregationStrategy *strategy)
                 HdBufferArrayRangeSharedPtr range =
                     bufferArray->GetRange(rangeIdx).lock();
 
-                if (not range) continue; // shouldn't exist
+                if (!range) continue; // shouldn't exist
 
                 size_t numElements = range->GetNumElements();
 
                 // numElements in each range should not exceed maxTotalElements
-                if (not TF_VERIFY(numElements < maxTotalElements,
+                if (!TF_VERIFY(numElements < maxTotalElements,
                                   "%lu >= %lu", numElements, maxTotalElements))
                     continue;
 
@@ -245,14 +248,14 @@ HdBufferArrayRegistry::_InsertNewBufferArray(_Entry &entry,
 
         // Check state of list, still matches what is expected.
         // If not another thread won and inserted a new buffer.
-        if (not entry.bufferArrays.empty()) {
+        if (!entry.bufferArrays.empty()) {
             if (entry.bufferArrays.back() != expectedTail) {
                 return;  // Lock_guard will unlock entry
             }
         } else {
             // This shouldn't ever happen, because where did the expected tail
             // come from if it wasn't in the list???
-            TF_VERIFY(not expectedTail);
+            TF_VERIFY(!expectedTail);
         }
 
         entry.bufferArrays.emplace_back(strategy->CreateBufferArray(role, bufferSpecs));
@@ -280,3 +283,6 @@ operator <<(std::ostream &out, const HdBufferArrayRegistry& self)
 
     return out;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -24,6 +24,7 @@
 #ifndef PCP_PRIM_INDEX_H
 #define PCP_PRIM_INDEX_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/iterator.h"
@@ -34,11 +35,16 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
+
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
+
 #include <tbb/spin_rw_mutex.h>
+
 #include <functional>
 #include <map>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfPrimSpec);
@@ -69,6 +75,7 @@ class SdfPath;
 class PcpPrimIndex
 {
 public:
+    /// Default construct an empty, invalid prim index.
     PcpPrimIndex();
 
     /// Copy-construct a prim index.
@@ -85,6 +92,10 @@ public:
 
     /// Same as Swap(), but standard name.
     inline void swap(PcpPrimIndex &rhs) { Swap(rhs); }
+
+    /// Return true if this index is valid.
+    /// A default-constructed index is invalid.
+    bool IsValid() const { return bool(_graph); }
 
     void SetGraph(const PcpPrimIndex_GraphRefPtr& graph);
     PcpPrimIndex_GraphPtr GetGraph() const;
@@ -365,4 +376,6 @@ PcpIsNewDefaultStandinBehaviorEnabled();
 void
 Pcp_RescanForSpecs(PcpPrimIndex* index, bool usd);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PCP_PRIM_INDEX_H

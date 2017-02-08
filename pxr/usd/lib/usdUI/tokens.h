@@ -33,7 +33,10 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \hideinitializer
 #define USDUI_TOKENS \
@@ -75,5 +78,7 @@
 /// \li <b>uiNodegraphNodePos</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodeStackingOrder</b> - UsdUINodeGraphNodeAPI
 TF_DECLARE_PUBLIC_TOKENS(UsdUITokens, USDUI_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "fileFormat.h"
 
 #include "pxr/usd/usd/usdaFileFormat.h"
@@ -35,6 +36,9 @@
 
 #include <fstream>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 using std::string;
 
@@ -75,18 +79,18 @@ UsdObjFileFormat::_ReadFromStream(
     string *outErr) const
 {
     SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (not TF_VERIFY(layer)) {
+    if (!TF_VERIFY(layer)) {
         return false;
     }
 
     // Read Obj data stream.
     UsdObjStream objStream;
-    if (not UsdObjReadDataFromStream(input, &objStream, outErr))
+    if (!UsdObjReadDataFromStream(input, &objStream, outErr))
         return false;
 
     // Translate obj to usd schema.
     SdfLayerRefPtr objAsUsd = UsdObjTranslateObjToUsd(objStream);
-    if (not objAsUsd)
+    if (!objAsUsd)
         return false;
     
     // Move generated content into final layer.
@@ -95,22 +99,22 @@ UsdObjFileFormat::_ReadFromStream(
 }
 
 bool
-UsdObjFileFormat::ReadFromFile(
+UsdObjFileFormat::Read(
     const SdfLayerBasePtr& layerBase,
-    const string& filePath,
+    const string& resolvedPath,
     bool metadataOnly) const
 {
     // try and open the file
-    std::ifstream fin(filePath.c_str());
+    std::ifstream fin(resolvedPath.c_str());
     if (!fin.is_open()) {
-        TF_RUNTIME_ERROR("Failed to open file \"%s\"", filePath.c_str());
+        TF_RUNTIME_ERROR("Failed to open file \"%s\"", resolvedPath.c_str());
         return false;
     }
 
     string error;
-    if (not _ReadFromStream(layerBase, fin, metadataOnly, &error)) {
+    if (!_ReadFromStream(layerBase, fin, metadataOnly, &error)) {
         TF_RUNTIME_ERROR("Failed to read OBJ from file \"%s\": %s",
-                         filePath.c_str(), error.c_str());
+                         resolvedPath.c_str(), error.c_str());
         return false;
     }
     return true;
@@ -123,7 +127,7 @@ UsdObjFileFormat::ReadFromString(
 {
     string error;
     std::stringstream ss(str);
-    if (not _ReadFromStream(layerBase, ss, /*metadataOnly=*/false, &error)) {
+    if (!_ReadFromStream(layerBase, ss, /*metadataOnly=*/false, &error)) {
         TF_RUNTIME_ERROR("Failed to read OBJ data from string: %s",
                          error.c_str());
         return false;
@@ -155,3 +159,6 @@ UsdObjFileFormat::WriteToStream(
     return SdfFileFormat::FindById(
         UsdUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -28,6 +28,8 @@
 /// \ingroup group_tf_Memory
 /// Pointer storage with deletion detection.
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/nullPtr.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/tf.h"
@@ -43,6 +45,8 @@
 
 #include <cstddef>
 #include <type_traits>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class TfHash;
 template <class U> class TfRefPtr;
@@ -213,13 +217,13 @@ private:
     }
 
     T *_FetchPointer() const {
-        if (ARCH_LIKELY(_remnant and _remnant->_IsAlive()))
+        if (ARCH_LIKELY(_remnant && _remnant->_IsAlive()))
             return _rawPtr;
         return 0;
     }
 
     bool _IsInvalid() const {
-        return _remnant and not _remnant->_IsAlive();
+        return _remnant && !_remnant->_IsAlive();
     }
 
     void const *_GetUniqueIdentifier() const {
@@ -442,5 +446,7 @@ struct Tf_SupportsWeakPtr
     virtual TfWeakBase const &__GetTfWeakBase__() const {       \
         return *this;                                           \
     }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_WEAKPTR_H

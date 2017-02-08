@@ -24,6 +24,7 @@
 ///
 /// \file Sdf/LayerUtils.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/layer.h"
@@ -33,12 +34,14 @@
 
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 string
 SdfComputeAssetPathRelativeToLayer(
     const SdfLayerHandle& anchor,
     const string& assetPath)
 {
-    if (not anchor) {
+    if (!anchor) {
         TF_CODING_ERROR("Invalid anchor layer");
         return string();
     }
@@ -56,8 +59,8 @@ SdfComputeAssetPathRelativeToLayer(
     // which we first look relative to the layer, then fall back to search
     // path resolution.
     string finalLayerPath = anchor->ComputeAbsolutePath(assetPath);
-    if (not SdfLayer::IsAnonymousLayerIdentifier(finalLayerPath)) {
-        if (resolver.IsSearchPath(assetPath) and
+    if (!SdfLayer::IsAnonymousLayerIdentifier(finalLayerPath)) {
+        if (resolver.IsSearchPath(assetPath) &&
             resolver.Resolve(finalLayerPath).empty())
             return assetPath;
     }
@@ -71,12 +74,12 @@ SdfFindOrOpenRelativeToLayer(
     string* layerPath,
     const SdfLayer::FileFormatArguments& args)
 {
-    if (not anchor) {
+    if (!anchor) {
         TF_CODING_ERROR("Invalid anchor layer");
         return TfNullPtr;
     }
 
-    if (not layerPath) {
+    if (!layerPath) {
         TF_CODING_ERROR("Invalid layer path pointer");
         return TfNullPtr;
     }
@@ -92,3 +95,4 @@ SdfFindOrOpenRelativeToLayer(
     return SdfLayer::FindOrOpen(*layerPath, args);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -26,12 +26,15 @@
 
 /// \file sdf/attributeSpec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/base/tf/enum.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 template <class T> class Sdf_MarkerUtils;
 
@@ -215,5 +218,7 @@ private:
     friend class Sdf_MarkerUtils<SdfAttributeSpec>;
     friend class Sdf_PyAttributeAccess;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_ATTRIBUTESPEC_H

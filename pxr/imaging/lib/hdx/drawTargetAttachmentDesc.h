@@ -24,12 +24,16 @@
 #ifndef HDX_DRAW_TARGET_ATTACHMENT_DESC_H
 #define HDX_DRAW_TARGET_ATTACHMENT_DESC_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 
 #include "pxr/base/vt/value.h"
 
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class HdxDrawTargetAttachmentDesc
 ///
@@ -46,8 +50,12 @@ public:
 
     /// Construct a draw target attachment description
     HdxDrawTargetAttachmentDesc(const std::string &name,
-                               HdFormat           format,
-                               const VtValue      &clearColor);
+                                HdFormat           format,
+                                const VtValue     &clearColor,
+                                HdWrap             wrapS,
+                                HdWrap             wrapT,
+                                HdMinFilter        minFilter,
+                                HdMagFilter        magFilter);
     ~HdxDrawTargetAttachmentDesc() = default;
 
     // Copy for container support.
@@ -57,6 +65,10 @@ public:
     const std::string &GetName()       const { return _name; }
     HdFormat           GetFormat()     const { return _format; }
     const VtValue     &GetClearColor() const { return _clearColor; }
+    HdWrap             GetWrapS()      const { return _wrapS; }
+    HdWrap             GetWrapT()      const { return _wrapS; }
+    HdMinFilter        GetMinFilter()  const { return _minFilter; }
+    HdMagFilter        GetMagFilter()  const { return _magFilter; }
 
     // VtValue requirements
     size_t GetHash() const;
@@ -68,9 +80,16 @@ private:
     std::string _name;
     HdFormat    _format;
     VtValue     _clearColor;
+    HdWrap      _wrapS;
+    HdWrap      _wrapT;
+    HdMinFilter _minFilter;
+    HdMagFilter _magFilter;
 };
 
 size_t hash_value(HdxDrawTargetAttachmentDesc const &attachment);
 std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDesc &pv);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HDX_DRAW_TARGET_ATTACHMENT_DESC_H

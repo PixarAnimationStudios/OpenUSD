@@ -28,7 +28,11 @@
 /// \ingroup group_tf_RuntimeTyping
 /// Safely compare C++ RTTI type structures.
 
+#include "pxr/pxr.h"
+
 #include <typeinfo>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Safely compare \c std::type_info structures.
 ///
@@ -52,4 +56,6 @@ TfSafeDynamic_cast(FROM* ptr) {
         return dynamic_cast<TO>(ptr);
 }
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TF_SAFETYPECOMPARE_H

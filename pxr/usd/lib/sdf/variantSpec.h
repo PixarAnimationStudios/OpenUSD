@@ -26,10 +26,13 @@
 
 /// \file sdf/variantSpec.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/spec.h"
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfPrimSpec);
@@ -110,5 +113,7 @@ SdfVariantSpecHandle SdfCreateVariantInLayer(
     const SdfPath &primPath,
     const std::string &variantSetName,
     const std::string &variantName );
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif /* SDF_VARIANT_SPEC_H */

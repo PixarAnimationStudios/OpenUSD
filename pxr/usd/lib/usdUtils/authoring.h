@@ -29,14 +29,18 @@
 /// A collection of utilities for higher-level authoring and copying scene
 /// description than provided by the core Usd and Sdf API's
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/declareHandles.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
 /// Given two layers \p source and \p destination, copy the authored metadata
 /// from one to the other.  By default, copy **all** authored metadata;
-/// however, you can skip certain classes of metadata with the parameters:
-/// \param skipSublayers - do not copy subLayers or subLayerOffsets
+/// however, you can skip certain classes of metadata with the parameter
+/// \p skipSublayers, which will prevent copying subLayers or subLayerOffsets
 ///
 /// Makes no attempt to clear metadata that may already be authored in
 /// \p destination, but any fields that are already in \p destination but also
@@ -46,5 +50,8 @@ SDF_DECLARE_HANDLES(SdfLayer);
 bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
                                const SdfLayerHandle &destination,
                                bool skipSublayers = false);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif /* _USDUTILS_PIPELINE_H_ */

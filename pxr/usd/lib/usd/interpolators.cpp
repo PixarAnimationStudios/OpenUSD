@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/interpolators.h"
 
 #include "pxr/usd/usd/attribute.h"
@@ -28,6 +29,9 @@
 #include "pxr/usd/usd/stage.h"
 
 #include <boost/preprocessor/seq/for_each.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 bool 
 Usd_UntypedInterpolator::Interpolate(
@@ -65,7 +69,7 @@ Usd_UntypedInterpolator::_Interpolate(
     // value.
 
     const TfType attrValueType = attr.GetTypeName().GetType();
-    if (not attrValueType) {
+    if (!attrValueType) {
         TF_RUNTIME_ERROR(
             "Unknown value type '%s' for attribute '%s'",
             attr.GetTypeName().GetAsToken().GetText(),
@@ -93,3 +97,6 @@ Usd_UntypedInterpolator::_Interpolate(
     return Usd_HeldInterpolator<VtValue>(_result).Interpolate(
         attr, src, specId, time, lower, upper);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

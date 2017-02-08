@@ -24,6 +24,7 @@
 #ifndef HD_SCENE_DELEGATE_H
 #define HD_SCENE_DELEGATE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/basisCurvesTopology.h"
@@ -44,6 +45,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class HdRenderIndex> HdRenderIndexSharedPtr;
 
@@ -157,6 +161,10 @@ public:
 
     /// Returns the authored repr (if any) for the given prim.
     virtual TfToken GetReprName(SdfPath const &id);
+
+    /// Returns the render tag that will be used to bucked prims during
+    /// render pass bucketing.
+    virtual TfToken GetRenderTag(SdfPath const& id);
 
     // -----------------------------------------------------------------------//
     /// \name Instancer prototypes
@@ -278,5 +286,8 @@ private:
     HdRenderIndexSharedPtr _index;
     SdfPath _delegateID;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HD_SCENE_DELEGATE_H

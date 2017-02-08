@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 
 #include "usdMaya/util.h"
@@ -35,6 +36,9 @@
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MItMeshFaceVertex.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 bool
@@ -54,7 +58,7 @@ MayaMeshWriter::_GetMeshUVSetData(
     if (status != MS::kSuccess) {
         return false;
     }
-    if (uvCounts.length() == 0 or uvIds.length() == 0) {
+    if (uvCounts.length() == 0 || uvIds.length() == 0) {
         return false;
     }
 
@@ -68,8 +72,8 @@ MayaMeshWriter::_GetMeshUVSetData(
 
     MItMeshFaceVertex itFV(mesh.object());
     unsigned int fvi = 0;
-    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
-        if (not itFV.hasUVs(uvSetName)) {
+    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
+        if (!itFV.hasUVs(uvSetName)) {
             // No UVs for this faceVertex, so leave it unassigned.
             continue;
         }
@@ -101,7 +105,7 @@ _MergeEquivalentColorSetValues(
         VtArray<float>* colorSetAlphaData,
         VtArray<int>* colorSetAssignmentIndices)
 {
-    if (not colorSetRGBData or not colorSetAlphaData or not colorSetAssignmentIndices) {
+    if (!colorSetRGBData || !colorSetAlphaData || !colorSetAssignmentIndices) {
         return;
     }
 
@@ -219,7 +223,7 @@ bool MayaMeshWriter::_GetMeshColorSetData(
     // Loop over every face vertex to populate the value arrays.
     MItMeshFaceVertex itFV(mesh.object());
     unsigned int fvi = 0;
-    for (itFV.reset(); not itFV.isDone(); itFV.next(), ++fvi) {
+    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
         // If this is a displayColor color set, we may need to fallback on the
         // bound shader colors/alphas for this face in some cases. In
         // particular, if the color set is alpha-only, we fallback on the
@@ -261,11 +265,11 @@ bool MayaMeshWriter::_GetMeshColorSetData(
                 if (shadersRGBData.size() == 1) {
                     valueIndex = 0;
                 }
-            } else if (faceIndex >= 0 and 
+            } else if (faceIndex >= 0 && 
                 static_cast<size_t>(faceIndex) < shadersAssignmentIndices.size()) {
 
                 int tmpIndex = shadersAssignmentIndices[faceIndex];
-                if (tmpIndex >= 0 and
+                if (tmpIndex >= 0 && 
                     static_cast<size_t>(tmpIndex) < shadersRGBData.size()) {
                     valueIndex = tmpIndex;
                 }
@@ -287,10 +291,10 @@ bool MayaMeshWriter::_GetMeshColorSetData(
                 if (shadersAlphaData.size() == 1) {
                     valueIndex = 0;
                 }
-            } else if (faceIndex >= 0 and 
+            } else if (faceIndex >= 0 && 
                 static_cast<size_t>(faceIndex) < shadersAssignmentIndices.size()) {
                 int tmpIndex = shadersAssignmentIndices[faceIndex];
-                if (tmpIndex >= 0 and 
+                if (tmpIndex >= 0 && 
                     static_cast<size_t>(tmpIndex) < shadersAlphaData.size()) {
                     valueIndex = tmpIndex;
                 }
@@ -308,14 +312,14 @@ bool MayaMeshWriter::_GetMeshColorSetData(
             GfVec3f rgbValue = _ColorSetDefaultRGB;
             float alphaValue = _ColorSetDefaultAlpha;
 
-            if (useShaderColorFallback or
-                    (*colorSetRep == MFnMesh::kRGB) or
+            if (useShaderColorFallback              || 
+                    (*colorSetRep == MFnMesh::kRGB) || 
                     (*colorSetRep == MFnMesh::kRGBA)) {
                 rgbValue = _LinearColorFromColorSet(colorSetData[fvi],
                                                     convertDisplayColorToLinear);
             }
-            if (useShaderAlphaFallback or
-                    (*colorSetRep == MFnMesh::kAlpha) or
+            if (useShaderAlphaFallback                || 
+                    (*colorSetRep == MFnMesh::kAlpha) || 
                     (*colorSetRep == MFnMesh::kRGBA)) {
                 alphaValue = colorSetData[fvi][3];
             }
@@ -361,7 +365,7 @@ bool MayaMeshWriter::_createAlphaPrimVar(
     }
 
     TfToken interp = interpolation;
-    if (numValues == 1 and interp == UsdGeomTokens->constant) {
+    if (numValues == 1 && interp == UsdGeomTokens->constant) {
         interp = TfToken();
     }
 
@@ -372,7 +376,7 @@ bool MayaMeshWriter::_createAlphaPrimVar(
 
     primVar.Set(data);
 
-    if (not assignmentIndices.empty()) {
+    if (!assignmentIndices.empty()) {
         primVar.SetIndices(assignmentIndices);
         if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
            primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
@@ -399,7 +403,7 @@ bool MayaMeshWriter::_createRGBPrimVar(
     }
 
     TfToken interp = interpolation;
-    if (numValues == 1 and interp == UsdGeomTokens->constant) {
+    if (numValues == 1 && interp == UsdGeomTokens->constant) {
         interp = TfToken();
     }
 
@@ -410,7 +414,7 @@ bool MayaMeshWriter::_createRGBPrimVar(
 
     primVar.Set(data);
 
-    if (not assignmentIndices.empty()) {
+    if (!assignmentIndices.empty()) {
         primVar.SetIndices(assignmentIndices);
         if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
            primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
@@ -433,12 +437,12 @@ bool MayaMeshWriter::_createRGBAPrimVar(
         bool clamped)
 {
     unsigned int numValues = rgbData.size();
-    if (numValues == 0 or numValues != alphaData.size()) {
+    if (numValues == 0 || numValues != alphaData.size()) {
         return false;
     }
 
     TfToken interp = interpolation;
-    if (numValues == 1 and interp == UsdGeomTokens->constant) {
+    if (numValues == 1 && interp == UsdGeomTokens->constant) {
         interp = TfToken();
     }
 
@@ -455,7 +459,7 @@ bool MayaMeshWriter::_createRGBAPrimVar(
 
     primVar.Set(rgbaData);
 
-    if (not assignmentIndices.empty()) {
+    if (!assignmentIndices.empty()) {
         primVar.SetIndices(assignmentIndices);
         if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
            primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
@@ -481,7 +485,7 @@ bool MayaMeshWriter::_createUVPrimVar(
     }
 
     TfToken interp = interpolation;
-    if (numValues == 1 and interp == UsdGeomTokens->constant) {
+    if (numValues == 1 && interp == UsdGeomTokens->constant) {
         interp = TfToken();
     }
 
@@ -492,7 +496,7 @@ bool MayaMeshWriter::_createUVPrimVar(
 
     primVar.Set(data);
 
-    if (not assignmentIndices.empty()) {
+    if (!assignmentIndices.empty()) {
         primVar.SetIndices(assignmentIndices);
         if (unassignedValueIndex != primVar.GetUnauthoredValuesIndex()) {
            primVar.SetUnauthoredValuesIndex(unassignedValueIndex);
@@ -515,13 +519,13 @@ bool MayaMeshWriter::_addDisplayPrimvars(
 {
     // If we already have an authored value, don't try to write a new one.
     UsdAttribute colorAttr = primSchema.GetDisplayColorAttr();
-    if (not colorAttr.HasAuthoredValueOpinion() and not RGBData.empty()) {
+    if (!colorAttr.HasAuthoredValueOpinion() && !RGBData.empty()) {
         UsdGeomPrimvar displayColor = primSchema.GetDisplayColorPrimvar();
         if (interpolation != displayColor.GetInterpolation()) {
             displayColor.SetInterpolation(interpolation);
         }
         displayColor.Set(RGBData);
-        if (not assignmentIndices.empty()) {
+        if (!assignmentIndices.empty()) {
             displayColor.SetIndices(assignmentIndices);
             if (unassignedValueIndex != displayColor.GetUnauthoredValuesIndex()) {
                displayColor.SetUnauthoredValuesIndex(unassignedValueIndex);
@@ -538,17 +542,17 @@ bool MayaMeshWriter::_addDisplayPrimvars(
     }
 
     UsdAttribute alphaAttr = primSchema.GetDisplayOpacityAttr();
-    if (not alphaAttr.HasAuthoredValueOpinion() and not AlphaData.empty()) {
+    if (!alphaAttr.HasAuthoredValueOpinion() && !AlphaData.empty()) {
         // we consider a single alpha value that is 1.0 to be the "default"
         // value.  We only want to write values that are not the "default".
-        bool hasDefaultAlpha = AlphaData.size() == 1 and GfIsClose(AlphaData[0], 1.0, 1e-9);
-        if (not hasDefaultAlpha) {
+        bool hasDefaultAlpha = AlphaData.size() == 1 && GfIsClose(AlphaData[0], 1.0, 1e-9);
+        if (!hasDefaultAlpha) {
             UsdGeomPrimvar displayOpacity = primSchema.GetDisplayOpacityPrimvar();
             if (interpolation != displayOpacity.GetInterpolation()) {
                 displayOpacity.SetInterpolation(interpolation);
             }
             displayOpacity.Set(AlphaData);
-            if (not assignmentIndices.empty()) {
+            if (!assignmentIndices.empty()) {
                 displayOpacity.SetIndices(assignmentIndices);
                 if (unassignedValueIndex != displayOpacity.GetUnauthoredValuesIndex()) {
                    displayOpacity.SetUnauthoredValuesIndex(unassignedValueIndex);
@@ -567,3 +571,6 @@ bool MayaMeshWriter::_addDisplayPrimvars(
 
     return true;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

@@ -2,9 +2,15 @@
 // index page produced by doxygen.
 
 /*!
-\mainpage
+\page hdx_page_front Hd : Hydra extensions
+\if ( PIXAR_MFB_BUILD )
+\mainpage  Hdx : Hydra extensions
+\publicLib
+\endif
+
 \anchor hdx_mainpage
 
-libHd: Extensions for libHd
+Hdx builds on the render framework established by Hd, providing abstractions
+and extensions useful for clients writing scenegraph delegates.
 
 */

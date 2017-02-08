@@ -26,7 +26,11 @@
 
 /// \file primReaderArgs.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \class PxrUsdMayaPrimReaderArgs
 /// \brief This class holds read-only arguments that are passed into reader plugins for
@@ -72,5 +76,8 @@ private:
     const double _startTime;
     const double _endTime;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_PRIMREADERARGS_H

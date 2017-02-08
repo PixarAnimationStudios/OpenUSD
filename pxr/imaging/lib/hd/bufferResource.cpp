@@ -27,8 +27,12 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    ((_bool, "bool"))
     ((_float, "float"))
     (vec2)
     (vec3)
@@ -82,7 +86,7 @@ HdBufferResource::SetAllocation(GLuint id, GLsizeiptr size)
     // or when the data store is respecified via BufferData/BufferStorage.
     // It doesn't change even when we make the buffer resident or non-resident.
     // https://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
-    if (id != 0 and glGetNamedBufferParameterui64vNV) {
+    if (id != 0 && glGetNamedBufferParameterui64vNV) {
         glGetNamedBufferParameterui64vNV(
             id, GL_BUFFER_GPU_ADDRESS_NV, (GLuint64EXT*)&_gpuAddr);
     } else {
@@ -169,6 +173,8 @@ HdBufferResource::GetGLTypeName() const
         return _tokens->uvec2;
     } else if (_glDataType == GL_INT_2_10_10_10_REV) {
         return _tokens->vec4;
+    } else if (_glDataType == GL_BOOL) {
+        return _tokens->_bool;
     }
 
     TF_CODING_ERROR("unsupported type: 0x%x numComponents = %d\n",
@@ -178,3 +184,6 @@ HdBufferResource::GetGLTypeName() const
     // float instead of empty
     return _tokens->_float;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

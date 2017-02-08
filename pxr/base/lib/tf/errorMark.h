@@ -26,10 +26,13 @@
 
 /// \file tf/errorMark.h
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/errorTransport.h"
 
 #include <boost/noncopyable.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfErrorMark
 /// \ingroup group_tf_TfError
@@ -94,7 +97,7 @@ class TfErrorMark : boost::noncopyable
     /// diagnostics are not being issued.
     inline bool IsClean() const {
         TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
-        return _mark >= mgr._nextSerial or _IsCleanImpl(mgr);
+        return _mark >= mgr._nextSerial || _IsCleanImpl(mgr);
     }
 
     /// Remove all errors in this mark from the error system.  Return true if
@@ -201,5 +204,7 @@ class TfErrorMark : boost::noncopyable
 ///
 /// \ingroup group_tf_TfError
 void TfReportActiveErrorMarks();
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_ERROR_MARK

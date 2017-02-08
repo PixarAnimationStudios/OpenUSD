@@ -21,13 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_MAKE_STATIC_DATA(TfType, _schemaBaseTfType) {
     *_schemaBaseTfType = TfType::Find<UsdSchemaBase>();
-    TF_VERIFY(not _schemaBaseTfType->IsUnknown());
+    TF_VERIFY(!_schemaBaseTfType->IsUnknown());
 }
 
 // Register the schema with the TfType system.
@@ -45,7 +49,7 @@ UsdTyped::~UsdTyped()
 UsdTyped
 UsdTyped::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-    if (not stage) {
+    if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdTyped();
     }
@@ -71,3 +75,6 @@ UsdTyped::_GetTfType() const
 {
     return *_tfType;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

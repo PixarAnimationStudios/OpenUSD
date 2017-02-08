@@ -24,8 +24,12 @@
 #ifndef COMMON_TF_TYPE_NOTICE_H
 #define COMMON_TF_TYPE_NOTICE_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfTypeWasDeclaredNotice
 ///
@@ -42,5 +46,7 @@ public:
 private:
     TfType _type;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // COMMON_TF_TYPE_NOTICE_H

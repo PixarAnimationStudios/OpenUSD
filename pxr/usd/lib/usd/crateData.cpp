@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/crateData.h"
 
 #include "crateFile.h"
@@ -61,6 +62,8 @@ using std::pair;
 using std::string;
 using std::unordered_map;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace Usd_CrateFile;
 
@@ -118,7 +121,7 @@ public:
         TfAutoMallocTag tag("Usd_CrateDataImpl::Save");
         
         auto dataFileName = _crateFile->GetFileName();
-        if (not TF_VERIFY(fileName == dataFileName or dataFileName.empty()))
+        if (!TF_VERIFY(fileName == dataFileName || dataFileName.empty()))
             return false;
 
         if (CrateFile::Packer packer = _crateFile->StartPacking(fileName)) {
@@ -161,7 +164,7 @@ public:
         if (parentPath.IsPrimPropertyPath()) {
             VtValue targetPaths;
             if (Has(SdfAbstractDataSpecId(&parentPath),
-                    SdfFieldKeys->TargetPaths, &targetPaths) and
+                    SdfFieldKeys->TargetPaths, &targetPaths) &&
                 targetPaths.IsHolding<SdfPathListOp>()) {
                 auto const &listOp = targetPaths.UncheckedGet<SdfPathListOp>();
                 if (listOp.IsExplicit()) {
@@ -196,11 +199,12 @@ public:
         if (_MaybeMoveToHashTable()) {
             _hashLastSet = nullptr;
             TF_VERIFY(_hashData->erase(id.GetFullSpecPath()),
-                      id.GetString().c_str());
+                      "%s", id.GetString().c_str());
         } else {
             auto iter = _flatData.find(id.GetFullSpecPath());
             size_t index = iter - _flatData.begin();
-            if (TF_VERIFY(iter != _flatData.end(), id.GetString().c_str())) {
+            if (TF_VERIFY(iter != _flatData.end(),
+                          "%s", id.GetString().c_str())) {
                 _flatLastSet = nullptr;
                 _flatData.erase(iter);
                 _flatTypes.erase(_flatTypes.begin() + index);
@@ -220,16 +224,16 @@ public:
 
         if (_MaybeMoveToHashTable()) {
             auto oldIter = _hashData->find(oldPath);
-            if (not TF_VERIFY(oldIter != _hashData->end()))
+            if (!TF_VERIFY(oldIter != _hashData->end()))
                 return;
             _hashLastSet = nullptr;
             bool inserted = _hashData->emplace(newPath, oldIter->second).second;
-            if (not TF_VERIFY(inserted))
+            if (!TF_VERIFY(inserted))
                 return;
             _hashData->erase(oldIter);
         } else {
             auto oldIter = _flatData.find(oldPath);
-            if (not TF_VERIFY(oldIter != _flatData.end()))
+            if (!TF_VERIFY(oldIter != _flatData.end()))
                 return;
             
             _flatLastSet = nullptr;
@@ -273,7 +277,7 @@ public:
 
     inline void
     CreateSpec(const SdfAbstractDataSpecId &id, SdfSpecType specType) {
-        if (not TF_VERIFY(specType != SdfSpecTypeUnknown))
+        if (!TF_VERIFY(specType != SdfSpecTypeUnknown))
             return;
         if (id.GetFullSpecPath().IsTargetPath()) {
             // Do nothing, we do not store relationship target specs in usd.
@@ -302,14 +306,14 @@ public:
         // XXX: Is it important to present relationship target specs here?
         if (_hashData) {
             for (auto const &p: *_hashData) {
-                if (not visitor->VisitSpec(
+                if (!visitor->VisitSpec(
                         data, SdfAbstractDataSpecId(&p.first))) {
                     break;
                 }
             }
         } else {
             for (auto const &p: _flatData) {
-                if (not visitor->VisitSpec(
+                if (!visitor->VisitSpec(
                         data, SdfAbstractDataSpecId(&p.first))) {
                     break;
                 }
@@ -388,9 +392,9 @@ public:
 
         SdfPath const &path = id.GetFullSpecPath();
 
-        if (not lastSet or lastSet->first != path) {
+        if (!lastSet || lastSet->first != path) {
             auto i = d.find(id.GetFullSpecPath());
-            if (not TF_VERIFY(
+            if (!TF_VERIFY(
                     i != d.end(),
                     "Tried to set field '%s' on nonexistent spec at <%s>",
                     id.GetString().c_str(), fieldName.GetText())) {
@@ -510,7 +514,7 @@ public:
                 auto const &ts = fieldValue->UncheckedGet<TimeSamples>();
                 auto const &times = ts.times.Get();
                 auto iter = lower_bound(times.begin(), times.end(), time);
-                if (iter == times.end() or *iter != time)
+                if (iter == times.end() || *iter != time)
                     return false;
                 if (value) {
                     auto index = iter - times.begin();
@@ -525,10 +529,10 @@ public:
 
     inline bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
                                 SdfAbstractDataValue* value) const {
-        if (not value)
+        if (!value)
             return QueryTimeSample(id, time, static_cast<VtValue *>(nullptr));
         VtValue vtVal;
-        return QueryTimeSample(id, time, &vtVal) and value->StoreValue(vtVal);
+        return QueryTimeSample(id, time, &vtVal) && value->StoreValue(vtVal);
     }
 
     inline void
@@ -544,14 +548,14 @@ public:
         VtValue *fieldValue =
             _GetMutableFieldValue(id, SdfDataTokens->TimeSamples);
         
-        if (fieldValue and fieldValue->IsHolding<TimeSamples>()) {
+        if (fieldValue && fieldValue->IsHolding<TimeSamples>()) {
             fieldValue->UncheckedSwap(newSamples);
         }
         
         // Insert or overwrite time into newTimes.
         auto iter = lower_bound(newSamples.times.Get().begin(),
                                 newSamples.times.Get().end(), time);
-        if (iter == newSamples.times.Get().end() or *iter != time) {
+        if (iter == newSamples.times.Get().end() || *iter != time) {
             auto index = iter - newSamples.times.Get().begin();
             // Make the samples mutable, which may invalidate 'iter'.
             _crateFile->MakeTimeSampleTimesAndValuesMutable(newSamples);
@@ -577,7 +581,7 @@ public:
         VtValue *fieldValue =
             _GetMutableFieldValue(id, SdfDataTokens->TimeSamples);
         
-        if (fieldValue and fieldValue->IsHolding<TimeSamples>()) {
+        if (fieldValue && fieldValue->IsHolding<TimeSamples>()) {
             fieldValue->UncheckedSwap(newSamples);
         } else {
             return;
@@ -586,7 +590,7 @@ public:
         // Insert or overwrite time into newTimes.
         auto iter = lower_bound(newSamples.times.Get().begin(),
                                 newSamples.times.Get().end(), time);
-        if (iter == newSamples.times.Get().end() or *iter != time)
+        if (iter == newSamples.times.Get().end() || *iter != time)
             return;
         
         auto index = iter-newSamples.times.Get().begin();
@@ -742,7 +746,7 @@ private:
 
     inline VtValue _UnpackForField(ValueRep rep) const {
         VtValue ret;
-        if (rep.IsInlined() or rep.GetType() == TypeEnum::TimeSamples) {
+        if (rep.IsInlined() || rep.GetType() == TypeEnum::TimeSamples) {
             ret = _crateFile->UnpackValue(rep);
         } else {
             ret = rep;
@@ -879,7 +883,7 @@ private:
     bool _MaybeMoveToHashTable() {
         // Arbitrary size threshold for flat_map data.
         constexpr size_t FlatDataThreshold = 1024;
-        if (not _hashData and _flatData.size() > FlatDataThreshold) {
+        if (!_hashData && _flatData.size() > FlatDataThreshold) {
             // blow lastSet caches.
             _flatLastSet = nullptr;
             _hashLastSet = nullptr;
@@ -983,10 +987,10 @@ Usd_CrateData::Save(string const &fileName)
         return false;
     }
 
-    bool hasFile = not _impl->GetFileName().empty();
+    bool hasFile = !_impl->GetFileName().empty();
     bool saveToOtherFile = _impl->GetFileName() != fileName;
         
-    if (hasFile and saveToOtherFile) {
+    if (hasFile && saveToOtherFile) {
         // We copy to a temporary data and save that.
         Usd_CrateData tmp;
         tmp.CopyFrom(SdfAbstractDataConstPtr(this));
@@ -1153,3 +1157,6 @@ Usd_CrateData::EraseTimeSample(const SdfAbstractDataSpecId& id, double time)
 {
     return _impl->EraseTimeSample(id, time);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

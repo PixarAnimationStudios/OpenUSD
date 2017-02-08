@@ -26,6 +26,7 @@
 
 /// \file ChaserRegistry.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/Chaser.h"
 #include "usdMaya/JobArgs.h"
 #include "usdMaya/util.h"
@@ -37,6 +38,9 @@
 #include "pxr/base/tf/singleton.h"
 
 #include <boost/function.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DECLARE_WEAK_PTRS(PxrUsdMayaChaserRegistry);
 
@@ -125,8 +129,11 @@ private:
 #define PXRUSDMAYA_DEFINE_CHASER_FACTORY(name, contextArgName) \
 static PxrUsdMayaChaser* _ChaserFactory_##name(const PxrUsdMayaChaserRegistry::FactoryContext&); \
 TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaChaserRegistry, name) {\
-    PxrUsdMayaChaserRegistry::GetInstance().RegisterFactory(#name, &::_ChaserFactory_##name); \
+    PxrUsdMayaChaserRegistry::GetInstance().RegisterFactory(#name, &_ChaserFactory_##name); \
 }\
 PxrUsdMayaChaser* _ChaserFactory_##name(const PxrUsdMayaChaserRegistry::FactoryContext& contextArgName)
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_CHASER_REGISTRY_H

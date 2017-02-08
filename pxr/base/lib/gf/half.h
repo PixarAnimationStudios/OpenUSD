@@ -37,6 +37,6 @@
 #include <half.h>
 
 /// Overload hash_value for half.
-inline size_t hash_value(::half h) { return h.bits(); }
+inline size_t hash_value(half h) { return h.bits(); }
 
 #endif // GF_HALF_H

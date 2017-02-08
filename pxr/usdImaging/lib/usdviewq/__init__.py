@@ -78,6 +78,11 @@ class Launcher(object):
         parser.add_argument('--select', action='store', default='/',
                             dest='primPath', type=str,
                             help='A prim path to initially select and frame')
+
+        parser.add_argument('--mask', action='store', nargs='+',
+                            dest='populationMask', metavar='PRIMPATH',
+                            help='Limit stage population to these prims, '
+                            'their descendants and ancestors')
         
         parser.add_argument('--clearsettings', action='store_true', 
                             dest='clearSettings', 
@@ -150,16 +155,19 @@ class Launcher(object):
         from mainWindow import MainWindow
         if arg_parse_result.clearSettings:
             MainWindow.clearSettings()
-            
-        # find the resource directory
+
+        # Find the resource directory
         resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
 
         # Create the Qt application
         app = QApplication(sys.argv)
 
-        # apply the style sheet to it
+        # Apply the style sheet to it
         sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')
-        sheetString = sheet.read().replace('RESOURCE_DIR', resourceDir)
+        
+        # Qt style sheet accepts only forward slashes as path separators
+        sheetString = sheet.read().replace('RESOURCE_DIR',
+                                           resourceDir.replace("\\", "/"))
         app.setStyleSheet(sheetString)
 
         mainWindow = MainWindow(None, arg_parse_result)

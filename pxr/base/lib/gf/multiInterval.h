@@ -27,9 +27,13 @@
 /// \file gf/multiInterval.h
 /// \ingroup group_gf_BasicMath
 
+#include "pxr/pxr.h"
 #include "pxr/base/gf/interval.h"
+
 #include <iosfwd>
 #include <set>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class GfMultiInterval
 /// \ingroup group_gf_BasicMath
@@ -174,4 +178,6 @@ private:
 /// \ingroup group_gf_DebuggingOutput
 std::ostream & operator<<(std::ostream &out, const GfMultiInterval &s);
 
-#endif
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // GF_INTERVAL_SET_H

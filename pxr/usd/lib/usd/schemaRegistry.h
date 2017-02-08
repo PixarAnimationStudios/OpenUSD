@@ -24,15 +24,19 @@
 #ifndef USD_SCHEMAREGISTRY_H
 #define USD_SCHEMAREGISTRY_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
-SDF_DECLARE_HANDLES(SdfAttributeSpec);
-SDF_DECLARE_HANDLES(SdfRelationshipSpec);
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/singleton.h"
-
 #include "pxr/base/tf/hashmap.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+SDF_DECLARE_HANDLES(SdfAttributeSpec);
+SDF_DECLARE_HANDLES(SdfRelationshipSpec);
 
 /// \class UsdSchemaRegistry
 ///
@@ -197,5 +201,8 @@ private:
         _TokenPairHash> _PrimTypePropNameToSpecIdMap;
     _PrimTypePropNameToSpecIdMap _primTypePropNameToSpecIdMap;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USD_SCHEMAREGISTRY_H

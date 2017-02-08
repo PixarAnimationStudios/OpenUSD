@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/templateString.h"
@@ -31,6 +32,7 @@
 using namespace boost::assign;
 using std::string;
 using std::vector;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static string
 _Replace(
@@ -51,7 +53,7 @@ TestTemplateString()
     TF_AXIOM(TfTemplateString("").IsValid());
     TF_AXIOM(TfTemplateString("${var}").IsValid());
     TF_AXIOM(TfTemplateString("$(var)").IsValid());
-    TF_AXIOM(not TfTemplateString("${}").IsValid());
+    TF_AXIOM(!TfTemplateString("${}").IsValid());
     TF_AXIOM(TfTemplateString("$").IsValid());
     TF_AXIOM(TfTemplateString("$$").IsValid());
     TF_AXIOM(TfTemplateString("$.").IsValid());
@@ -60,14 +62,14 @@ TestTemplateString()
     TF_AXIOM(TfTemplateString("#mcat $RCSfile$ $Revision$").IsValid());
 
     {
-        TF_AXIOM(not TfTemplateString("${} ${} ${} ").IsValid());
+        TF_AXIOM(!TfTemplateString("${} ${} ${} ").IsValid());
         TF_AXIOM(TfTemplateString("${} ${} ${} ").GetParseErrors().size() == 3);
     }
 
     {
         TfTemplateString t("${");
-        TF_AXIOM(not t.IsValid());
-        TF_AXIOM(not t.GetParseErrors().empty());
+        TF_AXIOM(!t.IsValid());
+        TF_AXIOM(!t.GetParseErrors().empty());
 
         t = TfTemplateString("${foo}");
         TF_AXIOM("${foo}" == t.GetTemplate());
@@ -125,7 +127,7 @@ TestTemplateString()
         TfErrorMark m;
         TF_AXIOM("Unreplaced placeholders ${are} not awesome" ==
             _Replace("Unreplaced placeholders ${are} not awesome"));
-        TF_AXIOM(not m.IsClean());
+        TF_AXIOM(!m.IsClean());
         m.Clear();
 
         fprintf(stderr, "=== End Expected Error ===\n");
@@ -137,7 +139,7 @@ TestTemplateString()
         TfErrorMark m;
         TF_AXIOM("Invalid characters in placeholders ${are not awesome" ==
             _Replace("Invalid characters in placeholders ${are not awesome"));
-        TF_AXIOM(not m.IsClean());
+        TF_AXIOM(!m.IsClean());
         m.Clear();
 
         fprintf(stderr, "=== End Expected Error ===\n");
@@ -149,7 +151,7 @@ TestTemplateString()
         TfErrorMark m;
         TF_AXIOM("Never stop ${quoting" ==
             _Replace("Never stop ${quoting"));
-        TF_AXIOM(not m.IsClean());
+        TF_AXIOM(!m.IsClean());
         m.Clear();
 
         fprintf(stderr, "=== End Expected Error ===\n");
@@ -160,7 +162,7 @@ TestTemplateString()
 
         TfErrorMark m;
         TF_AXIOM("${}" == _Replace("${}"));
-        TF_AXIOM(not m.IsClean());
+        TF_AXIOM(!m.IsClean());
         m.Clear();
 
         fprintf(stderr, "=== End Expected Error ===\n");
@@ -171,7 +173,7 @@ TestTemplateString()
 
         TfErrorMark m;
         TF_AXIOM("${  }" == _Replace("${  }"));
-        TF_AXIOM(not m.IsClean());
+        TF_AXIOM(!m.IsClean());
         m.Clear();
 
         fprintf(stderr, "=== End Expected Error ===\n");
@@ -191,8 +193,8 @@ TestTemplateString()
         TfTemplateString t("${ }");
         TfTemplateString::Mapping mapping = t.GetEmptyMapping();
         TF_AXIOM(mapping.empty());
-        TF_AXIOM(not t.IsValid());
-        TF_AXIOM(not t.GetParseErrors().empty());
+        TF_AXIOM(!t.IsValid());
+        TF_AXIOM(!t.GetParseErrors().empty());
     }
 
     return true;

@@ -24,11 +24,15 @@
 #ifndef HD_BUFFER_SPEC_H
 #define HD_BUFFER_SPEC_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 
@@ -74,20 +78,20 @@ struct HdBufferSpec {
 
     /// Equality checks.
     bool operator == (HdBufferSpec const &other) const {
-        return name == other.name and
-            glDataType == other.glDataType and
-            numComponents == other.numComponents and
+        return name == other.name                &&
+            glDataType == other.glDataType       &&
+            numComponents == other.numComponents &&
             arraySize == other.arraySize;
     }
     bool operator != (HdBufferSpec const &other) const {
-        return not (*this == other);
+        return !(*this == other);
     }
 
     /// Ordering.
     bool operator < (HdBufferSpec const &other) const {
-        return name < other.name or (name == other.name and
-              (glDataType < other.glDataType or (glDataType == other.glDataType and
-              (numComponents < other.numComponents or (numComponents == other.numComponents and
+        return name < other.name || (name == other.name &&
+              (glDataType < other.glDataType || (glDataType == other.glDataType &&
+              (numComponents < other.numComponents || (numComponents == other.numComponents &&
               (arraySize < other.arraySize))))));
     }
 
@@ -96,5 +100,8 @@ struct HdBufferSpec {
     int numComponents;
     int arraySize;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // HD_BUFFER_SPEC_H

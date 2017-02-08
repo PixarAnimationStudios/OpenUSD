@@ -24,6 +24,7 @@
 #ifndef HDX_RENDER_SETUP_TASK_H
 #define HDX_RENDER_SETUP_TASK_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/enums.h"
@@ -34,11 +35,15 @@
 
 #include <boost/shared_ptr.hpp>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdSprim> HdSprimSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 struct HdxRenderTaskParams;
+class HdxCamera;
+
 
 /// \class HdxRenderSetupTask
 ///
@@ -69,7 +74,7 @@ private:
     HdRenderPassShaderSharedPtr _colorRenderPassShader;
     HdRenderPassShaderSharedPtr _idRenderPassShader;
     GfVec4d _viewport;
-    HdSprimSharedPtr _camera;
+    const HdxCamera *_camera;
 };
 
 /// \class HdxRenderTaskParams
@@ -140,5 +145,8 @@ struct HdxRenderTaskParams : public HdTaskParams
 std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv);
 bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
 bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs);
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //HDX_RENDER_SETUP_TASK_H

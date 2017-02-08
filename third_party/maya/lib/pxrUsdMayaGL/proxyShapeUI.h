@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYAGL_PROXYSHAPEUI_H
 #define PXRUSDMAYAGL_PROXYSHAPEUI_H
 
+#include "pxr/pxr.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "usdMaya/proxyShape.h"
 
@@ -36,6 +37,9 @@
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionList.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
@@ -86,5 +90,8 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
     UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&);
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYAGL_PROXYSHAPEUI_H

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/usd/pcp/namespaceEdits.h" 
 #include "pxr/usd/pcp/debugCodes.h"
 #include "pxr/usd/pcp/dependencies.h"
@@ -36,6 +38,8 @@ using std::pair;
 using std::vector;
 
 using boost::dynamic_pointer_cast;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
@@ -74,7 +78,7 @@ _RelocatesMapContainsPrimOrDescendant(
     const SdfPath& primPath)
 {
     TF_FOR_ALL(it, reloMap) {
-        if (it->first.HasPrefix(primPath) or
+        if (it->first.HasPrefix(primPath) ||
             it->second.HasPrefix(primPath)) {
             return true;
         }
@@ -91,7 +95,7 @@ _AddRelocateEditsForLayerStack(
     const SdfPath& oldRelocatePath,
     const SdfPath& newRelocatePath)
 {
-    if (not result) {
+    if (!result) {
         return;
     }
 
@@ -110,7 +114,7 @@ _AddRelocateEditsForLayerStack(
             // doesn't necessarily mean there is a spec with a relocate
             // in every layer.  Skip layers that don't have a spec with
             // a relocate.
-            if (not prim or not prim->HasRelocates()) {
+            if (!prim || !prim->HasRelocates()) {
                 continue;
             }
 
@@ -205,7 +209,7 @@ _TranslatePathsAndEditRelocates(
 
     // Find the relocation.
     SdfRelocatesMap::const_iterator i = relocates.lower_bound(oldParentPath);
-    if (i != relocates.end() and oldParentPath.HasPrefix(i->first)) {
+    if (i != relocates.end() && oldParentPath.HasPrefix(i->first)) {
         const SdfPath & reloTargetPath = i->first;
         const SdfPath & reloSourcePath = i->second;
 
@@ -273,7 +277,7 @@ _TranslatePathsAndEditRelocates(
                 }
             }
 
-            if (not reloTargetNeedsEdit) {
+            if (!reloTargetNeedsEdit) {
                 // Since the relocation target isn't changing, this node
                 // 'absorbs' the namespace edit -- no layer stacks that 
                 // reference this layer stack need to be updated.  So, 
@@ -338,7 +342,7 @@ _AddLayerStackSite(
         final = true;
         return final;
     }
-    else if (oldNodePath->IsPrimPath() and not node.IsDueToAncestor()) {
+    else if (oldNodePath->IsPrimPath() && !node.IsDueToAncestor()) {
         final = true;
         TF_DEBUG(PCP_NAMESPACE_EDIT)
             .Msg("  - final.  direct arc fixup\n");
@@ -419,7 +423,7 @@ PcpComputeNamespaceEdits(
     const SdfPath primPath = curPath.GetPrimPath();
 
     // Verify that a prim index at primPath exists.
-    if (not primaryCache->FindPrimIndex(primPath)) {
+    if (!primaryCache->FindPrimIndex(primPath)) {
         TF_CODING_ERROR("No prim index computed for %s<%s>\n",
                         TfStringify(primaryLayerStack->GetIdentifier()).c_str(),
                         curPath.GetText());
@@ -461,7 +465,7 @@ PcpComputeNamespaceEdits(
             // node (e.g., a prim authored locally in a variant), we store
             // the node that introduced the variant as this truly represents
             // the namespace edited site.
-            while (node and node.GetArcType() == PcpArcTypeVariant) {
+            while (node && node.GetArcType() == PcpArcTypeVariant) {
                 node = node.GetParentNode();
             }
 
@@ -545,7 +549,7 @@ PcpComputeNamespaceEdits(
             //      cache can definitely see the namespace edit so
             //      they must be fixed, but can't inherits outside
             //      this cache also see the namespace edit?
-            if (cache == primaryCache and curPath.IsPrimPath()) {
+            if (cache == primaryCache && curPath.IsPrimPath()) {
 
                 SdfPathSet descendentPrimPaths;
 
@@ -588,8 +592,8 @@ PcpComputeNamespaceEdits(
                                   "lacks a prim index")) {
                         for (const PcpNodeRef &node:
                              index->GetNodeRange(PcpRangeTypeLocalInherit)) {
-                            if (node.GetLayerStack() == primaryLayerStack and
-                                not node.IsDueToAncestor()) {
+                            if (node.GetLayerStack() == primaryLayerStack &&
+                                !node.IsDueToAncestor()) {
                                 // Found an inherit using a descendant.
                                 descendantNodes.insert(
                                    std::make_pair(cacheIndex, node));
@@ -786,8 +790,8 @@ PcpComputeNamespaceEdits(
         }
 
         // If we made it all the way to the root then we have a cacheSite.
-        if (not node.GetParentNode()) {
-            if (not _IsInvalidEdit(oldNodePath, newNodePath)) {
+        if (!node.GetParentNode()) {
+            if (!_IsInvalidEdit(oldNodePath, newNodePath)) {
                 TF_DEBUG(PCP_NAMESPACE_EDIT)
                     .Msg("  - adding cacheSite for %s\n",
                          node.GetPath().GetText());
@@ -808,7 +812,7 @@ PcpComputeNamespaceEdits(
         {
             std::map<PcpLayerStackSite, size_t>::const_iterator i =
                 sites.lower_bound(site);
-            if (i != sites.end() and i->first == site) {
+            if (i != sites.end() && i->first == site) {
                 // Site exists in sites.
                 return true;
             }
@@ -832,7 +836,7 @@ PcpComputeNamespaceEdits(
 
     // If we're removing a prim then also collect every uncomposed site
     // that uses a descendant of the namespace edited site.
-    if (newPath.IsEmpty() and curPath.IsPrimPath()) {
+    if (newPath.IsEmpty() && curPath.IsPrimPath()) {
         std::map<PcpLayerStackSite, size_t> descendantSites;
 
         // Make a set of sites we already know have direct arcs to
@@ -853,9 +857,9 @@ PcpComputeNamespaceEdits(
                 TfStringify( cache->GetLayerStack()->GetIdentifier()).c_str());
             
             std::set<PcpLayerStackPtr> layerStacks;
-            for(const SdfLayerRefPtr &layer: primaryLayerStack->GetLayers()) { 
+            for (const SdfSite &site: primSites) {
                 const PcpLayerStackPtrVector& layerStackVec =
-                    cache->FindAllLayerStacksUsingLayer(layer);
+                    cache->FindAllLayerStacksUsingLayer(site.layer);
                 layerStacks.insert(layerStackVec.begin(), layerStackVec.end());
             }
 
@@ -913,7 +917,7 @@ PcpComputeNamespaceEdits(
                         descendantPath.ReplacePrefix(descendantPrimPath,
                                                      node.GetPath());
                     PcpLayerStackSite site(node.GetLayerStack(), path);
-                    if (not _Helper::HasSite(descendantSites, site)) {
+                    if (!_Helper::HasSite(descendantSites, site)) {
                         // We haven't seen this site or an ancestor yet.
                         if (doNotRemoveSites.count(site) == 0) {
                             // We're not blocking the addition of this site.
@@ -939,7 +943,7 @@ PcpComputeNamespaceEdits(
     }
 
     // Fix up all direct inherits to a descendant site.
-    if (not descendantNodes.empty()) {
+    if (!descendantNodes.empty()) {
         for (const auto& cacheAndNode : descendantNodes) {
             size_t cacheIndex   = cacheAndNode.first;
             const PcpNodeRef& node = cacheAndNode.second;
@@ -1016,3 +1020,5 @@ PcpComputeNamespaceEdits(
 
     return result;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

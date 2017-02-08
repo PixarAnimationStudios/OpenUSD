@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/debugCodes.h"
 
@@ -50,6 +52,8 @@
 using std::pair;
 using std::string;
 using std::vector;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 typedef TfHashMap< std::string, PlugPluginRefPtr, TfHash > _PluginMap;
 typedef TfHashMap< std::string, PlugPluginPtr, TfHash > _WeakPluginMap;
@@ -233,8 +237,8 @@ JsObject
 PlugPlugin::GetDependencies()
 {
     JsObject::iterator depend = _dict.find("PluginDependencies");
-    if (depend == _dict.end() or
-        not depend->second.IsObject())
+    if (depend == _dict.end() || 
+        !depend->second.IsObject())
         return JsObject();
 
     return depend->second.GetJsObject();
@@ -255,10 +259,10 @@ PlugPlugin::_Load()
                             _name.c_str(), _name.c_str());
             isLoaded = false;
         }
-    } else if (not IsResource()) {
+    } else if (!IsResource()) {
         string dsoError;
         _handle = TfDlopen(_path.c_str(), RTLD_NOW, &dsoError);
-        if ( ! _handle ) {
+        if (!_handle ) {
             TF_CODING_ERROR("Load of '%s' for '%s' failed: %s",
                             _path.c_str(), _name.c_str(), dsoError.c_str());
             isLoaded = false;
@@ -278,7 +282,7 @@ struct PlugPlugin::_SeenPlugins {
 bool
 PlugPlugin::_LoadWithDependents(_SeenPlugins *seenPlugins)
 {
-    if (not _isLoaded) {
+    if (!_isLoaded) {
         // Take note of each plugin we've visited and bail if there is a cycle.
         if (seenPlugins->plugins.count(_name)) {
             TF_CODING_ERROR("Load failed because of cyclic dependency for '%s'",
@@ -302,7 +306,7 @@ PlugPlugin::_LoadWithDependents(_SeenPlugins *seenPlugins)
 
             // Get dependencies, as typenames
             typedef vector<string> TypeNames;
-            if (not i->second.IsArrayOf<string>()) {
+            if (!i->second.IsArrayOf<string>()) {
                 TF_CODING_ERROR("Load failed: dependency list has wrong type");
                 return false;
             }
@@ -320,12 +324,12 @@ PlugPlugin::_LoadWithDependents(_SeenPlugins *seenPlugins)
                 }
 
                 PlugPluginPtr dependPlugin = _GetPluginForType(dependType);
-                if (not dependPlugin) {
+                if (!dependPlugin) {
                     TF_CODING_ERROR("Load failed: unknown dependent "
                                     "plugin '%s'", dependName.c_str());
                     return false;
                 }
-                if (not dependPlugin->_LoadWithDependents(seenPlugins)) {
+                if (!dependPlugin->_LoadWithDependents(seenPlugins)) {
                     TF_CODING_ERROR("Load failed: unable to load dependent "
                                     "plugin '%s'", dependName.c_str());
                     return false;
@@ -353,7 +357,7 @@ PlugPlugin::Load()
         TF_PY_ALLOW_THREADS_IN_SCOPE();
 
         std::lock_guard<std::recursive_mutex> lock(loadMutex);
-        loadedInSecondaryThread = not _isLoaded and not ArchIsMainThread();
+        loadedInSecondaryThread = !_isLoaded && !ArchIsMainThread();
         _SeenPlugins seenPlugins;
         result = _LoadWithDependents(&seenPlugins);
     }
@@ -401,7 +405,7 @@ std::string
 PlugPlugin::FindPluginResource(const std::string& path, bool verify) const
 {
     std::string result = MakeResourcePath(path);
-    if (verify and not TfPathExists(result)) {
+    if (verify && !TfPathExists(result)) {
         result.clear();
     }
     return result;
@@ -471,7 +475,7 @@ PlugPlugin::GetMetadataForType(const TfType &type)
 {
     JsValue types;
     TfMapLookup(_dict,"Types",&types);
-    if (not types.IsObject()) {
+    if (!types.IsObject()) {
         return JsObject();
     }
 
@@ -530,14 +534,14 @@ PlugPlugin::_DeclareAliases( TfType t, const JsObject & metadata )
 {
     JsObject::const_iterator i = metadata.find("alias");
 
-    if (i == metadata.end() or not i->second.IsObject())
+    if (i == metadata.end() || !i->second.IsObject())
         return;
 
     const JsObject& aliasDict = i->second.GetJsObject();
 
     TF_FOR_ALL(aliasIt, aliasDict) {
 
-        if (not aliasIt->second.IsString()) {
+        if (!aliasIt->second.IsString()) {
             TF_WARN("Expected string for alias name, but found %s",
                     aliasIt->second.GetTypeName().c_str() );
             continue;
@@ -582,7 +586,7 @@ PlugPlugin::_DeclareType(
         for (const auto& name : bases.GetArrayOf<string>()) {
             basesVec.push_back(TfType::Declare(name));
         }
-    } else if (not bases.IsNull()) {
+    } else if (!bases.IsNull()) {
         TF_CODING_ERROR("Invalid bases for type %s specified by plugin %s. "
             "Expected list of strings.", typeName.c_str(), _name.c_str());
     }
@@ -671,3 +675,4 @@ PlugFindPluginResource(
     return plugin ? plugin->FindPluginResource(path, verify) : std::string();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE

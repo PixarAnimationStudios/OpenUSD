@@ -24,9 +24,13 @@
 #ifndef GLF_GLCONTEXT_H
 #define GLF_GLCONTEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/threads.h"
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
@@ -203,12 +207,7 @@ public:
 private:
     static GlfGLContextSharedPtr _GetSharedContext()
     {
-        if (GlfGLContext::IsInitialized()
-#ifdef MENV30
-            // XXX skip this test for globaltrees until shared_code lands
-            and ArchIsMainThread()
-#endif
-            ) {
+        if (GlfGLContext::IsInitialized() && ArchIsMainThread()) {
             return GlfGLContext::GetSharedGLContext();
         }
         return GlfGLContextSharedPtr();
@@ -240,5 +239,8 @@ public:
 protected:
     GlfGLContextRegistrationInterface();
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

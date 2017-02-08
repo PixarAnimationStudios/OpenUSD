@@ -31,6 +31,8 @@
 /// \file gf/range{{ SUFFIX }}.h
 /// \ingroup group_gf_BasicGeometry
 
+#include "pxr/pxr.h"
+
 {% if DIM > 1 %}
 #include "pxr/base/gf/vec{{ DIM }}d.h"
 #include "pxr/base/gf/vec{{ DIM }}f.h"
@@ -42,6 +44,8 @@
 #include <cfloat>
 #include <cstddef>
 #include <iosfwd>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GfRange{{ DIM }}d;
 class GfRange{{ DIM }}f;
@@ -104,6 +108,14 @@ public:
 
     /// Returns the size of the range.
     {{ MINMAX }} GetSize() const { return _max - _min; }
+
+    /// Returns the midpoint of the range, that is, 0.5*(min+max).
+    /// Note: this returns zero in the case of default-constructed ranges,
+    /// or ranges set via SetEmpty().
+    {{ MINMAX }} GetMidpoint() const {
+        return static_cast<ScalarType>(0.5) * _min
+               + static_cast<ScalarType>(0.5) * _max;
+    }
 
     /// Sets the minimum value of the range.
     void SetMin({{ MINMAXPARM }}min) { _min = min; }
@@ -387,7 +399,9 @@ public:
 std::ostream& operator<<(std::ostream &, {{ RNG }} const &);
 
 {% for S in SCALARS if S != SCL %}
+PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/gf/range{{ DIM }}{{ S[0] }}.h"
+PXR_NAMESPACE_OPEN_SCOPE
 {% endfor %}
 
 {% for S in SCALARS if S != SCL %}
@@ -403,5 +417,7 @@ inline bool
 }
 
 {% endfor %}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_{{ UPPER(RNG)[2:] }}_H

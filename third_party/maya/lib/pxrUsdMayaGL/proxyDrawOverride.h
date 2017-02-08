@@ -24,6 +24,7 @@
 #ifndef PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H
 #define PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 
@@ -37,6 +38,9 @@
 #include <maya/MPxDrawOverride.h>
 #include <maya/MString.h>
 #include <maya/MUserData.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 
 class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
@@ -71,5 +75,8 @@ private:
     UsdMayaProxyDrawOverride(const MObject& obj);
 };
 
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H

@@ -22,13 +22,19 @@
 // language governing permissions and limitations under the Apache License.
 //
 #define ADDITION_OPERATOR
+
+#include "pxr/pxr.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
 
 #include <string>
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 void wrapArrayString() {
     VtWrapArray<VtArray<string> >();
     VtWrapComparisonFunctions<VtArray<string> >();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,7 +24,7 @@
 ///
 /// \file Sdf/fileFormat.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layerBase.h"
 #include "pxr/usd/sdf/data.h"
@@ -37,6 +37,8 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static TfStaticData<Sdf_FileFormatRegistry> _FileFormatRegistry;
 
@@ -186,7 +188,7 @@ const std::string&
 SdfFileFormat::GetPrimaryFileExtension() const
 {
     static std::string emptyString;
-    return TF_VERIFY(not _extensions.empty()) ? _extensions[0] : emptyString;
+    return TF_VERIFY(!_extensions.empty()) ? _extensions[0] : emptyString;
 }
 
 bool
@@ -331,7 +333,7 @@ SdfFileFormat::_LayerIsLoadingAsNew(const SdfLayerHandle& layer)
     // Note that this is an optional::bool and we are checking if it has
     // been set, not what its held value is.
     //
-    return not layer->_initializationWasSuccessful;
+    return !layer->_initializationWasSuccessful;
 }
 
 /* virtual */
@@ -345,3 +347,5 @@ SdfFileFormat::_InstantiateNewLayer(
 {
     return new SdfLayer(fileFormat, identifier, realPath, assetInfo, args);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

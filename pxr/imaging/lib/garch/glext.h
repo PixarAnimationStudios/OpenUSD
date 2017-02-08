@@ -24,13 +24,20 @@
 #ifndef GARCH_GLEXT_H
 #define GARCH_GLEXT_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 // Apple installs OpenGL headers in a non-standard location.
 #include <OpenGL/glext.h> 
 #else
 #include <GL/glext.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 #endif
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GARCH_GLEXT_H
 

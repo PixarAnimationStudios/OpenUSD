@@ -33,11 +33,14 @@
 
 #include <stddef.h>
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/functionLite.h"
 #include "pxr/base/arch/hints.h"
 
 #include <atomic>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Forward declaration to type in lib/Trace (in place of void*)
 class TraceScopeHolder;
@@ -181,5 +184,7 @@ private:
         _TRACELITE_JOIN(_tracelite_site, instance);                         \
     Tracelite_ScopeAuto _TRACELITE_JOIN(_traceliteScopeAuto_, instance)(    \
 			&_TRACELITE_JOIN(_tracelite_site, instance), name)
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TRACELITE_TRACE_H

@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/plug/info.h"
@@ -31,6 +33,9 @@
 #include <vector>
 
 using namespace std;
+PXR_NAMESPACE_USING_DIRECTIVE
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Custom get/set paths.  We don't link against libplug so we need to provide
 // Plug_SetPaths().
@@ -59,6 +64,8 @@ bool IsPathToCheck(string path)
     }
     return false;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 int main(int argc, char* argv[])
 {

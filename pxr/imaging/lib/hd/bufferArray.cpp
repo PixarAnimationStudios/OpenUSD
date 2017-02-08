@@ -27,6 +27,9 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/base/tf/iterator.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 static std::atomic_size_t _uniqueVersion(0);
 
 HdBufferArray::HdBufferArray(TfToken const &role,
@@ -116,7 +119,7 @@ HdBufferArray::_AddResource(TfToken const& name,
     if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
         // duplication check
         HdBufferResourceSharedPtr bufferRes = GetResource(name);
-        if (not TF_VERIFY(not bufferRes)) {
+        if (!TF_VERIFY(!bufferRes)) {
             return bufferRes;
         }
     }
@@ -235,4 +238,7 @@ std::ostream &operator <<(std::ostream &out,
     self.DebugDump(out);
     return out;
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

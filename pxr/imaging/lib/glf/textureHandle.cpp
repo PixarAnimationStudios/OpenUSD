@@ -35,6 +35,9 @@
 
 #include <iostream>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 GlfTextureHandleRefPtr
 GlfTextureHandle::New(GlfTextureRefPtr texture)
 {
@@ -83,10 +86,13 @@ GlfTextureHandle::_ComputeMemoryRequirement()
 {
     // adjust resolution to the maximum requirement
     size_t maxTargetMemory = 0;
-    if (not _requestedMemories.empty()) {
+    if (!_requestedMemories.empty()) {
         maxTargetMemory = _requestedMemories.rbegin()->first;
     }
 
     _texture->SetMemoryRequested(maxTargetMemory);
 
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

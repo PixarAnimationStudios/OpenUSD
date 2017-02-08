@@ -24,10 +24,13 @@
 ///
 /// \file Sdf/layerBase.cpp
 
-
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerBase.h"
 #include "pxr/usd/sdf/fileFormat.h"
+
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 SdfLayerBase::SdfLayerBase(
     const SdfFileFormatConstPtr& fileFormat,
@@ -54,3 +57,5 @@ SdfLayerBase::GetFileFormatArguments() const
 {
     return _fileFormatArgs;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

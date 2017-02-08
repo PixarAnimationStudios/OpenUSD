@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usd/usdGeom/pointInstancer.h"
-
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -38,6 +37,8 @@
 #include <string>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -213,6 +214,8 @@ void wrapUsdGeomPointInstancer()
     _CustomWrapCode(cls);
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
 // the code generator.  The entry point for your custom code should look
@@ -225,8 +228,98 @@ void wrapUsdGeomPointInstancer()
 // }
 //
 // Of course any other ancillary or support code may be provided.
+// 
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
+//
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-WRAP_CUSTOM {
+#include "pxr/base/tf/pyEnum.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+static
+std::vector<bool>
+_ComputeMaskAtTime(UsdGeomPointInstancer &self,
+                    UsdTimeCode time)
+{
+    return self.ComputeMaskAtTime(time);
 }
+
+static
+VtMatrix4dArray
+_ComputeInstanceTransformsAtTime(
+    UsdGeomPointInstancer &self,
+    UsdTimeCode time,
+    UsdTimeCode baseTime,
+    UsdGeomPointInstancer::ProtoXformInclusion doProtoXforms,
+    UsdGeomPointInstancer::MaskApplication applyMask)
+{
+    VtMatrix4dArray xforms;
+
+    // On error we'll be returning an empty array.
+    self.ComputeInstanceTransformsAtTime(&xforms, time, baseTime,
+                                         doProtoXforms, applyMask);
+
+    return xforms;
+}
+
+WRAP_CUSTOM {
+
+    typedef UsdGeomPointInstancer This;
+
+    TfPyWrapEnum<This::MaskApplication>();
+
+    TfPyWrapEnum<This::ProtoXformInclusion>();
+
+    _class
+        .def("ActivateId", 
+             &This::ActivateId,
+             (arg("id")))
+        .def("ActivateIds", 
+             &This::ActivateIds,
+             (arg("ids")))
+        .def("ActivateAllIds", 
+             &This::ActivateAllIds)
+        .def("DeactivateId", 
+             &This::DeactivateId,
+             (arg("id")))
+        .def("DeactivateIds", 
+             &This::DeactivateIds,
+             (arg("ids")))
+
+        .def("VisId", 
+             &This::VisId,
+             (arg("id"), arg("time")))
+        .def("VisIds", 
+             &This::VisIds,
+             (arg("ids"), arg("time")))
+        .def("VisAllIds", 
+             &This::VisAllIds,
+             (arg("time")))
+        .def("InvisId", 
+             &This::InvisId,
+             (arg("id"), arg("time")))
+        .def("InvisIds", 
+             &This::InvisIds,
+             (arg("ids"), arg("time")))
+        
+        // The cost to fetch 'ids' is likely dwarfed by python marshalling
+        // costs, so let's not worry about the 'ids' optional arg
+        .def("ComputeMaskAtTime",
+             &_ComputeMaskAtTime,
+             (arg("time")))
+
+        .def("ComputeInstanceTransformsAtTime",
+             &_ComputeInstanceTransformsAtTime,
+             (arg("time"), arg("baseTime"),
+              arg("doProtoXforms")=This::IncludeProtoXform,
+              arg("applyMask")=This::ApplyMask))
+              
+
+        ;
+
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

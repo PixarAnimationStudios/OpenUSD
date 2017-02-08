@@ -37,6 +37,9 @@
 
 #include "pxr/base/tf/type.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingSphereAdapter Adapter;
@@ -89,7 +92,7 @@ UsdImagingSphereAdapter::TrackVariability(UsdPrim const& prim,
     
     UsdTimeCode time(1.0);
     if (requestedBits & HdChangeTracker::DirtyTransform) {
-        if (not (*dirtyBits & HdChangeTracker::DirtyTransform)) {
+        if (!(*dirtyBits & HdChangeTracker::DirtyTransform)) {
             _IsVarying(prim, UsdGeomTokens->radius,
                           HdChangeTracker::DirtyTransform,
                           UsdImagingTokens->usdVaryingXform,
@@ -263,3 +266,6 @@ UsdImagingSphereAdapter::GetMeshTransform(UsdPrim const& prim,
     GfMatrix4d xf(GfVec4d(radius, radius, radius, 1.0));   
     return xf;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

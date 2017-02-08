@@ -27,6 +27,7 @@
 /// \file sdf/types.h
 /// Basic Sdf data types
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -86,6 +87,8 @@
 #include <typeinfo>
 #include <vector>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 class SdfPath;
 
 /// An enum that specifies the type of an object. Objects
@@ -116,13 +119,9 @@ enum SdfSpecType {
 ///
 /// <b>SdfSpecifier:</b>
 /// <ul>
-/// <li><b>SdfSpecifierDef.</b> Defines a new concrete prim.
-///        A prim with the same namespace path must not already
-///        have been defined (as a def or class) by a weaker layer.
-/// <li><b>SdfSpecifierOver.</b> Defines overrides for an existing prim.
-/// <li><b>SdfSpecifierClass.</b> Defines a new abstract prim.
-///        A prim with the same namespace path must not already
-///        have been defined (as a def or class) by a weaker layer.
+/// <li><b>SdfSpecifierDef.</b> Defines a concrete prim.
+/// <li><b>SdfSpecifierOver.</b> Overrides an existing prim.
+/// <li><b>SdfSpecifierClass.</b> Defines an abstract prim.
 /// <li><b>SdfNumSpecifiers.</b> The number of specifiers.
 /// </ul>
 ///
@@ -486,18 +485,18 @@ BOOST_PP_COMMA() SDF_VALUE_TRAITS_TYPE(elem)
 
 /// An mpl sequence of all available traits types for value types
 /// defined by Sdf.
-typedef boost::mpl::vector<
+typedef ::boost::mpl::vector<
     SDF_VALUE_TRAITS_TYPE(BOOST_PP_SEQ_HEAD(_SDF_SCALAR_VALUE_TYPES))
     BOOST_PP_SEQ_FOR_EACH(_SDF_WRITE_VALUE_TRAITS_TYPE, ~,
                           BOOST_PP_SEQ_TAIL(_SDF_SCALAR_VALUE_TYPES))
     > Sdf_ScalarValueTraitsTypesVector;
-typedef boost::mpl::vector<
+typedef ::boost::mpl::vector<
     SDF_VALUE_TRAITS_TYPE(BOOST_PP_SEQ_HEAD(_SDF_DIMENSIONED_VALUE_TYPES))
     BOOST_PP_SEQ_FOR_EACH(_SDF_WRITE_VALUE_TRAITS_TYPE, ~,
                           BOOST_PP_SEQ_TAIL(_SDF_DIMENSIONED_VALUE_TYPES))
     > Sdf_DimensionedValueTraitsTypesVector;
 
-typedef boost::mpl::joint_view<
+typedef ::boost::mpl::joint_view<
     Sdf_ScalarValueTraitsTypesVector, Sdf_DimensionedValueTraitsTypesVector
     > SdfValueTraitsTypesVector;
 
@@ -684,5 +683,7 @@ private:
 
 // Write out the string representation of a block.
 std::ostream& operator<<(std::ostream&, SdfValueBlock const&); 
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_TYPES_H

@@ -23,6 +23,7 @@
 //
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readModel.h"
 #include "usdKatana/usdInPrivateData.h"
@@ -31,6 +32,9 @@
 
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_ModelOp, privateData, interface)
 {
@@ -86,7 +90,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_ModelOp, privateData, interface)
     attrs.toInterface(interface);
 
     // when checking for a looks group, swap in the master if the prim is an instance
-    UsdPrim lookPrim = (prim.IsInstance() and not privateData.GetMasterPath().IsEmpty()) ?
+    UsdPrim lookPrim = (prim.IsInstance() && !privateData.GetMasterPath().IsEmpty()) ?
         prim.GetMaster().GetChild(TfToken(UsdKatanaTokens->katanaLooksScopeName))
             : prim.GetChild(TfToken(UsdKatanaTokens->katanaLooksScopeName));
 

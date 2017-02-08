@@ -24,23 +24,27 @@
 ///
 /// \file testenv/testJsUtils.cpp
 
+#include "pxr/pxr.h"
 #include "pxr/base/js/utils.h"
+#include "pxr/base/tf/diagnosticLite.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 int main(int argc, char const *argv[])
 {
     JsObject emptyObject;
-    assert(not JsFindValue(emptyObject, "key"));
+    TF_AXIOM(!JsFindValue(emptyObject, "key"));
     JsOptionalValue v = JsFindValue(emptyObject, "key", JsValue("value"));
-    assert(v);
-    assert(v->IsString());
-    assert(v->GetString() == "value");
+    TF_AXIOM(v);
+    TF_AXIOM(v->IsString());
+    TF_AXIOM(v->GetString() == "value");
 
     JsObject object;
     object["key"] = JsValue(42);
     JsOptionalValue jsInt = JsFindValue(object, "key", JsValue(43));
-    assert(jsInt);
-    assert(jsInt->IsInt());
-    assert(jsInt->GetInt() == 42);
+    TF_AXIOM(jsInt);
+    TF_AXIOM(jsInt->IsInt());
+    TF_AXIOM(jsInt->GetInt() == 42);
 
     return 0;
 }

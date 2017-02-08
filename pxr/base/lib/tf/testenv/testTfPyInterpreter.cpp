@@ -23,6 +23,7 @@
 //
 // testTfPyInterpreter.mm
 
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyInterpreter.h"
 
 #include <boost/python/handle.hpp>
@@ -30,6 +31,7 @@
 #include <string>
 
 using namespace boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static unsigned int
 testInterpreter(bool verbose)
@@ -73,7 +75,7 @@ testInterpreter(bool verbose)
     }
 
     modPath = TfPyGetModulePath("badmodule");
-    if (not modPath.empty()) {
+    if (!modPath.empty()) {
         printf("ERROR: TfPyGetModulePath, bad module name returned result '%s'.\n", modPath.c_str());
         numErrors++;
     } else if (verbose) {

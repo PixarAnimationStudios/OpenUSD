@@ -26,6 +26,7 @@
 
 /// \file sdf/reference.h
 
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/dictionary.h"
@@ -36,6 +37,8 @@
 #include <iosfwd>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfReference;
 
@@ -165,7 +168,7 @@ public:
     ///
     struct IdentityEqual {
         bool operator()(const SdfReference &lhs, const SdfReference &rhs) const {
-            return lhs._assetPath == rhs._assetPath and
+            return lhs._assetPath == rhs._assetPath &&
                    lhs._primPath  == rhs._primPath;
         }
     };
@@ -175,8 +178,8 @@ public:
     ///
     struct IdentityLessThan {
         bool operator()(const SdfReference &lhs, const SdfReference &rhs) const {
-            return lhs._assetPath <  rhs._assetPath or
-                  (lhs._assetPath == rhs._assetPath and
+            return lhs._assetPath <  rhs._assetPath ||
+                  (lhs._assetPath == rhs._assetPath &&
                    lhs._primPath  <  rhs._primPath);
         }
     };
@@ -212,5 +215,7 @@ int SdfFindReferenceByIdentity(
 /// Writes the string representation of \a SdfReference to \a out.
 std::ostream & operator<<( std::ostream &out,
                            const SdfReference &reference );
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_REFERENCE_H

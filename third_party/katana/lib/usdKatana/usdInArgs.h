@@ -24,13 +24,11 @@
 #ifndef PXRUSDKATANA_USDIN_ARGS_H
 #define PXRUSDKATANA_USDIN_ARGS_H
 
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/base/tf/refPtr.h"
 
 #include <tbb/enumerable_thread_specific.h>
-
-class PxrUsdKatanaUsdInArgs;
-typedef TfRefPtr<PxrUsdKatanaUsdInArgs> PxrUsdKatanaUsdInArgsRefPtr;
 
 /// \brief Reference counted container for op state that should be constructed
 /// at an ops root and passed to read USD prims into Katana attributes.
@@ -38,6 +36,46 @@ typedef TfRefPtr<PxrUsdKatanaUsdInArgs> PxrUsdKatanaUsdInArgsRefPtr;
 /// This should hold ref pointers or shareable copies of state that should not
 /// be copied at each location.
 ///
+
+#include <FnAttribute/FnAttribute.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class PxrUsdKatanaUsdInArgs;
+typedef TfRefPtr<PxrUsdKatanaUsdInArgs> PxrUsdKatanaUsdInArgsRefPtr;
+
+/// The sessionAttr is a structured GroupAttribute argument for delivering
+/// edits to the session layer of the stage. It replaces the earlier
+/// "variants" string while also providing activate/deactivate edits.
+/// 
+/// It is typically delivered to the node via graphState -- which then provides
+/// it directly here via opArg.
+/// 
+/// The format of the attr is:
+/// |
+/// ---variants
+/// |  |
+/// |  --- <entryPath>
+/// |  |  |
+/// |  | ---variantSetName -> variantSelection
+/// |  |  |
+/// |  |---...
+/// |  ---...
+/// ---activations
+///    |
+///    ---<entryPath> -> IntAttribute(0|1)
+///    |
+///    ---...
+/// 
+/// The format of <entryPath> is a FnAttribute::DelimiterEncode'd scenegraph
+/// location path. This protects against invalid characters in the entry attr
+/// name (as "." is valid in a scenegraph location path). The location path
+/// is the full katana scene path (so that multiple instances of the op) can
+/// distinguish what's relevant based on being beneath its own rootLocation
+/// argument. Internally, a sessionLocation argument may be used to specify
+/// a root separate from its own. This is typically use for cases of recursive
+/// op expansion sharing the same cached stage.
+
 
 class PxrUsdKatanaUsdInArgs : public TfRefBase
 {
@@ -50,7 +88,7 @@ public:
             UsdStageRefPtr stage,
             const std::string& rootLocation,
             const std::string& isolatePath,
-            const SdfPathSet& variantSelections,
+            FnAttribute::GroupAttribute sessionAttr,
             const std::string& ignoreLayerRegex,
             double currentTime,
             double shutterOpen,
@@ -64,7 +102,7 @@ public:
                     stage, 
                     rootLocation,
                     isolatePath,
-                    variantSelections,
+                    sessionAttr,
                     ignoreLayerRegex,
                     currentTime,
                     shutterOpen,
@@ -97,8 +135,8 @@ public:
         return _isolatePath;
     }
 
-    const std::set<SdfPath>& GetVariantSelections() const {
-        return _variantSelections;
+    FnAttribute::GroupAttribute GetSessionAttr() {
+        return _sessionAttr;
     }
 
     const std::string& GetIgnoreLayerRegex() const {
@@ -155,7 +193,7 @@ private:
             UsdStageRefPtr stage,
             const std::string& rootLocation,
             const std::string& isolatePath,
-            const SdfPathSet& variantSelections,
+            FnAttribute::GroupAttribute sessionAttr,
             const std::string& ignoreLayerRegex,
             double currentTime,
             double shutterOpen,
@@ -173,7 +211,7 @@ private:
     std::string _rootLocation;
     std::string _isolatePath;
 
-    std::set<SdfPath> _variantSelections;
+    FnAttribute::GroupAttribute _sessionAttr;
     std::string _ignoreLayerRegex;
 
     double _currentTime;
@@ -194,5 +232,63 @@ private:
     std::string _errorMessage;
 
 };
+
+
+// utility to make it easier to exit earlier from InitUsdInArgs
+struct ArgsBuilder
+{
+    UsdStageRefPtr stage;
+    std::string rootLocation;
+    std::string isolatePath;
+    FnAttribute::GroupAttribute sessionAttr;
+    std::string ignoreLayerRegex;
+    double currentTime;
+    double shutterOpen;
+    double shutterClose;
+    std::vector<double> motionSampleTimes;
+    std::set<std::string> defaultMotionPaths;
+    PxrUsdKatanaUsdInArgs::StringListMap extraAttributesOrNamespaces;
+    bool verbose;
+    const char * errorMessage;
+    
+    
+    ArgsBuilder()
+    : currentTime(0.0)
+    , shutterOpen(0.0)
+    , shutterClose(0.0)
+    , verbose(false)
+    , errorMessage(0)
+    {
+    }
+    
+    PxrUsdKatanaUsdInArgsRefPtr build()
+    {
+        return PxrUsdKatanaUsdInArgs::New(
+            stage,
+            rootLocation,
+            isolatePath,
+            sessionAttr.isValid() ? sessionAttr :
+                    FnAttribute::GroupAttribute(true),
+            ignoreLayerRegex,
+            currentTime,
+            shutterOpen,
+            shutterClose,
+            motionSampleTimes,
+            defaultMotionPaths,
+            extraAttributesOrNamespaces,
+            verbose,
+            errorMessage);
+    }
+    
+    PxrUsdKatanaUsdInArgsRefPtr buildWithError(std::string errorStr)
+    {
+        errorMessage = errorStr.c_str();
+        return build();
+    }
+    
+};
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDKATANA_USDIN_ARGS_H

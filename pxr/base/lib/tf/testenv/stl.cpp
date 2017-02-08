@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+#include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/hash.h"
@@ -35,6 +37,7 @@ using std::pair;
 using std::string;
 using std::vector;
 
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static void testSetDifferences()
 {

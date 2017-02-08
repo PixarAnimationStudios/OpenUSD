@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/instantiateSingleton.h"
@@ -39,7 +40,7 @@
 #include <set>
 
 using namespace std;
-
+PXR_NAMESPACE_USING_DIRECTIVE
 
 enum _TestEnum {
     A, B, C
@@ -185,7 +186,7 @@ public:
     }
 
     void _HandleTypeDeclaredNotice( const TfTypeWasDeclaredNotice & n ) {
-        assert( not n.GetType().IsUnknown() );
+        TF_AXIOM( !n.GetType().IsUnknown() );
         _seenNotices->insert( n.GetType() );
     }
 
@@ -216,36 +217,36 @@ TF_REGISTRY_FUNCTION(TfType)
 
     TfType t1 = TfType::Define<CountedClass>();
     t1.SetFactory<TfTest_RefPtrFactory<CountedClassFactory> >();
-    assert(typesWeHaveSeenNoticesFor.count( TfType::Find<CountedClass>()));
+    TF_AXIOM(typesWeHaveSeenNoticesFor.count( TfType::Find<CountedClass>()));
 
     TfType ts = TfType::Define<SingleClass>();
     ts.SetFactory<TfTest_SingletonFactory<SingleClass> >();
 
-    assert(typesWeHaveSeenNoticesFor.count( TfType::Find<SingleClass>()));
+    TF_AXIOM(typesWeHaveSeenNoticesFor.count( TfType::Find<SingleClass>()));
 
     TfType t2 = TfType::Define<ConcreteClass>();
     t2.SetFactory<TfTest_PtrFactory<ConcreteClass> >();
 
-    assert(typesWeHaveSeenNoticesFor.count( TfType::Find<ConcreteClass>()));
+    TF_AXIOM(typesWeHaveSeenNoticesFor.count( TfType::Find<ConcreteClass>()));
 
     TfType::Define<IAbstractClass>();
-    assert(typesWeHaveSeenNoticesFor.count( TfType::Find<IAbstractClass>()));
+    TF_AXIOM(typesWeHaveSeenNoticesFor.count( TfType::Find<IAbstractClass>()));
 
     TfType t3 = TfType::Define<ChildClass,
                    TfType::Bases< ConcreteClass, IAbstractClass > >();
     t3.SetFactory<TfTest_PtrFactory<ChildClass> >();
 
-    assert(typesWeHaveSeenNoticesFor.count( TfType::Find<ChildClass>()));
+    TF_AXIOM(typesWeHaveSeenNoticesFor.count( TfType::Find<ChildClass>()));
 
     TfType::Define<GrandchildClass,
                    TfType::Bases< ChildClass > >()
         ;
-    assert(typesWeHaveSeenNoticesFor.count( TfType::Find<GrandchildClass>()));
+    TF_AXIOM(typesWeHaveSeenNoticesFor.count( TfType::Find<GrandchildClass>()));
 
     TfType::Define<OtherGrandchildClass,
                    TfType::Bases< ChildClass > >()
         ;
-    assert(typesWeHaveSeenNoticesFor
+    TF_AXIOM(typesWeHaveSeenNoticesFor
            .count( TfType::Find<OtherGrandchildClass>() ) );
 }
 
@@ -265,14 +266,14 @@ Test_TfType()
     ////////////////////////////////////////////////////////////////////////
     // IsUnknown()
 
-    assert( tUnknown.IsUnknown() );
-    assert( not tRoot.IsUnknown() );
-    assert( not tChild.IsUnknown() );
-    assert( not tAbstract.IsUnknown() );
-    assert( not tChild.IsUnknown() );
-    assert( not tGrandchild.IsUnknown() );
-    assert( not tCounted.IsUnknown() );
-    assert( not tSingle.IsUnknown() );
+    TF_AXIOM( tUnknown.IsUnknown() );
+    TF_AXIOM( !tRoot.IsUnknown() );
+    TF_AXIOM( !tChild.IsUnknown() );
+    TF_AXIOM( !tAbstract.IsUnknown() );
+    TF_AXIOM( !tChild.IsUnknown() );
+    TF_AXIOM( !tGrandchild.IsUnknown() );
+    TF_AXIOM( !tCounted.IsUnknown() );
+    TF_AXIOM( !tSingle.IsUnknown() );
 
     ////////////////////////////////////////////////////////////////////////
     // All types should be distinct.
@@ -285,22 +286,22 @@ Test_TfType()
     knownTypeSet.insert( tGrandchild );
     knownTypeSet.insert( tCounted );
     knownTypeSet.insert( tSingle );
-    assert( knownTypeSet.size() == numKnownTypes );
+    TF_AXIOM( knownTypeSet.size() == numKnownTypes );
 
     // Now include unknown type
     std::set<TfType> allTypeSet = knownTypeSet;
     allTypeSet.insert( tUnknown );
-    assert( allTypeSet.size() == numKnownTypes+1 );
+    TF_AXIOM( allTypeSet.size() == numKnownTypes+1 );
 
     // Expect types to be unique
-    assert( allTypeSet.count( tUnknown ) == 1 );
-    assert( allTypeSet.count( tRoot ) == 1 );
-    assert( allTypeSet.count( tConcrete ) == 1 );
-    assert( allTypeSet.count( tAbstract ) == 1 );
-    assert( allTypeSet.count( tChild ) == 1 );
-    assert( allTypeSet.count( tGrandchild ) == 1 );
-    assert( allTypeSet.count( tCounted ) == 1 );
-    assert( allTypeSet.count( tSingle ) == 1 );
+    TF_AXIOM( allTypeSet.count( tUnknown ) == 1 );
+    TF_AXIOM( allTypeSet.count( tRoot ) == 1 );
+    TF_AXIOM( allTypeSet.count( tConcrete ) == 1 );
+    TF_AXIOM( allTypeSet.count( tAbstract ) == 1 );
+    TF_AXIOM( allTypeSet.count( tChild ) == 1 );
+    TF_AXIOM( allTypeSet.count( tGrandchild ) == 1 );
+    TF_AXIOM( allTypeSet.count( tCounted ) == 1 );
+    TF_AXIOM( allTypeSet.count( tSingle ) == 1 );
 
     ////////////////////////////////////////////////////////////////////////
     // All typeNames should be distinct.
@@ -308,7 +309,7 @@ Test_TfType()
     std::set<std::string> typeNameSet;
     TF_FOR_ALL(it, allTypeSet)
         typeNameSet.insert( it->GetTypeName() );
-    assert( typeNameSet.size() == allTypeSet.size() );
+    TF_AXIOM( typeNameSet.size() == allTypeSet.size() );
     
     ////////////////////////////////////////////////////////////////////////
     // Test IsA
@@ -317,50 +318,50 @@ Test_TfType()
     {
         TfErrorMark m;
         m.SetMark();
-        assert( not tUnknown.IsA(tUnknown) );
+        TF_AXIOM( !tUnknown.IsA(tUnknown) );
         m.Clear();
     }
 
     TF_FOR_ALL(it, knownTypeSet) {
-        assert( it->IsA(tRoot) );
-        assert( it->IsA(*it) );
+        TF_AXIOM( it->IsA(tRoot) );
+        TF_AXIOM( it->IsA(*it) );
 
         // IsA<Unknown> -> error
         {
             TfErrorMark m;
             m.SetMark();
-            assert( not it->IsA(tUnknown) );
-            assert( not it->IsA<UnknownClass>() );
+            TF_AXIOM( !it->IsA(tUnknown) );
+            TF_AXIOM( !it->IsA<UnknownClass>() );
             m.Clear();
         }
     }
 
-    assert( tChild.IsA(tConcrete) );
-    assert( tChild.IsA(tAbstract) );
-    assert( tChild.IsA<ConcreteClass>() );
-    assert( tChild.IsA<IAbstractClass>() );
+    TF_AXIOM( tChild.IsA(tConcrete) );
+    TF_AXIOM( tChild.IsA(tAbstract) );
+    TF_AXIOM( tChild.IsA<ConcreteClass>() );
+    TF_AXIOM( tChild.IsA<IAbstractClass>() );
 
-    assert( tConcrete.IsA<ConcreteClass>() );
-    assert( not tConcrete.IsA<ChildClass>() );
+    TF_AXIOM( tConcrete.IsA<ConcreteClass>() );
+    TF_AXIOM( !tConcrete.IsA<ChildClass>() );
 
-    assert( tAbstract.IsA(tAbstract) );
-    assert( not tAbstract.IsA(tChild) );
+    TF_AXIOM( tAbstract.IsA(tAbstract) );
+    TF_AXIOM( !tAbstract.IsA(tChild) );
 
-    assert( tGrandchild.IsA(tAbstract) );
-    assert( tGrandchild.IsA(tConcrete) );
-    assert( tGrandchild.IsA(tChild) );
-    assert( tGrandchild.IsA<IAbstractClass>() );
-    assert( tGrandchild.IsA<ConcreteClass>() );
-    assert( tGrandchild.IsA<ChildClass>() );
+    TF_AXIOM( tGrandchild.IsA(tAbstract) );
+    TF_AXIOM( tGrandchild.IsA(tConcrete) );
+    TF_AXIOM( tGrandchild.IsA(tChild) );
+    TF_AXIOM( tGrandchild.IsA<IAbstractClass>() );
+    TF_AXIOM( tGrandchild.IsA<ConcreteClass>() );
+    TF_AXIOM( tGrandchild.IsA<ChildClass>() );
 
     ////////////////////////////////////////////////////////////////////////
     // Test GetTypeid()
 
-    assert( TfSafeTypeCompare(tRoot.GetTypeid(), typeid(void)) );
-    assert( TfSafeTypeCompare(tConcrete.GetTypeid(), typeid(ConcreteClass)) );
-    assert( TfSafeTypeCompare(tAbstract.GetTypeid(), typeid(IAbstractClass)) );
-    assert( TfSafeTypeCompare(tChild.GetTypeid(), typeid(ChildClass)) );
-    assert( TfSafeTypeCompare(tGrandchild.GetTypeid(),
+    TF_AXIOM( TfSafeTypeCompare(tRoot.GetTypeid(), typeid(void)) );
+    TF_AXIOM( TfSafeTypeCompare(tConcrete.GetTypeid(), typeid(ConcreteClass)) );
+    TF_AXIOM( TfSafeTypeCompare(tAbstract.GetTypeid(), typeid(IAbstractClass)) );
+    TF_AXIOM( TfSafeTypeCompare(tChild.GetTypeid(), typeid(ChildClass)) );
+    TF_AXIOM( TfSafeTypeCompare(tGrandchild.GetTypeid(),
                               typeid(GrandchildClass)) );
 
     ////////////////////////////////////////////////////////////////////////
@@ -368,34 +369,34 @@ Test_TfType()
 
     ConcreteClass concreteObj;
     ChildClass childObj;
-    assert( tConcrete == TfType::Find(concreteObj) ); 
-    assert( tConcrete != TfType::Find(childObj) ); 
-    assert( tChild == TfType::Find(childObj) ); 
-    assert( tChild != TfType::Find(concreteObj) ); 
-    assert( tAbstract == TfType::FindByName("IAbstractClass") );
-    assert( tConcrete == TfType::FindByName("ConcreteClass") );
-    assert( tChild == TfType::FindByName("ChildClass") );
-    assert( tAbstract == TfType::Find(tAbstract.GetTypeid()) );
-    assert( tChild == TfType::Find(tChild.GetTypeid()) );
+    TF_AXIOM( tConcrete == TfType::Find(concreteObj) ); 
+    TF_AXIOM( tConcrete != TfType::Find(childObj) ); 
+    TF_AXIOM( tChild == TfType::Find(childObj) ); 
+    TF_AXIOM( tChild != TfType::Find(concreteObj) ); 
+    TF_AXIOM( tAbstract == TfType::FindByName("IAbstractClass") );
+    TF_AXIOM( tConcrete == TfType::FindByName("ConcreteClass") );
+    TF_AXIOM( tChild == TfType::FindByName("ChildClass") );
+    TF_AXIOM( tAbstract == TfType::Find(tAbstract.GetTypeid()) );
+    TF_AXIOM( tChild == TfType::Find(tChild.GetTypeid()) );
 
     // Test Find() for pointers to polymorphic types:
     // Raw pointer (T*)
-    assert( tConcrete == TfType::Find( &concreteObj ) );
+    TF_AXIOM( tConcrete == TfType::Find( &concreteObj ) );
     // TfRefPtr
     CountedClassRefPtr countedRef = CountedClass::New();
-    assert( tCounted == TfType::Find( countedRef ) );
+    TF_AXIOM( tCounted == TfType::Find( countedRef ) );
     // TfWeakPtr
     CountedClassPtr countedWeak(countedRef);
-    assert( tCounted == TfType::Find( countedWeak ) );
+    TF_AXIOM( tCounted == TfType::Find( countedWeak ) );
 
    //////////////////////////////////////////////////////////////////////// 
     // Test Get{Base,Derived}Types()
 
-    assert( tRoot.GetBaseTypes().empty() );
-    assert( not tRoot.GetDirectlyDerivedTypes().empty() );
+    TF_AXIOM( tRoot.GetBaseTypes().empty() );
+    TF_AXIOM( !tRoot.GetDirectlyDerivedTypes().empty() );
 
-    assert( tUnknown.GetBaseTypes().empty() );
-    assert( tUnknown.GetDirectlyDerivedTypes().empty() );
+    TF_AXIOM( tUnknown.GetBaseTypes().empty() );
+    TF_AXIOM( tUnknown.GetDirectlyDerivedTypes().empty() );
 
     std::vector<TfType> rootDerivatives = tRoot.GetDirectlyDerivedTypes();
     std::vector<TfType> abstractParents = tAbstract.GetBaseTypes();
@@ -406,30 +407,30 @@ Test_TfType()
     std::vector<TfType> grandchildDerivatives = tGrandchild.GetDirectlyDerivedTypes();
 
     // Test inheritance within our known hierarchy
-    assert( childParents.size() == 2 && childDerivatives.size() == 2 );
-    assert(
+    TF_AXIOM( childParents.size() == 2 && childDerivatives.size() == 2 );
+    TF_AXIOM(
         ((childParents[0] == tConcrete && childParents[1] == tAbstract) ||
         ((childParents[0] == tAbstract && childParents[1] == tConcrete))) );
-    assert(childDerivatives[0] == tGrandchild );
-    assert(grandchildParents.size() == 1 && grandchildDerivatives.empty());
-    assert(grandchildParents[0] == tChild);
+    TF_AXIOM(childDerivatives[0] == tGrandchild );
+    TF_AXIOM(grandchildParents.size() == 1 && grandchildDerivatives.empty());
+    TF_AXIOM(grandchildParents[0] == tChild);
 
     // These types should inherit the root directly
-    assert( tAbstract.GetBaseTypes() == std::vector<TfType>(1, tRoot) );
-    assert( tConcrete.GetBaseTypes() == std::vector<TfType>(1, tRoot) );
-    assert( std::find( rootDerivatives.begin(), rootDerivatives.end(),
+    TF_AXIOM( tAbstract.GetBaseTypes() == std::vector<TfType>(1, tRoot) );
+    TF_AXIOM( tConcrete.GetBaseTypes() == std::vector<TfType>(1, tRoot) );
+    TF_AXIOM( std::find( rootDerivatives.begin(), rootDerivatives.end(),
                        tAbstract ) != rootDerivatives.end() );
-    assert( std::find( rootDerivatives.begin(), rootDerivatives.end(),
+    TF_AXIOM( std::find( rootDerivatives.begin(), rootDerivatives.end(),
                        tConcrete ) != rootDerivatives.end() );
 
     // These types should not inherit the root directly
-    assert( std::find( rootDerivatives.begin(), rootDerivatives.end(),
+    TF_AXIOM( std::find( rootDerivatives.begin(), rootDerivatives.end(),
                        tChild ) == rootDerivatives.end() );
-    assert( std::find( rootDerivatives.begin(), rootDerivatives.end(),
+    TF_AXIOM( std::find( rootDerivatives.begin(), rootDerivatives.end(),
                        tGrandchild ) == rootDerivatives.end() );
-    assert( std::find( childDerivatives.begin(), childDerivatives.end(),
+    TF_AXIOM( std::find( childDerivatives.begin(), childDerivatives.end(),
                        tRoot ) == childDerivatives.end() );
-    assert( std::find( grandchildDerivatives.begin(),
+    TF_AXIOM( std::find( grandchildDerivatives.begin(),
                        grandchildDerivatives.end(),
                        tRoot ) == grandchildDerivatives.end() );
 
@@ -442,103 +443,103 @@ Test_TfType()
     // Try simple upcast
     ConcreteClass* childToConcrete = 
         (ConcreteClass*)tChild.CastToAncestor(tConcrete, &childForCast);
-    assert( childToConcrete != NULL );
-    assert( TfType::Find(*childToConcrete) == tChild );
+    TF_AXIOM( childToConcrete != NULL );
+    TF_AXIOM( TfType::Find(*childToConcrete) == tChild );
 
     // Try simple upcast to 2nd base
     IAbstractClass* childToIAbstract = 
         (IAbstractClass*)tChild.CastToAncestor(tAbstract, &childForCast);
-    assert( childToIAbstract != NULL );
-    assert( TfType::Find(*childToIAbstract) == tChild );
+    TF_AXIOM( childToIAbstract != NULL );
+    TF_AXIOM( TfType::Find(*childToIAbstract) == tChild );
 
     // Try 2-level upcast
     ConcreteClass* grandchildToConcrete = 
         (ConcreteClass*)tGrandchild.CastToAncestor
         (tConcrete, &grandchildForCast);
-    assert( grandchildToConcrete != NULL );
-    assert( TfType::Find(*grandchildToConcrete) == tGrandchild );
+    TF_AXIOM( grandchildToConcrete != NULL );
+    TF_AXIOM( TfType::Find(*grandchildToConcrete) == tGrandchild );
 
     // Try downcast to same type
     GrandchildClass* grandchildFromGrandchild =
         (GrandchildClass*)tGrandchild.CastFromAncestor
         (tGrandchild, (ChildClass*)&grandchildForCast);
-    assert( grandchildFromGrandchild != NULL );
-    assert( TfType::Find(*grandchildFromGrandchild) == tGrandchild );
+    TF_AXIOM( grandchildFromGrandchild != NULL );
+    TF_AXIOM( TfType::Find(*grandchildFromGrandchild) == tGrandchild );
 
     // Try upcast to same type
     grandchildFromGrandchild =
         (GrandchildClass*)tGrandchild.CastToAncestor
         (tGrandchild, (ChildClass*)&grandchildForCast);
-    assert( grandchildFromGrandchild != NULL );
-    assert( TfType::Find(*grandchildFromGrandchild) == tGrandchild );
+    TF_AXIOM( grandchildFromGrandchild != NULL );
+    TF_AXIOM( TfType::Find(*grandchildFromGrandchild) == tGrandchild );
 
     // Try incorrect upcast
     GrandchildClass* childToGrandchild =
         (GrandchildClass*)tChild.CastToAncestor(tGrandchild, &childForCast);
-    assert( childToGrandchild == NULL );
+    TF_AXIOM( childToGrandchild == NULL );
 
     // Try incorrect downcast
     ChildClass* childFromGrandchild =
         (ChildClass*)tChild.CastFromAncestor
         (tGrandchild, &grandchildForCast);
-    assert( childFromGrandchild == NULL );
+    TF_AXIOM( childFromGrandchild == NULL );
 
     // Try incorrect casts to/from unknown type.
     // We don't have an actual Unknown C++ type, so we fashion a bogus
     // pointer to supply; we expect all the cast functions to return 0.
     void *bogusPtr = reinterpret_cast<void*>(1234);
-    assert( not tChild.CastFromAncestor( tUnknown, bogusPtr ) );
-    assert( not tChild.CastToAncestor( tUnknown, bogusPtr ) );
-    assert( not tUnknown.CastFromAncestor( tChild, &childForCast) );
-    assert( not tUnknown.CastToAncestor( tChild, &childForCast) );
+    TF_AXIOM( !tChild.CastFromAncestor( tUnknown, bogusPtr ) );
+    TF_AXIOM( !tChild.CastToAncestor( tUnknown, bogusPtr ) );
+    TF_AXIOM( !tUnknown.CastFromAncestor( tChild, &childForCast) );
+    TF_AXIOM( !tUnknown.CastToAncestor( tChild, &childForCast) );
     
    //////////////////////////////////////////////////////////////////////// 
     // Test manufacture
 
     // Factory w/ 0 arguments
     CountedClassRefPtr orig;
-    assert(not orig);
+    TF_AXIOM(!orig);
     orig = tCounted.GetFactory<CountedClassFactory>()->New();
-    assert(orig);
-    assert(orig->GetNumber() == 0);
+    TF_AXIOM(orig);
+    TF_AXIOM(orig->GetNumber() == 0);
 
     // Factory w/ 1 arguments
     orig.Reset();
-    assert(not orig);
+    TF_AXIOM(!orig);
     orig = tCounted.GetFactory<CountedClassFactory>()->New(123);
-    assert(orig);
-    assert(orig->GetNumber() == 123);
+    TF_AXIOM(orig);
+    TF_AXIOM(orig->GetNumber() == 123);
 
     // Test argument promotion
     orig.Reset();
-    assert(not orig);
+    TF_AXIOM(!orig);
     orig = tCounted.GetFactory<CountedClassFactory>()->New(true);
-    assert(orig);
-    assert(orig->GetNumber() == int(true));
+    TF_AXIOM(orig);
+    TF_AXIOM(orig->GetNumber() == int(true));
 
     // Singleton manufacture
     SingleClass *s1=0, *s2=0;
     s1 = tSingle.GetFactory<TfTest_SingletonFactory<SingleClass> >()->New();
-    assert( s1 != s2 );
+    TF_AXIOM( s1 != s2 );
     s2 = tSingle.GetFactory<TfTest_SingletonFactory<SingleClass> >()->New();
-    assert( s1 );
-    assert( s2 );
-    assert( s1 == s2 );
+    TF_AXIOM( s1 );
+    TF_AXIOM( s2 );
+    TF_AXIOM( s1 == s2 );
     s1->SetNumber(123);
-    assert( s1->GetNumber() == 123 );
-    assert( s2->GetNumber() == 123 );
+    TF_AXIOM( s1->GetNumber() == 123 );
+    TF_AXIOM( s2->GetNumber() == 123 );
 
     // Test manufacture of polymorphic type
     ChildClass* cc = tChild.GetFactory<TfTest_PtrFactory<ChildClass> >()->New();
     ConcreteClass *pc = cc;
-    assert( pc );
+    TF_AXIOM( pc );
 
     // Test attempt to manufacture of unknown & root types
     {
         TfErrorMark m;
         m.SetMark();
-        assert( not tUnknown.GetFactory<TfType::FactoryBase>() );
-        assert( not tRoot.GetFactory<TfType::FactoryBase>() );
+        TF_AXIOM( !tUnknown.GetFactory<TfType::FactoryBase>() );
+        TF_AXIOM( !tRoot.GetFactory<TfType::FactoryBase>() );
         m.Clear();
     }
 
@@ -546,14 +547,14 @@ Test_TfType()
     // Test traits queries
 
     // POD types
-    assert( TfType::Find<int>().IsPlainOldDataType() );
-    assert( not TfType::Find<std::string>().IsPlainOldDataType() );
+    TF_AXIOM( TfType::Find<int>().IsPlainOldDataType() );
+    TF_AXIOM( !TfType::Find<std::string>().IsPlainOldDataType() );
 
     // Enum types
     TfType::Define<_TestEnum>();
-    assert( not TfType::Find<_TestEnum>().IsUnknown() );
-    assert( TfType::Find<_TestEnum>().IsEnumType() );
-    assert( not TfType::Find<int>().IsEnumType() );
+    TF_AXIOM( !TfType::Find<_TestEnum>().IsUnknown() );
+    TF_AXIOM( TfType::Find<_TestEnum>().IsEnumType() );
+    TF_AXIOM( !TfType::Find<int>().IsEnumType() );
 
     ////////////////////////////////////////////////////////////////////////
     // We should only have C++ types in this test
@@ -561,18 +562,18 @@ Test_TfType()
     // Start up Python.
     TfPyInitialize();
     TF_FOR_ALL(it, allTypeSet)
-        assert( TfPyIsNone( it->GetPythonClass().Get() ) );
+        TF_AXIOM( TfPyIsNone( it->GetPythonClass().Get() ) );
 
     ////////////////////////////////////////////////////////////////////////
     // Test looking up types via aliases
 
     TfType tClassA = TfType::Define<SomeClassA, TfType::Bases<ConcreteClass>>();
-    assert(tClassA);
+    TF_AXIOM(tClassA);
     tClassA.AddAlias(tConcrete, "SomeClassB");
     TfType tClassB = TfType::Define<SomeClassB, TfType::Bases<IAbstractClass>>();
-    assert(tClassB);
+    TF_AXIOM(tClassB);
     TfType found = tConcrete.FindDerivedByName("SomeClassB");
-    assert(found == tClassA);
+    TF_AXIOM(found == tClassA);
 
     return true;
 }

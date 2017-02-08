@@ -24,10 +24,14 @@
 #ifndef USDABC_ALEMBIC_FILE_FORMAT_H
 #define USDABC_ALEMBIC_FILE_FORMAT_H
  
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 #include <iosfwd>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 #define USDABC_ALEMBIC_FILE_FORMAT_TOKENS  \
     ((Id,      "abc"))                  \
@@ -46,9 +50,9 @@ public:
     // SdfFileFormat overrides
     virtual SdfAbstractDataRefPtr InitData(const FileFormatArguments&) const;
     virtual bool CanRead(const std::string &file) const;
-    virtual bool ReadFromFile(const SdfLayerBasePtr& layerBase,
-                              const std::string& filePath,
-                              bool metadataOnly) const;
+    virtual bool Read(const SdfLayerBasePtr& layerBase,
+                      const std::string& resolvedPath,
+                      bool metadataOnly) const;
     virtual bool WriteToFile(const SdfLayerBase* layerBase,
                              const std::string& filePath,
                              const std::string& comment = std::string(),
@@ -76,5 +80,8 @@ private:
 private:
     SdfFileFormatConstPtr _usda;
 };
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USDABC_ALEMBIC_FILE_FORMAT_H

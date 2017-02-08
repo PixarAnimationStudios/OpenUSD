@@ -21,11 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 
 #include <maya/MUintArray.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 
 static void
 _CompressCreases(
@@ -41,8 +45,8 @@ _CompressCreases(
         const int v0 = inCreaseIndices[i*2+0];
         const int v1 = inCreaseIndices[i*2+1];
         // Check if this edge represents a continuation of the last crease.
-        if (not creaseIndices->empty() and v0 == creaseIndices->back()
-            and sharpness == creaseSharpnesses->back()) {
+        if (!creaseIndices->empty() && v0 == creaseIndices->back()
+            && sharpness == creaseSharpnesses->back()) {
             // Extend the last crease.
             creaseIndices->push_back(v1);
             creaseLengths->back()++;
@@ -97,17 +101,17 @@ void MayaMeshWriter::assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &pr
         _CompressCreases(subdCreaseIndices, subdCreaseSharpnesses,
                 &numCreases, &creases, &creaseSharpnesses);
 
-        if (not creases.empty()) {
+        if (!creases.empty()) {
             VtIntArray creaseIndicesVt(creases.size());
             std::copy(creases.begin(), creases.end(), creaseIndicesVt.begin());
             primSchema.GetCreaseIndicesAttr().Set(creaseIndicesVt);
         }
-        if (not numCreases.empty()) {
+        if (!numCreases.empty()) {
             VtIntArray creaseLengthsVt(numCreases.size());
             std::copy(numCreases.begin(), numCreases.end(), creaseLengthsVt.begin());
             primSchema.GetCreaseLengthsAttr().Set(creaseLengthsVt);
         } 
-        if (not creaseSharpnesses.empty()) {
+        if (!creaseSharpnesses.empty()) {
             VtFloatArray creaseSharpnessesVt(creaseSharpnesses.size());
             std::copy(creaseSharpnesses.begin(), creaseSharpnesses.end(),
                       creaseSharpnessesVt.begin());
@@ -115,4 +119,7 @@ void MayaMeshWriter::assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &pr
         }
     }
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE
 

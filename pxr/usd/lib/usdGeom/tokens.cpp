@@ -23,4 +23,8 @@
 //
 #include "pxr/usd/usdGeom/tokens.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 TF_DEFINE_PUBLIC_TOKENS(UsdGeomTokens, USDGEOM_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE
