@@ -1,5 +1,94 @@
 # Change Log
 
+## [0.7.3] - 2017-02-05
+
+### Added
+- Added support for RelWithDebInfo and MinSizeRel release types.
+- Added initial support for C++ namespaces. This feature is 
+  currently experimental but can be enabled by specifying the 
+  `PXR_ENABLE_NAMESPACES` option to CMake. See documentation in
+  BUILDING.md for more details.
+- Added population masking to UsdStage. 
+  - Consumers can specify what parts of a stage to populate and use
+    to reduce resources used by the stage.
+  - usdview now has a --mask option allowing users to view just the
+    specified portion of a stage.
+- Added UsdPrim API for collecting relationship targets authored 
+  in a given prim subtree.
+- Added UsdShade API to allow creating and connecting outputs
+  on subgraphs and shaders instead of terminals.
+- Added support for bool shader parameters in Hydra. (Issue #104)
+- Added ability to independently toggle display of geometry with
+  purpose=proxy in usdview.
+- Added initial set of unit tests for pxrUsd library in the Maya plugin.
+- The Maya plugin now supports multi-sampling of frames during export.
+- Attributes in Maya may now be tagged to be converted from double
+  to single precision during export.
+- Alembic tagging for attributes in Maya are now respected during 
+  export. This includes support for primvars and custom prefixes.
+- Added support for playing back animation in assemblies via Hydra
+  when the Playback representation is activated in Maya.
+- Added support for reading material references in Katana plugin.
+
+### Changed
+- CMake will no longer look for X11 on OSX. (Issue #72)
+- The build system now uses relative paths for baking in plugin
+  search paths, allowing for relocatable builds as long as all
+  build products are moved together as one unit.
+- Removed hard-coded /usr/local/share directory from plugin search path.
+- Optimized creation of prim specs in Sdf. Creating 100k prim specs 
+  previously took 190s, it now takes 0.9s.
+- SdfPath::GetVariantSelection now returns a variant selection only
+  for variant selection paths.
+- UsdStage no longer issues an error if requested to unload a path that
+  does not identify an unloadable object.
+- Changed API on UsdInherits, UsdReferences, UsdRelationship,
+  UsdSpecializes, UsdVariantSet, and UsdVariantSets for clarity.
+- Hydra GPU compute settings have been consolidated under a single
+  HD_ENABLE_GPU_COMPUTE environment setting which is enabled by
+  default if the OpenSubdiv being used supports the GLSL compute kernel.
+- Numerous changes for in-progress work on refactoring Hydra to
+  support render delegates.
+- Changed 'Display' menu in usdview to 'Display Purposes...' and menu
+  items to match USD terminology.
+- Updated required Maya version to Maya 2016 EXT2 SP2.
+- Normals are now emitted by default when exporting polygonal meshes in Maya.
+- Katana plugin now supports deactivating prims directly on
+  UsdStage for improved efficiency.
+- Continued work on deprecating UsdShadeLook in favor of UsdShadeMaterial.
+- Numerous changes for ongoing Mac and Windows porting efforts.
+- Changed coding style to use symbol-like logical operators
+  instead of the keyword-like form (e.g., '&&' instead of 'and').
+- Various cleanup changes to fix comments, compiler warnings, and
+  to remove unused/old code.
+
+### Fixed
+- Fixed composition bug where nested variants with the same name
+  were composed incorrectly.
+- Fixed composition bug where variant selections from classes
+  were not being applied in certain cases. (Issue #156)
+- Fixed .usda file output to write out floating point values
+  using the correct precision and to use exponential representation
+  for values greater than 1e15 (instead of 1e21) to avoid parsing
+  issues.
+- Fixed bug where negative double values that could be represented as
+  floats were not stored optimally in .usdc files.
+- Fixed bug where UsdPrim::Has/GetProperty would return incorrect results.
+- Fixed bug where UsdObject::GetMetadata would return incorrect results
+  for dictionary-valued metadata in certain cases.
+- Fixed bug where reading certain .usdc files while forcing single-threaded
+  processing via PXR_WORK_THREAD_LIMIT would lead to a stack overflow.
+- Fixed missing garbage collection for shader and texture resource
+  registries in Hydra.
+- Several fixes for nested instancing support in Hydra (native
+  USD instances containing other instances or point instancers, etc.)
+- Fixed "Jump to Bound Material" in "Pick Models" selection mode in usdview.
+- Fixed bug where USD assemblies would not be drawn in Maya under VP2.0.
+- Workaround for performance issue when drawing proxies in Katana plugin.
+- Fixed issue causing USD Alembic plugin to fail to build with
+  Alembic 1.7. (Issue #106)
+- Various other bug fixes and performance improvements.
+
 ## [0.7.2] - 2016-12-02
 
 ### Added
