@@ -4,6 +4,12 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 set(PXR_PACKAGE tf)
 set(PXR_PREFIX pxr/base)
 
+include(CheckFunctionExists)
+check_function_exists(fstatat HAVE_FSTATAT)
+if(HAVE_FSTATAT)
+    add_definitions(-DHAVE_FSTATAT)
+endif()
+
 pxr_shared_library(tf
     LIBRARIES
         arch
