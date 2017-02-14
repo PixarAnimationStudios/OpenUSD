@@ -39,19 +39,19 @@ class PlugNotice
 {
 public:
     /// Base class for all Plug notices.
-    class PLUG_API Base : public TfNotice
+    class Base : public TfNotice
     {
     public:
-        virtual ~Base();
+        PLUG_API virtual ~Base();
     };
 
     /// Notice sent after new plugins have been registered with the Plug
     /// registry.
-    class PLUG_API DidRegisterPlugins : public Base
+    class DidRegisterPlugins : public Base
     {
     public:
         explicit DidRegisterPlugins(const PlugPluginPtrVector& newPlugins);
-        virtual ~DidRegisterPlugins();
+        PLUG_API virtual ~DidRegisterPlugins();
 
         const PlugPluginPtrVector& GetNewPlugins() const
         { return _plugins; }

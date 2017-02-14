@@ -87,7 +87,7 @@ _MergePaths(
     bool keepTrailingSlash = false)
 {
     // Return absolute or empty path as is.
-    if (subpathname.empty() || subpathname[0] == '/') {
+    if (subpathname.empty() || !TfIsRelativePath(subpathname)) {
         return subpathname;
     }
 
@@ -114,7 +114,7 @@ _AppendToRootPath(
     }
 
     // Return absolute or empty path as is.
-    if (subpathname[0] == '/') {
+    if (!TfIsRelativePath(subpathname)) {
         return subpathname;
     }
 
@@ -364,7 +364,7 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
     }
 
     // Fail if pathname is not absolute.
-    if (pathname[0] != '/') {
+    if (TfIsRelativePath(pathname)) {
         TF_RUNTIME_ERROR("Plugin info file %s is not absolute",
                          pathname.c_str());
         return;
@@ -391,10 +391,13 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
         return;
     }
 
+    // Converts backslashes to forward slashes for Windows.
+    std::string normalized = TfStringReplace(pathname, "\\", "/");
+
     // Find longest non-wildcarded prefix directory.
-    std::string::size_type j = pathname.rfind('/', i);
-    std::string dirname = pathname.substr(0, j);
-    std::string pattern = pathname.substr(j + 1);
+    std::string::size_type j = normalized.rfind('/', i);
+    std::string dirname = normalized.substr(0, j);
+    std::string pattern = normalized.substr(j + 1);
 
     // Convert to regex.
     pattern = _TranslateWildcardToRegex(pattern);
