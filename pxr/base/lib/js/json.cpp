@@ -31,6 +31,12 @@
 #include <iostream>
 #include <vector>
 
+#if PXR_USE_NAMESPACES
+#define PXRJS PXR_NS
+#else
+#define PXRJS PXRJS
+#endif
+
 // Place rapidjson into a namespace to prevent conflicts with d2.
 #define RAPIDJSON_NAMESPACE PXRJS::rapidjson
 #define RAPIDJSON_NAMESPACE_BEGIN namespace PXRJS { namespace rapidjson {
