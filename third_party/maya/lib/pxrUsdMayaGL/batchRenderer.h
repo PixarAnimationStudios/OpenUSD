@@ -373,14 +373,7 @@ private:
             const MMatrix& viewMat,
             const MMatrix& projectionMat,
             const GfVec4d& viewport );
-    
-    /// \brief Render specific object's bounds.
-    void _RenderBounds(
-            const MBoundingBox& bounds,
-            const GfVec4f& wireframeColor,
-            const MMatrix& worldViewMat,
-            const MMatrix& projectionMat );
-    
+
     /// \brief Cache of hashed \c ShapeRenderer objects for fast lookup
     typedef std::unordered_map<size_t,ShapeRenderer> _ShapeRendererMap;
     _ShapeRendererMap _shapeRendererMap;

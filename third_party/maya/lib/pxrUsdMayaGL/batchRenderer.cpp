@@ -27,7 +27,6 @@
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/garch/glut.h"
 
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdx/camera.h"
@@ -858,8 +857,10 @@ UsdMayaGLBatchRenderer::Draw(
 
     if( batchData->_bounds )
     {
-        _RenderBounds(
-            *(batchData->_bounds), *(batchData->_wireframeColor), modelViewMat, projectionMat );
+        px_vp20Utils::RenderBoundingBox(*(batchData->_bounds),
+                                        *(batchData->_wireframeColor),
+                                        modelViewMat,
+                                        projectionMat);
     }
     
     if( batchData->_drawShape && !_renderQueue.empty() )
@@ -902,9 +903,11 @@ UsdMayaGLBatchRenderer::Draw(
     if( batchData->_bounds )
     {
         MMatrix worldViewMat = context.getMatrix(MHWRender::MDrawContext::kWorldViewMtx, &status);
-        
-        _RenderBounds(
-            *(batchData->_bounds), *(batchData->_wireframeColor), worldViewMat, projectionMat );
+
+        px_vp20Utils::RenderBoundingBox(*(batchData->_bounds),
+                                        *(batchData->_wireframeColor),
+                                        worldViewMat,
+                                        projectionMat);
     }
     
     if( batchData->_drawShape && !_renderQueue.empty() )
@@ -1245,37 +1248,5 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         "^^^^^^^^^^^^ RENDER STAGE FINISH ^^^^^^^^^^^^^ (%zu)\n",_renderQueue.size());
 }
 
-void
-UsdMayaGLBatchRenderer::_RenderBounds(
-    const MBoundingBox &bounds,
-    const GfVec4f &wireframeColor,
-    const MMatrix& worldViewMat,
-    const MMatrix& projectionMat )
-{
-    glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT);
-    glDisable(GL_LIGHTING);
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadMatrixd(projectionMat.matrix[0]);
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadMatrixd(worldViewMat.matrix[0]);
-
-    glColor4fv((float*)&wireframeColor);
-    glTranslated( bounds.center()[0],
-                  bounds.center()[1],
-                  bounds.center()[2] );
-    glScaled( bounds.width(),
-              bounds.height(),
-              bounds.depth() );
-    glutWireCube(1.0);
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-    glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
