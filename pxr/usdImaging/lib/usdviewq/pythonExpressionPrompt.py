@@ -131,7 +131,9 @@ class Myconsole(interpreterView):
                 "    selectedPrims: a list of all selected prims\n"
                 "    selectedInstances: a dictionary of selected prims to selected indices within\n"
                 "    prim: the first selected prim in the selectedPrims list\n"
-                "    property: the currently selected property (if any)\n\n")
+                "    property: the currently selected usd property (if any)\n"
+                "    spec: the currently selected sdf spec in the composition tree (if any)\n"
+                "    layer: the currently selected sdf layer in the composition tree (if any)\n\n")
 
         interpreterView.__init__(self, parent)
 
@@ -163,6 +165,6 @@ class Myconsole(interpreterView):
         self.locals()['selectedInstances'] = mainWindow._stageView._selectedInstances.copy()
         self.locals()['prim'] = mainWindow._currentNodes[0] if \
                                         mainWindow._currentNodes else None
-
         self.locals()['property'] = mainWindow._currentProp
-
+        self.locals()['spec'] = mainWindow._currentSpec
+        self.locals()['layer'] = mainWindow._currentLayer

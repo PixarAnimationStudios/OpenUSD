@@ -52,7 +52,8 @@ from settings import Settings
 
 from common import (FallbackTextColor, ClampedTextColor, KeyframeTextColor,
                     DefaultTextColor, HeaderColor, RedColor, BoldFont,
-                    GetAttributeColor, Timer, BusyContext, DumpMallocTags)
+                    GetAttributeColor, Timer, BusyContext, DumpMallocTags,
+                    NoValueTextColor)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -68,7 +69,7 @@ GETBOUNDS = "BBox"
 # Name for nodes that have no type
 NOTYPE = "Typeless"
 
-INDEX_VALUE, INDEX_METADATA, INDEX_LAYERSTACK = range(3)
+INDEX_VALUE, INDEX_METADATA, INDEX_LAYERSTACK, INDEX_COMPOSITION = range(4)
 
 # Tf Debug entries to include in debug menu
 TF_DEBUG_MENU_ENTRIES = ["HD", "HDX", "USD", "USDIMAGING", "USDVIEWQ"]
@@ -260,6 +261,8 @@ class MainWindow(QtGui.QMainWindow):
         self._itemsToPush = []
         self._currentNodes = []
         self._currentProp = None
+        self._currentSpec = None
+        self._currentLayer = None
         self._console = None
         self._interpreter = None
         self._parserData = parserData
@@ -541,6 +544,10 @@ class MainWindow(QtGui.QMainWindow):
         self._ui.layerStackView\
                 .setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
+        # Set custom context menu for composition tree browser
+        self._ui.compositionTreeWidget\
+                .setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+
         # Set the node view header to have a fixed size type and vis columns
         nvh = self._ui.nodeView.header()
         nvh.setResizeMode(0, QtGui.QHeaderView.Stretch)
@@ -771,6 +778,14 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self._ui.layerStackView,
                                QtCore.SIGNAL('customContextMenuRequested(QPoint)'),
                                self._layerStackContextMenu)
+
+        QtCore.QObject.connect(self._ui.compositionTreeWidget,
+                               QtCore.SIGNAL('customContextMenuRequested(QPoint)'),
+                               self._compositionTreeContextMenu)
+
+        QtCore.QObject.connect(self._ui.compositionTreeWidget, QtCore.SIGNAL(
+            'currentItemChanged(QTreeWidgetItem *, QTreeWidgetItem *)'),
+                               self._onCompositionSelectionChanged)
 
         QtCore.QObject.connect(self._ui.renderModeActionGroup,
                                QtCore.SIGNAL('triggered(QAction *)'),
@@ -2389,6 +2404,8 @@ class MainWindow(QtGui.QMainWindow):
             # these back up in _refreshVars(), called below.
             self._currentNodes = []
             self._currentProp = None
+            self._currentSpec = None
+            self._currentLayer = None
 
             self._stage.Close()
             self._stage = self._openStage(self._parserData.usdFile,
@@ -2488,6 +2505,12 @@ class MainWindow(QtGui.QMainWindow):
         else:
             self._ui.attributeValueEditor.clear()
 
+    def _onCompositionSelectionChanged(self, curr=None, prev=None):
+        self._currentSpec = getattr(curr, 'spec', None)
+        self._currentLayer = getattr(curr, 'layer', None)
+        if self._console:
+            self._console.reloadConsole(self)
+
     def _updateAttributeInspector(self, index=None, obj=None,
                                   updateAttributeView=True):
         # index must be the first parameter since this method is used as
@@ -2507,6 +2530,8 @@ class MainWindow(QtGui.QMainWindow):
             self._updateMetadataView(obj)
         elif index == INDEX_LAYERSTACK:
             self._updateLayerStackView(obj)
+        elif index == INDEX_COMPOSITION:
+            self._updateCompositionView(obj)
 
     def _refreshAttributeValue(self):
         self._ui.attributeValueEditor.refresh()
@@ -2518,6 +2543,11 @@ class MainWindow(QtGui.QMainWindow):
 
     def _layerStackContextMenu(self, point):
         item = self._ui.layerStackView.itemAt(point)
+        self.contextMenu = LayerStackContextMenu(self, item)
+        self.contextMenu.exec_(QtGui.QCursor.pos())
+
+    def _compositionTreeContextMenu(self, point):
+        item = self._ui.compositionTreeWidget.itemAt(point)
         self.contextMenu = LayerStackContextMenu(self, item)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
@@ -3352,6 +3382,75 @@ class MainWindow(QtGui.QMainWindow):
             rowIndex += 1 
 
         tableWidget.resizeColumnToContents(0)
+
+    def _updateCompositionView(self, obj=None):
+        """ Sets the contents of the composition tree view"""
+        treeWidget = self._ui.compositionTreeWidget
+        treeWidget.clear()
+
+        # Update current spec & current layer, and push those updates
+        # to the python console
+        self._onCompositionSelectionChanged()
+
+        # If no prim or attribute selected, nothing to show.
+        if obj is None:
+            obj = self._getSelectedObject()
+        if not obj:
+            return
+
+        # For brevity, we display only the basename of layer paths.
+        def LabelForLayer(l):
+            return os.path.basename(l.realPath) if l.realPath else '~session~'
+
+        # Create treeview items for all sublayers in the layer tree.
+        def WalkSublayers(parent, node, layerTree, sublayer=False):
+            layer = layerTree.layer
+            spec = layer.GetObjectAtPath(node.path)
+            item = QtGui.QTreeWidgetItem(
+                parent,
+                [
+                    LabelForLayer(layer),
+                    'sublayer' if sublayer else node.arcType.displayName,
+                    str(node.GetPathAtIntroduction()),
+                    'yes' if bool(spec) else 'no'
+                ] )
+
+            # attributes for selection:
+            item.layer = layer
+            item.spec = spec
+
+            # attributes for LayerStackContextMenu:
+            if layer.realPath:
+                item.layerPath = layer.realPath
+            if spec:
+                item.path = node.path
+            
+            item.setExpanded(True)
+            item.setToolTip(0, layer.identifier)
+            if not spec:
+                for i in range(item.columnCount()):
+                    item.setForeground(i, NoValueTextColor)
+            for subtree in layerTree.childTrees:
+                WalkSublayers(item, node, subtree, True)
+            return item
+
+        # Create treeview items for all nodes in the composition index.
+        def WalkNodes(parent, node):
+            nodeItem = WalkSublayers(parent, node, node.layerStack.layerTree)
+            for child in node.children:
+                WalkNodes(nodeItem, child)
+
+        path = obj.GetPath().GetAbsoluteRootOrPrimPath()
+        prim = self._stage.GetPrimAtPath(path)
+        if not prim:
+            return
+
+        # Populate the treeview with items from the prim index.
+        index = prim.GetPrimIndex()
+        WalkNodes(treeWidget, index.rootNode)
+
+        # Adjust the headers to fit the contents.
+        treeWidget.header().setResizeMode(QtGui.QHeaderView.ResizeToContents)
 
     def _updateLayerStackView(self, obj=None):
         """ Sets the contents of the layer stack viewer"""

@@ -728,6 +728,9 @@
                      <property name="frameShadow">
                       <enum>QFrame::Plain</enum>
                      </property>
+                     <property name="lineWidth">
+                      <number>0</number>
+                     </property>
                      <property name="editTriggers">
                       <set>QAbstractItemView::NoEditTriggers</set>
                      </property>
@@ -902,6 +905,55 @@
                     </widget>
                    </item>
                   </layout>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="tab">
+               <attribute name="title">
+                <string>Composition</string>
+               </attribute>
+               <layout class="QHBoxLayout" name="horizontalLayout_4">
+                <item>
+                 <widget class="QTreeWidget" name="compositionTreeWidget">
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Plain</enum>
+                  </property>
+                  <property name="alternatingRowColors">
+                   <bool>true</bool>
+                  </property>
+                  <property name="indentation">
+                   <number>15</number>
+                  </property>
+                  <attribute name="headerHighlightSections">
+                   <bool>false</bool>
+                  </attribute>
+                  <attribute name="headerStretchLastSection">
+                   <bool>false</bool>
+                  </attribute>
+                  <column>
+                   <property name="text">
+                    <string>Layer</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Arc Type</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Arc Path</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Has Spec</string>
+                   </property>
+                  </column>
                  </widget>
                 </item>
                </layout>
@@ -1185,7 +1237,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>26</height>
+     <height>27</height>
     </rect>
    </property>
    <property name="minimumSize">
