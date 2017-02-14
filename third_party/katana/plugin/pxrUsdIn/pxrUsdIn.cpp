@@ -34,7 +34,6 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usdShade/material.h"
 
 #include <FnGeolib/op/FnGeolibOp.h>
 #include <FnLogging/FnLogging.h>
@@ -62,83 +61,6 @@ namespace FnKat = Foundry::Katana;
     interface.setAttr("type", Foundry::Katana::StringAttribute("error"));\
     interface.setAttr("errorMessage", Foundry::Katana::StringAttribute(\
         TfStringPrintf(__VA_ARGS__)));
-
-// Give these types some shorter names.
-typedef PxrUsdKatanaUsdInPrivateData::MaterialHierarchy MaterialHierarchy;
-typedef std::shared_ptr<const MaterialHierarchy> MaterialHierarchyPtr;
-
-// Helper to scan the immediate children of the given parentPrim for usd
-// materials, analyze their specializes arcs, and assemble the hierarchy.
-//
-// Note that this only scans a set of sibling prims -- we don't (say)
-// go deeply scan the entire scene here.  Instead, we rely on katana
-// traversal to discover and build up the material hierarchy as we go,
-// using a copy-on-write approach to share work across ops evaluating
-// different branches of the scene.
-//
-static void
-_UpdateMaterialHierarchyForChildPrims(
-        const UsdPrim &parentPrim,
-        MaterialHierarchyPtr &materials)
-{
-    const UsdStageWeakPtr stage = parentPrim.GetStage();
-
-    // Locally accumulate any new material hierarchy we discover.
-    MaterialHierarchy local;
-
-    // Scan immediate children prims for materials that directly
-    // specialize other materials.
-    for (const auto& childPrim : parentPrim.GetChildren()) {
-        // If childPrim is not a material, skip it.
-        if (!UsdShadeMaterial(childPrim)) {
-            continue;
-        }
-        // Check if childPrim has an immediate specializes arc,
-        // i.e. one right below the root of the prim composition.
-        //
-        // If there are specializes arcs deeper in the tree,
-        // we assume it is a library material that has been
-        // referenced in, and we do not expose the base material
-        // separately.
-        //
-        const PcpPrimIndex &index = childPrim.GetPrimIndex();
-        for(const PcpNodeRef &node: index.GetNodeRange()) {
-            if (PcpIsSpecializesArc(node.GetArcType())
-                && node.GetOriginNode() == index.GetRootNode()) {
-                // Found a root specializes arc.
-                const SdfPath derivedPath = childPrim.GetPath();
-                const SdfPath basePath = node.GetPath();
-                const UsdPrim basePrim = stage->GetPrimAtPath(basePath);
-                // If the base is anything but a material, ignore it.
-                if (!UsdShadeMaterial(basePrim)) {
-                    continue;
-                }
-                // The childPrim material derives from the basePrim material.
-                // Link them into the hierarchy.
-                local.baseMaterialPath[derivedPath] = basePath;
-                local.derivedMaterialPaths[basePath].push_back(derivedPath);
-            }
-        }
-    }
-
-    // If we discovered any new materials, merge them into the existing
-    // hierarchy of materials.  To do this we fork a new clone of the
-    // material hierarchy to pass down the katana op chain, which is
-    // why we defer doing this until we are certain we have new materials.
-    if (!local.baseMaterialPath.empty()) {
-        for (const auto &pair: materials->baseMaterialPath) {
-            local.baseMaterialPath.insert(pair);
-        }
-        for (const auto &pair: materials->derivedMaterialPaths) {
-            // Maintain order: insert the existing derived materials
-            // at front of the vector.
-            std::vector<SdfPath> &vec = local.derivedMaterialPaths[pair.first];
-            vec.insert(vec.begin(), pair.second.begin(), pair.second.end());
-        }
-        // Update pointer to own the newly modifed copy of the hierarchy.
-        materials.reset(new MaterialHierarchy(local));
-    }
-}
 
 // see overview.dox for more documentation.
 class PxrUsdInOp : public FnKat::GeolibOp
@@ -202,18 +124,6 @@ public:
                   interface.getRelativeOutputLocationPath().c_str());
             return;
         }
-
-        // Update material hierarchy.
-        MaterialHierarchyPtr materialHierarchy;
-        if (privateData) {
-            // Continue using the hierarchy provided by the parent op.
-            materialHierarchy = privateData->GetMaterialHierarchy();
-        }
-        if (!materialHierarchy) {
-            // Allocate an empty material hierarchy.
-            materialHierarchy.reset(new MaterialHierarchy);
-        }
-        _UpdateMaterialHierarchyForChildPrims(prim, materialHierarchy);
 
         // A flag to force the use of default motion samples. This is only set
         // when at root and an isolate path is specified. In this case, we must
@@ -310,8 +220,8 @@ public:
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(
                                 usdInArgs->GetRootPrim(),
-                                usdInArgs, privateData, useDefaultMotion,
-                                &materialHierarchy),
+                                usdInArgs, privateData, useDefaultMotion
+                                ),
                         PxrUsdKatanaUsdInPrivateData::Delete);
             }
         }
@@ -480,37 +390,6 @@ public:
             
         }
 
-        // Usd Material Hierarchy:  If this is a base material,
-        // splice the derived materials in as children.
-        if (UsdShadeMaterial(prim)) {
-            std::map<SdfPath, std::vector<SdfPath>>::const_iterator i =
-                materialHierarchy->derivedMaterialPaths.find(prim.GetPath());
-            if (i != materialHierarchy->derivedMaterialPaths.end()) {
-                // We found some derived materials.
-                const std::vector<SdfPath> &derivedMaterialPaths = i->second;
-                for (const SdfPath &derivedMaterialPath: derivedMaterialPaths){
-                    UsdPrim derivedMaterial =
-                        prim.GetStage()->GetPrimAtPath(derivedMaterialPath);
-                    if (!TF_VERIFY(derivedMaterial)) {
-                        // This shouldn't happen: we confirmed the prim
-                        // exists when building the hierarchy.
-                        continue;
-                    }
-                    const std::string& childName = derivedMaterial.GetName();
-                    interface.createChild(
-                            childName,
-                            "",
-                            opArgs,
-                            FnKat::GeolibCookInterface::ResetRootFalse,
-                            new PxrUsdKatanaUsdInPrivateData(
-                                    derivedMaterial, usdInArgs,
-                                    privateData, useDefaultMotion,
-                                    &materialHierarchy),
-                            PxrUsdKatanaUsdInPrivateData::Delete);
-                        }
-            }
-        }
-
         if (!skipAllChildren) {
 
             std::set<std::string> childrenToSkip;
@@ -556,14 +435,6 @@ public:
                     continue;
                 }
 
-                // Usd Material Hierarchy:  If this child is a derived
-                // material, we do not need to handle it here.  We will
-                // splice it below the correct base/parent material above. 
-                if (materialHierarchy->baseMaterialPath.find(child.GetPath())
-                    != materialHierarchy->baseMaterialPath.end()) {
-                    continue;
-                }
-
                 interface.createChild(
                         childName,
                         "",
@@ -571,8 +442,7 @@ public:
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(
                                 child, usdInArgs,
-                                privateData, useDefaultMotion,
-                                &materialHierarchy),
+                                privateData, useDefaultMotion),
                         PxrUsdKatanaUsdInPrivateData::Delete);
             }
         }
