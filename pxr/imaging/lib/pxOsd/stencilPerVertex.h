@@ -44,7 +44,7 @@ public:
     // instead of performing numerical closest-point projection.
     //
     static boost::shared_ptr<const OpenSubdiv::Far::LimitStencilTable>
-    GetStencilPerVertex(const PxOsdMeshTopology &topology,
+    GetStencilPerVertex(PxOsdMeshTopology topology,
                         const int level);
 };
 
