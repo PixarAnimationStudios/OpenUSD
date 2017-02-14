@@ -40,13 +40,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
-const char* const usdTranslatorImportDefaults =
+const char* const usdTranslatorImportDefaultsTemplate =
         "shadingMode=GPrim Colors;"
-        "readAnimData=0;"
+        "readAnimData=%d;"
         "useCustomFrameRange=0;"
         "assemblyRep=Collapsed";
 
+extern const char* const usdTranslatorImportDefaults;
 
 class usdTranslatorImport : public MPxFileTranslator
 {
