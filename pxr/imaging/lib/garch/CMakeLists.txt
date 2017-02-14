@@ -39,7 +39,6 @@ pxr_shared_library(garch
         gl.h
         glext.h
         glu.h
-        glut.h
         ${GLPLATFORMCONTEXT_H}
 
     PRIVATE_HEADERS
