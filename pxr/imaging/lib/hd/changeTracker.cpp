@@ -204,62 +204,6 @@ HdChangeTracker::InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const
 }
 
 // -------------------------------------------------------------------------- //
-/// \name Shader Object Tracking
-// -------------------------------------------------------------------------- //
-
-void
-HdChangeTracker::ShaderInserted(SdfPath const& id)
-{
-    TF_DEBUG(HD_SHADER_ADDED).Msg("Shader Added: %s\n", id.GetText());
-    _shaderState[id] = AllDirty;
-}
-
-void
-HdChangeTracker::ShaderRemoved(SdfPath const& id)
-{
-    TF_DEBUG(HD_SHADER_REMOVED).Msg("Shader Removed: %s\n", id.GetText());
-    _shaderState.erase(id);
-}
-
-void
-HdChangeTracker::MarkShaderDirty(SdfPath const& id, DirtyBits bits)
-{
-    _IDStateMap::iterator it = _shaderState.find(id);
-    if (!TF_VERIFY(it != _shaderState.end()))
-        return;
-    it->second = it->second | bits;
-}
-
-HdChangeTracker::DirtyBits
-HdChangeTracker::GetShaderDirtyBits(SdfPath const& id)
-{
-    _IDStateMap::iterator it = _shaderState.find(id);
-    if (!TF_VERIFY(it != _shaderState.end()))
-        return Clean;
-    return it->second;
-}
-
-void
-HdChangeTracker::MarkShaderClean(SdfPath const& id, DirtyBits newBits)
-{
-    _IDStateMap::iterator it = _shaderState.find(id);
-    if (!TF_VERIFY(it != _shaderState.end()))
-        return;
-    // preserve the variability bit
-    it->second = (it->second & Varying) | newBits;
-}
-
-void HdChangeTracker::MarkAllShadersDirty(DirtyBits bits)
-{
-    HD_TRACE_FUNCTION();
-
-    for (_IDStateMap::iterator it  = _shaderState.begin();
-                               it != _shaderState.end(); ++it) {
-        it->second |= bits;
-    }
-}
-
-// -------------------------------------------------------------------------- //
 /// \name Task Object Tracking
 // -------------------------------------------------------------------------- //
 

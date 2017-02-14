@@ -30,7 +30,6 @@
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/resourceBinder.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -38,215 +37,20 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class Hd_BindlessSamplerBufferSource : public HdBufferSource {
-public:
-    Hd_BindlessSamplerBufferSource(TfToken const &name, GLenum type, size_t value)
-        : _name(name), _type(type), _value(value) {
-        if (_value == 0) {
-            TF_CODING_ERROR("Invalid texture handle: %s: %ld\n",
-                            name.GetText(), value);
-        }
-    }
 
-    virtual TfToken const &GetName() const {
-        return _name;
-    }
-    virtual void const* GetData() const {
-        return &_value;
-    }
-    virtual int GetGLComponentDataType() const {
-        // note: we use sampler enums to express bindless pointer (somewhat unusual)
-        return _type;
-    }
-    virtual int GetGLElementDataType() const {
-        return GL_UNSIGNED_INT64_ARB;
-    }
-    virtual int GetNumElements() const {
-        return 1;
-    }
-    virtual short GetNumComponents() const {
-        return 1;
-    }
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const {
-        specs->push_back(HdBufferSpec(_name, _type, 1));
-    }
-    virtual bool Resolve() {
-        if (!_TryLock()) return false;
-        _SetResolved();
-        return true;
-    }
-
-protected:
-    virtual bool _CheckValid() const {
-        return true;
-    }
-
-private:
-    TfToken _name;
-    GLenum _type;
-    size_t _value;
-};
-
-
-HdSurfaceShader::HdSurfaceShader(SdfPath const& id)
+HdSurfaceShader::HdSurfaceShader()
  : HdShaderCode()
- , _id(id)
+ , _fragmentSource()
+ , _geometrySource()
+ , _params()
+ , _paramSpec()
+ , _paramArray()
+ , _textureDescriptors()
 {
 }
 
 HdSurfaceShader::~HdSurfaceShader()
 {
-}
-
-void
-HdSurfaceShader::Sync(HdSceneDelegate *sceneDelegate)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    if (!TF_VERIFY(sceneDelegate != nullptr)) {
-        return;  
-    }
-
-    SdfPath const& id = GetID();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-    HdChangeTracker& changeTracker = 
-                            sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetShaderDirtyBits(id);
-
-    if(bits & HdChangeTracker::DirtySurfaceShader) {
-        _fragmentSource = sceneDelegate->GetSurfaceShaderSource(id);
-        _geometrySource = sceneDelegate->GetDisplacementShaderSource(id);
-
-        // XXX Forcing collections to be dirty to reload everything
-        //     Something more efficient can be done here
-        changeTracker.MarkAllCollectionsDirty();
-    }
-
-    if(bits & HdChangeTracker::DirtyParams) {
-        HdBufferSourceVector sources;
-        TextureDescriptorVector textures;
-        _params = sceneDelegate->GetSurfaceShaderParams(id);
-        TF_FOR_ALL(paramIt, _params) {
-            if (paramIt->IsPrimvar()) {
-                // skip -- maybe not necessary, but more memory efficient
-                continue;
-            } else if (paramIt->IsFallback()) {
-                VtValue paramVt =
-                        sceneDelegate->GetSurfaceShaderParamValue(id,
-                                                            paramIt->GetName());
-                HdBufferSourceSharedPtr source(
-                             new HdVtBufferSource(paramIt->GetName(), paramVt));
-
-                sources.push_back(source);
-            } else if (paramIt->IsTexture()) {
-                bool bindless = HdRenderContextCaps::GetInstance()
-                                                        .bindlessTextureEnabled;
-                // register bindless handle
-
-                HdTextureResource::ID texID =
-                  sceneDelegate->GetTextureResourceID(paramIt->GetConnection());
-
-                HdTextureResourceSharedPtr texResource;
-                {
-                    HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 
-                        texInstance;
-
-                    bool textureResourceFound = false;
-                    std::unique_lock<std::mutex> regLock =
-                        resourceRegistry->FindTextureResource
-                        (texID, &texInstance, &textureResourceFound);
-                    if (!TF_VERIFY(textureResourceFound, 
-                            "No texture resource found with path %s",
-                            paramIt->GetConnection().GetText())) {
-                        continue;
-                    }
-
-                    texResource = texInstance.GetValue();
-                    if (!TF_VERIFY(texResource, 
-                            "Incorrect texture resource with path %s",
-                            paramIt->GetConnection().GetText())) {
-                        continue;
-                    }
-                }
-
-                TextureDescriptor tex;
-                tex.name = paramIt->GetName();
-
-                if (texResource->IsPtex()) {
-                    tex.type = TextureDescriptor::TEXTURE_PTEX_TEXEL;
-                    tex.handle = bindless ? texResource->GetTexelsTextureHandle()
-                                          : texResource->GetTexelsTextureId();
-                    textures.push_back(tex);
-
-                    if (bindless) {
-                        HdBufferSourceSharedPtr source(new Hd_BindlessSamplerBufferSource(
-                                                           tex.name,
-                                                           GL_SAMPLER_2D_ARRAY,
-                                                           tex.handle));
-                        sources.push_back(source);
-                    }
-
-                    // layout
-
-                    tex.name = TfToken(std::string(paramIt->GetName().GetText()) + "_layout");
-                    tex.type = TextureDescriptor::TEXTURE_PTEX_LAYOUT;
-                    tex.handle = bindless ? texResource->GetLayoutTextureHandle()
-                                          : texResource->GetLayoutTextureId();
-                    textures.push_back(tex);
-
-                    if (bindless) {
-                        HdBufferSourceSharedPtr source(new Hd_BindlessSamplerBufferSource(
-                                                           tex.name,
-                                                           GL_INT_SAMPLER_BUFFER,
-                                                           tex.handle));
-                        sources.push_back(source);
-                    }
-                } else {
-                    tex.type = TextureDescriptor::TEXTURE_2D;
-                    tex.handle = bindless ? texResource->GetTexelsTextureHandle()
-                                          : texResource->GetTexelsTextureId();
-                    tex.sampler =  texResource->GetTexelsSamplerId();
-                    textures.push_back(tex);
-
-                    if (bindless) {
-                        HdBufferSourceSharedPtr source(new Hd_BindlessSamplerBufferSource(
-                                                           tex.name,
-                                                           GL_SAMPLER_2D,
-                                                           tex.handle));
-                        sources.push_back(source);
-                    }
-                }
-            }
-        }
-
-        _textureDescriptors = textures;
-
-        // return before allocation if it's empty.                                   
-        if (sources.empty())                                                         
-            return;
-
-        // Allocate a new uniform buffer if not exists.
-        if (!_paramArray) {
-            // establish a buffer range
-            HdBufferSpecVector bufferSpecs;
-            TF_FOR_ALL(srcIt, sources) {
-                (*srcIt)->AddBufferSpecs(&bufferSpecs);
-            }
-            
-            HdBufferArrayRangeSharedPtr range =
-                            resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                                        HdTokens->surfaceShaderParams, bufferSpecs);
-            if (!TF_VERIFY(range->IsValid()))
-                return;
-            _paramArray = range;
-        }
-
-        if (!(TF_VERIFY(_paramArray->IsValid())))
-            return;
-
-        resourceRegistry->AddSources(_paramArray, sources);
-    }
 }
 
 void
@@ -377,30 +181,71 @@ HdSurfaceShader::ComputeHash() const
     return hash;
 }
 
-/*static*/
-bool
-HdSurfaceShader::CanAggregate(HdShaderCodeSharedPtr const &shaderA,
-                              HdShaderCodeSharedPtr const &shaderB)
+void
+HdSurfaceShader::SetFragmentSource(const std::string &source)
 {
-    bool bindlessTexture = HdRenderContextCaps::GetInstance()
-                                                .bindlessTextureEnabled;
+    _fragmentSource = source;
+}
 
-    // See if the shaders are same or not. If the bindless texture option
-    // is enabled, the shaders can be aggregated for those differences are
-    // only texture addresses.
-    if (bindlessTexture) {
-        if (shaderA->ComputeHash() != shaderB->ComputeHash()) {
-            return false;
-        }
+void
+HdSurfaceShader::SetGeometrySource(const std::string &source)
+{
+    _geometrySource = source;
+}
+
+void
+HdSurfaceShader::SetParams(const HdShaderParamVector &params)
+{
+    _params = params;
+}
+
+void
+HdSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
+{
+    _textureDescriptors = texDesc;
+}
+
+void
+HdSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources)
+{
+    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+
+    if (bufferSources.empty()) {
+        _paramArray.reset();
     } else {
-        // XXX: still wrong. it breaks batches for the shaders with same
-        // signature.
-        if (shaderA != shaderB) {
-            return false;
+        // Build the buffer Spec to see if its changed.
+        HdBufferSpecVector bufferSpecs;
+        TF_FOR_ALL(srcIt, bufferSources) {
+            (*srcIt)->AddBufferSpecs(&bufferSpecs);
+        }
+
+        if (!_paramArray || _paramSpec != bufferSpecs) {
+            _paramSpec = bufferSpecs;
+
+            // establish a buffer range
+            HdBufferArrayRangeSharedPtr range =
+                    resourceRegistry->AllocateShaderStorageBufferArrayRange(
+                                                  HdTokens->surfaceShaderParams,
+                                                  bufferSpecs);
+
+            if (!TF_VERIFY(range->IsValid())) {
+                _paramArray.reset();
+    } else {
+                _paramArray = range;
+            }
+        }
+
+        if (_paramArray->IsValid()) {
+            resourceRegistry->AddSources(_paramArray, bufferSources);
         }
     }
-    return true;
+}
+
+/// If the prim is based on asset, reload that asset.
+void
+HdSurfaceShader::Reload()
+{
+    // Nothing to do, this shader's sources are externally managed.
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

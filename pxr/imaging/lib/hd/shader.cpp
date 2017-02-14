@@ -21,41 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_GLSLFX_SHADER_H
-#define HD_GLSLFX_SHADER_H
-
-#include "pxr/pxr.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/surfaceShader.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/value.h"
-
-#include "pxr/base/tf/token.h"
-
-#include <boost/shared_ptr.hpp>
+#include "pxr/imaging/hd/shader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+HdShader::HdShader(SdfPath const& id)
+ : HdSprim(id)
+{
+    // NOTHING
+}
 
-typedef boost::shared_ptr<class HdGLSLFXShader> HdGLSLFXShaderSharedPtr;
-typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
-
-// XXX: DOCS!
-class HdGLSLFXShader : public HdSurfaceShader {
-public:
-    HdGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx);
-    virtual ~HdGLSLFXShader();
-
-    /// If the prim is based on asset, reload that asset.
-    virtual void Reload();
-
-private:
-    GlfGLSLFXSharedPtr _glslfx;
-};
-
+HdShader::~HdShader()
+{
+    // NOTHING
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif //HD_GLSLFX_SHADER_H

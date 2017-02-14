@@ -58,7 +58,7 @@ HdDrawItem::GetPrimitiveMode() const
 HdShaderCodeSharedPtr
 HdDrawItem::GetSurfaceShader() const
 {
-    return boost::static_pointer_cast<HdShaderCode>(_sharedData->surfaceShader);
+    return _sharedData->surfaceShader;
 }
 
 size_t

@@ -40,6 +40,7 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
+#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/ar/resolver.h"
@@ -172,7 +173,7 @@ UsdImagingDelegate::~UsdImagingDelegate()
         index.RemoveBprim(HdPrimTypeTokens->texture, *it);
     }
     TF_FOR_ALL(it, _shaderMap) {
-        index.RemoveShader(GetPathForIndex(it->first));
+        index.RemoveSprim(HdPrimTypeTokens->shader, GetPathForIndex(it->first));
     }
 }
 
@@ -557,8 +558,9 @@ UsdImagingIndexProxy::_InsertRprim(SdfPath const& usdPath,
             _delegate->_shaderMap.find(shader) == _delegate->_shaderMap.end()) {
 
             _delegate->GetRenderIndex()
-                .InsertShader<HdSurfaceShader>(_delegate,
-                                               _delegate->GetPathForIndex(shader));
+                .InsertSprim(HdPrimTypeTokens->shader,
+                             _delegate,
+                             _delegate->GetPathForIndex(shader));
             
             // Detect if the shader has any attribute that is time varying
             // if so we will tag the shader as time varying so we can 
@@ -1213,8 +1215,8 @@ UsdImagingDelegate::_PrepareWorkerForTimeUpdate(_Worker* worker)
         bool& isTimeVarying = it->second;
         if (isTimeVarying) {
             HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
-            tracker.MarkShaderDirty(
-                GetPathForIndex(it->first), HdChangeTracker::DirtyParams);
+            tracker.MarkSprimDirty(
+                GetPathForIndex(it->first), HdShader::DirtyParams);
         }
     }
 }

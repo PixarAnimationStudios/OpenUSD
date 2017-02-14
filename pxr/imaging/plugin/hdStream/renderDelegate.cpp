@@ -23,23 +23,44 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdStream/renderDelegate.h"
-#include "pxr/imaging/hd/renderDelegateRegistry.h"
-#include "pxr/imaging/hd/texture.h"
+
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/basisCurves.h"
 #include "pxr/imaging/hdSt/points.h"
+#include "pxr/imaging/hdSt/shader.h"
+
 #include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/light.h"
 
+
+#include "pxr/imaging/hd/glslfxShader.h"
+#include "pxr/imaging/hd/package.h"
+#include "pxr/imaging/hd/renderDelegateRegistry.h"
+#include "pxr/imaging/hd/texture.h"
+
+#include "pxr/imaging/glf/glslfx.h"
+
+
 PXR_NAMESPACE_OPEN_SCOPE
-
-
 
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdRenderDelegateRegistry::Define<HdStreamRenderDelegate>();
 }
+
+const TfTokenVector HdStreamRenderDelegate::SUPPORTED_SPRIM_TYPES =
+{
+    HdPrimTypeTokens->camera,
+    HdPrimTypeTokens->light,
+    HdPrimTypeTokens->drawTarget,
+    HdPrimTypeTokens->shader
+};
+
+const TfTokenVector HdStreamRenderDelegate::SUPPORTED_BPRIM_TYPES =
+{
+    HdPrimTypeTokens->texture
+};
 
 HdStreamRenderDelegate::HdStreamRenderDelegate()
 {
@@ -51,6 +72,18 @@ TfToken
 HdStreamRenderDelegate::GetDefaultGalId() const
 {
     return TfToken();
+}
+
+const TfTokenVector &
+HdStreamRenderDelegate::GetSupportedSprimTypes() const
+{
+    return SUPPORTED_SPRIM_TYPES;
+}
+
+const TfTokenVector &
+HdStreamRenderDelegate::GetSupportedBprimTypes() const
+{
+    return SUPPORTED_BPRIM_TYPES;
 }
 
 HdRprim *
@@ -87,12 +120,33 @@ HdStreamRenderDelegate::CreateSprim(TfToken const& typeId,
         return new HdxLight(sprimId);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdxDrawTarget(sprimId);
+    } else  if (typeId == HdPrimTypeTokens->shader) {
+        return new HdStShader(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
 
     return nullptr;
 }
+
+HdSprim *
+HdStreamRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
+{
+    if (typeId == HdPrimTypeTokens->camera) {
+        return new HdxCamera(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->light) {
+        return new HdxLight(SdfPath::EmptyPath());
+    } else  if (typeId == HdPrimTypeTokens->drawTarget) {
+        return new HdxDrawTarget(SdfPath::EmptyPath());
+    } else  if (typeId == HdPrimTypeTokens->shader) {
+        return _CreateFallbackShaderPrim();
+    } else {
+        TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
+    }
+
+    return nullptr;
+}
+
 
 void
 HdStreamRenderDelegate::DestroySprim(HdSprim *sPrim)
@@ -110,6 +164,18 @@ HdStreamRenderDelegate::CreateBprim(TfToken const& typeId,
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
 
+
+    return nullptr;
+}
+
+HdBprim *
+HdStreamRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
+{
+    if (typeId == HdPrimTypeTokens->texture) {
+        return new HdTexture(SdfPath::EmptyPath());
+    } else {
+        TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    }
 
     return nullptr;
 }
@@ -201,5 +267,18 @@ HdStreamRenderDelegate::_ConfigureReprs()
                               HdPointsGeomStylePoints);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+HdSprim *
+HdStreamRenderDelegate::_CreateFallbackShaderPrim()
+{
+    GlfGLSLFXSharedPtr glslfx(new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
 
+    HdSurfaceShaderSharedPtr fallbackShaderCode(new HdGLSLFXShader(glslfx));
+
+    HdStShader *shader = new HdStShader(SdfPath::EmptyPath());
+    shader->SetSurfaceShader(fallbackShaderCode);
+
+    return shader;
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

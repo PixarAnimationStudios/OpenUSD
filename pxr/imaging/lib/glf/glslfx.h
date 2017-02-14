@@ -183,6 +183,9 @@ public:
     /// Get the shader source associated with given key
     std::string GetSource(const TfToken &shaderStageKey) const;
 
+    /// Get the original file name passed to the constructor
+    const std::string &GetFilePath() const { return _globalContext.filename; }
+
     /// Return set of all files processed for this glslfx object.
     /// This includes the original file given to the constructor
     /// as well as any other files that were imported. This set

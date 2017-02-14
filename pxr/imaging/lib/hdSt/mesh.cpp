@@ -40,6 +40,7 @@
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
@@ -888,8 +889,16 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 bool
 HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 {
-    HdSurfaceShaderSharedPtr const& ss = 
-                                    renderIndex.GetShader(GetSurfaceShaderId());
+    const HdShader *shader = static_cast<const HdShader *>(
+                                  renderIndex.GetSprim(HdPrimTypeTokens->shader,
+                                                       GetSurfaceShaderId()));
+    if (shader == nullptr) {
+        shader = static_cast<const HdShader *>(
+                        renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
+    }
+
+    HdShaderCodeSharedPtr ss = shader->GetShaderCode();
+
     TF_FOR_ALL(it, ss->GetParams()) {
         if (it->IsPtex())
             return true;

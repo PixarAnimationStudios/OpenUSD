@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -181,8 +182,20 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 
+
     // XXX: this should be in a different method
-    _sharedData.surfaceShader = renderIndex.GetShader(_surfaceShaderID);
+    // XXX: This should be in HdSt getting the HdSt Shader
+    const HdShader *shader = static_cast<const HdShader *>(
+                                  renderIndex.GetSprim(HdPrimTypeTokens->shader,
+                                                       _surfaceShaderID));
+
+    if (shader == nullptr) {
+        shader = static_cast<const HdShader *>(
+                        renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
+    }
+
+    _sharedData.surfaceShader = shader->GetShaderCode();
+
 
     // update uniforms
     HdBufferSourceVector sources;
