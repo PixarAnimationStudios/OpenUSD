@@ -3754,7 +3754,6 @@ Pcp_RescanForSpecs(PcpPrimIndex *index, bool usd, bool updateHasSpecs)
 static void 
 _ConvertNodeForChild(
     PcpNodeRef node,
-    const TfToken & childName,
     const PcpPrimIndexInputs& inputs)
 {
     // Because the child site is at a deeper level of namespace than
@@ -3784,7 +3783,7 @@ _ConvertNodeForChild(
 
     // Arbitrary-order traversal.
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        _ConvertNodeForChild(*child, childName, inputs);
+        _ConvertNodeForChild(*child, inputs);
     }
 }
 
@@ -3999,7 +3998,7 @@ _BuildInitialPrimIndexFromAncestor(
     graph->SetHasPayload(false);
 
     PcpNodeRef rootNode = outputs->primIndex.GetRootNode();
-    _ConvertNodeForChild(rootNode, site.path.GetNameToken(), inputs);
+    _ConvertNodeForChild(rootNode, inputs);
 
     if (inputs.cull) {
         _CullSubtreesWithNoOpinions(rootNode, rootSite);
