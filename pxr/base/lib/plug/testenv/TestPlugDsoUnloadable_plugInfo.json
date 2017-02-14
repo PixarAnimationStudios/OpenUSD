@@ -3,9 +3,9 @@
         {
             "Type": "library",
             "Name": "TestPlugDsoUnloadable",
-            "Root": "..",
-            "LibraryPath": "TestPlugDsoUnloadable",
-            "ResourcePath": "Resources",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
             "Info": {
                 "Types": {
                     "TestPlugUnloadable": {

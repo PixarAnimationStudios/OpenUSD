@@ -786,7 +786,7 @@ function (pxr_create_test_module MODULE_NAME)
         set(initPyFile ${tm_SOURCE_DIR}/${MODULE_NAME}__init__.py)
         set(plugInfoFile ${tm_SOURCE_DIR}/${MODULE_NAME}_plugInfo.json)
 
-        if (EXISTS ${initPyFile})
+        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${initPyFile}")
             install(
                 FILES 
                     ${initPyFile}
@@ -797,7 +797,7 @@ function (pxr_create_test_module MODULE_NAME)
             )
         endif()
 
-        if (EXISTS ${plugInfoFile})
+        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${plugInfoFile}")
             install(
                 FILES 
                     ${plugInfoFile}
@@ -813,7 +813,7 @@ endfunction() # pxr_create_test_module
 function(pxr_build_test_shared_lib LIBRARY_NAME)
     if (PXR_BUILD_TESTS)
         cmake_parse_arguments(bt
-            "" ""
+            "" "INSTALL_PREFIX;SOURCE_DIR"
             "LIBRARIES;CPPFILES"
             ${ARGN}
         )
@@ -831,6 +831,26 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
                 FOLDER "${PXR_PREFIX}/tests/lib"
         )
 
+        if (NOT bt_SOURCE_DIR)
+            set(bt_SOURCE_DIR testenv)
+        endif()
+        set(testPlugInfoPath ${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json)
+
+        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoPath}")
+            set(TEST_PLUG_INFO_RESOURCE_PATH "Resources")
+            set(TEST_PLUG_INFO_ROOT "..")
+            _get_library_file(${LIBRARY_NAME} LIBRARY_FILE)
+            set(testPlugInfoInstallDir "tests/${bt_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
+            file(RELATIVE_PATH 
+                TEST_PLUG_INFO_LIBRARY_PATH
+                "${CMAKE_INSTALL_PREFIX}/${testPlugInfoInstallDir}"
+                "${CMAKE_INSTALL_PREFIX}/tests/lib/${LIBRARY_FILE}")
+            configure_file(
+                "${testPlugInfoPath}"
+                "${CMAKE_INSTALL_PREFIX}/${testPlugInfoInstallDir}/${TEST_PLUG_INFO_RESOURCE_PATH}/plugInfo.json"
+            )
+        endif()
+
         # We always want this test to build after the package it's under, even if
         # it doesn't link directly. This ensures that this test is able to include
         # headers from its parent package.
@@ -845,6 +865,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         install(TARGETS ${LIBRARY_NAME}
             LIBRARY DESTINATION "tests/lib"
             ARCHIVE DESTINATION "tests/lib"
+            RUNTIME DESTINATION "tests/lib"
         )
     endif()
 endfunction() # pxr_build_test_shared_lib
