@@ -30,13 +30,13 @@
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/diagnosticBase.h"
 
+#include <string>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class TfWarning;
 class TfStatus;
 class TfDiagnosticBase;
-
-#include <string>
 
 /// \class TfDiagnosticNotice
 ///
