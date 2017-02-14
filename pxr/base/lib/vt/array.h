@@ -390,6 +390,8 @@ class VtArray {
     Vt_Reserved* _GetReserved() {
         if (!_data) {
             _data.reset(new _Data);
+        } else {
+            _Detach();
         }
         return &_data->reserved;
     }
