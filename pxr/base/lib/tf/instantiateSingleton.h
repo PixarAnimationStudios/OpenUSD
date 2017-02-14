@@ -98,7 +98,7 @@ TfSingleton<T>::_DestroyInstance()
 ///
 /// \hideinitializer
 #define TF_INSTANTIATE_SINGLETON(T)                               \
-    template class TfSingleton<T>
+    template class PXR_NS_GLOBAL::TfSingleton<T>
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
