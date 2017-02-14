@@ -56,6 +56,7 @@ PRIMVAR_INTERPOLATION_OPTIONS = [
     '',
     UsdGeom.Tokens.constant,
     UsdGeom.Tokens.uniform,
+    UsdGeom.Tokens.varying,
     UsdGeom.Tokens.vertex,
     UsdGeom.Tokens.faceVarying
 ]
@@ -244,14 +245,8 @@ class ExportedAttribute(object):
 
     @primvarInterpolation.setter
     def primvarInterpolation(self, value):
-        exportableInterpolations = [
-            UsdGeom.Tokens.constant,
-            UsdGeom.Tokens.uniform,
-            UsdGeom.Tokens.vertex,
-            UsdGeom.Tokens.faceVarying
-        ]
         if (self._usdAttrType != USD_ATTR_TYPE_PRIMVAR or
-                value not in exportableInterpolations):
+                not UsdGeom.Primvar.IsValidInterpolation(str(value))):
             self._primvarInterpolation = None
         else:
             self._primvarInterpolation = value
