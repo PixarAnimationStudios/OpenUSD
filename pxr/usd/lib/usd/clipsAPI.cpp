@@ -263,6 +263,11 @@ UsdClipsAPI::SetClipTemplateStride(const double clipTemplateStride)
         return false;
     }
 
+    if (clipTemplateStride == 0) {
+        TF_CODING_ERROR("clipTemplateStride can not be set to 0.");
+        return false;
+    }
+
     return GetPrim().SetMetadata(UsdTokens->clipTemplateStride, 
                                  clipTemplateStride);
 }
