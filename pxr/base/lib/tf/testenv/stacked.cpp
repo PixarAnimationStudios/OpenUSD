@@ -37,23 +37,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Tf_SafeStacked : public TfStacked<Tf_SafeStacked> {
+class Tf_SafeStacked : public TfStacked<Tf_SafeStacked, true> {
 public:
     explicit Tf_SafeStacked(int v) : value(v) {}
     int value;
 };
 TF_INSTANTIATE_STACKED(Tf_SafeStacked);
 
-class Tf_UnsafeStacked :
-    public TfStacked<Tf_UnsafeStacked, /* PerThread = */ false> {
+TF_DEFINE_STACKED(Tf_UnsafeStacked, false, ) {
 public:
     explicit Tf_UnsafeStacked(int v) : value(v) {}
     int value;
 };
-TF_INSTANTIATE_STACKED(Tf_UnsafeStacked);
+TF_INSTANTIATE_DEFINED_STACKED(Tf_UnsafeStacked);
 
 
-class Tf_FallbackStacked : public TfStacked<Tf_FallbackStacked> {
+TF_DEFINE_STACKED(Tf_FallbackStacked, true, ) {
 public:
     explicit Tf_FallbackStacked(int v) : value(v) {}
     int value;
@@ -65,7 +64,7 @@ private:
         new Tf_FallbackStacked(-1);
     }
 };
-TF_INSTANTIATE_STACKED(Tf_FallbackStacked);
+TF_INSTANTIATE_DEFINED_STACKED(Tf_FallbackStacked);
 
 
 template <class T>
