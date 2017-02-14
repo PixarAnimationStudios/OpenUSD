@@ -163,7 +163,8 @@ private:
                       SdfPath instanceShaderBinding,
                       SdfPath instancerPath,
                       UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
-                      UsdImagingIndexProxy* index);
+                      UsdImagingIndexProxy* index,
+                      bool *isLeafInstancer);
 
     // Removes and reloads all instancer data, both locally and from the 
     // render index.
@@ -315,6 +316,11 @@ private:
 
         // Map of all rprims for this instancer prim.
         _PrimMap primMap;
+
+        // This is a set of reference paths, where this instancer needs
+        // to deferer to another instancer.  While refered to here as a child
+        // instancer, the actual relationship is more like a directed graph.
+        SdfPathSet childInstancers;
 
         // Proto group containing the instance indexes for each prototype
         // rprim.
