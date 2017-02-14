@@ -105,7 +105,7 @@ struct TfPyPolymorphic :
                     PyErr_Clear();
 
                     // do the appropriate conversion, if possible
-                    if (borrowed_f and PyMethod_Check(borrowed_f.get())) {
+                    if (borrowed_f && PyMethod_Check(borrowed_f.get())) {
                         func_object =
                             ((PyMethodObject*)borrowed_f.get())->im_func;
                     }
@@ -127,7 +127,7 @@ struct TfPyPolymorphic :
     Override GetPureOverride(char const *func) const {
         TfPyLock pyLock;
         Override ret = GetOverride(func);
-        if (not ret) {
+        if (!ret) {
             // Raise a *python* exception when no virtual is found.  This is
             // because a subsequent attempt to call ret will result in a python
             // exception, but a far less useful one.  If we were to simply make

@@ -36,6 +36,7 @@
 /// information. The intended usage is in a macro.
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/arch/functionLite.h"
 
 #include <stddef.h>
@@ -99,7 +100,7 @@ public:
     mutable bool _hidden;
 };
 
-TfCallContext
+TF_API TfCallContext
 Tf_PythonCallContext(char const *fileName,
                      char const *moduleName,
                      char const *functionName,

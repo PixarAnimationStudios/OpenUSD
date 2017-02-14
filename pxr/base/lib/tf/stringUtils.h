@@ -32,6 +32,7 @@
 
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/enum.h"
 
 #include <boost/type_traits/is_enum.hpp>
@@ -67,6 +68,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// as opposed to just passing \c caller).
 ///
 /// \note \c TfStringPrintf() is just a wrapper for \c ArchStringPrintf().
+TF_API
 std::string TfStringPrintf(const char *fmt, ...)
 #ifndef doxygen
     ARCH_PRINTF_FUNCTION(1, 2)
@@ -82,9 +84,12 @@ std::string TfStringPrintf(const char *fmt, ...)
 /// TfVStringPrintf() should call \c va_end(ap) itself afterwards.
 ///
 /// \note \c TfVStringPrintf() is just a wrapper for \c ArchVStringPrintf().
+TF_API
 std::string TfVStringPrintf(const std::string& fmt, va_list ap);
 
 /// Bloat-avoidance version of TfVStringPrintf()
+
+TF_API
 std::string TfVStringPrintf(const char *fmt, va_list ap)
 #ifndef doxygen
     ARCH_PRINTF_FUNCTION(1, 0)
@@ -122,10 +127,10 @@ inline std::string TfIntToString(int i) {
 ///    TfStringToDouble("1.2foo") == 1.2
 ///
 /// \note \c TfStringToDouble is a wrapper around the extern-c TfStringToDouble
-double TfStringToDouble(const std::string& txt);
+TF_API double TfStringToDouble(const std::string& txt);
 
 /// \overload
-double TfStringToDouble(const char *text);
+TF_API double TfStringToDouble(const char *text);
 
 /// Convert a sequence of digits in \p txt to a long int value.  Caller is
 /// responsible for ensuring that \p txt has content matching:
@@ -138,9 +143,12 @@ double TfStringToDouble(const char *text);
 /// (if \p outOfRange is not NULL) and return either
 /// std::numeric_limits<long>::min() or max(), whichever is closest to the
 /// true value.
+TF_API
 long TfStringToLong(const std::string &txt, bool *outOfRange=NULL);
 
 /// \overload
+
+TF_API
 long TfStringToLong(const char *txt, bool *outOfRange=NULL);
 
 /// Convert a sequence of digits in \p txt to an unsigned long value.  Caller
@@ -153,9 +161,12 @@ long TfStringToLong(const char *txt, bool *outOfRange=NULL);
 /// If the digit sequence's value is out of range, set \p *outOfRange to true
 /// (if \p outOfRange is not NULL) and return std::numeric_limits<unsigned
 /// long>::max().
+TF_API
 unsigned long TfStringToULong(const std::string &txt, bool *outOfRange=NULL);
 
 /// \overload
+
+TF_API
 unsigned long TfStringToULong(const char *txt, bool *outOfRange=NULL);
 
 /// Convert a sequence of digits in \p txt to an int64_t value.  Caller must
@@ -169,9 +180,11 @@ unsigned long TfStringToULong(const char *txt, bool *outOfRange=NULL);
 /// (if \p outOfRange is not NULL) and return either
 /// std::numeric_limits<int64_t>::min() or max(), whichever is closest to the
 /// true value.
+TF_API
 int64_t TfStringToInt64(const std::string &txt, bool *outOfRange=NULL);
 
 /// \overload
+TF_API
 int64_t TfStringToInt64(const char *txt, bool *outOfRange=NULL);
 
 /// Convert a sequence of digits in \p txt to a uint64_t value.  Caller is
@@ -184,9 +197,11 @@ int64_t TfStringToInt64(const char *txt, bool *outOfRange=NULL);
 /// If the digit sequence's value is out of range, set \p *outOfRange to true
 /// (if \p outOfRange is not NULL) and return std::numeric_limits<unsigned
 /// long>::max().
+TF_API
 uint64_t TfStringToUInt64(const std::string &txt, bool *outOfRange=NULL);
 
 /// \overload
+TF_API
 uint64_t TfStringToUInt64(const char *txt, bool *outOfRange=NULL);
 
 inline bool
@@ -211,6 +226,7 @@ TfStringStartsWith(const std::string& s, const std::string& prefix) {
 }
 
 /// \overload
+TF_API
 bool TfStringStartsWith(const std::string &s, const class TfToken& prefix);
 
 inline bool
@@ -235,10 +251,12 @@ TfStringEndsWith(const std::string& s, const std::string& suffix)
 }
 
 /// \overload
+TF_API
 bool TfStringEndsWith(const std::string &s, const class TfToken& suffix);
 
 /// Returns true if \p s contains \p substring.
 // \ingroup group_tf_String
+TF_API
 bool TfStringContains(const std::string& s, const char *substring);
 
 /// \overload
@@ -248,22 +266,27 @@ TfStringContains(const std::string &s, const std::string &substring) {
 }
 
 /// \overload
+TF_API
 bool TfStringContains(const std::string &s, const class TfToken& substring);
 
 /// Makes all characters in \p source lowercase, and returns the result.
+TF_API
 std::string TfStringToLower(const std::string& source);
 
 /// Makes all characters in \p source uppercase, and returns the result.
+TF_API
 std::string TfStringToUpper(const std::string& source);
 
 /// Returns a copy of the \p source string with only its first character
 /// capitalized. This emulates the behavior of Python's \c str.capitalize().
+TF_API
 std::string TfStringCapitalize(const std::string& source);
 
 /// Trims characters (by default, whitespace) from the left.
 ///
 /// Characters from the beginning of \p s are removed until a character not in
 /// \p trimChars is found; the result is returned.
+TF_API
 std::string TfStringTrimLeft(const std::string& s,
                              const char* trimChars = " \n\t\r");
 
@@ -271,6 +294,7 @@ std::string TfStringTrimLeft(const std::string& s,
 ///
 /// Characters at the end of \p s are removed until a character not in \p
 /// trimChars is found; the result is returned.
+TF_API
 std::string TfStringTrimRight(const std::string& s,
                               const char* trimChars = " \n\t\r");
 
@@ -279,6 +303,7 @@ std::string TfStringTrimRight(const std::string& s,
 ///
 /// Characters at the beginning and end of \p s are removed until a character
 /// not in \p trimChars is found; the result is returned.
+TF_API
 std::string TfStringTrim(const std::string& s,
                          const char* trimChars = " \n\t\r");
 
@@ -287,6 +312,7 @@ std::string TfStringTrim(const std::string& s,
 /// Copies of the input strings are compared.  Returns a new string which is
 /// the longest prefix common to both input strings.  If the strings have no
 /// common prefix, an empty string is returned.
+TF_API
 std::string TfStringGetCommonPrefix(std::string a, std::string b);
 
 /// Returns the suffix of a string
@@ -294,6 +320,7 @@ std::string TfStringGetCommonPrefix(std::string a, std::string b);
 /// Returns characters after the final character \c delimiter (default ".") of
 /// a string.  Thus suffix of "abc.def" is "def" using "." as the delimiter.
 /// If the delimiter does not occur, the empty string is returned.
+TF_API
 std::string TfStringGetSuffix(const std::string& name, char delimiter = '.');
 
 /// Returns the everthing up to the suffix of a string
@@ -302,17 +329,21 @@ std::string TfStringGetSuffix(const std::string& name, char delimiter = '.');
 /// of a string.  Thus not-suffix of "abc.def" is "abc" using "." as the
 /// delimiter.  If the delimiter does not occur, the original string is
 /// returned.
+TF_API
 std::string TfStringGetBeforeSuffix(const std::string& name, char delimiter = '.');
 
 /// Returns the base name of a file (final component of the path).
+TF_API
 std::string TfGetBaseName(const std::string& fileName);
 
 /// Returns the path component of a file (complement of TfGetBaseName()).
 ///
-/// The returned string ends in a '/', unless there were no slashes in \c
-/// fileName, in which case the empty string is returned.  In particular, \c
-/// TfGetPathName(s)+TfGetBaseName(s) == \c s for any string \c s ( as long as
-/// \c s doesn't end with multiple adjacent slashes, which is illegal).
+/// The returned string ends in a '/' (or possibly a '\' on Windows), unless
+/// none was found in \c fileName, in which case the empty string is returned.
+/// In particular, \c TfGetPathName(s)+TfGetBaseName(s) == \c s for any string
+/// \c s (as long as \c s doesn't end with multiple adjacent slashes, which is
+/// illegal).
+TF_API
 std::string TfGetPathName(const std::string& fileName);
 
 /// Replaces all occurences of string \p from with \p to in \p source
@@ -320,6 +351,7 @@ std::string TfGetPathName(const std::string& fileName);
 /// Returns a new string which is created by copying \p string and replacing
 /// every occurence of \p from with \p to. Correctly handles the case in which
 /// \p to contains \p from.
+TF_API
 std::string TfStringReplace(const std::string& source, const std::string& from,
                             const std::string& to);
 
@@ -362,6 +394,7 @@ std::string TfStringJoin(
 ///
 /// Returns the catenation of the strings in \p strings, with \p separator
 /// (by default, a space) added between each successive pair of strings.
+TF_API
 std::string TfStringJoin(const std::vector<std::string>& strings,
                          const char* separator = " ");
 
@@ -369,6 +402,7 @@ std::string TfStringJoin(const std::vector<std::string>& strings,
 ///
 /// Returns the catenation of the strings in \p strings, with \p separator
 /// (by default, a space) added between each successive pair of strings.
+TF_API
 std::string TfStringJoin(const std::set<std::string>& strings,
                          const char* separator = " ");
 
@@ -377,6 +411,7 @@ std::string TfStringJoin(const std::set<std::string>& strings,
 /// The string \p source is broken apart into individual words, where a word
 /// is delimited by the string \p separator. This function behaves like
 /// pythons string split method.
+TF_API
 std::vector<std::string> TfStringSplit(std::string const &src,
                                        std::string const &separator);
 
@@ -385,12 +420,14 @@ std::vector<std::string> TfStringSplit(std::string const &src,
 /// The string \p source is broken apart into individual words, where a word
 /// is delimited by the characters in \p delimiters.  Delimiters default to
 /// white space (space, tab, and newline).
+TF_API
 std::vector<std::string> TfStringTokenize(const std::string& source,
                                           const char* delimiters = " \t\n");
 
 /// Breaks the given string apart, returning a set of strings.
 ///
 /// Same as TfStringTokenize, except this one returns a set.
+TF_API
 std::set<std::string> TfStringTokenizeToSet(const std::string& source,
                                             const char* delimiters = " \t\n");
 
@@ -403,6 +440,7 @@ std::set<std::string> TfStringTokenizeToSet(const std::string& source,
 /// quotes or are preceded by a backslash character. \p errors, if provided,
 /// contains any error messages. Delimiters default to white space (space,
 /// tab, and newline).
+TF_API
 std::vector<std::string> 
 TfQuotedStringTokenize(const std::string& source, 
                        const char* delimiters = " \t\n", 
@@ -418,6 +456,7 @@ TfQuotedStringTokenize(const std::string& source,
 /// return a vector containig "a" and "to {be} split". If \p openDelimiter and
 /// \p closeDelimiter cannot be the same. \p errors, if provided, contains any
 /// error messages.
+TF_API
 std::vector<std::string> 
 TfMatchedStringTokenize(const std::string& source, 
                         char openDelimiter, 
@@ -471,7 +510,7 @@ struct TfDictionaryLessThan {
     /// \code
     ///     bool aIsFirst = TfDictionaryLessThan()(aString, bString);
     /// \endcode
-    bool operator()(const std::string &lhs, const std::string &rhs) const;
+    TF_API bool operator()(const std::string &lhs, const std::string &rhs) const;
 };
 
 /// Convert an arbitrary type into a string
@@ -497,13 +536,13 @@ TfStringify(const T& v)
 }
 
 /// \overload
-std::string TfStringify(bool v);
+TF_API std::string TfStringify(bool v);
 /// \overload
-std::string TfStringify(std::string const&);
+TF_API std::string TfStringify(std::string const&);
 /// \overload
-std::string TfStringify(float);
+TF_API std::string TfStringify(float);
 /// \overload
-std::string TfStringify(double);
+TF_API std::string TfStringify(double);
 
 /// Convert a string to an arbitrary type
 ///
@@ -524,9 +563,11 @@ TfUnstringify(const std::string &instring, bool* status = NULL)
 
 /// \overload
 template <>
+TF_API 
 bool TfUnstringify(const std::string &instring, bool* status);
 /// \overload
 template <>
+TF_API 
 std::string TfUnstringify(const std::string &instring, bool* status);
 
 /// Returns a string with glob characters converted to their regular
@@ -534,6 +575,7 @@ std::string TfUnstringify(const std::string &instring, bool* status);
 ///
 /// Currently, this transforms strings by replacing all instances of '.' with
 /// '\.', '*' with '.*', and '?' with '.', in that order.
+TF_API 
 std::string TfStringGlobToRegex(const std::string& s);
 
 /// Process escape sequences in ANSI C string constants.
@@ -560,8 +602,8 @@ std::string TfStringGlobToRegex(const std::string& s);
 /// sequence "\\c" would become "c".  Processing continues until the input
 /// hits a NUL character in the input string - anything appearing after the
 /// NUL will be ignored.
-std::string TfEscapeString(const std::string &in);
-void TfEscapeStringReplaceChar(const char** in, char** out);
+TF_API std::string TfEscapeString(const std::string &in);
+TF_API void TfEscapeStringReplaceChar(const char** in, char** out);
 
 /// Concatenate two strings containing '/' and '..' tokens like a file path or
 /// scope name.
@@ -573,6 +615,7 @@ void TfEscapeStringReplaceChar(const char** in, char** out);
 /// 
 /// \li TfStringCatPaths( "foo/bar", "jive" ) => "foo/bar/jive"
 /// \li TfStringCatPaths( "foo/bar", "../jive" ) => "foo/jive"
+TF_API
 std::string TfStringCatPaths( const std::string &prefix, 
                               const std::string &suffix );
 
@@ -586,8 +629,8 @@ TfIsValidIdentifier(const std::string &identifier)
 {
     char const *p = identifier.c_str();
     if (!*p || (!(('a' <= *p && *p <= 'z') || 
-                        ('A' <= *p && *p <= 'Z') || 
-                        *p == '_')))
+                  ('A' <= *p && *p <= 'Z') || 
+                  *p == '_')))
         return false;
 
     for (++p; *p; ++p) {
@@ -603,6 +646,7 @@ TfIsValidIdentifier(const std::string &identifier)
 
 /// Produce a valid identifier (see TfIsValidIdentifier) from \p in by
 /// replacing invalid characters with '_'.  If \p in is empty, return "_".
+TF_API
 std::string
 TfMakeValidIdentifier(const std::string &in);
 
@@ -610,6 +654,7 @@ TfMakeValidIdentifier(const std::string &in);
 ///
 /// Returns the name with special characters (&, <, >, ", ') replaced with the
 /// corresponding escape sequences.
+TF_API
 std::string TfGetXmlEscapedString(const std::string &in);
 
 ///@}

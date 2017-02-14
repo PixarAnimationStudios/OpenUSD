@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
 #include <string>
@@ -41,12 +42,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// The program name and arguments are set automatically. sys.argv has no
 /// arguments other than an argv[0] matching the program name.
+TF_API
 extern void TfPyInitialize();
 
 /// Runs the given string using PyRun_SimpleString().
 ///
 /// Starts the interpreter if necessary. Deals with necessary thread state
 /// setup.
+TF_API
 extern int TfPyRunSimpleString(const std::string & cmd);
 
 /// Runs the given string using PyRun_String().
@@ -58,6 +61,7 @@ extern int TfPyRunSimpleString(const std::string & cmd);
 ///
 /// Starts the interpreter if necessary. Deals with necessary thread state
 /// setup.
+TF_API
 extern boost::python::handle<>
 TfPyRunString(const std::string & cmd, int start,
               boost::python::object const &globals = boost::python::object(),
@@ -73,6 +77,7 @@ TfPyRunString(const std::string & cmd, int start,
 ///
 /// Starts the interpreter if necessary. Deals with necessary thread state
 /// setup.
+TF_API
 extern boost::python::handle<>
 TfPyRunFile(const std::string &filename, int start,
             boost::python::object const &globals = boost::python::object(),
@@ -83,6 +88,7 @@ TfPyRunFile(const std::string &filename, int start,
 ///
 /// Starts the interpreter if necessary. Deals with necessary thread state
 /// setup.
+TF_API
 extern std::string TfPyGetModulePath(const std::string & moduleName);
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -106,7 +106,7 @@ TfPyIsNone(boost::python::object const &obj)
 bool
 TfPyIsNone(boost::python::handle<> const &obj)
 {
-    return not obj.get() or obj.get() == Py_None;
+    return !obj.get() || obj.get() == Py_None;
 }
 
 void Tf_PyLoadScriptModule(std::string const &moduleName)
@@ -116,7 +116,7 @@ void Tf_PyLoadScriptModule(std::string const &moduleName)
         string tmp(moduleName);
         PyObject *result =
             PyImport_ImportModule(const_cast<char *>(tmp.c_str()));
-        if (not result) {
+        if (!result) {
             // CODE_COVERAGE_OFF
             TF_WARN("Import failed for module '%s'!", moduleName.c_str());
             TfPyPrintError();
@@ -212,7 +212,7 @@ TfPyNormalizeIndex(int index, unsigned int size, bool throwError)
 }
 
 
-void
+TF_API void
 Tf_PyWrapOnceImpl(
     boost::python::type_info const &type,
     boost::function<void()> const &wrapFunc,
@@ -220,7 +220,7 @@ Tf_PyWrapOnceImpl(
 {
     static std::mutex pyWrapOnceMutex;
 
-    if (not wrapFunc) {
+    if (!wrapFunc) {
         TF_CODING_ERROR("Got null wrapFunc");
         return;
     }
@@ -240,7 +240,7 @@ Tf_PyWrapOnceImpl(
     boost::python::type_handle pyType =
         boost::python::objects::registered_class_object(type);
 
-    if (not pyType) {
+    if (!pyType) {
         wrapFunc();
     }
 
@@ -281,7 +281,7 @@ vector<string> TfPyGetTraceback()
 {
     vector<string> result;
 
-    if (not TfPyIsInitialized())
+    if (!TfPyIsInitialized())
         return result;
 
     TfPyLock lock;
@@ -306,19 +306,19 @@ vector<string> TfPyGetTraceback()
 void
 TfPyGetStackFrames(vector<uintptr_t> *frames)
 {
-    if (not TfPyIsInitialized())
+    if (!TfPyIsInitialized())
         return;
 
     TfPyLock lock;
     try {
         object tbModule(handle<>(PyImport_ImportModule("traceback")));
         object stack = tbModule.attr("format_stack")();
-        long size = len(stack);
+        size_t size = len(stack);
         frames->reserve(size);
         // Reverse the order of stack frames so that the stack is ordered 
         // like the output of ArchGetStackFrames() (deepest function call at 
         // the top of stack).
-        for (long i = size-1; i >= 0; --i) {
+        for (long i = static_cast<long>(size)-1; i >= 0; --i) {
             string *s = new string(extract<string>(stack[i]));
             frames->push_back((uintptr_t)s);
         }
@@ -348,14 +348,14 @@ _GetOsEnviron()
     // out to be problematic, we may want to consider the other approach.
     boost::python::object
         module(boost::python::handle<>(PyImport_ImportModule("os")));
-    boost::python::object environ(module.attr("environ"));
-    return environ;
+    boost::python::object environObj(module.attr("environ"));
+    return environObj;
 }
 
 bool
 TfPySetenv(const std::string & name, const std::string & value)
 {
-    if (not TfPyIsInitialized()) {
+    if (!TfPyIsInitialized()) {
         TF_CODING_ERROR("Python is uninitialized.");
         return false;
     }
@@ -363,8 +363,8 @@ TfPySetenv(const std::string & name, const std::string & value)
     TfPyLock lock;
 
     try {
-        object environ(_GetOsEnviron());
-        environ[name] = value;
+        object environObj(_GetOsEnviron());
+        environObj[name] = value;
         return true;
     }
     catch (boost::python::error_already_set&) {
@@ -377,7 +377,7 @@ TfPySetenv(const std::string & name, const std::string & value)
 bool
 TfPyUnsetenv(const std::string & name)
 {
-    if (not TfPyIsInitialized()) {
+    if (!TfPyIsInitialized()) {
         TF_CODING_ERROR("Python is uninitialized.");
         return false;
     }
@@ -385,10 +385,10 @@ TfPyUnsetenv(const std::string & name)
     TfPyLock lock;
 
     try {
-        object environ(_GetOsEnviron());
-        object has_key(environ.attr("has_key"));
+        object environObj(_GetOsEnviron());
+        object has_key(environObj.attr("has_key"));
         if (has_key(name)) {
-            environ[name].del();
+            environObj[name].del();
         }
         return true;
     }
@@ -410,7 +410,7 @@ bool Tf_PyEvaluateWithErrorCheck(
 void
 TfPyPrintError()
 {
-    if (not PyErr_ExceptionMatches(PyExc_KeyboardInterrupt)) {
+    if (!PyErr_ExceptionMatches(PyExc_KeyboardInterrupt)) {
         PyErr_Print();
     }
 }
@@ -419,7 +419,7 @@ void
 Tf_PyObjectError(bool printError)
 {
     // Silently pass these exceptions through.
-    if (PyErr_ExceptionMatches(PyExc_SystemExit) or
+    if (PyErr_ExceptionMatches(PyExc_SystemExit) ||
         PyErr_ExceptionMatches(PyExc_KeyboardInterrupt)) {
         return;
     }

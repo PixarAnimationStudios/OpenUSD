@@ -42,8 +42,13 @@
 #include <limits>
 #include <utility>
 #include <vector>
+#include <memory>
 #include <double-conversion/double-conversion.h>
 #include <double-conversion/utils.h>
+
+#if defined(ARCH_OS_WINDOWS)
+#include <Shlwapi.h>
+#endif
 
 using std::list;
 using std::make_pair;
@@ -86,7 +91,7 @@ TfStringToDouble(const char *ptr)
                     /* infinity symbol */ "inf",
                     /* nan symbol */ "nan");
     int numDigits_unused;
-    return strToDouble.StringToDouble(ptr, strlen(ptr), &numDigits_unused);
+    return strToDouble.StringToDouble(ptr, static_cast<int>(strlen(ptr)), &numDigits_unused);
 }
 
 double
@@ -304,6 +309,9 @@ TfStringGetBeforeSuffix(const string& name, char delimiter)
 string
 TfGetBaseName(const string& fileName)
 {
+#if defined(ARCH_OS_WINDOWS)
+    return PathFindFileName(fileName.c_str());
+#else
     if (fileName.empty())
         return fileName;
     else if (fileName[fileName.size()-1] == '/')    // ends in /
@@ -315,12 +323,17 @@ TfGetBaseName(const string& fileName)
         else
             return fileName.substr(i+1);
     }
+#endif
 }
 
 string
 TfGetPathName(const string& fileName)
 {
+#if defined(ARCH_OS_WINDOWS)
+    size_t i = fileName.find_last_of("\\/");
+#else
     size_t i = fileName.rfind("/");
+#endif
     if (i == string::npos)                          // no / in name
         return "";
     else
@@ -708,7 +721,7 @@ DictionaryLess(char const *l, char const *r)
                 return lval < rval;
             // Leading zeros difference only, record for later use.
             if (!leadingZerosCmp)
-                leadingZerosCmp = (l-oldL) - (r-oldR);
+                leadingZerosCmp = static_cast<int>((l-oldL) - (r-oldR));
             continue;
         }
 
@@ -891,8 +904,12 @@ TfEscapeStringReplaceChar(const char** c, char** out)
 std::string
 TfEscapeString(const std::string &in)
 {
-    char out[in.size()+1];
-    char *outp = out;
+    // We use type char and a deleter for char[] instead of just using
+    // type char[] due to a (now fixed) bug in libc++ in LLVM.  See
+    // https://llvm.org/bugs/show_bug.cgi?id=18350.
+    std::unique_ptr<char,
+                    std::default_delete<char[]>> out(new char[in.size()+1]);
+    char *outp = out.get();
 
     for (const char *c = in.c_str(); *c; ++c)
     {
@@ -904,7 +921,7 @@ TfEscapeString(const std::string &in)
 
     }
     *outp++ = '\0';
-    return string(out,outp-out-1);
+    return std::string(out.get(), outp - out.get() - 1);
 }
 
 string 

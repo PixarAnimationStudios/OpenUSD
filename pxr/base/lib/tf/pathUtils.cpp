@@ -24,21 +24,30 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pathUtils.h"
-
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/errno.h"
 
 #include <boost/bind.hpp>
 #include <boost/scoped_array.hpp>
 
 #include <algorithm>
 #include <errno.h>
-#include <glob.h>
 #include <limits.h>
 #include <string>
 #include <sys/stat.h>
 #include <utility>
 #include <vector>
+
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#include <Shlwapi.h>
+#else
+#include <glob.h>
+#endif
 
 using std::pair;
 using std::string;
@@ -52,6 +61,27 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
     if (path.empty())
         return string();
 
+#if defined(ARCH_OS_WINDOWS)
+    char fullPath[ARCH_PATH_MAX];
+
+    if (!GetFullPathName(path.c_str(), ARCH_PATH_MAX, fullPath, NULL)) {
+        if (error) {
+            *error = "Call to GetFullPathName failed";
+        }
+        return string();
+    }
+    else {
+        // Make sure drive letters are always lower-case out of TfRealPath on
+        // Windows -- this is so that we can be sure we can reliably use the
+        // paths as keys in tables, etc.
+        if (fullPath[1] == ':') {
+            fullPath[0] = tolower(fullPath[0]);
+        }
+
+    }
+
+    return std::string(fullPath);
+#else
     string localError;
     if (!error)
         error = &localError;
@@ -69,13 +99,18 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
         suffix = string(path, split);
     }
 
-    char resolved[PATH_MAX];
+    char resolved[ARCH_PATH_MAX];
     return TfAbsPath(TfSafeString(realpath(prefix.c_str(), resolved)) + suffix);
+#endif
 }
 
 string::size_type
 TfFindLongestAccessiblePrefix(string const &path, string* error)
 {
+#if defined(ARCH_OS_WINDOWS)
+    TF_CODING_ERROR("TfFindLongestAccessiblePrefix not implemented on Windows");
+    return path.size();
+#else
     typedef string::size_type size_type;
     static const size_type npos = string::npos;
 
@@ -97,7 +132,7 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
             struct stat st;
             if (lstat(checkPath.c_str(), &st) == -1) {
                 if (errno != ENOENT && err->empty())
-                    *err = strerror(errno);
+                    *err = ArchStrerror(errno);
                 return false;
             }
 
@@ -109,7 +144,7 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
                         if (errno == ENOENT)
                             *err = "encountered dangling symbolic link";
                         else
-                            *err = strerror(errno);
+                            *err = ArchStrerror(errno);
                     }
                     return false;
                 }
@@ -139,6 +174,7 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
     if (result == splitPoints.end())
         return path.length();
     return *(result - 1);
+#endif // !defined(ARCH_OS_WINDOWS)
 }
 
 namespace { // Helpers for TfNormPath.
@@ -315,13 +351,23 @@ TfAbsPath(string const& path)
     if (path.empty()) {
         return path;
     }
-    else if (TfStringStartsWith(path, "/")) {
+
+#if defined(ARCH_OS_WINDOWS)
+    char buffer[ARCH_PATH_MAX];
+    if (GetFullPathName(path.c_str(), ARCH_PATH_MAX, buffer, nullptr)) {
+        return buffer;
+    }
+    else {
+        return path;
+    }
+#else
+    if (TfStringStartsWith(path, "/")) {
         return TfNormPath(path);
     }
 
-    boost::scoped_array<char> cwd(new char[PATH_MAX]);
+    boost::scoped_array<char> cwd(new char[ARCH_PATH_MAX]);
 
-    if (getcwd(cwd.get(), PATH_MAX) == NULL) {
+    if (getcwd(cwd.get(), ARCH_PATH_MAX) == NULL) {
         // CODE_COVERAGE_OFF hitting this would require creating a directory,
         // chdir'ing into it, deleting that directory, *then* calling this
         // function.
@@ -330,6 +376,7 @@ TfAbsPath(string const& path)
     }
 
     return TfNormPath(TfSafeString(cwd.get()) + "/" + path);
+#endif
 }
 
 string
@@ -355,21 +402,19 @@ TfGetExtension(string const& path)
 string
 TfReadLink(string const& path)
 {
-    if (path.empty()) {
-        return path;
-    }
-
-    boost::scoped_array<char> buf(new char[PATH_MAX]);
-    ssize_t len;
-
-    if ((len = readlink(path.c_str(), buf.get(), PATH_MAX)) == -1) {
-        return string();
-    }
-    buf.get()[len] = '\0';
-
-    return TfSafeString(buf.get());
+    return ArchReadLink(path.c_str());
 }
 
+bool TfIsRelativePath(std::string const& path)
+{
+#if defined(ARCH_OS_WINDOWS)
+    return path.empty() || PathIsRelative(path.c_str()) ? true : false;
+#else
+    return path.empty() || path[0] != '/';
+#endif
+}
+
+#if !defined(ARCH_OS_WINDOWS)
 vector<string>
 TfGlob(vector<string> const& paths, unsigned int flags)
 {
@@ -398,6 +443,43 @@ TfGlob(vector<string> const& paths, unsigned int flags)
 
     return results;
 }
+
+#else
+
+vector<string>
+TfGlob(vector<string> const& paths, unsigned int flags)
+{
+    if (paths.empty()) {
+        return vector<string>();
+    }
+
+    vector<string> results;
+
+    // XXX -- This doesn't really do proper globbing:  it doesn't handle
+    //        paths without '*', it doesn't handle '?', and it doesn't
+    //        handle multiple wildcards per path.  In short, this is
+    //        very broken.
+    for (auto path : paths) {
+        std::string::size_type wildcard = path.find("/*/");
+        if(wildcard != std::string::npos) {
+            string rootDir(path, 0, wildcard);
+
+            vector<string> dirNames;
+            TfReadDir(rootDir, &dirNames, nullptr, nullptr, nullptr);
+
+            for (auto dirName : dirNames) {
+                string dir = path;
+                dir.replace(wildcard + 1, 1, dirName);
+
+                results.push_back(dir);
+            }
+        }
+    }
+
+    return results;
+}
+
+#endif
 
 vector<string>
 TfGlob(string const& path, unsigned int flags)

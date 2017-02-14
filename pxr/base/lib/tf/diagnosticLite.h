@@ -43,6 +43,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/callContext.h"
 
@@ -129,10 +130,10 @@ struct Tf_DiagnosticLiteHelper {
     {
     }
     
-    void IssueError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
-    void IssueFatalError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
-    void IssueWarning(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
-    void IssueStatus(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueFatalError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueWarning(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueStatus(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
 
 private:
     TfCallContext _context;

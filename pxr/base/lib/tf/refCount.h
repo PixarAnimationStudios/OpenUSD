@@ -30,6 +30,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/tf/api.h"
 #include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE

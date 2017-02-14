@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/env.h"
 #include "pxr/base/tf/setenv.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -36,7 +37,7 @@ TfSetenv(const std::string & name, const std::string & value)
     if (TfPyIsInitialized())
         return TfPySetenv(name, value);
 
-    if (setenv(name.c_str(), value.c_str(), /* overwrite */ 1) == 0)
+    if (ArchSetEnv(name.c_str(), value.c_str(), /* overwrite */ true))
         return true;
 
     TF_WARN("Error setting '%s': %s", name.c_str(), ArchStrerror().c_str());
@@ -49,7 +50,7 @@ TfUnsetenv(const std::string & name)
     if (TfPyIsInitialized())
         return TfPyUnsetenv(name);
 
-    if (unsetenv(name.c_str()) == 0)
+    if (ArchRemoveEnv(name.c_str()))
         return true;
 
     TF_WARN("Error unsetting '%s': %s", name.c_str(), ArchStrerror().c_str());

@@ -4,12 +4,18 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 set(PXR_PACKAGE tf)
 set(PXR_PREFIX pxr/base)
 
+if(WIN32)
+    set(WINLIBS Shlwapi.lib)
+endif()
+
 pxr_shared_library(tf
     LIBRARIES
         arch
+        ${WINLIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_PYTHON_LIBRARY}
         ${Boost_IOSTREAMS_LIBRARY}
+        ${Boost_DATE_TIME_LIBRARY}
         ${DOUBLE_CONVERSION_LIBRARY}
         ${TBB_tbb_LIBRARY}
         ${TBB_tbbmalloc_LIBRARY}

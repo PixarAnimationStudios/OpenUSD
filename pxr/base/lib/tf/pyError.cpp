@@ -47,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m) {
     // If there is a python exception somewhere in here, restore that, otherwise
     // raise a normal error exception.
-    if (not m.IsClean()) {
+    if (!m.IsClean()) {
         list args;
         for (TfErrorMark::Iterator e = m.GetBegin(); e != m.GetEnd(); ++e) {
             if (e->GetErrorCode() == TF_PYTHON_EXCEPTION) {
@@ -99,7 +99,7 @@ TfPyConvertPythonExceptionToTfErrors()
  
     // Replace the errors in m with errors parsed out of the exception.
     if (exc.GetType()) {
-        if (exc.GetType().get() == Tf_PyGetErrorExceptionClass().get() and
+        if (exc.GetType().get() == Tf_PyGetErrorExceptionClass().get() &&
             exc.GetValue()) {
             // Replace the errors in m with errors pulled out of exc.
             object exception = object(exc.GetValue());

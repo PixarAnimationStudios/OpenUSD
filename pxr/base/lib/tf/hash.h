@@ -30,6 +30,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/timeStamp.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/arch/hash.h"
 
 #include <boost/static_assert.hpp>
@@ -39,10 +40,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class TfType;
-class TfEnum;
 class TfAnyWeakPtr;
+class TfEnum;
 class TfToken;
+class TfType;
 
 template <class T> class TfWeakPtr;
 template <class T> class TfRefPtr;
@@ -123,9 +124,9 @@ public:
         return ptr.GetHash();
     }
 
-    size_t operator()(const TfEnum& e) const;
+    TF_API size_t operator()(const TfEnum& e) const;
 
-    size_t operator()(const TfType& t) const;
+    TF_API size_t operator()(const TfType& t) const;
 
     size_t operator()(TfTimeStamp stamp) const {
         return _Mix(size_t(stamp.Get()));

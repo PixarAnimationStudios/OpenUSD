@@ -30,6 +30,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/arch/timing.h"
+#include "pxr/base/tf/api.h"
 
 #include <iosfwd>
 #include <string>
@@ -60,16 +61,16 @@ public:
     /// internal set and can be retrieved via \c GetNamedStopwatch.  No
     /// provision is made for multiple stopwatches with the same name.  So if
     /// you want to retrieve it, make sure you name it uniquely.
-    TfStopwatch(const std::string& name = std::string(),
+    TF_API TfStopwatch(const std::string& name = std::string(),
                 bool share = false);
 
     /// Copy constructor.
     ///
     /// We have a copy constructor because copies are never shared.
-    TfStopwatch(const TfStopwatch& other);
+    TF_API TfStopwatch(const TfStopwatch& other);
 
     /// Destroy a stopwatch.
-    virtual ~TfStopwatch();
+    TF_API virtual ~TfStopwatch();
 
     /// Record the current time for use by the next \c Stop() call.
     ///
@@ -122,7 +123,7 @@ public:
     /// Return a copy of a particular named stopwatch.
     ///
     /// \c GetNamedStopwatch returns an unshared copy of the named stopwatch.
-    static TfStopwatch GetNamedStopwatch(const std::string& name);
+    TF_API static TfStopwatch GetNamedStopwatch(const std::string& name);
     
     /// Return the accumulated time in nanoseconds.
     ///
@@ -169,6 +170,7 @@ public:
     /// objects themselves.  Fortunately, TfStopwatch objects are typically
     /// static and even if they are not, it does no harm to request a named
     /// stopwatch that does not exist.
+    TF_API
     static std::vector<std::string> GetStopwatchNames();
 
     /// Returns true if this stopwatch is shared.
@@ -179,7 +181,7 @@ public:
     /// Assignment operator
     ///
     /// We have a custom assignment operator because copies are never shared.
-    TfStopwatch& operator=(const TfStopwatch& other);
+    TF_API TfStopwatch& operator=(const TfStopwatch& other);
 
 private:
     uint64_t    _nTicks;
@@ -195,7 +197,7 @@ private:
 /// timer need not be stopped.
 ///
 /// \ingroup group_tf_DebuggingOutput
-std::ostream& operator<<(std::ostream& out, const TfStopwatch& s);
+TF_API std::ostream& operator<<(std::ostream& out, const TfStopwatch& s);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

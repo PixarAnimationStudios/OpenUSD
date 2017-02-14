@@ -210,7 +210,6 @@ function(pxr_shared_library LIBRARY_NAME)
         # Python modules must be suffixed with .pyd on Windows and .so on
         # other platforms.
         if(WIN32)
-            add_definitions(-D_BUILDING_PYD=1)
             set_target_properties(${LIBRARY_NAME}
                 PROPERTIES
                     PREFIX ""

@@ -34,6 +34,8 @@
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/tf/staticData.h"
 
+#include "pxr/base/arch/fileSystem.h"
+
 #include <boost/python/borrowed.hpp>
 #include <boost/python/dict.hpp>
 #include <boost/python/handle.hpp>
@@ -167,7 +169,7 @@ TfScriptModuleLoader::GetModulesDict() const
 void
 TfScriptModuleLoader::WriteDotFile(string const &file) const
 {
-    FILE *out = fopen(file.c_str(), "wt");
+    FILE *out = ArchOpenFile(file.c_str(), "wt");
     if (!out) {
         TF_RUNTIME_ERROR("Could not open '%s' for writing.\n", file.c_str());
         return;

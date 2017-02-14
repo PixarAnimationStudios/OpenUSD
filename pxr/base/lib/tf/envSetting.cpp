@@ -23,16 +23,19 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
-#include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/arch/env.h"
+#include "pxr/base/arch/fileSystem.h"
 
 #include <boost/python.hpp>
 #include <boost/noncopyable.hpp>
@@ -49,13 +52,14 @@ public:
 
     Tf_EnvSettingRegistry() {
         string fileName = TfGetenv("PIXAR_TF_ENV_SETTING_FILE", "");
-        if (FILE* fp = fopen(fileName.c_str(), "r")) {
+        if (FILE* fp = ArchOpenFile(fileName.c_str(), "r")) {
             char buffer[1024];
             bool syncPython = TfPyIsInitialized();
             int lineNo = 0;
             while (fgets(buffer, 1024, fp)) {
                 if (buffer[strlen(buffer)-1] != '\n') {
-                    fprintf(stderr, "File '%s' (from PIXAR_TF_ENV_SETTING_FILE): "
+                    fprintf(stderr, "File '%s' "
+                            "(from PIXAR_TF_ENV_SETTING_FILE): "
                             "line %d is too long: ignored\n",
                             fileName.c_str(), lineNo+1);
                     continue;
@@ -69,20 +73,23 @@ public:
                     string key = TfStringTrim(string(buffer, eqPtr));
                     string value = TfStringTrim(string(eqPtr+1));
                     if (!key.empty()) {
-                        setenv(key.c_str(), value.c_str(), 0 /* overwrite */);
+                        ArchSetEnv(key, value, false /* overwrite */);
                         if (syncPython) {
-                            if (TfSafeString(getenv(key.c_str())) == value)
+                            if (ArchGetEnv(key) == value) {
                                 TfPySetenv(key, value);
+                            }
                         }
                     }
                     else {
-                        fprintf(stderr, "File '%s' (from PIXAR_TF_ENV_SETTING_FILE): "
+                        fprintf(stderr, "File '%s' "
+                                "(from PIXAR_TF_ENV_SETTING_FILE): "
                                 "empty key on line %d\n",
                                 fileName.c_str(), lineNo);
                     }
                 }
                 else {
-                    fprintf(stderr, "File '%s' (from PIXAR_TF_ENV_SETTING_FILE): "
+                    fprintf(stderr, "File '%s' "
+                            "(from PIXAR_TF_ENV_SETTING_FILE): "
                             "no '=' found on line %d\n",
                             fileName.c_str(), lineNo);
                 }
@@ -245,23 +252,25 @@ void Tf_InitializeEnvSetting(TfEnvSetting<T> *setting)
 }
 
 // Explicitly instantiate for the supported types: bool, int, and string.
-template void Tf_InitializeEnvSetting(TfEnvSetting<bool> *);
-template void Tf_InitializeEnvSetting(TfEnvSetting<int> *);
-template void Tf_InitializeEnvSetting(TfEnvSetting<string> *);
+template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<bool> *);
+template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<int> *);
+template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<string> *);
 
+TF_API
 boost::python::object
 Tf_GetEnvSettingByName(string const& name)
 {
     return Tf_EnvSettingRegistry::GetInstance().LookupByName(name);
 }
 
+TF_API
 boost::python::object
 Tf_GetEnvSettingDictionary()
 {
     return Tf_EnvSettingRegistry::GetInstance().GetAllEntries();
 }
 
-void Tf_InitEnvSettings()
+void TF_API Tf_InitEnvSettings()
 {
     // Cause the registry to be created.  Crucially, this subscribes to
     // Tf_EnvSettingRegistry, ensuring that all env settings are defined

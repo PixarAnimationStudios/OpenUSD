@@ -52,4 +52,6 @@ void wrapScriptModuleLoader() {
         ;
 }
 
+TF_REFPTR_CONST_VOLATILE_GET(TfScriptModuleLoader)
+
 PXR_NAMESPACE_CLOSE_SCOPE

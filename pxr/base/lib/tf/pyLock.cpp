@@ -133,7 +133,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 // See https://github.com/pankajp/pygilstate_check
 //
-extern PyThreadState *_PyThreadState_Current;
+PyAPI_DATA(PyThreadState *) _PyThreadState_Current;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -144,7 +144,7 @@ TfPyEnsureGILUnlockedObj::TfPyEnsureGILUnlockedObj()
     // the correct state) and then BeginAllowThreads() to unlock it.  Otherwise
     // do nothing.  In Python 3.4+, this can be replaced by PyGILState_Check().
     PyThreadState *tstate = _PyThreadState_Current;
-    if (tstate and (tstate == PyGILState_GetThisThreadState())) {
+    if (tstate && (tstate == PyGILState_GetThisThreadState())) {
         _lock.Acquire();
         _lock.BeginAllowThreads();
     }        

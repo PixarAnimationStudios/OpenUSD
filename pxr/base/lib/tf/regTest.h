@@ -30,6 +30,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
@@ -106,6 +107,7 @@ public:
         return GetInstance()._Main(argc, argv);
     }
 
+    TF_API
     static TfRegTest& GetInstance();
 
     /// Type of a function with no arguments.
@@ -118,10 +120,14 @@ public:
     /// and \c argv+1.
     typedef bool (*RegFuncWithArgs)(int argc, char *argv[]);
 
+    TF_API
     bool Register(const char* name, RegFunc);
+    TF_API
     bool Register(const char* name, RegFuncWithArgs);
 
 private:
+    friend class TfSingleton<TfRegTest>;
+    TF_API
     int _Main(int argc, char *argv[]);
 
     void _PrintTestNames();
@@ -131,6 +137,8 @@ private:
     _Hash _functionTable;
     _HashWithArgs _functionTableWithArgs;
 };
+
+TF_API_TEMPLATE_CLASS(TfSingleton<TfRegTest>);
 
 /// Adds the function Test_\p name, under name \p name, as a runnable
 /// regression test. Test_\p name must be of type \c RegFunc or

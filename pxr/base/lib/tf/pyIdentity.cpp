@@ -108,7 +108,7 @@ void Tf_PyIdHandle::CleanUp() {
 }
 
 void Tf_PyIdHandle::Release() const {
-    if (_weakRef and not _isAcquired) {
+    if (_weakRef && !_isAcquired) {
         // CODE_COVERAGE_OFF Can only get here if there's a bug.
         TF_CODING_ERROR("Releasing while not acquired!");
         return;
@@ -247,7 +247,7 @@ void Tf_PyIdentityHelper::Set(void const *key, PyObject *obj) {
         Tf_ExpiryNotifier::SetNotifier(_WeakBaseDied);
     });
     
-    if (not key or not obj)
+    if (!key || !obj)
         return;
 
     // printf("Setting Python object id %zu with "
@@ -279,7 +279,7 @@ void Tf_PyIdentityHelper::Set(void const *key, PyObject *obj) {
 // Return a new reference to the python object associated with ptr.  If
 // there is none, return 0.
 PyObject *Tf_PyIdentityHelper::Get(void const *key) {
-    if (not key) {
+    if (!key) {
         return 0;
     }
 
@@ -297,7 +297,7 @@ PyObject *Tf_PyIdentityHelper::Get(void const *key) {
 
 void
 Tf_PyIdentityHelper::Erase(void const *key) {
-    if (not key)
+    if (!key)
         return;
     TfPyLock lock;
     _GetIdentityMap().erase(key);
@@ -306,7 +306,7 @@ Tf_PyIdentityHelper::Erase(void const *key) {
 
 
 void Tf_PyIdentityHelper::Acquire(void const *key) {
-    if (not key)
+    if (!key)
         return;
 
     TfPyLock lock;
@@ -320,7 +320,7 @@ void Tf_PyIdentityHelper::Acquire(void const *key) {
 }
 
 void Tf_PyIdentityHelper::Release(void const *key) {
-    if (not key)
+    if (!key)
         return;
 
     TfPyLock lock;
@@ -392,12 +392,12 @@ void Tf_PyOwnershipRefBaseUniqueChanged(TfRefBase const *refBase,
                                         bool isNowUnique)
 {
     // Python may already be shut down -- if so, don't do anything.
-    if (not Py_IsInitialized())
+    if (!Py_IsInitialized())
         return;
 
     void const *uniqueId = Tf_PyOwnershipPtrMap::Lookup(refBase);
 
-    if (not uniqueId) {
+    if (!uniqueId) {
         // CODE_COVERAGE_OFF Can only happen if there's a bug.
         TF_CODING_ERROR("Couldn't get uniqueId associated with refBase!");
         TfLogStackTrace("RefBase Unique Changed Error");

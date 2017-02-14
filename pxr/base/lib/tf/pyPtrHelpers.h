@@ -85,7 +85,7 @@ struct TfMakePyPtr {
     static Result Execute(Ptr const& p)
     {
         // null pointers -> python None.
-        if (not p.GetUniqueIdentifier())
+        if (!p.GetUniqueIdentifier())
             return Result(boost::python::detail::none(), false);
 
         // Force instantiation.  We must do this before checking if we
@@ -138,7 +138,7 @@ template <typename PtrType>
 bool _IsPtrExpired(object const &self) {
     try {
         PtrType p = extract<PtrType>(self);
-        return not p;
+        return !p;
     } catch (boost::python::error_already_set const &) {
         PyErr_Clear();
         return true;
@@ -147,7 +147,7 @@ bool _IsPtrExpired(object const &self) {
 
 template <typename PtrType>
 bool _IsPtrValid(object const &self) {
-    return not _IsPtrExpired<PtrType>(self);
+    return !_IsPtrExpired<PtrType>(self);
 }
 
 template <typename PtrType>
@@ -375,7 +375,7 @@ struct WeakPtr : def_visitor<WeakPtr> {
             // CODE_COVERAGE_ON
         }
         
-        if (not is_same<Wrapper, T>::value)
+        if (!is_same<Wrapper, T>::value)
             _PtrToPython<PtrType>();
 
     }

@@ -22,8 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/pxr.h"
-
 #if !BOOST_PP_IS_ITERATING
 
 #  ifndef TF_PYCALL_H
@@ -38,6 +36,8 @@
 #ifndef TF_MAX_ARITY
 #  define TF_MAX_ARITY 7
 #endif // TF_MAX_ARITY
+
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyLock.h"
@@ -99,11 +99,11 @@ Return operator()(BOOST_PP_ENUM_BINARY_PARAMS(N, A, a))
 {
     TfPyLock pyLock;
     // Do *not* call through if there's an active python exception.
-    if (not PyErr_Occurred()) {
+    if (!PyErr_Occurred()) {
         try {
             return boost::python::call<Return>
                 (_callable.ptr() BOOST_PP_ENUM_TRAILING_PARAMS(N, a));
-        } catch (boost::python::error_already_set const &e) {
+        } catch (boost::python::error_already_set const &) {
             // Convert any exception to TF_ERRORs.
             TfPyConvertPythonExceptionToTfErrors();
             PyErr_Clear();

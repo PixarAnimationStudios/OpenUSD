@@ -31,6 +31,7 @@
 
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
+#include "pxr/base/tf/api.h"
 
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
@@ -54,7 +55,7 @@ public:
     typedef boost::function<void ()> UnloadFunctionType;
 
     /// Return the singleton \c TfRegistryManager instance.
-    static TfRegistryManager& GetInstance();
+    TF_API static TfRegistryManager& GetInstance();
 
     /// Request that any initialization for service \c T be performed.
     ///
@@ -97,7 +98,7 @@ public:
     /// optimization, because most registries don't need to be deconstructed
     /// at exit time. This behavior can be changed by calling \c
     /// RunUnloadersAtExit().
-    bool AddFunctionForUnload(const UnloadFunctionType&);
+    TF_API bool AddFunctionForUnload(const UnloadFunctionType&);
 
     /// Run unload functions program exit time.
     ///
@@ -109,14 +110,14 @@ public:
     ///
     /// Note that this call does not cause construction of the singleton \c
     /// TfRegistryManager object if it does not already exist.
-    static void RunUnloadersAtExit();
+    TF_API static void RunUnloadersAtExit();
 
 private:
-    TfRegistryManager();
-    ~TfRegistryManager();
+    TF_API TfRegistryManager();
+    TF_API ~TfRegistryManager();
 
-    void _SubscribeTo(const std::type_info&);
-    void _UnsubscribeFrom(const std::type_info&);
+    TF_API void _SubscribeTo(const std::type_info&);
+    TF_API void _UnsubscribeFrom(const std::type_info&);
 };
 
 // Private class used to indicate the library has finished registering
@@ -124,10 +125,10 @@ private:
 // add functions to the registry.
 class Tf_RegistryInit {
 public:
-    Tf_RegistryInit(const char* name);
-    ~Tf_RegistryInit();
+    TF_API Tf_RegistryInit(const char* name);
+    TF_API ~Tf_RegistryInit();
 
-    static void Add(const char* libName,
+    TF_API static void Add(const char* libName,
                     TfRegistryManager::RegistrationFunctionType func,
                     const char* typeName);
     template <class T, class U>

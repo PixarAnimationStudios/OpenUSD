@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/tf/api.h"
 
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
@@ -50,12 +51,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Forward declare the function that will be provided that does the wrapping.
 static void WrapModule();
 
+TF_API
 void Tf_PyInitWrapModule(void (*wrapModule)(),
                          const char* packageModule,
                          const char* packageName,
                          const char* packageTag,
                          const char* packageTag2);
 
+ARCH_EXPORT
 void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
 
     Tf_PyInitWrapModule(

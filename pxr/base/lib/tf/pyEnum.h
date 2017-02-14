@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/type.h"
@@ -36,6 +37,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -53,7 +55,6 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/tuple.hpp>
 
-#include "pxr/base/tf/hashmap.h"
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -79,10 +80,11 @@ class Tf_PyEnumRegistry {
     
   public:
 
-    static This &GetInstance() {
+    TF_API static This &GetInstance() {
         return TfSingleton<This>::GetInstance();
     }
     
+    TF_API
     void RegisterValue(TfEnum const &e, boost::python::object const &obj);
 
     template <typename T>
@@ -108,11 +110,11 @@ class Tf_PyEnumRegistry {
             // In the case of producing a TfEnum or an integer, any
             // registered enum type is fine.  In all other cases, the
             // enum types must match.
-            if (boost::is_same<T, TfEnum>::value or
-                (boost::is_integral<T>::value and not boost::is_enum<T>::value))
+            if (boost::is_same<T, TfEnum>::value ||
+                (boost::is_integral<T>::value && !boost::is_enum<T>::value))
                 return i != o2e.end() ? obj : 0;
             else
-                return (i != o2e.end() and i->second.IsA<T>()) ? obj : 0;
+                return (i != o2e.end() && i->second.IsA<T>()) ? obj : 0;
         }
         static void construct(PyObject *src, boost::python::converter::
                               rvalue_from_python_stage1_data *data) {
@@ -153,7 +155,10 @@ class Tf_PyEnumRegistry {
 
 };
 
+TF_API_TEMPLATE_CLASS(TfSingleton<Tf_PyEnumRegistry>);
+
 // Private function used for __repr__ of wrapped enum types.
+TF_API
 std::string Tf_PyEnumRepr(boost::python::object const &self);
 
 // Private base class for types which are instantiated and exposed to python
@@ -194,7 +199,7 @@ struct Tf_PyEnumWrapper
         if (lhs == rhs)
             return false;
         // If types don't match, string compare names.
-        if (not lhs.value.IsA(rhs.value.GetType()))
+        if (!lhs.value.IsA(rhs.value.GetType()))
             return TfEnum::GetFullName(lhs.value) <
                 TfEnum::GetFullName(rhs.value);
         // If types do match, numerically compare values.
@@ -274,7 +279,7 @@ Tf_PyEnumRegistry::_EnumToPython<T>::convert(T const &t)
 
     // If there is no registered enum object, create a new one of
     // the appropriate type.
-    if (not Tf_PyEnumRegistry::GetInstance()._enumsToObjects.count(e)) {
+    if (!Tf_PyEnumRegistry::GetInstance()._enumsToObjects.count(e)) {
         std::string name = ArchGetDemangled(e.GetType());
         name = TfStringReplace(name, " ", "_");
         name = TfStringReplace(name, "::", "_");
@@ -306,6 +311,7 @@ struct Tf_TypedPyEnumWrapper : Tf_PyEnumWrapper
 
 // Removes the MFB package prefix from name if it starts with it, and replaces
 // spaces with underscores.
+TF_API
 std::string Tf_PyCleanEnumName(std::string name);
 
 /// \class TfPyWrapEnum
@@ -357,7 +363,7 @@ public:
     {
         using namespace boost::python;
 
-        bool explicitName = not name.empty();
+        bool explicitName = !name.empty();
 
         // First, take either the given name, or the demangled type name.
         std::string enumName = explicitName ? name :
@@ -370,13 +376,13 @@ public:
             baseName = std::string();
 
         // If the name is dotted, take the last element as the enum name.
-        if (not TfStringGetSuffix(enumName).empty())
+        if (!TfStringGetSuffix(enumName).empty())
             enumName = TfStringGetSuffix(enumName);
 
         // If the name was not explicitly given, then clean it up by removing
         // the mfb package name prefix if it exists.
-        if (not explicitName) {
-            if (not baseName.empty())
+        if (!explicitName) {
+            if (!baseName.empty())
                 baseName = Tf_PyCleanEnumName(baseName);
             else
                 enumName = Tf_PyCleanEnumName(enumName);
@@ -397,7 +403,7 @@ public:
         // that represents an enum are able to get to the equivalent 
         // python class with .pythonclass
         const TfType &type = TfType::Find<T>();
-        if (not type.IsUnknown())
+        if (!type.IsUnknown())
             type.DefinePythonClass(enumClass);
     }
     
@@ -407,15 +413,13 @@ public:
     /// If no explicit names have been registered, this will export the TfEnum
     /// registered names and values (if any).
     void _ExportValues(bool cleanNames, _EnumPyClassType &enumClass) {
-        using namespace boost::python;
-
-        list valueList;
+        boost::python::list valueList;
 
         std::vector<std::string> names = TfEnum::GetAllNames<T>();
         TF_FOR_ALL(name, names) {
             bool success = false;
             TfEnum enumValue = TfEnum::GetValueFromName<T>(*name, &success);
-            if (not success) {
+            if (!success) {
                 continue;
             }
 
@@ -424,14 +428,14 @@ public:
 
             // convert value to python.
             Tf_TypedPyEnumWrapper<T> wrappedValue(cleanedName, enumValue);
-            object pyValue(wrappedValue);
+            boost::python::object pyValue(wrappedValue);
 
             // register it as the python object for this value.
             Tf_PyEnumRegistry::GetInstance().RegisterValue(enumValue, pyValue);
 
             // Take all the values and export them into the current scope.
             std::string valueName = wrappedValue.GetName();
-            scope s;
+            boost::python::scope s;
 
             // Skip exporting attr if the scope already has an attribute
             // with that name, but do make sure to place it in .allValues
@@ -449,7 +453,7 @@ public:
         }
 
         // Add a tuple of all the values to the enum class.
-        enumClass.setattr("allValues", tuple(valueList));
+        enumClass.setattr("allValues", boost::python::tuple(valueList));
     }
 
 };

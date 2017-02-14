@@ -30,7 +30,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/arch/inttypes.h"
-
+#include "pxr/base/tf/api.h"
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -129,7 +129,7 @@ private:
 /// @{
 
 /// Stream insertion operator for the string representation of this timestamp
-std::ostream& operator<<(std::ostream& out, const TfTimeStamp& t);
+TF_API std::ostream& operator<<(std::ostream& out, const TfTimeStamp& t);
 
 /// @}
 

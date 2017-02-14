@@ -31,6 +31,8 @@
 #  define TF_MAX_ARITY 7
 #endif // TF_MAX_ARITY
 
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/pragmas.h"
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
@@ -46,7 +48,7 @@
 #include <boost/preprocessor/tuple/to_seq.hpp>
 
 // In boost version 1.51, they seem to have neglected to define this. 
-// Without it, some functions will get confused about marcros with no arguments
+// Without it, some functions will get confused about macros with no arguments
 #ifndef BOOST_PP_TUPLE_TO_SEQ_0
 #define BOOST_PP_TUPLE_TO_SEQ_0()
 #endif
@@ -58,6 +60,12 @@
 ///
 /// \ingroup group_tf_Preprocessor
 /// \hideinitializer
+#if defined(ARCH_OS_WINDOWS)
+    #include <boost/preprocessor/variadic/size.hpp>
+
+    #define TF_NUM_ARGS(...) \
+        BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)
+#else
 #define TF_NUM_ARGS(...)                                        \
     _TF_NUM_ARGS_CHECK(__VA_ARGS__)                             \
     BOOST_PP_IIF(BOOST_PP_EQUAL(1, _TF_NUM_ARGS1(__VA_ARGS__)), \
@@ -96,6 +104,7 @@
 #define _TF_NUM_ARGS_TF(...)                                 \
     (__VA_ARGS__ BOOST_PP_REPEAT(BOOST_PP_INC(TF_MAX_ARITY), \
     _TF_NUM_ARGS_REP, _TF))
+#endif
 
 
 /// If the argument is a tuple, expand to the tuple without its outermost
@@ -117,6 +126,14 @@
 /// Exapnds to 1 if the argument is a tuple, and 0 otherwise.
 /// \ingroup group_tf_Preprocessor
 /// \hideinitializer
+#if defined(ARCH_OS_WINDOWS)
+    #include <boost/vmd/is_tuple.hpp>
+    ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
+
+    #define TF_PP_IS_TUPLE(sequence) \
+        BOOST_VMD_IS_TUPLE(sequence)
+#else
+
 #define TF_PP_IS_TUPLE(arg) \
     BOOST_PP_CAT(_TF_PP_IS_TUPLE, BOOST_PP_EXPAND(_TF_PP_IS_TUPLE arg)) )
 
@@ -127,6 +144,8 @@
 
 #define _TF_PP_IS_TUPLE_TRUE() 1
 #define _TF_PP_IS_TUPLE_FALSE(arg) 0
+
+#endif 
 
 /// Count the number of elements in a preprocessor tuple.
 /// \ingroup group_tf_Preprocessor
