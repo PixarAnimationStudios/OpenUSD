@@ -376,6 +376,14 @@ PcpIsNewDefaultStandinBehaviorEnabled();
 void
 Pcp_RescanForSpecs(PcpPrimIndex* index, bool usd);
 
+// Returns true if \p index should be recomputed due to changes to
+// any computed asset paths that were used to find or open layers
+// when originally composing \p index. This may be due to scene
+// description changes or external changes to asset resolution that
+// may affect the computation of those asset paths.
+bool
+Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PCP_PRIM_INDEX_H

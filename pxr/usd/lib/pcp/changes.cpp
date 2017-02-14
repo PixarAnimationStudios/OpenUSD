@@ -1084,6 +1084,36 @@ PcpChanges::DidChangeLayerOffsets(PcpCache* cache)
     }
 }
 
+void 
+PcpChanges::DidChangeLayerStack(PcpCache* cache, 
+                                const PcpLayerStackPtr& layerStack)
+{
+    _DidChangeLayerStack(
+        layerStack, 
+        /* requiresLayerStackChange = */ true,
+        /* requiresLayerStackOffsetChange = */ true,
+        /* requiresSignificantChange = */ true);
+
+    // Since this layer stack will be recomputed, need to register
+    // significant changes to all prim indexes that use it so that
+    // they pick up the new contents.
+    
+    const PcpDependencyVector deps = cache->FindSiteDependencies(
+        layerStack, SdfPath::AbsoluteRootPath(), 
+        PcpDependencyTypeAnyIncludingVirtual,
+        /* recurseOnSite */ true,
+        /* recurseOnIndex */ true,
+        /* filter */ true);
+
+    for (const PcpDependency& dep : deps) {
+        if (!dep.indexPath.IsAbsoluteRootOrPrimPath()) {
+            // Filter to only prims; see comment above re: properties.
+            continue;
+        }
+        DidChangeSignificantly(cache, dep.indexPath);
+    }
+}
+
 void
 PcpChanges::DidChangeSignificantly(PcpCache* cache, const SdfPath& path)
 {
@@ -1601,7 +1631,7 @@ PcpChanges::_DidChangeSublayer(
     // new prims with new arcs, requiring prim and property indexes to be
     // recomputed. So, register significant changes for every prim path
     // in the cache that uses any path in any of the layer stacks that
-    // included layer.  Only bother doing this for prims, since thex
+    // included layer.  Only bother doing this for prims, since the
     // properties will be implicitly invalidated by significant
     // prim resyncs.
     //
