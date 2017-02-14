@@ -91,33 +91,10 @@ HdChangeTracker::RprimRemoved(SdfPath const& id)
     ++_varyingStateVersion;
 }
 
-/*static*/
-HdChangeTracker::DirtyBits
-HdChangeTracker::_PropagateDirtyBits(DirtyBits bits)
-{
-    // propagate point dirtiness to normal
-    bits |= (bits & DirtyPoints ? DirtyNormals : 0);
-
-    // when refine level changes, topology becomes dirty.
-    // XXX: can we remove DirtyRefineLevel then?
-    if (bits & DirtyRefineLevel) {
-        bits |=  DirtyTopology;
-    }
-
-    // if topology changes, all dependent bits become dirty.
-    if (bits & DirtyTopology) {
-        bits |= (DirtyPoints|
-                 DirtyNormals|
-                 DirtyPrimVar);
-    }
-    return bits;
-}
 
 void 
 HdChangeTracker::MarkRprimDirty(SdfPath const& id, DirtyBits bits)
 {
-    bits = _PropagateDirtyBits(bits);
-
     _IDStateMap::iterator it = _rprimState.find(id);
     if (!TF_VERIFY(it != _rprimState.end(), "%s\n", id.GetText()))
         return;
@@ -618,8 +595,6 @@ HdChangeTracker::MarkAllRprimsDirty(DirtyBits bits)
 {
     HD_TRACE_FUNCTION();
 
-    bits = _PropagateDirtyBits(bits);
-
     for (_IDStateMap::iterator it  = _rprimState.begin();
                                it != _rprimState.end(); ++it) {
         it->second |= bits;
@@ -647,7 +622,7 @@ HdChangeTracker::MarkPrimVarDirty(DirtyBits *dirtyBits, TfToken const &name)
     } else {
         setBits = DirtyPrimVar;
     }
-    *dirtyBits |= _PropagateDirtyBits(setBits);
+    *dirtyBits |= setBits;
 }
 
 HdChangeTracker::DirtyBits

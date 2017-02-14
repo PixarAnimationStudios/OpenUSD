@@ -1078,6 +1078,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
 HdChangeTracker::DirtyBits
 HdStMesh::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
 {
+    dirtyBits = _PropagateRprimDirtyBits(dirtyBits);
+
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (dirtyBits & HdChangeTracker::DirtyPoints) {
         dirtyBits |= _customDirtyBitsInUse & DirtySmoothNormals;

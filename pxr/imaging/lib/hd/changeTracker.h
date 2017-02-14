@@ -435,8 +435,6 @@ private:
     static void _LogCacheAccess(TfToken const& cacheName,
                                 SdfPath const& id, bool hit);
 
-    static DirtyBits _PropagateDirtyBits(DirtyBits bits);
-
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
     typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _InstancerRprimMap;

@@ -181,6 +181,8 @@ HdStBasisCurves::ConfigureRepr(TfToken const &reprName,
 HdChangeTracker::DirtyBits
 HdStBasisCurves::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
 {
+    dirtyBits = _PropagateRprimDirtyBits(dirtyBits);
+
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (dirtyBits & HdChangeTracker::DirtyTopology) {
         dirtyBits |= _customDirtyBitsInUse &

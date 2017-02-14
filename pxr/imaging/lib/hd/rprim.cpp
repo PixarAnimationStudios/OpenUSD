@@ -121,6 +121,28 @@ HdRprim::_GetReprName(HdSceneDelegate* delegate,
     return defaultReprName;
 }
 
+// Static
+HdChangeTracker::DirtyBits
+HdRprim::_PropagateRprimDirtyBits(HdChangeTracker::DirtyBits bits)
+{
+    // propagate point dirtiness to normal
+    bits |= (bits & HdChangeTracker::DirtyPoints) ?
+                                              HdChangeTracker::DirtyNormals : 0;
+
+    // when refine level changes, topology becomes dirty.
+    // XXX: can we remove DirtyRefineLevel then?
+    if (bits & HdChangeTracker::DirtyRefineLevel) {
+        bits |=  HdChangeTracker::DirtyTopology;
+    }
+
+    // if topology changes, all dependent bits become dirty.
+    if (bits & HdChangeTracker::DirtyTopology) {
+        bits |= (HdChangeTracker::DirtyPoints  |
+                 HdChangeTracker::DirtyNormals |
+                 HdChangeTracker::DirtyPrimVar);
+    }
+    return bits;
+}
 
 void
 HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
