@@ -100,6 +100,7 @@ wrapNode()
         .def("IsDueToAncestor", &This::IsDueToAncestor)
         .def("GetDepthBelowIntroduction", &This::GetDepthBelowIntroduction)
         .def("GetIntroPath", &This::GetIntroPath)
+        .def("GetPathAtIntroduction", &This::GetPathAtIntroduction)
 
         .def("CanContributeSpecs", &This::CanContributeSpecs)
 
