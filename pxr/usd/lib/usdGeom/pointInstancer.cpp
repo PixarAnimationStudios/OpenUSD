@@ -313,6 +313,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/gf/transform.h"
+#include "pxr/usd/usdGeom/bboxCache.h"
+#include "pxr/usd/usdGeom/xformCache.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -553,19 +556,243 @@ UsdGeomPointInstancer::ComputeMaskAtTime(UsdTimeCode time,
 bool
 UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     VtArray<GfMatrix4d>* xforms,
-    UsdTimeCode time,
-    UsdTimeCode baseTime,
-    ProtoXformInclusion doProtoXforms,
-    MaskApplication applyMask) const
+    const UsdTimeCode time,
+    const UsdTimeCode baseTime,
+    const ProtoXformInclusion doProtoXforms,
+    const MaskApplication applyMask) const
 {
-    /// XXX STUB!
-    (void)xforms;
-    (void)time;
+    // XXX: Need to add handling of velocities/angularVelocities and baseTime.
     (void)baseTime;
-    (void)doProtoXforms;
-    (void)applyMask;
 
-    printf("Computing Instance transforms\n");
+    if (!xforms) {
+        TF_WARN("%s -- null container passed to ComputeInstanceTransformsAtTime()",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    VtIntArray protoIndices;
+    if (!GetProtoIndicesAttr().Get(&protoIndices, time)) {
+        TF_WARN("%s -- no prototype indices",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    if (protoIndices.empty()) {
+        xforms->clear();
+        return true;
+    }
+
+    VtVec3fArray positions;
+    if (!GetPositionsAttr().Get(&positions, time)) {
+        TF_WARN("%s -- no positions",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    if (positions.size() != protoIndices.size()) {
+        TF_WARN("%s -- positions.size() [%zu] != protoIndices.size() [%zu]",
+                GetPrim().GetPath().GetText(),
+                positions.size(),
+                protoIndices.size());
+        return false;
+    }
+
+    VtVec3fArray scales;
+    GetScalesAttr().Get(&scales, time);
+    if (!scales.empty() && scales.size() != protoIndices.size()) {
+        TF_WARN("%s -- scales.size() [%zu] != protoIndices.size() [%zu]",
+                GetPrim().GetPath().GetText(),
+                scales.size(),
+                protoIndices.size());
+        return false;
+    }
+
+    VtQuathArray orientations;
+    GetOrientationsAttr().Get(&orientations, time);
+    if (!orientations.empty() && orientations.size() != protoIndices.size()) {
+        TF_WARN("%s -- orientations.size() [%zu] != protoIndices.size() [%zu]",
+                GetPrim().GetPath().GetText(),
+                orientations.size(),
+                protoIndices.size());
+        return false;
+    }
+
+    // If we're going to include the prototype transforms, verify that we have
+    // prototypes and that all of the protoIndices are in bounds.
+    SdfPathVector protoPaths;
+    if (doProtoXforms == IncludeProtoXform) {
+        const UsdRelationship prototypes = GetPrototypesRel();
+        if (!prototypes.GetTargets(&protoPaths) || protoPaths.empty()) {
+            TF_WARN("%s -- no prototypes",
+                    GetPrim().GetPath().GetText());
+            return false;
+        }
+
+        TF_FOR_ALL(iter, protoIndices) {
+            const int protoIndex = *iter;
+            if (protoIndex < 0 || static_cast<size_t>(protoIndex) >= protoPaths.size()) {
+                TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",
+                        GetPrim().GetPath().GetText(),
+                        protoIndex,
+                        protoPaths.size());
+                return false;
+            }
+        }
+    }
+
+    // Compute the mask only if applyMask says we should, otherwise we leave
+    // mask empty so that its application below is a no-op.
+    std::vector<bool> mask;
+    if (applyMask == ApplyMask) {
+        mask = ComputeMaskAtTime(time);
+        if (!mask.empty() && mask.size() != protoIndices.size()) {
+            TF_WARN("%s -- mask.size() [%zu] != protoIndices.size() [%zu]",
+                    GetPrim().GetPath().GetText(),
+                    mask.size(),
+                    protoIndices.size());
+            return false;
+        }
+    }
+
+    UsdStageWeakPtr stage = GetPrim().GetStage();
+    UsdGeomXformCache xformCache(time);
+
+    xforms->assign(protoIndices.size(), GfMatrix4d(1.0));
+    for (size_t instanceId = 0; instanceId < protoIndices.size(); ++instanceId) {
+        if (!mask.empty() && !mask[instanceId]) {
+            continue;
+        }
+
+        GfTransform instanceTransform;
+
+        if (!scales.empty()) {
+            instanceTransform.SetScale(scales[instanceId]);
+        }
+
+        if (!orientations.empty()) {
+            instanceTransform.SetRotation(GfRotation(orientations[instanceId]));
+        }
+
+        instanceTransform.SetTranslation(positions[instanceId]);
+
+        GfMatrix4d protoXform(1.0);
+        if (doProtoXforms == IncludeProtoXform) {
+            const int protoIndex = protoIndices[instanceId];
+            const SdfPath& protoPath = protoPaths[protoIndex];
+            const UsdPrim& protoPrim = stage->GetPrimAtPath(protoPath);
+            if (protoPrim) {
+                // Get the prototype's local transformation.
+                bool resetsXformStack;
+                protoXform = xformCache.GetLocalTransformation(protoPrim,
+                                                               &resetsXformStack);
+            }
+        }
+
+        (*xforms)[instanceId] = protoXform * instanceTransform.GetMatrix();
+    }
+
+    return ApplyMaskToArray(mask, xforms);
+}
+
+bool
+UsdGeomPointInstancer::ComputeExtentAtTime(
+    VtVec3fArray* extent,
+    const UsdTimeCode time,
+    const UsdTimeCode baseTime) const
+{
+    if (!extent) {
+        TF_WARN("%s -- null container passed to ComputeExtentAtTime()",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    VtIntArray protoIndices;
+    if (!GetProtoIndicesAttr().Get(&protoIndices, time)) {
+        TF_WARN("%s -- no prototype indices",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    const std::vector<bool> mask = ComputeMaskAtTime(time);
+    if (!mask.empty() && mask.size() != protoIndices.size()) {
+        TF_WARN("%s -- mask.size() [%zu] != protoIndices.size() [%zu]",
+                GetPrim().GetPath().GetText(),
+                mask.size(),
+                protoIndices.size());
+        return false;
+    }
+
+    const UsdRelationship prototypes = GetPrototypesRel();
+    SdfPathVector protoPaths;
+    if (!prototypes.GetTargets(&protoPaths) || protoPaths.empty()) {
+        TF_WARN("%s -- no prototypes",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    // verify that all the protoIndices are in bounds.
+    TF_FOR_ALL(iter, protoIndices) {
+        const int protoIndex = *iter;
+        if (protoIndex < 0 || protoIndex >= protoPaths.size()) {
+            TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",
+                    GetPrim().GetPath().GetText(),
+                    protoIndex,
+                    protoPaths.size());
+            return false;
+        }
+    }
+
+    // Note that we do NOT apply any masking when computing the instance
+    // transforms. This is so that for a particular instance we can determine
+    // both its transform and its prototype. Otherwise, the instanceTransforms
+    // array would have masked instances culled out and we would lose the
+    // mapping to the prototypes.
+    // Masked instances will be culled before being applied to the extent below.
+    VtMatrix4dArray instanceTransforms;
+    if (!ComputeInstanceTransformsAtTime(&instanceTransforms,
+                                         time,
+                                         baseTime,
+                                         IncludeProtoXform,
+                                         IgnoreMask)) {
+        TF_WARN("%s -- could not compute instance transforms",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    UsdStageWeakPtr stage = GetPrim().GetStage();
+    const TfTokenVector purposes {
+        UsdGeomTokens->default_,
+        UsdGeomTokens->proxy,
+        UsdGeomTokens->render
+    };
+    UsdGeomBBoxCache bboxCache(time, purposes);
+    bboxCache.SetTime(time);
+
+    GfRange3d extentRange;
+
+    for (size_t instanceId = 0; instanceId < protoIndices.size(); ++instanceId) {
+        if (!mask.empty() && !mask[instanceId]) {
+            continue;
+        }
+
+        const int protoIndex = protoIndices[instanceId];
+        const SdfPath& protoPath = protoPaths[protoIndex];
+        const UsdPrim& protoPrim = stage->GetPrimAtPath(protoPath);
+
+        // Get the prototype bounding box.
+        GfBBox3d thisBounds = bboxCache.ComputeUntransformedBound(protoPrim);
+
+        // Apply the instance transform.
+        thisBounds.Transform(instanceTransforms[instanceId]);
+        extentRange.UnionWith(thisBounds.ComputeAlignedRange());
+    }
+
+    const GfVec3d extentMin = extentRange.GetMin();
+    const GfVec3d extentMax = extentRange.GetMax();
+
+    *extent = VtVec3fArray(2);
+    (*extent)[0] = GfVec3f(extentMin[0], extentMin[1], extentMin[2]);
+    (*extent)[1] = GfVec3f(extentMax[0], extentMax[1], extentMax[2]);
 
     return true;
 }

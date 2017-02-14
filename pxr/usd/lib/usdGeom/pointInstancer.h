@@ -740,10 +740,15 @@ public:
     /// the positions, scales, orientations, velocities and angularVelocities
     /// at \p time, as described in \ref UsdGeomPointInstancer_transform .
     ///
-    /// This will return \c false and leave \p xforms untouched if \p xforms
-    /// is NULL, if there is no authored \em protoIndices attribute, or
-    /// if the size of any of the per-instance attributes does not match the
-    /// size of \em protoIndices.
+    /// This will return \c false and leave \p xforms untouched if:
+    /// - \p xforms is NULL
+    /// - there is no authored \em protoIndices attribute
+    /// - the size of any of the per-instance attributes does not match the
+    ///   size of \em protoIndices
+    /// - \p doProtoXforms is \c IncludeProtoXform but an index value in
+    ///   \em protoIndices is outside the range [0, prototypes.size())
+    /// - \p applyMask is \c ApplyMask and a mask is set but the size of the
+    ///   mask does not match the size of \em protoIndices.
     ///
     /// If there is no error, we will return \c true and \p xforms will contain
     /// the computed transformations.
@@ -783,11 +788,50 @@ public:
     bool
     ComputeInstanceTransformsAtTime(
                         VtArray<GfMatrix4d>* xforms,
-                        UsdTimeCode time,
-                        UsdTimeCode baseTime,
-                        ProtoXformInclusion doProtoXforms = IncludeProtoXform,
-                        MaskApplication applyMask = ApplyMask) const;
+                        const UsdTimeCode time,
+                        const UsdTimeCode baseTime,
+                        const ProtoXformInclusion doProtoXforms = IncludeProtoXform,
+                        const MaskApplication applyMask = ApplyMask) const;
 
+    /// Compute the extent of the point instancer based on the per-instance,
+    /// "PointInstancer relative" transforms at \p time, as described in
+    /// \ref UsdGeomPointInstancer_transform .
+    ///
+    /// If there is no error, we return \c true and \p extent will be the
+    /// tightest bounds we can compute efficiently.  If an error occurs,
+    /// \c false will be returned and \p extent will be left untouched.
+    ///
+    /// For now, this uses a UsdGeomBBoxCache with the "default", "proxy", and
+    /// "render" purposes.
+    ///
+    /// \param extent - the out parameter for the extent.  On success, it will
+    ///                 contain two elements representing the min and max.
+    /// \param time - UsdTimeCode at which we want to evaluate the extent
+    /// \param baseTime - required for correct interpolation between samples
+    ///                   when \em velocities or \em angularVelocities are
+    ///                   present. If there are samples for \em positions and
+    ///                   \em velocities at t1 and t2, normal value resolution
+    ///                   would attempt to interpolate between the two samples,
+    ///                   and if they could not be interpolated because they
+    ///                   differ in size (common in cases where velocity is
+    ///                   authored), will choose the sample at t1.  When
+    ///                   sampling for the purposes of motion-blur, for example,
+    ///                   it is common, when rendering the frame at t2, to 
+    ///                   sample at [ t2-shutter/2, t2+shutter/2 ] for a
+    ///                   shutter interval of \em shutter.  The first sample
+    ///                   falls between t1 and t2, but we must sample at t2
+    ///                   and apply velocity-based interpolation based on those
+    ///                   samples to get a correct result.  In such scenarios,
+    ///                   one should provide a \p baseTime of t2 when querying
+    ///                   \em both samples. If your application does not care
+    ///                   about off-sample interpolation, it can supply the
+    ///                   same value for \p baseTime that it does for \p time.
+    ///                   When \p baseTime is less than or equal to \p time,
+    ///                   we will choose the lower bracketing timeSample.
+    bool ComputeExtentAtTime(
+                        VtVec3fArray* extent,
+                        const UsdTimeCode time,
+                        const UsdTimeCode baseTime) const;
 };
 
 template <class T>
@@ -796,35 +840,35 @@ UsdGeomPointInstancer::ApplyMaskToArray(std::vector<bool> const &mask,
                                         VtArray<T> *dataArray,
                                         const int elementSize)
 {
-    if (!dataArray){
+    if (!dataArray) {
         TF_CODING_ERROR("NULL dataArray.");
         return false;
     }
-    size_t size = mask.size();
-    if (size == 0 || dataArray->size() == elementSize){
+    size_t maskSize = mask.size();
+    if (maskSize == 0 || dataArray->size() == elementSize){
         return true;
     }
-    else if ((size * elementSize) != dataArray->size()){
-        TF_WARNING("Input mask's size (%d) is not compatible with the "
-                   "input dataArray (%d) and elementSize (%d).",
-                   size, dataArray->size(), elementSize);
+    else if ((maskSize * elementSize) != dataArray->size()){
+        TF_WARN("Input mask's size (%zu) is not compatible with the "
+                "input dataArray (%zu) and elementSize (%d).",
+                maskSize, dataArray->size(), elementSize);
         return false;
     }
-    
-    T *beginData = dataArray->GetData();
-    T *currData = beginData;
+
+    T* beginData = dataArray->data();
+    T* currData = beginData;
     size_t numPreserved = 0;
-    for (size_t i=0; i<size; ++i){
+    for (size_t i = 0; i < maskSize; ++i) {
         // XXX Could add a fast-path for elementSize == 1 ?
-        if (mask[i]){
-            for (size_t j=0; j<elementSize; ++j){
-                *currData = beginData[i] + j;
+        if (mask[i]) {
+            for (size_t j = 0; j < elementSize; ++j) {
+                *currData = beginData[i + j];
                 ++currData;
             }
             numPreserved += elementSize;
         }
     }
-    if (numPreserved < dataArray->size()){
+    if (numPreserved < dataArray->size()) {
         dataArray->resize(numPreserved);
     }
     return true;
