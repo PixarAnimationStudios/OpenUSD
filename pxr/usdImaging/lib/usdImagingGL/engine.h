@@ -77,6 +77,7 @@ public:
     };
 
     enum CullStyle {
+        CULL_STYLE_NO_OPINION,
         CULL_STYLE_NOTHING,
         CULL_STYLE_BACK,
         CULL_STYLE_FRONT,

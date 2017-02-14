@@ -342,6 +342,7 @@ UsdImagingGL_DefaultTaskDelegate::_UpdateRenderParams(
 {
     static const HdCullStyle USD_2_HD_CULL_STYLE[] =
     {
+        HdCullStyleDontCare,              // Cull No Opinion (unused)
         HdCullStyleNothing,               // CULL_STYLE_NOTHING,
         HdCullStyleBack,                  // CULL_STYLE_BACK,
         HdCullStyleFront,                 // CULL_STYLE_FRONT,

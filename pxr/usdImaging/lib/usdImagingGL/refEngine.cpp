@@ -307,6 +307,7 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
     } else {
         static const GLenum USD_2_GL_CULL_FACE[] =
         {
+                0,         // No Opinion - Unused
                 0,         // CULL_STYLE_NOTHING - Unused
                 GL_BACK,   // CULL_STYLE_BACK
                 GL_FRONT,  // CULL_STYLE_FRONT
