@@ -76,6 +76,9 @@ MaterialReferenceAttrFncCache::createValue(
         materialPath = looksGroupLocation + materialPath;
     }
 
+    int flatten = FnKat::IntAttribute(
+        args.getChildByName("flatten")).getValue(0, false);
+
     FnAttribute::GroupAttribute sessionAttr;
     std::string sessionLocation = "";
     std::string ignoreLayerRegex = "";
@@ -103,7 +106,7 @@ MaterialReferenceAttrFncCache::createValue(
     PxrUsdKatanaAttrMap attrs;
     PxrUsdKatanaReadMaterial(
         materialSchema,
-        false,
+        bool(flatten),
         data,
         attrs,
         looksGroupLocation);
