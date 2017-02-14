@@ -81,8 +81,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #endif
 
 #ifndef ARCH_PATH_MAX
-    #ifdef _POSIX_VERSION
-        #define ARCH_PATH_MAX _POSIX_PATH_MAX
+    #ifdef PATH_MAX
+        #define ARCH_PATH_MAX PATH_MAX
     #else
         #ifdef MAXPATHLEN
             #define ARCH_PATH_MAX MAXPATHLEN
