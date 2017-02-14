@@ -217,7 +217,10 @@ PxrUsdMayaTranslatorModelAssembly::Create(
 
 static
 bool
-_HasAssetInfo(const UsdPrim& prim)
+_GetAssetInfo(
+    const UsdPrim& prim,
+    std::string* assetIdentifier,
+    SdfPath* assetPrimPath)
 {
     UsdModelAPI usdModel(prim);
     SdfAssetPath identifier;
@@ -225,21 +228,33 @@ _HasAssetInfo(const UsdPrim& prim)
         return false;
     }
 
+    *assetIdentifier = identifier.GetAssetPath();
+    // We are assuming the target asset will have defaultPrim.
+    *assetPrimPath = SdfPath();
     return true;
 }
 
 static
 bool
-_HasReferenceInfo(const UsdPrim& prim)
+_GetReferenceInfo(
+    const UsdPrim& prim,
+    std::string* assetIdentifier,
+    SdfPath* assetPrimPath)
 {
     SdfReferenceListOp refs;
     prim.GetMetadata(SdfFieldKeys->References, &refs);
 
     // this logic is not robust.  awaiting bug 99278.
     if (!refs.GetAddedItems().empty()) {
+        const SdfReference& ref = refs.GetAddedItems()[0];
+        *assetIdentifier = ref.GetAssetPath();
+        *assetPrimPath = ref.GetPrimPath();
         return true;
     }
     if (!refs.GetExplicitItems().empty()) {
+        const SdfReference& ref = refs.GetExplicitItems()[0];
+        *assetIdentifier = ref.GetAssetPath();
+        *assetPrimPath = ref.GetPrimPath();
         return true;
     }
 
@@ -250,7 +265,9 @@ _HasReferenceInfo(const UsdPrim& prim)
 bool
 PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
     const UsdPrim& usdImportRootPrim,
-    const UsdPrim& prim)
+    const UsdPrim& prim,
+    std::string* assetIdentifier,
+    SdfPath* assetPrimPath)
 {
     if (!prim) {
         return false;
@@ -266,12 +283,12 @@ PxrUsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
 
     // First we check if we're bringing in an asset (and not a reference to an
     // asset).
-    if (_HasAssetInfo(prim)) {
+    if (_GetAssetInfo(prim, assetIdentifier, assetPrimPath)) {
         return true;
     }
 
     // If we can't find any assetInfo, fall back to checking the reference.
-    if (_HasReferenceInfo(prim)) {
+    if (_GetReferenceInfo(prim, assetIdentifier, assetPrimPath)) {
         return true;
     }
 
