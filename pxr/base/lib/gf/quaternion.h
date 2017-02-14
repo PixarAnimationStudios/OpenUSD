@@ -28,6 +28,7 @@
 /// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/api.h"
 #include "pxr/base/gf/vec3d.h"
 
 #include <boost/functional/hash.hpp>
@@ -97,19 +98,23 @@ class GfQuaternion
     }
 
     /// Returns geometric length of this quaternion.
+    GF_API
     double              GetLength() const;
 
     /// Returns a normalized (unit-length) version of this quaternion.
     /// direction as this. If the length of this quaternion is smaller than \p
     /// eps, this returns the identity quaternion.
+    GF_API
     GfQuaternion        GetNormalized(double eps = GF_MIN_VECTOR_LENGTH) const;
 
     /// Normalizes this quaternion in place to unit length, returning the
     /// length before normalization. If the length of this quaternion is
     /// smaller than \p eps, this sets the quaternion to identity.
+    GF_API
     double              Normalize(double eps = GF_MIN_VECTOR_LENGTH);
 
     /// Returns the inverse of this quaternion.
+    GF_API
     GfQuaternion        GetInverse() const;
 
     /// Hash.
@@ -134,9 +139,11 @@ class GfQuaternion
     }
 
     /// Post-multiplies quaternion \p q into this quaternion.
+    GF_API
     GfQuaternion &      operator *=(const GfQuaternion &q);
 
     /// Scales this quaternion by \p s.
+    GF_API
     GfQuaternion &      operator *=(double s);
 
     /// Scales this quaternion by 1 / \p s.
@@ -202,14 +209,15 @@ class GfQuaternion
     /// If the interpolant \p alpha
     /// is zero, then the result is \p q0, while \p alpha of one yields
     /// \p q1.
+    GF_API
     friend GfQuaternion GfSlerp(double alpha,
                                 const GfQuaternion& q0,
                                 const GfQuaternion& q1);
 
     // TODO Remove this legacy alias/overload.
-    friend GfQuaternion GfSlerp(const GfQuaternion& q0,
-                                const GfQuaternion& q1,
-                                double alpha);
+    friend GF_API GfQuaternion GfSlerp(const GfQuaternion& q0,
+                                       const GfQuaternion& q1,
+                                       double alpha);
 
   private:
     /// Real part
@@ -224,12 +232,12 @@ class GfQuaternion
 };
 
 // Friend functions must be declared.
-GfQuaternion GfSlerp(double alpha, const GfQuaternion& q0, const GfQuaternion& q1);
-GfQuaternion GfSlerp(const GfQuaternion& q0, const GfQuaternion& q1, double alpha);
+GF_API GfQuaternion GfSlerp(double alpha, const GfQuaternion& q0, const GfQuaternion& q1);
+GF_API GfQuaternion GfSlerp(const GfQuaternion& q0, const GfQuaternion& q1, double alpha);
 
 /// Output a GfQuaternion using the format (r + (x, y, z)).
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream& out, const GfQuaternion& q);
+GF_API std::ostream& operator<<(std::ostream& out, const GfQuaternion& q);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

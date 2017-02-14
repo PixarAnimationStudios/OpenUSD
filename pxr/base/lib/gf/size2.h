@@ -30,6 +30,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/api.h"
 
 #include <iosfwd>
 
@@ -180,6 +181,7 @@ public:
     }
 
     /// Output operator.
+    GF_API
     friend std::ostream &operator<<(std::ostream &o, GfSize2 const &v);
 
     /// Conversion to GfVec2i.
@@ -191,7 +193,7 @@ public:
 };
 
 // Friend functions must be declared
-std::ostream &operator<<(std::ostream &o, GfSize2 const &v);
+GF_API std::ostream &operator<<(std::ostream &o, GfSize2 const &v);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/math.h"
+#include "pxr/base/gf/api.h" 
 
 #include <boost/functional/hash.hpp>
 
@@ -419,7 +420,7 @@ private:
 
 /// Output a GfInterval using the format (x, y).
 /// \ingroup group_gf_DebuggingOutput
-std::ostream &operator<<(std::ostream&, const GfInterval&);
+GF_API std::ostream &operator<<(std::ostream&, const GfInterval&);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

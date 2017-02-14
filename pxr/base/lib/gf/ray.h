@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/api.h"
 
 #include <float.h>
 #include <limits>
@@ -70,10 +71,12 @@ class GfRay {
     }
 
     /// Sets the ray by specifying a starting point and a direction.
+    GF_API
     void        SetPointAndDirection(const GfVec3d &startPoint,
                                      const GfVec3d &direction);
 
     /// Sets the ray by specifying a starting point and an ending point.
+    GF_API
     void        SetEnds(const GfVec3d &startPoint, const GfVec3d &endPoint);
 
     /// Returns the starting point of the segment.
@@ -94,11 +97,13 @@ class GfRay {
     }
 
     /// Transforms the ray by the given matrix.
+    GF_API
     GfRay &     Transform(const GfMatrix4d &matrix);
 
     /// Returns the point on the ray that is closest to \p point. If \p
     /// rayDistance is not \c NULL, it will be set to the parametric distance
     /// along the ray of the closest point.
+    GF_API
     GfVec3d             FindClosestPoint(const GfVec3d &point,
                                          double *rayDistance = NULL) const;
 
@@ -142,6 +147,7 @@ class GfRay {
     ///                          barycentricCoords[1] * p1 +
     ///                          barycentricCoords[2] * p2);
     /// \endcode
+    GF_API
     bool    Intersect(const GfVec3d &p0,
                       const GfVec3d &p1,
                       const GfVec3d &p2,
@@ -158,6 +164,7 @@ class GfRay {
     /// \p frontFacing, if they are not \c NULL. The front-facing flag is \c
     /// true if the intersection is on the side of the plane in which its
     /// normal points.
+    GF_API
     bool	Intersect(const GfPlane &plane, double *distance = NULL,
 			  bool *frontFacing = NULL) const;
 
@@ -165,6 +172,7 @@ class GfRay {
     /// ray intersects it at all within bounds. If there is an intersection,
     /// this also returns the parametric distances to the two intersection
     /// points in \p enterDistance and \p exitDistance.
+    GF_API
     bool        Intersect(const GfRange3d &box,
                           double *enterDistance = NULL,
                           double *exitDistance = NULL) const;
@@ -173,6 +181,7 @@ class GfRay {
     /// intersects it at all within bounds.  If there is an intersection,
     /// returns the parametric distance to the two intersection points in \p
     /// enterDistance and \p exitDistance.
+    GF_API
     bool        Intersect(const GfVec3d &center, double radius,
                           double *enterDistance = NULL,
                           double *exitDistance = NULL ) const;
@@ -185,6 +194,7 @@ class GfRay {
     /// intersection points in \p enterDistance and \p exitDistance.
     ///
     /// Note this method does not validate whether the radius is valid.
+    GF_API
     bool Intersect(const GfVec3d &origin,
                    const GfVec3d &axis,
                    const double  radius,
@@ -200,6 +210,7 @@ class GfRay {
     ///
     /// Note this method does not validate whether the radius are height are
     /// valid.
+    GF_API
     bool Intersect(const GfVec3d &origin,
                    const GfVec3d &axis,
                    const double  radius,
@@ -209,9 +220,11 @@ class GfRay {
     ///@}
 
   private:
+    GF_API
     friend bool GfFindClosestPoints( const GfRay &, const GfLine &,
                                      GfVec3d *, GfVec3d *,
                                      double *, double * );
+    GF_API
     friend bool GfFindClosestPoints( const GfRay &, const GfLineSeg &,
                                      GfVec3d *, GfVec3d *,
                                      double *, double * );
@@ -238,6 +251,7 @@ class GfRay {
 /// This returns \c false if the lines were close enough to parallel that no
 /// points could be computed; in this case, the other return values are
 /// undefined.
+GF_API
 bool GfFindClosestPoints( const GfRay &ray, const GfLine &line,
                           GfVec3d *rayPoint = nullptr,
                           GfVec3d *linePoint = nullptr,
@@ -251,6 +265,7 @@ bool GfFindClosestPoints( const GfRay &ray, const GfLine &line,
 /// This returns \c false if the lines were close enough to parallel that no
 /// points could be computed; in this case, the other return values are
 /// undefined.
+GF_API
 bool GfFindClosestPoints( const GfRay &ray, const GfLineSeg &seg,
                           GfVec3d *rayPoint = nullptr,
                           GfVec3d *segPoint = nullptr,
@@ -259,7 +274,7 @@ bool GfFindClosestPoints( const GfRay &ray, const GfLineSeg &seg,
 
 /// Output a GfRay using the format [(x y z) >> (x y z)].
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream&, const GfRay&);
+GF_API std::ostream& operator<<(std::ostream&, const GfRay&);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,22 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GF_PYBUFFER_UTILS_H
-#define GF_PYBUFFER_UTILS_H
+#ifndef GF_API_H
+#define GF_API_H
 
-#include "pxr/pxr.h"
-#include "pxr/base/gf/api.h"
+#include "pxr/base/arch/export.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#if defined(GF_STATIC)
+#   define GF_API
+#   define GF_API_TEMPLATE_CLASS
+#   define GF_API_TEMPLATE_STRUCT
+#   define GF_LOCAL
+#else
+#   if defined(GF_EXPORTS)
+#       define GF_API ARCH_EXPORT
+#       define GF_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define GF_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define GF_API ARCH_IMPORT
+#       define GF_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define GF_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define GF_LOCAL ARCH_HIDDEN
+#endif
 
-////////////////////////////////////////////////////////////////////////
-// Format strings matching Python buffer proto / struct module scheme.
-
-// This function template is explicitly instantiated for T =
-//    bool, [unsigned] (char, short, int, long), half, float, and double.
-template <class T>
-char *Gf_GetPyBufferFmtFor();
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // GF_PYBUFFER_UTILS_H
+#endif

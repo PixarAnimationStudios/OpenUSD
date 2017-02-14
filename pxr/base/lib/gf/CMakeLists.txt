@@ -66,6 +66,7 @@ pxr_shared_library(gf
         vec4i
 
     PUBLIC_HEADERS
+        api.h
         declare.h
         limits.h
         traits.h

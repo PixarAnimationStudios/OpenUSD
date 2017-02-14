@@ -33,6 +33,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/gf/api.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/math.h"
@@ -160,10 +161,13 @@ public:
 
     // TODO Add inequality for other vec types...
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec2d const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec2f const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec2i const &other) const;
     
     /// Create a vec with negated elements.
@@ -278,7 +282,7 @@ private:
 
 /// Output a GfVec2h.
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfVec2h const &);
+GF_API std::ostream& operator<<(std::ostream &, GfVec2h const &);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

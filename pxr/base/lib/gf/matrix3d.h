@@ -32,6 +32,7 @@
 /// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/api.h"
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec3d.h"
@@ -129,6 +130,7 @@ public:
     /// If it is too small, uninitialized elements will be filled in with
     /// the corresponding elements from an identity matrix.
     ///
+    GF_API
     explicit GfMatrix3d(const std::vector< std::vector<double> >& v);
 
     /// Constructor.  Initialize the matrix from a vector of vectors of
@@ -137,12 +139,15 @@ public:
     /// If it is too small, uninitialized elements will be filled in with
     /// the corresponding elements from an identity matrix.
     ///
+    GF_API
     explicit GfMatrix3d(const std::vector< std::vector<float> >& v);
 
     /// Constructor. Initialize matrix from rotation.
+    GF_API
     GfMatrix3d(const GfRotation& rot);
 
     /// This explicit constructor converts a "float" matrix to a "double" matrix.
+    GF_API
     explicit GfMatrix3d(const class GfMatrix3f& m);
 
     /// Sets a row of the matrix from a Vec3.
@@ -207,13 +212,16 @@ public:
     }
 
     /// Sets the matrix to \e s times the identity matrix.
+    GF_API
     GfMatrix3d& SetDiagonal(double s);
 
     /// Sets the matrix to have diagonal (<c>v[0], v[1], v[2]</c>).
+    GF_API
     GfMatrix3d& SetDiagonal(const GfVec3d&);
 
     /// Fills a 3x3 array of \c double values with the values in
     /// the matrix, specified in row-major order.
+    GF_API
     double* Get(double m[3][3]);
 
     /// Returns vector components as an array of \c double values.
@@ -248,10 +256,12 @@ public:
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix3d& m) const;
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix3f& m) const;
 
     /// Tests for element-wise matrix inequality. All elements must match
@@ -267,6 +277,7 @@ public:
     }
 
     /// Returns the transpose of the matrix.
+    GF_API
     GfMatrix3d GetTranspose() const;
 
     /// Returns the inverse of the matrix, or FLT_MAX * SetIdentity() if the
@@ -274,9 +285,11 @@ public:
     /// as defined by the system.) The matrix is considered singular if the
     /// determinant is less than or equal to the optional parameter \e eps. If
     /// \e det is non-null, <c>*det</c> is set to the determinant.
+    GF_API
     GfMatrix3d GetInverse(double* det = NULL, double eps = 0) const;
 
     /// Returns the determinant of the matrix.
+    GF_API
     double GetDeterminant() const;
 
     /// Makes the matrix orthonormal in place. This is an iterative method that
@@ -287,14 +300,17 @@ public:
     /// translation part of the matrix unchanged.  If \a issueWarning is true,
     /// this method will issue a warning if the iteration does not converge,
     /// otherwise it will be silent.
+    GF_API
     bool Orthonormalize(bool issueWarning=true);
 
     /// Returns an orthonormalized copy of the matrix.
+    GF_API
     GfMatrix3d GetOrthonormalized(bool issueWarning=true) const;
 
     /// Returns the sign of the determinant of the matrix, i.e. 1 for a
     /// right-handed matrix, -1 for a left-handed matrix, and 0 for a
     /// singular matrix.
+    GF_API
     double GetHandedness() const;
 
     /// Returns true if the vectors in the matrix form a right-handed
@@ -310,9 +326,11 @@ public:
     }
 
     /// Post-multiplies matrix \e m into this matrix.
+    GF_API
     GfMatrix3d& operator *=(const GfMatrix3d& m);
 
     /// Multiplies the matrix by a double.
+    GF_API
     GfMatrix3d& operator *=(double);
 
     /// Returns the product of a matrix and a double.
@@ -330,12 +348,15 @@ public:
     }
 
     /// Adds matrix \e m to this matrix.
+    GF_API
     GfMatrix3d& operator +=(const GfMatrix3d& m);
 
     /// Subtracts matrix \e m from this matrix.
+    GF_API
     GfMatrix3d& operator -=(const GfMatrix3d& m);
 
     /// Returns the unary negation of matrix \e m.
+    GF_API
     friend GfMatrix3d operator -(const GfMatrix3d& m);
 
     /// Adds matrix \e m2 to \e m1
@@ -384,23 +405,28 @@ public:
 
     /// Returns the product of a matrix \e m and a column vector \e vec.
     /// Note that the return type is a \c GfVec3f.
+    GF_API
     friend GfVec3f operator *(const GfMatrix3d& m, const GfVec3f& vec);
 
     /// Returns the product of row vector \e vec and a matrix \e m.
     /// Note that the return type is a \c GfVec3f.
+    GF_API
     friend GfVec3f operator *(const GfVec3f &vec, const GfMatrix3d& m);
 
     /// Sets matrix to specify a uniform scaling by \e scaleFactor.
+    GF_API
     GfMatrix3d& SetScale(double scaleFactor);
 
     /// \name 3D Transformation Utilities
     /// @{
 
     /// Sets the matrix to specify a rotation equivalent to \e rot.
+    GF_API
     GfMatrix3d& SetRotate(const GfRotation &rot);
 
     /// Sets the matrix to specify a nonuniform scaling in x, y, and z by
     /// the factors in vector \e scaleFactors.
+    GF_API
     GfMatrix3d& SetScale(const GfVec3d &scaleFactors);
 
     /// Returns the rotation corresponding to this matrix. This works
@@ -408,6 +434,7 @@ public:
     ///
     /// For good results, consider calling Orthonormalize() before calling
     /// this method.
+    GF_API
     GfRotation ExtractRotation() const;
 
     /// Decompose the rotation corresponding to this matrix about 3
@@ -416,6 +443,7 @@ public:
     ///
     /// This is a convenience method that is equivalent to calling
     /// ExtractRotation().Decompose().
+    GF_API
     GfVec3d DecomposeRotation(const GfVec3d &axis0,
                               const GfVec3d &axis1,
                               const GfVec3d &axis2 ) const;
@@ -425,6 +453,7 @@ public:
     ///
     /// For good results, consider calling Orthonormalize() before calling
     /// this method.
+    GF_API
     GfQuaternion ExtractRotationQuaternion() const;
 
     /// @}
@@ -439,7 +468,7 @@ private:
 
 /// Output a GfMatrix3d
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfMatrix3d const &);
+GF_API std::ostream& operator<<(std::ostream &, GfMatrix3d const &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
