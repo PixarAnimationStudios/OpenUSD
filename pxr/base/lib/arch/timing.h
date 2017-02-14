@@ -66,17 +66,9 @@ ArchGetTickTime()
 #if defined(ARCH_OS_DARWIN)
     // On Darwin we'll use mach_absolute_time().
     return mach_absolute_time();
-#elif defined(ARCH_OS_WINDOWS)
-    LARGE_INTEGER count;
-    QueryPerformanceCounter(&count);
-    return count.QuadPart;
-#elif defined(ARCH_OS_LINUX) && defined(ARCH_CPU_INTEL)
-    // On Intel we'll use the rdtscp instruction.
-    // For future reference: Linux stashes the core ID
-    // into tsc_aux. May want to expose this to ensure
-    // we haven't jumped cores during timing.
-    uint32_t tsc_aux;
-    return __rdtscp(&tsc_aux);
+#elif defined(ARCH_CPU_INTEL)
+    // On Intel we'll use the rdtsc instruction.
+    return __rdtsc();
 #else
 #error Unknown architecture.
 #endif
