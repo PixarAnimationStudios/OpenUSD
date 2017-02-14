@@ -264,7 +264,7 @@ UsdGeomBBoxCache::ComputeWorldBound(const UsdPrim& prim)
     GfBBox3d bbox;
 
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return bbox;
     }
 
@@ -286,7 +286,7 @@ UsdGeomBBoxCache::ComputeRelativeBound(const UsdPrim& prim,
 {
     GfBBox3d bbox;
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return bbox;
     }
 
@@ -312,7 +312,7 @@ UsdGeomBBoxCache::ComputeLocalBound(const UsdPrim& prim)
     GfBBox3d bbox;
 
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return bbox;
     }
 
@@ -335,7 +335,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(const UsdPrim& prim)
     GfBBox3d empty;
 
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return empty;
     }
 
@@ -355,7 +355,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
     GfBBox3d empty;
 
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return empty;
     }
 
