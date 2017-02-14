@@ -177,6 +177,30 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
 #endif // !defined(ARCH_OS_WINDOWS)
 }
 
+#if defined(ARCH_OS_WINDOWS)
+
+string
+TfNormPath(string const &inPath)
+{
+    // PathCanonicalize() doesn't handle forward slashes so make them all
+    // backslashes.  While we're at it replace double backslashes with
+    // single backslashes.  Note that we don't correctly handle UNC paths
+    // or paths that start with \\? (which allow longer paths).
+    string path = TfStringReplace(inPath, "/", "\\");
+    path = TfStringReplace(path, "\\\\", "\\");
+    char result[ARCH_PATH_MAX];
+    if (PathCanonicalize(result, path.c_str())) {
+        // Convert backslashes to forward slashes since we largely
+        // assume forward slashes elsewhere.
+        path = result;
+        path = TfStringReplace(path, "\\", "/");
+        return path;
+    }
+    return inPath;
+}
+
+#else
+
 namespace { // Helpers for TfNormPath.
 
 enum TokenType { Dot, DotDot, Elem };
@@ -345,6 +369,8 @@ TfNormPath(string const &inPath)
     return path;
 }
 
+#endif // defined(ARCH_OS_WINDOWS)
+
 string
 TfAbsPath(string const& path)
 {
@@ -408,7 +434,8 @@ TfReadLink(string const& path)
 bool TfIsRelativePath(std::string const& path)
 {
 #if defined(ARCH_OS_WINDOWS)
-    return path.empty() || PathIsRelative(path.c_str()) ? true : false;
+    return path.empty() ||
+        (PathIsRelative(path.c_str()) && path[0] != '/' && path[0] != '\\');
 #else
     return path.empty() || path[0] != '/';
 #endif
