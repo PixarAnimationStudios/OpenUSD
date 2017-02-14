@@ -314,7 +314,9 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
         // compute id.
         _topologyId = srcTopology.ComputeHash();
-        boost::hash_combine(_topologyId, (bool)(_refineLevel>0));
+        bool refined = (_refineLevel>0);
+        _topologyId = ArchHash64((const char*)&refined, sizeof(refined),
+            _topologyId);
 
         // XXX: Should be HdSt_BasisCurvesTopologySharedPtr
         HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> topologyInstance;

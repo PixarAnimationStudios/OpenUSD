@@ -33,40 +33,39 @@ PXR_NAMESPACE_OPEN_SCOPE
 PxOsdSubdivTags::ID
 PxOsdSubdivTags::ComputeHash() const {
 
-    uint32_t hash = 0;
+    ID hash = 0;
 
-    hash = ArchHash((const char*)&_vtxInterpolationRule,
-                    sizeof(_vtxInterpolationRule), hash);
+    hash = ArchHash64((const char*)&_vtxInterpolationRule,
+                      sizeof(_vtxInterpolationRule), hash);
 
-    hash = ArchHash((const char*)&_fvarInterpolationRule,
-                    sizeof(_fvarInterpolationRule), hash);
+    hash = ArchHash64((const char*)&_fvarInterpolationRule,
+                      sizeof(_fvarInterpolationRule), hash);
 
-    hash = ArchHash((const char*)&_creaseMethod,
-                    sizeof(_creaseMethod), hash);
+    hash = ArchHash64((const char*)&_creaseMethod,
+                      sizeof(_creaseMethod), hash);
 
-    hash = ArchHash((const char*)&_trianglesSubdivision,
-                    sizeof(_trianglesSubdivision), hash);
+    hash = ArchHash64((const char*)&_trianglesSubdivision,
+                      sizeof(_trianglesSubdivision), hash);
 
-    hash = ArchHash((const char*)_holeIndices.cdata(),
-                    _holeIndices.size() * sizeof(int), hash);
+    hash = ArchHash64((const char*)_holeIndices.cdata(),
+                      _holeIndices.size() * sizeof(int), hash);
 
-    hash = ArchHash((const char*)_cornerIndices.cdata(),
-                    _cornerIndices.size() * sizeof(int), hash);
+    hash = ArchHash64((const char*)_cornerIndices.cdata(),
+                      _cornerIndices.size() * sizeof(int), hash);
 
-    hash = ArchHash((const char*)_cornerWeights.cdata(),
-                    _cornerWeights.size() * sizeof(float), hash);
+    hash = ArchHash64((const char*)_cornerWeights.cdata(),
+                      _cornerWeights.size() * sizeof(float), hash);
 
-    hash = ArchHash((const char*)_creaseIndices.cdata(),
-                    _creaseIndices.size() * sizeof(int), hash);
+    hash = ArchHash64((const char*)_creaseIndices.cdata(),
+                      _creaseIndices.size() * sizeof(int), hash);
 
-    hash = ArchHash((const char*)_creaseLengths.cdata(),
-                    _creaseLengths.size() * sizeof(int), hash);
+    hash = ArchHash64((const char*)_creaseLengths.cdata(),
+                      _creaseLengths.size() * sizeof(int), hash);
 
-    hash = ArchHash((const char*)_creaseWeights.cdata(),
-                    _creaseWeights.size() * sizeof(float), hash);
+    hash = ArchHash64((const char*)_creaseWeights.cdata(),
+                      _creaseWeights.size() * sizeof(float), hash);
 
-    // promote to size_t
-    return (ID)hash;
+    return hash;
 }
 
 std::ostream& 

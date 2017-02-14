@@ -94,16 +94,15 @@ HdBasisCurvesTopology::ComputeHash() const
 {
     HD_TRACE_FUNCTION();
 
-    uint32_t hash = 0;
-    hash = ArchHash((const char*)&_curveBasis, sizeof(TfToken), hash);
-    hash = ArchHash((const char*)&_curveType, sizeof(TfToken), hash);
-    hash = ArchHash((const char*)&_curveWrap, sizeof(TfToken), hash);
-    hash = ArchHash((const char*)_curveVertexCounts.cdata(),
-                    _curveVertexCounts.size() * sizeof(int), hash);
-    hash = ArchHash((const char*)_curveIndices.cdata(),
-                    _curveIndices.size() * sizeof(int), hash);
-    // promote to size_t
-    return (ID)hash;
+    HdTopology::ID hash = 0;
+    hash = ArchHash64((const char*)&_curveBasis, sizeof(TfToken), hash);
+    hash = ArchHash64((const char*)&_curveType, sizeof(TfToken), hash);
+    hash = ArchHash64((const char*)&_curveWrap, sizeof(TfToken), hash);
+    hash = ArchHash64((const char*)_curveVertexCounts.cdata(),
+                      _curveVertexCounts.size() * sizeof(int), hash);
+    hash = ArchHash64((const char*)_curveIndices.cdata(),
+                      _curveIndices.size() * sizeof(int), hash);
+    return hash;
 }
 
 std::ostream&

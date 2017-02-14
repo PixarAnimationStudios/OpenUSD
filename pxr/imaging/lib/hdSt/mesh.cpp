@@ -158,7 +158,8 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // really need is the ability to compute quad indices late, however
         // splitting the topology shouldn't be a huge cost either.
         bool usePtexIndices = _UsePtexIndices(sceneDelegate->GetRenderIndex());
-        boost::hash_combine(_topologyId, usePtexIndices);
+        _topologyId = ArchHash64((const char*)&usePtexIndices,
+            sizeof(usePtexIndices), _topologyId);
 
         {
             // XXX: Should be HdSt_MeshTopologySharedPtr

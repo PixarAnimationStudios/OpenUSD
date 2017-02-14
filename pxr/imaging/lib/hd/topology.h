@@ -37,7 +37,7 @@ typedef boost::shared_ptr<class HdTopology> HdTopologySharedPtr;
 class HdTopology
 {
 public:
-    typedef size_t ID;
+    typedef uint64_t ID;
 
     HdTopology() {};
     virtual ~HdTopology() {};

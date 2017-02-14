@@ -86,17 +86,16 @@ PxOsdMeshTopology::ComputeHash() const {
 
     TRACE_FUNCTION();
 
-    uint32_t hash = _subdivTags.ComputeHash();
-    hash = ArchHash((const char*)&_scheme, sizeof(TfToken), hash);
-    hash = ArchHash((const char*)&_orientation, sizeof(TfToken), hash);
-    hash = ArchHash((const char*)_faceVertexCounts.cdata(),
-                    _faceVertexCounts.size() * sizeof(int), hash);
-    hash = ArchHash((const char*)_faceVertexIndices.cdata(),
-                    _faceVertexIndices.size() * sizeof(int), hash);
-    hash = ArchHash((const char*)_holeIndices.cdata(),
-                    _holeIndices.size() * sizeof(int), hash);
-    // promote to size_t
-    return (ID)hash;
+    ID hash = _subdivTags.ComputeHash();
+    hash = ArchHash64((const char*)&_scheme, sizeof(TfToken), hash);
+    hash = ArchHash64((const char*)&_orientation, sizeof(TfToken), hash);
+    hash = ArchHash64((const char*)_faceVertexCounts.cdata(),
+                      _faceVertexCounts.size() * sizeof(int), hash);
+    hash = ArchHash64((const char*)_faceVertexIndices.cdata(),
+                      _faceVertexIndices.size() * sizeof(int), hash);
+    hash = ArchHash64((const char*)_holeIndices.cdata(),
+                      _holeIndices.size() * sizeof(int), hash);
+    return hash;
 }
 
 bool
