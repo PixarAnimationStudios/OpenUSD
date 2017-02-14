@@ -40,13 +40,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-namespace {
 // Static assertion on PrimData size.  We want to be warned when its size
 // changes.
 static_assert(sizeof(Usd_PrimData) == 64,
               "Expected sizeof(Usd_PrimData) == 64");
-}
 
 Usd_PrimData::Usd_PrimData(UsdStage *stage, const SdfPath& path)
     : _stage(stage)
