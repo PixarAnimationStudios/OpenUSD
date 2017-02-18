@@ -156,7 +156,7 @@ class Vt_CastRegistry {
         _RegisterNumericCasts<bool, unsigned long>();
         _RegisterNumericCasts<bool, long long>();
         _RegisterNumericCasts<bool, unsigned long long>();
-        _RegisterNumericCasts<bool, half>();
+        _RegisterNumericCasts<bool, GfHalf>();
         _RegisterNumericCasts<bool, float>();
         _RegisterNumericCasts<bool, double>();
 
@@ -170,7 +170,7 @@ class Vt_CastRegistry {
         _RegisterNumericCasts<char, unsigned long>();
         _RegisterNumericCasts<char, long long>();
         _RegisterNumericCasts<char, unsigned long long>();
-        _RegisterNumericCasts<char, half>();
+        _RegisterNumericCasts<char, GfHalf>();
         _RegisterNumericCasts<char, float>();
         _RegisterNumericCasts<char, double>();
 
@@ -183,7 +183,7 @@ class Vt_CastRegistry {
         _RegisterNumericCasts<signed char, unsigned long>();
         _RegisterNumericCasts<signed char, long long>();
         _RegisterNumericCasts<signed char, unsigned long long>();
-        _RegisterNumericCasts<signed char, half>();
+        _RegisterNumericCasts<signed char, GfHalf>();
         _RegisterNumericCasts<signed char, float>();
         _RegisterNumericCasts<signed char, double>();
 
@@ -195,7 +195,7 @@ class Vt_CastRegistry {
         _RegisterNumericCasts<unsigned char, unsigned long>();
         _RegisterNumericCasts<unsigned char, long long>();
         _RegisterNumericCasts<unsigned char, unsigned long long>();
-        _RegisterNumericCasts<unsigned char, half>();
+        _RegisterNumericCasts<unsigned char, GfHalf>();
         _RegisterNumericCasts<unsigned char, float>();
         _RegisterNumericCasts<unsigned char, double>();
 
@@ -206,7 +206,7 @@ class Vt_CastRegistry {
         _RegisterNumericCasts<short, unsigned long>();
         _RegisterNumericCasts<short, long long>();
         _RegisterNumericCasts<short, unsigned long long>();
-        _RegisterNumericCasts<short, half>();
+        _RegisterNumericCasts<short, GfHalf>();
         _RegisterNumericCasts<short, float>();
         _RegisterNumericCasts<short, double>();
 
@@ -216,7 +216,7 @@ class Vt_CastRegistry {
         _RegisterNumericCasts<unsigned short, unsigned long>();
         _RegisterNumericCasts<unsigned short, long long>();
         _RegisterNumericCasts<unsigned short, unsigned long long>();
-        _RegisterNumericCasts<unsigned short, half>();
+        _RegisterNumericCasts<unsigned short, GfHalf>();
         _RegisterNumericCasts<unsigned short, float>();
         _RegisterNumericCasts<unsigned short, double>();
 
@@ -225,7 +225,7 @@ class Vt_CastRegistry {
         _RegisterNumericCasts<int, unsigned long>();
         _RegisterNumericCasts<int, long long>();
         _RegisterNumericCasts<int, unsigned long long>();
-        _RegisterNumericCasts<int, half>();
+        _RegisterNumericCasts<int, GfHalf>();
         _RegisterNumericCasts<int, float>();
         _RegisterNumericCasts<int, double>();
 
@@ -233,34 +233,34 @@ class Vt_CastRegistry {
         _RegisterNumericCasts<unsigned int, unsigned long>();
         _RegisterNumericCasts<unsigned int, long long>();
         _RegisterNumericCasts<unsigned int, unsigned long long>();
-        _RegisterNumericCasts<unsigned int, half>();
+        _RegisterNumericCasts<unsigned int, GfHalf>();
         _RegisterNumericCasts<unsigned int, float>();
         _RegisterNumericCasts<unsigned int, double>();
 
         _RegisterNumericCasts<long, unsigned long>();
         _RegisterNumericCasts<long, long long>();
         _RegisterNumericCasts<long, unsigned long long>();
-        _RegisterNumericCasts<long, half>();
+        _RegisterNumericCasts<long, GfHalf>();
         _RegisterNumericCasts<long, float>();
         _RegisterNumericCasts<long, double>();
 
         _RegisterNumericCasts<unsigned long, long long>();
         _RegisterNumericCasts<unsigned long, unsigned long long>();
-        _RegisterNumericCasts<unsigned long, half>();
+        _RegisterNumericCasts<unsigned long, GfHalf>();
         _RegisterNumericCasts<unsigned long, float>();
         _RegisterNumericCasts<unsigned long, double>();
 
         _RegisterNumericCasts<long long, unsigned long long>();
-        _RegisterNumericCasts<long long, half>();
+        _RegisterNumericCasts<long long, GfHalf>();
         _RegisterNumericCasts<long long, float>();
         _RegisterNumericCasts<long long, double>();
 
-        _RegisterNumericCasts<unsigned long long, half>();
+        _RegisterNumericCasts<unsigned long long, GfHalf>();
         _RegisterNumericCasts<unsigned long long, float>();
         _RegisterNumericCasts<unsigned long long, double>();
 
-        _RegisterNumericCasts<half, float>();
-        _RegisterNumericCasts<half, double>();
+        _RegisterNumericCasts<GfHalf, float>();
+        _RegisterNumericCasts<GfHalf, double>();
 
         _RegisterNumericCasts<float, double>();
 

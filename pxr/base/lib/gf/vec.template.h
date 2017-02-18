@@ -38,7 +38,7 @@
 #include "pxr/base/gf/traits.h"
 {% if IS_FLOATING_POINT(SCL) -%}
 #include "pxr/base/gf/math.h"
-{% if SCL == 'half' -%}
+{% if SCL == 'GfHalf' -%}
 #include "pxr/base/gf/half.h"
 {% endif %}
 {% endif %}
@@ -317,7 +317,7 @@ GF_API std::ostream& operator<<(std::ostream &, {{ VEC }} const &);
 PXR_NAMESPACE_CLOSE_SCOPE
 
 {% for S in SCALARS if S != SCL %}
-#include "pxr/base/gf/vec{{ DIM }}{{ S[0] }}.h"
+#include "pxr/base/gf/vec{{ DIM }}{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 
 PXR_NAMESPACE_OPEN_SCOPE

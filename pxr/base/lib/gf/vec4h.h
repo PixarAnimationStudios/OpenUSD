@@ -54,16 +54,16 @@ struct GfIsGfVec<class GfVec4h> { static const bool value = true; };
 /// \class GfVec4h
 /// \ingroup group_gf_LinearAlgebra
 ///
-/// Basic type for a vector of 4 half components.
+/// Basic type for a vector of 4 GfHalf components.
 ///
-/// Represents a vector of 4 components of type \c half.
+/// Represents a vector of 4 components of type \c GfHalf.
 /// It is intended to be fast and simple.
 ///
 class GfVec4h
 {
 public:
     /// Scalar element type and dimension.
-    typedef half ScalarType;
+    typedef GfHalf ScalarType;
     static const size_t dimension = 4;
 
     /// Default constructor does no initialization.
@@ -76,7 +76,7 @@ public:
     }
 
     /// Initialize all elements to a single value.
-    explicit GfVec4h(half value) {
+    explicit GfVec4h(GfHalf value) {
         _data[0] = value;
         _data[1] = value;
         _data[2] = value;
@@ -84,7 +84,7 @@ public:
     }
 
     /// Initialize all elements with explicit arguments.
-    GfVec4h(half s0, half s1, half s2, half s3) {
+    GfVec4h(GfHalf s0, GfHalf s1, GfHalf s2, GfHalf s3) {
         Set(s0, s1, s2, s3);
     }
 
@@ -136,7 +136,7 @@ public:
     }
 
     /// Set all elements with passed arguments.
-    GfVec4h &Set(half s0, half s1, half s2, half s3) {
+    GfVec4h &Set(GfHalf s0, GfHalf s1, GfHalf s2, GfHalf s3) {
         _data[0] = s0;
         _data[1] = s1;
         _data[2] = s2;
@@ -145,18 +145,18 @@ public:
     }
 
     /// Set all elements with a pointer to data.
-    GfVec4h &Set(half const *a) {
+    GfVec4h &Set(GfHalf const *a) {
         return Set(a[0], a[1], a[2], a[3]);
     }
 
     /// Direct data access.
-    half const *data() const { return _data; }
-    half *data() { return _data; }
-    half const *GetArray() const { return data(); }
+    GfHalf const *data() const { return _data; }
+    GfHalf *data() { return _data; }
+    GfHalf const *GetArray() const { return data(); }
 
     /// Indexing.
-    half const &operator[](size_t i) const { return _data[i]; }
-    half &operator[](size_t i) { return _data[i]; }
+    GfHalf const &operator[](size_t i) const { return _data[i]; }
+    GfHalf &operator[](size_t i) { return _data[i]; }
 
     /// Hash.
     friend inline size_t hash_value(GfVec4h const &vec) {
@@ -247,7 +247,7 @@ public:
     }
     
     /// See GfDot().
-    half operator*(GfVec4h const &v) const {
+    GfHalf operator*(GfVec4h const &v) const {
         return _data[0] * v[0] + _data[1] * v[1] + _data[2] * v[2] + _data[3] * v[3];
     }
 
@@ -269,12 +269,12 @@ public:
     }
 
     /// Squared length.
-    half GetLengthSq() const {
+    GfHalf GetLengthSq() const {
         return *this * *this;
     }
 
     /// Length
-    half GetLength() const {
+    GfHalf GetLength() const {
         // TODO should use GfSqrt.
         return sqrt(GetLengthSq());
     }
@@ -287,15 +287,15 @@ public:
     /// \todo This was fixed for bug 67777. This is a gcc64 optimizer bug.
     /// By tickling the code, it no longer tries to write into
     /// an illegal memory address (in the code section of memory).
-    half Normalize(half eps = 0.001) {
+    GfHalf Normalize(GfHalf eps = 0.001) {
         // TODO this seems suspect...  suggest dividing by length so long as
         // length is not zero.
-        half length = GetLength();
+        GfHalf length = GetLength();
         *this /= (length > eps) ? length : eps;
         return length;
     }
 
-    GfVec4h GetNormalized(half eps = 0.001) const {
+    GfVec4h GetNormalized(GfHalf eps = 0.001) const {
         GfVec4h normalized(*this);
         normalized.Normalize(eps);
         return normalized;
@@ -303,7 +303,7 @@ public:
 
   
 private:
-    half _data[4];
+    GfHalf _data[4];
 };
 
 /// Output a GfVec4h.
@@ -367,14 +367,14 @@ GfCompDiv(GfVec4h const &v1, GfVec4h const &v2) {
 }
 
 /// Returns the dot (inner) product of two vectors.
-inline half
+inline GfHalf
 GfDot(GfVec4h const &v1, GfVec4h const &v2) {
     return v1 * v2;
 }
 
 
 /// Returns the geometric length of \c v.
-inline half
+inline GfHalf
 GfGetLength(GfVec4h const &v)
 {
     return v.GetLength();
@@ -383,8 +383,8 @@ GfGetLength(GfVec4h const &v)
 /// Normalizes \c *v in place to unit length, returning the length before
 /// normalization. If the length of \c *v is smaller than \p eps then \c *v is
 /// set to \c *v/eps.  The original length of \c *v is returned.
-inline half
-GfNormalize(GfVec4h *v, half eps = 0.001)
+inline GfHalf
+GfNormalize(GfVec4h *v, GfHalf eps = 0.001)
 {
     return v->Normalize();
 }
@@ -393,7 +393,7 @@ GfNormalize(GfVec4h *v, half eps = 0.001)
 /// If the length of this vector is smaller than \p eps, the vector divided by
 /// \p eps is returned.
 inline GfVec4h
-GfGetNormalized(GfVec4h const &v, half eps = 0.001)
+GfGetNormalized(GfVec4h const &v, GfHalf eps = 0.001)
 {
     return v.GetNormalized(eps);
 }

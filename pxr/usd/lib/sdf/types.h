@@ -349,7 +349,7 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
 ((UInt,       uint,       unsigned int,   ()     )) \
 ((Int64,      int64,      int64_t,        ()     )) \
 ((UInt64,     uint64,     uint64_t,       ()     )) \
-((Half,       half,       half,           ()     )) \
+((Half,       half,       GfHalf,         ()     )) \
 ((Float,      float,      float,          ()     )) \
 ((Double,     double,     double,         ()     )) \
 ((String,     string,     std::string,    ()     )) \

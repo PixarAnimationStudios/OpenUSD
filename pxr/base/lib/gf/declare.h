@@ -29,9 +29,7 @@
 /// \file gf/declare.h
 /// Declares Gf types.
 ///
-/// This file provides typedefs for Gf types.
-
-class half;
+/// This file provides forward declarations for Gf types.
 
 PXR_NAMESPACE_OPEN_SCOPE
 

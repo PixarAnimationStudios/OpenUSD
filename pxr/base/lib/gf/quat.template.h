@@ -36,7 +36,7 @@
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/vec3{{ SUFFIX }}.h"
 #include "pxr/base/gf/traits.h"
-{% if SCL == 'half' -%}
+{% if SCL == 'GfHalf' -%}
 #include "pxr/base/gf/half.h"
 {% endif %}
 

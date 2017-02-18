@@ -85,7 +85,7 @@ template <> constexpr char Vt_FmtFor<long>() { return 'l'; }
 template <> constexpr char Vt_FmtFor<unsigned long>() { return 'L'; }
 template <> constexpr char Vt_FmtFor<long long>() { return 'q'; }
 template <> constexpr char Vt_FmtFor<unsigned long long>() { return 'Q'; }
-template <> constexpr char Vt_FmtFor<half>() { return 'e'; }
+template <> constexpr char Vt_FmtFor<GfHalf>() { return 'e'; }
 template <> constexpr char Vt_FmtFor<float>() { return 'f'; }
 template <> constexpr char Vt_FmtFor<double>() { return 'd'; }
 
@@ -114,7 +114,7 @@ Vt_GetConvertFn(char srcFmt)
     case 'L': return Vt_ConvertSingle<unsigned long, Dst>;
     case 'q': return Vt_ConvertSingle<long long, Dst>;
     case 'Q': return Vt_ConvertSingle<unsigned long long, Dst>;
-    case 'e': return Vt_ConvertSingle<half, Dst>;
+    case 'e': return Vt_ConvertSingle<GfHalf, Dst>;
     case 'f': return Vt_ConvertSingle<float, Dst>;
     case 'd': return Vt_ConvertSingle<double, Dst>;
     }

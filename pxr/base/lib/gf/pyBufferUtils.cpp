@@ -40,7 +40,7 @@ template <> constexpr char PyFmtFor<int>() { return 'i'; }
 template <> constexpr char PyFmtFor<unsigned int>() { return 'I'; }
 template <> constexpr char PyFmtFor<long>() { return 'l'; }
 template <> constexpr char PyFmtFor<unsigned long>() { return 'L'; }
-template <> constexpr char PyFmtFor<half>() { return 'e'; }
+template <> constexpr char PyFmtFor<GfHalf>() { return 'e'; }
 template <> constexpr char PyFmtFor<float>() { return 'f'; }
 template <> constexpr char PyFmtFor<double>() { return 'd'; }
 
@@ -61,7 +61,7 @@ template GF_API char *Gf_GetPyBufferFmtFor<int>();
 template GF_API char *Gf_GetPyBufferFmtFor<unsigned int>();
 template GF_API char *Gf_GetPyBufferFmtFor<long>();
 template GF_API char *Gf_GetPyBufferFmtFor<unsigned long>();
-template GF_API char *Gf_GetPyBufferFmtFor<half>();
+template GF_API char *Gf_GetPyBufferFmtFor<GfHalf>();
 template GF_API char *Gf_GetPyBufferFmtFor<float>();
 template GF_API char *Gf_GetPyBufferFmtFor<double>();
 

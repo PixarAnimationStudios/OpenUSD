@@ -298,7 +298,7 @@ template <typename T>
 static bool _IsFinite(T const &value) {
     return std::isfinite(value);
 }
-static bool _IsFinite(half const &value) {
+static bool _IsFinite(GfHalf const &value) {
     return std::isfinite(static_cast<float>(value));
 }
 

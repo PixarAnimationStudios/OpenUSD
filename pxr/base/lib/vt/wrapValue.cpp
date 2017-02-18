@@ -286,7 +286,7 @@ void wrapValue()
     def("UInt64", Vt_ValueWrapper::Create<uint64_t>, 
         TfStringPrintf(funcDocString, "UInt64","uint64_t","uint64_t").c_str());
 
-    def("Half", Vt_ValueWrapper::Create<half>, 
+    def("Half", Vt_ValueWrapper::Create<GfHalf>, 
         TfStringPrintf(funcDocString, "Half","half","half").c_str());
     def("Float", Vt_ValueWrapper::Create<float>, 
         TfStringPrintf(funcDocString, "Float","float","float").c_str());
