@@ -2,21 +2,18 @@ set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE garch)
 
 if(APPLE)
-    set(GLPLATFORMCONTEXT_H   glPlatformContextDarwin.h)
-    set(GLPLATFORMCONTEXT_CPP glPlatformContextDarwin.mm)
-    set(GLPLATFORMDEBUGWINDOW_H   glPlatformDebugWindowDarwin.h)
-    set(GLPLATFORMDEBUGWINDOW_CPP glPlatformDebugWindowDarwin.mm)
-    set(GLDEBUGWINDOW         glDebugWindow)
+    set(GARCH_GLPLATFORMCONTEXT       glPlatformContextDarwin)
+    set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowDarwin)
+    set(GARCH_SOURCE_EXTENSION        mm)
     FIND_LIBRARY(APPKIT_LIBRARY AppKit)
 elseif(X11_FOUND)
-    set(GLPLATFORMCONTEXT_H   glPlatformContextGLX.h)
-    set(GLPLATFORMCONTEXT_CPP glPlatformContextGLX.cpp)
-    set(GLPLATFORMDEBUGWINDOW_H   glPlatformDebugWindowGLX.h)
-    set(GLPLATFORMDEBUGWINDOW_CPP glPlatformDebugWindowGLX.cpp)
-    set(GLDEBUGWINDOW         glDebugWindow)
+    set(GARCH_GLPLATFORMCONTEXT       glPlatformContextGLX)
+    set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowGLX)
+    set(GARCH_SOURCE_EXTENSION        cpp)
 elseif(WIN32)
-    set(GLPLATFORMCONTEXT_H   glPlatformContextWindows.h)
-    set(GLPLATFORMCONTEXT_CPP glPlatformContextWindows.cpp)
+    set(GARCH_GLPLATFORMCONTEXT       glPlatformContextWindows)
+    set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowWindows)
+    set(GARCH_SOURCE_EXTENSION        cpp)
 endif()
 
 pxr_shared_library(garch
@@ -31,23 +28,21 @@ pxr_shared_library(garch
         ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        glPlatformContext
+        glDebugWindow
         glPlatformDebugContext
-        ${GLDEBUGWINDOW}
 
     PUBLIC_HEADERS
         gl.h
-        glext.h
-        glu.h
-        ${GLPLATFORMCONTEXT_H}
+        glPlatformContext.h
+        ${GARCH_GLPLATFORMCONTEXT}.h
 
     PRIVATE_HEADERS
-        ${GLPLATFORMDEBUGWINDOW_H}
+        ${GARCH_GLPLATFORMDEBUGWINDOW}.h
 
     CPPFILES
         moduleDeps.cpp
-        ${GLPLATFORMCONTEXT_CPP}
-        ${GLPLATFORMDEBUGWINDOW_CPP}
+        ${GARCH_GLPLATFORMCONTEXT}.${GARCH_SOURCE_EXTENSION}
+        ${GARCH_GLPLATFORMDEBUGWINDOW}.${GARCH_SOURCE_EXTENSION}
 
     PYMODULE_CPPFILES
         module.cpp
