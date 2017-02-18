@@ -25,6 +25,7 @@
 #define AR_DEBUG_CODES_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/base/tf/debug.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

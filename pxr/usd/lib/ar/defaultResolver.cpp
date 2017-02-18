@@ -58,7 +58,7 @@ ArDefaultResolver::ArDefaultResolver()
 
     const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
     if (!envPath.empty()) {
-        for (const auto& p : TfStringTokenize(envPath, ":")) {
+        for (const auto& p : TfStringTokenize(envPath, ARCH_PATH_LIST_SEP)) {
             _searchPath.push_back(TfAbsPath(p));
         }
     }
@@ -77,7 +77,7 @@ ArDefaultResolver::ConfigureResolverForAsset(const std::string& path)
 bool
 ArDefaultResolver::IsRelativePath(const std::string& path)
 {
-    return (!path.empty() && path[0] != '/');
+    return (!path.empty() && TfIsRelativePath(path));
 }
 
 bool
@@ -91,15 +91,21 @@ ArDefaultResolver::AnchorRelativePath(
     const std::string& anchorPath, 
     const std::string& path)
 {
-    if (anchorPath.empty() || anchorPath[0] != '/' ||
-        path.empty() || path[0] == '/' || !_IsFileRelative(path))
+    if (TfIsRelativePath(anchorPath) ||
+        !ArDefaultResolver::IsRelativePath(path) ||
+        !_IsFileRelative(path)) {
         return path;
+    }
+
+    // Ensure we are using forward slashes and not back slashes.
+    std::string forwardPath = anchorPath;
+    std::replace(forwardPath.begin(), forwardPath.end(), '\\', '/');
 
     // If anchorPath does not end with a '/', we assume it is specifying
     // a file, strip off the last component, and anchor the path to that
     // directory.
     const std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(anchorPath, '/'), path);
+        TfStringGetBeforeSuffix(forwardPath, '/'), path);
     return TfNormPath(anchoredPath);
 }
 
@@ -309,7 +315,7 @@ ArDefaultResolver::_BeginCacheScope(
     // be empty (when constructing a regular ArResolverScopedCache)
     // or holding on to a _CachePtr (when constructing an 
     // ArResolverScopedCache that shares data with another one).
-    TF_VERIFY(cacheScopeData && 
+    TF_VERIFY(cacheScopeData &&
               (cacheScopeData->IsEmpty() ||
                cacheScopeData->IsHolding<_CachePtr>()));
 

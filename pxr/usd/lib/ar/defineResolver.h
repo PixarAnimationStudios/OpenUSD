@@ -25,6 +25,7 @@
 #define AR_DEFINE_RESOLVER_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/registryManager.h"
@@ -51,8 +52,9 @@ TF_REGISTRY_FUNCTION(TfType) {                                      \
     t.SetFactory<ArResolverFactory<c> >();                          \
 }
 
-class AR_API ArResolverFactoryBase : public TfType::FactoryBase {
+class ArResolverFactoryBase : public TfType::FactoryBase {
 public:
+    AR_API
     virtual ArResolver* New() const = 0;
 };
 
