@@ -14,7 +14,6 @@ pxr_shared_library(pxOsd
     PUBLIC_CLASSES
         meshTopology
         refinerFactory
-        refinerCache
         stencilPerVertex
         subdivTags
         tokens
