@@ -45,7 +45,7 @@ struct JsParseError {
     JsParseError() : line(0), column(0) { }
     unsigned int line;
     unsigned int column;
-    JS_API std::string reason;
+    std::string reason;
 };
 
 /// Parse the contents of input stream \p istr and return a JsValue. On
