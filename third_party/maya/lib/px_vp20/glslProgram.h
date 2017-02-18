@@ -29,8 +29,7 @@
 #define __PX_VP20_GLSL_PROGRAM_H__
 
 #include "pxr/pxr.h"
-
-#include <GL/gl.h>
+#include "pxr/imaging/garch/gl.h"
 
 #include <string>
 

@@ -23,14 +23,13 @@
 //
 
 // glew must be included before any other GL header.
-#include <GL/glew.h>
+#include "pxr/imaging/glf/glew.h"
 
 #include "px_vp20/glslProgram.h"
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
-
-#include <GL/gl.h>
+#include "pxr/imaging/garch/gl.h"
 
 #include <string>
 
