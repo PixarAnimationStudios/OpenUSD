@@ -456,7 +456,7 @@ PxrUsdKatanaReadPointInstancer(
 
     PxrUsdKatanaReadXformable(instancer, data, attrs);
 
-    attrs.set("type", FnKat::StringAttribute("point instancer"));
+    attrs.set("type", FnKat::StringAttribute("usd point instancer"));
 
     const std::string fileName = data.GetUsdInArgs()->GetFileName();
     attrs.set("info.usd.fileName", FnKat::StringAttribute(fileName));
