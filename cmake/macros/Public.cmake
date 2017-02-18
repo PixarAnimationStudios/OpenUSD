@@ -834,21 +834,26 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         if (NOT bt_SOURCE_DIR)
             set(bt_SOURCE_DIR testenv)
         endif()
-        set(testPlugInfoPath ${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json)
+        set(testPlugInfoSrcPath ${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json)
 
-        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoPath}")
+        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
             set(TEST_PLUG_INFO_RESOURCE_PATH "Resources")
             set(TEST_PLUG_INFO_ROOT "..")
             _get_library_file(${LIBRARY_NAME} LIBRARY_FILE)
-            set(testPlugInfoInstallDir "tests/${bt_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
+
+            set(testPlugInfoLibDir "tests/${bt_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
+            set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
+            set(testPlugInfoPath "${CMAKE_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
+
             file(RELATIVE_PATH 
                 TEST_PLUG_INFO_LIBRARY_PATH
-                "${CMAKE_INSTALL_PREFIX}/${testPlugInfoInstallDir}"
+                "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
                 "${CMAKE_INSTALL_PREFIX}/tests/lib/${LIBRARY_FILE}")
-            configure_file(
-                "${testPlugInfoPath}"
-                "${CMAKE_INSTALL_PREFIX}/${testPlugInfoInstallDir}/${TEST_PLUG_INFO_RESOURCE_PATH}/plugInfo.json"
-            )
+
+            configure_file("${testPlugInfoSrcPath}" "${testPlugInfoPath}")
+            install(
+                FILES ${testPlugInfoPath}
+                DESTINATION ${testPlugInfoResourceDir})
         endif()
 
         # We always want this test to build after the package it's under, even if
