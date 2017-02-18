@@ -23,7 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "usdMaya/primReaderRegistry.h"
-#include "usdMaya/translatorLook.h"
+#include "usdMaya/translatorMaterial.h"
 
 #include "pxr/usd/usdShade/material.h"
 
@@ -35,7 +35,7 @@ PXRUSDMAYA_DEFINE_READER(UsdShadeMaterial, args, context)
     bool importUnboundShaders = args.ShouldImportUnboundShaders();
     if (importUnboundShaders) {
         const UsdPrim& usdPrim = args.GetUsdPrim();
-        PxrUsdMayaTranslatorLook::Read(args.GetShadingMode(), 
+        PxrUsdMayaTranslatorMaterial::Read(args.GetShadingMode(), 
                 UsdShadeMaterial(usdPrim), 
                 UsdGeomGprim(), 
                 context);

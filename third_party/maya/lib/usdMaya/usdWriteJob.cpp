@@ -31,7 +31,7 @@
 #include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/MayaCameraWriter.h"
 
-#include "usdMaya/translatorLook.h"
+#include "usdMaya/translatorMaterial.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/PluginPrimWriter.h"
 
@@ -260,8 +260,8 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
         }
     }
 
-    // Writing Looks/Shading
-    PxrUsdMayaTranslatorLook::ExportShadingEngines(
+    // Writing Materials/Shading
+    PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
                 mStage, 
                 mArgs.dagPaths,
                 mArgs.shadingMode,

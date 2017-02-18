@@ -27,7 +27,7 @@
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/translatorGprim.h"
-#include "usdMaya/translatorLook.h"
+#include "usdMaya/translatorMaterial.h"
 #include "usdMaya/translatorUtil.h"
 
 #include "pxr/usd/usdGeom/nurbsPatch.h"
@@ -201,10 +201,10 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
         context->RegisterNewMayaNode( shapePath, surfaceObj ); // used for undo/redo
     }
 
-    // If a look is bound, create (or reuse if already present) and assign it
+    // If a material is bound, create (or reuse if already present) and assign it
     // If no binding is present, assign the nurbs surface to the default shader
     const TfToken& shadingMode = args.GetShadingMode();  
-    PxrUsdMayaTranslatorLook::AssignLook(
+    PxrUsdMayaTranslatorMaterial::AssignMaterial(
             shadingMode,
             usdNurbsPatch,
             surfaceObj,

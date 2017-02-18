@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_TRANSLATOR_LOOK_H
-#define PXRUSDMAYA_TRANSLATOR_LOOK_H
+#ifndef PXRUSDMAYA_TRANSLATOR_MATERIAL_H
+#define PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -37,29 +37,29 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define PXRUSDMAYA_TRANSLATOR_LOOK_TOKENS \
-    ((LookNamespace, "USD_Looks"))
+#define PXRUSDMAYA_TRANSLATOR_MATERIAL_TOKENS \
+    ((MaterialNamespace, "USD_Materials"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorLookTokens,
-    PXRUSDMAYA_TRANSLATOR_LOOK_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorMaterialTokens,
+    PXRUSDMAYA_TRANSLATOR_MATERIAL_TOKENS);
 
 /// \brief Provides helper functions for reading UsdShadeMaterial
-struct PxrUsdMayaTranslatorLook
+struct PxrUsdMayaTranslatorMaterial
 {
-    /// \brief Reads \p look according to \p shadingMode .  Some shading modes
+    /// \brief Reads \p material according to \p shadingMode .  Some shading modes
     /// may want to know the \p boundPrim.  This returns an MObject that is the
-    /// maya shadingEngine that correspondes to \p look.
+    /// maya shadingEngine that corresponds to \p material.
     static MObject Read(
             const TfToken& shadingMode,
-            const UsdShadeMaterial& look,
+            const UsdShadeMaterial& material,
             const UsdGeomGprim& boundPrim,
             PxrUsdMayaPrimReaderContext* context);
 
-    /// \brief Given a \p prim, assigns a look to it according to \p
+    /// \brief Given a \p prim, assigns a material to it according to \p
     /// shadingMode.  This will see which UsdShadeMaterial is bound to \p prim.  If
-    /// the look has not been read already, it will read it.  The
+    /// the material has not been read already, it will read it.  The
     /// created/retrieved shadingEngine will be assigned to \p shapeObj.
-    static bool AssignLook(
+    static bool AssignMaterial(
             const TfToken& shadingMode,
             const UsdGeomGprim& prim,
             MObject shapeObj,
@@ -81,5 +81,5 @@ struct PxrUsdMayaTranslatorLook
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_LOOK_H
+#endif // PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 

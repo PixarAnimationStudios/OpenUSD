@@ -103,7 +103,7 @@ global proc int usdTranslatorExport (string $parent,
 	    optionMenuGrp -l "Shading Mode:" shadingModePopup;
 	        menuItem -l "None";
 	        menuItem -l "GPrim Colors";
-	        menuItem -l "Look Colors";
+	        menuItem -l "Material Colors";
 	        menuItem -l "RfM Shaders";
             
         checkBox -l "Make Instances" exportReferencesAsInstanceableCheckBox;
