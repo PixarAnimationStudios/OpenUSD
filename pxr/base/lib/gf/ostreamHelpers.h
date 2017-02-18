@@ -35,40 +35,18 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <iostream>
-#include <limits>
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-// Helper class to write out the correct precision
-template <class T>
-struct Gf_OstreamHelperValue {
-    explicit Gf_OstreamHelperValue(T v) : value(v) {}
-    T value;
-};
 
 // Make the template class general so that we can use the same class
 // (Gf_OstreamHelperP) on all variables and not worry about making a mistake
 template <class T>
 T Gf_OstreamHelperP(T v) { return v; }
 
-inline Gf_OstreamHelperValue<float> Gf_OstreamHelperP(float v) { 
-    return Gf_OstreamHelperValue<float>(v); 
+inline TfStreamFloat Gf_OstreamHelperP(float v) { 
+    return TfStreamFloat(v); 
 }
-inline Gf_OstreamHelperValue<double> Gf_OstreamHelperP(double v) { 
-    return Gf_OstreamHelperValue<double>(v); 
-}
-
-inline std::ostream &
-operator<<(std::ostream &out, const Gf_OstreamHelperValue<float> &data)
-{
-    return out << TfStringify(data.value);
-}
-
-inline std::ostream &
-operator<<(std::ostream &out, const Gf_OstreamHelperValue<double> &data)
-{
-    return out << TfStringify(data.value);
+inline TfStreamDouble Gf_OstreamHelperP(double v) { 
+    return TfStreamDouble(v); 
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
