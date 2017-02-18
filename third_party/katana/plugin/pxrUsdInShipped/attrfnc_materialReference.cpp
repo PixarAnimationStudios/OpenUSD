@@ -44,11 +44,11 @@ MaterialReferenceAttrFncCache::IMPLPtr
 MaterialReferenceAttrFncCache::createValue(
         const FnAttribute::Attribute & attr)
 {
-    FnKat::GroupAttribute args = attr;
+    FnAttribute::GroupAttribute args = attr;
     if (!args.isValid()) {
         return IMPLPtr(new FnAttribute::GroupAttribute());
     }
-    FnKat::StringAttribute assetAttr = args.getChildByName("asset");
+    FnAttribute::StringAttribute assetAttr = args.getChildByName("asset");
     if (!assetAttr.isValid()) {
         return IMPLPtr(new FnAttribute::GroupAttribute());
     }
@@ -57,7 +57,7 @@ MaterialReferenceAttrFncCache::createValue(
         return IMPLPtr(new FnAttribute::GroupAttribute());
     }
 
-    FnKat::StringAttribute materialPathAttr = args.getChildByName(
+    FnAttribute::StringAttribute materialPathAttr = args.getChildByName(
         "materialPath");
     if (!materialPathAttr.isValid()) {
         return IMPLPtr(new FnAttribute::GroupAttribute());
@@ -70,7 +70,7 @@ MaterialReferenceAttrFncCache::createValue(
         materialPath = "/" + materialPath;
     }
 
-    std::string looksGroupLocation = FnKat::StringAttribute(
+    std::string looksGroupLocation = FnAttribute::StringAttribute(
         args.getChildByName("looksGroupLocation")).getValue("", false);
     if (!looksGroupLocation.empty()) {
         materialPath = looksGroupLocation + materialPath;
@@ -117,7 +117,7 @@ MaterialReferenceAttrFncCache::createValue(
         kbd,
         attrs);
 
-    FnKat::GroupAttribute allMaterialAttributes = attrs.build();
+    FnAttribute::GroupAttribute allMaterialAttributes = attrs.build();
     return IMPLPtr(new FnAttribute::GroupAttribute(
         allMaterialAttributes.getChildByName("material")));
 }
@@ -148,18 +148,18 @@ LibraryMaterialNamesAttrFncCache::IMPLPtr
 LibraryMaterialNamesAttrFncCache::createValue(
         const FnAttribute::Attribute & attr)
 {
-    FnKat::GroupAttribute args = attr;
+    FnAttribute::GroupAttribute args = attr;
     if (!args.isValid()) {
-        return IMPLPtr(new FnAttribute::StringAttribute());
+        return IMPLPtr(new FnAttribute::GroupAttribute());
     }
-    FnKat::StringAttribute assetAttr = args.getChildByName("asset");
+    FnAttribute::StringAttribute assetAttr = args.getChildByName("asset");
     if (!assetAttr.isValid()) {
-        return IMPLPtr(new FnAttribute::StringAttribute());
+        return IMPLPtr(new FnAttribute::GroupAttribute());
     }
 
     std::string asset = assetAttr.getValue();
     if (asset.empty()) {
-        return IMPLPtr(new FnAttribute::StringAttribute());
+        return IMPLPtr(new FnAttribute::GroupAttribute());
     }
 
     FnAttribute::GroupAttribute sessionAttr;
@@ -172,7 +172,7 @@ LibraryMaterialNamesAttrFncCache::createValue(
         true /* forcePopulate */);
 
     if (!stage) {
-        return IMPLPtr(new FnAttribute::StringAttribute());
+        return IMPLPtr(new FnAttribute::GroupAttribute());
     }
 
     // Find all materials on this shader library
@@ -196,18 +196,47 @@ LibraryMaterialNamesAttrFncCache::createValue(
         if (TfStringStartsWith(childIt->GetName().GetString(), "_")) {
             continue;
         }
-
+        // base material - implemented via derivesFrom relationships
         std::string baseMaterialPath = 
             materialSchema.GetBaseMaterialPath().GetString();
         if (TfStringStartsWith(baseMaterialPath, "/_")) {
             continue;
+        }
+        // specialized
+        std::string specializedPath;
+        SdfPathListOp pathsListOp;
+        childIt->GetMetadata(SdfFieldKeys->Specializes, &pathsListOp);
+        if (pathsListOp.HasKeys()) {
+            std::vector<SdfPath> itemVector;
+            if (pathsListOp.IsExplicit())
+                itemVector = pathsListOp.GetExplicitItems();
+            else
+                itemVector = pathsListOp.GetAddedItems();
+            if (itemVector.size()) {
+                specializedPath = itemVector[0].GetString();
+                if (TfStringStartsWith(specializedPath, "/_")) {
+                    continue;
+                }
+            }
         }
 
         materialNames.push_back(childIt->GetName());
 
     }
 
-    return IMPLPtr(new FnAttribute::StringAttribute(materialNames));
+    FnAttribute::GroupBuilder gb;
+    gb.set("materialNames", FnAttribute::StringAttribute(materialNames));
+    if (stage->GetPrimAtPath(SdfPath("/LooksDerivedStructure"))) {
+        // older looks derived structure, for derivesFrom-based 
+        // shader libraries
+        gb.set("root", FnAttribute::StringAttribute("/LooksDerivedStructure"));
+    }
+    else {
+        // newer, for specialize arcs
+        gb.set("root", FnAttribute::StringAttribute(""));
+    }
+
+    return IMPLPtr(new FnAttribute::GroupAttribute(gb.build()));
 }
 
 

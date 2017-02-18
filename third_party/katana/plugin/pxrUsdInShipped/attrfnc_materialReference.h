@@ -48,11 +48,11 @@ public:
 
 // Cache for the LibraryMaterialNames AttributeFunction
 class LibraryMaterialNamesAttrFncCache : public FnGeolibUtil::AttributeKeyedCache<
-FnAttribute::StringAttribute >
+FnAttribute::GroupAttribute >
 {
 public:
     LibraryMaterialNamesAttrFncCache() : FnGeolibUtil::AttributeKeyedCache<
-        FnAttribute::StringAttribute>() {}
+        FnAttribute::GroupAttribute>() {}
 protected:
     IMPLPtr createValue(const FnAttribute::Attribute & attr);
 };
