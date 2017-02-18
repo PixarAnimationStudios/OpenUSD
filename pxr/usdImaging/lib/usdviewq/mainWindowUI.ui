@@ -154,40 +154,179 @@
            </column>
           </widget>
          </item>
+
+         <item>
+            <widget class="QWidget" name="nodeLegendContainer">
+                 <property name="maximumSize">
+                     <size>
+                         <width>400</width>
+                         <height>100</height>
+                     </size>
+                 </property>
+                <layout class="QVBoxLayout" name="nodeLegendLayoutContainer">
+                <item>
+                <layout class="QGridLayout" name="nodeLegendLayout">
+                <item row="0" column="0">
+                     <widget class="QGraphicsView" name="nodeLegendColorHasArcs">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="0" column="1">
+                     <widget class="QLabel" name="nodeLegendLabelHasArcs">
+                         <property name="font">
+                             <font>
+                                 <family>Gotham Rounded</family>
+                                 <pointsize>9</pointsize>
+                                 <weight>50</weight>
+                                 <italic>false</italic>
+                                 <bold>false</bold>
+                             </font>
+                         </property>
+                         <property name="text">
+                             <string>HasArcs</string>
+                         </property>
+                     </widget>
+                 </item> 
+
+
+                 <item row="0" column="2">
+                     <widget class="QGraphicsView" name="nodeLegendColorInstance">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="0" column="3">
+                     <widget class="QLabel" name="nodeLegendLabelInstance">
+                         <property name="font">
+                             <font>
+                                 <family>Gotham Rounded</family>
+                                 <pointsize>9</pointsize>
+                                 <weight>50</weight>
+                                 <italic>false</italic>
+                                 <bold>false</bold>
+                             </font>
+                         </property>
+                         <property name="text">
+                             <string>Instance</string>
+                         </property>
+                     </widget>
+                 </item> 
+
+                 <item row="0" column="4">
+                     <widget class="QGraphicsView" name="nodeLegendColorMaster">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="0" column="5">
+                     <widget class="QLabel" name="nodeLegendLabelMaster">
+                         <property name="font">
+                             <font>
+                                 <family>Gotham Rounded</family>
+                                 <pointsize>9</pointsize>
+                                 <weight>50</weight>
+                                 <italic>false</italic>
+                                 <bold>false</bold>
+                             </font>
+                         </property>
+                         <property name="text">
+                             <string>Master</string>
+                         </property>
+                     </widget>
+                 </item> 
+
+                 <item row="0" column="6">
+                     <widget class="QGraphicsView" name="nodeLegendColorNormal">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="0" column="7">
+                     <widget class="QLabel" name="nodeLegendLabelNormal">
+                         <property name="font">
+                             <font>
+                                 <family>Gotham Rounded</family>
+                                 <pointsize>9</pointsize>
+                                 <weight>50</weight>
+                                 <italic>false</italic>
+                                 <bold>false</bold>
+                             </font>
+                         </property>
+                         <property name="text">
+                             <string>Normal</string>
+                         </property>
+                     </widget>
+                 </item> 
+                </layout>
+                </item>
+                
+                <item>
+                <layout class="QVBoxLayout" name="nodeLegendLabelContainer">
+                <item>
+                    <widget class="QLabel" name="nodeLegendLabelDimmed">
+                        <property name="text">
+                            <string>Dimmed colors denote inactive prims</string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QLabel" name="nodeLegendLabelFontsAbstract">
+                        <property name="text">
+                            <string>Normal font indicates abstract prims(class and children)</string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QLabel" name="nodeLegendLabelFontsUndefined">
+                        <property name="text">
+                            <string>Italic font indicates undefined prims(declared with over)</string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QLabel" name="nodeLegendLabelFontsDefined">
+                        <property name="text">
+                            <string>Bold font indicates defined prims(declared with def)</string>
+                        </property>
+                    </widget>
+                </item>
+
+                </layout>
+                </item>
+
+                </layout>
+            </widget>
+         </item>
+
          <item>
           <layout class="QHBoxLayout" name="nodeFindContainer">
            <property name="topMargin">
             <number>0</number>
            </property>
+
            <item>
-            <widget class="QPushButton" name="nodeViewHelp">
-             <property name="maximumSize">
-              <size>
-               <width>34</width>
-               <height>24</height>
-              </size>
-             </property>
-             <property name="font">
-              <font>
-               <family>Gotham Rounded</family>
-               <pointsize>11</pointsize>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="focusPolicy">
-              <enum>Qt::NoFocus</enum>
-             </property>
-             <property name="toolTip">
-              <string/>
-             </property>
-             <property name="text">
-              <string>?</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_7">
+            <spacer name="horizontalSpacer_10">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -196,11 +335,33 @@
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>9</width>
+               <width>5</width>
                <height>20</height>
               </size>
              </property>
             </spacer>
+           </item>
+
+           <item>
+            <widget class="QToolButton" name="nodeLegendQButton">
+             <property name="iconSize">
+              <size>
+               <width>12</width>
+               <height>12</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Gotham Rounded</family>
+               <pointsize>9</pointsize>
+               <weight>50</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>?</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLineEdit" name="nodeViewLineEdit">
@@ -324,7 +485,7 @@
           <number>5</number>
          </property>
          <item>
-          <widget class="QTableWidget" name="attributeView">
+          <widget class="QTableWidget" name="propertyView">
            <property name="toolTip">
             <string/>
            </property>
@@ -397,181 +558,214 @@
            </column>
           </widget>
          </item>
+         <!-- Property Value Inspector Key Begin -->
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_6">
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <spacer name="horizontalSpacer_10">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QGraphicsView" name="attribLegendColorFallback">
+             <widget class="QWidget" name="propertyLegendContainer">
              <property name="maximumSize">
-              <size>
-               <width>20</width>
-               <height>15</height>
-              </size>
+                 <size>
+                     <width>500</width>
+                     <height>100</height>
+                 </size>
              </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="attribLegendLabelFallback">
-             <property name="font">
-              <font>
-               <family>Gotham Rounded</family>
-               <pointsize>9</pointsize>
-               <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Fallback</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QGraphicsView" name="attribLegendColorDefault">
-             <property name="maximumSize">
-              <size>
-               <width>20</width>
-               <height>15</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="attribLegendLabelDefault">
-             <property name="font">
-              <font>
-               <family>Gotham Rounded</family>
-               <pointsize>9</pointsize>
-               <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Default</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QGraphicsView" name="attribLegendColorClamped">
-             <property name="maximumSize">
-              <size>
-               <width>20</width>
-               <height>15</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="attribLegendLabelClamped">
-             <property name="font">
-              <font>
-               <family>Gotham Rounded</family>
-               <pointsize>9</pointsize>
-               <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Clamped</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_5">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QGraphicsView" name="attribLegendColorKeyframe">
-             <property name="maximumSize">
-              <size>
-               <width>20</width>
-               <height>15</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="attribLegendLabelKeyframe">
-             <property name="text">
-              <string>Keyframe</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_11">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="attribFindContainer">
+                 <layout class="QGridLayout" name="propertyLegendLayout">
+                 <item row="0" column="0">
+                     <widget class="QGraphicsView" name="propertyLegendColorFallback">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="0" column="1">
+                     <widget class="QLabel" name="propertyLegendLabelFallback">
+                         <property name="font">
+                             <font>
+                                 <family>Gotham Rounded</family>
+                                 <pointsize>9</pointsize>
+                                 <weight>50</weight>
+                                 <italic>false</italic>
+                                 <bold>false</bold>
+                             </font>
+                         </property>
+                         <property name="text">
+                             <string>Fallback</string>
+                         </property>
+                     </widget>
+                 </item> 
+
+                 <item row="0" column="2">
+                     <widget class="QGraphicsView" name="propertyLegendColorDefault">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="0" column="3">
+                     <widget class="QLabel" name="propertyLegendLabelDefault">
+                         <property name="font">
+                             <font>
+                                 <family>Gotham Rounded</family>
+                                 <pointsize>9</pointsize>
+                                 <weight>50</weight>
+                                 <italic>false</italic>
+                                 <bold>false</bold>
+                             </font>
+                         </property>
+                         <property name="text">
+                             <string>Default</string>
+                         </property>
+                     </widget>
+                 </item> 
+
+                 <item row="0" column="4">
+                     <widget class="QGraphicsView" name="propertyLegendColorTimeSample">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="0" column="5">
+                     <widget class="QLabel" name="propertyLegendLabelTimeSample">
+                         <property name="font">
+                             <font>
+                                 <family>Gotham Rounded</family>
+                                 <pointsize>9</pointsize>
+                                 <weight>50</weight>
+                                 <italic>false</italic>
+                                 <bold>false</bold>
+                             </font>
+                         </property>
+                         <property name="text">
+                             <string>Time Samples (Interpolated) </string>
+                         </property>
+                     </widget>
+                 </item> 
+
+                 
+                 <item row="1" column="0">
+                     <widget class="QGraphicsView" name="propertyLegendColorNoValue">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="1" column="1">
+                     <widget class="QLabel" name="propertyLegendLabelNoValue">
+                         <property name="font">
+                             <font>
+                                 <family>Gotham Rounded</family>
+                                 <pointsize>9</pointsize>
+                                 <weight>50</weight>
+                                 <italic>false</italic>
+                                 <bold>false</bold>
+                             </font>
+                         </property>
+                         <property name="text">
+                             <string>No Value</string>
+                         </property>
+                     </widget>
+                 </item>
+
+
+                 <item row="1" column="2">
+                     <widget class="QGraphicsView" name="propertyLegendColorCustom">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="1" column="3">
+                     <widget class="QLabel" name="propertyLegendLabelCustom">
+                         <property name="text">
+                             <string>Custom</string>
+                         </property>
+                     </widget>
+                 </item>
+                 <item row="1" column="4">
+                     <widget class="QGraphicsView" name="propertyLegendColorValueClips">
+                         <property name="maximumSize">
+                             <size>
+                                 <width>20</width>
+                                 <height>15</height>
+                             </size>
+                         </property>
+                     </widget>
+                 </item>
+
+                 <item row="1" column="5">
+                     <widget class="QLabel" name="propertyLegendLabelValueClips">
+                         <property name="font">
+                             <font>
+                                 <family>Gotham Rounded</family>
+                                 <pointsize>9</pointsize>
+                                 <weight>50</weight>
+                                 <italic>false</italic>
+                                 <bold>false</bold>
+                             </font>
+                         </property>
+                         <property name="text">
+                             <string>Value Clips (Interpolated)</string>
+                         </property>
+                     </widget>
+                 </item> 
+             </layout>  <!-- End QGridLayout -->
+
+             </widget> <!-- End Container Widget -->
+          </item>    <!-- Property Value Inspector Key End -->
+
+          <item>
+          <layout class="QHBoxLayout" name="propertyFindContainer">
            <property name="leftMargin">
             <number>5</number>
            </property>
            <property name="rightMargin">
             <number>5</number>
            </property>
+           <item>
+              <widget class="QToolButton" name="propertyLegendQButton">
+                  <property name="font">
+                      <font>
+                          <family>Gotham Rounded</family>
+                          <pointsize>9</pointsize>
+                          <weight>50</weight>
+                          <italic>false</italic>
+                          <bold>false</bold>
+                      </font>
+                  </property>
+                  <property name="focusPolicy">
+                      <enum>Qt::NoFocus</enum>
+                  </property>
+                  <property name="iconSize">
+                      <size>
+                          <width>12</width>
+                          <height>12</height>
+                      </size>
+                  </property>
+                  <property name="text">
+                      <string>?</string>
+                  </property>
+              </widget>
+           </item>
+
            <item>
             <widget class="QLineEdit" name="attrViewLineEdit">
              <property name="maximumSize">

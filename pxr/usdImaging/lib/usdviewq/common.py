@@ -38,10 +38,10 @@ HeaderColor = QtGui.QBrush(QtGui.QColor(201, 199, 195))
 # We use color in the attribute browser to specify value source
 RedColor = QtGui.QBrush(QtGui.QColor(230, 132, 131))
 FallbackTextColor = HasArcsColor
-ClampedTextColor = QtGui.QBrush(QtGui.QColor(180, 180, 180))
-KeyframeTextColor = QtGui.QBrush(QtGui.QColor(177, 207, 153))
+TimeSampleTextColor = QtGui.QBrush(QtGui.QColor(177, 207, 153))
 DefaultTextColor = InstanceColor
 NoValueTextColor = QtGui.QBrush(QtGui.QColor(140, 140, 140))
+ValueClipsTextColor = QtGui.QBrush(QtGui.QColor(230,150,230))
 
 # Font constants.  We use font in the prim browser to distinguish
 # "resolved" prim specifier
@@ -60,10 +60,6 @@ NormalFont = QtGui.QFont()
 NormalFont.setWeight(35)
 AbstractPrimFont = NormalFont
 
-# Keys for destinguishing items in the attribute inspector
-class AttributeStatus(object):
-    DEFAULT, CLAMPED, KEYFRAME, FALLBACK, NOVALUE = range(5)
-
 def PrintWarning(title, description):
     import sys
     msg = sys.stderr
@@ -74,50 +70,47 @@ def PrintWarning(title, description):
 
 # Return attribute status at a certian frame (is it using the default, or the
 # fallback? Is it authored at this frame? etc.
-def GetAttributeStatus(attribute, frame, hasValue=None, hasAuthoredValue=None,
-                       valueIsDefault=None):
+def GetAttributeStatus(attribute, frame):
     if not isinstance(frame, Usd.TimeCode):
         frame = Usd.TimeCode(frame)
 
-    # Save time if someone has already made the queries
-    if hasValue == False:
-        return AttributeStatus.NOVALUE
-    elif hasValue is not None and hasAuthoredValue == False:
-        return AttributeStatus.FALLBACK
+    return attribute.GetResolveInfo(frame).GetSource()
 
-    if not attribute.HasValue():
-        return AttributeStatus.NOVALUE
+# Return a Font corresponding to certain attribute properties.
+# Currently this only applies italicization on interpolated time samples.
+def GetAttributeTextFont(attribute, frame):
+    if isinstance(attribute, CustomAttribute):
+        return None
 
-    # no authored value? it's using fallback
-    if not attribute.HasAuthoredValueOpinion():
-        return AttributeStatus.FALLBACK
+    if not isinstance(frame, Usd.TimeCode):
+        frame = Usd.TimeCode(frame)
 
-    if frame.IsDefault() or valueIsDefault:
-        return AttributeStatus.DEFAULT
+    frameVal = frame.GetValue()
+    bracketing = attribute.GetBracketingTimeSamples(frameVal) 
 
-    bracketingTS = attribute.GetBracketingTimeSamples(frame.GetValue())
-    if len(bracketingTS) == 0:
-        return AttributeStatus.DEFAULT
+    # Note that some attributes return an empty tuple, some None, from
+    # GetBracketingTimeSamples(), but all will be fed into this function.
+    if bracketing and (len(bracketing) == 2) and (bracketing[0] != frameVal):
+        return ItalicFont
 
-    return (AttributeStatus.KEYFRAME if bracketingTS[0] == frame.GetValue() else
-            AttributeStatus.CLAMPED)
+    return None 
 
 # Helper function that takes attribute status and returns the display color
 def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
                       valueIsDefault=None):
+
     if isinstance(attribute, CustomAttribute):
         return RedColor.color()
 
-    statusToColor = {AttributeStatus.FALLBACK: FallbackTextColor,
-                     AttributeStatus.DEFAULT: DefaultTextColor,
-                     AttributeStatus.KEYFRAME: KeyframeTextColor,
-                     AttributeStatus.CLAMPED: ClampedTextColor,
-                     AttributeStatus.NOVALUE: NoValueTextColor}
+    statusToColor = {Usd.ResolveInfoSourceFallback   : FallbackTextColor,
+                     Usd.ResolveInfoSourceDefault    : DefaultTextColor,
+                     Usd.ResolveInfoSourceValueClips : ValueClipsTextColor,
+                     Usd.ResolveInfoSourceTimeSamples: TimeSampleTextColor,
+                     Usd.ResolveInfoSourceNone       : NoValueTextColor}
 
-    return statusToColor[GetAttributeStatus(attribute, frame, hasValue, 
-                                            hasAuthoredValue, valueIsDefault)]\
-                                            .color()
+    valueSource = GetAttributeStatus(attribute, frame)
 
+    return statusToColor[valueSource].color()
 
 # Gathers information about a layer used as a subLayer, including its
 # position in the layerStack hierarchy.
