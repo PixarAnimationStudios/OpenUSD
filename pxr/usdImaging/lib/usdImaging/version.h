@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Version 9 -- Rework UsdImagingEngineGL::RenderParams API to conform to
 //              updated purpose tokens and make proxy imaging optional.
 
-#define USD_IMAGING_API 9
+#define USD_IMAGING_API_VERSION 9
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
