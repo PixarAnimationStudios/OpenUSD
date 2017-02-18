@@ -105,7 +105,7 @@
 /// count decremented.
 ///
 /// A \c TfRefPtr<T> can access \c T's public members by the
-/// \c -> operator; however, the dereference operator "\c *" is not defined.
+/// \c -> operator and can be dereferenced by the "\c *" operator.
 /// Here is a simple example:
 /// \code
 ///    #include "pxr/base/tf/refPtr.h"
@@ -849,6 +849,11 @@ public:
             TF_FATAL_ERROR("attempted member lookup on NULL %s",
                            ArchGetDemangled(typeid(TfRefPtr)).c_str());
         return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
+    }
+
+    /// Dereferences the stored pointer.
+    T& operator *() const {
+        return *operator->();
     }
 
 #if !defined(doxygen)

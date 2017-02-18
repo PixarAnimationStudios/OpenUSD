@@ -240,6 +240,10 @@ public:
         return 0;
     }
 
+    DataType &operator * () const {
+        return * operator->();
+    }
+
     /// Reset this pointer to point at no object. Equivalent to assignment
     /// with \a TfNullPtr.
     void Reset() {
@@ -257,10 +261,6 @@ private:
             TF_FATAL_ERROR("Called TfTypeid on invalid %s",
                            ArchGetDemangled(typeid(Derived)).c_str());
         return typeid(*get_pointer(p));
-    }
-
-    DataType &operator * () const {
-        return * operator->();
     }
 
     DataType *_FetchPointer() const {
