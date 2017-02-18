@@ -52,6 +52,9 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/tf/fileUtils.h"
+
+#include "pxr/base/arch/fileSystem.h"
 
 #include <boost/scoped_ptr.hpp>
 
@@ -538,11 +541,11 @@ static void testDictionaryPyFormatting() {
     if (vt0 != vt2)
         die("VtDictionaryFromFile - written and read dictionaries differ!");
 
-    unlink("link-to-dictionary");
-    symlink(fileName, "link-to-dictionary");
+    ArchUnlinkFile("link-to-dictionary");
+    TfSymlink(fileName, "link-to-dictionary");
     VtDictionary vt3 = VtDictionaryFromFile("link-to-dictionary");
     if (vt3 != vt2)
-        die("VtDictionaryFromFile - read from symlink failed!");
+        die("VtDictionaryFromFile - read from TfSymlink failed!");
 
     {
         TfErrorMark m;
@@ -854,7 +857,7 @@ static void testValue() {
     if (!v.CanCastToTypeOf(v))
         die("CanCast to same type");
     if (v.CastToTypeOf(v).Get<double>() != 1.25)
-	die("Casting to same type got wrong value");
+        die("Casting to same type got wrong value");
     
     v = VtValue(1.25);
     VtValue v2 = VtValue(3);
@@ -868,7 +871,7 @@ static void testValue() {
     if (!v.CanCastToTypeOf(v2))
         die("CanCast to type of another value");
     if (VtValue::CastToTypeOf(v2, v).Get<double>() != 3.0)
-	die("Could not cast to type of another value");
+        die("Could not cast to type of another value");
 
     v = VtValue(1.25);
     if (!v.CanCastToTypeid(typeid(double)))

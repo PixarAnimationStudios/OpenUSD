@@ -25,6 +25,7 @@
 #define VT_OPERATORS_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_same.hpp>
@@ -126,7 +127,7 @@ PXR_NAMESPACE_OPEN_SCOPE
         return ret;                                                     \
     } 
 
-#define VTOPERATOR_CPPSCALAR(op)                                \
+#define VTOPERATOR_CPPSCALAR(op)                                        \
     VTOPERATOR_CPPSCALAR_TYPE(op,ElemType,ElemType,ElemType)
 
 // define special-case operators on arrays and doubles - except if the array
@@ -138,8 +139,8 @@ PXR_NAMESPACE_OPEN_SCOPE
                                VtArray<ElemType> >::type                       \
     operator op (double const &scalar,                                         \
                  VtArray<ElemType> const &vec) {                               \
-        VtArray<ElemType> ret(vec.size());                                 \
-        for (size_t i = 0; i<vec.size(); ++i)                               \
+        VtArray<ElemType> ret(vec.size());                                     \
+        for (size_t i = 0; i<vec.size(); ++i)                                  \
             ret[i] = scalar op vec[i];                                         \
         return ret;                                                            \
     }                                                                          \
@@ -148,8 +149,8 @@ PXR_NAMESPACE_OPEN_SCOPE
                                VtArray<ElemType> >::type                       \
     operator op (VtArray<ElemType> const &vec,                                 \
                  double const &scalar) {                                       \
-        VtArray<ElemType> ret(vec.size());                                 \
-        for (size_t i = 0; i<vec.size(); ++i)                               \
+        VtArray<ElemType> ret(vec.size());                                     \
+        for (size_t i = 0; i<vec.size(); ++i)                                  \
             ret[i] = vec[i] op scalar;                                         \
         return ret;                                                            \
     } 
@@ -166,13 +167,13 @@ PXR_NAMESPACE_OPEN_SCOPE
     VtArray<rettype> method##pytype(VtArray<T> vec, pytype obj)              \
     {                                                                        \
         size_t length = len(obj);                                            \
-        if (length != vec.size()) {                                       \
+        if (length != vec.size()) {                                          \
             TfPyThrowValueError("Non-conforming inputs for operator " #op);  \
             return VtArray<T>();                                             \
         }                                                                    \
-        VtArray<rettype> ret(vec.size());                                \
+        VtArray<rettype> ret(vec.size());                                    \
         for (int i = 0; i < length; ++i) {                                   \
-            if (!extract<T>(obj[i]).check())                              \
+            if (!extract<T>(obj[i]).check())                                 \
                 TfPyThrowValueError("Element is of incorrect type.");        \
             ret[i] = expr;                                                   \
         }                                                                    \
@@ -225,13 +226,13 @@ PXR_NAMESPACE_OPEN_SCOPE
     VtArray<bool> Vt##func(arg1, arg2)                                \
     {                                                                 \
         size_t length = len(obj);                                     \
-        if (length != vec.size()) {                                \
+        if (length != vec.size()) {                                   \
             TfPyThrowValueError("Non-conforming inputs for " #func);  \
             return VtArray<bool>();                                   \
         }                                                             \
-        VtArray<bool> ret(vec.size());                            \
+        VtArray<bool> ret(vec.size());                                \
         for (int i = 0; i < length; ++i) {                            \
-            if (!extract<T>(obj[i]).check())                       \
+            if (!extract<T>(obj[i]).check())                          \
                 TfPyThrowValueError("Element is of incorrect type."); \
             ret[i] = expr;                                            \
         }                                                             \
@@ -278,9 +279,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct Vt_Reserved;
 
-bool
+VT_API bool
 Vt_ArrayStackCheck(size_t size, const Vt_Reserved* reserved);
-bool
+VT_API bool
 Vt_ArrayCompareSize(size_t aSize, const Vt_Reserved* aReserved,
                     size_t bSize, const Vt_Reserved* bReserved);
 

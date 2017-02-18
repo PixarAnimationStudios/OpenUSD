@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/vt/arrayPyBuffer.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
@@ -590,7 +591,7 @@ VtArrayFromPyBuffer<VT_TYPE(elem)>(TfPyObjWrapper const &obj, string *err);
 BOOST_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
 #undef INSTANTIATE
 
-void Vt_AddBufferProtocolSupportToVtArrays()
+VT_API void Vt_AddBufferProtocolSupportToVtArrays()
 {
 
 // Add the buffer protocol support to every array type that we support it for.
@@ -600,8 +601,9 @@ void Vt_AddBufferProtocolSupportToVtArrays()
         Vt_CastBufferToArray<VT_TYPE(elem)>);                           \
     VtValue::RegisterCast<vector<VtValue>, VtArray<VT_TYPE(elem)> >(    \
         Vt_CastVectorToArray<VT_TYPE(elem)>);                           \
-    def(BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem)) "ArrayFromBuffer",       \
-        Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
+    boost::python::def(BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem))           \
+                        "ArrayFromBuffer",                              \
+                        Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
 
 BOOST_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)
 

@@ -29,6 +29,7 @@
 /// \file vt/dictionary.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/vt/keyValue.h"
 #include "pxr/base/vt/value.h"
 
@@ -182,64 +183,84 @@ public:
     }
 
     /// Creates a copy of the supplied \p VtDictionary
+    VT_API
     VtDictionary(VtDictionary const& other);
 
     /// Creates a new VtDictionary by moving the supplied \p VtDictionary.
+    VT_API
     VtDictionary(VtDictionary && other) = default;
 
     /// Creates a new VtDictionary from a braced initializer list.
+    VT_API
     VtDictionary(std::initializer_list<value_type> init);
 
     /// Copy assignment operator
+    VT_API
     VtDictionary& operator=(VtDictionary const& other);
 
     /// Move assignment operator
+    VT_API
     VtDictionary& operator=(VtDictionary && other) = default;
 
     /// Returns a reference to the \p VtValue that is associated with a 
     /// particular key.
+    VT_API
     VtValue& operator[](const std::string& key);
 
     /// Counts the number of elements whose key is \p key. 
+    VT_API
     size_type count(const std::string& key) const;
 
     /// Erases the element whose key is \p key. 
+    VT_API
     size_type erase(const std::string& key);
 
     /// Erases the element pointed to by \p it. 
+    VT_API
     void erase(iterator it);
 
     /// Erases all elements in a range.
+    VT_API
     void erase(iterator f, iterator l);
 
     /// Erases all of the elements. 
+    VT_API
     void clear();
 
     /// Finds an element whose key is \p key. 
+    VT_API
     iterator find(const std::string& key);
 
     /// Finds an element whose key is \p key. 
+    VT_API
     const_iterator find(const std::string& key) const;
 
     /// Returns an \p iterator pointing to the beginning of the \p VtDictionary. 
+    VT_API
     iterator begin();
 
     /// Returns an \p iterator pointing to the beginning of the \p VtDictionary. 
+    VT_API
     const_iterator begin() const;
 
     /// Returns an \p iterator pointing to the end of the \p VtDictionary. 
+    VT_API
     iterator end();
     
     /// Returns an \p iterator pointing to the end of the \p VtDictionary. 
+    VT_API
     const_iterator end() const;
 
     /// Returns the size of the VtDictionary. 
+    VT_API
     size_type size() const;
 	
     /// \c true if the \p VtDictionary's size is 0. 
+    VT_API
     bool empty() const;
     
     /// Swaps the contents of two \p VtDictionaries. 
+    VT_API
     void swap(VtDictionary& dict); 
 
     // Global overload for swap for unqualified calls in generic code.
@@ -266,6 +287,7 @@ public:
     }
 
     /// Inserts \p obj into the \p VtDictionary. 
+    VT_API
     std::pair<iterator, bool> insert(const value_type& obj);
 
     /// Return a pointer to the value at \p keyPath if one exists.  \p keyPath
@@ -273,6 +295,7 @@ public:
     /// produced by calling TfStringTokenize() with \p keyPath and
     /// \p delimiters.  \p keyPath may identify a leaf element or an entire
     /// sub-dictionary.  Return null if no such element at \p keyPath exists.
+    VT_API
     VtValue const *
     GetValueAtPath(std::string const &keyPath,
                    char const *delimiters = ":") const;
@@ -280,6 +303,7 @@ public:
     /// Return a pointer to the value at \p keyPath if one exists.  \p keyPath
     /// may identify a leaf element or an entire sub-dictionary.  Return null if
     /// no such element at \p keyPath exists.
+    VT_API
     VtValue const *
     GetValueAtPath(std::vector<std::string> const &keyPath) const;
 
@@ -289,6 +313,7 @@ public:
     /// sub-dictionaries as necessary according to the path elements in
     /// \p keyPath.  If \p keyPath identifies a full sub-dictionary, replace the
     /// entire sub-dictionary with \p value.
+    VT_API
     void SetValueAtPath(std::string const &keyPath,
                         VtValue const &value, char const *delimiters = ":");
 
@@ -296,6 +321,7 @@ public:
     /// necessary according to the path elements in \p keyPath.  If \p keyPath
     /// identifies a full sub-dictionary, replace the entire sub-dictionary with
     /// \p value.
+    VT_API
     void SetValueAtPath(std::vector<std::string> const &keyPath,
                         VtValue const &value);
 
@@ -304,12 +330,14 @@ public:
     /// TfStringTokenize() with \p keyPath and \p delimiters.  If no such
     /// element exists at \p keyPath, do nothing.  If \p keyPath identifies a
     /// sub-dictionary, erase the entire sub-dictionary.
+    VT_API
     void EraseValueAtPath(std::string const &keyPath,
         char const *delimiters = ":");
 
     /// Erase the value at \a keyPath.  If no such element exists at \p keyPath,
     /// do nothing.  If \p keyPath identifies a sub-dictionary, erase the entire
     /// sub-dictionary.
+    VT_API
     void EraseValueAtPath(std::vector<std::string> const &keyPath);
 
 private:
@@ -327,17 +355,17 @@ private:
 };
 
 /// Equality comparison.
-bool operator==(VtDictionary const &, VtDictionary const &);
-bool operator!=(VtDictionary const &, VtDictionary const &);
+VT_API bool operator==(VtDictionary const &, VtDictionary const &);
+VT_API bool operator!=(VtDictionary const &, VtDictionary const &);
 
 /// Write the contents of a VtDictionary to a stream, formatted like "{ 'key1':
 /// value1, 'key2': value2 }".
-std::ostream &operator<<(std::ostream &, VtDictionary const &);
+VT_API  std::ostream &operator<<(std::ostream &, VtDictionary const &);
 
 //
 // Return a const reference to an empty VtDictionary.
 //
-VtDictionary const &VtGetEmptyDictionary();
+VT_API VtDictionary const &VtGetEmptyDictionary();
 
 /// Returns true if \p dictionary contains \p key and the corresponding value
 /// is of type \p T.
@@ -402,7 +430,7 @@ struct Vt_DefaultGenerator {
 
 // This is a global stateless variable used to get the VtDefault = X syntax in
 // VtDictionaryGet.
-extern Vt_DefaultGenerator VtDefault;
+extern VT_API Vt_DefaultGenerator VtDefault;
 
 /// Return a value held in a VtDictionary, or a default value either if the
 /// supplied key is missing or if the types do not match.
@@ -440,7 +468,7 @@ T VtDictionaryGet( const VtDictionary &dictionary,
 /// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-VtDictionary
+VT_API VtDictionary
 VtDictionaryOver(const VtDictionary &strong, const VtDictionary &weak,
                  bool coerceToWeakerOpinionType = false);
 
@@ -455,7 +483,7 @@ VtDictionaryOver(const VtDictionary &strong, const VtDictionary &weak,
 /// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-void
+VT_API void
 VtDictionaryOver(VtDictionary *strong, const VtDictionary &weak,
                  bool coerceToWeakerOpinionType = false);
 
@@ -470,7 +498,7 @@ VtDictionaryOver(VtDictionary *strong, const VtDictionary &weak,
 /// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-void
+VT_API void
 VtDictionaryOver(const VtDictionary &strong, VtDictionary *weak,
                  bool coerceToWeakerOpinionType = false);
 
@@ -492,7 +520,7 @@ VtDictionaryOver(const VtDictionary &strong, VtDictionary *weak,
 /// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-VtDictionary
+VT_API VtDictionary
 VtDictionaryOverRecursive(const VtDictionary &strong, const VtDictionary &weak,
                           bool coerceToWeakerOpinionType = false);
 
@@ -513,7 +541,7 @@ VtDictionaryOverRecursive(const VtDictionary &strong, const VtDictionary &weak,
 /// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-void
+VT_API void
 VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak,
                           bool coerceToWeakerOpinionType = false);
 
@@ -537,7 +565,7 @@ VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak,
 /// intended to promote to enum types.
 ///
 /// \ingroup group_vtdict_functions
-void
+VT_API void
 VtDictionaryOverRecursive(const VtDictionary &strong, VtDictionary *weak,
                           bool coerceToWeakerOpinionType = false);
 
@@ -550,39 +578,39 @@ struct VtDictionaryHash {
 
 /// Evaluates the specified \p content string as a python dictionary and
 /// returns it as a VtDictionary.
-VtDictionary VtDictionaryFromPythonString(
+VT_API VtDictionary VtDictionaryFromPythonString(
     const std::string& content);
 
 /// Same as VtDictionaryFromPythonString but with more flexible failure
 /// policy.  Returns \c true if successful with the result in \p dict,
 /// otherwise returns \c false.
 /// 
-bool VtDictionaryFromPythonString(
+VT_API bool VtDictionaryFromPythonString(
     const std::string& content, 
     VtDictionary* dict);
 
 /// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
 /// and returns the formatted string. The pprint module is used to format the
 /// dictionary.
-std::string VtDictionaryPrettyPrint(
+VT_API std::string VtDictionaryPrettyPrint(
     const VtDictionary& vtdict);
 
 /// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
 /// and inserts it into the stream. The pprint module is used to format the
 /// dictionary.
-std::ostream& VtDictionaryPrettyPrint(
+VT_API std::ostream& VtDictionaryPrettyPrint(
     const VtDictionary& vtdict,
     std::ostream& ostream);
 
 /// Reads a text file at the specified \p fpath, evaluates its content string
 /// as a python dictionary and returns it as a VtDictionary.
-VtDictionary VtDictionaryFromFile(
+VT_API VtDictionary VtDictionaryFromFile(
     const std::string& fpath);
 
 /// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
 /// and saves the formatted string in a file at the specified \p fpath.
 /// The pprint module is used to format the dictionary.
-bool VtDictionaryPrettyPrintToFile(
+VT_API bool VtDictionaryPrettyPrintToFile(
     const VtDictionary& vtdict,
     const std::string& fpath);
 

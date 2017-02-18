@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
@@ -31,6 +32,7 @@
 
 #include "pxr/base/arch/math.h"
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
@@ -257,7 +259,7 @@ setitem_slice(VtArray<T> &self, slice idx, object value)
 
 
 template <class T>
-string GetVtArrayName();
+VT_API string GetVtArrayName();
 
 
 // To avoid overhead we stream out certain builtin types directly
@@ -387,6 +389,9 @@ VtArray<T> *VtArray__init__2(unsigned int size, object const &values)
 
 // overloading for operator special methods, to allow tuple / list & array
 // combinations
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
+ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
 VTOPERATOR_WRAP(+,__add__,__radd__)
 VTOPERATOR_WRAP_NONCOMM(-,__sub__,__rsub__)
 VTOPERATOR_WRAP(*,__mul__,__rmul__)
@@ -399,7 +404,7 @@ VTOPERATOR_WRAP_BOOL(Greater,>)
 VTOPERATOR_WRAP_BOOL(Less,<)
 VTOPERATOR_WRAP_BOOL(GreaterOrEqual,>=)
 VTOPERATOR_WRAP_BOOL(LessOrEqual,<=)
-
+ARCH_PRAGMA_POP
 }
 
 
@@ -516,7 +521,7 @@ Vt_ConvertFromPySequence(TfPyObjWrapper const &obj)
     typedef typename Array::ElementType ElemType;
     TfPyLock lock;
     if (PySequence_Check(obj.ptr())) {
-        size_t len = PySequence_Length(obj.ptr());
+        Py_ssize_t len = PySequence_Length(obj.ptr());
         Array result(len);
         ElemType *elem = result.data();
         for (size_t i = 0; i != len; ++i) {

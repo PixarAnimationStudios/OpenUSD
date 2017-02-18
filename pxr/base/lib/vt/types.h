@@ -28,6 +28,7 @@
 /// Defines all the types "TYPED" for which Vt creates a VtTYPEDArray typedef.
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/tf/token.h"
