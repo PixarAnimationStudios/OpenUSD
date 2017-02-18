@@ -33,6 +33,7 @@
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/nurbsPatch.h"
+#include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
@@ -49,6 +50,7 @@ DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_XformOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_ScopeOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_MeshOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_NurbsPatchOp)
+DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_PointInstancerOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_PointsOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_BasisCurvesOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_LookOp)
@@ -68,6 +70,7 @@ void registerPlugins()
     REGISTER_PLUGIN(PxrUsdInCore_ScopeOp, "PxrUsdInCore_ScopeOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_MeshOp, "PxrUsdInCore_MeshOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_NurbsPatchOp, "PxrUsdInCore_NurbsPatchOp", 0, 1);
+    REGISTER_PLUGIN(PxrUsdInCore_PointInstancerOp, "PxrUsdInCore_PointInstancerOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_PointsOp, "PxrUsdInCore_PointsOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_BasisCurvesOp, "PxrUsdInCore_BasisCurvesOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_LookOp, "PxrUsdInCore_LookOp", 0, 1);
@@ -82,6 +85,7 @@ void registerPlugins()
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomScope>("PxrUsdInCore_ScopeOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomMesh>("PxrUsdInCore_MeshOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomNurbsPatch>("PxrUsdInCore_NurbsPatchOp");
+    PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomPointInstancer>("PxrUsdInCore_PointInstancerOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomPoints>("PxrUsdInCore_PointsOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomBasisCurves>("PxrUsdInCore_BasisCurvesOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdShadeLook>("PxrUsdInCore_LookOp");
