@@ -2045,12 +2045,9 @@ class StageView(QtOpenGL.QGLWidget):
         return results
 
     def computePickFrustum(self, x, y):
-        from OpenGL import GL
 
-        # Need a correct OpenGL Rendering context to get viewport
-        self.makeCurrent()
-
-        posX, posY, width, height = GL.glGetIntegerv( GL.GL_VIEWPORT )
+        # normalize position and pick size by the viewport size
+        width, height = self.size().width(), self.size().height()
         size = Gf.Vec2d(1.0 / width, 1.0 / height)
         
         # compute pick frustum
