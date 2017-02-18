@@ -7,4 +7,7 @@ pxr_shared_library(tracelite
 
     PUBLIC_CLASSES
         trace
+        
+    PUBLIC_HEADERS
+        api.h
 )
