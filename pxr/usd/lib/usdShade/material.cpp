@@ -122,10 +122,15 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usd/editContext.h"
+#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/variantSets.h"
+
 #include "pxr/base/tf/envSetting.h"
+
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
+#include "pxr/usd/usdShade/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

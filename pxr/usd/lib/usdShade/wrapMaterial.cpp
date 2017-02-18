@@ -157,6 +157,7 @@ WRAP_CUSTOM {
 
         .def("HasMaterialFaceSet", &UsdShadeMaterial::HasMaterialFaceSet)
             .staticmethod("HasMaterialFaceSet")
+
         ;
 }
 

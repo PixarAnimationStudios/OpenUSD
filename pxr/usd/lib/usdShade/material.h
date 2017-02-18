@@ -431,7 +431,6 @@ public:
     static bool HasMaterialFaceSet(const UsdPrim &prim);
 
     /// @}
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

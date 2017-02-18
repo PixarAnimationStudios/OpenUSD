@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
+#include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 
 #include "pxr/usd/usd/conversions.h"
@@ -45,42 +45,40 @@ using std::vector;
 using namespace boost::python;
 
 static bool
-_Set(const UsdShadeOutput &self, object val, const UsdTimeCode &time) 
+_Set(const UsdShadeInput &self, object val, const UsdTimeCode &time) 
 {
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
 
-void wrapUsdShadeOutput()
+void wrapUsdShadeInput()
 {
-    typedef UsdShadeOutput Output;
+    typedef UsdShadeInput Input;
 
-    class_<Output>("Output")
+    class_<Input>("Input")
         .def(init<UsdAttribute>(arg("attr")))
         .def(!self)
 
-        .def("GetFullName", &Output::GetFullName,
+        .def("GetFullName", &Input::GetFullName,
                 return_value_policy<return_by_value>())
-        .def("GetBaseName", &Output::GetBaseName)
-        .def("GetPrim", &Output::GetPrim)
-        .def("GetTypeName", &Output::GetTypeName)
+        .def("GetBaseName", &Input::GetBaseName)
+        .def("GetPrim", &Input::GetPrim)
+        .def("GetTypeName", &Input::GetTypeName)
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
-        .def("SetRenderType", &Output::SetRenderType,
+        .def("SetRenderType", &Input::SetRenderType,
              (arg("renderType")))
-        .def("GetRenderType", &Output::GetRenderType)
-        .def("HasRenderType", &Output::HasRenderType)
+        .def("GetRenderType", &Input::GetRenderType)
+        .def("HasRenderType", &Input::HasRenderType)
 
-        .def("GetAttr", &Output::GetAttr)
-        .def("GetRel", &Output::GetRel)
-        .def("GetProperty", &Output::GetProperty,
-                return_value_policy<return_by_value>())
+        .def("GetAttr", &Input::GetAttr,
+             return_value_policy<return_by_value>())
         ;
 
-    implicitly_convertible<Output, UsdAttribute>();
-    implicitly_convertible<Output, UsdProperty>();
+    implicitly_convertible<Input, UsdAttribute>();
+    implicitly_convertible<Input, UsdProperty>();
 
     to_python_converter<
-        std::vector<Output>,
-        TfPySequenceToPython<std::vector<Output> > >();
+        std::vector<Input>,
+        TfPySequenceToPython<std::vector<Input> > >();
 }
 
 

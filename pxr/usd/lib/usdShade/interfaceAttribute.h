@@ -244,10 +244,6 @@ public:
     /// \endcode
     bool IsConnected() const;
 
-    /// Return the name of the sibling relationship that would encode
-    /// the connection for this interface attribute.
-    TfToken GetConnectionRelName() const;
-
     /// @}
 
     /// Set documentation string for this attribute.

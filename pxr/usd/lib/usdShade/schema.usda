@@ -60,8 +60,14 @@ over "GLOBAL" (
             }
             dictionary outputs = {
                 string value = "outputs:"
-                string doc = """The prefix on UsdShadeShader attributes
+                string doc = """The prefix on shading attributes
                 denoting an output.
+                """
+            }
+            dictionary inputs = {
+                string value = "inputs:"
+                string doc = """The prefix on shading attributes
+                denoting an input.
                 """
             }
             dictionary interface = {
@@ -118,9 +124,10 @@ class Subgraph "Subgraph" (
 #include <utility>
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/relationship.h"
+#include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
-#include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/parameter.h"
 """
     }
 ) {
@@ -257,8 +264,9 @@ class Shader "Shader" (
     UsdShadeParameter schema.""" 
     customData = {
         string extraIncludes = """
-#include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/parameter.h"
     """
     }
 ) {

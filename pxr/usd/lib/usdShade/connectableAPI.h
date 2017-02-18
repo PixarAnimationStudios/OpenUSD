@@ -168,34 +168,67 @@ public:
         return UsdShadeShader(GetPrim());
     }
 
+    /// \name Connections 
+    /// 
+    /// Inputs and outputs on shaders and subgraphs are connectable.
+    /// This section provides API for authoring and managing these connections
+    /// in a shading network.
+    /// 
+    /// @{
+
     /// Authors a connection for a given shading property \p shadingProp. 
     /// 
     /// \p shadingProp can represent a parameter, an interface attribute or 
     /// an output.
-    /// \p source is the connectable prim that produces or contains a value 
-    /// for the given shading property.
     /// \p sourceName is the name of the shading property that is the target
     /// of the connection. This excludes any namespace prefix that determines 
     /// the type of the source (eg, output or interface attribute).
-    /// \p typeName is used to validate whether the types of the source and 
-    /// target of the connection are compatible.
     /// \p sourceType is used to indicate the type of the shading property 
     /// that is the target of the connection. The source type is used to 
     /// determine the namespace prefix that must be attached to \p sourceName
     /// to determine the source full property name.
+    /// \p typeName if specified, is the typename of the attribute to create 
+    /// on the source if it doesn't exist. It is also used to validate whether 
+    /// the types of the source and consumer of the connection are compatible.
+    /// \p source is the connectable prim that produces or contains a value 
+    /// for the given shading property.
     /// 
     /// \return 
     /// \c true if a connection was created successfully. 
     /// \c false if \p shadingProp or \p source is invalid.
     /// 
-    static bool MakeConnection(
+    /// \note The source shading property is created if it doesn't exist 
+    /// already.
+    ///
+    static bool ConnectToSource(
         UsdProperty const &shadingProp,
         UsdShadeConnectableAPI const &source, 
         TfToken const &sourceName, 
-        SdfValueTypeName typeName,
-        UsdShadeAttributeType const sourceType);
+        UsdShadeAttributeType const sourceType=UsdShadeAttributeType::Output,
+        SdfValueTypeName typeName=SdfValueTypeName());
 
-    /// Evaluates the source of a connection for the given shading property.
+    /// \overload
+    /// Connect the given shading property to the source at path, \p sourcePath. 
+    /// 
+    /// \p sourcePath should be the fully namespaced property path. 
+    /// 
+    /// This overload is provided for convenience, for use in contexts where 
+    /// the prim types are unknown or unavailable.
+    /// 
+    static bool ConnectToSource(UsdProperty const &shadingProp, 
+                                SdfPath const &sourcePath);
+
+    /// \overload 
+    /// Connect the given shading property to the given source input. 
+    static bool ConnectToSource(UsdProperty const &shadingProp, 
+                                UsdShadeInput const &sourceInput);
+
+    /// \overload 
+    /// Connect the given shading property to the given source output. 
+    static bool ConnectToSource(UsdProperty const &shadingProp, 
+                                UsdShadeOutput const &sourceOutput);
+
+    /// Finds the source of a connection for the given shading property.
     /// 
     /// \p shadingProp is the input shading property which is typically an 
     /// attribute, but can be a relationship in the case of a terminal on a 
@@ -213,18 +246,56 @@ public:
     /// \c false if the shading property is not connected to a single, valid 
     /// source. 
     /// 
-    static bool EvaluateConnection(
+    /// \note The python wrapping for this method returns a 
+    /// (source, sourceName, sourceType) tuple if the parameter is connected, 
+    /// else \c None
+    ///
+    static bool GetConnectedSource(
         UsdProperty const &shadingProp,
         UsdShadeConnectableAPI *source, 
         TfToken *sourceName,
         UsdShadeAttributeType *sourceType);
 
-    /// Returns the relationship that encodes the connection to the given 
-    /// shading property, which can be a parameter, an output or an 
-    /// interface attribute.
-    static UsdRelationship GetConnectionRel(
-        const UsdProperty &shadingProp, 
-        bool create);
+    /// Returns true if and only if the shading property is currently connected 
+    /// to a valid (defined) source. 
+    ///
+    /// If you will be calling GetConnectedSource() afterwards anyways, 
+    /// it will be \em much faster to instead guard like so:
+    /// \code
+    /// if (UsdShadeConnectableAPI::GetConnectedSource(property, &source, 
+    ///         &sourceName, &sourceType)){
+    ///      // process connected property
+    /// } else {
+    ///      // process unconnected property
+    /// }
+    /// \endcode
+    static bool HasConnectedSource(const UsdProperty &shadingProp);
+
+    /// Disconnect source for this shading property.
+    ///
+    /// This may author more scene description than you might expect - we define
+    /// the behavior of disconnect to be that, even if a shading property 
+    /// becomes connected in a weaker layer than the current UsdEditTarget, the
+    /// property will \em still be disconnected in the composition, therefore
+    /// we must "block" it (see for e.g. UsdRelationship::BlockTargets()) in
+    /// the current UsdEditTarget. 
+    ///
+    /// \sa ConnectToSource().
+    static bool DisconnectSource(UsdProperty const &shadingProp);
+
+    /// Clears source for this shading property in the current UsdEditTarget.
+    ///
+    /// Most of the time, what you probably want is DisconnectSource()
+    /// rather than this function.
+    ///
+    /// \sa DisconnectSource()
+    static bool ClearSource(UsdProperty const &shadingProp);
+
+    /// @}
+
+
+    /// \name Outputs 
+    /// @{
 
     /// Create an output, which represents and externally computed, typed value.
     /// Outputs on subgraphs can be connected. 
@@ -237,12 +308,39 @@ public:
 
     /// Return the requested output if it exists.
     /// 
+    /// \p name is the unnamespaced base name.
+    ///
     UsdShadeOutput GetOutput(const TfToken &name) const;
 
     /// Returns all outputs on the connectable prim (i.e. shader or subgraph). 
-    /// Outputs are represented by attributes in the "outputs" namespace.
+    /// Outputs are represented by attributes in the "outputs:" namespace.
     /// 
     std::vector<UsdShadeOutput> GetOutputs() const;
+
+    /// @}
+
+    /// \name Inputs 
+    /// @{
+        
+    /// Create an input which can both have a value and be connected.
+    /// The attribute representing the input is created in the "inputs:" 
+    /// namespace.
+    /// 
+    UsdShadeInput CreateInput(const TfToken& name,
+                               const SdfValueTypeName& typeName) const;
+
+    /// Return the requested input if it exists.
+    /// 
+    /// \p name is the unnamespaced base name.
+    /// 
+    UsdShadeInput GetInput(const TfToken &name) const;
+
+    /// Returns all inputs on the connectable prim (i.e. shader or subgraph). 
+    /// Inputs are represented by attributes in the "inputs:" namespace.
+    /// 
+    std::vector<UsdShadeInput> GetInputs() const;
+
+    /// @}
 
 };
 

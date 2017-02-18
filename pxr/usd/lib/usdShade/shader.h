@@ -32,8 +32,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdShade/tokens.h"
 
-#include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/parameter.h"
     
 
 #include "pxr/base/vt/value.h"
@@ -199,6 +200,13 @@ public:
     /// a UsdShadeConnectableAPI.
     operator UsdShadeConnectableAPI () const;
 
+    /// \name Parameters API
+    /// \deprecated
+    /// Parameters have been replaced by the more general UsdShadeInputs, that
+    /// can exist on shaders and subgraphs.
+    /// 
+    /// @{
+        
     /// Create a parameter which can either have a value or can be
     /// connected.
     ///
@@ -216,6 +224,19 @@ public:
     /// a namespace
     std::vector<UsdShadeParameter> GetParameters() const;
 
+    /// @}
+
+
+    /// \name Outputs API
+    ///
+    /// Outputs represent a typed property on a shader or subgraph whose value 
+    /// is computed externally. 
+    /// 
+    /// When they exist on a subgraph, they are connectable and are typically 
+    /// connected to the output of a shader within the subgraph.
+    /// 
+    /// @{
+        
     /// Create an output which can either have a value or can be connected.
     /// The attribute representing the output is created in the "outputs:" 
     /// namespace. Outputs on a shader cannot be connected, as their 
@@ -228,9 +249,38 @@ public:
     /// 
     UsdShadeOutput GetOutput(const TfToken &name) const;
 
-    /// Outputs are represented by attributes in the "outputs" namespace.
+    /// Outputs are represented by attributes in the "outputs:" namespace.
     /// 
     std::vector<UsdShadeOutput> GetOutputs() const;
+
+    /// @}
+
+
+    /// \name Inputs API
+    ///
+    /// Inputs are connectable properties with a typed value. 
+    /// 
+    /// On shaders, the shader parameters are encoded as inputs. On subgraphs,
+    /// interface attributes are represented as inputs.
+    /// 
+    /// @{
+        
+    /// Create an input which can either have a value or can be connected.
+    /// The attribute representing the input is created in the "inputs:" 
+    /// namespace. Inputs on both shaders and subgraphs are connectable.
+    /// 
+    UsdShadeInput CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName);
+
+    /// Return the requested input if it exists.
+    /// 
+    UsdShadeInput GetInput(const TfToken &name) const;
+
+    /// Inputs are represented by attributes in the "inputs:" namespace.
+    /// 
+    std::vector<UsdShadeInput> GetInputs() const;
+
+    /// @}
 
 };
 
