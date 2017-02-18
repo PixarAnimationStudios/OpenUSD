@@ -1497,7 +1497,7 @@ PcpChanges::_DidChangeDependents(
         layer->GetIdentifier().c_str(), path.GetText(),
         onlyExistingDependentPaths ?
         " (restricted to existing caches)" :
-        " (restricted to existing caches)");
+        " (not restricted to existing caches)");
     for (const auto& dep: deps) {
         PCP_APPEND_DEBUG(
             "    <%s> depends on <%s>\n",

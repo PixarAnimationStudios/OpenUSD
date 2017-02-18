@@ -86,13 +86,13 @@
 
 #include <string>
 
-namespace bp = boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfSpec;
 
 namespace Sdf_PySpecDetail {
+
+namespace bp = boost::python;
 
 SDF_API bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
 
