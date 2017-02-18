@@ -89,7 +89,7 @@ KindRegistry::HasKind(const TfToken& kind)
 bool
 KindRegistry::_HasKind(const TfToken& kind) const
 {
-    return _kindMap.count(kind);
+    return _kindMap.count(kind) != 0;
 }
 
 /* static */
