@@ -28,6 +28,7 @@
 #include <stdarg.h>
 #include <string>
 #include <vector>
+#include <sstream>
 #include <stdio.h>
 
 using namespace std;
@@ -63,6 +64,24 @@ TestNumbers()
              == 0.336316384899143);
     TF_AXIOM(float(TfStringToDouble(TfStringify(0.1f))) == 0.1f);
     TF_AXIOM(float(TfStringToDouble(TfStringify(0.84066f))) == 0.84066f);
+
+    // Test similar operations on stream based stringify operations
+    std::stringstream sstr;
+
+    sstr << TfStreamDouble(0.1);
+    TF_AXIOM(TfStringToDouble(sstr.str()) == 0.1);
+    sstr.str(std::string());
+
+    sstr << TfStreamDouble(0.336316384899143);
+    TF_AXIOM(TfStringToDouble(sstr.str()) == 0.336316384899143);
+    sstr.str(std::string());
+
+    sstr << TfStreamFloat(0.1f);
+    TF_AXIOM(float(TfStringToDouble(sstr.str())) == 0.1f);
+    sstr.str(std::string());
+
+    sstr << TfStreamFloat(0.84066f);
+    TF_AXIOM(float(TfStringToDouble(sstr.str())) == 0.84066f);
 
     return true;
 }

@@ -38,8 +38,6 @@ find_package(Boost
         system
     REQUIRED
 )
-# --Double Conversion
-find_package(DoubleConversion REQUIRED)
 
 # --TBB
 find_package(TBB REQUIRED)

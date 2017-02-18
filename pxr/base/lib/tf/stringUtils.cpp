@@ -43,8 +43,9 @@
 #include <utility>
 #include <vector>
 #include <memory>
-#include <double-conversion/double-conversion.h>
-#include <double-conversion/utils.h>
+
+#include "pxrDoubleConversion/double-conversion.h"
+#include "pxrDoubleConversion/utils.h"
 
 #if defined(ARCH_OS_WINDOWS)
 #include <Shlwapi.h>
@@ -84,8 +85,8 @@ TfStringPrintf(const char *fmt, ...)
 double
 TfStringToDouble(const char *ptr)
 {
-    double_conversion::StringToDoubleConverter
-        strToDouble(double_conversion::DoubleToStringConverter::NO_FLAGS,
+    pxr_double_conversion::StringToDoubleConverter
+        strToDouble(pxr_double_conversion::DoubleToStringConverter::NO_FLAGS,
                     /* empty_string_value */ 0,
                     /* junk_string_value */ 0,
                     /* infinity symbol */ "inf",
@@ -766,11 +767,13 @@ TfStringify(std::string const& s)
     return s;
 }
 
-std::string
-TfStringify(float val)
+static
+const
+pxr_double_conversion::DoubleToStringConverter& 
+Tf_GetDoubleToStringConverter()
 {
-    double_conversion::DoubleToStringConverter conv(
-        double_conversion::DoubleToStringConverter::NO_FLAGS,
+    static const pxr_double_conversion::DoubleToStringConverter conv(
+        pxr_double_conversion::DoubleToStringConverter::NO_FLAGS,
         "inf", 
         "nan",
         'e',
@@ -778,34 +781,64 @@ TfStringify(float val)
         /* decimal_in_shortest_high */ 15,
         /* max_leading_padding_zeroes_in_precision_mode */ 0,
         /* max_trailing_padding_zeroes_in_precision_mode */ 0);
-    static const int bufSize = 128;
-    char buf[bufSize];
-    double_conversion::StringBuilder builder(buf, bufSize);
+
+    return conv;
+}
+
+void
+Tf_ApplyDoubleToStringConverter(float val, char* buffer, int bufferSize)
+{
+    const auto& conv = Tf_GetDoubleToStringConverter();
+    pxr_double_conversion::StringBuilder builder(buffer, bufferSize);
     // This should only fail if we provide an insufficient buffer.
-    TF_VERIFY( conv.ToShortestSingle(val, &builder),
-               "double_conversion failed");
-    return std::string(builder.Finalize());
+    TF_VERIFY(conv.ToShortestSingle(val, &builder),
+              "double_conversion failed");
+}
+
+void
+Tf_ApplyDoubleToStringConverter(double val, char* buffer, int bufferSize)
+{
+    const auto& conv = Tf_GetDoubleToStringConverter();
+    pxr_double_conversion::StringBuilder builder(buffer, bufferSize);
+    // This should only fail if we provide an insufficient buffer.
+    TF_VERIFY(conv.ToShortest(val, &builder),
+              "double_conversion failed");
+}
+
+std::string
+TfStringify(float val)
+{
+    constexpr int bufferSize = 128;
+    char buffer[bufferSize];
+    Tf_ApplyDoubleToStringConverter(val, buffer, bufferSize);
+    return std::string(buffer);
 }
 
 std::string
 TfStringify(double val)
 {
-    double_conversion::DoubleToStringConverter conv(
-        double_conversion::DoubleToStringConverter::NO_FLAGS,
-        "inf", 
-        "nan",
-        'e',
-        /* decimal_in_shortest_low */ -6,
-        /* decimal_in_shortest_high */ 15,
-        /* max_leading_padding_zeroes_in_precision_mode */ 0,
-        /* max_trailing_padding_zeroes_in_precision_mode */ 0);
-    static const int bufSize = 128;
-    char buf[bufSize];
-    double_conversion::StringBuilder builder(buf, bufSize);
-    // This should only fail if we provide an insufficient buffer.
-    TF_VERIFY( conv.ToShortest(val, &builder),
-               "double_conversion failed");
-    return std::string(builder.Finalize());
+    constexpr int bufferSize = 128;
+    char buffer[bufferSize];
+    Tf_ApplyDoubleToStringConverter(val, buffer, bufferSize);
+    return std::string(buffer);
+}
+
+std::ostream& 
+operator<<(std::ostream& o, TfStreamFloat t)
+{
+    constexpr int bufferSize = 128;
+    char buffer[bufferSize];
+    Tf_ApplyDoubleToStringConverter(t.value, buffer, bufferSize);
+    return o << buffer;
+}
+
+std::ostream& 
+operator<<(std::ostream& o, TfStreamDouble t)
+{
+    constexpr int bufferSize = 128;
+    char buffer[bufferSize];
+    Tf_ApplyDoubleToStringConverter(t.value, buffer, bufferSize);
+    return o << buffer;
 }
 
 template <>

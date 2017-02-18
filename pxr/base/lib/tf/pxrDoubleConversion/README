@@ -1,0 +1,27 @@
+Instructions for bringing in a new version of double-conversion
+---------------------------------------------------------------
+
+Version: 2.0.0
+Source can be found at:  https://github.com/google/double-conversion
+
+1. Copy the new double conversion files into pxrDoubleConversion.
+
+2. Apply the patch file. This will add our namespaces.
+    ```bash
+    patch -p0 < pxr-double-conversion.patch
+    ```
+    
+How to update the patchfile
+--------------------------------
+If you need to manually make some edits, and thus need to 
+generate a new patch file, run the following command.
+
+```bash
+diff -ruaN -x README 
+           -x CMakeLists.txt
+           -x SConscript
+           -x pxr-double-conversion.patch
+           double-conversion/ 
+           .
+> pxr-double-conversion.patch
+```

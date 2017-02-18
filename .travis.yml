@@ -50,11 +50,6 @@ install:
   - sudo apt-get install libboost-system1.55.0 libboost-system1.55-dev
   - sudo apt-get install libboost-program-options1.55.0 libboost-program-options1.55-dev
 
-  ### double-conversion
-  ### USD docs currently claim we require 1.1.1, but apt-get gives us 2.0.1 on trusty.
-  ### Building 1.1.1 as a shared library is annoying, so we'll go with this for now.
-  - sudo apt-get install libdouble-conversion-dev
-
   ### Intel TBB v4.3 update 1
   - if [ ! -d "$HOME/tbb43_20141023oss/lib" ]; then
       wget https://www.threadingbuildingblocks.org/sites/default/files/software_releases/linux/tbb43_20141023oss_lin.tgz -O /tmp/tbb.tgz;
