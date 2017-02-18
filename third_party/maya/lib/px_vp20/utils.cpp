@@ -50,8 +50,6 @@
 #include <maya/MStatus.h>
 #include <maya/MTransformationMatrix.h>
 
-#include <GL/gl.h>
-
 #include <cmath>
 #include <string>
 
