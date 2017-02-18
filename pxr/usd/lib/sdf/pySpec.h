@@ -404,10 +404,8 @@ public:
         typedef typename CLS::metadata::held_type_arg HeldArgType;
         typedef typename CLS::metadata::holder HolderType;
 
-        // HeldType must be SdfHandle<SpecType>.
-        BOOST_STATIC_ASSERT((boost::is_same<HeldType,\
-                                            SdfHandle<SpecType> >::value));
-
+        static_assert(std::is_same<HeldType, SdfHandle<SpecType> >::value,
+                      "HeldType must be SdfHandle<SpecType>.");
 
         // Add methods.
         c.add_property("expired", &_Helper<CLS>::IsExpired);

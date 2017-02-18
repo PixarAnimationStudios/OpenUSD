@@ -118,7 +118,8 @@ public:
     /// \sa UsdAttribute::Get
     template <typename T>
     bool Get(T* value, UsdTimeCode time = UsdTimeCode::Default()) const {
-        BOOST_STATIC_ASSERT(SdfValueTypeTraits<T>::IsValueType);
+        static_assert(SdfValueTypeTraits<T>::IsValueType,
+                      "T must be an SdfValueType.");
         return _Get(value, time);
     }
     /// \overload

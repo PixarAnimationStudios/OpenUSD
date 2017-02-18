@@ -78,7 +78,6 @@
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/static_assert.hpp>
 #include <iosfwd>
 #include <list>
 #include <map>
@@ -406,8 +405,9 @@ struct SDF_VALUE_TRAITS_TYPE(elem) {                                        \
     }                                                                       \
     static SdfTupleDimensions Dimensions() {                                \
         SdfTupleDimensions dimensions;                                      \
-        BOOST_STATIC_ASSERT(                                                \
-            BOOST_PP_LIST_SIZE(SDF_VALUE_TUPLE_DIM(elem)) <= 2);            \
+        static_assert(                                                      \
+            BOOST_PP_LIST_SIZE(SDF_VALUE_TUPLE_DIM(elem)) <= 2,             \
+            "Tuple dimensions cannot exceed 2.");                           \
         BOOST_PP_LIST_FOR_EACH(                                             \
             _SDF_ADD_DIMENSION, ~, SDF_VALUE_TUPLE_DIM(elem));              \
         return dimensions;                                                  \

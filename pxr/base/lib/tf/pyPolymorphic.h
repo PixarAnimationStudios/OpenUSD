@@ -40,7 +40,6 @@
 #include <boost/python/object/class_detail.hpp>
 #include <boost/function.hpp>
 #include <boost/python/wrapper.hpp>
-#include <boost/static_assert.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/python/has_back_reference.hpp>
 
@@ -203,7 +202,8 @@ TfPyPolymorphic<Derived>::CallVirtual(
     char const *fname,
     Ret (Cls::*defaultImpl)(Args...))
 {
-    BOOST_STATIC_ASSERT((boost::is_base_of<This, Cls>::value));
+    static_assert(std::is_base_of<This, Cls>::value,
+                  "This must be a base of Cls.");
     TfPyLock lock;
     if (Override o = GetOverride(fname))
         return boost::function<Ret (Args...)>(TfPyCall<Ret>(o));
@@ -219,7 +219,8 @@ TfPyPolymorphic<Derived>::CallVirtual(
     char const *fname,
     Ret (Cls::*defaultImpl)(Args...) const) const
 {
-    BOOST_STATIC_ASSERT((boost::is_base_of<This, Cls>::value));
+    static_assert(std::is_base_of<This, Cls>::value,
+                  "This must be a base of Cls.");
     TfPyLock lock;
     if (Override o = GetOverride(fname))
         return boost::function<Ret (Args...)>(TfPyCall<Ret>(o));

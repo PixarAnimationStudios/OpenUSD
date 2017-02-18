@@ -116,7 +116,6 @@ using namespace boost::python;
 using boost::disable_if;
 using boost::enable_if;
 using boost::is_abstract;
-using boost::is_same;
 
 template <typename Ptr>
 struct _PtrInterface {
@@ -333,10 +332,10 @@ struct WeakPtr : def_visitor<WeakPtr> {
     template <typename WrapperPtrType, typename Wrapper, typename T>
     static void _RegisterConversionsHelper() {
 
-        // Pointee should be same as Wrapper.
-        BOOST_STATIC_ASSERT((boost::is_same \
-                             <typename _PtrInterface<WrapperPtrType>::Pointee, \
-                             Wrapper>::value));
+        static_assert(std::is_same<
+                        typename _PtrInterface<WrapperPtrType>::Pointee, 
+                        Wrapper>::value,
+                      "Pointee must be same type as Wrapper.");
 
         typedef typename
             _PtrInterface<WrapperPtrType>::template Rebind<T>::Type PtrType;
@@ -375,7 +374,7 @@ struct WeakPtr : def_visitor<WeakPtr> {
             // CODE_COVERAGE_ON
         }
         
-        if (!is_same<Wrapper, T>::value)
+        if (!std::is_same<Wrapper, T>::value)
             _PtrToPython<PtrType>();
 
     }
@@ -402,8 +401,8 @@ struct WeakPtr : def_visitor<WeakPtr> {
     void visit(CLS &c) const {
         typedef typename CLS::wrapped_type Type;
         typedef typename CLS::metadata::held_type_arg PtrType;
-        // Must support weak ptr.
-        BOOST_STATIC_ASSERT(TF_SUPPORTS_WEAKPTR(Type));
+        static_assert(TF_SUPPORTS_WEAKPTR(Type),
+                      "Type must support TfWeakPtr.");
         // Register conversions
         _RegisterConversions<PtrType>
             ((Type *)0, detail::unwrap_wrapper((Type *)0));
@@ -431,8 +430,8 @@ struct RefAndWeakPtr : def_visitor<RefAndWeakPtr> {
     template <typename CLS>    
     void visit(CLS &c) const {
         typedef typename CLS::wrapped_type Type;
-        // Must support ref ptr.
-        BOOST_STATIC_ASSERT((TF_SUPPORTS_REFPTR(Type)));
+        static_assert(TF_SUPPORTS_REFPTR(Type),
+                      "Type must support TfRefPtr.");
         // Same as weak ptr plus ref conversions.
         WeakPtr().visit(c);
         _AddAPI<CLS>((Type *)0, detail::unwrap_wrapper((Type *)0));

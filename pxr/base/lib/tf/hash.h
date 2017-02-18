@@ -33,9 +33,6 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/arch/hash.h"
 
-#include <boost/static_assert.hpp>
-#include <boost/type_traits/is_same.hpp>
-
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -139,7 +136,8 @@ public:
     // TfHashCString if you want to hash the string.
     template <class T>
     size_t operator()(const T* ptr) const {
-        BOOST_STATIC_ASSERT((!boost::is_same<T, char>::value));
+        static_assert(!std::is_same<T, char>::value,
+                      "Can not hash const char*.");
         return _Mix((size_t) ptr);
     }
 

@@ -34,9 +34,7 @@
 
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/mpl/or.hpp>
-#include <boost/static_assert.hpp>
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 
@@ -211,7 +209,8 @@ public:
     template <class T>
     typename boost::disable_if<boost::is_base_of<T, DataType>, bool>::type
     PointsToA() const {
-        BOOST_STATIC_ASSERT((boost::is_polymorphic<DataType>::value));
+        static_assert(std::is_polymorphic<DataType>::value,
+                      "DataType must be polymorphic.");
         return dynamic_cast<T *>(_FetchPointer());
     }
 

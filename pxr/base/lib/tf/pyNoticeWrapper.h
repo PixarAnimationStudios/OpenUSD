@@ -48,9 +48,8 @@
 #include <boost/python/class.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/handle.hpp>
-#include <boost/static_assert.hpp>
-#include <boost/type_traits/is_base_of.hpp>
 
+#include <type_traits>
 #include <map>
 #include <string>
 
@@ -104,20 +103,19 @@ struct Tf_PyNoticeObjectFinder : public Tf_PyObjectFinderBase {
 template <typename NoticeType, typename BaseType>
 struct TfPyNoticeWrapper : public NoticeType, public TfPyNoticeWrapperBase {
 private:
-    BOOST_STATIC_ASSERT((boost::mpl::or_
-        <boost::is_base_of<TfNotice, NoticeType>,
-        boost::is_same<TfNotice, NoticeType> >::value));
+    static_assert(std::is_base_of<TfNotice, NoticeType>::value
+                  || std::is_same<TfNotice, NoticeType>::value,
+                  "Notice type must be derived from or equal to TfNotice.");
 
-    BOOST_STATIC_ASSERT((boost::mpl::or_
-        <boost::is_base_of<TfNotice, BaseType>,
-        boost::is_same<TfNotice, BaseType> >::value));
+    static_assert(std::is_base_of<TfNotice, BaseType>::value
+                  || std::is_same<TfNotice, BaseType>::value,
+                  "BaseType type must be derived from or equal to TfNotice.");
 
-    // Base must be a base of Notice, unless Base and Notice are both TfNotice
-    // (the root case).
-    BOOST_STATIC_ASSERT((boost::mpl::or_
-        <boost::is_base_of<BaseType, NoticeType>,
-        boost::mpl::and_<boost::is_same<NoticeType, TfNotice>
-        , boost::is_same<BaseType, TfNotice> > >::value));
+    static_assert(std::is_base_of<BaseType, NoticeType>::value
+                  || (std::is_same<NoticeType, TfNotice>::value
+                      && std::is_same<BaseType, TfNotice>::value),
+                  "BaseType type must be a base of notice, unless both "
+                  "BaseType and Notice type are equal to TfNotice.");
 
 public:
 

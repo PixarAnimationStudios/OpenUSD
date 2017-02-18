@@ -28,9 +28,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/plug/api.h"
+
+#include <type_traits>
 #include <typeinfo>
-#include <boost/static_assert.hpp>
-#include <boost/type_traits/is_abstract.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -149,8 +149,8 @@ protected:
 template <class Interface>
 class PlugStaticInterface : private Plug_StaticInterfaceBase {
 public:
-    // Interface must be abstract.
-    BOOST_STATIC_ASSERT(boost::is_abstract<Interface>::value);
+    static_assert(std::is_abstract<Interface>::value,
+                  "Interface type must be abstract.");
 
     typedef PlugStaticInterface<Interface> This;
 
@@ -160,7 +160,7 @@ public:
     /// \c false otherwise.
     operator UnspecifiedBoolType() const
     {
-        return _GetPtr() ? &This::_ptr : NULL;
+        return _GetPtr() ? &This::_ptr : nullptr;
     }
 
     /// Load and instantiate then return \c false if the interface is valid,
@@ -171,21 +171,21 @@ public:
     }
 
     /// Returns the interface pointer, loading the plugin if necessary.
-    /// Returns \c NULL if the interface could not be initialized.
+    /// Returns \c nullptr if the interface could not be initialized.
     Interface* Get() const
     {
         return _GetPtr();
     }
 
     /// Returns the interface pointer, loading the plugin if necessary.
-    /// Returns \c NULL if the interface could not be initialized.
+    /// Returns \c nullptr if the interface could not be initialized.
     Interface* operator->() const
     {
         return _GetPtr();
     }
 
     /// Returns the interface pointer as a reference, loading the plugin
-    /// if necessary.  Returns \c NULL if the interface could not be
+    /// if necessary.  Returns \c nullptr if the interface could not be
     /// initialized.
     Interface& operator*() const
     {

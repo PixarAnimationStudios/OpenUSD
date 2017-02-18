@@ -279,8 +279,8 @@ TfStatic_cast(const SdfHandle<SRC>& x)
 {
     typedef typename DST::SpecType Spec;
     typedef SdfHandle<Spec> Handle;
-    BOOST_STATIC_ASSERT(
-        (Sdf_SpecTypesAreDirectlyRelated<Spec, SRC>::value));
+    static_assert(Sdf_SpecTypesAreDirectlyRelated<Spec, SRC>::value,
+                  "Spec and SRC must be directly related.");
 
     return Handle(Sdf_CastAccess::CastSpec<Spec,SRC>(x.GetSpec()));
 }

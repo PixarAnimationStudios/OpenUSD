@@ -49,7 +49,6 @@
 #include <boost/intrusive_ptr.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/if.hpp>
-#include <boost/static_assert.hpp>
 #include <boost/type_traits/decay.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
 #include <boost/type_traits/has_trivial_constructor.hpp>
@@ -306,7 +305,8 @@ class VtValue
         }
 
     private:
-        BOOST_STATIC_ASSERT(sizeof(Container) <= sizeof(_Storage));
+        static_assert(sizeof(Container) <= sizeof(_Storage),
+                      "Container size cannot exceed storage size.");
 
         ////////////////////////////////////////////////////////////////////
         // Virtual function implementations.
