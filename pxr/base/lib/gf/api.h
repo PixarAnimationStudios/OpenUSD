@@ -28,8 +28,8 @@
 
 #if defined(GF_STATIC)
 #   define GF_API
-#   define GF_API_TEMPLATE_CLASS
-#   define GF_API_TEMPLATE_STRUCT
+#   define GF_API_TEMPLATE_CLASS(...)
+#   define GF_API_TEMPLATE_STRUCT(...)
 #   define GF_LOCAL
 #else
 #   if defined(GF_EXPORTS)

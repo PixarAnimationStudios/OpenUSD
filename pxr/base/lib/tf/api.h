@@ -28,8 +28,8 @@
 
 #if defined(TF_STATIC)
 #   define TF_API
-#   define TF_API_TEMPLATE_CLASS
-#   define TF_API_TEMPLATE_STRUCT
+#   define TF_API_TEMPLATE_CLASS(...)
+#   define TF_API_TEMPLATE_STRUCT(...)
 #   define TF_LOCAL
 #else
 #   if defined(TF_EXPORTS)
