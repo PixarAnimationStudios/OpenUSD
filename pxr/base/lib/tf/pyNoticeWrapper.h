@@ -21,15 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
-#ifndef BOOST_PP_IS_ITERATING
-
 #ifndef TF_PYNOTICEWRAPPER_H
 #define TF_PYNOTICEWRAPPER_H
-
-#ifndef TF_MAX_ARITY
-#  define TF_MAX_ARITY 7
-#endif // TF_MAX_ARITY
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/notice.h"
@@ -43,7 +36,6 @@
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/or.hpp>
-#include <boost/preprocessor.hpp>
 #include <boost/python/bases.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/extract.hpp>
@@ -151,16 +143,14 @@ public:
         return boost::python::handle<>(boost::python::borrowed(_self));
     }
 
-    // Arbitrary arg constructors.
-    TfPyNoticeWrapper(PyObject *self) : NoticeType(), _self(self) {}
-#define BOOST_PP_ITERATION_LIMITS (1, TF_MAX_ARITY)
-#define BOOST_PP_FILENAME_1 "pxr/base/tf/pyNoticeWrapper.h"
-#include BOOST_PP_ITERATE()
-/* comment needed for scons dependency scanner
-#include "pxr/base/tf/pyNoticeWrapper.h"
-*/
+    // Arbitrary argument constructor (with a leading PyObject *) which
+    // forwards to the base Notice class's constructor.
+    template <typename... Args>
+    TfPyNoticeWrapper(PyObject *self, Args... args)
+        : NoticeType(args...)
+        , _self(self) {}
     
-  private:
+private:
     PyObject *_self;
 
 };
@@ -175,20 +165,3 @@ TF_REGISTRY_FUNCTION(TfType) \
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_PYNOTICEWRAPPER_H
-
-#else // BOOST_PP_IS_ITERATING
-
-#define N BOOST_PP_ITERATION()
-
-// Arbitrary argument constructors (with a leading PyObject *) which forward to
-// the base Notice class's constructor.
-
-template <BOOST_PP_ENUM_PARAMS(N, typename A)>
-TfPyNoticeWrapper(PyObject *self
-    BOOST_PP_ENUM_TRAILING_BINARY_PARAMS(N, A, a)) :
-    NoticeType(BOOST_PP_ENUM_PARAMS(N, a)), _self(self) {}
-
-#undef N
-
-#endif // BOOST_PP_IS_ITERATING
-
