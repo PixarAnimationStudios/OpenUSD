@@ -284,7 +284,7 @@ private:
     struct _Task {
         _Task() : delegate(NULL), requestBits(NULL) { }
         _Task(UsdImagingDelegate* delegate_, const SdfPath& path_, 
-                        int* requestBits_)
+                        int requestBits_)
             : delegate(delegate_)
             , path(path_)
             , requestBits(requestBits_)
@@ -293,7 +293,7 @@ private:
 
         UsdImagingDelegate* delegate;
         SdfPath path;
-        int* requestBits;
+        int requestBits;
     };
     std::vector<_Task> _tasks;
 
@@ -310,16 +310,15 @@ public:
     }
 
     int GetRequestBits(_Task const& task) { 
-        if (task.requestBits)
-            return *task.requestBits;
-        else if (_requestBits)
-            return *_requestBits; 
-        else
-            return 0;
+         if (_requestBits) {
+            return *_requestBits;
+         } else {
+            return task.requestBits;
+         }
     }
 
     void AddTask(UsdImagingDelegate* delegate, SdfPath const& usdPath, 
-                 int* requestBits=NULL) {
+                 int requestBits=0) {
         _tasks.push_back(_Task(delegate, usdPath, requestBits));
         // TODO: This is only used when updating, might be nice to split this
         // out into two classes.
@@ -417,8 +416,7 @@ public:
                 adapter->UpdateForTime(prim, usdPath, time, 
                                         requestBits, &resultBits);
                 _results[i] = std::make_pair(usdPath, resultBits);
-                if (_tasks[i].requestBits)
-                    *_tasks[i].requestBits = resultBits;
+                _tasks[i].requestBits = resultBits;
             }
         }
     }
@@ -791,7 +789,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
     if (!TF_VERIFY(request)) {
         return;
     }
-    if (!TF_VERIFY(request->IDs.size() == request->maskedDirtyBits.size())) {
+    if (!TF_VERIFY(request->IDs.size() == request->dirtyBits.size())) {
         return;
     }
 
@@ -799,7 +797,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
     for (size_t i = 0; i < request->IDs.size(); i++) {
         // This is a refernece to allow the Adapter to communicate back to the
         // render index what was actually updated vs. what was requested.
-        int& dirtyFlags = request->maskedDirtyBits[i];
+        int dirtyFlags = request->dirtyBits[i];
 
         if (!TF_VERIFY(dirtyFlags != HdChangeTracker::Clean))
             continue;
@@ -819,7 +817,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
                     dirtyFlags,
                     HdChangeTracker::StringifyDirtyBits(dirtyFlags).c_str());
             adapter->UpdateForTimePrep(prim, usdPath, _time, dirtyFlags);
-            worker.AddTask(this, usdPath, &dirtyFlags);
+            worker.AddTask(this, usdPath, dirtyFlags);
         }
     }
 

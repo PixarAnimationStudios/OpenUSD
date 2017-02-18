@@ -777,30 +777,32 @@ namespace {
         void PushBack(HdSceneDelegate *sceneDelegate,
                       HdRprim *rprim,
                       size_t reprsMask,
-                      int dirtyBits, 
-                      int maskedDirtyBits)
+                      int dirtyBits)
         {
             sceneDelegates.push_back(sceneDelegate);
             rprims.push_back(rprim);
             reprsMasks.push_back(reprsMask);
             request.IDs.push_back(rprim->GetId());
-            request.allDirtyBits.push_back(dirtyBits);
-            request.maskedDirtyBits.push_back(maskedDirtyBits);
+            request.dirtyBits.push_back(dirtyBits);
         }
 
         void PushBackShader(SdfPath const& shaderID)
         {
-            request.surfaceShaderIDs.push_back(shaderID);
+            surfaceShaderIDs.push_back(shaderID);
         }
 
         void PushBackTexture(SdfPath const& textureID)
         {
-            request.textureIDs.push_back(textureID);
+            textureIDs.push_back(textureID);
         }
 
         std::vector<HdSceneDelegate *> sceneDelegates;
         std::vector<HdRprim *> rprims;
         std::vector<size_t> reprsMasks;
+
+        SdfPathVector surfaceShaderIDs;
+        SdfPathVector textureIDs;
+
         HdSyncRequestVector request;
     };
 
@@ -869,7 +871,7 @@ namespace {
                 HdRprim &rprim = *_r.rprims[i];
                 size_t reprsMask = _r.reprsMasks[i];
 
-                int dirtyBits = _r.request.allDirtyBits[i];
+                int dirtyBits = _r.request.dirtyBits[i];
 
                 TF_FOR_ALL(it, _reprs) {
                     if (reprsMask & 1) {
@@ -1027,9 +1029,8 @@ HdRenderIndex::SyncAll()
                 curdel = rprimInfo.sceneDelegate;
                 curvec = &syncMap[curdel];
             }
-            // XXX: maskedDirtyBits (the last argument) can be removed.
             curvec->PushBack(curdel, rprimInfo.rprim,
-                             reprsMask, dirtyBits, dirtyBits);
+                             reprsMask, dirtyBits);
         }
 
         // Use a heuristic to determine whether or not to destroy the entire
@@ -1070,7 +1071,7 @@ HdRenderIndex::SyncAll()
         _RprimSyncRequestVector& r = dlgIt->second;
 
 
-        TF_FOR_ALL(textureID, r.request.textureIDs) {
+        TF_FOR_ALL(textureID, r.textureIDs) {
             _BprimIndex::_PrimMap::const_iterator textIt =
                                                 textureMapXXX->find(*textureID);
 
@@ -1082,7 +1083,7 @@ HdRenderIndex::SyncAll()
             }
         }
 
-        TF_FOR_ALL(shaderID, r.request.surfaceShaderIDs) {
+        TF_FOR_ALL(shaderID, r.surfaceShaderIDs) {
             _SprimIndex::_PrimMap::const_iterator shaderIt =
                                                   shaderMapXXX->find(*shaderID);
 
