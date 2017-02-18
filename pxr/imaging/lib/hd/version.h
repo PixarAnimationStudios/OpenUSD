@@ -42,11 +42,11 @@
 #define HD_SHADER_API 2
 
 // 1 -> 2: Changes "doubleShaded" API to "doubleSided".
-#define HD_CHANGETRACKER_API 2
-#define HD_ENGINE_API 1
-#define HD_RPRIMCOLLECTION_API 1
+#define HD_CHANGETRACKER_API_VERSION 2
+#define HD_ENGINE_API_VERSION 1
+#define HD_RPRIMCOLLECTION_API_VERSION 1
 
 // 2 -> 3: Changes "doubleShaded" API to "doubleSided".
-#define HD_TOKENS_API   3
+#define HD_TOKENS_API_VERSION  3
 
 #endif // HD_VERSION_H
