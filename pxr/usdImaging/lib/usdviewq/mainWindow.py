@@ -656,6 +656,13 @@ class MainWindow(QtGui.QMainWindow):
         self._ui.compositionTreeWidget\
                 .setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
+        # Arc path is the most likely to need stretch.
+        twh = self._ui.compositionTreeWidget.header()
+        twh.setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
+        twh.setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
+        twh.setResizeMode(2, QtGui.QHeaderView.Stretch)
+        twh.setResizeMode(3, QtGui.QHeaderView.ResizeToContents)
+
         # Set the node view header to have a fixed size type and vis columns
         nvh = self._ui.nodeView.header()
         nvh.setResizeMode(0, QtGui.QHeaderView.Stretch)
@@ -3621,8 +3628,6 @@ class MainWindow(QtGui.QMainWindow):
         index = prim.GetPrimIndex()
         WalkNodes(treeWidget, index.rootNode)
 
-        # Adjust the headers to fit the contents.
-        treeWidget.header().setResizeMode(QtGui.QHeaderView.ResizeToContents)
 
     def _updateLayerStackView(self, obj=None):
         """ Sets the contents of the layer stack viewer"""
