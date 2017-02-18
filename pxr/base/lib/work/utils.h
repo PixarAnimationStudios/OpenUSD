@@ -27,12 +27,14 @@
 ///\file work/utils.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/work/api.h"
 #include "pxr/base/work/detachedTask.h"
 
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+WORK_API
 bool Work_ShouldSynchronizeAsyncDestroyCalls();
 
 template <class T>
