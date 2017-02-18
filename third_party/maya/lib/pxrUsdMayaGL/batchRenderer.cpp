@@ -500,7 +500,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
 
     // camera
     {
-#if defined(HD_API) && HD_API > 28
+#if defined(HD_API_VERSION) && HD_API_VERSION > 28
         renderIndex->InsertSprim<HdxCamera>(this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
         cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices()); 
@@ -566,7 +566,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache &cache = _valueCacheMap[_cameraId];
-#if defined(HD_API) && HD_API > 28
+#if defined(HD_API_VERSION) && HD_API_VERSION > 28
     cache[HdxCameraTokens->matrices] = 
         VtValue(HdxCameraMatrices(viewMatrix, projectionMatrix));
     cache[HdxCameraTokens->windowPolicy] = VtValue(); // no window policy.
