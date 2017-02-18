@@ -1033,8 +1033,18 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
             HdxIntersector::Result result;
             HdxIntersector::HitVector hits;
 
-            if( !_intersector->Query(qparams, rprims, &_hdEngine, &result) )
+            glPushAttrib(GL_VIEWPORT_BIT |
+                         GL_ENABLE_BIT |
+                         GL_COLOR_BUFFER_BIT |
+                         GL_DEPTH_BUFFER_BIT |
+                         GL_STENCIL_BUFFER_BIT |
+                         GL_TEXTURE_BIT |
+                         GL_POLYGON_BIT);
+            bool r = _intersector->Query(qparams, rprims, &_hdEngine, &result);
+            glPopAttrib();
+            if( !r ) {
                 continue;
+            }
             
             if( singleSelection )
             {
