@@ -41,11 +41,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// A struct containing information about a JSON parsing error.
 ///
-struct JS_API JsParseError {
+struct JsParseError {
     JsParseError() : line(0), column(0) { }
     unsigned int line;
     unsigned int column;
-    std::string reason;
+    JS_API std::string reason;
 };
 
 /// Parse the contents of input stream \p istr and return a JsValue. On
