@@ -27,6 +27,7 @@
 /// \file sdf/layerTree.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layerOffset.h"
 
@@ -57,19 +58,20 @@ SDF_DECLARE_HANDLES(SdfLayer);
 class SdfLayerTree : public TfRefBase, public TfWeakBase, boost::noncopyable {
 public:
     /// Create a new layer tree node.
+    SDF_API
     static SdfLayerTreeHandle
     New( const SdfLayerHandle & layer,
          const SdfLayerTreeHandleVector & childTrees,
          const SdfLayerOffset & cumulativeOffset = SdfLayerOffset() );
 
     /// Returns the layer handle this tree node represents.
-    const SdfLayerHandle & GetLayer() const;
+    SDF_API const SdfLayerHandle & GetLayer() const;
 
     /// Returns the cumulative layer offset from the root of the tree.
-    const SdfLayerOffset & GetOffset() const;
+    SDF_API const SdfLayerOffset & GetOffset() const;
 
     /// Returns the children of this tree node.
-    const SdfLayerTreeHandleVector & GetChildTrees() const;
+    SDF_API const SdfLayerTreeHandleVector & GetChildTrees() const;
 
 private:
     SdfLayerTree( const SdfLayerHandle & layer,

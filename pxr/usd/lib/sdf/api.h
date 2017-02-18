@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,30 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef SDF_PY_UTILS_H
-#define SDF_PY_UTILS_H
+#ifndef SDF_API_H
+#define SDF_API_H
 
-#include "pxr/pxr.h"
-#include "pxr/usd/sdf/api.h"
-#include "pxr/usd/sdf/layer.h"
+#include "pxr/base/arch/export.h"
 
-#include <boost/python/dict.hpp>
-#include <string>
+#if defined(SDF_STATIC)
+#   define SDF_API
+#   define SDF_API_TEMPLATE_CLASS(...)
+#   define SDF_API_TEMPLATE_STRUCT(...)
+#   define SDF_LOCAL
+#else
+#   if defined(SDF_EXPORTS)
+#       define SDF_API ARCH_EXPORT
+#       define SDF_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define SDF_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define SDF_API ARCH_IMPORT
+#       define SDF_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define SDF_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define SDF_LOCAL ARCH_HIDDEN
+#endif
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-/// Convert the Python dictionary \p dict to an SdfLayer::FileFormatArguments
-/// object and return it via \p args. 
-///
-/// If a non-string key or value is encountered, \p errMsg will be filled in
-/// (if given) and this function will return false. Otherwise, this function
-/// will return true.
-SDF_API bool
-SdfFileFormatArgumentsFromPython(
-    const boost::python::dict& dict,
-    SdfLayer::FileFormatArguments* args,
-    std::string* errMsg = NULL);
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // SDF_PY_UTILS_H
+#endif

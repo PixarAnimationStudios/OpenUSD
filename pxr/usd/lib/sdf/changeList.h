@@ -27,6 +27,7 @@
 /// \file sdf/changeList.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -180,7 +181,7 @@ private:
 };
 
 // Stream-output operator
-std::ostream& operator<<(std::ostream&, const SdfChangeList &);
+SDF_API std::ostream& operator<<(std::ostream&, const SdfChangeList &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

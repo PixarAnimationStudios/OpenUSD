@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/declareHandles.h"
+#include "pxr/usd/sdf/spec.h"
 #include "pxr/base/tf/singleton.h"
 
 #include <boost/noncopyable.hpp>
@@ -55,6 +56,7 @@ class SdfSpec;
 ///
 class Sdf_ChangeManager : boost::noncopyable {
 public:
+    SDF_API
     static Sdf_ChangeManager& Get() {
         return TfSingleton<Sdf_ChangeManager>::GetInstance();
     }
@@ -81,7 +83,9 @@ public:
 
     // Open/close change blocks. SdfChangeBlock provides stack-based management
     // of change blocks and should be preferred over this API.
+    SDF_API
     void OpenChangeBlock();
+    SDF_API
     void CloseChangeBlock();
 
 private:
@@ -106,6 +110,8 @@ private:
 
     friend class TfSingleton<Sdf_ChangeManager>;
 };
+
+SDF_API_TEMPLATE_CLASS(TfSingleton<Sdf_ChangeManager>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

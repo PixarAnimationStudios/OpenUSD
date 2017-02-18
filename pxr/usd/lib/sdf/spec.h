@@ -27,6 +27,7 @@
 /// \file sdf/spec.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/identity.h"
 #include "pxr/usd/sdf/declareSpec.h"
@@ -51,8 +52,10 @@ class SdfSpec {
     SDF_DECLARE_BASE_SPEC(SdfSchema, SdfSpec);
 
 public:
+    SDF_API
     SdfSpec &operator=(const SdfSpec &other);
 
+    SDF_API
     ~SdfSpec();
 
     /// \name SdSpec generic API
@@ -60,26 +63,33 @@ public:
     /// @{
 
     /// Returns the SdfSchemaBase for the layer that owns this spec.
+    SDF_API
     const SdfSchemaBase& GetSchema() const;
 
     /// Returns the SdfSpecType specifying the spec type this object
     /// represents.
+    SDF_API
     SdfSpecType GetSpecType() const;
 
     /// Returns true if this object is invalid or expired.
+    SDF_API
     bool IsDormant() const;
 
     /// Returns the layer that this object belongs to.
+    SDF_API
     SdfLayerHandle GetLayer() const;
 
     /// Returns the scene path of this object.
+    SDF_API
     SdfPath GetPath() const;
 
     /// Returns whether this object's layer can be edited.
+    SDF_API
     bool PermissionToEdit() const;
 
     /// Returns the full list of info keys currently set on this object.
     /// \note This does not include fields that represent names of children.
+    SDF_API
     std::vector<TfToken> ListInfoKeys() const;
 
     /// Returns the list of metadata info keys for this object.
@@ -90,16 +100,19 @@ public:
     ///
     /// This is interim API which is likely to change.  Only editors with
     /// an immediate specific need (like the Inspector) should use this API.
+    SDF_API
     std::vector<TfToken> GetMetaDataInfoKeys() const;
 
     /// Returns this metadata key's displayGroup.
     ///
+    SDF_API
     TfToken GetMetaDataDisplayGroup(TfToken const &key) const;
 
     /// Gets the value for the given metadata key.
     ///
     /// This is interim API which is likely to change.  Only editors with
     /// an immediate specific need (like the Inspector) should use this API.
+    SDF_API
     VtValue GetInfo(const TfToken &key) const;
 
     /// Sets the value for the given metadata key.
@@ -109,10 +122,12 @@ public:
     ///
     /// This is interim API which is likely to change.  Only editors with
     /// an immediate specific need (like the Inspector) should use this API.
+    SDF_API
     void SetInfo(const TfToken &key, const VtValue &value);
 
     /// Sets the value for \p entryKey to \p value within the dictionary 
     ///        with the given metadata key \p dictionaryKey
+    SDF_API
     void SetInfoDictionaryValue(const TfToken &dictionaryKey, 
                                 const TfToken &entryKey, const VtValue &value);
 
@@ -132,6 +147,7 @@ public:
     ///
     /// This is interim API which is likely to change.  Only editors with
     /// an immediate specific need (like the Inspector) should use this API.
+    SDF_API
     bool HasInfo(const TfToken &key) const;
 
     /// Clears the value for scene spec info with the given \a key.
@@ -142,15 +158,19 @@ public:
     ///
     /// This is interim API which is likely to change.  Only editors with
     /// an immediate specific need (like the Inspector) should use this API.
+    SDF_API
     void ClearInfo(const TfToken &key);
 
     /// Returns the data type for the info with the given \a key.
+    SDF_API
     TfType GetTypeForInfo(const TfToken &key) const;
 
     /// Returns the fallback for the info with the given \a key.
+    SDF_API
     const VtValue& GetFallbackForInfo(const TfToken &key) const;
 
     /// Writes this spec to the given stream.
+    SDF_API
     bool WriteToStream(std::ostream&, size_t indent = 0) const;
 
     /// Returns whether this object has no significant data.
@@ -161,6 +181,7 @@ public:
     /// those child objects are not.
     /// However, if \p ignoreChildren is \c true, these child objects
     /// will be ignored. 
+    SDF_API
     bool IsInert(bool ignoreChildren = false) const;
 
     /// @}
@@ -169,10 +190,12 @@ public:
     /// @{
 
     /// Returns all fields with values.
+    SDF_API
     std::vector<TfToken> ListFields() const;
 
     /// Returns \c true if the spec has a non-empty value with field
     /// name \p name.
+    SDF_API
     bool HasField(const TfToken &name) const;
 
     /// Returns \c true if the object has a non-empty value with name
@@ -190,6 +213,7 @@ public:
     }
 
     /// Returns a field value by name.
+    SDF_API
     VtValue GetField(const TfToken &name) const;
 
     /// Returns a field value by name.  If the object is invalid, or the
@@ -205,6 +229,7 @@ public:
     }
 
     /// Sets a field value as a boxed VtValue.
+    SDF_API
     bool SetField(const TfToken & name, const VtValue& value);
 
     /// Sets a field value of type T.
@@ -215,6 +240,7 @@ public:
     }
 
     /// Clears a field.
+    SDF_API
     bool ClearField(const TfToken & name);
 
     /// @}
@@ -222,8 +248,8 @@ public:
     /// \name Comparison operators
     /// @{
 
-    bool operator==(const SdfSpec& rhs) const;
-    bool operator<(const SdfSpec& rhs) const;
+    SDF_API bool operator==(const SdfSpec& rhs) const;
+    SDF_API bool operator<(const SdfSpec& rhs) const;
 
     /// @}
 

@@ -41,6 +41,7 @@
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/vt/dictionary.h"
 
+#include <deque>
 #include <map>
 #include <set>
 #include <vector>
@@ -355,7 +356,7 @@ _ValidateIsSceneDescriptionValue(const SdfSchemaBase& schema, const VtValue& val
 static SdfAllowed                                                       \
 _Validate ## name_(const SdfSchemaBase& schema, const VtValue& value)   \
 {                                                                       \
-    if (!value.IsHolding<expectedType_>()) {                         \
+    if (!value.IsHolding<expectedType_>()) {                            \
         return SdfAllowed("Expected value of type " # expectedType_);   \
     }                                                                   \
     return SdfSchemaBase::IsValid ## name_(value.Get<expectedType_>()); \
@@ -381,6 +382,7 @@ TF_DEFINE_PUBLIC_TOKENS(SdfFieldKeys, SDF_FIELD_KEYS);
 
 struct Sdf_SchemaFieldTypeRegistrar
 {
+public:
     Sdf_SchemaFieldTypeRegistrar(SdfSchemaBase* schema) : _schema(schema) { }
 
     template <class T>

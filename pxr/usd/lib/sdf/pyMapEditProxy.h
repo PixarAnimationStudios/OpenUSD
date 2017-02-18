@@ -194,7 +194,7 @@ private:
     static std::string _GetStr(const Type& x)
     {
         std::string result("{");
-        if (x and not x.empty()) {
+        if (x && ! x.empty()) {
             const_iterator i = x.begin(), n = x.end();
             result += TfPyRepr(i->first) + ": " + TfPyRepr(i->second);
             while (++i != n) {
@@ -221,7 +221,7 @@ private:
     {
         std::pair<typename Type::iterator, bool> i =
             x.insert(value_type(key, value));
-        if (not i.second and i.first != typename Type::iterator()) {
+        if (! i.second && i.first != typename Type::iterator()) {
             i.first->second = value;
         }
     }

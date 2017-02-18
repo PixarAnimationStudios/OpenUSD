@@ -27,6 +27,7 @@
 /// \file sdf/childrenUtils.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -53,6 +54,7 @@ public:
     /// Create a new spec in \a layer at \childPath and add it to its parent's
     /// field named \childrenKey. Emit an error and return false if the new spec
     /// couldn't be created.
+    SDF_API
     static bool CreateSpec(
         const SdfLayerHandle &layer,
         const SdfPath &childPath,
@@ -63,9 +65,11 @@ public:
     /// @{
 
     /// Return whether \a newName is a valid name for a child.
+    SDF_API
     static bool IsValidName(const FieldType &newName);
 
     /// Return whether \a newName is a valid name for a child.
+    SDF_API
     static bool IsValidName(const std::string &newName);
 
     /// Return whether \a spec can be renamed to \a newName.
@@ -76,6 +80,7 @@ public:
     /// Rename \a spec to \a newName. If \a fixPrimListEdits is true,
     /// then also fix up the name children order. It's an error for
     /// \a fixPrimListEdits to be true if spec is not a PrimSpec.
+    SDF_API
     static bool Rename(
         const SdfSpec &spec,
         const FieldType &newName);
@@ -88,12 +93,14 @@ public:
     /// Replace the children of the spec at \a path with the specs in \a
     /// values. This will delete existing children that aren't in \a values and
     /// reparent children from other locations in the layer.
+    SDF_API
     static bool SetChildren(
         const SdfLayerHandle &layer,
         const SdfPath &path,
         const std::vector<typename ChildPolicy::ValueType> &values);
 
     /// Insert \a value as a child of \a path at the specified index.
+    SDF_API
     static bool InsertChild(
         const SdfLayerHandle &layer,
         const SdfPath &path,
@@ -101,6 +108,7 @@ public:
         size_t index);
 
     /// Remove the child identified by \a key.
+    SDF_API
     static bool RemoveChild(
         const SdfLayerHandle &layer,
         const SdfPath &path,
@@ -113,6 +121,7 @@ public:
 
     /// Insert \a value as a child of \a path at the specified index with
     /// the new name \p newName.
+    SDF_API
     static bool MoveChildForBatchNamespaceEdit(
         const SdfLayerHandle &layer,
         const SdfPath &path,
@@ -121,6 +130,7 @@ public:
         size_t index);
 
     /// Remove the child identified by \a key.
+    SDF_API
     static bool RemoveChildForBatchNamespaceEdit(
         const SdfLayerHandle &layer,
         const SdfPath &path,
@@ -132,6 +142,7 @@ public:
     /// Returns \c true if \p value can be inserted as a child of \p path
     /// with the new name \p newName at the index \p index, otherwise
     /// returns \c false and sets \p whyNot.
+    SDF_API
     static bool CanMoveChildForBatchNamespaceEdit(
         const SdfLayerHandle &layer,
         const SdfPath &path,
@@ -142,6 +153,7 @@ public:
 
     /// Returns \c true if the child of \p path identified by \p key can
     /// be removed, otherwise returns \c false and sets \p whyNot.
+    SDF_API
     static bool CanRemoveChildForBatchNamespaceEdit(
         const SdfLayerHandle &layer,
         const SdfPath &path,

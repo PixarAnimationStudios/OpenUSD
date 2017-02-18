@@ -477,7 +477,7 @@ public:
     void Insert(int index, const value_type& value)
     {
         if (index == -1) {
-            index = _GetSize();
+            index = static_cast<int>(_GetSize());
         }
         _Edit(index, 0, value_vector_type(1, value));
     }

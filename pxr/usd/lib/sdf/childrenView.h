@@ -27,6 +27,7 @@
 /// \file sdf/childrenView.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/children.h"
 #include "pxr/base/tf/iterator.h"
 

@@ -818,12 +818,20 @@ static yyconst flex_int16_t yy_chk[949] =
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/textParserContext.h"
 #include "pxr/usd/sdf/parserHelpers.h"
 
 // Token table from yacc file
 #include "textFileFormat.tab.h"
+
+#ifndef fileno
+#define fileno(fd) ArchFileNo(fd)
+#endif
+#ifndef isatty
+#define isatty(fd) ArchFileIsaTTY(fd)
+#endif
 
 using std::map;
 using std::vector;
@@ -841,7 +849,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 /* Configuration options for flex */
 /* States */
 
-#line 822 "<stdout>"
+#line 830 "<stdout>"
 
 #define INITIAL 0
 #define SLASHTERIX_COMMENT 1
@@ -1106,13 +1114,13 @@ YY_DECL
 		}
 
 	{
-#line 58 "pxr/usd/sdf/textFileFormat.ll"
+#line 66 "pxr/usd/sdf/textFileFormat.ll"
 
 
     /* skip over whitespace and comments */
     /* handle the first line # comment specially, since it contains the
        magic token */
-#line 1093 "<stdout>"
+#line 1101 "<stdout>"
 
 	while ( 1 )		/* loops until end-of-file is reached */
 		{
@@ -1171,12 +1179,12 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 63 "pxr/usd/sdf/textFileFormat.ll"
+#line 71 "pxr/usd/sdf/textFileFormat.ll"
 {}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 64 "pxr/usd/sdf/textFileFormat.ll"
+#line 72 "pxr/usd/sdf/textFileFormat.ll"
 {
         if (yyextra->menvaLineNo == 1) {
             (*yylval_param) = std::string(yytext, yyleng);
@@ -1186,23 +1194,23 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 70 "pxr/usd/sdf/textFileFormat.ll"
+#line 78 "pxr/usd/sdf/textFileFormat.ll"
 {}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 71 "pxr/usd/sdf/textFileFormat.ll"
+#line 79 "pxr/usd/sdf/textFileFormat.ll"
 BEGIN SLASHTERIX_COMMENT ;
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 72 "pxr/usd/sdf/textFileFormat.ll"
+#line 80 "pxr/usd/sdf/textFileFormat.ll"
 ;
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 73 "pxr/usd/sdf/textFileFormat.ll"
+#line 81 "pxr/usd/sdf/textFileFormat.ll"
 BEGIN INITIAL ;
 	YY_BREAK
 /* newline is returned as TOK_NL
@@ -1212,7 +1220,7 @@ BEGIN INITIAL ;
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 79 "pxr/usd/sdf/textFileFormat.ll"
+#line 87 "pxr/usd/sdf/textFileFormat.ll"
 {
         yyextra->menvaLineNo++;
         return TOK_NL;
@@ -1222,213 +1230,213 @@ YY_RULE_SETUP
        can make use of it. */
 case 8:
 YY_RULE_SETUP
-#line 86 "pxr/usd/sdf/textFileFormat.ll"
+#line 94 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_ADD; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 87 "pxr/usd/sdf/textFileFormat.ll"
+#line 95 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_ATTRIBUTES; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 88 "pxr/usd/sdf/textFileFormat.ll"
+#line 96 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_CLASS; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 89 "pxr/usd/sdf/textFileFormat.ll"
+#line 97 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_CONFIG; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 90 "pxr/usd/sdf/textFileFormat.ll"
+#line 98 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_CONNECT; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 91 "pxr/usd/sdf/textFileFormat.ll"
+#line 99 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_CUSTOM; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 92 "pxr/usd/sdf/textFileFormat.ll"
+#line 100 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_CUSTOMDATA; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 93 "pxr/usd/sdf/textFileFormat.ll"
+#line 101 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_DEFAULT; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 94 "pxr/usd/sdf/textFileFormat.ll"
+#line 102 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_DEF; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 95 "pxr/usd/sdf/textFileFormat.ll"
+#line 103 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_DELETE; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 96 "pxr/usd/sdf/textFileFormat.ll"
+#line 104 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_DICTIONARY; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 97 "pxr/usd/sdf/textFileFormat.ll"
+#line 105 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_DISPLAYUNIT; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 98 "pxr/usd/sdf/textFileFormat.ll"
+#line 106 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_DOC; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 99 "pxr/usd/sdf/textFileFormat.ll"
+#line 107 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_INHERITS; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 100 "pxr/usd/sdf/textFileFormat.ll"
+#line 108 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_KIND; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 101 "pxr/usd/sdf/textFileFormat.ll"
+#line 109 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_MAPPER; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 102 "pxr/usd/sdf/textFileFormat.ll"
+#line 110 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_NAMECHILDREN; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 103 "pxr/usd/sdf/textFileFormat.ll"
+#line 111 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_NONE; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 104 "pxr/usd/sdf/textFileFormat.ll"
+#line 112 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_OFFSET; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 105 "pxr/usd/sdf/textFileFormat.ll"
+#line 113 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_OVER; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 106 "pxr/usd/sdf/textFileFormat.ll"
+#line 114 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_PAYLOAD; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 107 "pxr/usd/sdf/textFileFormat.ll"
+#line 115 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_PERMISSION; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 108 "pxr/usd/sdf/textFileFormat.ll"
+#line 116 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_PREFIX_SUBSTITUTIONS; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 109 "pxr/usd/sdf/textFileFormat.ll"
+#line 117 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_PROPERTIES; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 110 "pxr/usd/sdf/textFileFormat.ll"
+#line 118 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_REFERENCES; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 111 "pxr/usd/sdf/textFileFormat.ll"
+#line 119 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_RELOCATES; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 112 "pxr/usd/sdf/textFileFormat.ll"
+#line 120 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_REL; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 113 "pxr/usd/sdf/textFileFormat.ll"
+#line 121 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_REORDER; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 114 "pxr/usd/sdf/textFileFormat.ll"
+#line 122 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_ROOTPRIMS; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 115 "pxr/usd/sdf/textFileFormat.ll"
+#line 123 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_SCALE; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 116 "pxr/usd/sdf/textFileFormat.ll"
+#line 124 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_SUBLAYERS; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 117 "pxr/usd/sdf/textFileFormat.ll"
+#line 125 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_SUFFIX_SUBSTITUTIONS; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 118 "pxr/usd/sdf/textFileFormat.ll"
+#line 126 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_SPECIALIZES; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 119 "pxr/usd/sdf/textFileFormat.ll"
+#line 127 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_SYMMETRYARGUMENTS; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 120 "pxr/usd/sdf/textFileFormat.ll"
+#line 128 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_SYMMETRYFUNCTION; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 121 "pxr/usd/sdf/textFileFormat.ll"
+#line 129 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_TIME_SAMPLES; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 122 "pxr/usd/sdf/textFileFormat.ll"
+#line 130 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_UNIFORM; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 123 "pxr/usd/sdf/textFileFormat.ll"
+#line 131 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_VARIANTSET; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 124 "pxr/usd/sdf/textFileFormat.ll"
+#line 132 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_VARIANTSETS; }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 125 "pxr/usd/sdf/textFileFormat.ll"
+#line 133 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_VARIANTS; }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 126 "pxr/usd/sdf/textFileFormat.ll"
+#line 134 "pxr/usd/sdf/textFileFormat.ll"
 { (*yylval_param) = std::string(yytext, yyleng); return TOK_VARYING; }
 	YY_BREAK
 /* unquoted C/Python identifier */
 case 49:
 YY_RULE_SETUP
-#line 129 "pxr/usd/sdf/textFileFormat.ll"
+#line 137 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = std::string(yytext, yyleng);
         return TOK_IDENTIFIER;
@@ -1437,7 +1445,7 @@ YY_RULE_SETUP
 /* unquoted C++ namespaced identifier -- see bug 10775 */
 case 50:
 YY_RULE_SETUP
-#line 135 "pxr/usd/sdf/textFileFormat.ll"
+#line 143 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = std::string(yytext, yyleng);
         return TOK_CXX_NAMESPACED_IDENTIFIER;
@@ -1447,7 +1455,7 @@ YY_RULE_SETUP
      * delimited C/Python identifiers */
 case 51:
 YY_RULE_SETUP
-#line 142 "pxr/usd/sdf/textFileFormat.ll"
+#line 150 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = std::string(yytext, yyleng);
         return TOK_NAMESPACED_IDENTIFIER;
@@ -1456,7 +1464,7 @@ YY_RULE_SETUP
 /* scene paths */
 case 52:
 YY_RULE_SETUP
-#line 148 "pxr/usd/sdf/textFileFormat.ll"
+#line 156 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = Sdf_EvalQuotedString(yytext, yyleng, 1);
         return TOK_PATHREF;
@@ -1465,7 +1473,7 @@ YY_RULE_SETUP
 /* asset references */
 case 53:
 YY_RULE_SETUP
-#line 154 "pxr/usd/sdf/textFileFormat.ll"
+#line 162 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = Sdf_EvalQuotedString(yytext, yyleng, 1);
         return TOK_ASSETREF;
@@ -1476,10 +1484,10 @@ YY_RULE_SETUP
        them from the beginning of triply-quoted strings.
        Ex: "Foo \"foo\"" */
 case 54:
-#line 164 "pxr/usd/sdf/textFileFormat.ll"
+#line 172 "pxr/usd/sdf/textFileFormat.ll"
 case 55:
 YY_RULE_SETUP
-#line 164 "pxr/usd/sdf/textFileFormat.ll"
+#line 172 "pxr/usd/sdf/textFileFormat.ll"
 {  /* " //<- unfreak out coloring code */
         (*yylval_param) = Sdf_EvalQuotedString(yytext, yyleng, 1);
         return TOK_STRING;
@@ -1494,7 +1502,7 @@ YY_LINENO_REWIND_TO(yy_bp + 2);
 yyg->yy_c_buf_p = yy_cp = yy_bp + 2;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 171 "pxr/usd/sdf/textFileFormat.ll"
+#line 179 "pxr/usd/sdf/textFileFormat.ll"
 {  /* ' // <- keep syntax coloring from freaking out */
         (*yylval_param) = std::string();
         return TOK_STRING;
@@ -1507,7 +1515,7 @@ YY_LINENO_REWIND_TO(yy_bp + 2);
 yyg->yy_c_buf_p = yy_cp = yy_bp + 2;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 175 "pxr/usd/sdf/textFileFormat.ll"
+#line 183 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = std::string();
         return TOK_STRING;
@@ -1517,11 +1525,11 @@ YY_RULE_SETUP
        Ex: """A\n\"B\"\nC""" */
 case 58:
 /* rule 58 can match eol */
-#line 183 "pxr/usd/sdf/textFileFormat.ll"
+#line 191 "pxr/usd/sdf/textFileFormat.ll"
 case 59:
 /* rule 59 can match eol */
 YY_RULE_SETUP
-#line 183 "pxr/usd/sdf/textFileFormat.ll"
+#line 191 "pxr/usd/sdf/textFileFormat.ll"
 {  /* " //<- unfreak out coloring code */
 
         unsigned int numlines = 0;
@@ -1535,7 +1543,7 @@ YY_RULE_SETUP
      * don't know at this point what the final stored type will be. */
 case 60:
 YY_RULE_SETUP
-#line 194 "pxr/usd/sdf/textFileFormat.ll"
+#line 202 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = double(-0.0);
         return TOK_NUMBER;
@@ -1544,7 +1552,7 @@ YY_RULE_SETUP
 /* Positive integers: store as uint64_t if in range, otherwise double. */
 case 61:
 YY_RULE_SETUP
-#line 200 "pxr/usd/sdf/textFileFormat.ll"
+#line 208 "pxr/usd/sdf/textFileFormat.ll"
 {
         bool outOfRange = false;
         (*yylval_param) = TfStringToUInt64(yytext, &outOfRange);
@@ -1563,7 +1571,7 @@ YY_RULE_SETUP
 /* Negative integers: store as long. */
 case 62:
 YY_RULE_SETUP
-#line 216 "pxr/usd/sdf/textFileFormat.ll"
+#line 224 "pxr/usd/sdf/textFileFormat.ll"
 {
         bool outOfRange = false;
         (*yylval_param) = TfStringToInt64(yytext, &outOfRange);
@@ -1581,10 +1589,10 @@ YY_RULE_SETUP
 	YY_BREAK
 /* Numbers with decimal places or exponents: store as double. */
 case 63:
-#line 233 "pxr/usd/sdf/textFileFormat.ll"
+#line 241 "pxr/usd/sdf/textFileFormat.ll"
 case 64:
 YY_RULE_SETUP
-#line 233 "pxr/usd/sdf/textFileFormat.ll"
+#line 241 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = TfStringToDouble(yytext);
         return TOK_NUMBER;
@@ -1596,7 +1604,7 @@ YY_RULE_SETUP
      * identifiers. */
 case 65:
 YY_RULE_SETUP
-#line 242 "pxr/usd/sdf/textFileFormat.ll"
+#line 250 "pxr/usd/sdf/textFileFormat.ll"
 {
         (*yylval_param) = -std::numeric_limits<double>::infinity();
         return TOK_NUMBER;
@@ -1607,7 +1615,7 @@ YY_RULE_SETUP
      */
 case 66:
 YY_RULE_SETUP
-#line 250 "pxr/usd/sdf/textFileFormat.ll"
+#line 258 "pxr/usd/sdf/textFileFormat.ll"
 {
         return yytext[0];
     }
@@ -1618,17 +1626,17 @@ YY_RULE_SETUP
      */
 case 67:
 YY_RULE_SETUP
-#line 258 "pxr/usd/sdf/textFileFormat.ll"
+#line 266 "pxr/usd/sdf/textFileFormat.ll"
 {
         return TOK_SYNTAX_ERROR;
     }
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 262 "pxr/usd/sdf/textFileFormat.ll"
+#line 270 "pxr/usd/sdf/textFileFormat.ll"
 ECHO;
 	YY_BREAK
-#line 1609 "<stdout>"
+#line 1617 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(SLASHTERIX_COMMENT):
 	yyterminate();
@@ -2756,7 +2764,7 @@ void textFileFormatYyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 262 "pxr/usd/sdf/textFileFormat.ll"
+#line 270 "pxr/usd/sdf/textFileFormat.ll"
 
 
 

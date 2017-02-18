@@ -24,12 +24,20 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/textParserContext.h"
 #include "pxr/usd/sdf/parserHelpers.h"
 
 // Token table from yacc file
 #include "textFileFormat.tab.h"
+
+#ifndef fileno
+#define fileno(fd) ArchFileNo(fd)
+#endif
+#ifndef isatty
+#define isatty(fd) ArchFileIsaTTY(fd)
+#endif
 
 using std::map;
 using std::vector;

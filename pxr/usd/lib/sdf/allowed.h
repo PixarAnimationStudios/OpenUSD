@@ -27,6 +27,7 @@
 /// \file sdf/allowed.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/diagnostic.h"
 
 #include <string>
@@ -93,7 +94,7 @@ public:
 
     /// Returns the reason why the operation is not allowed.  If the
     /// operation is allowed this returns the empty string.
-    const std::string& GetWhyNot() const;
+    SDF_API const std::string& GetWhyNot() const;
 
     /// Returns \c true if allowed, otherwise fills \p whyNot if not \c NULL
     /// and returns \c false.

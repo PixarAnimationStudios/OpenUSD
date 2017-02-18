@@ -25,15 +25,14 @@
 #define SDF_DATA_H
 
 #include "pxr/pxr.h"
-
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/path.h"
-
-#include "pxr/base/vt/value.h"
-#include "pxr/base/tf/token.h"
 #include "pxr/base/tf/declarePtrs.h"
-
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
+
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -51,65 +50,87 @@ class SdfData : public SdfAbstractData
 {
 public:
     SdfData() {}
+    SDF_API
     virtual ~SdfData();
 
     /// SdfAbstractData overrides
 
+    SDF_API
     virtual void CreateSpec(const SdfAbstractDataSpecId& id, 
                             SdfSpecType specType);
+    SDF_API
     virtual bool HasSpec(const SdfAbstractDataSpecId& id) const;
+    SDF_API
     virtual void EraseSpec(const SdfAbstractDataSpecId& id);
+    SDF_API
     virtual void MoveSpec(const SdfAbstractDataSpecId& oldId, 
                           const SdfAbstractDataSpecId& newId);
+    SDF_API
     virtual SdfSpecType GetSpecType(const SdfAbstractDataSpecId& id) const;
 
     virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken &fieldName,
                      SdfAbstractDataValue* value) const;
+    SDF_API
     virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
                      VtValue *value = NULL) const;
+    SDF_API
     virtual VtValue Get(const SdfAbstractDataSpecId& id, 
                         const TfToken& fieldName) const;
+    SDF_API
     virtual void Set(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
                      const VtValue & value);
+    SDF_API
     virtual void Set(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
                      const SdfAbstractDataConstValue& value);
+    SDF_API
     virtual void Erase(const SdfAbstractDataSpecId& id, 
                        const TfToken& fieldName);
+    SDF_API
     virtual std::vector<TfToken> List(const SdfAbstractDataSpecId& id) const;
 
+    SDF_API
     virtual std::set<double>
     ListAllTimeSamples() const;
     
+    SDF_API
     virtual std::set<double>
     ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
 
+    SDF_API
     virtual bool
     GetBracketingTimeSamples(double time, double* tLower, double* tUpper) const;
 
+    SDF_API
     virtual size_t
     GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
 
+    SDF_API
     virtual bool
     GetBracketingTimeSamplesForPath(const SdfAbstractDataSpecId& id, 
                                     double time,
                                     double* tLower, double* tUpper) const;
 
+    SDF_API
     virtual bool
     QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
                     SdfAbstractDataValue *optionalValue) const;
+    SDF_API
     virtual bool
     QueryTimeSample(const SdfAbstractDataSpecId& id, double time, 
                     VtValue *value) const;
 
+    SDF_API
     virtual void
     SetTimeSample(const SdfAbstractDataSpecId& id, double time, 
                   const VtValue & value);
 
+    SDF_API
     virtual void
     EraseTimeSample(const SdfAbstractDataSpecId& id, double time);
 
 protected:
     // SdfAbstractData overrides
+    SDF_API
     virtual void _VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const;
 
 private:

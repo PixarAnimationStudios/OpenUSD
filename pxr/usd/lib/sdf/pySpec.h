@@ -66,6 +66,7 @@
 /// SdfPyAbstractSpecNoRepr() and def("__repr__", ...).
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -93,7 +94,7 @@ class SdfSpec;
 
 namespace Sdf_PySpecDetail {
 
-bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
+SDF_API bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
 
 template <typename CTOR>
 struct NewVisitor : bp::def_visitor<NewVisitor<CTOR> > {
@@ -165,7 +166,7 @@ public:
 
     static void SetFunc(Sig *func)
     {
-        if (not _func) {
+        if (! _func) {
             _func = func;
         }
         else {
@@ -204,13 +205,13 @@ SdfMakePySpecConstructor(T *func, const std::string &doc = std::string())
 namespace Sdf_PySpecDetail {
 
 // Create the repr for a spec using Sdf.Find().
-std::string _SpecRepr(const bp::object&, const SdfSpec*);
+SDF_API std::string _SpecRepr(const bp::object&, const SdfSpec*);
 
 // Registration for spec types to functions to create a holder with the spec
 // corresponding to the spec type.
 typedef PyObject* (*_HolderCreator)(const SdfSpec&);
-void _RegisterHolderCreator(const std::type_info&, _HolderCreator);
-PyObject* _CreateHolder(const std::type_info&, const SdfSpec&);
+SDF_API void _RegisterHolderCreator(const std::type_info&, _HolderCreator);
+SDF_API PyObject* _CreateHolder(const std::type_info&, const SdfSpec&);
 
 template <class _SpecType>
 struct _ConstHandleToPython {

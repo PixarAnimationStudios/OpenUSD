@@ -27,6 +27,7 @@
 /// \file sdf/textReferenceParser.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 
 #include <string>
 #include <vector>
@@ -38,6 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// the \p sublayers vector, references, whether prim references or values
 /// from asset path attributes, are returned in the \p references vector.
 /// Payload paths are returned in \p payloads.
+SDF_API
 void SdfExtractExternalReferences(
     const std::string& layerPath,
     std::vector<std::string>* subLayers,
@@ -48,6 +50,7 @@ void SdfExtractExternalReferences(
 /// them into separate type-based buckets. This is identical to
 /// SdfExtractExternalReferences, except that the input string is a string
 /// containing scene description in sdf text file format.
+SDF_API
 void SdfExtractExternalReferencesFromString(
     const std::string& layerData,
     std::vector<std::string>* subLayers,

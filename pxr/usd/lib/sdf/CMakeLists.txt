@@ -88,6 +88,7 @@ pxr_shared_library(sdf
         textFileFormat.tab
 
     PUBLIC_HEADERS
+        api.h
         accessorHelpers.h
         declareSpec.h
         schemaTypeRegistration.h

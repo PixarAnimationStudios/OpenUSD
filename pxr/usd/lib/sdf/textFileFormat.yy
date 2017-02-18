@@ -43,6 +43,7 @@
 
 #include "pxr/base/tracelite/trace.h"
 
+#include "pxr/base/arch/errno.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -58,8 +59,6 @@
 
 #include <sstream>
 #include <string>
-#include <sys/mman.h>
-#include <unistd.h>
 #include <vector>
 
 // See this page for info as to why this is here.  Especially note the last
@@ -82,7 +81,7 @@ using boost::get;
 #define ERROR_IF_NOT_ALLOWED(context, allowed)                   \
     {                                                            \
         const SdfAllowed allow = allowed;                        \
-        if (!allow) {                                         \
+        if (!allow) {                                            \
             Err(context, "%s", allow.GetWhyNot().c_str());       \
         }                                                        \
     }
@@ -90,7 +89,7 @@ using boost::get;
 #define ERROR_AND_RETURN_IF_NOT_ALLOWED(context, allowed)        \
     {                                                            \
         const SdfAllowed allow = allowed;                        \
-        if (!allow) {                                         \
+        if (!allow) {                                            \
             Err(context, "%s", allow.GetWhyNot().c_str());       \
             return;                                              \
         }                                                        \
@@ -110,7 +109,7 @@ void textFileFormatYyerror(Sdf_TextParserContext *context, const char *s);
 
 extern int textFileFormatYylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern char *textFileFormatYyget_text(yyscan_t yyscanner);
-extern int textFileFormatYyget_leng(yyscan_t yyscanner);
+extern size_t textFileFormatYyget_leng(yyscan_t yyscanner);
 extern int textFileFormatYylex_init(yyscan_t *yyscanner);
 extern int textFileFormatYylex_destroy(yyscan_t yyscanner);
 extern void textFileFormatYyset_extra(Sdf_TextParserContext *context, 
@@ -925,8 +924,8 @@ _SetItemsIfListOp(const TfType& type, Sdf_TextParserContext *context)
 
     typedef VtArray<typename ListOpType::value_type> ArrayType;
 
-    if (!TF_VERIFY(context->currentValue.IsHolding<ArrayType>() || 
-                      context->currentValue.IsEmpty())) {
+    if (!TF_VERIFY(context->currentValue.IsHolding<ArrayType>() ||
+                   context->currentValue.IsEmpty())) {
         return true;
     }
 
@@ -3132,7 +3131,7 @@ Sdf_MemoryFlexBuffer::Sdf_MemoryFlexBuffer(FILE* file,
     int64_t fileSize = ArchGetFileLength(file);
     if (fileSize == -1) {
         TF_RUNTIME_ERROR("Error retrieving file size for @%s@: %s", 
-                         name.c_str(), strerror(errno));
+                         name.c_str(), ArchStrerror(errno).c_str());
         return;
     }
 

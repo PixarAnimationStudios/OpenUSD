@@ -27,6 +27,7 @@
 /// \file sdf/declareHandles.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -204,7 +205,7 @@ SdfCreateHandle(T *p)
 }
 
 template <>
-SdfHandleTo<SdfLayer>::Handle
+SDF_API SdfHandleTo<SdfLayer>::Handle
 SdfCreateHandle(SdfLayer *p);
 
 template <typename T>
@@ -221,11 +222,11 @@ struct Sdf_CastAccess {
     }
 };
 
-bool 
+SDF_API bool 
 Sdf_CanCastToType(
     const SdfSpec& srcSpec, const std::type_info& destType);
 
-bool
+SDF_API bool
 Sdf_CanCastToTypeCheckSchema(
     const SdfSpec& srcSpec, const std::type_info& destType);
 
