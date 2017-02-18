@@ -548,23 +548,23 @@ TF_API std::string TfStringify(double);
 /// 
 /// A type which offers streaming for floats in a canonical
 /// format that can safely roundtrip with the minimal number of digits.
-struct TF_API TfStreamFloat {
+struct TfStreamFloat {
     explicit TfStreamFloat(float f) : value(f) {}
     float value;
 };
 
-std::ostream& operator<<(std::ostream& o, TfStreamFloat t);
+TF_API std::ostream& operator<<(std::ostream& o, TfStreamFloat t);
 
 /// \struct TfStreamDouble
 ///
 /// A type which offers streaming for doubles in a canonical
 /// format that can safely roundtrip with the minimal number of digits.
-struct TF_API TfStreamDouble {
+struct TfStreamDouble {
     explicit TfStreamDouble(double d) : value(d) {}
     double value;
 };
 
-std::ostream& operator<<(std::ostream& o, TfStreamDouble t);
+TF_API std::ostream& operator<<(std::ostream& o, TfStreamDouble t);
 
 /// Convert a string to an arbitrary type
 ///
