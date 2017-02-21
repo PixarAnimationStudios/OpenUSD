@@ -5,19 +5,18 @@ pxr_shared_library(${PXR_PACKAGE}
         arch
         garch
         gf
-        tf
-        plug
         glf
         hd
         hdx
+        plug
         px_vp20
         sdf
+        tf
         usd
         usdImaging
         usdImagingGL
         usdMaya
         ${Boost_LIBRARIES}
-        ${GLUT_LIBRARIES}
         ${MAYA_LIBRARIES}
 
     INCLUDE_DIRS
@@ -25,8 +24,8 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        hdRenderer
         batchRenderer
+        hdRenderer
         proxyDrawOverride
         proxyShapeUI
         softSelectHelper

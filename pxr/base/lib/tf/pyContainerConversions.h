@@ -40,6 +40,7 @@
 
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -170,7 +171,7 @@ namespace TfPyContainerConversions {
     template <typename ContainerType, typename ValueType>
     static void set_value(ContainerType& a, std::size_t i, ValueType const& v)
     {
-      assert(a.size() == i);
+      TF_AXIOM(a.size() == i);
       a.push_back(v);
     }
   };
@@ -325,12 +326,12 @@ namespace TfPyContainerConversions {
 
     static void* convertible(PyObject* obj_ptr)
     {
-      if (not PyTuple_Check(obj_ptr) or PyTuple_Size(obj_ptr) != 2) {
+      if (!PyTuple_Check(obj_ptr) || PyTuple_Size(obj_ptr) != 2) {
         return 0;
       }
       boost::python::extract<first_type> e1(PyTuple_GetItem(obj_ptr, 0));
       boost::python::extract<second_type> e2(PyTuple_GetItem(obj_ptr, 1));
-      if (not e1.check() or not e2.check()) {
+      if (!e1.check() || !e2.check()) {
         return 0;
       }
       return obj_ptr;

@@ -42,6 +42,7 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include <atomic>
+#include <cstdint>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -299,11 +300,10 @@ private:
     TfToken _typeName;
     Usd_PrimData *_firstChild;
     TfPointerAndBits<Usd_PrimData> _nextSiblingOrParent;
+    mutable std::atomic<int64_t> _refCount;
     Usd_PrimFlagBits _flags;
 
-    // Reference count and intrusive_ptr core primitives implementation.
-    mutable std::atomic_int _refCount;
-
+    // intrusive_ptr core primitives implementation.
     friend void intrusive_ptr_add_ref(const Usd_PrimData *prim) {
         prim->_refCount.fetch_add(1, std::memory_order_relaxed);
     }

@@ -144,9 +144,9 @@ template <class T>
 struct TfEnvSetting
 {
     std::atomic<T*> *_value;
-    T const _default;
-    char const * const _name;
-    char const * const _description;
+    T _default;
+    char const * _name;
+    char const * _description;
 };
 
 // Specialize for string, default is stored as char const * (pointing to a
@@ -155,9 +155,9 @@ template <>
 struct TfEnvSetting<std::string>
 {
     std::atomic<std::string*> *_value;
-    char const * const _default;
-    char const * const _name;
-    char const * const _description;
+    char const * _default;
+    char const * _name;
+    char const * _description;
 };
 
 template <class T>

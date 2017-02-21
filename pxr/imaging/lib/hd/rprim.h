@@ -145,6 +145,10 @@ protected:
 
     virtual HdChangeTracker::DirtyBits _GetInitialDirtyBits() const = 0;
 
+    static HdChangeTracker::DirtyBits _PropagateRprimDirtyBits(
+                                               HdChangeTracker::DirtyBits bits);
+
+
 private:
     SdfPath _id;
     SdfPath _instancerID;

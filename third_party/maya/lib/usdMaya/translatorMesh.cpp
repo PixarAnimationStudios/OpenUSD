@@ -26,7 +26,7 @@
 
 #include "usdMaya/meshUtil.h"
 #include "usdMaya/translatorGprim.h"
-#include "usdMaya/translatorLook.h"
+#include "usdMaya/translatorMaterial.h"
 #include "usdMaya/translatorUtil.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
@@ -180,10 +180,11 @@ PxrUsdMayaTranslatorMesh::Create(
         context->RegisterNewMayaNode( shapePath, meshObj ); // used for undo/redo
     }
 
-    // If a look is bound, create (or reuse if already present) and assign it
+    // If a material is bound, create (or reuse if already present) and assign it
     // If no binding is present, assign the mesh to the default shader    
     const TfToken& shadingMode = args.GetShadingMode();
-    PxrUsdMayaTranslatorLook::AssignLook(shadingMode, mesh, meshObj, context);
+    PxrUsdMayaTranslatorMaterial::AssignMaterial(shadingMode, mesh, meshObj,
+            context);
     
     // Mesh is a shape, so read Gprim properties
     PxrUsdMayaTranslatorGprim::Read(mesh, meshObj, context);

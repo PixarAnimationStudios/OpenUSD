@@ -1,0 +1,40 @@
+#usda 1.0
+(
+    defaultPrim = "Cubes_set"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Xform "Cubes_set" (
+    kind = "assembly"
+)
+{
+    def Xform "Cubes_grp" (
+        kind = "group"
+    )
+    {
+        def Xform "Cube_1" (
+            add references = @CubeModel.usda@</CubeModel>
+        )
+        {
+            double3 xformOp:translate = (-5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Cube_2" (
+            add references = @CubeModel.usda@</CubeModel>
+        )
+        {
+        }
+
+        def Xform "Cube_3" (
+            add references = @CubeModel.usda@</CubeModel>
+        )
+        {
+            double3 xformOp:translate = (5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}
+

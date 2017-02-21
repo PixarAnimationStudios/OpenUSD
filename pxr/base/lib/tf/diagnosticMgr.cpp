@@ -85,21 +85,15 @@ TF_REGISTRY_FUNCTION(TfDebug)
 }
 
 
-// Abort, but first remove Tf's signal handler so we don't invoke the session
-// logging mechanism.  This is meant for use by things like TF_FATAL_ERROR,
+// Abort without logging.  This is meant for use by things like TF_FATAL_ERROR,
 // which already log (more extensive) session information before doing the
 // abort.
 static
 void
 Tf_UnhandledAbort()
 {
-    // Remove signal handler.
-    struct sigaction act;
-    act.sa_handler = SIG_DFL;
-    act.sa_flags   = 0;
-    sigemptyset(&act.sa_mask);
-    sigaction(SIGABRT, &act, NULL);
-    abort();
+    constexpr bool logging = true;
+    ArchAbort(!logging);
 }
 
 TF_INSTANTIATE_SINGLETON(TfDiagnosticMgr);

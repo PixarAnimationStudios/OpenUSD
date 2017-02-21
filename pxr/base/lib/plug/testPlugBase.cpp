@@ -52,12 +52,11 @@ _TestPlugBase<N>::Manufacture(const std::string & subclass)
     return TfNullPtr;
 }
 
-// XXX -- These shouldn't be in the library or used by the Python module,
-//        let alone exported.
-template class PLUG_API _TestPlugBase<1>;
-template class PLUG_API _TestPlugBase<2>;
-template class PLUG_API _TestPlugBase<3>;
-template class PLUG_API _TestPlugBase<4>;
+// XXX -- These shouldn't be in the library or used by the Python module.
+template class _TestPlugBase<1>;
+template class _TestPlugBase<2>;
+template class _TestPlugBase<3>;
+template class _TestPlugBase<4>;
 
 // This derived class should be discovered as an available subclass
 // of _TestPlugBase1 even though it is compiled into the base library.

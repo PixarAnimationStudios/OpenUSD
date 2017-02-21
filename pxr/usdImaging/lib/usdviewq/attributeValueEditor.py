@@ -24,7 +24,7 @@
 from PySide import QtGui, QtCore
 from attributeValueEditorUI import Ui_AttributeValueEditor
 from pythonExpressionPrompt import PythonExpressionPrompt
-from common import GetAttributeColor, KeyframeTextColor
+from common import GetAttributeColor, TimeSampleTextColor
 
 # This is the widget that appears when selecting an attribute and
 # opening the "Value" tab.
@@ -63,7 +63,7 @@ class AttributeValueEditor(QtGui.QWidget):
         # pass the mainWindow instance from which to retrieve 
         # variable data.
         self._mainWindow = mainWindow
-        self._attributeView = mainWindow._ui.attributeView
+        self._propertyView = mainWindow._ui.propertyView
 
     def populate(self, name, node):
         # called when the selected attribute has changed
@@ -113,9 +113,8 @@ class AttributeValueEditor(QtGui.QWidget):
             self._ui.valueViewer.setTextColor(txtColor)
 
             from scalarTypes import ToString
-            self._ui.valueViewer.setText(ToString(
-                self._val, 
-                self._attribute.GetTypeName()))
+            rowText = ToString(self._val, self._attribute.GetTypeName())
+            self._ui.valueViewer.setText(rowText)
 
         #XXX USD Determine whether the revert button should be on
         self._ui.revertButton.setEnabled(False)
@@ -173,7 +172,7 @@ class AttributeValueEditor(QtGui.QWidget):
         reply = QtGui.QMessageBox.question(self, "Confirm Revert",
                     "Are you sure you want to revert the %s "
                     "<font color='%s'><b>%s</b></font> at %s?"
-                        %(type, KeyframeTextColor.color().name(), self._name, frameStr),
+                        %(type, TimeSampleTextColor.color().name(), self._name, frameStr),
                     QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Yes,
                     QtGui.QMessageBox.Cancel)
     

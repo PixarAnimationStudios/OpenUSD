@@ -1,1 +1,1 @@
-Fatal Error: in Test_TfDiagnosticNotice_Fatal at line 233 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- Testing notice IssuedFatalError.
+Fatal Error: in Test_TfDiagnosticNotice_Fatal at line 237 of pxr/base/lib/tf/testenv/diagnosticNotices.cpp -- Testing notice IssuedFatalError.

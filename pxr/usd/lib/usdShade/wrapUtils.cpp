@@ -22,8 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+
+#include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/enum.hpp>
+#include <boost/python/scope.hpp>
+#include <boost/python/tuple.hpp>
 
 #include "pxr/usd/usdShade/utils.h"
 
@@ -32,19 +36,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace boost::python;
 
+static object 
+_GetBaseNameAndType(const TfToken &fullName)
+{
+    const auto &result = UsdShadeUtils::GetBaseNameAndType(fullName);
+    return make_tuple(result.first, result.second);
+}
+
 void wrapUsdShadeUtils()
 {
     enum_<UsdShadeAttributeType>("AttributeType")
-        .value("Parameter", UsdShadeAttributeType::Parameter)
+        .value("Input", UsdShadeAttributeType::Input)
         .value("Output", UsdShadeAttributeType::Output)
+        .value("Parameter", UsdShadeAttributeType::Parameter)
         .value("InterfaceAttribute", 
             UsdShadeAttributeType::InterfaceAttribute)
         ;
 
-    def("GetPrefixForAttributeType", 
-        UsdShadeUtilsGetPrefixForAttributeType);
-    def("GetBaseNameAndType", 
-        UsdShadeUtilsGetBaseNameAndType);
+    scope thisScope = class_<UsdShadeUtils>("Utils", no_init)
+        .def("GetPrefixForAttributeType", 
+            UsdShadeUtils::GetPrefixForAttributeType)
+        .def("GetBaseNameAndType", _GetBaseNameAndType)
+        .def("GetFullName", UsdShadeUtils::GetFullName)
+   ;
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

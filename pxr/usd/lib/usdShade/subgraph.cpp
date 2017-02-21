@@ -122,6 +122,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usd/treeIterator.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -203,6 +204,209 @@ std::vector<UsdShadeOutput>
 UsdShadeSubgraph::GetOutputs() const
 {
     return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+}
+
+UsdShadeInput
+UsdShadeSubgraph::CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName)
+{
+    TfToken inputName = name;
+    if (not UsdShadeUtils::WriteNewEncoding()) {
+        inputName = TfToken(UsdShadeTokens->interface.GetString() + 
+                            name.GetString());
+    }
+    return UsdShadeConnectableAPI(GetPrim()).CreateInput(inputName, typeName);
+}
+
+UsdShadeInput
+UsdShadeSubgraph::GetInput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInput(name);
+}
+
+std::vector<UsdShadeInput>
+UsdShadeSubgraph::GetInputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+}
+
+std::vector<UsdShadeInput> 
+UsdShadeSubgraph::GetInterfaceInputs() const
+{
+    return GetInputs();
+}
+
+static bool 
+_IsValidInput(UsdShadeConnectableAPI const &source, 
+              UsdShadeAttributeType const sourceType) 
+{
+    return (sourceType == UsdShadeAttributeType::Input) or 
+           (UsdShadeUtils::ReadOldEncoding() and 
+            ((source.IsSubgraph() and 
+              sourceType == UsdShadeAttributeType::InterfaceAttribute) 
+             or 
+             (source.IsShader() and 
+              sourceType == UsdShadeAttributeType::Parameter)));
+}
+
+static 
+UsdShadeSubgraph::InterfaceInputConsumersMap 
+_ComputeNonTransitiveInputConsumersMap(const UsdShadeSubgraph &subgraph)
+{
+    UsdShadeSubgraph::InterfaceInputConsumersMap result;
+
+    std::vector<UsdShadeInput> inputs = subgraph.GetInputs();
+    for (const auto &input : inputs) {
+        std::vector<UsdShadeInput> consumers;
+        if (UsdShadeUtils::ReadOldEncoding()) {
+            // If the input is an interface attribute, then get all consumer 
+            // params using available API on UsdShadeInterfaceAttribute.
+            if (UsdShadeUtils::GetBaseNameAndType(input.GetAttr().GetName()).second
+                    == UsdShadeAttributeType::InterfaceAttribute) {
+                UsdShadeInterfaceAttribute interfaceAttr(input.GetAttr());
+                // How do we get all driven params of all render targets?!
+                std::vector<UsdShadeParameter> consumerParams = 
+                    interfaceAttr.GetRecipientParameters(TfToken());
+                for (const auto &param: consumerParams) {
+                    consumers.push_back(UsdShadeInput(param.GetAttr()));
+                }
+            }
+        }
+        result[input] = consumers;
+    }
+
+    UsdTreeIterator iter(subgraph.GetPrim());
+    // Skip the subgraph root in the traversal.
+    ++iter;
+
+    // XXX: This traversal isn't instancing aware. We must update this 
+    // once we have instancing aware USD objects. See http://bug/126053
+    for ( ; iter ; ++iter) {
+        const UsdPrim &prim = *iter;
+
+        UsdShadeConnectableAPI connectable(prim);
+        if (not connectable)
+            continue;
+
+        std::vector<UsdShadeInput> internalInputs = connectable.GetInputs();
+        for (const auto &internalInput: internalInputs) {
+            UsdShadeConnectableAPI source;
+            TfToken sourceName;
+            UsdShadeAttributeType sourceType;
+            if (UsdShadeConnectableAPI::GetConnectedSource(internalInput,
+                    &source, &sourceName, &sourceType)) {
+                if (source.GetPrim() == subgraph.GetPrim() and 
+                    _IsValidInput(source, sourceType))
+                {
+                    result[subgraph.GetInput(sourceName)].push_back(
+                        internalInput);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+static 
+void
+_RecursiveComputeSubgraphInterfaceInputConsumers(
+    const UsdShadeSubgraph::InterfaceInputConsumersMap &inputConsumersMap,
+    UsdShadeSubgraph::SubgraphInputConsumersMap *subgraphInputConsumers) 
+{
+    for (const auto &inputAndConsumers : inputConsumersMap) {
+        const std::vector<UsdShadeInput> &consumers = inputAndConsumers.second;
+        for (const UsdShadeInput &consumer: consumers) {
+            UsdShadeConnectableAPI connectable(consumer.GetAttr().GetPrim());
+            if (connectable.IsSubgraph()) {
+                if (not subgraphInputConsumers->count(connectable)) {
+
+                    const auto &irMap = _ComputeNonTransitiveInputConsumersMap(
+                        UsdShadeSubgraph(connectable));
+                    (*subgraphInputConsumers)[connectable] = irMap;
+                    
+                    _RecursiveComputeSubgraphInterfaceInputConsumers(irMap, 
+                        subgraphInputConsumers);
+                }
+            }
+        }
+    }
+}
+
+static 
+void
+_ResolveConsumers(const UsdShadeInput &consumer, 
+                   const UsdShadeSubgraph::SubgraphInputConsumersMap 
+                        &subgraphInputConsumers,
+                   std::vector<UsdShadeInput> *resolvedConsumers) 
+{
+    UsdShadeSubgraph consumerSubgraph(consumer.GetAttr().GetPrim());
+    if (not consumerSubgraph) {
+        resolvedConsumers->push_back(consumer);
+        return;
+    }
+
+    const auto &subgraphIt = subgraphInputConsumers.find(consumerSubgraph);
+    if (subgraphIt != subgraphInputConsumers.end()) {
+        const UsdShadeSubgraph::InterfaceInputConsumersMap &inputConsumers = 
+            subgraphIt->second;
+
+        const auto &inputIt = inputConsumers.find(consumer);
+        if (inputIt != inputConsumers.end()) {
+            const auto &consumers = inputIt->second;
+            if (not consumers.empty()) {
+                for (const auto &nestedConsumer : consumers) {
+                    _ResolveConsumers(nestedConsumer, subgraphInputConsumers, 
+                                    resolvedConsumers);
+                }
+            } else {
+                // If the subgraph input has no consumers, then add it to 
+                // the list of resolved consumers.
+                resolvedConsumers->push_back(consumer);
+            }
+        }
+    } else {
+        resolvedConsumers->push_back(consumer);
+    }
+}
+
+UsdShadeSubgraph::InterfaceInputConsumersMap 
+UsdShadeSubgraph::ComputeInterfaceInputConsumersMap(
+    bool computeTransitiveConsumers) const
+{
+    InterfaceInputConsumersMap result = 
+        _ComputeNonTransitiveInputConsumersMap(*this);
+
+    if (not computeTransitiveConsumers)
+        return result;
+
+    // Collect all subgraphs for which we must compute the input-consumers map.
+    SubgraphInputConsumersMap subgraphInputConsumers;
+    _RecursiveComputeSubgraphInterfaceInputConsumers(result, 
+                                                     &subgraphInputConsumers);
+
+    // If the are no consumers belonging to subgraphs, we're done.
+    if (subgraphInputConsumers.empty())
+        return result;
+
+    InterfaceInputConsumersMap resolved;
+    for (const auto &inputAndConsumers : result) {
+        const std::vector<UsdShadeInput> &consumers = inputAndConsumers.second;
+
+        std::vector<UsdShadeInput> resolvedConsumers;
+        for (const UsdShadeInput &consumer: consumers) {
+            std::vector<UsdShadeInput> nestedConsumers;
+            _ResolveConsumers(consumer, subgraphInputConsumers, 
+                              &nestedConsumers);
+
+            resolvedConsumers.insert(resolvedConsumers.end(), 
+                nestedConsumers.begin(), nestedConsumers.end());
+        }
+
+        resolved[inputAndConsumers.first] = resolvedConsumers;
+    }
+
+    return resolved;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

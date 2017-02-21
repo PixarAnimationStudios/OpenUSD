@@ -27,11 +27,11 @@
 /// \file sdf/attributeSpec.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/types.h"
-
 #include "pxr/base/tf/enum.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -72,6 +72,7 @@ public:
     ///
     /// Creates and returns a new attribute for the given prim.
     /// The \p owner will own the newly created attribute.
+    SDF_API
     static SdfAttributeSpecHandle
     New(const SdfPrimSpecHandle& owner,
         const std::string& name, const SdfValueTypeName& typeName,
@@ -84,6 +85,7 @@ public:
     /// and target. The \p owner will own the newly created attribute.
     /// The new attribute will appear at the end of the target's
     /// attribute list.
+    SDF_API
     static SdfAttributeSpecHandle
     New(const SdfRelationshipSpecHandle& owner,
         const SdfPath& targetPath,
@@ -101,12 +103,15 @@ public:
     ///
     /// The returned proxy, which is an SdfListEditorProxy, modifies the
     /// SdfListOp that represents this attribute's connections.
+    SDF_API
     SdfConnectionsProxy GetConnectionPathList() const;
 
     /// Returns \c true if any connection paths are set on this attribute.
+    SDF_API
     bool HasConnectionPaths() const;
 
     /// Clears the connection paths for this attribute.
+    SDF_API
     void ClearConnectionPaths();
 
     /// @}
@@ -118,13 +123,16 @@ public:
     /// Returns an editable map whose keys are connection paths and whose
     /// values are mappers.  Mappers may be removed from the map.  Mappers
     /// are added by directly constructing them.
+    SDF_API
     SdfConnectionMappersProxy GetConnectionMappers() const;
 
     /// Returns the target path that mapper \p mapper is associated with.
+    SDF_API
     SdfPath GetConnectionPathForMapper(const SdfMapperSpecHandle& mapper);
 
     /// Changes the path a mapper is associated with from \p oldPath to
     /// \p newPath.
+    SDF_API
     void ChangeMapperPath(const SdfPath& oldPath, const SdfPath& newPath);
 
     /// @}
@@ -135,20 +143,25 @@ public:
                      SdfPath::FastLessThan> ConnectionMarkerMap;
 
     /// Sets all the connection markers for this attribute.
+    SDF_API
     void SetConnectionMarkers(const ConnectionMarkerMap& markers);
 
     /// Returns the marker for the given connection path.
     /// If no marker exists, returns the empty string.
+    SDF_API
     std::string GetConnectionMarker(const SdfPath& path) const;
 
     /// Sets the marker for the given connection path.
     /// Clears the marker if an empty string is given.
+    SDF_API
     void SetConnectionMarker(const SdfPath& path, const std::string& marker);
 
     /// Clears the marker for the given connection path.
+    SDF_API
     void ClearConnectionMarker(const SdfPath& path);
 
     /// Returns all connection paths on which markers are specified.
+    SDF_API
     SdfPathVector GetConnectionMarkerPaths() const;
 
     /// @}
@@ -160,27 +173,35 @@ public:
     /// options for this attribute's value. However, this metadata is
     /// purely advisory. It is up to the consumer to perform any
     /// validation against this set of tokens, if desired.
+    SDF_API
     VtTokenArray GetAllowedTokens() const;
 
     /// Sets the allowed tokens metadata for this attribute.
+    SDF_API
     void SetAllowedTokens(const VtTokenArray& allowedTokens);
 
     /// Returns true if allowed tokens metadata is set for this attribute.
+    SDF_API
     bool HasAllowedTokens() const;
 
     /// Clears the allowed tokens metadata for this attribute.
+    SDF_API
     void ClearAllowedTokens(); 
 
     /// Returns the display unit of the attribute.
+    SDF_API
     TfEnum GetDisplayUnit() const;
 
     /// Sets the display unit of the attribute.
+    SDF_API
     void SetDisplayUnit(const TfEnum& displayUnit);
 
     /// Returns true if a display unit is set for this attribute.
+    SDF_API
     bool HasDisplayUnit() const;
 
     /// Clears the display unit of the attribute.
+    SDF_API
     void ClearDisplayUnit();
 
     /// @}
@@ -190,6 +211,7 @@ public:
     /// Returns the roleName for this attribute's typeName.
     ///
     /// If the typeName has no roleName, return empty token.
+    SDF_API
     TfToken GetRoleName() const;
 
     /// @}

@@ -25,6 +25,7 @@
 #define AR_DEFINE_RESOLVER_CONTEXT_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/pyResolverContext.h"
 

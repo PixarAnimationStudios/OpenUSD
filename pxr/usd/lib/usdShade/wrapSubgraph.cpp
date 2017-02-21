@@ -129,6 +129,20 @@ WRAP_CUSTOM {
         .def("GetOutputs",
              &UsdShadeSubgraph::GetOutputs,
              return_value_policy<TfPySequenceToList>())
+
+        .def("CreateInput", &UsdShadeSubgraph::CreateInput,
+             (arg("name"), arg("type")))
+        .def("GetInput", &UsdShadeSubgraph::GetInput, arg("name"))
+        .def("GetInputs", &UsdShadeSubgraph::GetInputs,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetInterfaceInputs", &UsdShadeSubgraph::GetInterfaceInputs,
+             return_value_policy<TfPySequenceToList>())
+
+        .def("ComputeInterfaceInputConsumersMap",
+             &UsdShadeSubgraph::ComputeInterfaceInputConsumersMap,
+             return_value_policy<TfPyMapToDictionary>(),
+             (arg("computeTransitiveConsumers")=false))
+
     ;
 
     implicitly_convertible<UsdShadeSubgraph, UsdShadeConnectableAPI>();

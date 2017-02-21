@@ -199,6 +199,11 @@ public:
     /// The sublayer offsets changed.
     void DidChangeLayerOffsets(PcpCache* cache);
 
+    /// The layer stack \p layerStack changed significantly, requiring
+    /// the layer stack to be recomputed.
+    void DidChangeLayerStack(PcpCache* cache, 
+                             const PcpLayerStackPtr& layerStack);
+
     /// The object at \p path changed significantly enough to require
     /// recomputing the entire prim or property index.  A significant change
     /// implies changes to every namespace descendant's index, specs, and

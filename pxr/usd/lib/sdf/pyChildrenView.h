@@ -175,7 +175,7 @@ private:
     static std::string _GetRepr(const View& x)
     {
         std::string result("{");
-        if (not x.empty()) {
+        if (! x.empty()) {
             const_iterator i = x.begin(), n = x.end();
             result += TfPyRepr(x.key(i)) + ": " + TfPyRepr(*i);
             while (++i != n) {

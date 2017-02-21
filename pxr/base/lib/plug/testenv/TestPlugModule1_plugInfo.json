@@ -6,7 +6,7 @@
             "Info": {
                 "_TestPlugBaseBool": true,
                 "Types": {
-                    "TestPlugPythonDerived1": {
+                    "TestPlugModule1.TestPlugPythonDerived1": {
                         "bases": ["_TestPlugBase<1>"]
                     }
                 }

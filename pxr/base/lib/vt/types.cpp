@@ -54,22 +54,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 // etc.
 #define VT_ZERO_0_CONSTRUCTOR(r, unused, elem)      \
 template<>                                          \
-VT_TYPE(elem) VtZero() {                            \
+VT_API VT_TYPE(elem) VtZero() {                     \
     return (VT_TYPE(elem))(0);                      \
 }
 #define VT_ZERO_0FLOAT_CONSTRUCTOR(r, unused, elem) \
 template<>                                          \
-VT_TYPE(elem) VtZero() {                            \
+VT_API VT_TYPE(elem) VtZero() {                     \
     return VT_TYPE(elem)(0.0f);                     \
 }
 #define VT_ZERO_0DOUBLE_CONSTRUCTOR(r, unused, elem)\
 template<>                                          \
-VT_TYPE(elem) VtZero() {                            \
-    return VT_TYPE(elem)(0.0);                     \
+VT_API VT_TYPE(elem) VtZero() {                     \
+    return VT_TYPE(elem)(0.0);                      \
 }
 #define VT_ZERO_EMPTY_CONSTRUCTOR(r, unused, elem)  \
 template<>                                          \
-VT_TYPE(elem) VtZero() {                            \
+VT_API VT_TYPE(elem) VtZero() {                     \
     return VT_TYPE(elem)() ;                        \
 }
 

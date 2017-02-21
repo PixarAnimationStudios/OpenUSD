@@ -28,8 +28,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/type.h"
-#include <boost/static_assert.hpp>
-#include <boost/type_traits/is_abstract.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,7 +44,8 @@ public:
     public:
         virtual void* New()
         {
-            BOOST_STATIC_ASSERT(boost::is_abstract<Interface>::value);
+            static_assert(std::is_abstract<Interface>::value,
+                          "Interface type must be abstract.");
             static Implementation impl;
             return static_cast<Interface*>(&impl);
         }

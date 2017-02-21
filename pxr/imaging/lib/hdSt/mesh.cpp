@@ -40,6 +40,7 @@
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
@@ -158,7 +159,8 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // really need is the ability to compute quad indices late, however
         // splitting the topology shouldn't be a huge cost either.
         bool usePtexIndices = _UsePtexIndices(sceneDelegate->GetRenderIndex());
-        boost::hash_combine(_topologyId, usePtexIndices);
+        _topologyId = ArchHash64((const char*)&usePtexIndices,
+            sizeof(usePtexIndices), _topologyId);
 
         {
             // XXX: Should be HdSt_MeshTopologySharedPtr
@@ -887,8 +889,16 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 bool
 HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 {
-    HdSurfaceShaderSharedPtr const& ss = 
-                                    renderIndex.GetShader(GetSurfaceShaderId());
+    const HdShader *shader = static_cast<const HdShader *>(
+                                  renderIndex.GetSprim(HdPrimTypeTokens->shader,
+                                                       GetSurfaceShaderId()));
+    if (shader == nullptr) {
+        shader = static_cast<const HdShader *>(
+                        renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
+    }
+
+    HdShaderCodeSharedPtr ss = shader->GetShaderCode();
+
     TF_FOR_ALL(it, ss->GetParams()) {
         if (it->IsPtex())
             return true;
@@ -1068,6 +1078,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
 HdChangeTracker::DirtyBits
 HdStMesh::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
 {
+    dirtyBits = _PropagateRprimDirtyBits(dirtyBits);
+
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (dirtyBits & HdChangeTracker::DirtyPoints) {
         dirtyBits |= _customDirtyBitsInUse & DirtySmoothNormals;

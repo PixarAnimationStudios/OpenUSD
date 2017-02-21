@@ -25,6 +25,7 @@
 #define TF_STACKED_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/demangle.h"
 
@@ -52,6 +53,68 @@ public:
     }
 };
 
+// Detail for TfStacked storage types.
+template <typename T, bool PerThread>
+class Tf_StackedStorageType {
+public:
+    typedef std::vector<T const *> Stack;
+
+private:
+    /* This is a wrapper around Stack that makes sure we call InitializeStack    */
+    /* once per stack instance.                                                  */
+    class _StackHolder {
+    public:
+        _StackHolder() : _initialized(false) { }
+
+        Stack &Get() {
+            if (!_initialized) {
+                _initialized = true;
+                TfStackedAccess::InitializeStack<T>();
+            }
+            return _stack;
+        }
+
+    private:
+        Stack _stack;
+        bool _initialized;
+    };
+
+    struct _PerThreadStackStorage {
+        tbb::enumerable_thread_specific<_StackHolder> stack;
+        Stack &Get() {
+            return stack.local().Get();
+        }
+    };
+
+    struct _GlobalStackStorage {
+        _StackHolder stack;
+        Stack &Get() {
+            return stack.Get();
+        }
+    };
+
+public:
+    /* Choose the stack storage type based on thea PerThread argument. */
+    typedef typename boost::mpl::if_c<
+        PerThread, _PerThreadStackStorage, _GlobalStackStorage
+    >::type Type;
+};
+
+// Detail for TfStacked storage.  This exists so we can specialize it
+// with exported storage.
+template <typename T, bool PerThread>
+struct Tf_ExportedStackedStorage { };
+
+// Detail for TfStacked storage.  This is for the case we don't need
+// exported storage.  This is the default when simply subclassing
+// TfStacked without using TF_DEFINE_STACKED.
+template <typename T, bool PerThread>
+struct Tf_StackedStorage {
+    typedef typename Tf_StackedStorageType<T, PerThread>::Stack Stack;
+    typedef typename Tf_StackedStorageType<T, PerThread>::Type Type;
+    static std::atomic<Type*> value;
+};
+
 /// \class TfStacked
 ///
 /// A TfStacked is used where a class needs to keep a stack of the objects
@@ -68,17 +131,16 @@ public:
 ///
 /// in a single .cpp file.
 ///
-/// Note that \a Stacked objects that differ only by \a PerThread will not share
-/// stacks.
+/// Note that \a Stacked objects that differ only by \a PerThread will not
+/// share stacks.
 ///
-template <class Derived, bool PerThread=true>
+template <class Derived, bool PerThread = true,
+          class Holder = Tf_StackedStorage<Derived, PerThread>>
 class TfStacked : boost::noncopyable {
-    typedef TfStackedAccess Access;
+    typedef typename Holder::Type _StorageType;
 public:
-
-    typedef TfStacked _StackedType;
-
-    typedef std::vector<Derived const *> Stack;
+    typedef Holder Storage;
+    typedef typename Storage::Stack Stack;
 
     /// Pushes this stacked object onto the stack.
     TfStacked() {
@@ -129,44 +191,6 @@ private:
     // initialization is performed.
     static void _InitializeStack() {}
 
-    // This is a wrapper around Stack that makes sure we call InitializeStack
-    // once per stack instance.
-    class _StackHolder {
-    public:
-        _StackHolder() : _initialized(false) { }
-
-        Stack &Get() {
-            if (!_initialized) {
-                _initialized = true;
-                Access::InitializeStack<Derived>();
-            }
-            return _stack;
-        }
-
-    private:
-        Stack _stack;
-        bool _initialized;
-    };
-
-    struct _PerThreadStackStorage {
-        tbb::enumerable_thread_specific<_StackHolder> stack;
-        Stack &Get() {
-            return stack.local().Get();
-        }
-    };
-
-    struct _GlobalStackStorage {
-        _StackHolder stack;
-        Stack &Get() {
-            return stack.Get();
-        }
-    };
-
-    // Choose the stack storage type based on the \a PerThread argument.
-    typedef typename boost::mpl::if_c<
-        PerThread, _PerThreadStackStorage, _GlobalStackStorage
-    >::type _StackStorage;
-
     // Push p on the stack.  Only the constructor should call this.
     static void _Push(Derived const *p) {
         _GetStack().push_back(p);
@@ -180,24 +204,24 @@ private:
         } else {
             // CODE_COVERAGE_OFF
             TF_FATAL_ERROR("Destroyed %s out of stack order.",
-                           ArchGetDemangled<TfStacked>().c_str());
+                ArchGetDemangled<Derived>().c_str());
             // CODE_COVERAGE_ON
         }
     }
 
     static Stack &_GetStack() {
         // Technically unsafe double-checked lock to intitialize the stack.
-        if (ARCH_UNLIKELY(!_stackStorage)) {
+        if (ARCH_UNLIKELY(Storage::value.load() == nullptr)) {
             // Make a new stack and try to set it.
-            _StackStorage *old = nullptr;
-            _StackStorage *tmp = new _StackStorage;
+            _StorageType *old = nullptr;
+            _StorageType *tmp = new _StorageType;
             // Attempt to set the stack.
-            if (!_stackStorage.compare_exchange_strong(old, tmp)) {
+            if (!Storage::value.compare_exchange_strong(old, tmp)) {
                 // Another caller won the race.
                 delete tmp;
             }
         }
-        return _stackStorage.load(std::memory_order_relaxed)->Get();
+        return Storage::value.load(std::memory_order_relaxed)->Get();
     }
 
     Derived *_AsDerived() {
@@ -207,10 +231,23 @@ private:
     Derived const *_AsDerived() const {
         return static_cast<Derived const *>(this);
     }
-
-    // Holds the objects in the stack.
-    static std::atomic<_StackStorage*> _stackStorage;
 };
+
+/// Define the class \p Derived that subclasses from TfStacked.
+/// \p IsPerThread selected thread safety and \p eiAPI is used to export
+/// the storage for the stack.  Use \c TF_INSTANTIATE_DEFINED_STACKED
+/// to define the storage.
+#define TF_DEFINE_STACKED(Derived, IsPerThread, eiAPI)                         \
+class Derived;                                                                 \
+template <>                                                                    \
+struct Tf_ExportedStackedStorage<Derived, IsPerThread> {                       \
+    typedef typename Tf_StackedStorageType<Derived, IsPerThread>::Stack Stack; \
+    typedef typename Tf_StackedStorageType<Derived, IsPerThread>::Type Type;   \
+    static eiAPI std::atomic<Type*> value;                                     \
+};                                                                             \
+class Derived :                                                                \
+    public TfStacked<Derived, IsPerThread,                                     \
+                     Tf_ExportedStackedStorage<Derived, IsPerThread>>
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

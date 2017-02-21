@@ -118,6 +118,7 @@ class JumpToBoundMaterialMenuItem(NodeContextMenuItem):
             material, bound = GetClosestBoundMaterial(p)
             if material is not None:
                 self._material = material
+                break
 
     def IsEnabled(self):
         return self._material is not None

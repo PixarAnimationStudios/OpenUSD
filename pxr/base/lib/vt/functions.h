@@ -26,6 +26,7 @@
 /// \file vt/functions.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/vt/array.h"
 #include <vector>
 

@@ -35,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdShadeConnectableAPI;
 class UsdShadeOutput;
+class UsdShadeInput;
 class UsdShadeInterfaceAttribute;
 
 /// \class UsdShadeParameter
@@ -171,6 +172,12 @@ public:
     bool ConnectToSource(UsdShadeInterfaceAttribute const &interfaceAttribute) 
         const;
 
+    /// \overload
+    ///
+    /// Connects this parameter to the given input.
+    /// 
+    bool ConnectToSource(UsdShadeInput const &input) const;
+
     /// Disconnect source for this Parameter.
     ///
     /// This may author more scene description than you might expect - we define
@@ -204,8 +211,8 @@ public:
     /// \c false if not connected to a defined prim.
     ///
     /// \note The python wrapping for this method returns a 
-    /// (source, sourceName) tuple if the parameter is connected, else
-    /// \c None
+    /// (source, sourceName, sourceType) tuple if the parameter is connected, 
+    /// else \c None
     bool GetConnectedSource(
             UsdShadeConnectableAPI *source, 
             TfToken *sourceName,
@@ -225,8 +232,11 @@ public:
     /// \endcode
     bool IsConnected() const;
 
+    /// \deprecated
+    /// 
     /// Return the name of the sibling relationship that would encode
     /// the connection for this parameter.
+    /// 
     TfToken GetConnectionRelName() const;
 
     // ---------------------------------------------------------------

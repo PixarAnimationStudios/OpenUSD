@@ -24,8 +24,9 @@
 // stencilPerVertex.cpp
 //
 
+#include "refinerFactory.h"
 #include "stencilPerVertex.h"
-#include "refinerCache.h"
+#include "tokens.h"
 
 #include <opensubdiv/far/stencilTable.h>
 #include <opensubdiv/far/stencilTableFactory.h>
@@ -44,24 +45,53 @@ using std::vector;
 
 boost::shared_ptr<const OpenSubdiv::Far::LimitStencilTable>
 PxOsdStencilPerVertex::GetStencilPerVertex(
-    const PxOsdMeshTopology &topology,
+    PxOsdMeshTopology topology,
     const int level)
 {
     TRACE_FUNCTION();
 
-    PxOsdRefinerCache::StencilTableSharedPtr cvStencils;
-    PxOsdRefinerCache::PatchTableSharedPtr   patchTable;
-
-    // we're using limit stencils for accuracy
-    const bool bilinearStencils = false;
-
-    PxOsdTopologyRefinerSharedPtr refiner =
-        PxOsdRefinerCache::GetInstance().GetOrCreateRefiner(
-            topology, bilinearStencils, level, &cvStencils, &patchTable);
-
-    if (!refiner) {
-        return boost::shared_ptr<OpenSubdiv::Far::LimitStencilTable>();
+    if ((topology.GetScheme() != PxOsdOpenSubdivTokens->catmullClark
+         && topology.GetScheme() != PxOsdOpenSubdivTokens->catmark)) {
+        // XXX: This refiner will be adaptively refined, so we need to ensure
+        // we're using catmull-clark subdivision scheme, since that's the only
+        // option currently. Once OpenSubdiv supports adaptive loop subdivision,
+        // we should remove this hack.
+        topology.SetScheme(PxOsdOpenSubdivTokens->catmullClark);
     }
+
+    PxOsdTopologyRefinerSharedPtr refiner = PxOsdRefinerFactory::Create(topology);
+    OpenSubdiv::Far::TopologyRefiner::AdaptiveOptions options(level);
+    options.useSingleCreasePatch = false;
+    refiner->RefineAdaptive(options);
+
+    OpenSubdiv::Far::StencilTableFactory::Options cvStencilOptions;
+    cvStencilOptions.generateControlVerts = true;
+    OpenSubdiv::Far::StencilTable const* cvStencilsRaw =
+        OpenSubdiv::Far::StencilTableFactory::Create(
+            *refiner, cvStencilOptions);
+
+    OpenSubdiv::Far::PatchTableFactory::Options patchTableOptions;
+    patchTableOptions.SetEndCapType(
+        OpenSubdiv::Far::PatchTableFactory::Options::ENDCAP_GREGORY_BASIS);
+
+    OpenSubdiv::Far::PatchTable *patchTableRaw =
+        OpenSubdiv::Far::PatchTableFactory::Create(
+            *refiner, patchTableOptions);        
+
+    // Append endcap stencils
+    OpenSubdiv::Far::StencilTable const* localPointStencilTable =
+        patchTableRaw->GetLocalPointStencilTable();
+    if (localPointStencilTable) {
+        OpenSubdiv::Far::StencilTable const* stencilTableWithEndcapsRaw =
+        OpenSubdiv::Far::StencilTableFactory::AppendLocalPointStencilTable(
+            *refiner, cvStencilsRaw, localPointStencilTable);
+    
+        delete cvStencilsRaw;
+        cvStencilsRaw = stencilTableWithEndcapsRaw;
+    }
+
+    boost::shared_ptr<OpenSubdiv::Far::StencilTable const> cvStencils(cvStencilsRaw);
+    boost::shared_ptr<OpenSubdiv::Far::PatchTable const> patchTable(patchTableRaw);
 
     OpenSubdiv::Far::PtexIndices ptexIndices(*refiner);
     OpenSubdiv::Far::TopologyLevel const & coarseTopology = refiner->GetLevel(0);
@@ -127,7 +157,6 @@ PxOsdStencilPerVertex::GetStencilPerVertex(
 
 
     return boost::shared_ptr<const OpenSubdiv::Far::LimitStencilTable>(stencilTablePtr);
-
 }
 
 

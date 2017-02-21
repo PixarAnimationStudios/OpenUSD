@@ -24,9 +24,17 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "layerIdentifier.tab.h"
-
+ 
 #include <string>
+
+#ifndef fileno
+#define fileno(fd) ArchFileNo(fd)
+#endif
+#ifndef isatty
+#define isatty(fd) ArchFileIsaTTY(fd)
+#endif
 
 #define YYSTYPE std::string
 

@@ -30,6 +30,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/math.h"
+#include "pxr/base/gf/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -170,9 +171,11 @@ inline float GfClamp(float value, float min, float max) {
 /// and for negative \p a, the value returned is \c fmod(a,b)+b.
 ///
 /// \ingroup group_gf_BasicMath
+GF_API
 double GfMod(double a, double b);
 /// \overload
 // \ingroup group_gf_BasicMath
+GF_API
 float GfMod(float a, float b);
 
 /// Linear interpolation function.

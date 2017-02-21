@@ -30,6 +30,7 @@
 
 #define PXR_NS @PXR_EXTERNAL_NAMESPACE@
 #define PXR_INTERNAL_NS @PXR_INTERNAL_NAMESPACE@__pxrReserved__
+#define PXR_NS_GLOBAL ::PXR_NS
 
 namespace PXR_INTERNAL_NS { }
 namespace PXR_NS {
@@ -43,6 +44,7 @@ namespace PXR_NS {
 #else
 
 #define PXR_NS 
+#define PXR_NS_GLOBAL 
 #define PXR_NAMESPACE_OPEN_SCOPE   
 #define PXR_NAMESPACE_CLOSE_SCOPE 
 #define PXR_NAMESPACE_USING_DIRECTIVE

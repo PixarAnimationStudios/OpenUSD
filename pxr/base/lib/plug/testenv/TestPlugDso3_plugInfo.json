@@ -3,12 +3,12 @@
         {
             "Type": "library",
             "Name": "TestPlugDso3",
-            "Root": "..",
-            "LibraryPath": "TestPlugDso3",
-            "ResourcePath": "Resources",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
             "Info": {
                 "PluginDependencies": {
-                    "_TestPlugBase<3>": ["TestPlugPythonDerived3_3"]
+                    "_TestPlugBase<3>": ["TestPlugModule3.TestPlugPythonDerived3_3"]
                 },
                 "Types": {
                     "TestPlugDerived3_3": {

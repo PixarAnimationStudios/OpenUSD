@@ -30,6 +30,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/api.h"
 
 #include <iosfwd>
 
@@ -104,6 +105,7 @@ class GfTransform {
 
     /// Sets the transformation from all component values.
     /// This constructor orders its arguments the way that 2x expects.
+    GF_API
     GfTransform &       Set(const GfVec3d &scale,
                             const GfRotation &pivotOrientation,
                             const GfRotation &rotation,
@@ -124,9 +126,11 @@ class GfTransform {
     /// Sets the transform components to implement the transformation
     /// represented by matrix \p m , ignoring any projection. This tries to
     /// leave the current center unchanged.
+    GF_API
     GfTransform &       SetMatrix(const GfMatrix4d &m);
 
     /// Sets the transformation to the identity transformation.
+    GF_API
     GfTransform &       SetIdentity();
 
     /// Sets the scale component, leaving all others untouched.
@@ -200,10 +204,12 @@ class GfTransform {
     }
 
     /// Returns a \c GfMatrix4d that implements the cumulative transformation.
+    GF_API
     GfMatrix4d          GetMatrix() const;
 
     /// Component-wise transform equality test. All components must match
     /// exactly for transforms to be considered equal.
+    GF_API
     bool                operator ==(const GfTransform &xf) const;
 
     /// Component-wise transform inequality test. All components must match
@@ -213,6 +219,7 @@ class GfTransform {
     }
 
     /// Post-multiplies transform \p xf into this transform.
+    GF_API
     GfTransform &       operator *=(const GfTransform &xf);
 
     /// Returns the product of transforms \p xf1 and \p xf2.
@@ -238,7 +245,7 @@ class GfTransform {
 /// Output a GfTransform using the format 
 /// [scale, scaleorientation, rotation, center, translation].
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream&, const GfTransform&);
+GF_API std::ostream& operator<<(std::ostream&, const GfTransform&);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

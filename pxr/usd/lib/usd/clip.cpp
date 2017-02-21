@@ -222,6 +222,18 @@ _DeriveClipInfo(const std::string& templateAssetPath,
                 const SdfLayerHandle& layer,
                 const PcpLayerStackPtr& layerStack)
 {
+    if (stride == 0) {
+        TF_WARN("Invalid clipTemplateStride %f on <%s> in LayerStack %s "
+                "at spec @%s@<%s>\n. clipTemplateStride "
+                "must be greater than 0.", 
+                stride,
+                node.GetRootNode().GetPath().GetString().c_str(),
+                TfStringify(node.GetLayerStack()).c_str(),
+                layer->GetIdentifier().c_str(), 
+                node.GetPath().GetString().c_str());
+        return;
+    }
+
     auto path = TfGetPathName(templateAssetPath);
     auto basename = TfGetBaseName(templateAssetPath);
     auto tokenizedBasename = TfStringTokenize(basename, ".");

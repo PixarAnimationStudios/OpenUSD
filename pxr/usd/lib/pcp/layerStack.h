@@ -150,6 +150,8 @@ private:
     friend class Pcp_LayerStackRegistry;
     // PcpCache needs access to check the _registry.
     friend class PcpCache;
+    // Needs access to _sublayerSourceInfo
+    friend bool Pcp_NeedToRecomputeDueToAssetPathChange(const PcpLayerStackPtr&);
 
     // It's a coding error to construct a layer stack with a NULL root layer.
     PcpLayerStack(const PcpLayerStackIdentifier &identifier,
@@ -202,6 +204,24 @@ private:
     /// Stored separately because this is needed only ocassionally.
     SdfLayerTreeHandle _layerTree;
 
+    /// Tracks information used to compute sublayer asset paths.
+    struct _SublayerSourceInfo {
+        _SublayerSourceInfo(
+            const SdfLayerHandle& layer_,
+            const std::string& authoredSublayerPath_,
+            const std::string& computedSublayerPath_)
+        : layer(layer_)
+        , authoredSublayerPath(authoredSublayerPath_)
+        , computedSublayerPath(computedSublayerPath_) { }
+
+        SdfLayerHandle layer;
+        std::string authoredSublayerPath;
+        std::string computedSublayerPath;
+    };
+
+    /// List of source info for sublayer asset path computations.
+    std::vector<_SublayerSourceInfo> _sublayerSourceInfo;
+
     /// Set of asset paths resolved while building the layer stack.
     /// This is used to handle updates.
     std::set<std::string> _assetPaths;
@@ -242,6 +262,14 @@ Pcp_ComputeRelocationsForLayerStack( const SdfLayerRefPtrVector & layers,
                                      SdfRelocatesMap *relocatesSourceToTarget,
                                      SdfRelocatesMap *relocatesTargetToSource,
                                      SdfPathVector *relocatesPrimPaths);
+
+// Returns true if \p layerStack should be recomputed due to changes to
+// any computed asset paths that were used to find or open layers
+// when originally composing \p layerStack. This may be due to scene
+// description changes or external changes to asset resolution that
+// may affect the computation of those asset paths.
+bool
+Pcp_NeedToRecomputeDueToAssetPathChange(const PcpLayerStackPtr& layerStack);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

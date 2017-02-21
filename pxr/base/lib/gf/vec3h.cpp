@@ -90,7 +90,7 @@ GfVec3h::OrthogonalizeBasis(
 
 void
 GfVec3h::BuildOrthonormalFrame(
-    GfVec3h *v1, GfVec3h *v2, half eps) const
+    GfVec3h *v1, GfVec3h *v2, GfHalf eps) const
 {
     return GfBuildOrthonormalFrame(*this, v1, v2, eps);
 }
@@ -206,9 +206,9 @@ GfOrthogonalizeBasis(GfVec3h *tx, GfVec3h *ty, GfVec3h *tz,
 void
 GfBuildOrthonormalFrame(GfVec3h const &v0,
                         GfVec3h* v1,
-                        GfVec3h* v2, half eps)
+                        GfVec3h* v2, GfHalf eps)
 {
-    half len = v0.GetLength();
+    GfHalf len = v0.GetLength();
 
     if (len == 0.) {
 	*v1 = *v2 = GfVec3h(0);

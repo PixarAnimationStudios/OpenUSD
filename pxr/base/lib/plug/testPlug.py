@@ -47,22 +47,34 @@ class NoticeListener:
     def __init__(self):
         self.numReceived = 0
         self.newPlugins = []
+        self.blocked = False
 
         self._listener = Tf.Notice.RegisterGlobally(
             "PlugNotice::DidRegisterPlugins", self._OnNotice)
 
+    # Ignore further notices.
+    def Block(self):
+        self.blocked = True
+
     def _OnNotice(self, notice, sender):
-        self.numReceived += 1
-        self.newPlugins += notice.GetNewPlugins()
+        if not self.blocked:
+            self.numReceived += 1
+            self.newPlugins += notice.GetNewPlugins()
 
 class TestPlug(unittest.TestCase):
 
-    def test_Registration(self):
+    # We can't undefine Tf.Types or unregister plugins so we do the
+    # registration in class setup and then prevent the notice listeners
+    # from responding to further notices so test_Registration() can do
+    # its tests.
+    @classmethod
+    def setUpClass(cls):
         # pre-load some plugins
         import TestPlugModuleLoaded
         import TestPlugModuleLoadedBadBase
 
-        listener = NoticeListener()
+        cls.listener1 = NoticeListener()
+        cls.listener2 = NoticeListener()
 
         # Register dso plugins.  Discard possible exception due to TestPlugDsoEmpty.
         # The exception only shows up here if it happens in the main thread so we
@@ -71,20 +83,25 @@ class TestPlug(unittest.TestCase):
             Plug.Registry().RegisterPlugins(testPluginsDsoSearch)
         except RuntimeError:
             pass
+        cls.listener1.Block()
 
+        # Register python module plugins
+        try:
+            Plug.Registry().RegisterPlugins(testPluginsPythonSearch)
+        except RuntimeError:
+            pass
+        cls.listener2.Block()
+
+    def test_Registration(self):
         # Verify we received the appropriate notification
-        self.assertEqual(listener.numReceived, 1)
-        self.assertEqual(set([p.name for p in listener.newPlugins]),
+        self.assertEqual(self.listener1.numReceived, 1)
+        self.assertEqual(set([p.name for p in self.listener1.newPlugins]),
                     set(['TestPlugDso1', 'TestPlugDso2', 'TestPlugDso3', 
                         'TestPlugDsoUnloadable']))
 
-        # Register python module plugins
-        with nested(ExpectedErrors(2), RequiredException(RuntimeError)):
-            Plug.Registry().RegisterPlugins(testPluginsPythonSearch)
-
         # Verify we received the appropriate notification
-        self.assertEqual(listener.numReceived, 2)
-        self.assertEqual(set([p.name for p in listener.newPlugins]),
+        self.assertEqual(self.listener2.numReceived, 2)
+        self.assertEqual(set([p.name for p in self.listener2.newPlugins]),
                     set(['TestPlugDso1', 'TestPlugDso2', 'TestPlugDso3', 
                         'TestPlugDsoUnloadable',
                         'TestPlugModule1', 'TestPlugModule2', 'TestPlugModule3',
@@ -97,7 +114,8 @@ class TestPlug(unittest.TestCase):
         # Check available subclasses of TestPlugBase<1>
         base1Subclasses = Tf.Type.FindByName('_TestPlugBase<1>').GetAllDerivedTypes()
         base1SubclassesExpected = \
-            ('_TestPlugDerived0', 'TestPlugDerived1', 'TestPlugPythonDerived1',
+            ('_TestPlugDerived0', 'TestPlugDerived1',
+            'TestPlugModule1.TestPlugPythonDerived1',
             'TestPlugModuleLoaded.TestPlugPythonLoaded',
             'TestPlugModuleLoadedBadBase.TestPlugPythonLoadedBadBase',
             'TestPlugUnloadable', 'TestPlugPythonUnloadable')
@@ -107,7 +125,8 @@ class TestPlug(unittest.TestCase):
 
         # Check available subclasses of _TestPlugBase<2>
         base2Subclasses = Tf.Type.FindByName('_TestPlugBase<2>').GetAllDerivedTypes()
-        base2SubclassesExpected = ('TestPlugDerived2', 'TestPlugPythonDerived2')
+        base2SubclassesExpected = ('TestPlugDerived2',
+                                   'TestPlugModule2.TestPlugPythonDerived2')
         for sc in base2SubclassesExpected:
             self.assertIn(sc, base2Subclasses)
         self.assertEqual(len(base2Subclasses), len(base2SubclassesExpected))
@@ -153,12 +172,12 @@ class TestPlug(unittest.TestCase):
         self.assertTrue(pd1.DeclaresType(Tf.Type('TestPlugDerived1'), includeSubclasses=True))
 
     def test_ManufacturingPythonDerivedClasses(self):
-        ppd1 = Plug.Registry().GetPluginForType('TestPlugPythonDerived1')
+        ppd1 = Plug.Registry().GetPluginForType('TestPlugModule1.TestPlugPythonDerived1')
         self.assertIsNotNone(ppd1)
         self.assertFalse(ppd1.isLoaded)
         self.assertTrue(ppd1.isPythonModule)
 
-        ppd2 = Plug.Registry().GetPluginForType('TestPlugPythonDerived2')
+        ppd2 = Plug.Registry().GetPluginForType('TestPlugModule2.TestPlugPythonDerived2')
         self.assertIsNotNone(ppd2)
         self.assertFalse(ppd2.isLoaded)
         self.assertTrue(ppd2.isPythonModule)
@@ -167,14 +186,14 @@ class TestPlug(unittest.TestCase):
         # (Loading should add TestPlugModule1 to the namespace)
         ppd1.Load()
         tpd1 = TestPlugModule1.TestPlugPythonDerived1()
-        self.assertEqual(tpd1.GetTypeName(), 'TestPlugPythonDerived1')
+        self.assertEqual(tpd1.GetTypeName(), 'TestPlugModule1.TestPlugPythonDerived1')
         self.assertTrue(ppd1.isLoaded)
 
         # Load and construct an instance of TestPlugPythonDerived2
         # (Loading should add TestPlugModule2 to the namespace)
         ppd2.Load()
         tpd2 = TestPlugModule2.TestPlugPythonDerived2()
-        self.assertEqual(tpd2.GetTypeName(), 'TestPlugPythonDerived2')
+        self.assertEqual(tpd2.GetTypeName(), 'TestPlugModule2.TestPlugPythonDerived2')
         self.assertTrue(ppd2.isLoaded)
 
         # Check that loading an already loaded plugin is a noop.
@@ -185,19 +204,19 @@ class TestPlug(unittest.TestCase):
                                     includeSubclasses=False))
         self.assertTrue(ppd1.DeclaresType(Tf.Type('_TestPlugBase<1>'), 
                                 includeSubclasses=True))
-        self.assertTrue(ppd1.DeclaresType(Tf.Type('TestPlugPythonDerived1'), 
+        self.assertTrue(ppd1.DeclaresType(Tf.Type('TestPlugModule1.TestPlugPythonDerived1'), 
                                 includeSubclasses=False))
-        self.assertTrue(ppd1.DeclaresType(Tf.Type('TestPlugPythonDerived1'), 
+        self.assertTrue(ppd1.DeclaresType(Tf.Type('TestPlugModule1.TestPlugPythonDerived1'), 
                                 includeSubclasses=True))
 
     def test_LoadingPluginDependencies(self):
         # Get the plugin for a subclass
         pd3 = Plug.Registry().GetPluginForType('TestPlugDerived3_3')
         self.assertIsNotNone(pd3)
-        self.assertFalse(pd3.sLoaded)
+        self.assertFalse(pd3.isLoaded)
 
         # Get the plugin for one of its subclass dependencies
-        ppd3 = Plug.Registry().GetPluginForType('TestPlugPythonDerived3_3')
+        ppd3 = Plug.Registry().GetPluginForType('TestPlugModule3.TestPlugPythonDerived3_3')
         self.assertIsNotNone(ppd3)
         self.assertFalse(ppd3.isLoaded)
 
@@ -219,7 +238,6 @@ class TestPlug(unittest.TestCase):
         self.assertTrue(metadata['Types'].has_key('TestPlugUnloadable'))
 
         md = metadata['Types']['TestPlugUnloadable']
-        print md
 
         self.assertTrue(md == 
             plugin.GetMetadataForType(Tf.Type.FindByName('TestPlugUnloadable')))
@@ -243,6 +261,8 @@ class TestPlug(unittest.TestCase):
 
 
     def test_ErrorCases(self):
+        allplugins = Plug.Registry().GetAllPlugins()
+
         listener = NoticeListener()
 
         # try to find a plugin for an unknown type
@@ -314,8 +334,10 @@ class TestPlug(unittest.TestCase):
             badPlugin.Load()
 
         # Try registering plugins again, this should be a no-op.
-        allplugins = Plug.Registry().GetAllPlugins()
         Plug.Registry().RegisterPlugins(testPluginsDsoSearch)
         Plug.Registry().RegisterPlugins(testPluginsPythonSearch)
         self.assertEqual(allplugins, Plug.Registry().GetAllPlugins())
         self.assertEqual(listener.numReceived, 0)
+
+if __name__ == '__main__':
+    unittest.main()

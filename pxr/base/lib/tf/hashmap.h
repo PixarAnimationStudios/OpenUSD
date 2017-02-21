@@ -38,6 +38,17 @@
 #if !defined(TF_NO_GNU_EXT)
 // Use GNU extension.
 #include <ext/hash_map>
+#elif __cplusplus > 201103L
+// Use C++11 unordered_map.
+#include <unordered_map>
+#else
+// Use boost unordered_map.
+#include <boost/unordered_map.hpp>
+#endif // TF_NO_GNU_EXT
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+#if !defined(TF_NO_GNU_EXT)
 
 template<class Key, class Mapped, class HashFn = __gnu_cxx::hash<Key>,
 	 class EqualKey = __gnu_cxx::equal_to<Key>,
@@ -253,9 +264,7 @@ private:
     }
 };
 
-#elif __cplusplus > 201103L
-// Use C++11 unordered_map.
-#include <unordered_map>
+#elif __cplusplus > 201103L // C++11
 
 template<class Key, class Mapped, class HashFn = std::hash<Key>,
 	 class EqualKey = std::equal_to<Key>,
@@ -444,8 +453,6 @@ public:
 };
 
 #else
-// Use boost unordered_map.
-#include <boost/unordered_map.hpp>
 
 template<class Key, class Mapped, class HashFn = boost::hash<Key>,
 	 class EqualKey = std::equal_to<Key>,
@@ -684,5 +691,7 @@ operator!=(const TfHashMultiMap<Key, Mapped, HashFn, EqualKey, Alloc>& lhs,
 {
     return !(lhs == rhs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_HASHMAP_H

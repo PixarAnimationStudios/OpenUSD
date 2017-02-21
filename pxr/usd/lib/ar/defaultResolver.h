@@ -25,6 +25,7 @@
 #define AR_DEFAULT_RESOLVER_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolver.h"
 
 #include <tbb/enumerable_thread_specific.h>
@@ -48,7 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// The first directory searched is always the current working directory.
 /// Consumers can specify additional directories by setting the 
 /// PXR_AR_DEFAULT_SEARCH_PATH environment variable to a list of
-/// directories delimited by ':'.
+/// directories delimited by the platform's standard path separator.
 ///
 class ArDefaultResolver
     : public ArResolver

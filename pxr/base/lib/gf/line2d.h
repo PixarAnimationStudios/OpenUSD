@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/api.h"
 
 #include <float.h>
 
@@ -74,6 +75,7 @@ class GfLine2d {
     /// Returns the point on the line that is closest to \p point. If \p t is
     /// not \c NULL, it will be set to the parametric distance along the line
     /// of the returned point.
+    GF_API
     GfVec2d FindClosestPoint(const GfVec2d &point, double *t = NULL) const;
 
     /// Component-wise equality test. The starting points and directions, must
@@ -89,6 +91,7 @@ class GfLine2d {
     }
 
   private:
+    GF_API
     friend bool GfFindClosestPoints( const GfLine2d &, const GfLine2d &,
                                      GfVec2d *, GfVec2d *,
                                      double *, double *);
@@ -107,6 +110,7 @@ class GfLine2d {
 /// This returns \c false if the lines were close enough to parallel that no
 /// points could be computed; in this case, the other return values are
 /// undefined.
+GF_API
 bool GfFindClosestPoints(const GfLine2d &l1, const GfLine2d &l2,
                          GfVec2d *p1 = nullptr, GfVec2d *p2 = nullptr,
                          double *t1 = nullptr, double *t2 = nullptr);

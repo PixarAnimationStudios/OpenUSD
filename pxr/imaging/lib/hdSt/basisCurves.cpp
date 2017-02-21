@@ -181,6 +181,8 @@ HdStBasisCurves::ConfigureRepr(TfToken const &reprName,
 HdChangeTracker::DirtyBits
 HdStBasisCurves::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
 {
+    dirtyBits = _PropagateRprimDirtyBits(dirtyBits);
+
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (dirtyBits & HdChangeTracker::DirtyTopology) {
         dirtyBits |= _customDirtyBitsInUse &
@@ -314,7 +316,9 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
         // compute id.
         _topologyId = srcTopology.ComputeHash();
-        boost::hash_combine(_topologyId, (bool)(_refineLevel>0));
+        bool refined = (_refineLevel>0);
+        _topologyId = ArchHash64((const char*)&refined, sizeof(refined),
+            _topologyId);
 
         // XXX: Should be HdSt_BasisCurvesTopologySharedPtr
         HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> topologyInstance;

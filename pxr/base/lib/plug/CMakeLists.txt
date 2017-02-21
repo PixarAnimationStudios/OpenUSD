@@ -53,49 +53,60 @@ pxr_test_scripts(
 
 pxr_build_test_shared_lib(TestPlugDso1
     CREATE_FRAMEWORK
+    INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDso1.cpp
 ) 
 pxr_build_test_shared_lib(TestPlugDso2
+    INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDso2.cpp
 ) 
 pxr_build_test_shared_lib(TestPlugDso3
+    INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDso3.cpp
 ) 
 pxr_build_test_shared_lib(TestPlugDsoEmpty
+    INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDsoEmpty.cpp
 ) 
 pxr_build_test_shared_lib(TestPlugDsoIncomplete
+    INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDsoIncomplete.cpp
 ) 
 pxr_build_test_shared_lib(TestPlugDsoUnloadable
+    INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDsoUnloadable.cpp
 ) 
 # This library helps test behavior when a plugin is unloadable,
-# but clang by default will error out when building this due to
-# the references to undefined symbols. So we need to specify a
+# but some linkers by default will error out when building this due
+# to the references to undefined symbols. So we need to specify a
 # link flag to force these symbols to be looked up at runtime.
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set_target_properties(TestPlugDsoUnloadable
         PROPERTIES
         LINK_FLAGS "-undefined dynamic_lookup"
+    )
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set_target_properties(TestPlugDsoUnloadable
+        PROPERTIES
+        LINK_FLAGS "/FORCE:UNRESOLVED"
     )
 endif()
 

@@ -279,7 +279,24 @@ struct ArgsBuilder
             verbose,
             errorMessage);
     }
-    
+
+    void update(PxrUsdKatanaUsdInArgsRefPtr other)
+    {
+        stage = other->GetStage();
+        rootLocation = other->GetRootLocationPath();
+        isolatePath = other->GetIsolatePath();
+        sessionAttr = other->GetSessionAttr();
+        ignoreLayerRegex = other->GetIgnoreLayerRegex();
+        currentTime = other->GetCurrentTime();
+        shutterOpen = other->GetShutterOpen();
+        shutterClose = other->GetShutterClose();
+        motionSampleTimes = other->GetMotionSampleTimes();
+        defaultMotionPaths = other->GetDefaultMotionPaths();
+        extraAttributesOrNamespaces = other->GetExtraAttributesOrNamespaces();
+        verbose = other->IsVerbose();
+        errorMessage = other->GetErrorMessage().c_str();
+    }
+
     PxrUsdKatanaUsdInArgsRefPtr buildWithError(std::string errorStr)
     {
         errorMessage = errorStr.c_str();

@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/primTypeIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -57,7 +58,6 @@ class HdRenderDelegate;
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdInstancer> HdInstancerSharedPtr;
-typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
 
 /// \class HdRenderIndex
@@ -164,6 +164,7 @@ public:
     /// Returns the subtree rooted under the given path.
     SdfPathVector GetRprimSubtree(SdfPath const& root) const;
 
+
     // ---------------------------------------------------------------------- //
     /// \name Instancer Support
     // ---------------------------------------------------------------------- //
@@ -183,37 +184,6 @@ public:
 
     /// Returns the instancer of id
     HdInstancerSharedPtr GetInstancer(SdfPath const &id) const;
-
-    // ---------------------------------------------------------------------- //
-    /// \name Shader Support
-    // ---------------------------------------------------------------------- //
-
-    /// Inserts a new shader into the render index with an identifer of \p id.
-    /// Note that Rprims can be speculatively bound to a shader before the
-    /// shader has been inserted into the render index, however the shader must
-    /// exist before any Rprims to which it is bound are rendered.
-    template <typename T>
-    void InsertShader(HdSceneDelegate* delegate, SdfPath const& id);
-
-    /// Removes the given shader from the RenderIndex. The client must unbind
-    /// or remove any existing Rprims that are bound to this shader before
-    /// rendering.
-    void RemoveShader(SdfPath const& id);
-
-    /// Returns true if a shader exists in the index with the given \p id.
-    bool HasShader(SdfPath const& id) {
-        return _shaderMap.find(id) != _shaderMap.end();
-    }
-
-    /// Returns the shader for the given \p id.
-    HdSurfaceShaderSharedPtr const& GetShader(SdfPath const& id) const;
-
-    /// Returns the fallback shader.
-    HdSurfaceShaderSharedPtr const& GetShaderFallback() const {
-        return _surfaceFallback;
-    };
-
-    void ReloadFallbackShader();
 
     // ---------------------------------------------------------------------- //
     /// \name Task Support
@@ -262,6 +232,10 @@ public:
     SdfPathVector GetSprimSubtree(TfToken const& typeId,
                                   SdfPath const& root) const;
 
+    /// Returns the fullback prim for the Sprim of the given type.
+    HdSprim *GetFallbackSprim(TfToken const& typeId) const;
+
+
     // ---------------------------------------------------------------------- //
     /// \name Buffer prims (e.g. textures, buffers)
     // ---------------------------------------------------------------------- //
@@ -280,6 +254,9 @@ public:
     SdfPathVector GetBprimSubtree(TfToken const& typeId,
                                   SdfPath const& root) const;
 
+    /// Returns the fallback prim for the Bprim of the given type.
+    HdBprim *GetFallbackBprim(TfToken const& typeId) const;
+
 
     // ---------------------------------------------------------------------- //
     /// \name Render Delegate
@@ -289,6 +266,12 @@ public:
     /// being specific to that delegate type.
     void SetRenderDelegate(HdRenderDelegate *renderDelegate);
     TfToken GetRenderDelegateType() const;
+
+    /// Creates fallback prims for each supported prim type
+    bool CreateFallbackPrims();
+
+    /// Release the fallback prims
+    void DestroyFallbackPrims();
 
 private:
     // ---------------------------------------------------------------------- //
@@ -301,11 +284,6 @@ private:
 
     // Allocate the next available instance id to the prim
     void _AllocatePrimId(HdRprim* prim);
-    
-    // Inserts the shader into the index and updates tracking state.
-    void _TrackDelegateShader(HdSceneDelegate* delegate, 
-                              SdfPath const& shaderId,
-                              HdSurfaceShaderSharedPtr const& shader);
 
     // Inserts the task into the index and updates tracking state.
     void _TrackDelegateTask(HdSceneDelegate* delegate, 
@@ -325,54 +303,17 @@ private:
         HdRprim         *rprim;
     };
 
-    struct _SprimInfo {
-        HdSceneDelegate *sceneDelegate;
-        HdSprim         *sprim;
-    };
 
-    struct _BprimInfo {
-        HdSceneDelegate *sceneDelegate;
-        HdBprim         *bprim;
-    };
-
-    struct _ShaderInfo {
-        HdSceneDelegate          *sceneDelegate;
-        HdSurfaceShaderSharedPtr  shader;
-    };
-
-
-
-    typedef TfHashMap<SdfPath, _ShaderInfo, SdfPath::Hash> _ShaderMap;
     typedef TfHashMap<SdfPath, HdTaskSharedPtr, SdfPath::Hash> _TaskMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
     typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash> _DelegateRprimMap;
-    typedef TfHashMap<SdfPath, _SprimInfo, SdfPath::Hash> _SprimMap;
-    typedef TfHashMap<SdfPath, _BprimInfo, SdfPath::Hash> _BprimMap;
+
 
     typedef std::set<SdfPath> _RprimIDSet;
-    typedef std::set<SdfPath> _SprimIDSet;
-    typedef std::set<SdfPath> _BprimIDSet;
     typedef std::map<uint32_t, SdfPath> _RprimPrimIDMap;
 
-    struct _SprimTypeIndex
-    {
-        _SprimMap   sprimMap;
-        _SprimIDSet sprimIDSet;
-    };
-
-    struct _BprimTypeIndex
-    {
-        _BprimMap   bprimMap;
-        _BprimIDSet bprimIDSet;
-    };
-
-    typedef std::unordered_map<TfToken,
-                               _SprimTypeIndex,
-                               boost::hash<TfToken> > _SprimTypeMap;
-
-    typedef std::unordered_map<TfToken,
-                               _BprimTypeIndex,
-                               boost::hash<TfToken> > _BprimTypeMap;
+    typedef Hd_PrimTypeIndex<HdSprim> _SprimIndex;
+    typedef Hd_PrimTypeIndex<HdBprim> _BprimIndex;
 
     _DelegateRprimMap _delegateRprimMap;
     _RprimMap _rprimMap;
@@ -380,19 +321,16 @@ private:
     _RprimIDSet _rprimIDSet;
     _RprimPrimIDMap _rprimPrimIdMap;
 
-    _ShaderMap _shaderMap;
     _TaskMap _taskMap;
 
-    _SprimTypeMap   _sprimTypeMap;
-    _SprimIDSet _sprimIDSet;
-    _BprimTypeMap   _bprimTypeMap;
+    _SprimIndex     _sprimIndex;
+    _BprimIndex     _bprimIndex;
 
     HdChangeTracker _tracker;
     int32_t _nextPrimId; 
 
     typedef TfHashMap<SdfPath, HdInstancerSharedPtr, SdfPath::Hash> _InstancerMap;
     _InstancerMap _instancerMap;
-    HdSurfaceShaderSharedPtr _surfaceFallback;
 
     // XXX: TO FIX Move
     typedef std::vector<HdDirtyListSharedPtr> _DirtyListVector;
@@ -410,19 +348,8 @@ private:
     // calling out the transitional elements.
     bool _ownsDelegateXXX;
 
+    void _InitPrimTypes();
 };
-
-
-template <typename T>
-void
-HdRenderIndex::InsertShader(HdSceneDelegate* delegate, SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    HdSurfaceShaderSharedPtr shader = boost::make_shared<T>(id);
-    _TrackDelegateShader(delegate, id, shader);
-}
 
 template <typename T>
 void

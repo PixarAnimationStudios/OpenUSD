@@ -25,6 +25,6 @@ from pxr import Plug, Tf
 
 class TestPlugPythonDerived2(Plug._TestPlugBase2):
     def GetTypeName(self):
-        return 'TestPlugPythonDerived2'
+        return 'TestPlugModule2.TestPlugPythonDerived2'
 
 Tf.Type.Define(TestPlugPythonDerived2)

@@ -517,11 +517,19 @@ static yyconst flex_int16_t yy_chk[121] =
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/usd/sdf/pathParser.h"
 #include "pxr/usd/sdf/tokens.h"
 #include "path.tab.h"
 
 #include <string>
+
+#ifndef fileno
+#define fileno(fd) ArchFileNo(fd)
+#endif
+#ifndef isatty
+#define isatty(fd) ArchFileIsaTTY(fd)
+#endif
 
 using std::string;
 
@@ -531,7 +539,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 #define YY_DECL int pathYylex(YYSTYPE *yylval_param, yyscan_t yyscanner)
 
 /* Configuration options for flex */
-#line 512 "<stdout>"
+#line 520 "<stdout>"
 
 #define INITIAL 0
 
@@ -795,10 +803,10 @@ YY_DECL
 		}
 
 	{
-#line 48 "pxr/usd/sdf/path.ll"
+#line 56 "pxr/usd/sdf/path.ll"
 
 
-#line 779 "<stdout>"
+#line 787 "<stdout>"
 
 	while ( 1 )		/* loops until end-of-file is reached */
 		{
@@ -857,7 +865,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 50 "pxr/usd/sdf/path.ll"
+#line 58 "pxr/usd/sdf/path.ll"
 {
     yylval_param->token = SdfPathTokens->mapperIndicator;
     return TOK_MAPPER;
@@ -865,7 +873,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 54 "pxr/usd/sdf/path.ll"
+#line 62 "pxr/usd/sdf/path.ll"
 {
     yylval_param->token = SdfPathTokens->expressionIndicator;
     return TOK_EXPRESSION;
@@ -876,7 +884,7 @@ YY_RULE_SETUP
   */
 case 3:
 YY_RULE_SETUP
-#line 62 "pxr/usd/sdf/path.ll"
+#line 70 "pxr/usd/sdf/path.ll"
 {
     yylval_param->token = TfToken(yytext);
     return TOK_IDENTIFIER;
@@ -886,7 +894,7 @@ YY_RULE_SETUP
   */
 case 4:
 YY_RULE_SETUP
-#line 69 "pxr/usd/sdf/path.ll"
+#line 77 "pxr/usd/sdf/path.ll"
 {
     yylval_param->token = TfToken(yytext);
     return TOK_NAMESPACED_IDENTIFIER;
@@ -898,7 +906,7 @@ YY_RULE_SETUP
   */
 case 5:
 YY_RULE_SETUP
-#line 78 "pxr/usd/sdf/path.ll"
+#line 86 "pxr/usd/sdf/path.ll"
 {
     yylval_param->token = TfToken(yytext);
     return TOK_PRIM_NAME;
@@ -915,7 +923,7 @@ YY_RULE_SETUP
   */
 case 6:
 YY_RULE_SETUP
-#line 92 "pxr/usd/sdf/path.ll"
+#line 100 "pxr/usd/sdf/path.ll"
 {
     yylval_param->token = TfToken(yytext);
     return TOK_VARIANT_NAME;
@@ -923,31 +931,31 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 97 "pxr/usd/sdf/path.ll"
+#line 105 "pxr/usd/sdf/path.ll"
 {
     return TOK_DOTDOT;
 }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 101 "pxr/usd/sdf/path.ll"
+#line 109 "pxr/usd/sdf/path.ll"
 { 
     return TOK_WHITESPACE; 
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 105 "pxr/usd/sdf/path.ll"
+#line 113 "pxr/usd/sdf/path.ll"
 { 
     return yytext[0];
 }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 109 "pxr/usd/sdf/path.ll"
+#line 117 "pxr/usd/sdf/path.ll"
 ECHO;
 	YY_BREAK
-#line 928 "<stdout>"
+#line 936 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2074,7 +2082,7 @@ void pathYyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 109 "pxr/usd/sdf/path.ll"
+#line 117 "pxr/usd/sdf/path.ll"
 
 
 

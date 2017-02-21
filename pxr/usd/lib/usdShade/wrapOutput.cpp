@@ -50,34 +50,9 @@ _Set(const UsdShadeOutput &self, object val, const UsdTimeCode &time)
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
 
-static object
-_GetConnectedSource(const UsdShadeOutput &self)
-{
-    UsdShadeConnectableAPI source;
-    TfToken                sourceName;
-    UsdShadeAttributeType  sourceType;
-    
-    if (self.GetConnectedSource(&source, &sourceName, &sourceType)){
-        return make_tuple(source, sourceName, sourceType);
-    }
-    else {
-        return object();
-    }
-}
-
 void wrapUsdShadeOutput()
 {
     typedef UsdShadeOutput Output;
-
-    bool (Output::*ConnectToSource_1)(UsdShadeConnectableAPI const &,
-                                   TfToken const &,
-                                   UsdShadeAttributeType const) const = &Output::ConnectToSource;
-    bool (Output::*ConnectToSource_2)(UsdShadeOutput const &) const =
-                                    &Output::ConnectToSource;
-    bool (Output::*ConnectToSource_3)(UsdShadeParameter const &) const =
-                                    &Output::ConnectToSource;
-    bool (Output::*ConnectToSource_4)(SdfPath const &) const =
-                                    &Output::ConnectToSource;
 
     class_<Output>("Output")
         .def(init<UsdAttribute>(arg("attr")))
@@ -86,6 +61,7 @@ void wrapUsdShadeOutput()
         .def("GetFullName", &Output::GetFullName,
                 return_value_policy<return_by_value>())
         .def("GetBaseName", &Output::GetBaseName)
+        .def("GetPrim", &Output::GetPrim)
         .def("GetTypeName", &Output::GetTypeName)
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
         .def("SetRenderType", &Output::SetRenderType,
@@ -93,22 +69,6 @@ void wrapUsdShadeOutput()
         .def("GetRenderType", &Output::GetRenderType)
         .def("HasRenderType", &Output::HasRenderType)
 
-        .def("IsConnected", &Output::IsConnected)
-
-        .def("ConnectToSource", ConnectToSource_1,
-             (arg("source"), arg("sourceName"), 
-              arg("sourceType")=UsdShadeAttributeType::Output))
-        .def("ConnectToSource", ConnectToSource_2,
-             (arg("output")))
-        .def("ConnectToSource", ConnectToSource_3,
-             (arg("param")))
-        .def("ConnectToSource", ConnectToSource_4,
-             (arg("path")))
-
-        .def("DisconnectSource", &Output::DisconnectSource)
-        .def("ClearSource", &Output::ClearSource)
-
-        .def("GetConnectedSource", _GetConnectedSource)
         .def("GetAttr", &Output::GetAttr)
         .def("GetRel", &Output::GetRel)
         .def("GetProperty", &Output::GetProperty,
@@ -116,6 +76,8 @@ void wrapUsdShadeOutput()
         ;
 
     implicitly_convertible<Output, UsdAttribute>();
+    implicitly_convertible<Output, UsdProperty>();
+
     to_python_converter<
         std::vector<Output>,
         TfPySequenceToPython<std::vector<Output> > >();

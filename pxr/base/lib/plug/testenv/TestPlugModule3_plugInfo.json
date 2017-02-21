@@ -5,12 +5,12 @@
             "Name": "TestPlugModule3",
             "Info": {
                 "Types": {
-                    "TestPlugPythonDerived3_3": {
+                    "TestPlugModule3.TestPlugPythonDerived3_3": {
                         "bases": ["_TestPlugBase<3>"],
                         # good alias
                         "alias": {"TfRefBase": "PluginDerived3_3"}
                     },
-                    "TestPlugPythonDerived3_4": {
+                    "TestPlugModule3.TestPlugPythonDerived3_4": {
                         "bases": ["_TestPlugBase<4>"],
                         # bad alias
                         "alias": {"TfRefBase": 1}

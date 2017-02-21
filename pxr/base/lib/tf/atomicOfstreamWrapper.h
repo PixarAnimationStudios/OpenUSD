@@ -28,6 +28,7 @@
 /// Atomic file writer with ofstream interface.
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/api.h"
 
 #include <boost/noncopyable.hpp>
 
@@ -80,10 +81,10 @@ class TfAtomicOfstreamWrapper : boost::noncopyable
 {
 public:
     /// Constructor.
-    explicit TfAtomicOfstreamWrapper(const std::string& filePath);
+    TF_API explicit TfAtomicOfstreamWrapper(const std::string& filePath);
 
     /// Destructor. Calls Cancel().
-    ~TfAtomicOfstreamWrapper();
+    TF_API ~TfAtomicOfstreamWrapper();
 
     /// Opens the temporary file for writing. If the destination directory
     /// does not exist, it is created. If the destination directory exists but
@@ -91,17 +92,17 @@ public:
     /// temporary file cannot be opened for writing in the destination
     /// directory, this method returns false and \p reason is set to the
     /// reason for failure.
-    bool Open(std::string* reason = 0);
+    TF_API bool Open(std::string* reason = 0);
 
     /// Synchronizes the temporary file contents to disk, and renames the
     /// temporary file into the file path passed to Open. If the file path
     /// passed to the constructor names an existing file, the file, the file
     /// is atomically replaced with the temporary file. If the rename fails,
     /// false is returned and \p reason is set to the reason for failure.
-    bool Commit(std::string* reason = 0);
+    TF_API bool Commit(std::string* reason = 0);
 
     /// Closes the temporary file and removes it from disk, if it exists.
-    bool Cancel(std::string* reason = 0);
+    TF_API bool Cancel(std::string* reason = 0);
 
     /// Returns the stream. If this is called before a call to Open, the
     /// returned file stream is not yet initialized. If called after Commit or

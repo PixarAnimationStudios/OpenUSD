@@ -29,9 +29,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/streamOut.h"
 
-#include <double-conversion/double-conversion.h>
-#include <double-conversion/utils.h>
-
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -69,44 +66,16 @@ VtStreamOut(signed char const &val, std::ostream &stream)
     return stream << static_cast<int>(val);
 }
 
-static double_conversion::DoubleToStringConverter const &
-_GetDoubleToStringConverter() {
-    static double_conversion::DoubleToStringConverter
-        converter(double_conversion::DoubleToStringConverter::NO_FLAGS,
-                  "inf", 
-                  "nan",
-                  'e',
-                  /* decimal_in_shortest_low */ -6,
-                  /* decimal_in_shortest_high */ 15,
-                  /* max_leading_padding_zeroes_in_precision_mode */ 0,
-                  /* max_trailing_padding_zeroes_in_precision_mode */ 0);
-    return converter;
-}
-
 std::ostream &
 VtStreamOut(float const &val, std::ostream &stream)
 {
-    double_conversion::DoubleToStringConverter const &conv =
-        _GetDoubleToStringConverter();
-    static const int bufSize = 128;
-    char buf[bufSize];
-    double_conversion::StringBuilder builder(buf, bufSize);
-    // This should only fail if we provide an insufficient buffer.
-    TF_VERIFY(conv.ToShortestSingle(val, &builder), "double_conversion failed");
-    return stream << builder.Finalize();
+    return stream << TfStreamFloat(val);
 }
 
 std::ostream &
 VtStreamOut(double const &val, std::ostream &stream)
 {
-    double_conversion::DoubleToStringConverter const &conv =
-        _GetDoubleToStringConverter();
-    static const int bufSize = 128;
-    char buf[bufSize];
-    double_conversion::StringBuilder builder(buf, bufSize);
-    // This should only fail if we provide an insufficient buffer.
-    TF_VERIFY(conv.ToShortest(val, &builder), "double_conversion failed");
-    return stream << builder.Finalize();
+    return stream << TfStreamDouble(val);
 }
 
 std::ostream &

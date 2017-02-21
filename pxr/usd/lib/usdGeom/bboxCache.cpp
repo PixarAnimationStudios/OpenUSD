@@ -38,6 +38,7 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
 #include <tbb/enumerable_thread_specific.h>
@@ -264,7 +265,7 @@ UsdGeomBBoxCache::ComputeWorldBound(const UsdPrim& prim)
     GfBBox3d bbox;
 
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return bbox;
     }
 
@@ -286,7 +287,7 @@ UsdGeomBBoxCache::ComputeRelativeBound(const UsdPrim& prim,
 {
     GfBBox3d bbox;
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return bbox;
     }
 
@@ -312,7 +313,7 @@ UsdGeomBBoxCache::ComputeLocalBound(const UsdPrim& prim)
     GfBBox3d bbox;
 
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return bbox;
     }
 
@@ -335,7 +336,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(const UsdPrim& prim)
     GfBBox3d empty;
 
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return empty;
     }
 
@@ -355,7 +356,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
     GfBBox3d empty;
 
     if (!prim) {
-        TF_CODING_ERROR("Invalid prim.");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(prim).c_str());
         return empty;
     }
 
@@ -534,8 +535,9 @@ UsdGeomBBoxCache::_ShouldIncludePrim(const UsdPrim& prim)
     if (img.GetVisibilityAttr().Get(&vis, _time)
         && vis == UsdGeomTokens->invisible) {
         TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] excluded for VISIBILITY. "
-                                   "prim: %s visibility: %s\n",
+                                   "prim: %s visibility at time %s: %s\n",
                                    prim.GetPath().GetText(),
+                                   TfStringify(_time).c_str(),
                                    vis.GetText());
         return false;
     }

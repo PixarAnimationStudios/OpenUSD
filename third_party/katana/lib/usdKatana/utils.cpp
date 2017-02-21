@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdKatana/utils.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
@@ -34,6 +33,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -45,6 +45,8 @@
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdUtils/pipeline.h"
+
+#include "usdKatana/utils.h"
 #include "usdKatana/lookAPI.h"
 
 #include <FnLogging/FnLogging.h>
@@ -979,13 +981,41 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         return basePath;
     }
 
+    SdfPath parentPath;
+
     UsdShadeMaterial materialSchema = UsdShadeMaterial(prim);
-    if (!materialSchema.HasBaseMaterial()) {
-        return basePath;
+    if (materialSchema.HasBaseMaterial()) {
+        // This base material is defined as a derivesFrom relationship
+        parentPath = materialSchema.GetBaseMaterialPath();
+    }
+    else {
+        const PcpPrimIndex &index = prim.GetPrimIndex();
+        for(const PcpNodeRef &node: index.GetNodeRange()) {
+            if (PcpIsSpecializesArc(node.GetArcType()))
+                    // && node.GetOriginNode() == index.GetRootNode()) {
+            {
+                // Found a root specializes arc.
+                if (node.GetParentNode() != node.GetRootNode()) {
+                    continue;
+                }
+
+                if (node.GetMapToParent().MapSourceToTarget(
+                    SdfPath::AbsoluteRootPath()).IsEmpty()) {
+                    // Skip this child node because it crosses a reference arc.
+                    // (Reference mappings never map the absoluteyroot path </>.)
+                    continue;
+                }
+                
+                // stop at the first one
+                parentPath = node.GetPath();
+                break;
+            }
+        }
     }
 
-    SdfPath parentPath = materialSchema.GetBaseMaterialPath();
-    UsdPrim parentPrim = data.GetUsdInArgs()->GetStage()->GetPrimAtPath(parentPath);
+    UsdPrim parentPrim = 
+        data.GetUsdInArgs()->GetStage()->GetPrimAtPath(parentPath);
+
 
     // Asset sanity check. It is possible the derivesFrom relationship
     // for a Look exists but references a non-existent location. If so,

@@ -65,13 +65,13 @@ def _WriteFile(filePath, content, verbose=True):
                                              content.split('\n')))
 
 def IsFloatingPoint(t):
-    return t in ['double', 'float', 'half']
+    return t in ['double', 'float', 'GfHalf']
 
 def RankScalar(s):
     # Return a numeric rank for a scalar type.  We allow implicit conversions to
     # scalars of greater rank.
     return dict([(t, n) for n, t in
-                 enumerate(['int', 'half', 'float', 'double'])])[s]
+                 enumerate(['int', 'GfHalf', 'float', 'double'])])[s]
 
 def AllowImplicitConversion(src, dst):
     # Somewhat questionably, we always allow ints to implicitly convert to
@@ -114,25 +114,32 @@ def GenerateFromTemplates(env, templates, suffix, outputPath, verbose=True):
             print >>sys.stderr, \
                 'Template Error: {}: {}'.format(err, tmplName)
 
+def ScalarSuffix(scl):
+    if scl == 'GfHalf':
+        return 'h'
+    else:
+        return scl[0]
+
 def VecName(dim, scl):
-    return 'GfVec%s%s' % (dim, scl[0])
+    return 'GfVec%s%s' % (dim, ScalarSuffix(scl))
 
 def Eps(scl):
-    return '0.001' if scl == 'half' else 'GF_MIN_VECTOR_LENGTH'
+    return '0.001' if scl == 'GfHalf' else 'GF_MIN_VECTOR_LENGTH'
 
 ########################################################################
 # GfVec
 def GetVecSpecs():
-    scalarTypes = ['double', 'float', 'half', 'int']
+    scalarTypes = ['double', 'float', 'GfHalf', 'int']
     dimensions = [2, 3, 4]
     vecSpecs = sorted(
         [dict(SCL=scl,
               DIM=dim,
-              SUFFIX=str(dim) + scl[0],
+              SUFFIX=str(dim) + ScalarSuffix(scl),
               VEC=VecName(dim, scl),
               EPS=Eps(scl),
               LIST=MakeListFn(dim),
               VECNAME=VecName,
+              SCALAR_SUFFIX=ScalarSuffix,
               SCALARS=scalarTypes)
          for scl, dim in itertools.product(scalarTypes, dimensions)],
         key=lambda d: RankScalar(d['SCL']))
@@ -144,7 +151,7 @@ def GetVecSpecs():
 # GfRange
 def GetRangeSpecs():
     def RngName(dim, scl):
-        return 'GfRange%s%s' % (dim, scl[0])
+        return 'GfRange%s%s' % (dim, ScalarSuffix(scl))
 
     def MinMaxType(dim, scl):
         return scl if dim == 1 else VecName(dim, scl)
@@ -160,7 +167,7 @@ def GetRangeSpecs():
               MINMAX=MinMaxType(dim, scl),
               MINMAXPARM=MinMaxParm(dim, scl),
               DIM=dim,
-              SUFFIX=str(dim) + scl[0],
+              SUFFIX=str(dim) + ScalarSuffix(scl),
               RNG=RngName(dim, scl),
               RNGNAME=RngName,
               SCALARS=scalarTypes,
@@ -175,14 +182,15 @@ def GetRangeSpecs():
 # GfQuat
 def GetQuatSpecs():
     def QuatName(scl):
-        return 'GfQuat%s' % scl[0]
+        return 'GfQuat%s' % ScalarSuffix(scl)
 
-    scalarTypes = ['double', 'float', 'half']
+    scalarTypes = ['double', 'float', 'GfHalf']
     quatSpecs = sorted(
         [dict(SCL=scl,
-              SUFFIX=scl[0],
+              SUFFIX=ScalarSuffix(scl),
               QUAT=QuatName(scl),
               QUATNAME=QuatName,
+              SCALAR_SUFFIX=ScalarSuffix,
               SCALARS=scalarTypes,
               LIST=MakeListFn(4))
          for scl in scalarTypes],
@@ -195,7 +203,7 @@ def GetQuatSpecs():
 # GfMatrix
 def GetMatrixSpecs(dim):
     def MatrixName(dim, scl):
-        return 'GfMatrix%s%s' % (dim, scl[0])
+        return 'GfMatrix%s%s' % (dim, ScalarSuffix(scl))
 
     scalarTypes = ['double', 'float']
     dimensions = [dim]
@@ -203,8 +211,8 @@ def GetMatrixSpecs(dim):
     matrixSpecs = sorted(
         [dict(SCL=scl,
               DIM=i,
-              FILESUFFIX=scl[0],
-              SUFFIX=str(i) + scl[0],
+              FILESUFFIX=ScalarSuffix(scl),
+              SUFFIX=str(i) + ScalarSuffix(scl),
               MAT=MatrixName(i, scl),
               LIST=MakeListFn(i),
               MATRIX=MakeMatrixFn(i),

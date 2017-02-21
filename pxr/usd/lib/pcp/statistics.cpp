@@ -325,38 +325,6 @@ public:
         TF_FOR_ALL(i, stats.layerStackRelocationsSizeDistribution) {
             printf("%zu   %zu\n", i->first, i->second);
         }
-
-        // Assert sizes of structs we want to keep a close eye on.
-        static_assert(sizeof(PcpMapFunction) == 8,
-                      "PcpMapFunction must be of size 8");
-        static_assert(sizeof(PcpMapExpression) == 8,
-                      "PcpMapExpression must be of size 8");
-
-        // This object is 120 bytes when building against libstdc++
-        // and 96 for libc++ because std::set is 48 bytes in the
-        // former case and 24 bytes in the latter.
-        static_assert(sizeof(PcpMapExpression::_Node) == 120 ||
-                      sizeof(PcpMapExpression::_Node) == 96,
-                      "PcpMapExpression::_Node must be of size 96 or 120");
-
-        static_assert(sizeof(PcpLayerStackPtr) == 16,
-                      "PcpLayerStackPtr must be of size 16");
-        static_assert(sizeof(PcpLayerStackSite) == 16,
-                      "PcpLayerStackSite must be of size 16");
-        static_assert(sizeof(PcpPrimIndex) == 40,
-                      "PcpPrimIndex must be of size 40");
-
-        // This object is 104 bytes when building against libstdc++
-        // and 88 for libc++ because std::vector<bool> is 40 bytes
-        // in the former case and 24 bytes in the latter.
-        static_assert(sizeof(PcpPrimIndex_Graph) == 104 ||
-                      sizeof(PcpPrimIndex_Graph) == 88,
-                      "PcpPrimIndex_Graph must be of size 88 or 104");
-
-        static_assert(sizeof(PcpPrimIndex_Graph::_Node) == 40,
-                      "PcpPrimIndex_Graph::_Node must be of size 40");
-        static_assert(sizeof(PcpPrimIndex_Graph::_SharedData) == 32,
-                      "PcpPrimIndex_Graph::_SharedData must be of size 32");
     }
 
     static void PrintPrimIndexStats(

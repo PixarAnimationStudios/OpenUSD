@@ -31,12 +31,12 @@
 /// the tracing registered as callback functions, via \c
 /// TraceliteSetFunctions().
 
-#include <stddef.h>
-
 #include "pxr/pxr.h"
+#include "pxr/base/tracelite/api.h"
 #include "pxr/base/arch/functionLite.h"
 #include "pxr/base/arch/hints.h"
 
+#include <stddef.h>
 #include <atomic>
 #include <string>
 
@@ -93,9 +93,10 @@ typedef void (*TraceliteEndFunction)(void*);
 ///
 /// This call is not thread-safe (the simplest use is to only call it from the
 /// main thread). 
+TRACELITE_API
 void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
-			   TraceliteBeginFunction beginFunction,
-			   TraceliteEndFunction endFunction);
+                           TraceliteBeginFunction beginFunction,
+                           TraceliteEndFunction endFunction);
 
 /// Enable the begin/end trace callbacks.
 ///
@@ -111,6 +112,7 @@ void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
 ///
 /// This call is not thread-safe (the simplest use is to only call it from the
 /// main thread). 
+TRACELITE_API
 int TraceliteEnable(bool state);
 
 class Tracelite_ScopeAuto {
@@ -120,7 +122,7 @@ public:
         _wasActive = false;
         if (ARCH_UNLIKELY(Tracelite_ScopeAuto::_active)) {
             _wasActive = true;
-            if (ARCH_UNLIKELY(!*siteData))
+            if (ARCH_UNLIKELY(!siteData->load()))
                 _Initialize(siteData, key);
 
             (*_beginFunction)(_space, *siteData);
@@ -129,41 +131,45 @@ public:
 
     Tracelite_ScopeAuto(std::atomic<TraceScopeHolder*>* siteData,
                         char const* key1, char const* key2 = NULL) {
-	_wasActive = false;
-	if (ARCH_UNLIKELY(Tracelite_ScopeAuto::_active)) {
-	    _wasActive = true;
-	    if (ARCH_UNLIKELY(!*siteData))
-		_Initialize(siteData, key1, key2);
+        _wasActive = false;
+        if (ARCH_UNLIKELY(Tracelite_ScopeAuto::_active)) {
+            _wasActive = true;
+            if (ARCH_UNLIKELY(!siteData->load()))
+                _Initialize(siteData, key1, key2);
 
-	    (*_beginFunction)(_space, *siteData);
-	}
+            (*_beginFunction)(_space, *siteData);
+        }
     }
     
     ~Tracelite_ScopeAuto() {
-	if (ARCH_UNLIKELY(_wasActive)) {
-	    (*_endFunction)(_space);
-	}
+        if (ARCH_UNLIKELY(_wasActive)) {
+            (*_endFunction)(_space);
+        }
     }
     
     
 private:
+    TRACELITE_API
     static void _Initialize(std::atomic<TraceScopeHolder*>* siteData,
                             const std::string& key);
+    TRACELITE_API
     static void _Initialize(std::atomic<TraceScopeHolder*>* siteData,
                             char const* key1, char const* key2);
 
+    TRACELITE_API
     friend int TraceliteEnable(bool);
+    TRACELITE_API
     friend void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
-				      TraceliteBeginFunction beginFunction,
-				      TraceliteEndFunction endFunction);
+                                      TraceliteBeginFunction beginFunction,
+                                      TraceliteEndFunction endFunction);
     union {
-	void* _autoData;
-	unsigned char _space[TRACELITE_STACKDATA_SIZE];
+        void* _autoData;
+        unsigned char _space[TRACELITE_STACKDATA_SIZE];
     };
 
-    static TraceliteBeginFunction _beginFunction;
-    static TraceliteEndFunction _endFunction;
-    static bool _active;
+    TRACELITE_API static TraceliteBeginFunction _beginFunction;
+    TRACELITE_API static TraceliteEndFunction _endFunction;
+    TRACELITE_API static bool _active;
     bool _wasActive;
 };
 
@@ -173,17 +179,17 @@ private:
 #define TRACE_SCOPE(name) _TRACELITE_SCOPE(__LINE__, name)
 #define TRACE_FUNCTION()  _TRACELITE_FUNCTION(__LINE__, __ARCH_FUNCTION__, __ARCH_PRETTY_FUNCTION__)
 
-#define _TRACELITE_FUNCTION(instance, name, prettyName)			    \
+#define _TRACELITE_FUNCTION(instance, name, prettyName)                     \
     static std::atomic<TraceScopeHolder*>                                   \
         _TRACELITE_JOIN(_tracelite_site, instance);                         \
     Tracelite_ScopeAuto _TRACELITE_JOIN(_traceliteScopeAuto_, instance)(    \
-			&_TRACELITE_JOIN(_tracelite_site, instance), name, prettyName)
+                        &_TRACELITE_JOIN(_tracelite_site, instance), name, prettyName)
 
-#define _TRACELITE_SCOPE(instance, name)				    \
+#define _TRACELITE_SCOPE(instance, name)                                    \
     static std::atomic<TraceScopeHolder*>                                   \
         _TRACELITE_JOIN(_tracelite_site, instance);                         \
     Tracelite_ScopeAuto _TRACELITE_JOIN(_traceliteScopeAuto_, instance)(    \
-			&_TRACELITE_JOIN(_tracelite_site, instance), name)
+                        &_TRACELITE_JOIN(_tracelite_site, instance), name)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

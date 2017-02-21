@@ -65,7 +65,7 @@ public:
         DirtyRefineLevel      = 1 << 4,
         DirtyPoints           = 1 << 5,
         DirtyPrimVar          = 1 << 6,
-        DirtySurfaceShader    = 1 << 7,   // XXX: surface shader uses this bit
+        DirtySurfaceShader    = 1 << 7,
         DirtyTopology         = 1 << 8,
         DirtyTransform        = 1 << 9,
         DirtyVisibility       = 1 << 10,
@@ -261,31 +261,6 @@ public:
     /// instancer \p instancerId
     void InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const& rprimId);
 
-
-    // ---------------------------------------------------------------------- //
-    /// @}
-    /// \name Shader Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Shader with the given \p id.
-    void ShaderInserted(SdfPath const& id);
-
-    /// Stop tracking Shader with the given \p id.
-    void ShaderRemoved(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-    void MarkShaderDirty(SdfPath const& id, DirtyBits bits=AllDirty);
-
-    /// Get the dirty bits for Shader with the given \p id.
-    DirtyBits GetShaderDirtyBits(SdfPath const& id);
-
-    /// Set the dirty flags to \p newBits.
-    void MarkShaderClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    /// Sets all shaders to the given dirty \p bits
-    void MarkAllShadersDirty(DirtyBits bits);
-
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name Task Object Tracking
@@ -459,8 +434,6 @@ private:
 
     static void _LogCacheAccess(TfToken const& cacheName,
                                 SdfPath const& id, bool hit);
-
-    static DirtyBits _PropagateDirtyBits(DirtyBits bits);
 
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;

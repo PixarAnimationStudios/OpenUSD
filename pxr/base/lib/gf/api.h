@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,22 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GARCH_GLUT_H
-#define GARCH_GLUT_H
+#ifndef GF_API_H
+#define GF_API_H
 
-#include "pxr/pxr.h"
-#include "pxr/base/arch/defines.h"
-#if defined(ARCH_OS_DARWIN)
-// Apple installs OpenGL headers in a non-standard location.
-#include <GLUT/glut.h>
+#include "pxr/base/arch/export.h"
+
+#if defined(GF_STATIC)
+#   define GF_API
+#   define GF_API_TEMPLATE_CLASS(...)
+#   define GF_API_TEMPLATE_STRUCT(...)
+#   define GF_LOCAL
 #else
-#include <GL/glut.h>
-
-PXR_NAMESPACE_OPEN_SCOPE
-
+#   if defined(GF_EXPORTS)
+#       define GF_API ARCH_EXPORT
+#       define GF_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define GF_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define GF_API ARCH_IMPORT
+#       define GF_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define GF_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define GF_LOCAL ARCH_HIDDEN
 #endif
 
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // GARCH_GLUT_H
+#endif

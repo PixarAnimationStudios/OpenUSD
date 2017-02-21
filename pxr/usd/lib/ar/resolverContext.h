@@ -84,7 +84,7 @@ std::string ArGetDebugString(const Context& context);
 /// \sa ArResolver::BindContext
 /// \sa ArResolver::UnbindContext
 /// \sa ArResolverContextBinder
-class AR_API ArResolverContext
+class ArResolverContext
 {
 public:
     /// Construct an empty asset resolver context.

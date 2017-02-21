@@ -83,5 +83,6 @@ void wrapLayerTree()
                           return_value_policy<TfPySequenceToList>()))
         ;
 }
+TF_REFPTR_CONST_VOLATILE_GET(SdfLayerTree)
 
 PXR_NAMESPACE_CLOSE_SCOPE

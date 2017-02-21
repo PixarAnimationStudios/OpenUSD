@@ -961,6 +961,56 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
     _includedPayloads.insert(newIncludes.begin(), newIncludes.end());
 }
 
+// Scan given prim indexes and layer stacks and register significant
+// changes for anything that needs to be recomputed due to asset path
+// changes. This is potentially expensive, but the alternative
+// is to store extra information when computing prim indexes, which
+// would impact composition/load times and memory usage.
+template <class PrimIndexIter, class LayerStackIter>
+static void
+_RegisterChangesForAssetPathChanges(
+    PcpCache* cache, PcpChanges* changes,
+    PrimIndexIter beginPrimIndex, PrimIndexIter endPrimIndex,
+    LayerStackIter beginLayerStack, LayerStackIter endLayerStack)
+{
+    tbb::concurrent_vector<SdfPath> pathsToResync;
+    tbb::concurrent_vector<PcpLayerStackPtr> layerStacksToResync;
+
+    WorkDispatcher dispatcher;
+    dispatcher.Run(
+        [&pathsToResync, beginPrimIndex, endPrimIndex]() {
+            WorkParallelForEach(
+                beginPrimIndex, endPrimIndex,
+                [&pathsToResync](const std::pair<SdfPath, PcpPrimIndex>& e) {
+                    if (e.second.IsValid() && 
+                        Pcp_NeedToRecomputeDueToAssetPathChange(e.second)) {
+                        pathsToResync.push_back(e.first);
+                    }
+                });
+        });
+
+    dispatcher.Run(
+        [&layerStacksToResync, beginLayerStack, endLayerStack]() {
+            WorkParallelForEach(
+                beginLayerStack, endLayerStack,
+                [&layerStacksToResync](const PcpLayerStackPtr& layerStack) {
+                    if (Pcp_NeedToRecomputeDueToAssetPathChange(layerStack)) {
+                        layerStacksToResync.push_back(layerStack);
+                    }
+                });
+        });
+
+    dispatcher.Wait();
+
+    for (const SdfPath& path : pathsToResync) {
+        changes->DidChangeSignificantly(cache, path);
+    }
+
+    for (const PcpLayerStackPtr& layerStack : layerStacksToResync) {
+        changes->DidChangeLayerStack(cache, layerStack);
+    }  
+}
+
 void
 PcpCache::Reload(PcpChanges* changes)
 {
@@ -1004,7 +1054,10 @@ PcpCache::Reload(PcpChanges* changes)
     }
 
     // Reload every layer we've reached except the session layers (which we
-    // never want to reload from disk).
+    // never want to reload from disk). Hold notifications until the end
+    // of this function so that clients don't alter the state of the PcpCache
+    // before the subsequent code is run.
+    SdfChangeBlock changeBlock;
     SdfLayerHandleSet layersToReload = GetUsedLayers();
 
     for (const SdfLayerHandle &layer : _layerStack->GetSessionLayers()) {
@@ -1012,6 +1065,16 @@ PcpCache::Reload(PcpChanges* changes)
     }
 
     SdfLayer::ReloadLayers(layersToReload);
+
+    // Find prim indexes and layer stacks that need to be recomputed
+    // due to asset path changes resulting from the reload above,
+    // but that aren't due to scene description changes. This ensures 
+    // that we reload anything that may be affected by external state 
+    // changes that aren't visible to Pcp but affect asset path resolution.
+    _RegisterChangesForAssetPathChanges(
+        this, changes, 
+        _primIndexCache.begin(), _primIndexCache.end(),
+        allLayerStacks.begin(), allLayerStacks.end());
 }
 
 void
@@ -1024,7 +1087,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     // Traverse every PrimIndex at or under primPath to find
     // InvalidAssetPath errors, and collect the unique layer stacks used.
     std::set<PcpLayerStackPtr> layerStacksAtOrUnderPrim;
-    auto range = _primIndexCache.FindSubtreeRange(primPath);
+    const auto range = _primIndexCache.FindSubtreeRange(primPath);
     for (auto entryIter = range.first; entryIter != range.second; ++entryIter) {
         const auto& entry = *entryIter;
         const PcpPrimIndex& primIndex = entry.second;
@@ -1059,7 +1122,10 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     }
 
     // Reload every layer used by prims at or under primPath, except for
-    // local layers.
+    // local layers. Hold notifications until the end of this function so
+    // that clients don't alter the state of the PcpCache before the 
+    // subsequent code is run.
+    SdfChangeBlock changeBlock;
     SdfLayerHandleSet layersToReload;
     for (const PcpLayerStackPtr& layerStack: layerStacksAtOrUnderPrim) {
         for (const SdfLayerHandle& layer: layerStack->GetLayers()) {
@@ -1070,6 +1136,12 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     }
 
     SdfLayer::ReloadLayers(layersToReload);
+
+    // See comments in Reload.
+    _RegisterChangesForAssetPathChanges(
+        this, changes, 
+        range.first, range.second,
+        layerStacksAtOrUnderPrim.begin(), layerStacksAtOrUnderPrim.end());
 }
 
 void

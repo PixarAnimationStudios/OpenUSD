@@ -52,4 +52,6 @@ void wrapRegistry()
         ;
 }
 
+TF_REFPTR_CONST_VOLATILE_GET(KindRegistry)
+
 PXR_NAMESPACE_CLOSE_SCOPE

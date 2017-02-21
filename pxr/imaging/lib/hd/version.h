@@ -36,17 +36,9 @@
 // 26 -> 27: move drawTarget to Hdx.
 // 27 -> 28: switch render index Sprim to take a typeId.
 // 28 -> 29: cameras only support matrices.
-#define HD_API 29
+#define HD_API_VERSION 29
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2
-
-// 1 -> 2: Changes "doubleShaded" API to "doubleSided".
-#define HD_CHANGETRACKER_API 2
-#define HD_ENGINE_API 1
-#define HD_RPRIMCOLLECTION_API 1
-
-// 2 -> 3: Changes "doubleShaded" API to "doubleSided".
-#define HD_TOKENS_API   3
 
 #endif // HD_VERSION_H

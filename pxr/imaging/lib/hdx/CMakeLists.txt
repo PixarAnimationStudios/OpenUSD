@@ -51,6 +51,9 @@ pxr_shared_library(hdx
         drawTargetTextureResource
         unitTestDelegate
 
+    PRIVATE_HEADERS
+        unitTestGLDrawing.h
+
     RESOURCE_FILES
         plugInfo.json
         shaders/simpleLightingShader.glslfx
@@ -59,3 +62,68 @@ pxr_shared_library(hdx
         shaders/renderPassIdShader.glslfx
         shaders/renderPassShadowShader.glslfx
 )
+
+if (X11_FOUND OR APPLE)
+pxr_build_test(testHdxRenderTask
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        testenv/testHdxRenderTask.cpp
+)
+pxr_build_test(testHdxLightAndShadow
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        testenv/testHdxLightAndShadow.cpp
+)
+pxr_build_test(testHdxIdRender
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testHdxIdRender.cpp
+)
+pxr_build_test(testHdxPickAndHighlight
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testHdxPickAndHighlight.cpp
+)
+pxr_build_test(testHdxCameraAndLight
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        testenv/testHdxCameraAndLight.cpp
+)
+endif()

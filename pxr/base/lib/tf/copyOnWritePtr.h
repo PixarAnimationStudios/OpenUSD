@@ -224,12 +224,12 @@ class TfCopyOnWritePtr : boost::equality_comparable<TfCopyOnWritePtr<T> >
   private:
 
     void _Detach() {
-        if (not _ptr or not IsUnique())
+        if (!_ptr || !IsUnique())
             _ptr = _Helper::New(get_pointer(_ptr));
     }
 
     void _AllocateIfNull() const {
-        if (not _ptr)
+        if (!_ptr)
             _ptr = _Helper::New();
     }
 

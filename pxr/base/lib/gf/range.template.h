@@ -33,6 +33,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/gf/api.h"
 {% if DIM > 1 %}
 #include "pxr/base/gf/vec{{ DIM }}d.h"
 #include "pxr/base/gf/vec{{ DIM }}f.h"
@@ -336,36 +337,43 @@ public:
     ///
     /// The values must match exactly and it does exactly what you might
     /// expect when comparing float and double values.
-    inline bool operator ==(const {{ RNGNAME(DIM, S) }}& other) const;
-    inline bool operator !=(const {{ RNGNAME(DIM, S) }}& other) const;
+    GF_API inline bool operator ==(const {{ RNGNAME(DIM, S) }}& other) const;
+    GF_API inline bool operator !=(const {{ RNGNAME(DIM, S) }}& other) const;
 {% endfor %}
 
     /// Compute the squared distance from a point to the range.
+    GF_API
     double GetDistanceSquared({{ MINMAXPARM }}p) const;
 
 {% if DIM == 2 %}
     /// Returns the ith corner of the range, in the following order:
     /// SW, SE, NW, NE.
+    GF_API
     {{ MINMAX }} GetCorner(size_t i) const;
 
     /// Returns the ith quadrant of the range, in the following order:
     /// SW, SE, NW, NE.
+    GF_API
     {{ RNG }} GetQuadrant(size_t i) const;
 
     /// The unit square.
+    GF_API
     static const {{ RNG }} UnitSquare;
 {% elif DIM == 3 %}
     /// Returns the ith corner of the range, in the following order:
     /// LDB, RDB, LUB, RUB, LDF, RDF, LUF, RUF. Where L/R is left/right,
     /// D/U is down/up, and B/F is back/front.
+    GF_API
     {{ MINMAX }} GetCorner(size_t i) const;
 
     /// Returns the ith octant of the range, in the following order:
     /// LDB, RDB, LUB, RUB, LDF, RDF, LUF, RUF. Where L/R is left/right,
     /// D/U is down/up, and B/F is back/front.
+    GF_API
     {{ RNG }} GetOctant(size_t i) const;
 
     /// The unit cube.
+    GF_API
     static const {{ RNG }} UnitCube;
 {% endif %}
 
@@ -396,7 +404,7 @@ public:
 
 /// Output a {{ RNG }}.
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, {{ RNG }} const &);
+GF_API std::ostream& operator<<(std::ostream &, {{ RNG }} const &);
 
 {% for S in SCALARS if S != SCL %}
 PXR_NAMESPACE_CLOSE_SCOPE

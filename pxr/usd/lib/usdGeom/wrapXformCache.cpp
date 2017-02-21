@@ -31,6 +31,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace boost::python;
 
+
+static
+tuple
+_GetLocalTransformation(
+        UsdGeomXformCache& self,
+        const UsdPrim& prim)
+{
+    bool resetsXformStack;
+    GfMatrix4d localXform = self.GetLocalTransformation(prim, &resetsXformStack);
+
+    return make_tuple(localXform, resetsXformStack);
+}
+
+
 void wrapUsdGeomXformCache()
 {
     typedef UsdGeomXformCache XformCache;
@@ -41,6 +55,8 @@ void wrapUsdGeomXformCache()
              &XformCache::GetLocalToWorldTransform, arg("prim"))
         .def("GetParentToWorldTransform",
              &XformCache::GetParentToWorldTransform, arg("prim"))
+        .def("GetLocalTransformation",
+             &_GetLocalTransformation, arg("prim"))
         .def("Clear", &XformCache::Clear)
         .def("SetTime", &XformCache::SetTime, arg("time"))
         .def("GetTime", &XformCache::GetTime)

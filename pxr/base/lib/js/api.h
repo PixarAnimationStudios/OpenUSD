@@ -28,12 +28,18 @@
 
 #if defined(JS_STATIC)
 #   define JS_API
+#   define JS_API_TEMPLATE_CLASS(...)
+#   define JS_API_TEMPLATE_STRUCT(...)
 #   define JS_LOCAL
 #else
 #   if defined(JS_EXPORTS)
 #       define JS_API ARCH_EXPORT
+#       define JS_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define JS_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
 #   else
 #       define JS_API ARCH_IMPORT
+#       define JS_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define JS_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
 #   endif
 #   define JS_LOCAL ARCH_HIDDEN
 #endif

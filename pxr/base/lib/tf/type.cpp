@@ -140,7 +140,7 @@ struct TfType::_TypeInfo : boost::noncopyable
     // A type is "defined" as soon as it has either type_info or a
     // Python class object.
     inline bool IsDefined() {
-        return typeInfo || pyClass.get();
+        return typeInfo.load() != nullptr || pyClass.get();
     }
 
     // Caller must hold a write lock on mutex.
@@ -154,7 +154,7 @@ struct TfType::_TypeInfo : boost::noncopyable
             }
         }
         // need to add a new func.
-        castFuncs.push_back(make_pair(&baseType, func));
+        castFuncs.push_back(std::make_pair(&baseType, func));
     }
 
     // Caller must hold at least a read lock on mutex.
@@ -867,7 +867,7 @@ TfType::_DefineCppType(const std::type_info & typeInfo,
     auto &r = Tf_TypeRegistry::GetInstance();
     ScopedLock infoLock(_info->mutex, /*write=*/true);
     ScopedLock regLock(r.GetMutex(), /*write=*/true);
-    if (_info->typeInfo) {
+    if (_info->typeInfo.load() != nullptr) {
         infoLock.release();
         regLock.release();
         TF_CODING_ERROR("TfType '%s' already has a defined C++ type; "

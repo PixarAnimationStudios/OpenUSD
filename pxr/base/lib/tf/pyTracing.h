@@ -28,6 +28,8 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
+
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -50,13 +52,13 @@ typedef boost::shared_ptr<TfPyTraceFn> TfPyTraceFnId;
 /// Register \a f as a python trace function.
 /// It will be invoked for python tracing events. If python is not yet
 /// initialized, the function will not be invoked until python is initialized.
-TfPyTraceFnId TfPyRegisterTraceFn(TfPyTraceFn const &f);
+TF_API TfPyTraceFnId TfPyRegisterTraceFn(TfPyTraceFn const &f);
 
 // For internal use only.  Do not use.
-void Tf_PyFabricateTraceEvent(TfPyTraceInfo const &info);
+TF_API void Tf_PyFabricateTraceEvent(TfPyTraceInfo const &info);
 
 // For internal use only.  Do not use.
-void Tf_PyTracingPythonInitialized();
+TF_API void Tf_PyTracingPythonInitialized();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

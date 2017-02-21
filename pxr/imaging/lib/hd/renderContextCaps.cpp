@@ -152,17 +152,22 @@ HdRenderContextCaps::_LoadCaps()
         int minor = std::max(0, std::min(9, *(dot+1) - '0'));
         glVersion = major * 100 + minor * 10;
     }
-    const char *glslVersionStr =
-        (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-    dot = strchr(glslVersionStr, '.');
-    if (TF_VERIFY((dot && dot != glslVersionStr),
-                  "Can't parse GL_SHADING_LANGUAGE_VERSION %s",
-                  glslVersionStr)) {
-        // GL_SHADING_LANGUAGE_VERSION = "4.10"
-        //                               "4.50 <vendor>"
-        int major = std::max(0, std::min(9, *(dot-1) - '0'));
-        int minor = std::max(0, std::min(9, *(dot+1) - '0'));
-        glslVersion = major * 100 + minor * 10;
+
+    if (glVersion >= 200) {
+        const char *glslVersionStr =
+            (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+        dot = strchr(glslVersionStr, '.');
+        if (TF_VERIFY((dot && dot != glslVersionStr),
+                      "Can't parse GL_SHADING_LANGUAGE_VERSION %s",
+                      glslVersionStr)) {
+            // GL_SHADING_LANGUAGE_VERSION = "4.10"
+            //                               "4.50 <vendor>"
+            int major = std::max(0, std::min(9, *(dot-1) - '0'));
+            int minor = std::max(0, std::min(9, *(dot+1) - '0'));
+            glslVersion = major * 100 + minor * 10;
+        }
+    } else {
+        glslVersion = 0;
     }
 
     // initialize by Core versions

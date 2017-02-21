@@ -34,9 +34,10 @@
 #include <utility>
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/relationship.h"
+#include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
-#include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/parameter.h"
 
 
 #include "pxr/base/vt/value.h"
@@ -241,8 +242,9 @@ public:
 
     /// @}
 
-    /// \anchor UsdShadeSubgraph_Outputs
-    /// \name Outputs of a subgraph.
+    /// \anchor UsdShadeSubgraph_Output
+    /// \name Outputs of a subgraph. These typically connect to outputs of 
+    /// shaders or nested subgraphs within the subgraph.
     /// 
     /// @{
 
@@ -257,11 +259,101 @@ public:
     /// 
     UsdShadeOutput GetOutput(const TfToken &name) const;
 
-    /// Outputs are represented by attributes in the "outputs" namespace.
+    /// Outputs are represented by attributes in the "outputs:" namespace.
     /// 
     std::vector<UsdShadeOutput> GetOutputs() const;
     
     /// @}
+
+    /// \anchor UsdShadeSubgraph_Inputs
+    /// \name Inputs of a subgraph. These define the interface afforded by the 
+    /// subgraph.
+    /// 
+    /// @{
+
+    /// Create an Input which can either have a value or can be connected.
+    /// The attribute representing the input is created in the "inputs:" 
+    /// namespace.
+    /// 
+    UsdShadeInput CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName);
+
+    /// Return the requested input if it exists.
+    /// 
+    UsdShadeInput GetInput(const TfToken &name) const;
+
+    /// Returns all inputs present on the subgraph. These are represented by
+    /// attributes in the "inputs:" namespace.
+    /// 
+    std::vector<UsdShadeInput> GetInputs() const;
+    
+    /// @}
+
+    // Provide custom hash and equality comparison function objects for 
+    // UsdShadeSubgraph until bug 143077 is resolved.
+
+    /// Hash functor for UsdShadeSubgraph objects.
+    struct SubgraphHasher {
+        inline size_t operator()(const UsdShadeSubgraph &subgraph) const {
+            return hash_value(subgraph.GetPrim());
+        }
+    };
+    /// Equality comparator for UsdShadeSubgraph objects.
+    struct SubgraphEqualFn
+    {
+        inline bool operator() (UsdShadeSubgraph const& s1, 
+                                UsdShadeSubgraph const& s2) const
+        {
+            return s1.GetPrim() == s2.GetPrim();
+        }
+    };
+
+    // ---------------------------------------------------------------------- //
+    /// \anchor UsdShadeSubgraph_InterfaceInputs
+    /// \name Interface Inputs
+    /// 
+    /// API to query the inputs that form the interface of the subgraph and 
+    /// their connections.
+    /// 
+    /// @{
+        
+    /// Returns all the "Interface Inputs" of the subgraph. This is the same 
+    /// as GetInputs(), but is provided  as a convenience, to allow clients to
+    /// distinguish between inputs on shaders vs. interface-inputs on subgraphs.
+    std::vector<UsdShadeInput> GetInterfaceInputs() const;
+
+    /// Map of interface inputs to corresponding vectors of inputs that 
+    /// consume their values.
+    typedef std::unordered_map<UsdShadeInput, std::vector<UsdShadeInput>, 
+        UsdShadeInput::Hash> InterfaceInputConsumersMap;
+
+    /// Map of subgraphs to their associated input-consumers map.
+    typedef std::unordered_map<UsdShadeSubgraph,
+                               InterfaceInputConsumersMap, 
+                               SubgraphHasher,
+                               SubgraphEqualFn> 
+            SubgraphInputConsumersMap;
+
+    /// Walks the namespace subtree below the subgraph and computes a map 
+    /// containing the list of all inputs on the subgraph and the associated 
+    /// vector of consumers of their values. The consumers can be inputs on 
+    /// shaders within the subgraph or on nested subgraphs).
+    /// 
+    /// If \p computeTransitiveConsumers is true, then value consumers
+    /// belonging to <b>subgraphs</b> are resolved transitively to compute the 
+    /// transitive mapping from inputs on the subgraph to inputs on shaders 
+    /// inside the material. Note that inputs on subgraphs that don't have 
+    /// value consumers will continue to be included in the result.
+    /// 
+    /// This API is provided for use by DCC's that want to present subgraph 
+    /// interface / shader connections in the opposite direction than they are 
+    /// encoded in USD.
+    /// 
+    InterfaceInputConsumersMap ComputeInterfaceInputConsumersMap(
+        bool computeTransitiveConsumers=false) const;
+
+    /// @}
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -60,7 +60,7 @@ public:
 
             TfPyLock pyLock;
             object result = _callback(_owner, value, op);
-            if (not TfPyIsNone(result)) {
+            if (! TfPyIsNone(result)) {
                 extract<V> e(result);
                 if (e.check()) {
                     return boost::optional<V>(e());
@@ -93,7 +93,7 @@ public:
 
             TfPyLock pyLock;
             object result = _callback(value);
-            if (not TfPyIsNone(result)) {
+            if (! TfPyIsNone(result)) {
                 extract<V> e(result);
                 if (e.check()) {
                     return boost::optional<V>(e());

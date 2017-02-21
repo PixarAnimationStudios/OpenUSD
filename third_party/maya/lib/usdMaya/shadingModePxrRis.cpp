@@ -70,21 +70,21 @@ _GetShaderTypeName(const MFnDependencyNode& depNode)
 }
 
 static UsdPrim
-_ExportShadingNode(const UsdPrim& lookPrim,
+_ExportShadingNode(const UsdPrim& materialPrim,
                    const MFnDependencyNode& depNode,
                    const PxrUsdMayaShadingModeExportContext* context,
                    SdfPathSet *processedPaths,
                    bool isFirstNode
 )
 {
-    UsdStagePtr stage = lookPrim.GetStage();
+    UsdStagePtr stage = materialPrim.GetStage();
 
     // XXX: would be nice to write out the current display color as
     // well.  currently, when we re-import, we don't get the display color so
     // it shows up as black.
 
     TfToken shaderPrimName(PxrUsdMayaUtil::SanitizeName(depNode.name().asChar()));
-    SdfPath shaderPath = lookPrim.GetPath().AppendChild(shaderPrimName);
+    SdfPath shaderPath = materialPrim.GetPath().AppendChild(shaderPrimName);
     if (processedPaths->count(shaderPath) == 1){
         return stage->GetPrimAtPath(shaderPath);
     }
@@ -149,7 +149,7 @@ _ExportShadingNode(const UsdPrim& lookPrim,
             MPlug connected(PxrUsdMayaUtil::GetConnected(attrPlug));
             MFnDependencyNode c(connected.node(), &status);
             if (status) {
-                if (UsdPrim cPrim = _ExportShadingNode(lookPrim, 
+                if (UsdPrim cPrim = _ExportShadingNode(materialPrim, 
                                                        c, 
                                                        context,
                                                        processedPaths,
@@ -176,8 +176,8 @@ DEFINE_SHADING_MODE_EXPORTER(pxrRis, context)
         return;
     }
 
-    UsdPrim lookPrim = context->MakeStandardLookPrim(assignments);
-    if (!lookPrim) {
+    UsdPrim materialPrim = context->MakeStandardMaterialPrim(assignments);
+    if (!materialPrim) {
         return;
     }
 
@@ -186,11 +186,11 @@ DEFINE_SHADING_MODE_EXPORTER(pxrRis, context)
         return;
     }
     SdfPathSet  processedShaders;
-    if (UsdPrim shaderPrim = _exporter::_ExportShadingNode(lookPrim,
+    if (UsdPrim shaderPrim = _exporter::_ExportShadingNode(materialPrim,
                                                            ssDepNode,
                                                            context,
                                                            &processedShaders, true)) {
-        UsdRiLookAPI riLook = UsdRiLookAPI(lookPrim);
+        UsdRiLookAPI riLook = UsdRiLookAPI(materialPrim);
         std::vector<SdfPath> bxdfTargets;
         bxdfTargets.push_back(shaderPrim.GetPath());
         riLook.CreateBxdfRel().SetTargets(bxdfTargets);
@@ -307,10 +307,10 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
 {
     // This expects the renderman for maya plugin is loaded.
     // How do we ensure that it is?
-    const UsdShadeMaterial& shadeLook = context->GetShadeLook();
+    const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();
 
     MStatus status;
-    UsdRiLookAPI riLookAPI(shadeLook);
+    UsdRiLookAPI riLookAPI(shadeMaterial);
     if (UsdRiRisBxdf bxdf = riLookAPI.GetBxdf()) {
         MObject bxdfObj = _importer::_GetOrCreateShaderObject(bxdf, context);
         MFnDependencyNode bxdfDep(bxdfObj, &status);

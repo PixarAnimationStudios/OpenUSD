@@ -38,6 +38,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
+#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -231,6 +232,11 @@ HdEngine::CreateContextWithDefaults()
     // prims using the delegate
     index->SetRenderDelegate(renderDelegate);
 
+    if (!index->CreateFallbackPrims()) {
+        DestroyContext(context);
+        return nullptr;
+    }
+
     return context;
 }
 
@@ -359,10 +365,20 @@ HdEngine::CreateContext(const TfToken &renderDelegateId,
 
     // Provide the Render Index with the Render Delegate, so it can create
     // prims using the delegate.
-    // This will either set the delegate for the first time or
-    // set the delegate to the same, so that's ok (and should be
-    // cheaper than doing the if).
-    index->SetRenderDelegate(renderDelegate);
+    //
+    // The assignment of the render delegate to the render index, initializes
+    // that render index with render delegate specific state, so we want
+    // to ensure that the context creation was success before doing this
+    // and we also don't want to repeat the operation if it has already been
+    // performed.
+    if (riRenderDelegateType.IsEmpty()) {
+        index->SetRenderDelegate(renderDelegate);
+
+        if (!index->CreateFallbackPrims()) {
+            DestroyContext(context);
+            return nullptr;
+        }
+    }
 
     return context;
 }
@@ -504,6 +520,9 @@ HdEngine::Draw(HdRenderIndex& index,
     HD_TRACE_FUNCTION();
     _InitCaps();
 
+    // Sync the scene state prims
+    index.SyncSprims();
+
     renderPass->Sync();
     renderPassState->Sync();
 
@@ -611,13 +630,23 @@ HdEngine::ReloadAllShaders(HdRenderIndex& index)
     tracker.MarkAllRprimsDirty(HdChangeTracker::AllDirty);
 
     // Dirty all surface shaders
-    tracker.MarkAllShadersDirty(HdChangeTracker::AllDirty);
+    SdfPathVector shaders = index.GetSprimSubtree(HdPrimTypeTokens->shader,
+                                                  SdfPath::EmptyPath());
+
+    for (SdfPathVector::iterator shaderIt  = shaders.begin();
+                                 shaderIt != shaders.end();
+                               ++shaderIt) {
+
+        tracker.MarkSprimDirty(*shaderIt, HdChangeTracker::AllDirty);
+    }
 
     // Invalidate Geometry shader cache in Resource Registry.
     _resourceRegistry->InvalidateGeometricShaderRegistry();
 
     // Fallback Shader
-    index.ReloadFallbackShader();
+    HdShader *shader = static_cast<HdShader *>(
+                              index.GetFallbackSprim(HdPrimTypeTokens->shader));
+    shader->Reload();
 
 
     // Note: Several Shaders are not currently captured in this

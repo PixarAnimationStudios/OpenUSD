@@ -35,8 +35,7 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         const UsdPrim& prim,
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
         const PxrUsdKatanaUsdInPrivateData* parentData,
-        bool useDefaultMotion,
-        std::shared_ptr<const MaterialHierarchy> *materialHierarchy)
+        bool useDefaultMotion)
     : _prim(prim), _usdInArgs(usdInArgs)
 {
     // XXX: manually track instance and master path for possible
@@ -50,9 +49,11 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         {
             SdfPath descendentPrimPath = 
                 prim.GetPath().ReplacePrefix(
-                    prim.GetPath().GetPrefixes()[0], SdfPath::ReflexiveRelativePath());
+                    prim.GetPath().GetPrefixes()[0], 
+                    SdfPath::ReflexiveRelativePath());
 
-            _instancePath = parentData->GetInstancePath().AppendPath(descendentPrimPath);
+            _instancePath = parentData->GetInstancePath().AppendPath(
+                descendentPrimPath);
         }
         else
         {
@@ -78,25 +79,23 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         {
             _masterPath = parentData->GetMasterPath();
         }
-
-        _materialHierarchy = parentData->GetMaterialHierarchy();
     }
 
     // Pass along the flag to use default motion sample times.
     //
-    const std::set<std::string>& defaultMotionPaths = usdInArgs->GetDefaultMotionPaths();
+    const std::set<std::string>& defaultMotionPaths = 
+        usdInArgs->GetDefaultMotionPaths();
 
     _useDefaultMotionSampleTimes =
-            useDefaultMotion || (parentData && parentData->UseDefaultMotionSampleTimes()) ||
-                defaultMotionPaths.find(prim.GetPath().GetString()) != defaultMotionPaths.end();
-
-    if (materialHierarchy) {
-        _materialHierarchy = *materialHierarchy;
-    }
+            useDefaultMotion || (
+                    parentData && parentData->UseDefaultMotionSampleTimes()) ||
+                defaultMotionPaths.find(
+                    prim.GetPath().GetString()) != defaultMotionPaths.end();
 }
 
 const std::vector<double>
-PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) const
+PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
+    const UsdAttribute& attr) const
 {
     static std::vector<double> noMotion = {0.0};
 
@@ -107,7 +106,8 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
         return noMotion;
     }
 
-    const std::vector<double> motionSampleTimes = _usdInArgs->GetMotionSampleTimes();
+    const std::vector<double> motionSampleTimes = 
+        _usdInArgs->GetMotionSampleTimes();
 
     // early exit if we don't have a valid attribute, aren't asking for
     // multiple samples, or this prim has been forced to use default motion
@@ -172,7 +172,8 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
         {
             if (lower > shutterStartTime)
             {
-                // Did not find a sample ealier than the shutter start. Return no motion.
+                // Did not find a sample ealier than the shutter start. 
+                // Return no motion.
                 return noMotion;
             }
 
@@ -197,7 +198,8 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(const UsdAttribute& attr) con
         {
             if (upper < shutterCloseTime)
             {
-                // Did not find a sample later than the shutter close. Return no motion.
+                // Did not find a sample later than the shutter close. 
+                // Return no motion.
                 return noMotion;
             }
 

@@ -431,8 +431,8 @@ UsdGeomXformOp::GetOpTransform(UsdGeomXformOp::Type const opType,
         doubleVal  = opVal.UncheckedGet<double>();
     } else if (opVal.IsHolding<float>()) {
         doubleVal = opVal.UncheckedGet<float>();
-    } else if (opVal.IsHolding<half>()) {
-        doubleVal = opVal.UncheckedGet<half>();
+    } else if (opVal.IsHolding<GfHalf>()) {
+        doubleVal = opVal.UncheckedGet<GfHalf>();
     } else {
         isScalarVal = false;
     }

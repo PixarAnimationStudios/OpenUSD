@@ -68,7 +68,7 @@ TfScopeDescription::TfScopeDescription(string const &description)
     : _stackIndex(InvalidIndex)
 {
     if (ArchIsMainThread()) {
-        _stackIndex = _PushDescription(description);
+        _stackIndex = static_cast<int>(_PushDescription(description));
     }
 }
 

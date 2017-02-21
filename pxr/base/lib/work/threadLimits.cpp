@@ -70,6 +70,12 @@ static tbb::atomic<unsigned> _threadLimit;
 static tbb::task_scheduler_init *_tbbTaskSchedInit;
 
 unsigned
+WorkGetThreadLimit()
+{
+    return TfGetEnvSetting(PXR_WORK_THREAD_LIMIT);
+}
+
+unsigned
 WorkGetPhysicalConcurrencyLimit()
 {
     // Use TBB here, since it pays attention to the affinity mask on Linux and

@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/stackTrace.h"
 
 #include <thread>
@@ -43,7 +44,7 @@ _ThreadTask()
 {
     TfErrorMark m;
     TF_RUNTIME_ERROR("Pending secondary thread error for crash report!");
-    sleep(600); // 10 minutes.
+    ArchNap(60000); // 10 minutes.
 }
 
 int
@@ -62,7 +63,7 @@ main(int argc, char **argv)
 
     std::thread t(_ThreadTask);
 
-    sleep(1);
+    ArchNap(100);
 
     int* bunk(0);
     std::cout << *bunk << '\n';

@@ -48,7 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// This includes the attribute's \ref GetInterpolation() "interpolation"
 /// across the primitive (which RenderMan refers to as its 
 /// \ref Usd_InterpolationVals "class specifier"
-/// and Alembic as its <A HREF="http://code.google.com/p/alembic/source/browse/lib/Alembic/AbcGeom/GeometryScope.h#46"> "geometry scope"</A>);
+/// and Alembic as its <A HREF="https://github.com/alembic/alembic/blob/master/lib/Alembic/AbcGeom/GeometryScope.h#L47"> "geometry scope"</A>);
 /// it also includes the attribute's \ref GetElementSize() "elementSize",
 /// which states how many values in the value array must be aggregated for
 /// each element on the primitive.  An attribute's \ref
@@ -61,7 +61,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li Primvars define a value that can vary across the primitive on which
 ///     they are defined, via prescribed interpolation rules
 /// \li Taken collectively on a prim, its Primvars describe the "per-primitive
-///     overrides" to the shader(s) to which the prim is bound.  Different
+///     overrides" to the material to which the prim is bound.  Different
 ///     renderers may communicate the variables to the shaders using different
 ///     mechanisms over which Usd has no control; Primvars simply provide the
 ///     classification that any renderer should use to locate potential
@@ -283,12 +283,21 @@ class UsdGeomPrimvar
     /// unauthored.  If this Primvar's type is \em not an array type,
     /// (e.g. "Vec3f[]"), then elementSize is irrelevant.
     ///
-    /// ElementSize dictates how many consecutive items in the value array
-    /// should be taken as an atomic element to be interpolated over a gprim.
-    /// For example, if one is encoding spherical harmonic coefficients in
-    /// a Primvar, the typeName would be "float[]", and the elementSize
-    /// would be 9.  Changing the elementSize without changing the interpolation
-    /// will always necessitate a change to the size of the value array.
+    /// ElementSize does \em not generally encode the length of an array-type
+    /// primvar, and rarely needs to be authored.  ElementSize can be thought
+    /// of as a way to create an "aggregate interpolatable type", by
+    /// dictating how many consecutive elements in the value array should be
+    /// taken as an atomic element to be interpolated over a gprim. 
+    ///
+    /// For example, spherical harmonics are often represented as a
+    /// collection of nine floating-point coefficients, and the coefficients
+    /// need to be sampled across a gprim's surface: a perfect case for
+    /// primvars.  However, USD has no <tt>float9</tt> datatype.  But we can
+    /// communicate the aggregation of nine floats successfully to renderers
+    /// by declaring a simple float-array valued primvar, and setting its
+    /// \em elementSize to 9.  To author a \em uniform spherical harmonic
+    /// primvar on a Mesh of 42 faces, the primvar's array value would contain
+    /// 9*42 = 378 float elements.
     int GetElementSize() const;
     
     /// Set the elementSize for this Primvar.

@@ -48,6 +48,9 @@ public:
     HdGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx);
     virtual ~HdGLSLFXShader();
 
+    /// If the prim is based on asset, reload that asset.
+    virtual void Reload();
+
 private:
     GlfGLSLFXSharedPtr _glslfx;
 };

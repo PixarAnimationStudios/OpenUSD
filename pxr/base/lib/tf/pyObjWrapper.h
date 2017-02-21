@@ -26,6 +26,8 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
+
 #include <boost/functional/hash.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
@@ -70,12 +72,12 @@ public:
 
     /// Default construct a TfPyObjWrapper holding a reference to python None.
     /// The GIL need not be held by the caller.
-    TfPyObjWrapper();
+    TF_API TfPyObjWrapper();
 
     /// Construct a TfPyObjectWrapper wrapping \a obj.
     /// The GIL must be held by the caller.  Note, allowing the implicit
     /// conversion is intended here.
-    TfPyObjWrapper(object obj);
+    TF_API TfPyObjWrapper(object obj);
 
     /// Underlying object access.
     /// This method returns a reference, so technically, the GIL need not be
@@ -93,7 +95,7 @@ public:
     /// operating on the returned object requires it.  The returned PyObject *
     /// is a "borrowed reference", meaning that the underlying object's
     /// reference count has not been incremented on behalf of the caller.
-    PyObject *ptr() const;
+    TF_API PyObject *ptr() const;
 
     /// Produce a hash code for this object.
     /// Note that this does not attempt to hash the underlying python object,
@@ -105,11 +107,11 @@ public:
 
     /// Equality.
     /// Returns true if \a other refers to the same python object.
-    bool operator==(TfPyObjWrapper const &other) const;
+    TF_API bool operator==(TfPyObjWrapper const &other) const;
 
     /// Inequality.
     /// Returns false if \a other refers to the same python object.
-    bool operator!=(TfPyObjWrapper const &other) const;
+    TF_API bool operator!=(TfPyObjWrapper const &other) const;
 
 private:
 

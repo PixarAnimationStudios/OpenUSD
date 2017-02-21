@@ -276,6 +276,25 @@ _FilterRelocationsForPath(const SdfRelocatesMap & relocates,
 }
 
 ////////////////////////////////////////////////////////////////////////
+
+bool
+Pcp_NeedToRecomputeDueToAssetPathChange(const PcpLayerStackPtr& layerStack)
+{
+    // Iterate through _sublayerSourceInfo to see if recomputing the
+    // asset paths used to open sublayers would result in different
+    // sublayers being opened.
+    for (const auto& sourceInfo : layerStack->_sublayerSourceInfo) {
+        const std::string& assetPath = SdfComputeAssetPathRelativeToLayer(
+            sourceInfo.layer, sourceInfo.authoredSublayerPath);
+        if (assetPath != sourceInfo.computedSublayerPath) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+////////////////////////////////////////////////////////////////////////
 // PcpLayerStack
 
 PcpLayerStack::PcpLayerStack(
@@ -507,6 +526,7 @@ PcpLayerStack::_BlowLayers()
     _layers.clear();
     _mapFunctions.clear();
     _layerTree = TfNullPtr;
+    _sublayerSourceInfo.clear();
     _assetPaths.clear();
     _mutedAssetPaths.clear();
 }
@@ -669,6 +689,8 @@ PcpLayerStack::_BuildLayerStack(
         string sublayerPath(sublayers[i]);
         SdfLayerRefPtr sublayer = SdfFindOrOpenRelativeToLayer(
             layer, &sublayerPath, layerArgs);
+
+        _sublayerSourceInfo.emplace_back(layer, sublayers[i], sublayerPath);
 
         if (!sublayer) {
             PcpErrorInvalidSublayerPathPtr err = 

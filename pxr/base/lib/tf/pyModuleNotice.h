@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/notice.h"
 
 #include <string>
@@ -43,10 +44,12 @@ class TfPyModuleWasLoaded : public TfNotice {
 public:
     explicit TfPyModuleWasLoaded(std::string const &name) : _name(name) {}
 
+    TF_API
     virtual ~TfPyModuleWasLoaded();
     
     /// Return the name of the module that was loaded.
     std::string const &GetName() { return _name; }
+
 private:
     std::string _name;
 };

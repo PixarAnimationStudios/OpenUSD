@@ -30,6 +30,7 @@
 /// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/api.h"
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec{{ SUFFIX }}.h"
@@ -107,6 +108,7 @@ public:
     /// If it is too small, uninitialized elements will be filled in with
     /// the corresponding elements from an identity matrix.
     ///
+    GF_API
     explicit {{ MAT }}(const std::vector< std::vector<{{ S }}> >& v);
 
 {% endfor %}
@@ -114,11 +116,13 @@ public:
 {% endblock %}
 {% if SCL == 'double' %}
     /// This explicit constructor converts a "float" matrix to a "double" matrix.
+    GF_API
     explicit {{ MAT }}(const class GfMatrix{{ DIM }}f& m);
 
 {% endif %}
 {% if SCL == 'float' %}
     /// This explicit constructor converts a "double" matrix to a "float" matrix.
+    GF_API
     explicit {{ MAT }}(const class GfMatrix{{ DIM }}d& m);
 
 {% endif %}
@@ -168,13 +172,16 @@ public:
     }
 
     /// Sets the matrix to \e s times the identity matrix.
+    GF_API
     {{ MAT }}& SetDiagonal({{ SCL }} s);
 
     /// Sets the matrix to have diagonal (<c>{{ LIST("v[%(i)s]") }}</c>).
+    GF_API
     {{ MAT }}& SetDiagonal(const GfVec{{ SUFFIX }}&);
 
     /// Fills a {{ DIM }}x{{ DIM }} array of \c {{ SCL }} values with the values in
     /// the matrix, specified in row-major order.
+    GF_API
     {{ SCL }}* Get({{ SCL }} m[{{ DIM }}][{{ DIM }}]);
 
     /// Returns vector components as an array of \c {{ SCL }} values.
@@ -209,10 +216,12 @@ public:
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix{{ DIM }}d& m) const;
 
     /// Tests for element-wise matrix equality. All elements must match
     /// exactly for matrices to be considered equal.
+    GF_API
     bool operator ==(const GfMatrix{{ DIM }}f& m) const;
 
     /// Tests for element-wise matrix inequality. All elements must match
@@ -228,6 +237,7 @@ public:
     }
 
     /// Returns the transpose of the matrix.
+    GF_API
     {{ MAT }} GetTranspose() const;
 
     /// Returns the inverse of the matrix, or FLT_MAX * SetIdentity() if the
@@ -235,18 +245,22 @@ public:
     /// as defined by the system.) The matrix is considered singular if the
     /// determinant is less than or equal to the optional parameter \e eps. If
     /// \e det is non-null, <c>*det</c> is set to the determinant.
+    GF_API
     {{ MAT }} GetInverse(double* det = NULL, double eps = 0) const;
 
     /// Returns the determinant of the matrix.
+    GF_API
     double GetDeterminant() const;
 
 {% block customFunctions %}
 {% endblock customFunctions %}
 
     /// Post-multiplies matrix \e m into this matrix.
+    GF_API
     {{ MAT }}& operator *=(const {{ MAT }}& m);
 
     /// Multiplies the matrix by a {{ SCL }}.
+    GF_API
     {{ MAT }}& operator *=(double);
 
     /// Returns the product of a matrix and a {{ SCL }}.
@@ -264,12 +278,15 @@ public:
     }
 
     /// Adds matrix \e m to this matrix.
+    GF_API
     {{ MAT }}& operator +=(const {{ MAT }}& m);
 
     /// Subtracts matrix \e m from this matrix.
+    GF_API
     {{ MAT }}& operator -=(const {{ MAT }}& m);
 
     /// Returns the unary negation of matrix \e m.
+    GF_API
     friend {{ MAT }} operator -(const {{ MAT }}& m);
 
     /// Adds matrix \e m2 to \e m1
@@ -323,10 +340,12 @@ public:
 {% if SCL == 'double' %}
     /// Returns the product of a matrix \e m and a column vector \e vec.
     /// Note that the return type is a \c GfVec{{ DIM }}f.
+    GF_API
     friend GfVec{{ DIM }}f operator *(const {{ MAT }}& m, const GfVec{{ DIM }}f& vec);
 
     /// Returns the product of row vector \e vec and a matrix \e m.
     /// Note that the return type is a \c GfVec{{ DIM }}f.
+    GF_API
     friend GfVec{{ DIM }}f operator *(const GfVec{{ DIM }}f &vec, const {{ MAT }}& m);
 
 {% endif %}
@@ -348,7 +367,7 @@ private:
 
 /// Output a {{ MAT }}
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, {{ MAT }} const &);
+GF_API std::ostream& operator<<(std::ostream &, {{ MAT }} const &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

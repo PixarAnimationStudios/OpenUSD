@@ -43,14 +43,14 @@ class PxrUsdMayaShadingModeImportContext
 {
 public:
 
-    const UsdShadeMaterial& GetShadeLook() const { return _shadeLook; }
+    const UsdShadeMaterial& GetShadeMaterial() const { return _shadeMaterial; }
     const UsdGeomGprim& GetBoundPrim() const { return _boundPrim; }
 
     PxrUsdMayaShadingModeImportContext(
-            const UsdShadeMaterial& shadeLook,
+            const UsdShadeMaterial& shadeMaterial,
             const UsdGeomGprim& boundPrim,
             PxrUsdMayaPrimReaderContext* context) :
-        _shadeLook(shadeLook),
+        _shadeMaterial(shadeMaterial),
         _boundPrim(boundPrim),
         _context(context)
     {
@@ -84,7 +84,7 @@ public:
     /// @}
 
 private:
-    const UsdShadeMaterial& _shadeLook;
+    const UsdShadeMaterial& _shadeMaterial;
     const UsdGeomGprim& _boundPrim;
     PxrUsdMayaPrimReaderContext* _context;
 };

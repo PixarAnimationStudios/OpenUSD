@@ -94,7 +94,7 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
                     jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
                 } else if (theOption[1]=="GPrim Colors") {
                     jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->displayColor;
-                } else if (theOption[1]=="Look Colors") {
+                } else if (theOption[1]=="Material Colors") {
                     jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->displayColor;
                 } else if (theOption[1]=="RfM Shaders") {
                     TfToken shadingMode("pxrRis");

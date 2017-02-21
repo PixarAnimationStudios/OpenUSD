@@ -25,8 +25,9 @@
 #include "pxr/usd/usdShade/parameter.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
-#include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
+#include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/utils.h"
 
 #include "pxr/usd/sdf/schema.h"
@@ -99,18 +100,45 @@ UsdShadeParameter::HasRenderType() const
     return _attr.HasMetadata(_tokens->renderType);
 }
 
+static TfToken 
+_GetConnectionRelName(const TfToken &attrName)
+{
+    return TfToken(UsdShadeTokens->connectedSourceFor.GetString() + 
+                   attrName.GetString());
+}
+
+static
+UsdRelationship 
+_GetConnectionRel(const UsdAttribute &parameter, 
+                  bool create)
+{
+    if (not parameter) {
+        TF_WARN("Invalid attribute: %s", UsdDescribe(parameter).c_str());
+        return UsdRelationship();
+    }
+
+    const UsdPrim& prim = parameter.GetPrim();
+    const TfToken& relName = _GetConnectionRelName(parameter.GetName());
+    if (UsdRelationship rel = prim.GetRelationship(relName)) {
+        return rel;
+    }
+    else if (create) {
+        return prim.CreateRelationship(relName, /* custom = */ false);
+    }
+
+    return UsdRelationship();
+}
+
 bool 
 UsdShadeParameter::ConnectToSource(
         UsdShadeConnectableAPI const &source, 
         TfToken const &outputName,
         UsdShadeAttributeType const sourceType) const
 {
-    UsdRelationship rel = UsdShadeConnectableAPI::GetConnectionRel(GetAttr(), 
-                                                                   true);
+    UsdRelationship rel = _GetConnectionRel(GetAttr(), true);
 
-    return UsdShadeConnectableAPI::MakeConnection(rel, source, outputName,
-                                                  _attr.GetTypeName(),
-                                                  sourceType);
+    return UsdShadeConnectableAPI::ConnectToSource(rel, 
+        source, outputName, sourceType, GetTypeName());
 }
 
 bool 
@@ -126,7 +154,7 @@ UsdShadeParameter::ConnectToSource(const SdfPath &sourcePath) const
 
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
-    std::tie(sourceName, sourceType) = UsdShadeUtilsGetBaseNameAndType(
+    std::tie(sourceName, sourceType) = UsdShadeUtils::GetBaseNameAndType(
         sourcePath.GetNameToken());
 
     return ConnectToSource(source, sourceName, sourceType);
@@ -160,11 +188,18 @@ UsdShadeParameter::ConnectToSource(
 }
     
 bool 
+UsdShadeParameter::ConnectToSource(UsdShadeInput const &input) const
+{
+    UsdShadeConnectableAPI source(input.GetAttr().GetPrim());
+    return ConnectToSource(source, input.GetBaseName(),
+        /* sourceType */ UsdShadeAttributeType::Input);
+}
+
+bool 
 UsdShadeParameter::DisconnectSource() const
 {
     bool success = true;
-    if (UsdRelationship rel = UsdShadeConnectableAPI::GetConnectionRel(
-        GetAttr(), false)) {
+    if (UsdRelationship rel = _GetConnectionRel(GetAttr(), false)) {
         success = rel.BlockTargets();
     }
     return success;
@@ -174,8 +209,7 @@ bool
 UsdShadeParameter::ClearSource() const
 {
     bool success = true;
-    if (UsdRelationship rel = UsdShadeConnectableAPI::GetConnectionRel(
-        GetAttr(), false)) {
+    if (UsdRelationship rel = _GetConnectionRel(GetAttr(), false)) {
         success = rel.ClearTargets(/* removeSpec = */ true);
     }
     return success;
@@ -193,7 +227,7 @@ UsdShadeParameter::GetConnectedSource(
         return false;
     }
     
-    return UsdShadeConnectableAPI::EvaluateConnection(GetAttr(), source, 
+    return UsdShadeConnectableAPI::GetConnectedSource(GetAttr(), source, 
             sourceName, sourceType);
 }
 

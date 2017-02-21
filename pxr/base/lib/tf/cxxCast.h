@@ -71,7 +71,7 @@ TfCastToMostDerivedType(T* ptr)
 
 template <typename T>
 inline typename std::enable_if<
-    not std::is_polymorphic<T>::value, Tf_CopyCV<T, void>*>::type
+    !std::is_polymorphic<T>::value, Tf_CopyCV<T, void>*>::type
 TfCastToMostDerivedType(T* ptr)
 {
     return static_cast<Tf_CopyCV<T, void>*>(ptr);

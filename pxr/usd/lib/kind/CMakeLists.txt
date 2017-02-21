@@ -8,6 +8,9 @@ pxr_shared_library(kind
 
     PUBLIC_CLASSES
         registry
+        
+    PUBLIC_HEADERS
+        api.h
 
     CPPFILES
         moduleDeps.cpp

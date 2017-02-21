@@ -29,9 +29,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/interval.h"
+#include "pxr/base/gf/api.h"
 
 #include <iosfwd>
 #include <set>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -51,26 +53,26 @@ public:
     /// \name Constructors
     /// @{
     /// Constructs an empty multi-interval.
-    GfMultiInterval() {}
+    GF_API GfMultiInterval() {}
     /// Constructs an multi-interval by copying the given set.
-    GfMultiInterval(const GfMultiInterval &s) : _set(s._set) {}
+    GF_API GfMultiInterval(const GfMultiInterval &s) : _set(s._set) {}
     /// Constructs an multi-interval with the single given interval.
-    explicit GfMultiInterval(const GfInterval &i);
+    GF_API explicit GfMultiInterval(const GfInterval &i);
     /// Constructs an multi-interval containing the given input intervals.
-    explicit GfMultiInterval(const std::vector<GfInterval> &intervals);
+    GF_API explicit GfMultiInterval(const std::vector<GfInterval> &intervals);
     /// @}
 
-    bool operator==(const GfMultiInterval &that) const { return _set == that._set; }
-    bool operator!=(const GfMultiInterval &that) const { return !(*this == that); }
-    bool operator<(const GfMultiInterval &that) const { return _set < that._set; }
-    bool operator>=(const GfMultiInterval &that) const { return !(*this < that); }
-    bool operator>(const GfMultiInterval &that) const { return (that < *this); }
-    bool operator<=(const GfMultiInterval &that) const { return !(that < *this); }
+    GF_API bool operator==(const GfMultiInterval &that) const { return _set == that._set; }
+    GF_API bool operator!=(const GfMultiInterval &that) const { return !(*this == that); }
+    GF_API bool operator<(const GfMultiInterval &that) const { return _set < that._set; }
+    GF_API bool operator>=(const GfMultiInterval &that) const { return !(*this < that); }
+    GF_API bool operator>(const GfMultiInterval &that) const { return (that < *this); }
+    GF_API bool operator<=(const GfMultiInterval &that) const { return !(that < *this); }
     
 
     /// Hash value.
     /// Just a basic hash function, not particularly high quality.
-    size_t Hash() const;
+    GF_API size_t Hash() const;
 
     friend inline size_t hash_value(const GfMultiInterval &mi) {
         return mi.Hash();
@@ -80,24 +82,24 @@ public:
     /// @{
 
     /// Returns true if the multi-interval is empty.
-    bool IsEmpty() const { return _set.empty(); }
+    GF_API bool IsEmpty() const { return _set.empty(); }
 
     /// Returns the number of intervals in the set.
-    size_t GetSize() const { return _set.size(); }
+    GF_API size_t GetSize() const { return _set.size(); }
 
     /// Returns an interval bounding the entire multi-interval.
     /// Returns an empty interval if the multi-interval is empty.
-    GfInterval GetBounds() const;
+    GF_API GfInterval GetBounds() const;
 
     /// Returns true if the multi-interval contains the given value.
-    bool Contains(double d) const;
+    GF_API bool Contains(double d) const;
 
     /// Returns true if the multi-interval contains the given interval.
-    bool Contains(const GfInterval & i) const;
+    GF_API bool Contains(const GfInterval & i) const;
 
     /// Returns true if the multi-interval contains all the intervals in the 
     /// given multi-interval.
-    bool Contains(const GfMultiInterval & s) const;
+    GF_API bool Contains(const GfMultiInterval & s) const;
 
     /// @}
 
@@ -105,28 +107,28 @@ public:
     /// @{
 
     /// Clear the multi-interval.
-    void Clear() { _set.clear(); }
+    GF_API void Clear() { _set.clear(); }
 
     /// Add the given interval to the multi-interval.
-    void Add( const GfInterval & i );
+    GF_API void Add( const GfInterval & i );
     /// Add the given multi-interval to the multi-interval.
     /// Sets this object to the union of the two sets.
-    void Add( const GfMultiInterval &s );
+    GF_API void Add( const GfMultiInterval &s );
 
     /// Uses the given interval to extend the multi-interval in
     /// the interval arithmetic sense.
-    void ArithmeticAdd( const GfInterval &i );
+    GF_API void ArithmeticAdd( const GfInterval &i );
 
     /// Remove the given interval from this multi-interval.
-    void Remove( const GfInterval & i );
+    GF_API void Remove( const GfInterval & i );
     /// Remove the given multi-interval from this multi-interval.
-    void Remove( const GfMultiInterval &s );
+    GF_API void Remove( const GfMultiInterval &s );
 
-    void Intersect( const GfInterval & i );
-    void Intersect( const GfMultiInterval &s );
+    GF_API void Intersect( const GfInterval & i );
+    GF_API void Intersect( const GfMultiInterval &s );
 
     /// Return the complement of this set.
-    GfMultiInterval GetComplement() const;
+    GF_API GfMultiInterval GetComplement() const;
 
     /// @}
 
@@ -135,28 +137,28 @@ public:
     /// the multi-interval, changes must be made via the public mutation API.
     /// @{
 
-    const_iterator begin() const { return _set.begin(); }
-    const_iterator end() const { return _set.end(); }
+    GF_API const_iterator begin() const { return _set.begin(); }
+    GF_API const_iterator end() const { return _set.end(); }
 
     /// Returns an iterator identifying the first (lowest) interval whose
     /// minimum value is >= x.  If no such interval exists, returns end().
-    const_iterator lower_bound( double x ) const;
+    GF_API const_iterator lower_bound( double x ) const;
 
     /// Returns an iterator identifying the first (lowest) interval whose
     /// minimum value is > x.  If no such interval exists, returns end().
-    const_iterator upper_bound( double x ) const;
+    GF_API const_iterator upper_bound( double x ) const;
 
     /// Returns an iterator identifying the first (loest) interval whose
     /// minimum value is > x.  If no such interval exists, returns end().
-    const_iterator GetNextNonContainingInterval( double x ) const;
+    GF_API const_iterator GetNextNonContainingInterval( double x ) const;
 
     /// Returns an iterator identifying the last (highest) interval whose
     /// maximum value is < x.  If no such interval exists, returns end().
-    const_iterator GetPriorNonContainingInterval( double x ) const;
+    GF_API const_iterator GetPriorNonContainingInterval( double x ) const;
 
     /// Returns an iterator identifying the interval that contains x.  If
     /// no interval contains x, then it returns end()
-    const_iterator GetContainingInterval( double x ) const;
+    GF_API const_iterator GetContainingInterval( double x ) const;
 
     /// @}
 
@@ -176,7 +178,7 @@ private:
 
 /// Output a GfMultiInterval
 /// \ingroup group_gf_DebuggingOutput
-std::ostream & operator<<(std::ostream &out, const GfMultiInterval &s);
+GF_API std::ostream & operator<<(std::ostream &out, const GfMultiInterval &s);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

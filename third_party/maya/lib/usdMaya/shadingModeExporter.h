@@ -60,7 +60,7 @@ public:
     /// Use this function to create a UsdShadeMaterial prim at the "standard"
     /// location.  The "standard" location may change depending on arguments
     /// that are passed to the export script.
-    UsdPrim MakeStandardLookPrim(
+    UsdPrim MakeStandardMaterialPrim(
             const AssignmentVector& assignmentsToBind,
             const std::string& name=std::string()) const;
 

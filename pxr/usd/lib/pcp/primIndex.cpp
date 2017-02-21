@@ -1637,6 +1637,7 @@ _EvalNodeReferences(
         }
 
         // Compute the reference layer stack
+        // See Pcp_NeedToRecomputeDueToAssetPathChange
         SdfLayerRefPtr refLayer;
         PcpLayerStackRefPtr refLayerStack;
 
@@ -3523,6 +3524,7 @@ _EvalNodePayload(
     Pcp_GetArgumentsForTargetSchema(indexer->inputs.targetSchema, &args);
 
     // Resolve asset path
+    // See Pcp_NeedToRecomputeDueToAssetPathChange
     std::string resolvedAssetPath(payload.GetAssetPath());
     SdfLayerRefPtr payloadLayer = SdfFindOrOpenRelativeToLayer(
         payloadSpecLayer, &resolvedAssetPath, args);
@@ -3749,12 +3751,134 @@ Pcp_RescanForSpecs(PcpPrimIndex *index, bool usd, bool updateHasSpecs)
 }
 
 ////////////////////////////////////////////////////////////////////////
+
+static std::pair<
+    PcpNodeRef_PrivateChildrenConstIterator, 
+    PcpNodeRef_PrivateChildrenConstIterator>
+_GetDirectChildRange(const PcpNodeRef& node, PcpArcType arcType)
+{
+    auto range = std::make_pair(
+        PcpNodeRef_PrivateChildrenConstIterator(node),
+        PcpNodeRef_PrivateChildrenConstIterator(node, /* end = */ true));
+    for (; range.first != range.second; ++range.first) {
+        const PcpNodeRef& childNode = *range.first;
+        if (childNode.GetArcType() == arcType && !childNode.IsDueToAncestor()) {
+            break;
+        }
+    }
+
+    auto end = range.second;
+    for (range.second = range.first; range.second != end; ++range.second) {
+        const PcpNodeRef& childNode = *range.second;
+        if (childNode.GetArcType() != arcType || childNode.IsDueToAncestor()) {
+            break;
+        }
+    }
+
+    return range;
+}
+
+static bool
+_ComputedAssetPathWouldCreateDifferentNode(
+    const PcpNodeRef& node, 
+    const SdfLayerHandle& anchorLayer, const std::string& authoredAssetPath)
+{
+    // Compute the same asset path that would be used during composition
+    // to open layers via SdfFindOrOpenRelativeToLayer.
+    const std::string assetPath = 
+        SdfComputeAssetPathRelativeToLayer(anchorLayer, authoredAssetPath);
+
+    // If no such layer is already open, this asset path must indicate a
+    // layer that differs from the given node's root layer.
+    const SdfLayerHandle layer = SdfLayer::Find(assetPath);
+    if (!layer) {
+        return true;
+    }
+
+    // Otherwise, if this layer differs from the given node's root layer,
+    // this asset path would result in a different node during composition.
+    const PcpLayerStackPtr nodeLayerStack = node.GetLayerStack();
+    return nodeLayerStack->GetIdentifier().rootLayer != layer;
+}
+
+bool
+Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
+{
+    // Scan the index for any direct composition arcs that target another
+    // layer. If any exist, try to determine if the asset paths that were
+    // computed to load those layers would now target a different layer.
+    // If so, this prim index needs to be recomputed to include that
+    // new layer.
+    for (const PcpNodeRef& node : index.GetNodeRange()) {
+        if (!node.CanContributeSpecs()) {
+            continue;
+        }
+
+        // Handle reference arcs. See _EvalNodeReferences.
+        auto refNodeRange = _GetDirectChildRange(node, PcpArcTypeReference);
+        if (refNodeRange.first != refNodeRange.second) {
+            SdfReferenceVector refs;
+            PcpSourceReferenceInfoVector sourceInfo;
+            PcpComposeSiteReferences(node.GetSite(), &refs, &sourceInfo);
+            TF_VERIFY(refs.size() == sourceInfo.size());
+            
+            const size_t numReferenceArcs = 
+                std::distance(refNodeRange.first, refNodeRange.second) ;
+            if (numReferenceArcs != refs.size()) {
+                // This could happen if there was some scene description
+                // change that added/removed references, but also if a 
+                // layer couldn't be opened when this index was computed. 
+                // We conservatively mark this index as needing recomputation
+                // in the latter case to simplify things.
+                return true;
+            }
+            
+            for (size_t i = 0; i < refs.size(); ++i, ++refNodeRange.first) {
+                // Skip internal references since there's no asset path
+                // computation that occurs when processing them.
+                if (refs[i].GetAssetPath().empty()) {
+                    continue;
+                }
+
+                if (_ComputedAssetPathWouldCreateDifferentNode(
+                        *refNodeRange.first, 
+                        sourceInfo[i].layer, refs[i].GetAssetPath())) {
+                    return true;
+                }
+            }
+        }
+
+        // Handle payload arcs. See _EvalNodePayload.
+        auto payloadNodeRange = _GetDirectChildRange(node, PcpArcTypePayload);
+        if (payloadNodeRange.first != payloadNodeRange.second) {
+            SdfPayload payload;
+            SdfLayerHandle sourceLayer;
+            PcpComposeSitePayload(node.GetSite(), &payload, &sourceLayer);
+
+            if (!payload) {
+                // This could happen if there was some scene description
+                // change that removed the payload, which requires
+                // recomputation.
+                return true;
+            }
+
+            if (_ComputedAssetPathWouldCreateDifferentNode(
+                    *payloadNodeRange.first, 
+                    sourceLayer, payload.GetAssetPath())) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+////////////////////////////////////////////////////////////////////////
 // Index Construction
 
 static void 
 _ConvertNodeForChild(
     PcpNodeRef node,
-    const TfToken & childName,
     const PcpPrimIndexInputs& inputs)
 {
     // Because the child site is at a deeper level of namespace than
@@ -3784,7 +3908,7 @@ _ConvertNodeForChild(
 
     // Arbitrary-order traversal.
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        _ConvertNodeForChild(*child, childName, inputs);
+        _ConvertNodeForChild(*child, inputs);
     }
 }
 
@@ -3999,7 +4123,7 @@ _BuildInitialPrimIndexFromAncestor(
     graph->SetHasPayload(false);
 
     PcpNodeRef rootNode = outputs->primIndex.GetRootNode();
-    _ConvertNodeForChild(rootNode, site.path.GetNameToken(), inputs);
+    _ConvertNodeForChild(rootNode, inputs);
 
     if (inputs.cull) {
         _CullSubtreesWithNoOpinions(rootNode, rootSite);

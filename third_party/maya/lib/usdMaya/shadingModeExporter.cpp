@@ -171,7 +171,7 @@ PxrUsdMayaShadingModeExportContext::GetAssignments() const
 }
 
 static UsdPrim
-_GetLookParent(const UsdStageRefPtr& stage,
+_GetMaterialParent(const UsdStageRefPtr& stage,
                const PxrUsdMayaShadingModeExportContext::AssignmentVector& assignments)
 {
     SdfPath commonAncestor;
@@ -205,30 +205,32 @@ _GetLookParent(const UsdStageRefPtr& stage,
 }
 
 UsdPrim
-PxrUsdMayaShadingModeExportContext::MakeStandardLookPrim(
+PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
         const AssignmentVector& assignmentsToBind,
         const std::string& name) const
 {
     UsdPrim ret;
 
-    std::string lookName = name;
-    if (lookName.empty()) {
+    std::string materialName = name;
+    if (materialName.empty()) {
         MStatus status;
         MFnDependencyNode seDepNode(_shadingEngine, &status);
         if (!status) {
             return ret;
         }
         MString seName = seDepNode.name();
-        lookName = MNamespace::stripNamespaceFromName(seName).asChar();
+        materialName = MNamespace::stripNamespaceFromName(seName).asChar();
     }
 
-    lookName = PxrUsdMayaUtil::SanitizeName(lookName);
+    materialName = PxrUsdMayaUtil::SanitizeName(materialName);
     UsdStageRefPtr stage = GetUsdStage();
-    if (UsdPrim lookParent = _GetLookParent(stage, assignmentsToBind)) {
-        SdfPath lookPath = lookParent.GetPath().AppendChild(TfToken(lookName));
-        UsdShadeMaterial look = UsdShadeMaterial::Define(GetUsdStage(), lookPath);
+    if (UsdPrim materialParent = _GetMaterialParent(stage, assignmentsToBind)) {
+        SdfPath materialPath = materialParent.GetPath().AppendChild(
+                TfToken(materialName));
+        UsdShadeMaterial material = UsdShadeMaterial::Define(
+                GetUsdStage(), materialPath);
 
-        UsdPrim lookPrim = look.GetPrim();
+        UsdPrim materialPrim = material.GetPrim();
 
         // could use this to determine where we want to export.  whatever.
         TF_FOR_ALL(iter, assignmentsToBind) {
@@ -237,14 +239,15 @@ PxrUsdMayaShadingModeExportContext::MakeStandardLookPrim(
 
             UsdPrim boundPrim = stage->OverridePrim(boundPrimPath);
             if (faceIndices.empty()) {
-                look.Bind(boundPrim);
+                material.Bind(boundPrim);
             } else {
-                UsdGeomFaceSetAPI faceSet = look.CreateMaterialFaceSet(boundPrim);
-                faceSet.AppendFaceGroup(faceIndices, lookPath);
+                UsdGeomFaceSetAPI faceSet = material.CreateMaterialFaceSet(
+                        boundPrim);
+                faceSet.AppendFaceGroup(faceIndices, materialPath);
             }
         }
 
-        return lookPrim;
+        return materialPrim;
     }
 
     return UsdPrim();

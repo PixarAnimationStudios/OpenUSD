@@ -28,12 +28,15 @@
 #define __PX_VP20_UTILS_H__
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
+#include <maya/MBoundingBox.h>
 #include <maya/MDrawContext.h>
+#include <maya/MMatrix.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 
 class px_vp20Utils
@@ -47,6 +50,13 @@ public:
     static GlfSimpleLightingContextRefPtr GetLightingContextFromDrawContext(
             const MHWRender::MDrawContext& context);
 
+    /// Renders the given bounding box in the given \p color via OpenGL.
+    static bool RenderBoundingBox(
+            const MBoundingBox& bounds,
+            const GfVec4f& color,
+            const MMatrix& worldViewMat,
+            const MMatrix& projectionMat);
+
 private:
     // This class is all static methods.. You should never
     // instantiate an actual object
@@ -55,7 +65,7 @@ private:
 };
 
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif //__PX_VP20_UTILS_H__

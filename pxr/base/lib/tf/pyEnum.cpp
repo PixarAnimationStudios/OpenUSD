@@ -74,7 +74,7 @@ string Tf_PyCleanEnumName(string name)
 {
     string pkgName =
         Tf_PyWrapContextManager::GetInstance().GetCurrentContext();
-    if (TfStringStartsWith(name, pkgName) and name != pkgName) {
+    if (TfStringStartsWith(name, pkgName) && name != pkgName) {
         name.erase(0, pkgName.size());
     }
     return TfStringReplace(name, " ", "_");

@@ -84,7 +84,7 @@ struct python_optional : public boost::noncopyable
         {
             using namespace boost::python::converter;
 
-            if ((source == Py_None) or boost::python::extract<T>(source).check())
+            if ((source == Py_None) || boost::python::extract<T>(source).check())
                 return source;
 
             return NULL;

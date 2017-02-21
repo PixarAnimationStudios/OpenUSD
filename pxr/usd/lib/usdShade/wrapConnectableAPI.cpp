@@ -104,7 +104,43 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static object
+_GetConnectedSource(const UsdProperty &shadingProp)
+{
+    UsdShadeConnectableAPI source;
+    TfToken                sourceName;
+    UsdShadeAttributeType  sourceType;
+    
+    if (UsdShadeConnectableAPI::GetConnectedSource(shadingProp, 
+            &source, &sourceName, &sourceType)){
+        return make_tuple(source, sourceName, sourceType);
+    } else {
+        return object();
+    }
+}
+
 WRAP_CUSTOM {
+
+    bool (*ConnectToSource_1)(
+        UsdProperty const &,
+        UsdShadeConnectableAPI const&,
+        TfToken const &,
+        UsdShadeAttributeType const,
+        SdfValueTypeName) = 
+            &UsdShadeConnectableAPI::ConnectToSource;
+
+    bool (*ConnectToSource_2)(
+        UsdProperty const &,
+        SdfPath const &) = &UsdShadeConnectableAPI::ConnectToSource;
+
+    bool (*ConnectToSource_3)(
+        UsdProperty const &,
+        UsdShadeInput const &) = &UsdShadeConnectableAPI::ConnectToSource;
+
+    bool (*ConnectToSource_4)(
+        UsdProperty const &,
+        UsdShadeOutput const &) = &UsdShadeConnectableAPI::ConnectToSource;
+
     _class
         .def(init<UsdShadeShader const &>(arg("shader")))
         .def(init<UsdShadeSubgraph const&>(arg("subgraph")))
@@ -112,6 +148,35 @@ WRAP_CUSTOM {
         .def("IsShader", &UsdShadeConnectableAPI::IsShader)
         .def("IsSubgraph", &UsdShadeConnectableAPI::IsSubgraph)
 
+        .def("ConnectToSource", ConnectToSource_1, 
+            (arg("shadingProp"), 
+             arg("source"), arg("sourceName"), 
+             arg("sourceType")=UsdShadeAttributeType::Output,
+             arg("typeName")=SdfValueTypeName()))
+        .def("ConnectToSource", ConnectToSource_2,
+            (arg("shadingProp"), arg("path")))
+        .def("ConnectToSource", ConnectToSource_3,
+            (arg("shadingProp"), arg("input")))
+        .def("ConnectToSource", ConnectToSource_4,
+            (arg("shadingProp"), arg("output")))
+        .staticmethod("ConnectToSource")
+
+        .def("GetConnectedSource", _GetConnectedSource,
+            (arg("shadingProp")))
+            .staticmethod("GetConnectedSource")
+
+        .def("HasConnectedSource", &UsdShadeConnectableAPI::HasConnectedSource,
+            (arg("shadingProp")))
+            .staticmethod("HasConnectedSource")
+        
+        .def("DisconnectSource", &UsdShadeConnectableAPI::DisconnectSource,
+            (arg("shadingProp")))
+            .staticmethod("DisconnectSource")
+        
+        .def("ClearSource", &UsdShadeConnectableAPI::ClearSource,
+            (arg("shadingProp")))
+            .staticmethod("ClearSource")
+        
     ;
 
     implicitly_convertible<UsdShadeConnectableAPI, UsdShadeSubgraph>();

@@ -113,7 +113,7 @@ struct _IsBitwiseReadWrite {
     static const bool value =
         std::is_enum<T>::value ||
         std::is_arithmetic<T>::value ||
-        std::is_same<T, half>::value ||
+        std::is_same<T, GfHalf>::value ||
         std::is_trivial<T>::value ||
         GfIsGfVec<T>::value ||
         GfIsGfMatrix<T>::value ||

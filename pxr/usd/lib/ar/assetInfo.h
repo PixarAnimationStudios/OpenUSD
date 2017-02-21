@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Contains information about a resolved asset.
 ///
-class AR_API ArAssetInfo 
+class ArAssetInfo 
 {
 public:
     /// Version of the resolved asset, if any.

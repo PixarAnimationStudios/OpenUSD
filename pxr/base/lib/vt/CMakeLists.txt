@@ -31,6 +31,7 @@ pxr_shared_library(vt
         wrapArray
 
     PUBLIC_HEADERS
+        api.h
         traits.h
         operators.h
         PRIVATE_CLASSES

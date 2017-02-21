@@ -55,14 +55,14 @@ std::ostream&
 operator<<(std::ostream &out, GfQuath const &q)
 {
     GfVec3h i = q.GetImaginary();
-    half real = q.GetReal();
+    GfHalf real = q.GetReal();
     return out << GfVec4h(real, i[0], i[1], i[2]);
 }
 
-half
-GfQuath::Normalize(half eps)
+GfHalf
+GfQuath::Normalize(GfHalf eps)
 {
-    half length = GetLength();
+    GfHalf length = GetLength();
 
     if (length < eps)
         *this = GetIdentity();
@@ -75,12 +75,12 @@ GfQuath::Normalize(half eps)
 GfQuath &
 GfQuath::operator *=(const GfQuath &q)
 {
-    half r1 = GetReal();
-    half r2 = q.GetReal();
+    GfHalf r1 = GetReal();
+    GfHalf r2 = q.GetReal();
     const GfVec3h &i1 = GetImaginary();
     const GfVec3h &i2 = q.GetImaginary();
 
-    half r = r1 * r2 - GfDot(i1, i2);
+    GfHalf r = r1 * r2 - GfDot(i1, i2);
 
     GfVec3h i(
         r1 * i2[0] + r2 * i1[0] + (i1[1] * i2[2] - i1[2] * i2[1]),
@@ -115,7 +115,7 @@ GfSlerp(double alpha, const GfQuath& q0, const GfQuath& q1)
 
     if (1.0 - cosTheta > 0.00001 ) {
         // standard case
-        half theta = acos(cosTheta),
+        GfHalf theta = acos(cosTheta),
                sinTheta = sin(theta);
 
         scale0 = sin((1.0 - alpha) * theta) / sinTheta;

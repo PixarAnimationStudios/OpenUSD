@@ -218,4 +218,23 @@ UsdShadeShader::GetOutputs() const
     return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
 }
 
+UsdShadeInput
+UsdShadeShader::CreateInput(const TfToken& name,
+                            const SdfValueTypeName& typeName)
+{
+    return UsdShadeConnectableAPI(GetPrim()).CreateInput(name, typeName);
+}
+
+UsdShadeInput
+UsdShadeShader::GetInput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInput(name);
+}
+
+std::vector<UsdShadeInput>
+UsdShadeShader::GetInputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

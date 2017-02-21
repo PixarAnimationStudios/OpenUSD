@@ -118,9 +118,9 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
     view->buf = static_cast<void *>(vec.data());
     view->len = sizeof(GfVec4h);
     view->readonly = 0;
-    view->itemsize = sizeof(half);
+    view->itemsize = sizeof(GfHalf);
     if ((flags & PyBUF_FORMAT) == PyBUF_FORMAT) {
-        view->format = Gf_GetPyBufferFmtFor<half>();
+        view->format = Gf_GetPyBufferFmtFor<GfHalf>();
     } else {
         view->format = NULL;
     }
@@ -133,7 +133,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         view->shape = NULL;
     }
     if ((flags & PyBUF_STRIDES) == PyBUF_STRIDES) {
-        static Py_ssize_t strides = sizeof(half);
+        static Py_ssize_t strides = sizeof(GfHalf);
         view->strides = &strides;
     } else {
         view->strides = NULL;
@@ -179,8 +179,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(VecNormalize_overloads, Normalize, 0, 1);
 BOOST_PYTHON_FUNCTION_OVERLOADS(GetNormalized_overloads,
                                 GfGetNormalized, 1, 2);
 
-static half
-NormalizeHelper(GfVec4h *vec, half eps = 0.001)
+static GfHalf
+NormalizeHelper(GfVec4h *vec, GfHalf eps = 0.001)
 {
     return GfNormalize(vec, eps);
 }
@@ -198,7 +198,7 @@ normalizeIndex(int index) {
 static int __len__(const GfVec4h &self) { return 4; }
 
 // Implements __getitem__ for a single index
-static half __getitem__(const GfVec4h &self, int index) {
+static GfHalf __getitem__(const GfVec4h &self, int index) {
     return self[normalizeIndex(index)];
 }
 
@@ -206,10 +206,10 @@ static half __getitem__(const GfVec4h &self, int index) {
 static list __getslice__(const GfVec4h &self, slice indices) {
     list result;
 
-    const half* begin = self.data();
-    const half* end = begin + 4;
+    const GfHalf* begin = self.data();
+    const GfHalf* end = begin + 4;
 
-    slice::range<const half*> bounds;
+    slice::range<const GfHalf*> bounds;
     try {
         // This appears to be a typo in the boost headers.  The method
         // name should be "get_indices".
@@ -232,7 +232,7 @@ static list __getslice__(const GfVec4h &self, slice indices) {
     return result;
 }
 
-static void __setitem__(GfVec4h &self, int index, half value) {
+static void __setitem__(GfVec4h &self, int index, GfHalf value) {
     self[normalizeIndex(index)] = value;
 }
 
@@ -245,12 +245,12 @@ static void __setslice__(GfVec4h &self, slice indices, object values) {
         TfPyThrowTypeError("value must be a sequence");
     }
 
-    half* begin = self.data();
-    half* end = begin + 4;
+    GfHalf* begin = self.data();
+    GfHalf* end = begin + 4;
 
     Py_ssize_t sliceLength = -1;
 
-    slice::range<half*> bounds;
+    slice::range<GfHalf*> bounds;
 
     // Convince g++ that we're not using uninitialized values.
     //
@@ -293,17 +293,17 @@ static void __setslice__(GfVec4h &self, slice indices, object values) {
         // This will throw a TypeError if any of the items cannot be
         // converted.
         //
-        (void)extract<half>(PySequence_GetItem(valuesObj, i));
+        (void)extract<GfHalf>(PySequence_GetItem(valuesObj, i));
     }
 
     for (Py_ssize_t i = 0; i < sliceLength; ++i) {
         *bounds.start =
-            extract<half>(PySequence_GetItem(valuesObj, i));
+            extract<GfHalf>(PySequence_GetItem(valuesObj, i));
         bounds.start += bounds.step;
     }
 }
 
-static bool __contains__(const GfVec4h &self, half value) {
+static bool __contains__(const GfVec4h &self, GfHalf value) {
     for (size_t i = 0; i < 4; ++i) {
         if (self[i] == value)
             return true;
@@ -332,7 +332,7 @@ struct FromPythonTuple {
         if (PyObject_HasAttrString(obj_ptr, "__isGfVec"))
             return 0;
 
-        typedef half Scalar;
+        typedef GfHalf Scalar;
 
         // XXX: Would like to allow general sequences, but currently clients
         // depend on this behavior.
@@ -349,7 +349,7 @@ struct FromPythonTuple {
 
     static void _construct(PyObject *obj_ptr, converter::
                            rvalue_from_python_stage1_data *data) {
-        typedef half Scalar;
+        typedef GfHalf Scalar;
         void *storage = ((converter::rvalue_from_python_storage<GfVec4h>*)data)
 	    ->storage.bytes;
         new (storage)
@@ -376,7 +376,7 @@ struct PickleSuite : boost::python::pickle_suite
 void wrapVec4h()
 {
     typedef GfVec4h Vec;
-    typedef half Scalar;
+    typedef GfHalf Scalar;
 
     static const size_t _dimension = 4;
     static const bool _true = true;
@@ -438,8 +438,8 @@ void wrapVec4h()
         .def(self *= double())
         .def(self * double())
         .def(double() * self)
-        .def(self /= half())
-        .def(self / half())
+        .def(self /= GfHalf())
+        .def(self / GfHalf())
         .def(-self)
         .def(self + self)
         .def(self - self)

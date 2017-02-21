@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/vt/arrayPyBuffer.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
@@ -84,7 +85,7 @@ template <> constexpr char Vt_FmtFor<long>() { return 'l'; }
 template <> constexpr char Vt_FmtFor<unsigned long>() { return 'L'; }
 template <> constexpr char Vt_FmtFor<long long>() { return 'q'; }
 template <> constexpr char Vt_FmtFor<unsigned long long>() { return 'Q'; }
-template <> constexpr char Vt_FmtFor<half>() { return 'e'; }
+template <> constexpr char Vt_FmtFor<GfHalf>() { return 'e'; }
 template <> constexpr char Vt_FmtFor<float>() { return 'f'; }
 template <> constexpr char Vt_FmtFor<double>() { return 'd'; }
 
@@ -113,7 +114,7 @@ Vt_GetConvertFn(char srcFmt)
     case 'L': return Vt_ConvertSingle<unsigned long, Dst>;
     case 'q': return Vt_ConvertSingle<long long, Dst>;
     case 'Q': return Vt_ConvertSingle<unsigned long long, Dst>;
-    case 'e': return Vt_ConvertSingle<half, Dst>;
+    case 'e': return Vt_ConvertSingle<GfHalf, Dst>;
     case 'f': return Vt_ConvertSingle<float, Dst>;
     case 'd': return Vt_ConvertSingle<double, Dst>;
     }
@@ -590,7 +591,7 @@ VtArrayFromPyBuffer<VT_TYPE(elem)>(TfPyObjWrapper const &obj, string *err);
 BOOST_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
 #undef INSTANTIATE
 
-void Vt_AddBufferProtocolSupportToVtArrays()
+VT_API void Vt_AddBufferProtocolSupportToVtArrays()
 {
 
 // Add the buffer protocol support to every array type that we support it for.
@@ -600,8 +601,9 @@ void Vt_AddBufferProtocolSupportToVtArrays()
         Vt_CastBufferToArray<VT_TYPE(elem)>);                           \
     VtValue::RegisterCast<vector<VtValue>, VtArray<VT_TYPE(elem)> >(    \
         Vt_CastVectorToArray<VT_TYPE(elem)>);                           \
-    def(BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem)) "ArrayFromBuffer",       \
-        Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
+    boost::python::def(BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem))           \
+                        "ArrayFromBuffer",                              \
+                        Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
 
 BOOST_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)
 

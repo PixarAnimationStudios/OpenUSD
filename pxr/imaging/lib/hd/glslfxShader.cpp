@@ -30,7 +30,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdGLSLFXShader::HdGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx)
-    : HdSurfaceShader(SdfPath())
+ : HdSurfaceShader()
     , _glslfx(glslfx)
 {
     _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());
@@ -41,5 +41,19 @@ HdGLSLFXShader::~HdGLSLFXShader()
 {
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+void
+HdGLSLFXShader::Reload()
+{
+    GlfGLSLFXSharedPtr newGlslFx(new GlfGLSLFX(_glslfx->GetFilePath()));
 
+    if (newGlslFx->IsValid())
+    {
+        _glslfx = newGlslFx;
+
+        _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());
+        _SetSource(HdShaderTokens->geometryShader, _glslfx->GetDisplacementSource());
+    }
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

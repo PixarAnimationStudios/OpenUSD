@@ -22,11 +22,13 @@
 # language governing permissions and limitations under the Apache License.
 #
 if (NOT PYTHON_EXECUTABLE)
+    message(STATUS "Unable to find Python executable - PySide not present")
+    set(PYSIDE_FOUND False)
     return()
 endif()
 
 find_program(PYSIDEUICBINARY
-    NAMES pyside-uic python2-pyside-uic
+    NAMES pyside-uic python2-pyside-uic pyside-uic-2.7
     HINTS ${PYSIDE_BIN_DIR}
 )
 
@@ -37,7 +39,15 @@ execute_process(
         pySideImportResult 
 )
 
-if (pySideImportResult EQUAL 0 AND EXISTS ${PYSIDEUICBINARY})
-    message(STATUS "Found PySide: ${PYSIDEUICBINARY}")
-    set(PYSIDE_FOUND True)
+if (pySideImportResult EQUAL 0)
+    if (EXISTS ${PYSIDEUICBINARY})
+        message(STATUS "Found PySide: with ${PYTHON_EXECUTABLE}, will use ${PYSIDEUICBINARY} for pyside-uic binary")
+        set(PYSIDE_FOUND True)
+    else()
+        message(STATUS "Found PySide but NOT pyside-uic binary")
+	set(PYSIDE_FOUND False)
+    endif()
+else()
+    message(STATUS "Did not find PySide with ${PYTHON_EXECUTABLE}")
+    set(PYSIDE_FOUND False)
 endif()

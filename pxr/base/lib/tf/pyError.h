@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/errorMark.h"
 
 #include <boost/python/default_call_policies.hpp>
@@ -38,11 +39,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Converts any \a TfError objects in \a m into python exceptions.  User code
 /// should generally not have to call this.  User code should generally not
 /// have to call this, unless it's manually bridging between C++ & Python.
+TF_API
 bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m);
 
 /// Convert the current python exception to \a TfError objects and post them
 /// to the error system.  User code should generally not have to call this,
 /// unless it's manually bridging between C++ & Python.
+TF_API
 void TfPyConvertPythonExceptionToTfErrors();
 
 /// \class TfPyRaiseOnError
@@ -91,7 +94,7 @@ struct TfPyRaiseOnError : Base
     // using it so we track a TfErrorMark.
     PyObject *postcall(argument_package const &a, PyObject *result) {
         result = Base::postcall(a, result);
-        if (result and TfPyConvertTfErrorsToPythonException(a.errorMark)) {
+        if (result && TfPyConvertTfErrorsToPythonException(a.errorMark)) {
             Py_DECREF(result);
             result = NULL;
         }

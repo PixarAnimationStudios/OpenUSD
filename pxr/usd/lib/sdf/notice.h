@@ -27,6 +27,7 @@
 /// \file sdf/notice.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
@@ -49,7 +50,7 @@ public:
     ///
     class Base : public TfNotice {
     public:
-        ~Base();
+        SDF_API ~Base();
     };
 
     /// \class BaseLayersDidChange
@@ -65,6 +66,7 @@ public:
             {}
 
         /// A list of layers changed.
+        SDF_API
         SdfLayerHandleVector GetLayers() const;
 
         /// A map of layers to the changes that occurred to them.
@@ -93,7 +95,7 @@ public:
         LayersDidChangeSentPerLayer(const SdfLayerChangeListMap &changeMap,
                                     size_t serialNumber)
             : BaseLayersDidChange(changeMap, serialNumber) {}
-        virtual ~LayersDidChangeSentPerLayer();
+        SDF_API virtual ~LayersDidChangeSentPerLayer();
     };
 
     /// \class LayersDidChange
@@ -106,7 +108,7 @@ public:
         LayersDidChange(const SdfLayerChangeListMap &changeMap,
                         size_t serialNumber)
             : BaseLayersDidChange(changeMap, serialNumber) {}
-        virtual ~LayersDidChange();
+        SDF_API virtual ~LayersDidChange();
     };
 
     /// \class LayerInfoDidChange
@@ -117,7 +119,7 @@ public:
     public:
         LayerInfoDidChange( const TfToken &key ) :
             _key(key) {}
-        ~LayerInfoDidChange();
+        SDF_API ~LayerInfoDidChange();
 
         /// Return the key affected.
         const TfToken & key() const { return _key; }
@@ -131,8 +133,10 @@ public:
     ///
     class LayerIdentifierDidChange : public Base {
     public:
+        SDF_API
         LayerIdentifierDidChange(const std::string& oldIdentifier,
                                  const std::string& newIdentifier);
+        SDF_API
         ~LayerIdentifierDidChange();
 
         /// Returns the old identifier for the layer.
@@ -152,14 +156,14 @@ public:
     ///
     class LayerDidReplaceContent : public Base {
     public:
-        ~LayerDidReplaceContent();
+        SDF_API ~LayerDidReplaceContent();
     };
 
     /// \class LayerDidReloadContent
     /// Sent after a layer is reloaded.
     class LayerDidReloadContent : public LayerDidReplaceContent {
     public:
-        virtual ~LayerDidReloadContent();
+        SDF_API virtual ~LayerDidReloadContent();
     };
     
     /// \class LayerDidSaveLayerToFile
@@ -168,7 +172,7 @@ public:
     ///
     class LayerDidSaveLayerToFile : public Base {
     public:
-        ~LayerDidSaveLayerToFile();
+        SDF_API ~LayerDidSaveLayerToFile();
     };
 
     /// \class LayerDirtinessChanged
@@ -178,7 +182,7 @@ public:
     ///
     class LayerDirtinessChanged : public Base {
     public:
-        ~LayerDirtinessChanged();
+        SDF_API ~LayerDirtinessChanged();
     };
 
     /// \class LayerMutenessChanged
@@ -194,7 +198,7 @@ public:
             , _wasMuted(wasMuted)
         { }
 
-        ~LayerMutenessChanged();
+        SDF_API ~LayerMutenessChanged();
 
         /// Returns the path of the layer that was muted or unmuted.
         const std::string& GetLayerPath() const { return _layerPath; }

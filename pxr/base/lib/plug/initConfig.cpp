@@ -29,6 +29,7 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/symbols.h"
 
 #include <boost/preprocessor/stringize.hpp>
@@ -47,14 +48,13 @@ _AppendPathList(
     std::vector<std::string>* result, 
     const std::string& paths, const std::string& sharedLibPath)
 {
-    for (const auto& path: TfStringSplit(paths, ":")) {
+    for (const auto& path: TfStringSplit(paths, ARCH_PATH_LIST_SEP)) {
         if (path.empty()) {
             continue;
         }
 
         // Anchor all relative paths to the shared library path.
-        // XXX: This is not sufficient on Windows.
-        const bool isLibraryRelativePath = (path[0] != '/');
+        const bool isLibraryRelativePath = TfIsRelativePath(path);
         if (isLibraryRelativePath) {
             result->push_back(TfStringCatPaths(sharedLibPath, path));
         }

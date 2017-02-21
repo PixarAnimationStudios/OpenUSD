@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -58,18 +59,9 @@ typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 /// expressed as well.
 class HdSurfaceShader : public HdShaderCode {
 public:
-    HdSurfaceShader(SdfPath const & id);
-
+    HdSurfaceShader();
     virtual ~HdSurfaceShader();
 
-    /// Returns the identifer by which this surface shader is known. This
-    /// identifier is a common associative key used by the SceneDelegate,
-    /// RenderIndex, and for binding to the Rprim.
-    SdfPath const& GetID() const { return _id; }
-
-    /// Synchronizes state from the delegate to Hydra, for example, allocating
-    /// parameters into GPU memory.
-    void Sync(HdSceneDelegate *sceneDelegate);
 
     // ---------------------------------------------------------------------- //
     /// \name HdShader Virtual Interface                                      //
@@ -83,29 +75,33 @@ public:
     virtual void AddBindings(HdBindingRequestVector *customBindings);
     virtual ID ComputeHash() const;
 
-    /// Returns if the two shaders can be aggregated in a same drawbatch or not.
-    static bool CanAggregate(HdShaderCodeSharedPtr const &shaderA,
-                             HdShaderCodeSharedPtr const &shaderB);
+    /// Setter method for prim
+    void SetFragmentSource(const std::string &source);
+    void SetGeometrySource(const std::string &source);
+    void SetParams(const HdShaderParamVector &params);
+    void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
+    void SetBufferSources(HdBufferSourceVector &bufferSources);
+
+    /// If the prim is based on asset, reload that asset.
+    virtual void Reload();
 
 protected:
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
 
 private:
-    HdSceneDelegate* _delegate;
     std::string _fragmentSource;
     std::string _geometrySource;
-    SdfPath _id;
 
-    // Data populated by delegate
+    // Shader Parameters
+    HdShaderParamVector         _params;
+    HdBufferSpecVector          _paramSpec;
     HdBufferArrayRangeSharedPtr _paramArray;
-    HdShaderParamVector _params;
 
     TextureDescriptorVector _textureDescriptors;
 
     // No copying
     HdSurfaceShader(const HdSurfaceShader &)                     = delete;
     HdSurfaceShader &operator =(const HdSurfaceShader &)         = delete;
-
 };
 
 

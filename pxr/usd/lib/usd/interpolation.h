@@ -49,7 +49,7 @@ enum UsdInterpolationType
 
 /// Sequence of value types that support linear interpolation.
 /// These types and VtArrays of these types are supported:
-/// \li <b>half</b>
+/// \li <b>GfHalf</b>
 /// \li <b>float</b>
 /// \li <b>double</b>
 /// \li <b>GfMatrix2d</b>
@@ -69,7 +69,7 @@ enum UsdInterpolationType
 /// \li <b>GfQuath</b> (via quaternion slerp)
 /// \hideinitializer
 #define USD_LINEAR_INTERPOLATION_TYPES               \
-    (half) (VtArray<half>)                           \
+    (GfHalf) (VtArray<GfHalf>)                       \
     (float) (VtArray<float>)                         \
     (double) (VtArray<double>)                       \
     (GfMatrix2d) (VtArray<GfMatrix2d>)               \

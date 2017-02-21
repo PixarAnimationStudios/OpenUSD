@@ -33,6 +33,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/gf/api.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 
@@ -158,10 +159,13 @@ public:
 
     // TODO Add inequality for other vec types...
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec3d const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec3f const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec3h const &other) const;
     
     /// Create a vec with negated elements.
@@ -250,7 +254,7 @@ private:
 
 /// Output a GfVec3i.
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfVec3i const &);
+GF_API std::ostream& operator<<(std::ostream &, GfVec3i const &);
 
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.

@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/token.h"
 
 #include "pxr/base/tf/hashset.h"
@@ -340,7 +341,7 @@ operator <<(std::ostream &stream, const TfToken& token)
     return stream << token.GetText();
 }
 
-void TfDumpTokenStats()
+TF_API void TfDumpTokenStats()
 {
     Tf_TokenRegistry::_GetInstance()._DumpStats();
 }

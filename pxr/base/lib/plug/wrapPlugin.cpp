@@ -107,4 +107,6 @@ void wrapPlugin()
         TfPySequenceToPython<std::vector<object> > >();
 }
 
+TF_REFPTR_CONST_VOLATILE_GET(PlugPlugin)
+
 PXR_NAMESPACE_CLOSE_SCOPE

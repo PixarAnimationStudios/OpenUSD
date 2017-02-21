@@ -34,6 +34,7 @@
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/api.h"
 
 #include <typeinfo>
 #include <string>
@@ -55,40 +56,40 @@ PXR_NAMESPACE_OPEN_SCOPE
     std::string(BOOST_PP_STRINGIZE(MFB_PACKAGE_MODULE) ".")
 
 /// Returns true if python is initialized.
-bool TfPyIsInitialized();
+TF_API bool TfPyIsInitialized();
 
 /// Raises a python \c IndexError and throws a C++ exception.
 /// Intended to be used in wrapper code.
-void TfPyThrowIndexError(std::string const &msg);
+TF_API void TfPyThrowIndexError(std::string const &msg);
 
 /// Raises a python \c RuntimError and throws a C++ exception.
 /// Intended to be used in wrapper code.
-void TfPyThrowRuntimeError(std::string const &msg);
+TF_API void TfPyThrowRuntimeError(std::string const &msg);
 
 /// Raises a python \c StopIteration exception and throws a C++ exception.
 /// Intended to be used in wrapper code.
-void TfPyThrowStopIteration(std::string const &msg);
+TF_API void TfPyThrowStopIteration(std::string const &msg);
 
 /// Raises a python \c KeyError and throws a C++ exception.
 /// Intended to be used in wrapper code.
-void TfPyThrowKeyError(std::string const &msg);
+TF_API void TfPyThrowKeyError(std::string const &msg);
 
 /// Raises a python \c ValueError and throws a C++ exception.
 /// Intended to be used in wrapper code.
-void TfPyThrowValueError(std::string const &msg);
+TF_API void TfPyThrowValueError(std::string const &msg);
 
 /// Raises a python \c TypeError and throws a C++ exception.
 /// Intended to be used in wrapper code.
-void TfPyThrowTypeError(std::string const &msg);
+TF_API void TfPyThrowTypeError(std::string const &msg);
 
 /// Return true iff \a obj is None.
-bool TfPyIsNone(boost::python::object const &obj);
+TF_API bool TfPyIsNone(boost::python::object const &obj);
 
 /// Return true iff \a obj is None.
-bool TfPyIsNone(boost::python::handle<> const &obj);
+TF_API bool TfPyIsNone(boost::python::handle<> const &obj);
 
 // Helper for \c TfPyObject().
-void Tf_PyObjectError(bool printError);
+TF_API void Tf_PyObjectError(bool printError);
 
 /// Return a python object for the given C++ object, loading the appropriate
 /// wrapper code if necessary. Spams users if complainOnFailure is true and
@@ -123,7 +124,7 @@ boost::python::object TfPyObject(PyObject* t, bool complainOnFailure = true) {
 /// Return repr(t).
 ///
 /// Calls PyObject_Repr on the given python object.
-std::string TfPyObjectRepr(boost::python::object const &t);
+TF_API std::string TfPyObjectRepr(boost::python::object const &t);
 
 /// Return repr(t).
 ///
@@ -157,6 +158,7 @@ std::string TfPyRepr(const std::vector<T> &v) {
 /// Evaluate python expression \a expr with all the known script modules
 /// imported under their standard names. Additional globals may be provided in
 /// the \p extraGlobals dictionary.
+TF_API
 boost::python::object
 TfPyEvaluate(
     std::string const &expr,
@@ -164,15 +166,16 @@ TfPyEvaluate(
 
 /// Return a positive index in the range [0,size).  If \a throwError is true,
 /// this will throw an index error if the resulting index is out of range.
+TF_API 
 int TfPyNormalizeIndex(int index, unsigned int size, bool throwError = false);
 
 /// Return the name of the class of \a obj.
-std::string TfPyGetClassName(boost::python::object const &obj);
+TF_API std::string TfPyGetClassName(boost::python::object const &obj);
 
 
 /// Return the python class object for \a type if \a type has been wrapped.
 /// Otherwise return None.
-boost::python::object
+TF_API boost::python::object
 TfPyGetClassObject(std::type_info const &type);
 
 /// Return the python class object for T if T has been wrapped.
@@ -195,7 +198,7 @@ void
 TfPyWrapOnce(boost::function<void()> const &wrapFunc)
 {
     // Don't try to wrap if python isn't initialized.
-    if (not TfPyIsInitialized()) {
+    if (!TfPyIsInitialized()) {
         return;
     }
 
@@ -204,7 +207,7 @@ TfPyWrapOnce(boost::function<void()> const &wrapFunc)
         return;
     }
 
-    void Tf_PyWrapOnceImpl(
+    TF_API void Tf_PyWrapOnceImpl(
         boost::python::type_info const &,
         boost::function<void()> const&,
         bool *);
@@ -216,6 +219,7 @@ TfPyWrapOnce(boost::function<void()> const &wrapFunc)
 /// infrastructure code to load python wrapper modules corresponding to C++
 /// shared libraries when they are needed.  It should generally not need to be
 /// called from normal user code.
+TF_API
 void Tf_PyLoadScriptModule(std::string const &name);
 
 /// Creates a python dictionary from a std::map.
@@ -247,15 +251,18 @@ boost::python::tuple TfPyCopySequenceToTuple(Seq const &seq) {
 ///
 /// The vector contains the same strings that python's traceback.format_stack()
 /// returns.
+TF_API
 std::vector<std::string> TfPyGetTraceback();
 
 /// Populates the vector passed in with pointers to strings containing the
 /// python interpreter stack frames. 
 /// Note that TfPyGetStackFrames allocates these strings on the heap and its
 /// the caller's responsibility to free them.
+TF_API
 void TfPyGetStackFrames(std::vector<uintptr_t> *frames);
 
 /// Print the current python traceback to stdout.
+TF_API
 void TfPyDumpTraceback();
 
 /// Set an environment variable in \c os.environ.
@@ -279,6 +286,7 @@ void TfPyDumpTraceback();
 /// os.environ to be poputated.  All modifications to the environment after \c
 /// os has been imported must be made with this function or \c TfSetenv if it
 /// important that they appear in \c os.environ.
+TF_API
 bool TfPySetenv(const std::string & name, const std::string & value);
 
 /// Remove an environment variable from \c os.environ.
@@ -303,11 +311,12 @@ bool TfPySetenv(const std::string & name, const std::string & value);
 /// os.environ to be poputated.  All modifications to the environment after \c
 /// os has been imported must be made with this function or \c TfUnsetenv if
 /// it important that they appear in \c os.environ.
+TF_API
 bool TfPyUnsetenv(const std::string & name);
 
 // Private helper method to TfPyEvaluateAndExtract.
 //
-bool Tf_PyEvaluateWithErrorCheck(
+TF_API bool Tf_PyEvaluateWithErrorCheck(
     const std::string & expr, boost::python::object * obj);
 
 /// Safely evaluates \p expr and extracts the return object of type T. If
@@ -327,12 +336,12 @@ bool TfPyEvaluateAndExtract(const std::string & expr, T * t)
     // boost::python::object, since it will increment and decrement ref counts 
     // outside of the call to TfPyEvaluate.
     boost::python::object obj;
-    if (not Tf_PyEvaluateWithErrorCheck(expr, &obj))
+    if (!Tf_PyEvaluateWithErrorCheck(expr, &obj))
         return false;
 
     boost::python::extract<T> extractor(obj);
 
-    if (not extractor.check())
+    if (!extractor.check())
         return false;
 
     *t = extractor();
@@ -343,6 +352,7 @@ bool TfPyEvaluateAndExtract(const std::string & expr, T * t)
 /// Print a standard traceback to sys.stderr and clear the error indicator.
 /// If the error is a KeyboardInterrupt then this does nothing.  Call this
 /// function only when the error indicator is set.
+TF_API
 void TfPyPrintError();
 
 PXR_NAMESPACE_CLOSE_SCOPE

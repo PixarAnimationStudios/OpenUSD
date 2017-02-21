@@ -127,6 +127,9 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    *dirtyBits = _PropagateRprimDirtyBits(*dirtyBits);
+
+
     // points don't have multiple draw items (for now)
     if (isNew || HdChangeTracker::IsDirty(*dirtyBits)) {
         if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {

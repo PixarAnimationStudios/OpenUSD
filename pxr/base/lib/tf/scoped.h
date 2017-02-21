@@ -56,16 +56,16 @@ public:
     typedef T Procedure;
 
     /// Execute \p leave when this object goes out of scope.
-    explicit TfScoped(const Procedure& leave) : _leave(leave) { }
+    explicit TfScoped(const Procedure& leave) : _onExit(leave) { }
 
-    ~TfScoped() { _leave(); }
+    ~TfScoped() { _onExit(); }
 
 private:
     // Can't put these on the heap.  No implemention needed.
     static void *operator new(::std::size_t size);
 
 private:
-    Procedure _leave;
+    Procedure _onExit;
 };
 
 // Specialization of TfScoped for member functions.
@@ -77,9 +77,9 @@ public:
 
     /// Execute \p leave on \p obj when this object goes out of scope.
     explicit TfScoped(T* obj, const Procedure& leave) :
-        _obj(obj), _leave(leave) { }
+        _obj(obj), _onExit(leave) { }
 
-    ~TfScoped() { (_obj->*_leave)(); }
+    ~TfScoped() { (_obj->*_onExit)(); }
 
 private:
     // Can't put these on the heap.  No implemention needed.
@@ -87,7 +87,7 @@ private:
 
 private:
     T* _obj;
-    Procedure _leave;
+    Procedure _onExit;
 };
 
 // Specialization of TfScoped for functions taking one pointer argument.
@@ -99,9 +99,9 @@ public:
 
     /// Execute \p leave, passing \p obj, when this object goes out of scope.
     explicit TfScoped(const Procedure& leave, T* obj) :
-        _obj(obj), _leave(leave) { }
+        _obj(obj), _onExit(leave) { }
 
-    ~TfScoped() { _leave(_obj); }
+    ~TfScoped() { _onExit(_obj); }
 
 private:
     // Can't put these on the heap.  No implemention needed.
@@ -109,7 +109,7 @@ private:
 
 private:
     T* _obj;
-    Procedure _leave;
+    Procedure _onExit;
 };
 
 /// \class TfScopedVar
