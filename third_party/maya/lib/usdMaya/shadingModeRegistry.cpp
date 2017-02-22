@@ -70,6 +70,28 @@ PxrUsdMayaShadingModeRegistry::_GetImporter(const TfToken& name)
     return _importReg[name];
 }
 
+TfTokenVector
+PxrUsdMayaShadingModeRegistry::_ListExporters() {
+    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaShadingModeExportContext>();
+    TfTokenVector ret;
+    ret.reserve(_exportReg.size());
+    for (const auto& e : _exportReg) {
+        ret.push_back(e.first);
+    }
+    return ret;
+}
+
+TfTokenVector
+PxrUsdMayaShadingModeRegistry::_ListImporters() {
+    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaShadingModeImportContext>();
+    TfTokenVector ret;
+    ret.reserve(_importReg.size());
+    for (const auto& e : _importReg) {
+        ret.push_back(e.first);
+    }
+    return ret;
+}
+
 TF_INSTANTIATE_SINGLETON(PxrUsdMayaShadingModeRegistry);
 
 PxrUsdMayaShadingModeRegistry&

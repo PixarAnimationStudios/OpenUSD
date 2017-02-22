@@ -73,13 +73,13 @@ global proc int usdTranslatorImport (string $parent,
         setParent $parent;
 
         columnLayout -adj true usdOptsCol;
-        
-	    optionMenuGrp -l "Shading Mode:" shadingModePopup;
-	        menuItem -l "None";
-	        menuItem -l "GPrim Colors";
-	        menuItem -l "Material Colors";
-	        menuItem -l "RfM Shaders";
-            
+
+        string $importers[] = `usdListShadingModes -import`;
+        optionMenuGrp -l "Shading Mode:" shadingModePopup;
+        for ($each in $importers) {
+            menuItem -l $each;
+        }
+
         checkBox -l "Read Animation Data" -cc ("usdTranslatorImport_AnimationCB") readAnimDataCheckBox;
 
         checkBox -l "Custom Frame Range" -cc ("usdTranslatorImport_AnimationCB") customFrameRangeCheckBox;
