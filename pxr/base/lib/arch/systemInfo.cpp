@@ -95,7 +95,7 @@ _DynamicSizedRead(
     // Repeatedly invoke the callback with our buffer until it's big enough.
     size_t size = initialSize;
     while (!callback(buffer.get(), &size)) {
-        if (size == -1) {
+        if (size == static_cast<size_t>(-1)) {
             // callback is never going to succeed.
             return std::string();
         }
@@ -119,7 +119,16 @@ ArchGetExecutablePath()
         _DynamicSizedRead(ARCH_PATH_MAX,
             [](char* buffer, size_t* size) {
                 const ssize_t n = readlink("/proc/self/exe", buffer, *size);
-                if (n >= *size) {
+                // Need to do this check BEFORE  the n >= *size, because
+                // when comparing signed and unsigned, the signed is
+                // automatically converted to unsigned, so -1 >= 2U is true.
+                if (n == -1) {
+                    ARCH_WARNING("Unable to read /proc/self/exe to obtain "
+                                 "executable path");
+                    *size = -1;
+                    return false;
+                }
+                else if (static_cast<size_t>(n) >= *size) {
                     // Find out how much space we need.
                     struct stat sb;
                     if (lstat("/proc/self/exe", &sb) == 0) {
@@ -129,12 +138,6 @@ ArchGetExecutablePath()
                         // Try iterating on the size.
                         *size *= 2;
                     }
-                    return false;
-                }
-                else if (n == -1) {
-                    ARCH_WARNING("Unable to read /proc/self/exe to obtain "
-                                 "executable path");
-                    *size = -1;
                     return false;
                 }
                 else {
