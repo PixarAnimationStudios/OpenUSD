@@ -317,21 +317,10 @@ PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
         return;
     }
 
-    if (PxrUsdMayaShadingModeExporter exporter =
+    if (auto exporterCreator =
             PxrUsdMayaShadingModeRegistry::GetExporter(shadingMode)) {
-        MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
-        for (; !shadingEngineIter.isDone(); shadingEngineIter.next()) {
-            MObject shadingEngine(shadingEngineIter.thisNode());
-            MFnDependencyNode seDepNode(shadingEngine);
-
-            PxrUsdMayaShadingModeExportContext c(
-                    shadingEngine,
-                    stage,
-                    mergeTransformAndShape,
-                    bindableRoots,
-                    overrideRootPath);
-
-            exporter(&c);
+        if (auto exporter = exporterCreator()) {
+            exporter->DoExport(stage, bindableRoots, mergeTransformAndShape, overrideRootPath);
         }
     }
     else {
