@@ -27,6 +27,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+WorkArenaDispatcher::WorkArenaDispatcher()
+    : _arena(WorkGetConcurrencyLimit(), /*reserved_for_masters=*/0)
+{
+}
+
 WorkArenaDispatcher::~WorkArenaDispatcher()
 {
     Wait();
