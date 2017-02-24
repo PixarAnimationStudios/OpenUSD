@@ -111,12 +111,16 @@ UsdVariantSet::GetVariantSelection() const
 bool
 UsdVariantSet::HasAuthoredVariantSelection(std::string *value) const
 {
-    auto vselMap = _prim.GetPrimIndex().ComposeAuthoredVariantSelections();
-    auto iter = vselMap.find(_variantSetName);
-    if (iter != vselMap.end()) {
-        if (value)
-            *value = iter->second;
-        return true;
+    string sel;
+    if (!value) {
+        value = &sel;
+    }
+    for (auto nodeIter = _prim.GetPrimIndex().GetNodeRange().first;
+         nodeIter != _prim.GetPrimIndex().GetNodeRange().second;
+         ++nodeIter) {
+        if (PcpComposeSiteVariantSelection(*nodeIter, _variantSetName, value)) {
+            return true;
+        }
     }
     return false;
 }
