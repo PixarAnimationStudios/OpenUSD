@@ -38,8 +38,10 @@
 
 using namespace boost::python;
 
+{% if useExportAPI %}
 {{ namespaceOpen }}
 
+{% endif %}
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
 
@@ -109,8 +111,10 @@ void wrap{{ cls.cppClassName }}()
 
     _CustomWrapCode(cls);
 }
+{% if useExportAPI %}
 
 {{ namespaceClose }}
+{% endif %}
 
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
@@ -124,10 +128,12 @@ void wrap{{ cls.cppClassName }}()
 // }
 //
 // Of course any other ancillary or support code may be provided.
+{% if useExportAPI %}
 // 
 // Just remember to wrap code in the appropriate delimiters:
 // '{{ namespaceOpen }}', '{{ namespaceClose }}'.
 //
+{% endif %}
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 

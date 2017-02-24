@@ -33,12 +33,16 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+{% if useExportAPI %}
 #include "pxr/pxr.h"
-#include "pxr/usd/usd/api.h"
+#include "{{ libraryPath }}/api.h"
+{% endif %}
 #include "pxr/base/tf/staticTokens.h"
 
+{% if useExportAPI %}
 {{ namespaceOpen }}
 
+{% endif %}
 /// \hideinitializer
 #define {{ Upper(tokensPrefix) }}_TOKENS \
 {% for token in tokens %}
@@ -71,8 +75,10 @@
 {% for token in tokens %}
 /// \li <b>{{ token.id }}</b> - {{ token.desc }}
 {% endfor %}
-TF_DECLARE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {{ Upper(tokensPrefix) }}_API, {{ Upper(tokensPrefix) }}_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {% if useExportAPI %}{{ Upper(libraryName) }}_API, {% endif %}{{ Upper(tokensPrefix) }}_TOKENS);
+{% if useExportAPI %}
 
 {{ namespaceClose }}
+{% endif %}
 
 #endif
