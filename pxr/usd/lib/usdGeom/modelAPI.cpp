@@ -150,7 +150,7 @@ UsdGeomModelAPI::ComputeExtentsHint(
     // we expect purpose 'default' to be the most common purpose value 
     // and in some cases the only purpose value. Computing bounds for 
     // the rest of the purpose values should be very fast.
-    for(int bboxType = (purposeTokens.size() - 1); bboxType >= 0; bboxType--) {
+    for(size_t bboxType = purposeTokens.size(); bboxType-- != 0; ) {
 
         // Set the gprim purpose that we are interested in computing the 
         // bbox for. This doesn't cause the cache to be blown.
@@ -168,7 +168,7 @@ UsdGeomModelAPI::ComputeExtentsHint(
         const GfVec3d &min = range.GetMin();
         const GfVec3d &max = range.GetMax();
 
-        int index = bboxType * 2;
+        size_t index = bboxType * 2;
         extents[index] = GfVec3f(min[0], min[1], min[2]);
         extents[index + 1] = GfVec3f(max[0], max[1], max[2]);
     }

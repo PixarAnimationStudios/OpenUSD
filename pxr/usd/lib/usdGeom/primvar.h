@@ -25,6 +25,7 @@
 #define USDGEOM_PRIMVAR_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
@@ -255,6 +256,7 @@ class UsdGeomPrimvar
     /// value as this constructor, but if you plan to subsequently use the
     /// Primvar anyways, just use this constructor, as demonstrated in the 
     /// \ref UsdGeomPrimvar_Using_Primvar "class documentation".
+    USDGEOM_API
     explicit UsdGeomPrimvar(const UsdAttribute &attr);
 
     /// Return the Primvar's interpolation, which is 
@@ -262,6 +264,7 @@ class UsdGeomPrimvar
     ///
     /// Interpolation determines how the Primvar interpolates over
     /// a geometric primitive.  See \ref Usd_InterpolationVals
+    USDGEOM_API
     TfToken GetInterpolation() const;
 
     /// Set the Primvar's interpolation.
@@ -272,11 +275,13 @@ class UsdGeomPrimvar
     /// to match its interpolation to its topology.
     ///
     /// \sa GetInterpolation(), \ref Usd_InterpolationVals
+    USDGEOM_API
     bool SetInterpolation(const TfToken &interpolation);
     
     /// Has interpolation been explicitly authored on this Primvar?
     ///
     /// \sa GetInterpolationSize()
+    USDGEOM_API
     bool HasAuthoredInterpolation() const;
 
     /// Return the "element size" for this Primvar, which is 1 if
@@ -298,6 +303,7 @@ class UsdGeomPrimvar
     /// \em elementSize to 9.  To author a \em uniform spherical harmonic
     /// primvar on a Mesh of 42 faces, the primvar's array value would contain
     /// 9*42 = 378 float elements.
+    USDGEOM_API
     int GetElementSize() const;
     
     /// Set the elementSize for this Primvar.
@@ -305,11 +311,13 @@ class UsdGeomPrimvar
     /// Errors and returns false if \p eltSize less than 1.
     ///
     /// \sa GetElementSize()
+    USDGEOM_API
     bool SetElementSize(int eltSize);
     
     /// Has elementSize been explicitly authored on this Primvar?
     ///
     /// \sa GetElementSize()
+    USDGEOM_API
     bool HasAuthoredElementSize() const;
     
 
@@ -317,10 +325,12 @@ class UsdGeomPrimvar
     /// implies that creating a UsdGeomPrimvar from the attribute will succeed.
     ///
     /// Success implies that \c attr.IsDefined() is true.
+    USDGEOM_API
     static bool IsPrimvar(const UsdAttribute &attr);
 
     /// Validate that the provided \p interpolation is a valid setting for 
     /// interpolation as defined by \ref Usd_InterpolationVals.  
+    USDGEOM_API
     static bool IsValidInterpolation(const TfToken &interpolation);
 
     /// Convenience function for fetching all information required to 
@@ -329,6 +339,7 @@ class UsdGeomPrimvar
     /// GetBaseName()
     ///
     /// May also be more efficient than querying key individually.
+    USDGEOM_API
     void GetDeclarationInfo(TfToken *name, SdfValueTypeName *typeName,
                             TfToken *interpolation, int *elementSize) const;
 
@@ -420,6 +431,7 @@ class UsdGeomPrimvar
     /// array returned by Get(). The element numerality of the primvar's 
     /// 'interpolation' metadata applies to the "indices" array, not the attribute
     /// value array (returned by Get()).
+    USDGEOM_API
     bool SetIndices(const VtIntArray &indices, 
                     UsdTimeCode time = UsdTimeCode::Default()) const;
 
@@ -427,12 +439,14 @@ class UsdGeomPrimvar
     /// primvar at \p time.
     /// 
     /// \sa SetIndices(), \ref Usd_Handling_Indexed_Primvars
+    USDGEOM_API
     bool GetIndices(VtIntArray *indices,
                     UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// Block the indices that were previously set.  This effectively makes an
     /// indexed primvar no longer indexed.  This is useful when overriding an
     /// existing primvar.
+    USDGEOM_API
     void BlockIndices() const;
 
     /// Returns true if the primvar is indexed, i.e., if it has an associated
@@ -440,6 +454,7 @@ class UsdGeomPrimvar
     ///
     /// If you are going to query the indices anyways, prefer to simply 
     /// consult the return-value of GetIndices(), which will be more efficient.
+    USDGEOM_API
     bool IsIndexed() const;
 
 
@@ -455,11 +470,13 @@ class UsdGeomPrimvar
     /// there are no unauthored values.
     /// 
     /// \sa GetUnauthoredValuesIndex()
+    USDGEOM_API
     bool SetUnauthoredValuesIndex(int unauthoredValuesIndex) const;
 
     /// Returns the index that represents unauthored values in the indices array.
     /// 
     /// \sa SetUnauthoredValuesIndex()
+    USDGEOM_API
     int GetUnauthoredValuesIndex() const;
     
     /// Computes the flattened value of the primvar at \p time. 
@@ -479,6 +496,7 @@ class UsdGeomPrimvar
     /// a scalar, this returns the authored value, which is the same as 
     /// \ref Get(). Hence, it's safe to call ComputeFlattened() on non-indexed 
     /// primvars.
+    USDGEOM_API
     bool ComputeFlattened(VtValue *value, 
                           UsdTimeCode time=UsdTimeCode::Default()) const;
 
@@ -519,12 +537,14 @@ class UsdGeomPrimvar
     /// Returns true if the primvar is an Id primvar.
     ///
     /// \sa \ref UsdGeomPrimvar_Id_primvars
+    USDGEOM_API
     bool IsIdTarget() const;
 
     /// This primvar must be of String or StringArray type for this method to
     /// succeed.  If not, a coding error is raised.
     ///
     /// \sa \ref UsdGeomPrimvar_Id_primvars
+    USDGEOM_API
     bool SetIdTarget(const SdfPath& path) const;
     
     /// @}
@@ -599,13 +619,13 @@ private:
 // We instantiate the following so we can check and provide the correct value
 // for Id attributes.
 template <>
-bool UsdGeomPrimvar::Get(std::string* value, UsdTimeCode time) const;
+USDGEOM_API bool UsdGeomPrimvar::Get(std::string* value, UsdTimeCode time) const;
 
 template <>
-bool UsdGeomPrimvar::Get(VtStringArray* value, UsdTimeCode time) const;
+USDGEOM_API bool UsdGeomPrimvar::Get(VtStringArray* value, UsdTimeCode time) const;
 
 template <>
-bool UsdGeomPrimvar::Get(VtValue* value, UsdTimeCode time) const;
+USDGEOM_API bool UsdGeomPrimvar::Get(VtValue* value, UsdTimeCode time) const;
 
 template <typename ScalarType>
 bool 

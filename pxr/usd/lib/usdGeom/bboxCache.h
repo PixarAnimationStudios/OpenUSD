@@ -25,6 +25,7 @@
 #define USDGEOM_BBOXCACHE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/base/gf/bbox3d.h"
@@ -103,6 +104,7 @@ public:
     /// of includedPurposes by combining bounding box hints that have been
     /// cached for various values of purposes.
     /// 
+    USDGEOM_API
     UsdGeomBBoxCache(UsdTimeCode time, TfTokenVector includedPurposes,
                      bool useExtentsHint=false);
 
@@ -115,6 +117,7 @@ public:
     /// Error handling note: No checking of \p prim validity is performed.
     /// If \p prim is invalid, this method will abort the program; therefore
     /// it is the client's responsibility to ensure \p prim is valid.
+    USDGEOM_API
     GfBBox3d ComputeWorldBound(const UsdPrim& prim);
 
     /// Compute the bound of the given prim in the space of an ancestor prim, 
@@ -124,6 +127,7 @@ public:
     /// \p relativeToAncestorPrim. The computed bound may be incorrect if 
     /// \p relativeToAncestorPrim is not an ancestor of \p prim.
     /// 
+    USDGEOM_API
     GfBBox3d ComputeRelativeBound(const UsdPrim &prim, 
                                   const UsdPrim &relativeToAncestorPrim);
 
@@ -135,6 +139,7 @@ public:
     /// local-to-world transform).
     ///
     /// See ComputeWorldBound() for notes on performance and error handling.
+    USDGEOM_API
     GfBBox3d ComputeLocalBound(const UsdPrim& prim);
 
     /// Computes the bound of the prim's children leveraging any pre-existing,
@@ -147,6 +152,7 @@ public:
     /// axis-aligned bounding box, the client must call ComputeAlignedRange().
     ///
     /// See ComputeWorldBound() for notes on performance and error handling.
+    USDGEOM_API
     GfBBox3d ComputeUntransformedBound(const UsdPrim& prim);
 
     /// \overload
@@ -165,12 +171,14 @@ public:
     /// axis-aligned bounding box, the client must call ComputeAlignedRange().
     ///
     /// See ComputeWorldBound() for notes on performance and error handling.
+    USDGEOM_API
     GfBBox3d ComputeUntransformedBound(
         const UsdPrim &prim, 
         const SdfPathSet &pathsToSkip,
         const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides);
 
     /// Clears all pre-cached values.
+    USDGEOM_API
     void Clear();
 
     /// Indicate the set of \p includedPurposes to use when resolving child
@@ -183,6 +191,7 @@ public:
     /// Changing this value  <b>does not invalidate existing caches.</b>
     /// It does mutate the BBoxCache's state, however, so be mindful of
     /// calling in multi-threaded uses.
+    USDGEOM_API
     void SetIncludedPurposes(const TfTokenVector& includedPurposes);
 
     /// Get the current set of included purposes.
@@ -197,6 +206,7 @@ public:
     /// Use the new \p time when computing values and may clear any existing
     /// values cached for the previous time. Setting \p time to the current time
     /// is a no-op.
+    USDGEOM_API
     void SetTime(UsdTimeCode time);
 
     /// Get the current time from which this cache is reading values.

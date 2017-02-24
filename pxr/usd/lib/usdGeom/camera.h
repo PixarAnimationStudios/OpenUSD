@@ -27,6 +27,7 @@
 /// \file usdGeom/camera.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -112,11 +113,13 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomCamera();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -129,6 +132,7 @@ public:
     /// UsdGeomCamera(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDGEOM_API
     static UsdGeomCamera
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -154,17 +158,20 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDGEOM_API
     static UsdGeomCamera
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USDGEOM_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -178,6 +185,7 @@ public:
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: perspective
     /// \n  \ref UsdGeomTokens "Allowed Values": [perspective, orthographic]
+    USDGEOM_API
     UsdAttribute GetProjectionAttr() const;
 
     /// See GetProjectionAttr(), and also 
@@ -185,6 +193,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateProjectionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -199,6 +208,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 20.9549999237
+    USDGEOM_API
     UsdAttribute GetHorizontalApertureAttr() const;
 
     /// See GetHorizontalApertureAttr(), and also 
@@ -206,6 +216,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateHorizontalApertureAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -220,6 +231,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 15.2908000946
+    USDGEOM_API
     UsdAttribute GetVerticalApertureAttr() const;
 
     /// See GetVerticalApertureAttr(), and also 
@@ -227,6 +239,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateVerticalApertureAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -240,6 +253,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0.0
+    USDGEOM_API
     UsdAttribute GetHorizontalApertureOffsetAttr() const;
 
     /// See GetHorizontalApertureOffsetAttr(), and also 
@@ -247,6 +261,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateHorizontalApertureOffsetAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -260,6 +275,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0.0
+    USDGEOM_API
     UsdAttribute GetVerticalApertureOffsetAttr() const;
 
     /// See GetVerticalApertureOffsetAttr(), and also 
@@ -267,6 +283,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateVerticalApertureOffsetAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -280,6 +297,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 50.0
+    USDGEOM_API
     UsdAttribute GetFocalLengthAttr() const;
 
     /// See GetFocalLengthAttr(), and also 
@@ -287,6 +305,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateFocalLengthAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -300,6 +319,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float2
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: (1, 1000000)
+    USDGEOM_API
     UsdAttribute GetClippingRangeAttr() const;
 
     /// See GetClippingRangeAttr(), and also 
@@ -307,6 +327,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateClippingRangeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -322,6 +343,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float4Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: []
+    USDGEOM_API
     UsdAttribute GetClippingPlanesAttr() const;
 
     /// See GetClippingPlanesAttr(), and also 
@@ -329,6 +351,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateClippingPlanesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -341,6 +364,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0.0
+    USDGEOM_API
     UsdAttribute GetFStopAttr() const;
 
     /// See GetFStopAttr(), and also 
@@ -348,6 +372,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateFStopAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -361,6 +386,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0.0
+    USDGEOM_API
     UsdAttribute GetFocusDistanceAttr() const;
 
     /// See GetFocusDistanceAttr(), and also 
@@ -368,6 +394,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateFocusDistanceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -382,6 +409,7 @@ public:
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: mono
     /// \n  \ref UsdGeomTokens "Allowed Values": [mono, left, right]
+    USDGEOM_API
     UsdAttribute GetStereoRoleAttr() const;
 
     /// See GetStereoRoleAttr(), and also 
@@ -389,6 +417,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateStereoRoleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -403,6 +432,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Double
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0.0
+    USDGEOM_API
     UsdAttribute GetShutterOpenAttr() const;
 
     /// See GetShutterOpenAttr(), and also 
@@ -410,6 +440,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateShutterOpenAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -425,6 +456,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Double
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0.0
+    USDGEOM_API
     UsdAttribute GetShutterCloseAttr() const;
 
     /// See GetShutterCloseAttr(), and also 
@@ -432,6 +464,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateShutterCloseAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -453,10 +486,12 @@ public:
     /// Set \p isZup to UsdUtilsGetCamerasAreZup(prim.GetStage()). Eventually,
     /// z-Up encoding of cameras will be dropped and this parameter will go
     /// away.
+    USDGEOM_API
     GfCamera GetCamera(const UsdTimeCode &time, const bool isZup = false) const;
 
     /// Write attribute values from \p camera for \p time.
     ///
+    USDGEOM_API
     void SetFromCamera(const GfCamera &camera, const UsdTimeCode &time);
 };
 

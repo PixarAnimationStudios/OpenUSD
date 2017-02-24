@@ -27,6 +27,7 @@
 /// \file usdGeom/pointInstancer.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/boundable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -281,11 +282,13 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomPointInstancer();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -298,6 +301,7 @@ public:
     /// UsdGeomPointInstancer(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDGEOM_API
     static UsdGeomPointInstancer
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -323,17 +327,20 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDGEOM_API
     static UsdGeomPointInstancer
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USDGEOM_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -349,6 +356,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->IntArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetProtoIndicesAttr() const;
 
     /// See GetProtoIndicesAttr(), and also 
@@ -356,6 +364,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateProtoIndicesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -373,6 +382,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetIdsAttr() const;
 
     /// See GetIdsAttr(), and also 
@@ -380,6 +390,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateIdsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -393,6 +404,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Point3fArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetPositionsAttr() const;
 
     /// See GetPositionsAttr(), and also 
@@ -400,6 +412,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreatePositionsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -423,6 +436,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->QuathArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetOrientationsAttr() const;
 
     /// See GetOrientationsAttr(), and also 
@@ -430,6 +444,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateOrientationsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -445,6 +460,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Float3Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetScalesAttr() const;
 
     /// See GetScalesAttr(), and also 
@@ -452,6 +468,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateScalesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -471,6 +488,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetVelocitiesAttr() const;
 
     /// See GetVelocitiesAttr(), and also 
@@ -478,6 +496,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateVelocitiesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -497,6 +516,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetAngularVelocitiesAttr() const;
 
     /// See GetAngularVelocitiesAttr(), and also 
@@ -504,6 +524,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateAngularVelocitiesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -517,6 +538,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetInvisibleIdsAttr() const;
 
     /// See GetInvisibleIdsAttr(), and also 
@@ -524,6 +546,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateInvisibleIdsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -539,6 +562,7 @@ public:
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: fullGeom
     /// \n  \ref UsdGeomTokens "Allowed Values": [point, card, fullGeom]
+    USDGEOM_API
     UsdAttribute GetPrototypeDrawModeAttr() const;
 
     /// See GetPrototypeDrawModeAttr(), and also 
@@ -546,6 +570,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreatePrototypeDrawModeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -560,10 +585,12 @@ public:
     /// instance that prototype. Since relationships are uniform, this property
     /// cannot be animated.
     ///
+    USDGEOM_API
     UsdRelationship GetPrototypesRel() const;
 
     /// See GetPrototypesRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDGEOM_API
     UsdRelationship CreatePrototypesRel() const;
 
 public:
@@ -590,6 +617,7 @@ public:
     /// This does not guarantee that the instance will be rendered, because
     /// it may still be "invisible" due to \p id being present in the 
     /// \em invisibleIds attribute (see VisId(), InvisId())
+    USDGEOM_API
     bool ActivateId(int64_t id) const;
 
     /// Ensure that the instances identified by \p ids are active over all time.
@@ -598,6 +626,7 @@ public:
     /// This does not guarantee that the instances will be rendered, because
     /// each may still be "invisible" due to its presence in the 
     /// \em invisibleIds attribute (see VisId(), InvisId())
+    USDGEOM_API
     bool ActivateIds(VtInt64Array const &ids) const;
 
     /// Ensure that all instances are active over all time.
@@ -605,6 +634,7 @@ public:
     /// This does not guarantee that the instances will be rendered, because
     /// each may still be "invisible" due to its presence in the 
     /// \em invisibleIds attribute (see VisId(), InvisId())
+    USDGEOM_API
     bool ActivateAllIds() const;
 
     /// Ensure that the instance identified by \p id is inactive over all time.
@@ -612,6 +642,7 @@ public:
     ///
     /// A deactivated instance is guaranteed not to render if the renderer
     /// honors masking.
+    USDGEOM_API
     bool DeactivateId(int64_t id) const;
 
     /// Ensure that the instances identified by \p ids are inactive over all time.
@@ -619,6 +650,7 @@ public:
     ///
     /// A deactivated instance is guaranteed not to render if the renderer
     /// honors masking.
+    USDGEOM_API
     bool DeactivateIds(VtInt64Array const &ids) const;
 
 
@@ -632,6 +664,7 @@ public:
     /// This does not guarantee that the instance will be rendered, because
     /// it may still be "inactive" due to \p id being present in the 
     /// \em inactivevIds metadata (see ActivateId(), DeactivateId())
+    USDGEOM_API
     bool VisId(int64_t id, UsdTimeCode const &time) const;
 
     /// Ensure that the instances identified by \p ids are visible at \p time.
@@ -644,6 +677,7 @@ public:
     /// This does not guarantee that the instances will be rendered, because
     /// each may still be "inactive" due to \p id being present in the 
     /// \em inactivevIds metadata (see ActivateId(), DeactivateId())
+    USDGEOM_API
     bool VisIds(VtInt64Array const &ids, UsdTimeCode const &time) const;
 
     /// Ensure that all instances are visible at \p time.
@@ -652,6 +686,7 @@ public:
     /// This does not guarantee that the instances will be rendered, because
     /// each may still be "inactive" due to its id being present in the 
     /// \em inactivevIds metadata (see ActivateId(), DeactivateId())
+    USDGEOM_API
     bool VisAllIds(UsdTimeCode const &time) const;
 
     /// Ensure that the instance identified by \p id is invisible at \p time.
@@ -662,6 +697,7 @@ public:
     ///
     /// An invised instance is guaranteed not to render if the renderer
     /// honors masking.
+    USDGEOM_API
     bool InvisId(int64_t id, UsdTimeCode const &time) const;
 
     /// Ensure that the instances identified by \p ids are invisible at \p time.
@@ -672,6 +708,7 @@ public:
     ///
     /// An invised instance is guaranteed not to render if the renderer
     /// honors masking.
+    USDGEOM_API
     bool InvisIds(VtInt64Array const &ids, UsdTimeCode const &time) const;
 
     /// Computes a presence mask to be applied to per-instance data arrays
@@ -691,6 +728,7 @@ public:
     ///
     /// The returned mask can be used with ApplyMaskToArray(), and will contain
     /// a \c true value for every element that should survive.
+    USDGEOM_API
     std::vector<bool> ComputeMaskAtTime(UsdTimeCode time, 
                                         VtInt64Array const *ids = nullptr) const;
 
@@ -785,6 +823,7 @@ public:
     ///                   \c ExcludeProtoXform instead.
     /// \param applyMask - specifies whether to apply ApplyMaskToArray() to the
     ///                    computed result.  The default is \c ApplyMask.
+    USDGEOM_API
     bool
     ComputeInstanceTransformsAtTime(
                         VtArray<GfMatrix4d>* xforms,
@@ -828,6 +867,7 @@ public:
     ///                   same value for \p baseTime that it does for \p time.
     ///                   When \p baseTime is less than or equal to \p time,
     ///                   we will choose the lower bracketing timeSample.
+    USDGEOM_API
     bool ComputeExtentAtTime(
                         VtVec3fArray* extent,
                         const UsdTimeCode time,

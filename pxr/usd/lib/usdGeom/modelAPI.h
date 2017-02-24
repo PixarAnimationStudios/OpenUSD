@@ -25,6 +25,7 @@
 #define USDGEOM_GENERATED_MODEL_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 
 #include "pxr/usd/usd/modelAPI.h"
@@ -87,12 +88,14 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomModelAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved
     /// (such as primvars created by UsdGeomImageable).
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -102,6 +105,7 @@ private:
     static const TfType &_GetStaticTfType();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -162,6 +166,7 @@ public:
     /// \sa UsdGeomImageable::GetPurposeAttr(), 
     ///     UsdGeomImageable::GetOrderedPurposeTokens()
     ///
+    USDGEOM_API
     bool GetExtentsHint(VtVec3fArray *extents, 
                         const UsdTimeCode &time = UsdTimeCode::Default()) const;
 
@@ -169,10 +174,12 @@ public:
     /// 
     /// \sa GetExtentsHint()
     ///
+    USDGEOM_API
     bool SetExtentsHint(VtVec3fArray const &extents, 
                         const UsdTimeCode &time = UsdTimeCode::Default());
 
     /// Returns the custom 'extentsHint' attribute if it exits.
+    USDGEOM_API
     UsdAttribute GetExtentsHintAttr();
 
     /// For the given model, compute the value for the extents hint with the
@@ -182,6 +189,7 @@ public:
     ///
     /// \note \p bboxCache should not be in use by any other thread while
     /// this method is using it in a thread.
+    USDGEOM_API
     VtVec3fArray ComputeExtentsHint(UsdGeomBBoxCache& bboxCache) const;
 
     /// @}
@@ -198,6 +206,7 @@ public:
     /// If the requested constraint target does not exist, then an invalid 
     /// UsdConstraintTarget object is returned.
     /// 
+    USDGEOM_API
     UsdGeomConstraintTarget GetConstraintTarget(
         const std::string &constraintName) const;
 
@@ -206,6 +215,7 @@ public:
     /// If the constraint target already exists, then the existing target is 
     /// returned. If it does not exist, a new one is created and returned.
     /// 
+    USDGEOM_API
     UsdGeomConstraintTarget CreateConstraintTarget(
         const std::string &constraintName) const;
 
@@ -214,6 +224,7 @@ public:
     /// Only valid constraint targets in the "constraintTargets" namespace 
     /// are returned by this method.
     /// 
+    USDGEOM_API
     std::vector<UsdGeomConstraintTarget> GetConstraintTargets() const;
 
     /// @}

@@ -25,6 +25,7 @@
 #define USDGEOM_XFORMCACHE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -58,9 +59,11 @@ class UsdGeomXformCache
 {
 public:
     /// Construct a new XformCache for the specified \p time.
+    USDGEOM_API
     explicit UsdGeomXformCache(const UsdTimeCode time);
 
     /// Construct a new XformCache for UsdTimeCode::Default().
+    USDGEOM_API
     UsdGeomXformCache();
 
     /// Compute the transformation matrix for the given \p prim, including the
@@ -68,6 +71,7 @@ public:
     ///
     /// \note This method may mutate internal cache state and is not thread
     /// safe.
+    USDGEOM_API
     GfMatrix4d GetLocalToWorldTransform(const UsdPrim& prim);
 
     /// Compute the transformation matrix for the given \p prim, but do NOT
@@ -75,11 +79,13 @@ public:
     ///
     /// \note This method may mutate internal cache state and is not thread
     /// safe.
+    USDGEOM_API
     GfMatrix4d GetParentToWorldTransform(const UsdPrim& prim);
 
     /// Returns the local transformation of the prim. Uses the cached 
     /// XformQuery to compute the result quickly. The result of this call
     /// is not cached.
+    USDGEOM_API
     GfMatrix4d GetLocalTransformation(const UsdPrim &prim,
                                       bool *resetsXformStack);
 
@@ -88,6 +94,7 @@ public:
     /// 
     /// \note This method may mutate internal cache state and is not thread
     /// safe.
+    USDGEOM_API
     bool IsAttributeIncludedInLocalTransform(const UsdPrim &prim, 
                                              const TfToken &attrName);
 
@@ -95,20 +102,24 @@ public:
     /// 
     /// \note This method may mutate internal cache state and is not thread
     /// safe.
+    USDGEOM_API
     bool TransformMightBeTimeVarying(const UsdPrim &prim);
 
     /// Whether the xform stack is reset at the given prim.
     /// 
     /// \note This method may mutate internal cache state and is not thread
     /// safe.
+    USDGEOM_API
     bool GetResetXformStack(const UsdPrim &prim);
 
     /// Clears all pre-cached values.
+    USDGEOM_API
     void Clear();
 
     /// Use the new \p time when computing values and may clear any existing
     /// values cached for the previous time. Setting \p time to the current time
     /// is a no-op.
+    USDGEOM_API
     void SetTime(UsdTimeCode time);
 
     /// Get the current time from which this cache is reading values.
@@ -124,6 +135,7 @@ public:
     ///
     /// This can be used to restrict accumulation of transformations to
     /// a subtree of the scene.
+    USDGEOM_API
     void SetWorldPath(const SdfPath& worldPath);
 
     /// Returns the path used when computing transformations
@@ -132,6 +144,7 @@ public:
     const SdfPath & GetWorldPath() const { return _worldPath; }
 
     /// Swap the contents of this XformCache with \p other.
+    USDGEOM_API
     void Swap(UsdGeomXformCache& other);
 
 private:

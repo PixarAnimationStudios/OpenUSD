@@ -27,6 +27,7 @@
 /// \file usdGeom/pointBased.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -81,11 +82,13 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomPointBased();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -98,6 +101,7 @@ public:
     /// UsdGeomPointBased(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDGEOM_API
     static UsdGeomPointBased
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -105,11 +109,13 @@ public:
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USDGEOM_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -123,6 +129,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Point3fArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetPointsAttr() const;
 
     /// See GetPointsAttr(), and also 
@@ -130,6 +137,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreatePointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -148,6 +156,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetVelocitiesAttr() const;
 
     /// See GetVelocitiesAttr(), and also 
@@ -155,6 +164,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateVelocitiesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -173,6 +183,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Normal3fArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDGEOM_API
     UsdAttribute GetNormalsAttr() const;
 
     /// See GetNormalsAttr(), and also 
@@ -180,6 +191,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateNormalsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -205,6 +217,7 @@ public:
     /// To achieve partial or fully faceted shading of a polygonal mesh
     /// with normals, one should use UsdGeomTokens->faceVarying or
     /// UsdGeomTokens->uniform interpolation.
+    USDGEOM_API
     TfToken GetNormalsInterpolation() const;
 
     /// Set the \ref Usd_InterpolationVals "interpolation" for the \em normals
@@ -217,6 +230,7 @@ public:
     /// to match its interpolation to its prim's topology.
     ///
     /// \sa GetNormalsInterpolation()
+    USDGEOM_API
     bool SetNormalsInterpolation(TfToken const &interpolation);
 
     /// Compute the extent for the point cloud defined by points. 
@@ -229,6 +243,7 @@ public:
     /// This function is to provide easy authoring of extent for usd authoring
     /// tools, hence it is static and acts outside a specific prim (as in 
     /// attribute based methods). 
+    USDGEOM_API
     static bool ComputeExtent(const VtVec3fArray& points, VtVec3fArray* extent);
 };
 
