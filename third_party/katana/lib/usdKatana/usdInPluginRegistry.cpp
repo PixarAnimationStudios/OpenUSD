@@ -30,6 +30,10 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 
+#include <FnLogging/FnLogging.h>
+
+FnLogSetup("UsdInPluginRegistry");
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -125,11 +129,17 @@ PxrUsdKatanaUsdInPluginRegistry::_DoFindKind(
         const _KindRegistry& reg)
 {
     // can cache this if it becomes an issue.
-    for (TfToken currKind = kind;
-            !currKind.IsEmpty();
-            currKind = KindRegistry::GetBaseKind(currKind)) {
+    TfToken currKind = kind;
+    while (!currKind.IsEmpty()) {
         if (TfMapLookup(reg, currKind, opName)) {
             return true;
+        }
+        if (KindRegistry::HasKind(currKind)) {
+            currKind = KindRegistry::GetBaseKind(currKind);
+        }
+        else {
+            FnLogWarn(TfStringPrintf("Unknown kind: '%s'", currKind.GetText()));
+            return false;
         }
     }
 
