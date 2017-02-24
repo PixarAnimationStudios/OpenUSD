@@ -27,7 +27,7 @@
 /// \file usdShade/material.h
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdShade/subgraph.h"
+#include "pxr/usd/usdShade/nodeGraph.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -98,7 +98,7 @@ class SdfAssetPath;
 /// 
 /// 
 ///
-class UsdShadeMaterial : public UsdShadeSubgraph
+class UsdShadeMaterial : public UsdShadeNodeGraph
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -112,7 +112,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdShadeMaterial(const UsdPrim& prim=UsdPrim())
-        : UsdShadeSubgraph(prim)
+        : UsdShadeNodeGraph(prim)
     {
     }
 
@@ -120,7 +120,7 @@ public:
     /// Should be preferred over UsdShadeMaterial(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdShadeMaterial(const UsdSchemaBase& schemaObj)
-        : UsdShadeSubgraph(schemaObj)
+        : UsdShadeNodeGraph(schemaObj)
     {
     }
 

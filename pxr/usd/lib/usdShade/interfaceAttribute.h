@@ -37,10 +37,10 @@ class UsdShadeOutput;
 /// \class UsdShadeInterfaceAttribute
 ///
 /// Schema wrapper for UsdAttribute for authoring and introspecting
-/// interface attributes, which are attributes on a UsdShadeSubgraph that provide
+/// interface attributes, which are attributes on a UsdShadeNodeGraph that provide
 /// values that can be instanced onto UsdShadeParameter's in shading networks .
 ///
-/// See \ref UsdShadeSubgraph_Interfaces "Look Interface Attributes" for more 
+/// See \ref UsdShadeNodeGraph_Interfaces "Look Interface Attributes" for more 
 /// detail on Look Interfaces and the API for using them.
 ///
 class UsdShadeInterfaceAttribute
@@ -112,9 +112,9 @@ public:
 
     /// \name Connections
     /// 
-    /// Interface attributes on subgraphs are connectable.
+    /// Interface attributes on node-graphs are connectable.
     /// 
-    /// Subgraphs can be connected to interface attributes on enclosing material 
+    /// Node-graphs can be connected to interface attributes on enclosing material 
     /// prims or to outputs of shaders in the material.
     /// 
     /// @{
@@ -132,7 +132,7 @@ public:
     /// attribute connections can be only single-targetted; that is, any given 
     /// interface attribute can target at most a single source/sourceName pair.
     ///
-    /// \param source  the shader or subgraph object producing the value
+    /// \param source  the shader or node-graph object producing the value
     ///        
     /// \param sourceName  the particular computation or parameter we 
     ///        want to consume. This does not include the namespace prefix
@@ -317,7 +317,7 @@ public:
     }
 #endif // doxygen
 private:
-    friend class UsdShadeSubgraph;
+    friend class UsdShadeNodeGraph;
 
     static std::string _GetInterfaceAttributeRelPrefix(
             const TfToken& relTarget);

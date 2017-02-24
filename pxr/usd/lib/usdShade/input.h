@@ -36,7 +36,7 @@ class UsdShadeConnectableAPI;
 
 /// \class UsdShadeInput
 /// 
-/// This class encapsulates a shader or subgraph input, which is a 
+/// This class encapsulates a shader or node-graph input, which is a 
 /// connectable property representing a typed value.
 /// 
 class UsdShadeInput

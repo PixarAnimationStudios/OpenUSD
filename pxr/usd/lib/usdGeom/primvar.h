@@ -67,7 +67,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     classification that any renderer should use to locate potential
 ///     overrides.  Do please note that primvars override parameters on
 ///     UsdShadeShader objects, \em not 
-///     \ref UsdShadeSubgraph_Interfaces "Interface Attributes" on UsdShadeMaterial
+///     \ref UsdShadeNodeGraph_Interfaces "Interface Attributes" on UsdShadeMaterial
 ///     prims.
 ///
 /// \section Usd_Creating_and_Accessing_Primvars Creating and Accessing Primvars

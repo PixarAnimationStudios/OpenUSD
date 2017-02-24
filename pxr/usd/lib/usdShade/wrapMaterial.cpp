@@ -51,7 +51,7 @@ void wrapUsdShadeMaterial()
 {
     typedef UsdShadeMaterial This;
 
-    class_<This, bases<UsdShadeSubgraph> >
+    class_<This, bases<UsdShadeNodeGraph> >
         cls("Material");
 
     cls

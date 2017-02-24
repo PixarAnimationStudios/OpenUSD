@@ -39,7 +39,7 @@ class UsdShadeConnectableAPI;
 
 /// \class UsdShadeOutput
 /// 
-/// This class encapsulates a shader or subgraph output, which is a 
+/// This class encapsulates a shader or node-graph output, which is a 
 /// connectable property representing a typed, externally computed value.
 /// 
 class UsdShadeOutput
@@ -225,7 +225,7 @@ private:
     // object.
     explicit UsdShadeOutput(const UsdProperty &prop);
 
-    // This is currently a relationship if the output belongs to a subgraph.
+    // This is currently a relationship if the output belongs to a node-graph.
     // In the future, all outputs will have associated attributes and we 
     // can switch this to be a UsdAttribute instead of UsdProperty.
     UsdProperty _prop;

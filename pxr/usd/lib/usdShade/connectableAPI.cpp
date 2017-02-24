@@ -129,16 +129,16 @@ UsdShadeConnectableAPI::IsShader() const
 }
 
 bool 
-UsdShadeConnectableAPI::IsSubgraph() const
+UsdShadeConnectableAPI::IsNodeGraph() const
 {
-    return GetPrim().IsA<UsdShadeSubgraph>();
+    return GetPrim().IsA<UsdShadeNodeGraph>();
 }
 
 /* virtual */
 bool 
 UsdShadeConnectableAPI::_IsCompatible(const UsdPrim &prim) const
 {
-    return IsShader() or IsSubgraph();
+    return IsShader() or IsNodeGraph();
 }
 
 static TfToken 
@@ -197,7 +197,7 @@ UsdShadeConnectableAPI::ConnectToSource(
     UsdShadeAttributeType shadingPropType = 
         UsdShadeUtils::GetBaseNameAndType(shadingProp.GetName()).second;
     if (shadingPropType == UsdShadeAttributeType::Output) {
-        // Only outputs belonging to subgraphs are connectable. We don't allow 
+        // Only outputs belonging to node-graphs are connectable. We don't allow 
         // connecting outputs of shaders as it's not meaningful.
         // 
         // Note: this warning will not be issued if the prim is untyped or 
@@ -210,13 +210,13 @@ UsdShadeConnectableAPI::ConnectToSource(
             return false;
         }
 
-        // Ensure that the source prim is a descendent of the subgraph owning 
+        // Ensure that the source prim is a descendent of the node-graph owning 
         // the output.
         const SdfPath sourcePrimPath = source.GetPrim().GetPath();
         const SdfPath outputOwnerPath = shadingProp.GetPrim().GetPath();
         if (not sourcePrimPath.HasPrefix(outputOwnerPath)) {
-            TF_WARN("Source of output '%s' on subgraph at path <%s> is outside "
-                "the subgraph: <%s>", sourceName.GetText(), 
+            TF_WARN("Source of output '%s' on node-graph at path <%s> is outside "
+                "the node-graph: <%s>", sourceName.GetText(), 
                 outputOwnerPath.GetText(), sourcePrimPath.GetText());
             // Issue a warning, but allow this connnection for now.
         }
@@ -228,7 +228,7 @@ UsdShadeConnectableAPI::ConnectToSource(
     UsdRelationship rel = _GetConnectionRel(shadingProp, /* create */ true);
 
     // XXX it WBN to be able to validate source itself, guaranteeing
-    // that the source is, in fact connectable (i.e., a shader or subgraph).
+    // that the source is, in fact connectable (i.e., a shader or node-graph).
     // However, it remains useful to be able to target a pure-over.
     if (rel && sourcePrim) {
         std::string prefix = UsdShadeUtils::GetPrefixForAttributeType(
@@ -239,7 +239,7 @@ UsdShadeConnectableAPI::ConnectToSource(
 
         if (not sourceAttr) {
             // If the sourcePrim contains a relationship with the source 
-            // name, then it must be a terminal output on a subgraph and 
+            // name, then it must be a terminal output on a node-graph and 
             // cannot be connected to.
             if (sourcePrim.GetRelationship(sourceAttrName)) {
                 TF_CODING_ERROR("Cannot connect shading property <%s>'s source"
@@ -254,7 +254,7 @@ UsdShadeConnectableAPI::ConnectToSource(
         // If a typeName isn't specified, 
         if (not typeName) {
             // If shadingProp is not an attribute, it must be a terminal output 
-            // on a subgraph. Hence wrapping shadingProp in a UsdShadeOutput 
+            // on a node-graph. Hence wrapping shadingProp in a UsdShadeOutput 
             // and asking for its typeName should give us the desired answer.
             typeName = UsdShadeOutput(shadingProp).GetTypeName();
         }
@@ -324,7 +324,7 @@ UsdShadeConnectableAPI::ConnectToSource(
         sourcePath.GetNameToken());
 
     // If shadingProp is not an attribute, it must be a terminal output on a
-    // subgraph. Hence wrapping shadingProp in a UsdShadeOutput and asking for 
+    // node-graph. Hence wrapping shadingProp in a UsdShadeOutput and asking for 
     // its typeName should give us the desired answer.
     SdfValueTypeName typeName = UsdShadeOutput(shadingProp).GetTypeName();
     return ConnectToSource(shadingProp, source, sourceName, sourceType, 
@@ -468,7 +468,7 @@ UsdShadeConnectableAPI::GetOutput(const TfToken &name) const
     } 
  
     if (UsdShadeUtils::ReadOldEncoding()) {
-        if (IsSubgraph()) {
+        if (IsNodeGraph()) {
             if (GetPrim().HasRelationship(name)) {
                 return UsdShadeOutput(GetPrim().GetRelationship(name));
             }
@@ -494,7 +494,7 @@ UsdShadeConnectableAPI::GetOutputs() const
         }
     }
 
-    if (UsdShadeUtils::ReadOldEncoding() and IsSubgraph()) {
+    if (UsdShadeUtils::ReadOldEncoding() and IsNodeGraph()) {
         std::vector<UsdRelationship> rels= GetPrim().GetRelationships();
         TF_FOR_ALL(relIter, rels) { 
             const UsdRelationship& rel= *relIter;
@@ -505,9 +505,10 @@ UsdShadeConnectableAPI::GetOutputs() const
                 not TfStringStartsWith(rel.GetName(), 
                                        UsdShadeTokens->interfaceRecipientsOf)) 
             {
-                // All relationships on subgraphs typically represent terminal
-                // outputs, so wrap the relationship in a UsdShadeOutput object 
-                // and add to the resuls.
+                // All non-connection related relationships on node-graphs
+                // typically represent terminal outputs, so wrap the 
+                // relationship in a UsdShadeOutput object and add to the 
+                // resuls.
                 ret.push_back(UsdShadeOutput(rel));
             }
         }
@@ -534,7 +535,7 @@ UsdShadeConnectableAPI::GetInput(const TfToken &name) const
     }
 
     if (UsdShadeUtils::ReadOldEncoding()) {
-        if (IsSubgraph()) {
+        if (IsNodeGraph()) {
             TfToken interfaceAttrName = TfToken(
                 UsdShadeTokens->interface.GetString() + name.GetString());
             if (GetPrim().HasAttribute(interfaceAttrName)) {
@@ -571,10 +572,10 @@ UsdShadeConnectableAPI::GetInputs() const
         // Support for old style encoding containing interface attributes 
         // and parameters.
         if (UsdShadeUtils::ReadOldEncoding()) {
-            if (IsSubgraph() and 
+            if (IsNodeGraph() and 
                 TfStringStartsWith(attr.GetName().GetString(), 
                                    UsdShadeTokens->interface)) {                    
-                // If it's an interface attribute on a subgraph, wrap it in a 
+                // If it's an interface attribute on a node-graph, wrap it in a 
                 // UsdShadeInput object and add it to the list of inputs.
                 ret.push_back(UsdShadeInput(attr));
             } else if (IsShader() and attr.GetNamespace().IsEmpty()) {

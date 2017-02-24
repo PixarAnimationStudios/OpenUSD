@@ -203,7 +203,7 @@ public:
     /// \name Parameters API
     /// \deprecated
     /// Parameters have been replaced by the more general UsdShadeInputs, that
-    /// can exist on shaders and subgraphs.
+    /// can exist on shaders and node-graphs.
     /// 
     /// @{
         
@@ -229,11 +229,11 @@ public:
 
     /// \name Outputs API
     ///
-    /// Outputs represent a typed property on a shader or subgraph whose value 
+    /// Outputs represent a typed property on a shader or node-graph whose value 
     /// is computed externally. 
     /// 
-    /// When they exist on a subgraph, they are connectable and are typically 
-    /// connected to the output of a shader within the subgraph.
+    /// When they exist on a node-graph, they are connectable and are typically 
+    /// connected to the output of a shader within the node-graph.
     /// 
     /// @{
         
@@ -260,14 +260,14 @@ public:
     ///
     /// Inputs are connectable properties with a typed value. 
     /// 
-    /// On shaders, the shader parameters are encoded as inputs. On subgraphs,
+    /// On shaders, the shader parameters are encoded as inputs. On node-graphs,
     /// interface attributes are represented as inputs.
     /// 
     /// @{
         
     /// Create an input which can either have a value or can be connected.
     /// The attribute representing the input is created in the "inputs:" 
-    /// namespace. Inputs on both shaders and subgraphs are connectable.
+    /// namespace. Inputs on both shaders and node-graphs are connectable.
     /// 
     UsdShadeInput CreateInput(const TfToken& name,
                               const SdfValueTypeName& typeName);

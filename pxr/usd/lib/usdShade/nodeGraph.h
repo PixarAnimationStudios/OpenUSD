@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDSHADE_GENERATED_SUBGRAPH_H
-#define USDSHADE_GENERATED_SUBGRAPH_H
+#ifndef USDSHADE_GENERATED_NODEGRAPH_H
+#define USDSHADE_GENERATED_NODEGRAPH_H
 
-/// \file usdShade/subgraph.h
+/// \file usdShade/nodeGraph.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/typed.h"
@@ -54,30 +54,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// SUBGRAPH                                                                   //
+// NODEGRAPH                                                                  //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdShadeSubgraph
+/// \class UsdShadeNodeGraph
 ///
-/// A subgraph is a container for shading nodes, as well as other 
-/// subgraphs. It has a public input interface and provides a list of public 
+/// A node-graph is a container for shading nodes, as well as other 
+/// node-graphs. It has a public input interface and provides a list of public 
 /// outputs.
 /// 
-/// <b>Subgraph Interfaces</b>
+/// <b>Node Graph Interfaces</b>
 /// 
-/// One of the most important functions of a Subgraph is to host the "interface"
+/// One of the most important functions of a node-graph is to host the "interface"
 /// with which clients of already-built shading networks will interact.  Please
-/// see \ref UsdShadeSubgraph_Interfaces "Interface Attributes" for a detailed
+/// see \ref UsdShadeNodeGraph_Interfaces "Interface Attributes" for a detailed
 /// explanation of what the interface provides, and how to construct and
 /// use it to effectively share/instance shader networks.
 /// 
-/// <b>Subgraph Outputs</b>
+/// <b>Node Graph Outputs</b>
 /// 
 /// These behave like outputs on a shader and are typically connected to an 
-/// output on a shader inside the subgraph.
+/// output on a shader inside the node-graph.
 /// 
 ///
-class UsdShadeSubgraph : public UsdTyped
+class UsdShadeNodeGraph : public UsdTyped
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -86,25 +86,25 @@ public:
     /// a non-empty typeName.
     static const bool IsConcrete = true;
 
-    /// Construct a UsdShadeSubgraph on UsdPrim \p prim .
-    /// Equivalent to UsdShadeSubgraph::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdShadeNodeGraph on UsdPrim \p prim .
+    /// Equivalent to UsdShadeNodeGraph::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdShadeSubgraph(const UsdPrim& prim=UsdPrim())
+    explicit UsdShadeNodeGraph(const UsdPrim& prim=UsdPrim())
         : UsdTyped(prim)
     {
     }
 
-    /// Construct a UsdShadeSubgraph on the prim held by \p schemaObj .
-    /// Should be preferred over UsdShadeSubgraph(schemaObj.GetPrim()),
+    /// Construct a UsdShadeNodeGraph on the prim held by \p schemaObj .
+    /// Should be preferred over UsdShadeNodeGraph(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdShadeSubgraph(const UsdSchemaBase& schemaObj)
+    explicit UsdShadeNodeGraph(const UsdSchemaBase& schemaObj)
         : UsdTyped(schemaObj)
     {
     }
 
     /// Destructor.
-    virtual ~UsdShadeSubgraph();
+    virtual ~UsdShadeNodeGraph();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -112,16 +112,16 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdShadeSubgraph holding the prim adhering to this
+    /// Return a UsdShadeNodeGraph holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdShadeSubgraph(stage->GetPrimAtPath(path));
+    /// UsdShadeNodeGraph(stage->GetPrimAtPath(path));
     /// \endcode
     ///
-    static UsdShadeSubgraph
+    static UsdShadeNodeGraph
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -146,7 +146,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
-    static UsdShadeSubgraph
+    static UsdShadeNodeGraph
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
@@ -171,21 +171,21 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// Allow UsdShadeSubgraph to auto-convert to UsdShadeConnectableAPI, so 
-    /// you can pass in a UsdShadeSubgraph to any function that accepts 
+    /// Allow UsdShadeNodeGraph to auto-convert to UsdShadeConnectableAPI, so 
+    /// you can pass in a UsdShadeNodeGraph to any function that accepts 
     /// a UsdShadeConnectableAPI.
     operator UsdShadeConnectableAPI () const;
 
-    /// \anchor UsdShadeSubgraph_Interfaces
+    /// \anchor UsdShadeNodeGraph_Interfaces
     /// \name Interface Attributes
     ///
     /// In addition to serving as the "head" for all of the shading networks
-    /// that describe each render target's particular Subgraph, the Subgraph
-    /// prim provides a unified "interface" that allows Subgraphs to share 
+    /// that describe each render target's particular node-graph, the node-graph
+    /// prim provides a unified "interface" that allows node-graphs to share 
     /// shading networks while retaining the ability for each to specify its own
     /// set of unique values for the parameters that users may need to modify.
     ///
-    /// A "Subgraph Interface" is a combination of:
+    /// A "Node-graph Interface" is a combination of:
     /// \li a flat collection of attributes, of arbitrary names
     /// \li for each such attribute, a list of UsdShaderParameter targets
     /// whose attributes on Shader prims should be driven by the interface
@@ -194,7 +194,7 @@ public:
     /// A single interface attribute can drive multiple shader parameters - 
     /// within the same or multiple render targets.  Connections to the driven
     /// shader parameters are encoded in such a way that is easy to filter
-    /// the Subgraph interface by render target; \em however, the set of 
+    /// the node-graph interface by render target; \em however, the set of 
     /// interface attributes itself is intentionally flat, to encourage
     /// sharing of interface between render targets.  Clients are always free
     /// to create interface attributes with namespacing to segregate "private"
@@ -242,9 +242,9 @@ public:
 
     /// @}
 
-    /// \anchor UsdShadeSubgraph_Output
-    /// \name Outputs of a subgraph. These typically connect to outputs of 
-    /// shaders or nested subgraphs within the subgraph.
+    /// \anchor UsdShadeNodeGraph_Output
+    /// \name Outputs of a node-graph. These typically connect to outputs of 
+    /// shaders or nested node-graphs within the node-graph.
     /// 
     /// @{
 
@@ -265,9 +265,9 @@ public:
     
     /// @}
 
-    /// \anchor UsdShadeSubgraph_Inputs
-    /// \name Inputs of a subgraph. These define the interface afforded by the 
-    /// subgraph.
+    /// \anchor UsdShadeNodeGraph_Inputs
+    /// \name Inputs of a node-graph. These define the interface afforded by the 
+    /// node-graph.
     /// 
     /// @{
 
@@ -282,7 +282,7 @@ public:
     /// 
     UsdShadeInput GetInput(const TfToken &name) const;
 
-    /// Returns all inputs present on the subgraph. These are represented by
+    /// Returns all inputs present on the node-graph. These are represented by
     /// attributes in the "inputs:" namespace.
     /// 
     std::vector<UsdShadeInput> GetInputs() const;
@@ -290,36 +290,37 @@ public:
     /// @}
 
     // Provide custom hash and equality comparison function objects for 
-    // UsdShadeSubgraph until bug 143077 is resolved.
+    // UsdShadeNodeGraph until bug 143077 is resolved.
 
-    /// Hash functor for UsdShadeSubgraph objects.
-    struct SubgraphHasher {
-        inline size_t operator()(const UsdShadeSubgraph &subgraph) const {
-            return hash_value(subgraph.GetPrim());
+    /// Hash functor for UsdShadeNodeGraph objects.
+    struct NodeGraphHasher {
+        inline size_t operator()(const UsdShadeNodeGraph &nodeGraph) const {
+            return hash_value(nodeGraph.GetPrim());
         }
     };
-    /// Equality comparator for UsdShadeSubgraph objects.
-    struct SubgraphEqualFn
+    /// Equality comparator for UsdShadeNodeGraph objects.
+    struct NodeGraphEqualFn
     {
-        inline bool operator() (UsdShadeSubgraph const& s1, 
-                                UsdShadeSubgraph const& s2) const
+        inline bool operator() (UsdShadeNodeGraph const& s1, 
+                                UsdShadeNodeGraph const& s2) const
         {
             return s1.GetPrim() == s2.GetPrim();
         }
     };
 
     // ---------------------------------------------------------------------- //
-    /// \anchor UsdShadeSubgraph_InterfaceInputs
+    /// \anchor UsdShadeNodeGraph_InterfaceInputs
     /// \name Interface Inputs
     /// 
-    /// API to query the inputs that form the interface of the subgraph and 
+    /// API to query the inputs that form the interface of the node-graph and 
     /// their connections.
     /// 
     /// @{
         
-    /// Returns all the "Interface Inputs" of the subgraph. This is the same 
+    /// Returns all the "Interface Inputs" of the node-graph. This is the same 
     /// as GetInputs(), but is provided  as a convenience, to allow clients to
-    /// distinguish between inputs on shaders vs. interface-inputs on subgraphs.
+    /// distinguish between inputs on shaders vs. interface-inputs on 
+    /// node-graphs.
     std::vector<UsdShadeInput> GetInterfaceInputs() const;
 
     /// Map of interface inputs to corresponding vectors of inputs that 
@@ -327,25 +328,25 @@ public:
     typedef std::unordered_map<UsdShadeInput, std::vector<UsdShadeInput>, 
         UsdShadeInput::Hash> InterfaceInputConsumersMap;
 
-    /// Map of subgraphs to their associated input-consumers map.
-    typedef std::unordered_map<UsdShadeSubgraph,
+    /// Map of node-graphs to their associated input-consumers map.
+    typedef std::unordered_map<UsdShadeNodeGraph,
                                InterfaceInputConsumersMap, 
-                               SubgraphHasher,
-                               SubgraphEqualFn> 
-            SubgraphInputConsumersMap;
+                               NodeGraphHasher,
+                               NodeGraphEqualFn> 
+            NodeGraphInputConsumersMap;
 
-    /// Walks the namespace subtree below the subgraph and computes a map 
-    /// containing the list of all inputs on the subgraph and the associated 
+    /// Walks the namespace subtree below the node-graph and computes a map 
+    /// containing the list of all inputs on the node-graph and the associated 
     /// vector of consumers of their values. The consumers can be inputs on 
-    /// shaders within the subgraph or on nested subgraphs).
+    /// shaders within the node-graph or on nested node-graphs).
     /// 
     /// If \p computeTransitiveConsumers is true, then value consumers
-    /// belonging to <b>subgraphs</b> are resolved transitively to compute the 
-    /// transitive mapping from inputs on the subgraph to inputs on shaders 
-    /// inside the material. Note that inputs on subgraphs that don't have 
+    /// belonging to <b>node-graphs</b> are resolved transitively to compute the 
+    /// transitive mapping from inputs on the node-graph to inputs on shaders 
+    /// inside the material. Note that inputs on node-graphs that don't have 
     /// value consumers will continue to be included in the result.
     /// 
-    /// This API is provided for use by DCC's that want to present subgraph 
+    /// This API is provided for use by DCC's that want to present node-graph
     /// interface / shader connections in the opposite direction than they are 
     /// encoded in USD.
     /// 

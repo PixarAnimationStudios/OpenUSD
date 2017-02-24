@@ -119,7 +119,7 @@ public:
     /// connections can be only single-targetted; that is, any given scalar
     /// parameter can target at most a single source/outputName pair.
     ///
-    /// \param source the shader or subgraph object producing the value
+    /// \param source the shader or node-graph object producing the value
     /// \param sourceName the particular computation or parameter we 
     ///        want to consume. This does not include the namespace prefix 
     ///        associated with the source type.

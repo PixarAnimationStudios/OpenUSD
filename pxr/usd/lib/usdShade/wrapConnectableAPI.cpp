@@ -143,10 +143,10 @@ WRAP_CUSTOM {
 
     _class
         .def(init<UsdShadeShader const &>(arg("shader")))
-        .def(init<UsdShadeSubgraph const&>(arg("subgraph")))
+        .def(init<UsdShadeNodeGraph const&>(arg("nodeGraph")))
 
         .def("IsShader", &UsdShadeConnectableAPI::IsShader)
-        .def("IsSubgraph", &UsdShadeConnectableAPI::IsSubgraph)
+        .def("IsNodeGraph", &UsdShadeConnectableAPI::IsNodeGraph)
 
         .def("ConnectToSource", ConnectToSource_1, 
             (arg("shadingProp"), 
@@ -179,7 +179,7 @@ WRAP_CUSTOM {
         
     ;
 
-    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeSubgraph>();
+    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeNodeGraph>();
     implicitly_convertible<UsdShadeConnectableAPI, UsdShadeShader>();
 }
 

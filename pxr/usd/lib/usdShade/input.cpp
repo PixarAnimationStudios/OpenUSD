@@ -104,10 +104,10 @@ UsdShadeInput::UsdShadeInput(
                 /* custom = */ false);
         } else {
             UsdShadeConnectableAPI connectable(prim);
-            // If this is a subgraph and the name already contains "interface:" 
+            // If this is a node-graph and the name already contains "interface:" 
             // namespace in it, just create the attribute with the requested 
             // name.
-            if (connectable.IsSubgraph() and 
+            if (connectable.IsNodeGraph() and 
                 TfStringStartsWith(name.GetString(), UsdShadeTokens->interface))
             {
                 _attr = prim.CreateAttribute(name, typeName, /*custom*/ false);

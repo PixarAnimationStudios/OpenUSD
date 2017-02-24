@@ -32,7 +32,7 @@
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/subgraph.h"
+#include "pxr/usd/usdShade/nodeGraph.h"
     
 
 #include "pxr/base/vt/value.h"
@@ -131,7 +131,7 @@ public:
     
 private:
     // Returns true if the given prim is compatible with this API schema,
-    // i.e. if it is a shader or a subgraph.
+    // i.e. if it is a shader or a node-graph.
     virtual bool _IsCompatible(const UsdPrim &prim) const;
     
 public:
@@ -142,23 +142,23 @@ public:
     {        
     }
 
-    /// Constructor that takes a UsdShadeSubgraph.
-    explicit UsdShadeConnectableAPI(const UsdShadeSubgraph &subgraph):
-        UsdShadeConnectableAPI(subgraph.GetPrim())
+    /// Constructor that takes a UsdShadeNodeGraph.
+    explicit UsdShadeConnectableAPI(const UsdShadeNodeGraph &nodeGraph):
+        UsdShadeConnectableAPI(nodeGraph.GetPrim())
     {        
     }
 
     /// Returns true if the prim is a shader.
     bool IsShader() const;
 
-    /// Returns true if the prim is a subgraph.
-    bool IsSubgraph() const;
+    /// Returns true if the prim is a node-graph.
+    bool IsNodeGraph() const;
 
-    /// Allow UsdShadeConnectableAPI to auto-convert to UsdShadeSubgraph, so 
+    /// Allow UsdShadeConnectableAPI to auto-convert to UsdShadeNodeGraph, so 
     /// you can pass in a UsdShadeConnectableAPI to any function that accepts 
-    /// a UsdShadeSubgraph.
-    operator UsdShadeSubgraph () {
-        return UsdShadeSubgraph(GetPrim());
+    /// a UsdShadeNodeGraph.
+    operator UsdShadeNodeGraph () {
+        return UsdShadeNodeGraph(GetPrim());
     }
 
     /// Allow UsdShadeConnectableAPI to auto-convert to UsdShadeShader, so 
@@ -170,7 +170,7 @@ public:
 
     /// \name Connections 
     /// 
-    /// Inputs and outputs on shaders and subgraphs are connectable.
+    /// Inputs and outputs on shaders and node-graphs are connectable.
     /// This section provides API for authoring and managing these connections
     /// in a shading network.
     /// 
@@ -298,7 +298,7 @@ public:
     /// @{
 
     /// Create an output, which represents and externally computed, typed value.
-    /// Outputs on subgraphs can be connected. 
+    /// Outputs on node-graphs can be connected. 
     /// 
     /// The attribute representing an output is created in the "outputs:" 
     /// namespace.
@@ -312,7 +312,7 @@ public:
     ///
     UsdShadeOutput GetOutput(const TfToken &name) const;
 
-    /// Returns all outputs on the connectable prim (i.e. shader or subgraph). 
+    /// Returns all outputs on the connectable prim (i.e. shader or node-graph). 
     /// Outputs are represented by attributes in the "outputs:" namespace.
     /// 
     std::vector<UsdShadeOutput> GetOutputs() const;
@@ -335,7 +335,7 @@ public:
     /// 
     UsdShadeInput GetInput(const TfToken &name) const;
 
-    /// Returns all inputs on the connectable prim (i.e. shader or subgraph). 
+    /// Returns all inputs on the connectable prim (i.e. shader or node-graph). 
     /// Inputs are represented by attributes in the "inputs:" namespace.
     /// 
     std::vector<UsdShadeInput> GetInputs() const;

@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdShadeMaterial,
-        TfType::Bases< UsdShadeSubgraph > >();
+        TfType::Bases< UsdShadeNodeGraph > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -103,7 +103,7 @@ UsdShadeMaterial::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdShadeSubgraph::GetSchemaAttributeNames(true);
+        UsdShadeNodeGraph::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;

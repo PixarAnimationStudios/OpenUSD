@@ -21,7 +21,7 @@ pxr_shared_library(usdShade
         pShader
         pShaderUtils
         shader
-        subgraph
+        nodeGraph
         tokens
         utils
 
@@ -39,7 +39,7 @@ pxr_shared_library(usdShade
         wrapParameter.cpp
         wrapPShader.cpp
         wrapShader.cpp
-        wrapSubgraph.cpp
+        wrapNodeGraph.cpp
         wrapTokens.cpp
         wrapUtils.cpp
 

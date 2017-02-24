@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdShade/subgraph.h"
+#include "pxr/usd/usdShade/nodeGraph.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -47,12 +47,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 WRAP_CUSTOM;
 
 
-void wrapUsdShadeSubgraph()
+void wrapUsdShadeNodeGraph()
 {
-    typedef UsdShadeSubgraph This;
+    typedef UsdShadeNodeGraph This;
 
     class_<This, bases<UsdTyped> >
-        cls("Subgraph");
+        cls("NodeGraph");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -111,41 +111,41 @@ PXR_NAMESPACE_OPEN_SCOPE
 WRAP_CUSTOM {
     _class
         .def("CreateInterfaceAttribute", 
-             &UsdShadeSubgraph::CreateInterfaceAttribute,
+             &UsdShadeNodeGraph::CreateInterfaceAttribute,
              (arg("interfaceAttrName"), arg("typeName")))
         .def("GetInterfaceAttribute", 
-             &UsdShadeSubgraph::GetInterfaceAttribute,
+             &UsdShadeNodeGraph::GetInterfaceAttribute,
              (arg("interfaceAttrName")))
         .def("GetInterfaceAttributes",
-             &UsdShadeSubgraph::GetInterfaceAttributes,
+             &UsdShadeNodeGraph::GetInterfaceAttributes,
              (arg("renderTarget")))
 
         .def("CreateOutput", 
-             &UsdShadeSubgraph::CreateOutput,
+             &UsdShadeNodeGraph::CreateOutput,
              (arg("name"), arg("typeName")))
         .def("GetOutput",
-             &UsdShadeSubgraph::GetOutput,
+             &UsdShadeNodeGraph::GetOutput,
              (arg("name")))
         .def("GetOutputs",
-             &UsdShadeSubgraph::GetOutputs,
+             &UsdShadeNodeGraph::GetOutputs,
              return_value_policy<TfPySequenceToList>())
 
-        .def("CreateInput", &UsdShadeSubgraph::CreateInput,
+        .def("CreateInput", &UsdShadeNodeGraph::CreateInput,
              (arg("name"), arg("type")))
-        .def("GetInput", &UsdShadeSubgraph::GetInput, arg("name"))
-        .def("GetInputs", &UsdShadeSubgraph::GetInputs,
+        .def("GetInput", &UsdShadeNodeGraph::GetInput, arg("name"))
+        .def("GetInputs", &UsdShadeNodeGraph::GetInputs,
              return_value_policy<TfPySequenceToList>())
-        .def("GetInterfaceInputs", &UsdShadeSubgraph::GetInterfaceInputs,
+        .def("GetInterfaceInputs", &UsdShadeNodeGraph::GetInterfaceInputs,
              return_value_policy<TfPySequenceToList>())
 
         .def("ComputeInterfaceInputConsumersMap",
-             &UsdShadeSubgraph::ComputeInterfaceInputConsumersMap,
+             &UsdShadeNodeGraph::ComputeInterfaceInputConsumersMap,
              return_value_policy<TfPyMapToDictionary>(),
              (arg("computeTransitiveConsumers")=false))
 
     ;
 
-    implicitly_convertible<UsdShadeSubgraph, UsdShadeConnectableAPI>();
+    implicitly_convertible<UsdShadeNodeGraph, UsdShadeConnectableAPI>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
