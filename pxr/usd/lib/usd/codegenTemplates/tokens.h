@@ -34,6 +34,7 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 {{ namespaceOpen }}
@@ -70,7 +71,7 @@
 {% for token in tokens %}
 /// \li <b>{{ token.id }}</b> - {{ token.desc }}
 {% endfor %}
-TF_DECLARE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {{ Upper(tokensPrefix) }}_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {{ Upper(tokensPrefix) }}_API, {{ Upper(tokensPrefix) }}_TOKENS);
 
 {{ namespaceClose }}
 

@@ -25,6 +25,7 @@
 #define USD_EDITTARGET_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/pcp/node.h"
@@ -80,6 +81,7 @@ public:
 
     /// Construct a null EditTarget.  A null EditTarget will return paths
     /// unchanged when asked to map paths.
+    USD_API
     UsdEditTarget();
 
     /// Constructor.  Allow implicit conversion from SdfLayerHandle.
@@ -88,31 +90,37 @@ public:
     /// without explicitly having to construct a \a UsdEditTarget instance.
     /// To automatically supply the appropriate layer offset for the given
     /// layer, see UsdStage::GetEditTargetForLayer().
+    USD_API
     UsdEditTarget(const SdfLayerHandle &layer,
                   SdfLayerOffset offset = SdfLayerOffset());
 
     /// Convenience implicit conversion from SdfLayerRefPtr.  See above
     /// constructor for more information.
+    USD_API
     UsdEditTarget(const SdfLayerRefPtr &layer,
                   SdfLayerOffset offset = SdfLayerOffset());
 
     /// Construct an EditTarget with \a layer and \a node.  The mapping
     /// will be used to map paths from the scene into the \a layer's namespace
     /// given the \a PcpNodeRef \a node's mapping.
+    USD_API
     UsdEditTarget(const SdfLayerHandle &layer, const PcpNodeRef &node);
 
     /// Convenience constructor taking SdfLayerRefPtr.  See above
     /// constructor for more information.
+    USD_API
     UsdEditTarget(const SdfLayerRefPtr &layer, const PcpNodeRef &node);
 
     /// Convenience constructor for editing a direct variant in a local
     /// LayerStack.  The \p varSelPath must be a prim variant selection path
     /// (see SdfPath::IsPrimVariantSelectionPath()).
+    USD_API
     static UsdEditTarget
     ForLocalDirectVariant(const SdfLayerHandle &layer,
                           const SdfPath &varSelPath);
 
     /// Equality comparison.
+    USD_API
     bool operator==(const UsdEditTarget &other) const;
 
     /// Inequality comparison.
@@ -135,6 +143,7 @@ public:
     /// EditTarget's layer, according to the EditTarget's mapping.  Null edit
     /// targets and EditTargets for which \a IsLocalLayer are true return
     /// scenePath unchanged.
+    USD_API
     SdfPath MapToSpecPath(const SdfPath &scenePath) const;
 
     /// Convenience function for getting the PrimSpec in the edit
@@ -143,12 +152,15 @@ public:
     /// target has a valid layer.  If this target IsNull or there is no valid
     /// mapping from \a scenePath to a SdfPrimSpec path in the layer, return
     /// null.
+    USD_API
     SdfPrimSpecHandle
     GetPrimSpecForScenePath(const SdfPath &scenePath) const;
 
+    USD_API
     SdfPropertySpecHandle
     GetPropertySpecForScenePath(const SdfPath &scenePath) const;
 
+    USD_API
     SdfSpecHandle
     GetSpecForScenePath(const SdfPath &scenePath) const;
 
@@ -166,6 +178,7 @@ public:
     /// desired.  This can be obtained by composing a partial (e.g. layer only)
     /// EditTarget over an explicit EditTarget with layer, mapping and layer
     /// stack identifier.
+    USD_API
     UsdEditTarget ComposeOver(const UsdEditTarget &weaker) const;
 
 private:

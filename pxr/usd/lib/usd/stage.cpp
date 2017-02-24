@@ -1343,7 +1343,7 @@ _ValueContainsBlock(const SdfAbstractDataValue* value)
 bool
 _ValueContainsBlock(const SdfAbstractDataConstValue* value)
 {
-    constexpr const std::type_info& valueBlockTypeId(typeid(SdfValueBlock));
+    const std::type_info& valueBlockTypeId(typeid(SdfValueBlock));
     return value && value->valueType == valueBlockTypeId;
 }
 
@@ -1742,7 +1742,7 @@ UsdStage::_WalkPrimsWithMastersImpl(
             cb(child);
             if (child.IsInstance()) {
                 const UsdPrim masterPrim = child.GetMaster();
-                if (TF_VERIFY(masterPrim) and 
+                if (TF_VERIFY(masterPrim) &&
                     seenMasterPrimPaths->insert(masterPrim.GetPath()).second) {
                     // Recurse.
                     _WalkPrimsWithMastersImpl(
@@ -1768,14 +1768,14 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
         (UsdPrim const &prim) {
             // Inactive prims are never included in this query.  Masters are
             // also never included, since they aren't independently loadable.
-            if (not prim.IsActive() or prim.IsMaster())
+            if (!prim.IsActive() || prim.IsMaster())
                 return;
             
             if (prim._GetSourcePrimIndex().HasPayload()) {
                 SdfPath const &payloadIncludePath =
                     prim._GetSourcePrimIndex().GetPath();
-                if (not unloadedOnly or
-                    not _cache->IsPayloadIncluded(payloadIncludePath)) {
+                if (!unloadedOnly ||
+                    !_cache->IsPayloadIncluded(payloadIncludePath)) {
                     if (primIndexPaths)
                         primIndexPathsVec.push_back(payloadIncludePath);
                     if (usdPrimPaths)

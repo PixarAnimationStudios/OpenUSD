@@ -25,6 +25,7 @@
 #define USD_USD_FILE_FORMAT_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -42,7 +43,7 @@ TF_DECLARE_WEAK_PTRS(SdfLayerBase);
     ((Target,       "usd"))         \
     ((FormatArg,    "format"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdUsdFileFormatTokens, USD_USD_FILE_FORMAT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdUsdFileFormatTokens, USD_API, USD_USD_FILE_FORMAT_TOKENS);
 
 /// \class UsdUsdFileFormat
 ///
@@ -62,31 +63,38 @@ class UsdUsdFileFormat : public SdfFileFormat
 public:
     using SdfFileFormat::FileFormatArguments;
 
+    USD_API
     virtual SdfAbstractDataRefPtr
     InitData(const FileFormatArguments& args) const;
 
+    USD_API
     virtual bool CanRead(const std::string &file) const;
 
+    USD_API
     virtual bool Read(
         const SdfLayerBasePtr& layerBase,
         const std::string& resolvedPath,
         bool metadataOnly) const;
 
+    USD_API
     virtual bool WriteToFile(
         const SdfLayerBase* layerBase,
         const std::string& filePath,
         const std::string& comment = std::string(),
         const FileFormatArguments& args = FileFormatArguments()) const;
 
+    USD_API
     virtual bool ReadFromString(
         const SdfLayerBasePtr& layerBase,
         const std::string& str) const;
 
+    USD_API
     virtual bool WriteToString(
         const SdfLayerBase* layerBase,
         std::string* str,
         const std::string& comment = std::string()) const;
 
+    USD_API
     virtual bool WriteToStream(
         const SdfSpecHandle &spec,
         std::ostream& out,

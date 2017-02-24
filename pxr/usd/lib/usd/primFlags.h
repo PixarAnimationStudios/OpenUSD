@@ -73,6 +73,7 @@
 /// negated to produce predicates:
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/bitUtils.h"
 
@@ -322,6 +323,7 @@ public:
     /// Every expression may be formulated as either a disjunction or a
     /// conjuction, but allowing both affords increased expressiveness.
     ///
+    USD_API
     class Usd_PrimFlagsDisjunction operator!() const;
 
 private:
@@ -425,6 +427,7 @@ public:
     /// Every expression may be formulated as either a disjunction or a
     /// conjuction, but allowing both affords increased expressiveness.
     ///
+    USD_API
     class Usd_PrimFlagsConjunction operator!() const;
 
 private:

@@ -27,6 +27,7 @@
 /// \file usd/stage.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/interpolation.h"
@@ -164,18 +165,22 @@ public:
     /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
     /// root layer's repository path if the layer has one, otherwise its real 
     /// path.
+    USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier,
               const SdfLayerHandle& sessionLayer);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier,
               const SdfLayerHandle& sessionLayer,
               const ArResolverContext& pathResolverContext);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier,
               const ArResolverContext& pathResolverContext);
@@ -192,20 +197,25 @@ public:
     /// create a stage with an anonymous in-memory session layer.  To create a
     /// stage without a session layer, pass TfNullPtr (or None in python) as the
     /// \p sessionLayer argument.
+    USD_API
     static UsdStageRefPtr
     CreateInMemory();
     /// \overload
+    USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
                    const ArResolverContext& pathResolverContext);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
                    const SdfLayerHandle &sessionLayer);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
                    const SdfLayerHandle &sessionLayer,
@@ -235,9 +245,11 @@ public:
     /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
     /// root layer's repository path if the layer has one, otherwise its real 
     /// path.
+    USD_API
     static UsdStageRefPtr
     Open(const std::string& filePath, InitialLoadSet load = LoadAll);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     Open(const std::string& filePath,
          const ArResolverContext& pathResolverContext,
@@ -259,11 +271,13 @@ public:
     /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
     /// root layer's repository path if the layer has one, otherwise its real 
     /// path.
+    USD_API
     static UsdStageRefPtr
     OpenMasked(const std::string &filePath,
                UsdStagePopulationMask const &mask,
                InitialLoadSet load = LoadAll);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     OpenMasked(const std::string &filePath,
                const ArResolverContext &pathResolverContext,
@@ -298,20 +312,24 @@ public:
     /// any cache that has that root layer is returned.  So, for example if you
     /// require that the stage have no session layer, you must explicitly
     /// specify TfNullPtr (or None in python) for the sessionLayer argument.
+    USD_API
     static UsdStageRefPtr
     Open(const SdfLayerHandle& rootLayer,
          InitialLoadSet load=LoadAll);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     Open(const SdfLayerHandle& rootLayer,
          const SdfLayerHandle& sessionLayer,
          InitialLoadSet load=LoadAll);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     Open(const SdfLayerHandle& rootLayer,
          const ArResolverContext& pathResolverContext,
          InitialLoadSet load=LoadAll);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     Open(const SdfLayerHandle& rootLayer,
          const SdfLayerHandle& sessionLayer,
@@ -338,23 +356,27 @@ public:
     /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
     /// root layer's repository path if the layer has one, otherwise its real 
     /// path.
+    USD_API
     static UsdStageRefPtr
     OpenMasked(const SdfLayerHandle& rootLayer,
                const UsdStagePopulationMask &mask,
                InitialLoadSet load=LoadAll);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     OpenMasked(const SdfLayerHandle& rootLayer,
                const SdfLayerHandle& sessionLayer,
                const UsdStagePopulationMask &mask,
                InitialLoadSet load=LoadAll);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     OpenMasked(const SdfLayerHandle& rootLayer,
                const ArResolverContext& pathResolverContext,
                const UsdStagePopulationMask &mask,
                InitialLoadSet load=LoadAll);
     /// \overload
+    USD_API
     static UsdStageRefPtr
     OpenMasked(const SdfLayerHandle& rootLayer,
                const SdfLayerHandle& sessionLayer,
@@ -362,8 +384,10 @@ public:
                const UsdStagePopulationMask &mask,
                InitialLoadSet load=LoadAll);
     
+    USD_API
     virtual ~UsdStage();
 
+    USD_API
     void Close();
 
     /// Calls SdfLayer::Reload on all layers contributing to this stage,
@@ -373,6 +397,7 @@ public:
     /// Note that reloading anonymous layers clears their content, so
     /// invoking Reload() on a stage constructed via CreateInMemory()
     /// will clear its root layer.
+    USD_API
     void Reload();
 
     /// Indicates whether the specified file is supported by UsdStage.
@@ -383,6 +408,7 @@ public:
     /// open the file or perform analysis on the contents.
     /// As such, UsdStage::Open may still fail even if this
     /// function returns true.
+    USD_API
     static bool
     IsSupportedFile(const std::string& filePath);
 
@@ -437,6 +463,7 @@ public:
     /// @{
 
     /// Get the global variant fallback preferences used in new UsdStages.
+    USD_API
     static PcpVariantFallbackMap GetGlobalVariantFallbacks();
 
     /// Set the global variant fallback preferences used in new
@@ -444,6 +471,7 @@ public:
     /// metadata, and only affects stages created after this call.
     ///
     /// \note This does not affect existing UsdStages.
+    USD_API
     static void
     SetGlobalVariantFallbacks(const PcpVariantFallbackMap &fallbacks);
 
@@ -481,6 +509,7 @@ public:
     /// See the rules under
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
+    USD_API
     UsdPrim
     Load(const SdfPath& path=SdfPath::AbsoluteRootPath());
 
@@ -496,6 +525,7 @@ public:
     /// See the rules under
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
+    USD_API
     void
     Unload(const SdfPath& path=SdfPath::AbsoluteRootPath());
 
@@ -510,6 +540,8 @@ public:
     /// See the rules under
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
+    USD_API
+    
     void LoadAndUnload(const SdfPathSet &loadSet, const SdfPathSet &unloadSet);
 
     /// Returns a set of all loaded paths.
@@ -519,6 +551,7 @@ public:
     /// descendants of explicitly loaded paths.
     ///
     /// This method does not return paths to inactive prims.
+    USD_API
     SdfPathSet GetLoadSet();
 
     /// Returns an SdfPathSet of all paths that can be loaded.
@@ -537,6 +570,7 @@ public:
     ///                     all.begin(), all.end(),
     ///                     std::inserter(result, result.end()));
     /// \endcode
+    USD_API
     SdfPathSet FindLoadable(
         const SdfPath& rootPath = SdfPath::AbsoluteRootPath());
 
@@ -546,6 +580,7 @@ public:
     }
 
     /// Set this stage's population mask and recompose the stage.
+    USD_API
     void SetPopulationMask(UsdStagePopulationMask const &mask);
 
     /// Expand this stage's population mask to include the targets of all
@@ -557,6 +592,7 @@ public:
     /// expressed as relationships.
     ///
     /// See also UsdPrim::FindAllRelationshipTargetPaths().
+    USD_API
     void ExpandPopulationMask(
         std::function<bool (UsdRelationship const &)> const &pred = nullptr);
     
@@ -582,6 +618,7 @@ public:
     /// A UsdStage always has a pseudo-root prim, unless there was an error
     /// opening or creating the stage, in which case this method returns
     /// an invalid UsdPrim.
+    USD_API
     UsdPrim GetPseudoRoot() const;
 
     /// Return the root UsdPrim on this stage whose name is the root layer's
@@ -590,6 +627,7 @@ public:
     /// a valid prim name.  Note that this function only examines this stage's
     /// rootLayer.  It does not consider sublayers of the rootLayer.  See also
     /// SdfLayer::GetDefaultPrim().
+    USD_API
     UsdPrim GetDefaultPrim() const;
 
     /// Set the default prim layer metadata in this stage's root layer.  This is
@@ -599,6 +637,7 @@ public:
     /// \endcode
     /// Note that this function always authors to the stage's root layer.  To
     /// author to a different layer, use the SdfLayer::SetDefaultPrim() API.
+    USD_API
     void SetDefaultPrim(const UsdPrim &prim);
     
     /// Clear the default prim layer metadata in this stage's root layer.  This
@@ -608,6 +647,7 @@ public:
     /// \endcode
     /// Note that this function always authors to the stage's root layer.  To
     /// author to a different layer, use the SdfLayer::SetDefaultPrim() API.
+    USD_API
     void ClearDefaultPrim();
 
     /// Return true if this stage's root layer has an authored opinion for the
@@ -617,6 +657,7 @@ public:
     /// \endcode
     /// Note that this function only consults the stage's root layer.  To
     /// consult a different layer, use the SdfLayer::HasDefaultPrim() API.
+    USD_API
     bool HasDefaultPrim() const;
 
     /// Return the already extant UsdPrim at \p path, or an invalid UsdPrim if
@@ -625,6 +666,7 @@ public:
     /// Unlike OverridePrim() and DefinePrim(), this method will never author
     /// scene description, and therefore is safe to use as a "reader" in the Usd
     /// multi-threading model.
+    USD_API
     UsdPrim GetPrimAtPath(const SdfPath &path) const;
 
 private:
@@ -654,18 +696,21 @@ public:
     /// particular prim is desired, construct a UsdTreeIterator directly.
     ///
     /// This is equivalent to UsdTreeIterator::Stage() . 
+    USD_API
     UsdTreeIterator Traverse();
 
     /// \overload
     /// Traverse the prims on this stage subject to \p predicate.
     ///
     /// This is equivalent to UsdTreeIterator::Stage() .
+    USD_API
     UsdTreeIterator Traverse(const Usd_PrimFlagsPredicate &predicate);
 
     /// Traverse all the prims on this stage depth-first.
     ///
     /// \sa Traverse()
     /// \sa UsdTreeIterator::Stage()
+    USD_API
     UsdTreeIterator TraverseAll();
 
     /// Attempt to ensure a \a UsdPrim at \p path exists on this stage.
@@ -686,6 +731,7 @@ public:
     /// description as described above but return an invalid prim, since the
     /// resulting prim is descendant to an inactive prim.
     ///
+    USD_API
     UsdPrim OverridePrim(const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim at \p path is defined (according to
@@ -711,6 +757,7 @@ public:
     /// match the supplied \p typeName, in case a stronger typeName opinion
     /// overrides the opinion at the current EditTarget.
     ///
+    USD_API
     UsdPrim DefinePrim(const SdfPath &path,
                        const TfToken &typeName=TfToken());
 
@@ -726,6 +773,7 @@ public:
     ///
     /// If it is impossible to author the necessary PrimSpec, issue an error
     /// and return an invalid \a UsdPrim.
+    USD_API
     UsdPrim CreateClassPrim(const SdfPath &rootPrimPath);
 
     /// Remove all scene description for the given \p path and its subtree
@@ -749,6 +797,7 @@ public:
     /// its subtree from the composition, without actually removing any
     /// scene description, which as a bonus, means that the effect is 
     /// reversible at a later time!
+    USD_API
     bool RemovePrim(const SdfPath& path);
 
     /// @}
@@ -760,15 +809,18 @@ public:
     // --------------------------------------------------------------------- //
 
     /// Return this stage's root session layer.
+    USD_API
     SdfLayerHandle GetSessionLayer() const;
 
     /// Return this stage's root layer.
+    USD_API
     SdfLayerHandle GetRootLayer() const;
 
     /// Return the path resolver context for all path resolution during
     /// composition of this stage. Useful for external clients that want to
     /// resolve paths with the same context as this stage, or create new
     /// stages with the same context.
+    USD_API
     ArResolverContext GetPathResolverContext() const;
 
     /// Resolve the given identifier using this stage's 
@@ -780,6 +832,7 @@ public:
     /// already-opened layer or an "anonymous", in-memory layer), or a resolved
     /// layer filepath.  If the identifier was not resolvable, return the
     /// empty string.
+    USD_API
     std::string
     ResolveIdentifierToEditTarget(std::string const &identifier) const;
 
@@ -789,6 +842,7 @@ public:
     /// strong-to-weak sublayers rooted at this stage's root layer.  If
     /// \a includeSessionLayers is false, omit the sublayers rooted at this
     /// stage's session layer.
+    USD_API
     SdfLayerHandleVector GetLayerStack(bool includeSessionLayers=true) const;
 
     /// Return a vector of all of the layers \em currently consumed by this
@@ -802,23 +856,28 @@ public:
     /// all of the layers that this stage has had to open so far to perform
     /// value resolution of attributes affected by 
     /// \ref Usd_AdvancedFeatures_ClipsOverview "Value Clips"
+    USD_API
     SdfLayerHandleVector GetUsedLayers(bool includeClipLayers=true) const;
 
     /// Return true if \a layer is one of the layers in this stage's local,
     /// root layerStack.
+    USD_API
     bool HasLocalLayer(const SdfLayerHandle &layer) const;
     
     /// Return the stage's EditTarget.
+    USD_API
     const UsdEditTarget &GetEditTarget() const;
 
     /// Return a UsdEditTarget for editing the layer at index \a i in the
     /// layer stack.  This edit target will incorporate any layer time
     /// offset that applies to the sublayer.
+    USD_API
     UsdEditTarget GetEditTargetForLocalLayer(size_t i);
 
     /// Return a UsdEditTarget for editing the given local \a layer.
     /// If the given layer appears more than once in the layer stack,
     /// the time offset to the first occurence will be used.
+    USD_API
     UsdEditTarget GetEditTargetForLocalLayer(const SdfLayerHandle &layer);
 
     /// Set the stage's EditTarget.  If \a editTarget.IsLocalLayer(), check to
@@ -827,6 +886,7 @@ public:
     /// and do nothing.  If \a editTarget differs from the stage's current
     /// EditTarget, set the EditTarget and send
     /// UsdNotice::StageChangedEditTarget.  Otherwise do nothing.
+    USD_API
     void SetEditTarget(const UsdEditTarget &editTarget);
 
     /// Mute the layer identified by \p layerIdentifier.  Muted layers are
@@ -857,10 +917,12 @@ public:
     ///
     /// The root layer of this stage may not be muted; attempting to do so
     /// will generate a coding error.
+    USD_API
     void MuteLayer(const std::string &layerIdentifier);
 
     /// Unmute the layer identified by \p layerIdentifier if it had
     /// previously been muted.
+    USD_API
     void UnmuteLayer(const std::string &layerIdentifier);
 
     /// Mute and unmute the layers identified in \p muteLayers and
@@ -870,16 +932,19 @@ public:
     /// in \p unmuteLayers followed by UsdStage::MuteLayer for each layer 
     /// in \p muteLayers, however this method is more efficient as all
     /// operations are committed in a single batch.
+    USD_API
     void MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
                              const std::vector<std::string> &unmuteLayers);
 
     /// Returns a vector of all layers that have been muted on this stage.
+    USD_API
     const std::vector<std::string>& GetMutedLayers() const;
 
     /// Returns true if the layer specified by \p layerIdentifier is
     /// muted in this cache, false otherwise.  See documentation on
     /// MuteLayer for details on how \p layerIdentifier is compared to the 
     /// layers that have been muted.
+    USD_API
     bool IsLayerMuted(const std::string& layerIdentifier) const;
 
     /// @}
@@ -902,6 +967,7 @@ public:
     /// will mention the input layer it was generated from.
     ///
     /// See UsdStage::Flatten for details of the flattening transformation.
+    USD_API
     bool Export(const std::string &filename,
                 bool addSourceFileComment=true,
                 const SdfLayer::FileFormatArguments &args = 
@@ -914,6 +980,7 @@ public:
     /// will mention the input layer it was generated from.
     ///
     /// See UsdStage::Flatten for details of the flattening transformation.
+    USD_API
     bool ExportToString(std::string *result,
                         bool addSourceFileComment=true) const;
 
@@ -942,6 +1009,7 @@ public:
     ///
     /// Finally, any deactivated prims will be pruned from the result.
     ///
+    USD_API
     SdfLayerRefPtr Flatten(bool addSourceFileComment=true) const;
     /// @}
 
@@ -970,6 +1038,7 @@ public:
     template <class T>
     bool GetMetadata(const TfToken &key, T *value) const;
     /// \overload
+    USD_API
     bool GetMetadata(const TfToken &key, VtValue *value) const;
 
     /// Returns true if the \a key has a meaningful value, that is, if
@@ -978,6 +1047,7 @@ public:
     /// value.
     ///
     /// Returns false if \p key is not allowed as layer metadata.
+    USD_API
     bool HasMetadata(const TfToken &key) const;
 
     /// Returns \c true if the \a key has an authored value, \c false if no
@@ -988,6 +1058,7 @@ public:
     /// is present in the root or session layer (which could happen through
     /// hand-editing or use of certain low-level API's), this method will
     /// still return \c false.
+    USD_API
     bool HasAuthoredMetadata(const TfToken &key) const;
 
     /// Set the value of Stage metadatum \p key to \p value, if the stage's
@@ -1001,6 +1072,7 @@ public:
     template<typename T>
     bool SetMetadata(const TfToken &key, const T &value) const;
     /// \overload
+    USD_API
     bool SetMetadata(const TfToken &key, const VtValue &value) const;
 
     /// Clear the value of stage metadatum \p key, if the stage's
@@ -1011,6 +1083,7 @@ public:
     /// Generates a coding error if \p key is not allowed as layer metadata.
     ///
     /// \sa \ref Usd_OM_Metadata
+    USD_API
     bool ClearMetadata(const TfToken &key) const;
 
     /// Resolve the requested dictionary sub-element \p keyPath of
@@ -1032,6 +1105,7 @@ public:
     bool GetMetadataByDictKey(const TfToken& key, const TfToken &keyPath, 
                               T* value) const;
     /// overload
+    USD_API
     bool GetMetadataByDictKey(
         const TfToken& key, const TfToken &keyPath, VtValue *value) const;
 
@@ -1045,6 +1119,7 @@ public:
     /// Returns false if \p key is not allowed as layer metadata.
     ///
     /// \sa \ref Usd_Dictionary_Type
+    USD_API
     bool HasMetadataDictKey(
         const TfToken& key, const TfToken &keyPath) const;
 
@@ -1056,6 +1131,7 @@ public:
     /// \p keyPath is empty, returns \c false.
     ///
     /// \sa \ref Usd_Dictionary_Type
+    USD_API
     bool HasAuthoredMetadataDictKey(
         const TfToken& key, const TfToken &keyPath) const;
 
@@ -1074,6 +1150,7 @@ public:
     bool SetMetadataByDictKey(const TfToken& key, const TfToken &keyPath, 
                               const T& value) const;
     /// \overload
+    USD_API
     bool SetMetadataByDictKey(
         const TfToken& key, const TfToken &keyPath, const VtValue& value) const;
 
@@ -1088,6 +1165,7 @@ public:
     /// Generates a coding error if \p key is not allowed as layer metadata.
     ///
     /// \sa \ref Usd_Dictionary_Type
+    USD_API
     bool ClearMetadataByDictKey(
         const TfToken& key, const TfToken& keyPath) const;
 
@@ -1104,6 +1182,7 @@ public:
     /// Returns the stage's start timeCode. If the stage has an associated
     /// session layer with a start timeCode opinion, this value is returned. 
     /// Otherwise, the start timeCode opinion from the root layer is returned.
+    USD_API
     double GetStartTimeCode() const;
 
     /// Sets the stage's start timeCode. 
@@ -1112,11 +1191,13 @@ public:
     /// layer of the stage or the session layer associated with the stage. If 
     /// the current EditTarget is neither, a warning is issued and the start 
     /// timeCode is not set.
+    USD_API
     void SetStartTimeCode(double);
 
     /// Returns the stage's end timeCode. If the stage has an associated
     /// session layer with an end timeCode opinion, this value is returned. 
     /// Otherwise, the end timeCode opinion from the root layer is returned.
+    USD_API
     double GetEndTimeCode() const;
 
     /// Sets the stage's end timeCode. 
@@ -1125,10 +1206,12 @@ public:
     /// layer of the stage or the session layer associated with the stage. If 
     /// the current EditTarget is neither, a warning is issued and the end 
     /// timeCode is not set.
+    USD_API
     void SetEndTimeCode(double);
 
     /// Returns true if the stage has both start and end timeCodes 
     /// authored in the session layer or the root layer of the stage.
+    USD_API
     bool HasAuthoredTimeCodeRange() const;
 
     /// Returns the stage's timeCodesPerSecond value.
@@ -1139,6 +1222,7 @@ public:
     /// sample at time ordinate 0. 
     ///
     /// The default value of timeCodesPerSecond is 24.
+    USD_API
     double GetTimeCodesPerSecond() const;
 
     /// Sets the stage's timeCodesPerSecond value.
@@ -1149,6 +1233,7 @@ public:
     /// value is set.
     ///
     /// \sa GetTimeCodesPerSecond()
+    USD_API
     void SetTimeCodesPerSecond(double timeCodesPerSecond) const;
 
     /// Returns the stage's framesPerSecond value.
@@ -1160,6 +1245,7 @@ public:
     /// timeline.  
     ///
     /// The default value of framesPerSecond is 24.
+    USD_API
     double GetFramesPerSecond() const;
     
     /// Sets the stage's framesPerSecond value.
@@ -1170,6 +1256,7 @@ public:
     /// value is set.
     /// 
     /// \sa GetFramesPerSecond()
+    USD_API
     void SetFramesPerSecond(double framesPerSecond) const;
     
     /// @}
@@ -1187,10 +1274,12 @@ public:
     /// for all attributes on this stage.  Changing this will cause a
     /// UsdNotice::StageContentsChanged notice to be sent, as values at
     /// times where no samples are authored may have changed.
+    USD_API
     void SetInterpolationType(UsdInterpolationType interpolationType);
 
     /// Returns the interpolation type used during value resolution
     /// for all attributes on this stage.
+    USD_API
     UsdInterpolationType GetInterpolationType() const;
 
     /// @}
@@ -1203,6 +1292,7 @@ public:
     // --------------------------------------------------------------------- //
 
     /// Returns all master prims.
+    USD_API
     std::vector<UsdPrim> GetMasters() const;
 
     /// @}
@@ -1669,11 +1759,13 @@ private:
 
 
 
+    USD_API
     bool _GetValueFromResolveInfo(const UsdResolveInfo &info,
                                   UsdTimeCode time, const UsdAttribute &attr,
                                   VtValue* result) const;
 
     template <class T>
+    USD_API
     bool _GetValueFromResolveInfo(const UsdResolveInfo &info,
                                   UsdTimeCode time, const UsdAttribute &attr,
                                   T* result) const;

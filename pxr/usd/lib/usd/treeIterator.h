@@ -25,6 +25,7 @@
 #define USD_TREEITERATOR_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primFlags.h"
@@ -170,6 +171,7 @@ public:
     /// Create a TreeIterator that traverses all the prims on \p stage, and
     /// visits those that pass the "canonical" predicate (as defined by
     /// UsdPrim::GetChildren()) with pre-order visitation.
+    USD_API
     static UsdTreeIterator
     Stage(const UsdStagePtr &stage,
           const Usd_PrimFlagsPredicate &predicate=
@@ -207,6 +209,7 @@ public:
 
     /// Behave as if the current prim has no children when next advanced.  Issue
     /// an error if this is a pre- and post-order iterator that IsPostVisit().
+    USD_API
     void PruneChildren();
 
 private:
@@ -254,6 +257,7 @@ private:
             _isPost == other._isPost;
     }
 
+    USD_API
     void increment();
     reference dereference() const { return UsdPrim(base()); }
 

@@ -25,10 +25,10 @@
 #define USD_CONVERSIONS_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class VtValue;
 class TfToken;
@@ -36,6 +36,7 @@ class SdfValueTypeName;
 
 // XXX: DEPRECATED.  This function does nothing except convert \p value to
 // python.  Do not call, it will be removed.
+USD_API
 TfPyObjWrapper UsdVtValueToPython(const VtValue &value);
 
 /// Helper for converting a python value to the target Usd/Sdf type, if
@@ -44,6 +45,7 @@ TfPyObjWrapper UsdVtValueToPython(const VtValue &value);
 /// and some python tuple/list -> VtArray conversions.  If conversion fails,
 /// returns a VtValue extracted from the pyVal, which may produce a VtValue
 /// holding a python object.
+USD_API
 VtValue UsdPythonToSdfType(TfPyObjWrapper pyVal,
                            SdfValueTypeName const &targetType);
 
@@ -58,6 +60,7 @@ VtValue UsdPythonToSdfType(TfPyObjWrapper pyVal,
 ///
 /// \return \c true on successful conversion, which can happen even if
 /// the converted \p result is an empty VtValue
+USD_API
 bool UsdPythonToMetadataValue(const TfToken &key, const TfToken &keyPath, 
                               TfPyObjWrapper pyVal, VtValue *result);
 

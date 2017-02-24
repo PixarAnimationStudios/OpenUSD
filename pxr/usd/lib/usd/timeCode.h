@@ -25,6 +25,7 @@
 #define USD_TIMECODE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/arch/hints.h"
 
 #include <boost/functional/hash.hpp>
@@ -178,12 +179,14 @@ public:
     }
 
 private:
+    USD_API
     void _IssueGetValueOnDefaultError() const;
 
     double _value;
 };
 
 // Stream insertion.
+USD_API
 std::ostream& operator<<(std::ostream& os, const UsdTimeCode& time);
 
 

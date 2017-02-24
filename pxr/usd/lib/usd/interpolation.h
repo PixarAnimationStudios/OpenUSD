@@ -27,6 +27,7 @@
 /// \file usd/interpolation.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/declare.h"
 
