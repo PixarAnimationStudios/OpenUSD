@@ -112,7 +112,7 @@ HdStMesh::_GetRefineLevelForDesc(HdStMeshReprDesc desc)
 void
 HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                             HdDrawItem *drawItem,
-                            HdChangeTracker::DirtyBits *dirtyBits,
+                            HdDirtyBits *dirtyBits,
                             HdStMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
@@ -449,7 +449,7 @@ _RefinePrimVar(HdBufferSourceSharedPtr const &source,
 void
 HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                   HdDrawItem *drawItem,
-                                  HdChangeTracker::DirtyBits *dirtyBits,
+                                  HdDirtyBits *dirtyBits,
                                   bool isNew,
                                   HdStMeshReprDesc desc,
                                   bool requireSmoothNormals)
@@ -741,7 +741,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 void
 HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
                                        HdDrawItem *drawItem,
-                                       HdChangeTracker::DirtyBits *dirtyBits,
+                                       HdDirtyBits *dirtyBits,
                                        HdStMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
@@ -827,7 +827,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 void
 HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
                                    HdDrawItem *drawItem,
-                                   HdChangeTracker::DirtyBits *dirtyBits,
+                                   HdDirtyBits *dirtyBits,
                                    TfTokenVector const &primVarNames)
 {
     HD_TRACE_FUNCTION();
@@ -912,7 +912,7 @@ HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 void
 HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                           HdDrawItem *drawItem,
-                          HdChangeTracker::DirtyBits *dirtyBits,
+                          HdDirtyBits *dirtyBits,
                           bool isNew,
                           HdStMeshReprDesc desc,
                           bool requireSmoothNormals)
@@ -1075,8 +1075,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
     renderIndex.GetChangeTracker().MarkShaderBindingsDirty();
 }
 
-HdChangeTracker::DirtyBits
-HdStMesh::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
+HdDirtyBits
+HdStMesh::_PropagateDirtyBits(HdDirtyBits dirtyBits)
 {
     dirtyBits = _PropagateRprimDirtyBits(dirtyBits);
 
@@ -1102,7 +1102,7 @@ HdStMesh::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
 HdReprSharedPtr const &
 HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
                    TfToken const &reprName,
-                   HdChangeTracker::DirtyBits *dirtyBits)
+                   HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1247,10 +1247,10 @@ HdStMesh::_SetGeometricShaders(HdRenderIndex &renderIndex)
     }
 }
 
-HdChangeTracker::DirtyBits
+HdDirtyBits
 HdStMesh::_GetInitialDirtyBits() const
 {
-    int mask = HdChangeTracker::Clean
+    HdDirtyBits mask = HdChangeTracker::Clean
         | HdChangeTracker::DirtyCullStyle
         | HdChangeTracker::DirtyDoubleSided
         | HdChangeTracker::DirtyExtent
@@ -1267,7 +1267,7 @@ HdStMesh::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyVisibility
         ;
 
-    return (HdChangeTracker::DirtyBits)mask;
+    return mask;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -59,7 +59,7 @@ HdxCamera::Sync(HdSceneDelegate *sceneDelegate)
     // efficient.
     HdChangeTracker& changeTracker = 
                              sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetSprimDirtyBits(id);
+    HdDirtyBits bits = changeTracker.GetSprimDirtyBits(id);
     
     if (bits & DirtyMatrices) {
         GfMatrix4d worldToViewMatrix(1.0);
@@ -111,7 +111,7 @@ HdxCamera::Get(TfToken const &name) const
 }
 
 /* virtual */
-int
+HdDirtyBits
 HdxCamera::GetInitialDirtyBitsMask() const
 {
     return AllDirty;

@@ -378,7 +378,7 @@ UsdImagingInstanceAdapter::_IsChildPrim(UsdPrim const& prim,
 void 
 UsdImagingInstanceAdapter::TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      int requestedBits,
+                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
                                           instancerContext)
 {
@@ -418,8 +418,8 @@ UsdImagingInstanceAdapter::TrackVariabilityPrep(UsdPrim const& prim,
 void 
 UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  int requestedBits,
-                                  int* dirtyBits,
+                                  HdDirtyBits requestedBits,
+                                  HdDirtyBits* dirtyBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext)
 {
@@ -738,7 +738,7 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
     bool operator()(
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
-        int dirtyBits;
+        HdDirtyBits dirtyBits;
         TF_FOR_ALL(primIt, instanceContext) {
             if (adapter->_IsTransformVarying(
                     *primIt, 
@@ -768,7 +768,7 @@ void
 UsdImagingInstanceAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
                                    UsdTimeCode time,
-                                   int requestedBits,
+                                   HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const* 
                                        instancerContext)
 {
@@ -810,8 +810,8 @@ void
 UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
-                               int requestedBits,
-                               int* resultBits,
+                               HdDirtyBits requestedBits,
+                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const*)
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
@@ -1196,7 +1196,7 @@ struct UsdImagingInstanceAdapter::_UpdateInstanceMapFn
     bool IsVisibilityVarying(const std::vector<UsdPrim>& instanceContext)
     {
         TF_FOR_ALL(primIt, instanceContext) {
-            int dirtyBits;
+            HdDirtyBits dirtyBits;
             if (adapter->_IsVarying(*primIt, 
                            UsdGeomTokens->visibility, 
                            HdChangeTracker::DirtyVisibility,

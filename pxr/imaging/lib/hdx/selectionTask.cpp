@@ -72,7 +72,7 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
     HdSceneDelegate* delegate = GetDelegate();
     HdRenderIndex& index = delegate->GetRenderIndex();
     HdChangeTracker& changeTracker = index.GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetTaskDirtyBits(id);
+    HdDirtyBits bits = changeTracker.GetTaskDirtyBits(id);
     HdResourceRegistry* resourceRegistry = &HdResourceRegistry::GetInstance();
 
     bool paramsChanged = bits & HdChangeTracker::DirtyParams;

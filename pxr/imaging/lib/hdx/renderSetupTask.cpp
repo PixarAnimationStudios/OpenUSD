@@ -78,7 +78,7 @@ HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdChangeTracker::DirtyBits bits = _GetTaskDirtyBits();
+    HdDirtyBits bits = _GetTaskDirtyBits();
 
     // XXX: for compatibility.
     if (bits & HdChangeTracker::DirtyParams) {

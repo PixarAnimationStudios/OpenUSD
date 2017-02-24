@@ -67,7 +67,7 @@ HdChangeTracker::_LogCacheAccess(TfToken const& cacheName,
 }
 
 void
-HdChangeTracker::RprimInserted(SdfPath const& id, int initialDirtyState)
+HdChangeTracker::RprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
 {
     TF_DEBUG(HD_RPRIM_ADDED).Msg("Rprim Added: %s\n", id.GetText());
     _rprimState[id] = initialDirtyState;
@@ -93,7 +93,7 @@ HdChangeTracker::RprimRemoved(SdfPath const& id)
 
 
 void 
-HdChangeTracker::MarkRprimDirty(SdfPath const& id, DirtyBits bits)
+HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
 {
     _IDStateMap::iterator it = _rprimState.find(id);
     if (!TF_VERIFY(it != _rprimState.end(), "%s\n", id.GetText()))
@@ -106,7 +106,7 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, DirtyBits bits)
     }
 
     // set Varying bit if it's not set
-    DirtyBits oldBits = it->second;
+    HdDirtyBits oldBits = it->second;
     if ((oldBits & HdChangeTracker::Varying) == 0) {
         // varying state changed.
         bits |= HdChangeTracker::Varying;
@@ -132,7 +132,7 @@ HdChangeTracker::ResetVaryingState()
 }
 
 void
-HdChangeTracker::MarkRprimClean(SdfPath const& id, DirtyBits newBits)
+HdChangeTracker::MarkRprimClean(SdfPath const& id, HdDirtyBits newBits)
 {
     TF_DEBUG(HD_RPRIM_CLEANED).Msg("Rprim Cleaned: %s\n", id.GetText());
     _IDStateMap::iterator it = _rprimState.find(id);
@@ -199,7 +199,7 @@ HdChangeTracker::TaskRemoved(SdfPath const& id)
 }
 
 void
-HdChangeTracker::MarkTaskDirty(SdfPath const& id, DirtyBits bits)
+HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
 {
     _IDStateMap::iterator it = _taskState.find(id);
     if (!TF_VERIFY(it != _taskState.end()))
@@ -207,7 +207,7 @@ HdChangeTracker::MarkTaskDirty(SdfPath const& id, DirtyBits bits)
     it->second = it->second | bits;
 }
 
-HdChangeTracker::DirtyBits
+HdDirtyBits
 HdChangeTracker::GetTaskDirtyBits(SdfPath const& id)
 {
     _IDStateMap::iterator it = _taskState.find(id);
@@ -217,7 +217,7 @@ HdChangeTracker::GetTaskDirtyBits(SdfPath const& id)
 }
 
 void
-HdChangeTracker::MarkTaskClean(SdfPath const& id, DirtyBits newBits)
+HdChangeTracker::MarkTaskClean(SdfPath const& id, HdDirtyBits newBits)
 {
     _IDStateMap::iterator it = _taskState.find(id);
     if (!TF_VERIFY(it != _taskState.end()))
@@ -230,7 +230,7 @@ HdChangeTracker::MarkTaskClean(SdfPath const& id, DirtyBits newBits)
 /// \name Instancer State Tracking
 // -------------------------------------------------------------------------- //
 
-HdChangeTracker::DirtyBits
+HdDirtyBits
 HdChangeTracker::GetInstancerDirtyBits(SdfPath const& id)
 {
     _IDStateMap::iterator it = _instancerState.find(id);
@@ -240,7 +240,7 @@ HdChangeTracker::GetInstancerDirtyBits(SdfPath const& id)
 }
 
 void
-HdChangeTracker::MarkInstancerDirty(SdfPath const& id, DirtyBits bits)
+HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
 {
     _IDStateMap::iterator it = _instancerState.find(id);
     if (!TF_VERIFY(it != _instancerState.end()))
@@ -265,7 +265,7 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, DirtyBits bits)
 }
 
 void
-HdChangeTracker::MarkInstancerClean(SdfPath const& id, DirtyBits newBits)
+HdChangeTracker::MarkInstancerClean(SdfPath const& id, HdDirtyBits newBits)
 {
     TF_DEBUG(HD_INSTANCER_CLEANED).Msg("Instancer Cleaned: %s\n", id.GetText());
     _IDStateMap::iterator it = _instancerState.find(id);
@@ -280,7 +280,7 @@ HdChangeTracker::MarkInstancerClean(SdfPath const& id, DirtyBits newBits)
 // -------------------------------------------------------------------------- //
 
 void
-HdChangeTracker::SprimInserted(SdfPath const& id, int initialDirtyState)
+HdChangeTracker::SprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
 {
     TF_DEBUG(HD_SPRIM_ADDED).Msg("Sprim Added: %s\n", id.GetText());
     _sprimState[id] = initialDirtyState;
@@ -293,7 +293,7 @@ HdChangeTracker::SprimRemoved(SdfPath const& id)
     _sprimState.erase(id);
 }
 
-HdChangeTracker::DirtyBits
+HdDirtyBits
 HdChangeTracker::GetSprimDirtyBits(SdfPath const& id)
 {
     _IDStateMap::iterator it = _sprimState.find(id);
@@ -303,7 +303,7 @@ HdChangeTracker::GetSprimDirtyBits(SdfPath const& id)
 }
 
 void
-HdChangeTracker::MarkSprimDirty(SdfPath const& id, DirtyBits bits)
+HdChangeTracker::MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
 {
     _IDStateMap::iterator it = _sprimState.find(id);
     if (!TF_VERIFY(it != _sprimState.end()))
@@ -312,7 +312,7 @@ HdChangeTracker::MarkSprimDirty(SdfPath const& id, DirtyBits bits)
 }
 
 void
-HdChangeTracker::MarkSprimClean(SdfPath const& id, DirtyBits newBits)
+HdChangeTracker::MarkSprimClean(SdfPath const& id, HdDirtyBits newBits)
 {
     _IDStateMap::iterator it = _sprimState.find(id);
     if (!TF_VERIFY(it != _sprimState.end()))
@@ -325,7 +325,7 @@ HdChangeTracker::MarkSprimClean(SdfPath const& id, DirtyBits newBits)
 // -------------------------------------------------------------------------- //
 
 void
-HdChangeTracker::BprimInserted(SdfPath const& id, int initialDirtyState)
+HdChangeTracker::BprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
 {
     TF_DEBUG(HD_BPRIM_ADDED).Msg("Bprim Added: %s\n", id.GetText());
     _bprimState[id] = initialDirtyState;
@@ -338,7 +338,7 @@ HdChangeTracker::BprimRemoved(SdfPath const& id)
     _bprimState.erase(id);
 }
 
-HdChangeTracker::DirtyBits
+HdDirtyBits
 HdChangeTracker::GetBprimDirtyBits(SdfPath const& id)
 {
     _IDStateMap::iterator it = _bprimState.find(id);
@@ -348,7 +348,7 @@ HdChangeTracker::GetBprimDirtyBits(SdfPath const& id)
 }
 
 void
-HdChangeTracker::MarkBprimDirty(SdfPath const& id, DirtyBits bits)
+HdChangeTracker::MarkBprimDirty(SdfPath const& id, HdDirtyBits bits)
 {
     _IDStateMap::iterator it = _bprimState.find(id);
     if (!TF_VERIFY(it != _bprimState.end()))
@@ -357,7 +357,7 @@ HdChangeTracker::MarkBprimDirty(SdfPath const& id, DirtyBits bits)
 }
 
 void
-HdChangeTracker::MarkBprimClean(SdfPath const& id, DirtyBits newBits)
+HdChangeTracker::MarkBprimClean(SdfPath const& id, HdDirtyBits newBits)
 {
     _IDStateMap::iterator it = _bprimState.find(id);
     if (!TF_VERIFY(it != _bprimState.end()))
@@ -445,7 +445,7 @@ HdChangeTracker::IsPrimVarDirty(SdfPath const& id, TfToken const& name)
 
 /*static*/
 bool 
-HdChangeTracker::IsTopologyDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsTopologyDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyTopology);
     _LogCacheAccess(HdTokens->topology, id, !isDirty);
@@ -454,7 +454,7 @@ HdChangeTracker::IsTopologyDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsDoubleSidedDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsDoubleSidedDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyDoubleSided);
     _LogCacheAccess(HdTokens->doubleSided, id, !isDirty);
@@ -463,7 +463,7 @@ HdChangeTracker::IsDoubleSidedDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsCullStyleDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsCullStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyCullStyle);
     _LogCacheAccess(HdTokens->cullStyle, id, !isDirty);
@@ -472,7 +472,7 @@ HdChangeTracker::IsCullStyleDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsRefineLevelDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsRefineLevelDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyRefineLevel);
     _LogCacheAccess(HdTokens->refineLevel, id, !isDirty);
@@ -481,7 +481,7 @@ HdChangeTracker::IsRefineLevelDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsSubdivTagsDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsSubdivTagsDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtySubdivTags);
     _LogCacheAccess(HdTokens->subdivTags, id, !isDirty);
@@ -490,7 +490,7 @@ HdChangeTracker::IsSubdivTagsDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsTransformDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsTransformDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyTransform);
     _LogCacheAccess(HdTokens->transform, id, !isDirty);
@@ -499,7 +499,7 @@ HdChangeTracker::IsTransformDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsVisibilityDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsVisibilityDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyVisibility);
     _LogCacheAccess(HdTokens->visibility, id, !isDirty);
@@ -508,7 +508,7 @@ HdChangeTracker::IsVisibilityDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsExtentDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsExtentDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyExtent);
     _LogCacheAccess(HdTokens->extent, id, !isDirty);
@@ -517,7 +517,7 @@ HdChangeTracker::IsExtentDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsPrimIdDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsPrimIdDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyPrimID);
     _LogCacheAccess(HdTokens->primID, id, !isDirty);
@@ -526,7 +526,7 @@ HdChangeTracker::IsPrimIdDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsInstancerDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsInstancerDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyInstancer);
     _LogCacheAccess(HdTokens->instancer, id, !isDirty);
@@ -535,7 +535,7 @@ HdChangeTracker::IsInstancerDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool
-HdChangeTracker::IsInstanceIndexDirty(DirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsInstanceIndexDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = bool(dirtyBits & DirtyInstanceIndex);
     _LogCacheAccess(HdTokens->instanceIndices, id, !isDirty);
@@ -544,7 +544,7 @@ HdChangeTracker::IsInstanceIndexDirty(DirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool
-HdChangeTracker::IsAnyPrimVarDirty(DirtyBits dirtyBits, SdfPath const &id)
+HdChangeTracker::IsAnyPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const &id)
 {
     bool isDirty = bool(dirtyBits & (DirtyPoints|
                                      DirtyNormals|
@@ -556,7 +556,7 @@ HdChangeTracker::IsAnyPrimVarDirty(DirtyBits dirtyBits, SdfPath const &id)
 
 /*static*/
 bool
-HdChangeTracker::IsPrimVarDirty(DirtyBits dirtyBits, SdfPath const& id,
+HdChangeTracker::IsPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
                                 TfToken const& name)
 {
     bool isDirty = false;
@@ -575,7 +575,7 @@ HdChangeTracker::IsPrimVarDirty(DirtyBits dirtyBits, SdfPath const& id,
 
 /*static*/
 bool
-HdChangeTracker::IsReprDirty(DirtyBits dirtyBits, SdfPath const &id)
+HdChangeTracker::IsReprDirty(HdDirtyBits dirtyBits, SdfPath const &id)
 {
     bool isDirty = bool(dirtyBits & DirtyRepr);
     return isDirty;
@@ -584,14 +584,14 @@ HdChangeTracker::IsReprDirty(DirtyBits dirtyBits, SdfPath const &id)
 void 
 HdChangeTracker::MarkPrimVarDirty(SdfPath const& id, TfToken const& name)
 {
-    DirtyBits flag = Clean;
+    HdDirtyBits flag = Clean;
     MarkPrimVarDirty(&flag, name);
     MarkRprimDirty(id, flag);
 }
 
 
 void
-HdChangeTracker::MarkAllRprimsDirty(DirtyBits bits)
+HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
 {
     HD_TRACE_FUNCTION();
 
@@ -610,9 +610,9 @@ HdChangeTracker::MarkAllRprimsDirty(DirtyBits bits)
 
 /*static*/
 void
-HdChangeTracker::MarkPrimVarDirty(DirtyBits *dirtyBits, TfToken const &name)
+HdChangeTracker::MarkPrimVarDirty(HdDirtyBits *dirtyBits, TfToken const &name)
 {
-    DirtyBits setBits = Clean;
+    HdDirtyBits setBits = Clean;
     if (name == HdTokens->points) {
         setBits = DirtyPoints;
     } else if (name == HdTokens->normals) {
@@ -625,7 +625,7 @@ HdChangeTracker::MarkPrimVarDirty(DirtyBits *dirtyBits, TfToken const &name)
     *dirtyBits |= setBits;
 }
 
-HdChangeTracker::DirtyBits
+HdDirtyBits
 HdChangeTracker::GetRprimDirtyBits(SdfPath const& id) const
 {
     _IDStateMap::const_iterator it = _rprimState.find(id);
@@ -755,7 +755,7 @@ HdChangeTracker::GetStateVersion(TfToken const &name) const
 
 /*static*/
 std::string
-HdChangeTracker::StringifyDirtyBits(int dirtyBits)
+HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
 {
     if (dirtyBits == HdChangeTracker::Clean) {
         return std::string("Clean");
@@ -831,7 +831,7 @@ HdChangeTracker::StringifyDirtyBits(int dirtyBits)
 
 /*static*/
 void
-HdChangeTracker::DumpDirtyBits(int dirtyBits)
+HdChangeTracker::DumpDirtyBits(HdDirtyBits dirtyBits)
 {
     std::cerr
         << "DirtyBits:"

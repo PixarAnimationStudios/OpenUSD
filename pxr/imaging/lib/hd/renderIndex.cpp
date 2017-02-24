@@ -777,7 +777,7 @@ namespace {
         void PushBack(HdSceneDelegate *sceneDelegate,
                       HdRprim *rprim,
                       size_t reprsMask,
-                      int dirtyBits)
+                      HdDirtyBits dirtyBits)
         {
             sceneDelegates.push_back(sceneDelegate);
             rprims.push_back(rprim);
@@ -871,7 +871,7 @@ namespace {
                 HdRprim &rprim = *_r.rprims[i];
                 size_t reprsMask = _r.reprsMasks[i];
 
-                int dirtyBits = _r.request.dirtyBits[i];
+                HdDirtyBits dirtyBits = _r.request.dirtyBits[i];
 
                 TF_FOR_ALL(it, _reprs) {
                     if (reprsMask & 1) {

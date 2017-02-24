@@ -62,22 +62,22 @@ public:
     
     virtual void TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      int requestedBits,
+                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
                                           instancerContext = NULL);
 
     /// Thread Safe.
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  int requestedBits,
-                                  int* dirtyBits,
+                                  HdDirtyBits requestedBits,
+                                  HdDirtyBits* dirtyBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL);
 
     virtual void UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
                                    UsdTimeCode time,
-                                   int requestedBits,
+                                   HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const* 
                                        instancerContext = NULL);
 
@@ -85,8 +85,8 @@ public:
     virtual void UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
-                               int requestedBits,
-                               int* resultBits,
+                               HdDirtyBits requestedBits,
+                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL);
 
@@ -274,8 +274,8 @@ private:
         _ProtoGroupPtr protoGroup;
         // Tracks the variability of the underlying adapter to avoid
         // redundantly reading data. This value is stored as
-        // HdChangeTracker::DirtyBits bit flags.
-        int variabilityBits;
+        // HdDirtyBits flags.
+        HdDirtyBits variabilityBits;
         // When variabilityBits does not include HdChangeTracker::DirtyVisibility
         // the visible field is the unvarying value for visibility.
         bool visible;

@@ -77,25 +77,24 @@ protected:
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
                  TfToken const &reprName,
-                 HdChangeTracker::DirtyBits *dirtyBitsState) override;
+                 HdDirtyBits *dirtyBitsState) override;
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdDrawItem *drawItem,
-                           HdChangeTracker::DirtyBits *dirtyBits,
+                           HdDirtyBits *dirtyBits,
                            const HdStBasisCurvesReprDesc &desc);
 
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                  HdDrawItem *drawItem,
-                                 HdChangeTracker::DirtyBits *dirtyBits);
+                                 HdDirtyBits *dirtyBits);
 
     void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
                                   HdDrawItem *drawItem,
-                                  HdChangeTracker::DirtyBits *dirtyBits);
+                                  HdDirtyBits *dirtyBits);
 
-    HdChangeTracker::DirtyBits _PropagateDirtyBits(
-        HdChangeTracker::DirtyBits dirtyBits);
+    HdDirtyBits _PropagateDirtyBits(HdDirtyBits dirtyBits);
 
-    virtual HdChangeTracker::DirtyBits _GetInitialDirtyBits() const override;
+    virtual HdDirtyBits _GetInitialDirtyBits() const override;
 
 private:
     enum DrawingCoord {
@@ -116,7 +115,7 @@ private:
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdDrawItem *drawItem,
-                         HdChangeTracker::DirtyBits *dirtyBits,
+                         HdDirtyBits *dirtyBits,
                          const HdStBasisCurvesReprDesc &desc);
 
     void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,

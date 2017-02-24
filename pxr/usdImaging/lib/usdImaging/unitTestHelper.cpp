@@ -82,7 +82,7 @@ UsdImaging_TestDriver::SetTime(double time)
 }
 
 void
-UsdImaging_TestDriver::MarkRprimDirty(SdfPath path, HdChangeTracker::DirtyBits flag)
+UsdImaging_TestDriver::MarkRprimDirty(SdfPath path, HdDirtyBits flag)
 {
     _delegate.GetRenderIndex().GetChangeTracker().MarkRprimDirty(path, flag);
 }

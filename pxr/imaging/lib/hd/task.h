@@ -136,15 +136,15 @@ public:
 protected:
     struct _TaskDirtyState
     {
-        HdChangeTracker::DirtyBits bits;
-        int                        collectionVersion;
+        HdDirtyBits bits;
+        int         collectionVersion;
     };
 
     virtual void _MarkClean();
     virtual void _SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children);
 
     /// Obtains the set of dirty bits for the task.
-    HdChangeTracker::DirtyBits _GetTaskDirtyBits();
+    HdDirtyBits _GetTaskDirtyBits();
 
     /// Obtains the set of dirty bits of the task
     /// and also returns the current collection version number for the

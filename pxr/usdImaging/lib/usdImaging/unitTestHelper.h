@@ -67,7 +67,7 @@ public:
     void SetTime(double time);
 
     /// Marks an rprim in the RenderIndex as dirty with the given dirty flags.
-    void MarkRprimDirty(SdfPath path, HdChangeTracker::DirtyBits flag);
+    void MarkRprimDirty(SdfPath path, HdDirtyBits flag);
 
     /// Set camera to renderpass
     void SetCamera(GfMatrix4d const &modelViewMatrix,

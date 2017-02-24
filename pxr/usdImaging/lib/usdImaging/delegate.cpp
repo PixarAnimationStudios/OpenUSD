@@ -177,7 +177,7 @@ UsdImagingDelegate::~UsdImagingDelegate()
     }
 }
 
-int*
+HdDirtyBits*
 UsdImagingDelegate::_GetDirtyBits(SdfPath const& usdPath)
 {
     _DirtyMap::iterator it = _dirtyMap.find(usdPath);
@@ -189,7 +189,8 @@ UsdImagingDelegate::_GetDirtyBits(SdfPath const& usdPath)
 }
 
 void 
-UsdImagingDelegate::_MarkRprimOrInstancerDirty(SdfPath const& usdPath, int dirtyFlags)
+UsdImagingDelegate::_MarkRprimOrInstancerDirty(SdfPath const& usdPath,
+                                               HdDirtyBits dirtyFlags)
 {
     // This function handles external client driven dirty tracking.
     // e.g. SetRootTransform, SetRefineLevel, SetCullStyle, ...
@@ -209,11 +210,9 @@ UsdImagingDelegate::_MarkRprimOrInstancerDirty(SdfPath const& usdPath, int dirty
     it->second |= dirtyFlags;
 
     if (_instancerPrimPaths.find(usdPath) != _instancerPrimPaths.end()) {
-        tracker.MarkInstancerDirty(indexPath,
-                        (HdChangeTracker::DirtyBits)dirtyFlags);
+        tracker.MarkInstancerDirty(indexPath, dirtyFlags);
     } else {
-        tracker.MarkRprimDirty(indexPath,
-                    (HdChangeTracker::DirtyBits)dirtyFlags);
+        tracker.MarkRprimDirty(indexPath, dirtyFlags);
     }
 }
 
@@ -284,7 +283,7 @@ private:
     struct _Task {
         _Task() : delegate(NULL), requestBits(NULL) { }
         _Task(UsdImagingDelegate* delegate_, const SdfPath& path_, 
-                        int requestBits_)
+                        HdDirtyBits requestBits_)
             : delegate(delegate_)
             , path(path_)
             , requestBits(requestBits_)
@@ -293,12 +292,12 @@ private:
 
         UsdImagingDelegate* delegate;
         SdfPath path;
-        int requestBits;
+        HdDirtyBits requestBits;
     };
     std::vector<_Task> _tasks;
 
     ResultVector _results;
-    boost::optional<int> _requestBits;
+    boost::optional<HdDirtyBits> _requestBits;
 
 public:
     _Worker()
@@ -309,16 +308,16 @@ public:
         _requestBits = flags;
     }
 
-    int GetRequestBits(_Task const& task) { 
+    HdDirtyBits GetRequestBits(_Task const& task) {
          if (_requestBits) {
-            return *_requestBits;
+            return *_requestBits; 
          } else {
             return task.requestBits;
          }
     }
 
     void AddTask(UsdImagingDelegate* delegate, SdfPath const& usdPath, 
-                 int requestBits=0) {
+                 HdDirtyBits requestBits=0) {
         _tasks.push_back(_Task(delegate, usdPath, requestBits));
         // TODO: This is only used when updating, might be nice to split this
         // out into two classes.
@@ -372,8 +371,8 @@ public:
             UsdImagingDelegate* delegate = _tasks[i].delegate;
             SdfPath const& usdPath = _tasks[i].path;
             UsdPrim const& prim = delegate->_GetPrim(usdPath);
-            int* requestBits = NULL;
-            int* dirtyBits = delegate->_GetDirtyBits(usdPath);
+            HdDirtyBits* requestBits = NULL;
+            HdDirtyBits* dirtyBits = delegate->_GetDirtyBits(usdPath);
             if (_requestBits) {
                 requestBits = &(*_requestBits);
             } else {
@@ -400,9 +399,9 @@ public:
             UsdTimeCode const& time = delegate->_time;
             SdfPath const& usdPath = _tasks[i].path;
             UsdPrim const& prim = delegate->_GetPrim(usdPath);
-            int requestBits = GetRequestBits(_tasks[i]);
+            HdDirtyBits requestBits = GetRequestBits(_tasks[i]);
             if (!requestBits) {
-                if (int* bits = delegate->_GetDirtyBits(usdPath)) {
+                if (HdDirtyBits* bits = delegate->_GetDirtyBits(usdPath)) {
                     requestBits = *bits;
                 } else {
                     // Should never get here; _GetDirtyBits will hit a failed
@@ -412,7 +411,7 @@ public:
             }
             _AdapterSharedPtr adapter = delegate->_AdapterLookupByPath(usdPath);
             if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
-                int resultBits = requestBits;
+                HdDirtyBits resultBits = requestBits;
                 adapter->UpdateForTime(prim, usdPath, time, 
                                         requestBits, &resultBits);
                 _results[i] = std::make_pair(usdPath, resultBits);
@@ -429,13 +428,13 @@ public:
             UsdImagingDelegate* delegate = _tasks[i].delegate;
 
             SdfPath const& path = _results[i].first;
-            int dirtyFlags = _results[i].second;
+            HdDirtyBits dirtyFlags = _results[i].second;
 
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
                     "[Update] RESULT: Dirtying rprim <%s> "
-                    "with dirtyFlags: %d [%s]\n",
+                    "with dirtyFlags: 0x%llX [%s]\n",
                     path.GetText(), 
-                    dirtyFlags,
+                    (unsigned long long)dirtyFlags,
                     HdChangeTracker::StringifyDirtyBits(dirtyFlags).c_str());
             
             delegate->_MarkRprimOrInstancerDirty(path, dirtyFlags);
@@ -797,7 +796,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
     for (size_t i = 0; i < request->IDs.size(); i++) {
         // This is a refernece to allow the Adapter to communicate back to the
         // render index what was actually updated vs. what was requested.
-        int dirtyFlags = request->dirtyBits[i];
+        HdDirtyBits dirtyFlags = request->dirtyBits[i];
 
         if (!TF_VERIFY(dirtyFlags != HdChangeTracker::Clean))
             continue;
@@ -812,9 +811,9 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
         _AdapterSharedPtr adapter = _AdapterLookupByPath(usdPath);
         if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
-                    "[Sync] PREP: <%s> dirtyFlags: %d [%s]\n",
+                    "[Sync] PREP: <%s> dirtyFlags: 0x%llX [%s]\n",
                     usdPath.GetText(), 
-                    dirtyFlags,
+                    (unsigned long long)dirtyFlags,
                     HdChangeTracker::StringifyDirtyBits(dirtyFlags).c_str());
             adapter->UpdateForTimePrep(prim, usdPath, _time, dirtyFlags);
             worker.AddTask(this, usdPath, dirtyFlags);
@@ -827,7 +826,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
         // not prefixed with the delegate ID.
         SdfPath usdPath = *it;
         UsdPrim prim = _GetPrim(usdPath);
-        int* p = _GetDirtyBits(usdPath);
+        HdDirtyBits* p = _GetDirtyBits(usdPath);
         if (!TF_VERIFY(p)) {
             continue;
         }
@@ -1202,7 +1201,7 @@ UsdImagingDelegate::_PrepareWorkerForTimeUpdate(_Worker* worker)
     // Mark varying attributes as dirty and build a work queue for threads to
     // populate caches for the new time.
     TF_FOR_ALL(it, _dirtyMap) {
-        int& dirtyFlags = it->second;
+        HdDirtyBits& dirtyFlags = it->second;
         if (dirtyFlags == HdChangeTracker::Clean)
             continue;
         _MarkRprimOrInstancerDirty(it->first, dirtyFlags);
@@ -1579,7 +1578,7 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
             // variability and stage the associated data.
             int requestBits = adapter->ProcessPropertyChange(prim, usdPath, attrName);
             if (requestBits != HdChangeTracker::AllDirty) {
-                int* dirtyBits = _GetDirtyBits(usdPath);
+                HdDirtyBits* dirtyBits = _GetDirtyBits(usdPath);
                 if (!TF_VERIFY(dirtyBits)) {
                     continue;
                 }
@@ -1624,7 +1623,7 @@ UsdImagingDelegate::_UpdateSingleValue(SdfPath const& usdPath, int requestBits)
     _AdapterSharedPtr adapter = _AdapterLookupByPath(usdPath);
     if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
         adapter->UpdateForTimePrep(prim, usdPath, _time, requestBits);
-        int resultBits = 0;
+        HdDirtyBits resultBits = 0;
         adapter->UpdateForTime(prim, usdPath, _time, requestBits, &resultBits);
     }
 }
@@ -2086,8 +2085,8 @@ UsdImagingDelegate::SetRigidXformOverrides(
 
 void
 UsdImagingDelegate::_MarkSubtreeDirty(SdfPath const &subtreeRoot,
-                                      int rprimDirtyFlag,
-                                      int instancerDirtyFlag)
+                                      HdDirtyBits rprimDirtyFlag,
+                                      HdDirtyBits instancerDirtyFlag)
 {
     std::pair<_PathAdapterMap::const_iterator,
         _PathAdapterMap::const_iterator> range =

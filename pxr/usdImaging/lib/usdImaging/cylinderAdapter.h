@@ -55,22 +55,22 @@ public:
     
     virtual void TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      int requestedBits,
+                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
                                           instancerContext = NULL);
 
     /// Thread Safe.
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  int requestedBits,
-                                  int* dirtyBits,
+                                  HdDirtyBits requestedBits,
+                                  HdDirtyBits* dirtyBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL);
 
     virtual void UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
                                    UsdTimeCode time,
-                                   int requestedBits,
+                                   HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const* 
                                        instancerContext = NULL);
 
@@ -78,8 +78,8 @@ public:
     virtual void UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
-                               int requestedBits,
-                               int* dirtyBits,
+                               HdDirtyBits requestedBits,
+                               HdDirtyBits* dirtyBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL);
 

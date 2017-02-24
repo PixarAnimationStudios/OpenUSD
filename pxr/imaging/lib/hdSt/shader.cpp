@@ -113,7 +113,7 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate)
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
     HdChangeTracker& changeTracker =
                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetSprimDirtyBits(id);
+    HdDirtyBits bits = changeTracker.GetSprimDirtyBits(id);
 
     if(bits & DirtySurfaceShader) {
         const std::string &fragmentSource =
@@ -255,7 +255,7 @@ HdStShader::Get(TfToken const &token) const
 }
 
 // virtual
-int
+HdDirtyBits
 HdStShader::GetInitialDirtyBitsMask() const
 {
     return AllDirty;

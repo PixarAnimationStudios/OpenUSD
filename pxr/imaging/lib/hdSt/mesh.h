@@ -96,16 +96,16 @@ protected:
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
                  TfToken const &reprName,
-                 HdChangeTracker::DirtyBits *dirtyBitsState) override;
+                 HdDirtyBits *dirtyBitsState) override;
 
-    HdChangeTracker::DirtyBits _PropagateDirtyBits(
-        HdChangeTracker::DirtyBits dirtyBits);
+    HdDirtyBits _PropagateDirtyBits(
+        HdDirtyBits dirtyBits);
 
     bool _UsePtexIndices(const HdRenderIndex &renderIndex) const;
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdDrawItem *drawItem,
-                         HdChangeTracker::DirtyBits *dirtyBits,
+                         HdDirtyBits *dirtyBits,
                          bool isNew,
                          HdStMeshReprDesc desc,
                          bool requireSmoothNormals);
@@ -120,31 +120,31 @@ protected:
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdDrawItem *drawItem,
-                           HdChangeTracker::DirtyBits *dirtyBits,
+                           HdDirtyBits *dirtyBits,
                            HdStMeshReprDesc desc);
 
     void _PopulateAdjacency();
 
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                  HdDrawItem *drawItem,
-                                 HdChangeTracker::DirtyBits *dirtyBits,
+                                 HdDirtyBits *dirtyBits,
                                  bool isNew,
                                  HdStMeshReprDesc desc,
                                  bool requireSmoothNormals);
 
     void _PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
                                       HdDrawItem *drawItem,
-                                      HdChangeTracker::DirtyBits *dirtyBits,
+                                      HdDirtyBits *dirtyBits,
                                       HdStMeshReprDesc desc);
 
     void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
                                   HdDrawItem *drawItem,
-                                  HdChangeTracker::DirtyBits *dirtyBits,
+                                  HdDirtyBits *dirtyBits,
                                   TfTokenVector const &primVarNames);
 
     int _GetRefineLevelForDesc(HdStMeshReprDesc desc);
 
-    virtual HdChangeTracker::DirtyBits _GetInitialDirtyBits() const override;
+    virtual HdDirtyBits _GetInitialDirtyBits() const override;
 
 private:
     enum DrawingCoord {

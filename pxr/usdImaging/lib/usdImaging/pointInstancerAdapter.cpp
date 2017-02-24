@@ -334,7 +334,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
 void 
 UsdImagingPointInstancerAdapter::TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      int requestedBits,
+                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
                                           instancerContext)
 {
@@ -388,8 +388,8 @@ UsdImagingPointInstancerAdapter::TrackVariabilityPrep(UsdPrim const& prim,
 void 
 UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  int requestedBits,
-                                  int* dirtyBits,
+                                  HdDirtyBits requestedBits,
+                                  HdDirtyBits* dirtyBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext)
 {
@@ -624,7 +624,7 @@ void
 UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath,
                                    UsdTimeCode time,
-                                   int requestedBits,
+                                   HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const*
                                        instancerContext)
 {
@@ -741,8 +741,8 @@ void
 UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
-                               int requestedBits,
-                               int* resultBits,
+                               HdDirtyBits requestedBits,
+                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext)
 {
@@ -1300,7 +1300,7 @@ UsdImagingPointInstancerAdapter::_UpdateDirtyBits(
         return instrData.dirtyBits;
 
     instrData.dirtyBits = HdChangeTracker::Clean;
-    int* dirtyBits = &instrData.dirtyBits;
+    HdDirtyBits* dirtyBits = &instrData.dirtyBits;
 
     if (!_IsVarying(instancerPrim, 
                        UsdGeomTokens->visibility, 

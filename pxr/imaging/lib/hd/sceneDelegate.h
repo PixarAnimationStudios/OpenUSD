@@ -62,7 +62,7 @@ struct HdSyncRequestVector {
     SdfPathVector IDs;
 
     // The HdChangeTracker::DirtyBits that are set for each Prim.
-    std::vector<int> dirtyBits;
+    std::vector<HdDirtyBits> dirtyBits;
 };
 
 

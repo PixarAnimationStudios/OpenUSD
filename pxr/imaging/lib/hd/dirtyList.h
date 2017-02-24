@@ -26,12 +26,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
-
-#include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/types.h"
+
+#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class HdRenderIndex;
 
@@ -129,7 +129,7 @@ public:
     void Clear();
 
 private:
-    void _UpdateIDs(SdfPathVector* ids, HdChangeTracker::DirtyBits mask);
+    void _UpdateIDs(SdfPathVector* ids, HdDirtyBits mask);
 
     HdRprimCollection _collection;
     SdfPathVector _dirtyIds;

@@ -54,7 +54,7 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate)
     SdfPath const& id = GetID();
     HdChangeTracker& changeTracker = 
                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetBprimDirtyBits(id);
+    HdDirtyBits bits = changeTracker.GetBprimDirtyBits(id);
 
     // XXX : DirtyParams and DirtyTexture are currently the same but they
     //       can be separated functionally and have different 
@@ -112,7 +112,7 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate)
     }
 }
 
-int
+HdDirtyBits
 HdTexture::GetInitialDirtyBitsMask() const
 {
     return AllDirty;

@@ -63,7 +63,7 @@ UsdImagingPointsAdapter::Populate(UsdPrim const& prim,
 void 
 UsdImagingPointsAdapter::TrackVariabilityPrep(UsdPrim const& prim,
                                               SdfPath const& cachePath,
-                                              int requestedBits,
+                                              HdDirtyBits requestedBits,
                                               UsdImagingInstancerContext const* 
                                                   instancerContext)
 {
@@ -75,8 +75,8 @@ UsdImagingPointsAdapter::TrackVariabilityPrep(UsdPrim const& prim,
 void 
 UsdImagingPointsAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
-                                          int requestedBits,
-                                          int* dirtyBits,
+                                          HdDirtyBits requestedBits,
+                                          HdDirtyBits* dirtyBits,
                                           UsdImagingInstancerContext const* 
                                               instancerContext)
 {
@@ -105,7 +105,7 @@ void
 UsdImagingPointsAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                            SdfPath const& cachePath, 
                                            UsdTimeCode time,
-                                           int requestedBits,
+                                           HdDirtyBits requestedBits,
                                            UsdImagingInstancerContext const* 
                                                instancerContext)
 {
@@ -124,8 +124,8 @@ void
 UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
                                        SdfPath const& cachePath, 
                                        UsdTimeCode time,
-                                       int requestedBits,
-                                       int* resultBits,
+                                       HdDirtyBits requestedBits,
+                                       HdDirtyBits* resultBits,
                                        UsdImagingInstancerContext const* 
                                            instancerContext)
 {

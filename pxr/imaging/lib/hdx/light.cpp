@@ -66,7 +66,7 @@ HdxLight::Sync(HdSceneDelegate *sceneDelegate)
 
     HdChangeTracker& changeTracker =
                              sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetSprimDirtyBits(id);
+    HdDirtyBits bits = changeTracker.GetSprimDirtyBits(id);
 
     // Change tracking
 
@@ -123,7 +123,7 @@ HdxLight::Get(TfToken const &token) const
 }
 
 /* virtual */
-int
+HdDirtyBits
 HdxLight::GetInitialDirtyBitsMask() const
 {
     return AllDirty;

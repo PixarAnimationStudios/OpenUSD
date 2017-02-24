@@ -114,6 +114,7 @@ pxr_shared_library(hd
 
     PUBLIC_HEADERS
         enums.h
+        types.h
         version.h
 
     PRIVATE_CLASSES

@@ -1392,7 +1392,7 @@ Hd_UnitTestDelegate::Clear()
 }
 
 void
-Hd_UnitTestDelegate::MarkRprimDirty(SdfPath path, HdChangeTracker::DirtyBits flag)
+Hd_UnitTestDelegate::MarkRprimDirty(SdfPath path, HdDirtyBits flag)
 {
     GetRenderIndex().GetChangeTracker().MarkRprimDirty(path, flag);
 }

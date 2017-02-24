@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
@@ -33,7 +34,6 @@
 #include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class HdSceneDelegate;
 
@@ -69,7 +69,7 @@ public:
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
-    virtual int GetInitialDirtyBitsMask() const = 0;
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const = 0;
 
 private:
     SdfPath _id;

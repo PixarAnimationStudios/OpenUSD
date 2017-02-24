@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/primTypeIndex.h"
 #include "pxr/imaging/hd/bprim.h"
+#include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
@@ -111,8 +112,7 @@ Hd_PrimTypeIndex<PrimType>::InsertPrim(const TfToken    &typeId,
     }
 
 
-    HdChangeTracker::DirtyBits initialDirtyState =
-                                                prim->GetInitialDirtyBitsMask();
+    HdDirtyBits initialDirtyState = prim->GetInitialDirtyBitsMask();
 
     _TrackerInsertPrim(tracker, primId, initialDirtyState);
 
@@ -299,7 +299,9 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker &tracker)
                                        ++primIt) {
             const SdfPath &primPath = primIt->first;
 
-            if (_TrackerGetPrimDirtyBits(tracker, primPath) != HdChangeTracker::Clean) {
+            HdDirtyBits dirtyBits = _TrackerGetPrimDirtyBits(tracker, primPath);
+
+            if (dirtyBits != HdChangeTracker::Clean) {
 
                 _PrimInfo &primInfo = primIt->second;
 
@@ -335,7 +337,7 @@ template <>
 void
 Hd_PrimTypeIndex<HdSprim>::_TrackerInsertPrim(HdChangeTracker &tracker,
                                               const SdfPath  &path,
-                                   HdChangeTracker::DirtyBits initialDirtyState)
+                                              HdDirtyBits initialDirtyState)
 {
     tracker.SprimInserted(path, initialDirtyState);
 }
@@ -351,7 +353,7 @@ Hd_PrimTypeIndex<HdSprim>::_TrackerRemovePrim(HdChangeTracker &tracker,
 
 template <>
 // static
-HdChangeTracker::DirtyBits
+HdDirtyBits
 Hd_PrimTypeIndex<HdSprim>::_TrackerGetPrimDirtyBits(HdChangeTracker &tracker,
                                                    const SdfPath &path)
 {
@@ -404,8 +406,8 @@ template <>
 // static
 void
 Hd_PrimTypeIndex<HdBprim>::_TrackerInsertPrim(HdChangeTracker &tracker,
-                                              const SdfPath  &path,
-                                   HdChangeTracker::DirtyBits initialDirtyState)
+                                              const SdfPath   &path,
+                                              HdDirtyBits     initialDirtyState)
 {
     tracker.BprimInserted(path, initialDirtyState);
 }
@@ -421,9 +423,9 @@ Hd_PrimTypeIndex<HdBprim>::_TrackerRemovePrim(HdChangeTracker &tracker,
 
 template <>
 // static
-HdChangeTracker::DirtyBits
+HdDirtyBits
 Hd_PrimTypeIndex<HdBprim>::_TrackerGetPrimDirtyBits(HdChangeTracker &tracker,
-                                                   const SdfPath &path)
+                                                    const SdfPath   &path)
 {
     return tracker.GetBprimDirtyBits(path);
 }

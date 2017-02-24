@@ -25,8 +25,7 @@
 #define HD_PRIM_TYPE_INDEX_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/changeTracker.h"
-
+#include "pxr/imaging/hd/types.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -37,6 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdChangeTracker;
 class HdRenderDelegate;
 class HdSceneDelegate;
 class SdfPath;
@@ -183,14 +183,13 @@ private:
     // These are to handle prim type specific function names on called objects.
     static void _TrackerInsertPrim(HdChangeTracker &tracker,
                                    const SdfPath &path,
-                                   HdChangeTracker::DirtyBits initialDirtyState);
+                                   HdDirtyBits initialDirtyState);
 
     static void _TrackerRemovePrim(HdChangeTracker &tracker,
                                    const SdfPath &path);
 
-    static HdChangeTracker::DirtyBits
-                              _TrackerGetPrimDirtyBits(HdChangeTracker &tracker,
-                                                       const SdfPath &path);
+    static HdDirtyBits _TrackerGetPrimDirtyBits(HdChangeTracker &tracker,
+                                                const SdfPath &path);
 
     static void _TrackerMarkPrimClean(HdChangeTracker &tracker,
                                       const SdfPath &path);
@@ -202,8 +201,7 @@ private:
                                                        const TfToken &typeId);
 
     static void _RenderDelegateDestroyPrim(HdRenderDelegate *renderDelegate,
-                                           PrimType *pri);
-
+                                           PrimType *prim);
 
     // No copying
     Hd_PrimTypeIndex(const Hd_PrimTypeIndex &) = delete;
