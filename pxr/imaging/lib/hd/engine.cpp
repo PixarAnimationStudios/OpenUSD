@@ -523,9 +523,6 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 
     _InitCaps();
 
-    // Sync the scene state prims
-    index.SyncSprims();
-
     // --------------------------------------------------------------------- //
     // DATA DISCOVERY PHASE
     // --------------------------------------------------------------------- //
@@ -538,17 +535,9 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
     // with both BufferSources that need to be resolved (possibly generating
     // data on the CPU) and computations to run on the GPU.
 
-    // could be in parallel... but how?
-    // may be just gathering dirtyLists at first, and then index->sync()?
-    TF_FOR_ALL(it, tasks) {
-        if (!TF_VERIFY(*it)) {
-            continue;
-        }
-        (*it)->Sync(&_taskContext);
-    }
 
     // Process all pending dirty lists
-    index.SyncAll();
+    index.SyncAll(tasks, &_taskContext);
 
     // --------------------------------------------------------------------- //
     // RESOLVE, COMPUTE & COMMIT PHASE
@@ -665,13 +654,13 @@ public:
     }
 
 protected:
-    virtual void _Sync( HdTaskContext* ctx)
+    virtual void _Sync( HdTaskContext* ctx) override
     {
         _renderPass->Sync();
         _renderPassState->Sync();
     }
 
-    virtual void _Execute(HdTaskContext* ctx)
+    virtual void _Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
         _renderPass->Execute(_renderPassState);

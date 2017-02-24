@@ -273,26 +273,7 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
 {
     size_t numTypes = _entries.size();
 
-    // XXX: Temporary solution to Sync Ordering issue.
-    // Currently SPrims are synced before BPrims, but BPrims are supposed to
-    // be first.  This is an issue for Shaders that depend on Textures being
-    // synced and registered.
-    // So for now, skip sync'ing shaders here and sync them later seperatly
-    // after Bprims.
-
-    size_t shaderTypeIdxXXX = -1;
-    _TypeIndex::const_iterator typeItXXX = _index.find(HdPrimTypeTokens->shader);
-    if (typeItXXX != _index.end()) {
-        shaderTypeIdxXXX = typeItXXX->second;
-    }
-
-
-
     for (size_t typeIdx = 0; typeIdx < numTypes; ++typeIdx) {
-        if (typeIdx == shaderTypeIdxXXX) {
-            continue;
-        }
-
         _PrimTypeEntry &typeEntry =  _entries[typeIdx];
 
         for (typename _PrimMap::iterator primIt  = typeEntry.primMap.begin();
@@ -314,21 +295,6 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
             }
         }
     }
-}
-
-// XXX: Transitional API
-template <class PrimType>
-const typename Hd_PrimTypeIndex<PrimType>::_PrimMap *
-Hd_PrimTypeIndex<PrimType>::GetPrimMapXXX(TfToken const &typeId) const
-{
-
-    typename _TypeIndex::const_iterator typeIt = _index.find(typeId);
-    if (typeIt ==_index.end()) {
-        TF_CODING_ERROR("Unsupported prim type: %s", typeId.GetText());
-        return nullptr;
-    }
-
-    return &_entries[typeIt->second].primMap;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -55,10 +55,17 @@ class HdDrawItem;
 class HdRprimCollection;
 class HdSceneDelegate;
 class HdRenderDelegate;
+class VtValue;
+
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdInstancer> HdInstancerSharedPtr;
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
+typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
+typedef std::unordered_map<TfToken,
+                           VtValue,
+                           TfToken::HashFunctor,
+                           TfToken::TokensEqualFunctor> HdTaskContext;
 
 /// \class HdRenderIndex
 ///
@@ -95,10 +102,7 @@ public:
     void Sync(HdDirtyListSharedPtr const &dirtyList);
 
     /// Processes all pending dirty lists 
-    void SyncAll();
-
-    /// Synchronize all scene states in the render index
-    void SyncSprims();
+    void SyncAll(HdTaskSharedPtrVector const &tasks, HdTaskContext *taskContext);
 
     /// Returns a vector of Rprim IDs that are bound to the given DelegateID.
     SdfPathVector const& GetDelegateRprimIDs(SdfPath const& delegateID) const;

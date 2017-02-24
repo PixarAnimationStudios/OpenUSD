@@ -39,6 +39,7 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -786,22 +787,9 @@ namespace {
             request.dirtyBits.push_back(dirtyBits);
         }
 
-        void PushBackShader(SdfPath const& shaderID)
-        {
-            surfaceShaderIDs.push_back(shaderID);
-        }
-
-        void PushBackTexture(SdfPath const& textureID)
-        {
-            textureIDs.push_back(textureID);
-        }
-
         std::vector<HdSceneDelegate *> sceneDelegates;
         std::vector<HdRprim *> rprims;
         std::vector<size_t> reprsMasks;
-
-        SdfPathVector surfaceShaderIDs;
-        SdfPathVector textureIDs;
 
         HdSyncRequestVector request;
     };
@@ -900,9 +888,28 @@ HdRenderIndex::Sync(HdDirtyListSharedPtr const &dirtyList)
 }
 
 void
-HdRenderIndex::SyncAll()
+HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
+                       HdTaskContext *taskContext)
 {
     HD_TRACE_FUNCTION();
+
+    HdRenderParam *renderParam = _renderDelegate->GetRenderParam();
+
+
+    _bprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
+    _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
+
+    // could be in parallel... but how?
+    // may be just gathering dirtyLists at first, and then index->sync()?
+
+    // These tasks will call Sync() adding dirty lists to _syncQueue for
+    // processing below.
+    TF_FOR_ALL(it, tasks) {
+        if (!TF_VERIFY(*it)) {
+            continue;
+        }
+        (*it)->Sync(taskContext);
+    }
 
     // Merge IDs using the slow SdfPath less-than so that all delegate IDs group
     // together. Unfortunately, FastLessThan makes the optimization below less
@@ -950,58 +957,8 @@ HdRenderIndex::SyncAll()
         }
     }
 
-    //
-    // This is transitional code as part of the Hydra Render Delegate Refactor.
-    // As part of that change, the Hydra policy in the order of sync operation
-    // is changing.  However, there are some existing inter-prim dependencies
-    // that need to be resolved to comply with the new policy.  So for now
-    // we explicitly sync shaders and texture prims here to maintain the current
-    // sync order.
-    //
-
     _RprimSyncRequestMap syncMap;
-    const _BprimIndex::_PrimMap *textureMapXXX =
-                       _bprimIndex.GetPrimMapXXX(HdPrimTypeTokens->texture);
-    const _SprimIndex::_PrimMap *shaderMapXXX =
-                       _sprimIndex.GetPrimMapXXX(HdPrimTypeTokens->shader);
-    if ((textureMapXXX == nullptr) ||
-        (shaderMapXXX == nullptr)) {
-        TF_CODING_ERROR("Texture or Shader prim types not defined");
-        return;
-    }
-
-
     bool resetVaryingState = false;
-    {
-        TRACE_SCOPE("Build Sync Map: Textures");
-
-
-        // Collect dirty texture IDs.
-        // We could/should try to be more sparse here, however finding the
-        // intersection of textures used by prims in this RenderPass is currently
-        // more expensive than just updating all textures.
-
-        TF_FOR_ALL(it, *textureMapXXX) {
-            if (HdChangeTracker::IsClean(_tracker.GetBprimDirtyBits(it->first)))
-                continue;
-            syncMap[it->second.sceneDelegate].PushBackTexture(it->first);
-        }
-    }
-
-    {
-        TRACE_SCOPE("Build Sync Map: Shaders");
-        // Collect dirty shader IDs.
-        // We could/should try to be more sparse here, however finding the
-        // intersection of shaders used by prims in this RenderPass is currently
-        // *way* more expensive than just updating all shaders.
-        TF_FOR_ALL(it, *shaderMapXXX) {
-            if (HdChangeTracker::IsClean(_tracker.GetSprimDirtyBits(it->first)))
-                continue;
-
-            syncMap[it->second.sceneDelegate].PushBackShader(it->first);
-        }
-    }
-
     {
         TRACE_SCOPE("Build Sync Map: Rprims");
         // Collect dirty Rprim IDs.
@@ -1068,45 +1025,11 @@ HdRenderIndex::SyncAll()
                          boost::bind(&_Worker::Process, worker, _1, _2));
     }
 
-    HdRenderParam *renderParam = _renderDelegate->GetRenderParam();
-
     // Collect results and synchronize.
     WorkArenaDispatcher dispatcher;
     TF_FOR_ALL(dlgIt, syncMap) {
         HdSceneDelegate* sceneDelegate = dlgIt->first;
         _RprimSyncRequestVector& r = dlgIt->second;
-
-
-        TF_FOR_ALL(textureID, r.textureIDs) {
-            _BprimIndex::_PrimMap::const_iterator textIt =
-                                                textureMapXXX->find(*textureID);
-
-            if (textIt != textureMapXXX->end()) {
-                const _BprimIndex::_PrimInfo &bprimInfo = textIt->second;
-
-                HdDirtyBits dirtyBits = _tracker.GetBprimDirtyBits(*textureID);
-
-                bprimInfo.prim->Sync(sceneDelegate, renderParam, &dirtyBits);
-
-                _tracker.MarkBprimClean(*textureID, dirtyBits);
-            }
-        }
-
-        TF_FOR_ALL(shaderID, r.surfaceShaderIDs) {
-            _SprimIndex::_PrimMap::const_iterator shaderIt =
-                                                  shaderMapXXX->find(*shaderID);
-
-
-            if (shaderIt != shaderMapXXX->end()) {
-                const _SprimIndex::_PrimInfo &sprimInfo = shaderIt->second;
-
-                HdDirtyBits dirtyBits = _tracker.GetSprimDirtyBits(*shaderID);
-
-                sprimInfo.prim->Sync(sceneDelegate, renderParam, &dirtyBits);
-
-                _tracker.MarkSprimClean(*shaderID, dirtyBits);
-            }
-        }
 
         {
             _SyncRPrims workerState(r, reprs, _tracker, renderParam);
@@ -1149,12 +1072,6 @@ HdRenderIndex::SyncAll()
         // Clear all pending dirty lists
         _syncQueue.clear();
     }
-}
-
-void
-HdRenderIndex::SyncSprims()
-{
-    _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
 }
 
 void

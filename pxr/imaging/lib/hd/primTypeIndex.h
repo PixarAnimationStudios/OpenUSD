@@ -144,19 +144,13 @@ public:
                    HdRenderParam *renderParam);
 
 
-public:  //Transitional API should be private.
-
+private:
     struct _PrimInfo {
         HdSceneDelegate *sceneDelegate;
         PrimType        *prim;
     };
 
     typedef std::unordered_map<SdfPath, _PrimInfo, SdfPath::Hash> _PrimMap;
-
-    // XXX: Transitional API
-    const _PrimMap *GetPrimMapXXX(TfToken const &typeId) const;
-
-private:
     typedef std::set<SdfPath> _PrimIDSet;
 
     struct _PrimTypeEntry
