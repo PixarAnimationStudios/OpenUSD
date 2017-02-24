@@ -1098,36 +1098,31 @@ private:
     friend class UsdPrim;
 
     // Constructor used by Prim.
-    UsdPrimSiblingIterator(const base_type &i, const base_type &end,
+    UsdPrimSiblingIterator(const base_type &i,
                            const Usd_PrimFlagsPredicate &predicate)
         : iterator_adaptor_(i)
-        , _end(end)
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
-        if (base() != end && !_predicate(base()))
+        if (base() && !_predicate(base()))
             increment();
     }
 
     // Core implementation invoked by iterator_adaptor.
     friend class boost::iterator_core_access;
     bool equal(const UsdPrimSiblingIterator &other) const {
-        return base() == other.base() &&
-            _end == other._end && _predicate == other._predicate;
+        return base() == other.base() && _predicate == other._predicate;
     }
 
     void increment() {
         base_type &base = base_reference();
-        // Advance base until end is encountered or the predicate succeeds.
-        do {
-            base = base->GetNextSibling();
-        } while (base != _end && !_predicate(base));
+        if (Usd_MoveToNextSiblingOrParent(base, _predicate))
+            base = nullptr;
     }
 
     reference dereference() const {
         return UsdPrim(base());
     }
 
-    base_type _end;
     Usd_PrimFlagsPredicate _predicate;
 };
 
@@ -1167,8 +1162,8 @@ UsdPrim::GetChildren() const
 UsdPrim::SiblingRange
 UsdPrim::_MakeSiblingRange(const Usd_PrimFlagsPredicate &pred) const {
     Usd_PrimDataConstPtr firstChild = _Prim()->GetFirstChild();
-    return SiblingRange(SiblingIterator(firstChild, NULL, pred),
-                        SiblingIterator(NULL, NULL, pred));
+    return SiblingRange(SiblingIterator(firstChild, pred),
+                        SiblingIterator(nullptr, pred));
 }
 
 #ifdef doxygen
@@ -1281,30 +1276,28 @@ private:
     friend class UsdPrim;
 
     // Constructor used by Prim.
-    UsdPrimSubtreeIterator(const base_type &i, const base_type &end,
+    UsdPrimSubtreeIterator(const base_type &i,
                            const Usd_PrimFlagsPredicate &predicate)
         : iterator_adaptor_(i)
-        , _end(end)
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
         base_type &base = base_reference();
-        if (base != _end && !_predicate(base)) {
-            if (Usd_MoveToNextSiblingOrParent(base, _end, _predicate))
-                base = _end;
+        if (base && !_predicate(base)) {
+            if (Usd_MoveToNextSiblingOrParent(base, _predicate))
+                base = nullptr;
         }
     }
 
     // Core implementation invoked by iterator_adaptor.
     friend class boost::iterator_core_access;
     bool equal(const UsdPrimSubtreeIterator &other) const {
-        return base() == other.base() && 
-            _end == other._end && _predicate == other._predicate;
+        return base() == other.base() && _predicate == other._predicate;
     }
 
     void increment() {
         base_type &base = base_reference();
-        if (!Usd_MoveToChild(base, _end, _predicate)) {
-            while (Usd_MoveToNextSiblingOrParent(base, _end, _predicate)) {}
+        if (!Usd_MoveToChild(base, _predicate)) {
+            while (Usd_MoveToNextSiblingOrParent(base, _predicate)) {}
         }
     }
 
@@ -1312,7 +1305,6 @@ private:
         return UsdPrim(base());
     }
 
-    base_type _end;
     Usd_PrimFlagsPredicate _predicate;
 };
 
@@ -1352,9 +1344,9 @@ UsdPrim::SubtreeRange
 UsdPrim::_MakeDescendantsRange(const Usd_PrimFlagsPredicate &pred) const {
     auto firstChild = _Prim()->GetFirstChild();
     return SubtreeRange(
-        SubtreeIterator(firstChild, NULL, pred),
+        SubtreeIterator(firstChild, pred),
         SubtreeIterator(firstChild ? _Prim()->GetNextPrim() : firstChild,
-                        NULL, pred));
+                        pred));
 }
 
 

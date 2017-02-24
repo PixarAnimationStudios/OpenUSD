@@ -455,8 +455,8 @@ Usd_PrimData::_GetSubtreeRange() const
 
 // Search for the next sibling that matches \p pred (up to \p end).  If such a
 // sibling exists, move \p p to it and return false.  If no such sibling exists
-// then move \p to its parent return true.  If \p end is reached while looking
-// for siblings, move \p p to \p end and return false.
+// then move \p to its parent and return true.  If \p end is reached while 
+// looking for siblings, move \p p to \p end and return false.
 template <class PrimDataPtr>
 inline bool
 Usd_MoveToNextSiblingOrParent(PrimDataPtr &p, PrimDataPtr end,
@@ -471,6 +471,15 @@ Usd_MoveToNextSiblingOrParent(PrimDataPtr &p, PrimDataPtr end,
 
     // Return true if we successfully moved to a parent, otherwise false.
     return !next && p;
+}
+
+// Convenience method for calling the above with \p end = \c nullptr.
+template <class PrimDataPtr>
+inline bool
+Usd_MoveToNextSiblingOrParent(PrimDataPtr &p, 
+                              const Usd_PrimFlagsPredicate &pred)
+{
+    return Usd_MoveToNextSiblingOrParent(p, PrimDataPtr(nullptr), pred);
 }
 
 // Search for the first direct child of \p p that matches \p pred (up to
@@ -489,6 +498,13 @@ Usd_MoveToChild(PrimDataPtr &p, PrimDataPtr end,
     return false;
 }
 
+// Convenience method for calling the above with \p end = \c nullptr.
+template <class PrimDataPtr>
+inline bool
+Usd_MoveToChild(PrimDataPtr &p, const Usd_PrimFlagsPredicate &pred) 
+{
+    return Usd_MoveToChild(p, PrimDataPtr(nullptr), pred);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
