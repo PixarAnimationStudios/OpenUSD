@@ -42,6 +42,8 @@ public:
 
     virtual TfToken GetDefaultGalId() const override;
 
+    virtual HdRenderParam *GetRenderParam() const override;
+
     virtual const TfTokenVector &GetSupportedSprimTypes() const override;
     virtual const TfTokenVector &GetSupportedBprimTypes() const override;
 
@@ -59,6 +61,7 @@ public:
                                  SdfPath const& bprimId) override;
     virtual HdBprim *CreateFallbackBprim(TfToken const& typeId) override;
     virtual void DestroyBprim(HdBprim *bPrim) override;
+
 private:
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;

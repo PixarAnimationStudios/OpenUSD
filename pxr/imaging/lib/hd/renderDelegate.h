@@ -28,6 +28,7 @@
 #include "pxr/base/tf/token.h"
 
 #include "pxr/imaging/hf/pluginDelegateBase.h"
+#include "pxr/imaging/hd/changeTracker.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,6 +37,23 @@ class SdfPath;
 class HdRprim;
 class HdSprim;
 class HdBprim;
+class HdSceneDelegate;
+
+///
+/// The HdRenderParam is an opaque (to core Hydra) handle, to an object
+/// that is obtained from the render delegate and passed to each prim
+/// during Sync processing.
+///
+class HdRenderParam {
+public:
+    HdRenderParam() {}
+    virtual ~HdRenderParam();
+
+private:
+    // Hydra will not attempt to copy the class.
+    HdRenderParam(const HdRenderParam &) = delete;
+    HdRenderParam &operator =(const HdRenderParam &) = delete;
+};
 
 /// \class HdRenderDelegate
 ///
@@ -61,6 +79,20 @@ public:
     /// delegate.
     ///
     virtual const TfTokenVector &GetSupportedBprimTypes() const = 0;
+
+    ///
+    /// Returns an opaque handle to a render param, that in turn is
+    /// passed to each prim created by the render delegate during sync
+    /// processing.
+    ///
+    /// The typical lifetime of the renderParam would match that of the
+    /// RenderDelegate, however the minimal lifetime is that of the Sync
+    /// processing.  The param maybe queried multiple times during sync.
+    ///
+    /// A render delegate may return null for the param.
+    ///
+    virtual HdRenderParam *GetRenderParam() const = 0;
+
 
     ////////////////////////////////////////////////////////////////////////////
     ///

@@ -38,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdChangeTracker;
 class HdRenderDelegate;
+class HdRenderParam;
 class HdSceneDelegate;
 class SdfPath;
 
@@ -139,7 +140,8 @@ public:
     /// Will call the Sync function on all prims in the index that
     /// are marked dirty in the specified change tracker.
     ///
-    void SyncPrims(HdChangeTracker &tracker);
+    void SyncPrims(HdChangeTracker &tracker,
+                   HdRenderParam *renderParam);
 
 
 public:  //Transitional API should be private.
@@ -192,13 +194,15 @@ private:
                                                 const SdfPath &path);
 
     static void _TrackerMarkPrimClean(HdChangeTracker &tracker,
-                                      const SdfPath &path);
+                                      const SdfPath &path,
+                                      HdDirtyBits dirtyBits);
 
     static PrimType *_RenderDelegateCreatePrim(HdRenderDelegate *renderDelegate,
                                                const TfToken &typeId,
                                                const SdfPath &primId);
-    static PrimType *_RenderDelegateCreateFallbackPrim(HdRenderDelegate *renderDelegate,
-                                                       const TfToken &typeId);
+    static PrimType *_RenderDelegateCreateFallbackPrim(
+            HdRenderDelegate *renderDelegate,
+            const TfToken &typeId);
 
     static void _RenderDelegateDestroyPrim(HdRenderDelegate *renderDelegate,
                                            PrimType *prim);

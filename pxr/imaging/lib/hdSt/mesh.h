@@ -82,6 +82,12 @@ public:
 
     virtual ~HdStMesh();
 
+    virtual void Sync(HdSceneDelegate *delegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits,
+                      TfToken const   &reprName,
+                      bool             forcedRepr) override;
+
     /// Returns whether packed (10_10_10 bits) normals to be used
     static bool IsEnabledPackedNormals();
 

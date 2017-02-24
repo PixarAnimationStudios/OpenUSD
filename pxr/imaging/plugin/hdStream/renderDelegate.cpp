@@ -86,6 +86,12 @@ HdStreamRenderDelegate::GetSupportedBprimTypes() const
     return SUPPORTED_BPRIM_TYPES;
 }
 
+HdRenderParam *
+HdStreamRenderDelegate::GetRenderParam() const
+{
+    return nullptr;
+}
+
 HdRprim *
 HdStreamRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId,

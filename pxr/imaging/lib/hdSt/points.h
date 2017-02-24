@@ -62,6 +62,12 @@ public:
              SdfPath const& instancerId = SdfPath());
     virtual ~HdStPoints();
 
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdRenderParam*   renderParam,
+                      HdDirtyBits*     dirtyBits,
+                      TfToken const&   reprName,
+                      bool             forcedRepr) override;
+
     /// Configure geometric style of drawItems for \p reprName
     static void ConfigureRepr(TfToken const &reprName,
                               const HdStPointsReprDesc &desc);

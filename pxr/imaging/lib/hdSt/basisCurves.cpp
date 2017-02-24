@@ -72,6 +72,27 @@ HdStBasisCurves::~HdStBasisCurves()
     /*NOTHING*/
 }
 
+void
+HdStBasisCurves::Sync(HdSceneDelegate* delegate,
+                      HdRenderParam*   renderParam,
+                      HdDirtyBits*     dirtyBits,
+                      TfToken const&   reprName,
+                      bool             forcedRepr)
+{
+    TF_UNUSED(renderParam);
+
+    HdRprim::_Sync(delegate,
+                  reprName,
+                  forcedRepr,
+                  dirtyBits);
+
+    TfToken calcReprName = _GetReprName(delegate, reprName,
+                                        forcedRepr, dirtyBits);
+    _GetRepr(delegate, calcReprName, dirtyBits);
+
+    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+}
+
 /* static */
 bool
 HdStBasisCurves::IsEnabledForceRefinedCurves()

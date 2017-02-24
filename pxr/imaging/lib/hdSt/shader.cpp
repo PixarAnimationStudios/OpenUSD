@@ -104,16 +104,17 @@ HdStShader::~HdStShader()
 
 /* virtual */
 void
-HdStShader::Sync(HdSceneDelegate *sceneDelegate)
+HdStShader::Sync(HdSceneDelegate *sceneDelegate,
+                 HdRenderParam   *renderParam,
+                 HdDirtyBits     *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    SdfPath const& id = GetID();
+    TF_UNUSED(renderParam);
+
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-    HdChangeTracker& changeTracker =
-                            sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdDirtyBits bits = changeTracker.GetSprimDirtyBits(id);
+    HdDirtyBits bits = *dirtyBits;
 
     if(bits & DirtySurfaceShader) {
         const std::string &fragmentSource =
@@ -128,6 +129,8 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate)
 
         // XXX Forcing collections to be dirty to reload everything
         //     Something more efficient can be done here
+        HdChangeTracker& changeTracker =
+                             sceneDelegate->GetRenderIndex().GetChangeTracker();
         changeTracker.MarkAllCollectionsDirty();
     }
 
@@ -244,6 +247,7 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate)
         _surfaceShader->SetBufferSources(sources);
     }
 
+    *dirtyBits = Clean;
 }
 
 // virtual

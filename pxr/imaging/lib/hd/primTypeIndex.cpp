@@ -268,7 +268,8 @@ Hd_PrimTypeIndex<PrimType>::DestroyFallbackPrims(HdRenderDelegate *renderDelegat
 
 template <class PrimType>
 void
-Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker &tracker)
+Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
+                                      HdRenderParam    *renderParam)
 {
     size_t numTypes = _entries.size();
 
@@ -305,9 +306,11 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker &tracker)
 
                 _PrimInfo &primInfo = primIt->second;
 
-                primInfo.prim->Sync(primInfo.sceneDelegate);
+                primInfo.prim->Sync(primInfo.sceneDelegate,
+                                    renderParam,
+                                    &dirtyBits);
 
-                _TrackerMarkPrimClean(tracker, primPath);
+                _TrackerMarkPrimClean(tracker, primPath, dirtyBits);
             }
         }
     }
@@ -363,10 +366,12 @@ Hd_PrimTypeIndex<HdSprim>::_TrackerGetPrimDirtyBits(HdChangeTracker &tracker,
 template <>
 // static
 void
-Hd_PrimTypeIndex<HdSprim>::_TrackerMarkPrimClean(HdChangeTracker &tracker,
-                                                 const SdfPath &path)
+Hd_PrimTypeIndex<HdSprim>::_TrackerMarkPrimClean(
+                                           HdChangeTracker &tracker,
+                                           const SdfPath &path,
+                                           HdDirtyBits dirtyBits)
 {
-    tracker.MarkSprimClean(path);
+    tracker.MarkSprimClean(path, dirtyBits);
 }
 
 template <>
@@ -433,10 +438,12 @@ Hd_PrimTypeIndex<HdBprim>::_TrackerGetPrimDirtyBits(HdChangeTracker &tracker,
 template <>
 // static
 void
-Hd_PrimTypeIndex<HdBprim>::_TrackerMarkPrimClean(HdChangeTracker &tracker,
-                                                 const SdfPath &path)
+Hd_PrimTypeIndex<HdBprim>::_TrackerMarkPrimClean(
+                                           HdChangeTracker &tracker,
+                                           const SdfPath &path,
+                                           HdDirtyBits dirtyBits)
 {
-    tracker.MarkBprimClean(path);
+    tracker.MarkBprimClean(path, dirtyBits);
 }
 
 template <>

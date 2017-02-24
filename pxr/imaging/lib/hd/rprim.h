@@ -43,6 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdDrawItem;
 class HdRenderIndex;
 class HdRepr;
+class HdRenderParam;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
 
@@ -56,17 +57,27 @@ public:
     HdRprim(SdfPath const& id,
             SdfPath const& instancerId);
     virtual ~HdRprim();
+    
+    /// Update objects representation based on dirty bits.
+    /// @param[in, out]  dirtyBits: On input specifies which state is
+    ///                             is dirty and can be pulled from the scene
+    ///                             delegate.
+    ///                             On output specifies which bits are still
+    ///                             dirty and were not cleaned by the sync. 
+    ///                             
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdRenderParam*   renderParam,
+                      HdDirtyBits*     dirtyBits,
+                      TfToken const&   reprName,
+                      bool             forcedRepr) = 0;
+
+ 
 
     /// Returns the draw items for the requested reprName, these draw items
     /// should be constructed and cached beforehand by Sync().
     std::vector<HdDrawItem>* GetDrawItems(HdSceneDelegate* delegate,
                                           TfToken const &reprName,
                                           bool forced);
-
-    /// Update objects representation based on dirty bits.
-    void Sync(HdSceneDelegate* delegate,
-              TfToken const &reprName, bool forced,
-              HdDirtyBits *dirtyBits);
 
     /// Returns the render tag associated to this rprim
     TfToken GetRenderTag(HdSceneDelegate* delegate) const;
@@ -114,10 +125,15 @@ public:
     inline TfTokenVector GetPrimVarFacevaryingNames(HdSceneDelegate* delegate) const;
     inline TfTokenVector GetPrimVarUniformNames(HdSceneDelegate* delegate)     const;
 
-    inline VtValue GetPrimVar(HdSceneDelegate* delegate, const TfToken &name) const;
-
+     inline VtValue GetPrimVar(HdSceneDelegate* delegate, const TfToken &name) const;
 
 protected:
+    /// Update objects representation based on dirty bits.
+    void _Sync(HdSceneDelegate* delegate,
+              TfToken const &reprName, bool forced,
+              HdDirtyBits *dirtyBits);
+
+
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
                  TfToken const &reprName,

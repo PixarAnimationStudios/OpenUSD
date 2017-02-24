@@ -853,13 +853,16 @@ namespace {
         _RprimSyncRequestVector &_r;
         _ReprList const &_reprs;
         HdChangeTracker &_tracker;
+        HdRenderParam *_renderParam;
     public:
         _SyncRPrims( _RprimSyncRequestVector& r,
                      _ReprList const &reprs,
-                     HdChangeTracker &tracker)
+                     HdChangeTracker &tracker,
+                     HdRenderParam *renderParam)
          : _r(r)
          , _reprs(reprs)
          , _tracker(tracker)
+         , _renderParam(renderParam)
         {
         }
 
@@ -876,9 +879,10 @@ namespace {
                 TF_FOR_ALL(it, _reprs) {
                     if (reprsMask & 1) {
                         rprim.Sync(sceneDelegate,
+                                   _renderParam,
+                                   &dirtyBits,
                                     it->reprName,
-                                    it->forcedRepr,
-                                    &dirtyBits);
+                                   it->forcedRepr);
                     }
                     reprsMask >>= 1;
                 }
@@ -1064,6 +1068,8 @@ HdRenderIndex::SyncAll()
                          boost::bind(&_Worker::Process, worker, _1, _2));
     }
 
+    HdRenderParam *renderParam = _renderDelegate->GetRenderParam();
+
     // Collect results and synchronize.
     WorkArenaDispatcher dispatcher;
     TF_FOR_ALL(dlgIt, syncMap) {
@@ -1078,8 +1084,11 @@ HdRenderIndex::SyncAll()
             if (textIt != textureMapXXX->end()) {
                 const _BprimIndex::_PrimInfo &bprimInfo = textIt->second;
 
-                bprimInfo.prim->Sync(sceneDelegate);
-                _tracker.MarkBprimClean(*textureID, HdTexture::Clean);
+                HdDirtyBits dirtyBits = _tracker.GetBprimDirtyBits(*textureID);
+
+                bprimInfo.prim->Sync(sceneDelegate, renderParam, &dirtyBits);
+
+                _tracker.MarkBprimClean(*textureID, dirtyBits);
             }
         }
 
@@ -1091,13 +1100,16 @@ HdRenderIndex::SyncAll()
             if (shaderIt != shaderMapXXX->end()) {
                 const _SprimIndex::_PrimInfo &sprimInfo = shaderIt->second;
 
-                sprimInfo.prim->Sync(sceneDelegate);
-                _tracker.MarkSprimClean(*shaderID, HdTexture::Clean);
+                HdDirtyBits dirtyBits = _tracker.GetSprimDirtyBits(*shaderID);
+
+                sprimInfo.prim->Sync(sceneDelegate, renderParam, &dirtyBits);
+
+                _tracker.MarkSprimClean(*shaderID, dirtyBits);
             }
         }
 
         {
-            _SyncRPrims workerState(r, reprs, _tracker);
+            _SyncRPrims workerState(r, reprs, _tracker, renderParam);
 
             if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
                   sceneDelegate->IsEnabled(HdOptionTokens->parallelRprimSync)) {
@@ -1142,7 +1154,7 @@ HdRenderIndex::SyncAll()
 void
 HdRenderIndex::SyncSprims()
 {
-    _sprimIndex.SyncPrims(_tracker);
+    _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
 }
 
 void

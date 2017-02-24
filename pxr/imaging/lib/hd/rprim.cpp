@@ -68,7 +68,7 @@ HdRprim::GetDrawItems(HdSceneDelegate* delegate,
 
 
 void
-HdRprim::Sync(HdSceneDelegate* delegate,
+HdRprim::_Sync(HdSceneDelegate* delegate,
               TfToken const &defaultReprName,
               bool forced,
               HdDirtyBits *dirtyBits)
@@ -91,12 +91,6 @@ HdRprim::Sync(HdSceneDelegate* delegate,
 
         *dirtyBits &= ~HdChangeTracker::DirtySurfaceShader;
     }
-
-    TfToken reprName = _GetReprName(delegate, defaultReprName,
-                                    forced, dirtyBits);
-    _GetRepr(delegate, reprName, dirtyBits);
-
-    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
 TfToken

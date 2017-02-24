@@ -63,20 +63,21 @@ HdxDrawTarget::~HdxDrawTarget()
 
 /*virtual*/
 void
-HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate)
+HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
+                    HdRenderParam   *renderParam,
+                    HdDirtyBits     *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+    TF_UNUSED(renderParam);
 
     SdfPath const &id = GetID();
     if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
     }
 
-    HdChangeTracker& changeTracker = 
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdDirtyBits bits = changeTracker.GetSprimDirtyBits(id);
-
+    HdDirtyBits bits = *dirtyBits;
 
     if (bits & DirtyDTEnable) {
         VtValue vtValue =  sceneDelegate->Get(id, HdxDrawTargetTokens->enable);
@@ -140,6 +141,9 @@ HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate)
         for (size_t colNum = 0; colNum < newColSize; ++colNum) {
             TfToken const &currentName = _collections[colNum].GetName();
 
+            HdChangeTracker& changeTracker =
+                             sceneDelegate->GetRenderIndex().GetChangeTracker();
+
             changeTracker.MarkCollectionDirty(currentName);
         }
 
@@ -158,6 +162,8 @@ HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate)
             _renderPassState.SetRprimCollection(_collections[0]);
         }
     }
+
+    *dirtyBits = Clean;
 }
 
 // virtual

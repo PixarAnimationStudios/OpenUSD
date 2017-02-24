@@ -42,10 +42,14 @@ HdxCamera::~HdxCamera()
 }
 
 void
-HdxCamera::Sync(HdSceneDelegate *sceneDelegate)
+HdxCamera::Sync(HdSceneDelegate *sceneDelegate,
+                HdRenderParam   *renderParam,
+                HdDirtyBits     *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+    TF_UNUSED(renderParam);
 
     SdfPath const &id = GetID();
     if (!TF_VERIFY(sceneDelegate != nullptr)) {
@@ -57,9 +61,7 @@ HdxCamera::Sync(HdSceneDelegate *sceneDelegate)
     // Later on Get() is called from TaskState (RenderPass) to perform
     // aggregation/pre-computation, in order to make the shader execution
     // efficient.
-    HdChangeTracker& changeTracker = 
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdDirtyBits bits = changeTracker.GetSprimDirtyBits(id);
+    HdDirtyBits bits = *dirtyBits;
     
     if (bits & DirtyMatrices) {
         GfMatrix4d worldToViewMatrix(1.0);
@@ -95,6 +97,8 @@ HdxCamera::Sync(HdSceneDelegate *sceneDelegate)
         _cameraValues[HdxCameraTokens->clipPlanes] = 
                 sceneDelegate->GetClipPlanes(id);
     }
+
+    *dirtyBits = Clean;
 }
 
 /* virtual */
