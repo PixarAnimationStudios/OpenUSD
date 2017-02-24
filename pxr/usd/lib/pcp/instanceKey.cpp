@@ -78,7 +78,7 @@ PcpInstanceKey::PcpInstanceKey(const PcpPrimIndex& primIndex)
     SdfVariantSelectionMap variantSelection;
     for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
         if (node.CanContributeSpecs()) {
-            PcpComposeSiteVariantSelections(node.GetSite(), &variantSelection);
+            PcpComposeSiteVariantSelections(node, &variantSelection);
         }
     }
     _variantSelection.assign(variantSelection.begin(), variantSelection.end());

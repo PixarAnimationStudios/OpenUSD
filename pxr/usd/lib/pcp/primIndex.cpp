@@ -1339,16 +1339,18 @@ _AddArc(
 
         // Compose the existence of primSpecs and update the HasSpecs field 
         // accordingly.
-        newNode.SetHasSpecs(PcpComposeSiteHasPrimSpecs(newNode.GetSite()));
+        newNode.SetHasSpecs(PcpComposeSiteHasPrimSpecs(newNode));
 
         if (!newNode.IsInert() && newNode.HasSpecs()) {
             if (!indexer->inputs.usd) {
                 // Determine whether opinions from this site can be accessed
                 // from other sites in the graph.
-                newNode.SetPermission(PcpComposeSitePermission(site));
+                newNode.SetPermission(PcpComposeSitePermission(
+                                          site.layerStack, site.path));
 
                 // Determine whether this node has any symmetry information.
-                newNode.SetHasSymmetry(PcpComposeSiteHasSymmetry(site));
+                newNode.SetHasSymmetry(PcpComposeSiteHasSymmetry(
+                                           site.layerStack, site.path));
             }
         }
 
@@ -1583,7 +1585,7 @@ _EvalNodeReferences(
     // Compose value for local references.
     SdfReferenceVector refArcs;
     PcpSourceReferenceInfoVector refInfo;
-    PcpComposeSiteReferences(node.GetSite(), &refArcs, &refInfo);
+    PcpComposeSiteReferences(node, &refArcs, &refInfo);
 
     // Add each reference arc.
     const SdfPath & srcPath = node.GetPath();
@@ -1919,7 +1921,7 @@ _EvalNodeRelocations(
         //      /Group/Model, but doesn't cite invalid opinions at 
         //      /Group/Model/B.
         SdfSiteVector sites;
-        PcpComposeSitePrimSites( newNode.GetSite(), &sites );
+        PcpComposeSitePrimSites(newNode, &sites);
         TF_FOR_ALL(site, sites) {
             PcpErrorOpinionAtRelocationSourcePtr err =
                 PcpErrorOpinionAtRelocationSource::New();
@@ -2592,7 +2594,7 @@ _EvalNodeInherits(
 
     // Compose value for local inherits.
     SdfPathVector inhArcs;
-    PcpComposeSiteInherits(node.GetSite(), &inhArcs);
+    PcpComposeSiteInherits(node, &inhArcs);
 
     // Add inherits arcs.
     _AddClassBasedArcs(
@@ -2621,7 +2623,7 @@ _EvalNodeSpecializes(
 
     // Compose value for local specializes.
     SdfPathVector specArcs;
-    PcpComposeSiteSpecializes(node.GetSite(), &specArcs);
+    PcpComposeSiteSpecializes(node, &specArcs);
 
     // Add specializes arcs.
     _AddClassBasedArcs(
@@ -2951,7 +2953,8 @@ _ComposeVariantSelectionForNode(
                 node.GetPath());
         }
 
-        if (PcpComposeSiteVariantSelection(site, vset, vsel)) {
+        if (PcpComposeSiteVariantSelection(
+                site.layerStack, site.path, vset, vsel)) {
             *nodeWithVsel = node;
             return true;
         }
@@ -3301,7 +3304,7 @@ _EvalNodeVariantSets(
         return;
 
     std::vector<std::string> vsetNames;
-    PcpComposeSiteVariantSets(node.GetSite(), &vsetNames);
+    PcpComposeSiteVariantSets(node, &vsetNames);
 
     for (int vsetNum=0, numVsets=vsetNames.size();
          vsetNum < numVsets; ++vsetNum) {
@@ -3329,7 +3332,7 @@ _EvalNodeAuthoredVariant(
 
     // Compose options.
     std::set<std::string> vsetOptions;
-    PcpComposeSiteVariantSetOptions(node.GetSite(), vset, &vsetOptions);
+    PcpComposeSiteVariantSetOptions(node, vset, &vsetOptions);
 
     // Determine what the fallback selection would be.
     // Generally speaking, authoring opinions win over fallbacks, however if
@@ -3401,7 +3404,7 @@ _EvalNodeFallbackVariant(
 
     // Compose options.
     std::set<std::string> vsetOptions;
-    PcpComposeSiteVariantSetOptions(node.GetSite(), vset, &vsetOptions);
+    PcpComposeSiteVariantSetOptions(node, vset, &vsetOptions);
 
     // Determine what the fallback selection would be.
     const std::string vsel =
@@ -3444,7 +3447,7 @@ _EvalNodePayload(
     //
     SdfPayload payload;
     SdfLayerHandle payloadSpecLayer;
-    PcpComposeSitePayload(node.GetSite(), &payload, &payloadSpecLayer);
+    PcpComposeSitePayload(node, &payload, &payloadSpecLayer);
     if (!payload) {
         return;
     }
@@ -3721,8 +3724,7 @@ Pcp_RescanForSpecs(PcpPrimIndex *index, bool usd, bool updateHasSpecs)
         // We do need to update the HasSpecs flag on nodes, however.
         if (updateHasSpecs) {
             TF_FOR_ALL(nodeIt, index->GetNodeRange()) {
-                nodeIt->SetHasSpecs(
-                    PcpComposeSiteHasPrimSpecs(nodeIt->GetSite()));
+                nodeIt->SetHasSpecs(PcpComposeSiteHasPrimSpecs(*nodeIt));
             }
         }
     } else {
@@ -3819,7 +3821,7 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
         if (refNodeRange.first != refNodeRange.second) {
             SdfReferenceVector refs;
             PcpSourceReferenceInfoVector sourceInfo;
-            PcpComposeSiteReferences(node.GetSite(), &refs, &sourceInfo);
+            PcpComposeSiteReferences(node, &refs, &sourceInfo);
             TF_VERIFY(refs.size() == sourceInfo.size());
             
             const size_t numReferenceArcs = 
@@ -3853,7 +3855,7 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
         if (payloadNodeRange.first != payloadNodeRange.second) {
             SdfPayload payload;
             SdfLayerHandle sourceLayer;
-            PcpComposeSitePayload(node.GetSite(), &payload, &sourceLayer);
+            PcpComposeSitePayload(node, &payload, &sourceLayer);
 
             if (!payload) {
                 // This could happen if there was some scene description
@@ -3884,7 +3886,7 @@ _ConvertNodeForChild(
     // Because the child site is at a deeper level of namespace than
     // the parent, there may no longer be any specs.
     if (node.HasSpecs()) {
-        node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node.GetSite()));
+        node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node));
     }
 
     // Inert nodes are just placeholders, so we can skip computing these
@@ -3895,13 +3897,13 @@ _ConvertNodeForChild(
             // If the parent's permission is private, it will be inherited by
             // the child. Otherwise, we recompute it here.
             if (node.GetPermission() == SdfPermissionPublic) {
-                node.SetPermission(PcpComposeSitePermission(node.GetSite()));
+                node.SetPermission(PcpComposeSitePermission(node));
             }
 
             // If the parent had symmetry, it will be inherited by the child.
             // Otherwise, we recompute it here.
             if (!node.HasSymmetry()) {
-                node.SetHasSymmetry(PcpComposeSiteHasSymmetry(node.GetSite()));
+                node.SetHasSymmetry(PcpComposeSiteHasSymmetry(node));
             }
         }
     }
@@ -3917,7 +3919,7 @@ _ConvertNodeForChild(
 // In general, a node can be culled if no descendant nodes contribute 
 // opinions, i.e., no specs are found in that subtree. There are some 
 // exceptions that are documented in the function.
-static bool
+static inline bool
 _NodeCanBeCulled(
     const PcpNodeRef& node,
     const PcpLayerStackSite& rootSite)
@@ -4170,7 +4172,7 @@ Pcp_BuildPrimIndex(
         // Even though the pseudo root spec exists implicitly, don't
         // assume that here.
         PcpNodeRef node = outputs->primIndex.GetGraph()->GetRootNode();
-        node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node.GetSite()));
+        node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node));
         // Optimization: Since no composition arcs can live on the
         // pseudo-root, we can return early.
         return;
@@ -4183,7 +4185,7 @@ Pcp_BuildPrimIndex(
         outputs->primIndex.SetGraph(PcpPrimIndex_Graph::New(site, inputs.usd));
 
         PcpNodeRef node = outputs->primIndex.GetGraph()->GetRootNode();
-        node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node.GetSite()));
+        node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node));
         node.SetInert(!directNodeShouldContributeSpecs);
     } else {
         // Start by building and cloning the namespace parent's index.

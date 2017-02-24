@@ -449,8 +449,7 @@ PcpComputeNamespaceEdits(
 
     // Find all specs at (primaryLayerStack, primPath).
     SdfSiteVector primSites;
-    PcpComposeSitePrimSites(
-        PcpLayerStackSite(primaryLayerStack, primPath), &primSites);
+    PcpComposeSitePrimSites(primaryLayerStack, primPath, &primSites);
 
     // Find the nodes corresponding to primPath in any relevant layer
     // stack over all caches.
@@ -888,8 +887,7 @@ PcpComputeNamespaceEdits(
                     // with recurseOnIndex, which may not actually
                     // have depended on this site (and exist for other
                     // reasons).
-                    if (PcpComposeSiteHasPrimSpecs(
-                            PcpLayerStackSite(layerStack, dep.sitePath))) {
+                    if (PcpComposeSiteHasPrimSpecs(layerStack, dep.sitePath)) {
                         Pcp_ForEachDependentNode(dep.sitePath, layerStack,
                                                  dep.indexPath,
                                                  *cache, visitNodeFn);

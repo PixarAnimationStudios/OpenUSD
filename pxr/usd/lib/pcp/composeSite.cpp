@@ -62,9 +62,10 @@ _ResolveReference( const SdfLayerHandle& layer,
 }
 
 void
-PcpComposeSiteReferences( const PcpLayerStackSite & site,
-                          SdfReferenceVector *result,
-                          PcpSourceReferenceInfoVector *info )
+PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
+                         SdfPath const &path,
+                         SdfReferenceVector *result,
+                         PcpSourceReferenceInfoVector *info )
 {
     static const TfToken field = SdfFieldKeys->References;
 
@@ -73,15 +74,15 @@ PcpComposeSiteReferences( const PcpLayerStackSite & site,
     // case is a PcpSourceReferenceInfo.
     std::map<SdfReference, PcpSourceReferenceInfo> infoMap;
 
-    const SdfLayerRefPtrVector& layers = site.layerStack->GetLayers();
+    const SdfLayerRefPtrVector& layers = layerStack->GetLayers();
     SdfReferenceListOp curListOp;
 
     result->clear();
     for (int i = layers.size() - 1; i >= 0; --i) {
         const SdfLayerHandle& layer = layers[i];
-        if (layer->HasField(site.path, field, &curListOp)) {
-            const SdfLayerOffset* layerOffset = 
-                site.layerStack->GetLayerOffsetForLayer(i);
+        if (layer->HasField(path, field, &curListOp)) {
+            const SdfLayerOffset* layerOffset =
+                layerStack->GetLayerOffsetForLayer(i);
             curListOp.ApplyOperations(result,
                 boost::bind( &_ResolveReference, boost::ref(layer),
                              layerOffset ? *layerOffset : SdfLayerOffset(),
@@ -91,54 +92,59 @@ PcpComposeSiteReferences( const PcpLayerStackSite & site,
 
     // Fill in info.
     info->clear();
-    TF_FOR_ALL(ref, *result) {
-        info->push_back(infoMap[*ref]);
+    info->reserve(result->size());
+    for (auto const &ref: *result) {
+        info->push_back(infoMap[ref]);
     }
 }
 
 void
-PcpComposeSitePayload( const PcpLayerStackSite & site,
-                       SdfPayload *result,
-                       SdfLayerHandle *sourceLayer )
+PcpComposeSitePayload(PcpLayerStackRefPtr const &layerStack,
+                      SdfPath const &path,
+                      SdfPayload *result,
+                      SdfLayerHandle *sourceLayer)
 {
     static const TfToken field = SdfFieldKeys->Payload;
 
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field, result) && *result) {
-            *sourceLayer = *layer;
+    for (auto const &layer: layerStack->GetLayers()) {
+        if (layer->HasField(path, field, result) && *result) {
+            *sourceLayer = layer;
             return;
         }
     }
 }
 
 SdfPermission
-PcpComposeSitePermission( const PcpLayerStackSite & site )
+PcpComposeSitePermission(PcpLayerStackRefPtr const &layerStack,
+                         SdfPath const &path)
 {
     SdfPermission perm = SdfPermissionPublic;
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, SdfFieldKeys->Permission, &perm))
+    for (auto const &layer: layerStack->GetLayers()) {
+        if (layer->HasField(path, SdfFieldKeys->Permission, &perm))
             break;
     }
     return perm;
 }
 
-bool 
-PcpComposeSiteHasPrimSpecs( const PcpLayerStackSite & site )
+bool
+PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
+                           SdfPath const &path)
 {
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasSpec(site.path)) {
+    for (auto const &layer: layerStack->GetLayers()) {
+        if (layer->HasSpec(path)) {
             return true;
         }
     }
     return false;
 }
 
-bool 
-PcpComposeSiteHasSymmetry( const PcpLayerStackSite & site )
+bool
+PcpComposeSiteHasSymmetry(PcpLayerStackRefPtr const &layerStack,
+                          SdfPath const &path)
 {
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, SdfFieldKeys->SymmetryFunction) ||
-            (*layer)->HasField(site.path, SdfFieldKeys->SymmetryArguments)) {
+    for (auto const &layer: layerStack->GetLayers()) {
+        if (layer->HasField(path, SdfFieldKeys->SymmetryFunction) ||
+            layer->HasField(path, SdfFieldKeys->SymmetryArguments)) {
             return true;
         }
     }
@@ -146,36 +152,29 @@ PcpComposeSiteHasSymmetry( const PcpLayerStackSite & site )
 }
 
 void
-PcpComposeSitePrimSites( const PcpLayerStackSite & site, 
-                         SdfSiteVector *result )
+PcpComposeSitePrimSites(PcpLayerStackRefPtr const &layerStack,
+                        SdfPath const &path,
+                        SdfSiteVector *result)
 {
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasSpec(site.path))
-            result->push_back(SdfSite(*layer, site.path));
+    for (auto const &layer: layerStack->GetLayers()) {
+        if (layer->HasSpec(path))
+            result->push_back(SdfSite(layer, path));
     }
 }
 
 void
-PcpComposeSitePrimSpecs( const PcpLayerStackSite & site, 
-                         SdfPrimSpecHandleVector *result )
-{
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if (SdfPrimSpecHandle prim = (*layer)->GetPrimAtPath(site.path))
-            result->push_back(prim);
-    }
-}
-
-void PcpComposeSiteRelocates( const PcpLayerStackSite & site,
-                              SdfRelocatesMap *result )
+PcpComposeSiteRelocates(PcpLayerStackRefPtr const &layerStack,
+                        SdfPath const &path,
+                        SdfRelocatesMap *result)
 {
     static const TfToken field = SdfFieldKeys->Relocates;
 
     SdfRelocatesMap relocMap;
-    TF_REVERSE_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field, &relocMap)) {
+    TF_REVERSE_FOR_ALL(layer, layerStack->GetLayers()) {
+        if ((*layer)->HasField(path, field, &relocMap)) {
             TF_FOR_ALL(reloc, relocMap) {
-                SdfPath source = reloc->first .MakeAbsolutePath(site.path);
-                SdfPath target = reloc->second.MakeAbsolutePath(site.path);
+                SdfPath source = reloc->first .MakeAbsolutePath(path);
+                SdfPath target = reloc->second.MakeAbsolutePath(path);
                 (*result)[source] = target;
             }
         }
@@ -183,58 +182,60 @@ void PcpComposeSiteRelocates( const PcpLayerStackSite & site,
 }
 
 void
-PcpComposeSiteInherits( const PcpLayerStackSite & site,
-                        SdfPathVector *result )
+PcpComposeSiteInherits( const PcpLayerStackRefPtr &layerStack,
+                        const SdfPath &path, SdfPathVector *result )
 {
     static const TfToken field = SdfFieldKeys->InheritPaths;
 
     SdfPathListOp inheritListOp;
-    TF_REVERSE_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field, &inheritListOp)) {
+    TF_REVERSE_FOR_ALL(layer, layerStack->GetLayers()) {
+        if ((*layer)->HasField(path, field, &inheritListOp)) {
             inheritListOp.ApplyOperations(result);
         }
     }
 }
 
 void
-PcpComposeSiteSpecializes( const PcpLayerStackSite & site,
-                           SdfPathVector *result )
+PcpComposeSiteSpecializes(PcpLayerStackRefPtr const &layerStack,
+                          SdfPath const &path, SdfPathVector *result)
 {
     static const TfToken field = SdfFieldKeys->Specializes;
 
     SdfPathListOp specializesListOp;
-    TF_REVERSE_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field, &specializesListOp)) {
+    TF_REVERSE_FOR_ALL(layer, layerStack->GetLayers()) {
+        if ((*layer)->HasField(path, field, &specializesListOp)) {
             specializesListOp.ApplyOperations(result);
         }
     }
 }
 
 void
-PcpComposeSiteVariantSets( const PcpLayerStackSite & site,
-                           std::vector<std::string> *result )
+PcpComposeSiteVariantSets(PcpLayerStackRefPtr const &layerStack,
+                          SdfPath const &path,
+                          std::vector<std::string> *result)
 {
     static const TfToken field = SdfFieldKeys->VariantSetNames;
 
     SdfStringListOp vsetListOp;
-    TF_REVERSE_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field, &vsetListOp)) {
+    TF_REVERSE_FOR_ALL(layer, layerStack->GetLayers()) {
+        if ((*layer)->HasField(path, field, &vsetListOp)) {
             vsetListOp.ApplyOperations(result);
         }
     }
 }
 
 void
-PcpComposeSiteVariantSetOptions( const PcpLayerStackSite & site,
-                                 const std::string &vsetName,
-                                 std::set<std::string> *result )
+PcpComposeSiteVariantSetOptions(PcpLayerStackRefPtr const &layerStack,
+                                SdfPath const &path,
+                                std::string const &vsetName,
+                                std::set<std::string> *result)
 {
     static const TfToken field = SdfChildrenKeys->VariantChildren;
 
-    const SdfPath vsetPath = site.path.AppendVariantSelection(vsetName, "");
+    const SdfPath vsetPath = path.AppendVariantSelection(vsetName, "");
     TfTokenVector vsetNames;
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(vsetPath, field, &vsetNames)) {
+    for (auto const &layer: layerStack->GetLayers()) {
+        if (layer->HasField(vsetPath, field, &vsetNames)) {
             TF_FOR_ALL(name, vsetNames) {
                 result->insert(name->GetString());
             }
@@ -243,15 +244,16 @@ PcpComposeSiteVariantSetOptions( const PcpLayerStackSite & site,
 }
 
 bool
-PcpComposeSiteVariantSelection( const PcpLayerStackSite & site,
-                                const std::string & vsetName,
-                                std::string *result )
+PcpComposeSiteVariantSelection(PcpLayerStackRefPtr const &layerStack,
+                               SdfPath const &path,
+                               std::string const &vsetName,
+                               std::string *result)
 {
     static const TfToken field = SdfFieldKeys->VariantSelection;
 
     SdfVariantSelectionMap vselMap;
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field, &vselMap)) {
+    for (auto const &layer: layerStack->GetLayers()) {
+        if (layer->HasField(path, field, &vselMap)) {
             SdfVariantSelectionMap::const_iterator i = vselMap.find(vsetName);
             if (i != vselMap.end()) {
                 *result = i->second;
@@ -263,31 +265,18 @@ PcpComposeSiteVariantSelection( const PcpLayerStackSite & site,
 }
 
 void 
-PcpComposeSiteVariantSelections( const PcpLayerStackSite & site,
-                                 SdfVariantSelectionMap *result )
+PcpComposeSiteVariantSelections(PcpLayerStackRefPtr const &layerStack,
+                                SdfPath const &path,
+                                SdfVariantSelectionMap *result)
 {
     static const TfToken field = SdfFieldKeys->VariantSelection;
 
     SdfVariantSelectionMap vselMap;
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field, &vselMap)) {
+    for (auto const &layer: layerStack->GetLayers()) {
+        if (layer->HasField(path, field, &vselMap)) {
             result->insert(vselMap.begin(), vselMap.end());
         }
     }
-}
-
-bool 
-PcpComposeSiteHasVariantSelections( const PcpLayerStackSite & site )
-{
-    static const TfToken field = SdfFieldKeys->VariantSelection;
-
-    TF_FOR_ALL(layer, site.layerStack->GetLayers()) {
-        if ((*layer)->HasField(site.path, field)) {
-            return true;
-        }
-    }
-    
-    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/pcp/site.h"
 
+#include "pxr/base/tf/denseHashSet.h"
+
 #include <limits>
 #include <vector>
 
@@ -188,6 +190,8 @@ typedef std::vector<Pcp_CompressedSdSite> Pcp_CompressedSdSiteVector;
 /// fallback in sequence, using the first one that exists.
 ///
 typedef std::map<std::string, std::vector<std::string>> PcpVariantFallbackMap;
+
+typedef TfDenseHashSet<TfToken, TfToken::HashFunctor> PcpTokenSet;
 
 /// A value which indicates an invalid index. This is simply used inplace of
 /// either -1 or numeric_limits::max() (which are equivalent for size_t). 

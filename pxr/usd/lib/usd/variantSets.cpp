@@ -69,9 +69,8 @@ UsdVariantSet::GetVariantNames() const
 {
     std::set<std::string> namesSet;
     TF_REVERSE_FOR_ALL(i, _prim.GetPrimIndex().GetNodeRange()) {
-        if (i->GetSite().path.IsPrimOrPrimVariantSelectionPath()) {
-            PcpComposeSiteVariantSetOptions(
-                i->GetSite(), _variantSetName, &namesSet);
+        if (i->GetPath().IsPrimOrPrimVariantSelectionPath()) {
+            PcpComposeSiteVariantSetOptions(*i, _variantSetName, &namesSet);
         }
     }
 
@@ -112,18 +111,12 @@ UsdVariantSet::GetVariantSelection() const
 bool
 UsdVariantSet::HasAuthoredVariantSelection(std::string *value) const
 {
-    for (auto nodeIter = _prim.GetPrimIndex().GetNodeRange().first;
-         nodeIter != _prim.GetPrimIndex().GetNodeRange().second;
-         ++nodeIter) 
-    {
-        string sel;
-        if (!value) {
-            value = &sel;
-        }
-        if (PcpComposeSiteVariantSelection(
-                nodeIter->GetSite(), _variantSetName, value)) {
-            return true;
-        }
+    auto vselMap = _prim.GetPrimIndex().ComposeAuthoredVariantSelections();
+    auto iter = vselMap.find(_variantSetName);
+    if (iter != vselMap.end()) {
+        if (value)
+            *value = iter->second;
+        return true;
     }
     return false;
 }
@@ -257,7 +250,7 @@ bool
 UsdVariantSets::GetNames(std::vector<std::string>* names) const
 {
     TF_REVERSE_FOR_ALL(i, _prim.GetPrimIndex().GetNodeRange()) {
-        PcpComposeSiteVariantSets(i->GetSite(), names);
+        PcpComposeSiteVariantSets(*i, names);
     }
     return true;
 }
