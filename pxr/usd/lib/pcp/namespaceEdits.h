@@ -25,6 +25,7 @@
 #define PCP_NAMESPACE_EDITS_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/base/tf/hashset.h"
 
@@ -137,6 +138,7 @@ struct PcpNamespaceEdits {
 /// index referenced /A then this method would not report that prim. 
 /// As a result that prim would continue to reference /A, which no
 /// longer exists.
+PCP_API
 PcpNamespaceEdits
 PcpComputeNamespaceEdits(const PcpCache *primaryCache,
                          const std::vector<PcpCache*>& caches,

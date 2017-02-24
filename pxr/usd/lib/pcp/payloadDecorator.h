@@ -25,6 +25,7 @@
 #define PCP_PAYLOAD_DECORATOR_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/declarePtrs.h"
 
@@ -66,6 +67,7 @@ public:
     /// Decorate the SdfLayer arguments \p args with additional arguments
     /// that will be used when opening the layer specified in the payload 
     /// \p payload when composing the index at \p primIndexPath.
+    PCP_API
     void DecoratePayload(
         const SdfPath& primIndexPath,
         const SdfPayload& payload, 
@@ -79,6 +81,7 @@ public:
     /// true, IsFieldChangeRelevantForDecoration will be called during
     /// change processing to allow the decorator to determine if the
     /// change is relevant and requires affected prims to be recomposed.
+    PCP_API
     bool IsFieldRelevantForDecoration(const TfToken& field);
 
     /// Return true if the change to scene description field \p field on
@@ -90,6 +93,7 @@ public:
     /// This is used during change processing to determine whether a scene
     /// description change affects a prim's payload arcs and requires the
     /// prim to be recomposed.
+    PCP_API
     bool IsFieldChangeRelevantForDecoration(
         const SdfPath& primIndexPath,
         const SdfLayerHandle& siteLayer,
@@ -98,7 +102,9 @@ public:
         const std::pair<VtValue, VtValue>& oldAndNewValues);
 
 protected:
+    PCP_API
     PcpPayloadDecorator();
+    PCP_API
     virtual ~PcpPayloadDecorator();
 
     /// Virtual implementation functions. See corresponding public

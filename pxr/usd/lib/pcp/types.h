@@ -25,9 +25,9 @@
 #define PCP_TYPES_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/site.h"
-
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/denseHashSet.h"
 
 #include <limits>
@@ -169,10 +169,11 @@ struct Pcp_SdSiteRef : boost::totally_ordered<Pcp_SdSiteRef> {
 // Internal type for Sd sites.
 struct Pcp_CompressedSdSite {
     Pcp_CompressedSdSite(size_t nodeIndex_, size_t layerIndex_) :
-        nodeIndex(nodeIndex_), layerIndex(layerIndex_)
+        nodeIndex(static_cast<uint16_t>(nodeIndex_)),
+        layerIndex(static_cast<uint16_t>(layerIndex_))
     {
-        TF_VERIFY(nodeIndex_  < (1 << 16));
-        TF_VERIFY(layerIndex_ < (1 << 16));
+        TF_VERIFY(nodeIndex_  < (size_t(1) << 16));
+        TF_VERIFY(layerIndex_ < (size_t(1) << 16));
     }
 
     // These are small to minimize the size of vectors of these.

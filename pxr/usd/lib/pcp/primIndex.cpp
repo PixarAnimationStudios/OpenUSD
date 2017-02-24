@@ -1615,7 +1615,7 @@ _EvalNodeReferences(
             fail = true;
         }
 
-        // Validate layer offset in original reference (!the composed
+        // Validate layer offset in original reference (not the composed
         // layer offset stored in ref).
         if (!srcLayerOffset.IsValid() ||
             !srcLayerOffset.GetInverse().IsValid()) {

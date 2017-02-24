@@ -78,7 +78,7 @@ PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
     SdfReferenceListOp curListOp;
 
     result->clear();
-    for (int i = layers.size() - 1; i >= 0; --i) {
+    for (size_t i = layers.size(); i-- != 0; ) {
         const SdfLayerHandle& layer = layers[i];
         if (layer->HasField(path, field, &curListOp)) {
             const SdfLayerOffset* layerOffset =

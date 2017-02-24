@@ -27,6 +27,7 @@
 /// \file pcp/layerStack.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/pcp/mapExpression.h"
@@ -63,39 +64,47 @@ class PcpLifeboat;
 class PcpLayerStack : public TfRefBase, public TfWeakBase, boost::noncopyable {
 public:
     // See Pcp_LayerStackRegistry for creating layer stacks.
-
+    PCP_API
     virtual ~PcpLayerStack();
 
     /// Returns the identifier for this layer stack.
+    PCP_API
     const PcpLayerStackIdentifier& GetIdentifier() const;
 
     /// Returns the layers in this layer stack in strong-to-weak order.
     /// Note that this is only the *local* layer stack -- it does not
     /// include any layers brought in by references inside prims.
+    PCP_API
     const SdfLayerRefPtrVector& GetLayers() const;
 
     /// Returns only the session layers in the layer stack in strong-to-weak 
     /// order.
+    PCP_API
     SdfLayerHandleVector GetSessionLayers() const;
 
     /// Returns the layer tree representing the structure of this layer
     /// stack.
+    PCP_API
     const SdfLayerTreeHandle& GetLayerTree() const;
 
     /// Returns the layer offset for the given layer, or NULL if the layer
     /// can't be found or is the identity.
+    PCP_API
     const SdfLayerOffset* GetLayerOffsetForLayer(const SdfLayerHandle&) const;
 
     /// Returns the layer offset for the layer at the given index in this
     /// layer stack. Returns NULL if the offset is the identity.
+    PCP_API
     const SdfLayerOffset* GetLayerOffsetForLayer(size_t layerIdx) const;
 
     /// Returns the set of asset paths resolved while building the
     /// layer stack.
+    PCP_API
     const std::set<std::string>& GetResolvedAssetPaths() const;
 
     /// Returns the set of layers that were muted in this layer
     /// stack.
+    PCP_API
     const std::set<std::string>& GetMutedLayers() const;
 
     /// Return the list of errors local to this layer stack.
@@ -105,17 +114,22 @@ public:
 
     /// Returns true if this layer stack contains the given layer, false
     /// otherwise.
+    PCP_API
     bool HasLayer(const SdfLayerHandle& layer) const;
+    PCP_API
     bool HasLayer(const SdfLayerRefPtr& layer) const;
 
     /// Returns relocation source-to-target mapping for this layer stack.
+    PCP_API
     const SdfRelocatesMap& GetRelocatesSourceToTarget() const;
 
     /// Returns relocation target-to-source mapping for this layer stack.
+    PCP_API
     const SdfRelocatesMap& GetRelocatesTargetToSource() const;
 
     /// Returns a list of paths to all prims across all layers in this 
     /// layer stack that contained relocates.
+    PCP_API
     const SdfPathVector& GetPathsToPrimsWithRelocates() const;
 
     /// Apply the changes in \p changes.  This blows caches.  It's up to
@@ -137,12 +151,14 @@ public:
     /// we don't destroy the layer and then read it again.  However, if
     /// the client destroys \p lifeboat before pulling on the cache then
     /// we would destroy the layer then read it again.
+    PCP_API
     void Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat);
 
     /// Return a PcpMapExpression representing the relocations that affect
     /// namespace at and below the given path.  The value of this
     /// expression will continue to track the effective relocations if
     /// they are changed later.
+    PCP_API
     PcpMapExpression GetExpressionForRelocatesAtPath(const SdfPath &path);
 
 private:
@@ -251,7 +267,9 @@ private:
     bool _isUsd;
 };
 
+PCP_API
 std::ostream& operator<<(std::ostream&, const PcpLayerStackPtr&);
+PCP_API
 std::ostream& operator<<(std::ostream&, const PcpLayerStackRefPtr&);
 
 /// Compose the relocation arcs in the given stack of layers,

@@ -447,7 +447,7 @@ PcpBuildFilteredTargetIndex(
     if (!(relOrAttrType == SdfSpecTypeRelationship ||
              relOrAttrType == SdfSpecTypeAttribute)) {
         TF_CODING_ERROR("relOrAttrType msut be either SdfSpecTypeRelationship"
-                        "or SdfSpecTypeAttribute");
+                        " or SdfSpecTypeAttribute");
         return;
     }
 

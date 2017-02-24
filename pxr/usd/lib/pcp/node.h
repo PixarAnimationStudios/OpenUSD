@@ -25,6 +25,7 @@
 #define PCP_NODE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/iterator.h"
@@ -111,22 +112,27 @@ public:
     /// @{
 
     /// Returns the type of arc connecting this node to its parent node.
+    PCP_API
     PcpArcType GetArcType() const;
 
     /// Returns this node's immediate parent node. Will return NULL if this
     /// node is a root node.
+    PCP_API
     PcpNodeRef GetParentNode() const;
 
     /// Returns an iterator range over the children nodes in strongest to
     /// weakest order.
+    PCP_API
     child_const_range GetChildrenRange() const;
 
     /// Inserts a new child node for \p site, connected to this node via
     /// \p arc.
+    PCP_API
     PcpNodeRef InsertChild(const PcpLayerStackSite& site, const PcpArc& arc);
 
     /// Inserts \p subgraph as a child of this node, with the root node of
     /// \p subtree connected to this node via \p arc.
+    PCP_API
     PcpNodeRef InsertChildSubgraph(
         const PcpPrimIndex_GraphPtr& subgraph, const PcpArc& arc);
 
@@ -134,38 +140,47 @@ public:
     /// is the node that caused this node to be brought into the prim index.
     /// In most cases, this is the same as the parent node. For implied 
     /// inherits, the origin is the node from which this node was propagated.
+    PCP_API
     PcpNodeRef GetOriginNode() const;
 
     /// Walk up to the root origin node for this node. This is the very
     /// first node that caused this node to be added to the graph. For
     /// instance, the root origin node of an implied inherit is the
     /// original inherit node.
+    PCP_API
     PcpNodeRef GetOriginRootNode() const;
 
     /// Walk up to the root node of this expression.
+    PCP_API
     PcpNodeRef GetRootNode() const;
 
     /// Returns mapping function used to translate paths and values from
     /// this node to its parent node.
+    PCP_API
     const PcpMapExpression& GetMapToParent() const;
 
     /// Returns mapping function used to translate paths and values from
     /// this node directly to the root node.
+    PCP_API
     const PcpMapExpression& GetMapToRoot() const;
 
     /// Returns this node's index among siblings with the same arc type
     /// at this node's origin.
+    PCP_API
     int GetSiblingNumAtOrigin() const;
 
     /// Returns the absolute namespace depth of the node that introduced
     /// this node. Note that this does *not* count any variant selections.
+    PCP_API
     int GetNamespaceDepth() const;
 
     /// Return the number of levels of namespace this node's site is
     /// below the level at which it was introduced by an arc.
+    PCP_API
     int GetDepthBelowIntroduction() const;
 
     /// Returns the path for this node's site when it was introduced.
+    PCP_API
     SdfPath GetPathAtIntroduction() const;
 
     /// Get the path that introduced this node.
@@ -173,6 +188,7 @@ public:
     /// of namespace where this node was added as a child.
     /// For a root node, this returns the absolute root path.
     /// See also GetDepthBelowIntroduction().
+    PCP_API
     SdfPath GetIntroPath() const;
 
     /// @} 
@@ -183,56 +199,74 @@ public:
     /// @{
 
     /// Get the site this node represents.
+    PCP_API
     PcpLayerStackSite GetSite() const;
 
     /// Returns the path for the site this node represents.
+    PCP_API
     const SdfPath& GetPath() const;
 
     /// Returns the layer stack for the site this node represents.
+    PCP_API
     const PcpLayerStackRefPtr& GetLayerStack() const;
 
     /// Returns true if this node is a source of direct opinions.
     /// There should only be one direct node per prim index.
+    PCP_API
     bool IsDirect() const;
 
     /// Returns true if this node is due to an ancestral opinion.
+    PCP_API
     bool IsDueToAncestor() const;
 
     /// Get/set whether this node provides any symmetry opinions, either
     /// directly or from a namespace ancestor.
+    PCP_API
     void SetHasSymmetry(bool hasSymmetry);
+    PCP_API
     bool HasSymmetry() const;
 
     /// Get/set the permission for this node. This indicates whether specs
     /// on this node can be accessed from other nodes.
+    PCP_API
     void SetPermission(SdfPermission perm);
+    PCP_API
     SdfPermission GetPermission() const;
 
     /// Get/set whether this node is inert. An inert node never provides
     /// any opinions to a prim index. Such a node may exist purely as a
     /// marker to represent certain composition structure, but should never 
     /// contribute opinions.
+    PCP_API
     void SetInert(bool inert);
+    PCP_API
     bool IsInert() const;
     
     /// Get/set whether this node is culled. If a node is culled, it and
     /// all descendant nodes provide no opinions to the index. A culled
     /// node is also considered inert.
+    PCP_API
     void SetCulled(bool culled);
+    PCP_API
     bool IsCulled() const;
 
     /// Get/set whether this node is restricted. A restricted node is a
     /// node that cannot contribute opinions to the index due to permissions.
+    PCP_API
     void SetRestricted(bool restricted);
+    PCP_API
     bool IsRestricted() const;
 
     /// Returns true if this node is allowed to contribute opinions
     /// for composition, false otherwise.
+    PCP_API
     bool CanContributeSpecs() const;
     
     /// Returns true if this node has opinions authored
     /// for composition, false otherwise.
+    PCP_API
     void SetHasSpecs(bool hasSpecs);
+    PCP_API
     bool HasSpecs() const;
 
     /// @}

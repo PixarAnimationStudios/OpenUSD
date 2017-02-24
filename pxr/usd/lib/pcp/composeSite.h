@@ -51,6 +51,7 @@
 /// identified by a PcpSite.
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
@@ -81,6 +82,7 @@ struct PcpSourceReferenceInfo {
 typedef std::vector<PcpSourceReferenceInfo> PcpSourceReferenceInfoVector;
 
 /// References
+PCP_API
 void
 PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
                          SdfPath const &path,
@@ -96,6 +98,7 @@ PcpComposeSiteReferences(PcpNodeRef const &node,
 }
 
 /// Payload
+PCP_API
 void
 PcpComposeSitePayload(PcpLayerStackRefPtr const &layerStack,
                       SdfPath const &path,
@@ -111,6 +114,7 @@ PcpComposeSitePayload(PcpNodeRef const &node,
 }
 
 /// Permission
+PCP_API
 SdfPermission
 PcpComposeSitePermission(PcpLayerStackRefPtr const &layerStack,
                          SdfPath const &path);
@@ -122,6 +126,7 @@ PcpComposeSitePermission(PcpNodeRef const &node)
 }
 
 /// Prim sites
+PCP_API
 void
 PcpComposeSitePrimSites(PcpLayerStackRefPtr const &layerStack,
                         SdfPath const &path,
@@ -135,6 +140,7 @@ PcpComposeSitePrimSites(PcpNodeRef const &node, SdfSiteVector *result)
 }
 
 /// Relocates
+PCP_API
 void
 PcpComposeSiteRelocates(PcpLayerStackRefPtr const &layerStack,
                         SdfPath const &path,
@@ -148,6 +154,7 @@ PcpComposeSiteRelocates(PcpNodeRef const &node, SdfRelocatesMap *result)
 }
 
 /// Has prim specs.
+PCP_API
 bool
 PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
                            SdfPath const &path);
@@ -158,6 +165,7 @@ PcpComposeSiteHasPrimSpecs(PcpNodeRef const &node)
 }
 
 /// Symmetry
+PCP_API
 bool
 PcpComposeSiteHasSymmetry(PcpLayerStackRefPtr const &layerStack,
                           SdfPath const &path);
@@ -168,6 +176,7 @@ PcpComposeSiteHasSymmetry(PcpNodeRef const &node)
 }
 
 /// Inherits
+PCP_API
 void
 PcpComposeSiteInherits(PcpLayerStackRefPtr const &layerStack,
                        SdfPath const &path, SdfPathVector *result);
@@ -178,6 +187,7 @@ PcpComposeSiteInherits(PcpNodeRef const &node, SdfPathVector *result)
 }
 
 /// Specializes
+PCP_API
 void
 PcpComposeSiteSpecializes(PcpLayerStackRefPtr const &layerStack,
                           SdfPath const &path, SdfPathVector *result);
@@ -189,6 +199,7 @@ PcpComposeSiteSpecializes(PcpNodeRef const &node, SdfPathVector *result)
 }
 
 /// VariantSets
+PCP_API
 void
 PcpComposeSiteVariantSets(PcpLayerStackRefPtr const &layerStack,
                           SdfPath const &path,
@@ -201,6 +212,7 @@ PcpComposeSiteVariantSets(PcpNodeRef const &node,
 }
 
 /// VariantSetOptions
+PCP_API
 void
 PcpComposeSiteVariantSetOptions(PcpLayerStackRefPtr const &layerStack,
                                 SdfPath const &path,
@@ -216,6 +228,7 @@ PcpComposeSiteVariantSetOptions(PcpNodeRef const &node,
 }
 
 /// VariantSelection
+PCP_API
 bool
 PcpComposeSiteVariantSelection(PcpLayerStackRefPtr const &layerStack,
                                SdfPath const &path,
@@ -231,6 +244,7 @@ PcpComposeSiteVariantSelection(PcpNodeRef const &node,
 }
 
 /// VariantSelections
+PCP_API
 void 
 PcpComposeSiteVariantSelections(PcpLayerStackRefPtr const &layerStack,
                                 SdfPath const &path,

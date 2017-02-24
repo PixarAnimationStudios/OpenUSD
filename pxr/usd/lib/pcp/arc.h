@@ -25,6 +25,7 @@
 #define PCP_ARC_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/types.h"
