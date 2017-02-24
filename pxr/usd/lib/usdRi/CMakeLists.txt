@@ -26,6 +26,9 @@ pxr_shared_library(usdRi
         risOslPattern
         risPattern
 
+    PUBLIC_HEADERS
+        api.h
+
     CPPFILES
         moduleDeps.cpp
         typeUtils

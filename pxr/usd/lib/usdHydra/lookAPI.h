@@ -27,6 +27,7 @@
 /// \file usdHydra/lookAPI.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdHydra/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -81,11 +82,13 @@ public:
     }
 
     /// Destructor.
+    USDHYDRA_API
     virtual ~UsdHydraLookAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDHYDRA_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -98,6 +101,7 @@ public:
     /// UsdHydraLookAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDHYDRA_API
     static UsdHydraLookAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -105,11 +109,13 @@ public:
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USDHYDRA_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDHYDRA_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -118,10 +124,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDHYDRA_API
     UsdRelationship GetBxdfRel() const;
 
     /// See GetBxdfRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDHYDRA_API
     UsdRelationship CreateBxdfRel() const;
 
 public:

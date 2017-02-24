@@ -58,7 +58,7 @@ UsdShadeUtils::GetPrefixForAttributeType(UsdShadeAttributeType sourceType)
         case UsdShadeAttributeType::Parameter: 
             return string();
         case UsdShadeAttributeType::InterfaceAttribute:
-            return UsdShadeTokens->interface.GetString();
+            return UsdShadeTokens->interface_.GetString();
         default:
             return string();
     }
@@ -73,7 +73,7 @@ UsdShadeUtils::GetBaseNameAndType(const TfToken &fullName)
     static const size_t outputsPrefixLen = 
         UsdShadeTokens->outputs.GetString().size();
     static const size_t interfaceAttrPrefixLen = 
-        UsdShadeTokens->interface.GetString().size();
+        UsdShadeTokens->interface_.GetString().size();
 
     if (TfStringStartsWith(fullName, UsdShadeTokens->inputs)) {
         TfToken sourceName(fullName.GetString().substr(inputsPrefixLen));
@@ -81,7 +81,7 @@ UsdShadeUtils::GetBaseNameAndType(const TfToken &fullName)
     } else if (TfStringStartsWith(fullName, UsdShadeTokens->outputs)) {
         TfToken sourceName(fullName.GetString().substr(outputsPrefixLen));
         return std::make_pair(sourceName, UsdShadeAttributeType::Output);
-    } else if (TfStringStartsWith(fullName, UsdShadeTokens->interface)) {
+    } else if (TfStringStartsWith(fullName, UsdShadeTokens->interface_)) {
         TfToken sourceName(fullName.GetString().substr(interfaceAttrPrefixLen));
         return std::make_pair(sourceName, 
                               UsdShadeAttributeType::InterfaceAttribute);

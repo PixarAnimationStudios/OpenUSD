@@ -151,6 +151,7 @@ public:
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USD_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();

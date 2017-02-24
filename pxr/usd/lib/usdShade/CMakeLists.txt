@@ -25,6 +25,9 @@ pxr_shared_library(usdShade
         tokens
         utils
 
+    PUBLIC_HEADERS
+        api.h
+
     CPPFILES
         moduleDeps.cpp
 

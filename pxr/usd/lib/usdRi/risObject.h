@@ -27,6 +27,7 @@
 /// \file usdRi/risObject.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdRi/api.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -80,11 +81,13 @@ public:
     }
 
     /// Destructor.
+    USDRI_API
     virtual ~UsdRiRisObject();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDRI_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -97,6 +100,7 @@ public:
     /// UsdRiRisObject(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDRI_API
     static UsdRiRisObject
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -122,17 +126,20 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDRI_API
     static UsdRiRisObject
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USDRI_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDRI_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -145,6 +152,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Asset
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDRI_API
     UsdAttribute GetFilePathAttr() const;
 
     /// See GetFilePathAttr(), and also 
@@ -152,6 +160,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDRI_API
     UsdAttribute CreateFilePathAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -164,6 +173,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Asset
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDRI_API
     UsdAttribute GetArgsPathAttr() const;
 
     /// See GetArgsPathAttr(), and also 
@@ -171,6 +181,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDRI_API
     UsdAttribute CreateArgsPathAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

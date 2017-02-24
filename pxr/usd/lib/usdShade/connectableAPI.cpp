@@ -537,7 +537,7 @@ UsdShadeConnectableAPI::GetInput(const TfToken &name) const
     if (UsdShadeUtils::ReadOldEncoding()) {
         if (IsNodeGraph()) {
             TfToken interfaceAttrName = TfToken(
-                UsdShadeTokens->interface.GetString() + name.GetString());
+                UsdShadeTokens->interface_.GetString() + name.GetString());
             if (GetPrim().HasAttribute(interfaceAttrName)) {
                 return UsdShadeInput(GetPrim().GetAttribute(interfaceAttrName));
             }
@@ -574,7 +574,7 @@ UsdShadeConnectableAPI::GetInputs() const
         if (UsdShadeUtils::ReadOldEncoding()) {
             if (IsNodeGraph() and 
                 TfStringStartsWith(attr.GetName().GetString(), 
-                                   UsdShadeTokens->interface)) {                    
+                                   UsdShadeTokens->interface_)) {                    
                 // If it's an interface attribute on a node-graph, wrap it in a 
                 // UsdShadeInput object and add it to the list of inputs.
                 ret.push_back(UsdShadeInput(attr));

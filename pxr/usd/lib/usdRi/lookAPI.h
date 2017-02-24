@@ -27,6 +27,7 @@
 /// \file usdRi/lookAPI.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdRi/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -90,11 +91,13 @@ public:
     }
 
     /// Destructor.
+    USDRI_API
     virtual ~UsdRiLookAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDRI_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -107,6 +110,7 @@ public:
     /// UsdRiLookAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDRI_API
     static UsdRiLookAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -114,11 +118,13 @@ public:
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USDRI_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDRI_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -127,10 +133,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetSurfaceRel() const;
 
     /// See GetSurfaceRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateSurfaceRel() const;
 
 public:
@@ -139,10 +147,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetDisplacementRel() const;
 
     /// See GetDisplacementRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateDisplacementRel() const;
 
 public:
@@ -151,10 +161,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetVolumeRel() const;
 
     /// See GetVolumeRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateVolumeRel() const;
 
 public:
@@ -163,10 +175,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetCoshadersRel() const;
 
     /// See GetCoshadersRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateCoshadersRel() const;
 
 public:
@@ -175,10 +189,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetBxdfRel() const;
 
     /// See GetBxdfRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreateBxdfRel() const;
 
 public:
@@ -187,10 +203,12 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
+    USDRI_API
     UsdRelationship GetPatternsRel() const;
 
     /// See GetPatternsRel(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDRI_API
     UsdRelationship CreatePatternsRel() const;
 
 public:

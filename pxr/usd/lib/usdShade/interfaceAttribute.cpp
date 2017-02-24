@@ -53,10 +53,10 @@ UsdShadeInterfaceAttribute::UsdShadeInterfaceAttribute(
         const UsdAttribute &attr)
 {
     TfToken const &interfaceAttrName = attr.GetName();
-    if (TfStringStartsWith(interfaceAttrName, UsdShadeTokens->interface)){
+    if (TfStringStartsWith(interfaceAttrName, UsdShadeTokens->interface_)){
         _attr = attr;
         _name = TfToken(interfaceAttrName.GetString().substr(
-            UsdShadeTokens->interface.GetString().size()));
+            UsdShadeTokens->interface_.GetString().size()));
     }
 }
 
@@ -64,12 +64,12 @@ UsdShadeInterfaceAttribute::UsdShadeInterfaceAttribute(
 UsdShadeInterfaceAttribute::_GetName(
         const TfToken& interfaceAttrName)
 {
-    if (TfStringStartsWith(interfaceAttrName, UsdShadeTokens->interface)) {
+    if (TfStringStartsWith(interfaceAttrName, UsdShadeTokens->interface_)) {
         return interfaceAttrName;
     }
     
     return TfToken(TfStringPrintf("%s%s",
-            UsdShadeTokens->interface.GetText(),
+            UsdShadeTokens->interface_.GetText(),
             interfaceAttrName.GetText()));
 }
 

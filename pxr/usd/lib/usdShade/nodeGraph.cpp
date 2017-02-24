@@ -212,7 +212,7 @@ UsdShadeNodeGraph::CreateInput(const TfToken& name,
 {
     TfToken inputName = name;
     if (not UsdShadeUtils::WriteNewEncoding()) {
-        inputName = TfToken(UsdShadeTokens->interface.GetString() + 
+        inputName = TfToken(UsdShadeTokens->interface_.GetString() + 
                             name.GetString());
     }
     return UsdShadeConnectableAPI(GetPrim()).CreateInput(inputName, typeName);

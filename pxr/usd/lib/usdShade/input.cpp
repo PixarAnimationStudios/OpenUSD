@@ -90,7 +90,7 @@ UsdShadeInput::UsdShadeInput(
             _attr = prim.GetAttribute(name);
         }
         else {
-            TfToken interfaceAttrName(UsdShadeTokens->interface.GetString() + 
+            TfToken interfaceAttrName(UsdShadeTokens->interface_.GetString() + 
                                       name.GetString());
             if (prim.HasAttribute(interfaceAttrName)) {
                 _attr = prim.GetAttribute(interfaceAttrName);
@@ -108,7 +108,7 @@ UsdShadeInput::UsdShadeInput(
             // namespace in it, just create the attribute with the requested 
             // name.
             if (connectable.IsNodeGraph() and 
-                TfStringStartsWith(name.GetString(), UsdShadeTokens->interface))
+                TfStringStartsWith(name.GetString(),UsdShadeTokens->interface_))
             {
                 _attr = prim.CreateAttribute(name, typeName, /*custom*/ false);
             } else {
