@@ -226,10 +226,12 @@ class VtValue
     struct _TypeInfo {
         constexpr _TypeInfo(const std::type_info &ti,
                             const std::type_info &elementTi,
-                           bool isArray)
+                            bool isArray,
+                            bool isHashable)
             : typeInfo(ti)
             , elementTypeInfo(elementTi)
             , isArray(isArray)
+            , isHashable(isHashable)
             {}
 
         virtual void CopyInit(_Storage const &, _Storage &) const = 0;
@@ -251,6 +253,7 @@ class VtValue
         const std::type_info &typeInfo;
         const std::type_info &elementTypeInfo;
         bool isArray;
+        bool isHashable;
     };
 
     // Type-dispatching overloads.
@@ -289,7 +292,8 @@ class VtValue
         constexpr _TypeInfoImpl()
             : _TypeInfo(typeid(T),
                         _ArrayHelper<T>::GetElementTypeid(),
-                        VtIsArray<T>::value) {}
+                        VtIsArray<T>::value,
+                        VtIsHashable<T>()) {}
 
         ////////////////////////////////////////////////////////////////////
         // Typed API for client use.
@@ -853,6 +857,9 @@ public:
 
     /// Returns true iff this value is empty.
     bool IsEmpty() const { return !_info; }
+
+    /// Return true if the held object provides a hash implementation.
+    VT_API bool CanHash() const;
 
     /// Return a hash code for the held object by calling VtHashValue() on it.
     VT_API size_t GetHash() const;

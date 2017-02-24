@@ -351,6 +351,13 @@ VtValue::GetTypeName() const
         return ArchGetDemangled(GetTypeid());
 }
 
+bool
+VtValue::CanHash() const
+{
+    VtValue const *v = _ResolveProxy();
+    return v->_info && v->_info->isHashable;
+}
+
 size_t
 VtValue::GetHash() const {
     if (IsEmpty())

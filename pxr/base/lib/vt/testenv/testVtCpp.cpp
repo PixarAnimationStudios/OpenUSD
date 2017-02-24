@@ -1153,6 +1153,38 @@ static void testValue() {
 
 }
 
+struct _Unhashable {};
+bool operator==(_Unhashable, _Unhashable) { return true; }
+
+static void
+testValueHash()
+{
+    static_assert(VtIsHashable<int>(), "");
+    static_assert(!VtIsHashable<_Unhashable>(), "");
+
+    VtValue vHashable{1};
+    VtValue vUnhashable{_Unhashable{}};
+
+    // Test the dynamic hashability check.
+    TF_AXIOM(vHashable.CanHash());
+    TF_AXIOM(!vUnhashable.CanHash());
+
+    {
+        // Test that hashable types can hash without error.
+        TfErrorMark m;
+        vHashable.GetHash();
+        TF_AXIOM(m.IsClean());
+    }
+
+    {
+        // Test that unhashable types post an error when attempting to hash.
+        TfErrorMark m;
+        vUnhashable.GetHash();
+        TF_AXIOM(!m.IsClean());
+        m.Clear();
+    }
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
@@ -1166,6 +1198,7 @@ int main(int argc, char *argv[])
 
     testDictionaryPyFormatting();
     testValue();
+    testValueHash();
 
     printf("Test SUCCEEDED\n");
 
