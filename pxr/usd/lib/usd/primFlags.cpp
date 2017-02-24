@@ -27,6 +27,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate = 
+    UsdPrimIsActive && UsdPrimIsDefined && 
+    UsdPrimIsLoaded && !UsdPrimIsAbstract;
 
 bool
 Usd_PrimFlagsPredicate::operator()(const UsdPrim &prim) const
@@ -43,7 +46,6 @@ Usd_PrimFlagsDisjunction
 Usd_PrimFlagsConjunction::operator!() const {
     return Usd_PrimFlagsDisjunction(_GetNegated());
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -52,7 +52,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class UsdTreeIterator;
 class Usd_PrimData;
 
@@ -417,15 +416,11 @@ public:
     /// Return this prim's active, loaded, defined, non-abstract children as an
     /// iterable range.  Equivalent to:
     /// \code
-    /// GetFilteredChildren(UsdPrimIsActive and UsdPrimIsDefined and
-    ///                     UsdPrimIsLoaded and not UsdPrimIsAbstract)
+    /// GetFilteredChildren(UsdPrimDefaultPredicate)
     /// \endcode
     ///
-    /// The above conjunction defines the "canonical traversal predicate,"
-    /// as it represents the prims on the stage that a processor would
-    /// typically consider present, meaningful, and needful of consideration.
-    ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" 
+    /// and #UsdPrimDefaultPredicate for more information.
     inline SiblingRange GetChildren() const;
 
     /// Return all this prim's children as an iterable range.
@@ -438,26 +433,29 @@ public:
     /// Example usage:
     /// \code
     /// // Get all active model children.
-    /// GetFilteredChildren(UsdPrimIsActive and UsdPrimIsModel);
+    /// GetFilteredChildren(UsdPrimIsActive && UsdPrimIsModel);
+    ///
+    /// // Get all model children that pass the default predicate.
+    /// GetFilteredChildren(UsdPrimDefaultPredicate && UsdPrimIsModel);
     /// \endcode
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" 
+    /// and #UsdPrimDefaultPredicate for more information.
     inline SiblingRange
     GetFilteredChildren(const Usd_PrimFlagsPredicate &predicate) const;
 
     /// Return this prim's active, loaded, defined, non-abstract descendants as
     /// an iterable range.  Equivalent to:
     /// \code
-    /// GetFilteredDescendants(UsdPrimIsActive and UsdPrimIsDefined and
-    ///                        UsdPrimIsLoaded and not UsdPrimIsAbstract)
+    /// GetFilteredDescendants(UsdPrimDefaultPredicate)
     /// \endcode
     ///
     /// \note This method is not yet available in python, pending some
     /// refactoring to make it more feasible.
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information,
-    /// UsdStage::Traverse(), and \c UsdTreeIterator for more general Stage
-    /// traversal behviors.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" and 
+    /// #UsdPrimDefaultPredicate for more information, UsdStage::Traverse(), 
+    /// and \c UsdTreeIterator for more general Stage traversal behaviors.
     inline SubtreeRange GetDescendants() const;
 
     /// Return all this prim's descendants as an iterable range.
@@ -465,9 +463,9 @@ public:
     /// \note This method is not yet available in python, pending some
     /// refactoring to make it more feasible.
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information,
-    /// UsdStage::TraverseAll(), and \c UsdTreeIterator for more general Stage
-    /// traversal behviors.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" and 
+    /// #UsdPrimDefaultPredicate for more information, UsdStage::Traverse(), 
+    /// and \c UsdTreeIterator for more general Stage traversal behaviors.
     inline SubtreeRange GetAllDescendants() const;
 
     /// Return a subset of all of this prim's descendants filtered by
@@ -477,15 +475,18 @@ public:
     /// Example usage:
     /// \code
     /// // Get all active model descendants.
-    /// GetFilteredDescendants(UsdPrimIsActive and UsdPrimIsModel);
+    /// GetFilteredDescendants(UsdPrimIsActive && UsdPrimIsModel);
+    /// 
+    /// // Get all model descendants that pass the default predicate.
+    /// GetFilteredDescendants(UsdPrimDefaultPredicate && UsdPrimIsModel);
     /// \endcode
     ///
     /// \note This method is not yet available in python, pending some
     /// refactoring to make it more feasible.
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information,
-    /// UsdStage::Traverse(), and \c UsdTreeIterator for more general Stage
-    /// traversal behviors.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" and 
+    /// #UsdPrimDefaultPredicate for more information, UsdStage::Traverse(), 
+    /// and \c UsdTreeIterator for more general Stage traversal behaviors.
     inline SubtreeRange
     GetFilteredDescendants(const Usd_PrimFlagsPredicate &predicate) const;
 
@@ -500,21 +501,22 @@ public:
         return Usd_PrimDataHandle(_Prim()->GetParent());
     }
 
-    /// Return this prim's next sibling if it has one, otherwise return the
-    /// invalid UsdPrim.  This is equivalent to:
+    /// Return this prim's next active, loaded, defined, non-abstract sibling 
+    /// if it has one, otherwise return an invalid UsdPrim.  Equivalent to:
     /// \code
-    /// GetFilteredNextSibling(UsdPrimIsActive and UsdPrimIsDefined and
-    ///                        UsdPrimIsLoaded and not UsdPrimIsAbstract)
+    /// GetFilteredNextSibling(UsdPrimDefaultPredicate)
     /// \endcode
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" 
+    /// and #UsdPrimDefaultPredicate for more information.
     USD_API
     UsdPrim GetNextSibling() const;
 
     /// Return this prim's next sibling that matches \p predicate if it has one,
     /// otherwise return the invalid UsdPrim.
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" 
+    /// and #UsdPrimDefaultPredicate for more information.
     USD_API
     UsdPrim GetFilteredNextSibling(
         const Usd_PrimFlagsPredicate &predicate) const;
@@ -1158,8 +1160,7 @@ UsdPrim::GetAllChildren() const
 UsdPrimSiblingRange
 UsdPrim::GetChildren() const
 {
-    return GetFilteredChildren(UsdPrimIsActive && UsdPrimIsDefined &&
-                               UsdPrimIsLoaded && !UsdPrimIsAbstract);
+    return GetFilteredChildren(UsdPrimDefaultPredicate);
 }
 
 // Helper to make a sibling range.
@@ -1343,8 +1344,7 @@ UsdPrim::GetAllDescendants() const
 UsdPrimSubtreeRange
 UsdPrim::GetDescendants() const
 {
-    return GetFilteredDescendants(UsdPrimIsActive && UsdPrimIsDefined &&
-                                  UsdPrimIsLoaded && !UsdPrimIsAbstract);
+    return GetFilteredDescendants(UsdPrimDefaultPredicate);
 }
 
 // Helper to make a sibling range.
@@ -1366,7 +1366,6 @@ UsdObject::GetPrim() const
 {
     return UsdPrim(_prim);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

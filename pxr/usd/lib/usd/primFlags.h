@@ -38,7 +38,7 @@
 /// For example:
 /// \code
 /// // Get only loaded model children.
-/// prim.GetFilteredChildren(UsdPrimIsModel and UsdPrimIsLoaded)
+/// prim.GetFilteredChildren(UsdPrimIsModel && UsdPrimIsLoaded)
 /// \endcode
 ///
 /// For performance, these predicates are implemented by a bitwise test, so
@@ -83,7 +83,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 // Enum for cached flags on prims.
 enum Usd_PrimFlags {
     // Flags for use with predicates.
@@ -127,38 +126,6 @@ inline Usd_Term
 operator!(Usd_PrimFlags flag) {
     return Usd_Term(flag, /*negated=*/true);
 }
-
-#ifdef doxygen
-
-/// Tests UsdPrim::IsActive()
-extern unspecified UsdPrimIsActive;
-/// Tests UsdPrim::IsLoaded()
-extern unspecified UsdPrimIsLoaded;
-/// Tests UsdPrim::IsModel()
-extern unspecified UsdPrimIsModel;
-/// Tests UsdPrim::IsGroup()
-extern unspecified UsdPrimIsGroup;
-/// Tests UsdPrim::IsAbstract()
-extern unspecified UsdPrimIsAbstract;
-/// Tests UsdPrim::IsDefined()
-extern unspecified UsdPrimIsDefined;
-/// Tests UsdPrim::IsInstance()
-extern unspecified UsdPrimIsInstance;
-/// Tests UsdPrim::HasDefiningSpecifier()
-extern unspecified UsdPrimHasDefiningSpecifier;
-#else
-
-static const Usd_PrimFlags UsdPrimIsActive = Usd_PrimActiveFlag;
-static const Usd_PrimFlags UsdPrimIsLoaded = Usd_PrimLoadedFlag;
-static const Usd_PrimFlags UsdPrimIsModel = Usd_PrimModelFlag;
-static const Usd_PrimFlags UsdPrimIsGroup = Usd_PrimGroupFlag;
-static const Usd_PrimFlags UsdPrimIsAbstract = Usd_PrimAbstractFlag;
-static const Usd_PrimFlags UsdPrimIsDefined = Usd_PrimDefinedFlag;
-static const Usd_PrimFlags UsdPrimIsInstance = Usd_PrimInstanceFlag;
-static const Usd_PrimFlags UsdPrimHasDefiningSpecifier 
-    = Usd_PrimHasDefiningSpecifierFlag;
-
-#endif // doxygen
 
 // Predicate functor class that tests a prim's flags against desired values.
 class Usd_PrimFlagsPredicate
@@ -273,7 +240,7 @@ private:
 /// predicate terms.  For example:
 /// \code
 /// // Get all loaded model children.
-/// prim.GetFilteredChildren(UsdPrimIsModel and UsdPrimIsLoaded)
+/// prim.GetFilteredChildren(UsdPrimIsModel && UsdPrimIsLoaded)
 /// \endcode
 ///
 /// See primFlags.h for more details.
@@ -469,6 +436,54 @@ operator||(Usd_PrimFlags lhs, Usd_PrimFlags rhs) {
     return Usd_Term(lhs) || Usd_Term(rhs);
 }
 
+#ifdef doxygen
+
+/// Tests UsdPrim::IsActive()
+extern unspecified UsdPrimIsActive;
+/// Tests UsdPrim::IsLoaded()
+extern unspecified UsdPrimIsLoaded;
+/// Tests UsdPrim::IsModel()
+extern unspecified UsdPrimIsModel;
+/// Tests UsdPrim::IsGroup()
+extern unspecified UsdPrimIsGroup;
+/// Tests UsdPrim::IsAbstract()
+extern unspecified UsdPrimIsAbstract;
+/// Tests UsdPrim::IsDefined()
+extern unspecified UsdPrimIsDefined;
+/// Tests UsdPrim::IsInstance()
+extern unspecified UsdPrimIsInstance;
+/// Tests UsdPrim::HasDefiningSpecifier()
+extern unspecified UsdPrimHasDefiningSpecifier;
+
+/// The default predicate used for prim traversals in methods like
+/// UsdPrim::GetChildren, UsdStage::Traverse, and by UsdTreeIterator.
+/// This is a conjunction that includes all active, loaded, defined, 
+/// non-abstract prims, equivalent to:
+/// \code
+/// UsdPrimIsActive && UsdPrimIsDefined && UsdPrimIsLoaded && !UsdPrimIsAbstract
+/// \endcode
+///
+/// This represents the prims on a stage that a processor would typically 
+/// consider present, meaningful, and needful of consideration.
+///
+/// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+extern unspecified UsdPrimDefaultPredicate;
+
+#else
+
+static const Usd_PrimFlags UsdPrimIsActive = Usd_PrimActiveFlag;
+static const Usd_PrimFlags UsdPrimIsLoaded = Usd_PrimLoadedFlag;
+static const Usd_PrimFlags UsdPrimIsModel = Usd_PrimModelFlag;
+static const Usd_PrimFlags UsdPrimIsGroup = Usd_PrimGroupFlag;
+static const Usd_PrimFlags UsdPrimIsAbstract = Usd_PrimAbstractFlag;
+static const Usd_PrimFlags UsdPrimIsDefined = Usd_PrimDefinedFlag;
+static const Usd_PrimFlags UsdPrimIsInstance = Usd_PrimInstanceFlag;
+static const Usd_PrimFlags UsdPrimHasDefiningSpecifier 
+    = Usd_PrimHasDefiningSpecifierFlag;
+
+USD_API extern const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate;
+
+#endif // doxygen
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
