@@ -207,6 +207,7 @@ public:
     /// Allow UsdShadeShader to auto-convert to UsdShadeConnectableAPI, so 
     /// you can pass in a UsdShadeShader to any function that accepts 
     /// a UsdShadeConnectableAPI.
+    USDSHADE_API
     operator UsdShadeConnectableAPI () const;
 
     /// \name Parameters API
@@ -222,15 +223,18 @@ public:
     /// \note parameter names should not be namespaced, as, to keep things
     /// simple, the criterion we use to enumerate parameters on a Shader is
     /// all non-namespaced atttributes - see GetParameters()
+    USDSHADE_API
     UsdShadeParameter CreateParameter(
             const TfToken& name, 
             const SdfValueTypeName& typeName);
 
     /// Return parameter if it exists.
+    USDSHADE_API
     UsdShadeParameter GetParameter(const TfToken &name) const;
 
     /// All attributes are considered parameters if they are not scoped with 
     /// a namespace
+    USDSHADE_API
     std::vector<UsdShadeParameter> GetParameters() const;
 
     /// @}
@@ -251,15 +255,18 @@ public:
     /// namespace. Outputs on a shader cannot be connected, as their 
     /// value is assumed to be computed externally.
     /// 
+    USDSHADE_API
     UsdShadeOutput CreateOutput(const TfToken& name,
                                 const SdfValueTypeName& typeName);
 
     /// Return the requested output if it exists.
     /// 
+    USDSHADE_API
     UsdShadeOutput GetOutput(const TfToken &name) const;
 
     /// Outputs are represented by attributes in the "outputs:" namespace.
     /// 
+    USDSHADE_API
     std::vector<UsdShadeOutput> GetOutputs() const;
 
     /// @}
@@ -278,15 +285,18 @@ public:
     /// The attribute representing the input is created in the "inputs:" 
     /// namespace. Inputs on both shaders and node-graphs are connectable.
     /// 
+    USDSHADE_API
     UsdShadeInput CreateInput(const TfToken& name,
                               const SdfValueTypeName& typeName);
 
     /// Return the requested input if it exists.
     /// 
+    USDSHADE_API
     UsdShadeInput GetInput(const TfToken &name) const;
 
     /// Inputs are represented by attributes in the "inputs:" namespace.
     /// 
+    USDSHADE_API
     std::vector<UsdShadeInput> GetInputs() const;
 
     /// @}

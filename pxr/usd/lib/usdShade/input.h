@@ -25,6 +25,7 @@
 #define USDSHADE_INPUT_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdShade/utils.h"
 
@@ -60,11 +61,13 @@ public:
     /// We call this the base name since it strips off the "inputs:" namespace 
     /// prefix from the attribute name, and returns it.
     /// 
+    USDSHADE_API
     TfToken GetBaseName() const;
 
     /// Get the "scene description" value type name of the attribute associated 
     /// with the Input.
     /// 
+    USDSHADE_API
     SdfValueTypeName GetTypeName() const;
     
     /// Get the prim that the input belongs to.
@@ -74,6 +77,7 @@ public:
 
     /// Set a value for the Input at \p time.
     /// 
+    USDSHADE_API
     bool Set(const VtValue& value, 
              UsdTimeCode time = UsdTimeCode::Default()) const;
 
@@ -104,17 +108,20 @@ public:
     ///
     /// \return true on success.
     ///
+    USDSHADE_API
     bool SetRenderType(TfToken const& renderType) const;
 
     /// Return this Input's specialized renderType, or an empty
     /// token if none was authored.
     ///
     /// \sa SetRenderType()
+    USDSHADE_API
     TfToken GetRenderType() const;
 
     /// Return true if a renderType has been specified for this Input.
     ///
     /// \sa SetRenderType()
+    USDSHADE_API
     bool HasRenderType() const;
 
     /// @}
@@ -131,12 +138,14 @@ public:
     /// \p attr already represents a shade Input, and produces an \em invalid 
     /// UsdShadeInput otherwise (i.e. \ref UsdShadeInput_bool_type 
     /// "unspecified-bool-type()" will return false).
+    USDSHADE_API
     explicit UsdShadeInput(const UsdAttribute &attr);
 
     /// Test whether a given UsdAttribute represents a valid Input, which
     /// implies that creating a UsdShadeInput from the attribute will succeed.
     ///
     /// Success implies that \c attr.IsDefined() is true.
+    USDSHADE_API
     static bool IsInput(const UsdAttribute &attr);
 
     /// Explicit UsdAttribute extractor.
@@ -150,7 +159,7 @@ public:
     /// Return true if the wrapped UsdAttribute is defined, and in addition the 
     /// attribute is identified as an input.
     bool IsDefined() const {
-        return _attr and IsInput(_attr);
+        return _attr && IsInput(_attr);
     }
 
     /// @}

@@ -25,6 +25,7 @@
 #define USDSHADE_OUTPUT_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/property.h"
 #include "pxr/usd/usd/relationship.h"
@@ -69,6 +70,7 @@ public:
     /// \note This simply returns the full property name if the Output represents a 
     /// terminal on a material.
     /// 
+    USDSHADE_API
     TfToken GetBaseName() const;
 
     /// Get the prim that the output belongs to.
@@ -82,6 +84,7 @@ public:
     /// \note If this is an output belonging to a terminal on a material, which 
     /// does not have an associated attribute, we return 'Token' as the type.
     /// 
+    USDSHADE_API
     SdfValueTypeName GetTypeName() const;
     
     /// Set a value for the output.
@@ -90,6 +93,7 @@ public:
     /// an externally computed value. The Set API is provided here just for the 
     /// sake of completeness and uniformity with other property schema.
     /// 
+    USDSHADE_API
     bool Set(const VtValue& value, 
              UsdTimeCode time = UsdTimeCode::Default()) const;
 
@@ -115,18 +119,21 @@ public:
     /// are of renderman custom struct types.
     ///
     /// \return true on success
+    USDSHADE_API
     bool SetRenderType(TfToken const& renderType) const;
 
     /// Return this output's specialized renderType, or an empty
     /// token if none was authored.
     ///
     /// \sa SetRenderType()
+    USDSHADE_API
     TfToken GetRenderType() const;
 
     /// Return true if a renderType has been specified for this
     /// output.
     ///
     /// \sa SetRenderType()
+    USDSHADE_API
     bool HasRenderType() const;
 
     /// @}
@@ -143,12 +150,14 @@ public:
     /// \p attr already represents a shade Output, and produces an \em invalid 
     /// UsdShadeOutput otherwise (i.e. \ref UsdShadeOutput_bool_type 
     /// "unspecified-bool-type()" will return false).
+    USDSHADE_API
     explicit UsdShadeOutput(const UsdAttribute &attr);
 
     /// Test whether a given UsdAttribute represents a valid Output, which
     /// implies that creating a UsdShadeOutput from the attribute will succeed.
     ///
     /// Success implies that \c prop.IsDefined() is true.
+    USDSHADE_API
     static bool IsOutput(const UsdAttribute &attr);
 
     /// Explicit UsdAttribute extractor.
@@ -179,7 +188,7 @@ public:
     /// addition the attribute is identified as an output.
     bool IsDefined() const {
         if (UsdAttribute attr = GetAttr()) {
-            return attr and IsOutput(attr);
+            return attr && IsOutput(attr);
         }
         return false;
     }

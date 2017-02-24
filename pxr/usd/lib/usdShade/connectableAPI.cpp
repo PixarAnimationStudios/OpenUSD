@@ -138,7 +138,7 @@ UsdShadeConnectableAPI::IsNodeGraph() const
 bool 
 UsdShadeConnectableAPI::_IsCompatible(const UsdPrim &prim) const
 {
-    return IsShader() or IsNodeGraph();
+    return IsShader() || IsNodeGraph();
 }
 
 static TfToken 
@@ -214,7 +214,7 @@ UsdShadeConnectableAPI::ConnectToSource(
         // the output.
         const SdfPath sourcePrimPath = source.GetPrim().GetPath();
         const SdfPath outputOwnerPath = shadingProp.GetPrim().GetPath();
-        if (not sourcePrimPath.HasPrefix(outputOwnerPath)) {
+        if (!sourcePrimPath.HasPrefix(outputOwnerPath)) {
             TF_WARN("Source of output '%s' on node-graph at path <%s> is outside "
                 "the node-graph: <%s>", sourceName.GetText(), 
                 outputOwnerPath.GetText(), sourcePrimPath.GetText());
@@ -237,7 +237,7 @@ UsdShadeConnectableAPI::ConnectToSource(
 
         UsdAttribute sourceAttr = sourcePrim.GetAttribute(sourceAttrName);
 
-        if (not sourceAttr) {
+        if (!sourceAttr) {
             // If the sourcePrim contains a relationship with the source 
             // name, then it must be a terminal output on a node-graph and 
             // cannot be connected to.
@@ -252,7 +252,7 @@ UsdShadeConnectableAPI::ConnectToSource(
         }
 
         // If a typeName isn't specified, 
-        if (not typeName) {
+        if (!typeName) {
             // If shadingProp is not an attribute, it must be a terminal output 
             // on a node-graph. Hence wrapping shadingProp in a UsdShadeOutput 
             // and asking for its typeName should give us the desired answer.
@@ -309,7 +309,7 @@ UsdShadeConnectableAPI::ConnectToSource(
     SdfPath const &sourcePath)
 {
     // sourcePath needs to be a property path for us to make a connection.
-    if (not sourcePath.IsPropertyPath())
+    if (!sourcePath.IsPropertyPath())
         return false;
 
     UsdPrim sourcePrim = shadingProp.GetStage()->GetPrimAtPath(
@@ -377,7 +377,7 @@ UsdShadeConnectableAPI::GetConnectedSource(
     TfToken *sourceName,
     UsdShadeAttributeType *sourceType)
 {
-    if (not (source and sourceName and sourceType)) {
+    if (!(source && sourceName && sourceType)) {
         TF_CODING_ERROR("GetConnectedSource() requires non-NULL "
                         "output-parameters.");
         return false;
@@ -494,16 +494,16 @@ UsdShadeConnectableAPI::GetOutputs() const
         }
     }
 
-    if (UsdShadeUtils::ReadOldEncoding() and IsNodeGraph()) {
+    if (UsdShadeUtils::ReadOldEncoding() && IsNodeGraph()) {
         std::vector<UsdRelationship> rels= GetPrim().GetRelationships();
         TF_FOR_ALL(relIter, rels) { 
             const UsdRelationship& rel= *relIter;
             // Excluded the "connectedSourceFor:" and "interfaceRecipientsOf:" 
             // relationships.
-            if (not TfStringStartsWith(rel.GetName(), 
-                                       UsdShadeTokens->connectedSourceFor) and
-                not TfStringStartsWith(rel.GetName(), 
-                                       UsdShadeTokens->interfaceRecipientsOf)) 
+            if (!TfStringStartsWith(rel.GetName(), 
+                                    UsdShadeTokens->connectedSourceFor) &&
+                !TfStringStartsWith(rel.GetName(), 
+                                    UsdShadeTokens->interfaceRecipientsOf)) 
             {
                 // All non-connection related relationships on node-graphs
                 // typically represent terminal outputs, so wrap the 
@@ -572,13 +572,13 @@ UsdShadeConnectableAPI::GetInputs() const
         // Support for old style encoding containing interface attributes 
         // and parameters.
         if (UsdShadeUtils::ReadOldEncoding()) {
-            if (IsNodeGraph() and 
+            if (IsNodeGraph() && 
                 TfStringStartsWith(attr.GetName().GetString(), 
                                    UsdShadeTokens->interface_)) {                    
                 // If it's an interface attribute on a node-graph, wrap it in a 
                 // UsdShadeInput object and add it to the list of inputs.
                 ret.push_back(UsdShadeInput(attr));
-            } else if (IsShader() and attr.GetNamespace().IsEmpty()) {
+            } else if (IsShader() && attr.GetNamespace().IsEmpty()) {
                 // If it's an unnamespaced (parameter) attribute on a shader, 
                 // wrap it in a UsdShadeInput object and add it to the list of 
                 // inputs.

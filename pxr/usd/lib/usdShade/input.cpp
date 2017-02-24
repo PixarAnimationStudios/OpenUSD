@@ -107,7 +107,7 @@ UsdShadeInput::UsdShadeInput(
             // If this is a node-graph and the name already contains "interface:" 
             // namespace in it, just create the attribute with the requested 
             // name.
-            if (connectable.IsNodeGraph() and 
+            if (connectable.IsNodeGraph() && 
                 TfStringStartsWith(name.GetString(),UsdShadeTokens->interface_))
             {
                 _attr = prim.CreateAttribute(name, typeName, /*custom*/ false);
@@ -149,7 +149,7 @@ UsdShadeInput::HasRenderType() const
 bool 
 UsdShadeInput::IsInput(const UsdAttribute &attr)
 {
-    return attr and attr.IsDefined() and 
+    return attr && attr.IsDefined() && 
             // Check the attribute's namespace only if reading of old encoding 
             // is not supported.
             (UsdShadeUtils::ReadOldEncoding() ? true :

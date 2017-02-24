@@ -209,6 +209,7 @@ public:
     ///
     /// Any UsdPrim can have a binding to at most a \em single UsdShadeMaterial .
     /// \return true on success
+    USDSHADE_API
     bool Bind(UsdPrim& prim) const;
 
     /// Ensure that, when resolved up to and including the current UsdEditTarget
@@ -219,6 +220,7 @@ public:
     /// such that a weaker binding will "shine through".  For that behavior,
     /// use GetBindingRel().ClearTargets()
     /// \return true on success
+    USDSHADE_API
     static bool Unbind(UsdPrim& prim);
 
     /// Direct access to the binding relationship for \p prim, if it has
@@ -233,11 +235,13 @@ public:
     /// will then be the client's responsibility to ensure that only a
     /// single Material prim is targetted.  In general, use 
     /// UsdRelationship::SetTargets() rather than UsdRelationship::AddTarget()
+    USDSHADE_API
     static UsdRelationship GetBindingRel(const UsdPrim& prim);
 
     /// Follows the relationship returned by GetBindingRel and returns a
     /// valid UsdShadeMaterial if the relationship targets exactly one such prim.
     ///
+    USDSHADE_API
     static UsdShadeMaterial GetBoundMaterial(const UsdPrim &prim);
 
     /// @}
@@ -312,12 +316,14 @@ public:
     /// default selection, or possibly UsdVariantSet::ClearVariantSelection()
     /// on the UsdShadeMaterial::GetMaterialVariant() UsdVariantSet.
     /// \sa UsdVariantSet::GetVariantEditContext()
+    USDSHADE_API
     std::pair<UsdStagePtr, UsdEditTarget>
     GetEditContextForVariant(const TfToken &MaterialVariantName,
                              const SdfLayerHandle &layer = SdfLayerHandle()) const;
     
     /// Return a UsdVariantSet object for interacting with the Material variant
     /// variantSet
+    USDSHADE_API
     UsdVariantSet GetMaterialVariant() const;
 
     /// Create a variantSet on \p masterPrim that will set the MaterialVariant on
@@ -348,6 +354,7 @@ public:
     ///
     /// Return \c true on success. It is an error if any of \p Materials
     /// have a different set of variants for the MaterialVariant than the others.
+    USDSHADE_API
     static bool CreateMasterMaterialVariant(
         const UsdPrim &masterPrim,
         const std::vector<UsdPrim> &MaterialPrims,
@@ -369,24 +376,30 @@ public:
 
     /// Get the path to the base Material of this Material.
     /// If there is no base Material, an empty Material is returned
+    USDSHADE_API
     UsdShadeMaterial GetBaseMaterial() const;
 
     /// Get the base Material of this Material.
     /// If there is no base Material, an empty path is returned
+    USDSHADE_API
     SdfPath GetBaseMaterialPath() const;
 
     /// Set the base Material of this Material.
     /// An empty Material is equivalent to clearing the base Material.
+    USDSHADE_API
     void SetBaseMaterial(const UsdShadeMaterial& baseMaterial) const;
 
     /// Set the path to the base Material of this Material.
     /// An empty path is equivalent to clearing the base Material.
+    USDSHADE_API
     void SetBaseMaterialPath(const SdfPath& baseMaterialPath) const;
 
     /// Clear the base Material of this Material.
+    USDSHADE_API
     void ClearBaseMaterial() const;
 
     // Check if this Material has a base Material
+    USDSHADE_API
     bool HasBaseMaterial() const;
 
     /// @}
@@ -425,16 +438,19 @@ public:
     /// If a "Material" face-set already exists, it is returned. If not, it
     /// creates one and returns it.
     /// 
+    USDSHADE_API
     static UsdGeomFaceSetAPI CreateMaterialFaceSet(const UsdPrim &prim);
 
     /// Returns the "Material" face-set if it exists on the given prim. If not, 
     /// returns an invalid UsdGeomFaceSetAPI object.
     /// 
+    USDSHADE_API
     static UsdGeomFaceSetAPI GetMaterialFaceSet(const UsdPrim &prim);
 
     /// Returns true if the given prim has a "Material" face-set. A "Material" 
     /// face-set must be a partition for it to be considered valid.
     /// 
+    USDSHADE_API
     static bool HasMaterialFaceSet(const UsdPrim &prim);
 
     /// @}

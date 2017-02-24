@@ -25,6 +25,7 @@
 #define USDSHADE_PARAMETER_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdShade/utils.h"
 
@@ -87,18 +88,21 @@ public:
     /// are of renderman custom struct types.
     ///
     /// \return true on success
+    USDSHADE_API
     bool SetRenderType(TfToken const& renderType) const;
 
     /// Return this parameter's specialized renderType, or an empty
     /// token if none was authored.
     ///
     /// \sa SetRenderType()
+    USDSHADE_API
     TfToken GetRenderType() const;
 
     /// Return true if a renderType has been specified for this
     /// parameter.
     ///
     /// \sa SetRenderType()
+    USDSHADE_API
     bool HasRenderType() const;
 
     /// @}
@@ -132,6 +136,7 @@ public:
     ///        
     /// \sa GetConnectedSource(), GetConnectedSources()
     ///
+    USDSHADE_API
     bool ConnectToSource(
             UsdShadeConnectableAPI const &source, 
             TfToken const &outputName,
@@ -147,6 +152,7 @@ public:
     /// This overload is provided for convenience, for use in contexts where 
     /// the prim types are unknown or unavailable.
     /// 
+    USDSHADE_API
     bool ConnectToSource(const SdfPath &sourcePath) const;
 
     /// \overload
@@ -157,18 +163,21 @@ public:
     /// them with inputs (that are simply UsdShadeParameters), we will 
     /// have parameter-to-parameter (or input-to-input) connections.
     /// 
+    USDSHADE_API
     bool ConnectToSource(UsdShadeParameter const &param) const;
 
     /// \overload
     ///
     /// Connects this parameter to the given output.
     /// 
+    USDSHADE_API
     bool ConnectToSource(UsdShadeOutput const &output) const;
 
     /// \overload
     ///
     /// Connects this parameter to the given interface attribute.
     /// 
+    USDSHADE_API
     bool ConnectToSource(UsdShadeInterfaceAttribute const &interfaceAttribute) 
         const;
 
@@ -176,6 +185,7 @@ public:
     ///
     /// Connects this parameter to the given input.
     /// 
+    USDSHADE_API
     bool ConnectToSource(UsdShadeInput const &input) const;
 
     /// Disconnect source for this Parameter.
@@ -188,6 +198,7 @@ public:
     /// the current UsdEditTarget. 
     ///
     /// \sa ConnectToSource().
+    USDSHADE_API
     bool DisconnectSource() const;
 
     /// Clears source for this Parameter in the current UsdEditTarget.
@@ -196,6 +207,7 @@ public:
     /// rather than this function.
     ///
     /// \sa DisconnectSource(), UsdRelationship::ClearTargets()
+    USDSHADE_API
     bool ClearSource() const;
 
     /// If this parameter is connected, retrieve the \p source prim
@@ -213,6 +225,7 @@ public:
     /// \note The python wrapping for this method returns a 
     /// (source, sourceName, sourceType) tuple if the parameter is connected, 
     /// else \c None
+    USDSHADE_API
     bool GetConnectedSource(
             UsdShadeConnectableAPI *source, 
             TfToken *sourceName,
@@ -230,6 +243,7 @@ public:
     ///      // process unconnected parameter
     /// }
     /// \endcode
+    USDSHADE_API
     bool IsConnected() const;
 
     /// \deprecated
@@ -237,6 +251,7 @@ public:
     /// Return the name of the sibling relationship that would encode
     /// the connection for this parameter.
     /// 
+    USDSHADE_API
     TfToken GetConnectionRelName() const;
 
     // ---------------------------------------------------------------
@@ -252,6 +267,7 @@ public:
     /// produces an \em invalid Parameter otherwise (i.e. 
     /// \ref UsdShadeParameter_bool_type "unspecified-bool-type()" will return
     /// false).
+    USDSHADE_API
     explicit UsdShadeParameter(const UsdAttribute &attr);
 
     /// Test whether a given UsdAttribute represents a valid Parameter, which

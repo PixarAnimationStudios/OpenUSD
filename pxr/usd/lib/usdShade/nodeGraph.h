@@ -181,6 +181,7 @@ public:
     /// Allow UsdShadeNodeGraph to auto-convert to UsdShadeConnectableAPI, so 
     /// you can pass in a UsdShadeNodeGraph to any function that accepts 
     /// a UsdShadeConnectableAPI.
+    USDSHADE_API
     operator UsdShadeConnectableAPI () const;
 
     /// \anchor UsdShadeNodeGraph_Interfaces
@@ -224,6 +225,7 @@ public:
     ///
     /// \todo clarify error behavior if typeName does not match existing,
     /// defined attribute - should match UsdPrim::CreateAttribute - bug/108970
+    USDSHADE_API
     UsdShadeInterfaceAttribute CreateInterfaceAttribute(
             const TfToken& interfaceAttrName,
             const SdfValueTypeName& typeName);
@@ -237,11 +239,13 @@ public:
     /// UsdShadeInterfaceAtribute(prim->GetAttribute(interfaceAttrName))
     /// \endcode
     /// will not, unless \p interfaceAttrName is properly namespace prefixed.
+    USDSHADE_API
     UsdShadeInterfaceAttribute GetInterfaceAttribute(
             const TfToken& interfaceAttrName) const;
 
     /// Returns all interface attributes that drive parameters of a
     /// \p renderTarget shading network.
+    USDSHADE_API
     std::vector<UsdShadeInterfaceAttribute> GetInterfaceAttributes(
             const TfToken& renderTarget) const;
 
@@ -259,15 +263,18 @@ public:
     /// The attribute representing the output is created in the "outputs:" 
     /// namespace.
     /// 
+    USDSHADE_API
     UsdShadeOutput CreateOutput(const TfToken& name,
                                 const SdfValueTypeName& typeName);
 
     /// Return the requested output if it exists.
     /// 
+    USDSHADE_API
     UsdShadeOutput GetOutput(const TfToken &name) const;
 
     /// Outputs are represented by attributes in the "outputs:" namespace.
     /// 
+    USDSHADE_API
     std::vector<UsdShadeOutput> GetOutputs() const;
     
     /// @}
@@ -282,16 +289,19 @@ public:
     /// The attribute representing the input is created in the "inputs:" 
     /// namespace.
     /// 
+    USDSHADE_API
     UsdShadeInput CreateInput(const TfToken& name,
                               const SdfValueTypeName& typeName);
 
     /// Return the requested input if it exists.
     /// 
+    USDSHADE_API
     UsdShadeInput GetInput(const TfToken &name) const;
 
     /// Returns all inputs present on the node-graph. These are represented by
     /// attributes in the "inputs:" namespace.
     /// 
+    USDSHADE_API
     std::vector<UsdShadeInput> GetInputs() const;
     
     /// @}
@@ -328,6 +338,7 @@ public:
     /// as GetInputs(), but is provided  as a convenience, to allow clients to
     /// distinguish between inputs on shaders vs. interface-inputs on 
     /// node-graphs.
+    USDSHADE_API
     std::vector<UsdShadeInput> GetInterfaceInputs() const;
 
     /// Map of interface inputs to corresponding vectors of inputs that 
@@ -357,6 +368,7 @@ public:
     /// interface / shader connections in the opposite direction than they are 
     /// encoded in USD.
     /// 
+    USDSHADE_API
     InterfaceInputConsumersMap ComputeInterfaceInputConsumersMap(
         bool computeTransitiveConsumers=false) const;
 

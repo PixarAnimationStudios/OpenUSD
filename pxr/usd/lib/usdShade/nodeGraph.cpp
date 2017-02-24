@@ -211,7 +211,7 @@ UsdShadeNodeGraph::CreateInput(const TfToken& name,
                               const SdfValueTypeName& typeName)
 {
     TfToken inputName = name;
-    if (not UsdShadeUtils::WriteNewEncoding()) {
+    if (!UsdShadeUtils::WriteNewEncoding()) {
         inputName = TfToken(UsdShadeTokens->interface_.GetString() + 
                             name.GetString());
     }
@@ -240,12 +240,12 @@ static bool
 _IsValidInput(UsdShadeConnectableAPI const &source, 
               UsdShadeAttributeType const sourceType) 
 {
-    return (sourceType == UsdShadeAttributeType::Input) or 
-           (UsdShadeUtils::ReadOldEncoding() and 
-            ((source.IsNodeGraph() and 
+    return (sourceType == UsdShadeAttributeType::Input) || 
+           (UsdShadeUtils::ReadOldEncoding() && 
+            ((source.IsNodeGraph() && 
               sourceType == UsdShadeAttributeType::InterfaceAttribute) 
-             or 
-             (source.IsShader() and 
+             || 
+             (source.IsShader() && 
               sourceType == UsdShadeAttributeType::Parameter)));
 }
 
@@ -285,7 +285,7 @@ _ComputeNonTransitiveInputConsumersMap(const UsdShadeNodeGraph &nodeGraph)
         const UsdPrim &prim = *iter;
 
         UsdShadeConnectableAPI connectable(prim);
-        if (not connectable)
+        if (!connectable)
             continue;
 
         std::vector<UsdShadeInput> internalInputs = connectable.GetInputs();
@@ -295,7 +295,7 @@ _ComputeNonTransitiveInputConsumersMap(const UsdShadeNodeGraph &nodeGraph)
             UsdShadeAttributeType sourceType;
             if (UsdShadeConnectableAPI::GetConnectedSource(internalInput,
                     &source, &sourceName, &sourceType)) {
-                if (source.GetPrim() == nodeGraph.GetPrim() and 
+                if (source.GetPrim() == nodeGraph.GetPrim() && 
                     _IsValidInput(source, sourceType))
                 {
                     result[nodeGraph.GetInput(sourceName)].push_back(
@@ -319,7 +319,7 @@ _RecursiveComputeNodeGraphInterfaceInputConsumers(
         for (const UsdShadeInput &consumer: consumers) {
             UsdShadeConnectableAPI connectable(consumer.GetAttr().GetPrim());
             if (connectable.IsNodeGraph()) {
-                if (not nodeGraphInputConsumers->count(connectable)) {
+                if (!nodeGraphInputConsumers->count(connectable)) {
 
                     const auto &irMap = _ComputeNonTransitiveInputConsumersMap(
                         UsdShadeNodeGraph(connectable));
@@ -341,7 +341,7 @@ _ResolveConsumers(const UsdShadeInput &consumer,
                    std::vector<UsdShadeInput> *resolvedConsumers) 
 {
     UsdShadeNodeGraph consumerNodeGraph(consumer.GetAttr().GetPrim());
-    if (not consumerNodeGraph) {
+    if (!consumerNodeGraph) {
         resolvedConsumers->push_back(consumer);
         return;
     }
@@ -354,7 +354,7 @@ _ResolveConsumers(const UsdShadeInput &consumer,
         const auto &inputIt = inputConsumers.find(consumer);
         if (inputIt != inputConsumers.end()) {
             const auto &consumers = inputIt->second;
-            if (not consumers.empty()) {
+            if (!consumers.empty()) {
                 for (const auto &nestedConsumer : consumers) {
                     _ResolveConsumers(nestedConsumer, nodeGraphInputConsumers, 
                                     resolvedConsumers);
@@ -377,7 +377,7 @@ UsdShadeNodeGraph::ComputeInterfaceInputConsumersMap(
     InterfaceInputConsumersMap result = 
         _ComputeNonTransitiveInputConsumersMap(*this);
 
-    if (not computeTransitiveConsumers)
+    if (!computeTransitiveConsumers)
         return result;
 
     // Collect all node-graphs for which we must compute the input-consumers map.

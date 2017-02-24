@@ -25,6 +25,7 @@
 #define USDSHADE_INTERFACEATTRIBUTE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdShade/parameter.h"
 
@@ -54,9 +55,11 @@ public:
     }
 
     /// Convenience wrapper for UsdAttribute::Get()
+    USDSHADE_API
     bool Get(VtValue* value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// Returns the un-namespaced name of this interface attribute.
+    USDSHADE_API
     TfToken GetName() const;
 
     /// Get the "scene description" value type name of the attribute associated 
@@ -71,6 +74,7 @@ public:
     ///
     /// \todo Provide a way to retrieve \em all driven parameters of all
     /// render targets.
+    USDSHADE_API
     std::vector<UsdShadeParameter> GetRecipientParameters(
             const TfToken& renderTarget) const;
 
@@ -78,6 +82,7 @@ public:
     /// @{
 
     /// Set the value for the look attribute.
+    USDSHADE_API
     bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// Set the attribute value of the interface attribute at \p time 
@@ -94,6 +99,7 @@ public:
     /// parameters to, uniquely, \p recipient
     ///
     /// \return true if this was successfully authored.
+    USDSHADE_API
     bool SetRecipient(
             const TfToken& renderTarget,
             const UsdShadeParameter& recipient) const;
@@ -106,6 +112,7 @@ public:
     /// for a \p renderTarget network.  This version of the function is useful
     /// if you're connecting to something that may not exist in the current 
     /// stage.
+    USDSHADE_API
     bool SetRecipient(
             const TfToken& renderTarget,
             const SdfPath& recipientPath) const;
@@ -152,6 +159,7 @@ public:
     /// shading network. 
     ///       
     /// \sa GetConnectedSource(), GetConnectedSources()
+    USDSHADE_API
     bool ConnectToSource(
             UsdShadeConnectableAPI const &source, 
             TfToken const &sourceName,
@@ -167,24 +175,28 @@ public:
     /// This overload is provided for convenience, for use in contexts where 
     /// the prim types are unknown or unavailable.
     /// 
+    USDSHADE_API
     bool ConnectToSource(const SdfPath &sourcePath) const;
 
     /// \overload
     ///
     /// Connects this interface attribute to the given \p param.
     /// 
+    USDSHADE_API
     bool ConnectToSource(UsdShadeParameter const &param) const;
 
     /// \overload
     ///
     /// Connects this interface attribute to the given \p output.
     /// 
+    USDSHADE_API
     bool ConnectToSource(UsdShadeOutput const &output) const;
 
     /// \overload
     ///
     /// Connects this interface attribute to the given \p interfaceAttribute.
     /// 
+    USDSHADE_API
     bool ConnectToSource(UsdShadeInterfaceAttribute const &interfaceAttribute) const;
 
     /// Disconnect source for this interface attribute.
@@ -197,6 +209,7 @@ public:
     /// UsdEditTarget. 
     ///
     /// \sa ConnectToSource().
+    USDSHADE_API
     bool DisconnectSource() const;
 
     /// Clears source for this interface attribute in the current UsdEditTarget.
@@ -205,6 +218,7 @@ public:
     /// rather than this function.
     ///
     /// \sa DisconnectSource(), UsdRelationship::ClearTargets()
+    USDSHADE_API
     bool ClearSource() const;
 
     /// If this interface attribute is connected, retrieve the \p source prim
@@ -224,6 +238,7 @@ public:
     /// \note The python wrapping for this method returns a 
     /// (source, sourceName, sourceType) tuple if the interface attribute is 
     /// connected, else \c None
+    USDSHADE_API
     bool GetConnectedSource(
             UsdShadeConnectableAPI *source, 
             TfToken *sourceName,
@@ -242,28 +257,33 @@ public:
     ///      // process unconnected interfaceAttribute
     /// }
     /// \endcode
+    USDSHADE_API
     bool IsConnected() const;
 
     /// @}
 
     /// Set documentation string for this attribute.
     /// \sa UsdObject::SetDocumentation()
+    USDSHADE_API
     bool SetDocumentation(
             const std::string& docs) const;
 
     /// Get documentation string for this attribute.
     /// \sa UsdObject::GetDocumentation()
+    USDSHADE_API
     std::string GetDocumentation() const;
 
     /// Set the displayGroup metadata for this interface attribute,
     /// i.e. hinting for the location and nesting of the attribute.
     /// \sa UsdProperty::SetDisplayGroup(), UsdProperty::SetNestedDisplayGroup()
+    USDSHADE_API
     bool SetDisplayGroup(
             const std::string& displayGroup) const;
 
     /// Get the displayGroup metadata for this interface attribute,
     /// i.e. hinting for the location and nesting of the attribute.
     /// \sa UsdProperty::GetDisplayGroup(), UsdProperty::GetNestedDisplayGroup()
+    USDSHADE_API
     std::string GetDisplayGroup() const;
 
     /// @}
@@ -280,6 +300,7 @@ public:
     /// produces an \em invalid Parameter otherwise (i.e. 
     /// \ref UsdShadeParameter_bool_type "unspecified-bool-type()" will return
     /// false).
+    USDSHADE_API
     explicit UsdShadeInterfaceAttribute(const UsdAttribute &attr);
 
     /// Test whether a given UsdAttribute represents valid Primvar, which
