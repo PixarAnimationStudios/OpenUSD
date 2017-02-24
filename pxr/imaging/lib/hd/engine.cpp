@@ -501,50 +501,6 @@ HdEngine::_InitCaps() const
     HdRenderContextCaps::GetInstance();
 }
 
-void 
-HdEngine::Draw(HdRenderIndex& index,
-               HdRenderPassSharedPtr const &renderPass,
-               HdRenderPassStateSharedPtr const &renderPassState)
-{
-    // DEPRECATED : use Execute() instead
-
-    // XXX: remaining client codes are
-    //
-    //   HdxIntersector::Query
-    //   Hd_TestDriver::Draw
-    //   UsdImaging_TestDriver::Draw
-    //   PxUsdGeomGL_TestDriver::Draw
-    //   HfkCurvesVMP::draw
-    //
-
-    HD_TRACE_FUNCTION();
-    _InitCaps();
-
-    // Sync the scene state prims
-    index.SyncSprims();
-
-    renderPass->Sync();
-    renderPassState->Sync();
-
-    // Process pending dirty lists.
-    index.SyncAll();
-
-    // Commit all pending source data.
-    _resourceRegistry->Commit();
-
-    if (index.GetChangeTracker().IsGarbageCollectionNeeded()) {
-        _resourceRegistry->GarbageCollect();
-        index.GetChangeTracker().ClearGarbageCollectionNeeded();
-        index.GetChangeTracker().MarkAllCollectionsDirty();
-    }
-
-    _resourceRegistry->GarbageCollectDispatchBuffers();
-
-    renderPassState->Bind();
-    renderPass->Execute(renderPassState);
-    renderPassState->Unbind();
-}
-
 void
 HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 {
@@ -693,6 +649,63 @@ HdEngine::_InitalizeDefaultGalDelegateId()
     GalDelegateRegistry &galRegistry = GalDelegateRegistry::GetInstance();
 
     _defaultGalDelegateId = galRegistry.GetDefaultDelegateId();
+}
+
+
+
+class Hd_DrawTask final : public HdTask
+{
+public:
+    Hd_DrawTask(HdRenderPassSharedPtr const &renderPass,
+                HdRenderPassStateSharedPtr const &renderPassState)
+    : HdTask()
+    , _renderPass(renderPass)
+    , _renderPassState(renderPassState)
+    {
+    }
+
+protected:
+    virtual void _Sync( HdTaskContext* ctx)
+    {
+        _renderPass->Sync();
+        _renderPassState->Sync();
+    }
+
+    virtual void _Execute(HdTaskContext* ctx)
+    {
+        _renderPassState->Bind();
+        _renderPass->Execute(_renderPassState);
+        _renderPassState->Unbind();
+    }
+
+private:
+    HdRenderPassSharedPtr _renderPass;
+    HdRenderPassStateSharedPtr _renderPassState;
+};
+
+void 
+HdEngine::Draw(HdRenderIndex& index,
+               HdRenderPassSharedPtr const &renderPass,
+               HdRenderPassStateSharedPtr const &renderPassState)
+{
+    // DEPRECATED : use Execute() instead
+
+    // XXX: remaining client codes are
+    //
+    //   HdxIntersector::Query
+    //   Hd_TestDriver::Draw
+    //   UsdImaging_TestDriver::Draw
+    //   PxUsdGeomGL_TestDriver::Draw
+    //   HfkCurvesVMP::draw
+    //
+    HD_TRACE_FUNCTION();
+
+    // Create Dummy task to use with Execute API.
+    HdTaskSharedPtrVector tasks;
+    tasks.push_back(boost::make_shared<Hd_DrawTask>(renderPass,
+                                                    renderPassState));
+
+    Execute(index, tasks);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
