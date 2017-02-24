@@ -138,6 +138,8 @@ pxr_shared_library(${PXR_PACKAGE}
 
     RESOURCE_FILES
         AEpxrUsdProxyShapeTemplate.mel
+        out_pxrUsdProxyShape.xpm
+        out_pxrUsdReferenceAssembly.xpm
         usdMaya.mel
         usdTranslatorExport.mel
         usdTranslatorImport.mel
