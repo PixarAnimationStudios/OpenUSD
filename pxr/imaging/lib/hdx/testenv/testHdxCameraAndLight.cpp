@@ -69,7 +69,6 @@ static void CameraAndLightTest()
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->hull)));
 
-    index.SyncSprims();
     engine.Draw(index, renderPass, renderPassState);
 
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
@@ -78,7 +77,6 @@ static void CameraAndLightTest()
     delegate.SetCamera(camera, GfMatrix4d(2), GfMatrix4d(2));
     tracker.MarkSprimDirty(camera, HdxCamera::DirtyMatrices);
 
-    index.SyncSprims();
     engine.Draw(index, renderPass, renderPassState);
 
     // batch should not be rebuilt
@@ -90,7 +88,6 @@ static void CameraAndLightTest()
                                                 HdTokens->refined)));
     tracker.MarkSprimDirty(light, HdxLight::DirtyCollection);
 
-    index.SyncSprims();
     engine.Draw(index, renderPass, renderPassState);
 
     // batch rebuilt
@@ -102,7 +99,6 @@ static void CameraAndLightTest()
                                                 HdTokens->refined)));
     tracker.MarkSprimDirty(light, HdxLight::DirtyCollection);
 
-    index.SyncSprims();
     engine.Draw(index, renderPass, renderPassState);
 
     // batch should not be rebuilt
