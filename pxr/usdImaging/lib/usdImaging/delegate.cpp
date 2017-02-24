@@ -2268,6 +2268,7 @@ UsdImagingDelegate::PopulateSelection(SdfPath const &path,
                                       int instanceIndex,
                                       HdxSelectionSharedPtr const &result)
 {
+    HD_TRACE_FUNCTION();
     SdfPath usdPath = GetPathForUsd(path);
     _AdapterSharedPtr const& adapter = _AdapterLookupByPath(usdPath);
     bool added = false;
@@ -2279,19 +2280,41 @@ UsdImagingDelegate::PopulateSelection(SdfPath const &path,
     }
 
     if (adapter) {
-        // prim, or instancer
+        // Prim, or instancer
         return adapter->PopulateSelection(usdPath, instanceIndices, result);
     } else {
-        // subtree (path doesnt' exist in the renderIndex)
-
-        // XXX: GetRprimSubtree doesn't work for native instancing.
-        SdfPathVector const& ids =
-            GetRenderIndex().GetRprimSubtree(path);  // this is an index path
-
-        TF_FOR_ALL (it, ids){
-            // XXX: TODO: should exclude prototypes
-            result->AddInstance(*it, instanceIndices);
+        // Select all rprims directly under the path (if any)
+        SdfPathVector const& rprimPaths = GetRenderIndex().GetRprimSubtree(path);
+        TF_FOR_ALL (rprimPath, rprimPaths){
+            result->AddRprim(*rprimPath);
             added = true;
+        }
+
+        // Iterate the adapter map to figure out what instancers exists 
+        // under the selected paths and populate the selection.
+        std::pair<UsdImagingDelegate::_PathAdapterMap::iterator,
+                  UsdImagingDelegate::_PathAdapterMap::iterator> 
+                  range = _pathAdapterMap.FindSubtreeRange(usdPath);
+        for (UsdImagingDelegate::_PathAdapterMap::iterator it = range.first; 
+             it != range.second; it++) {
+
+            // We are looking for instances of instancers, so if there is 
+            // no adapter let's ignore it and keep iterating
+            _AdapterSharedPtr const &adapter = it->second;
+            if (!adapter) {
+                continue;
+            }
+            
+            // Check if the there is an instancer associated to that path
+            // if so, let's populate the selection to that instance.
+            SdfPath instancePath = it->first;
+            SdfPath instancerPath = adapter->GetInstancer(instancePath);
+            if (!instancerPath.IsEmpty()) {
+                adapter->PopulateSelection(instancePath,
+                                           instanceIndices, 
+                                           result);
+                added = true;
+            }
         }
     }
     return added;
