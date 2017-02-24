@@ -57,7 +57,7 @@ class WorkArenaDispatcher
 public:
     /// Constructs a new dispatcher. The internal arena will mirror the
     /// global concurrency limit setting.
-    WORK_API WorkArenaDispatcher();
+    WorkArenaDispatcher() : _arena(WorkGetConcurrencyLimit()) {}
 
     /// Wait() for any pending tasks to complete, then destroy the dispatcher.
     WORK_API ~WorkArenaDispatcher();

@@ -27,12 +27,30 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+struct DummyTask : public tbb::task {
+    virtual tbb::task *execute() { return nullptr; }
+};
+}
+static int _ForceWorkerImpl()
+{
+    static tbb::task_group_context ctx(tbb::task_group_context::isolated);
+    tbb::task::enqueue(*new (tbb::task::allocate_root(ctx)) DummyTask);
+    return 0;
+}
+static inline void _ForceWorkerExistence()
+{
+    static int forceWorker = _ForceWorkerImpl();
+    (void)forceWorker;
+}
+
 WorkDispatcher::WorkDispatcher()
     : _context(
         tbb::task_group_context::isolated,
         tbb::task_group_context::concurrent_wait | 
         tbb::task_group_context::default_traits)
 {
+    _ForceWorkerExistence();
     // The concurrent_wait flag used with the task_group_context ensures
     // the ref count will remain at 1 after all predecessor tasks are
     // completed, so we don't need to keep resetting it in Wait().
