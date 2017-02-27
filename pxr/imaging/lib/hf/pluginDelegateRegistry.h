@@ -95,7 +95,7 @@ public:
     /// Returns true if a delegate has been registered for the given id.
     /// The delegate may not be loaded or been actually created yet.
     ///
-    bool IsRegisteredDelegate(const TfToken &delegateId) const;
+    bool IsRegisteredDelegate(const TfToken &delegateId);
 
 protected:
     // Must be derived.
