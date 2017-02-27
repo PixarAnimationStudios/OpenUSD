@@ -27,10 +27,20 @@
 
 #include <atomic>
 #include <cstdio>
+#include <thread>
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 struct _Tester {
+    _Tester() = default;
+    _Tester(_Tester const &) = delete;
+    _Tester &operator=(_Tester const &) = delete;
+    _Tester(_Tester &&other) : dtor(other.dtor) { other.dtor = nullptr; }
+    _Tester &operator=(_Tester &&other) {
+        dtor = other.dtor; other.dtor = nullptr;
+        return *this;
+    }
     ~_Tester() { if (dtor) { *dtor = true; } }
     std::atomic_bool *dtor = nullptr;
 };
@@ -40,7 +50,7 @@ void swap(_Tester &l, _Tester &r) { std::swap(l.dtor, r.dtor); }
 int
 main()
 {
-    constexpr size_t numIters = 100000;
+    constexpr size_t numIters = 10000;
     std::atomic_int counter;
     counter = 0;
 
@@ -48,7 +58,7 @@ main()
     for (size_t i = 0; i != numIters; ++i) {
         WorkRunDetachedTask([&counter]() { ++counter; });
     }
-    while (counter != numIters) { /* spin */ }
+    while (counter != numIters) { /* spin */ std::this_thread::yield(); }
     printf("OK\n");
 
     _Tester t;
@@ -58,14 +68,14 @@ main()
     t.dtor = &ranDtor;
     WorkSwapDestroyAsync(t);
     TF_AXIOM(!t.dtor);
-    while (!ranDtor) { /* spin */ }
+    while (!ranDtor) { /* spin */ std::this_thread::yield(); }
     printf("OK\n");
 
     printf("Test WorkMoveDestroyAsync... ");
     ranDtor = false;
     t.dtor = &ranDtor;
     WorkMoveDestroyAsync(t);
-    while (!ranDtor) { /* spin */ }
+    while (!ranDtor) { /* spin */ std::this_thread::yield(); }
     printf("OK\n");
 
     return 0;
