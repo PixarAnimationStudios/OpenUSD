@@ -78,7 +78,7 @@ Arch_InitTickTimer()
                 // The bogomips line is Millions of Instructions / sec
                 // So convert.
                 // The magic 2.0 is from Red Hat, which corresponds
-                // so modern Intel / AMD processors.
+                // to modern Intel / AMD processors.
                 cpuHz = 1e6 * atof(colon) / 2.0;
                 break;
             }
