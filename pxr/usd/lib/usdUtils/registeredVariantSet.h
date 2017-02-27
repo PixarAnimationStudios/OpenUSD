@@ -27,6 +27,7 @@
 /// \file usdUtils/registeredVariantSet.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdUtils/api.h"
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -94,4 +95,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDUTILS_REGISTEREDVARIANTSET_H
+#endif /* USDUTILS_REGISTEREDVARIANTSET_H */

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,38 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDUTILS_DEPENDENCIES_H
-#define USDUTILS_DEPENDENCIES_H
+#ifndef USDUTILS_API_H
+#define USDUTILS_API_H
 
-/// \file usdUtils/dependencies.h
-///
-/// Utilities for extracting asset dependencies from a USD file.
+#include "pxr/base/arch/export.h"
 
-#include "pxr/pxr.h"
-#include "pxr/usd/usdUtils/api.h"
+#if defined(USDUTILS_STATIC)
+#   define USDUTILS_API
+#   define USDUTILS_API_TEMPLATE_CLASS(...)
+#   define USDUTILS_API_TEMPLATE_STRUCT(...)
+#   define USDUTILS_LOCAL
+#else
+#   if defined(USDUTILS_EXPORTS)
+#       define USDUTILS_API ARCH_EXPORT
+#       define USDUTILS_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define USDUTILS_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define USDUTILS_API ARCH_IMPORT
+#       define USDUTILS_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define USDUTILS_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define USDUTILS_LOCAL ARCH_HIDDEN
+#endif
 
-#include <string>
-#include <vector>
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-
-/// Parses the file at \p filePath, identifying external references, and
-/// sorting them into separate type-based buckets. Sublayers are returned in
-/// the \p sublayers vector, references, whether prim references or values
-/// from asset path attributes, are returned in the \p references vector.
-/// Payload paths are returned in \p payloads.
-///
-/// \note No recursive chasing of dependencies is performed; that is the
-/// client's responsibility, if desired.
-USDUTILS_API
-void UsdUtilsExtractExternalReferences(
-    const std::string& filePath,
-    std::vector<std::string>* subLayers,
-    std::vector<std::string>* references,
-    std::vector<std::string>* payloads);
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // USDUTILS_DEPENDENCIES_H
+#endif
