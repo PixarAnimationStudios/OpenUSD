@@ -255,15 +255,6 @@ class MainWindow(QtGui.QMainWindow):
         self._deprecatedStatusFileName = '.usdviewrc'
         self._mallocTags  = parserData.mallocTagStats
 
-        self._propertyLegendCollapsed = False
-        self._nodeLegendCollapsed = False
-
-        self._propertyLegendHeightOffset = 50
-        self._nodeLegendHeightOffset = 100
-        self._legendButtonSelectedStyle = ('background: rgb(189, 155, 84); '
-                                           'color: rgb(227, 227, 227);')
-
-       
         MainWindow._renderer = parserData.renderer
         if MainWindow._renderer == 'simple':
             os.environ['HD_ENABLED'] = '0'
@@ -501,32 +492,17 @@ class MainWindow(QtGui.QMainWindow):
             action = getattr(self._ui,"actionLevel_" + str(i))
             self._ui.nodeViewDepthGroup.addAction(action)
 
+        # Start the help menus in collapsed position.
+        self._propertyLegendCollapsed = True
+        self._nodeLegendCollapsed = True
+        self._propertyLegendHeightOffset = 50
+        self._nodeLegendHeightOffset = 100
+        self._legendButtonSelectedStyle = ('background: rgb(189, 155, 84); '
+                                           'color: rgb(227, 227, 227);')
+
         # Configure stretch behavior for node and property panes
-        self._ui.propertyLegendContainer.setMaximumHeight(
-            self._propertyLegendHeightOffset)
         self._ui.propertyLegendContainer.setContentsMargins(5,0,5,0)
-        propertyLegendPolicy = self._ui.propertyLegendContainer.sizePolicy()
-        propertyLegendPolicy.setHorizontalPolicy(QtGui.QSizePolicy.Policy.Fixed)
-        propertyLegendPolicy.setVerticalPolicy(QtGui.QSizePolicy.Policy.Fixed)
-        self._ui.propertyLegendContainer.setSizePolicy(propertyLegendPolicy)
-
-        nodeViewPolicy = self._ui.nodeView.sizePolicy()
-        nodeViewPolicy.setVerticalPolicy(QtGui.QSizePolicy.Policy.Expanding)
-        self._ui.nodeView.setSizePolicy(nodeViewPolicy)
-
-        self._ui.nodeLegendContainer.setMaximumHeight(
-            self._nodeLegendHeightOffset)
         self._ui.nodeLegendContainer.setContentsMargins(5,0,5,0)
-        nodeLegendPolicy = self._ui.nodeLegendContainer.sizePolicy()
-        nodeLegendPolicy.setHorizontalPolicy(QtGui.QSizePolicy.Policy.Fixed)
-        nodeLegendPolicy.setVerticalPolicy(QtGui.QSizePolicy.Policy.Fixed)
-        self._ui.nodeLegendContainer.setSizePolicy(nodeLegendPolicy)
-
-        # set initial styling of '?' buttons
-        self._ui.nodeLegendQButton.setStyleSheet(
-            self._legendButtonSelectedStyle)
-        self._ui.propertyLegendQButton.setStyleSheet(
-            self._legendButtonSelectedStyle)
 
         # needed to set color of boxes
         graphicsScene = QtGui.QGraphicsScene()
@@ -628,13 +604,8 @@ class MainWindow(QtGui.QMainWindow):
         # setup animation objects for the primView and propertyView
         self._propertyLegendAnim = QtCore.QPropertyAnimation(
             self._ui.propertyLegendContainer, "maximumHeight")
-        self._propertyBrowserAnim = QtCore.QPropertyAnimation(
-            self._ui.propertyView, "maximumHeight")
-
         self._nodeLegendAnim = QtCore.QPropertyAnimation(
             self._ui.nodeLegendContainer, "maximumHeight")
-        self._nodeBrowserAnim = QtCore.QPropertyAnimation(
-            self._ui.nodeView, "maximumHeight")
 
         # set the context menu policy for the node browser and attribute
         # inspector headers. This is so we can have a context menu on the 
@@ -1894,26 +1865,18 @@ class MainWindow(QtGui.QMainWindow):
     #    |             |           |              |           |
     #    |----------->  -----------                +++++++++++
     def _toggleLegendWithBrowser(self, button, legendMinimized, 
-                                 legendHeight, legendResetHeight, legendAnim,
-                                 browserHeight, browserAnim, separatorHeight):
-
-
+                                 legendHeight, legendResetHeight, legendAnim):
         # We are dragging downward, so collapse the legend and expand the
         # attribute viewer panel to take up the remaining space.
         if legendMinimized:
             button.setStyleSheet('')
             self._setAnimValues(legendAnim, legendHeight, 0)
-            self._setAnimValues(browserAnim, browserHeight, 
-                                browserHeight+legendHeight)
         # We are expanding, so do the opposite.
         else:
             button.setStyleSheet(self._legendButtonSelectedStyle)
-            self._setAnimValues(legendAnim, 0, legendResetHeight)
-            self._setAnimValues(browserAnim, browserHeight,
-                                browserHeight-legendResetHeight+separatorHeight)
+            self._setAnimValues(legendAnim, legendHeight, legendResetHeight)
 
         legendAnim.start()
-        browserAnim.start()
 
     def _nodeLegendToggleCollapse(self):
         # Toggle status and update the button text accordingly
@@ -1922,10 +1885,7 @@ class MainWindow(QtGui.QMainWindow):
                                       self._nodeLegendCollapsed,
                                       self._ui.nodeLegendContainer.height(),
                                       self._nodeLegendHeightOffset,
-                                      self._nodeLegendAnim,
-                                      self._ui.nodeView.height(),
-                                      self._nodeBrowserAnim,
-                                      self._ui.nodeView.verticalScrollBar().height())
+                                      self._nodeLegendAnim)
 
     def _propertyLegendToggleCollapse(self):
         self._propertyLegendCollapsed = not self._propertyLegendCollapsed
@@ -1933,10 +1893,7 @@ class MainWindow(QtGui.QMainWindow):
                                       self._propertyLegendCollapsed,
                                       self._ui.propertyLegendContainer.height(), 
                                       self._propertyLegendHeightOffset,
-                                      self._propertyLegendAnim,
-                                      self._ui.propertyView.height(),
-                                      self._propertyBrowserAnim,
-                                      self._ui.propertyView.verticalScrollBar().height())
+                                      self._propertyLegendAnim)
 
     def _attrViewFindNext(self):
         self._ui.propertyView.clearSelection()

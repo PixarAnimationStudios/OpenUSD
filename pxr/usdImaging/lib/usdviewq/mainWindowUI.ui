@@ -182,12 +182,18 @@
 
          <item>
             <widget class="QWidget" name="nodeLegendContainer">
-                 <property name="maximumSize">
-                     <size>
-                         <width>400</width>
-                         <height>100</height>
-                     </size>
-                 </property>
+                <property name="maximumSize">
+                    <size>
+                        <width>400</width>
+                        <height>0</height>
+                    </size>
+                </property>
+                <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                   </sizepolicy>
+                </property>
                 <layout class="QVBoxLayout" name="nodeLegendLayoutContainer">
                 <item>
                 <layout class="QGridLayout" name="nodeLegendLayout">
@@ -368,7 +374,13 @@
            </item>
 
            <item>
-            <widget class="QToolButton" name="nodeLegendQButton">
+            <widget class="QPushButton" name="nodeLegendQButton">
+             <property name="maximumSize">
+              <size>
+               <width>32</width>
+               <height>24</height>
+              </size>
+             </property>
              <property name="iconSize">
               <size>
                <width>12</width>
@@ -586,12 +598,18 @@
          <!-- Property Value Inspector Key Begin -->
          <item>
              <widget class="QWidget" name="propertyLegendContainer">
-             <property name="maximumSize">
+                <property name="maximumSize">
                  <size>
                      <width>500</width>
-                     <height>100</height>
+                     <height>0</height>
                  </size>
-             </property>
+                </property>
+                <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                   </sizepolicy>
+                </property>
                  <layout class="QGridLayout" name="propertyLegendLayout">
                  <item row="0" column="0">
                      <widget class="QGraphicsView" name="propertyLegendColorFallback">
@@ -766,8 +784,14 @@
             <number>5</number>
            </property>
            <item>
-              <widget class="QToolButton" name="propertyLegendQButton">
-                  <property name="font">
+              <widget class="QPushButton" name="propertyLegendQButton">
+                <property name="maximumSize">
+                  <size>
+                   <width>32</width>
+                   <height>24</height>
+                  </size>
+                 </property>
+                 <property name="font">
                       <font>
                           <family>Gotham Rounded</family>
                           <pointsize>9</pointsize>
