@@ -137,6 +137,7 @@ pxr_shared_library(${PXR_PACKAGE}
         testenv/testUsdMayaUserExportedAttributes.py
         testenv/testUsdMetadataAttributeConverters.py
         testenv/testUsdReferenceAssemblyChangeRepresentations.py
+        testenv/testUsdReferenceAssemblySelection.py
 
     RESOURCE_FILES
         AEpxrUsdProxyShapeTemplate.mel
@@ -166,6 +167,7 @@ pxr_test_scripts(
         testenv/testUsdMayaUserExportedAttributes.py
         testenv/testUsdMetadataAttributeConverters.py
         testenv/testUsdReferenceAssemblyChangeRepresentations.py
+        testenv/testUsdReferenceAssemblySelection.py
 )
 
 pxr_install_test_dir(
@@ -379,6 +381,18 @@ pxr_install_test_dir(
 pxr_register_test(testUsdReferenceAssemblyChangeRepresentations
     COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdReferenceAssemblyChangeRepresentations"
     TESTENV testUsdReferenceAssemblyChangeRepresentations
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdReferenceAssemblySelectionTest
+    DEST testUsdReferenceAssemblySelection
+)
+pxr_register_test(testUsdReferenceAssemblySelection
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdReferenceAssemblySelection"
+    TESTENV testUsdReferenceAssemblySelection
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
