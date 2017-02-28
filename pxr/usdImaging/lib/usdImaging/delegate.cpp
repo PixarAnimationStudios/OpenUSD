@@ -1609,6 +1609,13 @@ UsdImagingDelegate::_ResyncProperty(SdfPath const& path,
     _ResyncPrim(path.GetPrimPath(), proxy);
 }
 
+void 
+UsdImagingDelegate::_ProcessPendingUpdates()
+{
+    // Change processing logic is all implemented in SetTime, so just
+    // redirect to that using our current time.
+    SetTime(_time);
+}
 
 // -------------------------------------------------------------------------- //
 // Data Collection
@@ -2269,6 +2276,18 @@ UsdImagingDelegate::PopulateSelection(SdfPath const &path,
                                       HdxSelectionSharedPtr const &result)
 {
     HD_TRACE_FUNCTION();
+
+    // Process any pending path resyncs/updates first to ensure all
+    // adapters are up-to-date. Note that this can't just be a call to
+    // _ProcessChangesForTimeUpdate, since that won't mark any rprims as
+    // dirty.
+    //
+    // XXX: 
+    // It feels a bit unsatisfying to have to do this here. UsdImagingDelegate
+    // should provide better guidance about when scene description changes are 
+    // handled.
+    _ProcessPendingUpdates();
+
     SdfPath usdPath = GetPathForUsd(path);
     _AdapterSharedPtr const& adapter = _AdapterLookupByPath(usdPath);
     bool added = false;

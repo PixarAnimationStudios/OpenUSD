@@ -435,6 +435,10 @@ private:
     // reconstructed for all prims below \p rootPath.
     void _ResyncPrim(SdfPath const& rootPath, UsdImagingIndexProxy* proxy);
 
+    // Process all pending updates, ensuring that rprims are marked dirty
+    // as needed.
+    void _ProcessPendingUpdates();
+
     // ---------------------------------------------------------------------- //
     // Usd Data-Access Helper Methods
     // ---------------------------------------------------------------------- //
