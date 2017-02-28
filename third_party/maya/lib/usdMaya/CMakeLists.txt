@@ -129,6 +129,7 @@ pxr_shared_library(${PXR_PACKAGE}
         testenv/testUsdImportCamera.py
         testenv/testUsdImportColorSets.py
         testenv/testUsdImportFrameRange.py
+        testenv/testUsdImportNestedAssemblyAnimation.py
         testenv/testUsdImportSessionLayer.py
         testenv/testUsdImportUVSets.py
         testenv/testUsdMayaGetVariantSetSelections.py
@@ -157,6 +158,7 @@ pxr_test_scripts(
         testenv/testUsdImportCamera.py
         testenv/testUsdImportColorSets.py
         testenv/testUsdImportFrameRange.py
+        testenv/testUsdImportNestedAssemblyAnimation.py
         testenv/testUsdImportSessionLayer.py
         testenv/testUsdImportUVSets.py
         testenv/testUsdMayaGetVariantSetSelections.py
@@ -281,6 +283,18 @@ pxr_install_test_dir(
 pxr_register_test(testUsdImportFrameRange
     COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportFrameRange"
     TESTENV testUsdImportFrameRange
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdImportNestedAssemblyAnimationTest
+    DEST testUsdImportNestedAssemblyAnimation
+)
+pxr_register_test(testUsdImportNestedAssemblyAnimation
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportNestedAssemblyAnimation"
+    TESTENV testUsdImportNestedAssemblyAnimation
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
