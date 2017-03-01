@@ -3583,7 +3583,8 @@ class MainWindow(QtGui.QMainWindow):
 
         # Populate the treeview with items from the prim index.
         index = prim.GetPrimIndex()
-        WalkNodes(treeWidget, index.rootNode)
+        if index.IsValid():
+            WalkNodes(treeWidget, index.rootNode)
 
 
     def _updateLayerStackView(self, obj=None):
