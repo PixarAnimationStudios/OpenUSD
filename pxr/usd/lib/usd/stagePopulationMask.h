@@ -66,6 +66,34 @@ public:
     All() {
         return UsdStagePopulationMask().Add(SdfPath::AbsoluteRootPath());
     }
+
+    /// Construct an empty mask that includes no paths.
+    UsdStagePopulationMask() = default;
+
+    UsdStagePopulationMask(UsdStagePopulationMask const &) = default;
+    UsdStagePopulationMask(UsdStagePopulationMask &&) = default;
+    UsdStagePopulationMask &operator=(UsdStagePopulationMask const &) = default;
+    UsdStagePopulationMask &operator=(UsdStagePopulationMask &&) = default;
+
+    /// Construct a mask from the range of paths [f, l).  All paths in the range
+    /// must be absolute prim paths or the absolute root path. (See
+    /// SdfPath::IsAbsolutePath, SdfPath::IsAbsoluteRootOrPrimPath).
+    template <class Iter>
+    explicit UsdStagePopulationMask(Iter f, Iter l) : _paths(f, l) {
+        _ValidateAndNormalize();
+    }
+
+    /// Construct a mask from \p paths.  All paths must be absolute prim paths
+    /// or the absolute root path.  (See SdfPath::IsAbsolutePath,
+    /// SdfPath::IsAbsoluteRootOrPrimPath).
+    explicit UsdStagePopulationMask(std::vector<SdfPath> const &paths) :
+        UsdStagePopulationMask(std::vector<SdfPath>(paths)) {};
+
+    /// Construct a mask from \p paths.  All paths must be absolute prim paths
+    /// or the absolute root path.  (See SdfPath::IsAbsolutePath,
+    /// SdfPath::IsAbsoluteRootOrPrimPath).
+    USD_API
+    explicit UsdStagePopulationMask(std::vector<SdfPath> &&paths);
     
     /// Return a mask that is the union of \p l and \p r.
     USD_API
@@ -81,6 +109,17 @@ public:
     USD_API
     UsdStagePopulationMask GetUnion(SdfPath const &path) const;
  
+    /// Return a mask that is the intersection of \p l and \p r.
+    USD_API
+    static UsdStagePopulationMask
+    Intersection(UsdStagePopulationMask const &l,
+                 UsdStagePopulationMask const &r);
+
+    /// Return a mask that is the intersection of this and \p other.
+    USD_API
+    UsdStagePopulationMask
+    GetIntersection(UsdStagePopulationMask const &other) const;
+
     /// Return true if this mask is a superset of \p other.  That is, if this
     /// mask includes at least every path that \p other includes.
     USD_API
@@ -145,6 +184,8 @@ public:
     }
 
 private:
+    USD_API void _ValidateAndNormalize();
+    
     std::vector<SdfPath> _paths;
 };
 

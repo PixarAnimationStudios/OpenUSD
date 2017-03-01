@@ -30,6 +30,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+UsdStagePopulationMask::UsdStagePopulationMask(std::vector<SdfPath> &&paths)
+    : _paths(std::move(paths))
+{
+    _ValidateAndNormalize();
+}
 
 UsdStagePopulationMask
 UsdStagePopulationMask::Union(UsdStagePopulationMask const &l,
@@ -93,6 +98,50 @@ UsdStagePopulationMask::GetUnion(SdfPath const &path) const
     return Union(*this, other);
 }
 
+UsdStagePopulationMask
+UsdStagePopulationMask::Intersection(UsdStagePopulationMask const &l,
+                                     UsdStagePopulationMask const &r)
+{
+    UsdStagePopulationMask result;
+
+    result._paths.reserve(std::min(l._paths.size(), r._paths.size()));
+
+    auto lcur = l._paths.begin(), lend = l._paths.end();
+    auto rcur = r._paths.begin(), rend = r._paths.end();
+
+    // Step through both lists in order, merging as we go, and including paths
+    // prefixed by others.
+    while (lcur != lend && rcur != rend) {
+        if (rcur->HasPrefix(*lcur)) {
+            do { result._paths.push_back(*rcur++); }
+            while (rcur != rend && rcur->HasPrefix(*lcur));
+            ++lcur;
+        }
+        else if (lcur->HasPrefix(*rcur)) {
+            do { result._paths.push_back(*lcur++); }
+            while (lcur != lend && lcur->HasPrefix(*rcur));
+            ++rcur;
+        }
+        else {
+            if (*lcur < *rcur) {
+                ++lcur;
+            }
+            else {
+                ++rcur;
+            }
+        }
+    }
+
+    return result;
+}
+
+UsdStagePopulationMask
+UsdStagePopulationMask
+::GetIntersection(UsdStagePopulationMask const &other) const
+{
+    return Intersection(*this, other);
+}
+
 bool
 UsdStagePopulationMask::Includes(UsdStagePopulationMask const &other) const
 {
@@ -136,6 +185,20 @@ std::vector<SdfPath>
 UsdStagePopulationMask::GetPaths() const
 {
     return _paths;
+}
+
+void
+UsdStagePopulationMask::_ValidateAndNormalize()
+{
+    // Check that all paths are valid.
+    for (auto const &path: _paths) {
+        if (!path.IsAbsolutePath() || !path.IsAbsoluteRootOrPrimPath()) {
+            TF_CODING_ERROR("Invalid path <%s>; must be an absolute prim path "
+                            "or the absolute root path", path.GetText());
+            return;
+        }
+    }
+    SdfPath::RemoveDescendentPaths(&_paths);
 }
 
 std::ostream &

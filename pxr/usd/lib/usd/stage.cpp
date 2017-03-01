@@ -2508,7 +2508,7 @@ UsdStage::_ComposeSubtreesInParallel(
         Usd_PrimDataPtr p = prims[i];
         _dispatcher->Run(
             &UsdStage::_ComposeSubtreeImpl, this, p, p->GetParent(),
-            &_populationMask,
+            p->IsInMaster() ? nullptr : &_populationMask,
             primIndexPaths ? (*primIndexPaths)[i] : p->GetPath());
     }
 
@@ -3609,7 +3609,9 @@ UsdStage::_ComputeSubtreesToRecompose(
             // parent to find the range of siblings.
 
             // Recompose parent's list of children.
-            _ComposeChildren(parentIt->second.get(), &_populationMask,
+            auto parent = parentIt->second.get();
+            _ComposeChildren(parent,
+                             parent->IsInMaster() ? nullptr : &_populationMask,
                              /*recurse=*/false);
 
             // Recompose the subtree for each affected sibling.
@@ -3695,8 +3697,32 @@ UsdStage::_ComposePrimIndexesInParallel(
     const std::string& context,
     Usd_InstanceChanges* instanceChanges)
 {
-    TF_DEBUG(USD_COMPOSITION).Msg(
-        "Composing prim indexes: %s\n", TfStringify(primIndexPaths).c_str());
+    if (TfDebug::IsEnabled(USD_COMPOSITION)) {
+        // Ensure not too much spew if primIndexPaths is big.
+        constexpr size_t maxPaths = 16;
+        std::vector<SdfPath> dbgPaths(
+            primIndexPaths.begin(),
+            primIndexPaths.begin() + std::min(maxPaths, primIndexPaths.size()));
+        string msg = TfStringPrintf(
+            "Composing prim indexes: %s%s\n",
+            TfStringify(dbgPaths).c_str(), primIndexPaths.size() > maxPaths ?
+            TfStringPrintf(
+                " (and %zu more)", primIndexPaths.size() - maxPaths).c_str() :
+            "");
+        TF_DEBUG(USD_COMPOSITION).Msg("%s", msg.c_str());
+    }
+
+    std::vector<SdfPath> const *pathsToCompose = &primIndexPaths;
+
+    // If we have a population mask, take the intersection of the requested
+    // paths with the stage's population mask, and only compute those.
+    static auto allMask = UsdStagePopulationMask::All();
+    vector<SdfPath> maskedPaths;
+    if (GetPopulationMask() != allMask) {
+        maskedPaths = UsdStagePopulationMask(primIndexPaths).
+            GetIntersection(GetPopulationMask()).GetPaths();
+        pathsToCompose = &maskedPaths;
+    }
 
     // Ask Pcp to compute all the prim indexes in parallel, stopping at
     // prim indexes that won't be used by the stage.
@@ -3704,19 +3730,19 @@ UsdStage::_ComposePrimIndexesInParallel(
 
     if (includeRule == _IncludeAllDiscoveredPayloads) {
         _cache->ComputePrimIndexesInParallel(
-            primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
+            *pathsToCompose, &errs, _NameChildrenPred(_instanceCache.get()),
             [](const SdfPath &) { return true; },
             "Usd", _mallocTagID);
     }
     else if (includeRule == _IncludeNoDiscoveredPayloads) {
         _cache->ComputePrimIndexesInParallel(
-            primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
+            *pathsToCompose, &errs, _NameChildrenPred(_instanceCache.get()),
             [](const SdfPath &) { return false; },
             "Usd", _mallocTagID);
     }
     else if (includeRule == _IncludeNewPayloadsIfAncestorWasIncluded) {
         _cache->ComputePrimIndexesInParallel(
-            primIndexPaths, &errs, _NameChildrenPred(_instanceCache.get()),
+            *pathsToCompose, &errs, _NameChildrenPred(_instanceCache.get()),
             _IncludeNewlyDiscoveredPayloadsPredicate(this),
             "Usd", _mallocTagID);
     }
@@ -3916,9 +3942,7 @@ _GenerateFlattenedMasterPath(const std::vector<UsdPrim>& masters)
             while (stage->GetPrimAtPath(flattenedMasterPath)) {
                 flattenedMasterPath = generatePathName();
             }
-
-            masterToFlattened.emplace(make_pair(
-                masterPrimPath, flattenedMasterPath));
+            masterToFlattened.emplace(masterPrimPath, flattenedMasterPath);
         } else {
             flattenedMasterPath = masterPathLookup->second;
         }     
