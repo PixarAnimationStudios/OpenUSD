@@ -24,9 +24,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/daemon.h"
+
+#include <errno.h>
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 #include <stdio.h>
-#include <errno.h>
 #include <signal.h>
 #include <sys/param.h>
 #include <stdlib.h>
