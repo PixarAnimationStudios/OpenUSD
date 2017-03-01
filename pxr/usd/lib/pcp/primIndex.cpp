@@ -876,9 +876,11 @@ struct Pcp_PrimIndexer
     }
 
     // Add this node and its children to the task queues.  
-    void _AddTasksForNodeRecursively(const PcpNodeRef& n, 
-                                     bool skipCompletedNodes,
-                                     bool isUsd) 
+    void _AddTasksForNodeRecursively(
+        const PcpNodeRef& n, 
+        bool skipCompletedNodesForAncestralOpinions,
+        bool skipCompletedNodesForImpliedSpecializes,
+        bool isUsd) 
     {
 #ifdef PCP_DIAGNOSTIC_VALIDATION
         TF_VERIFY(seen.count(n) == 0, "Already processed <%s>",
@@ -887,80 +889,104 @@ struct Pcp_PrimIndexer
 #endif // PCP_DIAGNOSTIC_VALIDATION
 
         TF_FOR_ALL(child, Pcp_GetChildrenRange(n)) {
-            _AddTasksForNodeRecursively(*child, skipCompletedNodes, isUsd);
+            _AddTasksForNodeRecursively(
+                *child, 
+                skipCompletedNodesForAncestralOpinions, 
+                skipCompletedNodesForImpliedSpecializes, isUsd);
         }
 
         // If the node does not have specs or cannot contribute specs,
         // we can avoid even enqueueing certain kinds of tasks that will
         // end up being no-ops.
         bool contributesSpecs = n.HasSpecs() && n.CanContributeSpecs();
-        // If the caller tells us the new node and its children were
-        // already fully indexed, we do not need to re-scan them for
-        // these kinds of arcs.
-        if (!skipCompletedNodes) {
+
+        // If the caller tells us the new node and its children were already
+        // indexed, we do not need to re-scan them for certain arcs based on
+        // what was already completed.
+        if (skipCompletedNodesForImpliedSpecializes) {
+            // In this case, we only need to add tasks that come after 
+            // implied specializes.
             if (contributesSpecs) {
-                AddTask(Task(Task::Type::EvalNodeInherits, n));
-                AddTask(Task(Task::Type::EvalNodeSpecializes, n));
-                AddTask(Task(Task::Type::EvalNodeReferences, n));
-            }
-            if (!isUsd) {
-                AddTask(Task(Task::Type::EvalNodeRelocations, n));
+                if (evaluateVariants) {
+                    AddTask(Task(Task::Type::EvalNodeVariantSets, n));
+                }
             }
         }
-        if (contributesSpecs) {
-            AddTask(Task(Task::Type::EvalNodePayload, n));
-            if (evaluateVariants) {
-                AddTask(Task(Task::Type::EvalNodeVariantSets, n));
+        else {
+            if (!skipCompletedNodesForAncestralOpinions) {
+                // In this case, we only need to add tasks that weren't
+                // evaluated during the recursive prim indexing for
+                // ancestral opinions.
+                if (contributesSpecs) {
+                    AddTask(Task(Task::Type::EvalNodeInherits, n));
+                    AddTask(Task(Task::Type::EvalNodeSpecializes, n));
+                    AddTask(Task(Task::Type::EvalNodeReferences, n));
+                }
+                if (!isUsd) {
+                    AddTask(Task(Task::Type::EvalNodeRelocations, n));
+                }
             }
-        }
-        if (!isUsd && n.GetArcType() == PcpArcTypeRelocate) {
-            AddTask(Task(Task::Type::EvalImpliedRelocations, n));
+            if (contributesSpecs) {
+                AddTask(Task(Task::Type::EvalNodePayload, n));
+                if (evaluateVariants) {
+                    AddTask(Task(Task::Type::EvalNodeVariantSets, n));
+                }
+            }
+            if (!isUsd && n.GetArcType() == PcpArcTypeRelocate) {
+                AddTask(Task(Task::Type::EvalImpliedRelocations, n));
+            }
         }
     }
 
-    void AddTasksForNode(const PcpNodeRef& n, 
-                         bool skipCompletedNodes = false,
-                         bool skipImpliedSpecializes = false) {
+    void AddTasksForNode(
+        const PcpNodeRef& n, 
+        bool skipCompletedNodesForAncestralOpinions = false,
+        bool skipCompletedNodesForImpliedSpecializes = false) {
 
         // Any time we add an edge to the graph, we may need to update
         // implied class edges.
-        if (PcpIsClassBasedArc(n.GetArcType())) {
-            // The new node is itself class-based.  Find the starting
-            // prim of the chain of classes the node is a part of, and 
-            // propagate the entire chain as a single unit.
-            if (PcpNodeRef base = _FindStartingNodeForImpliedClasses(n)) {
-                AddTask(Task(Task::Type::EvalImpliedClasses, base));
-            }
-        } else if (_HasClassBasedChild(n)) {
-            // The new node is not class-based -- but it has class-based
-            // children.  Such children represent inherits found during the
-            // recursive computation of the node's subgraph.  We need to
-            // pick them up and continue propagating them now that we are
-            // merging the subgraph into the parent graph.
-            AddTask(Task(Task::Type::EvalImpliedClasses, n));
-        }
-        if (!skipImpliedSpecializes && evaluateImpliedSpecializes) {
-            if (PcpNodeRef base = _FindStartingNodeForImpliedSpecializes(n)) {
-                // We're adding a new specializes node or a node beneath
-                // a specializes node.  Add a task to propagate the subgraph
-                // beneath this node to the appropriate location.
-                AddTask(Task(Task::Type::EvalImpliedSpecializes, base));
-            }
-            else if (_HasSpecializesChild(n)) {
-                // The new node is not a specializes node or beneath a
-                // specializes node, but has specializes children.
-                // Such children represent arcs found during the recursive 
-                // computation of the node's subgraph.  We need to pick them 
-                // up and continue propagating them now that we are
+        if (!skipCompletedNodesForImpliedSpecializes) {
+            if (PcpIsClassBasedArc(n.GetArcType())) {
+                // The new node is itself class-based.  Find the starting
+                // prim of the chain of classes the node is a part of, and 
+                // propagate the entire chain as a single unit.
+                if (PcpNodeRef base = _FindStartingNodeForImpliedClasses(n)) {
+                    AddTask(Task(Task::Type::EvalImpliedClasses, base));
+                }
+            } else if (_HasClassBasedChild(n)) {
+                // The new node is not class-based -- but it has class-based
+                // children.  Such children represent inherits found during the
+                // recursive computation of the node's subgraph.  We need to
+                // pick them up and continue propagating them now that we are
                 // merging the subgraph into the parent graph.
-                AddTask(Task(Task::Type::EvalImpliedSpecializes, n));
+                AddTask(Task(Task::Type::EvalImpliedClasses, n));
+            }
+            if (evaluateImpliedSpecializes) {
+                if (PcpNodeRef base = 
+                    _FindStartingNodeForImpliedSpecializes(n)) {
+                    // We're adding a new specializes node or a node beneath
+                    // a specializes node.  Add a task to propagate the subgraph
+                    // beneath this node to the appropriate location.
+                    AddTask(Task(Task::Type::EvalImpliedSpecializes, base));
+                }
+                else if (_HasSpecializesChild(n)) {
+                    // The new node is not a specializes node or beneath a
+                    // specializes node, but has specializes children.
+                    // Such children represent arcs found during the recursive 
+                    // computation of the node's subgraph.  We need to pick them 
+                    // up and continue propagating them now that we are
+                    // merging the subgraph into the parent graph.
+                    AddTask(Task(Task::Type::EvalImpliedSpecializes, n));
+                }
             }
         }
 
         // Recurse over all of the rest of the nodes.  (We assume that any
         // embedded class hierarchies have already been propagated to
         // the top node n, letting us avoid redundant work.)
-        _AddTasksForNodeRecursively(n, skipCompletedNodes, inputs.usd);
+        _AddTasksForNodeRecursively(
+            n, skipCompletedNodesForAncestralOpinions, 
+            skipCompletedNodesForImpliedSpecializes, inputs.usd);
 
         _DebugPrintTasks("After AddTasksForNode");
     }
@@ -1206,7 +1232,7 @@ _AddArc(
     bool includeAncestralOpinions,
     bool requirePrimAtTarget,
     bool skipDuplicateNodes,
-    bool skipImpliedSpecializes,
+    bool skipImpliedSpecializesCompletedNodes,
     Pcp_PrimIndexer *indexer )
 {
     PCP_GRAPH_PHASE(
@@ -1225,7 +1251,7 @@ _AddArc(
         "includeAncestralOpinions: %s\n"
         "requirePrimAtTarget: %s\n"
         "skipDuplicateNodes: %s\n"
-        "skipImpliedSpecializes: %s\n\n",
+        "skipImpliedSpecializesCompletedNodes: %s\n\n",
         origin ? Pcp_FormatSite(origin.GetSite()).c_str() : "<None>",
         arcSiblingNum,
         namespaceDepth,
@@ -1233,7 +1259,7 @@ _AddArc(
         includeAncestralOpinions ? "true" : "false",
         requirePrimAtTarget ? "true" : "false",
         skipDuplicateNodes ? "true" : "false",
-        skipImpliedSpecializes ? "true" : "false");
+        skipImpliedSpecializesCompletedNodes ? "true" : "false");
 
     if (!TF_VERIFY(!mapExpr.IsNull())) {
         return PcpNodeRef();
@@ -1468,9 +1494,10 @@ _AddArc(
     // If we evaluated ancestral opinions, it it means the nested
     // call to Pcp_BuildPrimIndex() has already evaluated refs, payloads,
     // and inherits on this subgraph, so we can skip those tasks.
-    const bool skipCompletedNodes = includeAncestralOpinions;
+    const bool skipAncestralCompletedNodes = includeAncestralOpinions;
     indexer->AddTasksForNode(
-        newNode, skipCompletedNodes, skipImpliedSpecializes);
+        newNode, skipAncestralCompletedNodes, 
+        skipImpliedSpecializesCompletedNodes);
 
     // If requested, recursively check if there is a prim spec at the 
     // targeted site or at any of its descendants. If there isn't, 
