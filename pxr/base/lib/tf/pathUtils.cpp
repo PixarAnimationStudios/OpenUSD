@@ -35,6 +35,7 @@
 #include <boost/scoped_array.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <errno.h>
 #include <limits.h>
 #include <string>
@@ -187,13 +188,34 @@ TfNormPath(string const &inPath)
     // single backslashes.  Note that we don't correctly handle UNC paths
     // or paths that start with \\? (which allow longer paths).
     string path = TfStringReplace(inPath, "/", "\\");
-    path = TfStringReplace(path, "\\\\", "\\");
+    path.erase(std::unique(path.begin(), path.end(),
+                           [](char a, char b){ return a == b && a == '\\'; }),
+               path.end());
     char result[ARCH_PATH_MAX];
     if (PathCanonicalize(result, path.c_str())) {
         // Convert backslashes to forward slashes since we largely
         // assume forward slashes elsewhere.
         path = result;
         path = TfStringReplace(path, "\\", "/");
+
+        // Trim any trailing slashes, leaving a single slash if there is
+        // nothing but slashes and leaving the string untouched if there
+        // are no slashes.
+        auto i = path.find_last_not_of('/');
+        if (i != std::string::npos) {
+            path.erase(i + 1);
+        }
+        else if (!path.empty()) {
+            path.erase(1);
+        }
+
+        // Make sure drive letters are always lower-case out of TfNormPath on
+        // Windows -- this is so that we can be sure we can reliably use the
+        // paths as keys in tables, etc.
+        if (path.size() >= 2 && path[1] == ':' && std::isupper(path[0])) {
+            path[0] = std::tolower(path[0]);
+        }
+
         return path;
     }
     return inPath;
