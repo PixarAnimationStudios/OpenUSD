@@ -250,6 +250,16 @@ HdxDrawTarget::_SetAttachments(HdSceneDelegate *sceneDelegate,
 
     GlfGLContext::MakeCurrent(_drawTargetContext);
 
+
+    if (_drawTarget) {
+        // If we had a prior draw target, we need to garbage collect
+        // to clean up it's resources.
+        HdChangeTracker& changeTracker =
+                         sceneDelegate->GetRenderIndex().GetChangeTracker();
+
+        changeTracker.SetGarbageCollectionNeeded();
+    }
+
     // XXX: Discard old draw target and create a new one
     // This is necessary because a we have to clone the draw target into each
     // gl context.
