@@ -1088,7 +1088,12 @@ UsdMayaRepresentationProxyBase::_PushEditsToProxy()
         stage->GetSessionLayer()->GetSubLayerPaths().clear();
         stage->GetSessionLayer()->GetSubLayerPaths().push_back(
             _sessionSublayer->GetIdentifier());
-        
+
+        // Make the session sublayer the edit target before applying the Maya
+        // edits to ensure that we don't pollute other assemblies using the
+        // same layer(s).
+        UsdEditContext editContext(stage, _sessionSublayer);
+
         PxrUsdMayaEditUtil::ApplyEditsToProxy( refEdits, stage, proxyRootPrim, &failedEdits );
     }
     
