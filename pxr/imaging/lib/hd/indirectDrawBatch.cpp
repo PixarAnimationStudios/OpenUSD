@@ -1201,7 +1201,9 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
     GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
     binder.BindUniformui(HdTokens->ulocDrawCommandNumUints, 1, &drawCommandNumUints);
     binder.BindUniformf(HdTokens->ulocCullMatrix, 16, cullMatrix.GetArray());
-    binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+    if (IsEnabledGPUTinyPrimCulling()) {
+        binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+    }
 
     // run culling shader
     bool validProgram = true;
@@ -1314,7 +1316,9 @@ Hd_IndirectDrawBatch::_GPUFrustumCullingXFB(
     GfMatrix4f cullMatrix(renderPassState->GetCullMatrix());
     GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
     binder.BindUniformf(HdTokens->ulocCullMatrix, 16, cullMatrix.GetArray());
-    binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+    if (IsEnabledGPUTinyPrimCulling()) {
+        binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+    }
 
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0,
                      _dispatchBuffer->GetEntireResource()->GetId());
