@@ -126,6 +126,7 @@ pxr_shared_library(${PXR_PACKAGE}
         testenv/testUsdExportFrameOffset.py
         testenv/testUsdExportMesh.py
         testenv/testUsdExportRenderLayerMode.py
+        testenv/testUsdExportSelection.py
         testenv/testUsdExportUVSets.py
         testenv/testUsdImportAsAssemblies.py
         testenv/testUsdImportCamera.py
@@ -159,6 +160,7 @@ pxr_test_scripts(
         testenv/testUsdExportFrameOffset.py
         testenv/testUsdExportMesh.py
         testenv/testUsdExportRenderLayerMode.py
+        testenv/testUsdExportSelection.py
         testenv/testUsdExportUVSets.py
         testenv/testUsdImportAsAssemblies.py
         testenv/testUsdImportCamera.py
@@ -255,6 +257,18 @@ pxr_install_test_dir(
 pxr_register_test(testUsdExportRenderLayerMode
     COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportRenderLayerMode"
     TESTENV testUsdExportRenderLayerMode
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportSelectionTest
+    DEST testUsdExportSelection
+)
+pxr_register_test(testUsdExportSelection
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportSelection"
+    TESTENV testUsdExportSelection
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
