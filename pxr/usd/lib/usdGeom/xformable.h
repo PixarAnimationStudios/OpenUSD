@@ -595,6 +595,7 @@ public:
     /// When this returns true, all ops upto the last "!resetXformStack!" in
     /// xformOpOrder are ignored when computing the local transformation.
     /// 
+    USDGEOM_API
     bool GetResetXformStack() const;
 
     /// Reorder the already-existing transform ops on this prim.
