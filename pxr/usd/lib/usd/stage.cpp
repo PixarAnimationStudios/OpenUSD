@@ -4048,8 +4048,21 @@ UsdStage::_FlattenPrim(const UsdPrim &usdPrim,
     }
     
     _CopyMetadata(usdPrim, newPrim);
-    for (auto const &prop : usdPrim.GetAuthoredProperties()) {
-        _CopyProperty(prop, newPrim, masterToFlattened);
+
+    // In the case of flattening clips, we may have builtin attributes which aren't
+    // declared in the static scene topology, but may have a value in some
+    // clips that we want to relay into the flattened result.
+    // XXX: This should be removed if we fix GetProperties()
+    // and GetAuthoredProperties to consider clips.
+    auto hasValue = [](const UsdProperty& prop){
+        return prop.Is<UsdAttribute>()
+               && prop.As<UsdAttribute>().HasAuthoredValueOpinion();
+    };
+    
+    for (auto const &prop : usdPrim.GetProperties()) {
+        if (prop.IsAuthored() || hasValue(prop)) {
+            _CopyProperty(prop, newPrim, masterToFlattened);
+        }
     }
 }
 
