@@ -82,13 +82,16 @@ def _getFileFormat(path):
     return None
 
 def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
+    exitCode = 0
     command = _generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)
 
     # We are redirecting to stdout for the case where a user
     # provides an empty file and we have to use regular 'cat'
     # which doesn't offer the redirection usdcat does through --out
     with open(outPath) as outFile:
-        call(command, stdout=outFile) 
+        exitCode = call(command, stdout=outFile) 
+
+    return exitCode
 
 def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
     if composed:
@@ -97,7 +100,7 @@ def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
     if not os.access(fileName, os.W_OK):
         sys.exit('Error: Cannot write to %s, insufficient permissions' % fileName)
     
-    _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
+    return _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
 
 def _runDiff(baseline, comparison, compose, noeffect):
     from pxr import Tf
@@ -128,10 +131,13 @@ def _runDiff(baseline, comparison, compose, noeffect):
             sys.exit(pluginError % comparison)
 
         # Dump the contents of our files into the temporaries
-        _convertTo(baseline, tempBaseline.name, usdcatCmd, 
-                   flatten=compose, fmt=None)
-        _convertTo(comparison, tempComparison.name, usdcatCmd,
-                   flatten=compose, fmt=None)
+        convertError = 'Error: failed to convert from %s to %s.'
+        if _convertTo(baseline, tempBaseline.name, usdcatCmd, 
+                      flatten=compose, fmt=None) != 0:
+            sys.exit(convertError % (baseline, tempBaseline.name))
+        if _convertTo(comparison, tempComparison.name, usdcatCmd,
+                      flatten=compose, fmt=None) != 0:
+            sys.exit(convertError % (comparison, tempComparison.name)) 
 
         tempBaselineTimestamp = os.path.getmtime(tempBaseline.name)
         tempComparisonTimestamp = os.path.getmtime(tempComparison.name)
@@ -146,12 +152,13 @@ def _runDiff(baseline, comparison, compose, noeffect):
         # If we intend to edit either of the files
         if not noeffect:
             if tempBaselineChanged:
-                _tryEdit(baseline, tempBaseline.name, 
-                         usdcatCmd, baselineFileType, compose)
-
+                if _tryEdit(baseline, tempBaseline.name, 
+                            usdcatCmd, baselineFileType, compose) != 0:
+                    sys.exit(convertError % (baseline, tempBaseline.name))
             if tempComparisonChanged:
-                _tryEdit(comparison, tempComparison.name,
-                         usdcatCmd, comparisonFileType, compose)
+                if _tryEdit(comparison, tempComparison.name,
+                            usdcatCmd, comparisonFileType, compose) != 0:
+                    sys.exit(convertError % (comparison, tempComparison.name))
     return diffResult
 
 def _findFiles(args):
