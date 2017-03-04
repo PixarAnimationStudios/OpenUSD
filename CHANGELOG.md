@@ -1,5 +1,57 @@
 # Change Log
 
+## [0.7.4] - 2017-03-03
+
+USD now supports C++ namespaces. They are disabled by default in this release
+to ease transition, but we anticipate enabling them by default in the next 
+release. 
+
+Specify the `PXR_ENABLE_NAMESPACES` CMake option to enable namespaces.
+See documentation in [BUILDING.md](BUILDING.md#c-namespace-configuration) for more details.
+
+### Added
+- Added GfHalf type to represent half-precision numeric values. This type 
+  is currently an alias to the "half" type supplied by the ilmbase library 
+  USD is built against. This will be changed in an upcoming release to point 
+  to a version of "half" that is included in the USD codebase, which will
+  allow us to remove the USD core's dependency on ilmbase.
+- Added UsdShadeInput class to represent shader or NodeGraph input.
+  These are encoded as attributes in the "inputs:" namespace. By default, 
+  this encoding will not be written out via UsdShadeConnectableAPI unless 
+  the 'USD_SHADE_WRITE_NEW_ENCODING' environment variable is set.
+- Added "Composition" tab to usdview that allows users to inspect the 
+  composition structure of a selected prim.
+- Added tests for Hdx. These tests are currently not run as part of the unit 
+  test suite, but are being included for users to try on their platforms and 
+  to serve as example code.
+- Added icons for the USD assemblies in Maya.
+- Added initial implementation of Katana plugin for reading 
+  UsdGeomPointInstancer locations. 
+
+### Changed
+- CMake module now additionally looks for the pyside-uic binary under the name 
+  pyside-uic-2.7 to accommodate package managers on OSX.
+- Removed GLUT dependency.
+- Removed double-conversion dependency.
+- Modified all uses of "half" type from ilmbase to use new GfHalf type.
+- Renamed UsdShadeSubgraph to UsdShadeNodeGraph to conform with final
+  MaterialX terminology.
+- Numerous changes for in-progress work on refactoring Hydra to support render 
+  delegates.
+- Updated UI in usdview to display legends for text coloring in collapsible 
+  panes and to include more information.
+- The import UI in the Maya plugin now enables reading of anim data by default.
+- Updated API in Maya plugin that referred to "look" to "material".
+- Numerous changes for ongoing Mac and Windows porting efforts.
+
+### Fixed
+- Fixed several issues when building with C++ namespaces enabled.
+- Fixed bug with selection highlighting for instanced prims in usdview.
+- Fixed crash that occurred when an invalid color primvar was encountered while
+  using usdview's "simple" renderer.
+- Fixed issue with TF_REGISTRY_DEFINE* macros that caused build failures
+  for the Maya plugin on OSX. (Issue #162)
+
 ## [0.7.3] - 2017-02-05
 
 ### Added
