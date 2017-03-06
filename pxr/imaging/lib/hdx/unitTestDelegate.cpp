@@ -773,7 +773,7 @@ Hdx_UnitTestDelegate::AddSurfaceShader(SdfPath const &id,
                                        HdShaderParamVector const &params)
 {
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertShader<HdSurfaceShader>(this, id);
+    index.InsertSprim(HdPrimTypeTokens->shader, this, id);
     _surfaceShaders[id] = _SurfaceShader(source, params);
 }
 

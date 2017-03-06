@@ -38,8 +38,6 @@ find_package(Boost
         system
     REQUIRED
 )
-# --Double Conversion
-find_package(DoubleConversion REQUIRED)
 
 # --TBB
 find_package(TBB REQUIRED)
@@ -115,7 +113,6 @@ endif()
 
 if (PXR_BUILD_MAYA_PLUGIN)
     find_package(Maya REQUIRED)
-    find_package(GLUT REQUIRED)
 endif()
 
 if (PXR_BUILD_ALEMBIC_PLUGIN)

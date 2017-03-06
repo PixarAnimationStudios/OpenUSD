@@ -190,13 +190,6 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     //
     // Setup GL raster state
     //
-    glPushAttrib(GL_VIEWPORT_BIT |
-                 GL_ENABLE_BIT |
-                 GL_COLOR_BUFFER_BIT |
-                 GL_DEPTH_BUFFER_BIT |
-                 GL_STENCIL_BUFFER_BIT |
-                 GL_TEXTURE_BIT |
-                 GL_POLYGON_BIT);
 
     GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0,
                               GL_COLOR_ATTACHMENT1,
@@ -232,21 +225,13 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         glStencilOp(GL_KEEP,     // stencil failed
                     GL_KEEP,     // stencil passed, depth failed
                     GL_REPLACE); // stencil passed, depth passed
-        // Attempt to protect from GL state corruption.
-        glPushAttrib(GL_VIEWPORT_BIT |
-                     GL_ENABLE_BIT |
-                     GL_COLOR_BUFFER_BIT |
-                     GL_DEPTH_BUFFER_BIT |
-                     GL_STENCIL_BUFFER_BIT |
-                     GL_TEXTURE_BIT |
-                     GL_POLYGON_BIT);
 
         //
         // Condition the stencil buffer.
         //
         params.depthMaskCallback();
+        // we expect any GL state changes are restored.
 
-        glPopAttrib();
         // Disable stencil updates and setup the stencil test.
         glStencilFunc(GL_LESS, 0, 1);
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -274,6 +259,14 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         //
         // XXX: make intersector a Task
         engine->Draw(*_index, _renderPass, _renderPassState);
+
+        glDisable(GL_STENCIL_TEST);
+
+        if (convRstr) {
+            // XXX: this should come from Glew
+            #define GL_CONSERVATIVE_RASTERIZATION_NV 0x9346
+            glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        }
 
         // Restore
         glBindVertexArray(0);
@@ -308,6 +301,8 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
                     &depths[0]);
 
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     GLF_POST_PENDING_GL_ERRORS();
 
     if (result) {
@@ -316,15 +311,6 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
             std::move(depths), _index, params, viewport);
     }
 
-    //
-    // Restore all modified GL state
-    //
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glPopAttrib(); /* GL_VIEWPORT_BIT |
-                      GL_ENABLE_BIT |
-                      GL_COLOR_BUFFER_BIT
-                      GL_DEPTH_BUFFER_BIT
-                      GL_TEXTURE_BIT */
     drawTarget->Unbind();
     GLF_POST_PENDING_GL_ERRORS();
 

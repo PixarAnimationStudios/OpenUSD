@@ -195,14 +195,14 @@ GfFrustum::GetFOV(bool isFovVertical /* = false */)
 void
 GfFrustum::SetOrthographic(double left, double right,
                            double bottom, double top,
-                           double near, double far)
+                           double nearPlane, double farPlane)
 {
     _projectionType = GfFrustum::Orthographic;
 
     _window.SetMin(GfVec2d(left, bottom));
     _window.SetMax(GfVec2d(right, top));
-    _nearFar.SetMin(near);
-    _nearFar.SetMax(far);
+    _nearFar.SetMin(nearPlane);
+    _nearFar.SetMax(farPlane);
 
     _DirtyFrustumPlanes();
 }
@@ -210,7 +210,7 @@ GfFrustum::SetOrthographic(double left, double right,
 bool
 GfFrustum::GetOrthographic(double *left, double *right,
                            double *bottom, double *top,
-                           double *near, double *far) const
+                           double *nearPlane, double *farPlane) const
 {
     if (_projectionType != GfFrustum::Orthographic)
         return false;
@@ -220,8 +220,8 @@ GfFrustum::GetOrthographic(double *left, double *right,
     *bottom = _window.GetMin()[1];
     *top    = _window.GetMax()[1];
 
-    *near   = _nearFar.GetMin();
-    *far    = _nearFar.GetMax();
+    *nearPlane	= _nearFar.GetMin();
+    *farPlane   = _nearFar.GetMax();
 
     return true;
 }

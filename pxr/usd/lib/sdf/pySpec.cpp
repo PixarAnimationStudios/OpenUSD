@@ -48,7 +48,7 @@ _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */)
 std::string
 _SpecRepr(const bp::object& self, const SdfSpec* spec)
 {
-    if (not spec or spec->IsDormant() or not spec->GetLayer()) {
+    if (!spec || spec->IsDormant() || !spec->GetLayer()) {
         return "<dormant " + TfPyGetClassName(self) + ">";
     }
     else {
@@ -73,7 +73,7 @@ _RegisterHolderCreator(const std::type_info& ti, _HolderCreator creator)
         TF_CODING_ERROR("No TfType registered for type \"%s\"",
                         ArchGetDemangled(ti).c_str());
     }
-    else if (not _holderCreators->insert(std::make_pair(type, creator)).second){
+    else if (!_holderCreators->insert(std::make_pair(type, creator)).second){
         TF_CODING_ERROR("Duplicate conversion for \"%s\" ignored",
                         type.GetTypeName().c_str());
     }
@@ -93,7 +93,7 @@ _CreateHolder(const std::type_info& ti, const SdfSpec& spec)
         // Find the creator for the type and invoke it.
         _HolderCreatorMap::const_iterator i = _holderCreators->find(type);
         if (i == _holderCreators->end()) {
-            if (not type.IsUnknown()) {
+            if (!type.IsUnknown()) {
                 TF_CODING_ERROR("No conversion for registed for \"%s\"",
                                 type.GetTypeName().c_str());
             }

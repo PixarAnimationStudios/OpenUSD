@@ -24,6 +24,9 @@ pxr_shared_library(usdUtils
         stitch
         stitchClips
 
+    PUBLIC_HEADERS
+        api.h
+        
     CPPFILES
         moduleDeps.cpp
 

@@ -43,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 const char* const usdTranslatorImportDefaults =
         "shadingMode=GPrim Colors;"
-        "readAnimData=0;"
+        "readAnimData=1;"
         "useCustomFrameRange=0;"
         "assemblyRep=Collapsed";
 

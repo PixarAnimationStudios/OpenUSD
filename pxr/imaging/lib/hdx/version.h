@@ -28,6 +28,6 @@
 // 2  -> 3 : move simpleLightingShader to Hdx.
 // 3  -> 4 : move camera and light to Hdx.
 // 4  -> 5 : move drawTarget to Hdx.
-#define HDX_API  5
+#define HDX_API_VERSION  5
 
 #endif // HDX_VERSION_H

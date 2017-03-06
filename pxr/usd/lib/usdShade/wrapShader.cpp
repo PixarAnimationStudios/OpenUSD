@@ -136,6 +136,12 @@ WRAP_CUSTOM {
         .def("GetOutputs", &UsdShadeShader::GetOutputs,
              return_value_policy<TfPySequenceToList>())
 
+        .def("CreateInput", &UsdShadeShader::CreateInput,
+             (arg("name"), arg("type")))
+        .def("GetInput", &UsdShadeShader::GetInput, arg("name"))
+        .def("GetInputs", &UsdShadeShader::GetInputs,
+             return_value_policy<TfPySequenceToList>())
+
         ;
 
     implicitly_convertible<UsdShadeShader, UsdShadeConnectableAPI>();

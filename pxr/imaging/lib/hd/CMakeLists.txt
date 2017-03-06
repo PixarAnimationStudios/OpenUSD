@@ -78,6 +78,7 @@ pxr_shared_library(hd
         perfLog
         persistentBuffer
         points
+        primTypeIndex
         renderContextCaps
         renderDelegate
         renderDelegateRegistry
@@ -93,6 +94,7 @@ pxr_shared_library(hd
         rprimCollection
         rprimSharedData
         sceneDelegate
+        shader
         shaderCode
         shaderKey
         shaderParam
@@ -112,6 +114,7 @@ pxr_shared_library(hd
 
     PUBLIC_HEADERS
         enums.h
+        types.h
         version.h
 
     PRIVATE_CLASSES

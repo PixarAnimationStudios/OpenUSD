@@ -25,6 +25,7 @@
 #define USD_INHERITS_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -32,7 +33,6 @@
 #include "pxr/usd/sdf/path.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 SDF_DECLARE_HANDLES(SdfPrimSpec);
 
@@ -47,21 +47,24 @@ class UsdInherits {
     explicit UsdInherits(const UsdPrim& prim) : _prim(prim) {}
 
 public:
-
     /// Appends a path to the inheritPaths listOp at the current EditTarget.
+    USD_API
     bool AppendInherit(const SdfPath &primPath);
 
     /// Removes the specified path from the inheritPaths listOp at the
     /// current EditTarget.
+    USD_API
     bool RemoveInherit(const SdfPath &primPath);
 
     /// Removes the authored inheritPaths listOp edits at the current edit
     /// target.
+    USD_API
     bool ClearInherits();
 
     /// Explicitly set the inherited paths, potentially blocking weaker opinions
     /// that add or remove items, returning true on success, false if the edit
     /// could not be performed.
+    USD_API
     bool SetInherits(const SdfPathVector& items);
 
     /// Return the prim this object is bound to.
@@ -79,7 +82,6 @@ private:
     UsdPrim _prim;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //USD_INHERITS_H
+#endif // USD_INHERITS_H

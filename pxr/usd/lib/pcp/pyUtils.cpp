@@ -57,15 +57,15 @@ PcpVariantFallbackMapFromPython( const dict& d,
         std::string k;
         std::vector<std::string> v;
         
-        if (not _ExtractValue(key, &k)) {
+        if (!_ExtractValue(key, &k)) {
             TF_CODING_ERROR("unrecognized type for PcpVariantFallbackMap key");
             return false;
         }
-        if (not _ExtractValue(value, &v)) {
+        if (!_ExtractValue(value, &v)) {
             TF_CODING_ERROR("unrecognized type for PcpVariantFallbackMap val");
             return false;
         }
-        if (not k.empty() and not v.empty()) { 
+        if (!k.empty() && !v.empty()) { 
             (*result)[k] = v;
         }
     }

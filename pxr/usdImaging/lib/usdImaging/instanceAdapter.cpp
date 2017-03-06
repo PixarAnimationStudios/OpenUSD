@@ -134,10 +134,13 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
     // instancing.
     if (instancedPrimAdapter) {
         UsdTreeIterator treeIt(prim);
+
+        bool isLeafInstancer;
         const SdfPath protoPath = 
             _InsertProtoRprim(&treeIt, TfToken(),
                               instanceShaderBinding,
-                              SdfPath(), instancedPrimAdapter, index);
+                              SdfPath(), instancedPrimAdapter, index,
+                              &isLeafInstancer);
         instancePath = SdfPath();
 
         TF_WARN("The prim at path <%s> was directly instanced, but rendering "
@@ -198,10 +201,14 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
             //
             const TfToken protoName(TfStringPrintf(
                 "proto_%s_id%d", treeIt->GetName().GetText(), protoID++));
+
+            bool isLeafInstancer;
+
             const SdfPath protoPath = 
                 _InsertProtoRprim(&treeIt, protoName,
                                   instanceShaderBinding,
-                                  instancerPath, instancerAdapter, index);
+                                  instancerPath, instancerAdapter, index,
+                                  &isLeafInstancer);
                     
             // 
             // Update instancer data.
@@ -211,6 +218,10 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
             rproto.adapter = adapter;
             rproto.protoGroup = grp;
             ++primCount;
+
+            if (!isLeafInstancer) {
+                instancerData.childInstancers.insert(protoPath);
+            }
 
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
                 "[Add Instance NI] <%s>  %s (%s), adapter = %p\n",
@@ -284,10 +295,13 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(UsdTreeIterator* it,
                         SdfPath instanceShaderBinding,
                         SdfPath instancerPath,
                         UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
-                        UsdImagingIndexProxy* index)
+                        UsdImagingIndexProxy* index,
+                        bool *isLeafInstancer)
 {
     UsdPrim const& prim = **it;
     SdfPath protoPath;
+
+    *isLeafInstancer = true;
 
     // Talk to the prim's native adapter to do population and ShaderBinding
     // queries on our behalf.
@@ -335,6 +349,7 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(UsdTreeIterator* it,
         // we use populatedPath instead of prim.GetPath() so that prim adapter
         // can clone the prim if necessary (see PointInstancer)
         protoPath = populatedPath;
+        *isLeafInstancer = false;
     } else {
         protoPath = instancerPath.AppendProperty(protoName);
     }
@@ -363,7 +378,7 @@ UsdImagingInstanceAdapter::_IsChildPrim(UsdPrim const& prim,
 void 
 UsdImagingInstanceAdapter::TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      int requestedBits,
+                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
                                           instancerContext)
 {
@@ -403,8 +418,8 @@ UsdImagingInstanceAdapter::TrackVariabilityPrep(UsdPrim const& prim,
 void 
 UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  int requestedBits,
-                                  int* dirtyBits,
+                                  HdDirtyBits requestedBits,
+                                  HdDirtyBits* dirtyBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext)
 {
@@ -723,7 +738,7 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
     bool operator()(
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
-        int dirtyBits;
+        HdDirtyBits dirtyBits;
         TF_FOR_ALL(primIt, instanceContext) {
             if (adapter->_IsTransformVarying(
                     *primIt, 
@@ -753,7 +768,7 @@ void
 UsdImagingInstanceAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
                                    UsdTimeCode time,
-                                   int requestedBits,
+                                   HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const* 
                                        instancerContext)
 {
@@ -795,8 +810,8 @@ void
 UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
-                               int requestedBits,
-                               int* resultBits,
+                               HdDirtyBits requestedBits,
+                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const*)
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
@@ -1181,7 +1196,7 @@ struct UsdImagingInstanceAdapter::_UpdateInstanceMapFn
     bool IsVisibilityVarying(const std::vector<UsdPrim>& instanceContext)
     {
         TF_FOR_ALL(primIt, instanceContext) {
-            int dirtyBits;
+            HdDirtyBits dirtyBits;
             if (adapter->_IsVarying(*primIt, 
                            UsdGeomTokens->visibility, 
                            HdChangeTracker::DirtyVisibility,
@@ -1345,16 +1360,15 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
         // if it's not found, it may be an instance of other instancer.
         TF_FOR_ALL(instIt, _instancerData) {
             _InstancerData& inst = instIt->second;
-            TF_FOR_ALL (i, inst.primMap) {
-                if (i->first.GetPrimPath() == instancerPath) {
-                    // found.
+
+            if (inst.childInstancers.find(instancerPath) !=
+                inst.childInstancers.end()) {
                     return GetPathForInstanceIndex(instIt->first,
                                                    instanceIndex,
                                                    instanceCount,
                                                    absoluteInstanceIndex,
                                                    rprimPath,
                                                    instanceContext);
-                }
             }
         }
         TF_CODING_ERROR("Unknown instancer %s", instancerPath.GetText());

@@ -17,6 +17,9 @@ pxr_shared_library(usdHydra
         ptexTexture
         tokens
 
+    PUBLIC_HEADERS
+        api.h
+
     CPPFILES
         moduleDeps.cpp
 

@@ -25,6 +25,7 @@
 #define USD_COMMON_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -52,16 +53,22 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdStage);
 typedef UsdStagePtr UsdStageWeakPtr;
 
 /// Return a human-readable description.
+USD_API
 std::string UsdDescribe(const UsdObject &);
 /// \overload
+USD_API
 std::string UsdDescribe(const UsdStageRefPtr &);
 /// \overload
+USD_API
 std::string UsdDescribe(const UsdStageWeakPtr &);
 /// \overload
+USD_API
 std::string UsdDescribe(const UsdStage *);
 /// \overload
+USD_API
 std::string UsdDescribe(const UsdStage &);
 /// \overload
+USD_API
 std::string UsdDescribe(const UsdStageCache &);
 
 // XXX:
@@ -73,8 +80,8 @@ typedef std::map<class TfToken, VtValue,
 
 /// Returns true if the pipeline is configured to process / generate 
 /// USD only and stop generating tidScenes.
+USD_API
 bool UsdIsRetireLumosEnabled();
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

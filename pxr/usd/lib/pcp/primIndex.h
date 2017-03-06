@@ -25,6 +25,7 @@
 #define PCP_PRIM_INDEX_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/iterator.h"
@@ -76,9 +77,11 @@ class PcpPrimIndex
 {
 public:
     /// Default construct an empty, invalid prim index.
+    PCP_API
     PcpPrimIndex();
 
     /// Copy-construct a prim index.
+    PCP_API
     PcpPrimIndex(const PcpPrimIndex& rhs);
 
     /// Assignment.
@@ -88,6 +91,7 @@ public:
     }
 
     /// Swap the contents of this prim index with \p index.
+    PCP_API
     void Swap(PcpPrimIndex& rhs);
 
     /// Same as Swap(), but standard name.
@@ -97,28 +101,35 @@ public:
     /// A default-constructed index is invalid.
     bool IsValid() const { return bool(_graph); }
 
+    PCP_API
     void SetGraph(const PcpPrimIndex_GraphRefPtr& graph);
+    PCP_API
     PcpPrimIndex_GraphPtr GetGraph() const;
 
     /// Returns the root node of the prim index graph.
+    PCP_API
     PcpNodeRef GetRootNode() const;
 
     /// Returns the path of the prim whose opinions are represented by this 
     /// prim index.
+    PCP_API
     const SdfPath& GetPath() const;
 
     /// Returns true if this prim index contains any scene description
     /// opinions.
+    PCP_API
     bool HasSpecs() const;
 
     /// Returns true if the prim has an authored payload arc.
     /// The payload contents are only resolved and included
     /// if this prim's path is in the payload inclusion set
     /// provided in PcpPrimIndexInputs.
+    PCP_API
     bool HasPayload() const;
 
     /// Returns true if this prim index was composed in USD mode.
     /// \see PcpCache::IsUsd().
+    PCP_API
     bool IsUsd() const;
 
     /// Returns true if this prim index is instanceable.
@@ -126,6 +137,7 @@ public:
     /// guaranteed to have the same set of opinions, but may not have
     /// local opinions about name children.
     /// \see PcpInstanceKey
+    PCP_API
     bool IsInstanceable() const;
 
     /// \name Iteration
@@ -136,14 +148,17 @@ public:
     /// strong-to-weak order.
     /// 
     /// By default, this returns a range encompassing the entire index.
+    PCP_API
     PcpNodeRange GetNodeRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
 
     /// Returns range of iterators that encompasses all prims, in
     /// strong-to-weak order.
+    PCP_API
     PcpPrimRange GetPrimRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
 
     /// Returns range of iterators that encompasses all prims from the
     /// site of \p node. \p node must belong to this prim index.
+    PCP_API
     PcpPrimRange GetPrimRangeForNode(const PcpNodeRef& node) const;
 
     /// @}
@@ -153,11 +168,13 @@ public:
 
     /// Returns the node that brings opinions from \p primSpec into
     /// this prim index. If no such node exists, returns an invalid PcpNodeRef.
+    PCP_API
     PcpNodeRef GetNodeProvidingSpec(const SdfPrimSpecHandle& primSpec) const;
 
     /// Returns the node that brings opinions from the Sd prim spec at \p layer
     /// and \p path into this prim index. If no such node exists, returns an
     /// invalid PcpNodeRef.
+    PCP_API
     PcpNodeRef GetNodeProvidingSpec(
         const SdfLayerHandle& layer, const SdfPath& path) const;
 
@@ -172,6 +189,7 @@ public:
     }
 
     /// Prints various statistics about this prim index.
+    PCP_API
     void PrintStatistics() const;
 
     /// Dump the prim index contents to a string.
@@ -180,12 +198,14 @@ public:
     /// nodes will include information about the originating inherit node.
     /// If \p includeMaps is \c true, output for each node will include the
     /// mappings to the parent and root node.
+    PCP_API
     std::string DumpToString(
         bool includeInheritOriginInfo = true,
         bool includeMaps = true) const;
 
     /// Dump the prim index in dot format to the file named \p filename.
     /// See Dump(...) for information regarding arguments.
+    PCP_API
     void DumpToDotGraph(
         const std::string& filename,
         bool includeInheritOriginInfo = true,
@@ -199,12 +219,14 @@ public:
 
     /// Compute the prim child names for the given path. \p errors will 
     /// contain any errors encountered while performing this operation.
+    PCP_API
     void ComputePrimChildNames(TfTokenVector *nameOrder,
                                PcpTokenSet *prohibitedNameSet) const;
 
     /// Compute the prim property names for the given path. \p errors will
     /// contain any errors encountered while performing this operation.  The
     /// \p nameOrder vector must not contain any duplicate entries.
+    PCP_API
     void ComputePrimPropertyNames(TfTokenVector *nameOrder) const;
 
     /// Compose the authored prim variant selections.
@@ -214,12 +236,14 @@ public:
     /// if they are invalid.
     ///
     /// \note This result is not cached, but computed each time.
+    PCP_API
     SdfVariantSelectionMap ComposeAuthoredVariantSelections() const;
 
     /// Return the variant selecion applied for the named variant set.
     /// If none was applied, this returns an empty string.
     /// This can be different from the authored variant selection;
     /// for example, if the authored selection is invalid.
+    PCP_API
     std::string GetSelectionAppliedForVariantSet(
         const std::string &variantSet) const;
 
@@ -360,6 +384,7 @@ public:
 
 /// Compute an index for the given path. \p errors will contain any errors
 /// encountered while performing this operation.
+PCP_API
 void
 PcpComputePrimIndex(
     const SdfPath& primPath,
@@ -369,12 +394,21 @@ PcpComputePrimIndex(
     ArResolver* pathResolver = NULL);
 
 /// Returns true if the 'new' default standin behavior is enabled.
+PCP_API
 bool
 PcpIsNewDefaultStandinBehaviorEnabled();
 
 // Sets the prim stack in \p index.
 void
 Pcp_RescanForSpecs(PcpPrimIndex* index, bool usd);
+
+// Returns true if \p index should be recomputed due to changes to
+// any computed asset paths that were used to find or open layers
+// when originally composing \p index. This may be due to scene
+// description changes or external changes to asset resolution that
+// may affect the computation of those asset paths.
+bool
+Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

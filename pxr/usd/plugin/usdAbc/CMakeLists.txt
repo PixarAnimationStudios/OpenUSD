@@ -21,21 +21,22 @@ pxr_plugin(usdAbc
         ${ALEMBIC_INCLUDE_DIR}
         ${HDF5_INCLUDE_DIRS}
 
-    PUBLIC_CLASSES
-        alembicFileFormat
-        alembicTest
-
     PRIVATE_CLASSES
         alembicData
+        alembicFileFormat
         alembicReader
         alembicUtil
         alembicWriter
+
+    PRIVATE_HEADERS
+        alembicTest.h
 
     CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
+        alembicTest.cpp
         wrapAlembicTest.cpp
 
     PYTHON_FILES

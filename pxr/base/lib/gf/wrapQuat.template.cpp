@@ -28,7 +28,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/quat{{ SUFFIX }}.h"
 {% for S in SCALARS if S != SCL and ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
-#include "pxr/base/gf/quat{{ S[0] }}.h"
+#include "pxr/base/gf/quat{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 
 #include "pxr/base/tf/pyUtils.h"

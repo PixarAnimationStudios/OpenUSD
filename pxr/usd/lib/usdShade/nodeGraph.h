@@ -1,0 +1,381 @@
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+#ifndef USDSHADE_GENERATED_NODEGRAPH_H
+#define USDSHADE_GENERATED_NODEGRAPH_H
+
+/// \file usdShade/nodeGraph.h
+
+#include "pxr/pxr.h"
+#include "pxr/usd/usdShade/api.h"
+#include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/stage.h"
+
+#include <utility>
+#include "pxr/usd/usd/editTarget.h"
+#include "pxr/usd/usd/relationship.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/interfaceAttribute.h"
+#include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/parameter.h"
+
+
+#include "pxr/base/vt/value.h"
+
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/matrix4d.h"
+
+#include "pxr/base/tf/token.h"
+#include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class SdfAssetPath;
+
+// -------------------------------------------------------------------------- //
+// NODEGRAPH                                                                  //
+// -------------------------------------------------------------------------- //
+
+/// \class UsdShadeNodeGraph
+///
+/// A node-graph is a container for shading nodes, as well as other 
+/// node-graphs. It has a public input interface and provides a list of public 
+/// outputs.
+/// 
+/// <b>Node Graph Interfaces</b>
+/// 
+/// One of the most important functions of a node-graph is to host the "interface"
+/// with which clients of already-built shading networks will interact.  Please
+/// see \ref UsdShadeNodeGraph_Interfaces "Interface Attributes" for a detailed
+/// explanation of what the interface provides, and how to construct and
+/// use it to effectively share/instance shader networks.
+/// 
+/// <b>Node Graph Outputs</b>
+/// 
+/// These behave like outputs on a shader and are typically connected to an 
+/// output on a shader inside the node-graph.
+/// 
+///
+class UsdShadeNodeGraph : public UsdTyped
+{
+public:
+    /// Compile-time constant indicating whether or not this class corresponds
+    /// to a concrete instantiable prim type in scene description.  If this is
+    /// true, GetStaticPrimDefinition() will return a valid prim definition with
+    /// a non-empty typeName.
+    static const bool IsConcrete = true;
+
+    /// Construct a UsdShadeNodeGraph on UsdPrim \p prim .
+    /// Equivalent to UsdShadeNodeGraph::Get(prim.GetStage(), prim.GetPath())
+    /// for a \em valid \p prim, but will not immediately throw an error for
+    /// an invalid \p prim
+    explicit UsdShadeNodeGraph(const UsdPrim& prim=UsdPrim())
+        : UsdTyped(prim)
+    {
+    }
+
+    /// Construct a UsdShadeNodeGraph on the prim held by \p schemaObj .
+    /// Should be preferred over UsdShadeNodeGraph(schemaObj.GetPrim()),
+    /// as it preserves SchemaBase state.
+    explicit UsdShadeNodeGraph(const UsdSchemaBase& schemaObj)
+        : UsdTyped(schemaObj)
+    {
+    }
+
+    /// Destructor.
+    USDSHADE_API
+    virtual ~UsdShadeNodeGraph();
+
+    /// Return a vector of names of all pre-declared attributes for this schema
+    /// class and all its ancestor classes.  Does not include attributes that
+    /// may be authored by custom/extended methods of the schemas involved.
+    USDSHADE_API
+    static const TfTokenVector &
+    GetSchemaAttributeNames(bool includeInherited=true);
+
+    /// Return a UsdShadeNodeGraph holding the prim adhering to this
+    /// schema at \p path on \p stage.  If no prim exists at \p path on
+    /// \p stage, or if the prim at that path does not adhere to this schema,
+    /// return an invalid schema object.  This is shorthand for the following:
+    ///
+    /// \code
+    /// UsdShadeNodeGraph(stage->GetPrimAtPath(path));
+    /// \endcode
+    ///
+    USDSHADE_API
+    static UsdShadeNodeGraph
+    Get(const UsdStagePtr &stage, const SdfPath &path);
+
+    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
+    /// is defined (according to UsdPrim::IsDefined()) on this stage.
+    ///
+    /// If a prim adhering to this schema at \p path is already defined on this
+    /// stage, return that prim.  Otherwise author an \a SdfPrimSpec with
+    /// \a specifier == \a SdfSpecifierDef and this schema's prim type name for
+    /// the prim at \p path at the current EditTarget.  Author \a SdfPrimSpec s
+    /// with \p specifier == \a SdfSpecifierDef and empty typeName at the
+    /// current EditTarget for any nonexistent, or existing but not \a Defined
+    /// ancestors.
+    ///
+    /// The given \a path must be an absolute prim path that does not contain
+    /// any variant selections.
+    ///
+    /// If it is impossible to author any of the necessary PrimSpecs, (for
+    /// example, in case \a path cannot map to the current UsdEditTarget's
+    /// namespace) issue an error and return an invalid \a UsdPrim.
+    ///
+    /// Note that this method may return a defined prim whose typeName does not
+    /// specify this schema class, in case a stronger typeName opinion overrides
+    /// the opinion at the current EditTarget.
+    ///
+    USDSHADE_API
+    static UsdShadeNodeGraph
+    Define(const UsdStagePtr &stage, const SdfPath &path);
+
+private:
+    // needs to invoke _GetStaticTfType.
+    friend class UsdSchemaRegistry;
+    USDSHADE_API
+    static const TfType &_GetStaticTfType();
+
+    static bool _IsTypedSchema();
+
+    // override SchemaBase virtuals.
+    USDSHADE_API
+    virtual const TfType &_GetTfType() const;
+
+public:
+    // ===================================================================== //
+    // Feel free to add custom code below this line, it will be preserved by 
+    // the code generator. 
+    //
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
+    // ===================================================================== //
+    // --(BEGIN CUSTOM CODE)--
+
+    /// Allow UsdShadeNodeGraph to auto-convert to UsdShadeConnectableAPI, so 
+    /// you can pass in a UsdShadeNodeGraph to any function that accepts 
+    /// a UsdShadeConnectableAPI.
+    USDSHADE_API
+    operator UsdShadeConnectableAPI () const;
+
+    /// \anchor UsdShadeNodeGraph_Interfaces
+    /// \name Interface Attributes
+    ///
+    /// In addition to serving as the "head" for all of the shading networks
+    /// that describe each render target's particular node-graph, the node-graph
+    /// prim provides a unified "interface" that allows node-graphs to share 
+    /// shading networks while retaining the ability for each to specify its own
+    /// set of unique values for the parameters that users may need to modify.
+    ///
+    /// A "Node-graph Interface" is a combination of:
+    /// \li a flat collection of attributes, of arbitrary names
+    /// \li for each such attribute, a list of UsdShaderParameter targets
+    /// whose attributes on Shader prims should be driven by the interface
+    /// attribute
+    ///
+    /// A single interface attribute can drive multiple shader parameters - 
+    /// within the same or multiple render targets.  Connections to the driven
+    /// shader parameters are encoded in such a way that is easy to filter
+    /// the node-graph interface by render target; \em however, the set of 
+    /// interface attributes itself is intentionally flat, to encourage
+    /// sharing of interface between render targets.  Clients are always free
+    /// to create interface attributes with namespacing to segregate "private"
+    /// attributes exclusive to the render target, but we hope this will be
+    /// an exception.
+    ///
+    /// To facilitate connecting, qualifying, and interrogating interface
+    /// attributes, we provide an attribute schema UsdShadeInterfaceAttribute
+    /// that performs services similar to UsdShadeParameter .
+    ///
+    /// <b>Scoped Interfaces</b>
+    ///
+    /// \todo describe scoped interfaces and fix bug/108940 to account for them
+    /// @{
+
+    /// Create an interface attribute.
+    ///
+    /// \p interfaceAttrName may be any legal property name, including
+    /// arbitrary namespaces
+    ///
+    /// \todo clarify error behavior if typeName does not match existing,
+    /// defined attribute - should match UsdPrim::CreateAttribute - bug/108970
+    USDSHADE_API
+    UsdShadeInterfaceAttribute CreateInterfaceAttribute(
+            const TfToken& interfaceAttrName,
+            const SdfValueTypeName& typeName);
+
+    /// Return the Interface attribute named by \p name, which will
+    /// be valid if an Interface attribute definition already exists.
+    ///
+    /// Name lookup will account for Interface namespacing, which means
+    /// that this method will succeed in some cases where
+    /// \code
+    /// UsdShadeInterfaceAtribute(prim->GetAttribute(interfaceAttrName))
+    /// \endcode
+    /// will not, unless \p interfaceAttrName is properly namespace prefixed.
+    USDSHADE_API
+    UsdShadeInterfaceAttribute GetInterfaceAttribute(
+            const TfToken& interfaceAttrName) const;
+
+    /// Returns all interface attributes that drive parameters of a
+    /// \p renderTarget shading network.
+    USDSHADE_API
+    std::vector<UsdShadeInterfaceAttribute> GetInterfaceAttributes(
+            const TfToken& renderTarget) const;
+
+    /// \todo GetInterfaceValueMap()
+
+    /// @}
+
+    /// \anchor UsdShadeNodeGraph_Output
+    /// \name Outputs of a node-graph. These typically connect to outputs of 
+    /// shaders or nested node-graphs within the node-graph.
+    /// 
+    /// @{
+
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace.
+    /// 
+    USDSHADE_API
+    UsdShadeOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName);
+
+    /// Return the requested output if it exists.
+    /// 
+    USDSHADE_API
+    UsdShadeOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs:" namespace.
+    /// 
+    USDSHADE_API
+    std::vector<UsdShadeOutput> GetOutputs() const;
+    
+    /// @}
+
+    /// \anchor UsdShadeNodeGraph_Inputs
+    /// \name Inputs of a node-graph. These define the interface afforded by the 
+    /// node-graph.
+    /// 
+    /// @{
+
+    /// Create an Input which can either have a value or can be connected.
+    /// The attribute representing the input is created in the "inputs:" 
+    /// namespace.
+    /// 
+    USDSHADE_API
+    UsdShadeInput CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName);
+
+    /// Return the requested input if it exists.
+    /// 
+    USDSHADE_API
+    UsdShadeInput GetInput(const TfToken &name) const;
+
+    /// Returns all inputs present on the node-graph. These are represented by
+    /// attributes in the "inputs:" namespace.
+    /// 
+    USDSHADE_API
+    std::vector<UsdShadeInput> GetInputs() const;
+    
+    /// @}
+
+    // Provide custom hash and equality comparison function objects for 
+    // UsdShadeNodeGraph until bug 143077 is resolved.
+
+    /// Hash functor for UsdShadeNodeGraph objects.
+    struct NodeGraphHasher {
+        inline size_t operator()(const UsdShadeNodeGraph &nodeGraph) const {
+            return hash_value(nodeGraph.GetPrim());
+        }
+    };
+    /// Equality comparator for UsdShadeNodeGraph objects.
+    struct NodeGraphEqualFn
+    {
+        inline bool operator() (UsdShadeNodeGraph const& s1, 
+                                UsdShadeNodeGraph const& s2) const
+        {
+            return s1.GetPrim() == s2.GetPrim();
+        }
+    };
+
+    // ---------------------------------------------------------------------- //
+    /// \anchor UsdShadeNodeGraph_InterfaceInputs
+    /// \name Interface Inputs
+    /// 
+    /// API to query the inputs that form the interface of the node-graph and 
+    /// their connections.
+    /// 
+    /// @{
+        
+    /// Returns all the "Interface Inputs" of the node-graph. This is the same 
+    /// as GetInputs(), but is provided  as a convenience, to allow clients to
+    /// distinguish between inputs on shaders vs. interface-inputs on 
+    /// node-graphs.
+    USDSHADE_API
+    std::vector<UsdShadeInput> GetInterfaceInputs() const;
+
+    /// Map of interface inputs to corresponding vectors of inputs that 
+    /// consume their values.
+    typedef std::unordered_map<UsdShadeInput, std::vector<UsdShadeInput>, 
+        UsdShadeInput::Hash> InterfaceInputConsumersMap;
+
+    /// Map of node-graphs to their associated input-consumers map.
+    typedef std::unordered_map<UsdShadeNodeGraph,
+                               InterfaceInputConsumersMap, 
+                               NodeGraphHasher,
+                               NodeGraphEqualFn> 
+            NodeGraphInputConsumersMap;
+
+    /// Walks the namespace subtree below the node-graph and computes a map 
+    /// containing the list of all inputs on the node-graph and the associated 
+    /// vector of consumers of their values. The consumers can be inputs on 
+    /// shaders within the node-graph or on nested node-graphs).
+    /// 
+    /// If \p computeTransitiveConsumers is true, then value consumers
+    /// belonging to <b>node-graphs</b> are resolved transitively to compute the 
+    /// transitive mapping from inputs on the node-graph to inputs on shaders 
+    /// inside the material. Note that inputs on node-graphs that don't have 
+    /// value consumers will continue to be included in the result.
+    /// 
+    /// This API is provided for use by DCC's that want to present node-graph
+    /// interface / shader connections in the opposite direction than they are 
+    /// encoded in USD.
+    /// 
+    USDSHADE_API
+    InterfaceInputConsumersMap ComputeInterfaceInputConsumersMap(
+        bool computeTransitiveConsumers=false) const;
+
+    /// @}
+
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

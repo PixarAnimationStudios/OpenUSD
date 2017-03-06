@@ -1,0 +1,25 @@
+#usda 1.0
+(
+    defaultPrim = "AnimatedReferencedCube"
+    endTimeCode = 149
+    startTimeCode = 101
+    upAxis = "Z"
+)
+
+def "AnimatedReferencedCube" (
+    add references = @./CubeModel.usda@
+)
+{
+    over "Geom"
+    {
+        over "Cube"
+        {
+            double3 xformOp:translate.timeSamples = {
+                101: (-10, 0, 0),
+                125: (10, 0, 0),
+                149: (-10, 0, 0)
+            }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}

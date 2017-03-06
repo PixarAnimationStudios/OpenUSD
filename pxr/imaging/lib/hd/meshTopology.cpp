@@ -191,10 +191,9 @@ HdMeshTopology::ComputeHash() const
 {
     HD_TRACE_FUNCTION();
 
-    HdTopology::ID id =_topology.ComputeHash();
-    boost::hash_combine(id, _refineLevel);
-
-    return id;
+    HdTopology::ID hash =_topology.ComputeHash();
+    hash = ArchHash64((const char*)&_refineLevel, sizeof(_refineLevel), hash);
+    return hash;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

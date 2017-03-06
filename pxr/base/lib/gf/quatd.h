@@ -32,6 +32,7 @@
 /// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/api.h"
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/traits.h"
@@ -82,8 +83,10 @@ class GfQuatd
     }
 
     /// Implicitly convert from GfQuatf.
+    GF_API
     GfQuatd(class GfQuatf const &other);
     /// Implicitly convert from GfQuath.
+    GF_API
     GfQuatd(class GfQuath const &other);
 
     /// Return the identity quaternion, with real coefficient 1 and an
@@ -124,6 +127,7 @@ class GfQuatd
     /// Normalizes this quaternion in place to unit length, returning the
     /// length before normalization. If the length of this quaternion is
     /// smaller than \p eps, this sets the quaternion to identity.
+    GF_API
     double Normalize(double eps = GF_MIN_VECTOR_LENGTH);
 
     /// Return this quaternion's conjugate, which is the quaternion with the
@@ -164,6 +168,7 @@ class GfQuatd
     }
 
     /// Post-multiply quaternion \p q into this quaternion.
+    GF_API
     GfQuatd &operator *=(const GfQuatd &q);
 
     /// Multiply this quaternion's coefficients by \p s.
@@ -248,15 +253,15 @@ class GfQuatd
 ///
 /// If the interpolant \p alpha is zero, then the result is \p q0, while
 /// \p alpha of one yields \p q1.
-GfQuatd
+GF_API GfQuatd
 GfSlerp(double alpha, const GfQuatd& q0, const GfQuatd& q1);
 
-GfQuatd
+GF_API GfQuatd
 GfSlerp(const GfQuatd& q0, const GfQuatd& q1, double alpha);
 
 /// Output a GfQuatd using the format (re, i, j, k)
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfQuatd const &);
+GF_API std::ostream& operator<<(std::ostream &, GfQuatd const &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

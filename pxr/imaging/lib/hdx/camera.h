@@ -74,7 +74,9 @@ public:
     };
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync(HdSceneDelegate *sceneDelegate) override;
+    virtual void Sync(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits) override;
 
     /// Accessor for tasks to get the parameters cached in this object.
     virtual VtValue Get(TfToken const &token) const override;
@@ -82,7 +84,7 @@ public:
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
-    virtual int GetInitialDirtyBitsMask() const override;
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 private:
     TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _cameraValues;

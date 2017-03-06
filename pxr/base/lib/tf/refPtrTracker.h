@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/weakBase.h"
@@ -97,15 +98,17 @@ class TfRefPtrTracker : public TfWeakBase, boost::noncopyable {
 public:
     enum TraceType { Add, Assign };
 
-    static TfRefPtrTracker& GetInstance()
+    TF_API static TfRefPtrTracker& GetInstance()
     {
          return TfSingleton<TfRefPtrTracker>::GetInstance();
     }
 
     /// Returns the maximum stack trace depth.
+    TF_API
     size_t GetStackTraceMaxDepth() const;
 
     /// Sets the maximum stack trace depth.
+    TF_API
     void SetStackTraceMaxDepth(size_t);
 
     /// A track trace.
@@ -130,19 +133,24 @@ public:
 
     /// Returns the watched objects and the number of owners of each.
     /// Returns a copy for thread safety.
+    TF_API
     WatchedCounts GetWatchedCounts() const;
 
     /// Returns traces for all owners.  Returns a copy for thread safety.
+    TF_API
     OwnerTraces GetAllTraces() const;
 
     /// Writes all watched objects and the number of owners of each
     /// to \p stream.
+    TF_API
     void ReportAllWatchedCounts(std::ostream& stream) const;
 
     /// Writes all traces to \p stream.
+    TF_API
     void ReportAllTraces(std::ostream& stream) const;
 
     /// Writes traces for all owners of \p watched.
+    TF_API
     void ReportTracesForWatched(std::ostream& stream,
                                 const TfRefBase* watched) const;
 
@@ -191,6 +199,8 @@ private:
     friend class Tf_RefPtrTrackerUtil;
     friend class TfSingleton<TfRefPtrTracker>;
 };
+
+TF_API_TEMPLATE_CLASS(TfSingleton<TfRefPtrTracker>);
 
 // For internal use only.
 class Tf_RefPtrTrackerUtil {

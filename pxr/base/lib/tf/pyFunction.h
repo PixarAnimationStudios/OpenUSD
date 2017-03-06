@@ -160,7 +160,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
                     TfPyObjWrapper(weakSelf),
                     TfPyObjWrapper(cls)});
 
-        } else if (PyObject_HasAttrString(pyCallable, "__name__") and
+        } else if (PyObject_HasAttrString(pyCallable, "__name__") &&
                    extract<string>(callable.attr("__name__"))() == "<lambda>") {
             // Explicitly hold on to strong references to lambdas.
             new (storage) FuncType(Call{TfPyObjWrapper(callable)});

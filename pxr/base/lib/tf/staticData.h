@@ -129,7 +129,7 @@ public:
     
     /// Return true if the underlying data object is created and initialized.
     /// Return false otherwise.
-    inline bool IsInitialized() const { return _data; }
+    inline bool IsInitialized() const { return _data.load() != nullptr; }
 
 private:
     T *_TryToCreateData() const {

@@ -30,7 +30,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/arch/inttypes.h"
-
+#include "pxr/base/tf/api.h"
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -49,7 +49,7 @@ public:
     inline TfTimeStamp() {}
 
     /// Initializes timestamp to given value.
-    inline TfTimeStamp(const uint64_t &value) {
+    inline explicit TfTimeStamp(const uint64_t &value) {
         _value = value;
     }
 
@@ -61,6 +61,11 @@ public:
     /// Assignment operator
     inline const TfTimeStamp & operator=(const TfTimeStamp &timeStamp) {
         _value = timeStamp._value;
+        return *this;
+    }
+
+    inline const TfTimeStamp & operator=(uint64_t value) {
+        _value = value;
         return *this;
     }
 
@@ -129,7 +134,7 @@ private:
 /// @{
 
 /// Stream insertion operator for the string representation of this timestamp
-std::ostream& operator<<(std::ostream& out, const TfTimeStamp& t);
+TF_API std::ostream& operator<<(std::ostream& out, const TfTimeStamp& t);
 
 /// @}
 

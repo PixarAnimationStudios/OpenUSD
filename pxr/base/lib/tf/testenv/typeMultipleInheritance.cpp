@@ -25,7 +25,6 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/regTest.h"
-#include "pxr/base/arch/error.h"
 
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE

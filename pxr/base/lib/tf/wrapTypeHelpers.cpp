@@ -45,7 +45,7 @@ TfType_DefinePythonTypeAndBases( const boost::python::object & classObj )
     // Extract the bases, and declare them if they have not yet been declared.
     object basesObj = classObj.attr("__bases__");
     vector<TfType> baseTypes;
-    for (int i=0; i < boost::python::len(basesObj); ++i)
+    for (boost::python::ssize_t i=0; i < boost::python::len(basesObj); ++i)
     {
         boost::python::object baseClass = basesObj[i];
 

@@ -25,6 +25,7 @@
 #define GF_MATRIX_DATA_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

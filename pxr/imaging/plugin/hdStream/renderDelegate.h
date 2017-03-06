@@ -42,6 +42,11 @@ public:
 
     virtual TfToken GetDefaultGalId() const override;
 
+    virtual HdRenderParam *GetRenderParam() const override;
+
+    virtual const TfTokenVector &GetSupportedSprimTypes() const override;
+    virtual const TfTokenVector &GetSupportedBprimTypes() const override;
+
     virtual HdRprim *CreateRprim(TfToken const& typeId,
                                  SdfPath const& rprimId,
                                  SdfPath const& instancerId) override;
@@ -49,13 +54,20 @@ public:
 
     virtual HdSprim *CreateSprim(TfToken const& typeId,
                                  SdfPath const& sprimId) override;
+    virtual HdSprim *CreateFallbackSprim(TfToken const& typeId) override;
     virtual void DestroySprim(HdSprim *sPrim) override;
 
     virtual HdBprim *CreateBprim(TfToken const& typeId,
                                  SdfPath const& bprimId) override;
+    virtual HdBprim *CreateFallbackBprim(TfToken const& typeId) override;
     virtual void DestroyBprim(HdBprim *bPrim) override;
+
 private:
+    static const TfTokenVector SUPPORTED_SPRIM_TYPES;
+    static const TfTokenVector SUPPORTED_BPRIM_TYPES;
+
     static void _ConfigureReprs();
+    HdSprim *_CreateFallbackShaderPrim();
 
     HdStreamRenderDelegate(const HdStreamRenderDelegate &)             = delete;
     HdStreamRenderDelegate &operator =(const HdStreamRenderDelegate &) = delete;

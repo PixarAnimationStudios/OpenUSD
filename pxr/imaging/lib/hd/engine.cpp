@@ -38,6 +38,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
+#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -231,6 +232,11 @@ HdEngine::CreateContextWithDefaults()
     // prims using the delegate
     index->SetRenderDelegate(renderDelegate);
 
+    if (!index->CreateFallbackPrims()) {
+        DestroyContext(context);
+        return nullptr;
+    }
+
     return context;
 }
 
@@ -359,10 +365,20 @@ HdEngine::CreateContext(const TfToken &renderDelegateId,
 
     // Provide the Render Index with the Render Delegate, so it can create
     // prims using the delegate.
-    // This will either set the delegate for the first time or
-    // set the delegate to the same, so that's ok (and should be
-    // cheaper than doing the if).
-    index->SetRenderDelegate(renderDelegate);
+    //
+    // The assignment of the render delegate to the render index, initializes
+    // that render index with render delegate specific state, so we want
+    // to ensure that the context creation was success before doing this
+    // and we also don't want to repeat the operation if it has already been
+    // performed.
+    if (riRenderDelegateType.IsEmpty()) {
+        index->SetRenderDelegate(renderDelegate);
+
+        if (!index->CreateFallbackPrims()) {
+            DestroyContext(context);
+            return nullptr;
+        }
+    }
 
     return context;
 }
@@ -485,47 +501,6 @@ HdEngine::_InitCaps() const
     HdRenderContextCaps::GetInstance();
 }
 
-void 
-HdEngine::Draw(HdRenderIndex& index,
-               HdRenderPassSharedPtr const &renderPass,
-               HdRenderPassStateSharedPtr const &renderPassState)
-{
-    // DEPRECATED : use Execute() instead
-
-    // XXX: remaining client codes are
-    //
-    //   HdxIntersector::Query
-    //   Hd_TestDriver::Draw
-    //   UsdImaging_TestDriver::Draw
-    //   PxUsdGeomGL_TestDriver::Draw
-    //   HfkCurvesVMP::draw
-    //
-
-    HD_TRACE_FUNCTION();
-    _InitCaps();
-
-    renderPass->Sync();
-    renderPassState->Sync();
-
-    // Process pending dirty lists.
-    index.SyncAll();
-
-    // Commit all pending source data.
-    _resourceRegistry->Commit();
-
-    if (index.GetChangeTracker().IsGarbageCollectionNeeded()) {
-        _resourceRegistry->GarbageCollect();
-        index.GetChangeTracker().ClearGarbageCollectionNeeded();
-        index.GetChangeTracker().MarkAllCollectionsDirty();
-    }
-
-    _resourceRegistry->GarbageCollectDispatchBuffers();
-
-    renderPassState->Bind();
-    renderPass->Execute(renderPassState);
-    renderPassState->Unbind();
-}
-
 void
 HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 {
@@ -548,9 +523,6 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 
     _InitCaps();
 
-    // Sync the scene state prims
-    index.SyncSprims();
-
     // --------------------------------------------------------------------- //
     // DATA DISCOVERY PHASE
     // --------------------------------------------------------------------- //
@@ -563,17 +535,9 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
     // with both BufferSources that need to be resolved (possibly generating
     // data on the CPU) and computations to run on the GPU.
 
-    // could be in parallel... but how?
-    // may be just gathering dirtyLists at first, and then index->sync()?
-    TF_FOR_ALL(it, tasks) {
-        if (!TF_VERIFY(*it)) {
-            continue;
-        }
-        (*it)->Sync(&_taskContext);
-    }
 
     // Process all pending dirty lists
-    index.SyncAll();
+    index.SyncAll(tasks, &_taskContext);
 
     // --------------------------------------------------------------------- //
     // RESOLVE, COMPUTE & COMMIT PHASE
@@ -611,13 +575,23 @@ HdEngine::ReloadAllShaders(HdRenderIndex& index)
     tracker.MarkAllRprimsDirty(HdChangeTracker::AllDirty);
 
     // Dirty all surface shaders
-    tracker.MarkAllShadersDirty(HdChangeTracker::AllDirty);
+    SdfPathVector shaders = index.GetSprimSubtree(HdPrimTypeTokens->shader,
+                                                  SdfPath::EmptyPath());
+
+    for (SdfPathVector::iterator shaderIt  = shaders.begin();
+                                 shaderIt != shaders.end();
+                               ++shaderIt) {
+
+        tracker.MarkSprimDirty(*shaderIt, HdChangeTracker::AllDirty);
+    }
 
     // Invalidate Geometry shader cache in Resource Registry.
     _resourceRegistry->InvalidateGeometricShaderRegistry();
 
     // Fallback Shader
-    index.ReloadFallbackShader();
+    HdShader *shader = static_cast<HdShader *>(
+                              index.GetFallbackSprim(HdPrimTypeTokens->shader));
+    shader->Reload();
 
 
     // Note: Several Shaders are not currently captured in this
@@ -664,6 +638,63 @@ HdEngine::_InitalizeDefaultGalDelegateId()
     GalDelegateRegistry &galRegistry = GalDelegateRegistry::GetInstance();
 
     _defaultGalDelegateId = galRegistry.GetDefaultDelegateId();
+}
+
+
+
+class Hd_DrawTask final : public HdTask
+{
+public:
+    Hd_DrawTask(HdRenderPassSharedPtr const &renderPass,
+                HdRenderPassStateSharedPtr const &renderPassState)
+    : HdTask()
+    , _renderPass(renderPass)
+    , _renderPassState(renderPassState)
+    {
+    }
+
+protected:
+    virtual void _Sync( HdTaskContext* ctx) override
+    {
+        _renderPass->Sync();
+        _renderPassState->Sync();
+    }
+
+    virtual void _Execute(HdTaskContext* ctx) override
+    {
+        _renderPassState->Bind();
+        _renderPass->Execute(_renderPassState);
+        _renderPassState->Unbind();
+    }
+
+private:
+    HdRenderPassSharedPtr _renderPass;
+    HdRenderPassStateSharedPtr _renderPassState;
+};
+
+void 
+HdEngine::Draw(HdRenderIndex& index,
+               HdRenderPassSharedPtr const &renderPass,
+               HdRenderPassStateSharedPtr const &renderPassState)
+{
+    // DEPRECATED : use Execute() instead
+
+    // XXX: remaining client codes are
+    //
+    //   HdxIntersector::Query
+    //   Hd_TestDriver::Draw
+    //   UsdImaging_TestDriver::Draw
+    //   PxUsdGeomGL_TestDriver::Draw
+    //   HfkCurvesVMP::draw
+    //
+    HD_TRACE_FUNCTION();
+
+    // Create Dummy task to use with Execute API.
+    HdTaskSharedPtrVector tasks;
+    tasks.push_back(boost::make_shared<Hd_DrawTask>(renderPass,
+                                                    renderPassState));
+
+    Execute(index, tasks);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

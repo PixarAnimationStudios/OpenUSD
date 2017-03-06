@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
@@ -58,7 +59,7 @@ class TfScriptModuleLoader : public TfWeakBase {
     typedef TfScriptModuleLoader This;
 
     /// Return the singleton instance.
-    static This &GetInstance() {
+    TF_API static This &GetInstance() {
         return TfSingleton<This>::GetInstance();
     } 
 
@@ -66,28 +67,34 @@ class TfScriptModuleLoader : public TfWeakBase {
     /// and libraries which must be loaded first \a predecessors. The script
     /// module will be loaded when necessary. This should generally not be
     /// called by user code.
+    TF_API
     void RegisterLibrary(TfToken const &name, TfToken const &moduleName,
                          std::vector<TfToken> const &predecessors);
 
     /// Load all the script modules for any libraries registered using \a
     /// RegisterLibrary if necessary. Loads the modules in dependency order as
     /// defined in \a RegisterLibrary.
+    TF_API
     void LoadModules();
 
     /// Load all the script modules for any libraries registered using \a
     /// RegisterLibrary that depend on library \a name.
+    TF_API
     void LoadModulesForLibrary(TfToken const &name);
 
     /// Return a list of all currently known modules in a valid dependency
     /// order.
+    TF_API
     std::vector<std::string> GetModuleNames() const;
 
     /// Return a python dict containing all currently known modules under
     /// their canonical names.
+    TF_API
     boost::python::dict GetModulesDict() const;
     
     /// Write a graphviz dot-file for the dependency graph of all. currently
     /// known libraries/modules to \a file.
+    TF_API
     void WriteDotFile(std::string const &file) const;
     
   private:
@@ -130,6 +137,8 @@ class TfScriptModuleLoader : public TfWeakBase {
     // This is only used to handle reentrant loading requests.
     std::deque<TfToken> _remainingLoadWork;
 };
+
+TF_API_TEMPLATE_CLASS(TfSingleton<TfScriptModuleLoader>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

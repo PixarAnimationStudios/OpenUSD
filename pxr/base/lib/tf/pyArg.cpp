@@ -54,10 +54,10 @@ TfPyProcessOptionalArgs(
 {
     std::pair<tuple, dict> rval;
 
-    const unsigned int numArgs = len(args);
-    const unsigned int numExpectedArgs = expectedArgs.size();
+    const unsigned int numArgs = static_cast<unsigned int>(len(args));
+    const unsigned int numExpectedArgs = static_cast<unsigned int>(expectedArgs.size());
 
-    if (not allowExtraArgs) {
+    if (!allowExtraArgs) {
         if (numArgs > numExpectedArgs) {
             TfPyThrowTypeError("Too many arguments for function");
         }
@@ -100,7 +100,7 @@ _AddArgAndTypeDocStrings(
     const TfPyArg& arg, vector<string>* argStrs, vector<string>* typeStrs)
 {
     argStrs->push_back(arg.GetName());
-    if (not arg.GetDefaultValueDoc().empty()) {
+    if (!arg.GetDefaultValueDoc().empty()) {
         argStrs->back() += 
             TfStringPrintf(" = %s", arg.GetDefaultValueDoc().c_str());
     }
@@ -133,12 +133,12 @@ TfPyCreateFunctionDocString(
     rval += TfStringJoin(argStrs.begin(), argStrs.end(), ", ");
     rval += ")";
 
-    if (not typeStrs.empty()) {
+    if (!typeStrs.empty()) {
         rval += "\n";
         rval += TfStringJoin(typeStrs.begin(), typeStrs.end(), "\n");
     }
 
-    if (not description.empty()) {
+    if (!description.empty()) {
         rval += "\n\n";
         rval += description;
     }

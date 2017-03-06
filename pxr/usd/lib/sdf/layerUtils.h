@@ -27,6 +27,7 @@
 /// \file sdf/layerUtils.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layer.h"
 
@@ -43,7 +44,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// \p layerPath will be returned.  If \p layerPath is not relative,
 /// \p layerPath will be returned.  Otherwise, the anchored path will
 /// be returned.
-std::string
+SDF_API std::string
 SdfComputeAssetPathRelativeToLayer(
     const SdfLayerHandle& anchor,
     const std::string& assetPath);
@@ -56,7 +57,7 @@ SdfComputeAssetPathRelativeToLayer(
 /// If the \p anchor layer is invalid, the \p layerPath pointer is invalid, or
 /// \p layerPath contains an empty string, a coding error is raised and a null
 /// layer is returned.
-SdfLayerRefPtr 
+SDF_API SdfLayerRefPtr 
 SdfFindOrOpenRelativeToLayer(
     const SdfLayerHandle& anchor,
     std::string* layerPath,

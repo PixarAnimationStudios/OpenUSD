@@ -58,20 +58,11 @@ typedef boost::shared_ptr<class HdRenderIndex> HdRenderIndexSharedPtr;
 /// back to the delegate to drive synchronization.
 ///
 struct HdSyncRequestVector {
-    // The Rprims to synchronize in this request.
+    // The Prims to synchronize in this request.
     SdfPathVector IDs;
 
-    // The SurfaceShaders to synchronize in this request.
-    SdfPathVector surfaceShaderIDs;
-
-    // The Textures to synchronize in this request.
-    SdfPathVector textureIDs;
-
-    // The HdChangeTracker::DirtyBits that are set for each Rprim.
-    std::vector<int> allDirtyBits;
-
-    // The HdChangeTracker::DirtyBits which are relevant to this request.
-    std::vector<int> maskedDirtyBits;
+    // The HdChangeTracker::DirtyBits that are set for each Prim.
+    std::vector<HdDirtyBits> dirtyBits;
 };
 
 

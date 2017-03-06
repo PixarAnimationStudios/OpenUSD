@@ -25,6 +25,7 @@
 #define PCP_LAYER_PREFETCH_REQUEST_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <set>
@@ -48,11 +49,13 @@ public:
     /// Enqueue a request to pre-fetch of the sublayers of \a layer.
     /// This recursively includes any nested sublayers. Arguments in \a args
     /// will be passed to Sdf when finding or opening sublayers.
+    PCP_API
     void RequestSublayerStack(
         const SdfLayerRefPtr &layer,
         const SdfLayer::FileFormatArguments &args);
 
     /// Run the queued requests, returning when complete.
+    PCP_API
     void Run(const Pcp_MutedLayers& mutedLayers);
 
 private:

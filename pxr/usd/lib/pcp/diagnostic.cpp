@@ -247,7 +247,7 @@ _WriteGraph(
 
     bool hasSpecs = false;
     if (node.CanContributeSpecs()) {
-        hasSpecs = PcpComposeSiteHasPrimSpecs(node.GetSite());
+        hasSpecs = PcpComposeSiteHasPrimSpecs(node);
     }
 
     std::vector<std::string> status;

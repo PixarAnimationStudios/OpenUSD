@@ -23,8 +23,12 @@
 //
 #include "{{ libraryPath }}/tokens.h"
 
+{% if useExportAPI %}
 {{ namespaceOpen }}
 
+{% endif %}
 TF_DEFINE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {{ Upper(tokensPrefix) }}_TOKENS);
+{% if useExportAPI %}
 
 {{ namespaceClose }}
+{% endif %}

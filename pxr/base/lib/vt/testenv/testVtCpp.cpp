@@ -52,6 +52,9 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/tf/fileUtils.h"
+
+#include "pxr/base/arch/fileSystem.h"
 
 #include <boost/scoped_ptr.hpp>
 
@@ -187,6 +190,31 @@ static void testArray() {
 
     }
 
+    {
+        // Test that mutating reserved data doesn't affect copies of an array.
+        VtArray<int> a(4);
+        a._GetReserved()->data[0] = 4;
+        a._GetReserved()->data[1] = 0;
+
+        VtArray<int> b = a;
+        const auto &ca = a;
+        const auto &cb = b;
+        TF_AXIOM(ca._GetReserved()->data[0] == cb._GetReserved()->data[0]);
+        TF_AXIOM(ca._GetReserved()->data[1] == cb._GetReserved()->data[1]);
+
+        b._GetReserved()->data[0] = 2;
+        b._GetReserved()->data[1] = 2;
+        b._GetReserved()->data[2] = 0;
+
+        // Check that a's reserved data is unchanged
+        TF_AXIOM(ca._GetReserved()->data[0] == 4);
+        TF_AXIOM(ca._GetReserved()->data[1] == 0);
+
+        // and that b's reserved data has been updated as expected.
+        TF_AXIOM(cb._GetReserved()->data[0] == 2);
+        TF_AXIOM(cb._GetReserved()->data[1] == 2);
+        TF_AXIOM(cb._GetReserved()->data[2] == 0);
+    }
 }
 
 static void testArrayOperators() {
@@ -513,11 +541,11 @@ static void testDictionaryPyFormatting() {
     if (vt0 != vt2)
         die("VtDictionaryFromFile - written and read dictionaries differ!");
 
-    unlink("link-to-dictionary");
-    symlink(fileName, "link-to-dictionary");
+    ArchUnlinkFile("link-to-dictionary");
+    TfSymlink(fileName, "link-to-dictionary");
     VtDictionary vt3 = VtDictionaryFromFile("link-to-dictionary");
     if (vt3 != vt2)
-        die("VtDictionaryFromFile - read from symlink failed!");
+        die("VtDictionaryFromFile - read from TfSymlink failed!");
 
     {
         TfErrorMark m;
@@ -721,7 +749,8 @@ TF_REGISTRY_FUNCTION(TfEnum)
 static void testValue() {
     {
         // Test that we can create values holding non-streamable types. 
-        BOOST_STATIC_ASSERT(!Vt_IsOutputStreamable<_NotStreamable>::value);
+        static_assert(!Vt_IsOutputStreamable<_NotStreamable>::value,
+                      "_NotStreamable must not satisfy Vt_IsOutputStreamable.");
         _NotStreamable n;
         VtValue v(n);
         VtValue copy = v;
@@ -828,7 +857,7 @@ static void testValue() {
     if (!v.CanCastToTypeOf(v))
         die("CanCast to same type");
     if (v.CastToTypeOf(v).Get<double>() != 1.25)
-	die("Casting to same type got wrong value");
+        die("Casting to same type got wrong value");
     
     v = VtValue(1.25);
     VtValue v2 = VtValue(3);
@@ -842,7 +871,7 @@ static void testValue() {
     if (!v.CanCastToTypeOf(v2))
         die("CanCast to type of another value");
     if (VtValue::CastToTypeOf(v2, v).Get<double>() != 3.0)
-	die("Could not cast to type of another value");
+        die("Could not cast to type of another value");
 
     v = VtValue(1.25);
     if (!v.CanCastToTypeid(typeid(double)))
@@ -1124,6 +1153,38 @@ static void testValue() {
 
 }
 
+struct _Unhashable {};
+bool operator==(_Unhashable, _Unhashable) { return true; }
+
+static void
+testValueHash()
+{
+    static_assert(VtIsHashable<int>(), "");
+    static_assert(!VtIsHashable<_Unhashable>(), "");
+
+    VtValue vHashable{1};
+    VtValue vUnhashable{_Unhashable{}};
+
+    // Test the dynamic hashability check.
+    TF_AXIOM(vHashable.CanHash());
+    TF_AXIOM(!vUnhashable.CanHash());
+
+    {
+        // Test that hashable types can hash without error.
+        TfErrorMark m;
+        vHashable.GetHash();
+        TF_AXIOM(m.IsClean());
+    }
+
+    {
+        // Test that unhashable types post an error when attempting to hash.
+        TfErrorMark m;
+        vUnhashable.GetHash();
+        TF_AXIOM(!m.IsClean());
+        m.Clear();
+    }
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
@@ -1137,6 +1198,7 @@ int main(int argc, char *argv[])
 
     testDictionaryPyFormatting();
     testValue();
+    testValueHash();
 
     printf("Test SUCCEEDED\n");
 

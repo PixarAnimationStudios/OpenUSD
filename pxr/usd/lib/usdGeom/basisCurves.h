@@ -27,6 +27,7 @@
 /// \file usdGeom/basisCurves.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -188,11 +189,13 @@ public:
     }
 
     /// Destructor.
+    USDGEOM_API
     virtual ~UsdGeomBasisCurves();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -205,6 +208,7 @@ public:
     /// UsdGeomBasisCurves(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDGEOM_API
     static UsdGeomBasisCurves
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -230,17 +234,20 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
+    USDGEOM_API
     static UsdGeomBasisCurves
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USDGEOM_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDGEOM_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -255,6 +262,7 @@ public:
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: cubic
     /// \n  \ref UsdGeomTokens "Allowed Values": [linear, cubic]
+    USDGEOM_API
     UsdAttribute GetTypeAttr() const;
 
     /// See GetTypeAttr(), and also 
@@ -262,6 +270,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateTypeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -279,6 +288,7 @@ public:
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: bezier
     /// \n  \ref UsdGeomTokens "Allowed Values": [bezier, bspline, catmullRom, hermite, power]
+    USDGEOM_API
     UsdAttribute GetBasisAttr() const;
 
     /// See GetBasisAttr(), and also 
@@ -286,6 +296,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateBasisAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -301,6 +312,7 @@ public:
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: nonperiodic
     /// \n  \ref UsdGeomTokens "Allowed Values": [nonperiodic, periodic]
+    USDGEOM_API
     UsdAttribute GetWrapAttr() const;
 
     /// See GetWrapAttr(), and also 
@@ -308,6 +320,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
     UsdAttribute CreateWrapAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -333,6 +346,7 @@ public:
     /// the expected value for each token.
     ///
     /// The topology is determined using \p timeCode.
+    USDGEOM_API
     TfToken ComputeInterpolationForSize(size_t n, 
             const UsdTimeCode& timeCode,
             ComputeInterpolationInfo* info=NULL) const;
@@ -341,18 +355,21 @@ public:
     ///
     /// If you're trying to determine what interpolation to use, it is more
     /// efficient to use \c ComputeInterpolationForSize
+    USDGEOM_API
     size_t ComputeUniformDataSize(const UsdTimeCode& timeCode) const;
 
     /// Computes the expected size for data with "varying" interpolation.
     ///
     /// If you're trying to determine what interpolation to use, it is more
     /// efficient to use \c ComputeInterpolationForSize
+    USDGEOM_API
     size_t ComputeVaryingDataSize(const UsdTimeCode& timeCode) const;
 
     /// Computes the expected size for data with "vertex" interpolation.
     ///
     /// If you're trying to determine what interpolation to use, it is more
     /// efficient to use \c ComputeInterpolationForSize
+    USDGEOM_API
     size_t ComputeVertexDataSize(const UsdTimeCode& timeCode) const;
 
     /// \}

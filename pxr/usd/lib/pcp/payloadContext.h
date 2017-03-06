@@ -25,6 +25,7 @@
 #define PCP_PAYLOAD_CONTEXT_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/base/vt/value.h"
@@ -60,6 +61,7 @@ public:
     /// Compose the value of the scene description \p field using the
     /// given composition function \p fn from strongest to weakest
     /// available opinion. 
+    PCP_API
     bool ComposeValue(const TfToken& field, const ComposeFunction& fn) const;
 
 private:

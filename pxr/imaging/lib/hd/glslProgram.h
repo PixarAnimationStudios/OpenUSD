@@ -37,15 +37,7 @@ typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
 
 /// \class HdGLSLProgram
 ///
-/// An instance of glsl program.
-///
-/// This is almost a stripped version of GlfGLSLProgram, intended
-/// not to disturb Glf API during Hd development.
-/// It will be refactored and integrated back to Glf at some point.
-///
-/// This class assumes every glsl program has a single uniform block.
-/// Although this class generate ID of the buffer object, the allocation
-/// and update of the uniform block is caller's responsibility.
+/// An instance of a glsl program.
 ///
 // XXX: this design is transitional and will be revised soon.
 class HdGLSLProgram

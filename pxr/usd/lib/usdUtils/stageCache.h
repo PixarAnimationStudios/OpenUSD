@@ -21,13 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _USDUTILS_STAGECACHE_H_
-#define _USDUTILS_STAGECACHE_H_
+#ifndef USDUTILS_STAGECACHE_H
+#define USDUTILS_STAGECACHE_H
 
 /// \file usdUtils/stageCache.h
 /// A simple interface for handling a singleton usd stage cache.
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/usd/stageCache.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -51,12 +52,14 @@ class UsdUtilsStageCache {
 public:
 
     /// Returns the singleton stage cache.
+    USDUTILS_API
     static UsdStageCache &Get();
 
     /// Given variant selections as a vector of pairs (vector in case order
     /// matters to the client), constructs a session layer with overs on the
     /// given root modelName with the variant selections, or returns a cached
     /// session layer with those opinions.
+    USDUTILS_API
     static SdfLayerRefPtr GetSessionLayerForVariantSelections(
         const TfToken& modelName,
         const std::vector<std::pair<std::string, std::string> > &variantSelections);
@@ -65,4 +68,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif /* USDUTILS_STAGECACHE_H */

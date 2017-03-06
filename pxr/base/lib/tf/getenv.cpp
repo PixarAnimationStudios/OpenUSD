@@ -23,13 +23,10 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/env.h"
 #include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/stringUtils.h"
-#include <cstdlib>
-#include <cstring>
 #include <ctype.h>
 #include <string>
-#include <strings.h>
 
 using std::string;
 
@@ -38,49 +35,52 @@ PXR_NAMESPACE_OPEN_SCOPE
 string
 TfGetenv(const string& envName, const string& defaultValue)
 {
-    const char* value = getenv(envName.c_str());
+    string value = ArchGetEnv(envName);
 
-    if (!value || value[0] == '\0')
+    if (value.empty())
         return defaultValue;
     else 
-        return string(value);
+        return value;
 }
 
 int
 TfGetenvInt(const string& envName, int defaultValue)
 {
-    const char* value = getenv(envName.c_str());
+    string value = ArchGetEnv(envName);
 
-    if (!value || value[0] == '\0')
+    if (value.empty())
         return defaultValue;
     else 
-        return atoi(value);
+        return std::stoi(value);
 }
 
 bool
 TfGetenvBool(const string& envName, bool defaultValue)
 {
-    const char* value = getenv(envName.c_str());
+    string value = ArchGetEnv(envName);
 
-    if (!value || value[0] == '\0')
+    if (value.empty())
         return defaultValue;
     else {
-        return strcasecmp(value, "true") == 0 ||
-            strcasecmp(value, "yes") == 0     ||
-            strcasecmp(value, "on") == 0      ||
-            strcmp(value, "1") == 0;
+        for (char& c: value)
+            c = tolower(c);
+
+        return value == "true" ||
+               value == "yes"  ||
+               value == "on"   ||
+               value == "1";
     }
 }
 
 double
 TfGetenvDouble(const string& envName, double defaultValue)
 {
-    const char* value = getenv(envName.c_str());
+    string value = ArchGetEnv(envName);
 
-    if (!value || value[0] == '\0')
+    if (value.empty())
         return defaultValue;
     else
-        return TfStringToDouble(string(value));
+        return std::stod(value);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

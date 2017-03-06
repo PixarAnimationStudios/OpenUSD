@@ -12,6 +12,9 @@ pxr_shared_library(usdUI
         nodeGraphNodeAPI
         tokens
 
+    PUBLIC_HEADERS
+        api.h
+
     CPPFILES
         moduleDeps.cpp
 

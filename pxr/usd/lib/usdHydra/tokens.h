@@ -34,6 +34,7 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdHydra/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -111,7 +112,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>uv</b> - UsdHydraUvTexture
 /// \li <b>wrapS</b> - UsdHydraUvTexture
 /// \li <b>wrapT</b> - UsdHydraUvTexture
-TF_DECLARE_PUBLIC_TOKENS(UsdHydraTokens, USDHYDRA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdHydraTokens, USDHYDRA_API, USDHYDRA_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

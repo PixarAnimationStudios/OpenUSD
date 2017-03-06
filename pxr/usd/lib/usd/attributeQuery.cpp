@@ -95,6 +95,7 @@ UsdAttributeQuery::GetAttribute() const
 }
 
 template <typename T>
+USD_API
 bool 
 UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
 {
@@ -103,6 +104,7 @@ UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
 }
 
 template <>
+USD_API
 bool
 UsdAttributeQuery::_Get(VtArray<SdfAssetPath>* assetPaths, 
                         UsdTimeCode time) const
@@ -120,6 +122,7 @@ UsdAttributeQuery::_Get(VtArray<SdfAssetPath>* assetPaths,
 
 
 template <>
+USD_API
 bool
 UsdAttributeQuery::_Get(SdfAssetPath* assetPath, UsdTimeCode time) const
 {
@@ -208,9 +211,9 @@ UsdAttributeQuery::ValueMightBeTimeVarying() const
 // Explicitly instantiate templated getters for all Sdf value
 // types.
 #define _INSTANTIATE_GET(r, unused, elem)                               \
-    template bool UsdAttributeQuery::_Get(                              \
+    template USD_API bool UsdAttributeQuery::_Get(                      \
         SDF_VALUE_TRAITS_TYPE(elem)::Type*, UsdTimeCode) const;         \
-    template bool UsdAttributeQuery::_Get(                              \
+    template USD_API bool UsdAttributeQuery::_Get(                      \
         SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*, UsdTimeCode) const;
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)

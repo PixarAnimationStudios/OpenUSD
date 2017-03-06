@@ -103,6 +103,11 @@ public:
     /// Add custom bindings (used by codegen)
     virtual void AddBindings(HdBindingRequestVector* customBindings) = 0;
 
+    /// Returns if the two shaders can be aggregated in a same drawbatch or not.
+    static bool CanAggregate(HdShaderCodeSharedPtr const &shaderA,
+                             HdShaderCodeSharedPtr const &shaderB);
+
+
 private:
 
     // No copying

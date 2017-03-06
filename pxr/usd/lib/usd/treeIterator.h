@@ -25,6 +25,7 @@
 #define USD_TREEITERATOR_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primFlags.h"
@@ -116,8 +117,8 @@ public:
     UsdTreeIterator() : iterator_adaptor_(NULL) {}
 
     /// Construct a TreeIterator that traverses the subtree rooted at \p start,
-    /// and visits prims that pass the "canonical" predicate (as defined by
-    /// UsdPrim::GetChildren()) with pre-order visitation.
+    /// and visits prims that pass the default predicate (as defined by
+    /// #UsdPrimDefaultPredicate) with pre-order visitation.
     explicit UsdTreeIterator(const UsdPrim &start)
         : iterator_adaptor_(get_pointer(start._Prim())) {
         _Init(base(), base() ? base()->GetNextPrim() : NULL);
@@ -132,8 +133,8 @@ public:
     }
 
     /// Create a TreeIterator that traverses the subtree rooted at \p start,
-    /// and visits prims that pass the "canonical" predicate (as defined by
-    /// UsdPrim::GetChildren()) with pre- and post-order visitation.
+    /// and visits prims that pass the default predicate (as defined by
+    /// #UsdPrimDefaultPredicate) with pre- and post-order visitation.
     static UsdTreeIterator
     PreAndPostVisit(const UsdPrim &start) {
         UsdTreeIterator result(start);
@@ -168,13 +169,13 @@ public:
     }
 
     /// Create a TreeIterator that traverses all the prims on \p stage, and
-    /// visits those that pass the "canonical" predicate (as defined by
-    /// UsdPrim::GetChildren()) with pre-order visitation.
+    /// visits those that pass the default predicate (as defined by
+    /// #UsdPrimDefaultPredicate) with pre-order visitation.
+    USD_API
     static UsdTreeIterator
     Stage(const UsdStagePtr &stage,
-          const Usd_PrimFlagsPredicate &predicate=
-          (UsdPrimIsActive && UsdPrimIsDefined &&
-           UsdPrimIsLoaded && !UsdPrimIsAbstract));
+          const Usd_PrimFlagsPredicate &predicate =
+              UsdPrimDefaultPredicate);
 
 #ifdef doxygen
     /// Safe bool-conversion operator.  Convertible to true if this iterator is
@@ -207,14 +208,14 @@ public:
 
     /// Behave as if the current prim has no children when next advanced.  Issue
     /// an error if this is a pre- and post-order iterator that IsPostVisit().
+    USD_API
     void PruneChildren();
 
 private:
     UsdTreeIterator(Usd_PrimDataConstPtr start,
                     Usd_PrimDataConstPtr end,
                     const Usd_PrimFlagsPredicate &predicate =
-                    (UsdPrimIsActive && UsdPrimIsDefined &&
-                     UsdPrimIsLoaded && !UsdPrimIsAbstract))
+                        UsdPrimDefaultPredicate)
         : iterator_adaptor_(start) {
         _Init(start, end, predicate);
     }
@@ -224,8 +225,7 @@ private:
     void _Init(const Usd_PrimData *start,
                const Usd_PrimData *end,
                const Usd_PrimFlagsPredicate &predicate = 
-               (UsdPrimIsActive && UsdPrimIsDefined &&
-                UsdPrimIsLoaded && !UsdPrimIsAbstract)) {
+                   UsdPrimDefaultPredicate) {
         _end = end;
         _predicate = predicate;
         _depth = 0;
@@ -254,6 +254,7 @@ private:
             _isPost == other._isPost;
     }
 
+    USD_API
     void increment();
     reference dereference() const { return UsdPrim(base()); }
 

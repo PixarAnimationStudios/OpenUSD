@@ -46,15 +46,17 @@ HdTexture::~HdTexture()
 }
 
 void
-HdTexture::Sync(HdSceneDelegate *sceneDelegate)
+HdTexture::Sync(HdSceneDelegate *sceneDelegate,
+                HdRenderParam   *renderParam,
+                HdDirtyBits     *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
- 
+
+    TF_UNUSED(renderParam);
+
     SdfPath const& id = GetID();
-    HdChangeTracker& changeTracker = 
-                            sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetBprimDirtyBits(id);
+    HdDirtyBits bits = *dirtyBits;
 
     // XXX : DirtyParams and DirtyTexture are currently the same but they
     //       can be separated functionally and have different 
@@ -110,9 +112,11 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate)
             }
         }
     }
+
+    *dirtyBits = Clean;
 }
 
-int
+HdDirtyBits
 HdTexture::GetInitialDirtyBitsMask() const
 {
     return AllDirty;

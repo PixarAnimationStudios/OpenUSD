@@ -40,7 +40,7 @@ template <> constexpr char PyFmtFor<int>() { return 'i'; }
 template <> constexpr char PyFmtFor<unsigned int>() { return 'I'; }
 template <> constexpr char PyFmtFor<long>() { return 'l'; }
 template <> constexpr char PyFmtFor<unsigned long>() { return 'L'; }
-template <> constexpr char PyFmtFor<half>() { return 'e'; }
+template <> constexpr char PyFmtFor<GfHalf>() { return 'e'; }
 template <> constexpr char PyFmtFor<float>() { return 'f'; }
 template <> constexpr char PyFmtFor<double>() { return 'd'; }
 
@@ -52,17 +52,17 @@ char *Gf_GetPyBufferFmtFor() {
     return str;
 }
 
-template char *Gf_GetPyBufferFmtFor<bool>();
-template char *Gf_GetPyBufferFmtFor<char>();
-template char *Gf_GetPyBufferFmtFor<unsigned char>();
-template char *Gf_GetPyBufferFmtFor<short>();
-template char *Gf_GetPyBufferFmtFor<unsigned short>();
-template char *Gf_GetPyBufferFmtFor<int>();
-template char *Gf_GetPyBufferFmtFor<unsigned int>();
-template char *Gf_GetPyBufferFmtFor<long>();
-template char *Gf_GetPyBufferFmtFor<unsigned long>();
-template char *Gf_GetPyBufferFmtFor<half>();
-template char *Gf_GetPyBufferFmtFor<float>();
-template char *Gf_GetPyBufferFmtFor<double>();
+template GF_API char *Gf_GetPyBufferFmtFor<bool>();
+template GF_API char *Gf_GetPyBufferFmtFor<char>();
+template GF_API char *Gf_GetPyBufferFmtFor<unsigned char>();
+template GF_API char *Gf_GetPyBufferFmtFor<short>();
+template GF_API char *Gf_GetPyBufferFmtFor<unsigned short>();
+template GF_API char *Gf_GetPyBufferFmtFor<int>();
+template GF_API char *Gf_GetPyBufferFmtFor<unsigned int>();
+template GF_API char *Gf_GetPyBufferFmtFor<long>();
+template GF_API char *Gf_GetPyBufferFmtFor<unsigned long>();
+template GF_API char *Gf_GetPyBufferFmtFor<GfHalf>();
+template GF_API char *Gf_GetPyBufferFmtFor<float>();
+template GF_API char *Gf_GetPyBufferFmtFor<double>();
 
 PXR_NAMESPACE_CLOSE_SCOPE

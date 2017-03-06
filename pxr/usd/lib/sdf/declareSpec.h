@@ -25,6 +25,7 @@
 #define SDF_DECLARE_SPEC_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/specType.h"
 #include "pxr/base/tf/registryManager.h"

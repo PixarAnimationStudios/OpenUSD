@@ -100,9 +100,9 @@ MakeScalarValueImpl(float *out, vector<Value> const &vars, size_t &index) {
 }
 
 inline void
-MakeScalarValueImpl(half *out, vector<Value> const &vars, size_t &index) {
+MakeScalarValueImpl(GfHalf *out, vector<Value> const &vars, size_t &index) {
     CHECK_BOUNDS(1, "half");
-    *out = half(vars[index++].Get<float>());
+    *out = GfHalf(vars[index++].Get<float>());
 }
 
 template <class Int>
@@ -130,8 +130,8 @@ MakeScalarValueImpl(GfVec2f *out, vector<Value> const &vars, size_t &index) {
 inline void
 MakeScalarValueImpl(GfVec2h *out, vector<Value> const &vars, size_t &index) {
     CHECK_BOUNDS(2, "Vec2h");
-    (*out)[0] = half(vars[index++].Get<float>());
-    (*out)[1] = half(vars[index++].Get<float>());
+    (*out)[0] = GfHalf(vars[index++].Get<float>());
+    (*out)[1] = GfHalf(vars[index++].Get<float>());
 }
 
 inline void
@@ -160,9 +160,9 @@ MakeScalarValueImpl(GfVec3f *out, vector<Value> const &vars, size_t &index) {
 inline void
 MakeScalarValueImpl(GfVec3h *out, vector<Value> const &vars, size_t &index) {
     CHECK_BOUNDS(3, "Vec3h");
-    (*out)[0] = half(vars[index++].Get<float>());
-    (*out)[1] = half(vars[index++].Get<float>());
-    (*out)[2] = half(vars[index++].Get<float>());
+    (*out)[0] = GfHalf(vars[index++].Get<float>());
+    (*out)[1] = GfHalf(vars[index++].Get<float>());
+    (*out)[2] = GfHalf(vars[index++].Get<float>());
 }
 
 inline void
@@ -194,10 +194,10 @@ MakeScalarValueImpl(GfVec4f *out, vector<Value> const &vars, size_t &index) {
 inline void
 MakeScalarValueImpl(GfVec4h *out, vector<Value> const &vars, size_t &index) {
     CHECK_BOUNDS(4, "Vec4h");
-    (*out)[0] = half(vars[index++].Get<float>());
-    (*out)[1] = half(vars[index++].Get<float>());
-    (*out)[2] = half(vars[index++].Get<float>());
-    (*out)[3] = half(vars[index++].Get<float>());
+    (*out)[0] = GfHalf(vars[index++].Get<float>());
+    (*out)[1] = GfHalf(vars[index++].Get<float>());
+    (*out)[2] = GfHalf(vars[index++].Get<float>());
+    (*out)[3] = GfHalf(vars[index++].Get<float>());
 }
 
 inline void
@@ -279,7 +279,7 @@ inline void
 MakeScalarValueImpl(GfQuath *out, vector<Value> const &vars, size_t &index) {
     CHECK_BOUNDS(4, "Quath");
     // Values in order are re, i, j, k.
-    GfVec3h imag; half re;
+    GfVec3h imag; GfHalf re;
     MakeScalarValueImpl(&re, vars, index);
     out->SetReal(re);
     MakeScalarValueImpl(&imag, vars, index);
@@ -397,7 +397,7 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     builder.add<uint32_t>(SdfValueTypeNames->UInt);
     builder.add<int64_t>(SdfValueTypeNames->Int64);
     builder.add<uint64_t>(SdfValueTypeNames->UInt64);
-    builder.add<half>(SdfValueTypeNames->Half);
+    builder.add<GfHalf>(SdfValueTypeNames->Half);
     builder.add<float>(SdfValueTypeNames->Float);
     builder.add<double>(SdfValueTypeNames->Double);
     builder.add<std::string>(SdfValueTypeNames->String);

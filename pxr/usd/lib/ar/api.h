@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -28,12 +28,18 @@
 
 #if defined(AR_STATIC)
 #   define AR_API
+#   define AR_API_TEMPLATE_CLASS(...)
+#   define AR_API_TEMPLATE_STRUCT(...)
 #   define AR_LOCAL
 #else
 #   if defined(AR_EXPORTS)
 #       define AR_API ARCH_EXPORT
+#       define AR_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define AR_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
 #   else
 #       define AR_API ARCH_IMPORT
+#       define AR_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define AR_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
 #   endif
 #   define AR_LOCAL ARCH_HIDDEN
 #endif

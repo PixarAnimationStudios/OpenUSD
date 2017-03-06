@@ -37,6 +37,10 @@
 #include <fstream>
 #include <string>
 
+#if defined(ARCH_OS_WINDOWS)
+#   undef GetMessage // Defined on Windows.
+#endif
+
 using std::string;
 PXR_NAMESPACE_USING_DIRECTIVE
 

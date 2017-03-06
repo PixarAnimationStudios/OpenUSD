@@ -39,7 +39,7 @@
 // Include headers for other vec types to support wrapping conversions and
 // operators.
 {% for S in SCALARS if S != SCL -%}
-#include "pxr/base/gf/vec{{ DIM }}{{ S[0] }}.h"
+#include "pxr/base/gf/vec{{ DIM }}{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 {% endif %}
 

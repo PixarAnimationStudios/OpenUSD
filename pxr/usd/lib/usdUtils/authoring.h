@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _USDUTILS_AUTHORING_H_
-#define _USDUTILS_AUTHORING_H_
+#ifndef USDUTILS_AUTHORING_H_
+#define USDUTILS_AUTHORING_H_
 
 /// \file usdUtils/authoring.h 
 ///
@@ -30,6 +30,7 @@
 /// description than provided by the core Usd and Sdf API's
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,6 +48,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// in \p source will be replaced.
 ///
 /// \return \c true on success, \c false on error.
+USDUTILS_API
 bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
                                const SdfLayerHandle &destination,
                                bool skipSublayers = false);
@@ -54,4 +56,4 @@ bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif /* _USDUTILS_PIPELINE_H_ */
+#endif /* USDUTILS_AUTHORING_H_ */

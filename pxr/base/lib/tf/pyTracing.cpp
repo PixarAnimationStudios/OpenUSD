@@ -94,10 +94,10 @@ static int _TracePythonFn(PyObject *, PyFrameObject *frame,
 
 static void _SetTraceFnEnabled(bool enable) {
     // NOTE! mutex must be locked by caller!
-    if (enable and not _traceFnInstalled and Py_IsInitialized()) {
+    if (enable && !_traceFnInstalled && Py_IsInitialized()) {
         _traceFnInstalled = true;
         PyEval_SetTrace(_TracePythonFn, NULL);
-    } else if (not enable and _traceFnInstalled) {
+    } else if (!enable && _traceFnInstalled) {
         _traceFnInstalled = false;
         PyEval_SetTrace(NULL, NULL);
     }
@@ -131,7 +131,6 @@ void Tf_PyFabricateTraceEvent(TfPyTraceInfo const &info)
         _InvokeTraceFns(info);
 }
 
-
 TfPyTraceFnId TfPyRegisterTraceFn(TfPyTraceFn const &f)
 {
     tbb::spin_mutex::scoped_lock lock(_traceFnMutex);
@@ -148,7 +147,7 @@ void Tf_PyTracingPythonInitialized()
     std::call_once(once, [](){
             TF_AXIOM(Py_IsInitialized());
             tbb::spin_mutex::scoped_lock lock(_traceFnMutex);
-            if (not _traceFns->empty())
+            if (!_traceFns->empty())
                 _SetTraceFnEnabled(true);
         });
 }

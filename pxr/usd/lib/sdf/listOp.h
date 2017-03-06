@@ -25,6 +25,7 @@
 #define SDF_LIST_OP_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/function.hpp>
@@ -76,9 +77,9 @@ public:
     typedef ItemType value_type;
     typedef ItemVector value_vector_type;
 
-    SdfListOp();
+    SDF_API SdfListOp();
 
-    void Swap(SdfListOp<T>& rhs);
+    SDF_API void Swap(SdfListOp<T>& rhs);
 
     /// Returns \c true if the editor has an explicit list (even if it's
     /// empty) or it has any added, deleted, or ordered keys.
@@ -125,21 +126,21 @@ public:
     }
 
     /// Return the item vector identified by \p type.
-    const ItemVector& GetItems(SdfListOpType type) const;
+    SDF_API const ItemVector& GetItems(SdfListOpType type) const;
 
-    void SetExplicitItems(const ItemVector &items);
-    void SetAddedItems(const ItemVector &items);
-    void SetDeletedItems(const ItemVector &items);
-    void SetOrderedItems(const ItemVector &items);
+    SDF_API void SetExplicitItems(const ItemVector &items);
+    SDF_API void SetAddedItems(const ItemVector &items);
+    SDF_API void SetDeletedItems(const ItemVector &items);
+    SDF_API void SetOrderedItems(const ItemVector &items);
 
     /// Sets the item vector for the given operation \p type.
-    void SetItems(const ItemVector &items, SdfListOpType type);
+    SDF_API void SetItems(const ItemVector &items, SdfListOpType type);
 
     /// Removes all items and changes the list to be non-explicit.
-    void Clear();
+    SDF_API void Clear();
 
     /// Removes all items and changes the list to be explicit.
-    void ClearAndMakeExplicit();
+    SDF_API void ClearAndMakeExplicit();
 
     /// Callback type for ApplyOperations.
     typedef boost::function<
@@ -151,6 +152,7 @@ public:
     /// before they are applied to \p vec. Consumers can use this to transform
     /// the items stored in the operation vectors to match what's stored in
     /// \p vec.
+    SDF_API 
     void ApplyOperations(ItemVector* vec, 
                          const ApplyCallback& cb = ApplyCallback()) const;
 
@@ -165,16 +167,18 @@ public:
     /// with the returned key.
     ///
     /// Returns true if a change was made, false otherwise.
-    bool ModifyOperations(const ModifyCallback& callback);
+    SDF_API bool ModifyOperations(const ModifyCallback& callback);
 
     /// Replaces the items in the specified operation vector in the range
     /// (index, index + n] with the given \p newItems. If \p newItems is empty
     /// the items in the range will simply be removed.
+    SDF_API 
     bool ReplaceOperations(const SdfListOpType op, size_t index, size_t n, 
                            const ItemVector& newItems);
 
     /// Composes a stronger SdfListOp's opinions for a given operation list
     /// over this one.
+    SDF_API 
     void ComposeOperations(const SdfListOp<T>& stronger, SdfListOpType op);
 
     friend inline size_t hash_value(const SdfListOp &op) {
@@ -225,12 +229,14 @@ private:
 // Helper function for applying an ordering operation described by \p orderVector
 // to vector \p v.
 template <class ItemType>
+SDF_API
 void SdfApplyListOrdering(std::vector<ItemType>* v, 
                           const std::vector<ItemType>& order);
 
 // Ostream output methods for list values (useful for debugging and required
 // for storing a list value in a VtValue).
 template <typename T>
+SDF_API
 std::ostream & operator<<( std::ostream &, const SdfListOp<T> & );
 
 // Concrete, instantiated listop types.

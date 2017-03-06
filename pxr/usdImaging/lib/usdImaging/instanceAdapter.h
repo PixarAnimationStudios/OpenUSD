@@ -62,22 +62,22 @@ public:
     
     virtual void TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      int requestedBits,
+                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
                                           instancerContext = NULL);
 
     /// Thread Safe.
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  int requestedBits,
-                                  int* dirtyBits,
+                                  HdDirtyBits requestedBits,
+                                  HdDirtyBits* dirtyBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL);
 
     virtual void UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
                                    UsdTimeCode time,
-                                   int requestedBits,
+                                   HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const* 
                                        instancerContext = NULL);
 
@@ -85,8 +85,8 @@ public:
     virtual void UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
-                               int requestedBits,
-                               int* resultBits,
+                               HdDirtyBits requestedBits,
+                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL);
 
@@ -163,7 +163,8 @@ private:
                       SdfPath instanceShaderBinding,
                       SdfPath instancerPath,
                       UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
-                      UsdImagingIndexProxy* index);
+                      UsdImagingIndexProxy* index,
+                      bool *isLeafInstancer);
 
     // Removes and reloads all instancer data, both locally and from the 
     // render index.
@@ -273,8 +274,8 @@ private:
         _ProtoGroupPtr protoGroup;
         // Tracks the variability of the underlying adapter to avoid
         // redundantly reading data. This value is stored as
-        // HdChangeTracker::DirtyBits bit flags.
-        int variabilityBits;
+        // HdDirtyBits flags.
+        HdDirtyBits variabilityBits;
         // When variabilityBits does not include HdChangeTracker::DirtyVisibility
         // the visible field is the unvarying value for visibility.
         bool visible;
@@ -315,6 +316,11 @@ private:
 
         // Map of all rprims for this instancer prim.
         _PrimMap primMap;
+
+        // This is a set of reference paths, where this instancer needs
+        // to deferer to another instancer.  While refered to here as a child
+        // instancer, the actual relationship is more like a directed graph.
+        SdfPathSet childInstancers;
 
         // Proto group containing the instance indexes for each prototype
         // rprim.

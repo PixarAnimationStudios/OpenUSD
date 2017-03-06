@@ -4,13 +4,18 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 set(PXR_PACKAGE tf)
 set(PXR_PREFIX pxr/base)
 
+if(WIN32)
+    set(WINLIBS Shlwapi.lib)
+endif()
+
 pxr_shared_library(tf
     LIBRARIES
         arch
+        ${WINLIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_PYTHON_LIBRARY}
         ${Boost_IOSTREAMS_LIBRARY}
-        ${DOUBLE_CONVERSION_LIBRARY}
+        ${Boost_DATE_TIME_LIBRARY}
         ${TBB_tbb_LIBRARY}
         ${TBB_tbbmalloc_LIBRARY}
 
@@ -18,7 +23,6 @@ pxr_shared_library(tf
         ${PYTHON_INCLUDE_DIR}
         ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
-        ${DOUBLE_CONVERSION_INCLUDE_DIR}
 
     PUBLIC_CLASSES
         anyWeakPtr
@@ -141,10 +145,30 @@ pxr_shared_library(tf
         noticeRegistry
         pyErrorInternal
 
+    PRIVATE_HEADERS 
+        pxrDoubleConversion/ieee.h
+        pxrDoubleConversion/utils.h
+        pxrDoubleConversion/double-conversion.h
+        pxrDoubleConversion/bignum-dtoa.h
+        pxrDoubleConversion/bignum.h
+        pxrDoubleConversion/cached-powers.h
+        pxrDoubleConversion/diy-fp.h
+        pxrDoubleConversion/fast-dtoa.h
+        pxrDoubleConversion/fixed-dtoa.h
+        pxrDoubleConversion/strtod.h
+
     CPPFILES
         initConfig.cpp
         moduleDeps.cpp
         preprocessorUtils.cpp
+        pxrDoubleConversion/double-conversion.cc
+        pxrDoubleConversion/bignum-dtoa.cc
+        pxrDoubleConversion/bignum.cc
+        pxrDoubleConversion/cached-powers.cc
+        pxrDoubleConversion/diy-fp.cc
+        pxrDoubleConversion/fast-dtoa.cc
+        pxrDoubleConversion/fixed-dtoa.cc
+        pxrDoubleConversion/strtod.cc
 
     PYMODULE_CPPFILES
         module.cpp

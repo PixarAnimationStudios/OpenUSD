@@ -25,6 +25,7 @@
 #define USD_RELATIONSHIPS_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/property.h"
 
@@ -165,6 +166,7 @@ public:
     /// What data this actually authors depends on what data is currently
     /// authored in the authoring layer, with respect to list-editing
     /// semantics, which we will document soon 
+    USD_API
     bool AppendTarget(const SdfPath& target) const;
 
     /// Removes \p target from the list of targets.
@@ -172,11 +174,13 @@ public:
     /// Passing paths to master prims or any other objects in masters will 
     /// cause an error to be issued. It is not valid to author targets to
     /// these objects.
+    USD_API
     bool RemoveTarget(const SdfPath& target) const;
 
     /// Clears all target edits from the current EditTarget, and makes
     /// the opinion explicit, which means we are effectively resetting the
     /// composed value of the targets list to empty.
+    USD_API
     bool BlockTargets() const;
 
     /// Make the authoring layer's opinion of the targets list explicit,
@@ -188,6 +192,7 @@ public:
     ///
     /// If any target in \p targets is invalid, no targets will be authored
     /// and this function will return false.
+    USD_API
     bool SetTargets(const SdfPathVector& targets) const;
 
     /// Remove all opinions about the target list from the current edit
@@ -196,6 +201,7 @@ public:
     /// Only remove the spec if \p removeSpec is true (leave the spec to
     /// preserve meta-data we may have intentionally authored on the
     /// relationship)
+    USD_API
     bool ClearTargets(bool removeSpec) const;
 
     /// Compose this relationship's targets and fill \p targets with the result.
@@ -217,6 +223,7 @@ public:
     /// ultimately correspond to the same master.
     ///
     /// The result is not cached, so will be recomputed on every query.
+    USD_API
     bool GetTargets(SdfPathVector* targets,
                     bool forwardToObjectsInMasters = true) const;
 
@@ -249,12 +256,14 @@ public:
     /// Forwarding" for details on the semantics.
     ///
     /// The result is not cached, so will be recomputed on every query.
+    USD_API
     bool GetForwardedTargets(SdfPathVector* targets,
                              bool forwardToObjectsInMasters = true) const;
 
     /// Returns true if any target path opinions have been authored. 
     /// Note that this may include opinions that clear targets and may not 
     /// indicate that target paths will exist for this relationship.
+    USD_API
     bool HasAuthoredTargets() const;
 
     /// @}

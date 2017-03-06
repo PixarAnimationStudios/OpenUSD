@@ -27,9 +27,10 @@
 /// \file usd/resolveInfo.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/pcp/node.h"
 
 #include "pxr/base/tf/declarePtrs.h"

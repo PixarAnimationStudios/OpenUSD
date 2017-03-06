@@ -25,6 +25,7 @@
 #define PCP_DEPENDENCY_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -128,8 +129,10 @@ typedef std::vector<PcpDependency> PcpDependencyVector;
 /// Classify the dependency represented by a node, by analyzing
 /// its structural role in its PcpPrimIndex.  Returns a
 /// bitmask of flags from PcpDependencyType.
+PCP_API
 PcpDependencyFlags PcpClassifyNodeDependency(const PcpNodeRef &n);
 
+PCP_API
 std::string PcpDependencyFlagsToString(const PcpDependencyFlags flags);
 
 PXR_NAMESPACE_CLOSE_SCOPE

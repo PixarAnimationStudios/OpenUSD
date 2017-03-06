@@ -29,7 +29,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/poolAllocator.h"
 #include "pxr/base/tf/stopwatch.h"
-
+#include "pxr/base/arch/nap.h"
 
 #include <boost/bind.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -384,7 +384,7 @@ static bool
 _DelayedGraphTask(Graph *graph)
 {
     std::cout << "\tSleeping..." << std::endl;
-    sleep(2);
+    ArchNap(200);
     return _TestDispatcher<DispatcherType>(graph);
 }
 
@@ -404,7 +404,7 @@ _TestDispatcherCancellation(Graph *graph)
     DispatcherType parentDispatcher;
 
     parentDispatcher.Run(&_DelayedGraphTask<DispatcherType>, graph);
-    sleep(1);
+    ArchNap(100);
     std::cout << "\tCancelling..." << std::endl;
     parentDispatcher.Cancel();
     parentDispatcher.Wait();

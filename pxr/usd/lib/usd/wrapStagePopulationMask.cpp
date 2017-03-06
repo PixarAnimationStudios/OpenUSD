@@ -45,6 +45,8 @@ static string __repr__(UsdStagePopulationMask const &self)
 void wrapUsdStagePopulationMask()
 {
     class_<UsdStagePopulationMask>("StagePopulationMask")
+        .def(init<std::vector<SdfPath>>())
+        
         .def("All", &UsdStagePopulationMask::All)
         .staticmethod("All")
         
@@ -61,6 +63,15 @@ void wrapUsdStagePopulationMask()
                  SdfPath const &) const)
              &UsdStagePopulationMask::GetUnion,
              arg("path"))
+
+        .def("Intersection", &UsdStagePopulationMask::Intersection)
+        .staticmethod("Intersection")
+
+        .def("GetIntersection",
+             (UsdStagePopulationMask (UsdStagePopulationMask::*)(
+                 UsdStagePopulationMask const &) const)
+             &UsdStagePopulationMask::GetIntersection,
+             arg("other"))
 
         .def("Includes",
              (bool (UsdStagePopulationMask::*)(

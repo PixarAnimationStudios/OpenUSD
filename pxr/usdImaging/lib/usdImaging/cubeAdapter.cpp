@@ -68,7 +68,7 @@ UsdImagingCubeAdapter::Populate(UsdPrim const& prim,
 void 
 UsdImagingCubeAdapter::TrackVariabilityPrep(UsdPrim const& prim,
                                             SdfPath const& cachePath,
-                                            int requestedBits,
+                                            HdDirtyBits requestedBits,
                                             UsdImagingInstancerContext const* 
                                                 instancerContext)
 {
@@ -80,8 +80,8 @@ UsdImagingCubeAdapter::TrackVariabilityPrep(UsdPrim const& prim,
 void 
 UsdImagingCubeAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
-                                        int requestedBits,
-                                        int* dirtyBits,
+                                        HdDirtyBits requestedBits,
+                                        HdDirtyBits* dirtyBits,
                                         UsdImagingInstancerContext const* 
                                             instancerContext)
 {
@@ -106,7 +106,7 @@ void
 UsdImagingCubeAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                          SdfPath const& cachePath, 
                                          UsdTimeCode time,
-                                         int requestedBits,
+                                         HdDirtyBits requestedBits,
                                          UsdImagingInstancerContext const* 
                                              instancerContext)
 {
@@ -124,8 +124,8 @@ void
 UsdImagingCubeAdapter::UpdateForTime(UsdPrim const& prim,
                                      SdfPath const& cachePath, 
                                      UsdTimeCode time,
-                                     int requestedBits,
-                                     int* resultBits,
+                                     HdDirtyBits requestedBits,
+                                     HdDirtyBits* resultBits,
                                      UsdImagingInstancerContext const* 
                                          instancerContext)
 {

@@ -49,9 +49,11 @@
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 
-#include "pxr/base/tracelite/trace.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/errno.h"
+#include "pxr/base/tracelite/trace.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/iterator.h"
@@ -1622,7 +1624,7 @@ SdfLayer::InsertSubLayerPath(const string& path, int index)
     SdfSubLayerProxy proxy = GetSubLayerPaths();
 
     if (index == -1) {
-        index = proxy.size();
+        index = static_cast<int>(proxy.size());
     }
 
     proxy.Insert(index, path);
@@ -1945,9 +1947,9 @@ SdfLayer::CanApply(
     static const bool fixBackpointers = true;
     SdfLayerHandle self = SdfCreateNonConstHandle(this);
     if (!edits.Process(NULL,
-                          boost::bind(&_HasObjectAtPath, self, _1),
-                          boost::bind(&_CanEdit, self, _1, _2),
-                          details, !fixBackpointers)) {
+                       boost::bind(&_HasObjectAtPath, self, _1),
+                       boost::bind(&_CanEdit, self, _1, _2),
+                       details, !fixBackpointers)) {
         result = CombineError(result);
     }
 
@@ -1965,9 +1967,9 @@ SdfLayer::Apply(const SdfBatchNamespaceEdit& edits)
     SdfLayerHandle self(this);
     SdfNamespaceEditVector final;
     if (!edits.Process(&final,
-                          boost::bind(&_HasObjectAtPath, self, _1),
-                          boost::bind(&_CanEdit, self, _1, _2),
-                          NULL, !fixBackpointers)) {
+                       boost::bind(&_HasObjectAtPath, self, _1),
+                       boost::bind(&_CanEdit, self, _1, _2),
+                       NULL, !fixBackpointers)) {
         return false;
     }
 
@@ -3097,7 +3099,7 @@ SdfLayer::EraseFieldDictValueByKey(const SdfAbstractDataSpecId& id,
     }
 
     if (!_data->HasDictKey(id, fieldName, keyPath,
-                              static_cast<VtValue *>(NULL))) {
+                           static_cast<VtValue *>(NULL))) {
         return;
     }
 
@@ -3246,7 +3248,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData)
                                                   SdfSpecifierOver)
                         == SdfSpecifierOver)
                     && (newData->GetAs<TfToken>(id, SdfFieldKeys->TypeName,
-                                                 TfToken())
+                                                TfToken())
                         .IsEmpty());
             } else if (path.IsPropertyPath()) {
                 // Properties are considered inert if they are custom.
@@ -3356,7 +3358,7 @@ SdfLayer::_PrimPushChild(const SdfPath& parentPath,
 {
     SdfAbstractDataSpecId id(&parentPath);
 
-    if (not HasField(id, fieldName)) {
+    if (!HasField(id, fieldName)) {
         _PrimSetField(id, fieldName,
             VtValue(std::vector<T>(1, value)));
         return;
@@ -3772,7 +3774,7 @@ bool
 SdfLayer::_IsInertSubtree(const SdfPath &path)
 {
     if (!_IsInert(path, true /*ignoreChildren*/, 
-                     true /* requiredFieldOnlyPropertiesAreInert */)) {
+                  true /* requiredFieldOnlyPropertiesAreInert */)) {
         return false;
     }
 
@@ -3789,8 +3791,8 @@ SdfLayer::_IsInertSubtree(const SdfPath &path)
             path, SdfChildrenKeys->PropertyChildren);
         TF_FOR_ALL(i, properties) {
             if (!_IsInert(path.AppendProperty(*i), 
-                             false /*ignoreChildren*/, 
-                             true /* requiredFieldOnlyPropertiesAreInert */)) {
+                          false /*ignoreChildren*/, 
+                          true /* requiredFieldOnlyPropertiesAreInert */)) {
 
                 return false;
             }
@@ -3906,7 +3908,7 @@ SdfLayer::_Save(bool force) const
         return true;
 
     if (!_WriteToFile(path, std::string(), 
-                         GetFileFormat(), GetFileFormatArguments()))
+                      GetFileFormat(), GetFileFormatArguments()))
         return false;
 
     // Record modification timestamp.

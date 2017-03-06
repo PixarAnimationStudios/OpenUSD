@@ -27,6 +27,7 @@
 /// \file usd/primData.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/sdf/types.h"
@@ -42,6 +43,7 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include <atomic>
+#include <cstdint>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -143,6 +145,7 @@ public:
     bool MayHaveOpinionsInClips() const { return _flags[Usd_PrimClipsFlag]; }
 
     /// Return this prim's composed specifier.
+    USD_API
     SdfSpecifier GetSpecifier() const;
 
 public:
@@ -152,6 +155,7 @@ public:
     // --------------------------------------------------------------------- //
 
     /// Return this prim's parent prim.  Return NULL if this is a root prim.
+    USD_API
     Usd_PrimDataConstPtr GetParent() const;
 
     // --------------------------------------------------------------------- //
@@ -174,6 +178,7 @@ public:
     ///
     /// In either of the above two cases, this prim index will not have the 
     /// same path as the prim's path.
+    USD_API
     const class PcpPrimIndex &GetPrimIndex() const;
 
     /// Return a const reference to the source PcpPrimIndex for this prim.
@@ -182,6 +187,7 @@ public:
     /// this is the prim index for the instance that was chosen to serve
     /// as the master for all other instances.  This prim index will not
     /// have the same path as the prim's path.
+    USD_API
     const class PcpPrimIndex &GetSourcePrimIndex() const;
 
     // --------------------------------------------------------------------- //
@@ -223,7 +229,9 @@ public:
     // --------------------------------------------------------------------- //
 private:
 
+    USD_API
     Usd_PrimData(UsdStage *stage, const SdfPath& path);
+    USD_API
     ~Usd_PrimData();
 
     // Compute and store cached flags.
@@ -299,11 +307,10 @@ private:
     TfToken _typeName;
     Usd_PrimData *_firstChild;
     TfPointerAndBits<Usd_PrimData> _nextSiblingOrParent;
+    mutable std::atomic<int64_t> _refCount;
     Usd_PrimFlagBits _flags;
 
-    // Reference count and intrusive_ptr core primitives implementation.
-    mutable std::atomic_int _refCount;
-
+    // intrusive_ptr core primitives implementation.
     friend void intrusive_ptr_add_ref(const Usd_PrimData *prim) {
         prim->_refCount.fetch_add(1, std::memory_order_relaxed);
     }
@@ -312,6 +319,7 @@ private:
             delete prim;
     }
 
+    USD_API
     friend void Usd_IssueFatalPrimAccessError(Usd_PrimData const *p);
     friend std::string Usd_DescribePrimData(const Usd_PrimData *p);
 
@@ -447,8 +455,8 @@ Usd_PrimData::_GetSubtreeRange() const
 
 // Search for the next sibling that matches \p pred (up to \p end).  If such a
 // sibling exists, move \p p to it and return false.  If no such sibling exists
-// then move \p to its parent return true.  If \p end is reached while looking
-// for siblings, move \p p to \p end and return false.
+// then move \p to its parent and return true.  If \p end is reached while 
+// looking for siblings, move \p p to \p end and return false.
 template <class PrimDataPtr>
 inline bool
 Usd_MoveToNextSiblingOrParent(PrimDataPtr &p, PrimDataPtr end,
@@ -463,6 +471,15 @@ Usd_MoveToNextSiblingOrParent(PrimDataPtr &p, PrimDataPtr end,
 
     // Return true if we successfully moved to a parent, otherwise false.
     return !next && p;
+}
+
+// Convenience method for calling the above with \p end = \c nullptr.
+template <class PrimDataPtr>
+inline bool
+Usd_MoveToNextSiblingOrParent(PrimDataPtr &p, 
+                              const Usd_PrimFlagsPredicate &pred)
+{
+    return Usd_MoveToNextSiblingOrParent(p, PrimDataPtr(nullptr), pred);
 }
 
 // Search for the first direct child of \p p that matches \p pred (up to
@@ -481,6 +498,13 @@ Usd_MoveToChild(PrimDataPtr &p, PrimDataPtr end,
     return false;
 }
 
+// Convenience method for calling the above with \p end = \c nullptr.
+template <class PrimDataPtr>
+inline bool
+Usd_MoveToChild(PrimDataPtr &p, const Usd_PrimFlagsPredicate &pred) 
+{
+    return Usd_MoveToChild(p, PrimDataPtr(nullptr), pred);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

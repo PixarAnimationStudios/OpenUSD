@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using std::vector;
 
-TF_INSTANTIATE_STACKED(UsdStageCacheContext);
+TF_INSTANTIATE_DEFINED_STACKED(UsdStageCacheContext);
 
 TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(UsdBlockStageCaches);

@@ -74,8 +74,8 @@ template <class T> class TfWeakPtr;
 ///
 /// <b>Basic Use</b>
 ///
-/// A \c TfWeakPtr<T> can access \c T's public members by the \c -> operator;
-/// however, the dereference operator "\c *" is not defined.
+/// A \c TfWeakPtr<T> can access \c T's public members by the \c -> operator
+/// and can be dereferenced by the "\c *" operator.
 ///
 /// A \c TfWeakPtr converts to a \c true bool value (for example, in an \c if
 /// statement) only if the pointer points to an unexpired object.  Otherwise,

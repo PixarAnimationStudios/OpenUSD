@@ -12,6 +12,7 @@ pxr_shared_library(usdShade
     PUBLIC_CLASSES
         connectableAPI
         debugCodes
+        input
         interfaceAttribute
         look
         material
@@ -20,9 +21,12 @@ pxr_shared_library(usdShade
         pShader
         pShaderUtils
         shader
-        subgraph
+        nodeGraph
         tokens
         utils
+
+    PUBLIC_HEADERS
+        api.h
 
     CPPFILES
         moduleDeps.cpp
@@ -30,6 +34,7 @@ pxr_shared_library(usdShade
     PYMODULE_CPPFILES
         module.cpp
         wrapConnectableAPI.cpp
+        wrapInput.cpp
         wrapInterfaceAttribute.cpp
         wrapLook.cpp
         wrapMaterial.cpp
@@ -37,7 +42,7 @@ pxr_shared_library(usdShade
         wrapParameter.cpp
         wrapPShader.cpp
         wrapShader.cpp
-        wrapSubgraph.cpp
+        wrapNodeGraph.cpp
         wrapTokens.cpp
         wrapUtils.cpp
 

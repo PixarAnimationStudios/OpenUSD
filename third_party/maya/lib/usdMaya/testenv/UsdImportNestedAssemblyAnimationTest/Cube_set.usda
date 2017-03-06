@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    defaultPrim = "Cube_set"
+    endTimeCode = 149
+    startTimeCode = 101
+    upAxis = "Z"
+)
+
+def Xform "Cube_set" (
+    kind = "assembly"
+)
+{
+    def Xform "Cubes_grp" (
+        kind = "group"
+    )
+    {
+        def "AnimationDirectlyInModelCube" (
+            add references = @./AnimatedCubeModel.usda@
+        )
+        {
+        }
+
+        def "AnimationInLayerOnReferencedCube" (
+            add references = @./AnimationLayer.usda@
+        )
+        {
+            double3 xformOp:translate = (0, 0, 10)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}

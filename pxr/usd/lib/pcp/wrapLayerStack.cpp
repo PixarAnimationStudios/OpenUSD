@@ -101,4 +101,6 @@ void wrapLayerStack()
         ;
 }
 
+TF_REFPTR_CONST_VOLATILE_GET(PcpLayerStack)
+
 PXR_NAMESPACE_CLOSE_SCOPE

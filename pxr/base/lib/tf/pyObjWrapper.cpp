@@ -90,7 +90,7 @@ TfPyObjWrapper::operator==(TfPyObjWrapper const &other) const
 bool
 TfPyObjWrapper::operator!=(TfPyObjWrapper const &other) const
 {
-    return not (*this == other);
+    return !(*this == other);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

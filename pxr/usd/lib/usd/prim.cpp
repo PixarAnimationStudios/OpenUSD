@@ -53,7 +53,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 UsdPrim
 UsdPrim::GetChild(const TfToken &name) const
 {
@@ -662,8 +661,7 @@ UsdPrim::Unload() const
 UsdPrim
 UsdPrim::GetNextSibling() const
 {
-    return GetFilteredNextSibling(UsdPrimIsActive && UsdPrimIsDefined &&
-                                  UsdPrimIsLoaded && !UsdPrimIsAbstract);
+    return GetFilteredNextSibling(UsdPrimDefaultPredicate);
 }
 
 UsdPrim

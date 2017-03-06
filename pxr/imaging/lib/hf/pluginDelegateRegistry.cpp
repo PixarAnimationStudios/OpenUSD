@@ -113,8 +113,12 @@ HfPluginDelegateRegistry::ReleaseDelegate(HfPluginDelegateBase *delegate)
 }
 
 bool
-HfPluginDelegateRegistry::IsRegisteredDelegate(const TfToken &delegateId) const
+HfPluginDelegateRegistry::IsRegisteredDelegate(const TfToken &delegateId)
 {
+    if (!_delegateCachePopulated) {
+        _DiscoverDelegates();
+    }
+
     _TokenMap::const_iterator it = _delegateIndex.find(delegateId);
     return (it != _delegateIndex.end());
 }
@@ -122,6 +126,10 @@ HfPluginDelegateRegistry::IsRegisteredDelegate(const TfToken &delegateId) const
 HfPluginDelegateBase *
 HfPluginDelegateRegistry::GetDelegate(const TfToken &delegateId)
 {
+    if (!_delegateCachePopulated) {
+        _DiscoverDelegates();
+    }
+
     _TokenMap::const_iterator it = _delegateIndex.find(delegateId);
     if (it == _delegateIndex.end()) {
         return nullptr;

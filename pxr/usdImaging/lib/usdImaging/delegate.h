@@ -435,6 +435,10 @@ private:
     // reconstructed for all prims below \p rootPath.
     void _ResyncPrim(SdfPath const& rootPath, UsdImagingIndexProxy* proxy);
 
+    // Process all pending updates, ensuring that rprims are marked dirty
+    // as needed.
+    void _ProcessPendingUpdates();
+
     // ---------------------------------------------------------------------- //
     // Usd Data-Access Helper Methods
     // ---------------------------------------------------------------------- //
@@ -549,7 +553,7 @@ private:
     /// Tracks a set of dirty flags for each prim, these flags get sent to the
     /// render index as time changes to trigger invalidation. All prims exist in
     /// this map, but some will have flags set to HdChangeTracker::Clean.
-    typedef TfHashMap<SdfPath, int, SdfPath::Hash> _DirtyMap;
+    typedef TfHashMap<SdfPath, HdDirtyBits, SdfPath::Hash> _DirtyMap;
     _DirtyMap _dirtyMap;
 
     typedef TfHashMap<SdfPath, bool, SdfPath::Hash> _ShaderMap;
@@ -562,13 +566,13 @@ private:
 
     // Retrieves the dirty bits for a given usdPath and allows mutation of the
     // held value, but requires that the entry already exists in the map.
-    int* _GetDirtyBits(SdfPath const& usdPath);
+    HdDirtyBits* _GetDirtyBits(SdfPath const& usdPath);
 
-    void _MarkRprimOrInstancerDirty(SdfPath const& usdPath, int dirtyFlags);
+    void _MarkRprimOrInstancerDirty(SdfPath const& usdPath, HdDirtyBits dirtyFlags);
 
     void _MarkSubtreeDirty(SdfPath const &subtreeRoot,
-                           int rprimDirtyFlag,
-                           int instancerDirtyFlag);
+                           HdDirtyBits rprimDirtyFlag,
+                           HdDirtyBits instancerDirtyFlag);
 
     bool _IsChildPath(SdfPath const& path) const {
         return path.IsPropertyPath();

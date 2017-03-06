@@ -214,7 +214,7 @@ private:
     std::string _GetRepr() const
     {
         std::string result("{");
-        if (not _proxy.empty()) {
+        if (! _proxy.empty()) {
             _const_iterator i = _proxy.begin(), n = _proxy.end();
             result += TfPyRepr(i->first) + ": " + TfPyRepr(i->second);
             while (++i != n) {
@@ -260,9 +260,9 @@ private:
     void _SetItemBySlice(const boost::python::slice& slice,
                          const mapped_vector_type& values)
     {
-        if (not TfPyIsNone(slice.start()) or
-            not TfPyIsNone(slice.stop()) or
-            not TfPyIsNone(slice.step())) {
+        if (! TfPyIsNone(slice.start()) ||
+            ! TfPyIsNone(slice.stop()) ||
+            ! TfPyIsNone(slice.step())) {
             TfPyThrowIndexError("can only assign to full slice [:]");
         }
         else {
@@ -295,7 +295,7 @@ private:
 
     void _InsertItemByIndex(int index, const mapped_type& value)
     {
-        if (index < -1 or index > static_cast<int>(_proxy.size())) {
+        if (index < -1 || index > static_cast<int>(_proxy.size())) {
             TfPyThrowIndexError("list index out of range");
         }
         _proxy._Insert(value, index);

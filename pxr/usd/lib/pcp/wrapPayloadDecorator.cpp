@@ -155,4 +155,7 @@ wrapPayloadDecorator()
         ;
 }
 
+TF_REFPTR_CONST_VOLATILE_GET(PcpPayloadDecorator)
+TF_REFPTR_CONST_VOLATILE_GET(Pcp_PolymorphicPayloadDecorator)
+
 PXR_NAMESPACE_CLOSE_SCOPE

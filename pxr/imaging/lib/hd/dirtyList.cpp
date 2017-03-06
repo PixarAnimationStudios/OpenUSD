@@ -141,7 +141,7 @@ HdDirtyList::~HdDirtyList()
 }
 
 void
-HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdChangeTracker::DirtyBits mask)
+HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdDirtyBits mask)
 {
     HD_TRACE_FUNCTION();
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyListsRebuilt);

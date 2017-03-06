@@ -246,7 +246,7 @@ _CompareNodeStrength(
     // there are enough corresponding elements in bNodes, flipping the
     // arguments and return value if necessary.
     if (bNodes.size() < aNodes.size()) {
-        return _CompareNodeStrength(b, bNodes, a, aNodes) * -1;
+        return -_CompareNodeStrength(b, bNodes, a, aNodes);
     }
 
     TF_VERIFY(aNodes.size() <= bNodes.size());

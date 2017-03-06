@@ -29,6 +29,8 @@
 /// Utilities for extracting asset dependencies from a USD file.
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdUtils/api.h"
+
 #include <string>
 #include <vector>
 
@@ -43,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \note No recursive chasing of dependencies is performed; that is the
 /// client's responsibility, if desired.
+USDUTILS_API
 void UsdUtilsExtractExternalReferences(
     const std::string& filePath,
     std::vector<std::string>* subLayers,

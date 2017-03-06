@@ -40,7 +40,6 @@
 #include <boost/python/object/class_detail.hpp>
 #include <boost/function.hpp>
 #include <boost/python/wrapper.hpp>
-#include <boost/static_assert.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/python/has_back_reference.hpp>
 
@@ -105,7 +104,7 @@ struct TfPyPolymorphic :
                     PyErr_Clear();
 
                     // do the appropriate conversion, if possible
-                    if (borrowed_f and PyMethod_Check(borrowed_f.get())) {
+                    if (borrowed_f && PyMethod_Check(borrowed_f.get())) {
                         func_object =
                             ((PyMethodObject*)borrowed_f.get())->im_func;
                     }
@@ -127,7 +126,7 @@ struct TfPyPolymorphic :
     Override GetPureOverride(char const *func) const {
         TfPyLock pyLock;
         Override ret = GetOverride(func);
-        if (not ret) {
+        if (!ret) {
             // Raise a *python* exception when no virtual is found.  This is
             // because a subsequent attempt to call ret will result in a python
             // exception, but a far less useful one.  If we were to simply make
@@ -203,7 +202,8 @@ TfPyPolymorphic<Derived>::CallVirtual(
     char const *fname,
     Ret (Cls::*defaultImpl)(Args...))
 {
-    BOOST_STATIC_ASSERT((boost::is_base_of<This, Cls>::value));
+    static_assert(std::is_base_of<This, Cls>::value,
+                  "This must be a base of Cls.");
     TfPyLock lock;
     if (Override o = GetOverride(fname))
         return boost::function<Ret (Args...)>(TfPyCall<Ret>(o));
@@ -219,7 +219,8 @@ TfPyPolymorphic<Derived>::CallVirtual(
     char const *fname,
     Ret (Cls::*defaultImpl)(Args...) const) const
 {
-    BOOST_STATIC_ASSERT((boost::is_base_of<This, Cls>::value));
+    static_assert(std::is_base_of<This, Cls>::value,
+                  "This must be a base of Cls.");
     TfPyLock lock;
     if (Override o = GetOverride(fname))
         return boost::function<Ret (Args...)>(TfPyCall<Ret>(o));

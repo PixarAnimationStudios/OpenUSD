@@ -18,6 +18,7 @@ pxr_shared_library(hdSt
         basisCurves
         mesh
         points
+        shader
 
     PRIVATE_CLASSES
         basisCurvesComputations

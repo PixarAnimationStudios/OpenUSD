@@ -27,6 +27,7 @@
 /// \file sdf/textFileFormat.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h" 
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -41,7 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Version, "1.4.32"))           \
     ((Target,  "sdf"))
 
-TF_DECLARE_PUBLIC_TOKENS(SdfTextFileFormatTokens, SDF_TEXT_FILE_FORMAT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(SdfTextFileFormatTokens,
+                         SDF_API, SDF_TEXT_FILE_FORMAT_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfTextFileFormat);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerBase);
@@ -60,6 +62,7 @@ public:
     /// instead of any existing layer comment, without changing the existing
     /// comment. Returns true if the content is successfully written to
     /// stream. Otherwise, false is returned and errors are posted.
+    SDF_API
     bool Write(
         const SdfLayerBase* layerBase,
         std::ostream& ostr,
@@ -68,33 +71,40 @@ public:
     /// Writes the content in \p layerBase into the stream \p ostr. If the
     /// content is successfully written, this method returns true. Otherwise,
     /// false is returned and errors are posted. 
+    SDF_API
     bool WriteToStream(
         const SdfLayerBase* layerBase,
         std::ostream& ostr) const;
 
     // SdfFileFormat overrides.
+    SDF_API
     virtual bool CanRead(const std::string &file) const;
 
+    SDF_API
     virtual bool Read(
         const SdfLayerBasePtr& layerBase,
         const std::string& resolvedPath,
         bool metadataOnly) const;
 
+    SDF_API
     virtual bool WriteToFile(
         const SdfLayerBase* layerBase,
         const std::string& filePath,
         const std::string& comment = std::string(),
         const FileFormatArguments& args = FileFormatArguments()) const;
 
+    SDF_API
     virtual bool ReadFromString(
         const SdfLayerBasePtr& layerBase,
         const std::string& str) const;
 
+    SDF_API
     virtual bool WriteToString(
         const SdfLayerBase* layerBase,
         std::string* str,
         const std::string& comment = std::string()) const;
 
+    SDF_API
     virtual bool WriteToStream(
         const SdfSpecHandle &spec,
         std::ostream& out,
@@ -104,15 +114,18 @@ protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
 
     /// Destructor.
+    SDF_API
     virtual ~SdfTextFileFormat();
 
     /// Constructor.
+    SDF_API
     SdfTextFileFormat();
 
     /// Constructor. This form of the constructor may be used by formats that
     /// use menva as their internal representation.  If a non-empty
     /// versionString is provided, it will be used as the file format version;
     /// otherwise the menva format version will be implicitly used.
+    SDF_API
     explicit SdfTextFileFormat(const TfToken& formatId,
                                const TfToken& versionString = TfToken(),
                                const TfToken& target = TfToken());
@@ -121,9 +134,9 @@ private:
 
     // Override to return false.  Reloading anonymous menva files clears their
     // content.
-    virtual bool _ShouldSkipAnonymousReload() const;
+    SDF_API virtual bool _ShouldSkipAnonymousReload() const;
 
-    virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
+    SDF_API virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

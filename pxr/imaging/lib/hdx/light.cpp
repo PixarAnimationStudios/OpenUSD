@@ -46,10 +46,14 @@ HdxLight::~HdxLight()
 
 /* virtual */
 void
-HdxLight::Sync(HdSceneDelegate *sceneDelegate)
+HdxLight::Sync(HdSceneDelegate *sceneDelegate,
+               HdRenderParam   *renderParam,
+               HdDirtyBits     *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+    TF_UNUSED(renderParam);
 
     SdfPath const &id = GetID();
 
@@ -64,9 +68,7 @@ HdxLight::Sync(HdSceneDelegate *sceneDelegate)
     // aggregation/pre-computation, in order to make the shader execution
     // efficient.
 
-    HdChangeTracker& changeTracker =
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-    HdChangeTracker::DirtyBits bits = changeTracker.GetSprimDirtyBits(id);
+    HdDirtyBits bits = *dirtyBits;
 
     // Change tracking
 
@@ -104,6 +106,10 @@ HdxLight::Sync(HdSceneDelegate *sceneDelegate)
 
             if (_params[HdxLightTokens->shadowCollection] != newCollection) {
                 _params[HdxLightTokens->shadowCollection] = newCollection;
+
+                HdChangeTracker& changeTracker =
+                             sceneDelegate->GetRenderIndex().GetChangeTracker();
+
                 changeTracker.MarkCollectionDirty(newCollection.GetName());
             }
 
@@ -111,6 +117,8 @@ HdxLight::Sync(HdSceneDelegate *sceneDelegate)
             _params[HdxLightTokens->shadowCollection] = HdRprimCollection();
         }
     }
+
+    *dirtyBits = Clean;
 }
 
 /* virtual */
@@ -123,7 +131,7 @@ HdxLight::Get(TfToken const &token) const
 }
 
 /* virtual */
-int
+HdDirtyBits
 HdxLight::GetInitialDirtyBitsMask() const
 {
     return AllDirty;

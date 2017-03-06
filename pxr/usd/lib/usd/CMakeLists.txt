@@ -3,6 +3,7 @@ set(PXR_PACKAGE usd)
 
 pxr_shared_library(usd
     LIBRARIES
+        arch
         kind
         pcp
         sdf
@@ -67,11 +68,14 @@ pxr_shared_library(usd
         instanceCache
         instanceKey
         interpolators
-        wrapUtils
+
+    PUBLIC_HEADERS
+        api.h
 
     PRIVATE_HEADERS
         crateDataTypes.h
         crateValueInliners.h
+        wrapUtils.h
 
     CPPFILES
         moduleDeps.cpp
@@ -106,6 +110,7 @@ pxr_shared_library(usd
         wrapTimeCode.cpp
         wrapTreeIterator.cpp
         wrapTyped.cpp
+        wrapUtils.cpp
         wrapVariantSets.cpp
 
     PYTHON_FILES

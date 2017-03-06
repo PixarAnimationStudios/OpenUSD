@@ -25,8 +25,10 @@
 #define PCP_TYPES_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/site.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/base/tf/denseHashSet.h"
 
 #include <limits>
 #include <vector>
@@ -167,10 +169,11 @@ struct Pcp_SdSiteRef : boost::totally_ordered<Pcp_SdSiteRef> {
 // Internal type for Sd sites.
 struct Pcp_CompressedSdSite {
     Pcp_CompressedSdSite(size_t nodeIndex_, size_t layerIndex_) :
-        nodeIndex(nodeIndex_), layerIndex(layerIndex_)
+        nodeIndex(static_cast<uint16_t>(nodeIndex_)),
+        layerIndex(static_cast<uint16_t>(layerIndex_))
     {
-        TF_VERIFY(nodeIndex_  < (1 << 16));
-        TF_VERIFY(layerIndex_ < (1 << 16));
+        TF_VERIFY(nodeIndex_  < (size_t(1) << 16));
+        TF_VERIFY(layerIndex_ < (size_t(1) << 16));
     }
 
     // These are small to minimize the size of vectors of these.
@@ -188,6 +191,8 @@ typedef std::vector<Pcp_CompressedSdSite> Pcp_CompressedSdSiteVector;
 /// fallback in sequence, using the first one that exists.
 ///
 typedef std::map<std::string, std::vector<std::string>> PcpVariantFallbackMap;
+
+typedef TfDenseHashSet<TfToken, TfToken::HashFunctor> PcpTokenSet;
 
 /// A value which indicates an invalid index. This is simply used inplace of
 /// either -1 or numeric_limits::max() (which are equivalent for size_t). 

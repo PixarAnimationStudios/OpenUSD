@@ -60,19 +60,25 @@ over "GLOBAL" (
             }
             dictionary outputs = {
                 string value = "outputs:"
-                string doc = """The prefix on UsdShadeShader attributes
+                string doc = """The prefix on shading attributes
                 denoting an output.
+                """
+            }
+            dictionary inputs = {
+                string value = "inputs:"
+                string doc = """The prefix on shading attributes
+                denoting an input.
                 """
             }
             dictionary interface = {
                 string value = "interface:"
-                string doc = """The prefix on UsdShadeSubgraph attributes 
+                string doc = """The prefix on UsdShadeNodeGraph attributes 
                 denoting an interface attribute.
                 """
             }
             dictionary interfaceRecipientsOf = {
                 string value = "interfaceRecipientsOf:"
-                string doc = """The prefix on UsdShadeSubgraph relationships
+                string doc = """The prefix on UsdShadeNodeGraph relationships
                 denoting the target of an interface attribute.
                 """
             }
@@ -94,33 +100,34 @@ class PShader "PShader" (
 
 
 
-class Subgraph "Subgraph" (
+class NodeGraph "NodeGraph" (
     inherits = </Typed>
-    doc = """A subgraph is a container for shading nodes, as well as other 
-    subgraphs. It has a public input interface and provides a list of public 
+    doc = """A node-graph is a container for shading nodes, as well as other 
+    node-graphs. It has a public input interface and provides a list of public 
     outputs.
 
-    <b>Subgraph Interfaces</b>
+    <b>Node Graph Interfaces</b>
     
-    One of the most important functions of a Subgraph is to host the "interface"
+    One of the most important functions of a node-graph is to host the "interface"
     with which clients of already-built shading networks will interact.  Please
-    see \\ref UsdShadeSubgraph_Interfaces "Interface Attributes" for a detailed
+    see \\ref UsdShadeNodeGraph_Interfaces "Interface Attributes" for a detailed
     explanation of what the interface provides, and how to construct and
     use it to effectively share/instance shader networks.
 
-    <b>Subgraph Outputs</b>
+    <b>Node Graph Outputs</b>
 
     These behave like outputs on a shader and are typically connected to an 
-    output on a shader inside the subgraph.
+    output on a shader inside the node-graph.
     """
     customData = {
         string extraIncludes = """
 #include <utility>
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/relationship.h"
+#include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
-#include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/parameter.h"
 """
     }
 ) {
@@ -129,7 +136,7 @@ class Subgraph "Subgraph" (
 
 
 class Material "Material" (
-    inherits = </Subgraph>
+    inherits = </NodeGraph>
     doc = """A Material provides a container into which multiple "render targets"
     can add data that defines a "shading material" for a renderer.  Typically
     this consists of one or more UsdRelationship properties that target
@@ -257,8 +264,9 @@ class Shader "Shader" (
     UsdShadeParameter schema.""" 
     customData = {
         string extraIncludes = """
-#include "pxr/usd/usdShade/parameter.h"
+#include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/parameter.h"
     """
     }
 ) {
@@ -284,7 +292,7 @@ class "ConnectableAPI"
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/subgraph.h"
+#include "pxr/usd/usdShade/nodeGraph.h"
     """
     }
 )

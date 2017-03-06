@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -59,7 +60,7 @@ HdRprim::GetDrawItems(HdSceneDelegate* delegate,
 {
     // note: GetDrawItems is called at execute phase.
     // All required dirtyBits should have cleaned at this point.
-    HdChangeTracker::DirtyBits dirtyBits(HdChangeTracker::Clean);
+    HdDirtyBits dirtyBits(HdChangeTracker::Clean);
     TfToken reprName = _GetReprName(delegate, defaultReprName,
                                     forced, &dirtyBits);
     return _GetRepr(delegate, reprName, &dirtyBits)->GetDrawItems();
@@ -67,10 +68,10 @@ HdRprim::GetDrawItems(HdSceneDelegate* delegate,
 
 
 void
-HdRprim::Sync(HdSceneDelegate* delegate,
+HdRprim::_Sync(HdSceneDelegate* delegate,
               TfToken const &defaultReprName,
               bool forced,
-              HdChangeTracker::DirtyBits *dirtyBits)
+              HdDirtyBits *dirtyBits)
 {
     HdRenderIndex   &renderIndex   = delegate->GetRenderIndex();
     HdChangeTracker &changeTracker = renderIndex.GetChangeTracker();
@@ -90,19 +91,13 @@ HdRprim::Sync(HdSceneDelegate* delegate,
 
         *dirtyBits &= ~HdChangeTracker::DirtySurfaceShader;
     }
-
-    TfToken reprName = _GetReprName(delegate, defaultReprName,
-                                    forced, dirtyBits);
-    _GetRepr(delegate, reprName, dirtyBits);
-
-    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
 TfToken
 HdRprim::_GetReprName(HdSceneDelegate* delegate,
                       TfToken const &defaultReprName,
                       bool forced,
-                      HdChangeTracker::DirtyBits *dirtyBits)
+                      HdDirtyBits *dirtyBits)
 {
     // resolve reprName
 
@@ -120,10 +115,32 @@ HdRprim::_GetReprName(HdSceneDelegate* delegate,
     return defaultReprName;
 }
 
+// Static
+HdDirtyBits
+HdRprim::_PropagateRprimDirtyBits(HdDirtyBits bits)
+{
+    // propagate point dirtiness to normal
+    bits |= (bits & HdChangeTracker::DirtyPoints) ?
+                                              HdChangeTracker::DirtyNormals : 0;
+
+    // when refine level changes, topology becomes dirty.
+    // XXX: can we remove DirtyRefineLevel then?
+    if (bits & HdChangeTracker::DirtyRefineLevel) {
+        bits |=  HdChangeTracker::DirtyTopology;
+    }
+
+    // if topology changes, all dependent bits become dirty.
+    if (bits & HdChangeTracker::DirtyTopology) {
+        bits |= (HdChangeTracker::DirtyPoints  |
+                 HdChangeTracker::DirtyNormals |
+                 HdChangeTracker::DirtyPrimVar);
+    }
+    return bits;
+}
 
 void
 HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
-                           HdChangeTracker::DirtyBits *dirtyBits)
+                           HdDirtyBits *dirtyBits)
 {
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, GetId())) {
         _sharedData.visible = delegate->GetVisible(GetId());
@@ -163,7 +180,7 @@ HdRprim::SetPrimId(int32_t primId)
     // Don't set DirtyPrimID here, to avoid undesired variability tracking.
 }
 
-int
+HdDirtyBits
 HdRprim::GetInitialDirtyBitsMask() const
 {
     return _GetInitialDirtyBits();
@@ -172,7 +189,7 @@ HdRprim::GetInitialDirtyBitsMask() const
 void
 HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
                                    HdDrawItem *drawItem,
-                                   HdChangeTracker::DirtyBits *dirtyBits)
+                                   HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -181,8 +198,20 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 
+
     // XXX: this should be in a different method
-    _sharedData.surfaceShader = renderIndex.GetShader(_surfaceShaderID);
+    // XXX: This should be in HdSt getting the HdSt Shader
+    const HdShader *shader = static_cast<const HdShader *>(
+                                  renderIndex.GetSprim(HdPrimTypeTokens->shader,
+                                                       _surfaceShaderID));
+
+    if (shader == nullptr) {
+        shader = static_cast<const HdShader *>(
+                        renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
+    }
+
+    _sharedData.surfaceShader = shader->GetShaderCode();
+
 
     // update uniforms
     HdBufferSourceVector sources;
@@ -314,7 +343,7 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
 void
 HdRprim::_PopulateInstancePrimVars(HdSceneDelegate* delegate,
                                    HdDrawItem *drawItem,
-                                   HdChangeTracker::DirtyBits *dirtyBits,
+                                   HdDirtyBits *dirtyBits,
                                    int instancePrimVarSlot)
 {
     HD_TRACE_FUNCTION();

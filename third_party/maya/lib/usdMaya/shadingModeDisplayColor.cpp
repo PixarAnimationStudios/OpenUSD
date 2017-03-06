@@ -23,7 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/translatorLook.h"
+#include "usdMaya/translatorMaterial.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/usd/usd/stage.h"
@@ -129,36 +129,36 @@ DEFINE_SHADING_MODE_EXPORTER(displayColor, context)
         }
     }
 
-    bool makeLookPrim = true;
-    if (makeLookPrim) {
-        if (UsdShadeMaterial look = 
-            UsdShadeMaterial(context->MakeStandardLookPrim(assignments))) {
-            // Create a Diffuse RIS shader for the Look.
+    bool makeMaterialPrim = true;
+    if (makeMaterialPrim) {
+        if (UsdShadeMaterial material = 
+            UsdShadeMaterial(context->MakeStandardMaterialPrim(assignments))) {
+            // Create a Diffuse RIS shader for the Material.
             // Although Maya can't yet make use of it, downstream apps
-            // can make use of Look interface attributes, so create one to
+            // can make use of Material interface attributes, so create one to
             // drive the shader's color.
             //
             // NOTE!  We do not set any values directly on the shaders;
-            // instead we set the values only on the look's interface,
+            // instead we set the values only on the material's interface,
             // emphasizing that the interface is a value provider for
             // its shading networks.
-            UsdShadeInterfaceAttribute dispColorIA = look.CreateInterfaceAttribute(
+            UsdShadeInterfaceAttribute dispColorIA = material.CreateInterfaceAttribute(
                     _tokens->displayColor, 
                     SdfValueTypeNames->Color3f);
             dispColorIA.Set(VtValue(color));
 
 
-            UsdPrim lookPrim = look.GetPrim();
+            UsdPrim materialPrim = material.GetPrim();
             std::string shaderName = TfStringPrintf("%s_lambert",
-                                       lookPrim.GetName().GetText());
+                                       materialPrim.GetName().GetText());
             TfToken shaderPrimName(shaderName);
             UsdRiRisBxdf bxdfSchema = UsdRiRisBxdf::Define(
-                    stage, lookPrim.GetPath().AppendChild(shaderPrimName));
+                    stage, materialPrim.GetPath().AppendChild(shaderPrimName));
             bxdfSchema.CreateFilePathAttr(VtValue(SdfAssetPath("PxrDiffuse")));
             UsdShadeParameter diffuse =
                 bxdfSchema.CreateParameter(_tokens->diffuseColor, 
                                            SdfValueTypeNames->Color3f);
-            UsdRiLookAPI(look).SetInterfaceRecipient(dispColorIA, diffuse);
+            UsdRiLookAPI(material).SetInterfaceRecipient(dispColorIA, diffuse);
 
             
             // Make an interface attr for transparency, which we will hook up
@@ -166,11 +166,11 @@ DEFINE_SHADING_MODE_EXPORTER(displayColor, context)
             // want to consume it.  Only author a *value* if we got a
             // non-zero transparency
             UsdShadeInterfaceAttribute transparencyIA = 
-                look.CreateInterfaceAttribute(_tokens->transparency, 
-                                              SdfValueTypeNames->Color3f);
+                material.CreateInterfaceAttribute(_tokens->transparency, 
+                                                  SdfValueTypeNames->Color3f);
             UsdShadeInterfaceAttribute dispOpacityIA = 
-                look.CreateInterfaceAttribute(_tokens->displayOpacity, 
-                                              SdfValueTypeNames->Float);
+                material.CreateInterfaceAttribute(_tokens->displayOpacity, 
+                                                  SdfValueTypeNames->Float);
 
             // PxrDiffuse's transmissionColor may not produce similar
             // results to MfnLambertShader's transparency, but it's in
@@ -178,8 +178,8 @@ DEFINE_SHADING_MODE_EXPORTER(displayColor, context)
             UsdShadeParameter transmission =
                 bxdfSchema.CreateParameter(_tokens->transmissionColor, 
                                            SdfValueTypeNames->Color3f);
-            UsdRiLookAPI(look).SetInterfaceRecipient(transparencyIA, 
-                                                     transmission);
+            UsdRiLookAPI(material).SetInterfaceRecipient(transparencyIA, 
+                                                         transmission);
             if (transparencyAvg > 0){
                 transparencyIA.Set(VtValue(transparency));
                 dispOpacityIA.Set(VtValue((float)(1.0-transparencyAvg)));
@@ -190,23 +190,23 @@ DEFINE_SHADING_MODE_EXPORTER(displayColor, context)
         
 DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
 {
-    const UsdShadeMaterial& shadeLook = context->GetShadeLook();
+    const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();
     const UsdGeomGprim& primSchema = context->GetBoundPrim();
 
     MStatus status;
 
     // Note that we always couple the source of the displayColor with the
     // source of the displayOpacity.  It would not make sense to get the
-    // displayColor from a bound Look, while getting the displayOpacity from
-    // the gprim itself, for example, even if the Look did not have
-    // displayOpacity authored. When the Look or gprim does not have
+    // displayColor from a bound Material, while getting the displayOpacity from
+    // the gprim itself, for example, even if the Material did not have
+    // displayOpacity authored. When the Material or gprim does not have
     // displayOpacity authored, we fall back to full opacity.
     bool gotDisplayColorAndOpacity=false;
 
     // Get Display Color from USD (linear) and convert to Display
     GfVec3f linearDisplayColor(.5,.5,.5), linearTransparency(0, 0, 0);
-    if (!shadeLook || 
-        !shadeLook.GetInterfaceAttribute(_tokens->displayColor).GetAttr().Get(&linearDisplayColor)) {
+    if (!shadeMaterial || 
+        !shadeMaterial.GetInterfaceAttribute(_tokens->displayColor).GetAttr().Get(&linearDisplayColor)) {
         VtArray<GfVec3f> gprimDisplayColor(1);
         if (primSchema && 
             primSchema.GetDisplayColorPrimvar().ComputeFlattened(&gprimDisplayColor)) 
@@ -221,15 +221,15 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
             }
             gotDisplayColorAndOpacity = true;
         } else {
-            MString warn = MString("Unable to retrieve DisplayColor on Look: ");
-            warn += shadeLook ? shadeLook.GetPrim().GetPath().GetText() : "<NONE>";
+            MString warn = MString("Unable to retrieve DisplayColor on Material: ");
+            warn += shadeMaterial ? shadeMaterial.GetPrim().GetPath().GetText() : "<NONE>";
             warn += " or GPrim: ";
             warn += primSchema ? primSchema.GetPrim().GetPath().GetText() 
                                : "<NONE>";
             MGlobal::displayWarning(warn);
         }
     } else {
-        shadeLook
+        shadeMaterial
             .GetInterfaceAttribute(_tokens->transparency)
             .GetAttr()
             .Get(&linearTransparency);
@@ -242,12 +242,12 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
 
         std::string shaderName(_tokens->MayaShaderName.GetText());
         SdfPath shaderParentPath = SdfPath::AbsoluteRootPath();
-        if (shadeLook) {
-            const UsdPrim& shadeLookPrim = shadeLook.GetPrim();
+        if (shadeMaterial) {
+            const UsdPrim& shadeMaterialPrim = shadeMaterial.GetPrim();
             shaderName = TfStringPrintf("%s_%s",
-                shadeLookPrim.GetName().GetText(),
+                shadeMaterialPrim.GetName().GetText(),
                 _tokens->MayaShaderName.GetText());
-            shaderParentPath = shadeLookPrim.GetPath();
+            shaderParentPath = shadeMaterialPrim.GetPath();
         }
 
         MString mShaderName(shaderName.c_str());

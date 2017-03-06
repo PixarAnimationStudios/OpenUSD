@@ -44,15 +44,10 @@
 #include <string>
 #include <vector>
 
-// XXX: Work around GCC 4.8's inability to see that we're using
-//      boost::optional safely.  See GCC bug 47679.
-#include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/pragmas.h"
+ARCH_PRAGMA_MAYBE_UNINITIALIZED
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-#if ARCH_COMPILER_GCC_MAJOR == 4 && ARCH_COMPILER_GCC_MINOR == 8
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
 
 bool
 UsdIsClipRelatedField(const TfToken& fieldName)
@@ -222,6 +217,18 @@ _DeriveClipInfo(const std::string& templateAssetPath,
                 const SdfLayerHandle& layer,
                 const PcpLayerStackPtr& layerStack)
 {
+    if (stride == 0) {
+        TF_WARN("Invalid clipTemplateStride %f on <%s> in LayerStack %s "
+                "at spec @%s@<%s>\n. clipTemplateStride "
+                "must be greater than 0.", 
+                stride,
+                node.GetRootNode().GetPath().GetString().c_str(),
+                TfStringify(node.GetLayerStack()).c_str(),
+                layer->GetIdentifier().c_str(), 
+                node.GetPath().GetString().c_str());
+        return;
+    }
+
     auto path = TfGetPathName(templateAssetPath);
     auto basename = TfGetBaseName(templateAssetPath);
     auto tokenizedBasename = TfStringTokenize(basename, ".");

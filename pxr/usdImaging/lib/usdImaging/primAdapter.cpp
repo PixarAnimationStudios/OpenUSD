@@ -211,9 +211,9 @@ UsdImagingPrimAdapter::_MergePrimvar(
 bool 
 UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
                                   TfToken const& attrName, 
-                                  HdChangeTracker::DirtyBits dirtyFlag, 
+                                  HdDirtyBits dirtyFlag,
                                   TfToken const& perfToken,
-                                  int* dirtyFlags,
+                                  HdDirtyBits* dirtyFlags,
                                   bool isInherited)
 {
     HD_TRACE_FUNCTION();
@@ -241,9 +241,9 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
 
 bool 
 UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
-                                           HdChangeTracker::DirtyBits dirtyFlag, 
+                                           HdDirtyBits dirtyFlag,
                                            TfToken const& perfToken,
-                                           int* dirtyFlags)
+                                           HdDirtyBits* dirtyFlags)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

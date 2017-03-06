@@ -68,10 +68,14 @@ UsdObject::_GetMetadataImpl(
         *this, key, keyPath, /*useFallbacks=*/true, value);
 }
 
-template bool
+template
+USD_API
+bool
 UsdObject::_GetMetadataImpl(
     const TfToken&, VtValue*, const TfToken &) const;
-template bool
+template
+USD_API
+bool
 UsdObject::_GetMetadataImpl(
     const TfToken&, SdfAbstractDataValue*, const TfToken &) const;
 
@@ -102,10 +106,14 @@ UsdObject::_SetMetadataImpl(const TfToken& key, const T& value,
 }
 
 
-template bool
+template
+USD_API
+bool
 UsdObject::_SetMetadataImpl(
     const TfToken&, const VtValue&, const TfToken &) const;
-template bool
+template
+USD_API
+bool
 UsdObject::_SetMetadataImpl(
     const TfToken&, const SdfAbstractDataConstValue&, const TfToken &) const;
 

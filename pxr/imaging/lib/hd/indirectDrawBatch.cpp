@@ -1550,12 +1550,14 @@ Hd_IndirectDrawBatch::_CullingProgram::_Link(
             : drawElementsOutputs;
 
         const int nOutputs = 5;
-        BOOST_STATIC_ASSERT(
+        static_assert(
             sizeof(drawArraysOutputs)/sizeof(drawArraysOutputs[0])
-            == nOutputs);
-        BOOST_STATIC_ASSERT(
+            == nOutputs,
+            "Size of drawArraysOutputs element must equal nOutputs.");
+        static_assert(
             sizeof(drawElementsOutputs)/sizeof(drawElementsOutputs[0])
-            == nOutputs);
+            == nOutputs,
+            "Size of drawElementsOutputs element must equal nOutputs.");
         glTransformFeedbackVaryings(glslProgram->GetProgram().GetId(),
                                     nOutputs,
                                     outputs, GL_INTERLEAVED_ATTRIBS);

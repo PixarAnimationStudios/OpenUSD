@@ -202,7 +202,7 @@ public:
     void SetRefineLevel(SdfPath const &id, int refineLevel);
 
     /// Marks an rprim in the RenderIndex as dirty with the given dirty flags.
-    void MarkRprimDirty(SdfPath path, HdChangeTracker::DirtyBits flag);
+    void MarkRprimDirty(SdfPath path, HdDirtyBits flag);
 
     void UpdatePositions(SdfPath const &id, float time);
     void UpdateRprims(float time);

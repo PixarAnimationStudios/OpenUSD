@@ -50,7 +50,7 @@ class PxOsdMeshTopology {
 
 public:
 
-    typedef size_t ID;
+    typedef uint64_t ID;
 
     PxOsdMeshTopology();
 

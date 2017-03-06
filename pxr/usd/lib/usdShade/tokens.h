@@ -34,6 +34,7 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,7 +47,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (displayColor) \
     (displayOpacity) \
     ((infoId, "info:id")) \
-    ((interface, "interface:")) \
+    ((inputs, "inputs:")) \
+    ((interface_, "interface:")) \
     ((interfaceRecipientsOf, "interfaceRecipientsOf:")) \
     ((lookBinding, "look:binding")) \
     ((materialBinding, "material:binding")) \
@@ -83,17 +85,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>displayColor</b> - UsdShadePShader
 /// \li <b>displayOpacity</b> - UsdShadePShader
 /// \li <b>infoId</b> - UsdShadeShader
-/// \li <b>interface</b> - The prefix on UsdShadeSubgraph attributes  denoting an interface attribute. 
-/// \li <b>interfaceRecipientsOf</b> - The prefix on UsdShadeSubgraph relationships denoting the target of an interface attribute. 
+/// \li <b>inputs</b> - The prefix on shading attributes denoting an input. 
+/// \li <b>interface_</b> - The prefix on UsdShadeNodeGraph attributes  denoting an interface attribute. 
+/// \li <b>interfaceRecipientsOf</b> - The prefix on UsdShadeNodeGraph relationships denoting the target of an interface attribute. 
 /// \li <b>lookBinding</b> - The relationship name on non shading prims to denote a binding to a UsdShadeLook. This is a deprecated relationship and is superceded by material:binding. 
 /// \li <b>materialBinding</b> -  The relationship name on non-shading prims to denote a binding to a UsdShadeMaterial. 
 /// \li <b>materialVariant</b> - The variant name of material variation described on a UsdShadeMaterial. 
-/// \li <b>outputs</b> - The prefix on UsdShadeShader attributes denoting an output. 
+/// \li <b>outputs</b> - The prefix on shading attributes denoting an output. 
 /// \li <b>shaderProtocol</b> - UsdShadePShader
 /// \li <b>shaderType</b> - UsdShadePShader
 /// \li <b>sloPath</b> - UsdShadePShader
 /// \li <b>surface</b> - Describes the surface relationship terminal on a UsdShadeMaterial. Used to find the terminal UsdShadeShader describing the surface of a UsdShadeMaterial. 
-TF_DECLARE_PUBLIC_TOKENS(UsdShadeTokens, USDSHADE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdShadeTokens, USDSHADE_API, USDSHADE_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

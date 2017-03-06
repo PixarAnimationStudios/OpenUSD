@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/type.h"
 #include <boost/python/class.hpp>
@@ -78,7 +79,7 @@ struct TfTypePythonClass : public TfType_WrapHelpers::_PythonClass {};
 /// A helper for wrapping C++ types.
 /// This method defines a TfType for the given python class object, and also
 /// recursively defines TfTypes for all the Python bases if necessary.
-TfType TfType_DefinePythonTypeAndBases( const boost::python::object & classObj );
+TF_API TfType TfType_DefinePythonTypeAndBases( const boost::python::object & classObj );
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

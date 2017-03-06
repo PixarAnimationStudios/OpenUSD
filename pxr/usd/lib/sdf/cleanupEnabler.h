@@ -27,6 +27,7 @@
 /// \file sdf/cleanupEnabler.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/stacked.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -65,17 +66,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// }
 /// \endcode
 ///
-class SdfCleanupEnabler : 
-    public TfStacked<SdfCleanupEnabler, /* thread safe */ false>
+TF_DEFINE_STACKED(SdfCleanupEnabler, false, SDF_API)
 {
 public:
 
-    SdfCleanupEnabler();
+    SDF_API SdfCleanupEnabler();
 
-    ~SdfCleanupEnabler();
+    SDF_API ~SdfCleanupEnabler();
 
     /// Returns whether cleanup is currently being scheduled.
-    static bool IsCleanupEnabled();
+    SDF_API static bool IsCleanupEnabled();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

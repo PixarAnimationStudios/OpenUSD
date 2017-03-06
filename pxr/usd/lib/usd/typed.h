@@ -25,6 +25,7 @@
 #define USD_TYPED_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -64,6 +65,7 @@ public:
     {
     }
 
+    USD_API
     virtual ~UsdTyped();
 
     /// Return a vector of names of all pre-declared attributes for this schema
@@ -85,11 +87,14 @@ public:
     /// UsdTyped(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USD_API
     static UsdTyped
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
+    USD_API
     virtual bool _IsCompatible(const UsdPrim &prim) const;
+    USD_API
     virtual const TfType &_GetTfType() const;
 };
 

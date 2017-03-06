@@ -62,21 +62,28 @@ public:
              SdfPath const& instancerId = SdfPath());
     virtual ~HdStPoints();
 
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdRenderParam*   renderParam,
+                      HdDirtyBits*     dirtyBits,
+                      TfToken const&   reprName,
+                      bool             forcedRepr) override;
+
     /// Configure geometric style of drawItems for \p reprName
     static void ConfigureRepr(TfToken const &reprName,
                               const HdStPointsReprDesc &desc);
+
 
 protected:
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
                  TfToken const &reprName,
-                 HdChangeTracker::DirtyBits *dirtyBitsState) override;
+                 HdDirtyBits *dirtyBitsState) override;
 
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                  HdDrawItem *drawItem,
-                                 HdChangeTracker::DirtyBits *dirtyBitsState);
+                                 HdDirtyBits *dirtyBitsState);
 
-    virtual HdChangeTracker::DirtyBits _GetInitialDirtyBits() const override;
+    virtual HdDirtyBits _GetInitialDirtyBits() const override;
 
 private:
     enum DrawingCoord {
@@ -85,7 +92,7 @@ private:
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdDrawItem *drawItem,
-                         HdChangeTracker::DirtyBits *dirtyBits);
+                         HdDirtyBits *dirtyBits);
 
     typedef _ReprDescConfigs<HdStPointsReprDesc> _PointsReprConfig;
     static _PointsReprConfig _reprDescConfig;

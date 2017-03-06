@@ -25,6 +25,7 @@
 #define PCP_TARGET_INDEX_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
@@ -58,6 +59,7 @@ struct PcpTargetIndex {
 ///
 /// Note that this function will skip the validation checks performed
 /// by PcpBuildFilteredTargetIndex. See documentation below for details.
+PCP_API
 void
 PcpBuildTargetIndex(
     const PcpSite& propSite,
@@ -82,6 +84,7 @@ PcpBuildTargetIndex(
 ///
 /// \p allErrors will contain any errors encountered while
 /// performing this operation.
+PCP_API
 void
 PcpBuildFilteredTargetIndex(
     const PcpSite& propSite,

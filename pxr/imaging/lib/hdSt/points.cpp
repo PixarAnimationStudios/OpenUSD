@@ -59,9 +59,30 @@ HdStPoints::~HdStPoints()
 }
 
 void
+HdStPoints::Sync(HdSceneDelegate* delegate,
+                 HdRenderParam*   renderParam,
+                 HdDirtyBits*     dirtyBits,
+                 TfToken const&   reprName,
+                 bool             forcedRepr)
+{
+    TF_UNUSED(renderParam);
+
+    HdRprim::_Sync(delegate,
+                  reprName,
+                  forcedRepr,
+                  dirtyBits);
+
+    TfToken calcReprName = _GetReprName(delegate, reprName,
+                                        forcedRepr, dirtyBits);
+    _GetRepr(delegate, calcReprName, dirtyBits);
+
+    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+}
+
+void
 HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                             HdDrawItem *drawItem,
-                            HdChangeTracker::DirtyBits *dirtyBits)
+                            HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -104,7 +125,7 @@ HdStPoints::ConfigureRepr(TfToken const &reprName,
 HdReprSharedPtr const &
 HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
                      TfToken const &reprName,
-                     HdChangeTracker::DirtyBits *dirtyBits)
+                     HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -127,6 +148,9 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    *dirtyBits = _PropagateRprimDirtyBits(*dirtyBits);
+
+
     // points don't have multiple draw items (for now)
     if (isNew || HdChangeTracker::IsDirty(*dirtyBits)) {
         if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {
@@ -142,7 +166,7 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
 void
 HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                     HdDrawItem *drawItem,
-                                    HdChangeTracker::DirtyBits *dirtyBits)
+                                    HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -220,10 +244,10 @@ HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                  sources);
 }
 
-HdChangeTracker::DirtyBits 
+HdDirtyBits 
 HdStPoints::_GetInitialDirtyBits() const
 {
-    int mask = HdChangeTracker::Clean
+    HdDirtyBits mask = HdChangeTracker::Clean
         | HdChangeTracker::DirtyExtent
         | HdChangeTracker::DirtyInstanceIndex
         | HdChangeTracker::DirtyPoints
@@ -236,7 +260,7 @@ HdStPoints::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyWidths
         ;
 
-    return (HdChangeTracker::DirtyBits)mask;
+    return mask;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

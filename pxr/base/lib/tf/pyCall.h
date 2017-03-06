@@ -21,13 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
-#include "pxr/pxr.h"
-
-#if !BOOST_PP_IS_ITERATING
-
-#  ifndef TF_PYCALL_H
-#  define TF_PYCALL_H
+#ifndef TF_PY_CALL_H
+#define TF_PY_CALL_H
 
 /// \file tf/pyCall.h
 /// Utilities for calling python callables.
@@ -35,17 +30,13 @@
 /// These functions handle trapping python errors and converting them to \a
 /// TfErrors.
 
-#ifndef TF_MAX_ARITY
-#  define TF_MAX_ARITY 7
-#endif // TF_MAX_ARITY
+#include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include <boost/preprocessor.hpp>
 #include <boost/python/call.hpp>
-#include <boost/python/object.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,42 +59,26 @@ struct TfPyCall {
     /// boost::python::object works, since those implicitly convert to \c
     /// TfPyObjWrapper, however in that case the GIL must be held by the caller.
     explicit TfPyCall(TfPyObjWrapper const &c) : _callable(c) {}
-  private:
+
+    template <typename... Args>
+    Return operator()(Args... args);
+
+private:
     TfPyObjWrapper _callable;
-  public:
-#define BOOST_PP_ITERATION_LIMITS (0, TF_MAX_ARITY)
-#define BOOST_PP_FILENAME_1 "pxr/base/tf/pyCall.h"
-#include BOOST_PP_ITERATE()
 };
-/* comment needed for scons dependency scanner
-#include "pxr/base/tf/pyCall.h"
-*/
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#  endif // TF_PYCALL_H
-
-#else // BOOST_PP_IS_ITERATING
-
-#  define N BOOST_PP_ITERATION()
-
-// This generates multi-argument versions of TfPyCall.
-// One nice thing about this style of PP repetition is that the debugger will
-// actually step you over these lines for any instantiation of Ctor.  Also
-// compile errors will point to the correct line here.
-
-#if N
-template <BOOST_PP_ENUM_PARAMS(N, class A)>
-#endif
-Return operator()(BOOST_PP_ENUM_BINARY_PARAMS(N, A, a))
+template <typename Return>
+template <typename... Args>
+inline Return
+TfPyCall<Return>::operator()(Args... args)
 {
     TfPyLock pyLock;
     // Do *not* call through if there's an active python exception.
-    if (not PyErr_Occurred()) {
+    if (!PyErr_Occurred()) {
         try {
             return boost::python::call<Return>
-                (_callable.ptr() BOOST_PP_ENUM_TRAILING_PARAMS(N, a));
-        } catch (boost::python::error_already_set const &e) {
+                (_callable.ptr(), args...);
+        } catch (boost::python::error_already_set const &) {
             // Convert any exception to TF_ERRORs.
             TfPyConvertPythonExceptionToTfErrors();
             PyErr_Clear();
@@ -111,7 +86,7 @@ Return operator()(BOOST_PP_ENUM_BINARY_PARAMS(N, A, a))
     }
     return Return();
 }
-#  undef N
 
-#endif // BOOST_PP_IS_ITERATING
+PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif

@@ -31,7 +31,6 @@
 #include <algorithm>
 #include <iostream>
 #include <signal.h>
-#include <unistd.h>
 
 using std::cerr;
 using std::endl;

@@ -25,6 +25,7 @@
 #define SUBTRACTION_OPERATOR
 #define UNARY_NEG_OPERATOR
 #define DOUBLE_MULT_OPERATOR
+
 // Vec types support *, but as a dot product, so return is a double rather than
 // a Vec, so we can't use it on two Vecs, just on Vec * double
 // (sure we could create special overloading for

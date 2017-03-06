@@ -64,7 +64,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     TRACE_FUNCTION();
     TfAutoMallocTag2 tag("GlimRg", __PRETTY_FUNCTION__);
 
-    HdChangeTracker::DirtyBits bits = _GetTaskDirtyBits();
+    HdDirtyBits bits = _GetTaskDirtyBits();
 
     if (bits & HdChangeTracker::DirtyParams) {
         HdxDrawTargetTaskParams params;

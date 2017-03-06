@@ -32,7 +32,7 @@
 #include "pxr/base/tf/type.h"
 
 {% for S in SCALARS if S != SCL -%}
-#include "pxr/base/gf/quat{{ S[0] }}.h"
+#include "pxr/base/gf/quat{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 
 PXR_NAMESPACE_OPEN_SCOPE

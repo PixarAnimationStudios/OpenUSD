@@ -27,6 +27,7 @@
 /// \file usd/prim.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/primFlags.h"
@@ -50,7 +51,6 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class UsdTreeIterator;
 class Usd_PrimData;
@@ -142,6 +142,7 @@ public:
 
     /// Return this prim's definition from the UsdSchemaRegistry based on the
     /// prim's type if one exists, otherwise return null.
+    USD_API
     SdfPrimSpecHandle GetPrimDefinition() const;
 
     /// Return this prim's composed specifier.
@@ -156,6 +157,7 @@ public:
     /// PrimStack for the purposes of expedited value resolution for prim
     /// metadata, since not all metadata resolves with simple "strongest
     /// opinion wins" semantics.
+    USD_API
     SdfPrimSpecHandleVector GetPrimStack() const;
 
     /// Author an opinion for this Prim's specifier at the current edit
@@ -239,6 +241,7 @@ public:
     ///
     /// \sa GetAuthoredPropertyNames()
     /// \sa UsdProperty::IsAuthored()
+    USD_API
     TfTokenVector GetPropertyNames() const;
 
     /// Return this prim's property names (attributes and relationships) that
@@ -248,6 +251,7 @@ public:
     ///
     /// \sa GetPropertyNames()
     /// \sa UsdProperty::IsAuthored() 
+    USD_API
     TfTokenVector GetAuthoredPropertyNames() const;
 
     /// Return all of this prim's properties (attributes and relationships),
@@ -287,6 +291,7 @@ public:
     ///
     /// \sa GetAuthoredProperties()
     /// \sa UsdProperty::IsAuthored()
+    USD_API
     std::vector<UsdProperty> GetProperties() const;
 
     /// Return this prim's properties (attributes and relationships) that have
@@ -296,6 +301,7 @@ public:
     ///
     /// \sa GetProperties()
     /// \sa UsdProperty::IsAuthored()
+    USD_API
     std::vector<UsdProperty> GetAuthoredProperties() const;
 
     /// Return this prim's properties that are inside the given property
@@ -309,6 +315,7 @@ public:
     /// GetProperties().
     ///
     /// For details of namespaced properties, see \ref Usd_Ordering
+    USD_API
     std::vector<UsdProperty>
     GetPropertiesInNamespace(const std::vector<std::string> &namespaces) const;
 
@@ -316,6 +323,7 @@ public:
     /// \p namespaces must be an already-concatenated ordered set of namespaces,
     /// and may or may not terminate with the namespace-separator character. If
     /// \p namespaces is empty, this method is equivalent to GetProperties().
+    USD_API
     std::vector<UsdProperty>
     GetPropertiesInNamespace(const std::string &namespaces) const;
 
@@ -324,6 +332,7 @@ public:
     /// UsdProperty::IsAuthored().
     ///
     /// For details of namespaced properties, see \ref Usd_Ordering
+    USD_API
     std::vector<UsdProperty>
     GetAuthoredPropertiesInNamespace(
         const std::vector<std::string> &namespaces) const;
@@ -333,19 +342,23 @@ public:
     /// and may or may not terminate with the namespace-separator character. If
     /// \p namespaces is empty, this method is equivalent to
     /// GetAuthoredProperties().
+    USD_API
     std::vector<UsdProperty>
     GetAuthoredPropertiesInNamespace(const std::string &namespaces) const;
 
     /// Return the strongest propertyOrder metadata value authored on this prim.
+    USD_API
     TfTokenVector GetPropertyOrder() const;
 
     /// Author an opinion for propertyOrder metadata on this prim at the current
     /// EditTarget.
+    USD_API
     void SetPropertyOrder(const TfTokenVector &order) const;
 
     /// Remove all scene description for the property with the
     /// given \p propName <em>in the current UsdEditTarget</em>.
     /// Return true if the property is removed, false otherwise.
+    USD_API
     bool RemoveProperty(const TfToken &propName);
 
     /// Return a UsdProperty with the name \a propName. The property 
@@ -360,16 +373,19 @@ public:
     ///    // myProp was not defined/authored
     /// }
     /// \endcode
+    USD_API
     UsdProperty GetProperty(const TfToken &propName) const;
 
     /// Return true if this prim has an property named \p propName, false
     /// otherwise.
+    USD_API
     bool HasProperty(const TfToken &propName) const;
 
 private:
     friend void wrapUsdPrim();
     /// The non-templated implementation of UsdPrim::IsA using the
     /// TfType system.
+    USD_API
     bool _IsA(const TfType& schemaType) const;
 
 public:
@@ -394,20 +410,17 @@ public:
     /// \code
     /// prim.GetStage()->GetPrimAtPath(prim.GetPath().AppendChild(name))
     /// \endcode
+    USD_API
     UsdPrim GetChild(const TfToken &name) const;
 
     /// Return this prim's active, loaded, defined, non-abstract children as an
     /// iterable range.  Equivalent to:
     /// \code
-    /// GetFilteredChildren(UsdPrimIsActive and UsdPrimIsDefined and
-    ///                     UsdPrimIsLoaded and not UsdPrimIsAbstract)
+    /// GetFilteredChildren(UsdPrimDefaultPredicate)
     /// \endcode
     ///
-    /// The above conjunction defines the "canonical traversal predicate,"
-    /// as it represents the prims on the stage that a processor would
-    /// typically consider present, meaningful, and needful of consideration.
-    ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" 
+    /// and #UsdPrimDefaultPredicate for more information.
     inline SiblingRange GetChildren() const;
 
     /// Return all this prim's children as an iterable range.
@@ -420,26 +433,29 @@ public:
     /// Example usage:
     /// \code
     /// // Get all active model children.
-    /// GetFilteredChildren(UsdPrimIsActive and UsdPrimIsModel);
+    /// GetFilteredChildren(UsdPrimIsActive && UsdPrimIsModel);
+    ///
+    /// // Get all model children that pass the default predicate.
+    /// GetFilteredChildren(UsdPrimDefaultPredicate && UsdPrimIsModel);
     /// \endcode
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" 
+    /// and #UsdPrimDefaultPredicate for more information.
     inline SiblingRange
     GetFilteredChildren(const Usd_PrimFlagsPredicate &predicate) const;
 
     /// Return this prim's active, loaded, defined, non-abstract descendants as
     /// an iterable range.  Equivalent to:
     /// \code
-    /// GetFilteredDescendants(UsdPrimIsActive and UsdPrimIsDefined and
-    ///                        UsdPrimIsLoaded and not UsdPrimIsAbstract)
+    /// GetFilteredDescendants(UsdPrimDefaultPredicate)
     /// \endcode
     ///
     /// \note This method is not yet available in python, pending some
     /// refactoring to make it more feasible.
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information,
-    /// UsdStage::Traverse(), and \c UsdTreeIterator for more general Stage
-    /// traversal behviors.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" and 
+    /// #UsdPrimDefaultPredicate for more information, UsdStage::Traverse(), 
+    /// and \c UsdTreeIterator for more general Stage traversal behaviors.
     inline SubtreeRange GetDescendants() const;
 
     /// Return all this prim's descendants as an iterable range.
@@ -447,9 +463,9 @@ public:
     /// \note This method is not yet available in python, pending some
     /// refactoring to make it more feasible.
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information,
-    /// UsdStage::TraverseAll(), and \c UsdTreeIterator for more general Stage
-    /// traversal behviors.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" and 
+    /// #UsdPrimDefaultPredicate for more information, UsdStage::Traverse(), 
+    /// and \c UsdTreeIterator for more general Stage traversal behaviors.
     inline SubtreeRange GetAllDescendants() const;
 
     /// Return a subset of all of this prim's descendants filtered by
@@ -459,15 +475,18 @@ public:
     /// Example usage:
     /// \code
     /// // Get all active model descendants.
-    /// GetFilteredDescendants(UsdPrimIsActive and UsdPrimIsModel);
+    /// GetFilteredDescendants(UsdPrimIsActive && UsdPrimIsModel);
+    /// 
+    /// // Get all model descendants that pass the default predicate.
+    /// GetFilteredDescendants(UsdPrimDefaultPredicate && UsdPrimIsModel);
     /// \endcode
     ///
     /// \note This method is not yet available in python, pending some
     /// refactoring to make it more feasible.
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information,
-    /// UsdStage::Traverse(), and \c UsdTreeIterator for more general Stage
-    /// traversal behviors.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" and 
+    /// #UsdPrimDefaultPredicate for more information, UsdStage::Traverse(), 
+    /// and \c UsdTreeIterator for more general Stage traversal behaviors.
     inline SubtreeRange
     GetFilteredDescendants(const Usd_PrimFlagsPredicate &predicate) const;
 
@@ -482,20 +501,23 @@ public:
         return Usd_PrimDataHandle(_Prim()->GetParent());
     }
 
-    /// Return this prim's next sibling if it has one, otherwise return the
-    /// invalid UsdPrim.  This is equivalent to:
+    /// Return this prim's next active, loaded, defined, non-abstract sibling 
+    /// if it has one, otherwise return an invalid UsdPrim.  Equivalent to:
     /// \code
-    /// GetFilteredNextSibling(UsdPrimIsActive and UsdPrimIsDefined and
-    ///                        UsdPrimIsLoaded and not UsdPrimIsAbstract)
+    /// GetFilteredNextSibling(UsdPrimDefaultPredicate)
     /// \endcode
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" 
+    /// and #UsdPrimDefaultPredicate for more information.
+    USD_API
     UsdPrim GetNextSibling() const;
 
     /// Return this prim's next sibling that matches \p predicate if it has one,
     /// otherwise return the invalid UsdPrim.
     ///
-    /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+    /// See \ref Usd_PrimFlags "Prim predicate flags" 
+    /// and #UsdPrimDefaultPredicate for more information.
+    USD_API
     UsdPrim GetFilteredNextSibling(
         const Usd_PrimFlagsPredicate &predicate) const;
 
@@ -508,6 +530,7 @@ public:
     ///
     /// The returned object also provides the API for adding new VariantSets
     /// to the prim.
+    USD_API
     UsdVariantSets GetVariantSets() const;
 
     /// Retrieve a specifically named VariantSet for editing or constructing
@@ -517,6 +540,7 @@ public:
     /// \code
     /// prim.GetVariantSets().GetVariantSet(variantSetName)
     /// \endcode
+    USD_API
     UsdVariantSet GetVariantSet(const std::string& variantSetName) const;
 
     /// Return true if this prim has any authored VariantSets.
@@ -524,6 +548,7 @@ public:
     /// \note this connotes only the *existence* of one of more VariantSets,
     /// *not* that such VariantSets necessarily contain any variants or
     /// variant opinions.
+    USD_API
     bool HasVariantSets() const;
 
 
@@ -588,6 +613,7 @@ public:
     /// the provided \a typeName and \a custom for the required metadata fields.
     /// Note that these supplied arguments are only ever used in this particular
     /// circumstance, in all other cases they are ignored.
+    USD_API
     UsdAttribute
     CreateAttribute(const TfToken& name,
                     const SdfValueTypeName &typeName,
@@ -595,6 +621,7 @@ public:
                     SdfVariability variability = SdfVariabilityVarying) const;
     /// \overload
     /// Create a custom attribute with \p name, \p typeName and \p variability.
+    USD_API
     UsdAttribute
     CreateAttribute(const TfToken& name,
                     const SdfValueTypeName &typeName,
@@ -604,6 +631,7 @@ public:
     /// This overload of CreateAttribute() accepts a vector of name components
     /// used to construct a \em namespaced property name.  For details, see
     /// \ref Usd_Ordering
+    USD_API
     UsdAttribute CreateAttribute(
         const std::vector<std::string> &nameElts,
         const SdfValueTypeName &typeName,
@@ -612,16 +640,19 @@ public:
     /// \overload
     /// Create a custom attribute with \p nameElts, \p typeName, and
     /// \p variability.
+    USD_API
     UsdAttribute CreateAttribute(
         const std::vector<std::string> &nameElts,
         const SdfValueTypeName &typeName,
         SdfVariability variability = SdfVariabilityVarying) const;
 
     /// Like GetProperties(), but exclude all relationships from the result.
+    USD_API
     std::vector<UsdAttribute> GetAttributes() const;
 
     /// Like GetAttributes(), but exclude attributes without authored scene
     /// description from the result.  See UsdProperty::IsAuthored().
+    USD_API
     std::vector<UsdAttribute> GetAuthoredAttributes() const;
 
     /// Return a UsdAttribute with the name \a attrName. The attribute 
@@ -636,10 +667,12 @@ public:
     ///    // myAttr was not defined/authored
     /// }
     /// \endcode
+    USD_API
     UsdAttribute GetAttribute(const TfToken& attrName) const;
 
     /// Return true if this prim has an attribute named \p attrName, false
     /// otherwise.
+    USD_API
     bool HasAttribute(const TfToken& attrName) const;
 
     // --------------------------------------------------------------------- //
@@ -682,6 +715,7 @@ public:
     /// - Otherwise author a uniform relationship spec at the current
     /// EditTarget, honoring \p custom .
     ///
+    USD_API
     UsdRelationship CreateRelationship(const TfToken& relName,
                                        bool custom=true) const;
 
@@ -689,15 +723,18 @@ public:
     /// This overload of CreateRelationship() accepts a vector of
     /// name components used to construct a \em namespaced property name.
     /// For details, see \ref Usd_Ordering
+    USD_API
     UsdRelationship CreateRelationship(const std::vector<std::string> &nameElts,
                                        bool custom=true)
         const;
 
     /// Like GetProperties(), but exclude all attributes from the result.
+    USD_API
     std::vector<UsdRelationship> GetRelationships() const;
 
     /// Like GetRelationships(), but exclude relationships without authored
     /// scene description from the result.  See UsdProperty::IsAuthored().
+    USD_API
     std::vector<UsdRelationship> GetAuthoredRelationships() const;
 
     /// Return a UsdRelationship with the name \a relName. The relationship
@@ -712,10 +749,12 @@ public:
     ///    // myRel was not defined/authored
     /// }
     /// \endcode
+    USD_API
     UsdRelationship GetRelationship(const TfToken& relName) const;
 
     /// Return true if this prim has a relationship named \p relName, false
     /// otherwise.
+    USD_API
     bool HasRelationship(const TfToken& relName) const;
 
     /// Search the prim subtree rooted at this prim for relationships for which
@@ -724,6 +763,7 @@ public:
     /// function was invoked on the targeted prims and owning prims of targeted
     /// properties also (but not of forwarding relationships) and return the
     /// union.
+    USD_API
     SdfPathVector
     FindAllRelationshipTargetPaths(
         std::function<bool (UsdRelationship const &)> const &pred = nullptr,
@@ -735,41 +775,49 @@ public:
 
     /// Clears the payload at the current EditTarget for this prim. 
     /// Return false if the payload could not be cleared.
+    USD_API
     bool ClearPayload() const;
 
     /// Fetch the payload for this prim; return true if a value was
     /// read, otherwise return false, leaving \p payload unaltered.
     ///
     /// \sa \ref Usd_Payloads
+    USD_API
     bool GetPayload(SdfPayload* payload) const;
    
     /// Return true if a payload is present on this prim.
     ///
     /// \sa \ref Usd_Payloads
+    USD_API
     bool HasPayload() const;
 
     /// Author payload metadata for this prim at the current edit
     /// target. Return true on success, false if the value could not be set. 
     ///
     /// \sa \ref Usd_Payloads
+    USD_API
     bool SetPayload(const SdfPayload& payload) const;
 
     /// Shorthand for SetPayload(SdfPayload(assetPath, primPath)).
+    USD_API
     bool SetPayload(
         const std::string& assetPath, const SdfPath& primPath) const;
     
     /// Shorthand for SetPayload(SdfPayload(layer->GetIdentifer(),
     /// primPath)).
+    USD_API
     bool SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const;
 
     /// Loads this prim, all its ancestors, and all its descendants.
     ///
     /// See UsdStage::Load for additional details.
+    USD_API
     void Load() const;
 
     /// Unloads this prim and all its descendants.
     ///
     /// See UsdStage::Unload for additional details.
+    USD_API
     void Unload() const;
 
     // --------------------------------------------------------------------- //
@@ -782,9 +830,11 @@ public:
     /// There is currently no facility for \em listing the currently authored
     /// references on a prim... the problem is somewhat ill-defined, and
     /// requires some thought.
+    USD_API
     UsdReferences GetReferences() const;
 
     /// Return true if this prim has any authored references.
+    USD_API
     bool HasAuthoredReferences() const;
 
     // --------------------------------------------------------------------- //
@@ -797,9 +847,11 @@ public:
     /// There is currently no facility for \em listing the currently authored
     /// inherits on a prim... the problem is somewhat ill-defined, and
     /// requires some thought.
+    USD_API
     UsdInherits GetInherits() const;
 
     /// Return true if this prim has any authored inherits.
+    USD_API
     bool HasAuthoredInherits() const;
 
     // --------------------------------------------------------------------- //
@@ -812,9 +864,11 @@ public:
     /// There is currently no facility for \em listing the currently authored
     /// specializes on a prim... the problem is somewhat ill-defined, and
     /// requires some thought.
+    USD_API
     UsdSpecializes GetSpecializes() const;
 
     /// Returns true if this prim has any authored specializes.
+    USD_API
     bool HasAuthoredSpecializes() const;
 
     // --------------------------------------------------------------------- //
@@ -870,6 +924,7 @@ public:
 
     /// If this prim is an instance, return the UsdPrim for the corresponding
     /// master. Otherwise, return an invalid UsdPrim.
+    USD_API
     UsdPrim GetMaster() const;
 
 private:
@@ -1043,36 +1098,31 @@ private:
     friend class UsdPrim;
 
     // Constructor used by Prim.
-    UsdPrimSiblingIterator(const base_type &i, const base_type &end,
+    UsdPrimSiblingIterator(const base_type &i,
                            const Usd_PrimFlagsPredicate &predicate)
         : iterator_adaptor_(i)
-        , _end(end)
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
-        if (base() != end && !_predicate(base()))
+        if (base() && !_predicate(base()))
             increment();
     }
 
     // Core implementation invoked by iterator_adaptor.
     friend class boost::iterator_core_access;
     bool equal(const UsdPrimSiblingIterator &other) const {
-        return base() == other.base() &&
-            _end == other._end && _predicate == other._predicate;
+        return base() == other.base() && _predicate == other._predicate;
     }
 
     void increment() {
         base_type &base = base_reference();
-        // Advance base until end is encountered or the predicate succeeds.
-        do {
-            base = base->GetNextSibling();
-        } while (base != _end && !_predicate(base));
+        if (Usd_MoveToNextSiblingOrParent(base, _predicate))
+            base = nullptr;
     }
 
     reference dereference() const {
         return UsdPrim(base());
     }
 
-    base_type _end;
     Usd_PrimFlagsPredicate _predicate;
 };
 
@@ -1105,16 +1155,15 @@ UsdPrim::GetAllChildren() const
 UsdPrimSiblingRange
 UsdPrim::GetChildren() const
 {
-    return GetFilteredChildren(UsdPrimIsActive && UsdPrimIsDefined &&
-                               UsdPrimIsLoaded && !UsdPrimIsAbstract);
+    return GetFilteredChildren(UsdPrimDefaultPredicate);
 }
 
 // Helper to make a sibling range.
 UsdPrim::SiblingRange
 UsdPrim::_MakeSiblingRange(const Usd_PrimFlagsPredicate &pred) const {
     Usd_PrimDataConstPtr firstChild = _Prim()->GetFirstChild();
-    return SiblingRange(SiblingIterator(firstChild, NULL, pred),
-                        SiblingIterator(NULL, NULL, pred));
+    return SiblingRange(SiblingIterator(firstChild, pred),
+                        SiblingIterator(nullptr, pred));
 }
 
 #ifdef doxygen
@@ -1227,30 +1276,28 @@ private:
     friend class UsdPrim;
 
     // Constructor used by Prim.
-    UsdPrimSubtreeIterator(const base_type &i, const base_type &end,
+    UsdPrimSubtreeIterator(const base_type &i,
                            const Usd_PrimFlagsPredicate &predicate)
         : iterator_adaptor_(i)
-        , _end(end)
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
         base_type &base = base_reference();
-        if (base != _end && !_predicate(base)) {
-            if (Usd_MoveToNextSiblingOrParent(base, _end, _predicate))
-                base = _end;
+        if (base && !_predicate(base)) {
+            if (Usd_MoveToNextSiblingOrParent(base, _predicate))
+                base = nullptr;
         }
     }
 
     // Core implementation invoked by iterator_adaptor.
     friend class boost::iterator_core_access;
     bool equal(const UsdPrimSubtreeIterator &other) const {
-        return base() == other.base() && 
-            _end == other._end && _predicate == other._predicate;
+        return base() == other.base() && _predicate == other._predicate;
     }
 
     void increment() {
         base_type &base = base_reference();
-        if (!Usd_MoveToChild(base, _end, _predicate)) {
-            while (Usd_MoveToNextSiblingOrParent(base, _end, _predicate)) {}
+        if (!Usd_MoveToChild(base, _predicate)) {
+            while (Usd_MoveToNextSiblingOrParent(base, _predicate)) {}
         }
     }
 
@@ -1258,7 +1305,6 @@ private:
         return UsdPrim(base());
     }
 
-    base_type _end;
     Usd_PrimFlagsPredicate _predicate;
 };
 
@@ -1290,8 +1336,7 @@ UsdPrim::GetAllDescendants() const
 UsdPrimSubtreeRange
 UsdPrim::GetDescendants() const
 {
-    return GetFilteredDescendants(UsdPrimIsActive && UsdPrimIsDefined &&
-                                  UsdPrimIsLoaded && !UsdPrimIsAbstract);
+    return GetFilteredDescendants(UsdPrimDefaultPredicate);
 }
 
 // Helper to make a sibling range.
@@ -1299,9 +1344,9 @@ UsdPrim::SubtreeRange
 UsdPrim::_MakeDescendantsRange(const Usd_PrimFlagsPredicate &pred) const {
     auto firstChild = _Prim()->GetFirstChild();
     return SubtreeRange(
-        SubtreeIterator(firstChild, NULL, pred),
+        SubtreeIterator(firstChild, pred),
         SubtreeIterator(firstChild ? _Prim()->GetNextPrim() : firstChild,
-                        NULL, pred));
+                        pred));
 }
 
 
@@ -1313,7 +1358,6 @@ UsdObject::GetPrim() const
 {
     return UsdPrim(_prim);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

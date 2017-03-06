@@ -34,7 +34,6 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usdShade/material.h"
 
 #include <FnGeolib/op/FnGeolibOp.h>
 #include <FnLogging/FnLogging.h>
@@ -62,83 +61,6 @@ namespace FnKat = Foundry::Katana;
     interface.setAttr("type", Foundry::Katana::StringAttribute("error"));\
     interface.setAttr("errorMessage", Foundry::Katana::StringAttribute(\
         TfStringPrintf(__VA_ARGS__)));
-
-// Give these types some shorter names.
-typedef PxrUsdKatanaUsdInPrivateData::MaterialHierarchy MaterialHierarchy;
-typedef std::shared_ptr<const MaterialHierarchy> MaterialHierarchyPtr;
-
-// Helper to scan the immediate children of the given parentPrim for usd
-// materials, analyze their specializes arcs, and assemble the hierarchy.
-//
-// Note that this only scans a set of sibling prims -- we don't (say)
-// go deeply scan the entire scene here.  Instead, we rely on katana
-// traversal to discover and build up the material hierarchy as we go,
-// using a copy-on-write approach to share work across ops evaluating
-// different branches of the scene.
-//
-static void
-_UpdateMaterialHierarchyForChildPrims(
-        const UsdPrim &parentPrim,
-        MaterialHierarchyPtr &materials)
-{
-    const UsdStageWeakPtr stage = parentPrim.GetStage();
-
-    // Locally accumulate any new material hierarchy we discover.
-    MaterialHierarchy local;
-
-    // Scan immediate children prims for materials that directly
-    // specialize other materials.
-    for (const auto& childPrim : parentPrim.GetChildren()) {
-        // If childPrim is not a material, skip it.
-        if (!UsdShadeMaterial(childPrim)) {
-            continue;
-        }
-        // Check if childPrim has an immediate specializes arc,
-        // i.e. one right below the root of the prim composition.
-        //
-        // If there are specializes arcs deeper in the tree,
-        // we assume it is a library material that has been
-        // referenced in, and we do not expose the base material
-        // separately.
-        //
-        const PcpPrimIndex &index = childPrim.GetPrimIndex();
-        for(const PcpNodeRef &node: index.GetNodeRange()) {
-            if (PcpIsSpecializesArc(node.GetArcType())
-                && node.GetOriginNode() == index.GetRootNode()) {
-                // Found a root specializes arc.
-                const SdfPath derivedPath = childPrim.GetPath();
-                const SdfPath basePath = node.GetPath();
-                const UsdPrim basePrim = stage->GetPrimAtPath(basePath);
-                // If the base is anything but a material, ignore it.
-                if (!UsdShadeMaterial(basePrim)) {
-                    continue;
-                }
-                // The childPrim material derives from the basePrim material.
-                // Link them into the hierarchy.
-                local.baseMaterialPath[derivedPath] = basePath;
-                local.derivedMaterialPaths[basePath].push_back(derivedPath);
-            }
-        }
-    }
-
-    // If we discovered any new materials, merge them into the existing
-    // hierarchy of materials.  To do this we fork a new clone of the
-    // material hierarchy to pass down the katana op chain, which is
-    // why we defer doing this until we are certain we have new materials.
-    if (!local.baseMaterialPath.empty()) {
-        for (const auto &pair: materials->baseMaterialPath) {
-            local.baseMaterialPath.insert(pair);
-        }
-        for (const auto &pair: materials->derivedMaterialPaths) {
-            // Maintain order: insert the existing derived materials
-            // at front of the vector.
-            std::vector<SdfPath> &vec = local.derivedMaterialPaths[pair.first];
-            vec.insert(vec.begin(), pair.second.begin(), pair.second.end());
-        }
-        // Update pointer to own the newly modifed copy of the hierarchy.
-        materials.reset(new MaterialHierarchy(local));
-    }
-}
 
 // see overview.dox for more documentation.
 class PxrUsdInOp : public FnKat::GeolibOp
@@ -202,18 +124,6 @@ public:
                   interface.getRelativeOutputLocationPath().c_str());
             return;
         }
-
-        // Update material hierarchy.
-        MaterialHierarchyPtr materialHierarchy;
-        if (privateData) {
-            // Continue using the hierarchy provided by the parent op.
-            materialHierarchy = privateData->GetMaterialHierarchy();
-        }
-        if (!materialHierarchy) {
-            // Allocate an empty material hierarchy.
-            materialHierarchy.reset(new MaterialHierarchy);
-        }
-        _UpdateMaterialHierarchyForChildPrims(prim, materialHierarchy);
 
         // A flag to force the use of default motion samples. This is only set
         // when at root and an isolate path is specified. In this case, we must
@@ -310,8 +220,8 @@ public:
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(
                                 usdInArgs->GetRootPrim(),
-                                usdInArgs, privateData, useDefaultMotion,
-                                &materialHierarchy),
+                                usdInArgs, privateData, useDefaultMotion
+                                ),
                         PxrUsdKatanaUsdInPrivateData::Delete);
             }
         }
@@ -480,37 +390,6 @@ public:
             
         }
 
-        // Usd Material Hierarchy:  If this is a base material,
-        // splice the derived materials in as children.
-        if (UsdShadeMaterial(prim)) {
-            std::map<SdfPath, std::vector<SdfPath>>::const_iterator i =
-                materialHierarchy->derivedMaterialPaths.find(prim.GetPath());
-            if (i != materialHierarchy->derivedMaterialPaths.end()) {
-                // We found some derived materials.
-                const std::vector<SdfPath> &derivedMaterialPaths = i->second;
-                for (const SdfPath &derivedMaterialPath: derivedMaterialPaths){
-                    UsdPrim derivedMaterial =
-                        prim.GetStage()->GetPrimAtPath(derivedMaterialPath);
-                    if (!TF_VERIFY(derivedMaterial)) {
-                        // This shouldn't happen: we confirmed the prim
-                        // exists when building the hierarchy.
-                        continue;
-                    }
-                    const std::string& childName = derivedMaterial.GetName();
-                    interface.createChild(
-                            childName,
-                            "",
-                            opArgs,
-                            FnKat::GeolibCookInterface::ResetRootFalse,
-                            new PxrUsdKatanaUsdInPrivateData(
-                                    derivedMaterial, usdInArgs,
-                                    privateData, useDefaultMotion,
-                                    &materialHierarchy),
-                            PxrUsdKatanaUsdInPrivateData::Delete);
-                        }
-            }
-        }
-
         if (!skipAllChildren) {
 
             std::set<std::string> childrenToSkip;
@@ -556,14 +435,6 @@ public:
                     continue;
                 }
 
-                // Usd Material Hierarchy:  If this child is a derived
-                // material, we do not need to handle it here.  We will
-                // splice it below the correct base/parent material above. 
-                if (materialHierarchy->baseMaterialPath.find(child.GetPath())
-                    != materialHierarchy->baseMaterialPath.end()) {
-                    continue;
-                }
-
                 interface.createChild(
                         childName,
                         "",
@@ -571,8 +442,7 @@ public:
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(
                                 child, usdInArgs,
-                                privateData, useDefaultMotion,
-                                &materialHierarchy),
+                                privateData, useDefaultMotion),
                         PxrUsdKatanaUsdInPrivateData::Delete);
             }
         }
@@ -1063,11 +933,143 @@ public:
 };
 
 
+// XXX A variation on the PxrUsdInMasterIntermediate op that will build out the
+// specified usd prim rather than each of its prim children.
+//
+class PxrUsdInBuildIntermediateOp : public FnKat::GeolibOp
+{
+public:
+    static void setup(FnKat::GeolibSetupInterface &interface)
+    {
+        interface.setThreading(
+                FnKat::GeolibSetupInterface::ThreadModeConcurrent);
+    }
+
+    static void cook(FnKat::GeolibCookInterface &interface)
+    {
+        PxrUsdKatanaUsdInPrivateData* privateData =
+            static_cast<PxrUsdKatanaUsdInPrivateData*>(
+                interface.getPrivateData());
+        PxrUsdKatanaUsdInArgsRefPtr usdInArgs = privateData->GetUsdInArgs();
+
+        FnKat::GroupAttribute staticScene =
+                interface.getOpArg("staticScene");
+
+        FnKat::GroupAttribute attrsGroup = staticScene.getChildByName("a");
+
+        FnKat::StringAttribute primPathAttr =
+                attrsGroup.getChildByName("usdPrimPath");
+        FnKat::StringAttribute primNameAttr =
+                attrsGroup.getChildByName("usdPrimName");
+        FnKat::GroupAttribute overridesAttr =
+                attrsGroup.getChildByName("usdInArgsOverrides");
+
+        // If prim attrs are present, use them to build out the usd prim.
+        // Otherwise, build out a katana group.
+        //
+        if (primPathAttr.isValid())
+        {
+            attrsGroup = FnKat::GroupBuilder()
+                .update(attrsGroup)
+                .del("usdPrimPath")
+                .del("usdPrimName")
+                .del("usdInArgsOverrides")
+                .build();
+
+            std::string primPath = primPathAttr.getValue("", false);
+            if (!primPath.empty())
+            {
+                // Get the usd prim at the given source path.
+                //
+                UsdPrim prim = usdInArgs->GetStage()->GetPrimAtPath(
+                        SdfPath(primPath));
+
+                // Get the desired name for the usd prim; if one isn't provided,
+                // ask the prim directly.
+                //
+                std::string nameToUse = prim.GetName();
+                if (primNameAttr.isValid())
+                {
+                    std::string primName = primNameAttr.getValue("", false);
+                    if (!primName.empty())
+                    {
+                        nameToUse = primName;
+                    }
+                }
+
+                // XXX In order for the prim's material hierarchy to get built
+                // out correctly via the PxrUsdInCore_LooksGroupOp, we'll need
+                // to override the original 'rootLocation' and 'isolatePath'
+                // UsdIn args.
+                //
+                ArgsBuilder ab;
+                ab.update(usdInArgs);
+                ab.rootLocation =
+                        interface.getOutputLocationPath() + "/" + nameToUse;
+                ab.isolatePath = primPath;
+
+                // Build the prim using PxrUsdIn.
+                //
+                interface.createChild(
+                        nameToUse,
+                        "PxrUsdIn",
+                        interface.getOpArg(),
+                        FnKat::GeolibCookInterface::ResetRootFalse,
+                        new PxrUsdKatanaUsdInPrivateData(prim, ab.build(),
+                                privateData),
+                        PxrUsdKatanaUsdInPrivateData::Delete);
+            }
+        }
+        else
+        {
+            FnKat::GroupAttribute childrenGroup =
+                staticScene.getChildByName("c");
+            for (size_t i = 0, e = childrenGroup.getNumberOfChildren(); i != e;
+                     ++i)
+            {
+                FnKat::GroupAttribute childGroup =
+                        childrenGroup.getChildByIndex(i);
+
+                if (!childGroup.isValid())
+                {
+                    continue;
+                }
+
+                // Build the intermediate group using the same op.
+                //
+                interface.createChild(
+                        childrenGroup.getChildName(i),
+                        "",
+                        FnKat::GroupBuilder()
+                            .update(interface.getOpArg())
+                            .set("staticScene", childGroup)
+                            .build(),
+                        FnKat::GeolibCookInterface::ResetRootFalse,
+                        new PxrUsdKatanaUsdInPrivateData(
+                                usdInArgs->GetRootPrim(), usdInArgs,
+                                privateData),
+                        PxrUsdKatanaUsdInPrivateData::Delete);
+            }
+        }
+
+        // Apply local attrs.
+        //
+        for (size_t i = 0, e = attrsGroup.getNumberOfChildren(); i != e; ++i)
+        {
+            interface.setAttr(attrsGroup.getChildName(i),
+                    attrsGroup.getChildByIndex(i));
+        }
+        
+    }
+};
+
+
 //-----------------------------------------------------------------------------
 
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInBootstrapOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInMasterIntermediateOp)
+DEFINE_GEOLIBOP_PLUGIN(PxrUsdInBuildIntermediateOp)
 
 void registerPlugins()
 {
@@ -1075,4 +1077,6 @@ void registerPlugins()
     REGISTER_PLUGIN(PxrUsdInBootstrapOp, "PxrUsdIn.Bootstrap", 0, 1);
     REGISTER_PLUGIN(PxrUsdInMasterIntermediateOp, 
         "PxrUsdIn.MasterIntermediate", 0, 1);
+    REGISTER_PLUGIN(PxrUsdInBuildIntermediateOp,
+        "PxrUsdIn.BuildIntermediate", 0, 1);
 }

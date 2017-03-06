@@ -25,10 +25,12 @@
 #define USD_SHD_UTILS_H
 
 #include "pxr/pxr.h"
-#include <string>
-#include <utility>
+#include "pxr/usd/usdShade/api.h"
 
 #include "pxr/base/tf/token.h"
+
+#include <string>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,24 +39,48 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// 
 /// Specifies the type of a shading attribute.
 /// 
-/// Pretty soon, we'll be adding "Input" to the list of source types and 
-/// deprecating "Parameter" and "InterfaceAttribute".
+/// "Parameter" and "InterfaceAttribute" are deprecated shading attribute types.
 /// 
 enum class UsdShadeAttributeType {
-    Parameter,
+    Input,
     Output,
+    Parameter,
     InterfaceAttribute
 };
 
-/// Returns the namespace prefix of the USD attribute associated with the given
-/// shading attribute type.
-std::string UsdShadeUtilsGetPrefixForAttributeType(
-    UsdShadeAttributeType sourceType);
+/// \class UsdShadeUtils
+///
+/// This class contains a set of utility functions used when authoring and 
+/// querying shading networks.
+///
+class UsdShadeUtils {
+public:
+    /// Returns the namespace prefix of the USD attribute associated with the given
+    /// shading attribute type.
+    USDSHADE_API
+    static std::string GetPrefixForAttributeType(
+        UsdShadeAttributeType sourceType);
 
-/// Given the full name of a shading property, returns it's base name and type.
-std::pair<TfToken, UsdShadeAttributeType> 
-    UsdShadeUtilsGetBaseNameAndType(const TfToken &fullName);
+    /// Given the full name of a shading property, returns it's base name and type.
+    USDSHADE_API
+    static std::pair<TfToken, UsdShadeAttributeType> 
+        GetBaseNameAndType(const TfToken &fullName);
 
+    /// Returns the full shading attribute name given the basename and the type.
+    USDSHADE_API
+    static TfToken GetFullName(const TfToken &baseName, 
+                                    const UsdShadeAttributeType type);
+
+    /// Whether the env-setting that enables the reading of old-style encoding 
+    /// of shading networks is set to 'true'.
+    USDSHADE_API
+    static bool ReadOldEncoding();
+
+    /// Whether the env-setting that enables the writing of new-style encoding 
+    /// of shading networks is set to 'true'.
+    USDSHADE_API
+    static bool WriteNewEncoding();
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

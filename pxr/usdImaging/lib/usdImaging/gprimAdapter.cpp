@@ -62,7 +62,7 @@ UsdImagingGprimAdapter::~UsdImagingGprimAdapter()
 void 
 UsdImagingGprimAdapter::TrackVariabilityPrep(UsdPrim const& prim,
                                              SdfPath const& cachePath,
-                                             int requestedBits,
+                                             HdDirtyBits requestedBits,
                                              UsdImagingInstancerContext const* 
                                                  instancerContext)
 {
@@ -82,8 +82,8 @@ UsdImagingGprimAdapter::TrackVariabilityPrep(UsdPrim const& prim,
 void 
 UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                                          SdfPath const& cachePath,
-                                         int requestedBits,
-                                         int* dirtyBits,
+                                         HdDirtyBits requestedBits,
+                                         HdDirtyBits* dirtyBits,
                                          UsdImagingInstancerContext const* 
                                              instancerContext)
 {
@@ -157,7 +157,7 @@ void
 UsdImagingGprimAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
                                    UsdTimeCode time,
-                                   int requestedBits,
+                                   HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const* 
                                        instancerContext)
 {
@@ -358,8 +358,8 @@ void
 UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
-                               int requestedBits,
-                               int* resultBits,
+                               HdDirtyBits requestedBits,
+                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext)
 {

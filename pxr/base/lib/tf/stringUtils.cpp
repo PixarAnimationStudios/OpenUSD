@@ -42,8 +42,14 @@
 #include <limits>
 #include <utility>
 #include <vector>
-#include <double-conversion/double-conversion.h>
-#include <double-conversion/utils.h>
+#include <memory>
+
+#include "pxrDoubleConversion/double-conversion.h"
+#include "pxrDoubleConversion/utils.h"
+
+#if defined(ARCH_OS_WINDOWS)
+#include <Shlwapi.h>
+#endif
 
 using std::list;
 using std::make_pair;
@@ -79,14 +85,14 @@ TfStringPrintf(const char *fmt, ...)
 double
 TfStringToDouble(const char *ptr)
 {
-    double_conversion::StringToDoubleConverter
-        strToDouble(double_conversion::DoubleToStringConverter::NO_FLAGS,
+    pxr_double_conversion::StringToDoubleConverter
+        strToDouble(pxr_double_conversion::DoubleToStringConverter::NO_FLAGS,
                     /* empty_string_value */ 0,
                     /* junk_string_value */ 0,
                     /* infinity symbol */ "inf",
                     /* nan symbol */ "nan");
     int numDigits_unused;
-    return strToDouble.StringToDouble(ptr, strlen(ptr), &numDigits_unused);
+    return strToDouble.StringToDouble(ptr, static_cast<int>(strlen(ptr)), &numDigits_unused);
 }
 
 double
@@ -304,6 +310,9 @@ TfStringGetBeforeSuffix(const string& name, char delimiter)
 string
 TfGetBaseName(const string& fileName)
 {
+#if defined(ARCH_OS_WINDOWS)
+    return PathFindFileName(fileName.c_str());
+#else
     if (fileName.empty())
         return fileName;
     else if (fileName[fileName.size()-1] == '/')    // ends in /
@@ -315,12 +324,17 @@ TfGetBaseName(const string& fileName)
         else
             return fileName.substr(i+1);
     }
+#endif
 }
 
 string
 TfGetPathName(const string& fileName)
 {
+#if defined(ARCH_OS_WINDOWS)
+    size_t i = fileName.find_last_of("\\/");
+#else
     size_t i = fileName.rfind("/");
+#endif
     if (i == string::npos)                          // no / in name
         return "";
     else
@@ -708,7 +722,7 @@ DictionaryLess(char const *l, char const *r)
                 return lval < rval;
             // Leading zeros difference only, record for later use.
             if (!leadingZerosCmp)
-                leadingZerosCmp = (l-oldL) - (r-oldR);
+                leadingZerosCmp = static_cast<int>((l-oldL) - (r-oldR));
             continue;
         }
 
@@ -753,11 +767,13 @@ TfStringify(std::string const& s)
     return s;
 }
 
-std::string
-TfStringify(float val)
+static
+const
+pxr_double_conversion::DoubleToStringConverter& 
+Tf_GetDoubleToStringConverter()
 {
-    double_conversion::DoubleToStringConverter conv(
-        double_conversion::DoubleToStringConverter::NO_FLAGS,
+    static const pxr_double_conversion::DoubleToStringConverter conv(
+        pxr_double_conversion::DoubleToStringConverter::NO_FLAGS,
         "inf", 
         "nan",
         'e',
@@ -765,34 +781,64 @@ TfStringify(float val)
         /* decimal_in_shortest_high */ 15,
         /* max_leading_padding_zeroes_in_precision_mode */ 0,
         /* max_trailing_padding_zeroes_in_precision_mode */ 0);
-    static const int bufSize = 128;
-    char buf[bufSize];
-    double_conversion::StringBuilder builder(buf, bufSize);
+
+    return conv;
+}
+
+void
+Tf_ApplyDoubleToStringConverter(float val, char* buffer, int bufferSize)
+{
+    const auto& conv = Tf_GetDoubleToStringConverter();
+    pxr_double_conversion::StringBuilder builder(buffer, bufferSize);
     // This should only fail if we provide an insufficient buffer.
-    TF_VERIFY( conv.ToShortestSingle(val, &builder),
-               "double_conversion failed");
-    return std::string(builder.Finalize());
+    TF_VERIFY(conv.ToShortestSingle(val, &builder),
+              "double_conversion failed");
+}
+
+void
+Tf_ApplyDoubleToStringConverter(double val, char* buffer, int bufferSize)
+{
+    const auto& conv = Tf_GetDoubleToStringConverter();
+    pxr_double_conversion::StringBuilder builder(buffer, bufferSize);
+    // This should only fail if we provide an insufficient buffer.
+    TF_VERIFY(conv.ToShortest(val, &builder),
+              "double_conversion failed");
+}
+
+std::string
+TfStringify(float val)
+{
+    constexpr int bufferSize = 128;
+    char buffer[bufferSize];
+    Tf_ApplyDoubleToStringConverter(val, buffer, bufferSize);
+    return std::string(buffer);
 }
 
 std::string
 TfStringify(double val)
 {
-    double_conversion::DoubleToStringConverter conv(
-        double_conversion::DoubleToStringConverter::NO_FLAGS,
-        "inf", 
-        "nan",
-        'e',
-        /* decimal_in_shortest_low */ -6,
-        /* decimal_in_shortest_high */ 15,
-        /* max_leading_padding_zeroes_in_precision_mode */ 0,
-        /* max_trailing_padding_zeroes_in_precision_mode */ 0);
-    static const int bufSize = 128;
-    char buf[bufSize];
-    double_conversion::StringBuilder builder(buf, bufSize);
-    // This should only fail if we provide an insufficient buffer.
-    TF_VERIFY( conv.ToShortest(val, &builder),
-               "double_conversion failed");
-    return std::string(builder.Finalize());
+    constexpr int bufferSize = 128;
+    char buffer[bufferSize];
+    Tf_ApplyDoubleToStringConverter(val, buffer, bufferSize);
+    return std::string(buffer);
+}
+
+std::ostream& 
+operator<<(std::ostream& o, TfStreamFloat t)
+{
+    constexpr int bufferSize = 128;
+    char buffer[bufferSize];
+    Tf_ApplyDoubleToStringConverter(t.value, buffer, bufferSize);
+    return o << buffer;
+}
+
+std::ostream& 
+operator<<(std::ostream& o, TfStreamDouble t)
+{
+    constexpr int bufferSize = 128;
+    char buffer[bufferSize];
+    Tf_ApplyDoubleToStringConverter(t.value, buffer, bufferSize);
+    return o << buffer;
 }
 
 template <>
@@ -891,8 +937,12 @@ TfEscapeStringReplaceChar(const char** c, char** out)
 std::string
 TfEscapeString(const std::string &in)
 {
-    char out[in.size()+1];
-    char *outp = out;
+    // We use type char and a deleter for char[] instead of just using
+    // type char[] due to a (now fixed) bug in libc++ in LLVM.  See
+    // https://llvm.org/bugs/show_bug.cgi?id=18350.
+    std::unique_ptr<char,
+                    std::default_delete<char[]>> out(new char[in.size()+1]);
+    char *outp = out.get();
 
     for (const char *c = in.c_str(); *c; ++c)
     {
@@ -904,7 +954,7 @@ TfEscapeString(const std::string &in)
 
     }
     *outp++ = '\0';
-    return string(out,outp-out-1);
+    return std::string(out.get(), outp - out.get() - 1);
 }
 
 string 

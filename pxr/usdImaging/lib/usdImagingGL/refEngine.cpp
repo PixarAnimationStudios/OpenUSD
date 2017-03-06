@@ -307,6 +307,7 @@ UsdImagingGLRefEngine::Render(const UsdPrim& root, RenderParams params)
     } else {
         static const GLenum USD_2_GL_CULL_FACE[] =
         {
+                0,         // No Opinion - Unused
                 0,         // CULL_STYLE_NOTHING - Unused
                 GL_BACK,   // CULL_STYLE_BACK
                 GL_FRONT,  // CULL_STYLE_FRONT
@@ -809,15 +810,29 @@ UsdImagingGLRefEngine::_HandleCurves(const UsdPrim& prim)
 
     _ProcessGprimColor(&curvesSchema, prim, &doubleSided, &color,
                        &colorInterpolation);
-    if (color.size() < 1) {
-        // set default
-        color = VtArray<GfVec3f>(1);
-        color[0] = GfVec3f(0.5, 0.5, 0.5);
-        colorInterpolation = UsdGeomTokens->constant;
-    }
 
     VtVec3fArray pts;
     curvesSchema.GetPointsAttr().Get(&pts, _params.frame);
+
+
+    if (color.size() < 1) {
+
+        // set default
+        color = VtArray<GfVec3f>(1);
+        color[0] = GfVec3f(0.5f, 0.5f, 0.5f);
+        colorInterpolation = UsdGeomTokens->constant;
+
+    // Check for error condition for vertex colors
+    } else if (colorInterpolation == UsdGeomTokens->vertex &&
+               color.size() != pts.size()) {
+
+        // fallback to default
+        color = VtArray<GfVec3f>(1);
+        color[0] = GfVec3f(0.5f, 0.5f, 0.5f);
+        colorInterpolation = UsdGeomTokens->constant;
+        TF_WARN("Color primvar error on prim '%s'", prim.GetPath().GetText());
+    }
+
     int index = 0;
     TF_FOR_ALL(itr, pts) {
         GfVec3f pt = _ctm.Transform(*itr);

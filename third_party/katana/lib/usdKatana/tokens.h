@@ -34,6 +34,7 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/pxr.h"
+#include "usdKatana/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -73,7 +74,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>katanaPrimName</b> - UsdKatanaLookAPI
 /// \li <b>katanaType</b> - UsdKatanaBlindDataObject
 /// \li <b>katanaVisible</b> - UsdKatanaBlindDataObject
-TF_DECLARE_PUBLIC_TOKENS(UsdKatanaTokens, USDKATANA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdKatanaTokens, USDKATANA_API, USDKATANA_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

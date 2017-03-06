@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "set"
+)
+
+def Xform "set" (
+    kind = "assembly"
+)
+{
+    def "Cube_1" (
+        add references = @./CubeModel.usda@
+    )
+    {
+    }
+}

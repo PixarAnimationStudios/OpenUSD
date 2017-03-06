@@ -27,6 +27,7 @@
 /// \file pcp/layerStackIdentifier.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/ar/resolverContext.h"
 
@@ -50,10 +51,12 @@ public:
     typedef PcpLayerStackIdentifier This;
 
     /// Construct with all empty pointers.
+    PCP_API
     PcpLayerStackIdentifier();
 
     /// Construct with given pointers.  If all arguments are \c TfNullPtr
     /// then the result is identical to the default constructed object.
+    PCP_API
     PcpLayerStackIdentifier(const SdfLayerHandle& rootLayer_,
                             const SdfLayerHandle& sessionLayer_ = TfNullPtr,
                             const ArResolverContext& pathResolverContext_ =
@@ -61,16 +64,20 @@ public:
 
     // XXX: Allow assignment because there are clients using this
     //      as a member that themselves want to be assignable.
+    PCP_API
     PcpLayerStackIdentifier& operator=(const PcpLayerStackIdentifier&);
 
     // Validity.
 #if !defined(doxygen)
     typedef const size_t This::*UnspecifiedBoolType;
 #endif
+    PCP_API
     operator UnspecifiedBoolType() const;
 
     // Comparison.
+    PCP_API
     bool operator==(const This &rhs) const;
+    PCP_API
     bool operator<(const This &rhs) const;
 
     // Hashing.
@@ -109,22 +116,26 @@ hash_value(const PcpLayerStackIdentifier& x)
     return x.GetHash();
 }
 
+PCP_API
 std::ostream& operator<<(std::ostream&, const PcpLayerStackIdentifier&);
 
 /// Manipulator to cause the next PcpLayerStackIdentifier written to the
 /// ostream to write the base name of its layers, rather than the full
 /// identifier.
+PCP_API
 std::ostream& PcpIdentifierFormatBaseName(std::ostream&);
 
 /// Manipulator to cause the next PcpLayerStackIdentifier written to the
 /// ostream to write the real path of its layers, rather than the
 /// identifier.
+PCP_API
 std::ostream& PcpIdentifierFormatRealPath(std::ostream&);
 
 /// Manipulator to cause the next PcpLayerStackIdentifier written to the
 /// ostream to write the identifier of its layers.  This is the default
 /// state;  this manipulator is only to nullify one of the above
 /// manipulators.
+PCP_API
 std::ostream& PcpIdentifierFormatIdentifier(std::ostream&);
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -51,7 +51,7 @@ void wrapUsdShadeMaterial()
 {
     typedef UsdShadeMaterial This;
 
-    class_<This, bases<UsdShadeSubgraph> >
+    class_<This, bases<UsdShadeNodeGraph> >
         cls("Material");
 
     cls
@@ -157,6 +157,7 @@ WRAP_CUSTOM {
 
         .def("HasMaterialFaceSet", &UsdShadeMaterial::HasMaterialFaceSet)
             .staticmethod("HasMaterialFaceSet")
+
         ;
 }
 

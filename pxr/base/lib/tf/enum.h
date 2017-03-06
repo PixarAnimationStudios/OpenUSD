@@ -28,9 +28,11 @@
 /// \ingroup group_tf_RuntimeTyping
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/safeTypeCompare.h"
+#include "pxr/base/tf/api.h"
 
 #include <boost/operators.hpp>
 #include <boost/preprocessor/punctuation/comma.hpp>
@@ -261,20 +263,20 @@ public:
     /// Returns the name associated with an enumerated value.
     ///
     /// If there is no such name registered, an empty string is returned.
-    static std::string  GetName(TfEnum val);
+    TF_API static std::string  GetName(TfEnum val);
 
     /// Returns the fully-qualified name for an enumerated value.
     ///
     /// This returns a fully-qualified enumerated value name (e.g.,
     /// \c "Season::WINTER") associated with the given value. If there is no
     /// such name registered, an empty string is returned.
-    static std::string  GetFullName(TfEnum val);
+    TF_API static std::string  GetFullName(TfEnum val);
 
     /// Returns the display name for an enumerated value.
     ///
     /// This returns a user interface-suitable string for the given enumerated
     /// value.
-    static std::string  GetDisplayName(TfEnum val);
+    TF_API static std::string  GetDisplayName(TfEnum val);
 
     /// Returns a vector of all the names associated with an enum type.
     ///
@@ -289,7 +291,7 @@ public:
     }
     
     /// \overload
-    static std::vector<std::string> GetAllNames(const std::type_info &ti);
+    TF_API static std::vector<std::string> GetAllNames(const std::type_info &ti);
 
     /// Returns a vector of all the names associated with an enum type.
     ///
@@ -309,6 +311,7 @@ public:
     /// This returns a pointer to the type_info associated with the enum that
     /// has the type name \c typeName.  If no such enum is registered, returns
     /// NULL.
+    TF_API
     static const std::type_info *GetTypeFromName(const std::string& typeName);
 
     /// Returns the enumerated value for a name.
@@ -325,6 +328,7 @@ public:
     /// Returns the enumerated value for a name.
     ///
     /// This is a template-independent version of \c GetValueFromName().
+    TF_API
     static TfEnum GetValueFromName(const std::type_info& ti,
                                    const std::string &name,
                                    bool *foundIt = NULL);
@@ -338,6 +342,7 @@ public:
     /// set to \c true if the name was found and \c false
     /// otherwise. Also, since this is not a templated function, it has
     /// to return a generic value type, so we use \c TfEnum.
+    TF_API
     static TfEnum GetValueFromFullName(const std::string &fullname,
                                        bool *foundIt = NULL);
 
@@ -345,6 +350,7 @@ public:
     ///
     /// If any enum whose demangled type name is \p typeName has been
     /// added via \c TF_ADD_ENUM_NAME(), this function returns true.
+    TF_API
     static bool IsKnownEnumType(const std::string& typeName);
 
     ///@}
@@ -354,6 +360,7 @@ public:
     /// \warning This method is called by the \c TF_ADD_ENUM_NAME() macro, and
     /// should NOT be called directly. Instead, call AddName(), which does
     /// exactly the same thing.
+    TF_API
     static void _AddName(TfEnum val, const std::string &valName,
                          const std::string &displayName="");
 
@@ -382,10 +389,11 @@ private:
 
     // Internal constructor for size_t values.
     explicit TfEnum(size_t value)
-        : _typeInfo(&typeid(size_t)), _value(value)
+        : _typeInfo(&typeid(size_t)), _value(static_cast<int>(value))
     {
     }
 
+    TF_API
     void _FatalGetValueError(std::type_info const& typeInfo) const;
 
     const std::type_info* _typeInfo;
@@ -394,7 +402,7 @@ private:
 
 /// Output a TfEnum value.
 /// \ingroup group_tf_DebuggingOutput
-std::ostream& operator<<(std::ostream& out, const TfEnum & e);
+TF_API std::ostream& operator<<(std::ostream& out, const TfEnum & e);
 
 /// Macro used to associate a name with an enumerated value.
 ///

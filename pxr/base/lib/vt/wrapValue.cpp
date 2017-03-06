@@ -286,7 +286,7 @@ void wrapValue()
     def("UInt64", Vt_ValueWrapper::Create<uint64_t>, 
         TfStringPrintf(funcDocString, "UInt64","uint64_t","uint64_t").c_str());
 
-    def("Half", Vt_ValueWrapper::Create<half>, 
+    def("Half", Vt_ValueWrapper::Create<GfHalf>, 
         TfStringPrintf(funcDocString, "Half","half","half").c_str());
     def("Float", Vt_ValueWrapper::Create<float>, 
         TfStringPrintf(funcDocString, "Float","float","float").c_str());
@@ -297,8 +297,8 @@ void wrapValue()
     // nobody's registered anything before us.
 
     if (Vt_ValueFromPythonRegistry::HasConversions()) {
-	TF_FATAL_ERROR("Vt was not the first library to register VtValue "
-		       "from-python conversions!");
+        TF_FATAL_ERROR("Vt was not the first library to register VtValue "
+                       "from-python conversions!");
     }
 
     // register conversion types in reverse order, because the extractor

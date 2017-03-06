@@ -27,6 +27,7 @@
 #include "pxr/base/plug/debugCodes.h"
 
 #include "pxr/base/arch/threads.h"
+#include "pxr/base/arch/library.h"
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/dl.h"
@@ -261,7 +262,7 @@ PlugPlugin::_Load()
         }
     } else if (!IsResource()) {
         string dsoError;
-        _handle = TfDlopen(_path.c_str(), RTLD_NOW, &dsoError);
+        _handle = TfDlopen(_path.c_str(), ARCH_LIBRARY_NOW, &dsoError);
         if (!_handle ) {
             TF_CODING_ERROR("Load of '%s' for '%s' failed: %s",
                             _path.c_str(), _name.c_str(), dsoError.c_str());

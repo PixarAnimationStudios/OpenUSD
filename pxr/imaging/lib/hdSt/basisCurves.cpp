@@ -72,6 +72,27 @@ HdStBasisCurves::~HdStBasisCurves()
     /*NOTHING*/
 }
 
+void
+HdStBasisCurves::Sync(HdSceneDelegate* delegate,
+                      HdRenderParam*   renderParam,
+                      HdDirtyBits*     dirtyBits,
+                      TfToken const&   reprName,
+                      bool             forcedRepr)
+{
+    TF_UNUSED(renderParam);
+
+    HdRprim::_Sync(delegate,
+                  reprName,
+                  forcedRepr,
+                  dirtyBits);
+
+    TfToken calcReprName = _GetReprName(delegate, reprName,
+                                        forcedRepr, dirtyBits);
+    _GetRepr(delegate, calcReprName, dirtyBits);
+
+    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+}
+
 /* static */
 bool
 HdStBasisCurves::IsEnabledForceRefinedCurves()
@@ -82,7 +103,7 @@ HdStBasisCurves::IsEnabledForceRefinedCurves()
 void
 HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                                  HdDrawItem *drawItem,
-                                 HdChangeTracker::DirtyBits *dirtyBits,
+                                 HdDirtyBits *dirtyBits,
                                  const HdStBasisCurvesReprDesc &desc)
 {
     HD_TRACE_FUNCTION();
@@ -178,9 +199,11 @@ HdStBasisCurves::ConfigureRepr(TfToken const &reprName,
     _reprDescConfig.Append(reprName, _BasisCurvesReprConfig::DescArray{desc});
 }
 
-HdChangeTracker::DirtyBits
-HdStBasisCurves::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
+HdDirtyBits
+HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits dirtyBits)
 {
+    dirtyBits = _PropagateRprimDirtyBits(dirtyBits);
+
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (dirtyBits & HdChangeTracker::DirtyTopology) {
         dirtyBits |= _customDirtyBitsInUse &
@@ -193,7 +216,7 @@ HdStBasisCurves::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
 HdReprSharedPtr const &
 HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
                           TfToken const &reprName,
-                          HdChangeTracker::DirtyBits *dirtyBits)
+                          HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -292,7 +315,7 @@ HdStBasisCurves::_SetGeometricShaders()
 void
 HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                                    HdDrawItem *drawItem,
-                                   HdChangeTracker::DirtyBits *dirtyBits,
+                                   HdDirtyBits *dirtyBits,
                                    const HdStBasisCurvesReprDesc &desc)
 {
     HD_TRACE_FUNCTION();
@@ -314,7 +337,9 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
         // compute id.
         _topologyId = srcTopology.ComputeHash();
-        boost::hash_combine(_topologyId, (bool)(_refineLevel>0));
+        bool refined = (_refineLevel>0);
+        _topologyId = ArchHash64((const char*)&refined, sizeof(refined),
+            _topologyId);
 
         // XXX: Should be HdSt_BasisCurvesTopologySharedPtr
         HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> topologyInstance;
@@ -400,7 +425,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 void
 HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                          HdDrawItem *drawItem,
-                                         HdChangeTracker::DirtyBits *dirtyBits)
+                                         HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -486,7 +511,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 void
 HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
                                           HdDrawItem *drawItem,
-                                          HdChangeTracker::DirtyBits *dirtyBits)
+                                          HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -562,10 +587,10 @@ HdStBasisCurves::_SupportsSmoothCurves(const HdStBasisCurvesReprDesc &desc,
     return false;
 }
 
-HdChangeTracker::DirtyBits 
+HdDirtyBits
 HdStBasisCurves::_GetInitialDirtyBits() const
 {
-    int mask = HdChangeTracker::Clean
+    HdDirtyBits mask = HdChangeTracker::Clean
         | HdChangeTracker::DirtyExtent
         | HdChangeTracker::DirtyInstanceIndex
         | HdChangeTracker::DirtyNormals
@@ -581,7 +606,7 @@ HdStBasisCurves::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyWidths
         ;
 
-    return (HdChangeTracker::DirtyBits)mask;
+    return mask;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

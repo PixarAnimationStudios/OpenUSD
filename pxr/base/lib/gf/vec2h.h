@@ -33,6 +33,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/gf/api.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/math.h"
@@ -53,16 +54,16 @@ struct GfIsGfVec<class GfVec2h> { static const bool value = true; };
 /// \class GfVec2h
 /// \ingroup group_gf_LinearAlgebra
 ///
-/// Basic type for a vector of 2 half components.
+/// Basic type for a vector of 2 GfHalf components.
 ///
-/// Represents a vector of 2 components of type \c half.
+/// Represents a vector of 2 components of type \c GfHalf.
 /// It is intended to be fast and simple.
 ///
 class GfVec2h
 {
 public:
     /// Scalar element type and dimension.
-    typedef half ScalarType;
+    typedef GfHalf ScalarType;
     static const size_t dimension = 2;
 
     /// Default constructor does no initialization.
@@ -75,13 +76,13 @@ public:
     }
 
     /// Initialize all elements to a single value.
-    explicit GfVec2h(half value) {
+    explicit GfVec2h(GfHalf value) {
         _data[0] = value;
         _data[1] = value;
     }
 
     /// Initialize all elements with explicit arguments.
-    GfVec2h(half s0, half s1) {
+    GfVec2h(GfHalf s0, GfHalf s1) {
         Set(s0, s1);
     }
 
@@ -121,25 +122,25 @@ public:
     }
 
     /// Set all elements with passed arguments.
-    GfVec2h &Set(half s0, half s1) {
+    GfVec2h &Set(GfHalf s0, GfHalf s1) {
         _data[0] = s0;
         _data[1] = s1;
         return *this;
     }
 
     /// Set all elements with a pointer to data.
-    GfVec2h &Set(half const *a) {
+    GfVec2h &Set(GfHalf const *a) {
         return Set(a[0], a[1]);
     }
 
     /// Direct data access.
-    half const *data() const { return _data; }
-    half *data() { return _data; }
-    half const *GetArray() const { return data(); }
+    GfHalf const *data() const { return _data; }
+    GfHalf *data() { return _data; }
+    GfHalf const *GetArray() const { return data(); }
 
     /// Indexing.
-    half const &operator[](size_t i) const { return _data[i]; }
-    half &operator[](size_t i) { return _data[i]; }
+    GfHalf const &operator[](size_t i) const { return _data[i]; }
+    GfHalf &operator[](size_t i) { return _data[i]; }
 
     /// Hash.
     friend inline size_t hash_value(GfVec2h const &vec) {
@@ -160,10 +161,13 @@ public:
 
     // TODO Add inequality for other vec types...
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec2d const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec2f const &other) const;
     /// Equality comparison.
+    GF_API
     bool operator==(class GfVec2i const &other) const;
     
     /// Create a vec with negated elements.
@@ -217,7 +221,7 @@ public:
     }
     
     /// See GfDot().
-    half operator*(GfVec2h const &v) const {
+    GfHalf operator*(GfVec2h const &v) const {
         return _data[0] * v[0] + _data[1] * v[1];
     }
 
@@ -239,12 +243,12 @@ public:
     }
 
     /// Squared length.
-    half GetLengthSq() const {
+    GfHalf GetLengthSq() const {
         return *this * *this;
     }
 
     /// Length
-    half GetLength() const {
+    GfHalf GetLength() const {
         // TODO should use GfSqrt.
         return sqrt(GetLengthSq());
     }
@@ -257,15 +261,15 @@ public:
     /// \todo This was fixed for bug 67777. This is a gcc64 optimizer bug.
     /// By tickling the code, it no longer tries to write into
     /// an illegal memory address (in the code section of memory).
-    half Normalize(half eps = 0.001) {
+    GfHalf Normalize(GfHalf eps = 0.001) {
         // TODO this seems suspect...  suggest dividing by length so long as
         // length is not zero.
-        half length = GetLength();
+        GfHalf length = GetLength();
         *this /= (length > eps) ? length : eps;
         return length;
     }
 
-    GfVec2h GetNormalized(half eps = 0.001) const {
+    GfVec2h GetNormalized(GfHalf eps = 0.001) const {
         GfVec2h normalized(*this);
         normalized.Normalize(eps);
         return normalized;
@@ -273,12 +277,12 @@ public:
 
   
 private:
-    half _data[2];
+    GfHalf _data[2];
 };
 
 /// Output a GfVec2h.
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, GfVec2h const &);
+GF_API std::ostream& operator<<(std::ostream &, GfVec2h const &);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
@@ -327,14 +331,14 @@ GfCompDiv(GfVec2h const &v1, GfVec2h const &v2) {
 }
 
 /// Returns the dot (inner) product of two vectors.
-inline half
+inline GfHalf
 GfDot(GfVec2h const &v1, GfVec2h const &v2) {
     return v1 * v2;
 }
 
 
 /// Returns the geometric length of \c v.
-inline half
+inline GfHalf
 GfGetLength(GfVec2h const &v)
 {
     return v.GetLength();
@@ -343,8 +347,8 @@ GfGetLength(GfVec2h const &v)
 /// Normalizes \c *v in place to unit length, returning the length before
 /// normalization. If the length of \c *v is smaller than \p eps then \c *v is
 /// set to \c *v/eps.  The original length of \c *v is returned.
-inline half
-GfNormalize(GfVec2h *v, half eps = 0.001)
+inline GfHalf
+GfNormalize(GfVec2h *v, GfHalf eps = 0.001)
 {
     return v->Normalize();
 }
@@ -353,7 +357,7 @@ GfNormalize(GfVec2h *v, half eps = 0.001)
 /// If the length of this vector is smaller than \p eps, the vector divided by
 /// \p eps is returned.
 inline GfVec2h
-GfGetNormalized(GfVec2h const &v, half eps = 0.001)
+GfGetNormalized(GfVec2h const &v, GfHalf eps = 0.001)
 {
     return v.GetNormalized(eps);
 }

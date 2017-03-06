@@ -26,12 +26,11 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/systemInfo.h"
 
 #include <string>
 #include <vector>
-#include <errno.h>
-#include <unistd.h>
 
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -69,10 +68,12 @@ TestTfRealPath()
     // Nonexistent relative
     TF_AXIOM(TfRealPath("nosuch", true) == TfAbsPath("nosuch"));
 
+#if !defined(ARCH_OS_WINDOWS)
     string error;
     string::size_type split = TfFindLongestAccessiblePrefix("g", &error);
     TF_AXIOM(split == 0);
     TF_AXIOM(error == "encountered dangling symbolic link");
+#endif
 
     return true;
 }
@@ -109,17 +110,24 @@ TestTfAbsPath()
 static bool
 TestTfReadLink()
 {
+#if defined(ARCH_OS_WINDOWS)
+    const char* knownFileOrDir = "C:\\Windows";
+#else
+    const char* knownFileOrDir = "/etc/passwd";
+#endif
+
     TF_AXIOM(TfReadLink("") == "");
 
-    unlink("test-link");
-    if (symlink("/etc/passwd", "test-link") == -1) {
-        TF_RUNTIME_ERROR("failed to create test link: %s", strerror(errno));
+    ArchUnlinkFile("test-link");
+    if (!TfSymlink(knownFileOrDir, "test-link")) {
+        TF_RUNTIME_ERROR("failed to create test link: %s",
+                            ArchStrerror(errno).c_str());
         return false;
     }
 
-    TF_AXIOM(TfReadLink("test-link") == "/etc/passwd");
-    TF_AXIOM(TfReadLink("/usr") == "");
-    unlink("test-link");
+    TF_AXIOM(TfReadLink("test-link") == knownFileOrDir);
+    TF_AXIOM(TfReadLink(knownFileOrDir) == "");
+    ArchUnlinkFile("test-link");
 
     return true;
 }

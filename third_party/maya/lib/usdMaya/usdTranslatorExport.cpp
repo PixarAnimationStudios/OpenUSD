@@ -84,7 +84,7 @@ usdTranslatorExport::writer(const MFileObject &file,
                 
                 if (theOption[1]=="None") {
                     jobArgs.exportDisplayColor = false;
-                }else if (theOption[1]=="Look Colors") {
+                }else if (theOption[1]=="Material Colors") {
                     jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->displayColor;
                 } else if (theOption[1]=="RfM Shaders") {
                     TfToken shadingMode("pxrRis");

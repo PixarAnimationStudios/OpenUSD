@@ -28,6 +28,8 @@
 #include "pxr/imaging/hdx/debugCodes.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/glslfxShader.h"
+#include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/renderPassState.h"
@@ -37,11 +39,17 @@
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+HdShaderCodeSharedPtr HdxRenderSetupTask::_overrideShader;
 
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id)
+    , _renderPassState()
+    , _colorRenderPassShader()
+    , _idRenderPassShader()
     , _viewport()
     , _camera()
 {
@@ -70,7 +78,7 @@ HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdChangeTracker::DirtyBits bits = _GetTaskDirtyBits();
+    HdDirtyBits bits = _GetTaskDirtyBits();
 
     // XXX: for compatibility.
     if (bits & HdChangeTracker::DirtyParams) {
@@ -100,8 +108,11 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
     if (params.enableHardwareShading) {
         _renderPassState->SetOverrideShader(HdShaderCodeSharedPtr());
     } else {
-        _renderPassState->SetOverrideShader(
-            GetDelegate()->GetRenderIndex().GetShaderFallback());
+        if (!_overrideShader) {
+            _CreateOverrideShader();
+        }
+
+        _renderPassState->SetOverrideShader(_overrideShader);
     }
     if (params.enableIdRender) {
         _renderPassState->SetRenderPassShader(_idRenderPassShader);
@@ -168,6 +179,25 @@ HdxRenderSetupTask::SyncCamera()
     }
 }
 
+void
+HdxRenderSetupTask::_CreateOverrideShader()
+{
+    static std::mutex shaderCreateLock;
+
+    while (!_overrideShader) {
+        std::lock_guard<std::mutex> lock(shaderCreateLock);
+        {
+            if (!_overrideShader) {
+                GlfGLSLFXSharedPtr glslfx =
+                        GlfGLSLFXSharedPtr(
+                               new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
+
+                _overrideShader =
+                              HdShaderCodeSharedPtr(new HdGLSLFXShader(glslfx));
+            }
+        }
+    }
+}
 
 // --------------------------------------------------------------------------- //
 // VtValue Requirements

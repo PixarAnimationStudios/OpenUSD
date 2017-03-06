@@ -28,7 +28,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_INSTANTIATE_STACKED(SdfCleanupEnabler);
+TF_INSTANTIATE_DEFINED_STACKED(SdfCleanupEnabler);
 
 SdfCleanupEnabler::SdfCleanupEnabler()
 {

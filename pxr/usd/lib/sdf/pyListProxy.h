@@ -151,7 +151,7 @@ private:
     {
         using namespace boost::python;
 
-        if (not x._Validate()) {
+        if (! x._Validate()) {
             return;
         }
 
@@ -248,7 +248,7 @@ private:
         if (index < 0) {
             index += x._GetSize();
         }
-        if (index < 0 or index > static_cast<int>(x._GetSize())) {
+        if (index < 0 || index > static_cast<int>(x._GetSize())) {
             TfPyThrowIndexError("list index out of range");
         }
         x._Edit(index, 0, value_vector_type(1, value));

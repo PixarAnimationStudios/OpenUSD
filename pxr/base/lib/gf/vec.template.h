@@ -33,11 +33,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/gf/api.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 {% if IS_FLOATING_POINT(SCL) -%}
 #include "pxr/base/gf/math.h"
-{% if SCL == 'half' -%}
+{% if SCL == 'GfHalf' -%}
 #include "pxr/base/gf/half.h"
 {% endif %}
 {% endif %}
@@ -158,6 +159,7 @@ public:
     // TODO Add inequality for other vec types...
     {% for S in SCALARS if S != SCL -%}
     /// Equality comparison.
+    GF_API
     bool operator==(class {{ VECNAME(DIM, S) }} const &other) const;
     {% endfor %}
 
@@ -285,6 +287,7 @@ public:
     /// returned vectors will be as close as possible to orthogonal within the
     /// iteration limit. Colinear vectors will be unaltered, and the method
     /// will return false.
+    GF_API
     static bool OrthogonalizeBasis(
         {{ VEC }} *tx, {{ VEC }} *ty, {{ VEC }} *tz,
         const bool normalize,
@@ -294,6 +297,7 @@ public:
     /// mutually orthogonal.  If the length L of *this is smaller than \c eps,
     /// then v1 and v2 will have magnitude L/eps.  As a result, the function
     /// delivers a continuous result as *this shrinks in length.
+    GF_API
     void BuildOrthonormalFrame({{ VEC }} *v1, {{ VEC }} *v2,
                     {{ SCL }} eps = {{ EPS }}) const;
 
@@ -306,14 +310,14 @@ private:
 
 /// Output a {{ VEC }}.
 /// \ingroup group_gf_DebuggingOutput
-std::ostream& operator<<(std::ostream &, {{ VEC }} const &);
+GF_API std::ostream& operator<<(std::ostream &, {{ VEC }} const &);
 
 {% if IS_FLOATING_POINT(SCL) %}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 {% for S in SCALARS if S != SCL %}
-#include "pxr/base/gf/vec{{ DIM }}{{ S[0] }}.h"
+#include "pxr/base/gf/vec{{ DIM }}{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -407,11 +411,11 @@ GfIsClose({{ VEC }} const &v1, {{ VEC }} const &v2, double tolerance)
 
 {% if DIM == 3 %}
 
-bool
+GF_API bool
 GfOrthogonalizeBasis({{ VEC }} *tx, {{ VEC }} *ty, {{ VEC }} *tz,
                      bool normalize, double eps = GF_MIN_ORTHO_TOLERANCE);
 
-void
+GF_API void
 GfBuildOrthonormalFrame({{ VEC }} const &v0,
                         {{ VEC }}* v1,
                         {{ VEC }}* v2,
@@ -436,7 +440,7 @@ operator^({{ VEC }} const &v1, {{ VEC }} const &v2)
 }
 
 /// Spherical linear interpolation in three dimensions.
-{{ VEC }}
+GF_API {{ VEC }}
 GfSlerp(double alpha, {{ VEC }} const &v0, {{ VEC }} const &v1);
 
 {% endif %} {# DIM == 3 #}

@@ -25,27 +25,21 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/stl.h"
-#include "pxr/base/tf/staticData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_MAKE_STATIC_DATA((TfHashMap<int, int>), _emptyHashMap) {
-    *_emptyHashMap = TfHashMap<int, int>(0);
-}
-TF_MAKE_STATIC_DATA(TfHashSet<int>, _emptyHashSet) {
-    *_emptyHashSet = TfHashSet<int>(0);
-}
 
 size_t
 Tf_GetEmptyHashMapBucketCount()
 {
-    return _emptyHashMap->bucket_count();
+    static const TfHashMap<int, int> empty(0);
+    return empty.bucket_count();
 }
 
 size_t
 Tf_GetEmptyHashSetBucketCount()
 {
-    return _emptyHashSet->bucket_count();
+    static const TfHashSet<int> empty(0);
+    return empty.bucket_count();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

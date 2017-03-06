@@ -5,7 +5,7 @@
             "Name": "TestPlugModule2",
             "Info": {
                 "Types": {
-                    "TestPlugPythonDerived2": {
+                    "TestPlugModule2.TestPlugPythonDerived2": {
                         "bases": ["_TestPlugBase<2>"]
                     }
                 }

@@ -118,7 +118,7 @@ class Tf_PyNotice
                            const std::type_info &) {
             TfPyLock lock;
             object pyNotice = _GetDeliverableNotice(notice, type);
-            if (not TfPyIsNone(pyNotice)) {
+            if (!TfPyIsNone(pyNotice)) {
                 // Get the python sender.
                 handle<> pySender = sender ?
                     handle<>(allow_null(Tf_PyIdentityHelper::

@@ -27,6 +27,7 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/pragmas.h"
 
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -158,13 +159,8 @@ wrapPyDateTime()
 // Python API whose parameter is char * instead of const char *.  The
 // problematic function signature is fixed in Python 3.x, but won't be fixed
 // in 2.x.  (http://bugs.python.org/issue7463)
-//
-// XXX: We should remove this pragma as soon as it is reasonable to put the
-//      warning flag in the SConscript instead (bug 44546) or it is no longer
-//      necessary (ie. Python 3).
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
-#pragma GCC diagnostic ignored "-Wwrite-strings"
-#endif
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_WRITE_STRINGS
 static void
 _ImportPyDateTimeModuleOnce()
 {
@@ -175,5 +171,6 @@ _ImportPyDateTimeModuleOnce()
         PyDateTime_IMPORT;
     });
 }
+ARCH_PRAGMA_POP
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -25,6 +25,7 @@
 #define VT_HASH_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/tf/hash.h"
 #include <boost/functional/hash.hpp>
 #include <typeinfo>
@@ -35,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace Vt_HashDetail {
 
 // Issue a coding error when we attempt to hash a t.
-void _IssueUnimplementedHashError(std::type_info const &t);
+VT_API void _IssueUnimplementedHashError(std::type_info const &t);
 
 // We make unqualified calls, intending to pick up boost::hash_value if an
 // overload isn't found by ADL.

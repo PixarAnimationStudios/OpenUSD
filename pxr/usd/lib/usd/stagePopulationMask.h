@@ -25,6 +25,7 @@
 #define USD_STAGEPOPULATIONMASK_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <iosfwd>
@@ -65,25 +66,69 @@ public:
     All() {
         return UsdStagePopulationMask().Add(SdfPath::AbsoluteRootPath());
     }
+
+    /// Construct an empty mask that includes no paths.
+    UsdStagePopulationMask() = default;
+
+    UsdStagePopulationMask(UsdStagePopulationMask const &) = default;
+    UsdStagePopulationMask(UsdStagePopulationMask &&) = default;
+    UsdStagePopulationMask &operator=(UsdStagePopulationMask const &) = default;
+    UsdStagePopulationMask &operator=(UsdStagePopulationMask &&) = default;
+
+    /// Construct a mask from the range of paths [f, l).  All paths in the range
+    /// must be absolute prim paths or the absolute root path. (See
+    /// SdfPath::IsAbsolutePath, SdfPath::IsAbsoluteRootOrPrimPath).
+    template <class Iter>
+    explicit UsdStagePopulationMask(Iter f, Iter l) : _paths(f, l) {
+        _ValidateAndNormalize();
+    }
+
+    /// Construct a mask from \p paths.  All paths must be absolute prim paths
+    /// or the absolute root path.  (See SdfPath::IsAbsolutePath,
+    /// SdfPath::IsAbsoluteRootOrPrimPath).
+    explicit UsdStagePopulationMask(std::vector<SdfPath> const &paths) :
+        UsdStagePopulationMask(std::vector<SdfPath>(paths)) {};
+
+    /// Construct a mask from \p paths.  All paths must be absolute prim paths
+    /// or the absolute root path.  (See SdfPath::IsAbsolutePath,
+    /// SdfPath::IsAbsoluteRootOrPrimPath).
+    USD_API
+    explicit UsdStagePopulationMask(std::vector<SdfPath> &&paths);
     
     /// Return a mask that is the union of \p l and \p r.
+    USD_API
     static UsdStagePopulationMask
     Union(UsdStagePopulationMask const &l, UsdStagePopulationMask const &r);
 
     /// Return a mask that is the union of this and \p other.
+    USD_API
     UsdStagePopulationMask GetUnion(UsdStagePopulationMask const &other) const;
 
     /// Return a mask that is the union of this and a mask containing the single
     /// \p path.
+    USD_API
     UsdStagePopulationMask GetUnion(SdfPath const &path) const;
  
+    /// Return a mask that is the intersection of \p l and \p r.
+    USD_API
+    static UsdStagePopulationMask
+    Intersection(UsdStagePopulationMask const &l,
+                 UsdStagePopulationMask const &r);
+
+    /// Return a mask that is the intersection of this and \p other.
+    USD_API
+    UsdStagePopulationMask
+    GetIntersection(UsdStagePopulationMask const &other) const;
+
     /// Return true if this mask is a superset of \p other.  That is, if this
     /// mask includes at least every path that \p other includes.
+    USD_API
     bool Includes(UsdStagePopulationMask const &other) const;
     
     /// Return true if this mask includes \p path.  This is true if \p path is
     /// one of the paths in this mask, or if it is either a descendant or an
     /// ancestor of one of the paths in this mask.
+    USD_API
     bool Includes(SdfPath const &path) const;
 
     /// Return true if this mask includes \p path and all paths descendant to
@@ -96,6 +141,7 @@ public:
     /// mask.IncludesSubtree('/a') -> false
     /// mask.IncludesSubtree('/a/b') -> true
     /// \endcode
+    USD_API
     bool IncludesSubtree(SdfPath const &path) const;
 
     /// Return true if this mask contains no paths.  Empty masks include no
@@ -105,6 +151,7 @@ public:
     }
 
     /// Return the set of paths that define this mask.
+    USD_API
     std::vector<SdfPath> GetPaths() const;
 
     /// Assign this mask to be its union with \p other and return a reference to
@@ -137,10 +184,13 @@ public:
     }
 
 private:
+    USD_API void _ValidateAndNormalize();
+    
     std::vector<SdfPath> _paths;
 };
 
 /// Stream a text representation of a mask.
+USD_API
 std::ostream &operator<<(std::ostream &, UsdStagePopulationMask const &);
 
 /// Swap the contents of masks \p l and \p r.

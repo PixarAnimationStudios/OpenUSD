@@ -25,6 +25,7 @@
 #define USDGEOM_PRIMVAR_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
@@ -48,7 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// This includes the attribute's \ref GetInterpolation() "interpolation"
 /// across the primitive (which RenderMan refers to as its 
 /// \ref Usd_InterpolationVals "class specifier"
-/// and Alembic as its <A HREF="http://code.google.com/p/alembic/source/browse/lib/Alembic/AbcGeom/GeometryScope.h#46"> "geometry scope"</A>);
+/// and Alembic as its <A HREF="https://github.com/alembic/alembic/blob/master/lib/Alembic/AbcGeom/GeometryScope.h#L47"> "geometry scope"</A>);
 /// it also includes the attribute's \ref GetElementSize() "elementSize",
 /// which states how many values in the value array must be aggregated for
 /// each element on the primitive.  An attribute's \ref
@@ -61,13 +62,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li Primvars define a value that can vary across the primitive on which
 ///     they are defined, via prescribed interpolation rules
 /// \li Taken collectively on a prim, its Primvars describe the "per-primitive
-///     overrides" to the shader(s) to which the prim is bound.  Different
+///     overrides" to the material to which the prim is bound.  Different
 ///     renderers may communicate the variables to the shaders using different
 ///     mechanisms over which Usd has no control; Primvars simply provide the
 ///     classification that any renderer should use to locate potential
 ///     overrides.  Do please note that primvars override parameters on
 ///     UsdShadeShader objects, \em not 
-///     \ref UsdShadeSubgraph_Interfaces "Interface Attributes" on UsdShadeMaterial
+///     \ref UsdShadeNodeGraph_Interfaces "Interface Attributes" on UsdShadeMaterial
 ///     prims.
 ///
 /// \section Usd_Creating_and_Accessing_Primvars Creating and Accessing Primvars
@@ -255,6 +256,7 @@ class UsdGeomPrimvar
     /// value as this constructor, but if you plan to subsequently use the
     /// Primvar anyways, just use this constructor, as demonstrated in the 
     /// \ref UsdGeomPrimvar_Using_Primvar "class documentation".
+    USDGEOM_API
     explicit UsdGeomPrimvar(const UsdAttribute &attr);
 
     /// Return the Primvar's interpolation, which is 
@@ -262,6 +264,7 @@ class UsdGeomPrimvar
     ///
     /// Interpolation determines how the Primvar interpolates over
     /// a geometric primitive.  See \ref Usd_InterpolationVals
+    USDGEOM_API
     TfToken GetInterpolation() const;
 
     /// Set the Primvar's interpolation.
@@ -272,23 +275,35 @@ class UsdGeomPrimvar
     /// to match its interpolation to its topology.
     ///
     /// \sa GetInterpolation(), \ref Usd_InterpolationVals
+    USDGEOM_API
     bool SetInterpolation(const TfToken &interpolation);
     
     /// Has interpolation been explicitly authored on this Primvar?
     ///
     /// \sa GetInterpolationSize()
+    USDGEOM_API
     bool HasAuthoredInterpolation() const;
 
     /// Return the "element size" for this Primvar, which is 1 if
     /// unauthored.  If this Primvar's type is \em not an array type,
     /// (e.g. "Vec3f[]"), then elementSize is irrelevant.
     ///
-    /// ElementSize dictates how many consecutive items in the value array
-    /// should be taken as an atomic element to be interpolated over a gprim.
-    /// For example, if one is encoding spherical harmonic coefficients in
-    /// a Primvar, the typeName would be "float[]", and the elementSize
-    /// would be 9.  Changing the elementSize without changing the interpolation
-    /// will always necessitate a change to the size of the value array.
+    /// ElementSize does \em not generally encode the length of an array-type
+    /// primvar, and rarely needs to be authored.  ElementSize can be thought
+    /// of as a way to create an "aggregate interpolatable type", by
+    /// dictating how many consecutive elements in the value array should be
+    /// taken as an atomic element to be interpolated over a gprim. 
+    ///
+    /// For example, spherical harmonics are often represented as a
+    /// collection of nine floating-point coefficients, and the coefficients
+    /// need to be sampled across a gprim's surface: a perfect case for
+    /// primvars.  However, USD has no <tt>float9</tt> datatype.  But we can
+    /// communicate the aggregation of nine floats successfully to renderers
+    /// by declaring a simple float-array valued primvar, and setting its
+    /// \em elementSize to 9.  To author a \em uniform spherical harmonic
+    /// primvar on a Mesh of 42 faces, the primvar's array value would contain
+    /// 9*42 = 378 float elements.
+    USDGEOM_API
     int GetElementSize() const;
     
     /// Set the elementSize for this Primvar.
@@ -296,11 +311,13 @@ class UsdGeomPrimvar
     /// Errors and returns false if \p eltSize less than 1.
     ///
     /// \sa GetElementSize()
+    USDGEOM_API
     bool SetElementSize(int eltSize);
     
     /// Has elementSize been explicitly authored on this Primvar?
     ///
     /// \sa GetElementSize()
+    USDGEOM_API
     bool HasAuthoredElementSize() const;
     
 
@@ -308,10 +325,12 @@ class UsdGeomPrimvar
     /// implies that creating a UsdGeomPrimvar from the attribute will succeed.
     ///
     /// Success implies that \c attr.IsDefined() is true.
+    USDGEOM_API
     static bool IsPrimvar(const UsdAttribute &attr);
 
     /// Validate that the provided \p interpolation is a valid setting for 
     /// interpolation as defined by \ref Usd_InterpolationVals.  
+    USDGEOM_API
     static bool IsValidInterpolation(const TfToken &interpolation);
 
     /// Convenience function for fetching all information required to 
@@ -320,6 +339,7 @@ class UsdGeomPrimvar
     /// GetBaseName()
     ///
     /// May also be more efficient than querying key individually.
+    USDGEOM_API
     void GetDeclarationInfo(TfToken *name, SdfValueTypeName *typeName,
                             TfToken *interpolation, int *elementSize) const;
 
@@ -411,6 +431,7 @@ class UsdGeomPrimvar
     /// array returned by Get(). The element numerality of the primvar's 
     /// 'interpolation' metadata applies to the "indices" array, not the attribute
     /// value array (returned by Get()).
+    USDGEOM_API
     bool SetIndices(const VtIntArray &indices, 
                     UsdTimeCode time = UsdTimeCode::Default()) const;
 
@@ -418,12 +439,14 @@ class UsdGeomPrimvar
     /// primvar at \p time.
     /// 
     /// \sa SetIndices(), \ref Usd_Handling_Indexed_Primvars
+    USDGEOM_API
     bool GetIndices(VtIntArray *indices,
                     UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// Block the indices that were previously set.  This effectively makes an
     /// indexed primvar no longer indexed.  This is useful when overriding an
     /// existing primvar.
+    USDGEOM_API
     void BlockIndices() const;
 
     /// Returns true if the primvar is indexed, i.e., if it has an associated
@@ -431,6 +454,7 @@ class UsdGeomPrimvar
     ///
     /// If you are going to query the indices anyways, prefer to simply 
     /// consult the return-value of GetIndices(), which will be more efficient.
+    USDGEOM_API
     bool IsIndexed() const;
 
 
@@ -446,11 +470,13 @@ class UsdGeomPrimvar
     /// there are no unauthored values.
     /// 
     /// \sa GetUnauthoredValuesIndex()
+    USDGEOM_API
     bool SetUnauthoredValuesIndex(int unauthoredValuesIndex) const;
 
     /// Returns the index that represents unauthored values in the indices array.
     /// 
     /// \sa SetUnauthoredValuesIndex()
+    USDGEOM_API
     int GetUnauthoredValuesIndex() const;
     
     /// Computes the flattened value of the primvar at \p time. 
@@ -470,6 +496,7 @@ class UsdGeomPrimvar
     /// a scalar, this returns the authored value, which is the same as 
     /// \ref Get(). Hence, it's safe to call ComputeFlattened() on non-indexed 
     /// primvars.
+    USDGEOM_API
     bool ComputeFlattened(VtValue *value, 
                           UsdTimeCode time=UsdTimeCode::Default()) const;
 
@@ -510,12 +537,14 @@ class UsdGeomPrimvar
     /// Returns true if the primvar is an Id primvar.
     ///
     /// \sa \ref UsdGeomPrimvar_Id_primvars
+    USDGEOM_API
     bool IsIdTarget() const;
 
     /// This primvar must be of String or StringArray type for this method to
     /// succeed.  If not, a coding error is raised.
     ///
     /// \sa \ref UsdGeomPrimvar_Id_primvars
+    USDGEOM_API
     bool SetIdTarget(const SdfPath& path) const;
     
     /// @}
@@ -590,13 +619,13 @@ private:
 // We instantiate the following so we can check and provide the correct value
 // for Id attributes.
 template <>
-bool UsdGeomPrimvar::Get(std::string* value, UsdTimeCode time) const;
+USDGEOM_API bool UsdGeomPrimvar::Get(std::string* value, UsdTimeCode time) const;
 
 template <>
-bool UsdGeomPrimvar::Get(VtStringArray* value, UsdTimeCode time) const;
+USDGEOM_API bool UsdGeomPrimvar::Get(VtStringArray* value, UsdTimeCode time) const;
 
 template <>
-bool UsdGeomPrimvar::Get(VtValue* value, UsdTimeCode time) const;
+USDGEOM_API bool UsdGeomPrimvar::Get(VtValue* value, UsdTimeCode time) const;
 
 template <typename ScalarType>
 bool 

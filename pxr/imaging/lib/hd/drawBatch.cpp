@@ -120,8 +120,8 @@ bool
 Hd_DrawBatch::_IsAggregated(HdDrawItem const *drawItem0,
                             HdDrawItem const *drawItem1)
 {
-    if (!HdSurfaceShader::CanAggregate(drawItem0->GetSurfaceShader(),
-                                          drawItem1->GetSurfaceShader())) {
+    if (!HdShaderCode::CanAggregate(drawItem0->GetSurfaceShader(),
+                                    drawItem1->GetSurfaceShader())) {
         return false;
     }
 
@@ -222,15 +222,13 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
             // shaders for customization, we will need to check them as well.
             
             typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
-            typedef boost::shared_ptr<class HdSurfaceShader> 
-                HdSurfaceShaderSharedPtr;
 
             GlfGLSLFXSharedPtr glslSurfaceFallback = 
                 GlfGLSLFXSharedPtr(
                         new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
 
-            HdSurfaceShaderSharedPtr fallbackSurface = 
-                HdSurfaceShaderSharedPtr(
+            HdShaderCodeSharedPtr fallbackSurface =
+                HdShaderCodeSharedPtr(
                     new HdGLSLFXShader(glslSurfaceFallback));
 
             _program.SetSurfaceShader(fallbackSurface);

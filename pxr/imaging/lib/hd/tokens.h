@@ -203,6 +203,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (camera)                                    \
     (light)                                     \
     (drawTarget)                                \
+    (shader)                                    \
                                                 \
     /* Bprims */                                \
     (texture)

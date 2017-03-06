@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
+#include "pxr/base/tf/refPtr.h"
 
 #include <boost/noncopyable.hpp>
 
@@ -55,5 +56,7 @@ wrapResolver()
     def("GetResolver", ArGetResolver,
         return_value_policy<reference_existing_object>());
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(ArResolver)
 
 PXR_NAMESPACE_CLOSE_SCOPE

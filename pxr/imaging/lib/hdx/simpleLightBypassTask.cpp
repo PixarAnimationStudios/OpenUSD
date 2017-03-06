@@ -57,7 +57,7 @@ HdxSimpleLightBypassTask::_Sync(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
 
-    HdChangeTracker::DirtyBits bits = _GetTaskDirtyBits();
+    HdDirtyBits bits = _GetTaskDirtyBits();
 
     if (bits & HdChangeTracker::DirtyParams) {
         HdxSimpleLightBypassTaskParams params;

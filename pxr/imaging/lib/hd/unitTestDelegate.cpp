@@ -248,7 +248,7 @@ Hd_UnitTestDelegate::AddSurfaceShader(SdfPath const &id,
                                HdShaderParamVector const &params)
 {
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertShader<HdSurfaceShader>(this, id);
+    index.InsertSprim(HdPrimTypeTokens->shader, this, id);
     _surfaceShaders[id] = _SurfaceShader(source, params);
 }
 
@@ -1392,7 +1392,7 @@ Hd_UnitTestDelegate::Clear()
 }
 
 void
-Hd_UnitTestDelegate::MarkRprimDirty(SdfPath path, HdChangeTracker::DirtyBits flag)
+Hd_UnitTestDelegate::MarkRprimDirty(SdfPath path, HdDirtyBits flag)
 {
     GetRenderIndex().GetChangeTracker().MarkRprimDirty(path, flag);
 }

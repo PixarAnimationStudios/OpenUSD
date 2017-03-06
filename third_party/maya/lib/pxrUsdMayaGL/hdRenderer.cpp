@@ -29,12 +29,12 @@
 // Make sure to include glew first before any header that might include
 // gl.h
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/garch/glut.h"
 
 #include "pxrUsdMayaGL/hdRenderer.h"
 #include "px_vp20/utils.h"
 #include "px_vp20/utils_legacy.h"
 
+#include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawRequest.h>
@@ -135,8 +135,8 @@ void UsdMayaGLHdRenderer::RenderVp2(
     using namespace MHWRender;
     
     MStatus status;
-	MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
-	if (!theRenderer) return;
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (!theRenderer) return;
 
     MHWRender::MStateManager* stateMgr = context.getStateManager();
     if (!stateMgr) return;
@@ -158,10 +158,12 @@ void UsdMayaGLHdRenderer::RenderVp2(
 
     glPushAttrib(GL_CURRENT_BIT | GL_LIGHTING_BIT);
 
-    MMatrix worldView = context.getMatrix(MHWRender::MDrawContext::kWorldViewMtx, &status);
+    const MMatrix worldView =
+        context.getMatrix(MHWRender::MDrawContext::kWorldViewMtx, &status);
     GfMatrix4d modelViewMatrix(worldView.matrix);
 
-    MMatrix projection = context.getMatrix(MHWRender::MDrawContext::kProjectionMtx, &status);
+    const MMatrix projection =
+        context.getMatrix(MHWRender::MDrawContext::kProjectionMtx, &status);
     GfMatrix4d projectionMatrix(projection.matrix);
 
     // get root matrix
@@ -225,29 +227,10 @@ void UsdMayaGLHdRenderer::RenderVp2(
             break;
         }
         case UsdMayaGLHdRenderer::DRAW_BOUNDING_BOX: {
-
-            MBoundingBox bbox = request.bounds;
-            glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
-            glDisable(GL_LIGHTING);
-            glMatrixMode(GL_PROJECTION);
-            glPushMatrix();
-            glLoadMatrixd(projection.matrix[0]);
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glLoadMatrixd(worldView.matrix[0]);
-
-            glColor3fv((float*)&request.fWireframeColor);
-            glTranslated( bbox.center()[0],
-                          bbox.center()[1],
-                          bbox.center()[2] );
-            glScaled( bbox.width(), bbox.height(), bbox.depth() );
-            glutWireCube(1.0);
-            glMatrixMode(GL_PROJECTION);
-            glPopMatrix();
-            glMatrixMode(GL_MODELVIEW);
-            glPopMatrix();
-            glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT
-
+            px_vp20Utils::RenderBoundingBox(request.bounds,
+                                            request.fWireframeColor,
+                                            worldView,
+                                            projection);
             break;
         }
         }
@@ -330,29 +313,28 @@ UsdMayaGLHdRenderer::Render(
         }
         case DRAW_BOUNDING_BOX: {
             MDrawData drawData = request.drawData();
-            const MPxSurfaceShape* shape = static_cast<const MPxSurfaceShape*>(
-                    drawData.geometry());
+            const MPxSurfaceShape* shape =
+                static_cast<const MPxSurfaceShape*>(drawData.geometry());
 
             if (!shape) {
                 break;
             }
-            if( !shape->isBounded() )
+            if (!shape->isBounded()) {
                 break;
-            
-            MBoundingBox bbox = shape->boundingBox();
-            
-            glPushAttrib( GL_ENABLE_BIT );
-            // Make sure we are not using lighitng when drawing
-            glDisable(GL_LIGHTING);
-            glPushMatrix();
-            glTranslated( bbox.center()[0],
-                          bbox.center()[1],
-                          bbox.center()[2] );
-            glScaled( bbox.width(), bbox.height(), bbox.depth() );
-            glutWireCube(1.0);
-            glPopMatrix();
-            glPopAttrib(); // GL_ENABLE_BIT
-            
+            }
+
+            const MBoundingBox bbox = shape->boundingBox();
+            const MColor mayaColor = request.color();
+            const GfVec4f wireframeColor(mayaColor.r,
+                                         mayaColor.g,
+                                         mayaColor.b,
+                                         mayaColor.a);
+
+            px_vp20Utils::RenderBoundingBox(bbox,
+                                            wireframeColor,
+                                            mayaViewMatrix,
+                                            mayaProjMatrix);
+
             break;
         }
     }

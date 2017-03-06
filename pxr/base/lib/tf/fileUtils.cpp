@@ -29,8 +29,10 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/arch/errno.h"
 
 #include <boost/assign.hpp>
 #include <boost/bind.hpp>
@@ -43,15 +45,21 @@
 #include <string>
 #include <cstdio>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <errno.h>
+#if !defined(ARCH_OS_WINDOWS)
+#include <sys/time.h>
 #include <unistd.h>
 #include <utime.h>
 #include <dirent.h>
-#include <errno.h>
 #include <utime.h>
-
+#else
+#include <Windows.h>
+#include <Shellapi.h>
+#include <ShlwAPI.h>
+#include <sys/utime.h>
+#endif
 using std::set;
 using std::string;
 using std::vector;
@@ -70,9 +78,16 @@ Tf_Stat(string const& path, bool resolveSymlinks, struct stat* st = 0)
         st = &unused;
     }
 
+#if defined(ARCH_OS_WINDOWS)
+    if (resolveSymlinks) {
+        printf("Tf_IsStat: symlink resolving not yet implemented for windows\n");
+    }
+    return stat(path.c_str(), st) == 0;
+#else
     int result = resolveSymlinks ?
         stat(path.c_str(), st) : lstat(path.c_str(), st);
     return result == 0;
+#endif
 }
 
 bool
@@ -84,30 +99,51 @@ TfPathExists(string const& path, bool resolveSymlinks)
 bool
 TfIsDir(string const& path, bool resolveSymlinks)
 {
+#if defined (ARCH_OS_WINDOWS)
+    DWORD attribs = GetFileAttributes(path.c_str());
+
+    return (attribs != INVALID_FILE_ATTRIBUTES &&
+        (attribs & FILE_ATTRIBUTE_DIRECTORY));
+#else
     struct stat st;
     if (Tf_Stat(path, resolveSymlinks, &st)) {
         return S_ISDIR(st.st_mode);
     }
     return false;
+#endif
 }
 
 bool
 TfIsFile(string const& path, bool resolveSymlinks)
 {
+#if defined (ARCH_OS_WINDOWS)
+    DWORD attribs = GetFileAttributes(path.c_str());
+
+    return (attribs != INVALID_FILE_ATTRIBUTES &&
+        !(attribs & FILE_ATTRIBUTE_DIRECTORY));
+#else
     struct stat st;
     if (Tf_Stat(path, resolveSymlinks, &st)) {
         return S_ISREG(st.st_mode);
     }
     return false;
+#endif
 }
 
 bool
 TfIsLink(string const& path)
 {
+#if defined(ARCH_OS_WINDOWS)
+    DWORD attribs = GetFileAttributes(path.c_str());
+
+    return (attribs != INVALID_FILE_ATTRIBUTES &&
+        (attribs & FILE_ATTRIBUTE_REPARSE_POINT));
+#else
     struct stat st;
     if (Tf_Stat(path, /* resolveSymlinks */ false, &st)) {
         return S_ISLNK(st.st_mode);
     }
+#endif
     return false;
 }
 
@@ -126,7 +162,9 @@ TfIsDirEmpty(string const& path)
 {
     if (!TfIsDir(path))
         return false;
-
+#if defined(ARCH_OS_WINDOWS)
+    return PathIsDirectoryEmpty(path.c_str()) == TRUE;
+#else
     if (DIR *dirp = opendir(path.c_str()))
     {
         struct dirent *dent;
@@ -143,18 +181,25 @@ TfIsDirEmpty(string const& path)
         return true;
     }
     return false;
+#endif
 }
 
 bool
 TfSymlink(string const& src, string const& dst)
 {
+#if defined(ARCH_OS_WINDOWS)
+    return ::CreateSymbolicLink(src.c_str(), dst.c_str(), 
+                         TfIsDir(src) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0) 
+                         ? true : false;
+#else
     return (symlink(src.c_str(), dst.c_str()) != -1);
+#endif
 }
 
 bool
 TfDeleteFile(std::string const& path)
 {
-    if (unlink(path.c_str()) != 0) {
+    if (ArchUnlinkFile(path.c_str()) != 0) {
         TF_RUNTIME_ERROR("Failed to delete '%s'", path.c_str());
         return false;
     }
@@ -164,17 +209,25 @@ TfDeleteFile(std::string const& path)
 bool
 TfMakeDir(string const& path, int mode)
 {
+#if defined(ARCH_OS_WINDOWS)
+    return CreateDirectory(path.c_str(), nullptr) == TRUE;
+#else
     // Default mode is 0777
     if (mode == -1)
         mode = S_IRWXU|S_IRWXG|S_IRWXO;
 
     return (mkdir(path.c_str(), mode) != -1);
+#endif
 }
 
 static bool
 Tf_MakeDirsRec(string const& path, int mode)
 {
+#if defined(ARCH_OS_WINDOWS)
+    string head = TfStringTrimRight(TfGetPathName(path), "\\/");
+#else
     string head = TfStringTrimRight(TfGetPathName(path), "/");
+#endif
 
     if (head.empty()) {
         return TfIsDir(path) ? true : TfMakeDir(path, mode);
@@ -221,6 +274,46 @@ TfReadDir(
     vector<string>* symlinknames,
     string *errMsg)
 {
+#if defined(ARCH_OS_WINDOWS)
+    char szPath[MAX_PATH];
+    WIN32_FIND_DATA fdFile;
+    HANDLE hFind = NULL;
+
+    PathCombine(szPath, dirPath.c_str(), "*.*");
+
+    if((hFind = FindFirstFile(szPath, &fdFile)) == INVALID_HANDLE_VALUE)
+    {
+        if (errMsg) {
+            *errMsg = TfStringPrintf("Path not found: %s", szPath);
+        }
+        return false;
+    }
+    else
+    {
+        do
+        {
+            if(strcmp(fdFile.cFileName, ".") != 0
+                && strcmp(fdFile.cFileName, "..") != 0)
+            {
+                if(fdFile.dwFileAttributes &FILE_ATTRIBUTE_DIRECTORY)
+                {
+                    if (dirnames)
+                        dirnames->push_back(fdFile.cFileName);
+                }
+                else
+                {
+                    if (filenames)
+                        filenames->push_back(fdFile.cFileName);
+                }
+            }
+        }
+        while (FindNextFile(hFind, &fdFile));
+
+        FindClose(hFind);
+
+        return true;
+    }
+#else
     DIR *dir;
     struct dirent entry;
     struct dirent *result;
@@ -228,7 +321,7 @@ TfReadDir(
 
     if ((dir = opendir(dirPath.c_str())) == NULL) {
         if (errMsg) {
-            *errMsg = TfStringPrintf("opendir failed: %s", strerror(errno));
+            *errMsg = TfStringPrintf("opendir failed: %s", ArchStrerror(errno).c_str());
         }
         return false;
     }
@@ -279,7 +372,7 @@ TfReadDir(
     }
 
     closedir(dir);
-    
+#endif
     return true;
 }    
 
@@ -413,24 +506,26 @@ Tf_RmTree(string const& dirpath,
     vector<string>::const_iterator it;
     for (it = filenames.begin(); it != filenames.end(); ++it) {
         string path = dirpath + "/" + *it;
-        if (unlink(path.c_str()) != 0) {
+        if (ArchUnlinkFile(path.c_str()) != 0) {
             // CODE_COVERAGE_OFF this could happen if the file is removed by
             // another process before we get there, or a file exists but is
             // not writable by us, or the parent directory is not writable by
             // us.
-            if (onError)
-                onError(dirpath, TfStringPrintf("unlink failed for '%s': %s",
-                                                path.c_str(), strerror(errno)));
+            if (onError) {
+                onError(dirpath, TfStringPrintf("ArchUnlinkFile failed for '%s': %s",
+                    path.c_str(), ArchStrerror(errno).c_str()));
+            }
             // CODE_COVERAGE_ON
         }
     }
 
-    if (rmdir(dirpath.c_str()) != 0) {
+    if (ArchRmDir(dirpath.c_str()) != 0) {
         // CODE_COVERAGE_OFF this could happen for all the same reasons the
-        // unlink above could fail.
-        if (onError)
+        // ArchUnlinkFile above could fail.
+        if (onError) {
             onError(dirpath, TfStringPrintf("rmdir failed for '%s': %s",
-                                            dirpath.c_str(), strerror(errno)));
+                dirpath.c_str(), ArchStrerror(errno).c_str()));
+        }
         // CODE_COVERAGE_ON
     }
 
@@ -479,10 +574,11 @@ TfListDir(string const& path, bool recursive)
     return result;
 }
 
-bool
+TF_API bool
 TfTouchFile(string const &fileName, bool create)
 {
     if (create) {
+#if !defined(ARCH_OS_WINDOWS)
         // Attempt to create the file so it is readable and writable by user,
         // group and other.
         int fd = open(fileName.c_str(),
@@ -491,11 +587,31 @@ TfTouchFile(string const &fileName, bool create)
         if (fd == -1)
             return false;
         close(fd);
+#else
+        HANDLE fileHandle = ::CreateFile(fileName.c_str(),
+            GENERIC_WRITE,          // open for write
+            0,                      // not for sharing
+            NULL,                   // default security
+            CREATE_ALWAYS,          // overwrite existing
+            FILE_ATTRIBUTE_NORMAL,  //normal file
+            NULL);                  // no template
+
+        if (fileHandle == INVALID_HANDLE_VALUE) {
+            return false;
+        }
+
+        // Close the file
+        ::CloseHandle(fileHandle);
+#endif
     }
 
     // Passing NULL to the 'times' argument sets both the atime and mtime to
     // the current time, with millisecond precision.
+#if defined(ARCH_OS_WINDOWS)
+    return _utime(fileName.c_str(), /* times */ NULL) == 0;
+#else
     return utimes(fileName.c_str(), /* times */ NULL) == 0;
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

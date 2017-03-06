@@ -28,6 +28,7 @@
 /// Diagnostic helpers.
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/errors.h"
 
 #include <boost/preprocessor/arithmetic/add.hpp>
@@ -42,19 +43,23 @@ class PcpNodeRef;
 class PcpPrimIndex;
 class PcpSite;
 
+PCP_API
 std::string PcpDump(const PcpPrimIndex& primIndex,
                     bool includeInheritOriginInfo = false,
                     bool includeMaps = false);
 
+PCP_API
 std::string PcpDump(const PcpNodeRef& node,
                     bool includeInheritOriginInfo = false,
                     bool includeMaps = false);
 
+PCP_API
 void PcpDumpDotGraph(const PcpPrimIndex& primIndex, 
                      const char *filename, 
                      bool includeInheritOriginInfo = true,
                      bool includeMaps = false);
 
+PCP_API
 void PcpDumpDotGraph(const PcpNodeRef& node, 
                      const char *filename, 
                      bool includeInheritOriginInfo = true,
@@ -87,14 +92,14 @@ void PcpDumpDotGraph(const PcpNodeRef& node,
 /// Indicates that the prim index currently being constructed has been
 /// updated.
 #define PCP_GRAPH_UPDATE(...)                                           \
-    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
+    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                        \
     else {                                                              \
         Pcp_GraphUpdate(__VA_ARGS__);                                   \
     }
 
 /// Annotates the current phase of prim indexing with the given message.
 #define PCP_GRAPH_MSG(...)                                              \
-    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                     \
+    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                        \
     else {                                                              \
         Pcp_GraphMsg(__VA_ARGS__);                                      \
     }

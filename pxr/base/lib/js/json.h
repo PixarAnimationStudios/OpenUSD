@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// A struct containing information about a JSON parsing error.
 ///
-struct JS_API JsParseError {
+struct JsParseError {
     JsParseError() : line(0), column(0) { }
     unsigned int line;
     unsigned int column;

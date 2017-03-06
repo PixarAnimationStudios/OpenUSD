@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _USDUTILS_PINTROSPECTION_H_
-#define _USDUTILS_PINTROSPECTION_H_
+#ifndef USDUTILS_INTROSPECTION_H
+#define USDUTILS_INTROSPECTION_H
 
 /// \file usdUtils/introspection.h
 ///
@@ -31,6 +31,7 @@
 /// "Does this stage contain this asset?", "usd grep" functionality, etc.
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -64,7 +65,8 @@ SDF_DECLARE_HANDLES(SdfLayer);
     (primCountsByType)                  \
         (untyped)
 
-TF_DECLARE_PUBLIC_TOKENS(UsdUtilsUsdStageStatsKeys, USDUTILS_USDSTAGE_STATS);
+TF_DECLARE_PUBLIC_TOKENS(UsdUtilsUsdStageStatsKeys,
+                         USDUTILS_API, USDUTILS_USDSTAGE_STATS);
 
 /// Opens the given layer on a USD stage and collects various stats. 
 /// The stats are populated in the dictionary-valued output param \p stats.
@@ -105,6 +107,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdUtilsUsdStageStatsKeys, USDUTILS_USDSTAGE_STATS);
 /// \note Only component models are included in 'modelCount' and 
 /// 'instancedModelCount'.
 ///
+USDUTILS_API
 UsdStageRefPtr UsdUtilsComputeUsdStageStats(const std::string &rootLayerPath, 
                                             VtDictionary *stats);
 
@@ -114,10 +117,11 @@ UsdStageRefPtr UsdUtilsComputeUsdStageStats(const std::string &rootLayerPath,
 /// Returns the total number of prims on the stage, including active, inactive.
 /// pure overs, prims inside masters etc.
 /// 
+USDUTILS_API
 size_t UsdUtilsComputeUsdStageStats(const UsdStageWeakPtr &stage, 
                                     VtDictionary *stats);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif /* _USDUTILS_INTROSPECTION_H_ */
+#endif /* USDUTILS_INTROSPECTION_H */

@@ -41,23 +41,27 @@ static bool
 _NodeRepresentsLiveBaseMaterial(const PcpNodeRef &node)
 {
     bool isLiveBaseMaterial = false;
-    for (PcpNodeRef n = node; n; n = n.GetOriginNode()) {
+    for (PcpNodeRef n = node; 
+            n; // 0, or false, means we are at the root node
+            n = n.GetOriginNode()) {
         switch(n.GetArcType()) {
         case PcpArcTypeLocalSpecializes:
         case PcpArcTypeGlobalSpecializes:
             isLiveBaseMaterial = true;
             break;
-        case PcpArcTypeReference:
-            if (isLiveBaseMaterial) {
-                // Node is within a base material, but that is in turn
-                // across a reference. That means this is a library
-                // material, so it is not live and we should flatten it
-                // out.  Continue iterating, however, since this
-                // might be referenced into some other live base material
-                // downstream.
-                isLiveBaseMaterial = false;
-            }
-            break;
+        // dakrunch: specializes across references are actually still valid.
+        // 
+        // case PcpArcTypeReference:
+        //     if (isLiveBaseMaterial) {
+        //         // Node is within a base material, but that is in turn
+        //         // across a reference. That means this is a library
+        //         // material, so it is not live and we should flatten it
+        //         // out.  Continue iterating, however, since this
+        //         // might be referenced into some other live base material
+        //         // downstream.
+        //         isLiveBaseMaterial = false;
+        //     }
+        //     break;
         default:
             break;
         }

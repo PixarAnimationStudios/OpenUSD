@@ -27,6 +27,7 @@
 /// \file sdf/relationshipSpec.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/types.h"
@@ -67,6 +68,7 @@ public:
     ///
     /// Creates and returns a new relationship for the given prim.
     /// The \p owner will own the newly created relationship.
+    SDF_API
     static SdfRelationshipSpecHandle
     New(const SdfPrimSpecHandle& owner,
         const std::string& name,
@@ -82,18 +84,22 @@ public:
     ///
     /// The list of the target paths for this relationship may be modified
     /// through the proxy.
+    SDF_API
     SdfTargetsProxy GetTargetPathList() const;
 
     /// Returns true if the relationship has any target paths.
+    SDF_API
     bool HasTargetPathList() const;
 
     /// Clears the list of target paths on this relationship.
+    SDF_API
     void ClearTargetPathList() const;
 
     /// Updates the specified target path.
     ///
     /// Replaces the path given by \p oldPath with the one specified by
     /// \p newPath.  Relational attributes are updated if necessary.
+    SDF_API
     void ReplaceTargetPath(const SdfPath& oldPath, const SdfPath& newPath);
 
     /// Removes the specified target path.
@@ -102,6 +108,7 @@ public:
     /// given target path. If \p preserveTargetOrder is \c true, Erase() is
     /// called on the list editor instead of RemoveItemEdits(). This preserves
     /// the ordered items list.
+    SDF_API
     void RemoveTargetPath(const SdfPath& path, bool preserveTargetOrder = false);
 
     /// @}
@@ -109,26 +116,32 @@ public:
     /// @{
 
     /// Gets the attributes for the given target path.
+    SDF_API
     SdfRelationalAttributeSpecView
     GetAttributesForTargetPath(const SdfPath& path) const;
 
     /// Sets the attributes for the given target path as a vector.
+    SDF_API
     void SetAttributesForTargetPath(const SdfPath& path,
                                     const SdfAttributeSpecHandleVector& newAttrs);
 
     /// Inserts the given attribute for the given target path.
+    SDF_API
     bool InsertAttributeForTargetPath(const SdfPath& path,
                                       const SdfAttributeSpecHandle& attr,
                                       int index = -1);
 
     /// Removes an attribute from the given target path.
+    SDF_API
     void RemoveAttributeForTargetPath(const SdfPath& path,
                                       const SdfAttributeSpecHandle& attr);
 
     /// Returns all target paths for which there are relational attributes.
+    SDF_API
     SdfPathVector GetAttributeTargetPaths() const;
 
     /// Returns the target path for the given relational attribute.
+    SDF_API
     SdfPath
     GetTargetPathForAttribute(const SdfAttributeSpecConstHandle& attr) const;
 
@@ -141,20 +154,24 @@ public:
 
     /// Returns list of all target paths for which an ordering of relational
     /// attributes exists.
+    SDF_API
     SdfPathVector GetAttributeOrderTargetPaths() const;
 
     /// Returns true if a relational attribute ordering is authored for the
     /// given target \p path.
+    SDF_API
     bool HasAttributeOrderForTargetPath(const SdfPath& path) const;
 
     /// Returns a list editor proxy for authoring relational attribute
     /// orderings for the given target \p path. If no ordering exists for
     /// \p path, an invalid proxy object is returned.
+    SDF_API
     SdfNameOrderProxy GetAttributeOrderForTargetPath(const SdfPath& path) const;
 
     /// Returns a list editor proxy for authoring relational attribute
     /// orderings for the given target \p path. This may create a relationship
     /// target spec for \p path if one does not already exist.
+    SDF_API
     SdfNameOrderProxy GetOrCreateAttributeOrderForTargetPath(
         const SdfPath& path);
 
@@ -163,6 +180,7 @@ public:
     /// The map's keys are the target paths whose attributes should be
     /// ordered.  The values are vectors of strings specifying the
     /// ordering for each path.
+    SDF_API
     void SetTargetAttributeOrders(const AttributeOrderMap& orders);
 
     /// Reorders the given list of attribute names according to the reorder
@@ -170,6 +188,7 @@ public:
     ///
     /// This routine employs the standard list editing operation for ordered
     /// items in a ListEditor.
+    SDF_API
     void ApplyAttributeOrderForTargetPath(
         const SdfPath& path, std::vector<TfToken>* vec) const;
 
@@ -182,31 +201,39 @@ public:
                      SdfPath::FastLessThan> TargetMarkerMap;
 
     /// Returns a copy of all the target markers for this relationship.
+    SDF_API
     TargetMarkerMap GetTargetMarkers() const;
 
     /// Sets the all the target markers for this relationship.
+    SDF_API
     void SetTargetMarkers(const TargetMarkerMap& markers);
 
     /// Returns the marker for this relationship for the given target path.
+    SDF_API
     std::string GetTargetMarker(const SdfPath& path) const;
 
     /// Sets the marker for this relationship for the given target path. 
     /// 
     /// If an empty string is specified, the target marker will be cleared.
+    SDF_API
     void SetTargetMarker(const SdfPath& path, const std::string& marker);
 
     /// Clears the marker for the given target path.
+    SDF_API
     void ClearTargetMarker(const SdfPath& path);
 
     /// Returns all target paths on which markers are specified.
+    SDF_API
     SdfPathVector GetTargetMarkerPaths() const;
 
     /// Get whether loading the target of this relationship is necessary
     /// to load the prim we're attached to
+    SDF_API
     bool GetNoLoadHint(void) const;
 
     /// Set whether loading the target of this relationship is necessary
     /// to load the prim we're attached to
+    SDF_API
     void SetNoLoadHint(bool noload);
 
     /// @}

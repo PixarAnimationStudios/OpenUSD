@@ -29,6 +29,7 @@ pxr_plugin(${PXR_PACKAGE}
         mesh.cpp
         model.cpp
         nurbsPatch.cpp
+        pointInstancer.cpp
         points.cpp
         scope.cpp
         uiUtils.cpp

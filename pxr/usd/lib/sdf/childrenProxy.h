@@ -27,6 +27,7 @@
 /// \file sdf/childrenProxy.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/diagnostic.h"

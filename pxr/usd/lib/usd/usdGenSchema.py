@@ -144,6 +144,12 @@ def _GetTokensPrefix(layer):
     return _GetLibMetadata(layer).get('tokensPrefix', 
         _GetLibPrefix(layer))
 
+
+def _GetUseExportAPI(layer):
+    """ Return the useExportAPI defined in layer."""
+
+    return _GetLibMetadata(layer).get('useExportAPI', True)
+
     
 def _UpperCase(aString):
     return aString.upper()
@@ -385,6 +391,7 @@ def ParseUsd(usdFilePath):
             _GetLibPath(sdfLayer),
             _GetLibPrefix(sdfLayer),
             _GetTokensPrefix(sdfLayer),
+            _GetUseExportAPI(sdfLayer),
             _GetLibMetadata(sdfLayer).get('libraryTokens', {}),
             classes)
 
@@ -435,9 +442,11 @@ def _ExtractCustomCode(filePath, default=None):
 
 
 def _AddToken(tokenDict, tokenId, val, desc):
-    # if token is a reserved word in either language, append with underscore
+    # If token is a reserved word in either language, append with underscore.
+    # 'interface' is not a reserved word but is a macro on Windows when using
+    # COM so we treat it as reserved.
     reserved = set(['class', 'default', 'def', 'case', 'switch', 'break',
-                    'if', 'else', 'struct', 'template'])
+                    'if', 'else', 'struct', 'template', 'interface'])
     if tokenId in reserved:
         tokenId = tokenId + '_'
     if tokenId in tokenDict:
@@ -501,12 +510,13 @@ def GatherTokens(classes, libName, libTokens):
 
 
 def GenerateCode(codeGenPath, tokenData, classes, 
-                 namespaceOpen, namespaceClose, env):
+                 namespaceOpen, namespaceClose, useExportAPI, env):
     #
     # Load Templates
     #
     print 'Loading Templates'
     try:
+        apiTemplate = env.get_template('api.h')
         headerTemplate = env.get_template('schemaClass.h')
         sourceTemplate = env.get_template('schemaClass.cpp')
         wrapTemplate = env.get_template('wrapSchemaClass.cpp')
@@ -519,6 +529,11 @@ def GenerateCode(codeGenPath, tokenData, classes,
         print '\t', tse,
         print 'Aborting GenerateCode...'
         return
+
+    if useExportAPI:
+        print 'Writing API:'
+        _WriteFile(os.path.join(codeGenPath, 'api.h'),
+                   apiTemplate.render())
     
     if tokenData:
         print 'Writing Schema Tokens:'
@@ -786,6 +801,7 @@ if __name__ == '__main__':
         libPath, \
         libPrefix, \
         tokensPrefix, \
+        useExportAPI, \
         libTokens, \
         classes = ParseUsd(schemaPath)
         tokenData = GatherTokens(classes, libName, libTokens)
@@ -806,9 +822,10 @@ if __name__ == '__main__':
                               libraryName=libName,
                               libraryPath=libPath,
                               libraryPrefix=libPrefix,
-                              tokensPrefix=tokensPrefix)
+                              tokensPrefix=tokensPrefix,
+                              useExportAPI=useExportAPI)
         GenerateCode(codeGenPath, tokenData, classes,
-                     namespaceOpen, namespaceClose, j2_env)
+                     namespaceOpen, namespaceClose, useExportAPI, j2_env)
         GenerateRegistry(codeGenPath, schemaPath, classes, j2_env)
     
     except Exception as e:

@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/demangle.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
 
@@ -115,6 +116,7 @@ struct Tf_FlyweightData : public Tf_FlyweightDataBase {
 // poolName.  If successful, \a data is installed and the returned value is the
 // same as \a data.  If unsuccessful, the returned value is a pointer to the
 // existing data.
+TF_API
 Tf_FlyweightDataBase *
 Tf_TrySetFlyweightData(std::string const &poolName, Tf_FlyweightDataBase *data);
 

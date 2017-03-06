@@ -28,8 +28,10 @@
 /// Defines all the types "TYPED" for which Vt creates a VtTYPEDArray typedef.
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/declare.h"
+#include "pxr/base/gf/half.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/preprocessor.hpp>
@@ -44,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define VT_FLOATING_POINT_BUILTIN_VALUE_TYPES \
 ((      double,                Double )) \
 ((      float,                 Float  )) \
-((      half,                  Half   ))
+((      GfHalf,                Half   ))
 
 #define VT_INTEGRAL_BUILTIN_VALUE_TYPES     \
 ((      bool,                  Bool   ))    \

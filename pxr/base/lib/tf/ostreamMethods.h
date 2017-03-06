@@ -111,7 +111,7 @@ operator<<(std::ostream &out, const std::list<T> &l)
 template <class K, class M, class H, class C, class A>
 typename std::enable_if<
     PXR_NS::Tf_IsOstreamable<K>() && PXR_NS::Tf_IsOstreamable<M>(), std::ostream &>::type
-operator<<(std::ostream &out, const TfHashMap<K, M, H, C, A> &h)
+operator<<(std::ostream &out, const PXR_NS::TfHashMap<K, M, H, C, A> &h)
 {
     out << "< ";
     for (auto const &p: h)

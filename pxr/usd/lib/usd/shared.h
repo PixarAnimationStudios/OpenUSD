@@ -25,6 +25,8 @@
 #define USD_SHARED_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
+
 #include <boost/functional/hash.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <atomic>

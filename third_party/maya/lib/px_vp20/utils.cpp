@@ -24,6 +24,8 @@
 #include "pxr/pxr.h"
 #include "px_vp20/utils.h"
 
+#include "px_vp20/glslProgram.h"
+
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
@@ -33,24 +35,31 @@
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFloatPoint.h>
 #include <maya/MFloatPointArray.h>
 #include <maya/MFloatVector.h>
+#include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
+#include <maya/MMatrix.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MStatus.h>
+#include <maya/MTransformationMatrix.h>
 
 #include <cmath>
+#include <string>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
-bool px_vp20Utils::setupLightingGL( const MHWRender::MDrawContext& context)
+/* static */
+bool
+px_vp20Utils::setupLightingGL(const MHWRender::MDrawContext& context)
 {
     MStatus status;
     
@@ -201,7 +210,9 @@ bool px_vp20Utils::setupLightingGL( const MHWRender::MDrawContext& context)
 
 //------------------------------------------------------------------------------
 //
-void px_vp20Utils::unsetLightingGL( const MHWRender::MDrawContext& context)
+/* static */
+void
+px_vp20Utils::unsetLightingGL(const MHWRender::MDrawContext& context)
 {
     MStatus status;
     
@@ -624,5 +635,147 @@ px_vp20Utils::GetLightingContextFromDrawContext(
     return lightingContext;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+/* static */
+bool
+px_vp20Utils::RenderBoundingBox(
+        const MBoundingBox& bounds,
+        const GfVec4f& color,
+        const MMatrix& worldViewMat,
+        const MMatrix& projectionMat)
+{
+    static const GfVec3f cubeLineVertices[24] = {
+        // Vertical edges
+        GfVec3f(-0.5f, -0.5f, 0.5f),
+        GfVec3f(-0.5f, 0.5f, 0.5f),
 
+        GfVec3f(0.5f, -0.5f, 0.5f),
+        GfVec3f(0.5f, 0.5f, 0.5f),
+
+        GfVec3f(0.5f, -0.5f, -0.5f),
+        GfVec3f(0.5f, 0.5f, -0.5f),
+
+        GfVec3f(-0.5f, -0.5f, -0.5f),
+        GfVec3f(-0.5f, 0.5f, -0.5f),
+
+        // Top face edges
+        GfVec3f(-0.5f, 0.5f, 0.5f),
+        GfVec3f(0.5f, 0.5f, 0.5f),
+
+        GfVec3f(0.5f, 0.5f, 0.5f),
+        GfVec3f(0.5f, 0.5f, -0.5f),
+
+        GfVec3f(0.5f, 0.5f, -0.5f),
+        GfVec3f(-0.5f, 0.5f, -0.5f),
+
+        GfVec3f(-0.5f, 0.5f, -0.5f),
+        GfVec3f(-0.5f, 0.5f, 0.5f),
+
+        // Bottom face edges
+        GfVec3f(-0.5f, -0.5f, 0.5f),
+        GfVec3f(0.5f, -0.5f, 0.5f),
+
+        GfVec3f(0.5f, -0.5f, 0.5f),
+        GfVec3f(0.5f, -0.5f, -0.5f),
+
+        GfVec3f(0.5f, -0.5f, -0.5f),
+        GfVec3f(-0.5f, -0.5f, -0.5f),
+
+        GfVec3f(-0.5f, -0.5f, -0.5f),
+        GfVec3f(-0.5f, -0.5f, 0.5f),
+    };
+
+    static const std::string vertexShaderSource(
+        "#version 140\n"
+        "\n"
+        "in vec3 position;\n"
+        "uniform mat4 mvpMatrix;\n"
+        "\n"
+        "void main()\n"
+        "{\n"
+        "    gl_Position = vec4(position, 1.0) * mvpMatrix;\n"
+        "}\n");
+
+    static const std::string fragmentShaderSource(
+        "#version 140\n"
+        "\n"
+        "uniform vec4 color;\n"
+        "out vec4 outColor;\n"
+        "\n"
+        "void main()\n"
+        "{\n"
+        "    outColor = color;\n"
+        "}\n");
+
+    PxrMayaGLSLProgram renderBoundsProgram;
+
+    if (!renderBoundsProgram.CompileShader(GL_VERTEX_SHADER,
+                                           vertexShaderSource)) {
+        MGlobal::displayError("Failed to compile bounding box vertex shader");
+        return false;
+    }
+
+    if (!renderBoundsProgram.CompileShader(GL_FRAGMENT_SHADER,
+                                           fragmentShaderSource)) {
+        MGlobal::displayError("Failed to compile bounding box fragment shader");
+        return false;
+    }
+
+    if (!renderBoundsProgram.Link()) {
+        MGlobal::displayError("Failed to link bounding box render program");
+        return false;
+    }
+
+    if (!renderBoundsProgram.Validate()) {
+        MGlobal::displayError("Failed to validate bounding box render program");
+        return false;
+    }
+
+    GLuint renderBoundsProgramId = renderBoundsProgram.GetProgramId();
+
+    glUseProgram(renderBoundsProgramId);
+
+    // Populate an array buffer with the cube line vertices.
+    GLuint cubeLinesVBO;
+    glGenBuffers(1, &cubeLinesVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeLinesVBO);
+    glBufferData(GL_ARRAY_BUFFER,
+                 sizeof(cubeLineVertices),
+                 cubeLineVertices,
+                 GL_STATIC_DRAW);
+
+    // Create a transformation matrix from the bounding box's center and
+    // dimensions.
+    MTransformationMatrix bboxTransformMatrix = MTransformationMatrix::identity;
+    bboxTransformMatrix.setTranslation(bounds.center(), MSpace::kTransform);
+    const double scales[3] = { bounds.width(), bounds.height(), bounds.depth() };
+    bboxTransformMatrix.setScale(scales, MSpace::kTransform);
+
+    const MMatrix mvpMatrix =
+        bboxTransformMatrix.asMatrix() * worldViewMat * projectionMat;
+
+    GLfloat mvpMatrixArray[4][4];
+    mvpMatrix.get(mvpMatrixArray);
+
+    // Populate the shader variables.
+    GLuint mvpMatrixLocation = glGetUniformLocation(renderBoundsProgramId, "mvpMatrix");
+    glUniformMatrix4fv(mvpMatrixLocation, 1, GL_TRUE, &mvpMatrixArray[0][0]);
+
+    GLuint colorLocation = glGetUniformLocation(renderBoundsProgramId, "color");
+    glUniform4fv(colorLocation, 1, color.data());
+
+    // Enable the position attribute and draw.
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glDrawArrays(GL_LINES, 0, sizeof(cubeLineVertices));
+    glDisableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDeleteBuffers(1, &cubeLinesVBO);
+
+    glUseProgram(0);
+
+    return true;
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

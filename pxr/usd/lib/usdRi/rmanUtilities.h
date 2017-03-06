@@ -21,10 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
 #ifndef USDRI_RMANUTILITIES_H
 #define USDRI_RMANUTILITIES_H
 
@@ -32,22 +28,31 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Utilities for converting between USD encodings and Renderman encodings in
 /// cases where there is a difference.
 
+#include "pxr/pxr.h"
+#include "pxr/usd/usdRi/api.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 class TfToken;
 
 /// Given a \p token representing a UsdGeom interpolate boundary value, returns
 /// corresponding rman enum (converted to int).
+USDRI_API
 int UsdRiConvertToRManInterpolateBoundary(const TfToken &token);
 
 /// Given the integer \p i that corresponds to an rman enum for interpolate
 /// boundary condition, returns the equivalent UsdGeom token.
+USDRI_API
 const TfToken &UsdRiConvertFromRManInterpolateBoundary(int i);
 
 /// Given a \p token representing a UsdGeom face-varying interpolate boundary 
 /// value, returns corresponding rman enum (converted to int).
+USDRI_API
 int UsdRiConvertToRManFaceVaryingLinearInterpolation(const TfToken &token);
 
 /// Given the integer \p i that corresponds to an rman enum for face-varying
 /// interpolate boundary condition, returns the equivalent UsdGeom token.
+USDRI_API
 const TfToken &UsdRiConvertFromRManFaceVaryingLinearInterpolation(int i);
 
 

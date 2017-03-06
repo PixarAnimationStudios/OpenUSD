@@ -151,11 +151,11 @@ __getattribute__(object selfObj, const char *name) {
     // whitelist.
     if ((name[0] == '_' && name[1] == '_') ||
         extract<UsdObject &>(selfObj)().GetPrim().IsValid() ||
-        strcmp(name, "IsValid") == 0 or
-        strcmp(name, "IsDefined") == 0 or
-        strcmp(name, "GetDescription") == 0 or
-        strcmp(name, "GetPrim") == 0 or
-        strcmp(name, "GetPath") == 0 or
+        strcmp(name, "IsValid") == 0 ||
+        strcmp(name, "IsDefined") == 0 ||
+        strcmp(name, "GetDescription") == 0 ||
+        strcmp(name, "GetPrim") == 0 ||
+        strcmp(name, "GetPath") == 0 ||
         strcmp(name, "GetPrimPath") == 0) {
         // Dispatch to object's __getattribute__.
         return (*_object__getattribute__)(selfObj, name);

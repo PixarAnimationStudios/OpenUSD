@@ -54,11 +54,16 @@ struct PxrUsdMayaTranslatorModelAssembly
 
     /// This method returns true if \p prim being considered for import under
     /// \p usdImportRootPrim should be imported into Maya as an assembly.
+    /// If so, assetIdentifier and assetPrimPath will be populated
+    /// appropriately so that they can be used to create an assembly that
+    /// references the asset directly if desired.
     /// XXX: This might be a candidate for a plugin point that studios would
     //  want to customize.
     static bool ShouldImportAsAssembly(
         const UsdPrim& usdImportRootPrim,
-        const UsdPrim& prim);
+        const UsdPrim& prim,
+        std::string* assetIdentifier,
+        SdfPath* assetPrimPath);
 
     /// Imports the model at \p prim as a new Maya assembly under
     /// \p parentNode. An assembly node of type \p assemblyTypeName will be

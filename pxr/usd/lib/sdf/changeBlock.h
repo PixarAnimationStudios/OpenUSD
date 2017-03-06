@@ -25,6 +25,7 @@
 #define SDF_CHANGEBLOCK_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 
 /// \class SdfChangeBlock
 ///
@@ -70,7 +71,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfChangeBlock {
 public:
+    SDF_API
     SdfChangeBlock();
+    SDF_API
     ~SdfChangeBlock();
 };
 

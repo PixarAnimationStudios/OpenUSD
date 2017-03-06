@@ -131,6 +131,7 @@ void wrapUsdPrimFlags()
     scope().attr("PrimIsInstance") = Usd_Term(UsdPrimIsInstance);
     scope().attr("PrimHasDefiningSpecifier") 
         = Usd_Term(UsdPrimHasDefiningSpecifier);
+    scope().attr("PrimDefaultPredicate") = UsdPrimDefaultPredicate;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

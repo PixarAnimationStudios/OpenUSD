@@ -32,8 +32,8 @@ TraceliteBeginFunction Tracelite_ScopeAuto::_beginFunction = NULL;
 TraceliteEndFunction Tracelite_ScopeAuto::_endFunction = NULL;
 
 void TraceliteSetFunctions(TraceliteInitializeFunction initializeFunction,
-			   TraceliteBeginFunction beginFunction,
-			   TraceliteEndFunction endFunction)
+                           TraceliteBeginFunction beginFunction,
+                           TraceliteEndFunction endFunction)
 {
     _initializeFunction = initializeFunction;
     Tracelite_ScopeAuto::_beginFunction = beginFunction;
@@ -45,12 +45,12 @@ int TraceliteEnable(bool state)
     static int counter = 0;
 
     if (_initializeFunction) {
-	if (state)
-	    counter++;
-	else
-	    counter--;
-	
-	Tracelite_ScopeAuto::_active = counter > 0;
+        if (state)
+            counter++;
+        else
+            counter--;
+        
+        Tracelite_ScopeAuto::_active = counter > 0;
     }
 
     return counter;
@@ -60,7 +60,7 @@ void
 Tracelite_ScopeAuto::_Initialize(std::atomic<TraceScopeHolder*>* siteData,
                                  const std::string& key)
 {
-    if (!*siteData)
+    if (!siteData->load())
         (*_initializeFunction)(siteData, &key, NULL, NULL);
 }
 
@@ -68,8 +68,8 @@ void
 Tracelite_ScopeAuto::_Initialize(std::atomic<TraceScopeHolder*>* siteData,
                                  char const* key1, char const* key2)
 {
-    if (!*siteData)
-	(*_initializeFunction)(siteData, NULL, key1, key2);
+    if (!siteData->load())
+        (*_initializeFunction)(siteData, NULL, key1, key2);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

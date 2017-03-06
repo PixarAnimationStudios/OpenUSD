@@ -29,6 +29,7 @@
 // values (the child's SpecHandle).
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/declareHandles.h"

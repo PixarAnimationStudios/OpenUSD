@@ -27,6 +27,7 @@
 /// \file usd/clipsAPI.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -123,11 +124,13 @@ public:
     }
 
     /// Destructor.
+    USD_API
     virtual ~UsdClipsAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USD_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -140,6 +143,7 @@ public:
     /// UsdClipsAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USD_API
     static UsdClipsAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -147,11 +151,13 @@ public:
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USD_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USD_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -170,9 +176,11 @@ public:
     /// List of asset paths to the clips for this prim. This list is
     /// unordered, but elements in this list are referred to by index in
     /// other clip-related fields.
+    USD_API
     bool GetClipAssetPaths(VtArray<SdfAssetPath>* assetPaths) const;
     /// Set the clipAssetPaths metadata for this prim.
     /// \sa GetClipAssetPaths()
+    USD_API
     bool SetClipAssetPaths(const VtArray<SdfAssetPath>& assetPaths);
 
     /// Path to the prim in the clips from which time samples will be read.
@@ -182,18 +190,22 @@ public:
     /// and we want to get values for the attribute '/Prim_1.size'. The
     /// clip prim path will be substituted in, yielding '/Prim.size', and
     /// each clip will be examined for values at that path.
+    USD_API
     bool GetClipPrimPath(std::string* primPath) const;
     /// Set the clipPrimPath metadata for this prim.
     /// \sa GetClipPrimPath()
+    USD_API
     bool SetClipPrimPath(const std::string& primPath);
 
     /// List of pairs (time, clip index) indicating the time on the stage
     /// at which the clip specified by the clip index is active. For instance,
     /// a value of [(0.0, 0), (20.0, 1)] indicates that clip 0 is active
     /// at time 0 and clip 1 is active at time 20.
+    USD_API
     bool GetClipActive(VtVec2dArray* activeClips) const;
     /// Set the clipActive metadata for this prim.
     /// \sa GetClipActive()
+    USD_API
     bool SetClipActive(const VtVec2dArray& activeClips);
 
     /// List of pairs (stage time, clip time) indicating the time in the
@@ -206,9 +218,11 @@ public:
     /// at stage time 0, values from the active clip at time 0 will be used,
     /// at stage time 5, values from the active clip at time 10, and at stage 
     /// time 10, clip values at time 20.
+    USD_API
     bool GetClipTimes(VtVec2dArray* clipTimes) const;
     /// Set the clipTimes metadata for this prim.
     /// \sa GetClipTimes()
+    USD_API
     bool SetClipTimes(const VtVec2dArray& clipTimes);
 
     /// Asset path for the clip manifest. The clip manifest indicates which
@@ -223,9 +237,11 @@ public:
     /// </Prim>, and we want values for the attribute </Prim_1.size>, we will
     /// only look within this prim's clips if the attribute </Prim.size>
     /// exists and is varying in the manifest.
+    USD_API
     bool GetClipManifestAssetPath(SdfAssetPath* manifestAssetPath) const;
     /// Set the clipManifestAssetPath metadata for this prim.
     /// \sa GetClipManifestAssetPath()
+    USD_API
     bool SetClipManifestAssetPath(const SdfAssetPath& manifestAssetPath);
 
     /// A template string representing a set of assets. This string
@@ -258,32 +274,40 @@ public:
     ///
     /// Note that USD requires that hash groups be adjacent in the string, 
     /// and that there only be one or two such groups.
+    USD_API
     bool GetClipTemplateAssetPath(std::string* clipTemplateAssetPath) const;
     /// Set the clipTemplateAssetPath metadata for this prim.
     /// \sa GetClipTemplateAssetPath
+    USD_API
     bool SetClipTemplateAssetPath(const std::string& clipTemplateAssetPath);
 
     /// A double representing the increment value USD will use when
     /// searching for asset paths. For example usage \sa GetClipTemplateAssetPath.
+    USD_API
     bool GetClipTemplateStride(double* clipTemplateStride) const;
     /// Set the clipTemplateStride metadata for this prim
     /// \sa GetClipTemplateStride()
+    USD_API
     bool SetClipTemplateStride(const double clipTemplateStride);
 
     /// A double which indicates the start of the range USD will use 
     /// to search for asset paths. This value is inclusive in that range.
     /// For example usage \sa GetClipTemplateAssetPath.
+    USD_API
     bool GetClipTemplateStartTime(double* clipTemplateStartTime) const;
     /// Set the clipTemplateStartTime metadata for this prim
     /// \sa GetClipTemplateStartTime
+    USD_API
     bool SetClipTemplateStartTime(const double clipTemplateStartTime);
 
     /// A double which indicates the end of the range USD will use to
     /// to search for asset paths. This value is inclusive in that range.
     /// For example usage \sa GetClipTemplateAssetPath.
+    USD_API
     bool GetClipTemplateEndTime(double* clipTemplateEndTime) const;
     /// Set the clipTemplateEndTime metadata for this prim
     /// \sa GetClipTemplateEndTime()
+    USD_API
     bool SetClipTemplateEndTime(const double clipTemplateEndTime);
 
     /// Clear out the following metadata from the current edit target:
@@ -294,6 +318,7 @@ public:
     /// clipTemplateEndTime
     ///
     /// \sa ClearNonTemplateClipMetadata()
+    USD_API
     bool ClearTemplateClipMetadata();
 
     /// Clear out the following metadata from the current edit target:
@@ -303,6 +328,7 @@ public:
     /// clipAssetPaths
     ///
     /// \sa ClearTemplateClipMetadata()
+    USD_API
     bool ClearNonTemplateClipMetadata();
 
 };

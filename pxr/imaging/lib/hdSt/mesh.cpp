@@ -40,6 +40,7 @@
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
@@ -81,6 +82,28 @@ HdStMesh::~HdStMesh()
     /*NOTHING*/
 }
 
+void
+HdStMesh::Sync(HdSceneDelegate *delegate,
+               HdRenderParam   *renderParam,
+               HdDirtyBits     *dirtyBits,
+               TfToken const   &reprName,
+               bool             forcedRepr)
+{
+    TF_UNUSED(renderParam);
+
+    HdRprim::_Sync(delegate,
+                  reprName,
+                  forcedRepr,
+                  dirtyBits);
+
+    TfToken calcReprName = _GetReprName(delegate, reprName,
+                                        forcedRepr, dirtyBits);
+    _GetRepr(delegate, calcReprName, dirtyBits);
+
+    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+}
+
+
 static bool
 _IsEnabledForceQuadrangulate()
 {
@@ -111,7 +134,7 @@ HdStMesh::_GetRefineLevelForDesc(HdStMeshReprDesc desc)
 void
 HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                             HdDrawItem *drawItem,
-                            HdChangeTracker::DirtyBits *dirtyBits,
+                            HdDirtyBits *dirtyBits,
                             HdStMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
@@ -158,7 +181,8 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // really need is the ability to compute quad indices late, however
         // splitting the topology shouldn't be a huge cost either.
         bool usePtexIndices = _UsePtexIndices(sceneDelegate->GetRenderIndex());
-        boost::hash_combine(_topologyId, usePtexIndices);
+        _topologyId = ArchHash64((const char*)&usePtexIndices,
+            sizeof(usePtexIndices), _topologyId);
 
         {
             // XXX: Should be HdSt_MeshTopologySharedPtr
@@ -447,7 +471,7 @@ _RefinePrimVar(HdBufferSourceSharedPtr const &source,
 void
 HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                   HdDrawItem *drawItem,
-                                  HdChangeTracker::DirtyBits *dirtyBits,
+                                  HdDirtyBits *dirtyBits,
                                   bool isNew,
                                   HdStMeshReprDesc desc,
                                   bool requireSmoothNormals)
@@ -739,7 +763,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 void
 HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
                                        HdDrawItem *drawItem,
-                                       HdChangeTracker::DirtyBits *dirtyBits,
+                                       HdDirtyBits *dirtyBits,
                                        HdStMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
@@ -825,7 +849,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 void
 HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
                                    HdDrawItem *drawItem,
-                                   HdChangeTracker::DirtyBits *dirtyBits,
+                                   HdDirtyBits *dirtyBits,
                                    TfTokenVector const &primVarNames)
 {
     HD_TRACE_FUNCTION();
@@ -887,8 +911,16 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 bool
 HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 {
-    HdSurfaceShaderSharedPtr const& ss = 
-                                    renderIndex.GetShader(GetSurfaceShaderId());
+    const HdShader *shader = static_cast<const HdShader *>(
+                                  renderIndex.GetSprim(HdPrimTypeTokens->shader,
+                                                       GetSurfaceShaderId()));
+    if (shader == nullptr) {
+        shader = static_cast<const HdShader *>(
+                        renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
+    }
+
+    HdShaderCodeSharedPtr ss = shader->GetShaderCode();
+
     TF_FOR_ALL(it, ss->GetParams()) {
         if (it->IsPtex())
             return true;
@@ -902,7 +934,7 @@ HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 void
 HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                           HdDrawItem *drawItem,
-                          HdChangeTracker::DirtyBits *dirtyBits,
+                          HdDirtyBits *dirtyBits,
                           bool isNew,
                           HdStMeshReprDesc desc,
                           bool requireSmoothNormals)
@@ -1065,9 +1097,11 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
     renderIndex.GetChangeTracker().MarkShaderBindingsDirty();
 }
 
-HdChangeTracker::DirtyBits
-HdStMesh::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
+HdDirtyBits
+HdStMesh::_PropagateDirtyBits(HdDirtyBits dirtyBits)
 {
+    dirtyBits = _PropagateRprimDirtyBits(dirtyBits);
+
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (dirtyBits & HdChangeTracker::DirtyPoints) {
         dirtyBits |= _customDirtyBitsInUse & DirtySmoothNormals;
@@ -1090,7 +1124,7 @@ HdStMesh::_PropagateDirtyBits(HdChangeTracker::DirtyBits dirtyBits)
 HdReprSharedPtr const &
 HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
                    TfToken const &reprName,
-                   HdChangeTracker::DirtyBits *dirtyBits)
+                   HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1235,10 +1269,10 @@ HdStMesh::_SetGeometricShaders(HdRenderIndex &renderIndex)
     }
 }
 
-HdChangeTracker::DirtyBits
+HdDirtyBits
 HdStMesh::_GetInitialDirtyBits() const
 {
-    int mask = HdChangeTracker::Clean
+    HdDirtyBits mask = HdChangeTracker::Clean
         | HdChangeTracker::DirtyCullStyle
         | HdChangeTracker::DirtyDoubleSided
         | HdChangeTracker::DirtyExtent
@@ -1255,7 +1289,7 @@ HdStMesh::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyVisibility
         ;
 
-    return (HdChangeTracker::DirtyBits)mask;
+    return mask;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

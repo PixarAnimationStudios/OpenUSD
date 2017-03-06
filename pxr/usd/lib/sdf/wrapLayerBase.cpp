@@ -50,4 +50,6 @@ void wrapLayerBase()
         ;
 }
 
+TF_REFPTR_CONST_VOLATILE_GET(SdfLayerBase)
+
 PXR_NAMESPACE_CLOSE_SCOPE

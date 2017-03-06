@@ -48,6 +48,9 @@ pxr_shared_library(usdGeom
         xformable
         xformOp
         xformCommonAPI
+        
+    PUBLIC_HEADERS
+        api.h
 
     CPPFILES
         moduleDeps.cpp

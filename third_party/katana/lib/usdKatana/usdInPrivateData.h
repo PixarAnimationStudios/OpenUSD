@@ -52,8 +52,7 @@ public:
             const UsdPrim& prim,
             PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
             const PxrUsdKatanaUsdInPrivateData* parentData = NULL,
-            bool useDefaultMotion = false,
-            std::shared_ptr<const MaterialHierarchy> *materialHierarchy = NULL);
+            bool useDefaultMotion = false);
 
     virtual ~PxrUsdKatanaUsdInPrivateData()
     {
@@ -79,12 +78,8 @@ public:
         return _useDefaultMotionSampleTimes;
     }
 
-    const std::vector<double> GetMotionSampleTimes(const UsdAttribute& attr = UsdAttribute()) const;
-
-    std::shared_ptr<const MaterialHierarchy>
-    GetMaterialHierarchy() const {
-        return _materialHierarchy;
-    }
+    const std::vector<double> GetMotionSampleTimes(
+        const UsdAttribute& attr = UsdAttribute()) const;
 
 private:
 
@@ -97,7 +92,6 @@ private:
     
     bool _useDefaultMotionSampleTimes;
 
-    std::shared_ptr<const MaterialHierarchy> _materialHierarchy;
 };
 
 

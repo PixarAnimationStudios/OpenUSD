@@ -38,6 +38,7 @@
 //   in usd/tokens.h)
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdShade/pShader.h"
@@ -49,18 +50,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Return whether the given relationship represents a shader binding.
 /// This is true if it's called "shaders" or the isShaderBinding metadata 
 /// is true.
+USDSHADE_API
 bool UsdShdIsShaderBinding(const UsdRelationship &rel);
 
 /// Return the sloArgName metadata value from the specified property, or an
 /// empty string if none exists.
 //
+USDSHADE_API
 std::string UsdShdGetSloArgName(const UsdAttribute &prop);
+USDSHADE_API
 std::string UsdShdGetSloArgName(const UsdRelationship &prop);
 
 /// Return the ribAttributeName metadata value from the specified property, or
 /// an empty string if none exists.
 ///
+USDSHADE_API
 std::string UsdShdGetRibAttributeName(const UsdAttribute &prop);
+USDSHADE_API
 std::string UsdShdGetRibAttributeName(const UsdRelationship &prop);
 
 /// Return the sloPath attribute value from the specified Shader prim.
@@ -69,19 +75,25 @@ std::string UsdShdGetRibAttributeName(const UsdRelationship &prop);
 
 /// Return whether the given property represents a coshader instance.
 ///
+USDSHADE_API
 bool UsdShdIsCoshaderInstance(const UsdAttribute &prop);
+USDSHADE_API
 bool UsdShdIsCoshaderInstance(const UsdRelationship &prop);
 
 /// Return whether isExplicitRib metadata exists and has a true value for the
 /// specified property.
 ///
+USDSHADE_API
 bool UsdShdIsExplicitRib(const UsdAttribute &prop);
+USDSHADE_API
 bool UsdShdIsExplicitRib(const UsdRelationship &prop);
 
 /// Return whether isCoshaderArray metadata exists and has a true value for the
 /// specified property.
 ///
+USDSHADE_API
 bool UsdShdIsCoshaderArray(const UsdAttribute &prop);
+USDSHADE_API
 bool UsdShdIsCoshaderArray(const UsdRelationship &prop);
 
 /// Return the shaderType attribute value from the specified Shader prim.
@@ -91,21 +103,26 @@ bool UsdShdIsCoshaderArray(const UsdRelationship &prop);
 /// Return the coshaderHandle metadata value from the specified property, or
 /// an empty string if none exists.
 ///
+USDSHADE_API
 std::string UsdShdGetCoshaderHandle(const UsdAttribute &prop);
+USDSHADE_API
 std::string UsdShdGetCoshaderHandle(const UsdRelationship &prop);
 
 /// Return a RIB-safe name for the given object that is guaranteed to be
 /// unique.  Used to, e.g., give unique names to shader instances.
+USDSHADE_API
 std::string UsdShdGetPath(const UsdPrim &obj);
 
 /// Return the handle that should be used for the given shader.
 /// This is the path unless an explicit riName was specified.
+USDSHADE_API
 std::string UsdShdGetShaderHandle(const UsdPrim &obj);
 
 /// Given a rib attribute name, split on the first ':' and return the two parts
 /// as attrName and argName.
 /// If no ':' occurs in the string, then split on the first '_' instead.
 /// Return false if neither ':' nor '_' occur in the string.
+USDSHADE_API
 bool UsdShdSplitRibAttributeName(const std::string &name,
                                  std::string *attrName, std::string *argName);
 

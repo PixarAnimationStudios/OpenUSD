@@ -25,6 +25,7 @@
 #define VT_KEY_VALUE_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/vt/value.h"
 
 #include <string>

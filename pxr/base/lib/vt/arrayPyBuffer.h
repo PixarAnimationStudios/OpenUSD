@@ -25,6 +25,7 @@
 #define VT_ARRAY_PYBUFFER_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/api.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 

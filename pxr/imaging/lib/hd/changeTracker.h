@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/hashmap.h"
 
@@ -65,7 +66,7 @@ public:
         DirtyRefineLevel      = 1 << 4,
         DirtyPoints           = 1 << 5,
         DirtyPrimVar          = 1 << 6,
-        DirtySurfaceShader    = 1 << 7,   // XXX: surface shader uses this bit
+        DirtySurfaceShader    = 1 << 7,
         DirtyTopology         = 1 << 8,
         DirtyTransform        = 1 << 9,
         DirtyVisibility       = 1 << 10,
@@ -92,8 +93,6 @@ public:
         DirtyCollection       = 1 << 4,
     };
 
-    typedef int DirtyBits;
-
     HdChangeTracker();
     virtual ~HdChangeTracker();
 
@@ -103,7 +102,7 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Rprim with the given \p id.
-    void RprimInserted(SdfPath const& id, int initialDirtyState);
+    void RprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
 
     /// Stop tracking Rprim with the given \p id.
     void RprimRemoved(SdfPath const& id);
@@ -115,16 +114,16 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the rprim with \p id.
-    DirtyBits GetRprimDirtyBits(SdfPath const& id) const;
+    HdDirtyBits GetRprimDirtyBits(SdfPath const& id) const;
 
     /// Flag the Rprim with the given \p id as being dirty. Multiple calls with
     /// different dirty bits accumulate.
-    void MarkRprimDirty(SdfPath const& id, DirtyBits bits=AllDirty);
+    void MarkRprimDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
 
     /// Clear the dirty flags for an HdRprim. if inSync is true, set OutOfSync
     /// flag to notify dirtyList will discover the prim to sync the residual
     /// data for new repr.
-    void MarkRprimClean(SdfPath const& id, DirtyBits newBits=Clean);
+    void MarkRprimClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
     /// Mark the primvar for the rprim with \p id as being dirty.
     void MarkPrimVarDirty(SdfPath const& id, TfToken const& name);
@@ -132,7 +131,7 @@ public:
     /// Flag all the Rprim with the given \p id as being dirty. Multiple calls
     /// with different dirty bits accumulate.
     /// Doesn't touch varying state.
-    void MarkAllRprimsDirty(DirtyBits bits);
+    void MarkAllRprimsDirty(HdDirtyBits bits);
 
     // Clear Varying bit of all prims.
     ///
@@ -183,63 +182,63 @@ public:
     bool IsPrimIdDirty(SdfPath const& id);
 
     /// Returns true if the dirtyBits has any flags set other than the varying flag.
-    static bool IsDirty(DirtyBits dirtyBits) {
+    static bool IsDirty(HdDirtyBits dirtyBits) {
         return (dirtyBits & AllDirty) != 0;
     }
 
     /// Returns true if the dirtyBits has no flags set except the varying flag.
-    static bool IsClean(DirtyBits dirtyBits) {
+    static bool IsClean(HdDirtyBits dirtyBits) {
         return (dirtyBits & AllDirty) == 0;
     }
 
     /// Returns true if the dirtyBits has a dirty extent. id is for perflog.
-    static bool IsExtentDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsExtentDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty refine level. id is for perflog.
-    static bool IsRefineLevelDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsRefineLevelDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty subdiv tags. id is for perflog.
-    static bool IsSubdivTagsDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsSubdivTagsDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty primvar \p name.
     /// id is for perflog.
-    static bool IsPrimVarDirty(DirtyBits dirtyBits, SdfPath const& id,
+    static bool IsPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
                                TfToken const& name);
 
     /// Returns true if the dirtyBits has any dirty primvars.
     /// id is for perflog.
-    static bool IsAnyPrimVarDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsAnyPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty topology. id is for perflog.
-    static bool IsTopologyDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsTopologyDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has dirty doubleSided state. id is for perflog.
-    static bool IsDoubleSidedDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsDoubleSidedDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has dirty cullstyle. id is for perflog.
-    static bool IsCullStyleDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsCullStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty transform. id is for perflog.
-    static bool IsTransformDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsTransformDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has dirty visibility. id is for perflog.
-    static bool IsVisibilityDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsVisibilityDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty primID. id is for perflog.
-    static bool IsPrimIdDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsPrimIdDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty instancer. id is for perflog.
-    static bool IsInstancerDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsInstancerDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty instance index. id is for perflog.
-    static bool IsInstanceIndexDirty(DirtyBits dirtyBits, SdfPath const& id);
+    static bool IsInstanceIndexDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
-    static bool IsReprDirty(DirtyBits dirtyBits, SdfPath const &id);
+    static bool IsReprDirty(HdDirtyBits dirtyBits, SdfPath const &id);
 
     // ---------------------------------------------------------------------- //
 
     /// Set the primvar dirty flag to \p dirtyBits.
-    static void MarkPrimVarDirty(DirtyBits *dirtyBits, TfToken const &name);
+    static void MarkPrimVarDirty(HdDirtyBits *dirtyBits, TfToken const &name);
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -261,31 +260,6 @@ public:
     /// instancer \p instancerId
     void InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const& rprimId);
 
-
-    // ---------------------------------------------------------------------- //
-    /// @}
-    /// \name Shader Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Shader with the given \p id.
-    void ShaderInserted(SdfPath const& id);
-
-    /// Stop tracking Shader with the given \p id.
-    void ShaderRemoved(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-    void MarkShaderDirty(SdfPath const& id, DirtyBits bits=AllDirty);
-
-    /// Get the dirty bits for Shader with the given \p id.
-    DirtyBits GetShaderDirtyBits(SdfPath const& id);
-
-    /// Set the dirty flags to \p newBits.
-    void MarkShaderClean(SdfPath const& id, DirtyBits newBits=Clean);
-
-    /// Sets all shaders to the given dirty \p bits
-    void MarkAllShadersDirty(DirtyBits bits);
-
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name Task Object Tracking
@@ -299,13 +273,13 @@ public:
     void TaskRemoved(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
-    void MarkTaskDirty(SdfPath const& id, DirtyBits bits=AllDirty);
+    void MarkTaskDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
 
     /// Get the dirty bits for Task with the given \p id.
-    DirtyBits GetTaskDirtyBits(SdfPath const& id);
+    HdDirtyBits GetTaskDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p newBits.
-    void MarkTaskClean(SdfPath const& id, DirtyBits newBits=Clean);
+    void MarkTaskClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -314,14 +288,14 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the instancer with \p id.
-    DirtyBits GetInstancerDirtyBits(SdfPath const& id);
+    HdDirtyBits GetInstancerDirtyBits(SdfPath const& id);
 
     /// Flag the Instancer with the given \p id as being dirty. Multiple calls
     /// with different dirty bits accumulate.
-    void MarkInstancerDirty(SdfPath const& id, DirtyBits bits=AllDirty);
+    void MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
 
     /// Clean the specified dirty bits for the instancer with \p id.
-    void MarkInstancerClean(SdfPath const& id, DirtyBits newBits=Clean);
+    void MarkInstancerClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -330,19 +304,19 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking sprim with the given \p id.
-    void SprimInserted(SdfPath const& id, int initialDirtyState);
+    void SprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
 
     /// Stop tracking sprim with the given \p id.
     void SprimRemoved(SdfPath const& id);
 
     /// Get the dirty bits for sprim with the given \p id.
-    DirtyBits GetSprimDirtyBits(SdfPath const& id);
+    HdDirtyBits GetSprimDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
-    void MarkSprimDirty(SdfPath const& id, DirtyBits bits);
+    void MarkSprimDirty(SdfPath const& id, HdDirtyBits bits);
 
     /// Set the dirty flags to \p newBits.
-    void MarkSprimClean(SdfPath const& id, DirtyBits newBits=Clean);
+    void MarkSprimClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -351,19 +325,19 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking bprim with the given \p id.
-    void BprimInserted(SdfPath const& id, int initialDirtyState);
+    void BprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
 
     /// Stop tracking bprim with the given \p id.
     void BprimRemoved(SdfPath const& id);
 
     /// Get the dirty bits for bprim with the given \p id.
-    DirtyBits GetBprimDirtyBits(SdfPath const& id);
+    HdDirtyBits GetBprimDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
-    void MarkBprimDirty(SdfPath const& id, DirtyBits bits);
+    void MarkBprimDirty(SdfPath const& id, HdDirtyBits bits);
 
     /// Set the dirty flags to \p newBits.
-    void MarkBprimClean(SdfPath const& id, DirtyBits newBits=Clean);
+    void MarkBprimClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
 
     // ---------------------------------------------------------------------- //
@@ -449,9 +423,9 @@ public:
     /// \name Debug
     /// @{
     // ---------------------------------------------------------------------- //
-    static std::string StringifyDirtyBits(int dirtyBits);
+    static std::string StringifyDirtyBits(HdDirtyBits dirtyBits);
 
-    static void DumpDirtyBits(int dirtyBits);
+    static void DumpDirtyBits(HdDirtyBits dirtyBits);
 
     /// @}
 
@@ -460,9 +434,7 @@ private:
     static void _LogCacheAccess(TfToken const& cacheName,
                                 SdfPath const& id, bool hit);
 
-    static DirtyBits _PropagateDirtyBits(DirtyBits bits);
-
-    typedef TfHashMap<SdfPath, int, SdfPath::Hash> _IDStateMap;
+    typedef TfHashMap<SdfPath, HdDirtyBits, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
     typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _InstancerRprimMap;
     typedef TfHashMap<TfToken, unsigned, TfToken::HashFunctor> _GeneralStateMap;
@@ -470,7 +442,6 @@ private:
     // Core dirty state.
     _IDStateMap _rprimState;
     _IDStateMap _instancerState;
-    _IDStateMap _shaderState;
     _IDStateMap _taskState;
     _IDStateMap _sprimState;
     _IDStateMap _bprimState;
