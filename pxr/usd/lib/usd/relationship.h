@@ -144,7 +144,8 @@ class UsdRelationship : public UsdProperty {
 public:
     /// Construct an invalid relationship.
     UsdRelationship()
-        : UsdProperty(UsdTypeRelationship, Usd_PrimDataHandle(), TfToken())
+        : UsdProperty(UsdTypeRelationship, Usd_PrimDataHandle(), SdfPath(), 
+                      TfToken())
     {
     }
 
@@ -275,13 +276,15 @@ private:
     friend struct UsdPrim_TargetFinder;
 
     UsdRelationship(const Usd_PrimDataHandle &prim,
+                    const SdfPath &primPath,
                     const TfToken& relName)
-        : UsdProperty(UsdTypeRelationship, prim, relName) {}
+        : UsdProperty(UsdTypeRelationship, prim, primPath, relName) {}
 
     UsdRelationship(UsdObjType objType,
                     const Usd_PrimDataHandle &prim,
+                    const SdfPath &primPath,
                     const TfToken &propName)
-        : UsdProperty(objType, prim, propName) {}
+        : UsdProperty(objType, prim, primPath, propName) {}
 
     SdfRelationshipSpecHandle _CreateSpec(bool fallbackCustom=true) const;
     bool _Create(bool fallbackCustom) const;

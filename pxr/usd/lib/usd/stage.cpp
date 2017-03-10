@@ -1604,7 +1604,7 @@ _IsPrivateFieldKey(const TfToken& fieldKey)
 UsdPrim
 UsdStage::GetPseudoRoot() const
 {
-    return UsdPrim(_pseudoRoot);
+    return UsdPrim(_pseudoRoot, SdfPath::AbsoluteRootPath());
 }
 
 UsdPrim
@@ -1637,7 +1637,8 @@ UsdStage::HasDefaultPrim() const
 UsdPrim
 UsdStage::GetPrimAtPath(const SdfPath &path) const
 {
-    return UsdPrim(_GetPrimDataAtPath(path));
+    Usd_PrimDataConstPtr primData = _GetPrimDataAtPath(path);
+    return UsdPrim(primData, primData ? primData->GetPath() : SdfPath());
 }
 
 Usd_PrimDataConstPtr

@@ -56,7 +56,7 @@ class UsdProperty : public UsdObject {
 public:
     /// Construct an invalid property.
     UsdProperty()
-        : UsdObject(UsdTypeProperty, Usd_PrimDataHandle(), TfToken())
+        : UsdObject(UsdTypeProperty, Usd_PrimDataHandle(), SdfPath(), TfToken())
     {
     }
 
@@ -242,8 +242,9 @@ private:
 
     UsdProperty(UsdObjType objType,
                 const Usd_PrimDataHandle &prim,
+                const SdfPath &primPath,
                 const TfToken &propName)
-        : UsdObject(objType, prim, propName) {}
+        : UsdObject(objType, prim, primPath, propName) {}
 
 };
 

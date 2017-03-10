@@ -143,7 +143,8 @@ class UsdAttribute : public UsdProperty {
 public:
     /// Construct an invalid attribute.
     UsdAttribute()
-        : UsdProperty(UsdTypeAttribute, Usd_PrimDataHandle(), TfToken())
+        : UsdProperty(UsdTypeAttribute, Usd_PrimDataHandle(), SdfPath(), 
+                      TfToken())
     {
     }
 
@@ -414,14 +415,16 @@ private:
     friend class UsdSchemaBase;
     friend class Usd_PrimData;
 
-    UsdAttribute(const Usd_PrimDataHandle& prim,
-                 const TfToken& attrName)
-        : UsdProperty(UsdTypeAttribute, prim, attrName) {}
+    UsdAttribute(const Usd_PrimDataHandle &prim,
+                 const SdfPath &primPath,
+                 const TfToken &attrName)
+        : UsdProperty(UsdTypeAttribute, prim, primPath, attrName) {}
 
     UsdAttribute(UsdObjType objType,
                  const Usd_PrimDataHandle &prim,
+                 const SdfPath &primPath,
                  const TfToken &propName)
-        : UsdProperty(objType, prim, propName) {}
+        : UsdProperty(objType, prim, primPath, propName) {}
 
     SdfAttributeSpecHandle
     _CreateSpec(const SdfValueTypeName &typeName, bool custom,

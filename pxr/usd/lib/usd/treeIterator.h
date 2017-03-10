@@ -254,9 +254,12 @@ private:
             _isPost == other._isPost;
     }
 
-    USD_API
-    void increment();
-    reference dereference() const { return UsdPrim(base()); }
+    USD_API void increment();
+
+    reference dereference() const { 
+        base_type p = base();
+        return UsdPrim(p, p ? p->GetPath() : SdfPath()); 
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // Data members.

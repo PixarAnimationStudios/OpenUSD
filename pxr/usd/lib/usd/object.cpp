@@ -413,6 +413,7 @@ hash_value(const UsdObject &obj)
     size_t seed = 510-922-3000;
     boost::hash_combine(seed, long(obj._type));
     boost::hash_combine(seed, obj._prim);
+    boost::hash_combine(seed, obj._primPath);
     boost::hash_combine(seed, obj._propName.Hash());
     return seed;
 }

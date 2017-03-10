@@ -498,7 +498,8 @@ public:
     /// Return this prim's parent prim.  Return an invalid UsdPrim if this is a
     /// root prim.
     UsdPrim GetParent() const {
-        return Usd_PrimDataHandle(_Prim()->GetParent());
+        Usd_PrimDataConstPtr parent = _Prim()->GetParent();
+        return UsdPrim(parent, parent ? parent->GetPath() : SdfPath());
     }
 
     /// Return this prim's next active, loaded, defined, non-abstract sibling 
@@ -939,13 +940,17 @@ private:
     friend class Usd_PrimFlagsPredicate;
     friend struct UsdPrim_TargetFinder;
 
-    // Private implicit conversion.
-    UsdPrim(const Usd_PrimDataHandle &primData) : UsdObject(primData) {}
+    // Prim constructor.
+    UsdPrim(const Usd_PrimDataHandle &primData,
+            const SdfPath &primPath) 
+        : UsdObject(primData, primPath) { }
 
     // General constructor.
     UsdPrim(UsdObjType objType,
-            const Usd_PrimDataHandle &prim, const TfToken &propName)
-        : UsdObject(objType, prim, propName) {}
+            const Usd_PrimDataHandle &prim, 
+            const SdfPath &primPath,
+            const TfToken &propName)
+        : UsdObject(objType, prim, primPath, propName) {}
 
     // Helper to make a sibling range.
     inline SiblingRange
@@ -1120,7 +1125,8 @@ private:
     }
 
     reference dereference() const {
-        return UsdPrim(base());
+        base_type p = base();
+        return UsdPrim(p, p ? p->GetPath() : SdfPath());
     }
 
     Usd_PrimFlagsPredicate _predicate;
@@ -1302,7 +1308,8 @@ private:
     }
 
     reference dereference() const {
-        return UsdPrim(base());
+        base_type p = base();
+        return UsdPrim(p, p ? p->GetPath() : SdfPath());
     }
 
     Usd_PrimFlagsPredicate _predicate;
@@ -1356,7 +1363,7 @@ UsdPrim::_MakeDescendantsRange(const Usd_PrimFlagsPredicate &pred) const {
 inline UsdPrim
 UsdObject::GetPrim() const
 {
-    return UsdPrim(_prim);
+    return UsdPrim(_prim, _primPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

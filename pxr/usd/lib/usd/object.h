@@ -168,7 +168,8 @@ public:
     /// same UsdObject, false otherwise.
     friend bool operator==(const UsdObject &lhs, const UsdObject &rhs) {
         return lhs._type == rhs._type &&
-            lhs._prim == rhs._prim    &&
+            lhs._prim == rhs._prim &&
+            lhs._primPath == rhs._primPath &&
             lhs._propName == rhs._propName;
     }
 
@@ -192,20 +193,18 @@ public:
     /// cached result
     SdfPath GetPath() const {
         // Allow getting expired object paths.
-        if (Usd_PrimDataConstPtr p = get_pointer(_prim)) {
+        if (!_primPath.IsEmpty()) { 
             return _type == UsdTypePrim ?
-                p->GetPath() : p->GetPath().AppendProperty(_propName);
+                _primPath : _primPath.AppendProperty(_propName);
         }
-        return SdfPath();
+        return _primPath;
     }
 
     /// Return this object's path if this object is a prim, otherwise this
     /// object's nearest owning prim's path.  Equivalent to GetPrim().GetPath().
     const SdfPath &GetPrimPath() const {
         // Allow getting expired object paths.
-        if (Usd_PrimDataConstPtr p = get_pointer(_prim))
-            return p->GetPath();
-        return SdfPath::EmptyPath();
+        return _primPath;
     }
 
     /// Return this object if it is a prim, otherwise return this object's
@@ -218,8 +217,7 @@ public:
     /// This is equivalent to, but generally cheaper than,
     /// GetPath().GetNameToken()
     const TfToken &GetName() const {
-        return _type == UsdTypePrim ?
-            _prim->GetPath().GetNameToken() : _propName;
+        return _type == UsdTypePrim ? _primPath.GetNameToken() : _propName;
     }
 
     /// Convert this UsdObject to another object type \p T if possible.  Return
@@ -228,7 +226,7 @@ public:
     template <class T>
     T As() const {
         // compile-time type assertion provided by invoking Is<T>().
-        return Is<T>() ? T(_type, _prim, _propName) : T();
+        return Is<T>() ? T(_type, _prim, _primPath, _propName) : T();
     }
 
     /// Return true if this object is convertible to \p T.  This is equivalent
@@ -644,17 +642,21 @@ private:
 
 protected:
     // Private constructor for UsdPrim.
-    UsdObject(const Usd_PrimDataHandle &prim)
+    UsdObject(const Usd_PrimDataHandle &prim,
+              const SdfPath &primPath)
         : _type(UsdTypePrim)
         , _prim(prim)
+        , _primPath(primPath)
         {}
 
     // Private constructor for UsdAttribute/UsdRelationship.
     UsdObject(UsdObjType objType,
               const Usd_PrimDataHandle &prim,
+              const SdfPath &primPath,
               const TfToken &propName)
         : _type(objType)
         , _prim(prim)
+        , _primPath(primPath)
         , _propName(propName) {}
 
     // Return the stage this object belongs to.
@@ -682,6 +684,7 @@ private:
 
     UsdObjType _type;
     Usd_PrimDataHandle _prim;
+    SdfPath _primPath;
     TfToken _propName;
 
 };

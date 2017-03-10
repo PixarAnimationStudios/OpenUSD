@@ -79,10 +79,10 @@ public:
     //@{
 
     /// Return this schema object's held prim.
-    UsdPrim GetPrim() const { return _primData; }
+    UsdPrim GetPrim() const { return UsdPrim(_primData, _primPath); }
 
     /// Shorthand for GetPrim()->GetPath().
-    SdfPath GetPath() const { return _primData->GetPath(); }
+    SdfPath GetPath() const { return _primPath; }
 
     //@}
 
@@ -117,7 +117,8 @@ public:
 #else
     operator _UnspecifiedBoolType() const {
         return (_primData &&
-                _IsCompatible(_primData)) ? &UsdSchemaBase::_primData : NULL;
+                _IsCompatible(UsdPrim(_primData, _primPath)))
+                    ? &UsdSchemaBase::_primData : NULL;
     }
 #endif // doxygen
 
@@ -148,8 +149,9 @@ private:
     USD_API
     virtual const TfType &_GetTfType() const;
 
-    // The held prim.
+    // The held prim and prim path.
     Usd_PrimDataHandle _primData;
+    SdfPath _primPath;
 };
 
 
