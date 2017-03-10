@@ -23,38 +23,88 @@
 #
 include(Private)
 
-function(pxr_python_bins)
+function(pxr_python_bin BIN_NAME)
+    set(oneValueArgs
+        PYTHON_FILE
+    )
+    set(multiValueArgs
+        DEPENDENCIES
+    )
+    cmake_parse_arguments(pb
+        ""
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+
     _get_install_dir(bin installDir)
-    foreach(file ${ARGN})
-        set(pyFile ${file}.py)
 
-        # /pxrpythonsubst will be replaced with the full path to the configured
-        # python executable. This doesn't use the CMake ${...} or @...@ syntax
-        # for backwards compatibility with other build systems.
-        file(READ ${pyFile} contents)
-        string(REGEX REPLACE "/pxrpythonsubst" ${PXR_PYTHON_SHEBANG} 
-            contents "${contents}")
-        file(WRITE ${CMAKE_BINARY_DIR}/${pyFile} "${contents}")
+    # Source file.
+    if( "${pb_PYTHON_FILE}" STREQUAL "")
+        set(infile ${CMAKE_CURRENT_SOURCE_DIR}/${BIN_NAME}.py)
+    else()
+        set(infile ${CMAKE_CURRENT_SOURCE_DIR}/${pb_PYTHON_FILE})
+    endif()
 
-        install(PROGRAMS
-            ${CMAKE_BINARY_DIR}/${pyFile}
-            DESTINATION ${installDir}
-            RENAME ${file}
+    # Destination file.
+    set(outfile ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME})
+
+    # /pxrpythonsubst will be replaced with the full path to the configured
+    # python executable. This doesn't use the CMake ${...} or @...@ syntax
+    # for backwards compatibility with other build systems.
+    add_custom_command(
+        OUTPUT ${outfile}
+        DEPENDS ${infile}
+        COMMENT "Substituting Python shebang"
+        COMMAND
+            ${PYTHON_EXECUTABLE}
+            ${PROJECT_SOURCE_DIR}/cmake/macros/shebang.py
+            ${PXR_PYTHON_SHEBANG}
+            ${infile}
+            ${outfile}
+    )
+    list(APPEND outputs ${outfile})
+
+    install(
+        PROGRAMS ${outfile}
+        DESTINATION ${installDir}
+        RENAME ${BIN_NAME}
+    )
+
+    # Windows by default cannot execute Python files so here
+    # we create a batch file wrapper that invokes the python
+    # files.
+    if(WIN32)
+        add_custom_command(
+            OUTPUT ${outfile}.cmd
+            COMMENT "Creating Python cmd wrapper"
+            COMMAND
+                ${PYTHON_EXECUTABLE}
+                ${PROJECT_SOURCE_DIR}/cmake/macros/shebang.py
+                ${BIN_NAME}
+                ${outfile}.cmd
         )
+        list(APPEND outputs ${outfile}.cmd)
 
-        # Windows by default cannot execute Python files so here
-        # we create a batch file wrapper that invokes the python
-        # files.
-        if(WIN32)
-            file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@python \"%~dp0${file}\" %*")
-            install(PROGRAMS
-                "${CMAKE_BINARY_DIR}/${pyFile}.cmd"
-                DESTINATION ${installDir}
-                RENAME "${file}.cmd"
-            )
-        endif()
-    endforeach()
-endfunction() # pxr_install_python_bins
+        install(
+            PROGRAMS ${outfile}.cmd
+            DESTINATION ${installDir}
+            RENAME ${BIN_NAME}.cmd
+        )
+    endif()
+
+    # Make sure the custom commands are executed by the default rule.
+    add_custom_target(
+        ${BIN_NAME}
+        ALL
+        DEPENDS ${outputs} ${pb_DEPENDENCIES}
+    )
+    set_target_properties(
+        ${BIN_NAME}
+        PROPERTIES
+            FOLDER "${PXR_PREFIX}"
+    )
+endfunction() # pxr_python_bin
 
 function(pxr_cpp_bin BIN_NAME)
     _get_install_dir(bin installDir)
@@ -768,6 +818,7 @@ function(pxr_setup_python)
 
     # Install a pxr __init__.py with an appropriate __all__
     _get_install_dir(lib/python/pxr installPrefix)
+    install(DIRECTORY DESTINATION ${installPrefix})
     install(CODE
         "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${installPrefix}/__init__.py\" \"__all__ = [${pyModulesStr}]\n\")"
     )
@@ -1027,9 +1078,11 @@ function(pxr_setup_plugins)
     # top-level plugin area
     _get_resources_dir_name(resourcesDir)
     set(plugInfoContents "{\\n    \\\"Includes\\\": [ \\\"*/${resourcesDir}/\\\" ]\\n}\\n")
+    install(DIRECTORY DESTINATION ${SHARE_INSTALL_PREFIX}/plugins)
     install(CODE
         "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_PREFIX}/plugins/plugInfo.json\" ${plugInfoContents})"
     )
+    install(DIRECTORY DESTINATION plugin/usd)
     install(CODE
         "file(WRITE \"${CMAKE_INSTALL_PREFIX}/plugin/usd/plugInfo.json\" ${plugInfoContents})"
     )
@@ -1052,6 +1105,7 @@ function(pxr_katana_nodetypes NODE_TYPES)
     )
 
     # Install a __init__.py that imports all the known node types
+    install(DIRECTORY DESTINATION ${installDir})
     install(CODE
         "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${installDir}/__init__.py\" \"${importLines}\")"
     )

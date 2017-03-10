@@ -242,6 +242,11 @@ function(_install_pyside_ui_files)
     add_custom_target(${LIBRARY_NAME}_pysideuifiles ALL
         DEPENDS ${uiFiles}
     )
+    set_target_properties(
+        ${LIBRARY_NAME}_pysideuifiles
+        PROPERTIES
+            FOLDER "${PXR_PREFIX}/_pysideuifiles"
+    )
 
     set(libPythonPrefix lib/python)
     _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)

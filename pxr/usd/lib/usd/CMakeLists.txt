@@ -124,7 +124,10 @@ pxr_shared_library(usd
 if (NOT JINJA2_FOUND)
     message(WARNING "Skipping building usdGenSchema due to missing dependency: Jinja2")
 else()
-    pxr_python_bins(
-        usdGenSchema
+    pxr_python_bin(usdGenSchema
+        DEPENDENCIES
+            tf
+            sdf
+            usd
     )
 endif()

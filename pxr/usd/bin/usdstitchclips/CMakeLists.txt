@@ -1,3 +1,9 @@
-pxr_python_bins(
-    usdstitchclips
+set(PXR_PREFIX pxr/usd)
+set(PXR_PACKAGE usd)
+
+pxr_python_bin(usdstitchclips
+    DEPENDENCIES
+        tf
+        sdf
+        usdUtils
 )
