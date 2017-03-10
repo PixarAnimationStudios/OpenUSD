@@ -25,7 +25,6 @@ pxr_shared_library(pcp
         changes
         composeSite
         dependency
-        diagnostic
         errors
         instanceKey
         iterator
@@ -50,6 +49,7 @@ pxr_shared_library(pcp
     PRIVATE_CLASSES
         debugCodes
         dependencies
+        diagnostic
         instancing
         layerStackRegistry
         node_Iterator
