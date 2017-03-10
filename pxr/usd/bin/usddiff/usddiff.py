@@ -119,9 +119,13 @@ def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
     # the file isn't valid usd.
     if os.stat(inPath).st_size == 0:
         import shutil
-        shutil.copy(inPath, outPath)
+        try:
+            shutil.copy(inPath, outPath)
+            return 0
+        except:
+            return 1
     else:
-        call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt))
+        return call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt))
 
 def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
     if composed:
