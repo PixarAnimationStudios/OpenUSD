@@ -69,7 +69,7 @@ class TestVtValue(unittest.TestCase):
         self.assertEqual(Vt._test_ValueTypeName(Vt.Long(1234)), 'long')
         self.assertEqual(Vt._test_ValueTypeName(Vt.ULong(100)), 'unsigned long')
 
-        self.assertEqual(Vt._test_ValueTypeName(Vt.Half(1.234)), 'half')
+        self.assertEqual(Vt._test_ValueTypeName(Vt.Half(1.234)), 'pxr_half::half')
         self.assertEqual(Vt._test_ValueTypeName(Vt.Float(1.234)), 'float')
         self.assertEqual(Vt._test_ValueTypeName(Vt.Double(1.234)), 'double')
 

@@ -20,6 +20,7 @@ pxr_plugin(usdAbc
     INCLUDE_DIRS
         ${ALEMBIC_INCLUDE_DIR}
         ${HDF5_INCLUDE_DIRS}
+        ${OPENEXR_INCLUDE_DIRS}
 
     PRIVATE_CLASSES
         alembicData

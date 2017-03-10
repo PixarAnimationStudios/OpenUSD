@@ -163,18 +163,18 @@ main(int argc, char *argv[])
     
     // half
     {
-        float halfPosInf = half::posInf();
+        float halfPosInf = GfHalf::posInf();
         TF_AXIOM(!std::isfinite(halfPosInf));
         TF_AXIOM(std::isinf(halfPosInf));
 
-        float halfNegInf = half::negInf();
+        float halfNegInf = GfHalf::negInf();
         TF_AXIOM(!std::isfinite(halfNegInf));
         TF_AXIOM(std::isinf(halfNegInf));
 
-        float halfqNan = half::qNan();
+        float halfqNan = GfHalf::qNan();
         TF_AXIOM(std::isnan(halfqNan));
 
-        float halfsNan = half::sNan();
+        float halfsNan = GfHalf::sNan();
         TF_AXIOM(std::isnan(halfsNan));
     }
     

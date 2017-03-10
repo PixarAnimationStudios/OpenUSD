@@ -70,12 +70,16 @@ pxr_shared_library(gf
         declare.h
         limits.h
         traits.h
+        pxrHalf/half.h
+        pxrHalf/eLut.h
+        pxrHalf/toFloat.h
 
     PRIVATE_CLASSES
         ostreamHelpers
 
     CPPFILES
         moduleDeps.cpp
+        pxrHalf/half.cpp
 
     PYMODULE_CPPFILES
         module.cpp

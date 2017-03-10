@@ -38,7 +38,7 @@ xx(UInt,          4, unsigned int, true)
 xx(Int64,         5, int64_t,      true)
 xx(UInt64,        6, uint64_t,     true)
 
-xx(Half,          7, half,         true)
+xx(Half,          7, GfHalf,       true)
 xx(Float,         8, float,        true)
 xx(Double,        9, double,       true)
 

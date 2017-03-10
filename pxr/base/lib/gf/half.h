@@ -26,22 +26,29 @@
 
 /// \file gf/half.h
 ///
-/// This header serves to simply bring in the half float datatype, plus
-/// provides other supporting utilities.  For documentation, of the half type,
-/// please see the half header.  At the time of this writing the latest
-/// version was available at the following link, but note that this may not be
-/// the version you are building against.
-/// 
-/// https://github.com/openexr/openexr/blob/master/IlmBase/Half/half.h
+/// This header serves to simply bring in the half float datatype and
+/// provide a hash_value function.  For documentation, of the half type,
+/// please see the half header in pxrHalf/half.h.
 
 #include "pxr/pxr.h"
+#include "pxrHalf/half.h"
 
-#include <half.h>
+#include <type_traits>
 
-using GfHalf = half;
+PXR_NAMESPACE_OPEN_SCOPE
 
-/// Overload hash_value for half.
-inline size_t hash_value(GfHalf h) { return h.bits(); }
+/// A 16-bit floating point data type.
+using GfHalf = pxr_half::half;
+
+namespace pxr_half {
+    /// Overload hash_value for half.
+    template<typename Half>
+    inline
+    typename std::enable_if<std::is_same<Half, half>::value, size_t>::type
+    hash_value(const Half& h) { return h.bits(); }
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 
 #endif // GF_HALF_H

@@ -313,7 +313,7 @@ UsdAbc_AlembicConversions::UsdAbc_AlembicConversions()
     data.AddConverter<unsigned int,  uint32_t>();
     data.AddConverter<long,          int64_t>();
     data.AddConverter<unsigned long, uint64_t>();
-    data.AddConverter<GfHalf,        GfHalf>();
+    data.AddConverter<GfHalf,        ::half>();
     data.AddConverter<float,         float32_t>();
     data.AddConverter<double,        float64_t>();
     data.AddConverter<std::string,   std::string>();

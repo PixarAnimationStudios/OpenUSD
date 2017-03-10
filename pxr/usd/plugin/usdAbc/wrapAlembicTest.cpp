@@ -22,14 +22,13 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include <boost/python/def.hpp>
-
 #include "pxr/usd/usdAbc/alembicTest.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
+#include <boost/python/def.hpp>
 
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 void wrapUsdAbcAlembicTest()
 {
