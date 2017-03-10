@@ -53,6 +53,8 @@ TF_DECLARE_PUBLIC_TOKENS(Hd_UnitTestTokens, HD_UNIT_TEST_TOKENS);
 class Hd_UnitTestDelegate : public HdSceneDelegate {
 public:
     Hd_UnitTestDelegate();
+    Hd_UnitTestDelegate(HdRenderIndexSharedPtr const& parentIndex,
+                        SdfPath const& delegateID);
 
     void SetUseInstancePrimVars(bool v) { _hasInstancePrimVars = v; }
 
@@ -182,6 +184,15 @@ public:
 
     /// Camera
     void AddCamera(SdfPath const &id);
+    void UpdateCamera(SdfPath const &id, TfToken const &key, VtValue value);
+
+    /// Tasks
+    template<typename T>
+    void AddTask(SdfPath const &id) {
+        GetRenderIndex().InsertTask<T>(this, id);
+        _tasks[id] = _Task();
+    }
+    void UpdateTask(SdfPath const &id, TfToken const &key, VtValue value);
 
     /// Remove a prim
     void Remove(SdfPath const &id);
@@ -208,8 +219,6 @@ public:
     void UpdateRprims(float time);
     void UpdateInstancerPrimVars(float time);
     void UpdateInstancerPrototypes(float time);
-
-    void UpdateCamera(SdfPath const &id, TfToken const &key, VtValue value);
 
     void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId)
     {
@@ -376,6 +385,9 @@ private:
     struct _Light {
         VtDictionary params;
     };
+    struct _Task {
+        VtDictionary params;
+    };
 
     std::map<SdfPath, _Mesh> _meshes;
     std::map<SdfPath, _Curves> _curves;
@@ -385,6 +397,7 @@ private:
     std::map<SdfPath, _Texture> _textures;
     std::map<SdfPath, _Camera> _cameras;
     std::map<SdfPath, _Light> _lights;
+    std::map<SdfPath, _Task> _tasks;
     TfHashSet<SdfPath, SdfPath::Hash> _hiddenRprims;
 
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
