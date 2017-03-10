@@ -579,12 +579,11 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
         // let the usd stage cache deal with caching the usd stage data
         //
         std::string fileString = TfStringTrimRight(aFile.asChar());
-
-        fileString = PxrUsdMayaQuery::ResolvePath(fileString);
+        std::string resolvedString = PxrUsdMayaQuery::ResolvePath(fileString);
 
         // Fall back on checking if path is just a standard absolute path
-        if ( fileString.empty() ) {
-            fileString = aFile.asChar();
+        if (resolvedString.empty()) {
+            resolvedString = fileString;
         }
 
         // == Load the Stage
@@ -594,8 +593,11 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
         // Don't try to create a stage for a non-existent file. Some processes
         // such as mbuild may author a file path here does not yet exist until a
         // later operation.
-        bool isValidPath = (TfStringStartsWith(fileString, "//") ||
-                            TfIsFile(fileString, true /*resolveSymlinks*/));
+        // However, this is just for sanity checking -- pass the unresolved path
+        // to UsdStage and let it handle path resolution (in case the
+        // resolution changes and we reload the stage).
+        bool isValidPath = (TfStringStartsWith(resolvedString, "//") ||
+                            TfIsFile(resolvedString, true /*resolveSymlinks*/));
 
         if (isValidPath) {
 
