@@ -74,11 +74,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     #define R_OK    4       // Test for read permission.
 #endif
 
-#if !defined(ARCH_OS_WINDOWS)
-    #define ARCH_GLOB_DEFAULT   GLOB_NOCHECK|GLOB_MARK
+#if defined(ARCH_OS_WINDOWS)
+    #define ARCH_GLOB_NOCHECK   1
+    #define ARCH_GLOB_MARK      2
+    #define ARCH_GLOB_NOSORT    4
 #else
-    #define ARCH_GLOB_DEFAULT   0
+    #define ARCH_GLOB_NOCHECK   GLOB_NOCHECK
+    #define ARCH_GLOB_MARK      GLOB_MARK
+    #define ARCH_GLOB_NOSORT    GLOB_NOSORT
 #endif
+#define ARCH_GLOB_DEFAULT   (ARCH_GLOB_NOCHECK | ARCH_GLOB_MARK)
 
 #ifndef ARCH_PATH_MAX
     #ifdef PATH_MAX
