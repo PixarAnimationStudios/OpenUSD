@@ -81,3 +81,5 @@ if (PXR_ENABLE_NAMESPACES)
 else()
     set(PXR_USE_NAMESPACES "0")
 endif()
+
+message(STATUS "C++ namespace configured to (external) ${PXR_EXTERNAL_NAMESPACE}, (internal) ${PXR_INTERNAL_NAMESPACE}")

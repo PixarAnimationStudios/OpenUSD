@@ -22,7 +22,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 include(Version)
-include(CXXDefaults)
 
 function(_install_headers LIBRARY_NAME)
     set(options  "")
