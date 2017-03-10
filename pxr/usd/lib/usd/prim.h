@@ -1101,7 +1101,7 @@ private:
         : iterator_adaptor_(i)
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
-        if (base() && !_predicate(base()))
+        if (base() && !Usd_EvalPredicate(_predicate, base()))
             increment();
     }
 
@@ -1281,7 +1281,7 @@ private:
         , _predicate(predicate) {
         // Need to advance iterator to first matching element.
         base_type &base = base_reference();
-        if (base && !_predicate(base)) {
+        if (base && !Usd_EvalPredicate(_predicate, base)) {
             if (Usd_MoveToNextSiblingOrParent(base, _predicate))
                 base = nullptr;
         }

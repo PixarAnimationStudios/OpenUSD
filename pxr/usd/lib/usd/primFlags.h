@@ -162,14 +162,6 @@ public:
         return Usd_PrimFlagsPredicate()._Negate();
     }
 
-    // Invoke boolean predicate on \p prim.
-    template <class PrimPtr>
-    bool operator()(const PrimPtr &prim) const {
-        // Mask the prim's flags, compare to desired values, then optionally
-        // negate the result.
-        return ((prim->_GetFlags() & _mask) == _values) ^ _negate;
-    }
-
     // Invoke boolean predicate on UsdPrim \p prim.
     bool operator()(const class UsdPrim &prim) const;
 
@@ -205,6 +197,21 @@ protected:
     Usd_PrimFlagBits _values;
 
 private:
+    // Evaluate this predicate with prim data \p prim.
+    template <class PrimPtr>
+    bool _Eval(const PrimPtr &prim) const {
+        // Mask the prim's flags, compare to desired values, then optionally
+        // negate the result.
+        return ((prim->_GetFlags() & _mask) == _values) ^ _negate;
+    }
+
+    // Evaluate this predicate with prim data \p prim.
+    template <class PrimPtr>
+    friend bool 
+    Usd_EvalPredicate(const Usd_PrimFlagsPredicate& pred, const PrimPtr &prim) {
+        return pred._Eval(prim);
+    }
+
     // Equality comparison.
     friend bool
     operator==(const Usd_PrimFlagsPredicate &lhs,

@@ -234,7 +234,7 @@ private:
         _isPost = false;
 
         // Advance to the first prim that passes the predicate.
-        if (base() != _end && !_predicate(base())) {
+        if (base() != _end && !Usd_EvalPredicate(_predicate, base())) {
             _pruneChildrenFlag = true;
             increment();
         }

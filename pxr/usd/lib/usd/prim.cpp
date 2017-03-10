@@ -662,7 +662,7 @@ UsdPrim
 UsdPrim::GetFilteredNextSibling(const Usd_PrimFlagsPredicate &pred) const
 {
     Usd_PrimDataPtr s = _Prim()->GetNextSibling();
-    while (s && !pred(s))
+    while (s && !Usd_EvalPredicate(pred, s))
         s = s->GetNextSibling();
 
     return UsdPrim(s, s ? s->GetPath() : SdfPath());

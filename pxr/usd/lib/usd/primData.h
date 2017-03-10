@@ -463,7 +463,7 @@ Usd_MoveToNextSiblingOrParent(PrimDataPtr &p, PrimDataPtr end,
                               const Usd_PrimFlagsPredicate &pred)
 {
     PrimDataPtr next = p->GetNextSibling();
-    while (next && next != end && !pred(next)) {
+    while (next && next != end && !Usd_EvalPredicate(pred, next)) {
         p = next;
         next = p->GetNextSibling();
     }
@@ -492,7 +492,8 @@ Usd_MoveToChild(PrimDataPtr &p, PrimDataPtr end,
 {
     if (PrimDataPtr child = p->GetFirstChild()) {
         p = child;
-        if (pred(p) || !Usd_MoveToNextSiblingOrParent(p, end, pred))
+        if (Usd_EvalPredicate(pred, p) || 
+            !Usd_MoveToNextSiblingOrParent(p, end, pred))
             return true;
     }
     return false;
