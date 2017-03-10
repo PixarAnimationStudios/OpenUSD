@@ -31,7 +31,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 Hdx_DrawTargetTextureResource::Hdx_DrawTargetTextureResource()
- : _attachment()
+ : HdTextureResource()
+ , _attachment()
  , _sampler(0)
 {
     // GL initialization guard for headless unit testing

@@ -188,6 +188,8 @@ HdxDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
                            const std::string &attachment,
                            const std::string &path) const
 {
+    HF_MALLOC_TAG_FUNCTION();
+
     // Check the draw targets been allocated
     if (!_drawTarget || !_drawTargetContext) {
         TF_WARN("Missing draw target");
@@ -234,6 +236,8 @@ void
 HdxDrawTarget::_SetAttachments(HdSceneDelegate *sceneDelegate,
                             const HdxDrawTargetAttachmentDescArray &attachments)
 {
+    HF_MALLOC_TAG_FUNCTION();
+
     if (!_drawTargetContext) {
         // Use one of the shared contexts as the master.
         _drawTargetContext = GlfGLContext::GetSharedGLContext();
@@ -351,6 +355,8 @@ HdxDrawTarget::_GetCamera(const HdRenderIndex &renderIndex) const
 void
 HdxDrawTarget::_ResizeDrawTarget()
 {
+    HF_MALLOC_TAG_FUNCTION();
+
     // Make sure all draw target operations happen on the same
     // context.
     GlfGLContextSharedPtr oldContext = GlfGLContext::GetCurrentGLContext();
@@ -372,6 +378,8 @@ HdxDrawTarget::_RegisterTextureResource(HdSceneDelegate *sceneDelegate,
                                         const std::string &name,
                                         HdTextureResourceSharedPtr *resourcePtr)
 {
+    HF_MALLOC_TAG_FUNCTION();
+
     HdResourceRegistry &resourceRegistry = HdResourceRegistry::GetInstance();
 
     // Create Path for the texture resource
@@ -400,6 +408,8 @@ void
 HdxDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
                               HdxDrawTargetPtrConstVector *drawTargets)
 {
+    HF_MALLOC_TAG_FUNCTION();
+
     const HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     SdfPathVector sprimPaths =
