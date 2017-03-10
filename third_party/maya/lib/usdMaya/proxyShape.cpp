@@ -414,68 +414,50 @@ MStatus UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
         //
         std::string fileString = TfStringTrimRight(file.asChar());
 
-        if (!TfStringStartsWith(fileString, "./")) {
-            fileString = PxrUsdMayaQuery::ResolvePath(fileString);
-        }
-
-        // Fall back on checking if path is just a standard absolute path
-        if ( fileString.empty() ) {
-            fileString = file.asChar();
-        }
-
         // == Load the Stage
         UsdStageRefPtr usdStage;
         SdfPath        primPath;
 
-        // Check path validity
-        // Don't try to create a stage for a non-existent file. Some processes
-        // such as mbuild may author a file path here does not yet exist until a
-        // later operation (e.g., the mayaConvert target will produce the .mb
-        // for the USD standin before the usd target runs the usdModelForeman to
-        // assemble all the necessary usd files).
-        bool isValidPath = (TfStringStartsWith(fileString, "//") ||
-                            TfIsFile(fileString, true /*resolveSymlinks*/));
+        // get the variantKey
+        MDataHandle variantKeyHandle = 
+            dataBlock.inputValue(_psData.variantKey, &retValue);
+        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+        const MString variantKey = variantKeyHandle.asString();
+        
+        SdfLayerRefPtr sessionLayer;
+        std::vector<std::pair<std::string, std::string> > variantSelections;
+        std::string variantKeyString = variantKey.asChar();
+        if (!variantKeyString.empty()) {
+            variantSelections.push_back(
+                std::make_pair("modelingVariant",variantKeyString));
 
-        if (isValidPath) {
-
-            // get the variantKey
-            MDataHandle variantKeyHandle = 
-                dataBlock.inputValue(_psData.variantKey, &retValue);
+            // Get the primPath
+            const MString primPathMString =
+                dataBlock.inputValue(_psData.primPath, &retValue).asString();
             CHECK_MSTATUS_AND_RETURN_IT(retValue);
-            const MString variantKey = variantKeyHandle.asString();
-            
-            SdfLayerRefPtr sessionLayer;
-            std::vector<std::pair<std::string, std::string> > variantSelections;
-            std::string variantKeyString = variantKey.asChar();
-            if (!variantKeyString.empty()) {
-                variantSelections.push_back(
-                    std::make_pair("modelingVariant",variantKeyString));
 
-                // Get the primPath
-                const MString primPathMString =
-                    dataBlock.inputValue(_psData.primPath, &retValue).asString();
-                CHECK_MSTATUS_AND_RETURN_IT(retValue);
+            std::vector<std::string> primPathEltStrs =
+                TfStringTokenize(primPathMString.asChar(),"/");
+            if (primPathEltStrs.size() > 0) {
+                sessionLayer =
+                    UsdUtilsStageCache::GetSessionLayerForVariantSelections(
+                        TfToken(primPathEltStrs[0]), variantSelections);
+            }
+        }
 
-                std::vector<std::string> primPathEltStrs =
-                    TfStringTokenize(primPathMString.asChar(),"/");
-                if (primPathEltStrs.size() > 0) {
-                    sessionLayer =
-                        UsdUtilsStageCache::GetSessionLayerForVariantSelections(
-                            TfToken(primPathEltStrs[0]), variantSelections);
-                }
+        if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
+            if (sessionLayer) {
+                usdStage = UsdStage::Open(rootLayer, 
+                        sessionLayer,
+                        ArGetResolver().GetCurrentContext());
+            } else {
+                usdStage = UsdStage::Open(rootLayer,
+                        ArGetResolver().GetCurrentContext());
             }
-            SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString);
-            {
-                UsdStageCacheContext ctx(UsdMayaStageCache::Get());
-                if (sessionLayer) {
-                    usdStage = UsdStage::Open(rootLayer, 
-                            sessionLayer,
-                            ArGetResolver().GetCurrentContext());
-                } else {
-                    usdStage = UsdStage::Open(rootLayer,
-                            ArGetResolver().GetCurrentContext());
-                }
-            }
+        }
+
+        if (usdStage) {
             primPath = usdStage->GetPseudoRoot().GetPath();
         }
 

@@ -39,7 +39,6 @@ using namespace boost;
 void wrapQuery()
 {
     def("GetPrim", PxrUsdMayaQuery::GetPrim);
-    def("ResolvePath", PxrUsdMayaQuery::ResolvePath);
     def("ReloadStage", PxrUsdMayaQuery::ReloadStage);
 }
 

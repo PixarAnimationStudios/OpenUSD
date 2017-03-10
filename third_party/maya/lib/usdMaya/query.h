@@ -39,7 +39,6 @@ struct PxrUsdMayaQuery
     /*! \brief converts a dagPath of a usdStageShapeNode into a usdprim
      */
     static UsdPrim GetPrim(const std::string& shapeName);
-    static std::string ResolvePath(const std::string &filePath);
     static void ReloadStage(const std::string& shapeName);
 };
 
