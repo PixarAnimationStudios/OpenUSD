@@ -94,6 +94,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (refined)                                   \
     (refinedWire)                               \
     (refinedWireOnSurf)                         \
+    (renderTags)                                \
     (ulocDrawCommandNumUints)                   \
     (ulocResetPass)                             \
     (ulocCullMatrix)                            \

@@ -38,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (lightingShader)            \
     (renderPassState)           \
     (renderIndexVersion)        \
+    (renderTags)                \
     (selection)                 \
     (selectionState)            \
     (selectionOffsets)          \
@@ -70,6 +71,17 @@ TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_PRIMITIVE_TOKENS);
     (taskSetAlphaToCoverage)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxOptionTokens, HDX_OPTION_TOKENS);
+
+#define HDX_RENDERTAGS_TOKENS   \
+    (guide)                     \
+    (renderingGuide)            \
+    (label)                     \
+    (cameraGuide)               \
+    (streamline)                \
+    (interactiveOnlyGeom)       \
+    (path)
+
+TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagsTokens, HDX_RENDERTAGS_TOKENS);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

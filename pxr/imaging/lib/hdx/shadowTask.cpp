@@ -85,7 +85,7 @@ HdxShadowTask::_Execute(HdTaskContext* ctx)
         shadows->BeginCapture(shadowId, true);
 
         // Render the actual geometry in the collection
-        _passes[shadowId]->Execute(_renderPassStates[shadowId]);
+        _passes[shadowId]->Execute(_renderPassStates[shadowId], HdTokens->geometry);
 
         // Unbind the buffer and move on to the next shadow map
         shadows->EndCapture(shadowId);

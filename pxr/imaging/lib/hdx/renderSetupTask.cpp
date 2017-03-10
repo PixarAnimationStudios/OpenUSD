@@ -52,12 +52,12 @@ HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const&
     , _idRenderPassShader()
     , _viewport()
     , _camera()
+    , _renderTags()    
 {
     _colorRenderPassShader.reset(
         new HdRenderPassShader(HdxPackageRenderPassShader()));
     _idRenderPassShader.reset(
         new HdRenderPassShader(HdxPackageRenderPassIdShader()));
-
     _renderPassState.reset(
         new HdRenderPassState(_colorRenderPassShader));
 }
@@ -70,6 +70,7 @@ HdxRenderSetupTask::_Execute(HdTaskContext* ctx)
 
     // set raster state to TaskContext
     (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
+    (*ctx)[HdxTokens->renderTags] = VtValue(_renderTags);
 }
 
 void
@@ -141,6 +142,8 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
         !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
     _viewport = params.viewport;
+
+    _renderTags = params.renderTags;
 
     const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
     _camera = static_cast<const HdxCamera *>(
@@ -224,8 +227,10 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.hullVisibility << " "
         << pv.surfaceVisibility << " "
         << pv.camera << " "
-        << pv.viewport
-        ;
+        << pv.viewport << " ";
+        TF_FOR_ALL(rt, pv.renderTags) {
+            out << *rt << " ";
+        }
     return out;
 }
 
@@ -249,7 +254,8 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.hullVisibility          == rhs.hullVisibility          && 
            lhs.surfaceVisibility       == rhs.surfaceVisibility       && 
            lhs.camera                  == rhs.camera                  && 
-           lhs.viewport                == rhs.viewport;
+           lhs.viewport                == rhs.viewport                &&
+           lhs.renderTags              == rhs.renderTags;
 }
 
 bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs) 
@@ -258,4 +264,3 @@ bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

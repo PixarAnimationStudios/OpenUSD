@@ -136,7 +136,7 @@ HdxDrawTargetRenderPass::Execute(
     glViewport(0, 0, resolution[0], resolution[1]);
 
     // Perform actual draw
-    _renderPass.Execute(renderPassState);
+    _renderPass.Execute(renderPassState, HdTokens->geometry);
 
     // restore viewport
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);

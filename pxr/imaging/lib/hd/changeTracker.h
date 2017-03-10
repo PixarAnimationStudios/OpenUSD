@@ -78,9 +78,10 @@ public:
         DirtyInstancer        = 1 << 16,
         DirtyInstanceIndex    = 1 << 17,
         DirtyRepr             = 1 << 18,
-        AllSceneDirtyBits     = ((1<<19) - 1),
+        DirtyPurpose          = 1 << 19,
+        AllSceneDirtyBits     = ((1<<20) - 1),
 
-        CustomBitsBegin       = 1 << 19,
+        CustomBitsBegin       = 1 << 20,
         CustomBitsEnd         = 1 << 30,
     };
 

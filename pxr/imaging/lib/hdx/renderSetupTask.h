@@ -62,6 +62,9 @@ public:
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
     }
+    TfTokenVector const &GetRenderTags() const {
+        return _renderTags;
+    }
 
 protected:
     /// Execute render pass task
@@ -76,6 +79,7 @@ private:
     HdRenderPassShaderSharedPtr _idRenderPassShader;
     GfVec4d _viewport;
     const HdxCamera *_camera;
+    TfTokenVector _renderTags;
 
     static HdShaderCodeSharedPtr _overrideShader;
 
@@ -97,6 +101,7 @@ struct HdxRenderTaskParams : public HdTaskParams
         , tessLevel(1.0)
         , drawingRange(0.0, -1.0)
         , enableHardwareShading(true)
+        , renderTags()
         , depthBiasUseDefault(true)
         , depthBiasEnable(false)
         , depthBiasConstantFactor(0.0f)
@@ -120,13 +125,13 @@ struct HdxRenderTaskParams : public HdTaskParams
     float tessLevel;
     GfVec2f drawingRange;
     bool enableHardwareShading;
+    TfTokenVector renderTags;
 
     // Depth Bias Raster State
     // When use default is true - state
     // is inherited and onther values are
     // ignored.  Otherwise the raster state
     // is set using the values specified.
-
     bool depthBiasUseDefault;
     bool depthBiasEnable;
     float depthBiasConstantFactor;
