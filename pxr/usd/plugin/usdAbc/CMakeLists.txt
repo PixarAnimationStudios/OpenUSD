@@ -6,6 +6,14 @@ if(NOT ALEMBIC_FOUND)
     return()
 endif()
 
+set(MULTIVERSE_DEPS "")
+if (PXR_ENABLE_MULTIVERSE_SUPPORT)
+    list(APPEND MULTIVERSE_DEPS ${GIT2_LIB})
+    list(APPEND MULTIVERSE_DEPS ${Boost_FILESYSTEM_LIBRARY})
+    list(APPEND MULTIVERSE_DEPS ${Boost_SYSTEM_LIBRARY})
+    add_definitions(-DUSDABC_MULTIVERSE_SUPPORT)
+endif()
+
 pxr_plugin(usdAbc
     LIBRARIES
         tf
@@ -16,6 +24,7 @@ pxr_plugin(usdAbc
         ${HDF5_LIBRARIES}
         ${HDF5_HL_LIBRARIES}
         ${OPENEXR_Iex_LIBRARY}
+        ${MULTIVERSE_DEPS}
 
     INCLUDE_DIRS
         ${ALEMBIC_INCLUDE_DIR}

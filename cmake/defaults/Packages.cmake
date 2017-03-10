@@ -122,4 +122,13 @@ if (PXR_BUILD_ALEMBIC_PLUGIN)
             HL
         REQUIRED
     )
+    if (PXR_ENABLE_MULTIVERSE_SUPPORT)
+        find_package(Boost
+            COMPONENTS
+            filesystem
+            REQUIRED
+            )
+        find_library(GIT2_LIB git2)
+    endif()
+
 endif()

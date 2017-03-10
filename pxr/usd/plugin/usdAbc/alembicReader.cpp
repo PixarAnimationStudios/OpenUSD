@@ -43,6 +43,11 @@
 #include <Alembic/Abc/ITypedArrayProperty.h>
 #include <Alembic/Abc/ITypedScalarProperty.h>
 #include <Alembic/AbcCoreAbstract/Foundation.h>
+
+#ifdef USDABC_MULTIVERSE_SUPPORT
+#include <Alembic/AbcCoreGit/All.h>
+#endif // #ifdef USDABC_MULTIVERSE_SUPPORT
+
 #include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/GeometryScope.h>
@@ -744,6 +749,11 @@ private:
     bool _OpenOgawa(const std::string& filePath, IArchive*,
                     std::string* format, std::recursive_mutex** mutex) const;
 
+#ifdef USDABC_MULTIVERSE_SUPPORT
+    bool _OpenGit(const std::string& filePath, IArchive*,
+                    std::string* format, std::recursive_mutex** mutex) const;
+#endif // #ifdef USDABC_MULTIVERSE_SUPPORT
+
     // Walk the object hierarchy looking for instances and instance sources.
     static void _FindInstances(const IObject& parent,
                                _SourceToInstancesMap* instances);
@@ -848,11 +858,20 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
 
     IArchive archive;
     std::string format;
-    if (!(_OpenOgawa(filePath, &archive, &format, &_mutex) || 
+#ifdef USDABC_MULTIVERSE_SUPPORT
+    if (not (_OpenOgawa(filePath, &archive, &format, &_mutex) ||
+             _OpenHDF5(filePath, &archive, &format, &_mutex) ||
+             _OpenGit(filePath, &archive, &format, &_mutex))) {
+        *errorLog = "Unsupported format";
+        return false;
+    }
+#else
+    if (not (_OpenOgawa(filePath, &archive, &format, &_mutex) ||
              _OpenHDF5(filePath, &archive, &format, &_mutex))) {
         *errorLog = "Unsupported format";
         return false;
     }
+#endif // #ifdef USDABC_MULTIVERSE_SUPPORT
 
     // Lock _mutex if it exists for remainder of this method.
     _Lock lock(_mutex);
@@ -1319,6 +1338,21 @@ _ReaderContext::_OpenOgawa(
                        filePath, ErrorHandler::kQuietNoopPolicy);
     return *result;
 }
+
+#ifdef USDABC_MULTIVERSE_SUPPORT
+bool
+_ReaderContext::_OpenGit(
+    const std::string& filePath,
+    IArchive* result,
+    std::string* format,
+    std::recursive_mutex** mutex) const
+{
+    *format = "Git";
+    *result = IArchive(Alembic::AbcCoreGit::ReadArchive(),
+                       filePath, ErrorHandler::kQuietNoopPolicy);
+    return *result;
+}
+#endif // #ifdef USDABC_MULTIVERSE_SUPPORT
 
 void
 _ReaderContext::_FindInstances(
