@@ -294,7 +294,10 @@ Test_TfAtomicOfstreamWrapper()
     TestErrorCases();
     TestCommitToNewFile();
     TestCommitToExistingFile();
+#if !defined(ARCH_OS_WINDOWS)
+    // Windows has issues with the create symlink privilege.
     TestCommitSymlink();
+#endif
     TestCancel();
     TestAutoCancel();
     TestFilePermissions();
