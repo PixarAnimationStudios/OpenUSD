@@ -27,8 +27,10 @@
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/error.h"
+
 #include <cstdlib>
 #include <functional>
+#include <limits>
 
 #if defined(ARCH_OS_LINUX)
 
@@ -95,7 +97,7 @@ _DynamicSizedRead(
     // Repeatedly invoke the callback with our buffer until it's big enough.
     size_t size = initialSize;
     while (!callback(buffer.get(), &size)) {
-        if (size == -1) {
+        if (size == std::numeric_limits<size_t>::max()) {
             // callback is never going to succeed.
             return std::string();
         }
@@ -119,7 +121,13 @@ ArchGetExecutablePath()
         _DynamicSizedRead(ARCH_PATH_MAX,
             [](char* buffer, size_t* size) {
                 const ssize_t n = readlink("/proc/self/exe", buffer, *size);
-                if (n >= *size) {
+                if (n == -1) {
+                    ARCH_WARNING("Unable to read /proc/self/exe to obtain "
+                                 "executable path");
+                    *size = std::numeric_limits<size_t>::max();
+                    return false;
+                }
+                else if (static_cast<size_t>(n) >= *size) {
                     // Find out how much space we need.
                     struct stat sb;
                     if (lstat("/proc/self/exe", &sb) == 0) {
@@ -129,12 +137,6 @@ ArchGetExecutablePath()
                         // Try iterating on the size.
                         *size *= 2;
                     }
-                    return false;
-                }
-                else if (n == -1) {
-                    ARCH_WARNING("Unable to read /proc/self/exe to obtain "
-                                 "executable path");
-                    *size = -1;
                     return false;
                 }
                 else {
@@ -171,7 +173,7 @@ ArchGetExecutablePath()
                 if (n == 0) {
                     ARCH_WARNING("Unable to read GetModuleFileName() to obtain "
                                  "executable path");
-                    *size = -1;
+                    *size = std::numeric_limits<size_t>::max();
                     return false;
                 }
                 else if (n >= nSize) {
