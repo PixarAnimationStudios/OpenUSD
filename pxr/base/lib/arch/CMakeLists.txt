@@ -142,6 +142,13 @@ pxr_build_test(testArchThreads
     CPPFILES
         testenv/testThreads.cpp
 )
+pxr_build_test(testArchTiming
+    LIBRARIES
+        arch
+        ${CMAKE_DL_LIBS}
+    CPPFILES
+        testenv/testTiming.cpp
+)
 pxr_build_test(testArchVsnprintf
     LIBRARIES
         arch
@@ -179,6 +186,9 @@ pxr_register_test(testArchSymbols
 )
 pxr_register_test(testArchSystemInfo
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchSystemInfo"
+)
+pxr_register_test(testArchTiming
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchTiming"
 )
 pxr_register_test(testArchThreads
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchThreads"
