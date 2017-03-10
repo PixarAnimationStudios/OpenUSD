@@ -24,34 +24,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/timing.h"
-#include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/error.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-#define MINNAPTIME 4
-#define NAPTIME 5
-#define MAXNAPTIME 6
-
 int main()
 {
-    uint64_t startTick, endTick, hSeconds;
-
-    for(int i = 0; i < 20; i++) {
-        startTick = ArchGetTickTime();
-        ArchNap(NAPTIME);
-        endTick = ArchGetTickTime();
-        hSeconds = ArchTicksToNanoseconds(endTick - startTick) / 10000000;
-       if(hSeconds < MINNAPTIME || hSeconds > MAXNAPTIME) {
-            ARCH_ERROR("ArchTiming failed, possibly due to a "
-                                  "process being swapped out.  Try running "
-                                  "it again, and if does not fail "
-                                  "consistently it's ok to ignore this.");
-        }
-    }
-    
-    ArchNap(0);
-
     uint64_t ticks = ArchGetTickTime();
     ARCH_AXIOM( (uint64_t) ArchTicksToNanoseconds(ticks) == 
         uint64_t(static_cast<double>(ticks)*ArchGetNanosecondsPerTick() + .5));

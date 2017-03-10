@@ -29,13 +29,14 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/regTest.h"
-#include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/pragmas.h"
 
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <chrono>
+#include <thread>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -601,7 +602,7 @@ TestTfTouchFile()
     time_t oldmTime = st.st_mtime;
 
     // Wait a moment, so that mod time differs...
-    ArchNap(100);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // Touch again
     TF_AXIOM(TfTouchFile(fileName, false));

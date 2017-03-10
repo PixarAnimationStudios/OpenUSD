@@ -25,7 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/error.h"
-#include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/pragmas.h"
 
 #include <cstdio>

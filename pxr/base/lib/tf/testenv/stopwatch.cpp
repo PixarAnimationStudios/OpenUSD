@@ -23,13 +23,14 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/nap.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <iostream>
 #include <algorithm>
+#include <chrono>
+#include <iostream>
+#include <thread>
 
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -44,7 +45,8 @@ Pause(double seconds)
     static TfStopwatch pauseWatch("pwatch", true);
 
     pauseWatch.Start();
-    ArchNap(static_cast<size_t>(seconds * 100.0));
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(static_cast<size_t>(seconds*1000)));
     pauseWatch.Stop();
 }
 
@@ -78,7 +80,7 @@ Test_TfStopwatch()
     // Delay .5 seconds (500 million nanoseconds)
     //
     watch1.Start();
-    ArchNap(50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     watch1.Stop();
 
     // The value of watch1 should be "near" 0.5 seconds
@@ -93,7 +95,7 @@ Test_TfStopwatch()
     // Delay another .5 seconds and see if watch is near 1
     //
     watch1.Start();
-    ArchNap(50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     watch1.Stop();
 
     // The value of watch1 should be "near" 1.0 seconds
@@ -187,7 +189,7 @@ Test_TfStopwatch()
     // Delay .5 seconds (500 million nanoseconds)
     //
     swatch1.Start();
-    ArchNap(50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     swatch1.Stop();
 
     // The value of swatch1 should be "near" 0.5 seconds
@@ -202,7 +204,7 @@ Test_TfStopwatch()
     // Delay another .5 seconds and see if swatch is near 1
     //
     swatch1.Start();
-    ArchNap(50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     swatch1.Stop();
 
     // The value of swatch1 should be "near" 1.0 seconds

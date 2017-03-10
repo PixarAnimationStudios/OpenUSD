@@ -27,10 +27,10 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakPtr.h"
-#include "pxr/base/arch/nap.h"
 
 #include <boost/noncopyable.hpp>
 
+#include <chrono>
 #include <condition_variable>
 #include <cstdio>
 #include <future>
@@ -335,7 +335,7 @@ Test_TfCreateRefPtrFromProtectedWeakPtr()
             std::async(std::launch::async, _ThreadFunc);
 
         // Wait for that thread to block on semaphore (janky!)
-        ArchNap(25 /* .25 sec */);
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
         // Now invoke the destructor.  This will post to _findOrCreateSema,
         // unblocking the t1 thread, and then block trying to grab the
