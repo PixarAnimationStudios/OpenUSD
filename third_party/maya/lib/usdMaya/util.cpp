@@ -789,6 +789,16 @@ struct ValueHash
     }
 };
 
+// There is no globally defined hash_value for numeric types
+// so we need an explicit opt-in here.
+template <>
+struct ValueHash<float>
+{
+    std::size_t operator() (const float& value) const {
+        return boost::hash_value(value);
+    }
+};
+
 template <typename T>
 struct ValuesEqual
 {
