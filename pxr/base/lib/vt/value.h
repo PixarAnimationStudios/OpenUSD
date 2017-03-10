@@ -224,6 +224,10 @@ class VtValue
 
     // Type information base class.
     struct _TypeInfo {
+    protected:
+        ~_TypeInfo() = default;
+
+    public:
         constexpr _TypeInfo(const std::type_info &ti,
                             const std::type_info &elementTi,
                             bool isArray,
@@ -254,9 +258,6 @@ class VtValue
         const std::type_info &elementTypeInfo;
         bool isArray;
         bool isHashable;
-
-        protected:
-            ~_TypeInfo() = default;
     };
 
     // Type-dispatching overloads.
