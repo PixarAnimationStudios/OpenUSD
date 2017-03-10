@@ -688,25 +688,37 @@ PcpCache::FindSiteDependencies(
         TRACE_SCOPE("PcpCache::FindSiteDependencies - recurseOnIndex");
         SdfPathSet seenDeps;
         PcpDependencyVector expandedDeps;
+
         for(const PcpDependency &dep: deps) {
             const SdfPath & indexPath = dep.indexPath;
-            if (seenDeps.find(indexPath) != seenDeps.end()) {
-                // Short circuit further expansion; expect we
-                // have already recursed below this path.
-                continue;
+
+            auto it = seenDeps.upper_bound(indexPath);
+            if (it != seenDeps.begin()) {
+                --it;
+                if (indexPath.HasPrefix(*it)) {
+                    // Short circuit further expansion; expect we
+                    // have already recursed below this path.
+                    continue;
+                }
             }
+
             seenDeps.insert(indexPath);
             expandedDeps.push_back(dep);
             // Recurse on child index entries.
             if (indexPath.IsAbsoluteRootOrPrimPath()) {
-                const auto primRange =
+                auto primRange =
                     _primIndexCache.FindSubtreeRange(indexPath);
+                if (primRange.first != primRange.second) {
+                    // Skip initial entry, since we've already added it 
+                    // to expandedDeps above.
+                    ++primRange.first;
+                }
+
                 for (auto entryIter = primRange.first;
                      entryIter != primRange.second; ++entryIter) {
                     const SdfPath& subPath = entryIter->first;
                     const PcpPrimIndex& subPrimIndex = entryIter->second;
-                    if (subPrimIndex.IsValid() &&
-                        seenDeps.find(subPath) == seenDeps.end()) {
+                    if (subPrimIndex.IsValid()) {
                         expandedDeps.push_back(PcpDependency{
                             subPath,
                             subPath.ReplacePrefix(indexPath, dep.sitePath),
@@ -721,8 +733,7 @@ PcpCache::FindSiteDependencies(
                  entryIter != propRange.second; ++entryIter) {
                 const SdfPath& subPath = entryIter->first;
                 const PcpPropertyIndex& subPropIndex = entryIter->second;
-                if (!subPropIndex.IsEmpty() &&
-                    seenDeps.find(subPath) == seenDeps.end()) {
+                if (!subPropIndex.IsEmpty()) {
                     expandedDeps.push_back(PcpDependency{
                         subPath,
                         subPath.ReplacePrefix(indexPath, dep.sitePath),
