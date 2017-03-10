@@ -894,8 +894,7 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
         }
 
         // Blow property stacks and update spec dependencies on prims.
-        TF_FOR_ALL(i, changes.didChangeSpecs) {
-            const SdfPath& path = *i;
+        auto updateSpecStacks = [this, &lifeboat](const SdfPath& path) {
             if (path.IsAbsoluteRootOrPrimPath()) {
                 // We've possibly changed the prim spec stack.  Note that
                 // we may have blown the prim index so check that it exists.
@@ -926,6 +925,14 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
                 // relational attributes for this target.
                 _RemovePropertyCaches(path, lifeboat);
             }
+        };
+
+        TF_FOR_ALL(i, changes.didChangeSpecs) {
+            updateSpecStacks(*i);
+        }
+
+        TF_FOR_ALL(i, changes._didChangeSpecsInternal) {
+            updateSpecStacks(*i);
         }
 
         // Fix the keys for any prim or property under any of the renamed

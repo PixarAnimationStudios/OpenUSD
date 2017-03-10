@@ -1356,11 +1356,19 @@ PcpChanges::_Optimize(PcpCacheChanges* changes)
     TF_FOR_ALL(i, changes->didChangeSignificantly) {
         Pcp_SubsumeDescendants(&changes->didChangePrims, *i);
         Pcp_SubsumeDescendants(&changes->didChangeSpecs, *i);
+        Pcp_SubsumeDescendants(&changes->_didChangeSpecsInternal, *i);
     }
 
     // Subsume spec changes for prims whose indexes will be rebuilt.
     TF_FOR_ALL(i, changes->didChangePrims) {
         changes->didChangeSpecs.erase(*i);
+        changes->_didChangeSpecsInternal.erase(*i);
+    }
+
+    // Subsume spec changes that don't change the contents of the stack
+    // changes against those that may change the contents.
+    TF_FOR_ALL(i, changes->didChangeSpecs) {
+        changes->_didChangeSpecsInternal.erase(*i);
     }
 
     // XXX: Do we subsume name changes?
@@ -1676,7 +1684,7 @@ PcpChanges::_DidChangeSublayer(
             if (*significant) {
                 DidChangeSignificantly(cache, dep.indexPath);
             } else {
-                DidChangeSpecStack(cache, dep.indexPath);
+                _DidChangeSpecStackInternal(cache, dep.indexPath);
             }
         }
     }
@@ -1810,6 +1818,12 @@ PcpChanges::_DidChangeLayerStackRelocations(
             DidChangeSignificantly(cache, depPath);
         }
     }
+}
+
+void 
+PcpChanges::_DidChangeSpecStackInternal(PcpCache* cache, const SdfPath& path)
+{
+    _cacheChanges[cache]._didChangeSpecsInternal.insert(path);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
