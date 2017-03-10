@@ -199,13 +199,12 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
     if (primIndex) {
         // Find which node corresponds to (layer, oldPath).
         for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
-            const PcpDependencyFlags flags = PcpClassifyNodeDependency(node);
-            if (flags != PcpDependencyTypeNone &&
+            if (PcpNodeIntroducesDependency(node) && 
                 node.GetLayerStack()->HasLayer(layer) &&
                 sitePath.HasPrefix(node.GetPath()))
             {
                 nodeUsingSite = node;
-                fn(depIndexPath, nodeUsingSite, flags);
+                fn(depIndexPath, nodeUsingSite);
             }
         }
     }
@@ -244,13 +243,12 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
     if (primIndex) {
         // Find which node corresponds to (layerStack, oldPath).
         for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
-            const PcpDependencyFlags flags = PcpClassifyNodeDependency(node);
-            if (flags != PcpDependencyTypeNone &&
+            if (PcpNodeIntroducesDependency(node) &&
                 node.GetLayerStack() == layerStack &&
                 sitePath.HasPrefix(node.GetPath()))
             {
                 nodeUsingSite = node;
-                fn(depIndexPath, nodeUsingSite, flags);
+                fn(depIndexPath, nodeUsingSite);
             }
         }
     }

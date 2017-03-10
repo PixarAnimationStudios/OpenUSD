@@ -640,36 +640,42 @@ PcpCache::FindSiteDependencies(
             ? depPrimSitePath : sitePath;
 
         auto visitNodeFn = [&](const SdfPath &depPrimIndexPath,
-                               const PcpNodeRef &node,
-                               PcpDependencyFlags flags)
+                               const PcpNodeRef &node)
         {
-            if ((flags & localMask) == flags) {
-                // Now that we have found a dependency on depPrimSitePath,
-                // use path translation to get the corresponding depIndexPath.
-                SdfPath depIndexPath;
-                bool valid = false;
-                if (node.GetArcType() == PcpArcTypeRelocate) {
-                    // Relocates require special handling.  Because
-                    // a relocate node's map function is always
-                    // identity, we must do our own prefix replacement
-                    // to step out of the relocate, then continue
-                    // with regular path translation.
-                    const PcpNodeRef parent = node.GetParentNode(); 
-                    depIndexPath = PcpTranslatePathFromNodeToRoot(
-                        parent,
-                        localSitePath.ReplacePrefix( node.GetPath(),
-                                                       parent.GetPath() ),
-                        &valid );
-                } else {
-                    depIndexPath = PcpTranslatePathFromNodeToRoot(
-                        node, localSitePath, &valid);
+            // Skip computing the node's dependency type if we aren't looking
+            // for a specific type -- that computation can be expensive.
+            if (localMask != PcpDependencyTypeAnyIncludingVirtual) {
+                PcpDependencyFlags flags = PcpClassifyNodeDependency(node);
+                if ((flags & localMask) != flags) { 
+                    return;
                 }
-                if (valid && TF_VERIFY(!depIndexPath.IsEmpty()) &&
-                    cacheFilterFn(depIndexPath)) {
-                    deps.push_back(PcpDependency{
-                        depIndexPath, localSitePath,
-                        node.GetMapToRoot().Evaluate() });
-                }
+            }
+
+            // Now that we have found a dependency on depPrimSitePath,
+            // use path translation to get the corresponding depIndexPath.
+            SdfPath depIndexPath;
+            bool valid = false;
+            if (node.GetArcType() == PcpArcTypeRelocate) {
+                // Relocates require special handling.  Because
+                // a relocate node's map function is always
+                // identity, we must do our own prefix replacement
+                // to step out of the relocate, then continue
+                // with regular path translation.
+                const PcpNodeRef parent = node.GetParentNode(); 
+                depIndexPath = PcpTranslatePathFromNodeToRoot(
+                    parent,
+                    localSitePath.ReplacePrefix( node.GetPath(),
+                                                 parent.GetPath() ),
+                    &valid );
+            } else {
+                depIndexPath = PcpTranslatePathFromNodeToRoot(
+                    node, localSitePath, &valid);
+            }
+            if (valid && TF_VERIFY(!depIndexPath.IsEmpty()) &&
+                cacheFilterFn(depIndexPath)) {
+                deps.push_back(PcpDependency{
+                    depIndexPath, localSitePath,
+                    node.GetMapToRoot().Evaluate() });
             }
         };
         Pcp_ForEachDependentNode(depPrimSitePath, siteLayerStack,
