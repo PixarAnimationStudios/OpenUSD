@@ -254,6 +254,9 @@ class VtValue
         const std::type_info &elementTypeInfo;
         bool isArray;
         bool isHashable;
+
+        protected:
+            ~_TypeInfo() = default;
     };
 
     // Type-dispatching overloads.
