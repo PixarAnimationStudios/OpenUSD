@@ -42,6 +42,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #if defined(ARCH_OS_WINDOWS)
+#include <functional>
 #include <io.h>
 #include <process.h>
 #include <Windows.h>
@@ -230,72 +231,88 @@ ArchMakeTmpFile(const std::string& prefix, std::string* pathname)
     return ArchMakeTmpFile(ArchGetTmpDir(), prefix, pathname);
 }
 
+#if defined (ARCH_OS_WINDOWS)
+
+namespace {
+std::string
+MakeUnique(
+    const std::string& sTemplate,
+    std::function<bool(const char* name)> func,
+    int maxRetry = 1000)
+{
+    static const bool init = (srand(GetTickCount()), true);
+
+    // Copy template to a writable buffer.
+    const auto length = sTemplate.size();
+    char* cTemplate = reinterpret_cast<char*>(alloca(length + 1));
+    strcpy_s(cTemplate, length + 1, sTemplate.c_str());
+
+    // Fill template with random characters from table.
+    const char* table = "abcdefghijklmnopqrstuvwxyz123456";
+    std::string::size_type offset = length - 6;
+    int retry = 0;
+    do {
+        unsigned int x = (static_cast<unsigned int>(rand()) << 15) + rand();
+        cTemplate[offset + 0] = table[(x >> 25) & 31];
+        cTemplate[offset + 1] = table[(x >> 20) & 31];
+        cTemplate[offset + 2] = table[(x >> 15) & 31];
+        cTemplate[offset + 3] = table[(x >> 10) & 31];
+        cTemplate[offset + 4] = table[(x >>  5) & 31];
+        cTemplate[offset + 5] = table[(x      ) & 31];
+
+        // Invoke callback and if successful return the path.  Otherwise
+        // repeat with a different random name for up to maxRetry times.
+        if (func(cTemplate)) {
+            return cTemplate;
+        }
+    } while (++retry < maxRetry);
+
+    return std::string();
+}
+
+}
+
+#endif
+
 int
 ArchMakeTmpFile(const std::string& tmpdir,
                 const std::string& prefix, std::string* pathname)
 {
-#if defined(ARCH_OS_WINDOWS)
-    char filename[ARCH_PATH_MAX];
-    UINT ret = ::GetTempFileName(tmpdir.c_str(), prefix.c_str(), 0, filename);
-    if (ret == 0)
-    {
-        std::string errorMsg("Call to GetTempFileName failed because ");
-        errorMsg.append(ArchStrSysError(::GetLastError()));
-        ARCH_ERROR(errorMsg.c_str());
-        return -1;
-    }
-
-    // Attempt to create the file
-    HANDLE fileHandle = ::CreateFile(filename,
-            GENERIC_WRITE,          // open for write
-            0,                      // not for sharing
-            NULL,                   // default security
-            CREATE_ALWAYS,          // overwrite existing
-            FILE_ATTRIBUTE_NORMAL,  //normal file
-            NULL);                  // no template
-
-    if (fileHandle == INVALID_HANDLE_VALUE) {
-        std::string errorMsg("Call to CreateFile failed because ");
-        errorMsg.append(ArchStrSysError(::GetLastError()));
-        ARCH_ERROR(errorMsg.c_str());
-        return -1;
-    }
-
-    // Close the file
-    ::CloseHandle(fileHandle);
-
-    if (pathname)
-    {
-        *pathname = filename;
-    }
-
-    int fd = 0;
-    _sopen_s(&fd, filename, _O_RDWR, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    return fd;
-#else
     // Format the template.
     std::string sTemplate =
         ArchStringPrintf("%s/%s.XXXXXX", tmpdir.c_str(), prefix.c_str());
 
+#if defined(ARCH_OS_WINDOWS)
+    int fd = -1;
+    auto cTemplate =
+        MakeUnique(sTemplate, [&fd](const char* name){
+            _sopen_s(&fd, name, _O_CREAT | _O_EXCL | _O_RDWR,
+                     _SH_DENYNO, _S_IREAD | _S_IWRITE);
+            return fd != -1;
+        });
+#else
     // Copy template to a writable buffer.
     char* cTemplate = reinterpret_cast<char*>(alloca(sTemplate.size() + 1));
     strcpy(cTemplate, sTemplate.c_str());
+
     // Open the file.
     int fd = mkstemp(cTemplate);
+    if (fd != -1) {
+        // Make sure file is readable by group.  mkstemp created the
+        // file with 0600 permissions.  We want 0640.
+        //
+        fchmod(fd, 0640);
+    }
+#endif
 
     if (fd != -1) {
         // Save the path.
         if (pathname) {
             *pathname = cTemplate;
         }
-
-        // Make sure file is readable by group.  mkstemp created the
-        // file with 0600 permissions.  We want 0640.
-        //
-        fchmod(fd, 0640);
     }
+
     return fd;
-#endif
 }
 
 std::string
@@ -309,10 +326,10 @@ ArchMakeTmpSubdir(const std::string& tmpdir,
         ArchStringPrintf("%s/%s.XXXXXX", tmpdir.c_str(), prefix.c_str());
 
 #if defined(ARCH_OS_WINDOWS)
-    if (::CreateDirectory(sTemplate.c_str(), NULL))
-    {
-        retstr = sTemplate;
-    }
+    retstr =
+        MakeUnique(sTemplate, [](const char* name){
+            return CreateDirectory(name, NULL) != FALSE;
+        });
 #else
     // Copy template to a writable buffer.
     char* cTemplate = reinterpret_cast<char*>(alloca(sTemplate.size() + 1));
