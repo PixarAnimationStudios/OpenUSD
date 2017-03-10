@@ -269,6 +269,8 @@ public:
     /// render delegate.  Due to the inserted information and change tracking
     /// being specific to that delegate type.
     void SetRenderDelegate(HdRenderDelegate *renderDelegate);
+    HdRenderDelegate *GetRenderDelegate() const;
+
     TfToken GetRenderDelegateType() const;
 
     /// Creates fallback prims for each supported prim type

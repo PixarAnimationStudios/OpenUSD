@@ -58,7 +58,6 @@ HdEngine::HdEngine()
  , _activeContextsDirty(false)
  , _defaultRenderDelegateId(_UninitalizedId)
  , _defaultGalDelegateId(_UninitalizedId)
- , _resourceRegistry(&HdResourceRegistry::GetInstance())
  , _taskContext()
 {
 }
@@ -504,9 +503,12 @@ HdEngine::_InitCaps() const
 void
 HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 {
+    // Note: For Hydra Stream render delegate.
+    //
+    //
     // The following order is important, be careful.
     //
-    // If _SyncGPU updates topology varying prims, it triggers both:
+    // If Sync updates topology varying prims, it triggers both:
     //   1. changing drawing coordinate and bumps up the global collection
     //      version to invalidate the (indirect) batch.
     //   2. marking garbage collection needed so that the unused BAR
@@ -539,27 +541,8 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
     // Process all pending dirty lists
     index.SyncAll(tasks, &_taskContext);
 
-    // --------------------------------------------------------------------- //
-    // RESOLVE, COMPUTE & COMMIT PHASE
-    // --------------------------------------------------------------------- //
-    // All the required input data is now resident in memory, next we must: 
-    //
-    //     1) Execute compute as needed for normals, tessellation, etc.
-    //     2) Commit resources to the GPU.
-    //     3) Update any scene-level acceleration structures.
-
-    // Commit all pending source data.
-    _resourceRegistry->Commit();
-
-    if (index.GetChangeTracker().IsGarbageCollectionNeeded()) {
-        _resourceRegistry->GarbageCollect();
-        index.GetChangeTracker().ClearGarbageCollectionNeeded();
-        index.GetChangeTracker().MarkAllCollectionsDirty();
-    }
-
-    // see bug126621. currently dispatch buffers need to be released
-    //                more frequently than we expect.
-    _resourceRegistry->GarbageCollectDispatchBuffers();
+    HdRenderDelegate *renderDelegate = index.GetRenderDelegate();
+    renderDelegate->CommitResources(&index.GetChangeTracker());
 
     TF_FOR_ALL(it, tasks) {
         (*it)->Execute(&_taskContext);
@@ -586,7 +569,7 @@ HdEngine::ReloadAllShaders(HdRenderIndex& index)
     }
 
     // Invalidate Geometry shader cache in Resource Registry.
-    _resourceRegistry->InvalidateGeometricShaderRegistry();
+    HdResourceRegistry::GetInstance().InvalidateGeometricShaderRegistry();
 
     // Fallback Shader
     HdShader *shader = static_cast<HdShader *>(

@@ -37,6 +37,7 @@
 #include "pxr/imaging/hd/glslfxShader.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/renderDelegateRegistry.h"
+#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/texture.h"
 
 #include "pxr/imaging/glf/glslfx.h"
@@ -286,5 +287,33 @@ HdStreamRenderDelegate::_CreateFallbackShaderPrim()
     return shader;
 }
 
+
+void
+HdStreamRenderDelegate::CommitResources(HdChangeTracker *tracker)
+{
+    HdResourceRegistry &resourceRegistry = HdResourceRegistry::GetInstance();
+
+    // --------------------------------------------------------------------- //
+    // RESOLVE, COMPUTE & COMMIT PHASE
+    // --------------------------------------------------------------------- //
+    // All the required input data is now resident in memory, next we must:
+    //
+    //     1) Execute compute as needed for normals, tessellation, etc.
+    //     2) Commit resources to the GPU.
+    //     3) Update any scene-level acceleration structures.
+
+    // Commit all pending source data.
+    resourceRegistry.Commit();
+
+    if (tracker->IsGarbageCollectionNeeded()) {
+        resourceRegistry.GarbageCollect();
+        tracker->ClearGarbageCollectionNeeded();
+        tracker->MarkAllCollectionsDirty();
+    }
+
+    // see bug126621. currently dispatch buffers need to be released
+    //                more frequently than we expect.
+    resourceRegistry.GarbageCollectDispatchBuffers();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

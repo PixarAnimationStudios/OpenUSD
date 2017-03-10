@@ -524,6 +524,11 @@ HdRenderIndex::SetRenderDelegate(HdRenderDelegate *renderDelegate)
     _InitPrimTypes();
 }
 
+HdRenderDelegate *HdRenderIndex::GetRenderDelegate() const
+{
+    return _renderDelegate;
+}
+
 TfToken
 HdRenderIndex::GetRenderDelegateType() const
 {

@@ -62,6 +62,8 @@ public:
     virtual HdBprim *CreateFallbackBprim(TfToken const& typeId) override;
     virtual void DestroyBprim(HdBprim *bPrim) override;
 
+    virtual void CommitResources(HdChangeTracker *tracker) override;
+
 private:
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;

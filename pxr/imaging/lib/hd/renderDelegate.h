@@ -83,7 +83,8 @@ public:
     ///
     /// Returns an opaque handle to a render param, that in turn is
     /// passed to each prim created by the render delegate during sync
-    /// processing.
+    /// processing.  This avoids the need to store a global state pointer
+    /// in each prim.
     ///
     /// The typical lifetime of the renderParam would match that of the
     /// RenderDelegate, however the minimal lifetime is that of the Sync
@@ -168,6 +169,25 @@ public:
     /// Request to Destruct and deallocate the prim.
     ///
     virtual void DestroyBprim(HdBprim *bprim) = 0;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Sync, Execute & Dispatch Hooks
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Notification point from the Engine to the delegate.
+    /// This notification occurs after all Sync's have completed and
+    /// before task execution.
+    ///
+    /// This notification gives the Render Delegate a chance to
+    /// update and move memory that the render may need.
+    ///
+    /// For example, the render delegate might fill primvar buffers or texture
+    /// memory.
+    ///
+    virtual void CommitResources(HdChangeTracker *tracker) = 0;
 
 
 protected:

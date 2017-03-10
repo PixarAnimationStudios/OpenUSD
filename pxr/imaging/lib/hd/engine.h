@@ -126,9 +126,6 @@ public:
 
     /// @}
 
-    HdResourceRegistry& GetResourceRegistry() const
-        { return *_resourceRegistry; }
-
 
     /// \name Task Context
     ///
@@ -177,9 +174,6 @@ private:
     // Default Delegates
     TfToken _defaultRenderDelegateId;
     TfToken _defaultGalDelegateId;
-
-    // XXX FIX: To be moved to HdStream
-    HdResourceRegistry* _resourceRegistry;
 
     /// XXX FIX: Move to HdContext.
     /// Context containing token-value pairs, that is passed to each
