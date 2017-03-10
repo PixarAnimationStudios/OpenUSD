@@ -1296,7 +1296,7 @@ UsdImagingPointInstancerAdapter::_UpdateDirtyBits(
     }
 
     // If another thread already initialized the dirty bits, we can bail.
-    if (instrData.dirtyBits != HdChangeTracker::AllDirty)
+    if (instrData.dirtyBits != static_cast<HdDirtyBits>(HdChangeTracker::AllDirty))
         return instrData.dirtyBits;
 
     instrData.dirtyBits = HdChangeTracker::Clean;
