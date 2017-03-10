@@ -241,6 +241,7 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
 
     UsdStage *stage = _GetStage();
     PcpErrorVector pcpErrors;
+    std::vector<std::string> otherErrors;
     PcpTargetIndex targetIndex;
     {
         // Our intention is that the following code requires read-only
@@ -262,61 +263,96 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
     }
 
     targets->swap(targetIndex.paths);
+    if (!targets->empty()) {
+        const Usd_InstanceCache* instanceCache = stage->_instanceCache.get();
 
-    // Translate any target paths that point to descendents of instance prims
-    // to the corresponding prim in the instance's master if desired.
-    std::vector<std::string> otherErrors;
-    if (forwardToObjectsInMasters) {
         const bool relationshipInMaster = _Prim()->IsInMaster();
-        SdfPath masterPath;
+        Usd_PrimDataConstPtr master = nullptr;
         if (relationshipInMaster) {
-            masterPath = _Prim()->GetPath();
-            while (!masterPath.IsRootPrimPath()) { 
-                masterPath = masterPath.GetParentPath();
+            master = get_pointer(_Prim());
+            while (!master->IsMaster()) { 
+                master = master->GetParent();  
             }
         }
 
-        const Usd_InstanceCache* instanceCache = stage->_instanceCache.get();
-        for (SdfPath& path : *targets) {
-            const SdfPath& primPath = path.GetPrimPath();
-            const SdfPath& primInMasterPath = 
-                instanceCache->GetPrimInMasterForPrimIndexAtPath(primPath);
-            const bool pathIsObjectInMaster = !primInMasterPath.IsEmpty();
+        // XXX: 
+        // If this relationship is in a master, we should probably always
+        // forward to master paths. Otherwise, we return the targets from
+        // whatever source prim index was selected, which will vary from
+        // run to run.
+        if (forwardToObjectsInMasters) {
+            // Translate any target paths that point to descendents of instance
+            // prims to the corresponding prim in the instance's master.
+            for (SdfPath& target : *targets) {
+                const SdfPath& primPath = target.GetPrimPath();
+                const SdfPath& primInMasterPath = 
+                    instanceCache->GetPrimInMasterForPrimIndexAtPath(primPath);
+                const bool pathIsObjectInMaster = !primInMasterPath.IsEmpty();
 
-            if (pathIsObjectInMaster) {
-                path = path.ReplacePrefix(primPath, primInMasterPath);
-            }
-            else if (relationshipInMaster) {
-                // Relationships authored within an instance cannot target
-                // the instance itself or any its properties, since doing so
-                // would break the encapsulation of the instanced scene
-                // description and the ability to share that data across 
-                // multiple instances.
-                // 
-                // We can detect this situation by checking whether this
-                // target has a corresponding master prim. If so, issue
-                // an error and elide this target.
-                if (stage->_instanceCache->GetMasterForPrimIndexAtPath(primPath) 
-                    == masterPath) {
+                if (pathIsObjectInMaster) {
+                    target = target.ReplacePrefix(primPath, primInMasterPath);
+                }
+                else if (relationshipInMaster) {
+                    // Relationships authored within an instance cannot target
+                    // the instance itself or any its properties, since doing so
+                    // would break the encapsulation of the instanced scene
+                    // description and the ability to share that data across 
+                    // multiple instances.
+                    // 
+                    // We can detect this situation by checking whether this
+                    // target has a corresponding master prim. If so, issue
+                    // an error and elide this target.
+                    //
                     // XXX: 
-                    // The path in this error message is potentially
-                    // confusing because it is the composed target path and
-                    // not necessarily what's authored in a layer. In order
-                    // to be more useful, we'd need to return more info
-                    // from the relationship target composition.
-                    otherErrors.push_back(TfStringPrintf(
-                        "Target path <%s> is not allowed because it is "
-                        "authored in instanced scene description but targets "
-                        "its owning instance.",
-                        path.GetText()));
-                    path = SdfPath();
+                    // Not certain if this is the right behavior. For
+                    // consistency with instance proxy case, we think this
+                    // shouldn't error out and should return the master path
+                    // instead.
+                    if (instanceCache->GetMasterForPrimIndexAtPath(primPath)
+                        == master->GetPath()) {
+                        // XXX: 
+                        // The path in this error message is potentially
+                        // confusing because it is the composed target path and
+                        // not necessarily what's authored in a layer. In order
+                        // to be more useful, we'd need to return more info
+                        // from the relationship target composition.
+                        otherErrors.push_back(TfStringPrintf(
+                            "Target path <%s> is not allowed because it is "
+                            "authored in instanced scene description but targets "
+                            "its owning instance.",
+                            target.GetText()));
+                        target = SdfPath();
+                    }
                 }
             }
-        }
 
-        targets->erase(
-            std::remove(targets->begin(), targets->end(), SdfPath()),
-            targets->end());
+            targets->erase(
+                std::remove(targets->begin(), targets->end(), SdfPath()),
+                targets->end());
+        }
+        else if (GetPrim().IsInstanceProxy()) {
+            // Translate any target paths that point to an object within 
+            // the shared master to our instance.
+
+            // Since we're under an instance proxy, this relationship must
+            // be in a master. Walk up to find the corresponding instance.
+            TF_VERIFY(relationshipInMaster && master);
+
+            UsdPrim instance = GetPrim();
+            while (!instance.IsInstance()) { 
+                instance = instance.GetParent(); 
+            }
+
+            // Target paths that point to an object under the master's
+            // source prim index are internal to the master and need to
+            // be translated to the instance we're currently looking at.
+            const SdfPath& masterSourcePrimIndexPath = 
+                master->GetSourcePrimIndex().GetPath();
+            for (SdfPath& target : *targets) {
+                target = target.ReplacePrefix(
+                    masterSourcePrimIndexPath, instance.GetPath());
+            }
+        }
     }
 
     // TODO: handle errors

@@ -179,6 +179,18 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
     }
 }
 
+Usd_PrimDataConstPtr 
+Usd_PrimData::GetPrimDataAtPathOrInMaster(const SdfPath &path) const
+{
+    return _stage->_GetPrimDataAtPathOrInMaster(path);
+}
+
+Usd_PrimDataConstPtr 
+Usd_PrimData::GetMaster() const
+{
+    return _stage->_GetMasterForInstance(this);
+}
+
 bool
 Usd_PrimData::_ComposePrimChildNames(TfTokenVector* nameOrder)
 {

@@ -25,6 +25,7 @@
 #include "pxr/usd/usd/primFlags.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 #include <boost/python/implicit.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/scope.hpp>
@@ -131,7 +132,15 @@ void wrapUsdPrimFlags()
     scope().attr("PrimIsInstance") = Usd_Term(UsdPrimIsInstance);
     scope().attr("PrimHasDefiningSpecifier") 
         = Usd_Term(UsdPrimHasDefiningSpecifier);
+
     scope().attr("PrimDefaultPredicate") = UsdPrimDefaultPredicate;
+
+    def("TraverseInstanceProxies", 
+        (Usd_PrimFlagsPredicate(*)())&UsdTraverseInstanceProxies);
+    def("TraverseInstanceProxies", 
+        (Usd_PrimFlagsPredicate(*)(Usd_PrimFlagsPredicate))
+            &UsdTraverseInstanceProxies, 
+        arg("predicate"));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

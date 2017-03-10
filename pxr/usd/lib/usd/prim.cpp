@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/inherits.h"
+#include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/resolver.h"
@@ -659,13 +660,17 @@ UsdPrim::GetNextSibling() const
 }
 
 UsdPrim
-UsdPrim::GetFilteredNextSibling(const Usd_PrimFlagsPredicate &pred) const
+UsdPrim::GetFilteredNextSibling(const Usd_PrimFlagsPredicate &inPred) const
 {
-    Usd_PrimDataPtr s = _Prim()->GetNextSibling();
-    while (s && !Usd_EvalPredicate(pred, s))
-        s = s->GetNextSibling();
+    Usd_PrimDataConstPtr sibling = get_pointer(_Prim());
+    SdfPath siblingPath = GetPrimPath();
+    const Usd_PrimFlagsPredicate pred = 
+        Usd_CreatePredicateForTraversal(sibling, siblingPath, inPred);
 
-    return UsdPrim(s, s ? s->GetPath() : SdfPath());
+    if (Usd_MoveToNextSiblingOrParent(sibling, siblingPath, pred)) {
+        return UsdPrim();
+    }
+    return UsdPrim(sibling, siblingPath);
 }
 
 UsdPrim
@@ -675,6 +680,12 @@ UsdPrim::GetMaster() const
         _GetStage()->_GetMasterForInstance(get_pointer(_Prim()));
     return UsdPrim(masterPrimData, 
                    masterPrimData ? masterPrimData->GetPath() : SdfPath());
+}
+
+bool 
+UsdPrim::_PrimPathIsInMaster() const
+{
+    return Usd_InstanceCache::IsPathMasterOrInMaster(GetPrimPath());
 }
 
 SdfPrimSpecHandleVector 

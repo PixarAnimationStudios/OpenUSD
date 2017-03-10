@@ -1637,8 +1637,11 @@ UsdStage::HasDefaultPrim() const
 UsdPrim
 UsdStage::GetPrimAtPath(const SdfPath &path) const
 {
-    Usd_PrimDataConstPtr primData = _GetPrimDataAtPath(path);
-    return UsdPrim(primData, primData ? primData->GetPath() : SdfPath());
+    // If this path points to a prim beneath an instance, return
+    // an instance proxy that uses the prim data from the corresponding
+    // prim in the master but appears to be a prim at the given path.
+    Usd_PrimDataConstPtr primData = _GetPrimDataAtPathOrInMaster(path);
+    return UsdPrim(primData, primData ? path : SdfPath());
 }
 
 Usd_PrimDataConstPtr
@@ -1659,6 +1662,26 @@ UsdStage::_GetPrimDataAtPath(const SdfPath &path)
         lock.acquire(*_primMapMutex, /*write=*/false);
     PathToNodeMap::const_iterator entry = _primMap.find(path);
     return entry != _primMap.end() ? entry->second.get() : NULL;
+}
+
+Usd_PrimDataConstPtr 
+UsdStage::_GetPrimDataAtPathOrInMaster(const SdfPath &path) const
+{
+    Usd_PrimDataConstPtr primData = _GetPrimDataAtPath(path);
+
+    // If no prim data exists at the given path, check if this
+    // path is pointing to a prim beneath an instance. If so, we
+    // need to return the prim data for the corresponding prim
+    // in the master.
+    if (!primData) {
+        const SdfPath primInMasterPath = 
+            _instanceCache->GetPrimInMasterForPath(path);
+        if (!primInMasterPath.IsEmpty()) {
+            primData = _GetPrimDataAtPath(primInMasterPath);
+        }
+    }
+
+    return primData;
 }
 
 bool
@@ -2039,8 +2062,22 @@ UsdStage::GetLoadSet()
 SdfPathSet
 UsdStage::FindLoadable(const SdfPath& rootPath)
 {
+    SdfPath path = rootPath;
+
+    // If the given path points to a prim beneath an instance,
+    // convert it to the path of the prim in the corresponding master.
+    // This ensures _DiscoverPayloads will always return paths to 
+    // prims in masters for loadable prims in instances.
+    if (!Usd_InstanceCache::IsPathMasterOrInMaster(path)) {
+        const SdfPath pathInMaster = 
+            _instanceCache->GetPrimInMasterForPath(path);
+        if (!pathInMaster.IsEmpty()) {
+            path = pathInMaster;
+        }
+    }
+
     SdfPathSet loadable;
-    _DiscoverPayloads(rootPath, NULL, /* unloadedOnly = */ false, &loadable);
+    _DiscoverPayloads(path, NULL, /* unloadedOnly = */ false, &loadable);
     return loadable;
 }
 

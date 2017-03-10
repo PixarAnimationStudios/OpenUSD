@@ -47,7 +47,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 using std::string;
 using std::vector;
 
@@ -259,6 +258,9 @@ void wrapUsdPrim()
         .def("IsInMaster", &UsdPrim::IsInMaster)
         .def("GetMaster", &UsdPrim::GetMaster)
 
+        .def("IsInstanceProxy", &UsdPrim::IsInstanceProxy)
+        .def("GetPrimInMaster", &UsdPrim::GetPrimInMaster)
+
         // Exposed only for testing and debugging.
         .def("_GetSourcePrimIndex", &UsdPrim::_GetSourcePrimIndex,
              return_value_policy<return_by_value>())
@@ -266,9 +268,6 @@ void wrapUsdPrim()
 
     TfPyRegisterStlSequencesFromPython<UsdPrim>();
 }
-
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

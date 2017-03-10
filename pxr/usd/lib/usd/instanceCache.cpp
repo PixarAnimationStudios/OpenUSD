@@ -362,7 +362,7 @@ Usd_InstanceCache::_RemoveMasterIfNoInstances(
 bool 
 Usd_InstanceCache::IsPathMasterOrInMaster(const SdfPath& path)
 {
-    if (path.IsEmpty()) {
+    if (path.IsEmpty() || path == SdfPath::AbsoluteRootPath()) {
         return false;
     }
     if (!path.IsAbsolutePath()) {
@@ -633,6 +633,44 @@ Usd_InstanceCache::GetPrimInMasterForPrimIndexAtPath(
     }
 
     return primInMasterPath;
+}
+
+SdfPath 
+Usd_InstanceCache::GetPrimInMasterForPath(const SdfPath& primPath) const
+{
+    SdfPath primIndexPath;
+
+    // Without instancing, the path of a prim on a stage will be the same
+    // as the path for its prim index. However, this is not the case for
+    // prims in masters (e.g., /__Master_1/Instance/Child). In this case,
+    // we need to figure out what the source prim index path would be.
+    if (IsPathMasterOrInMaster(primPath)) {
+        // If primPath is prefixed by a master prim path, replace it
+        // with that master's source index path to produce a prim index
+        // path.
+        _MasterToSourcePrimIndexMap::const_iterator it = 
+            _masterToSourcePrimIndexMap.upper_bound(primPath);
+        if (it != _masterToSourcePrimIndexMap.begin()) {
+            --it;
+            const SdfPath& masterPath = it->first;
+            const SdfPath& sourcePrimIndexPath = it->second;
+
+            // Just try the prefix replacement instead of doing a separate
+            // HasPrefix check. If it does nothing, we know primPath wasn't
+            // a prim in a master that this cache knows about.
+            const SdfPath p = 
+                primPath.ReplacePrefix(masterPath, sourcePrimIndexPath);
+            if (p != primPath) {
+                primIndexPath = p;
+            }
+        }
+    }
+    else {
+        primIndexPath = primPath;
+    }
+
+    return primIndexPath.IsEmpty() ? 
+        SdfPath() : GetPrimInMasterForPrimIndexAtPath(primIndexPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

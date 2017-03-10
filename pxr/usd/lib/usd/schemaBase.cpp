@@ -38,7 +38,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdSchemaBase::UsdSchemaBase(const UsdPrim& prim) 
     : _primData(prim._Prim())
-    , _primPath(_primData ? _primData->GetPath() : SdfPath())
+    , _primPath(prim.GetPrimPath())
 {
     /* NOTHING */
 }

@@ -34,7 +34,7 @@ const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate =
 bool
 Usd_PrimFlagsPredicate::operator()(const UsdPrim &prim) const
 {
-    return _Eval(prim._Prim());
+    return _Eval(prim._Prim(), prim.IsInstanceProxy());
 }
 
 Usd_PrimFlagsConjunction

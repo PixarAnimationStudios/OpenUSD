@@ -234,10 +234,7 @@ public:
     /// relationship paths in \p targets.
     ///
     /// See documentation on GetTargets for information on the 
-    /// \p forwardToObjectsInMasters parameter. Note that setting this
-    /// parameter to false will stop the relationship forwarding process
-    /// at any targets that correspond to an object in a master. In this
-    /// case, this method will never return paths to an object in a master.
+    /// \p forwardToObjectsInMasters parameter.
     ///
     /// When composition errors occur, continue to collect successfully
     /// composed targets, but return false to indicate to the caller that
