@@ -53,14 +53,6 @@ using std::vector;
 
 using namespace boost::python;
 
-static SdfPayload
-_GetPayload(const UsdPrim &self)
-{
-    SdfPayload result;
-    self.GetPayload(&result);
-    return result;
-}
-
 static SdfPathVector
 _FindAllRelationshipTargetPaths(
     UsdPrim const &self,
@@ -230,7 +222,6 @@ void wrapUsdPrim()
              (arg("predicate")=object(), arg("recurseOnTargets")=false))
 
         .def("HasPayload", &UsdPrim::HasPayload)
-        .def("GetPayload", _GetPayload)
         .def("SetPayload",
              (bool (UsdPrim::*)(const SdfPayload &) const)
              &UsdPrim::SetPayload, (arg("payload")))

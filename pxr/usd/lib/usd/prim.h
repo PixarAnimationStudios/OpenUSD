@@ -779,13 +779,6 @@ public:
     USD_API
     bool ClearPayload() const;
 
-    /// Fetch the payload for this prim; return true if a value was
-    /// read, otherwise return false, leaving \p payload unaltered.
-    ///
-    /// \sa \ref Usd_Payloads
-    USD_API
-    bool GetPayload(SdfPayload* payload) const;
-   
     /// Return true if a payload is present on this prim.
     ///
     /// \sa \ref Usd_Payloads

@@ -616,12 +616,6 @@ UsdPrim::HasPayload() const
 }
 
 bool
-UsdPrim::GetPayload(SdfPayload* payload) const
-{
-    return GetMetadata(SdfFieldKeys->Payload, payload);
-}
-
-bool
 UsdPrim::SetPayload(const SdfPayload& payload) const
 {
     return SetMetadata(SdfFieldKeys->Payload, payload);
