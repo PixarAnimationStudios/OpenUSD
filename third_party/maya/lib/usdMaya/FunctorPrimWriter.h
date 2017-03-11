@@ -21,41 +21,47 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_PLUGINPRIMWRITER_H
-#define PXRUSDMAYA_PLUGINPRIMWRITER_H
+#ifndef PXRUSDMAYA_FUNCTORPRIMWRITER_H
+#define PXRUSDMAYA_FUNCTORPRIMWRITER_H
 
-/// \file PluginPrimWriter.h
+/// \file FunctorPrimWriter.h
 
 #include "pxr/pxr.h"
 #include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/JobArgs.h"
 
-#include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/primWriterArgs.h"
+#include "usdMaya/primWriterContext.h"
 
 #include "pxr/usd/usd/stage.h"
-#include <boost/smart_ptr.hpp>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdExport_PluginPrimWriter
+/// \class FunctorPrimWriter
 /// \brief This class is scaffolding to hold the writer plugin and to adapt it
 /// to the MayaTransformWriter class.  This allows our writer plugins to be
 /// implemented without caring about the internal MayaTransformWriter interface.
 ///
-/// This class is named "Plugin" because we are only supporting writer plugins
-/// for user-defined maya dependency nodes.
-class PxrUsdExport_PluginPrimWriter : public MayaTransformWriter
+/// This class can be used as a base for plugins that write user-defined Maya
+/// shape nodes to a USD prim. For other types of nodes, you may want to
+/// consider creating a custom prim writer.
+class FunctorPrimWriter : public MayaTransformWriter
 {
 public:
-    typedef boost::shared_ptr<PxrUsdExport_PluginPrimWriter> Ptr;
-    PxrUsdExport_PluginPrimWriter(
+    typedef std::function< bool (
+            const PxrUsdMayaPrimWriterArgs&,
+            PxrUsdMayaPrimWriterContext*) > WriterFn;
+
+    FunctorPrimWriter(
             MDagPath& iDag,
             UsdStageRefPtr& stage,
             const JobExportArgs& iArgs,
-            PxrUsdMayaPrimWriterRegistry::WriterFn plugFn);
+            WriterFn plugFn);
 
-    virtual ~PxrUsdExport_PluginPrimWriter();
+    virtual ~FunctorPrimWriter();
 
     // Overrides for MayaTransformWriter
     virtual UsdPrim write(const UsdTimeCode &usdTime);
@@ -66,8 +72,20 @@ public:
 
     virtual bool shouldPruneChildren() const override;    
 
+    static MayaPrimWriterPtr Create(
+            MDagPath& dag,
+            UsdStageRefPtr& stage,
+            const JobExportArgs& args,
+            WriterFn plugFn);
+
+    static std::function< MayaPrimWriterPtr(
+            MDagPath&,
+            UsdStageRefPtr&,
+            const JobExportArgs&) >
+            CreateFactory(WriterFn plugFn);
+
 private:
-    PxrUsdMayaPrimWriterRegistry::WriterFn _plugFn;
+    WriterFn _plugFn;
     bool _exportsGprims;
     bool _exportsReferences;
     bool _pruneChildren;
@@ -75,4 +93,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_PLUGINPRIMWRITER_H
+#endif // PXRUSDMAYA_FUNCTORPRIMWRITER_H

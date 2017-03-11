@@ -57,6 +57,8 @@ pxr_shared_library(${PXR_PACKAGE}
         writeUtil
 
         MayaPrimWriter
+        MayaTransformWriter
+        FunctorPrimWriter
         JobArgs
         usdReadJob
         usdWriteJob
@@ -83,9 +85,7 @@ pxr_shared_library(${PXR_PACKAGE}
         MayaMeshWriter
         MayaNurbsCurveWriter
         MayaNurbsSurfaceWriter
-        MayaTransformWriter
         ModelKindWriter
-        PluginPrimWriter
 
     PRIVATE_HEADERS
         shadingModePxrRis_rfm_map.h
