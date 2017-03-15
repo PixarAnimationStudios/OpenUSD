@@ -1457,10 +1457,19 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
         SdfPath path = instanceContext.back().GetPath();
-        // we're only interested in the instanceContext which has instancePath
-        if (path != instancePath) {
-            return true;
+        // When we don't have instanceIndices we might be looking for a subtree
+        // in that case we can add everything under that path
+        // Otherwise, we're only interested in the instanceContext 
+        // which has instancePath
+        if (!instanceIndices.empty()) {
+            if (path != instancePath) {
+                return true;
             }
+        } else {
+            if (!path.HasPrefix(instancePath)) {
+                return true;
+            }
+        }
 
         const _InstancerData* instancerData = 
             TfMapLookupPtr(adapter->_instancerData, instancerPath);
@@ -1483,9 +1492,9 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
             SdfPath indexPath = adapter->_delegate->GetPathForIndex(it->first);
 
             // highlight all subtree with instanceIndices.
-            // XXX: this seems redundant, but needed for point instancer highlighting for now.
-            // ideally we should communicate back to point instancer adapter
-            // to not use renderIndex
+            // XXX: this seems redundant, but needed for point instancer 
+            // highlighting for now. Ideally we should communicate back to point 
+            // instancer adapter to not use renderIndex
             SdfPathVector const &ids
                 = adapter->_delegate->GetRenderIndex().GetRprimSubtree(indexPath);
             TF_FOR_ALL (protoIt, ids) {
