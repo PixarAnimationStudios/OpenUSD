@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // Fan triangulation helper function.
 template <typename T>
+static
 bool _FanTriangulate(T *dst, T const *src,
                      int offset, int index, int size, bool flip)
 {
@@ -65,6 +66,7 @@ bool _FanTriangulate(T *dst, T const *src,
     return true;
 }
 
+static
 bool _FanTriangulate(GfVec3i *dst, int const *src,
                      int offset, int index, int size, bool flip)
 {
@@ -177,6 +179,7 @@ HdMeshUtil::ComputeTriangleIndices(VtVec3iArray *indices,
 
 // Face-varying triangulation helper function, to deal with type polymorphism.
 template <typename T>
+static
 void _TriangulateFaceVarying(
         SdfPath const& id,
         VtIntArray const &faceVertexCounts,
@@ -545,7 +548,7 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
 }
 
 template <typename T>
-void
+static void
 _Quadrangulate(void const* sourceUntyped,
                HdQuadInfo const *qi,
                VtValue *quadrangulated)
@@ -645,7 +648,7 @@ HdMeshUtil::ComputeQuadrangulatedPrimvar(HdQuadInfo const* qi,
 }
 
 template <typename T>
-void
+static void
 _QuadrangulateFaceVarying(SdfPath const& id,
                           VtIntArray const &faceVertexCounts,
                           VtIntArray const &holeFaces,
