@@ -1,0 +1,9 @@
+#usda 1.0
+
+def "ANode"
+{
+    uniform color3f ui:nodegraph:node:displayColor = (1, 0, 0)
+    uniform float2 ui:nodegraph:node:pos = (3, 2)
+    uniform int ui:nodegraph:node:stackingOrder = 100
+}
+
