@@ -32,6 +32,7 @@
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
+#include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -80,7 +81,7 @@ HdSt_MeshTopology::operator==(HdSt_MeshTopology const &other) const {
 }
 
 void
-HdSt_MeshTopology::SetQuadInfo(HdSt_QuadInfo const *quadInfo)
+HdSt_MeshTopology::SetQuadInfo(HdQuadInfo const *quadInfo)
 {
     delete _quadInfo;
     _quadInfo = quadInfo;

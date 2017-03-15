@@ -95,12 +95,6 @@ public:
     /// Returns the num points by looking vert indices array
     static int ComputeNumPoints(VtIntArray const &verts);
 
-    /// Returns the number of quadrangulated quads.
-    /// If degenerated face is found, sets invalidFaceFound as true.
-    static int ComputeNumQuads(VtIntArray const &numVerts,
-                               VtIntArray const &holeIndices,
-                               bool *invalidFaceFound=NULL);
-
     /// Returns the subdivision scheme
     TfToken const GetScheme() const {
         return _topology.GetScheme();
@@ -165,18 +159,6 @@ public:
     }
 
     /// @}
-
-    // Per-primitive coarse-face-param encoding/decoding functions
-    static int EncodeCoarseFaceParam(int faceIndex, int edgeFlag) {
-        return ((faceIndex << 2) | (edgeFlag & 3));
-    }
-    static int DecodeFaceIndexFromCoarseFaceParam(int coarseFaceParam) {
-        return (coarseFaceParam >> 2);
-    }
-    static int DecodeEdgeFlagFromCoarseFaceParam(int coarseFaceParam) {
-        return (coarseFaceParam & 3);
-    }
-
 
 protected:
     PxOsdMeshTopology _topology;

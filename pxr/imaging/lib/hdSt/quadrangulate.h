@@ -46,9 +46,7 @@ typedef boost::shared_ptr<class HdSt_QuadInfoBuilderComputation>
 class HdSt_MeshTopology;
 
 /*
-  computation classes for quadrangulation.
-
-  Dependencies
+  Computation classes for quadrangulation.
 
    *CPU quadrangulation
 
@@ -101,42 +99,7 @@ class HdSt_MeshTopology;
                             <------------------------->
                                filled by computation
 
- */
-    // quadrangulation info
-    //
-    // v0           v2
-    // +-----e2----+
-    //  \    |    /
-    //   \ __c__ /
-    //   e0     e1
-    //     \   /
-    //      \ /
-    //       + v1
-    //
-    //
-    //  original points       additional center and edge points
-    // +------------ ... ----+--------------------------------+
-    // | p0 p1 p2         pn | e0 e1 e2 c0, e3 e4 e5 c1 ...   |
-    // +------------ ... ----+--------------------------------+
-    //                       ^
-    //                   pointsOffset
-    //                       <----- numAdditionalPoints  ---->
-
-struct HdSt_QuadInfo {
-    HdSt_QuadInfo() : pointsOffset(0), numAdditionalPoints(0), maxNumVert(0) { }
-
-    /// Returns true if the mesh is all-quads.
-    bool IsAllQuads() const { return numAdditionalPoints == 0; }
-
-    int pointsOffset;
-    int numAdditionalPoints;
-    int maxNumVert;
-    std::vector<int> numVerts;  // num vertices of non-quads
-    std::vector<int> verts;     // vertex indices of non-quads
-};
-
-/*
-    computation dependencies
+   *Computation dependencies
 
     Topology ---> QuadInfo --->  QuadIndices
                            --->  QuadrangulateComputation(CPU)
@@ -165,6 +128,21 @@ private:
 ///
 /// Quad indices computation CPU.
 ///
+
+// Index quadrangulation generates a mapping from triangle ID to authored
+// face index domain, called primitiveParams. The primitive params are
+// stored alongisde topology index buffers, so that the same aggregation
+// locators can be used for such an additional buffer as well. This change
+// transforms index buffer from int array to int[3] array or int[4] array at
+// first. Thanks to the heterogenius non-interleaved buffer aggregation ability
+// in hd, we'll get this kind of buffer layout:
+//
+// ----+-----------+-----------+------
+// ... |i0 i1 i2 i3|i4 i5 i6 i7| ...    index buffer (for quads)
+// ----+-----------+-----------+------
+// ... |     m0    |     m1    | ...    primitive param buffer (coarse face index)
+// ----+-----------+-----------+------
+
 class HdSt_QuadIndexBuilderComputation : public HdComputedBufferSource {
 public:
     HdSt_QuadIndexBuilderComputation(
@@ -279,37 +257,6 @@ private:
     GLenum _dataType;
 };
 
-// primitiveParam : quads to faces mapping buffer
-//
-// In order to access per-face signals (face color, face selection etc)
-// in glsl shader, we need a mapping from primitiveID (triangulated
-// or quadrangulated, or can be an adaptively refined patch) to authored
-// face index domain.
-//
-/*
-               +--------+-------+
-              /|        |    |   \
-             / |        |  2 | 2 /\
-            /  |        |     \ /  \
-           / 0 |    1   |------+  2 +
-          /\  /|        |     / \  /
-         /  \/ |        |  2 | 2 \/
-        / 0 | 0|        |    |   /
-       +-------+--------+-------+
-*/
-// We store this mapping buffer alongside topology index buffers, so
-// that same aggregation locators can be used for such an additional
-// buffer as well. This change transforms index buffer from int array
-// to int[3] array or int[4] array at first. Thanks to the heterogenius
-// non-interleaved buffer aggregation ability in hd, we'll get this kind
-// of buffer layout:
-//
-// ----+-----------+-----------+------
-// ... |i0 i1 i2 i3|i4 i5 i6 i7| ...    index buffer (for quads)
-// ----+-----------+-----------+------
-// ... |     m0    |     m1    | ...    primitive param buffer
-// ----+-----------+-----------+------
-//
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

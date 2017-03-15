@@ -73,6 +73,7 @@ pxr_shared_library(hd
         lightingShader
         mesh
         meshTopology
+        meshUtil
         package
         patchIndex
         perfLog
