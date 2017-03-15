@@ -32,6 +32,7 @@ pxr_shared_library(hdx
         intersector
         light
         package
+        rendererPlugin
         renderTask
         renderSetupTask
         selectionTask
