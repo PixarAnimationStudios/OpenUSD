@@ -58,11 +58,11 @@ HdEngine::~HdEngine()
 
 // static
 HdRenderIndex *
-HdEngine::CreateRenderIndex()
+HdEngine::CreateRenderIndex(HdRenderDelegate *renderDelegate)
 {
     Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
 
-    return riMgr.CreateRenderIndex();
+    return riMgr.CreateRenderIndex(renderDelegate);
 }
 
 // static

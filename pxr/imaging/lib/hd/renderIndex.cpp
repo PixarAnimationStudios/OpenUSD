@@ -87,6 +87,29 @@ HdRenderIndex::HdRenderIndex()
 
 }
 
+HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
+    : _delegateRprimMap()
+    , _rprimMap()
+    , _rprimIDSet()
+    , _rprimPrimIdMap()
+    , _taskMap()
+    , _sprimIndex()
+    , _bprimIndex()
+    , _tracker()
+    , _nextPrimId(1)
+    , _instancerMap()
+    , _syncQueue()
+    , _renderDelegate(renderDelegate)
+    , _ownsDelegateXXX(false)
+{
+
+    // Register well-known collection types (to be deprecated)
+    // XXX: for compatibility and smooth transition,
+    //      leave geometry collection for a while.
+    _tracker.AddCollection(HdTokens->geometry);
+
+}
+
 HdRenderIndex::~HdRenderIndex()
 {
     HD_TRACE_FUNCTION();

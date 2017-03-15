@@ -75,13 +75,14 @@ typedef std::unordered_map<TfToken,
 /// relies on the HdSceneDelegate to provide any hierarchical or other
 /// computed values.
 ///
-class HdRenderIndex : public boost::noncopyable {
+class HdRenderIndex final : public boost::noncopyable {
 public:
 
     typedef std::unordered_map<TfToken, std::vector<HdDrawItem const*>,
                                boost::hash<TfToken> > HdDrawItemView;
 
     HdRenderIndex();
+    HdRenderIndex(HdRenderDelegate *renderDelegate);
     ~HdRenderIndex();
 
     /// Clear all r (render), s (state) and b (buffer) prims.

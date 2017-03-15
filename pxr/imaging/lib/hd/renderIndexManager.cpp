@@ -60,11 +60,16 @@ Hd_RenderIndexManager::~Hd_RenderIndexManager()
 }
 
 HdRenderIndex *
-Hd_RenderIndexManager::CreateRenderIndex()
+Hd_RenderIndexManager::CreateRenderIndex(HdRenderDelegate *renderDelegate)
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    HdRenderIndex *renderIndex = new HdRenderIndex;
+    if (renderDelegate == nullptr) {
+        TF_CODING_ERROR("Null Render Delegate provided to create render index");
+        return nullptr;
+    }
+
+    HdRenderIndex *renderIndex = new HdRenderIndex(renderDelegate);
 
     _renderIndexes.emplace(renderIndex, 1);
 

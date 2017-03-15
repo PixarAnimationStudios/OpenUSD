@@ -82,16 +82,11 @@ public:
     ///
     /// The Render Index object is Hydra's primary scene management tool.
     /// Typically there would be one render index in the scene shared between
-    /// contexts.
-    ///
-    /// Using the context creation functions, the application typically
-    /// does not need to worry about managing the life-time of render index
-    /// objects directly.  However, this API allow for more specific life-time
-    /// management for applications that want finer control.
+    /// multiple contexts providing different outputs for the same scene.
     ///
     /// @{
 
-    static HdRenderIndex *CreateRenderIndex();
+    static HdRenderIndex *CreateRenderIndex(HdRenderDelegate *renderDelegate);
     static void AddRenderIndexReference(HdRenderIndex *renderIndex);
     static void ReleaseRenderIndex(HdRenderIndex *renderIndex);
 

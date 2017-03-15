@@ -34,6 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdRenderIndex;
+class HdRenderDelegate;
 
 ///
 /// Provides a global collection of all render indexes that have been
@@ -49,7 +50,7 @@ public:
     ///
     /// Create a new Render Index.
     ///
-    HdRenderIndex *CreateRenderIndex();
+    HdRenderIndex *CreateRenderIndex(HdRenderDelegate *renderDelegate);
 
     ///
     /// Increment reference count on a render index.
