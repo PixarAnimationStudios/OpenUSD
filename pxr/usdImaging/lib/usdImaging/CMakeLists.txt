@@ -56,6 +56,7 @@ pxr_shared_library(usdImaging
         unitTestHelper
 
     PUBLIC_HEADERS
+        api.h
         version.h
 
     RESOURCE_FILES

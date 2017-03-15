@@ -25,6 +25,7 @@
 #define USDIMAGING_VALUE_CACHE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
 

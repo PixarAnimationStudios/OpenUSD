@@ -1519,7 +1519,7 @@ UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
         _InstancerDataMap::iterator it = _instancerData.find(protoPath);
         if (it != _instancerData.end()) {
             SdfPath parentInstancerPath = it->second.parentInstancerPath;
-            if (not parentInstancerPath.IsEmpty()) {
+            if (!parentInstancerPath.IsEmpty()) {
 
                 UsdImagingPrimAdapterSharedPtr adapter =
                     _GetPrimAdapter(_GetPrim(parentInstancerPath));

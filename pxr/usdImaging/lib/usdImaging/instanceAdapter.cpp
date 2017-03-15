@@ -1578,11 +1578,11 @@ VtIntArray
 UsdImagingInstanceAdapter::GetInstanceIndices(SdfPath const &instancerPath,
                                               SdfPath const &protoRprimPath)
 {
-    if (not instancerPath.IsEmpty()) {
+    if (!instancerPath.IsEmpty()) {
         UsdImagingInstancerContext ctx;
         _ProtoRprim const& rproto =
             _GetProtoRprim(instancerPath, protoRprimPath, &ctx);
-        if (not rproto.protoGroup) {
+        if (!rproto.protoGroup) {
             TF_CODING_ERROR("NI: No prototype found for parent <%s> of <%s>\n",
                     instancerPath.GetText(),
                     protoRprimPath.GetText());

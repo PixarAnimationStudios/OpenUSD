@@ -25,6 +25,7 @@
 #define USDIMAGING_INSTANCER_CONTEXT_H
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <boost/shared_ptr.hpp>

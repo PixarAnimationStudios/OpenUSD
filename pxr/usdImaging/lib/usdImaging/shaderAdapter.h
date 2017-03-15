@@ -25,6 +25,7 @@
 #define USDIMAGING_SHADERADAPTER_H
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/shaderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,25 +35,29 @@ class UsdImagingDelegate;
 /// \class UsdImagingShaderAdapter
 /// \brief Provides information that can be used to generate a surface shader in
 /// hydra.
-class UsdImagingShaderAdapter
-{
+class UsdImagingShaderAdapter {
 public:
+    USDIMAGING_API
     UsdImagingShaderAdapter(UsdImagingDelegate* delegate);
 
     /// \brief Traverses the shading prims and if any of the attributes are time
     /// varying, returns true.
+    USDIMAGING_API
     bool GetSurfaceShaderIsTimeVarying(SdfPath const& usdPath) const;
 
     /// \brief Returns the glsl source string for the shader at \p usdPath.
     /// 
     /// This obtains the shading source via the \c UsdHydraShader schema.
+    USDIMAGING_API
     std::string GetSurfaceShaderSource(SdfPath const& usdPath) const;
 
     /// \brief Returns the parameter names for \p usdPath.
     /// \deprecated This is now replaced by UsdImagingShaderAdapter::GetSurfaceShaderParams
+    USDIMAGING_API
     TfTokenVector GetSurfaceShaderParamNames(SdfPath const& usdPath) const;
 
     /// \brief Returns the value of param \p paramName for \p usdPath.
+    USDIMAGING_API
     VtValue GetSurfaceShaderParamValue(SdfPath const& usdPath, TfToken const& paramName) const;
 
     /// \brief Returns the parameters that \p usdPath users.  Hydra will built
@@ -60,10 +65,12 @@ public:
     /// available in the shader.
     ///
     /// \sa HdShaderParam
+    USDIMAGING_API
     HdShaderParamVector GetSurfaceShaderParams(SdfPath const& usdPath) const;
 
     /// \brief Returns the textures (identified by \c SdfPath objects) that \p
     /// usdPath users.
+    USDIMAGING_API
     SdfPathVector GetSurfaceShaderTextures(SdfPath const& usdPath) const;
 
 private:

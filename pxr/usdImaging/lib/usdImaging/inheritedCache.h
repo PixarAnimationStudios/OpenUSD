@@ -25,6 +25,7 @@
 #define USDIMAGING_INHERITEDCACHE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/treeIterator.h"
 #include "pxr/usd/sdf/path.h"
