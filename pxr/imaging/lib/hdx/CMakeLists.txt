@@ -33,6 +33,7 @@ pxr_shared_library(hdx
         light
         package
         rendererPlugin
+        rendererPluginRegistry
         renderTask
         renderSetupTask
         selectionTask
