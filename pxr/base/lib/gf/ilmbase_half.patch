@@ -1,6 +1,5 @@
-diff -ruN -x README -x CMakeLists.txt -x eLut.cpp -x toFloat.cpp -x halfExport.h -x halfFunction.h -x halfLimits.h -x Makefile.am -x Makefile.in -x eLut.h -x toFloat.h -x pxr-half.patch ilmbase-2.2.0/Half/half.cpp ./half.cpp
---- ilmbase-2.2.0/Half/half.cpp	2015-06-09 14:25:24.000000000 -0700
-+++ ./half.cpp	2017-02-16 22:49:46.054490296 -0800
+--- openexr/IlmBase/Half/half.cpp	2017-03-14 16:58:25.704467232 -0700
++++ ilmbase_half.cpp	2017-03-14 17:17:17.359821757 -0700
 @@ -45,18 +45,24 @@
  //---------------------------------------------------------------------------
  
@@ -8,7 +7,7 @@ diff -ruN -x README -x CMakeLists.txt -x eLut.cpp -x toFloat.cpp -x halfExport.h
 -#include "half.h"
 +
 +#include "pxr/pxr.h"
-+#include "pxr/base/gf/pxrHalf/half.h"
++#include "pxr/base/gf/ilmbase_half.h"
  
  using namespace std;
  
@@ -25,9 +24,9 @@ diff -ruN -x README -x CMakeLists.txt -x eLut.cpp -x toFloat.cpp -x halfExport.h
 -HALF_EXPORT const unsigned short half::_eLut[1 << 9] =
 -    #include "eLut.h"
 +GF_API const half::uif half::_toFloat[1 << 16] =
-+    #include "pxr/base/gf/pxrHalf/toFloat.h"
++    #include "pxr/base/gf/ilmbase_toFloat.h"
 +GF_API const unsigned short half::_eLut[1 << 9] =
-+    #include "pxr/base/gf/pxrHalf/eLut.h"
++    #include "pxr/base/gf/ilmbase_eLut.h"
  
  //-----------------------------------------------
  // Overflow handler for float-to-half conversion;
@@ -43,7 +42,8 @@ diff -ruN -x README -x CMakeLists.txt -x eLut.cpp -x toFloat.cpp -x halfExport.h
  
      for (int i = 0; i < 10; i++)	
  	f *= f;				// this will overflow before
-					    // the for­loop terminates
+-					// the for­loop terminates
++					// the forÂ­loop terminates
      return f;
  }
  
@@ -118,9 +118,8 @@ diff -ruN -x README -x CMakeLists.txt -x eLut.cpp -x toFloat.cpp -x halfExport.h
 +} // namespace pxr_half
 +
 +PXR_NAMESPACE_CLOSE_SCOPE
-diff -ruN -x README -x CMakeLists.txt -x eLut.cpp -x toFloat.cpp -x halfExport.h -x halfFunction.h -x halfLimits.h -x Makefile.am -x Makefile.in -x eLut.h -x toFloat.h -x pxr-half.patch ilmbase-2.2.0/Half/half.h ./half.h
---- ilmbase-2.2.0/Half/half.h	2015-06-09 14:25:24.000000000 -0700
-+++ ./half.h	2017-02-16 22:49:46.060618148 -0800
+--- openexr/IlmBase/Half/half.h	2017-03-14 16:48:21.376739032 -0700
++++ ilmbase_half.h	2017-03-14 17:17:17.350150189 -0700
 @@ -82,12 +82,18 @@
  //
  //---------------------------------------------------------------------------

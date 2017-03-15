@@ -47,7 +47,7 @@
 #include <assert.h>
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/pxrHalf/half.h"
+#include "pxr/base/gf/ilmbase_half.h"
 
 using namespace std;
 
@@ -60,9 +60,9 @@ namespace pxr_half {
 //-------------------------------------------------------------
 
 GF_API const half::uif half::_toFloat[1 << 16] =
-    #include "pxr/base/gf/pxrHalf/toFloat.h"
+    #include "pxr/base/gf/ilmbase_toFloat.h"
 GF_API const unsigned short half::_eLut[1 << 9] =
-    #include "pxr/base/gf/pxrHalf/eLut.h"
+    #include "pxr/base/gf/ilmbase_eLut.h"
 
 //-----------------------------------------------
 // Overflow handler for float-to-half conversion;
@@ -77,7 +77,7 @@ half::overflow ()
 
     for (int i = 0; i < 10; i++)	
 	f *= f;				// this will overflow before
-					// the for�loop terminates
+					// the for­loop terminates
     return f;
 }
 

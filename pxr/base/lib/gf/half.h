@@ -28,10 +28,10 @@
 ///
 /// This header serves to simply bring in the half float datatype and
 /// provide a hash_value function.  For documentation, of the half type,
-/// please see the half header in pxrHalf/half.h.
+/// please see the half header in ilmbase_half.h.
 
 #include "pxr/pxr.h"
-#include "pxrHalf/half.h"
+#include "pxr/base/gf/ilmbase_half.h"
 
 #include <type_traits>
 

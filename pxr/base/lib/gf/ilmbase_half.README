@@ -1,0 +1,32 @@
+Instructions for bringing in a new version of half
+---------------------------------------------------------------
+
+Current version: ilmbase-2.2.0
+Source can be found at: https://github.com/openexr/openexr/tree/master/IlmBase/Half
+
+1. Build IlmBase from source. We don't actually need to built libraries, but the 
+   build generates some header files that we need to copy into our source code.
+
+2. Copy in the new files from source
+    ```
+    cp openexr/IlmBase/Half/half.h ilmbase_half.h
+    cp openexr/IlmBase/Half/half.cpp ilmbase_half.cpp
+    cp openexr/IlmBase/Half/eLut.h ilmbase_eLut.h
+    cp openexr/IlmBase/Half/toFloat.h ilmbase_toFloat.h
+    ```
+
+3. Apply the patch file.
+    ```
+    patch -s -p0 < ilmbase_half.patch
+    ```
+
+How to update the patchfile
+--------------------------------
+If you need to manually make some edits, and thus need to 
+generate a new patch file, run the following commands
+
+```
+diff -ruN openexr/IlmBase/Half/half.cpp ilmbase_half.cpp > ilmbase_half.patch
+diff -ruN openexr/IlmBase/Half/half.h ilmbase_half.h >> ilmbase_half.patch
+```
+
