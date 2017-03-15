@@ -24,6 +24,9 @@ pxr_shared_library(usdviewq
 
     CPPFILES
         moduleDeps.cpp
+        
+    PUBLIC_HEADERS
+        api.h
 
     PYMODULE_CPPFILES
         module.cpp

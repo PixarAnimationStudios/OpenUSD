@@ -1935,7 +1935,7 @@ class MainWindow(QtGui.QMainWindow):
     def _outputBaseDirectory(cls):
         import os
 
-        baseDir = os.getenv('HOME') + "/.usdview/"
+        baseDir = os.path.join(os.path.expanduser('~'), '.usdview')
 
         if not os.path.exists(baseDir):
             os.makedirs(baseDir)
