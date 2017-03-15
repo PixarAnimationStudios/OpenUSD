@@ -51,8 +51,7 @@ public:
     PxrUsdKatanaUsdInPrivateData(
             const UsdPrim& prim,
             PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
-            const PxrUsdKatanaUsdInPrivateData* parentData = NULL,
-            bool useDefaultMotion = false);
+            const PxrUsdKatanaUsdInPrivateData* parentData = NULL);
 
     virtual ~PxrUsdKatanaUsdInPrivateData()
     {
@@ -74,8 +73,16 @@ public:
         return _masterPath;
     }
 
-    const bool UseDefaultMotionSampleTimes() const {
-        return _useDefaultMotionSampleTimes;
+    const double GetCurrentTime() const {
+        return _currentTime;
+    }
+
+    const double GetShutterOpen() const {
+        return _shutterOpen;
+    }
+
+    const double GetShutterClose() const {
+        return _shutterClose;
     }
 
     const std::vector<double> GetMotionSampleTimes(
@@ -84,13 +91,18 @@ public:
 private:
 
     UsdPrim _prim;
-    
+
     PxrUsdKatanaUsdInArgsRefPtr _usdInArgs;
 
     SdfPath _instancePath;
     SdfPath _masterPath;
-    
-    bool _useDefaultMotionSampleTimes;
+
+    double _currentTime;
+    double _shutterOpen;
+    double _shutterClose;
+
+    std::vector<double> _motionSampleTimesOverride;
+    std::vector<double> _motionSampleTimesFallback;
 
 };
 

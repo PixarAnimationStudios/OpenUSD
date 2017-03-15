@@ -308,7 +308,7 @@ PxrUsdKatanaReadNurbsPatch(
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs)
 {
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetCurrentTime();
     const std::vector<double>& motionSampleTimes = 
         data.GetMotionSampleTimes(UsdGeomPointBased(nurbsPatch).GetPointsAttr());
 

@@ -148,7 +148,7 @@ namespace
         VtIntArray& outputIndices,
         std::vector<GfRange3d>& outputBounds)
     {
-        const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+        const double currentTime = data.GetCurrentTime();
 
         std::vector<std::string> prototypePaths =
                 _ConvertRelationshipTargets(instancer.GetPrototypesRel());
@@ -296,7 +296,7 @@ namespace
         // NOTE We assume that the instancer's positions and velocities have
         // already been validated.
 
-        const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+        const double currentTime = data.GetCurrentTime();
         const std::vector<double> motionSampleTimes = data.GetMotionSampleTimes();
 
         VtIntArray protoIndices;
@@ -417,7 +417,7 @@ namespace
             FnKat::StringAttribute("usd"));
 
         proxiesBuilder.set("viewer.load.opArgs.a.currentTime", 
-            FnKat::DoubleAttribute(data.GetUsdInArgs()->GetCurrentTime()));
+            FnKat::DoubleAttribute(data.GetCurrentTime()));
 
         proxiesBuilder.set("viewer.load.opArgs.a.fileName", 
             FnKat::StringAttribute(data.GetUsdInArgs()->GetFileName()));
@@ -453,7 +453,7 @@ PxrUsdKatanaReadPointInstancer(
         PxrUsdKatanaAttrMap& instancesAttrMap,
         PxrUsdKatanaAttrMap& instancerOpArgsAttrMap)
 {
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetCurrentTime();
 
     PxrUsdKatanaReadXformable(instancer, data, attrs);
 

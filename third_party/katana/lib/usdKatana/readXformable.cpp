@@ -53,7 +53,7 @@ PxrUsdKatanaReadXformable(
     // Calculate and set the xform attribute.
     //
 
-    double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    double currentTime = data.GetCurrentTime();
 
     // Get the ordered xform ops for the prim.
     //

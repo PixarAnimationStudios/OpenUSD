@@ -253,7 +253,7 @@ PxrUsdKatanaReadMesh(
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs)
 {
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetCurrentTime();
 
     //
     // Set all general attributes for a gprim type.

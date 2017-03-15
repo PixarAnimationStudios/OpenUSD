@@ -93,7 +93,7 @@ PxrUsdKatanaReadMaterial(
     // we do this before ReadPrim because ReadPrim calls ReadBlindData 
     // (primvars only) which we don't want to stomp here.
     attrs.set("material", _GetMaterialAttr(
-        material, data.GetUsdInArgs()->GetCurrentTime(), flatten));
+        material, data.GetCurrentTime(), flatten));
 
     const std::string& parentPrefix = (looksGroupLocation.empty()) ?
         data.GetUsdInArgs()->GetRootLocationPath() : looksGroupLocation;

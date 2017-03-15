@@ -59,7 +59,7 @@ PxrUsdKatanaGeomGetDisplayColorAttr(
     // Eval color.
     VtArray<GfVec3f> color;
     if (!gprim.GetDisplayColorPrimvar().ComputeFlattened(
-        &color, data.GetUsdInArgs()->GetCurrentTime())) {
+        &color, data.GetCurrentTime())) {
         return FnKat::Attribute();
     }
 
@@ -127,7 +127,7 @@ _ConvertGeomAttr(
         return FnKat::Attribute();
     }
 
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetCurrentTime();
     const std::vector<double>& motionSampleTimes = data.GetMotionSampleTimes(usdAttr);
 
     // Flag to check if we discovered the topology is varying, in
