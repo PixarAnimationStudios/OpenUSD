@@ -10,6 +10,7 @@ pxr_shared_library(hf
         tracelite
 
     PUBLIC_HEADERS
+        api.h
         pluginDelegateDesc.h
         perfLog.h
 

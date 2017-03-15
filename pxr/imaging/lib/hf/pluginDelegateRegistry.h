@@ -25,9 +25,10 @@
 #define HF_PLUGIN_DELEGATE_REGISTRY_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/type.h"
+#include "pxr/imaging/hf/api.h"
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/imaging/hf/pluginDelegateDesc.h"
+#include "pxr/base/tf/type.h"
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -72,29 +73,34 @@ public:
     ///
     /// Returns the id of delegate to use as the default
     ///
+    HF_API
     TfToken GetDefaultDelegateId();
 
     ///
     /// Returns an ordered list of all registered delegates.
     /// The delegates are ordered by priority then alphabetically
     ///
+    HF_API
     void GetDelegateDescs(HfPluginDelegateDescVector *delegates);
 
     ///
     /// Increment the reference count on an existing delegate.
     ///
+    HF_API
     void AddDelegateReference(HfPluginDelegateBase *delegate);
 
     ///
     /// Decrement the reference count on the delegate.  If the
     /// reference count get to 0, the delegate is freed.
     ///
+    HF_API
     void ReleaseDelegate(HfPluginDelegateBase *delegate);
 
     ///
     /// Returns true if a delegate has been registered for the given id.
     /// The delegate may not be loaded or been actually created yet.
     ///
+    HF_API
     bool IsRegisteredDelegate(const TfToken &delegateId);
 
 protected:
@@ -105,13 +111,16 @@ protected:
     /// delegateBaseType is the TfType of the class derived from
     /// HfPluginDelegate that provides the delegate API.
     ///
+    HF_API
     HfPluginDelegateRegistry(const TfType &delegateBaseType);
+    HF_API
     virtual ~HfPluginDelegateRegistry();
 
     ///
     /// Returns the delegate from the given delegateId.
     /// The reference count on the deletegate is automatically increased.
     ///
+    HF_API
     HfPluginDelegateBase *GetDelegate(const TfToken &delegateId);
 
     ///
@@ -139,6 +148,7 @@ private:
 
     template<typename T>
     static HfPluginDelegateBase *_CreateDelegate();
+    HF_API
     static void _SetFactory(TfType &type, _FactoryFn &func);
 
     TfType                     _delegateBaseType;

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,41 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HF_PLUGIN_DELEGATE_BASE_H
-#define HF_PLUGIN_DELEGATE_BASE_H
+#ifndef HF_API_H
+#define HF_API_H
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hf/api.h"
+#include "pxr/base/arch/export.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#if defined(HF_STATIC)
+#   define HF_API
+#   define HF_API_TEMPLATE_CLASS(...)
+#   define HF_API_TEMPLATE_STRUCT(...)
+#   define HF_LOCAL
+#else
+#   if defined(HF_EXPORTS)
+#       define HF_API ARCH_EXPORT
+#       define HF_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HF_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define HF_API ARCH_IMPORT
+#       define HF_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HF_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define HF_LOCAL ARCH_HIDDEN
+#endif
 
-///
-/// \class HfPluginDelegate
-///
-/// Base class for all delegates that are provided through plugins.
-/// This class provides no functionality other than to serve as
-/// a polymorphic type for the delegate registry.
-///
-class HfPluginDelegateBase
-{
-public:
-    HF_API
-    virtual ~HfPluginDelegateBase();  // = default: See workaround in cpp file
-
-protected:
-    // Pure virtual class, must be derived
-    HF_API
-    HfPluginDelegateBase() = default;
-
-private:
-    ///
-    /// This class is not intended to be copied.
-    ///
-    HfPluginDelegateBase(const HfPluginDelegateBase &)            = delete;
-    HfPluginDelegateBase &operator=(const HfPluginDelegateBase &) = delete;
-};
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // HF_PLUGIN_DELEGATE_BASE_H
+#endif // HF_API_H
