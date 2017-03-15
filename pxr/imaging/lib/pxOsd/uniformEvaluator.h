@@ -21,10 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXOSDUTIL_UNIFORM_EVALUATOR_H
-#define PXOSDUTIL_UNIFORM_EVALUATOR_H
+#ifndef PXOSD_UNIFORM_EVALUATOR_H
+#define PXOSD_UNIFORM_EVALUATOR_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/pxOsd/api.h"
 #include "pxr/imaging/pxOsd/refinerFactory.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -43,9 +44,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// data structures used to sample values on subdivision surfaces.
 ///
 class PxOsdUniformEvaluator {
-  public:
+public:
+    PXOSD_API
     PxOsdUniformEvaluator();
 
+    PXOSD_API
     ~PxOsdUniformEvaluator();    
 
     // Initialize returns false on error.  If errorMessage is non-NULL it'll
@@ -57,6 +60,7 @@ class PxOsdUniformEvaluator {
     // We don't hold a reference to the refiner, it is used during the
     // function call and not needed afterword.
     //
+    PXOSD_API
     bool Initialize(
         PxOsdTopologyRefinerSharedPtr refiner,
         const PxOsdMeshTopology &topology,
@@ -80,6 +84,7 @@ class PxOsdUniformEvaluator {
     // to compute the result of subdivision on coarsePoints. Note
     // that this isn't the limit point, but the result of N subdivision
     // steps passed as "level" to Initialize
+    PXOSD_API
     bool EvaluatePoint(
         const std::vector<GfVec3d> &coarsePoints,
         int index,
@@ -118,4 +123,4 @@ class PxOsdUniformEvaluator {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif /* PXOSDUTIL_UNIFORM_EVALUATOR_H */
+#endif /* PXOSD_UNIFORM_EVALUATOR_H */

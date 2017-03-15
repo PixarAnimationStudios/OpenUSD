@@ -27,6 +27,7 @@
 /// \file pxOsd/refinerFactory.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/pxOsd/api.h"
 #include "pxr/imaging/pxOsd/meshTopology.h"
 #include "pxr/base/vt/array.h"
 
@@ -43,10 +44,12 @@ class PxOsdRefinerFactory {
 public:
 
     /// Returns an OpenSubdiv TopologyRefiner
+    PXOSD_API
     static PxOsdTopologyRefinerSharedPtr Create(
         PxOsdMeshTopology const & topology, TfToken name=TfToken());
 
     /// Returns an OpenSubdiv TopologyRefiner with faceVarying topology
+    PXOSD_API
     static PxOsdTopologyRefinerSharedPtr Create(
         PxOsdMeshTopology const & topology,
         std::vector<VtIntArray> const &fvarTopologies,

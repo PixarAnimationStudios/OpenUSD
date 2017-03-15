@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,36 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXOSD_STENCILPERVERTEX_H
-#define PXOSD_STENCILPERVERTEX_H
+#ifndef PXOSD_API_H
+#define PXOSD_API_H
 
-/// \file pxOsd/stencilPerVertex.h
+#include "pxr/base/arch/export.h"
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/pxOsd/api.h"
-#include "pxr/imaging/pxOsd/meshTopology.h"
+#if defined(PXOSD_STATIC)
+#   define PXOSD_API
+#   define PXOSD_API_TEMPLATE_CLASS(...)
+#   define PXOSD_API_TEMPLATE_STRUCT(...)
+#   define PXOSD_LOCAL
+#else
+#   if defined(PXOSD_EXPORTS)
+#       define PXOSD_API ARCH_EXPORT
+#       define PXOSD_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define PXOSD_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define PXOSD_API ARCH_IMPORT
+#       define PXOSD_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define PXOSD_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define PXOSD_LOCAL ARCH_HIDDEN
+#endif
 
-#include <boost/shared_ptr.hpp>
-#include <opensubdiv/far/stencilTable.h>
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-
-class PxOsdStencilPerVertex {
-public:    
-
-    // Compute a limit stencil table holding a limit stencil for each
-    // of the control vertices.  Similar to ProjectPoints except directly
-    // constructs surface locations corresponding to the control vertices,
-    // instead of performing numerical closest-point projection.
-    //
-    PXOSD_API
-    static boost::shared_ptr<const OpenSubdiv::Far::LimitStencilTable>
-    GetStencilPerVertex(PxOsdMeshTopology topology,
-                        const int level);
-};
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif 
+#endif // PXOSD_API_H

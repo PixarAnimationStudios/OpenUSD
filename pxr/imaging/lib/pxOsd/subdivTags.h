@@ -27,6 +27,7 @@
 /// \file pxOsd/subdivTags.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/pxOsd/api.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/token.h"
 
@@ -164,6 +165,7 @@ public:
     typedef size_t ID;
 
     /// Returns the hash value of this topology to be used for instancing.
+    PXOSD_API
     ID ComputeHash() const;
 
 private:
@@ -186,8 +188,11 @@ private:
     VtIntArray   _holeIndices;
 };
 
-std::ostream& operator << (std::ostream &out, PxOsdSubdivTags const &);
+PXOSD_API
+std::ostream& operator<<(std::ostream &out, PxOsdSubdivTags const &);
+PXOSD_API
 bool operator==(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs);
+PXOSD_API
 bool operator!=(const PxOsdSubdivTags& lhs, const PxOsdSubdivTags& rhs);
 
 
