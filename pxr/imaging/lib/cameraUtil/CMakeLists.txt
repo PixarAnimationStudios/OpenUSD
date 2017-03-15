@@ -12,6 +12,9 @@ pxr_shared_library(cameraUtil
 
     CPPFILES
         moduleDeps.cpp
+        
+    PUBLIC_HEADERS
+        api.h
 
     PYMODULE_CPPFILES
         module.cpp

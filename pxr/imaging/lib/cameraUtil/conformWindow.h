@@ -21,10 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_CONFORM_WINDOW_H
-#define PXR_CONFORM_WINDOW_H
+#ifndef PXR_CAMERAUTIL_CONFORM_WINDOW_H
+#define PXR_CAMERAUTIL_CONFORM_WINDOW_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/cameraUtil/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,6 +54,7 @@ enum CameraUtilConformWindowPolicy {
 
 /// Returns a window with aspect ratio \p targetAspect by applying
 /// \p policy to \p window where \p window is encoded as GfRange2d.
+CAMERAUTIL_API
 GfRange2d
 CameraUtilConformedWindow(
     const GfRange2d &window,
@@ -61,6 +63,7 @@ CameraUtilConformedWindow(
 /// Returns a window with aspect ratio \p targetAspect by applying
 /// \p policy to \p window where \p window is encoded as vector
 /// (left, right, bottom, top) similarly to RenderMan's RiScreenWindow.
+CAMERAUTIL_API
 GfVec4d 
 CameraUtilConformedWindow(
     const GfVec4d &window,
@@ -69,6 +72,7 @@ CameraUtilConformedWindow(
 /// Returns a window with aspect ratio \p targetAspect by applying
 /// \p policy to \p window where \p window is encoded as vector
 /// (width, height).
+CAMERAUTIL_API
 GfVec2d
 CameraUtilConformedWindow(
     const GfVec2d &window,
@@ -76,6 +80,7 @@ CameraUtilConformedWindow(
 
 /// Conforms the given \p projectionMatrix to have aspect ratio \p targetAspect
 /// by applying \p policy
+CAMERAUTIL_API
 GfMatrix4d
 CameraUtilConformedWindow(
     const GfMatrix4d &projectionMatrix,
@@ -83,6 +88,7 @@ CameraUtilConformedWindow(
 
 /// Conforms the given \p camera to have aspect ratio \p targetAspect
 /// by applying \p policy.
+CAMERAUTIL_API
 void
 CameraUtilConformWindow(
     GfCamera *camera,
@@ -90,6 +96,7 @@ CameraUtilConformWindow(
 
 /// Conforms the given \p frustum to have aspect ratio \p targetAspect
 /// by applying \p policy.
+CAMERAUTIL_API
 void
 CameraUtilConformWindow(
     GfFrustum *frustum,
