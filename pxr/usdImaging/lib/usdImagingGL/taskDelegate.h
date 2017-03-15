@@ -25,6 +25,7 @@
 #define USDIMAGINGGL_TASK_DELEGATE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/imaging/hd/version.h"
@@ -45,9 +46,11 @@ typedef boost::shared_ptr<class UsdImagingGLTaskDelegate> UsdImagingGLTaskDelega
 
 class UsdImagingGLTaskDelegate : public HdSceneDelegate {
 public:
+    USDIMAGINGGL_API
     UsdImagingGLTaskDelegate(HdRenderIndexSharedPtr const& renderIndex,
                            SdfPath const& delegateID);
 
+    USDIMAGINGGL_API
     ~UsdImagingGLTaskDelegate();
 
     // HdSceneDelegate interface
@@ -64,6 +67,7 @@ public:
         const UsdImagingGLEngine::RenderParams &params) = 0;
 
     // Return the current active RprimCollection
+    USDIMAGINGGL_API
     virtual HdRprimCollection const& GetRprimCollection() const;
 
     // set the lighting state using GlfSimpleLightingContext

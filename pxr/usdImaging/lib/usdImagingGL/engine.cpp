@@ -356,6 +356,7 @@ UsdImagingGLEngine::TestIntersection(
     return didHit;
 }
 
+static
 uint32_t
 _pow2roundup (uint32_t x)
 {
@@ -500,20 +501,20 @@ UsdImagingGLEngine::TestIntersectionBatch(
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
 
-    GLubyte primId[width*height*4];
+    std::vector<GLubyte> primId(width*height*4);
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("primId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, primId);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, primId.data());
 
-    GLubyte instanceId[width*height*4];
+    std::vector<GLubyte> instanceId(width*height*4);
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("instanceId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId.data());
 
-    GLfloat depths[width*height];
+    std::vector<GLfloat> depths(width*height);
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("depth")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, depths);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, depths.data());
 
     glPopAttrib(); /* GL_VIEWPORT_BIT |
                       GL_ENABLE_BIT |

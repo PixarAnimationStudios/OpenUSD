@@ -28,6 +28,7 @@
 #define USDIMAGINGGL_HDENGINE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/imaging/hd/version.h"
@@ -57,6 +58,7 @@ typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 class UsdImagingGLHdEngine : public UsdImagingGLEngine
 {
 public:
+    USDIMAGINGGL_API
     UsdImagingGLHdEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
@@ -64,54 +66,74 @@ public:
                        const UsdImagingGLHdEngineSharedPtr& sharedImaging =
                            UsdImagingGLHdEngineSharedPtr());
 
+    USDIMAGINGGL_API
     virtual ~UsdImagingGLHdEngine();
 
+    USDIMAGINGGL_API
     HdRenderIndexSharedPtr GetRenderIndex() const;
 
+    USDIMAGINGGL_API
     virtual void InvalidateBuffers();
 
+    USDIMAGINGGL_API
     static void PrepareBatch(
         const UsdImagingGLHdEngineSharedPtrVector& engines,
         const UsdPrimVector& rootPrims,
         const std::vector<UsdTimeCode>& times,
         RenderParams params);
 
+    USDIMAGINGGL_API
     virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
+    USDIMAGINGGL_API
     virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
 
+    USDIMAGINGGL_API
     virtual void Render(const UsdPrim& root, RenderParams params);
 
     // A custom render override for hdEngine.
     // note: external RenderIndex may not be needed anymore.
+    USDIMAGINGGL_API
     void Render(HdRenderIndex& index, RenderParams params);
 
+    USDIMAGINGGL_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
+    USDIMAGINGGL_API
     virtual void SetLightingStateFromOpenGL();
 
+    USDIMAGINGGL_API
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
+    USDIMAGINGGL_API
     virtual void SetLightingState(GlfSimpleLightVector const &lights,
                                   GlfSimpleMaterial const &material,
                                   GfVec4f const &sceneAmbient);
 
+    USDIMAGINGGL_API
     virtual void SetRootTransform(GfMatrix4d const& xf);
 
+    USDIMAGINGGL_API
     virtual void SetRootVisibility(bool isVisible);
 
+    USDIMAGINGGL_API
     virtual void SetSelected(SdfPathVector const& paths);
 
+    USDIMAGINGGL_API
     virtual void ClearSelected();
+    USDIMAGINGGL_API
     virtual void AddSelected(SdfPath const &path, int instanceIndex);
 
+    USDIMAGINGGL_API
     virtual void SetSelectionColor(GfVec4f const& color);
 
+    USDIMAGINGGL_API
     virtual SdfPath GetPrimPathFromPrimIdColor(GfVec4i const& primIdColor,
                                                GfVec4i const& instanceIdColor,
                                                int* instanceIndexOut = NULL);
 
+    USDIMAGINGGL_API
     virtual SdfPath GetPrimPathFromInstanceIndex(
         SdfPath const& protoPrimPath,
         int instanceIndex,
@@ -119,12 +141,16 @@ public:
         SdfPath * rprimPath=NULL,
         SdfPathVector *instanceContext=NULL);
 
+    USDIMAGINGGL_API
     virtual bool IsConverged() const;
 
+    USDIMAGINGGL_API
     virtual std::vector<TfType> GetRenderGraphPlugins();
 
+    USDIMAGINGGL_API
     virtual bool SetRenderGraphPlugin(TfType const &type);
 
+    USDIMAGINGGL_API
     virtual bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -136,6 +162,7 @@ public:
         SdfPath *outHitInstancerPath = NULL,
         int *outHitInstanceIndex = NULL);
 
+    USDIMAGINGGL_API
     virtual bool TestIntersectionBatch(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -146,6 +173,7 @@ public:
         PathTranslatorCallback pathTranslator,
         HitBatch *outHit);
 
+    USDIMAGINGGL_API
     virtual VtDictionary GetResourceAllocation() const;
 
 private:
