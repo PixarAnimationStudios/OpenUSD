@@ -36,7 +36,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class GalDelegate;
 class HdContext;
 class HdRenderIndex;
 class HdRenderDelegate;
@@ -77,34 +76,6 @@ public:
 
     const TfToken &GetDefaultRenderDelegateId();
     const TfToken &GetDefaultGalDelegateId();
-    /// @}
-
-
-
-    /// \name Context Management
-    ///
-    /// Hydra contexts allow an application to run multiple views of a
-    /// scene in parallel.  For example, an application can create
-    /// a context per window, or a context per parallel render task.
-    ///
-    /// A context can be active or inactive.  For efficiency, it is better
-    /// to sync all contexts at once, but only those on the active list
-    /// are synced, those on the inactive list are skipped.  Contexts start
-    /// in the active state.
-    ///
-    /// @{
-
-    HdContext *CreateContextWithDefaults();
-    HdContext *CreateSharedContext(HdContext *srcContext);
-    HdContext *CreateContext(const TfToken &renderDelegateId,
-                             const TfToken &galDelegateId,
-                             HdRenderIndex *index);
-
-    void DestroyContext(HdContext *context);
-
-    void ActivateContext(HdContext *context);
-    void DeactivateContext(HdContext *context);
-
     /// @}
 
     /// \name Render Index
@@ -156,26 +127,6 @@ public:
 
 
 private:
-    // Used an initialized placeholder instead for the default delegates
-    // instead of using an empty token as the empty token is valid.
-    static const TfToken _UninitalizedId;
-
-    // Store contexts in a intrusive list.
-    // Don't use constant time size as we are going to use auto-unlink
-    typedef boost::intrusive::list<HdContext,
-                                   boost::intrusive::constant_time_size<false>
-                                  > HdContextList;
-
-    // Lists of contexts
-    HdContextList _activeContexts;
-    HdContextList _inactiveContexts;
-    bool          _activeContextsDirty;
-
-    // Default Delegates
-    TfToken _defaultRenderDelegateId;
-    TfToken _defaultGalDelegateId;
-
-    /// XXX FIX: Move to HdContext.
     /// Context containing token-value pairs, that is passed to each
     /// task in the render graph.  The task-context can be pre-populated
     /// and managed externally, so the state is persistent between runs of the
@@ -183,13 +134,6 @@ private:
     HdTaskContext _taskContext;
 
     void _InitCaps() const;
-    HdContext *_CreateContext(HdRenderDelegate *renderDelegate,
-                              GalDelegate      *galDelegate,
-                              HdRenderIndex    *index);
-    void _DeleteContext(HdContext *context);
-
-    void _InitalizeDefaultRenderDelegateId();
-    void _InitalizeDefaultGalDelegateId();
 };
 
 
