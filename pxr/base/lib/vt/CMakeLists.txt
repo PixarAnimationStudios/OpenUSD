@@ -8,13 +8,11 @@ pxr_shared_library(vt
         gf
         tracelite
         ${Boost_PYTHON_LIBRARY}
-        ${DOUBLE_CONVERSION_LIBRARY}
         ${TBB_tbb_LIBRARY}
         ${TBB_tbbmalloc_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
-        ${DOUBLE_CONVERSION_INCLUDE_DIR}
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
