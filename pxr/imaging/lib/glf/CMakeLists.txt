@@ -70,6 +70,9 @@ pxr_shared_library(glf
         debugCodes
         glContextRegistry
 
+    PUBLIC_HEADERS
+        api.h
+        
     PRIVATE_HEADERS
         rankedTypeMap.h
 

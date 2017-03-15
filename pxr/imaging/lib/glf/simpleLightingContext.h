@@ -27,6 +27,7 @@
 /// \file glf/simpleLightingContext.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 #include "pxr/imaging/glf/simpleShadowArray.h"
@@ -50,48 +51,72 @@ class GlfSimpleLightingContext : public TfRefBase, public TfWeakBase {
 public:
     typedef GlfSimpleLightingContext This;
 
+    GLF_API
     static GlfSimpleLightingContextRefPtr New();
 
+    GLF_API
     void SetLights(GlfSimpleLightVector const & lights);
+    GLF_API
     GlfSimpleLightVector & GetLights();
 
     // returns the effective number of lights taken into account
     // in composable/compatible shader constraints
+    GLF_API
     int GetNumLightsUsed() const;
 
+    GLF_API
     void SetShadows(GlfSimpleShadowArrayRefPtr const & shadows);
+    GLF_API
     GlfSimpleShadowArrayRefPtr const & GetShadows();
 
+    GLF_API
     void SetMaterial(GlfSimpleMaterial const & material);
+    GLF_API
     GlfSimpleMaterial const & GetMaterial() const;
 
+    GLF_API
     void SetSceneAmbient(GfVec4f const & sceneAmbient);
+    GLF_API
     GfVec4f const & GetSceneAmbient() const;
 
+    GLF_API
     void SetCamera(GfMatrix4d const &worldToViewMatrix,
                    GfMatrix4d const &projectionMatrix);
 
+    GLF_API
     void SetUseLighting(bool val);
+    GLF_API
     bool GetUseLighting() const;
 
     // returns true if any light has shadow enabled.
+    GLF_API
     bool GetUseShadows() const;
 
+    GLF_API
     void SetUseColorMaterialDiffuse(bool val);
+    GLF_API
     bool GetUseColorMaterialDiffuse() const;
 
+    GLF_API
     void InitUniformBlockBindings(GlfBindingMapPtr const &bindingMap) const;
+    GLF_API
     void InitSamplerUnitBindings(GlfBindingMapPtr const &bindingMap) const;
 
+    GLF_API
     void BindUniformBlocks(GlfBindingMapPtr const &bindingMap);
+    GLF_API
     void BindSamplers(GlfBindingMapPtr const &bindingMap);
 
+    GLF_API
     void UnbindSamplers(GlfBindingMapPtr const &bindingMap);
 
+    GLF_API
     void SetStateFromOpenGL();
 
 protected:
+    GLF_API
     GlfSimpleLightingContext();
+    GLF_API
     ~GlfSimpleLightingContext();
 
 private:

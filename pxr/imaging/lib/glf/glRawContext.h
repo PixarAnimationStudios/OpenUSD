@@ -27,6 +27,7 @@
 /// \file glf/glRawContext.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/garch/glPlatformContext.h"
 
@@ -38,23 +39,30 @@ typedef boost::shared_ptr<class GlfGLRawContext> GlfGLRawContextSharedPtr;
 class GlfGLRawContext : public GlfGLContext {
 public:
     /// Returns a new object with the current context.
+    GLF_API
     static GlfGLRawContextSharedPtr New();
 
     /// Returns a new object with the given state.
+    GLF_API
     static GlfGLRawContextSharedPtr New(const GarchGLPlatformContextState&);
 
+    GLF_API
     virtual ~GlfGLRawContext();
 
     /// Returns the held state.
     const GarchGLPlatformContextState& GetState() const { return _state; }
 
     // GlfGLContext overrides
+    GLF_API
     virtual bool IsValid() const;
 
 protected:
     // GlfGLContext overrides
+    GLF_API
     virtual void _MakeCurrent();
+    GLF_API
     virtual bool _IsSharing(const GlfGLContextSharedPtr& rhs) const;
+    GLF_API
     virtual bool _IsEqual(const GlfGLContextSharedPtr& rhs) const;
 
 private:

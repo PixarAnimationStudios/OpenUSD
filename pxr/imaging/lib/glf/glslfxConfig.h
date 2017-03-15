@@ -27,6 +27,7 @@
 /// \file glf/glslfxConfig.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/dictionary.h"
 
@@ -122,6 +123,7 @@ public:
     ///
     /// The \p filename parameter is only used for error reporting.
     ///
+    GLF_API
     static GlfGLSLFXConfig * Read(std::string const & input,
                                   std::string const & filename,
                                   std::string *errorStr);
@@ -129,15 +131,19 @@ public:
     typedef std::vector<std::string> SourceKeys;
 
     /// Return the set of source keys for a particular shader stage
+    GLF_API
     SourceKeys GetSourceKeys(TfToken const & shaderStageKey) const;
 
     /// Return the parameters specified in the configuration
+    GLF_API
     Parameters GetParameters() const;
 
     /// Return the textures specified in the configuration
+    GLF_API
     Textures GetTextures() const;
 
     /// Returns the attributes specified in the configuration
+    GLF_API
     Attributes GetAttributes() const;
 
 private:

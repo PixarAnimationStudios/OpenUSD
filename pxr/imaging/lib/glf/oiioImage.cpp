@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/utils.h"
 
@@ -28,15 +29,19 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_MACRO_REDEFINITION // due to Python copysign
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/typedesc.h>
+ARCH_PRAGMA_POP
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -447,6 +452,11 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
         image = &scaled;
     }
 
+//XXX:
+//'OpenImageIO::v1_7::ImageBuf::get_pixels': Use get_pixels(ROI, ...) instead. [1.6] 
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_DEPRECATED_POSIX_NAME
+
     // Read pixel data
     TypeDesc type = _GetOIIOBaseType(storage.type);
     if (!image->get_pixels(0, storage.width, 0, storage.height, 0, 1,
@@ -454,6 +464,8 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
         TF_CODING_ERROR("unable to get_pixels");
         return false;
     }
+
+ARCH_PRAGMA_POP
 
     if (image != &_imagebuf) {
         _imagebuf.swap(*image);

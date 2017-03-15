@@ -27,6 +27,7 @@
 /// \file glf/image.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/garch/gl.h"
 
 #include "pxr/base/tf/token.h"
@@ -72,15 +73,18 @@ public:
     };
 
 public:
+    GLF_API
     virtual ~GlfImage();
 
     /// Returns whether \a filename opened as a texture image.
+    GLF_API
     static bool IsSupportedImageFile(std::string const & filename);
 
     /// \name Reading
     /// {@
 
     /// Opens \a filename for reading from the given \a subimage.
+    GLF_API
     static GlfImageSharedPtr OpenForReading(std::string const & filename,
                                             int subimage = 0);
 
@@ -100,6 +104,7 @@ public:
     /// {@
 
     /// Opens \a filename for writing from the given \a storage.
+    GLF_API
     static GlfImageSharedPtr OpenForWriting(std::string const & filename);
 
     /// Writes the image with \a metadata.

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,42 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/uvTextureStorage.h"
+#ifndef GLF_API_H
+#define GLF_API_H
 
-#include "pxr/base/tf/makePyConstructor.h"
-#include "pxr/base/tf/pyPtrHelpers.h"
+#include "pxr/base/arch/export.h"
 
-#include <boost/python/bases.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/overloads.hpp>
+#if defined(GLF_STATIC)
+#   define GLF_API
+#   define GLF_API_TEMPLATE_CLASS(...)
+#   define GLF_API_TEMPLATE_STRUCT(...)
+#   define GLF_LOCAL
+#else
+#   if defined(GLF_EXPORTS)
+#       define GLF_API ARCH_EXPORT
+#       define GLF_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define GLF_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define GLF_API ARCH_IMPORT
+#       define GLF_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define GLF_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define GLF_LOCAL ARCH_HIDDEN
+#endif
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
-using namespace boost::python;
-
-static GlfUVTextureStorageRefPtr _NewUVTextureStorage(
-    unsigned int width,
-    unsigned int height, 
-    const VtValue &storageData)
-{
-    return GlfUVTextureStorage::New(width, height, storageData);
-}
-
-void wrapUVTextureStorage()
-{    
-    typedef GlfUVTextureStorage This;
-    typedef GlfUVTextureStoragePtr ThisPtr;
-
-    scope thisScope = class_<This, bases<GlfBaseTexture>, ThisPtr, 
-        boost::noncopyable>("UVTextureStorage", no_init)
-        .def(TfPyRefAndWeakPtr())
-        .def("__init__",TfMakePyConstructor(&_NewUVTextureStorage))
-
-        ;
-}
-
-TF_REFPTR_CONST_VOLATILE_GET(GlfUVTextureStorage)
-    
-
-PXR_NAMESPACE_CLOSE_SCOPE
+#endif // GLF_API_H

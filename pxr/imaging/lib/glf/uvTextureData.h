@@ -25,6 +25,7 @@
 #define GLF_UVTEXTURE_DATA_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include <boost/shared_ptr.hpp>
@@ -39,8 +40,7 @@ typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTextureData);
 
-class GlfUVTextureData : public GlfBaseTextureData
-{
+class GlfUVTextureData : public GlfBaseTextureData {
 public:
     struct Params {
         Params() 
@@ -69,6 +69,7 @@ public:
         unsigned int cropTop, cropBottom, cropLeft, cropRight;
     };
 
+    GLF_API
     static GlfUVTextureDataRefPtr
     New(std::string const &filePath,
         size_t targetMemory,
@@ -77,14 +78,17 @@ public:
         unsigned int cropLeft,
         unsigned int cropRight);
 
+    GLF_API
     static GlfUVTextureDataRefPtr
     New(std::string const &filePath, Params const &params);
 
     const Params& GetParams() const { return _params; }
 
     // GlfBaseTextureData overrides
+    GLF_API
     virtual int ResizedWidth(int mipLevel = 0) const;
 
+    GLF_API
     virtual int ResizedHeight(int mipLevel = 0) const;
 
     virtual GLenum GLInternalFormat() const {
@@ -107,16 +111,22 @@ public:
         return _wrapInfo;
     };
 
+    GLF_API
     virtual size_t ComputeBytesUsed() const;
 
+    GLF_API
     virtual size_t ComputeBytesUsedByMip(int mipLevel = 0) const;
 
+    GLF_API
     virtual bool HasRawBuffer(int mipLevel = 0) const;
 
+    GLF_API
     virtual unsigned char * GetRawBuffer(int mipLevel = 0) const;
 
+    GLF_API
     virtual bool Read(int degradeLevel, bool generateMipmap);
 
+    GLF_API
     virtual int GetNumMipLevels() const;
 
 private:

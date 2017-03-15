@@ -27,6 +27,7 @@
 /// \file glf/glslfx.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/glslfxConfig.h"
 
 #include "pxr/base/tf/token.h"
@@ -120,42 +121,54 @@ class GlfGLSLFX
 {
 public:
     /// Create an invalid glslfx object
+    GLF_API
     GlfGLSLFX();
 
     /// Create a glslfx object from a file
+    GLF_API
     GlfGLSLFX(std::string const & filePath);
 
     /// Create a glslfx object from a stream
+    GLF_API
     GlfGLSLFX(std::istream &is);
 
     /// Return the parameters specified in the configuration
+    GLF_API
     GlfGLSLFXConfig::Parameters GetParameters() const;
 
     /// Return the textures specified in the configuration
+    GLF_API
     GlfGLSLFXConfig::Textures GetTextures() const;
 
     /// Return the attributes specified in the configuration
+    GLF_API
     GlfGLSLFXConfig::Attributes GetAttributes() const;
 
     /// Returns true if this is a valid glslfx file
+    GLF_API
     bool IsValid(std::string *reason=NULL) const;
 
     /// \name Compatible shader sources
     /// @{
 
     /// Get the vertex source string
+    GLF_API
     std::string GetVertexSource() const;
 
     /// Get the tess control source string
+    GLF_API
     std::string GetTessControlSource() const;
 
     /// Get the tess eval source string
+    GLF_API
     std::string GetTessEvalSource() const;
 
     /// Get the geometry source string
+    GLF_API
     std::string GetGeometrySource() const;
 
     /// Get the fragment source string
+    GLF_API
     std::string GetFragmentSource() const;
 
     /// @}
@@ -164,23 +177,29 @@ public:
     /// @{
 
     /// Get the preamble (osd uniform definitions)
+    GLF_API
     std::string GetPreambleSource() const;
 
     /// Get the surface source string
+    GLF_API
     std::string GetSurfaceSource() const;
 
     /// Get the displacement source string
+    GLF_API
     std::string GetDisplacementSource() const;
 
     /// Get the vertex injection source string
+    GLF_API
     std::string GetVertexInjectionSource() const;
 
     /// Get the geometry injection source string
+    GLF_API
     std::string GetGeometryInjectionSource() const;
 
     /// @}
 
     /// Get the shader source associated with given key
+    GLF_API
     std::string GetSource(const TfToken &shaderStageKey) const;
 
     /// Get the original file name passed to the constructor
@@ -226,6 +245,7 @@ private:
     bool _ParseConfigurationLine(_ParseContext & context);
     bool _ComposeConfiguration(std::string *reason);
     std::string _GetSource(const TfToken &shaderStageKey) const;
+
 private:
     _ParseContext _globalContext;
 
@@ -244,8 +264,6 @@ private:
     std::string _invalidReason; // if _valid is false, reason why
     size_t _hash;
 };
-
-
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

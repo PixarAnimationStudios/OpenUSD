@@ -42,7 +42,7 @@ public:
 
     bool operator==(const Glf_TestGLContextPrivate& rhs) const
     {
-        return _dpy == rhs._dpy and _context == rhs._context;
+        return _dpy == rhs._dpy && _context == rhs._context;
     }
 
     static const Glf_TestGLContextPrivate * currentContext();

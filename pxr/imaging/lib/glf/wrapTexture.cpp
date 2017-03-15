@@ -43,28 +43,28 @@ void wrapTexture()
     class_<This, ThisPtr, boost::noncopyable>(
         "Texture", no_init)
         .def("GetTextureMemoryAllocated", &This::GetTextureMemoryAllocated)
-	    .staticmethod("GetTextureMemoryAllocated")
+        .staticmethod("GetTextureMemoryAllocated")
 
-	    .add_property( "memoryUsed", make_function(
+        .add_property( "memoryUsed", make_function(
                 &This::GetMemoryUsed,
                 return_value_policy<return_by_value>()))
 
-	    .add_property( "memoryRequested", make_function(
+        .add_property( "memoryRequested", make_function(
                 &This::GetMemoryRequested,
                 return_value_policy<return_by_value>()),
                 &This::SetMemoryRequested)
 
-	    .add_property( "minFilterSupported", make_function(
+        .add_property( "minFilterSupported", make_function(
                 &This::IsMinFilterSupported,
                 return_value_policy<return_by_value>()))
 
-	    .add_property( "magFilterSupported", make_function(
+        .add_property( "magFilterSupported", make_function(
                 &This::IsMagFilterSupported,
                 return_value_policy<return_by_value>()))
         ;
 }
     
+TF_REFPTR_CONST_VOLATILE_GET(GlfTexture)
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

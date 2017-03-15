@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "ptexMipmapTextureLoader.h"
+#include "pxr/imaging/glf/ptexMipmapTextureLoader.h"
+#include "pxr/base/arch/fileSystem.h"
 
 #include <Ptexture.h>
 #include <vector>
 #include <list>
 #include <algorithm>
-#include <cstdio>
 #include <cstring>
 #include <cassert>
 
@@ -899,6 +899,7 @@ GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
         if (!added) {
             Page *page = new Page(_pageWidth, _pageHeight);
             added = page->AddBlock(block);
+            // XXX -- Should not use assert().
             assert(added);
             _pages.push_back(page);
         }
@@ -979,7 +980,7 @@ GlfPtexMipmapTextureLoader::generateBuffers()
 
 #if 0
     // debug
-    FILE *fp = fopen("out.ppm", "w");
+    FILE *fp = ArchOpenFile("out.ppm", "w");
     fprintf(fp, "P3\n");
     fprintf(fp, "%d %d\n", _pageWidth, _pageHeight * numPages);
     fprintf(fp, "255\n");

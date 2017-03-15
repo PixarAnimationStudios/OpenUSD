@@ -71,5 +71,7 @@ void wrapDrawTarget()
         ;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+TF_REFPTR_CONST_VOLATILE_GET(GlfDrawTarget)
 
+
+PXR_NAMESPACE_CLOSE_SCOPE

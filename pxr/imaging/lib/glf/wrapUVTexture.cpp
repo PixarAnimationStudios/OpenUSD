@@ -68,7 +68,8 @@ void wrapUVTexture()
             return_value_policy<return_by_value>()))
         ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(GlfUVTexture)
     
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

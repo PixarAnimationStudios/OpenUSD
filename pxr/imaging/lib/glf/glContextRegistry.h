@@ -38,7 +38,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class GlfGLContextRegistry_Data;
+struct GlfGLContextRegistry_Data;
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
