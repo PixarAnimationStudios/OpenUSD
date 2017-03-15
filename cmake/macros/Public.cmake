@@ -245,11 +245,11 @@ function(pxr_shared_library LIBRARY_NAME)
         # Python modules need to be able to access their corresponding
         # wrapped library, so compute a relative path and append that to
         # the module's rpath.
-	# 
-	# XXX: Only do this on Linux for now, since $ORIGIN only exists
-	# on that platform. We will need to figure out the correct thing
-	# to do here for other platforms.
-	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        # 
+        # XXX: Only do this on Linux for now, since $ORIGIN only exists
+        # on that platform. We will need to figure out the correct thing
+        # to do here for other platforms.
+        if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
             file(RELATIVE_PATH
                 PYTHON_RPATH
                 "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}"
@@ -661,9 +661,9 @@ function(pxr_plugin PLUGIN_NAME)
 
         # If an install subdirectory is specified (e.g., for third party
         # packages), add an rpath pointing to lib/ within it.
-	#
-	# XXX: See comment about $ORIGIN in pxr_shared_library
-	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        #
+        # XXX: See comment about $ORIGIN in pxr_shared_library
+        if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
             if (PXR_INSTALL_SUBDIR)
                 file(RELATIVE_PATH
                     PLUGIN_RPATH
@@ -989,7 +989,7 @@ function(pxr_register_test TEST_NAME)
     if (PXR_BUILD_TESTS)
         cmake_parse_arguments(bt
             "PYTHON" 
-            "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
+            "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
             "ENV"
             ${ARGN}
         )
@@ -1004,6 +1004,22 @@ function(pxr_register_test TEST_NAME)
 
         if (bt_STDERR_REDIRECT)
             set(testWrapperCmd ${testWrapperCmd} --stderr-redirect=${bt_STDERR_REDIRECT})
+        endif()
+
+        if (bt_PRE_COMMAND_STDOUT_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --pre-command-stdout-redirect=${bt_PRE_COMMAND_STDOUT_REDIRECT})
+        endif()
+
+        if (bt_PRE_COMMAND_STDERR_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --pre-command-stderr-redirect=${bt_PRE_COMMAND_STDERR_REDIRECT})
+        endif()
+
+        if (bt_POST_COMMAND_STDOUT_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --post-command-stdout-redirect=${bt_POST_COMMAND_STDOUT_REDIRECT})
+        endif()
+
+        if (bt_POST_COMMAND_STDERR_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --post-command-stderr-redirect=${bt_POST_COMMAND_STDERR_REDIRECT})
         endif()
 
         # Not all tests will have testenvs, but if they do let the wrapper know so
@@ -1029,14 +1045,27 @@ function(pxr_register_test TEST_NAME)
         endif()
 
         if (bt_CLEAN_OUTPUT)
-            foreach (path ${bt_CLEAN_OUTPUT})
-                set(testWrapperCmd ${testWrapperCmd} --clean-output-paths=${path})
-            endforeach()
+            set(testWrapperCmd ${testWrapperCmd} --clean-output-paths=${bt_CLEAN_OUTPUT})
+        endif()
+
+        if (bt_FILES_EXIST)
+            set(testWrapperCmd ${testWrapperCmd} --files-exist=${bt_FILES_EXIST})
+        endif()
+
+        if (bt_FILES_DONT_EXIST)
+            set(testWrapperCmd ${testWrapperCmd} --files-dont-exist=${bt_FILES_DONT_EXIST})
+        endif()
+
+        if (bt_PRE_COMMAND)
+            set(testWrapperCmd ${testWrapperCmd} --pre-command=${bt_PRE_COMMAND})
+        endif()
+
+        if (bt_POST_COMMAND)
+            set(testWrapperCmd ${testWrapperCmd} --post-command=${bt_POST_COMMAND})
         endif()
 
         if (bt_EXPECTED_RETURN_CODE)
-            set(testWrapperCmd ${testWrapperCmd} 
-                --expected-return-code=${bt_EXPECTED_RETURN_CODE})
+            set(testWrapperCmd ${testWrapperCmd} --expected-return-code=${bt_EXPECTED_RETURN_CODE})
         endif()
 
         if (bt_ENV)
@@ -1048,7 +1077,7 @@ function(pxr_register_test TEST_NAME)
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.
-	set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PYTHONPATH}")
+        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PYTHONPATH}")
         if(WIN32)
             string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
         else()
@@ -1110,4 +1139,3 @@ function(pxr_katana_nodetypes NODE_TYPES)
         "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${installDir}/__init__.py\" \"${importLines}\")"
     )
 endfunction() # pxr_katana_nodetypes
-
