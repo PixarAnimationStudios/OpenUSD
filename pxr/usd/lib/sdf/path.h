@@ -680,8 +680,8 @@ public:
     /// order.
     SDF_API static void RemoveDescendentPaths(SdfPathVector *paths);
 
-    /// Remove all elements of \a paths that prefix other elements in \a
-    /// paths.  As a side-effect, the result is left in sorted order.
+    /// Remove all elements of \a paths that prefix other elements in
+    /// \a paths.  As a side-effect, the result is left in sorted order.
     SDF_API static void RemoveAncestorPaths(SdfPathVector *paths);
 
     /// @}
