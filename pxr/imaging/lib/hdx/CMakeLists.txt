@@ -40,6 +40,7 @@ pxr_shared_library(hdx
         simpleLightingShader
         simpleLightTask
         simpleLightBypassTask
+        taskController
         tokens
         types
 
