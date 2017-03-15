@@ -7,3 +7,48 @@ pxr_python_bin(usdcat
         sdf
         usd
 )
+
+pxr_install_test_dir(
+    SRC testenv/testCatToFile
+    DEST testUsdCatOutToFile
+)
+
+pxr_register_test(testUsdCatOutToFile
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat input.usda --out output.usda"
+    DIFF_COMPARE output.usda
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_install_test_dir(
+    SRC testenv/testVariadicCatting
+    DEST testUsdCatVariadicCatting
+)
+
+pxr_register_test(testUsdCatVariadicCatting
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat a.usd b.usd c.usd"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_install_test_dir(
+    SRC testenv/testMissingOrInvalidFiles
+    DEST testUsdCatMissingOrInvalidFiles1
+)
+
+pxr_register_test(testUsdCatMissingOrInvalidFiles1
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat hello.txt"
+    EXPECTED_RETURN_CODE 1 
+)
+
+pxr_install_test_dir(
+    SRC testenv/testMissingOrInvalidFiles
+    DEST testUsdCatMissingOrInvalidFiles2
+)
+
+pxr_register_test(testUsdCatMissingOrInvalidFiles2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat foo.usda"
+    EXPECTED_RETURN_CODE 1 
+)
