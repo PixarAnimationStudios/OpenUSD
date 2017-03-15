@@ -365,12 +365,10 @@ public:
     // --------------------------------------------------------------------- //
     /// \anchor UsdShadeMaterial_BaseMaterial
     /// \name BaseMaterial
-    /// Relationship to describe child/parent inheritance.
-    /// A Material that derives from a BaseMaterial will curruntely only
-    /// present/compose the properties unique to the derived Material, and does
-    /// not retain a live composition relationship to its BaseMaterial
-    //
-    /// \todo We plan to add a "derives" Usd composition arc to replace this.
+    /// A specialize arc describes child/parent inheritance.
+    /// A Material that derives from a BaseMaterial will retain a live 
+    /// composition relationship to its BaseMaterial
+    ///
     /// @{
     // --------------------------------------------------------------------- //
 

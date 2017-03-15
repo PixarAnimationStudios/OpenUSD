@@ -122,7 +122,10 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/pcp/mapExpression.h"
+
 #include "pxr/usd/usd/editContext.h"
+#include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/treeIterator.h"
 #include "pxr/usd/usd/variantSets.h"
 
@@ -142,6 +145,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_DEFINE_ENV_SETTING(
     USD_HONOR_LEGACY_USD_LOOK, true,
     "If on, keep reading look bindings when material bindings are missing.");
+
+TF_DEFINE_ENV_SETTING(
+    USD_USE_LEGACY_BASE_MATERIAL, true,
+    "If on, store base material as derivesFrom relationship.");
+
+TF_DEFINE_ENV_SETTING(
+    USD_HONOR_LEGACY_BASE_MATERIAL, true,
+    "If on, read base material as derivesFrom relationship when available.");
 
 
 static 
@@ -376,6 +387,11 @@ UsdShadeMaterial::CreateMasterMaterialVariant(const UsdPrim &masterPrim,
     return true;
 }
 
+// --------------------------------------------------------------------- //
+// old vs new style controlled by env var:
+// USD_USE_LEGACY_BASE_MATERIAL
+
+
 UsdShadeMaterial
 UsdShadeMaterial::GetBaseMaterial() const 
 {
@@ -389,29 +405,72 @@ UsdShadeMaterial::GetBaseMaterial() const
 SdfPath
 UsdShadeMaterial::GetBaseMaterialPath() const 
 {
-    UsdRelationship baseRel = GetPrim().GetRelationship(
-            UsdShadeTokens->derivesFrom);
-    if (baseRel.IsValid()) {
-        SdfPathVector targets;
-        baseRel.GetTargets(&targets);
-        if (targets.size() == 1) {
-            return targets[0];
+    // first look for deriveFrom relationship
+    if (TfGetEnvSetting(USD_HONOR_LEGACY_BASE_MATERIAL)) {
+        UsdRelationship baseRel = GetPrim().GetRelationship(
+                UsdShadeTokens->derivesFrom);
+        if (baseRel.IsValid()) {
+            SdfPathVector targets;
+            baseRel.GetTargets(&targets);
+            if (targets.size() == 1) {
+                return targets[0];
+            }
         }
     }
-    return SdfPath();
+
+    ////////////////
+    const PcpPrimIndex &index = GetPrim().GetPrimIndex();
+    SdfPath parentPath;
+    for(const PcpNodeRef &node: index.GetNodeRange()) {
+        if (PcpIsSpecializesArc(node.GetArcType()))
+                // && node.GetOriginNode() == index.GetRootNode()) {
+        {
+            // Found a root specializes arc.
+            if (node.GetParentNode() != node.GetRootNode()) {
+                continue;
+            }
+
+            if (node.GetMapToParent().MapSourceToTarget(
+                SdfPath::AbsoluteRootPath()).IsEmpty()) {
+                // Skip this child node because it crosses a reference arc.
+                // (Reference mappings never map the absoluteyroot path </>.)
+                continue;
+            }
+            
+            // stop at the first one
+            parentPath = node.GetPath();
+            break;
+        }
+    }
+
+    return parentPath;
 }
 
 void
 UsdShadeMaterial::SetBaseMaterialPath(const SdfPath& baseMaterialPath) const 
 {
-    UsdRelationship baseRel = GetPrim().CreateRelationship(
-        UsdShadeTokens->derivesFrom, /* custom = */ false);
+    if (TfGetEnvSetting(USD_USE_LEGACY_BASE_MATERIAL)) {
+        UsdRelationship baseRel = GetPrim().CreateRelationship(
+            UsdShadeTokens->derivesFrom, /* custom = */ false);
 
-    if (!baseMaterialPath.IsEmpty()) {
-        SdfPathVector targets(1, baseMaterialPath);
-        baseRel.SetTargets(targets);
-    } else {
-        baseRel.ClearTargets(false);
+        if (!baseMaterialPath.IsEmpty()) {
+            SdfPathVector targets(1, baseMaterialPath);
+            baseRel.SetTargets(targets);
+        } else {
+            baseRel.ClearTargets(false);
+        }
+    }
+    else {
+        // Only one specialize is allowed
+        UsdSpecializes specializes = GetPrim().GetSpecializes();
+        if (!baseMaterialPath.IsEmpty()) {
+            SdfPathVector v;
+            v.push_back(baseMaterialPath);
+            specializes.SetSpecializes(v);
+        }
+        else {
+            specializes.ClearSpecializes();
+        }
     }
 }
 
@@ -438,6 +497,8 @@ UsdShadeMaterial::HasBaseMaterial() const
 {
     return !GetBaseMaterialPath().IsEmpty();
 }
+
+// --------------------------------------------------------------------- //
 
 /* static */
 UsdGeomFaceSetAPI 
