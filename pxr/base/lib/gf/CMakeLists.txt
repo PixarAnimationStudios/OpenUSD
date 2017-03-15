@@ -8,10 +8,6 @@ pxr_shared_library(gf
     LIBRARIES
         arch
         tf
-        ${OPENEXR_Half_LIBRARY}
-
-    INCLUDE_DIRS
-        ${OPENEXR_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         bbox3d
