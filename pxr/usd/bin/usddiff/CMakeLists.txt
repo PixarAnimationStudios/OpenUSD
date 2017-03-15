@@ -174,7 +174,7 @@ pxr_register_test(testUsdDiffComposedResults2
     EXPECTED_RETURN_CODE 1 
     STDOUT_REDIRECT composed_diff.txt
     DIFF_COMPARE composed_diff.txt
-    CLEAN_OUTPUT "\\/tmp.*\\/"
+    CLEAN_OUTPUT "\\/.*\\/"
     ENV
         PATH=${CMAKE_INSTALL_PREFIX}/bin:$ENV{PATH}
 )
