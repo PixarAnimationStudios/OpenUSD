@@ -21,64 +21,64 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hf/pluginDelegateEntry.h"
-#include "pxr/imaging/hf/pluginDelegateBase.h"
-#include "pxr/imaging/hf/pluginDelegateDesc.h"
+#include "pxr/imaging/hf/pluginEntry.h"
+#include "pxr/imaging/hf/pluginBase.h"
+#include "pxr/imaging/hf/pluginDesc.h"
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-Hf_PluginDelegateEntry::Hf_PluginDelegateEntry(const TfType &type,
-                                               const std::string &displayName,
-                                               int   priority)
+Hf_PluginEntry::Hf_PluginEntry(const TfType &type,
+                               const std::string &displayName,
+                               int   priority)
  : _type(type)
  , _displayName(displayName)
  , _priority(priority)
- , _delegateInstance(nullptr)
+ , _instance(nullptr)
  , _refCount(0)
 {
 }
 
-Hf_PluginDelegateEntry::~Hf_PluginDelegateEntry()
+Hf_PluginEntry::~Hf_PluginEntry()
 {
     // Memory leak detection - All instances should be released before
     // deleting the class
-    if (!TF_VERIFY(_delegateInstance == nullptr)) {
-        delete _delegateInstance;
+    if (!TF_VERIFY(_instance == nullptr)) {
+        delete _instance;
     }
 }
 
-Hf_PluginDelegateEntry::Hf_PluginDelegateEntry(Hf_PluginDelegateEntry &&source)
+Hf_PluginEntry::Hf_PluginEntry(Hf_PluginEntry &&source)
  : _type(source._type)
  , _displayName(std::move(source._displayName))
  , _priority(source._priority)
- , _delegateInstance(source._delegateInstance)
+ , _instance(source._instance)
  , _refCount(source._refCount)
 {
 }
 
-Hf_PluginDelegateEntry &
-Hf_PluginDelegateEntry::operator =(Hf_PluginDelegateEntry &&source)
+Hf_PluginEntry &
+Hf_PluginEntry::operator =(Hf_PluginEntry &&source)
 {
-    _type             = std::move(source._type);
-    _displayName      = std::move(source._displayName);
-    _priority         = std::move(source._priority);
-    _delegateInstance = std::move(source._delegateInstance);
-    _refCount         = std::move(source._refCount);
+    _type         = std::move(source._type);
+    _displayName  = std::move(source._displayName);
+    _priority     = std::move(source._priority);
+    _instance     = std::move(source._instance);
+    _refCount     = std::move(source._refCount);
 
     return *this;
 }
 
 TfToken
-Hf_PluginDelegateEntry::GetId() const
+Hf_PluginEntry::GetId() const
 {
     const std::string &typeName =_type.GetTypeName();
     return TfToken(typeName);
 }
 
 void
-Hf_PluginDelegateEntry::GetDelegateDesc(HfPluginDelegateDesc *desc) const
+Hf_PluginEntry::GetDesc(HfPluginDesc *desc) const
 {
     desc->id          = GetId();
     desc->displayName = _displayName;
@@ -86,19 +86,19 @@ Hf_PluginDelegateEntry::GetDelegateDesc(HfPluginDelegateDesc *desc) const
 }
 
 void
-Hf_PluginDelegateEntry::IncRefCount()
+Hf_PluginEntry::IncRefCount()
 {
     if (_refCount == 0) {
         _Factory *factory = _type.GetFactory<_Factory>();
 
-        _delegateInstance = factory->New();
+        _instance = factory->New();
     }
 
     ++_refCount;
 }
 
 void
-Hf_PluginDelegateEntry::DecRefCount()
+Hf_PluginEntry::DecRefCount()
 {
     // something went wrong with ref counting
     if (!TF_VERIFY(_refCount > 0)) {
@@ -109,13 +109,13 @@ Hf_PluginDelegateEntry::DecRefCount()
     --_refCount;
 
     if (_refCount == 0) {
-        delete _delegateInstance;
-        _delegateInstance = nullptr;
+        delete _instance;
+        _instance = nullptr;
     }
 }
 
 bool
-Hf_PluginDelegateEntry::operator <(const Hf_PluginDelegateEntry &other) const
+Hf_PluginEntry::operator <(const Hf_PluginEntry &other) const
 {
     // Policy is sort by priority then alphabetical order on
     // machine name.
@@ -135,8 +135,8 @@ Hf_PluginDelegateEntry::operator <(const Hf_PluginDelegateEntry &other) const
 }
 
 void
-Hf_PluginDelegateEntry::SetFactory(TfType &type,
-                                   _DelegateFactoryFn &func)
+Hf_PluginEntry::SetFactory(TfType &type,
+                           _PluginFactoryFn &func)
 {
     type.SetFactory(std::unique_ptr<_Factory>(new _Factory(func)));
 }

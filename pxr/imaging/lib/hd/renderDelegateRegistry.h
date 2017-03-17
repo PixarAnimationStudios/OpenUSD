@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hf/pluginDelegateRegistry.h"
+#include "pxr/imaging/hf/pluginRegistry.h"
 #include "pxr/base/tf/singleton.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderDelegate;
 
-class HdRenderDelegateRegistry final  : public HfPluginDelegateRegistry
+class HdRenderDelegateRegistry final  : public HfPluginRegistry
 {
 public:
     ///
@@ -76,7 +76,7 @@ private:
 template<typename T, typename... Bases>
 void HdRenderDelegateRegistry::Define()
 {
-    HfPluginDelegateRegistry::Define<T, HdRenderDelegate, Bases...>();
+    HfPluginRegistry::Define<T, HdRenderDelegate, Bases...>();
 }
 
 HD_API_TEMPLATE_CLASS(TfSingleton<HdRenderDelegateRegistry>);

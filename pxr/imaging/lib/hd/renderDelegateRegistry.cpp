@@ -39,7 +39,7 @@ HdRenderDelegateRegistry::GetInstance()
 
 
 HdRenderDelegateRegistry::HdRenderDelegateRegistry()
- : HfPluginDelegateRegistry(TfType::Find<HdRenderDelegate>())
+ : HfPluginRegistry(TfType::Find<HdRenderDelegate>())
 {
 }
 
@@ -52,7 +52,7 @@ HdRenderDelegateRegistry::~HdRenderDelegateRegistry()
 HdRenderDelegate *
 HdRenderDelegateRegistry::GetRenderDelegate(const TfToken &delegateId)
 {
-    return static_cast<HdRenderDelegate *>(GetDelegate(delegateId));
+    return static_cast<HdRenderDelegate *>(GetPlugin(delegateId));
 }
 
 

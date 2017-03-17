@@ -39,7 +39,7 @@ HdxRendererPluginRegistry::GetInstance()
 
 
 HdxRendererPluginRegistry::HdxRendererPluginRegistry()
- : HfPluginDelegateRegistry(TfType::Find<HdxRendererPlugin>())
+ : HfPluginRegistry(TfType::Find<HdxRendererPlugin>())
 {
 }
 
@@ -52,7 +52,7 @@ HdxRendererPluginRegistry::~HdxRendererPluginRegistry()
 HdxRendererPlugin *
 HdxRendererPluginRegistry::GetRendererPlugin(const TfToken &pluginId)
 {
-    return static_cast<HdxRendererPlugin *>(GetDelegate(pluginId));
+    return static_cast<HdxRendererPlugin *>(GetPlugin(pluginId));
 }
 
 

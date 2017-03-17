@@ -21,38 +21,41 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HF_PLUGN_DELEGATE_DESC_H
-#define HF_PLUGN_DELEGATE_DESC_H
+#ifndef HF_PLUGIN_BASE_H
+#define HF_PLUGIN_BASE_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/token.h"
-
-#include <vector>
+#include "pxr/imaging/hf/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+///
+/// \class HfPluginBase
+///
+/// Base class for all hydra plugin classes. This class provides no
+/// functionality other than to serve as a polymorphic type for the
+/// plugin registry.
+///
+class HfPluginBase
+{
+public:
+    HF_API
+    virtual ~HfPluginBase();  // = default: See workaround in cpp file
 
-///
-/// Common structure used to report registered delegates in one of the delegate
-/// registries.  The id token is used for internal api communication
-/// about the name of the delegate.
-/// displayName is a human readable name given to the delegate intended
-/// to be used in menus.
-/// priorty is used to provide an ordering of plugins.  The plugin
-/// with the highest priority is determined to be the default delegate (unless
-/// overriden by the application).  In the event of a tie
-/// the string version of id is used to sort alphabetically ('a' has priority
-/// over 'b').
-///
-struct HfPluginDelegateDesc {
-    TfToken     id;
-    std::string displayName;
-    int         priority;
+protected:
+    // Pure virtual class, must be derived
+    HF_API
+    HfPluginBase() = default;
+
+private:
+    ///
+    /// This class is not intended to be copied.
+    ///
+    HfPluginBase(const HfPluginBase &)            = delete;
+    HfPluginBase &operator=(const HfPluginBase &) = delete;
 };
-
-typedef std::vector<HfPluginDelegateDesc> HfPluginDelegateDescVector;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HF_PLUGN_DELEGATE_DESC_H
+#endif // HF_PLUGIN_BASE_H

@@ -21,41 +21,32 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HF_PLUGIN_DELEGATE_BASE_H
-#define HF_PLUGIN_DELEGATE_BASE_H
+#include "pxr/imaging/hf/pluginBase.h"
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hf/api.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-///
-/// \class HfPluginDelegate
-///
-/// Base class for all delegates that are provided through plugins.
-/// This class provides no functionality other than to serve as
-/// a polymorphic type for the delegate registry.
-///
-class HfPluginDelegateBase
+
+// Register the base type with Tf.
+TF_REGISTRY_FUNCTION(TfType)
 {
-public:
-    HF_API
-    virtual ~HfPluginDelegateBase();  // = default: See workaround in cpp file
+    TfType::Define<HfPluginBase>();
+}
 
-protected:
-    // Pure virtual class, must be derived
-    HF_API
-    HfPluginDelegateBase() = default;
-
-private:
-    ///
-    /// This class is not intended to be copied.
-    ///
-    HfPluginDelegateBase(const HfPluginDelegateBase &)            = delete;
-    HfPluginDelegateBase &operator=(const HfPluginDelegateBase &) = delete;
-};
-
+//
+// WORKAROUND: As this class is a pure interface class, it does not need a
+// vtable.  However, it is possible that some users will use rtti.
+// This will cause a problem for some of our compilers:
+//
+// In particular clang will throw a warning: -wweak-vtables
+// For gcc, there is an issue were the rtti typeid's are different.
+//
+// As destruction of the class is not on the performance path,
+// the body of the deleter is provided here, so a vtable is created
+// in this compilation unit.
+HfPluginBase::~HfPluginBase() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HF_PLUGIN_DELEGATE_BASE_H

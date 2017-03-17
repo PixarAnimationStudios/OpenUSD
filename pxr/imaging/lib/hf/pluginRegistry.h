@@ -21,25 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HF_PLUGIN_DELEGATE_REGISTRY_H
-#define HF_PLUGIN_DELEGATE_REGISTRY_H
+#ifndef HF_PLUGIN_REGISTRY_H
+#define HF_PLUGIN_REGISTRY_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hf/api.h"
 #include "pxr/imaging/hf/perfLog.h"
-#include "pxr/imaging/hf/pluginDelegateDesc.h"
+#include "pxr/imaging/hf/pluginDesc.h"
 #include "pxr/base/tf/type.h"
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HfPluginDelegateBase;
-class Hf_PluginDelegateEntry;
+class HfPluginBase;
+class Hf_PluginEntry;
 
 
 ///
-/// \class HfPluginDelegateRegistry
+/// \class HfPluginRegistry
 ///
 /// Base class for registering Hydra plugins using the plug mechanism.
 /// It is expected that each plugin has a pluginfo.json file that contains
@@ -59,141 +59,141 @@ class Hf_PluginDelegateEntry;
 ///{
 ///    "Types": {
 ///        "CPPTypeName": {
-///            "bases": ["BaseDelegateTypeName"],
+///            "bases": ["BaseTypeName"],
 ///            "displayName": "Human Readable Name",
 ///            "priority" : 0
 ///       }
 ///    }
 ///}
 ///
-class HfPluginDelegateRegistry
+class HfPluginRegistry
 {
 
 public:
     ///
-    /// Returns the id of delegate to use as the default
+    /// Returns the id of plugin to use as the default
     ///
     HF_API
-    TfToken GetDefaultDelegateId();
+    TfToken GetDefaultPluginId();
 
     ///
-    /// Returns an ordered list of all registered delegates.
-    /// The delegates are ordered by priority then alphabetically
+    /// Returns an ordered list of all registered plugins.
+    /// The plugins are ordered by priority then alphabetically
     ///
     HF_API
-    void GetDelegateDescs(HfPluginDelegateDescVector *delegates);
+    void GetPluginDescs(HfPluginDescVector *plugins);
 
     ///
-    /// Increment the reference count on an existing delegate.
+    /// Increment the reference count on an existing plugin.
     ///
     HF_API
-    void AddDelegateReference(HfPluginDelegateBase *delegate);
+    void AddPluginReference(HfPluginBase *plugin);
 
     ///
-    /// Decrement the reference count on the delegate.  If the
-    /// reference count get to 0, the delegate is freed.
+    /// Decrement the reference count on the plugin.  If the
+    /// reference count get to 0, the plugin is freed.
     ///
     HF_API
-    void ReleaseDelegate(HfPluginDelegateBase *delegate);
+    void ReleasePlugin(HfPluginBase *plugin);
 
     ///
-    /// Returns true if a delegate has been registered for the given id.
-    /// The delegate may not be loaded or been actually created yet.
+    /// Returns true if a plugin has been registered for the given id.
+    /// The plugin may not be loaded or been actually created yet.
     ///
     HF_API
-    bool IsRegisteredDelegate(const TfToken &delegateId);
+    bool IsRegisteredPlugin(const TfToken &pluginId);
 
 protected:
     // Must be derived.
 
     ///
-    /// Constructs a Delegate Registry.
-    /// delegateBaseType is the TfType of the class derived from
-    /// HfPluginDelegate that provides the delegate API.
+    /// Constructs a Plugin Registry.
+    /// pluginBaseType is the TfType of the class derived from
+    /// HfPluginBase that provides the plugin API.
     ///
     HF_API
-    HfPluginDelegateRegistry(const TfType &delegateBaseType);
+    HfPluginRegistry(const TfType &pluginBaseType);
     HF_API
-    virtual ~HfPluginDelegateRegistry();
+    virtual ~HfPluginRegistry();
 
     ///
-    /// Returns the delegate from the given delegateId.
-    /// The reference count on the deletegate is automatically increased.
+    /// Returns the plugin from the given pluginId.
+    /// The reference count on the plugin is automatically increased.
     ///
     HF_API
-    HfPluginDelegateBase *GetDelegate(const TfToken &delegateId);
+    HfPluginBase *GetPlugin(const TfToken &pluginId);
 
     ///
     /// Entry point for registering a types implementation.
-    /// T is the delegate being registered.
-    /// DelegateBaseType is the HfPluginDelegate derived class
+    /// T is the plugin being registered.
+    /// PluginBaseType is the HfPluginBase derived class
     /// that specifies the API (the same one the TfType is for in
     /// the constructor).
     ///
     /// Bases optionally specifies other classes that T is derived from.
     ///
-    template<typename T, typename DelegateBaseType, typename... Bases>
+    template<typename T, typename PluginBaseType, typename... Bases>
     static void Define();
 
 private:
-    typedef std::vector<Hf_PluginDelegateEntry> _PluginDelegateEntryVector;
+    typedef std::vector<Hf_PluginEntry> _PluginEntryVector;
     typedef std::map<TfToken, size_t> _TokenMap;
 
     //
     // The purpose of this group of functions is to provide a factory
-    // to create the registered plugin delegate with the type system
-    // without exposing the internal class _PluginDelegateEntry
+    // to create the registered plugin with the type system
+    // without exposing the internal class _PluginEntry
     ///
-    typedef std::function<HfPluginDelegateBase *()> _FactoryFn;
+    typedef std::function<HfPluginBase *()> _FactoryFn;
 
     template<typename T>
-    static HfPluginDelegateBase *_CreateDelegate();
+    static HfPluginBase *_CreatePlugin();
     HF_API
     static void _SetFactory(TfType &type, _FactoryFn &func);
 
-    TfType                     _delegateBaseType;
+    TfType                     _pluginBaseType;
 
     //
     // Plugins are stored in a ordered list (as a vector).  The token
     // map converts from plugin id into an index in the list.
     //
-    _PluginDelegateEntryVector _delegateEntries;
-    _TokenMap                  _delegateIndex;
+    _PluginEntryVector         _pluginEntries;
+    _TokenMap                  _pluginIndex;
 
     // Plugin discovery is deferred until first use.
-    bool                       _delegateCachePopulated;
+    bool                       _pluginCachePopulated;
 
-    // Use the Plug system to discover delegates from the meta data.
-    void _DiscoverDelegates();
+    // Use the Plug system to discover plugins from the meta data.
+    void _DiscoverPlugins();
 
-    // Find the plugin entry for the given delegate
-    Hf_PluginDelegateEntry *_GetEntryForDelegate(HfPluginDelegateBase *delegate);
+    // Find the plugin entry for the given plugin object.
+    Hf_PluginEntry *_GetEntryForPlugin(HfPluginBase *plugin);
 
     ///
     /// This class is not intended to be copied.
     ///
-    HfPluginDelegateRegistry()                                            = delete;
-    HfPluginDelegateRegistry(const HfPluginDelegateRegistry &)            = delete;
-    HfPluginDelegateRegistry &operator=(const HfPluginDelegateRegistry &) = delete;
+    HfPluginRegistry()                                    = delete;
+    HfPluginRegistry(const HfPluginRegistry &)            = delete;
+    HfPluginRegistry &operator=(const HfPluginRegistry &) = delete;
 };
 
 template<typename T>
-HfPluginDelegateBase *
-HfPluginDelegateRegistry::_CreateDelegate()
+HfPluginBase *
+HfPluginRegistry::_CreatePlugin()
 {
     HF_MALLOC_TAG_FUNCTION();
     return new T;
 }
 
 
-template<typename T, typename DelegateBaseType, typename... Bases>
+template<typename T, typename PluginBaseType, typename... Bases>
 void
-HfPluginDelegateRegistry::Define()
+HfPluginRegistry::Define()
 {
     TfType type = TfType::Define<T,
-                                  TfType::Bases<DelegateBaseType, Bases...> >();
+                                  TfType::Bases<PluginBaseType, Bases...> >();
 
-    _FactoryFn func = &_CreateDelegate<T>;
+    _FactoryFn func = &_CreatePlugin<T>;
     _SetFactory(type, func);
 }
 
@@ -201,5 +201,5 @@ HfPluginDelegateRegistry::Define()
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HF_PLUGIN_DELEGATE_REGISTRY_H
+#endif //HF_PLUGIN_REGISTRY_H
 

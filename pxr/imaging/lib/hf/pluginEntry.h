@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HF_PLUGIN_DELEGATE_ENTRY_H
-#define HF_PLUGIN_DELEGATE_ENTRY_H
+#ifndef HF_PLUGIN_ENTRY_H
+#define HF_PLUGIN_ENTRY_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
@@ -33,41 +33,41 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HfPluginDelegateBase;
-class HfPluginDelegateDesc;
+class HfPluginBase;
+class HfPluginDesc;
 
 
 
 ///
-/// Internal class that manages a single Delegate provided by a plug-in.
+/// Internal class that manages a single plugin.
 ///
-class Hf_PluginDelegateEntry final {
+class Hf_PluginEntry final {
 public:
-    HF_MALLOC_TAG_NEW("new Hf_PluginDelegateEntry");
+    HF_MALLOC_TAG_NEW("new Hf_PluginEntry");
 
     ///
-    /// Functor that is used to create a delegate.
+    /// Functor that is used to create a plugin.
     /// This is used instead of using TfType::FactoryBase
     /// as that would require exposing the class hierarchy publicly
     /// due to templating and the idea is that this class is _Factory
     /// below are private.
     ///
-    typedef std::function<HfPluginDelegateBase *()> _DelegateFactoryFn;
+    typedef std::function<HfPluginBase *()> _PluginFactoryFn;
 
     ///
-    /// Constructors a new Delegate entry from information in the
-    /// plugins metadata file.  See HfPluginDelegateRegistry.
+    /// Constructors a new plugin entry from information in the
+    /// plugins metadata file.  See HfPluginRegistry.
     ///
-    Hf_PluginDelegateEntry(const TfType &type,
-                           const std::string &displayName,
-                           int   priority);
-    ~Hf_PluginDelegateEntry();
+    Hf_PluginEntry(const TfType &type,
+                   const std::string &displayName,
+                   int   priority);
+    ~Hf_PluginEntry();
 
     ///
     /// For containers, allow moving only (no copying)
     ///
-    Hf_PluginDelegateEntry(Hf_PluginDelegateEntry &&source);
-    Hf_PluginDelegateEntry &operator =(Hf_PluginDelegateEntry &&source);
+    Hf_PluginEntry(Hf_PluginEntry &&source);
+    Hf_PluginEntry &operator =(Hf_PluginEntry &&source);
 
     ///
     /// Simple Accessors
@@ -75,22 +75,22 @@ public:
     const TfType         &GetType()        const { return _type;             }
     const std::string    &GetDisplayName() const { return _displayName;      }
     int                   GetPriority()    const { return _priority;         }
-    HfPluginDelegateBase *GetInstance()    const { return _delegateInstance; }
+    HfPluginBase         *GetInstance()    const { return _instance;         }
 
     ///
-    /// Returns the internal name of the delegate that is used by the API's.
+    /// Returns the internal name of the plugin that is used by the API's.
     ///
     TfToken            GetId() const;
 
     ///
-    /// Fills in a delegate description structure that is used to communicate
-    /// with the application information about this delegate.
+    /// Fills in a plugin description structure that is used to communicate
+    /// with the application information about this plugin.
     ///
-    void               GetDelegateDesc(HfPluginDelegateDesc *desc) const;
+    void               GetDesc(HfPluginDesc *desc) const;
 
     ///
-    /// Ref counting the instance of the delegate.  Each delegate is only
-    /// Instantiated once.
+    /// Ref counting the instance of the plugin.  Each plugin is only
+    /// instantiated once.
     ///
     void IncRefCount();
     void DecRefCount();
@@ -99,12 +99,12 @@ public:
     /// For sorting:
     /// Entries are ordered by priority then alphabetical order of type name
     ///
-    bool operator <(const Hf_PluginDelegateEntry &other) const;
+    bool operator <(const Hf_PluginEntry &other) const;
 
     ///
     /// Type Factory Creation
     ///
-    static void SetFactory(TfType &type, _DelegateFactoryFn &func);
+    static void SetFactory(TfType &type, _PluginFactoryFn &func);
 
 private:
     ///
@@ -118,31 +118,31 @@ private:
     {
     public:
 
-        _Factory(_DelegateFactoryFn &func) : _func(func) {}
+        _Factory(_PluginFactoryFn &func) : _func(func) {}
 
-        HfPluginDelegateBase *New() const { return _func(); }
+        HfPluginBase *New() const { return _func(); }
 
     private:
-        _DelegateFactoryFn _func;
+        _PluginFactoryFn _func;
     };
 
 
     TfType                _type;
     std::string           _displayName;
     int                   _priority;
-    HfPluginDelegateBase *_delegateInstance;
+    HfPluginBase         *_instance;
     int                   _refCount;
 
     ///
     /// Don't allow copying
     ///
-    Hf_PluginDelegateEntry()                                           = delete;
-    Hf_PluginDelegateEntry(const Hf_PluginDelegateEntry &)             = delete;
-    Hf_PluginDelegateEntry &operator =(const Hf_PluginDelegateEntry &) = delete;
+    Hf_PluginEntry()                                   = delete;
+    Hf_PluginEntry(const Hf_PluginEntry &)             = delete;
+    Hf_PluginEntry &operator =(const Hf_PluginEntry &) = delete;
 };
 
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HF_PLUGIN_DELEGATE_ENTRY_H
+#endif // HF_PLUGIN_ENTRY_H

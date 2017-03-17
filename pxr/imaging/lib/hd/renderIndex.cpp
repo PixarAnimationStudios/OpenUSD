@@ -125,7 +125,7 @@ HdRenderIndex::~HdRenderIndex()
             HdRenderDelegateRegistry &renderRegistry =
                                         HdRenderDelegateRegistry::GetInstance();
 
-            renderRegistry.ReleaseDelegate(_renderDelegate);
+            renderRegistry.ReleasePlugin(_renderDelegate);
             _renderDelegate = nullptr;
         }
     }
@@ -165,7 +165,7 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
             HdRenderDelegateRegistry &renderRegistry =
                                         HdRenderDelegateRegistry::GetInstance();
             const TfToken &defaultRenderDelegateId =
-                                          renderRegistry.GetDefaultDelegateId();
+                                          renderRegistry.GetDefaultPluginId();
              _renderDelegate =
                       renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
              _ownsDelegateXXX = true;
@@ -394,7 +394,7 @@ HdRenderIndex::InsertSprim(TfToken const& typeId,
             HdRenderDelegateRegistry &renderRegistry =
                                         HdRenderDelegateRegistry::GetInstance();
             const TfToken &defaultRenderDelegateId =
-                                          renderRegistry.GetDefaultDelegateId();
+                                          renderRegistry.GetDefaultPluginId();
              _renderDelegate =
                       renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
              _ownsDelegateXXX = true;
@@ -471,7 +471,7 @@ HdRenderIndex::InsertBprim(TfToken const& typeId,
             HdRenderDelegateRegistry &renderRegistry =
                                         HdRenderDelegateRegistry::GetInstance();
             const TfToken &defaultRenderDelegateId =
-                                          renderRegistry.GetDefaultDelegateId();
+                                          renderRegistry.GetDefaultPluginId();
              _renderDelegate =
                       renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
              _ownsDelegateXXX = true;
@@ -541,7 +541,7 @@ HdRenderIndex::SetRenderDelegate(HdRenderDelegate *renderDelegate)
         HdRenderDelegateRegistry &renderRegistry =
                                         HdRenderDelegateRegistry::GetInstance();
 
-        renderRegistry.AddDelegateReference(_renderDelegate);
+        renderRegistry.AddPluginReference(_renderDelegate);
     }
 
     _InitPrimTypes();

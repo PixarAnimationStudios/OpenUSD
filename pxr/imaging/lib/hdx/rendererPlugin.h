@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hf/pluginDelegateBase.h"
+#include "pxr/imaging/hf/pluginBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,7 +47,7 @@ class HdxTaskController;
 /// The class is used to factory objects that provide delegate support
 /// to other parts of the Hydra Ecosystem.
 ///
-class HdxRendererPlugin : public HfPluginDelegateBase {
+class HdxRendererPlugin : public HfPluginBase {
 public:
 
     ///

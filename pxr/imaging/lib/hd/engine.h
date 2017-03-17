@@ -29,7 +29,6 @@
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/task.h"
-#include "pxr/imaging/hf/pluginDelegateDesc.h"
 
 #include <boost/shared_ptr.hpp>
 

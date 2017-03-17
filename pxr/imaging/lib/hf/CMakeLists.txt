@@ -11,13 +11,13 @@ pxr_shared_library(hf
 
     PUBLIC_HEADERS
         api.h
-        pluginDelegateDesc.h
+        pluginDesc.h
         perfLog.h
 
     PUBLIC_CLASSES
-        pluginDelegateBase
-        pluginDelegateRegistry
+        pluginBase
+        pluginRegistry
         
     PRIVATE_CLASSES
-        pluginDelegateEntry
+        pluginEntry
 )

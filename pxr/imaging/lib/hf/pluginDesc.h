@@ -21,32 +21,38 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hf/pluginDelegateBase.h"
+#ifndef HF_PLUGIN_DESC_H
+#define HF_PLUGIN_DESC_H
 
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/type.h"
+#include "pxr/pxr.h"
+#include "pxr/base/tf/token.h"
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-// Register the base type with Tf.
-TF_REGISTRY_FUNCTION(TfType)
-{
-    TfType::Define<HfPluginDelegateBase>();
-}
+///
+/// Common structure used to report registered plugins in one of the plugin 
+/// registries.  The id token is used for internal api communication
+/// about the name of the plugin.
+/// displayName is a human readable name given to the plugin intended
+/// to be used in menus.
+/// priorty is used to provide an ordering of plugins.  The plugin
+/// with the highest priority is determined to be the default (unless
+/// overriden by the application).  In the event of a tie
+/// the string version of id is used to sort alphabetically ('a' has priority
+/// over 'b').
+///
+struct HfPluginDesc {
+    TfToken     id;
+    std::string displayName;
+    int         priority;
+};
 
-//
-// WORKAROUND: As this class is a pure interface class, it does not need a
-// vtable.  However, it is possible that some users will use rtti.
-// This will cause a problem for some of our compilers:
-//
-// In particular clang will throw a warning: -wweak-vtables
-// For gcc, there is an issue were the rtti typeid's are different.
-//
-// As destruction of the class is not on the performance path,
-// the body of the deleter is provided here, so a vtable is created
-// in this compilation unit.
-HfPluginDelegateBase::~HfPluginDelegateBase() = default;
+typedef std::vector<HfPluginDesc> HfPluginDescVector;
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif // HF_PLUGIN_DESC_H

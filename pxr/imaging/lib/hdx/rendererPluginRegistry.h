@@ -27,14 +27,14 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/base/tf/singleton.h"
-#include "pxr/imaging/hf/pluginDelegateRegistry.h"
+#include "pxr/imaging/hf/pluginRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdxRendererPlugin;
 
-class HdxRendererPluginRegistry final  : public HfPluginDelegateRegistry
+class HdxRendererPluginRegistry final  : public HfPluginRegistry
 {
 public:
     ///
@@ -76,7 +76,7 @@ private:
 template<typename T, typename... Bases>
 void HdxRendererPluginRegistry::Define()
 {
-    HfPluginDelegateRegistry::Define<T, HdxRendererPlugin, Bases...>();
+    HfPluginRegistry::Define<T, HdxRendererPlugin, Bases...>();
 }
 
 
