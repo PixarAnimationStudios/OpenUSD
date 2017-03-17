@@ -611,7 +611,7 @@ UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
 {
     // Instead of using root.begin(), setup a special iterator that does both
     // pre-order and post-order traversal so we can push and pop state.
-    UsdTreeIterator primIt = UsdTreeIterator::PreAndPostVisit(root);
+    UsdPrimRange primIt = UsdPrimRange::PreAndPostVisit(root);
 
     UsdPrim pseudoRoot = root.GetStage()->GetPseudoRoot();
 

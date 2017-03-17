@@ -49,7 +49,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdReferences);
     TF_WRAP(UsdSchemaRegistry);
     TF_WRAP(UsdSpecializes);
-    TF_WRAP(UsdTreeIterator);
+    TF_WRAP(UsdPrimRange);
     TF_WRAP(UsdVariantSets);
 
     // SchemaBase and subclasses.

@@ -210,7 +210,7 @@ public:
             // Invalidate cache entries if the prim is not a descendant of a 
             // path that has already been processed.
             if (!isDescendantOfProcessedOverride) {
-                for (UsdTreeIterator iter(prim); iter ; ++iter) {
+                for (UsdPrimRange iter(prim); iter ; ++iter) {
                     if (_Entry* entry = _GetCacheEntryForPrim((*iter))) {
                         entry->version = _GetInvalidVersion();
                     }
@@ -244,7 +244,7 @@ public:
             // Invalidate cache entries if the prim is not a descendant of a 
             // path that has already been processed.
             if (!isDescendantOfProcessedOverride) {
-                for (UsdTreeIterator iter(prim); iter ; ++iter) {
+                for (UsdPrimRange iter(prim); iter ; ++iter) {
                     if (_Entry* entry = _GetCacheEntryForPrim((*iter))) {
                         entry->version = _GetInvalidVersion();
                     }

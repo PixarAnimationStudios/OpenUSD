@@ -32,16 +32,16 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-UsdTreeIterator
-UsdTreeIterator::Stage(const UsdStagePtr &stage,
+UsdPrimRange
+UsdPrimRange::Stage(const UsdStagePtr &stage,
                        const Usd_PrimFlagsPredicate &predicate)
 {
     Usd_PrimDataConstPtr firstChild = 
         stage->GetPseudoRoot()._Prim()->GetFirstChild();
-    UsdTreeIterator ret(firstChild, /* end = */ nullptr, 
+    UsdPrimRange ret(firstChild, /* end = */ nullptr, 
                         firstChild ? firstChild->GetPath() : SdfPath(), 
                         predicate);
-    // The TreeIterator uses a depth count to know when it's about to pop out of
+    // The PrimRange uses a depth count to know when it's about to pop out of
     // the subtree it was walking so it can stop and avoid walking into siblings
     // of the initial prim.  Since we're proactively descending to the first
     // child under the stage's pseudo-root, we need to preincrement _depth so we
@@ -52,7 +52,7 @@ UsdTreeIterator::Stage(const UsdStagePtr &stage,
 }
 
 void
-UsdTreeIterator::PruneChildren()
+UsdPrimRange::PruneChildren()
 {
     if (!*this) {
         TF_CODING_ERROR("Iterator past-the-end");
@@ -68,7 +68,7 @@ UsdTreeIterator::PruneChildren()
 }
 
 void
-UsdTreeIterator::increment()
+UsdPrimRange::increment()
 {
     base_type &base = base_reference();
     if (ARCH_UNLIKELY(_isPost)) {

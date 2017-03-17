@@ -37,53 +37,53 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace boost::python;
 
-class Usd_PyTreeIterator
+class Usd_PyPrimRange
 {
 public:
 
-    Usd_PyTreeIterator(UsdPrim root)
+    Usd_PyPrimRange(UsdPrim root)
         : _iter(root)
         , _curPrim(_iter ? *_iter : UsdPrim())
         , _didFirst(false)
         {}
 
-    Usd_PyTreeIterator(UsdPrim root, Usd_PrimFlagsPredicate predicate)
+    Usd_PyPrimRange(UsdPrim root, Usd_PrimFlagsPredicate predicate)
         : _iter(root, predicate)
         , _curPrim(_iter ? *_iter : UsdPrim())
         , _didFirst(false)
         {}
 
-    static Usd_PyTreeIterator
+    static Usd_PyPrimRange
     PreAndPostVisit(UsdPrim root) {
-        return Usd_PyTreeIterator(UsdTreeIterator::PreAndPostVisit(root));
+        return Usd_PyPrimRange(UsdPrimRange::PreAndPostVisit(root));
     }
 
-    static Usd_PyTreeIterator
+    static Usd_PyPrimRange
     PreAndPostVisit(UsdPrim root, Usd_PrimFlagsPredicate predicate) {
-        return Usd_PyTreeIterator(
-            UsdTreeIterator::PreAndPostVisit(root, predicate));
+        return Usd_PyPrimRange(
+            UsdPrimRange::PreAndPostVisit(root, predicate));
     }
 
-    static Usd_PyTreeIterator
+    static Usd_PyPrimRange
     AllPrims(UsdPrim root) {
-        return Usd_PyTreeIterator(UsdTreeIterator::AllPrims(root));
+        return Usd_PyPrimRange(UsdPrimRange::AllPrims(root));
     }
 
-    static Usd_PyTreeIterator
+    static Usd_PyPrimRange
     AllPrimsPreAndPostVisit(UsdPrim root) {
-        return Usd_PyTreeIterator(
-            UsdTreeIterator::AllPrimsPreAndPostVisit(root));
+        return Usd_PyPrimRange(
+            UsdPrimRange::AllPrimsPreAndPostVisit(root));
     }
 
-    static Usd_PyTreeIterator
+    static Usd_PyPrimRange
     Stage(const UsdStagePtr &stage) {
-        return Usd_PyTreeIterator(UsdTreeIterator::Stage(stage));
+        return Usd_PyPrimRange(UsdPrimRange::Stage(stage));
     }
 
-    static Usd_PyTreeIterator
+    static Usd_PyPrimRange
     Stage(const UsdStagePtr &stage, const Usd_PrimFlagsPredicate &predicate) {
-        return Usd_PyTreeIterator(
-            UsdTreeIterator::Stage(stage, predicate));
+        return Usd_PyPrimRange(
+            UsdPrimRange::Stage(stage, predicate));
     }
 
     bool IsPostVisit() const { return _iter.IsPostVisit(); }
@@ -92,10 +92,10 @@ public:
     UsdPrim GetCurrentPrim() const { return _curPrim; }
 
     operator bool() const { return IsValid(); }
-    bool operator==(Usd_PyTreeIterator other) const {
+    bool operator==(Usd_PyPrimRange other) const {
         return _curPrim == other._curPrim && _iter == other._iter;
     }
-    bool operator!=(Usd_PyTreeIterator other) const {
+    bool operator!=(Usd_PyPrimRange other) const {
         return !(*this == other);
     }
 
@@ -125,98 +125,98 @@ public:
 
     static void RegisterConversions() {
         // to-python
-        to_python_converter<UsdTreeIterator, Usd_PyTreeIterator>();
+        to_python_converter<UsdPrimRange, Usd_PyPrimRange>();
         // from-python
         converter::registry::push_back(
             &_convertible, &_construct,
-            boost::python::type_id<UsdTreeIterator>());
+            boost::python::type_id<UsdPrimRange>());
     }
 
-    // to-python conversion of UsdTreeIterator.
-    static PyObject *convert(const UsdTreeIterator &treeIter) {
+    // to-python conversion of UsdPrimRange.
+    static PyObject *convert(const UsdPrimRange &treeRange) {
         TfPyLock lock;
         // (extra parens to avoid 'most vexing parse')
-        boost::python::object obj((Usd_PyTreeIterator(treeIter)));
+        boost::python::object obj((Usd_PyPrimRange(treeRange)));
         PyObject *ret = obj.ptr();
         Py_INCREF(ret);
         return ret;
     }
 
 private:
-    explicit Usd_PyTreeIterator(const UsdTreeIterator &treeIter)
-        : _iter(treeIter)
-        , _curPrim(treeIter ? *treeIter : UsdPrim())
+    explicit Usd_PyPrimRange(const UsdPrimRange &treeRange)
+        : _iter(treeRange)
+        , _curPrim(treeRange ? *treeRange : UsdPrim())
         , _didFirst(false)
         {}
 
     void _RaiseIfAtEnd() const {
         if (!_iter) {
-            PyErr_SetString(PyExc_StopIteration, "TreeIterator at end");
+            PyErr_SetString(PyExc_StopIteration, "PrimRange at end");
             throw_error_already_set();
         }
     }
 
     static void *_convertible(PyObject *obj_ptr) {
-        extract<Usd_PyTreeIterator> extractor(obj_ptr);
+        extract<Usd_PyPrimRange> extractor(obj_ptr);
         return extractor.check() ? obj_ptr : NULL;
     }
 
     static void _construct(PyObject *obj_ptr,
                            converter::rvalue_from_python_stage1_data *data) {
         void *storage = ((converter::rvalue_from_python_storage<
-                              Usd_PyTreeIterator>*)data)->storage.bytes;
-        Usd_PyTreeIterator pyIter = extract<Usd_PyTreeIterator>(obj_ptr);
-        new (storage) UsdTreeIterator(pyIter._iter);
+                              Usd_PyPrimRange>*)data)->storage.bytes;
+        Usd_PyPrimRange pyIter = extract<Usd_PyPrimRange>(obj_ptr);
+        new (storage) UsdPrimRange(pyIter._iter);
         data->convertible = storage;
     }
 
-    UsdTreeIterator _iter;
+    UsdPrimRange _iter;
     UsdPrim _curPrim;
     bool _didFirst;
 };
 
-static UsdTreeIterator
-_TestTreeIterRoundTrip(const UsdTreeIterator &treeIter) {
-    return treeIter;
+static UsdPrimRange
+_TestPrimRangeRoundTrip(const UsdPrimRange &treeRange) {
+    return treeRange;
 }
 
-void wrapUsdTreeIterator()
+void wrapUsdPrimRange()
 {
-    class_<Usd_PyTreeIterator>("TreeIterator", no_init)
+    class_<Usd_PyPrimRange>("PrimRange", no_init)
         .def(init<UsdPrim>(arg("root")))
         .def(init<UsdPrim, Usd_PrimFlagsPredicate>(
                  (arg("root"), arg("predicate"))))
 
         .def("PreAndPostVisit",
-             (Usd_PyTreeIterator (*)(UsdPrim))
-             &Usd_PyTreeIterator::PreAndPostVisit, arg("root"))
+             (Usd_PyPrimRange (*)(UsdPrim))
+             &Usd_PyPrimRange::PreAndPostVisit, arg("root"))
         .def("PreAndPostVisit",
-             (Usd_PyTreeIterator (*)(UsdPrim, Usd_PrimFlagsPredicate))
-             &Usd_PyTreeIterator::PreAndPostVisit,
+             (Usd_PyPrimRange (*)(UsdPrim, Usd_PrimFlagsPredicate))
+             &Usd_PyPrimRange::PreAndPostVisit,
              (arg("root"), arg("predicate")))
         .staticmethod("PreAndPostVisit")
              
-        .def("AllPrims", &Usd_PyTreeIterator::AllPrims, arg("root"))
+        .def("AllPrims", &Usd_PyPrimRange::AllPrims, arg("root"))
         .staticmethod("AllPrims")
 
         .def("AllPrimsPreAndPostVisit",
-             &Usd_PyTreeIterator::AllPrimsPreAndPostVisit, arg("root"))
+             &Usd_PyPrimRange::AllPrimsPreAndPostVisit, arg("root"))
         .staticmethod("AllPrimsPreAndPostVisit")
 
         .def("Stage",
-             (Usd_PyTreeIterator (*)(const UsdStagePtr &))
-             &Usd_PyTreeIterator::Stage, arg("stage"))
+             (Usd_PyPrimRange (*)(const UsdStagePtr &))
+             &Usd_PyPrimRange::Stage, arg("stage"))
         .def("Stage",
-             (Usd_PyTreeIterator (*)(
+             (Usd_PyPrimRange (*)(
                  const UsdStagePtr &, const Usd_PrimFlagsPredicate &))
-             &Usd_PyTreeIterator::Stage, (arg("stage"), arg("predicate")))
+             &Usd_PyPrimRange::Stage, (arg("stage"), arg("predicate")))
         .staticmethod("Stage")
 
-        .def("IsPostVisit", &Usd_PyTreeIterator::IsPostVisit)
-        .def("PruneChildren", &Usd_PyTreeIterator::PruneChildren)
-        .def("IsValid", &Usd_PyTreeIterator::IsValid,
+        .def("IsPostVisit", &Usd_PyPrimRange::IsPostVisit)
+        .def("PruneChildren", &Usd_PyPrimRange::PruneChildren)
+        .def("IsValid", &Usd_PyPrimRange::IsValid,
             "true if the iterator is not yet exhausted")
-        .def("GetCurrentPrim", &Usd_PyTreeIterator::GetCurrentPrim,
+        .def("GetCurrentPrim", &Usd_PyPrimRange::GetCurrentPrim,
             "Since an iterator cannot be dereferenced in python, "
             "GetCurrentPrim()\n performs the same function: yielding "
             "the currently visited prim.")
@@ -225,14 +225,14 @@ void wrapUsdTreeIterator()
         .def(self == self)
         .def(self != self)
 
-        .def("__iter__", &Usd_PyTreeIterator::__iter__, return_self<>())
-        .def("next", &Usd_PyTreeIterator::next)
+        .def("__iter__", &Usd_PyPrimRange::__iter__, return_self<>())
+        .def("next", &Usd_PyPrimRange::next)
 
         ;
 
-    Usd_PyTreeIterator::RegisterConversions();
+    Usd_PyPrimRange::RegisterConversions();
 
-    def("_TestTreeIterRoundTrip", _TestTreeIterRoundTrip);
+    def("_TestPrimRangeRoundTrip", _TestPrimRangeRoundTrip);
 }
 
 

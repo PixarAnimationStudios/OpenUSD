@@ -204,8 +204,8 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
 
     _PrototypeSharedPtr &prototype = instrData.prototypes[protoIndex];
 
-    std::vector<UsdTreeIterator> treeStack;
-    treeStack.push_back(UsdTreeIterator(protoRootPrim));
+    std::vector<UsdPrimRange> treeStack;
+    treeStack.push_back(UsdPrimRange(protoRootPrim));
     for (; !treeStack.empty();) {
         if (!treeStack.back()) {
             treeStack.pop_back();
@@ -220,7 +220,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 continue;
             }
         }
-        UsdTreeIterator& treeIt = treeStack.back();
+        UsdPrimRange& treeIt = treeStack.back();
         if (UsdImagingPrimAdapterSharedPtr adapter = 
             _GetPrimAdapter(*treeIt)){
             primCount++;
@@ -237,7 +237,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
             SdfPath protoPath;
             if (treeIt->IsInstance()) {
                 UsdPrim master = treeIt->GetMaster();
-                treeStack.push_back(UsdTreeIterator(master));
+                treeStack.push_back(UsdPrimRange(master));
                 continue;
             } else if (treeIt->IsMaster()) {
                 // ignore master root (redirected from IsInstance condition)

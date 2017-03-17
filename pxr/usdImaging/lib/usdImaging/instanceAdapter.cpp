@@ -133,7 +133,7 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
     // In this case, we dispatch to the underlying PrimAdapter and disable
     // instancing.
     if (instancedPrimAdapter) {
-        UsdTreeIterator treeIt(prim);
+        UsdPrimRange treeIt(prim);
 
         bool isLeafInstancer;
         const SdfPath protoPath = 
@@ -177,7 +177,7 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
         // The master is a typeless stub for instancing and should
         // never itself be a renderable gprim, so we can skip it initially
         // and just iterate over its children;
-        UsdTreeIterator treeIt(masterPrim);
+        UsdPrimRange treeIt(masterPrim);
         ++treeIt;
 
         int primCount = 0;
@@ -290,7 +290,7 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 }
 
 SdfPath
-UsdImagingInstanceAdapter::_InsertProtoRprim(UsdTreeIterator* it,
+UsdImagingInstanceAdapter::_InsertProtoRprim(UsdPrimRange* it,
                         TfToken const& protoName,
                         SdfPath instanceShaderBinding,
                         SdfPath instancerPath,

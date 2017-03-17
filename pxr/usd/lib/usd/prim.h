@@ -52,7 +52,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdTreeIterator;
+class UsdPrimRange;
 class Usd_PrimData;
 
 class UsdAttribute;
@@ -459,7 +459,7 @@ public:
     ///
     /// See \ref Usd_PrimFlags "Prim predicate flags" and 
     /// #UsdPrimDefaultPredicate for more information, UsdStage::Traverse(), 
-    /// and \c UsdTreeIterator for more general Stage traversal behaviors.
+    /// and \c UsdPrimRange for more general Stage traversal behaviors.
     inline SubtreeRange GetDescendants() const;
 
     /// Return all this prim's descendants as an iterable range.
@@ -469,7 +469,7 @@ public:
     ///
     /// See \ref Usd_PrimFlags "Prim predicate flags" and 
     /// #UsdPrimDefaultPredicate for more information, UsdStage::Traverse(), 
-    /// and \c UsdTreeIterator for more general Stage traversal behaviors.
+    /// and \c UsdPrimRange for more general Stage traversal behaviors.
     inline SubtreeRange GetAllDescendants() const;
 
     /// Return a subset of all of this prim's descendants filtered by
@@ -494,7 +494,7 @@ public:
     ///
     /// See \ref Usd_PrimFlags "Prim predicate flags" and 
     /// #UsdPrimDefaultPredicate for more information, UsdStage::Traverse(), 
-    /// and \c UsdTreeIterator for more general Stage traversal behaviors.
+    /// and \c UsdPrimRange for more general Stage traversal behaviors.
     inline SubtreeRange
     GetFilteredDescendants(const Usd_PrimFlagsPredicate &predicate) const;
 
@@ -958,7 +958,7 @@ private:
     friend class UsdProperty;
     friend class UsdSchemaBase;
     friend class UsdStage;
-    friend class UsdTreeIterator;
+    friend class UsdPrimRange;
     friend class Usd_PrimData;
     friend class Usd_PrimFlagsPredicate;
     friend struct UsdPrim_TargetFinder;

@@ -1759,7 +1759,7 @@ UsdStage::_WalkPrimsWithMastersImpl(
     tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash> *seenMasterPrimPaths
     ) const
 {
-    UsdTreeIterator childIt = UsdTreeIterator::AllPrims(prim);
+    UsdPrimRange childIt = UsdPrimRange::AllPrims(prim);
     WorkParallelForEach(
         childIt, childIt.GetEnd(),
         [=](UsdPrim const &child) {
@@ -3090,22 +3090,22 @@ UsdStage::IsLayerMuted(const std::string& layerIdentifier) const
     return _cache->IsLayerMuted(layerIdentifier);
 }
 
-UsdTreeIterator
+UsdPrimRange
 UsdStage::Traverse()
 {
-    return UsdTreeIterator::Stage(UsdStagePtr(this));
+    return UsdPrimRange::Stage(UsdStagePtr(this));
 }
 
-UsdTreeIterator
+UsdPrimRange
 UsdStage::Traverse(const Usd_PrimFlagsPredicate &predicate)
 {
-    return UsdTreeIterator::Stage(UsdStagePtr(this), predicate);
+    return UsdPrimRange::Stage(UsdStagePtr(this), predicate);
 }
 
-UsdTreeIterator
+UsdPrimRange
 UsdStage::TraverseAll()
 {
-    return UsdTreeIterator::Stage(UsdStagePtr(this),
+    return UsdPrimRange::Stage(UsdStagePtr(this),
                                   Usd_PrimFlagsPredicate::Tautology());
 }
 
@@ -4031,7 +4031,7 @@ UsdStage::Flatten(bool addSourceFileComment) const
         _CopyMasterPrim(master, flatLayer, masterToFlattened);
     }
 
-    for (auto childIt = UsdTreeIterator::AllPrims(GetPseudoRoot()); 
+    for (auto childIt = UsdPrimRange::AllPrims(GetPseudoRoot()); 
          childIt; ++childIt) {
         UsdPrim usdPrim = *childIt;
         _FlattenPrim(usdPrim, flatLayer, usdPrim.GetPath(), masterToFlattened);
@@ -4113,7 +4113,7 @@ UsdStage::_CopyMasterPrim(const UsdPrim &masterPrim,
     const auto& flattenedMasterPath 
         = masterToFlattened.at(masterPrim.GetPath());
    
-    for (auto primIt = UsdTreeIterator::AllPrims(masterPrim); primIt; primIt++){
+    for (auto primIt = UsdPrimRange::AllPrims(masterPrim); primIt; primIt++){
         UsdPrim child = *primIt;
         
         // We need to update the child path to use the Flatten name.

@@ -977,7 +977,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
     leafPaths.reserve(pathsToRepopulate.size());
 
     TF_FOR_ALL(rootPathIt, pathsToRepopulate) {
-        UsdTreeIterator treeIt(_GetPrim(*rootPathIt));
+        UsdPrimRange treeIt(_GetPrim(*rootPathIt));
 
         // Discover and insert all renderable prims into the worker for later
         // execution.
@@ -1403,7 +1403,7 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
         // If this path was not pruned by a parent, discover all prims that were
         // newly added with this change.
         if (!prunedByParent) {
-            UsdTreeIterator treeIt(prim);
+            UsdPrimRange treeIt(prim);
 
             for (;treeIt;++treeIt) {
                 if (prunedByParent)

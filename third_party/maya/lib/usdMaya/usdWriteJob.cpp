@@ -442,7 +442,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
                 UsdEditContext editContext(mStage, editTarget);
 
                 // == Activate/Deactivate UsdPrims
-                UsdTreeIterator it = UsdTreeIterator::AllPrims(mStage->GetPseudoRoot());
+                UsdPrimRange it = UsdPrimRange::AllPrims(mStage->GetPseudoRoot());
                 std::vector<UsdPrim> primsToDeactivate;
                 for ( ; it; ++it) {
                     UsdPrim usdPrim = *it;
@@ -462,7 +462,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
                         }
                     }
                 }
-                // Now deactivate the prims (done outside of the UsdTreeIterator 
+                // Now deactivate the prims (done outside of the UsdPrimRange 
                 // so not to modify the iterator while in the loop)
                 for ( UsdPrim const& prim : primsToDeactivate ) {
                     prim.SetActive(false);

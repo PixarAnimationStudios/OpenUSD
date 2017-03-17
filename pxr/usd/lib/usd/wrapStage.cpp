@@ -372,10 +372,10 @@ void wrapUsdStage()
         .def("HasDefaultPrim", &UsdStage::HasDefaultPrim)
 
         .def("GetPrimAtPath", &UsdStage::GetPrimAtPath, arg("path"))
-        .def("Traverse", (UsdTreeIterator (UsdStage::*)())
+        .def("Traverse", (UsdPrimRange (UsdStage::*)())
              &UsdStage::Traverse)
         .def("Traverse",
-             (UsdTreeIterator (UsdStage::*)(const Usd_PrimFlagsPredicate &))
+             (UsdPrimRange (UsdStage::*)(const Usd_PrimFlagsPredicate &))
              &UsdStage::Traverse, arg("predicate"))
         .def("TraverseAll", &UsdStage::TraverseAll)
 

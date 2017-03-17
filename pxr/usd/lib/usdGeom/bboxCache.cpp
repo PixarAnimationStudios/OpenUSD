@@ -375,7 +375,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
     }
 
     GfBBox3d result;
-    for (UsdTreeIterator it(prim); it ; ++it) {
+    for (UsdPrimRange it(prim); it ; ++it) {
         const UsdPrim &p = *it;
         const SdfPath &primPath = p.GetPath();
 
@@ -733,7 +733,7 @@ UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
 
     TfHashSet<UsdPrim, _UsdPrimHash> seenMasterPrims;
 
-    for (UsdTreeIterator it(
+    for (UsdPrimRange it(
             prim, (UsdPrimIsActive && UsdPrimIsDefined 
                    && !UsdPrimIsAbstract)); it; ++it) {
 

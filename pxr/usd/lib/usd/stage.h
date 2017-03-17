@@ -72,7 +72,7 @@ class Usd_InstanceChanges;
 class Usd_InterpolatorBase;
 class UsdResolveInfo;
 class Usd_Resolver;
-class UsdTreeIterator;
+class UsdPrimRange;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -689,7 +689,7 @@ public:
     /// Traverse the active, loaded, defined, non-abstract prims on this stage
     /// depth-first.
     ///
-    /// Traverse() returns a UsdTreeIterator , which allows low-latency
+    /// Traverse() returns a UsdPrimRange , which allows low-latency
     /// traversal, with the ability to prune subtrees from traversal.  It
     /// is python iterable, so in its simplest form, one can do:
     ///
@@ -699,25 +699,25 @@ public:
     /// \endcode
     ///
     /// If either a pre-and-post-order traversal or a traversal rooted at a
-    /// particular prim is desired, construct a UsdTreeIterator directly.
+    /// particular prim is desired, construct a UsdPrimRange directly.
     ///
-    /// This is equivalent to UsdTreeIterator::Stage() . 
+    /// This is equivalent to UsdPrimRange::Stage() . 
     USD_API
-    UsdTreeIterator Traverse();
+    UsdPrimRange Traverse();
 
     /// \overload
     /// Traverse the prims on this stage subject to \p predicate.
     ///
-    /// This is equivalent to UsdTreeIterator::Stage() .
+    /// This is equivalent to UsdPrimRange::Stage() .
     USD_API
-    UsdTreeIterator Traverse(const Usd_PrimFlagsPredicate &predicate);
+    UsdPrimRange Traverse(const Usd_PrimFlagsPredicate &predicate);
 
     /// Traverse all the prims on this stage depth-first.
     ///
     /// \sa Traverse()
-    /// \sa UsdTreeIterator::Stage()
+    /// \sa UsdPrimRange::Stage()
     USD_API
-    UsdTreeIterator TraverseAll();
+    UsdPrimRange TraverseAll();
 
     /// Attempt to ensure a \a UsdPrim at \p path exists on this stage.
     ///

@@ -64,7 +64,7 @@ UsdviewqUtils::_GetAllPrimsOfType(UsdStagePtr const &stage,
                                   TfType const& schemaType)
 {
     std::vector<UsdPrim> result;
-    for(UsdTreeIterator it = stage->Traverse(); it; ++it) {
+    for(UsdPrimRange it = stage->Traverse(); it; ++it) {
         if (_IsA(*it, schemaType))
             result.push_back(*it);
     }

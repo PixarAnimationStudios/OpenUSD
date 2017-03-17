@@ -1226,7 +1226,7 @@ class MainWindow(QtGui.QMainWindow):
                 # We can only safely do Sdf-level ops inside an Sdf.ChangeBlock,
                 # so gather all the paths from the UsdStage first
                 modelPaths = [p.GetPath() for p in \
-                                  Usd.TreeIterator.Stage(stage, 
+                                  Usd.PrimRange.Stage(stage, 
                                                          Usd.PrimIsGroup) ]
                 with Sdf.ChangeBlock():
                     for mpp in modelPaths:
@@ -1800,7 +1800,7 @@ class MainWindow(QtGui.QMainWindow):
             isMatch = lambda x: pattern in x.lower()
 
         matches = [prim.GetPath() for prim
-                   in Usd.TreeIterator.Stage(self._stage, 
+                   in Usd.PrimRange.Stage(self._stage, 
                                              self._displayPredicate)
                    if isMatch(prim.GetName())]
 
@@ -1808,7 +1808,7 @@ class MainWindow(QtGui.QMainWindow):
         if showMasters:
             for master in self._stage.GetMasters():
                 matches += [prim.GetPath() for prim
-                            in Usd.TreeIterator(master, self._displayPredicate)
+                            in Usd.PrimRange(master, self._displayPredicate)
                             if isMatch(prim.GetName())]
         
         return matches
@@ -2773,7 +2773,7 @@ class MainWindow(QtGui.QMainWindow):
         childTypeDict = {} 
         primCount = 0
 
-        for child in Usd.TreeIterator(prim):
+        for child in Usd.PrimRange(prim):
             typeString = _GetType(child)
             # skip pseudoroot
             if typeString is NOTYPE and not prim.GetParent():

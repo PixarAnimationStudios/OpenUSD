@@ -158,7 +158,7 @@ private:
     // The rprim will be created under a child path combining the 
     // \p instancerPath and \p protoName; that path will be returned.
     SdfPath 
-    _InsertProtoRprim(UsdTreeIterator* prim, 
+    _InsertProtoRprim(UsdPrimRange* prim, 
                       const TfToken& protoName,
                       SdfPath instanceShaderBinding,
                       SdfPath instancerPath,

@@ -35,18 +35,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdTreeIterator
+/// \class UsdPrimRange
 ///
 /// An object with iterator semantics that will traverse the subtree of prims
 /// rooted at a given prim.
 ///
 /// In addition to providing an alternative to UsdPrim::GetChildren()-based
-/// recursion, UsdTreeIterator provides a compact expression for performing
+/// recursion, UsdPrimRange provides a compact expression for performing
 /// post-order (prim is yielded after all of its descendents) iteration in
 /// addition to "normal" pre-order (prim is yielded before its children)
 /// iteration.  For iterations that include a post-order visitation, each
 /// prim will be yielded twice, and client can call
-/// UsdTreeIterator::IsPostVisit() on the iterator to determine when to perform
+/// UsdPrimRange::IsPostVisit() on the iterator to determine when to perform
 /// the post-order processing.
 ///
 /// There are several constructors providing different levels of 
@@ -54,21 +54,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// iteration, just as one would use UsdPrim::GetFilteredChildren() in a custom
 /// recursion.
 ///
-/// Why would one want to use a UsdTreeIterator rather than just iterating
+/// Why would one want to use a UsdPrimRange rather than just iterating
 /// over the results of UsdPrim::GetFilteredDescendants() ?  Primarily, if
 /// one of the following applies:
 /// \li You need to perform pre-and-post-order processing
 /// \li You may want to prune sub-trees from processing (see PruneChildren())
 /// \li You want to treat the root prim itself uniformly with its 
 /// descendents (GetFilteredDescendants() will not return the root prim itself,
-/// while UsdTreeIterator will - see UsdTreeIterator::Stage for the one
+/// while UsdPrimRange will - see UsdPrimRange::Stage for the one
 /// exception).
 ///
-/// <b>Using UsdTreeIterator in C++</b>
+/// <b>Using UsdPrimRange in C++</b>
 ///
-/// UsdTreeIterator provides standard iterator semantics, so, for example:
+/// UsdPrimRange provides standard iterator semantics, so, for example:
 /// \code
-/// for (UsdTreeIterator  it(rootPrim); it ; ++it){
+/// for (UsdPrimRange  it(rootPrim); it ; ++it){
 ///     // Good practice if you derefence 'it' more than once
 ///     const UsdPrim &prim = *it;
 ///
@@ -81,17 +81,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// }
 /// \endcode
 ///
-/// <b>Using Usd.TreeIterator in python</b>
+/// <b>Using Usd.PrimRange in python</b>
 ///
-/// The python wrapping for TreeIterator is python-iterable, so it can
+/// The python wrapping for PrimRange is python-iterable, so it can
 /// used directly as the object of a "for x in..." clause; however in that
-/// usage one loses access to TreeIterator methods such as PruneChildren() and
+/// usage one loses access to PrimRange methods such as PruneChildren() and
 /// IsPostVisit().  Simply create the iterator outside the loop to overcome
 /// this limitation.  Finally, in python, prim predicates must be combined
 /// with bit-wise operators rather than logical operators because the latter
 /// are not overridable.
 /// \code{.py}
-/// it = Usd.TreeIterator.Stage(stage, Usd.PrimIsLoaded & ~Usd.PrimIsAbstract)
+/// it = Usd.PrimRange.Stage(stage, Usd.PrimIsLoaded & ~Usd.PrimIsAbstract)
 /// for prim in it:
 ///     if Usd.ModelAPI(prim).GetKind() == Kind.Tokens.component:
 ///         it.PruneChildren()
@@ -103,77 +103,77 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// provide the \em python \em only methods GetCurrentPrim() and IsValid(),
 /// documented in the python help system.
 ///
-class UsdTreeIterator : public boost::iterator_adaptor<
-    UsdTreeIterator,               // crtp base.
+class UsdPrimRange : public boost::iterator_adaptor<
+    UsdPrimRange,               // crtp base.
     Usd_PrimDataConstPtr,          // base iterator.
     UsdPrim,                       // value type.
     boost::forward_traversal_tag,  // traversal.
     UsdPrim>                       // reference type.
 {
-    typedef const Usd_PrimFlagsPredicate UsdTreeIterator::*_UnspecifiedBoolType;
+    typedef const Usd_PrimFlagsPredicate UsdPrimRange::*_UnspecifiedBoolType;
 
 public:
-    UsdTreeIterator() : iterator_adaptor_(NULL) {}
+    UsdPrimRange() : iterator_adaptor_(NULL) {}
 
-    /// Construct a TreeIterator that traverses the subtree rooted at \p start,
+    /// Construct a PrimRange that traverses the subtree rooted at \p start,
     /// and visits prims that pass the default predicate (as defined by
     /// #UsdPrimDefaultPredicate) with pre-order visitation.
-    explicit UsdTreeIterator(const UsdPrim &start)
+    explicit UsdPrimRange(const UsdPrim &start)
         : iterator_adaptor_(get_pointer(start._Prim())) {
         _Init(base(), base() ? base()->GetNextPrim() : NULL, 
               start.GetPrimPath());
     }
 
-    /// Construct a TreeIterator that traverses the subtree rooted at \p start,
+    /// Construct a PrimRange that traverses the subtree rooted at \p start,
     /// and visits prims that pass \p predicate with pre-order visitation.
-    UsdTreeIterator(const UsdPrim &start,
+    UsdPrimRange(const UsdPrim &start,
                     const Usd_PrimFlagsPredicate &predicate)
         : iterator_adaptor_(get_pointer(start._Prim())) {
         _Init(base(), base() ? base()->GetNextPrim() : NULL, 
               start.GetPrimPath(), predicate);
     }
 
-    /// Create a TreeIterator that traverses the subtree rooted at \p start,
+    /// Create a PrimRange that traverses the subtree rooted at \p start,
     /// and visits prims that pass the default predicate (as defined by
     /// #UsdPrimDefaultPredicate) with pre- and post-order visitation.
-    static UsdTreeIterator
+    static UsdPrimRange
     PreAndPostVisit(const UsdPrim &start) {
-        UsdTreeIterator result(start);
+        UsdPrimRange result(start);
         result._postOrder = true;
         return result;
     }
 
-    /// Create a TreeIterator that traverses the subtree rooted at \p start, and
+    /// Create a PrimRange that traverses the subtree rooted at \p start, and
     /// visits prims that pass \p predicate with pre- and post-order visitation.
-    static UsdTreeIterator
+    static UsdPrimRange
     PreAndPostVisit(const UsdPrim &start,
                     const Usd_PrimFlagsPredicate &predicate) {
-        UsdTreeIterator result(start, predicate);
+        UsdPrimRange result(start, predicate);
         result._postOrder = true;
         return result;
     }
 
-    /// Create a TreeIterator that traverses the subtree rooted at \p start, and
+    /// Create a PrimRange that traverses the subtree rooted at \p start, and
     /// visits all prims (including deactivated, undefined, and abstract prims)
     /// with pre-order visitation.
-    static UsdTreeIterator
+    static UsdPrimRange
     AllPrims(const UsdPrim &start) {
-        return UsdTreeIterator(start, Usd_PrimFlagsPredicate::Tautology());
+        return UsdPrimRange(start, Usd_PrimFlagsPredicate::Tautology());
     }
 
-    /// Create a TreeIterator that traverses the subtree rooted at \p start, and
+    /// Create a PrimRange that traverses the subtree rooted at \p start, and
     /// visits all prims (including deactivated, undefined, and abstract prims)
     /// with pre- and post-order visitation.
-    static UsdTreeIterator
+    static UsdPrimRange
     AllPrimsPreAndPostVisit(const UsdPrim &start) {
         return PreAndPostVisit(start, Usd_PrimFlagsPredicate::Tautology());
     }
 
-    /// Create a TreeIterator that traverses all the prims on \p stage, and
+    /// Create a PrimRange that traverses all the prims on \p stage, and
     /// visits those that pass the default predicate (as defined by
     /// #UsdPrimDefaultPredicate) with pre-order visitation.
     USD_API
-    static UsdTreeIterator
+    static UsdPrimRange
     Stage(const UsdStagePtr &stage,
           const Usd_PrimFlagsPredicate &predicate =
               UsdPrimDefaultPredicate);
@@ -184,15 +184,15 @@ public:
     operator unspecified-bool-type() const();
 #else
     operator _UnspecifiedBoolType() const {
-        return base() != _end ? &UsdTreeIterator::_predicate : NULL;
+        return base() != _end ? &UsdPrimRange::_predicate : NULL;
     }
 #endif
 
-    /// Return a UsdTreeIterator that represents the end of this iterator's
+    /// Return a UsdPrimRange that represents the end of this iterator's
     /// iteration.  This is useful for algorithms that require a range of
     /// [begin, end) iterators.
-    UsdTreeIterator GetEnd() const {
-        UsdTreeIterator r(*this);
+    UsdPrimRange GetEnd() const {
+        UsdPrimRange r(*this);
         r.base_reference() = r._end;
         r._primPath = SdfPath();
         r._depth = 0;
@@ -214,7 +214,7 @@ public:
     void PruneChildren();
 
 private:
-    UsdTreeIterator(Usd_PrimDataConstPtr start,
+    UsdPrimRange(Usd_PrimDataConstPtr start,
                     Usd_PrimDataConstPtr end,
                     const SdfPath& primPath,
                     const Usd_PrimFlagsPredicate &predicate =
@@ -250,7 +250,7 @@ private:
     ////////////////////////////////////////////////////////////////////////
     // Core implementation invoked by iterator_adaptor.
     friend class boost::iterator_core_access;
-    bool equal(const UsdTreeIterator &other) const {
+    bool equal(const UsdPrimRange &other) const {
         return
             base() == other.base() &&
             _end == other._end &&

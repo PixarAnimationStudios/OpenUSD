@@ -37,7 +37,7 @@ assert([x for x in stage.Traverse() if UsdGeom.Sphere(x)] ==
          stage.GetPrimAtPath("/refSphere2/world")])
 
 # section 3
-treeIter = Usd.TreeIterator.PreAndPostVisit(stage.GetPseudoRoot())
+treeIter = Usd.PrimRange.PreAndPostVisit(stage.GetPseudoRoot())
     
 treeIterExpectedResults = [(stage.GetPrimAtPath("/"), False),
         (stage.GetPrimAtPath("/refSphere"), False),

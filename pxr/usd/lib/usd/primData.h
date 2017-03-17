@@ -480,7 +480,7 @@ Usd_IsInstanceProxy(const PrimDataPtr &p, const SdfPath &primPath)
 // siblings or descendants of the prim at path \p primPath with 
 // prim data \p p.  This is used by prim traversal functions like 
 // UsdPrim::GetFilteredChildren, UsdPrim::GetFilteredDescendants, 
-// UsdPrim::GetFilteredNextSibling, and UsdTreeIterator.
+// UsdPrim::GetFilteredNextSibling, and UsdPrimRange.
 template <class PrimDataPtr>
 inline Usd_PrimFlagsPredicate
 Usd_CreatePredicateForTraversal(const PrimDataPtr &p, const SdfPath &primPath,

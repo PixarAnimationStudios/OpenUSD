@@ -203,7 +203,7 @@ class SdfAssetPath;
 /// 
 /// There \em is a pattern one can deploy for organizing the prototypes
 /// such that they will automatically be skipped by basic UsdPrim::GetChildren()
-/// or UsdTreeIterator traversals.  Usd prims each have a 
+/// or UsdPrimRange traversals.  Usd prims each have a 
 /// \ref Usd_PrimSpecifiers "specifier" of "def", "over", or "class".  The
 /// default traversals skip over prims that are "pure overs" or classes.  So
 /// to protect prototypes from all generic traversals and processing, place

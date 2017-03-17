@@ -303,7 +303,7 @@ def GetPrimLoadability(prim):
     # XXX Note that we are potentially traversing the entire stage here.
     # If this becomes a performance issue, we can cast this query into C++,
     # cache results, etc.
-    for p in Usd.TreeIterator(prim, Usd.PrimIsActive):
+    for p in Usd.PrimRange(prim, Usd.PrimIsActive):
         if not p.IsLoaded():
             return (True, False)
     return (True, True)

@@ -308,7 +308,7 @@ usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
 }
 
 bool
-usdReadJob::_DoImportWithProxies(UsdTreeIterator& primIt)
+usdReadJob::_DoImportWithProxies(UsdPrimRange& primIt)
 {
     MStatus status;
 

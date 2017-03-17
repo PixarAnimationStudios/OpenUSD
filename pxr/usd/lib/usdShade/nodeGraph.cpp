@@ -275,7 +275,7 @@ _ComputeNonTransitiveInputConsumersMap(const UsdShadeNodeGraph &nodeGraph)
         result[input] = consumers;
     }
 
-    UsdTreeIterator iter(nodeGraph.GetPrim());
+    UsdPrimRange iter(nodeGraph.GetPrim());
     // Skip the node-graph root in the traversal.
     ++iter;
 

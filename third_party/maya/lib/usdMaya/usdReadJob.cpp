@@ -182,7 +182,7 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
         mArgs.shadingMode = ASSEMBLY_SHADING_MODE;
     }
 
-    UsdTreeIterator primIt(usdRootPrim);
+    UsdPrimRange primIt(usdRootPrim);
 
     // We maintain a registry mapping SdfPaths to MObjects as we create Maya
     // nodes, so prime the registry with the root Maya node and the
@@ -233,7 +233,7 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
 }
 
 
-bool usdReadJob::_DoImport(UsdTreeIterator& primIt,
+bool usdReadJob::_DoImport(UsdPrimRange& primIt,
                            const UsdPrim& usdRootPrim)
 {
     for(; primIt; ++primIt) {
