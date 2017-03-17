@@ -65,13 +65,6 @@ public:
     virtual ~HdRenderDelegate();
 
     ///
-    /// Allows the delegate an opinion on the default Gal to use.
-    /// Return an empty token for no opinion.
-    /// Return HdDelegateTokens->None for no Gal.
-    ///
-    virtual TfToken GetDefaultGalId() const = 0;
-
-    ///
     /// Returns a list of typeId's of all supported Sprims by this render
     /// delegate.
     ///

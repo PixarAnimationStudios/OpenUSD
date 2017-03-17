@@ -40,8 +40,6 @@ public:
     HdStreamRenderDelegate();
     virtual ~HdStreamRenderDelegate() = default;
 
-    virtual TfToken GetDefaultGalId() const override;
-
     virtual HdRenderParam *GetRenderParam() const override;
 
     virtual const TfTokenVector &GetSupportedSprimTypes() const override;

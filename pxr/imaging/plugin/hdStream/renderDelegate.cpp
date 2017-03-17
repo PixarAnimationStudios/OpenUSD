@@ -69,12 +69,6 @@ HdStreamRenderDelegate::HdStreamRenderDelegate()
     std::call_once(reprsOnce, _ConfigureReprs);
 }
 
-TfToken
-HdStreamRenderDelegate::GetDefaultGalId() const
-{
-    return TfToken();
-}
-
 const TfTokenVector &
 HdStreamRenderDelegate::GetSupportedSprimTypes() const
 {
