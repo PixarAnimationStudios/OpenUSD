@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,34 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_COMPUTE_SHADOW_MATRIX_H
-#define HDX_COMPUTE_SHADOW_MATRIX_H
+#ifndef HDX_API_H
+#define HDX_API_H
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/cameraUtil/conformWindow.h"
-#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/arch/export.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#if defined(HDX_STATIC)
+#   define HDX_API
+#   define HDX_API_TEMPLATE_CLASS(...)
+#   define HDX_API_TEMPLATE_STRUCT(...)
+#   define HDX_LOCAL
+#else
+#   if defined(HDX_EXPORTS)
+#       define HDX_API ARCH_EXPORT
+#       define HDX_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HDX_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define HDX_API ARCH_IMPORT
+#       define HDX_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HDX_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define HDX_LOCAL ARCH_HIDDEN
+#endif
 
-
-// Interface class for computing the shadow matrix
-// for a given viewport.
-class HdxShadowMatrixComputation {
-public:
-    virtual GfMatrix4d Compute(const GfVec4f &viewport, CameraUtilConformWindowPolicy policy) = 0;
-
-protected:
-    HdxShadowMatrixComputation()          = default;
-    virtual ~HdxShadowMatrixComputation() = default;
-
-private:
-    HdxShadowMatrixComputation(const HdxShadowMatrixComputation &)             = delete;
-    HdxShadowMatrixComputation &operator =(const HdxShadowMatrixComputation &) = delete;
-};
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // HDX_COMPUTE_SHADOW_MATRIX_H
+#endif // HDX_API_H

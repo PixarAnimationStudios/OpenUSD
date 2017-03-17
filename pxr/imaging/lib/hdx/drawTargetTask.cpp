@@ -62,7 +62,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     HF_MALLOC_TAG_FUNCTION();
 
     TRACE_FUNCTION();
-    TfAutoMallocTag2 tag("GlimRg", __PRETTY_FUNCTION__);
+    TfAutoMallocTag2 tag("GlimRg", __ARCH_PRETTY_FUNCTION__);
 
     HdDirtyBits bits = _GetTaskDirtyBits();
 

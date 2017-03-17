@@ -25,6 +25,7 @@
 #define HDX_TASK_CONTROLLER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/task.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,6 +45,7 @@ public:
 protected:
     /// This class must be derived from
     HdxTaskController()          = default;
+    HDX_API
     virtual ~HdxTaskController();
 
 private:

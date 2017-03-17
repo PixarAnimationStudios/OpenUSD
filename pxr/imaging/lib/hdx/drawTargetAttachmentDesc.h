@@ -25,6 +25,7 @@
 #define HDX_DRAW_TARGET_ATTACHMENT_DESC_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 
@@ -46,9 +47,11 @@ class HdxDrawTargetAttachmentDesc final
 {
 public:
     /// default constructor - only for use by containers.
+    HDX_API
     HdxDrawTargetAttachmentDesc();
 
     /// Construct a draw target attachment description
+    HDX_API
     HdxDrawTargetAttachmentDesc(const std::string &name,
                                 HdFormat           format,
                                 const VtValue     &clearColor,
@@ -59,7 +62,9 @@ public:
     ~HdxDrawTargetAttachmentDesc() = default;
 
     // Copy for container support.
+    HDX_API
     HdxDrawTargetAttachmentDesc(const HdxDrawTargetAttachmentDesc &copy);
+    HDX_API
     HdxDrawTargetAttachmentDesc &operator =(const HdxDrawTargetAttachmentDesc &copy);
 
     const std::string &GetName()       const { return _name; }
@@ -71,9 +76,13 @@ public:
     HdMagFilter        GetMagFilter()  const { return _magFilter; }
 
     // VtValue requirements
+    HDX_API
     size_t GetHash() const;
+    HDX_API
     void   Dump(std::ostream &out) const;
+    HDX_API
     bool operator==(const HdxDrawTargetAttachmentDesc &other) const;
+    HDX_API
     bool operator!=(const HdxDrawTargetAttachmentDesc &other) const;
 
 private:
@@ -86,7 +95,9 @@ private:
     HdMagFilter _magFilter;
 };
 
+HDX_API
 size_t hash_value(HdxDrawTargetAttachmentDesc const &attachment);
+HDX_API
 std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDesc &pv);
 
 

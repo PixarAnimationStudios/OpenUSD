@@ -25,6 +25,7 @@
 #define HDX_RENDER_PLUGIN_REGISTRY_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hf/pluginDelegateRegistry.h"
 
@@ -39,6 +40,7 @@ public:
     ///
     /// Returns the singleton registry for \c HdxRendererPlugin
     ///
+    HDX_API
     static HdxRendererPluginRegistry &GetInstance();
 
     ///
@@ -52,6 +54,7 @@ public:
     /// if not found.  The reference count on the returned
     /// delegate is incremented.
     ///
+    HDX_API
     HdxRendererPlugin *GetRendererPlugin(const TfToken &pluginId);
 
 private:

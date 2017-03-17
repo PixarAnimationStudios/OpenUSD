@@ -25,6 +25,7 @@
 #define HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/drawTargetAttachmentDesc.h"
 
 #include <vector>
@@ -47,15 +48,20 @@ class HdxDrawTargetAttachmentDescArray
 {
 public:
     /// Default constructor for container purposes.
+    HDX_API
     HdxDrawTargetAttachmentDescArray();
 
+    HDX_API
     HdxDrawTargetAttachmentDescArray(size_t attachmentCount);
     virtual ~HdxDrawTargetAttachmentDescArray() = default;
 
+    HDX_API
     HdxDrawTargetAttachmentDescArray(const HdxDrawTargetAttachmentDescArray &copy);
+    HDX_API
     HdxDrawTargetAttachmentDescArray &operator =(const HdxDrawTargetAttachmentDescArray &copy);
 
     /// Pushes a new attachment onto the end of the list of attachments.
+    HDX_API
     void AddAttachment(const std::string &name,
                        HdFormat           format,
                        const VtValue      &clearColor,
@@ -65,10 +71,13 @@ public:
                        HdMagFilter        magFilter);
 
 
+    HDX_API
     size_t GetNumAttachments() const;
+    HDX_API
     const HdxDrawTargetAttachmentDesc &GetAttachment(size_t idx) const;
 
     /// Sampler State for Depth attachment
+    HDX_API
     void SetDepthSampler(HdWrap      depthWrapS,
                          HdWrap      depthWrapT,
                          HdMinFilter depthMinFilter,
@@ -82,9 +91,13 @@ public:
 
 
     // VtValue requirements
+    HDX_API
     size_t GetHash() const;
+    HDX_API
     void   Dump(std::ostream &out) const;
+    HDX_API
     bool operator==(const HdxDrawTargetAttachmentDescArray &other) const;
+    HDX_API
     bool operator!=(const HdxDrawTargetAttachmentDescArray &other) const;
 
 private:
@@ -99,7 +112,9 @@ private:
     HdMagFilter _depthMagFilter;
 };
 
+HDX_API
 size_t hash_value(const HdxDrawTargetAttachmentDescArray &attachments);
+HDX_API
 std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDescArray &pv);
 
 

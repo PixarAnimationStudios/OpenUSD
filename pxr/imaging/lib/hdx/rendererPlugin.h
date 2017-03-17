@@ -25,6 +25,7 @@
 #define HDX_RENDERER_PLUGIN_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hf/pluginDelegateBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -92,6 +93,7 @@ public:
 
 protected:
     HdxRendererPlugin() = default;
+    HDX_API
     virtual ~HdxRendererPlugin();
 
 

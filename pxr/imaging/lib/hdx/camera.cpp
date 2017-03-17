@@ -70,7 +70,7 @@ HdxCamera::Sync(HdSceneDelegate *sceneDelegate,
 
         // extract view/projection matrices
         VtValue vMatrices = sceneDelegate->Get(id, HdxCameraTokens->matrices);
-        if (not vMatrices.IsEmpty()) {
+        if (!vMatrices.IsEmpty()) {
             const HdxCameraMatrices matrices = 
                 vMatrices.Get<HdxCameraMatrices>();
             worldToViewMatrix                = matrices.viewMatrix;

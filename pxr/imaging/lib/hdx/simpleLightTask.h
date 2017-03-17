@@ -25,6 +25,7 @@
 #define HDX_SIMPLE_LIGHT_TASK_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hdx/light.h"
 
@@ -56,8 +57,10 @@ TF_DECLARE_REF_PTRS(GlfSimpleShadowArray);
 
 class HdxSimpleLightTask : public HdSceneTask {
 public:
+    HDX_API
     HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id);
 
+    HDX_API
     static SdfPathVector ComputeIncludedLights(
         SdfPathVector const & allLightPaths,
         SdfPathVector const & includedPaths,
@@ -65,9 +68,11 @@ public:
 
 protected:
     /// Execute render pass task
+    HDX_API
     virtual void _Execute(HdTaskContext* ctx);
 
     /// Sync the render pass resources
+    HDX_API
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
@@ -91,8 +96,7 @@ private:
     GlfSimpleLightVector _glfSimpleLights;
 };
 
-struct HdxSimpleLightTaskParams
-{
+struct HdxSimpleLightTaskParams {
     HdxSimpleLightTaskParams()
         : cameraPath()
         , lightIncludePaths(1, SdfPath::AbsoluteRootPath())
@@ -116,12 +120,14 @@ struct HdxSimpleLightTaskParams
 };
 
 // VtValue requirements
+HDX_API
 std::ostream& operator<<(std::ostream& out, const HdxSimpleLightTaskParams& pv);
+HDX_API
 bool operator==(const HdxSimpleLightTaskParams& lhs, const HdxSimpleLightTaskParams& rhs);
+HDX_API
 bool operator!=(const HdxSimpleLightTaskParams& lhs, const HdxSimpleLightTaskParams& rhs);
 
-struct HdxShadowParams
-{
+struct HdxShadowParams {
     HdxShadowParams()
         : shadowMatrix()
         , bias(0.0)
@@ -138,8 +144,11 @@ struct HdxShadowParams
 };
 
 // VtValue requirements
+HDX_API
 std::ostream& operator<<(std::ostream& out, const HdxShadowParams& pv);
+HDX_API
 bool operator==(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
+HDX_API
 bool operator!=(const HdxShadowParams& lhs, const HdxShadowParams& rhs);
 
 

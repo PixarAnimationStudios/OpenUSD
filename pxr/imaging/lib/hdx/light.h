@@ -25,6 +25,7 @@
 #define HDX_LIGHT_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -45,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (shadowParams)                              \
     (transform)
 
-TF_DECLARE_PUBLIC_TOKENS(HdxLightTokens, HDX_LIGHT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdxLightTokens, HDX_API, HDX_LIGHT_TOKENS);
 
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdxLight> HdxLightSharedPtr;
@@ -57,7 +58,9 @@ typedef std::vector<class HdxLight const *> HdxLightPtrConstVector;
 ///
 class HdxLight : public HdSprim {
 public:
+    HDX_API
     HdxLight(SdfPath const & id);
+    HDX_API
     virtual ~HdxLight();
 
     // change tracking for HdxLight
@@ -74,16 +77,19 @@ public:
     };
 
     /// Synchronizes state from the delegate to this object.
+    HDX_API
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
 
     /// Accessor for tasks to get the parameters cached in this object.
+    HDX_API
     virtual VtValue Get(TfToken const &token) const override;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
+    HDX_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 private:

@@ -25,11 +25,12 @@
 #define HDX_DRAW_TARGET_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
+#include "pxr/imaging/hdx/drawTargetRenderPassState.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/textureResource.h"
-#include "pxr/imaging/hdx/drawTargetRenderPassState.h"
 #include "pxr/imaging/glf/drawTarget.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -51,7 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (enable)                                    \
     (resolution)
 
-TF_DECLARE_PUBLIC_TOKENS(HdxDrawTargetTokens, HDX_DRAW_TARGET_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdxDrawTargetTokens, HDX_API, HDX_DRAW_TARGET_TOKENS);
 
 class HdSceneDelegate;
 class HdRenderIndex;
@@ -72,7 +73,9 @@ typedef std::vector<class HdxDrawTarget const *> HdxDrawTargetPtrConstVector;
 ///
 class HdxDrawTarget : public HdSprim {
 public:
+    HDX_API
     HdxDrawTarget(SdfPath const & id);
+    HDX_API
     virtual ~HdxDrawTarget();
 
     /// Dirty bits for the HdxDrawTarget object
@@ -101,16 +104,19 @@ public:
     unsigned int GetVersion() const { return _version; }
 
     /// Synchronizes state from the delegate to this object.
+    HDX_API
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
 
     /// Accessor for tasks to get the parameters cached in this object.
+    HDX_API
     virtual VtValue Get(TfToken const &token) const override;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
+    HDX_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 
@@ -125,11 +131,13 @@ public:
     }
 
     /// Debug api to output the contents of the draw target to a png file.
+    HDX_API
     bool WriteToFile(const HdRenderIndex &renderIndex,
                      const std::string &attachment,
                      const std::string &path) const;
 
     /// returns all HdxDrawTargets in the render index
+    HDX_API
     static void GetDrawTargets(HdSceneDelegate *sceneDelegate,
                                HdxDrawTargetPtrConstVector *drawTargets);
 

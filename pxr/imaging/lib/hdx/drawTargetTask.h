@@ -25,6 +25,7 @@
 #define HDX_DRAW_TARGET_TASK_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
 
@@ -44,14 +45,17 @@ typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShader
 
 class HdxDrawTargetTask  : public HdSceneTask {
 public:
+    HDX_API
     HdxDrawTargetTask(HdSceneDelegate* delegate, SdfPath const& id);
     virtual ~HdxDrawTargetTask() = default;
 
 protected:
     /// Sync the render pass resources
+    HDX_API
     virtual void _Sync(HdTaskContext* ctx);
 
     /// Execute render pass task
+    HDX_API
     virtual void _Execute(HdTaskContext* ctx);
 
 private:
@@ -153,8 +157,11 @@ struct HdxDrawTargetTaskParams
 };
 
 // VtValue requirements
+HDX_API
 std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv);
+HDX_API
 bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs);
+HDX_API
 bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs);
 
 
