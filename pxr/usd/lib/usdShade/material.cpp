@@ -126,7 +126,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/specializes.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
 
 #include "pxr/base/tf/envSetting.h"

@@ -31,7 +31,7 @@
 #include "usdMaya/primReaderContext.h"
 
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>

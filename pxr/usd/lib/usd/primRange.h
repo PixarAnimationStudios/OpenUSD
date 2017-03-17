@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USD_TREEITERATOR_H
-#define USD_TREEITERATOR_H
+#ifndef USD_PRIMRANGE_H
+#define USD_PRIMRANGE_H
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
@@ -179,12 +179,12 @@ public:
               UsdPrimDefaultPredicate);
 
 #ifdef doxygen
-    /// Safe bool-conversion operator.  Convertible to true if this iterator is
-    /// not exhausted, false otherwise.
+    /// Explicit bool-conversion operator.  True if this iterator is not
+    /// exhausted, false otherwise.
     operator unspecified-bool-type() const();
 #else
-    operator _UnspecifiedBoolType() const {
-        return base() != _end ? &UsdPrimRange::_predicate : NULL;
+    explicit operator bool() const {
+        return base() != _end;
     }
 #endif
 
@@ -289,4 +289,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USD_TREEITERATOR_H
+#endif // USD_PRIMRANGE_H

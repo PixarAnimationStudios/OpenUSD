@@ -34,7 +34,7 @@
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdGeom/xform.h"
 
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/base/tracelite/trace.h"
 
 #include "pxr/base/tf/pyLock.h"
