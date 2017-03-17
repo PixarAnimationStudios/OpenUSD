@@ -25,14 +25,16 @@
 #define HD_SURFACESHADER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/version.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/value.h"
 
 #include "pxr/imaging/garch/gl.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -59,33 +61,50 @@ typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
 /// expressed as well.
 class HdSurfaceShader : public HdShaderCode {
 public:
+    HD_API
     HdSurfaceShader();
+    HD_API
     virtual ~HdSurfaceShader();
 
 
     // ---------------------------------------------------------------------- //
     /// \name HdShader Virtual Interface                                      //
     // ---------------------------------------------------------------------- //
+    HD_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
+    HD_API
     virtual HdShaderParamVector const& GetParams() const;
+    HD_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
+    HD_API
     virtual TextureDescriptorVector GetTextures() const;
+    HD_API
     virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    HD_API
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    HD_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
+    HD_API
     virtual ID ComputeHash() const;
 
     /// Setter method for prim
+    HD_API
     void SetFragmentSource(const std::string &source);
+    HD_API
     void SetGeometrySource(const std::string &source);
+    HD_API
     void SetParams(const HdShaderParamVector &params);
+    HD_API
     void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
+    HD_API
     void SetBufferSources(HdBufferSourceVector &bufferSources);
 
     /// If the prim is based on asset, reload that asset.
+    HD_API
     virtual void Reload();
 
 protected:
+    HD_API
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
 
 private:

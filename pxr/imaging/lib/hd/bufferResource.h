@@ -25,6 +25,7 @@
 #define HD_BUFFER_RESOURCE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/conversions.h"
@@ -52,12 +53,14 @@ typedef std::vector<
 ///
 class HdBufferResource : public HdResource {
 public:
+    HD_API
     HdBufferResource(TfToken const &role,
                      int glDataType,
                      short numComponents,
                      int arraySize,
                      int offset,
                      int stride);
+    HD_API
     ~HdBufferResource();
 
     /// OpenGL data type; GL_UNSIGNED_INT, etc
@@ -91,10 +94,12 @@ public:
     uint64_t GetGPUAddress() const { return _gpuAddr; }
 
     /// Returns the texture buffer view
+    HD_API
     GLuint GetTextureBuffer();
 
     /// Returns the GLSL type name string of this resource
     /// to be used in codegen.
+    HD_API
     TfToken GetGLTypeName() const;
 
 private:

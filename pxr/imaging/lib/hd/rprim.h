@@ -25,6 +25,7 @@
 #define HD_RPRIM_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/drawItem.h"
@@ -54,8 +55,10 @@ typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
 ///
 class HdRprim {
 public:
+    HD_API
     HdRprim(SdfPath const& id,
             SdfPath const& instancerId);
+    HD_API
     virtual ~HdRprim();
     
     /// Update objects representation based on dirty bits.
@@ -75,11 +78,13 @@ public:
 
     /// Returns the draw items for the requested reprName, these draw items
     /// should be constructed and cached beforehand by Sync().
+    HD_API
     std::vector<HdDrawItem>* GetDrawItems(HdSceneDelegate* delegate,
                                           TfToken const &reprName,
                                           bool forced);
 
     /// Returns the render tag associated to this rprim
+    HD_API
     TfToken GetRenderTag(HdSceneDelegate* delegate) const;
 
     /// Returns the identifier of this Rprim. This is both used in the
@@ -99,14 +104,17 @@ public:
     }
 
     /// Returns true if any dirty flags are set for this rprim.
+    HD_API
     bool IsDirty(HdChangeTracker &changeTracker);
 
     /// Set the unique instance id
+    HD_API
     void SetPrimId(int32_t primId);
 
     /// Return the unique instance id
     int32_t GetPrimId() const { return _primId; };
 
+    HD_API
     HdDirtyBits GetInitialDirtyBitsMask() const;
 
 
@@ -129,39 +137,47 @@ public:
 
 protected:
     /// Update objects representation based on dirty bits.
+    HD_API
     void _Sync(HdSceneDelegate* delegate,
               TfToken const &reprName, bool forced,
               HdDirtyBits *dirtyBits);
 
 
+    HD_API
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
                  TfToken const &reprName,
                  HdDirtyBits *dirtyBits) = 0;
 
+    HD_API
     void _UpdateVisibility(HdSceneDelegate *sceneDelegate,
                            HdDirtyBits *dirtyBits);
 
     /// note: constant range has to be shared across reprs (smooth, refined),
     /// since we're tracking dirtiness in a single bit (e.g. DirtyTransform)
     /// unlike vertex primvars (DirtyPoints-DirtyRefinedPoints)
+    HD_API
     void _PopulateConstantPrimVars(HdSceneDelegate *sceneDelegate,
                                    HdDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits);
 
+    HD_API
     void _PopulateInstancePrimVars(HdSceneDelegate *sceneDelegate,
                                    HdDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits,
                                    int instancePrimVarSlot);
 
+    HD_API
     VtMatrix4dArray _GetInstancerTransforms(HdSceneDelegate* delegate);
 
+    HD_API
     TfToken _GetReprName(HdSceneDelegate* delegate,
                          TfToken const &defaultReprName, bool forced,
                          HdDirtyBits *dirtyBits);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
 
+    HD_API
     static HdDirtyBits _PropagateRprimDirtyBits(HdDirtyBits bits);
 
 

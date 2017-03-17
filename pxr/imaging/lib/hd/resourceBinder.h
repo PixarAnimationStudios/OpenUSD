@@ -25,6 +25,7 @@
 #define HD_RESOURCE_BINDER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/binding.h"
@@ -241,10 +242,12 @@ public:
     };
 
     /// Constructor.
+    HD_API
     Hd_ResourceBinder();
 
     /// Assign all binding points used in drawitem and custom bindings.
     /// Returns metadata to be used for codegen.
+    HD_API
     void ResolveBindings(HdDrawItem const *drawItem,
                          HdShaderCodeSharedPtrVector const &shaders,
                          MetaData *metaDataOut,

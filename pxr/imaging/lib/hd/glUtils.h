@@ -25,6 +25,7 @@
 #define HD_GL_UTILS_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/vt/value.h"
 
@@ -75,6 +76,7 @@ class HdGLUtils {
 public:
     /// Reads the content of VBO back to VtArray.
     /// The \p vboOffset is expressed in bytes.
+    HD_API
     static VtValue ReadBuffer(GLint vbo,
                               int glDataType,
                               int numComponents,
@@ -85,11 +87,13 @@ public:
 
     /// Returns true if the shader has been successfully compiled.
     /// if not, returns false and fills the error log into reason.
+    HD_API
     static bool GetShaderCompileStatus(GLuint shader,
                                        std::string * reason = NULL);
 
     /// Returns true if the program has been successfully linked.
     /// if not, returns false and fills the error log into reason.
+    HD_API
     static bool GetProgramLinkStatus(GLuint program,
                                      std::string * reason = NULL);
 
@@ -106,11 +110,13 @@ public:
 
     /// Schedule the range to be copied. The consecutive ranges could be
     /// aggregated into a single copy where possible.
+    HD_API
     void AddRange(GLintptr readOffset,
                   GLintptr writeOffset,
                   GLsizeiptr copySize);
 
     /// Execute GL buffer copy command to flush all scheduled range copies.
+    HD_API
     void Commit();
 
 private:

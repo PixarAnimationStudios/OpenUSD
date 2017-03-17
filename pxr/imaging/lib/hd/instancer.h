@@ -25,6 +25,7 @@
 #define HD_INSTANCER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/usd/sdf/path.h"
@@ -64,6 +65,7 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 class HdInstancer {
 public:
     /// Constructor.
+    HD_API
     HdInstancer(HdSceneDelegate* delegate, SdfPath const& id,
                 SdfPath const &parentInstancerId);
 
@@ -74,16 +76,19 @@ public:
     SdfPath const& GetParentId() const { return _parentId; }
 
     /// Populates instance primvars and returns the buffer range.
+    HD_API
     HdBufferArrayRangeSharedPtr GetInstancePrimVars(int level);
 
     /// Populates the instance index indirection buffer for \p prototypeId and
     /// returns the buffer range.
+    HD_API
     HdBufferArrayRangeSharedPtr GetInstanceIndices(SdfPath const &prototypeId);
 
 protected:
     HdSceneDelegate* _GetDelegate() const {
         return _delegate;
     }
+    HD_API
     void _GetInstanceIndices(SdfPath const &prototypeId,
                              std::vector<VtIntArray> *instanceIndicesArray);
 
@@ -96,8 +101,8 @@ private:
 
     HdBufferArrayRangeSharedPtr _instancePrimVarRange;
     TfHashMap<SdfPath,
-                         HdBufferArrayRangeSharedPtr,
-                         SdfPath::Hash> _instanceIndexRangeMap;
+              HdBufferArrayRangeSharedPtr,
+              SdfPath::Hash> _instanceIndexRangeMap;
 };
 
 

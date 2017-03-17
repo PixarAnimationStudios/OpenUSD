@@ -483,6 +483,7 @@ HdVtBufferSource::_CheckValid() const
             (_glElementDataType > 0));
 }
 
+HD_API
 std::ostream &operator <<(std::ostream &out,
                                  const HdVtBufferSource& self) {
     out << "Buffer Source:\n";

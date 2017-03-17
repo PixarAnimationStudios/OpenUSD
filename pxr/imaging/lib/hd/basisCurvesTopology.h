@@ -25,6 +25,7 @@
 #define HD_BASIS_CURVES_TOPOLOGY_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/topology.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -81,14 +82,18 @@ typedef boost::shared_ptr<class HdBasisCurvesTopology> HdBasisCurvesTopologyShar
 class HdBasisCurvesTopology : public HdTopology {
 public:
 
+    HD_API
     HdBasisCurvesTopology();
+    HD_API
     HdBasisCurvesTopology(const HdBasisCurvesTopology &src);
 
+    HD_API
     HdBasisCurvesTopology(const TfToken &curveType,
                           const TfToken &curveBasis,
                           const TfToken &curveWrap,
                           const VtIntArray &curveVertexCounts,
                           const VtIntArray &curveIndices);
+    HD_API
     virtual ~HdBasisCurvesTopology();
 
 
@@ -111,16 +116,21 @@ public:
     bool HasIndices() const { return !_curveIndices.empty(); }
 
     /// Returns the hash value of this topology to be used for instancing.
+    HD_API
     virtual ID ComputeHash() const;
 
     /// Equality check between two basisCurves topologies.
+    HD_API
     bool operator==(HdBasisCurvesTopology const &other) const;
+    HD_API
     bool operator!=(HdBasisCurvesTopology const &other) const;
 
     /// Figure out how many vertices / control points this topology references
+    HD_API
     size_t CalculateNeededNumberOfControlPoints() const;
 
     /// Figure out how many control points with varying data this topology needs
+    HD_API
     size_t CalculateNeededNumberOfVaryingControlPoints() const;
 
 private:
@@ -131,6 +141,7 @@ private:
     VtIntArray _curveIndices;
 };
 
+HD_API
 std::ostream& operator << (std::ostream &out, HdBasisCurvesTopology const &topo);
 
 

@@ -1222,7 +1222,8 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
         binder.BindUniformi(HdTokens->ulocResetPass, 1, &resetPass);
         glMultiDrawArraysIndirect(
             GL_POINTS,
-            reinterpret_cast<const GLvoid*>(cullCommandBuffer->GetOffset()),
+            reinterpret_cast<const GLvoid*>(
+                static_cast<intptr_t>(cullCommandBuffer->GetOffset())),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
 
@@ -1234,7 +1235,8 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
         binder.BindUniformi(HdTokens->ulocResetPass, 1, &resetPass);
         glMultiDrawArraysIndirect(
             GL_POINTS,
-            reinterpret_cast<const GLvoid*>(cullCommandBuffer->GetOffset()),
+            reinterpret_cast<const GLvoid*>(
+                static_cast<intptr_t>(cullCommandBuffer->GetOffset())),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
 

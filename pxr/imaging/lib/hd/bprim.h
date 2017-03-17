@@ -25,6 +25,7 @@
 #define HD_BPRIM_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/types.h"
 
@@ -54,7 +55,9 @@ class HdRenderParam;
 /// The most typical use of a Bprim would be a Texture.
 class HdBprim {
 public:
+    HD_API
     HdBprim(SdfPath const & id);
+    HD_API
     virtual ~HdBprim();
 
     /// Returns the identifer by which this buffer is known. This

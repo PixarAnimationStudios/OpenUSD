@@ -25,10 +25,10 @@
 #define HD_RENDER_DELEGATE_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/token.h"
-
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hf/pluginDelegateBase.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,6 +47,7 @@ class HdSceneDelegate;
 class HdRenderParam {
 public:
     HdRenderParam() {}
+    HD_API
     virtual ~HdRenderParam();
 
 private:
@@ -193,6 +194,7 @@ public:
 protected:
     /// This class must be derived from
     HdRenderDelegate()          = default;
+    HD_API
     virtual ~HdRenderDelegate();
 
     ///

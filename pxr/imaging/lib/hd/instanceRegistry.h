@@ -25,14 +25,15 @@
 #define HD_INSTANCE_REGISTRY_H
 
 #include "pxr/pxr.h"
-#include <mutex>
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hf/perfLog.h"
+
 #include <boost/shared_ptr.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/perfLog.h"
-
-#include "pxr/imaging/hf/perfLog.h"
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -25,6 +25,7 @@
 #define HD_SMOOTH_NORMALS_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
@@ -45,6 +46,7 @@ class Hd_VertexAdjacency;
 ///
 class Hd_SmoothNormalsComputation : public HdComputedBufferSource {
 public:
+    HD_API
     Hd_SmoothNormalsComputation(Hd_VertexAdjacency const *adjacency,
                                 HdBufferSourceSharedPtr const &points,
                                 TfToken const &dstName,
@@ -52,12 +54,17 @@ public:
                                 bool packed);
 
     /// overrides
+    HD_API
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    HD_API
     virtual bool Resolve();
+    HD_API
     virtual TfToken const &GetName() const;
+    HD_API
     virtual int GetGLComponentDataType() const;
 
 protected:
+    HD_API
     virtual bool _CheckValid() const;
 
 private:
@@ -75,13 +82,16 @@ class Hd_SmoothNormalsComputationGPU : public HdComputation {
 public:
     /// Constructor
     /// @param topology 
+    HD_API
     Hd_SmoothNormalsComputationGPU(Hd_VertexAdjacency const *adjacency,
                                  TfToken const &srcName,
                                  TfToken const &dstName,
                                  GLenum srcDataType,
                                  GLenum dstDataType);
 
+    HD_API
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    HD_API
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range);
     /// This computaion doesn't generate buffer source (i.e. 2nd phase)
     /// This is a gpu computation, but no need to resize the destination

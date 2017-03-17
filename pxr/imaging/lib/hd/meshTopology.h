@@ -25,6 +25,7 @@
 #define HD_MESH_TOPOLOGY_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/topology.h"
 
@@ -52,31 +53,40 @@ typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 ///
 class HdMeshTopology : public HdTopology {
 public:
+    HD_API
     HdMeshTopology();
+    HD_API
     HdMeshTopology(const HdMeshTopology &, int refineLevel=0);
+    HD_API
     HdMeshTopology(const PxOsdMeshTopology &, int refineLevel=0);
+    HD_API
     HdMeshTopology(const TfToken    &scheme,
                    const TfToken    &orientation,
                    const VtIntArray &faceVertexCounts,
                    const VtIntArray &faceVertexIndices,
                    int refineLevel = 0);
+    HD_API
     HdMeshTopology(const TfToken &scheme,
                    const TfToken &orientation,
                    const VtIntArray &faceVertexCounts,
                    const VtIntArray &faceVertexIndices,
                    const VtIntArray &holeIndices,
                    int refineLevel = 0);
+    HD_API
     virtual ~HdMeshTopology();
 
+    HD_API
     HdMeshTopology &operator =(const HdMeshTopology &copy);
 
 
 #if defined(HD_SUPPORT_OPENSUBDIV2)
     /// Returns whether OpenSubdiv 3.0 to be used.
+    HD_API
     static bool IsEnabledOpenSubdiv3();
 #endif
 
     /// Returns whether adaptive subdivision is enabled or not.
+    HD_API
     static bool IsEnabledAdaptive();
 
     PxOsdMeshTopology const & GetPxOsdMeshTopology() const {
@@ -84,16 +94,27 @@ public:
     }
 
     /// Returns the num faces
+    HD_API
     int GetNumFaces() const;
 
     /// Returns the num facevarying primvars
+    HD_API
     int GetNumFaceVaryings() const;
 
     /// Returns the num points by looking vert indices array
+    HD_API
     int ComputeNumPoints() const;
 
     /// Returns the num points by looking vert indices array
+    HD_API
     static int ComputeNumPoints(VtIntArray const &verts);
+
+    /// Returns the number of quadrangulated quads.
+    /// If degenerated face is found, sets invalidFaceFound as true.
+    HD_API
+    static int ComputeNumQuads(VtIntArray const &numVerts,
+                               VtIntArray const &holeIndices,
+                               bool *invalidFaceFound=NULL);
 
     /// Returns the subdivision scheme
     TfToken const GetScheme() const {
@@ -121,9 +142,11 @@ public:
     }
 
     /// Returns the hash value of this topology to be used for instancing.
+    HD_API
     virtual ID ComputeHash() const;
 
     /// Equality check between two mesh topologies.
+    HD_API
     bool operator==(HdMeshTopology const &other) const;
 
     ///

@@ -670,7 +670,7 @@ HdResourceRegistry::GetResourceAllocation() const
 
     TF_FOR_ALL (textureResourceIt, _textureResourceRegistry) {
         HdTextureResourceSharedPtr textureResource = (textureResourceIt->second);
-        if (not TF_VERIFY(textureResource)) {
+        if (!TF_VERIFY(textureResource)) {
             continue;
         }
 
@@ -800,6 +800,7 @@ void HdResourceRegistry::InvalidateGeometricShaderRegistry()
     _geometricShaderRegistry.Invalidate();
 }
 
+HD_API
 std::ostream &operator <<(std::ostream &out,
                           const HdResourceRegistry& self)
 {

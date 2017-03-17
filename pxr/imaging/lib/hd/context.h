@@ -25,6 +25,7 @@
 #define HD_CONTEXT_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include <boost/intrusive/list.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -53,17 +54,22 @@ public:
     /// galDelegate    - Image Presentation functionality (optional)
     /// index          - Scene to render
     ///
+    HD_API
     HdContext(HdRenderDelegate *renderDelegate,
               GalDelegate      *galDelegate,
               HdRenderIndex    *index);
+    HD_API
     virtual ~HdContext();
 
 
     ///
     /// Accessors
     ///
+    HD_API
     HdRenderDelegate *GetRenderDelegate();
+    HD_API
     GalDelegate      *GetGalDelegate();
+    HD_API
     HdRenderIndex    *GetRenderIndex();
 
 private:

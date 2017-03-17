@@ -25,6 +25,7 @@
 #define HD_BINDING_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/bufferResource.h"
@@ -220,6 +221,7 @@ public:
     /// Note that this hash captures the structural state of the request, not
     /// the contents. For example, buffer array versions/reallocations will not
     /// affect hash, but changing the BAR pointer will.
+    HD_API
     size_t ComputeHash() const;
 
 private:

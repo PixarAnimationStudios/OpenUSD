@@ -25,6 +25,7 @@
 #define HD_CODE_GEN_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/resourceBinder.h"
@@ -53,13 +54,16 @@ public:
     typedef size_t ID;
 
     /// Constructor.
+    HD_API
     Hd_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
                HdShaderCodeSharedPtrVector const &shaders);
 
     /// Return the hash value of glsl shader to be generated.
+    HD_API
     ID ComputeHash() const;
 
     /// Generate shader source and compile it.
+    HD_API
     HdGLSLProgramSharedPtr Compile();
 
     /// Return the generated vertex shader source

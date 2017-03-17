@@ -25,6 +25,7 @@
 #define HD_SHADER_KEY_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/base/tf/token.h"
@@ -62,6 +63,7 @@ struct HdShaderKey {
                            key.IsCullingPass());
     }
 
+    HD_API
     static ID ComputeHash(TfToken const &glslfxFile,
                           TfToken const *VS,
                           TfToken const *TCS,
@@ -84,6 +86,7 @@ struct HdShaderKey {
                                key.GetFS());
     }
 
+    HD_API
     static std::string GetGLSLFXString(TfToken const &glslfxFile,
                                        TfToken const *VS,
                                        TfToken const *TCS,

@@ -25,13 +25,14 @@
 #define HD_VBO_SIMPLE_MEMORY_MANAGER_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/singleton.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
+#include "pxr/base/tf/singleton.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,14 +47,17 @@ class HdVBOSimpleMemoryManager : public HdAggregationStrategy {
 public:
     /// Factory for creating HdBufferArray managed by
     /// HdVBOSimpleMemoryManager.
+    HD_API
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs);
 
     /// Factory for creating HdBufferArrayRange
+    HD_API
     virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange();
 
     /// Returns id for given bufferSpecs to be used for aggregation
+    HD_API
     virtual HdAggregationStrategy::AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs) const;
 
@@ -84,6 +88,7 @@ protected:
         }
 
         /// Returns true is the range has been assigned to a buffer
+        HD_API
         virtual bool IsAssigned() const;
 
         /// Resize memory area for this range. Returns true if it causes container
@@ -94,9 +99,11 @@ protected:
         }
 
         /// Copy source data into buffer
+        HD_API
         virtual void CopyData(HdBufferSourceSharedPtr const &bufferSource);
 
         /// Read back the buffer content
+        HD_API
         virtual VtValue ReadData(TfToken const &name) const;
 
         /// Returns the relative offset in aggregated buffer
@@ -130,22 +137,28 @@ protected:
         }
 
         /// Returns the max number of elements
+        HD_API
         virtual size_t GetMaxNumElements() const;
 
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
+        HD_API
         virtual HdBufferResourceSharedPtr GetResource() const;
 
         /// Returns the named GPU resource.
+        HD_API
         virtual HdBufferResourceSharedPtr GetResource(TfToken const& name);
 
         /// Returns the list of all named GPU resources for this bufferArrayRange.
+        HD_API
         virtual HdBufferResourceNamedList const& GetResources() const;
 
         /// Sets the buffer array assosiated with this buffer;
+        HD_API
         virtual void SetBufferArray(HdBufferArray *bufferArray);
 
         /// Debug dump
+        HD_API
         virtual void DebugDump(std::ostream &out) const;
 
         /// Make this range invalid
@@ -155,6 +168,7 @@ protected:
 
     protected:
         /// Returns the aggregation container
+        HD_API
         virtual const void *_GetAggregation() const;
 
     private:
@@ -175,27 +189,34 @@ protected:
     {
     public:
         /// Constructor.
+        HD_API
         _SimpleBufferArray(TfToken const &role, HdBufferSpecVector const &bufferSpecs);
 
         /// Destructor. It invalidates _range
+        HD_API
         virtual ~_SimpleBufferArray();
 
         /// perform compaction if necessary, returns true if it becomes empty.
+        HD_API
         virtual bool GarbageCollect();
 
         /// Debug output
+        HD_API
         virtual void DebugDump(std::ostream &out) const;
 
         /// Set to resize buffers. Actual reallocation happens on Reallocate()
+        HD_API
         bool Resize(int numElements);
 
         /// Performs reallocation.
         /// GLX context has to be set when calling this function.
+        HD_API
         virtual void Reallocate(
                 std::vector<HdBufferArrayRangeSharedPtr> const &ranges,
                 HdBufferArraySharedPtr const &curRangeOwner);
 
         /// Returns the maximum number of elements capacity.
+        HD_API
         virtual size_t GetMaxNumElements() const;
 
         /// Returns current capacity. It could be different from numElements.
@@ -204,6 +225,7 @@ protected:
         }
 
     protected:
+        HD_API
         void _DeallocateResources();
 
     private:
@@ -217,6 +239,8 @@ protected:
         }
     };
 };
+
+HD_API_TEMPLATE_CLASS(TfSingleton<HdVBOSimpleMemoryManager>);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

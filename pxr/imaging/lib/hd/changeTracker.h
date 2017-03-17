@@ -25,6 +25,7 @@
 #define HD_CHANGE_TRACKER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/types.h"
@@ -94,7 +95,9 @@ public:
         DirtyCollection       = 1 << 4,
     };
 
+    HD_API
     HdChangeTracker();
+    HD_API
     virtual ~HdChangeTracker();
 
     // ---------------------------------------------------------------------- //
@@ -103,9 +106,11 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Rprim with the given \p id.
+    HD_API
     void RprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
 
     /// Stop tracking Rprim with the given \p id.
+    HD_API
     void RprimRemoved(SdfPath const& id);
 
     // ---------------------------------------------------------------------- //
@@ -115,23 +120,28 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the rprim with \p id.
+    HD_API
     HdDirtyBits GetRprimDirtyBits(SdfPath const& id) const;
 
     /// Flag the Rprim with the given \p id as being dirty. Multiple calls with
     /// different dirty bits accumulate.
+    HD_API
     void MarkRprimDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
 
     /// Clear the dirty flags for an HdRprim. if inSync is true, set OutOfSync
     /// flag to notify dirtyList will discover the prim to sync the residual
     /// data for new repr.
+    HD_API
     void MarkRprimClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
     /// Mark the primvar for the rprim with \p id as being dirty.
+    HD_API
     void MarkPrimVarDirty(SdfPath const& id, TfToken const& name);
 
     /// Flag all the Rprim with the given \p id as being dirty. Multiple calls
     /// with different dirty bits accumulate.
     /// Doesn't touch varying state.
+    HD_API
     void MarkAllRprimsDirty(HdDirtyBits bits);
 
     // Clear Varying bit of all prims.
@@ -141,45 +151,58 @@ public:
     /// rprims get dirtied with the same dirty bits.. The change tracker can
     /// leverage this and build stable sets of dirty lists and reduce the
     /// overall cost of an update iteration.
+    HD_API
     void ResetVaryingState();
 
     // ---------------------------------------------------------------------- //
 
     /// Returns true if the rprim identified by \p id has any dirty flags set.
+    HD_API
     bool IsRprimDirty(SdfPath const& id);
     
     /// Returns true if the rprim identified by \p id has a dirty extent.
+    HD_API
     bool IsExtentDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has a dirty refine level.
+    HD_API
     bool IsRefineLevelDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id with primvar \p name is
     /// dirty.
+    HD_API
     bool IsPrimVarDirty(SdfPath const& id, TfToken const& name);
 
     /// Returns true if the rprim identified by \p id has any dirty primvars.
+    HD_API
     bool IsAnyPrimVarDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has a dirty topology.
+    HD_API
     bool IsTopologyDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has dirty doubleSided state.
+    HD_API
     bool IsDoubleSidedDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has dirty cullstyle.
+    HD_API
     bool IsCullStyleDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has a dirty subdiv tags.
+    HD_API
     bool IsSubdivTagsDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has a dirty transform.
+    HD_API
     bool IsTransformDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has dirty visibility.
+    HD_API
     bool IsVisibilityDirty(SdfPath const& id);
     
     /// Returns true if the rprim identified by \p id has a dirty primID.
+    HD_API
     bool IsPrimIdDirty(SdfPath const& id);
 
     /// Returns true if the dirtyBits has any flags set other than the varying flag.
@@ -193,52 +216,67 @@ public:
     }
 
     /// Returns true if the dirtyBits has a dirty extent. id is for perflog.
+    HD_API
     static bool IsExtentDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty refine level. id is for perflog.
+    HD_API
     static bool IsRefineLevelDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty subdiv tags. id is for perflog.
+    HD_API
     static bool IsSubdivTagsDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty primvar \p name.
     /// id is for perflog.
+    HD_API
     static bool IsPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
                                TfToken const& name);
 
     /// Returns true if the dirtyBits has any dirty primvars.
     /// id is for perflog.
+    HD_API
     static bool IsAnyPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty topology. id is for perflog.
+    HD_API
     static bool IsTopologyDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has dirty doubleSided state. id is for perflog.
+    HD_API
     static bool IsDoubleSidedDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has dirty cullstyle. id is for perflog.
+    HD_API
     static bool IsCullStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty transform. id is for perflog.
+    HD_API
     static bool IsTransformDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has dirty visibility. id is for perflog.
+    HD_API
     static bool IsVisibilityDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty primID. id is for perflog.
+    HD_API
     static bool IsPrimIdDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty instancer. id is for perflog.
+    HD_API
     static bool IsInstancerDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty instance index. id is for perflog.
+    HD_API
     static bool IsInstanceIndexDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
+    HD_API
     static bool IsReprDirty(HdDirtyBits dirtyBits, SdfPath const &id);
 
     // ---------------------------------------------------------------------- //
 
     /// Set the primvar dirty flag to \p dirtyBits.
+    HD_API
     static void MarkPrimVarDirty(HdDirtyBits *dirtyBits, TfToken const &name);
 
     // ---------------------------------------------------------------------- //
@@ -248,17 +286,21 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Instancer with the given \p id.
+    HD_API
     void InstancerInserted(SdfPath const& id);
 
     /// Stop tracking Instancer with the given \p id.
+    HD_API
     void InstancerRemoved(SdfPath const& id);
 
     /// Add the gived \p rprimId to the list of rprims associated with the
     /// instancer \p instancerId
+    HD_API
     void InstancerRPrimInserted(SdfPath const& instancerId, SdfPath const& rprimId);
 
     /// Remove the gived \p rprimId to the list of rprims associated with the
     /// instancer \p instancerId
+    HD_API
     void InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const& rprimId);
 
     // ---------------------------------------------------------------------- //
@@ -268,18 +310,23 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking Task with the given \p id.
+    HD_API
     void TaskInserted(SdfPath const& id);
 
     /// Stop tracking Task with the given \p id.
+    HD_API
     void TaskRemoved(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+    HD_API
     void MarkTaskDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
 
     /// Get the dirty bits for Task with the given \p id.
+    HD_API
     HdDirtyBits GetTaskDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p newBits.
+    HD_API
     void MarkTaskClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -289,13 +336,16 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Returns the dirty bits for the instancer with \p id.
+    HD_API
     HdDirtyBits GetInstancerDirtyBits(SdfPath const& id);
 
     /// Flag the Instancer with the given \p id as being dirty. Multiple calls
     /// with different dirty bits accumulate.
+    HD_API
     void MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
 
     /// Clean the specified dirty bits for the instancer with \p id.
+    HD_API
     void MarkInstancerClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -305,18 +355,23 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking sprim with the given \p id.
+    HD_API
     void SprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
 
     /// Stop tracking sprim with the given \p id.
+    HD_API
     void SprimRemoved(SdfPath const& id);
 
     /// Get the dirty bits for sprim with the given \p id.
+    HD_API
     HdDirtyBits GetSprimDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+    HD_API
     void MarkSprimDirty(SdfPath const& id, HdDirtyBits bits);
 
     /// Set the dirty flags to \p newBits.
+    HD_API
     void MarkSprimClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
     // ---------------------------------------------------------------------- //
@@ -326,18 +381,23 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Start tracking bprim with the given \p id.
+    HD_API
     void BprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
 
     /// Stop tracking bprim with the given \p id.
+    HD_API
     void BprimRemoved(SdfPath const& id);
 
     /// Get the dirty bits for bprim with the given \p id.
+    HD_API
     HdDirtyBits GetBprimDirtyBits(SdfPath const& id);
 
     /// Set the dirty flags to \p bits.
+    HD_API
     void MarkBprimDirty(SdfPath const& id, HdDirtyBits bits);
 
     /// Set the dirty flags to \p newBits.
+    HD_API
     void MarkBprimClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
 
@@ -370,20 +430,25 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Adds a named collection for tracking.
+    HD_API
     void AddCollection(TfToken const& collectionName);
 
     /// Marks a named collection as being dirty, this bumps the version of the
     /// collection.
+    HD_API
     void MarkCollectionDirty(TfToken const& collectionName);
 
     /// Invalidates all collections by bumping a global version number.
+    HD_API
     void MarkAllCollectionsDirty();
 
     /// Returns the current version of the named collection.
+    HD_API
     unsigned GetCollectionVersion(TfToken const& collectionName);
 
     /// Returns the number of changes to visibility. This is intended to be used
     /// to detect when visibility has changed for *any* Rprim.
+    HD_API
     unsigned GetVisibilityChangeCount();
 
     /// Returns the current version of varying state. This is used to refresh
@@ -398,9 +463,11 @@ public:
     }
 
     /// Marks all shader bindings dirty (draw batches need to be validated).
+    HD_API
     void MarkShaderBindingsDirty();
 
     /// Returns the current shader binding version.
+    HD_API
     unsigned GetShaderBindingsVersion() const;
 
     // ---------------------------------------------------------------------- //
@@ -410,13 +477,16 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Adds a named state for tracking.
+    HD_API
     void AddState(TfToken const& name);
 
     /// Marks a named state as being dirty., this bumps the version of the
     /// state.
+    HD_API
     void MarkStateDirty(TfToken const& name);
 
     /// Returns the current version of the named state.
+    HD_API
     unsigned GetStateVersion(TfToken const &name) const;
 
     // ---------------------------------------------------------------------- //
@@ -424,8 +494,10 @@ public:
     /// \name Debug
     /// @{
     // ---------------------------------------------------------------------- //
+    HD_API
     static std::string StringifyDirtyBits(HdDirtyBits dirtyBits);
 
+    HD_API
     static void DumpDirtyBits(HdDirtyBits dirtyBits);
 
     /// @}

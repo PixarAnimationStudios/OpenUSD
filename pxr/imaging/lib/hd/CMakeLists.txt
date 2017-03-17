@@ -114,6 +114,7 @@ pxr_shared_library(hd
         vtBufferSource
 
     PUBLIC_HEADERS
+        api.h
         enums.h
         types.h
         version.h

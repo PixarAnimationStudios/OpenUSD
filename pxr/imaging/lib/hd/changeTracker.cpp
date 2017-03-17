@@ -447,7 +447,7 @@ HdChangeTracker::IsPrimVarDirty(SdfPath const& id, TfToken const& name)
 bool 
 HdChangeTracker::IsTopologyDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyTopology);
+    bool isDirty = (dirtyBits & DirtyTopology) != 0;
     _LogCacheAccess(HdTokens->topology, id, !isDirty);
     return isDirty;
 }
@@ -456,7 +456,7 @@ HdChangeTracker::IsTopologyDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool 
 HdChangeTracker::IsDoubleSidedDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyDoubleSided);
+    bool isDirty = (dirtyBits & DirtyDoubleSided) != 0;
     _LogCacheAccess(HdTokens->doubleSided, id, !isDirty);
     return isDirty;
 }
@@ -465,7 +465,7 @@ HdChangeTracker::IsDoubleSidedDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool 
 HdChangeTracker::IsCullStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyCullStyle);
+    bool isDirty = (dirtyBits & DirtyCullStyle) != 0;
     _LogCacheAccess(HdTokens->cullStyle, id, !isDirty);
     return isDirty;
 }
@@ -474,7 +474,7 @@ HdChangeTracker::IsCullStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool 
 HdChangeTracker::IsRefineLevelDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyRefineLevel);
+    bool isDirty = (dirtyBits & DirtyRefineLevel) != 0;
     _LogCacheAccess(HdTokens->refineLevel, id, !isDirty);
     return isDirty;
 }
@@ -483,7 +483,7 @@ HdChangeTracker::IsRefineLevelDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool 
 HdChangeTracker::IsSubdivTagsDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtySubdivTags);
+    bool isDirty = (dirtyBits & DirtySubdivTags) != 0;
     _LogCacheAccess(HdTokens->subdivTags, id, !isDirty);
     return isDirty;
 }
@@ -492,7 +492,7 @@ HdChangeTracker::IsSubdivTagsDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool 
 HdChangeTracker::IsTransformDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyTransform);
+    bool isDirty = (dirtyBits & DirtyTransform) != 0;
     _LogCacheAccess(HdTokens->transform, id, !isDirty);
     return isDirty;
 }
@@ -501,7 +501,7 @@ HdChangeTracker::IsTransformDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool 
 HdChangeTracker::IsVisibilityDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyVisibility);
+    bool isDirty = (dirtyBits & DirtyVisibility) != 0;
     _LogCacheAccess(HdTokens->visibility, id, !isDirty);
     return isDirty;
 }
@@ -510,7 +510,7 @@ HdChangeTracker::IsVisibilityDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool 
 HdChangeTracker::IsExtentDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyExtent);
+    bool isDirty = (dirtyBits & DirtyExtent) != 0;
     _LogCacheAccess(HdTokens->extent, id, !isDirty);
     return isDirty;
 }
@@ -519,7 +519,7 @@ HdChangeTracker::IsExtentDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool 
 HdChangeTracker::IsPrimIdDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyPrimID);
+    bool isDirty = (dirtyBits & DirtyPrimID) != 0;
     _LogCacheAccess(HdTokens->primID, id, !isDirty);
     return isDirty;
 }
@@ -528,7 +528,7 @@ HdChangeTracker::IsPrimIdDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool 
 HdChangeTracker::IsInstancerDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyInstancer);
+    bool isDirty = (dirtyBits & DirtyInstancer) != 0;
     _LogCacheAccess(HdTokens->instancer, id, !isDirty);
     return isDirty;
 }
@@ -537,7 +537,7 @@ HdChangeTracker::IsInstancerDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool
 HdChangeTracker::IsInstanceIndexDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = bool(dirtyBits & DirtyInstanceIndex);
+    bool isDirty = (dirtyBits & DirtyInstanceIndex) != 0;
     _LogCacheAccess(HdTokens->instanceIndices, id, !isDirty);
     return isDirty;
 }
@@ -546,10 +546,10 @@ HdChangeTracker::IsInstanceIndexDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 bool
 HdChangeTracker::IsAnyPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const &id)
 {
-    bool isDirty = bool(dirtyBits & (DirtyPoints|
-                                     DirtyNormals|
-                                     DirtyWidths|
-                                     DirtyPrimVar));
+    bool isDirty = (dirtyBits & (DirtyPoints|
+                                 DirtyNormals|
+                                 DirtyWidths|
+                                 DirtyPrimVar)) != 0;
     _LogCacheAccess(HdTokens->primVar, id, !isDirty);
     return isDirty;
 }
@@ -561,13 +561,13 @@ HdChangeTracker::IsPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
 {
     bool isDirty = false;
     if (name == HdTokens->points) {
-        isDirty = dirtyBits & DirtyPoints;
+        isDirty = (dirtyBits & DirtyPoints) != 0;
     } else if (name == HdTokens->normals) {
-        isDirty = dirtyBits & DirtyNormals;
+        isDirty = (dirtyBits & DirtyNormals) != 0;
     } else if (name == HdTokens->widths) {
-        isDirty = dirtyBits & DirtyWidths;
+        isDirty = (dirtyBits & DirtyWidths) != 0;
     } else {
-        isDirty = dirtyBits & DirtyPrimVar;
+        isDirty = (dirtyBits & DirtyPrimVar) != 0;
     }
     _LogCacheAccess(name, id, !isDirty);
     return isDirty;
@@ -577,7 +577,7 @@ HdChangeTracker::IsPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
 bool
 HdChangeTracker::IsReprDirty(HdDirtyBits dirtyBits, SdfPath const &id)
 {
-    bool isDirty = bool(dirtyBits & DirtyRepr);
+    bool isDirty = (dirtyBits & DirtyRepr) != 0;
     return isDirty;
 }
 

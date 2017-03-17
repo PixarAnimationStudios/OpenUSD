@@ -25,6 +25,7 @@
 #define HD_MESH_UTIL_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/meshTopology.h"
 
@@ -99,6 +100,7 @@ public:
 
     /// Return a triangulation of the input topology.  indices and
     /// primitiveParams are output parameters.
+    HD_API
     void ComputeTriangleIndices(VtVec3iArray *indices,
                                 VtIntArray *primitiveParams);
 
@@ -107,6 +109,7 @@ public:
     /// (e.g. GL_FLOAT_VEC3); the result is a VtArray<T> of the
     /// correct type written to the variable "triangulated".
     /// This function returns false if it can't resolve glDataType.
+    HD_API
     bool ComputeTriangulatedFaceVaryingPrimvar(void const* source,
                                                int numElements,
                                                int glDataType,
@@ -132,16 +135,19 @@ public:
 
     /// Return the number of quadrangulated quads.
     /// If degenerated face is found, sets invalidFaceFound as true.
+    HD_API
     static int ComputeNumQuads(VtIntArray const &numVerts,
                                VtIntArray const &holeIndices,
                                bool *invalidFaceFound=NULL);
 
 
     /// Generate a quadInfo struct for the input topology.
+    HD_API
     void ComputeQuadInfo(HdQuadInfo* quadInfo);
 
     /// Return quadrangulated indices of the input topology. indices and
     /// primitiveParams are output parameters.
+    HD_API
     void ComputeQuadIndices(VtVec4iArray *indices,
                             VtVec2iArray *primitiveParams);
 
@@ -150,6 +156,7 @@ public:
     /// (e.g. GL_FLOAT_VEC3); the result is a VtArray<T> of the
     /// correct type written to the variable "quadrangulated".
     /// This function returns false if it can't resolve glDataType.
+    HD_API
     bool ComputeQuadrangulatedPrimvar(HdQuadInfo const* qi,
                                       void const* source,
                                       int numElements,
@@ -161,6 +168,7 @@ public:
     /// to glDataType (e.g. GL_FLOAT_VEC3); the result is a VtArray<T> of the
     /// correct type written to the variable "quadrangulated".
     /// This function returns false if it can't resolve glDataType.
+    HD_API
     bool ComputeQuadrangulatedFaceVaryingPrimvar(void const* source,
                                                  int numElements,
                                                  int glDataType,

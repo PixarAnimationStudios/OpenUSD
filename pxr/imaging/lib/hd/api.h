@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,43 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_COPY_COMPUTATION_H
-#define HD_COPY_COMPUTATION_H
+#ifndef HD_API_H
+#define HD_API_H
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/computation.h"
+#include "pxr/base/arch/export.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#if defined(HD_STATIC)
+#   define HD_API
+#   define HD_API_TEMPLATE_CLASS(...)
+#   define HD_API_TEMPLATE_STRUCT(...)
+#   define HD_LOCAL
+#else
+#   if defined(HD_EXPORTS)
+#       define HD_API ARCH_EXPORT
+#       define HD_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HD_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define HD_API ARCH_IMPORT
+#       define HD_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HD_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define HD_LOCAL ARCH_HIDDEN
+#endif
 
-
-/// \class HdCopyComputationGPU
-///
-/// A GPU computation which transfers a vbo range specified by src and name to
-/// the given range.
-///
-class HdCopyComputationGPU : public HdComputation {
-public:
-    HD_API
-    HdCopyComputationGPU(HdBufferArrayRangeSharedPtr const &src,
-                          TfToken const &name);
-
-    HD_API
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range);
-
-    HD_API
-    virtual int GetNumOutputElements() const;
-
-    HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-
-private:
-    HdBufferArrayRangeSharedPtr _src;
-    TfToken _name;
-};
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif  // HD_COMPUTATION_H
+#endif // HD_API_H

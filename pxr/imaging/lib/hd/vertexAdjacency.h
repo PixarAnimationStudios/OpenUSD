@@ -25,7 +25,7 @@
 #define HD_VERTEX_ADJACENCY_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/vt/array.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
@@ -34,6 +34,7 @@
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/vt/array.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -65,27 +66,34 @@ class HdMeshTopology;
 ///
 class Hd_VertexAdjacency {
 public:
+    HD_API
     Hd_VertexAdjacency();
 
     /// Returns an array of the same size and type as the source points
     /// containing normal vectors computed by averaging the cross products
     /// of incident face edges.
+    HD_API
     VtArray<GfVec3f> ComputeSmoothNormals(int numPoints,
                                           GfVec3f const * pointsPtr) const;
+    HD_API
     VtArray<GfVec3d> ComputeSmoothNormals(int numPoints,
                                           GfVec3d const * pointsPtr) const;
+    HD_API
     VtArray<HdVec4f_2_10_10_10_REV> ComputeSmoothNormalsPacked(int numPoints,
                                           GfVec3f const * pointsPtr) const;
+    HD_API
     VtArray<HdVec4f_2_10_10_10_REV> ComputeSmoothNormalsPacked(int numPoints,
                                           GfVec3d const * pointsPtr) const;
 
     /// Returns the adjacency builder computation.
     /// This computaions generates adjacency table on CPU.
+    HD_API
     HdBufferSourceSharedPtr GetAdjacencyBuilderComputation(
         HdMeshTopology const *topology);
 
     /// Returns the adjacency builder computation.
     /// This computaions generates adjacency table on GPU.
+    HD_API
     HdBufferSourceSharedPtr GetAdjacencyBuilderForGPUComputation();
 
     ///
@@ -96,6 +104,7 @@ public:
     /// This computation generates buffer source of computed normals
     /// to be transferred later. It requires adjacency table on CPU
     /// produced by AdjacencyBuilderComputation.
+    HD_API
     HdBufferSourceSharedPtr GetSmoothNormalsComputation(
         HdBufferSourceSharedPtr const &points,
         TfToken const &dstName,
@@ -104,6 +113,7 @@ public:
     /// Returns the smooth normal computation on GPU.
     /// This computation requires adjacency table on GPU produced by
     /// AdjacencyBuilderForGPUComputation.
+    HD_API
     HdComputationSharedPtr GetSmoothNormalsComputationGPU(
         TfToken const &srcName, TfToken const &dstName,
         GLenum srcDataType, GLenum dstDataType);
@@ -150,11 +160,14 @@ private:
 ///
 class Hd_AdjacencyBuilderComputation : public HdNullBufferSource {
 public:
+    HD_API
     Hd_AdjacencyBuilderComputation(Hd_VertexAdjacency *adjacency,
                                    HdMeshTopology const *topology);
+    HD_API
     virtual bool Resolve();
 
 protected:
+    HD_API
     virtual bool _CheckValid() const;
 
 private:
@@ -171,15 +184,19 @@ public:
     typedef boost::shared_ptr<class Hd_AdjacencyBuilderComputation>
         Hd_AdjacencyBuilderComputationSharedPtr;
 
+    HD_API
     Hd_AdjacencyBuilderForGPUComputation(
         Hd_VertexAdjacency const *adjacency,
         Hd_AdjacencyBuilderComputationSharedPtr const &adjacencyBuilder);
 
     // overrides
+    HD_API
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    HD_API
     virtual bool Resolve();
 
 protected:
+    HD_API
     virtual bool _CheckValid() const;
 
 private:

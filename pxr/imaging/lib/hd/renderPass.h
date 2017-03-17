@@ -25,6 +25,7 @@
 #define HD_RENDER_PASS_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/commandBuffer.h"
@@ -53,8 +54,11 @@ typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 ///
 class HdRenderPass : boost::noncopyable {
 public:
+    HD_API
     HdRenderPass(HdRenderIndex *index);
+    HD_API
     HdRenderPass(HdRenderIndex *index, const HdRprimCollection &collection);
+    HD_API
     virtual ~HdRenderPass();
 
     /// Returns the HdRprimCollection to be drawn by this RenderPass.
@@ -62,6 +66,7 @@ public:
 
     /// Sets the HdRprimCollection, note that this may invalidate internal
     /// caches used to accelerate drawing.
+    HD_API
     void SetRprimCollection(HdRprimCollection const& col);
 
     /// Returns the dirty list (maintained in the change tracker) for
@@ -72,17 +77,21 @@ public:
 
     /// Returns the most recent list of render tags that this render pass
     /// has found in the render items included in the collection.
+    HD_API
     TfTokenVector const &GetRenderTags();
 
     /// Execute render pass task
+    HD_API
     void Execute(HdRenderPassStateSharedPtr const &renderPassState);
 
     /// Execute a specific render bucket specified by the 
     /// render tag.
+    HD_API
     void Execute(HdRenderPassStateSharedPtr const &renderPassState,
                  TfToken const &renderTag);
 
     /// Sync the render pass resources
+    HD_API
     void Sync();
 
     /// Return the render index

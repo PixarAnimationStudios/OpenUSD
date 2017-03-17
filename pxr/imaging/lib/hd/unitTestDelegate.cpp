@@ -1226,7 +1226,7 @@ Hd_UnitTestDelegate::AddCurves(
     if (authoredNormals)
         authNormals = _BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
 
-    for(uint i = 0;i < sizeof(points) / sizeof(points[0]); ++ i) {
+    for(size_t i = 0;i < sizeof(points) / sizeof(points[0]); ++ i) {
         GfVec4f tmpPoint = GfVec4f(points[i][0], points[i][1], points[i][2], 1.0f);
         tmpPoint = tmpPoint * transform;
         points[i] = GfVec3f(tmpPoint[0], tmpPoint[1], tmpPoint[2]);

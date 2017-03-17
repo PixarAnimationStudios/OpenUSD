@@ -25,6 +25,7 @@
 #define HD_SPRIM_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/types.h"
 
@@ -52,7 +53,9 @@ class HdRenderParam;
 ///
 class HdSprim {
 public:
+    HD_API
     HdSprim(SdfPath const & id);
+    HD_API
     virtual ~HdSprim();
 
     /// Returns the identifer by which this state is known. This

@@ -217,7 +217,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
             shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToPacked;
         }
     }
-    if (not TF_VERIFY(!shaderToken.IsEmpty())) return;
+    if (!TF_VERIFY(!shaderToken.IsEmpty())) return;
 
     HdGLSLProgramSharedPtr computeProgram
         = HdGLSLProgram::GetComputeProgram(shaderToken);

@@ -25,6 +25,11 @@
 #define HD_VT_BUFFER_SOURCE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/bufferSource.h"
+#include "pxr/imaging/hd/glUtils.h"
+#include "pxr/imaging/hd/patchIndex.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -37,10 +42,6 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/glUtils.h"
-#include "pxr/imaging/hd/patchIndex.h"
 #include "pxr/base/vt/value.h"
 
 #include <vector>
@@ -119,6 +120,7 @@ public:
     /// copied into a new internal buffer.
     ///
     /// We may be able to map this to GPU memory in the glorious future.
+    HD_API
     HdVtBufferSource(TfToken const &name, VtValue const& value,
                      bool staticArray=false);
 
@@ -127,6 +129,7 @@ public:
     /// (GL_FLOAT by default, GL_DOUBLE when HD_ENABLE_DOUBLE_MATRIX=1)
     /// note that if we use above VtValue taking constructor, we can use
     /// either float or double matrix regardless the default type.
+    HD_API
     HdVtBufferSource(TfToken const &name, GfMatrix4d const &matrix);
 
     /// Constructs a new buffer from matrix array. The data is copied
@@ -134,13 +137,16 @@ public:
     /// (GL_FLOAT by default, GL_DOUBLE when HD_ENABLE_DOUBLE_MATRIX=1)
     /// note that if we use above VtValue taking constructor, we can use
     /// either float or double matrix regardless the default type.
+    HD_API
     HdVtBufferSource(TfToken const &name, VtArray<GfMatrix4d> const &matrices,
                      bool staticArray=false);
 
     /// Returns the default matrix type (GL_FLOAT or GL_DOUBLE)
+    HD_API
     static GLenum GetDefaultMatrixType();
 
     /// Destructor deletes the internal storage.
+    HD_API
     ~HdVtBufferSource();
 
     /// Return the name of this buffer source.
@@ -160,6 +166,7 @@ public:
 
     /// Returns the number of elements (e.g. VtVec3dArray().GetLength()) from
     /// the source array.
+    HD_API
     virtual int GetNumElements() const;
 
     /// Returns the number of components in a single element.
@@ -186,10 +193,12 @@ public:
         return true;
     }
 
+    HD_API
     friend std::ostream &operator <<(std::ostream &out,
                                      const HdVtBufferSource& self);
 
 protected:
+    HD_API
     virtual bool _CheckValid() const;
 
 private:

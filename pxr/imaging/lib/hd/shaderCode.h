@@ -25,6 +25,7 @@
 #define HD_SHADER_CODE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/resourceBinder.h"  // XXX: including a private class
@@ -56,13 +57,16 @@ class HdShaderCode {
 public:
     typedef size_t ID;
 
+    HD_API
     HdShaderCode();
+    HD_API
     virtual ~HdShaderCode();
 
     /// Returns the hash value of this shader.
     virtual ID ComputeHash() const = 0;
 
     /// Returns the combined hash values of multiple shaders.
+    HD_API
     static ID ComputeHash(HdShaderCodeSharedPtrVector const &shaders);
 
     /// Returns the shader source provided by this shader
@@ -71,6 +75,7 @@ public:
 
     // XXX: Should be pure-virtual
     /// Returns the shader parameters for this shader.
+    HD_API
     virtual HdShaderParamVector const& GetParams() const;
 
     struct TextureDescriptor {
@@ -83,11 +88,13 @@ public:
     typedef std::vector<TextureDescriptor> TextureDescriptorVector;
 
     // XXX: DOC
+    HD_API
     virtual TextureDescriptorVector GetTextures() const;
 
     // XXX: Should be pure-virtual
     /// Returns a buffer which stores parameter fallback values and texture
     /// handles.
+    HD_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
 
     /// Binds shader-specific resources to \a program
@@ -104,6 +111,7 @@ public:
     virtual void AddBindings(HdBindingRequestVector* customBindings) = 0;
 
     /// Returns if the two shaders can be aggregated in a same drawbatch or not.
+    HD_API
     static bool CanAggregate(HdShaderCodeSharedPtr const &shaderA,
                              HdShaderCodeSharedPtr const &shaderB);
 

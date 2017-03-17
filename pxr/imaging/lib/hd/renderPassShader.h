@@ -25,6 +25,7 @@
 #define HD_RENDER_PASS_SHADER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/binding.h"
@@ -48,24 +49,35 @@ typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
 ///
 class HdRenderPassShader : public HdShaderCode {
 public:
+    HD_API
     HdRenderPassShader();
+    HD_API
     HdRenderPassShader(TfToken const &glslfxFile);
+    HD_API
     virtual ~HdRenderPassShader() override;
 
     /// HdShader overrides
+    HD_API
     virtual ID ComputeHash() const override;
+    HD_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const override;
+    HD_API
     virtual void BindResources(Hd_ResourceBinder const &binder, int program) override;
+    HD_API
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program) override;
+    HD_API
     virtual void AddBindings(HdBindingRequestVector *customBindings) override;
 
     /// Add a custom binding request for use when this shader executes.
+    HD_API
     void AddBufferBinding(HdBindingRequest const& req);
 
     /// Remove \p name from custom binding.
+    HD_API
     void RemoveBufferBinding(TfToken const &name);
 
     /// Clear all custom bindings associated with this shader.
+    HD_API
     void ClearBufferBindings();
 
     HdCullStyle GetCullStyle() const {

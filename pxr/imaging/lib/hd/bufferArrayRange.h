@@ -25,6 +25,7 @@
 #define HD_BUFFER_ARRAY_RANGE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
@@ -57,6 +58,7 @@ public:
     /// collection in its destructor. However, be careful not do any
     /// substantial work here (obviously including any kind of GL calls),
     /// since the destructor gets called frequently on various contexts.
+    HD_API
     virtual ~HdBufferArrayRange();
 
     /// Returns true if this range is valid
@@ -116,6 +118,7 @@ public:
     }
 
     /// Sets the bufferSpecs for all resources.
+    HD_API
     void AddBufferSpecs(HdBufferSpecVector *bufferSpecs) const;
 
 protected:
@@ -124,6 +127,7 @@ protected:
 
 };
 
+HD_API
 std::ostream &operator <<(std::ostream &out,
                           const HdBufferArrayRange &self);
 
@@ -139,10 +143,12 @@ public:
 
     /// Set \p range into the container at \p index.
     /// If the size of container is smaller than index, resize it.
+    HD_API
     void Set(int index, HdBufferArrayRangeSharedPtr const &range);
 
     /// Returns the bar at \p index. returns null if either the index
     // is out of range or not yet set.
+    HD_API
     HdBufferArrayRangeSharedPtr const &Get(int index) const;
 
 private:

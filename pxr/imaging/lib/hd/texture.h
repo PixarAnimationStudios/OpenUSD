@@ -25,14 +25,15 @@
 #define HD_TEXTURE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-
 #include "pxr/imaging/hd/bprim.h"
 
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/value.h"
-
 #include "pxr/imaging/garch/gl.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -63,11 +64,14 @@ public:
                                 |DirtyTexture)
     };
 
+    HD_API
     HdTexture(SdfPath const & id);
+    HD_API
     virtual ~HdTexture();
 
     /// Synchronizes state from the delegate to Hydra, for example, allocating
     /// parameters into GPU memory.
+    HD_API
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
@@ -75,6 +79,7 @@ public:
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
+    HD_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     // ---------------------------------------------------------------------- //
@@ -82,12 +87,15 @@ public:
     // ---------------------------------------------------------------------- //
     
     /// Returns the binary data for the texture.
+    HD_API
     HdTextureResourceSharedPtr GetTextureData() const;
 
     /// Returns true if the texture should be interpreted as a PTex texture.
+    HD_API
     bool IsPtex() const;
 
     /// Returns true if mipmaps should be generated when loading.
+    HD_API
     bool ShouldGenerateMipMaps() const;
 
 private:
