@@ -988,30 +988,6 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         // This base material is defined as a derivesFrom relationship
         parentPath = materialSchema.GetBaseMaterialPath();
     }
-    else {
-        const PcpPrimIndex &index = prim.GetPrimIndex();
-        for(const PcpNodeRef &node: index.GetNodeRange()) {
-            if (PcpIsSpecializesArc(node.GetArcType()))
-                    // && node.GetOriginNode() == index.GetRootNode()) {
-            {
-                // Found a root specializes arc.
-                if (node.GetParentNode() != node.GetRootNode()) {
-                    continue;
-                }
-
-                if (node.GetMapToParent().MapSourceToTarget(
-                    SdfPath::AbsoluteRootPath()).IsEmpty()) {
-                    // Skip this child node because it crosses a reference arc.
-                    // (Reference mappings never map the absoluteyroot path </>.)
-                    continue;
-                }
-                
-                // stop at the first one
-                parentPath = node.GetPath();
-                break;
-            }
-        }
-    }
 
     UsdPrim parentPrim = 
         data.GetUsdInArgs()->GetStage()->GetPrimAtPath(parentPath);
