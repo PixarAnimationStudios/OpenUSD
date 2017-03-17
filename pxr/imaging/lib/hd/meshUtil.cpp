@@ -549,7 +549,9 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
 
 template <typename T>
 static void
-_Quadrangulate(void const* sourceUntyped,
+_Quadrangulate(SdfPath const& id,
+               void const* sourceUntyped,
+               int numElements,
                HdQuadInfo const *qi,
                VtValue *quadrangulated)
 {
@@ -560,7 +562,16 @@ _Quadrangulate(void const* sourceUntyped,
 
     // copy original primVars
     T const *source = reinterpret_cast<T const*>(sourceUntyped);
-    memcpy(results.data(), source, sizeof(T)*qi->pointsOffset);
+    if (numElements >= qi->pointsOffset) {
+        memcpy(results.data(), source, sizeof(T)*qi->pointsOffset);
+    } else {
+        TF_WARN("source.numElements and pointsOffset are inconsistent [%s]",
+                id.GetText());
+        memcpy(results.data(), source, sizeof(T)*numElements);
+        for (int i = numElements; i < qi->pointsOffset; ++i) {
+            results[i] = T(0);
+        }
+    }
 
     // compute quadrangulate primVars
     int index = 0;
@@ -575,11 +586,11 @@ _Quadrangulate(void const* sourceUntyped,
             int i1 = qi->verts[index+(i+1)%nv];
 
             // midpoint
-            T edge = (source[i0] + source[i1]) * 0.5;
+            T edge = (results[i0] + results[i1]) * 0.5;
             results[dstIndex++] = edge;
 
             // accumulate center
-            center += source[i0];
+            center += results[i0];
         }
         // average center value
         center /= nv;
@@ -608,35 +619,31 @@ HdMeshUtil::ComputeQuadrangulatedPrimvar(HdQuadInfo const* qi,
         TF_CODING_ERROR("No output buffer provided for quadrangulation");
         return false;
     }
-    if (numElements != qi->pointsOffset) {
-        TF_CODING_ERROR("Buffer size and quad info mismatch");
-        return false;
-    }
 
     switch (glDataType) {
     case GL_FLOAT:
-        _Quadrangulate<float>(source, qi, quadrangulated);
+        _Quadrangulate<float>(_id, source, numElements, qi, quadrangulated);
         break;
     case GL_FLOAT_VEC2:
-        _Quadrangulate<GfVec2f>(source, qi, quadrangulated);
+        _Quadrangulate<GfVec2f>(_id, source, numElements, qi, quadrangulated);
         break;
     case GL_FLOAT_VEC3:
-        _Quadrangulate<GfVec3f>(source, qi, quadrangulated);
+        _Quadrangulate<GfVec3f>(_id, source, numElements, qi, quadrangulated);
         break;
     case GL_FLOAT_VEC4:
-        _Quadrangulate<GfVec4f>(source, qi, quadrangulated);
+        _Quadrangulate<GfVec4f>(_id, source, numElements, qi, quadrangulated);
         break;
     case GL_DOUBLE:
-        _Quadrangulate<double>(source, qi, quadrangulated);
+        _Quadrangulate<double>(_id, source, numElements, qi, quadrangulated);
         break;
     case GL_DOUBLE_VEC2:
-        _Quadrangulate<GfVec2d>(source, qi, quadrangulated);
+        _Quadrangulate<GfVec2d>(_id, source, numElements, qi, quadrangulated);
         break;
     case GL_DOUBLE_VEC3:
-        _Quadrangulate<GfVec3d>(source, qi, quadrangulated);
+        _Quadrangulate<GfVec3d>(_id, source, numElements, qi, quadrangulated);
         break;
     case GL_DOUBLE_VEC4:
-        _Quadrangulate<GfVec4d>(source, qi, quadrangulated);
+        _Quadrangulate<GfVec4d>(_id, source, numElements, qi, quadrangulated);
         break;
     default:
         TF_CODING_ERROR("Unsupported points type for quadrangulation [%s]",
