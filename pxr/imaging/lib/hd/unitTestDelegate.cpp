@@ -411,6 +411,9 @@ Hd_UnitTestDelegate::UpdateCamera(SdfPath const &id,
                                   VtValue value)
 {
     _cameras[id].params[key] = value;
+   HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+   // XXX: we could be more granular here if the tokens weren't in hdx.
+   tracker.MarkSprimDirty(id, HdChangeTracker::AllDirty);
 }
 
 void
@@ -419,6 +422,18 @@ Hd_UnitTestDelegate::UpdateTask(SdfPath const &id,
                                 VtValue value)
 {
     _tasks[id].params[key] = value;
+
+   // Update dirty bits for tokens we recognize.
+   HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+   if (key == HdTokens->params) {
+       tracker.MarkTaskDirty(id, HdChangeTracker::DirtyParams);
+   } else if (key == HdTokens->collection) {
+       tracker.MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
+   } else if (key == HdTokens->children) {
+       tracker.MarkTaskDirty(id, HdChangeTracker::DirtyChildren);
+   } else {
+       TF_CODING_ERROR("Unknown key %s", key.GetText());
+   }
 }
 
 /*virtual*/
