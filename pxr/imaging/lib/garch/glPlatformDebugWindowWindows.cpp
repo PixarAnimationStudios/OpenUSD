@@ -22,17 +22,33 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/imaging/garch/glPlatformDebugWindowWindows.h"
-
+#include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/diagnostic.h"
+
+#include <map>
+#include <GL/gl.h>
+#include <tchar.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace {
+
+static
+std::map<HWND, Garch_GLPlatformDebugWindow*>&
+_GetWindowsMap()
+{
+    static std::map<HWND, Garch_GLPlatformDebugWindow*> windows;
+    return windows;
+}
+
+}
+
 // ---------------------------------------------------------------------------
-Garch_GLPlatformDebugWindow::_className = _T("GarchGLDebugWindow");
+
+LPCTSTR Garch_GLPlatformDebugWindow::_className = _T("GarchGLDebugWindow");
 
 Garch_GLPlatformDebugWindow::Garch_GLPlatformDebugWindow(GarchGLDebugWindow *w)
     : _running(false)
@@ -52,7 +68,7 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
     if (GetClassInfo(_hInstance, _className, &wc) == 0) {
         ZeroMemory(&wc, sizeof(WNDCLASS));
 
-        wc.lpfnWndProc   = MsgProc; // XXX:
+        wc.lpfnWndProc   = &Garch_GLPlatformDebugWindow::_MsgProc;
         wc.hInstance     = _hInstance;
         wc.style         = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
         wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
@@ -69,12 +85,17 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
     DWORD flags = WS_CLIPSIBLINGS|WS_CLIPCHILDREN;
     DWORD exFlags = 0;
 
-    _hWND = CreateWindowEX(exFlags, _className,
+    _hWND = CreateWindowEx(exFlags, _className,
                            title, flags, 100, 100, width, height,
                            (HWND)NULL, (HMENU)NULL, _hInstance,
                            (LPVOID)NULL);
-    ShowWidnow(_hWND, SW_SHOW);
-    _windows[_hWND] = this;
+    if (_hWND == 0) {
+        TF_FATAL_ERROR("CreateWindowEx failed");
+        exit(1);
+    }
+
+    ShowWindow(_hWND, SW_SHOW);
+    _GetWindowsMap()[_hWND] = this;
     _hDC = GetDC(_hWND);
 
     PIXELFORMATDESCRIPTOR pfd;
@@ -113,10 +134,15 @@ static int
 Garch_GetModifierKeys(WPARAM wParam)
 {
     int keys = 0;
-    if (wParam & MK_SHIFT)   keys |= GarchGLDebugWindow::Shift;
-    if (wParam & MK_CONTROL) keys |= GarchGLDebugWindow::Ctrl;
-    if (HIBYTE(GetKeyState(VK_MENU)) & 0x80)
+    if (wParam & MK_SHIFT) {
+        keys |= GarchGLDebugWindow::Shift;
+    }
+    if (wParam & MK_CONTROL) {
+        keys |= GarchGLDebugWindow::Ctrl;
+    }
+    if (HIBYTE(GetKeyState(VK_MENU)) & 0x80) {
         keys |= GarchGLDebugWindow::Alt;
+    }
     return keys;
 }
 
@@ -124,9 +150,9 @@ Garch_GetModifierKeys(WPARAM wParam)
 Garch_GLPlatformDebugWindow *
 Garch_GLPlatformDebugWindow::_GetWindowByHandle(HWND hWND)
 {
-    std::map<HWND, Garch_GLPlatformDebugWindow*>::iterator it =
-        _windows.find(hWND);
-    if (it != _windows.end()) {
+    const auto& windows = _GetWindowsMap();
+    auto it = windows.find(hWND);
+    if (it != windows.end()) {
         return it->second;
     }
     return NULL;
@@ -135,10 +161,10 @@ Garch_GLPlatformDebugWindow::_GetWindowByHandle(HWND hWND)
 /* static */
 LRESULT WINAPI
 Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
-                                     WPARAM wParam, LPARAM lParam)
+                                      WPARAM wParam, LPARAM lParam)
 {
     Garch_GLPlatformDebugWindow *window
-        = Garch_GLPlatformDebugWindow::GetWindowByHandle(hWnd);
+        = Garch_GLPlatformDebugWindow::_GetWindowByHandle(hWnd);
     if (!TF_VERIFY(window)) {
         return 0;
     }
@@ -151,35 +177,41 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
             HIWORD(lParam), LOWORD(lParam));
         break;
     case WM_LBUTTONDOWN:
-        window->_callback->OnMousePressEvent(
+        window->_callback->OnMousePress(
             /*button=*/0, x, y, Garch_GetModifierKeys(wParam));
         break;
     case WM_MBUTTONDOWN:
-        window->_callback->OnMousePressEvent(
+        window->_callback->OnMousePress(
             /*button=*/1, x, y, Garch_GetModifierKeys(wParam));
         break;
     case WM_RBUTTONDOWN:
-        window->_callback->OnMousePressEvent(
+        window->_callback->OnMousePress(
             /*button=*/2, x, y, Garch_GetModifierKeys(wParam));
         break;
     case WM_LBUTTONUP:
-        window->_callback->OnMouseReleaseEvent(
+        window->_callback->OnMouseRelease(
             /*button=*/0, x, y, Garch_GetModifierKeys(wParam));
         break;
     case WM_MBUTTONUP:
-        window->_callback->OnMouseReleaseEvent(
+        window->_callback->OnMouseRelease(
             /*button=*/1, x, y, Garch_GetModifierKeys(wParam));
         break;
     case WM_RBUTTONUP:
-        window->_callback->OnMouseReleaseEvent(
+        window->_callback->OnMouseRelease(
             /*button=*/2, x, y, Garch_GetModifierKeys(wParam));
         break;
     case WM_MOUSEMOVE:
-        window->_callback->OnMouseMoveEvent(
+        window->_callback->OnMouseMove(
             x, y, Garch_GetModifierKeys(wParam));
         break;
     case WM_KEYUP:
-        window->_callback->OnKeyReleaseEvent(key);
+        // We could try to do our own key translation here but for
+        // now we handle WM_CHAR.
+        //window->_callback->OnKeyRelease(XXX);
+        break;
+    case WM_CHAR:
+        // Note -- this is send on key down, not up.
+        window->_callback->OnKeyRelease(wParam);
         break;
     }
     return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -188,12 +220,14 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
 void
 Garch_GLPlatformDebugWindow::Run()
 {
-    if (!_display) return;
+    if (!_hWND) {
+        return;
+    }
 
     _running = true;
 
     MSG msg = {0};
-    while (_running && message != WM_QUIT) {
+    while (_running && msg.message != WM_QUIT) {
         if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
@@ -212,11 +246,13 @@ Garch_GLPlatformDebugWindow::Run()
     }
     _callback->OnUninitializeGL();
 
-    whlMakeCurrent(0, 0);
+    wglMakeCurrent(NULL, NULL);
     // release GL
     wglDeleteContext(_hGLRC);
+    ReleaseDC(_hWND, _hDC);
 
-    _windows.remove(_hWND);
+    _GetWindowsMap().erase(_hWND);
+    _hWND = 0;
 }
 
 void

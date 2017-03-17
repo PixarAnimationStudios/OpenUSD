@@ -31,7 +31,7 @@
 #elif defined ARCH_OS_DARWIN
 #include "pxr/imaging/garch/glPlatformDebugWindowDarwin.h"
 #elif defined ARCH_OS_WINDOWS
-#include "pxr/imaging/garch/glPlatformDebugWindowWin.h"
+#include "pxr/imaging/garch/glPlatformDebugWindowWindows.h"
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE

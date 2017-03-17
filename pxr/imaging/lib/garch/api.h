@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,46 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GARCH_GLPLATFORMCONTEXT_H
-#define GARCH_GLPLATFORMCONTEXT_H
+#ifndef GARCH_API_H
+#define GARCH_API_H
 
-/// \file garch/glPlatformContext.h
+#include "pxr/base/arch/export.h"
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/garch/api.h"
-#include "pxr/base/arch/defines.h"
-#include <cstddef>
-
-#if defined ARCH_OS_LINUX
-
-#include "pxr/imaging/garch/glPlatformContextGLX.h"
-
-#elif defined ARCH_OS_DARWIN
-
-#include "pxr/imaging/garch/glPlatformContextDarwin.h"
-
-#elif defined ARCH_OS_WINDOWS
-
-#include "pxr/imaging/garch/glPlatformContextWindows.h"
-
+#if defined(GARCH_STATIC)
+#   define GARCH_API
+#   define GARCH_API_TEMPLATE_CLASS(...)
+#   define GARCH_API_TEMPLATE_STRUCT(...)
+#   define GARCH_LOCAL
 #else
-
-#error "Unknown platform"
-
+#   if defined(GARCH_EXPORTS)
+#       define GARCH_API ARCH_EXPORT
+#       define GARCH_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define GARCH_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define GARCH_API ARCH_IMPORT
+#       define GARCH_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define GARCH_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define GARCH_LOCAL ARCH_HIDDEN
 #endif
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-GARCH_API GarchGLPlatformContextState GarchGetNullGLPlatformContextState();
-
-inline
-size_t
-hash_value(const GarchGLPlatformContextState& x)
-{
-    return x.GetHash();
-}
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif  // GARCH_GLPLATFORMCONTEXT_H
+#endif

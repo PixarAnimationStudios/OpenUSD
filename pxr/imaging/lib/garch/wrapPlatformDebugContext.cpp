@@ -53,5 +53,7 @@ void wrapPlatformDebugContext()
     ;
 }
 
+TF_REFPTR_CONST_VOLATILE_GET(GarchGLPlatformDebugContext)
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

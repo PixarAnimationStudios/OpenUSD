@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,46 +21,57 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GARCH_GLPLATFORMCONTEXT_H
-#define GARCH_GLPLATFORMCONTEXT_H
-
-/// \file garch/glPlatformContext.h
+#ifndef GARCH_GLPLATFORMCONTEXT_WINDOWS_H
+#define GARCH_GLPLATFORMCONTEXT_WINDOWS_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/garch/api.h"
-#include "pxr/base/arch/defines.h"
-#include <cstddef>
-
-#if defined ARCH_OS_LINUX
-
-#include "pxr/imaging/garch/glPlatformContextGLX.h"
-
-#elif defined ARCH_OS_DARWIN
-
-#include "pxr/imaging/garch/glPlatformContextDarwin.h"
-
-#elif defined ARCH_OS_WINDOWS
-
-#include "pxr/imaging/garch/glPlatformContextWindows.h"
-
-#else
-
-#error "Unknown platform"
-
-#endif
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-GARCH_API GarchGLPlatformContextState GarchGetNullGLPlatformContextState();
 
-inline
-size_t
-hash_value(const GarchGLPlatformContextState& x)
-{
-    return x.GetHash();
-}
+class GarchWGLContextState {
+public:
+    /// Construct with the current state.
+    GARCH_API
+    GarchWGLContextState();
+
+    enum class NullState { nullstate };
+
+    /// Construct with the null state.
+    GARCH_API
+    GarchWGLContextState(NullState);
+
+    /// Compare for equality.
+    GARCH_API
+    bool operator==(const GarchWGLContextState& rhs) const;
+
+    /// Returns a hash value for the state.
+    GARCH_API
+    size_t GetHash() const;
+
+    /// Returns \c true if the context state is valid.
+    GARCH_API
+    bool IsValid() const;
+
+    /// Make the context current.
+    GARCH_API
+    void MakeCurrent();
+
+    /// Make no context current.
+    GARCH_API
+    static void DoneCurrent();
+
+private:
+    class _Detail;
+    std::shared_ptr<_Detail> _detail;
+};
+
+// Hide the platform specific type name behind a common name.
+typedef GarchWGLContextState GarchGLPlatformContextState;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // GARCH_GLPLATFORMCONTEXT_H
+#endif  // GARCH_GLPLATFORMCONTEXT_WINDOWS_H
