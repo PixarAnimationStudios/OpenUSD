@@ -47,10 +47,10 @@ public:
 
     virtual GLuint GetTexelsTextureId() override;
     virtual GLuint GetTexelsSamplerId() override;
-    virtual GLuint64EXT GetTexelsTextureHandle() override;
+    virtual uint64_t GetTexelsTextureHandle() override;
 
     virtual GLuint GetLayoutTextureId() override;
-    virtual GLuint64EXT GetLayoutTextureHandle() override;
+    virtual uint64_t GetLayoutTextureHandle() override;
 
     virtual size_t GetMemoryUsed() override;
 

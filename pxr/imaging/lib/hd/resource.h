@@ -33,6 +33,8 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <cstddef>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -54,15 +56,15 @@ public:
 
     /// The OpenGL name/identifier for this resource and its size
     HD_API
-    virtual void SetAllocation(GLuint id, GLsizeiptr size);
+    virtual void SetAllocation(GLuint id, ptrdiff_t size);
 
     GLuint GetId() const {return _id;}
-    GLsizeiptr GetSize() const {return _size;}
+    ptrdiff_t GetSize() const {return _size;}
 
 private:
     const TfToken _role;
     GLuint _id;
-    GLsizeiptr _size;
+    ptrdiff_t _size;
 };
 
 

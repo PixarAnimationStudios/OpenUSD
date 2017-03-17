@@ -39,6 +39,8 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <cstdint>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -63,10 +65,10 @@ public:
 
     virtual GLuint GetTexelsTextureId() = 0;
     virtual GLuint GetTexelsSamplerId() = 0;
-    virtual GLuint64EXT GetTexelsTextureHandle() = 0;
+    virtual uint64_t GetTexelsTextureHandle() = 0;
 
     virtual GLuint GetLayoutTextureId() = 0;
-    virtual GLuint64EXT GetLayoutTextureHandle() = 0;
+    virtual uint64_t GetLayoutTextureHandle() = 0;
 
     virtual size_t GetMemoryUsed() = 0;
 };
@@ -90,12 +92,12 @@ public:
     HD_API
     virtual GLuint GetTexelsSamplerId();
     HD_API
-    virtual GLuint64EXT GetTexelsTextureHandle();
+    virtual uint64_t GetTexelsTextureHandle();
 
     HD_API
     virtual GLuint GetLayoutTextureId();
     HD_API
-    virtual GLuint64EXT GetLayoutTextureHandle();
+    virtual uint64_t GetLayoutTextureHandle();
 
     HD_API
     virtual size_t GetMemoryUsed();

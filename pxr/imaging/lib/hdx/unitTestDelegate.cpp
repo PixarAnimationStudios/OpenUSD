@@ -135,14 +135,14 @@ public:
     virtual GLuint GetTexelsSamplerId() {
         return 0;
     }
-    virtual GLuint64EXT GetTexelsTextureHandle() {
+    virtual uint64_t GetTexelsTextureHandle() {
         return 0;
     }
 
     virtual GLuint GetLayoutTextureId() {
         return 0;
     }
-    virtual GLuint64EXT GetLayoutTextureHandle() {
+    virtual uint64_t GetLayoutTextureHandle() {
         return 0;
     }
 

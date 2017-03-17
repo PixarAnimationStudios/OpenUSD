@@ -59,7 +59,7 @@ void GlfRegisterDefaultDebugOutputMessageCallback();
 GLF_API
 void GlfDefaultDebugOutputMessageCallback(
         GLenum source, GLenum type, GLuint id, GLenum severity,
-        GLsizei length, GLchar const * message, GLvoid const * userParam);
+        GLsizei length, char const * message, GLvoid const * userParam);
 
 /// Returns a string representation of debug output enum values.
 GLF_API

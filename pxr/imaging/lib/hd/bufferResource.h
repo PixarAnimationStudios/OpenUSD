@@ -33,6 +33,7 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
+#include <cstddef>
 #include <utility>
 #include <vector>
 
@@ -88,7 +89,7 @@ public:
 
     /// Sets the OpenGL name/identifier for this resource and its size.
     /// also caches the gpu address of the buffer.
-    virtual void SetAllocation(GLuint id, GLsizeiptr size);
+    virtual void SetAllocation(GLuint id, ptrdiff_t size);
 
     /// Returns the gpu address (if available. otherwise returns 0).
     uint64_t GetGPUAddress() const { return _gpuAddr; }

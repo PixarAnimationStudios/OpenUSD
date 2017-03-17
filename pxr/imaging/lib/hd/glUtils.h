@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -111,9 +112,9 @@ public:
     /// Schedule the range to be copied. The consecutive ranges could be
     /// aggregated into a single copy where possible.
     HD_API
-    void AddRange(GLintptr readOffset,
-                  GLintptr writeOffset,
-                  GLsizeiptr copySize);
+    void AddRange(ptrdiff_t readOffset,
+                  ptrdiff_t writeOffset,
+                  ptrdiff_t copySize);
 
     /// Execute GL buffer copy command to flush all scheduled range copies.
     HD_API
@@ -121,7 +122,7 @@ public:
 
 private:
     struct _CopyUnit {
-        _CopyUnit(GLintptr read, GLintptr write, GLsizeiptr size)
+        _CopyUnit(ptrdiff_t read, ptrdiff_t write, ptrdiff_t size)
             : readOffset(read), writeOffset(write), copySize(size) {}
 
         bool Concat(_CopyUnit const &next) {
@@ -133,9 +134,9 @@ private:
             return false;
         }
 
-        GLintptr readOffset;
-        GLintptr writeOffset;
-        GLsizeiptr copySize;
+        ptrdiff_t readOffset;
+        ptrdiff_t writeOffset;
+        ptrdiff_t copySize;
     };
 
     std::vector<_CopyUnit> _queue;
