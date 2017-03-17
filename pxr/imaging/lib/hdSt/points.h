@@ -23,7 +23,9 @@
 //
 #ifndef HDST_POINTS_H
 #define HDST_POINTS_H
+
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/enums.h"
@@ -58,10 +60,14 @@ struct HdStPointsReprDesc {
 class HdStPoints final : public HdPoints {
 public:
     HF_MALLOC_TAG_NEW("new HdStPoints");
+
+    HDST_API
     HdStPoints(SdfPath const& id,
              SdfPath const& instancerId = SdfPath());
+    HDST_API
     virtual ~HdStPoints();
 
+    HDST_API
     virtual void Sync(HdSceneDelegate* delegate,
                       HdRenderParam*   renderParam,
                       HdDirtyBits*     dirtyBits,
@@ -69,6 +75,7 @@ public:
                       bool             forcedRepr) override;
 
     /// Configure geometric style of drawItems for \p reprName
+    HDST_API
     static void ConfigureRepr(TfToken const &reprName,
                               const HdStPointsReprDesc &desc);
 

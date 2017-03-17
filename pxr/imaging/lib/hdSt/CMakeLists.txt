@@ -20,6 +20,9 @@ pxr_shared_library(hdSt
         points
         shader
 
+    PUBLIC_HEADERS
+        api.h
+
     PRIVATE_CLASSES
         basisCurvesComputations
         basisCurvesShaderKey
