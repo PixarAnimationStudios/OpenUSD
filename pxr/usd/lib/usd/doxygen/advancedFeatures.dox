@@ -250,8 +250,6 @@ it finds one with timeSamples authored. In the case that many consecutive clips
 don't have timeSamples authored, the user pays a cost of opening all those
 layers.
 
-\subsection Usd_AdvancedFeatures_ClipToolSupport Tool Support 
-
 \subsubsection usdview
 
 - Usdview supports value clip debugging through the layer stack viewer(lower left).
@@ -263,9 +261,100 @@ on the prim introducing clips.
 
 \subsubsection usdcat
 
-Usdcat supports flattening model clips, though its support is currently
-incomplete. In certain cases, the flattened result will *not* match up with
-the composed stage. This is a known bug that the USD team is invested in fixing.
+Usdcat supports flattening value clips. Attributes with values from clips 
+flatten to timeSamples. Any active clip at
+timecode \em t with an authored \ref SdfValueBlock or an absent value will result in an
+\ref SdfValueBlock at \em t in the output timeSamples. 
+
+Consider the following set of files:
+
+root.usda, our root layer:
+\code
+#usda 1.0                                                                        
+(                                                                                
+    endTimeCode = 103                                                               
+    startTimeCode = 101                                                          
+    subLayers = [                                                                
+        @./root.topology.usda@                                                   
+    ]                                                                            
+)                                                                                
+                                                                                 
+over "points" (                                                      
+    clipActive = [(101, 0), (102, 1), (103, 2)]            
+    clipAssetPaths = [@./clip1.usda@, @./clip2.usda@, @./clip3.usda@]
+    clipManifestAssetPath = @./root.topology.usda@                      
+    clipPrimPath = "/points"               
+    clipTimes = [(101, 101), (102, 102), (103, 103)]     
+)                                                                       
+{                                                                    
+}                                                                    
+\endcode
+
+root.topology.usda, our static scene topology:
+\code
+#usda 1.0                                                                        
+                                                                     
+def Points "points"                                                  
+{                                                                    
+    float3[] extent                                                  
+}                                                                    
+\endcode
+
+clip1.usda, our first (of three) clips:
+\code
+#usda 1.0                                                                        
+ 
+def Points "points"                                                  
+{                                                                    
+    float3[] extent.timeSamples = {                                  
+        101: None,                                                   
+    }                                                                
+}                                                                    
+\endcode
+
+clip2.usda:
+\code
+#usda 1.0                                                                        
+                                                                                 
+def Points "points"                                                  
+{                                                                    
+    float3[] extent.timeSamples = {                                  
+        102: [(102,102,102), (102,102,102)],                         
+    }                                                                
+}                                                                    
+\endcode
+
+clip3.usda:
+\code
+#usda 1.0                                                                        
+
+def Points "points"                                                  
+{                                                                    
+}                                                                    
+\endcode
+
+Now, lets examine the flattened result (achieved with $ usdcat --flatten
+root.usda --out flattenedClips.usda):
+
+\code
+#usda 1.0                                                                        
+(                                                                                
+    endTimeCode = 103                                                               
+    startTimeCode = 101                                                          
+)                                                                                
+                                                                                 
+def Points "points"                                                  
+{                                                                    
+    float3[] extent.timeSamples = {                                  
+        101: None,                                                   
+        102: [(102, 102, 102), (102, 102, 102)],                     
+        103: None,                                                   
+    }                                                                
+}                                                                    
+\endcode
+
+Note that both clip1.usda, which has an authored \ref SdfValueBlock,  
+and clip3.usda, which does not have an authored value, produce a block in the resulting timeSamples. 
 
 \subsubsection usdstitchclips
 
