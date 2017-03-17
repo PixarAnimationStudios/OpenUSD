@@ -61,6 +61,9 @@ private:
 class HdRenderDelegate : public HfPluginDelegateBase
 {
 public:
+    HD_API
+    virtual ~HdRenderDelegate();
+
     ///
     /// Allows the delegate an opinion on the default Gal to use.
     /// Return an empty token for no opinion.
@@ -194,8 +197,6 @@ public:
 protected:
     /// This class must be derived from
     HdRenderDelegate()          = default;
-    HD_API
-    virtual ~HdRenderDelegate();
 
     ///
     /// This class is not intended to be copied.

@@ -32,6 +32,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdxTaskController {
 public:
+    HDX_API
+    virtual ~HdxTaskController();
+
     /// Obtain the set of tasks managed by the task controller
     /// suitable for execution.
     virtual HdTaskSharedPtrVector const &GetTasks() = 0;
@@ -45,8 +48,6 @@ public:
 protected:
     /// This class must be derived from
     HdxTaskController()          = default;
-    HDX_API
-    virtual ~HdxTaskController();
 
 private:
     ///
