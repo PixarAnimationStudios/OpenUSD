@@ -48,7 +48,6 @@ pxr_shared_library(hd
         codeGen
         commandBuffer
         computation
-        context
         conversions
         copyComputation
         debugCodes
