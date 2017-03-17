@@ -1435,7 +1435,9 @@ private:
     // Open a layer, adding an entry to the registry and releasing
     // the registry lock.
     // Precondition: _layerRegistryMutex must be locked.
+    template <class Lock>
     static SdfLayerRefPtr _OpenLayerAndUnlockRegistry(
+        Lock &lock,
         const _FindOrOpenLayerInfo& info,
         bool metadataOnly,
         std::string const &resolvedPath,
