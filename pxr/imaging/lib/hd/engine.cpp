@@ -23,9 +23,6 @@
 //
 #include "pxr/imaging/hd/engine.h"
 
-#include "pxr/imaging/gal/delegateRegistry.h"
-#include "pxr/imaging/gal/delegate.h"
-
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/perfLog.h"

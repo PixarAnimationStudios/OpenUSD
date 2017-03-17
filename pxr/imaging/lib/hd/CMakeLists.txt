@@ -20,7 +20,6 @@ pxr_shared_library(hd
         sdf
         garch
         hf
-        gal
         glf
         pxOsd
         ${OPENSUBDIV_LIBRARIES}
