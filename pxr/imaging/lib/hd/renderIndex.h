@@ -82,10 +82,18 @@ public:
     typedef std::unordered_map<TfToken, std::vector<HdDrawItem const*>,
                                boost::hash<TfToken> > HdDrawItemView;
 
+    /// Create a render index with the given render delegate.
+    /// Returns null if renderDelegate is null.
+    HD_API
+    static HdRenderIndex* New(HdRenderDelegate *renderDelegate);
+
+    /// \deprecated {
+    ///   Create a render index with no bound render delegate.
+    ///   XXX: This method will be deleted soon.
+    /// }
     HD_API
     HdRenderIndex();
-    HD_API
-    HdRenderIndex(HdRenderDelegate *renderDelegate);
+
     HD_API
     ~HdRenderIndex();
 
@@ -299,25 +307,19 @@ public:
     /// \name Render Delegate
     // ---------------------------------------------------------------------- //
     /// Currently, a render index only supports connection to one type of
-    /// render delegate.  Due to the inserted information and change tracking
+    /// render delegate, due to the inserted information and change tracking
     /// being specific to that delegate type.
-    HD_API
-    void SetRenderDelegate(HdRenderDelegate *renderDelegate);
     HD_API
     HdRenderDelegate *GetRenderDelegate() const;
 
     HD_API
     TfToken GetRenderDelegateType() const;
 
-    /// Creates fallback prims for each supported prim type
-    HD_API
-    bool CreateFallbackPrims();
-
-    /// Release the fallback prims
-    HD_API
-    void DestroyFallbackPrims();
-
 private:
+    // The render index constructor is private so we can check
+    // renderDelegate before construction: see HdRenderIndex::New(...).
+    HdRenderIndex(HdRenderDelegate *renderDelegate);
+
     // ---------------------------------------------------------------------- //
     // Private Helper methods 
     // ---------------------------------------------------------------------- //
@@ -330,6 +332,8 @@ private:
     void _AllocatePrimId(HdRprim* prim);
 
     // Inserts the task into the index and updates tracking state.
+    // _TrackDelegateTask is called by the inlined InsertTask<T>, so it needs
+    // to be marked HD_API.
     HD_API
     void _TrackDelegateTask(HdSceneDelegate* delegate, 
                             SdfPath const& taskId,
@@ -393,7 +397,15 @@ private:
     // calling out the transitional elements.
     bool _ownsDelegateXXX;
 
+    /// Register the render delegate's list of supported prim types.
     void _InitPrimTypes();
+
+    /// Creates fallback prims for each supported prim type.
+    bool _CreateFallbackPrims();
+
+    /// Release the fallback prims.
+    void _DestroyFallbackPrims();
+
 };
 
 template <typename T>

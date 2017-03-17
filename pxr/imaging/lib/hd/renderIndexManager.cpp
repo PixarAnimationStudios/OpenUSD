@@ -64,14 +64,10 @@ Hd_RenderIndexManager::CreateRenderIndex(HdRenderDelegate *renderDelegate)
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    if (renderDelegate == nullptr) {
-        TF_CODING_ERROR("Null Render Delegate provided to create render index");
-        return nullptr;
+    HdRenderIndex *renderIndex = HdRenderIndex::New(renderDelegate);
+    if (renderIndex != nullptr) {
+        _renderIndexes.emplace(renderIndex, 1);
     }
-
-    HdRenderIndex *renderIndex = new HdRenderIndex(renderDelegate);
-
-    _renderIndexes.emplace(renderIndex, 1);
 
     return renderIndex;
 }
@@ -97,7 +93,6 @@ Hd_RenderIndexManager::ReleaseRenderIndex(HdRenderIndex *renderIndex)
     RenderIndexMap::iterator it =  _renderIndexes.find(renderIndex);
 
     if (it == _renderIndexes.end()) {
-
         TF_CODING_ERROR("Render Index not found during release");
         return;
     }

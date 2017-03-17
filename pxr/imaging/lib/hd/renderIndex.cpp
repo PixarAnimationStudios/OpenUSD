@@ -64,6 +64,16 @@ typedef tbb::concurrent_unordered_map<TfToken,
                         tbb::concurrent_vector<HdDrawItem const*>, 
                         TfToken::HashFunctor > _ConcurrentDrawItemView; 
 
+HdRenderIndex*
+HdRenderIndex::New(HdRenderDelegate *renderDelegate)
+{
+    if (renderDelegate == nullptr) {
+        TF_CODING_ERROR("Null Render Delegate provided to create render index");
+        return nullptr;
+    }
+    return new HdRenderIndex(renderDelegate);
+}
+
 HdRenderIndex::HdRenderIndex()
     : _delegateRprimMap()
     , _rprimMap()
@@ -102,19 +112,24 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     , _renderDelegate(renderDelegate)
     , _ownsDelegateXXX(false)
 {
+    // Note: HdRenderIndex::New(...) guarantees renderDelegate is non-null.
 
     // Register well-known collection types (to be deprecated)
     // XXX: for compatibility and smooth transition,
     //      leave geometry collection for a while.
     _tracker.AddCollection(HdTokens->geometry);
 
+    // Register the prim types our render delegate supports.
+    _InitPrimTypes();
+    // Create fallback prims.
+    _CreateFallbackPrims();
 }
 
 HdRenderIndex::~HdRenderIndex()
 {
     HD_TRACE_FUNCTION();
     Clear();
-    DestroyFallbackPrims();
+    _DestroyFallbackPrims();
 
     {
         // XXX: Transitional Code - to be removed.
@@ -170,7 +185,7 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
                       renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
              _ownsDelegateXXX = true;
              _InitPrimTypes();
-             CreateFallbackPrims();
+             _CreateFallbackPrims();
         }
     }
 
@@ -399,7 +414,7 @@ HdRenderIndex::InsertSprim(TfToken const& typeId,
                       renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
              _ownsDelegateXXX = true;
              _InitPrimTypes();
-             CreateFallbackPrims();
+             _CreateFallbackPrims();
         }
     }
 
@@ -476,7 +491,7 @@ HdRenderIndex::InsertBprim(TfToken const& typeId,
                       renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
              _ownsDelegateXXX = true;
              _InitPrimTypes();
-             CreateFallbackPrims();
+             _CreateFallbackPrims();
         }
     }
 
@@ -523,30 +538,6 @@ HdRenderIndex::GetFallbackBprim(TfToken const& typeId) const
     return _bprimIndex.GetFallbackPrim(typeId);
 }
 
-void
-HdRenderIndex::SetRenderDelegate(HdRenderDelegate *renderDelegate)
-{
-    if (_renderDelegate != nullptr && _renderDelegate != renderDelegate) {
-        TF_CODING_ERROR("Render Delegate already set on render index and "
-                        "switching render delegates is not supported");
-        return;
-    }
-
-    _renderDelegate = renderDelegate;
-    {
-        // Small hack until applications migrate to using new
-        // context API.
-        // XXX: To be removed
-
-        HdRenderDelegateRegistry &renderRegistry =
-                                        HdRenderDelegateRegistry::GetInstance();
-
-        renderRegistry.AddPluginReference(_renderDelegate);
-    }
-
-    _InitPrimTypes();
-}
-
 HdRenderDelegate *HdRenderIndex::GetRenderDelegate() const
 {
     return _renderDelegate;
@@ -566,7 +557,7 @@ HdRenderIndex::GetRenderDelegateType() const
 }
 
 bool
-HdRenderIndex::CreateFallbackPrims()
+HdRenderIndex::_CreateFallbackPrims()
 {
     bool success = true;
 
@@ -582,7 +573,7 @@ HdRenderIndex::CreateFallbackPrims()
 }
 
 void
-HdRenderIndex::DestroyFallbackPrims()
+HdRenderIndex::_DestroyFallbackPrims()
 {
     // If the render delegate never got assigned, or already removed we can't
     // free the fallback prims.
