@@ -83,6 +83,9 @@ TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_ASSEM_NAMESPACE, true,
 TF_DEFINE_ENV_SETTING(PIXMAYA_DEBUG_USD_ASSEM, false,
                       "Displays debug information for unrolling USD assemblies");
 
+TF_DEFINE_ENV_SETTING(PIXMAYA_READ_ANIM_BY_DEFAULT, false,
+                      "Default to reading animation when importing usd");
+
 // == Statics ==
 const MString UsdMayaReferenceAssembly::_classification("drawdb/geometry/transform");
 

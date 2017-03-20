@@ -34,6 +34,9 @@
 #include "usdMaya/usdReadJob.h"
 #include "usdMaya/usdWriteJob.h"
 
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/stringUtils.h"
+
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MString.h>
@@ -43,7 +46,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+extern TfEnvSetting<bool> PIXMAYA_READ_ANIM_BY_DEFAULT;
 
+namespace {
+    static const std::string usdTranslatorImportDefaultsString = TfStringPrintf(
+            usdTranslatorImportDefaultsTemplate,
+            TfGetEnvSetting(PIXMAYA_READ_ANIM_BY_DEFAULT));
+}
+
+const char* const usdTranslatorImportDefaults = usdTranslatorImportDefaultsString.c_str();
 
 void* usdTranslatorImport::creator(const std::string& assemblyTypeName,
                                    const std::string& proxyShapeTypeName) {
