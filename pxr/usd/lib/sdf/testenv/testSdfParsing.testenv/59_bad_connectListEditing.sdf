@@ -1,0 +1,12 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+def MfScope "foo"
+{
+    # test using None in a list op for connections
+    delete double badAttr.connect = None
+    
+    # test invalid relative connection path
+    double badRelAttr.connect = <../../iam.nowhere>
+}
+

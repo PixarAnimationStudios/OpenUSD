@@ -1,0 +1,23 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "TestPrim1" (
+    payload = None
+)
+{
+}
+
+def MfScope "TestPrim2" (
+    payload = @///test/layer.sdf@</Prim>
+)
+{
+}
+
+def MfScope "TestAsset" (
+    payload = @///test/layer.sdf@
+)
+{
+}

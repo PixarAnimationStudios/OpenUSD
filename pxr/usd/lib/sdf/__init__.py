@@ -40,10 +40,51 @@ within it at the given path.'''
     if (scenePath is None): return layer
     return layer.GetObjectAtPath(scenePath)
 
+
+# Test utilities
+def _PathElemsToPrefixes(absolute, elements):
+    if absolute:
+        string = "/";
+    else:
+        string = ""
+    
+    lastElemWasDotDot = False
+    didFirst = False
+    
+    for elem in elements:
+        if elem == Path.parentPathElement:
+            # dotdot
+            if didFirst:
+                string = string + "/"
+            else:
+                didFirst = True
+            string = string + elem
+            lastElemWasDotDot = True
+        elif elem[0] == ".":
+            # property
+            if lastElemWasDotDot:
+                string = string + "/"
+            string = string + elem
+            lastElemWasDotDot = False
+        elif elem[0] == "[":
+            # rel attr or sub-attr indices, don't care which
+            string = string + elem
+            lastElemWasDotDot = False
+        else:
+            if didFirst:
+                string = string + "/"
+            else:
+                didFirst = True
+            string = string + elem
+            lastElemWasDotDot = False
+    if not string:
+        return []
+    path = Path(string)
+    return path.GetPrefixes()
+
 try:
     from . import __DOC
     __DOC.Execute(locals())
     del __DOC
 except Exception:
     pass
-

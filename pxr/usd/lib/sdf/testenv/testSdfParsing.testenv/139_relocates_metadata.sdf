@@ -1,0 +1,19 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+# Note: This is testing parsing syntax only, not allowable semantics.
+
+def MfScope "TestPrim" (
+    relocates = {
+        </source> : </target>, 
+        </absolute> : <some/nested/relative/path>,
+        <relative/path> : <some/other/relative/path>
+    }
+)
+{
+}
+

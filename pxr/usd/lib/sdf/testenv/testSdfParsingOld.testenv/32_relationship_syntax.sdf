@@ -1,0 +1,211 @@
+#sdf 1.4.32
+(
+    """Test of relationships."""
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "foo"
+{
+    def MfScope "Scope" {
+        rel rel_relative_path = <..>
+    }
+    rel no_targets_rel
+    rel single_target_rel = </foo/Foo>
+    rel multi_target_rel = [
+        </foo/Foo>,
+        </foo/Bar>,
+        </foo/Baz>,
+    ]
+    rel attr_rel = </foo/Foo/Bar> {
+        double x = 1.234
+    }
+    rel multi_attr_rel = [
+        </foo/One> {
+            double x = 1
+        },
+        </foo/Two> {
+            double x = 2
+        },
+    ]
+    rel semicolons_rel = [
+        </foo/One> {
+            double x = 1
+        },
+        </foo/Two> {
+            double x = 2
+        },
+    ]
+    rel complex_rel = [
+        </foo/Foo/Bar> {
+            double scale = 0.5
+            Color rgb = (0.2, 0.3, 0.4)
+            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+        },
+        </foo/Blah/Blah> {
+            double scale = 0.5
+            Color rgb = (0.2, 0.3, 0.4)
+            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+        },
+    ] (
+        """Exercise full syntax"""
+        doc = '''use this for \"stuff\"...'''
+        permission = public
+        symmetryFunction = testSymmetryFunction
+    )
+    rel rel_with_empty_path = </foo>
+    delete rel rel_list_editing = [
+        </foo>,
+        </bar>,
+    ]
+    add rel rel_list_editing = [
+        </baz> {
+            double intensity = 0.5
+            double intensity.connect = </foo.bar>
+        },
+        </boom>,
+    ]
+    reorder rel rel_list_editing = [
+        </boom>,
+        </baz>,
+        </whatever>,
+    ]
+    add rel rel_list_editing2 = [
+        </baz> {
+            double intensity = 0.5
+            double intensity.connect = </foo.bar>
+        },
+        </boom>,
+    ]
+    reorder rel rel_list_editing3 = [
+        </boom>,
+        </baz>,
+        </whatever>,
+    ]
+    rel rel_make_empty = None
+    delete rel rel_list_editing_doubles = [
+        </foo>,
+        </bar>,
+    ]
+    add rel rel_list_editing_doubles = [
+        </baz>,
+        </boom>,
+    ]
+    reorder rel rel_list_editing_doubles = [
+        </boom>,
+        </baz>,
+        </whatever>,
+    ]
+    rel rel_explicit_doubles = [
+        </foo>,
+        </bar>,
+    ]
+    rel rel_with_attr[</foo/Foo>] {
+        double y = 1.234
+    }
+}
+
+def MfScope "customFoo"
+{
+    def MfScope "Scope" {
+        custom rel rel_relative_path = <..>
+    }
+    custom rel no_targets_rel
+    custom rel single_target_rel = </foo/Foo>
+    custom rel multi_target_rel = [
+        </foo/Foo>,
+        </foo/Bar>,
+        </foo/Baz>,
+    ]
+    custom rel attr_rel = </foo/Foo/Bar> {
+        double x = 1.234
+    }
+    custom rel multi_attr_rel = [
+        </foo/One> {
+            double x = 1
+        },
+        </foo/Two> {
+            double x = 2
+        },
+    ]
+    custom rel semicolons_rel = [
+        </foo/One> {
+            double x = 1
+        },
+        </foo/Two> {
+            double x = 2
+        },
+    ]
+    custom rel complex_rel = [
+        </foo/Foo/Bar> {
+            double scale = 0.5
+            Color rgb = (0.2, 0.3, 0.4)
+            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+        },
+        </foo/Blah/Blah> {
+            double scale = 0.5
+            Color rgb = (0.2, 0.3, 0.4)
+            Frame xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+        },
+    ] (
+        """Exercise full syntax"""
+        doc = '''use this for \"stuff\"...'''
+        permission = public
+        symmetryFunction = testSymmetryFunction
+    )
+    custom rel rel_with_empty_path = </foo>
+    custom rel rel_list_editing
+    delete rel rel_list_editing = [
+        </foo>,
+        </bar>,
+    ]
+    add rel rel_list_editing = [
+        </baz> {
+            double intensity = 0.5
+            double intensity.connect = </foo.bar>
+        },
+        </boom>,
+    ]
+    reorder rel rel_list_editing = [
+        </boom>,
+        </baz>,
+        </whatever>,
+    ]
+    custom rel rel_list_editing2
+    add rel rel_list_editing2 = [
+        </baz> {
+            double intensity = 0.5
+            double intensity.connect = </foo.bar>
+        },
+        </boom>,
+    ]
+    custom rel rel_list_editing3
+    reorder rel rel_list_editing3 = [
+        </boom>,
+        </baz>,
+        </whatever>,
+    ]
+    custom rel rel_make_empty = None
+    custom rel rel_list_editing_doubles
+    delete rel rel_list_editing_doubles = [
+        </foo>,
+        </bar>,
+    ]
+    add rel rel_list_editing_doubles = [
+        </baz>,
+        </boom>,
+    ]
+    reorder rel rel_list_editing_doubles = [
+        </boom>,
+        </baz>,
+        </whatever>,
+    ]
+    custom rel rel_explicit_doubles = [
+        </foo>,
+        </bar>,
+    ]
+    custom rel rel_with_attr[</foo/Foo>] {
+        double y = 1.234
+    }
+}
+

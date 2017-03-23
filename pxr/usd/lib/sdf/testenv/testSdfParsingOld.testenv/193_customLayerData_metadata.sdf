@@ -1,0 +1,8 @@
+#sdf 1.4.32
+(
+    customLayerData = {
+        token testId = "testId"
+        string testString = "testString"
+        int testVersion = 1
+    }
+)

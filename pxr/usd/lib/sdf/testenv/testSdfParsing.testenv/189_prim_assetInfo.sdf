@@ -1,0 +1,26 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+class MfScope "Root" (
+    assetInfo = {
+        int version = 100
+        asset identifier = @Root/sdf/Root.sdf@
+        token name = "RootName"
+    }
+)
+{
+}
+
+def MfScope "Ref" (
+    assetInfo = {
+        int version = 99
+        string chiselLabel = "shriram"
+    }
+    inherits = </Root>
+)
+{
+}
+

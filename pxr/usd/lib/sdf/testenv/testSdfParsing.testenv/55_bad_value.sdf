@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+def MfScope "foo"
+{
+    # test improper value (not a parseable double) for a tuple value
+    double3 a1 = (0, 1, foo)
+}
+

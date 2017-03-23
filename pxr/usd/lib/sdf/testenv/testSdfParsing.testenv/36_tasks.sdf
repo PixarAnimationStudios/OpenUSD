@@ -1,0 +1,13 @@
+#sdf 1.4.32
+(
+    """Test of bogus task restriction and membership flags"""
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "foo"
+{
+    double x1 = 1
+    double x2 = 1
+}
+

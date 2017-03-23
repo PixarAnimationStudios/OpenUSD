@@ -1,0 +1,17 @@
+#sdf 1.4.32
+(
+    """Test of bad marker names (2)."""
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def ModelScope "marker_name_test"
+{
+    double a1.connect = </marker_name_test/Foo/Bar.blah>
+}
+
+def ModelScope2 "marker_name_test2"
+{
+    double a1.connect = </marker_name_test2/Foo/Bar.blah> @ current
+}
+

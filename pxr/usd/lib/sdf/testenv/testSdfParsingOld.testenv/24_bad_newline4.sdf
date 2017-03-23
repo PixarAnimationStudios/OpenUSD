@@ -1,0 +1,29 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+    startFrame = 1
+    endFrame = 1
+)
+
+def CamCamera "Test1"
+{
+    def MfScope "Leg"
+    {  
+        double aspect = 1.02517
+    
+        # ERROR newline after type
+	double
+        width = 1905.41
+        def MfScope "Thigh"  {
+            double aspect = 1.02517
+            double width = 1905.41
+        }
+    }
+    def MfScope "Arm" {
+	double aspect = 1.02517
+	double width = 1905.41
+    }
+}
+
+
+

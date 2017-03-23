@@ -1,0 +1,16 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+# Tests the __END__ debug facility.
+
+def MfScope "Root" {
+    string value = """This is a string""";
+    double f = 0.34;
+}
+
+__END__
+
+This is garbage that the scanner should ignore because
+it comes after the magic __END__ token.
+
+Blah blah blah.

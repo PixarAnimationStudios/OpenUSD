@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+)
+
+def MfScope "Root"
+{
+    double attr = 1.0 (displayUnit = badDisplayUnit)
+}

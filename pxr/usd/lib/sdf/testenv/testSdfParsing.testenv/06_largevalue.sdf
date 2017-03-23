@@ -1,0 +1,67 @@
+#sdf 1.4.32
+(
+    '''Exercises internal lexical scanner logic for the case where
+       scanned values are larger than the "fast scan" fixed size buffer,
+       forcing a flush to the full string used as the token buffer.'''
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "Root"
+{
+    custom string value = """This is a large string that must be larger than the
+internal 'fast-scan' scanner buffer.  As of this writing, this internal
+buffer is 1024 bytes long, so we will try to make this string longer than
+that, maybe by 2 or 3 times, such that the buffer must be flushed to the
+full token buffer string.  Assuming each line of text has roughly 80 characters,
+than we would need about 40 lines of text.
+This is a large string that must be larger than the
+internal 'fast-scan' scanner buffer.  As of this writing, this internal
+buffer is 1024 bytes long, so we will try to make this string longer than
+that, maybe by 2 or 3 times, such that the buffer must be flushed to the
+full token buffer string.  Assuming each line of text has roughly 80 characters,
+than we would need about 40 lines of text.
+This is a large string that must be larger than the
+internal 'fast-scan' scanner buffer.  As of this writing, this internal
+buffer is 1024 bytes long, so we will try to make this string longer than
+that, maybe by 2 or 3 times, such that the buffer must be flushed to the
+full token buffer string.  Assuming each line of text has roughly 80 characters,
+than we would need about 40 lines of text.
+This is a large string that must be larger than the
+internal 'fast-scan' scanner buffer.  As of this writing, this internal
+buffer is 1024 bytes long, so we will try to make this string longer than
+that, maybe by 2 or 3 times, such that the buffer must be flushed to the
+full token buffer string.  Assuming each line of text has roughly 80 characters,
+than we would need about 40 lines of text.
+This is a large string that must be larger than the
+internal 'fast-scan' scanner buffer.  As of this writing, this internal
+buffer is 1024 bytes long, so we will try to make this string longer than
+that, maybe by 2 or 3 times, such that the buffer must be flushed to the
+full token buffer string.  Assuming each line of text has roughly 80 characters,
+than we would need about 40 lines of text.
+This is a large string that must be larger than the
+internal 'fast-scan' scanner buffer.  As of this writing, this internal
+buffer is 1024 bytes long, so we will try to make this string longer than
+that, maybe by 2 or 3 times, such that the buffer must be flushed to the
+full token buffer string.  Assuming each line of text has roughly 80 characters,
+than we would need about 40 lines of text.
+This is a large string that must be larger than the
+internal 'fast-scan' scanner buffer.  As of this writing, this internal
+buffer is 1024 bytes long, so we will try to make this string longer than
+that, maybe by 2 or 3 times, such that the buffer must be flushed to the
+full token buffer string.  Assuming each line of text has roughly 80 characters,
+than we would need about 40 lines of text.
+This is a large string that must be larger than the
+internal 'fast-scan' scanner buffer.  As of this writing, this internal
+buffer is 1024 bytes long, so we will try to make this string longer than
+that, maybe by 2 or 3 times, such that the buffer must be flushed to the
+full token buffer string.  Assuming each line of text has roughly 80 characters,
+than we would need about 40 lines of text.
+This is a large string that must be larger than the
+internal 'fast-scan' scanner buffer.  As of this writing, this internal
+buffer is 1024 bytes long, so we will try to make this string longer than
+that, maybe by 2 or 3 times, such that the buffer must be flushed to the
+full token buffer string.  Assuming each line of text has roughly 80 characters,
+than we would need about 40 lines of text."""
+}
+

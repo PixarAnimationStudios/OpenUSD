@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+def MfScope "foo"
+{
+    # test using None in a list op for targets
+    delete rel badRel = None
+}
+

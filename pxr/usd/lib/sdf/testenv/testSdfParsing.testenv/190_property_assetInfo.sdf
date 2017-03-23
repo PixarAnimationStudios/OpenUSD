@@ -1,0 +1,18 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "Root"
+{
+    custom asset referencePath = @sim/BingBong.out@ (
+        assetInfo = {
+            int version = 1
+            token name = "BingBong"
+            asset identifier = @sim/BingBong.out@
+            string fallbackPath = "/usr/anim/cake/modchars/src/BingBong/sim/BingBong.out"
+        }
+    )
+}
+

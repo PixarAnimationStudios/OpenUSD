@@ -1,0 +1,6 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+def Camera "overview_cam"  {
+    double foo (access=foo);
+}

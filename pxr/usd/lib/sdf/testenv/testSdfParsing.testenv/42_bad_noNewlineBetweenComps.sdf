@@ -1,0 +1,23 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+startFrame = 1;
+endFrame = 1
+)
+def Camera "overview_cam"  {
+    double camx = 1.2;
+    double camy = 3.4;
+    double camz = 5.6;
+    def Scope "Head"  {
+	double aspect = 1.02517;
+	double width = 1905.41;
+    }
+} def Camera "overview_cam2"  {
+    double camx = 1.2;
+    double camy = 3.4;
+    double camz = 5.6;
+    def Scope "Head"  {
+	double aspect = 1.02517;
+	double width = 1905.41;
+    }
+}

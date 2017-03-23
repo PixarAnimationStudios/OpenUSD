@@ -1,0 +1,42 @@
+#sdf 1.4.32
+(
+    """Test token-renaming metadata"""
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+class MfScope "Rig"
+{
+    def MfScope "Leg" (
+        doc = """docs to test multiline output coverage"""
+        prefix = "$Left"
+        suffix = "_$NUM"
+    )
+    {
+        custom double kneeFB (
+            doc = """docs to test multiline output coverage"""
+            prefix = "$Left"
+            suffix = "_$NUM"
+        )
+        custom rel foo
+        rel foo = </Rig/Leg.kneeFB> (
+            doc = """docs to test multiline output coverage"""
+            prefix = "$Left"
+            suffix = "_$NUM"
+        )
+    }
+}
+
+def MfScope "RightLeg" (
+    inherits = </Rig>
+    prefixSubstitutions = {
+        "$Left": "Right", 
+        "Left": "Right"
+    }
+    suffixSubstitutions = {
+        "$NUM": "1", 
+    }
+)
+{
+}
+

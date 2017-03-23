@@ -1,0 +1,13 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "TestPrim"(
+    # kind is a string, not a token
+    kind = model
+)
+{
+}
