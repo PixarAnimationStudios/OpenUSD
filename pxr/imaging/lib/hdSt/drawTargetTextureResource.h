@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_DRAW_TARGET_TEXTURE_RESOURCE_H
-#define HDX_DRAW_TARGET_TEXTURE_RESOURCE_H
+#ifndef HDST_DRAW_TARGET_TEXTURE_RESOURCE_H
+#define HDST_DRAW_TARGET_TEXTURE_RESOURCE_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/textureResource.h"
@@ -31,10 +31,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class Hdx_DrawTargetTextureResource final : public HdTextureResource {
+class HdSt_DrawTargetTextureResource final : public HdTextureResource {
 public:
-    Hdx_DrawTargetTextureResource();
-    virtual ~Hdx_DrawTargetTextureResource();
+    HdSt_DrawTargetTextureResource();
+    virtual ~HdSt_DrawTargetTextureResource();
 
     void SetAttachment(const GlfDrawTarget::AttachmentRefPtr &attachment);
     void SetSampler(HdWrap wrapS, HdWrap wrapT,
@@ -60,11 +60,11 @@ private:
 
 
     // No copying
-    Hdx_DrawTargetTextureResource(const Hdx_DrawTargetTextureResource &)             = delete;
-    Hdx_DrawTargetTextureResource &operator =(const Hdx_DrawTargetTextureResource &) = delete;
+    HdSt_DrawTargetTextureResource(const HdSt_DrawTargetTextureResource &)             = delete;
+    HdSt_DrawTargetTextureResource &operator =(const HdSt_DrawTargetTextureResource &) = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDX_DRAW_TARGET_TEXTURE_RESOURCE_H
+#endif // HDST_DRAW_TARGET_TEXTURE_RESOURCE_H

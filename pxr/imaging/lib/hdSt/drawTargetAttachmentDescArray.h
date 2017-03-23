@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,19 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
-#define HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
+#ifndef HDST_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
+#define HDST_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/drawTargetAttachmentDesc.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/drawTargetAttachmentDesc.h"
 
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class HdxDrawTargetAttachmentDescArray
+/// \class HdStDrawTargetAttachmentDescArray
 ///
 /// Describes all the color buffer attachments for a draw target.
 /// The array should not contain a depth buffer - that is managed
@@ -44,24 +44,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// class is derivable for TfAny support.
 ///
-class HdxDrawTargetAttachmentDescArray
+class HdStDrawTargetAttachmentDescArray
 {
 public:
     /// Default constructor for container purposes.
-    HDX_API
-    HdxDrawTargetAttachmentDescArray();
+    HDST_API
+    HdStDrawTargetAttachmentDescArray();
 
-    HDX_API
-    HdxDrawTargetAttachmentDescArray(size_t attachmentCount);
-    virtual ~HdxDrawTargetAttachmentDescArray() = default;
+    HDST_API
+    HdStDrawTargetAttachmentDescArray(size_t attachmentCount);
+    virtual ~HdStDrawTargetAttachmentDescArray() = default;
 
-    HDX_API
-    HdxDrawTargetAttachmentDescArray(const HdxDrawTargetAttachmentDescArray &copy);
-    HDX_API
-    HdxDrawTargetAttachmentDescArray &operator =(const HdxDrawTargetAttachmentDescArray &copy);
+    HDST_API
+    HdStDrawTargetAttachmentDescArray(const HdStDrawTargetAttachmentDescArray &copy);
+    HDST_API
+    HdStDrawTargetAttachmentDescArray &operator =(const HdStDrawTargetAttachmentDescArray &copy);
 
     /// Pushes a new attachment onto the end of the list of attachments.
-    HDX_API
+    HDST_API
     void AddAttachment(const std::string &name,
                        HdFormat           format,
                        const VtValue      &clearColor,
@@ -71,13 +71,13 @@ public:
                        HdMagFilter        magFilter);
 
 
-    HDX_API
+    HDST_API
     size_t GetNumAttachments() const;
-    HDX_API
-    const HdxDrawTargetAttachmentDesc &GetAttachment(size_t idx) const;
+    HDST_API
+    const HdStDrawTargetAttachmentDesc &GetAttachment(size_t idx) const;
 
     /// Sampler State for Depth attachment
-    HDX_API
+    HDST_API
     void SetDepthSampler(HdWrap      depthWrapS,
                          HdWrap      depthWrapT,
                          HdMinFilter depthMinFilter,
@@ -91,17 +91,17 @@ public:
 
 
     // VtValue requirements
-    HDX_API
+    HDST_API
     size_t GetHash() const;
-    HDX_API
+    HDST_API
     void   Dump(std::ostream &out) const;
-    HDX_API
-    bool operator==(const HdxDrawTargetAttachmentDescArray &other) const;
-    HDX_API
-    bool operator!=(const HdxDrawTargetAttachmentDescArray &other) const;
+    HDST_API
+    bool operator==(const HdStDrawTargetAttachmentDescArray &other) const;
+    HDST_API
+    bool operator!=(const HdStDrawTargetAttachmentDescArray &other) const;
 
 private:
-    typedef std::vector<HdxDrawTargetAttachmentDesc> _AttachmentDescArray;
+    typedef std::vector<HdStDrawTargetAttachmentDesc> _AttachmentDescArray;
 
     _AttachmentDescArray _attachments;
 
@@ -112,12 +112,13 @@ private:
     HdMagFilter _depthMagFilter;
 };
 
-HDX_API
-size_t hash_value(const HdxDrawTargetAttachmentDescArray &attachments);
-HDX_API
-std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDescArray &pv);
+HDST_API
+size_t hash_value(const HdStDrawTargetAttachmentDescArray &attachments);
+HDST_API
+std::ostream &operator <<(std::ostream &out,
+                          const HdStDrawTargetAttachmentDescArray &pv);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HDX_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H
+#endif  // HDST_DRAW_TARGET_ATTACHMENT_DESC_ARRAY_H

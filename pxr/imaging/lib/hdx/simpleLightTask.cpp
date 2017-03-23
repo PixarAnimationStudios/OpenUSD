@@ -24,11 +24,12 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 
-#include "pxr/imaging/hdx/camera.h"
-#include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/shadowMatrixComputation.h"
 #include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
+
+#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -103,7 +104,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
 
         HdSceneDelegate* delegate = GetDelegate();
         const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
-        _camera = static_cast<const HdxCamera *>(
+        _camera = static_cast<const HdStCamera *>(
                     renderIndex.GetSprim(HdPrimTypeTokens->camera,
                                          params.cameraPath));
 
@@ -118,7 +119,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         _lights.clear();
         _lights.reserve(lights.size());
         TF_FOR_ALL (it, lights) {
-            HdxLight const *light = static_cast<const HdxLight *>(
+            HdStLight const *light = static_cast<const HdStLight *>(
                                    renderIndex.GetSprim(HdPrimTypeTokens->light,
                                                         *it));
 
@@ -183,7 +184,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     for (size_t lightId = 0; lightId < numLights; ++lightId) {
         // Take a copy of the simple light into our temporary array and
         // update it with viewer-dependant values.
-        VtValue vtLightParams = _lights[lightId]->Get(HdxLightTokens->params);
+        VtValue vtLightParams = _lights[lightId]->Get(HdStLightTokens->params);
 
         if (TF_VERIFY(vtLightParams.IsHolding<GlfSimpleLight>())) {
             _glfSimpleLights.push_back(
@@ -203,7 +204,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         // the position and spot direction to the right
         // space
         if (glfl.IsCameraSpaceLight()) {
-            VtValue vtXform = _lights[lightId]->Get(HdxLightTokens->transform);
+            VtValue vtXform = _lights[lightId]->Get(HdStLightTokens->transform);
             const GfMatrix4d &lightXform =
                 vtXform.IsHolding<GfMatrix4d>() ? vtXform.Get<GfMatrix4d>() : GfMatrix4d(1);
 
@@ -214,7 +215,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             glfl.SetSpotDirection(GfVec3f(invCamXform.TransformDir(lightDir)));
         }
 
-        VtValue vLightShadowParams =  _lights[lightId]->Get(HdxLightTokens->shadowParams);
+        VtValue vLightShadowParams =  _lights[lightId]->Get(HdStLightTokens->shadowParams);
         TF_VERIFY(vLightShadowParams.IsHolding<HdxShadowParams>());
         HdxShadowParams lightShadowParams = 
             vLightShadowParams.GetWithDefault<HdxShadowParams>(HdxShadowParams());
@@ -231,7 +232,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         // to calculate shadows
         if (glfl.HasShadow()) {
             // Extract the window policy to adjust the frustum correctly
-            VtValue windowPolicy = _camera->Get(HdxCameraTokens->windowPolicy);
+            VtValue windowPolicy = _camera->Get(HdStCameraTokens->windowPolicy);
             if (!TF_VERIFY(windowPolicy.IsHolding<CameraUtilConformWindowPolicy>())) {
                 return;
             }
@@ -274,7 +275,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
                 continue;
             }
 
-            VtValue vLightShadowParams =  _lights[lightId]->Get(HdxLightTokens->shadowParams);
+            VtValue vLightShadowParams =  _lights[lightId]->Get(HdStLightTokens->shadowParams);
             TF_VERIFY(vLightShadowParams.IsHolding<HdxShadowParams>());
             HdxShadowParams lightShadowParams = 
                 vLightShadowParams.GetWithDefault<HdxShadowParams>(

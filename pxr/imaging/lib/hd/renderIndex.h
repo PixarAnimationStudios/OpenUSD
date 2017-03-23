@@ -249,16 +249,6 @@ public:
                      HdSceneDelegate* delegate,
                      SdfPath const& sprimId);
 
-    /// \deprecated {
-    ///   Old templated mathod of inserting a sprim into the index.
-    ///   This API has been superseeded by passing the typeId token.
-    ///   XXX: This method still exists to aid transition but may be
-    ///   removed at any time.
-    /// }
-    template <typename T>
-    void
-    InsertSprim(HdSceneDelegate* delegate, SdfPath const &id);
-
     HD_API
     void RemoveSprim(TfToken const& typeId, SdfPath const &id);
 
@@ -430,9 +420,6 @@ HdRenderIndex::InsertTask(HdSceneDelegate* delegate, SdfPath const& id)
 class HdMesh;
 class HdBasisCurves;
 class HdPoints;
-class HdxCamera;
-class HdxDrawTarget;
-class HdxLight;
 
 namespace HdRenderIndexInternal
 {  
@@ -463,30 +450,6 @@ namespace HdRenderIndexInternal
         return HdPrimTypeTokens->points;
     }
 
-    template <>
-    inline
-    const TfToken &
-    _GetTypeId<HdxCamera>()
-    {
-        return HdPrimTypeTokens->camera;
-    }
-
-    template <>
-    inline
-    const TfToken &
-    _GetTypeId<HdxDrawTarget>()
-    {
-        return HdPrimTypeTokens->drawTarget;
-    }
-
-    template <>
-    inline
-    const TfToken &
-    _GetTypeId<HdxLight>()
-    {
-        return HdPrimTypeTokens->light;
-    }
-
 } 
 
 template <typename T>
@@ -498,13 +461,6 @@ HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
     InsertRprim(HdRenderIndexInternal::_GetTypeId<T>(), delegate, id, instancerId);
 }
 
-
-template <typename T>
-void
-HdRenderIndex::InsertSprim(HdSceneDelegate* delegate, SdfPath const& id)
-{
-    InsertSprim(HdRenderIndexInternal::_GetTypeId<T>(), delegate, id);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 //

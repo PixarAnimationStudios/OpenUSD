@@ -24,15 +24,13 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdStream/renderDelegate.h"
 
-#include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/light.h"
+#include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/shader.h"
-
-#include "pxr/imaging/hdx/camera.h"
-#include "pxr/imaging/hdx/drawTarget.h"
-#include "pxr/imaging/hdx/light.h"
-
 
 #include "pxr/imaging/hd/glslfxShader.h"
 #include "pxr/imaging/hd/package.h"
@@ -116,11 +114,11 @@ HdStreamRenderDelegate::CreateSprim(TfToken const& typeId,
                                     SdfPath const& sprimId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdxCamera(sprimId);
+        return new HdStCamera(sprimId);
     } else if (typeId == HdPrimTypeTokens->light) {
-        return new HdxLight(sprimId);
+        return new HdStLight(sprimId);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
-        return new HdxDrawTarget(sprimId);
+        return new HdStDrawTarget(sprimId);
     } else  if (typeId == HdPrimTypeTokens->shader) {
         return new HdStShader(sprimId);
     } else {
@@ -134,11 +132,11 @@ HdSprim *
 HdStreamRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdxCamera(SdfPath::EmptyPath());
+        return new HdStCamera(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->light) {
-        return new HdxLight(SdfPath::EmptyPath());
+        return new HdStLight(SdfPath::EmptyPath());
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
-        return new HdxDrawTarget(SdfPath::EmptyPath());
+        return new HdStDrawTarget(SdfPath::EmptyPath());
     } else  if (typeId == HdPrimTypeTokens->shader) {
         return _CreateFallbackShaderPrim();
     } else {

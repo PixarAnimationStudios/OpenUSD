@@ -21,107 +21,83 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_CAMERA_H
-#define HDX_CAMERA_H
+#ifndef HDST_LIGHT_H
+#define HDST_LIGHT_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sprim.h"
 
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/dictionary.h"
-#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/vt/value.h"
 
 #include <boost/shared_ptr.hpp>
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HDX_CAMERA_TOKENS                       \
-    (clipPlanes)                                \
-    (matrices)                                  \
-    (worldToViewMatrix)                         \
-    (worldToViewInverseMatrix)                  \
-    (projectionMatrix)                          \
-    (windowPolicy)
+#define HDST_LIGHT_TOKENS                        \
+    (params)                                    \
+    (shadowCollection)                          \
+    (shadowParams)                              \
+    (transform)
 
-TF_DECLARE_PUBLIC_TOKENS(HdxCameraTokens, HDX_API, HDX_CAMERA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdStLightTokens, HDST_API, HDST_LIGHT_TOKENS);
 
 class HdSceneDelegate;
+typedef boost::shared_ptr<class HdStLight> HdStLightSharedPtr;
+typedef std::vector<class HdStLight const *> HdStLightPtrConstVector;
 
-/// \class HdxCamera
+/// \class HdStLight
 ///
-/// A camera model, used in conjunction with HdRenderPass.
+/// A light model, used in conjunction with HdRenderPass.
 ///
-class HdxCamera : public HdSprim {
+class HdStLight final : public HdSprim {
 public:
-    typedef std::vector<GfVec4d> ClipPlanesVector;
+    HDST_API
+    HdStLight(SdfPath const & id);
+    HDST_API
+    virtual ~HdStLight();
 
-    HDX_API
-    HdxCamera(SdfPath const & id);
-    HDX_API
-    ~HdxCamera();  // note: not virtual (for now)
-
-    // change tracking for HdxCamera
+    // change tracking for HdStLight
     enum DirtyBits {
         Clean                 = 0,
-        DirtyMatrices         = 1 << 0,
-        DirtyWindowPolicy     = 1 << 1,
-        DirtyClipPlanes       = 1 << 2,
-        AllDirty              = (DirtyMatrices
-                                |DirtyWindowPolicy
-                                |DirtyClipPlanes)
+        DirtyTransform        = 1 << 0,
+        DirtyParams           = 1 << 1,
+        DirtyShadowParams     = 1 << 2,
+        DirtyCollection       = 1 << 3,
+        AllDirty              = (DirtyTransform
+                                 |DirtyParams
+                                 |DirtyShadowParams
+                                 |DirtyCollection)
     };
 
     /// Synchronizes state from the delegate to this object.
-    HDX_API
+    HDST_API
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
 
     /// Accessor for tasks to get the parameters cached in this object.
-    HDX_API
+    HDST_API
     virtual VtValue Get(TfToken const &token) const override;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
-    HDX_API
+    HDST_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 private:
-    TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _cameraValues;
+    // cached states
+    TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _params;
 };
-
-struct HdxCameraMatrices
-{
-    HdxCameraMatrices() :
-          viewMatrix(1.0),
-          projMatrix(1.0)
-        {}
-
-    HdxCameraMatrices(GfMatrix4d const & view, GfMatrix4d const & proj) :
-          viewMatrix(view),
-          projMatrix(proj)
-        {}
-
-    // Matrices to create a camera
-    GfMatrix4d viewMatrix;
-    GfMatrix4d projMatrix;
-};
-
-// VtValue requirements
-HDX_API
-std::ostream& operator<<(std::ostream& out,   const HdxCameraMatrices& pv);
-HDX_API
-bool operator==(const HdxCameraMatrices& lhs, const HdxCameraMatrices& rhs);
-HDX_API
-bool operator!=(const HdxCameraMatrices& lhs, const HdxCameraMatrices& rhs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HDX_CAMERA_H
+#endif  // HDST_LIGHT_H

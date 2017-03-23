@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdx/drawTargetRenderPassState.h"
+#include "pxr/imaging/hdSt/drawTargetRenderPassState.h"
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdxDrawTargetRenderPassState::HdxDrawTargetRenderPassState()
+HdStDrawTargetRenderPassState::HdStDrawTargetRenderPassState()
  : _colorClearValues()
  , _depthClearValue(1.0f)
  , _cameraId()
@@ -37,19 +37,19 @@ HdxDrawTargetRenderPassState::HdxDrawTargetRenderPassState()
 
 }
 
-HdxDrawTargetRenderPassState::~HdxDrawTargetRenderPassState()
+HdStDrawTargetRenderPassState::~HdStDrawTargetRenderPassState()
 {
 }
 
 
 void
-HdxDrawTargetRenderPassState::SetNumColorAttachments(size_t numAttachments)
+HdStDrawTargetRenderPassState::SetNumColorAttachments(size_t numAttachments)
 {
     _colorClearValues.resize(numAttachments);
 }
 
 void
-HdxDrawTargetRenderPassState::SetColorClearValue(size_t attachmentIdx,
+HdStDrawTargetRenderPassState::SetColorClearValue(size_t attachmentIdx,
                                            const VtValue &clearValue)
 {
     TF_DEV_AXIOM(attachmentIdx < _colorClearValues.size());
@@ -57,19 +57,19 @@ HdxDrawTargetRenderPassState::SetColorClearValue(size_t attachmentIdx,
 }
 
 void
-HdxDrawTargetRenderPassState::SetDepthClearValue(float clearValue)
+HdStDrawTargetRenderPassState::SetDepthClearValue(float clearValue)
 {
     _depthClearValue = clearValue;
 }
 
 void
-HdxDrawTargetRenderPassState::SetCamera(const SdfPath &cameraId)
+HdStDrawTargetRenderPassState::SetCamera(const SdfPath &cameraId)
 {
     _cameraId = cameraId;
 }
 
 
-void HdxDrawTargetRenderPassState::SetRprimCollection(
+void HdStDrawTargetRenderPassState::SetRprimCollection(
                                                    HdRprimCollection const& col)
 {
     _rprimCollection = col;

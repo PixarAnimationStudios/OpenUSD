@@ -47,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderIndex;
 class HdSceneDelegate;
-class HdxCamera;
+class HdStCamera;
 
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
 
@@ -67,7 +67,7 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
-    const HdxCamera *_camera;
+    const HdStCamera *_camera;
     HdxSimpleLightingShaderSharedPtr _lightingShader;
 
     GlfSimpleLightingContextRefPtr _simpleLightingContext;

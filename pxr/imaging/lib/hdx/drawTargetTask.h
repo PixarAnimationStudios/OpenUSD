@@ -36,6 +36,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdStDrawTarget;
+
 
 typedef std::unique_ptr<HdxDrawTargetRenderPass> HdxDrawTargetRenderPassUniquePtr;
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
@@ -62,7 +64,7 @@ private:
     struct RenderPassInfo {
         HdRenderPassStateSharedPtr        renderPassState;
         HdxSimpleLightingShaderSharedPtr  simpleLightingShader;
-        const HdxDrawTarget              *target;
+        const HdStDrawTarget             *target;
         unsigned int                      version;
     };
     unsigned _currentDrawTargetSetVersion;

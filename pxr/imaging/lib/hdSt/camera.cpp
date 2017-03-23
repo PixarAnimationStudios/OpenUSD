@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdx/camera.h"
+#include "pxr/imaging/hdSt/camera.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -30,19 +30,19 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(HdxCameraTokens, HDX_CAMERA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdStCameraTokens, HDST_CAMERA_TOKENS);
 
-HdxCamera::HdxCamera(SdfPath const &id)
+HdStCamera::HdStCamera(SdfPath const &id)
  : HdSprim(id)
 {
 }
 
-HdxCamera::~HdxCamera()
+HdStCamera::~HdStCamera()
 {
 }
 
 void
-HdxCamera::Sync(HdSceneDelegate *sceneDelegate,
+HdStCamera::Sync(HdSceneDelegate *sceneDelegate,
                 HdRenderParam   *renderParam,
                 HdDirtyBits     *dirtyBits)
 {
@@ -56,7 +56,7 @@ HdxCamera::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    // HdxCamera communicates to the scene graph and caches all interesting
+    // HdStCamera communicates to the scene graph and caches all interesting
     // values within this class.
     // Later on Get() is called from TaskState (RenderPass) to perform
     // aggregation/pre-computation, in order to make the shader execution
@@ -69,32 +69,32 @@ HdxCamera::Sync(HdSceneDelegate *sceneDelegate,
         GfMatrix4d projectionMatrix(1.0);
 
         // extract view/projection matrices
-        VtValue vMatrices = sceneDelegate->Get(id, HdxCameraTokens->matrices);
+        VtValue vMatrices = sceneDelegate->Get(id, HdStCameraTokens->matrices);
         if (!vMatrices.IsEmpty()) {
-            const HdxCameraMatrices matrices = 
-                vMatrices.Get<HdxCameraMatrices>();
+            const HdStCameraMatrices matrices =
+                vMatrices.Get<HdStCameraMatrices>();
             worldToViewMatrix                = matrices.viewMatrix;
             worldToViewInverseMatrix         = worldToViewMatrix.GetInverse();
             projectionMatrix                 = matrices.projMatrix;
         } else {
-            TF_CODING_ERROR("No camera matrices passed to HdxCamera.");
+            TF_CODING_ERROR("No camera matrices passed to HdStCamera.");
         }
 
-        _cameraValues[HdxCameraTokens->worldToViewMatrix] =
+        _cameraValues[HdStCameraTokens->worldToViewMatrix] =
             VtValue(worldToViewMatrix);
-        _cameraValues[HdxCameraTokens->worldToViewInverseMatrix] =
+        _cameraValues[HdStCameraTokens->worldToViewInverseMatrix] =
             VtValue(worldToViewInverseMatrix);
-        _cameraValues[HdxCameraTokens->projectionMatrix] =
+        _cameraValues[HdStCameraTokens->projectionMatrix] =
             VtValue(projectionMatrix);
     }
 
     if (bits & DirtyWindowPolicy) {
-        _cameraValues[HdxCameraTokens->windowPolicy] = 
-                sceneDelegate->Get(id, HdxCameraTokens->windowPolicy);
+        _cameraValues[HdStCameraTokens->windowPolicy] =
+                sceneDelegate->Get(id, HdStCameraTokens->windowPolicy);
     }
 
     if (bits & DirtyClipPlanes) {
-        _cameraValues[HdxCameraTokens->clipPlanes] = 
+        _cameraValues[HdStCameraTokens->clipPlanes] =
                 sceneDelegate->GetClipPlanes(id);
     }
 
@@ -103,12 +103,12 @@ HdxCamera::Sync(HdSceneDelegate *sceneDelegate,
 
 /* virtual */
 VtValue
-HdxCamera::Get(TfToken const &name) const
+HdStCamera::Get(TfToken const &name) const
 {
     VtValue r;
 
     TF_VERIFY(TfMapLookup(_cameraValues, name, &r),
-            "HdxCamera - Unknown %s\n",
+            "HdStCamera - Unknown %s\n",
             name.GetText());
 
     return r;
@@ -116,7 +116,7 @@ HdxCamera::Get(TfToken const &name) const
 
 /* virtual */
 HdDirtyBits
-HdxCamera::GetInitialDirtyBitsMask() const
+HdStCamera::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
 }
@@ -125,22 +125,22 @@ HdxCamera::GetInitialDirtyBitsMask() const
 // VtValue Requirements
 // -------------------------------------------------------------------------- //
 
-std::ostream& operator<<(std::ostream& out, const HdxCameraMatrices& pv)
+std::ostream& operator<<(std::ostream& out, const HdStCameraMatrices& pv)
 {
-    out << "HdxCameraMatrices Params: (...) " 
+    out << "HdStCameraMatrices Params: (...) "
         << pv.viewMatrix << " " 
         << pv.projMatrix
         ;
     return out;
 }
 
-bool operator==(const HdxCameraMatrices& lhs, const HdxCameraMatrices& rhs) 
+bool operator==(const HdStCameraMatrices& lhs, const HdStCameraMatrices& rhs)
 {
     return lhs.viewMatrix           == rhs.viewMatrix &&
            lhs.projMatrix           == rhs.projMatrix;
 }
 
-bool operator!=(const HdxCameraMatrices& lhs, const HdxCameraMatrices& rhs) 
+bool operator!=(const HdStCameraMatrices& lhs, const HdStCameraMatrices& rhs)
 {
     return !(lhs == rhs);
 }

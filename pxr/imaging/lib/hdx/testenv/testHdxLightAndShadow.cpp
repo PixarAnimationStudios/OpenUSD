@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
     // --------------------------------------------------------------------
     // move light
     light2.SetPosition(GfVec4f(-0.3,-0.2,1,0));
-    delegate.SetLight(SdfPath("/light2"), HdxLightTokens->params,
+    delegate.SetLight(SdfPath("/light2"), HdStLightTokens->params,
                       VtValue(light2));
 
     // --------------------------------------------------------------------

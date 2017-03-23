@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
-class HdxDrawTargetRenderPassState;
+class HdStDrawTargetRenderPassState;
 
 /// \class HdxDrawTargetRenderPass
 ///
@@ -67,7 +67,7 @@ public:
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
     HDX_API
-    void SetRenderPassState(const HdxDrawTargetRenderPassState *renderPassState);
+    void SetRenderPassState(const HdStDrawTargetRenderPassState *renderPassState);
 
     /// Sets the collection of rprims associated to this render pass.
     HDX_API
@@ -86,7 +86,7 @@ private:
     HdRenderPass _renderPass;
 
     /// drawtarget renderPass state
-    const HdxDrawTargetRenderPassState *_drawTargetRenderPassState;
+    const HdStDrawTargetRenderPassState *_drawTargetRenderPassState;
 
     /// Local copy of the draw target object.
     GlfDrawTargetRefPtr  _drawTarget;

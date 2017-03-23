@@ -10,12 +10,19 @@ endif()
 
 pxr_shared_library(hdSt
     LIBRARIES
+        cameraUtil
         hd
         tf
         tracelite
 
     PUBLIC_CLASSES
         basisCurves
+        camera
+        drawTarget
+        drawTargetAttachmentDesc
+        drawTargetAttachmentDescArray
+        drawTargetRenderPassState
+        light      
         mesh
         points
         shader
@@ -27,6 +34,7 @@ pxr_shared_library(hdSt
         basisCurvesComputations
         basisCurvesShaderKey
         basisCurvesTopology
+        drawTargetTextureResource
         meshShaderKey
         meshTopology 
         pointsShaderKey

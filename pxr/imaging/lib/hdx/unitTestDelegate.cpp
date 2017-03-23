@@ -31,17 +31,20 @@
 #include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/textureResource.h"
-#include "pxr/imaging/hdx/camera.h"
-#include "pxr/imaging/hdx/drawTarget.h"
-#include "pxr/imaging/hdx/drawTargetAttachmentDescArray.h"
+
+#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
+#include "pxr/imaging/hdSt/light.h"
+
 #include "pxr/imaging/hdx/drawTargetTask.h"
 #include "pxr/imaging/hdx/drawTargetResolveTask.h"
-#include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/shadowMatrixComputation.h"
+
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -162,7 +165,7 @@ Hdx_UnitTestDelegate::Hdx_UnitTestDelegate()
     : Hdx_UnitTestDelegate(HdRenderIndexSharedPtr(new HdRenderIndex()))
 {
     GetRenderIndex().GetChangeTracker().AddState(
-        HdxDrawTargetTokens->drawTargetSet);
+        HdStDrawTargetTokens->drawTargetSet);
 }
 
 Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndexSharedPtr const &index)
@@ -171,7 +174,7 @@ Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndexSharedPtr const &index)
 {
     // add camera
     _cameraId = SdfPath("/camera");
-    GetRenderIndex().InsertSprim<HdxCamera>(this, _cameraId);
+    GetRenderIndex().InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
     GfFrustum frustum;
     frustum.SetPosition(GfVec3d(0, 0, 3));
     SetCamera(frustum.ComputeViewMatrix(), frustum.ComputeProjectionMatrix());
@@ -203,29 +206,29 @@ Hdx_UnitTestDelegate::SetCamera(SdfPath const &cameraId,
                                 GfMatrix4d const &projMatrix)
 {
     _ValueCache &cache = _valueCacheMap[cameraId];
-    cache[HdxCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
-    cache[HdxCameraTokens->matrices] = 
-        VtValue(HdxCameraMatrices(viewMatrix, projMatrix));
+    cache[HdStCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
+    cache[HdStCameraTokens->matrices] =
+        VtValue(HdStCameraMatrices(viewMatrix, projMatrix));
 
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(cameraId,
-                                                       HdxCamera::AllDirty);
+                                                       HdStCamera::AllDirty);
 }
 
 void
 Hdx_UnitTestDelegate::AddCamera(SdfPath const &id)
 {
     // add a camera
-    GetRenderIndex().InsertSprim<HdxCamera>(this, id);
+    GetRenderIndex().InsertSprim(HdPrimTypeTokens->camera, this, id);
     _ValueCache &cache = _valueCacheMap[id];
-    cache[HdxCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
-    cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices());
+    cache[HdStCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
+    cache[HdStCameraTokens->matrices] = VtValue(HdStCameraMatrices());
 }
 
 void
 Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
 {
     // add light
-    GetRenderIndex().InsertSprim<HdxLight>(this, id);
+    GetRenderIndex().InsertSprim(HdPrimTypeTokens->light, this, id);
     _ValueCache &cache = _valueCacheMap[id];
 
     HdxShadowParams shadowParams;
@@ -236,9 +239,9 @@ Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
     shadowParams.bias = -0.001;
     shadowParams.blur = 0.1;
 
-    cache[HdxLightTokens->params] = light;
-    cache[HdxLightTokens->shadowParams] = shadowParams;
-    cache[HdxLightTokens->shadowCollection]
+    cache[HdStLightTokens->params] = light;
+    cache[HdStLightTokens->shadowParams] = shadowParams;
+    cache[HdStLightTokens->shadowCollection]
         = HdRprimCollection(HdTokens->geometry, HdTokens->refined);
 }
 
@@ -248,33 +251,33 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
 {
     _ValueCache &cache = _valueCacheMap[id];
     cache[key] = value;
-    if (key == HdxLightTokens->params) {
+    if (key == HdStLightTokens->params) {
         // update shadow matrix too
         GlfSimpleLight light = value.Get<GlfSimpleLight>();
         HdxShadowParams shadowParams
-            = cache[HdxLightTokens->shadowParams].Get<HdxShadowParams>();
+            = cache[HdStLightTokens->shadowParams].Get<HdxShadowParams>();
         shadowParams.shadowMatrix
             = HdxShadowMatrixComputationSharedPtr(new ShadowMatrix(light));
 
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdxLight::DirtyParams|HdxLight::DirtyShadowParams);
-        cache[HdxLightTokens->shadowParams] = shadowParams;
-    } else if (key == HdxLightTokens->transform) {
+            id, HdStLight::DirtyParams|HdStLight::DirtyShadowParams);
+        cache[HdStLightTokens->shadowParams] = shadowParams;
+    } else if (key == HdStLightTokens->transform) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdxLight::DirtyTransform);
-    } else if (key == HdxLightTokens->shadowCollection) {
+            id, HdStLight::DirtyTransform);
+    } else if (key == HdStLightTokens->shadowCollection) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdxLight::DirtyCollection);
+            id, HdStLight::DirtyCollection);
     }
 }
 
 void
 Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
 {
-    GetRenderIndex().InsertSprim<HdxDrawTarget>(this, id);
+    GetRenderIndex().InsertSprim(HdPrimTypeTokens->drawTarget, this, id);
     _ValueCache &cache = _valueCacheMap[id];
 
-    HdxDrawTargetAttachmentDescArray attachments;
+    HdStDrawTargetAttachmentDescArray attachments;
     attachments.AddAttachment("color",
                               HdFormatR8G8B8A8UNorm,
                               VtValue(GfVec4f(1,1,0,1)),
@@ -283,19 +286,19 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
                               HdMinFilterLinear,
                               HdMagFilterLinear);
 
-    cache[HdxDrawTargetTokens->enable]          = VtValue(true);
-    cache[HdxDrawTargetTokens->camera]          = VtValue(SdfPath());
-    cache[HdxDrawTargetTokens->resolution]      = VtValue(GfVec2i(256, 256));
-    cache[HdxDrawTargetTokens->attachments]     = VtValue(attachments);
-    cache[HdxDrawTargetTokens->depthClearValue] = VtValue(1.0f);
-    cache[HdxDrawTargetTokens->collection]      =
+    cache[HdStDrawTargetTokens->enable]          = VtValue(true);
+    cache[HdStDrawTargetTokens->camera]          = VtValue(SdfPath());
+    cache[HdStDrawTargetTokens->resolution]      = VtValue(GfVec2i(256, 256));
+    cache[HdStDrawTargetTokens->attachments]     = VtValue(attachments);
+    cache[HdStDrawTargetTokens->depthClearValue] = VtValue(1.0f);
+    cache[HdStDrawTargetTokens->collection]      =
         VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull));
 
     GetRenderIndex().InsertBprim(HdPrimTypeTokens->texture, this, id);
     _drawTargets[id] = _DrawTarget();
 
     GetRenderIndex().GetChangeTracker().MarkStateDirty(
-        HdxDrawTargetTokens->drawTargetSet);
+        HdStDrawTargetTokens->drawTargetSet);
 }
 
 void
@@ -304,24 +307,24 @@ Hdx_UnitTestDelegate::SetDrawTarget(SdfPath const &id, TfToken const &key,
 {
     _ValueCache &cache = _valueCacheMap[id];
     cache[key] = value;
-    if (key == HdxDrawTargetTokens->enable) {
+    if (key == HdStDrawTargetTokens->enable) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdxDrawTarget::DirtyDTEnable);
-    } else if (key == HdxDrawTargetTokens->camera) {
+            id, HdStDrawTarget::DirtyDTEnable);
+    } else if (key == HdStDrawTargetTokens->camera) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdxDrawTarget::DirtyDTCamera);
-    } else if (key == HdxDrawTargetTokens->resolution) {
+            id, HdStDrawTarget::DirtyDTCamera);
+    } else if (key == HdStDrawTargetTokens->resolution) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdxDrawTarget::DirtyDTResolution);
-    } else if (key == HdxDrawTargetTokens->attachments) {
+            id, HdStDrawTarget::DirtyDTResolution);
+    } else if (key == HdStDrawTargetTokens->attachments) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdxDrawTarget::DirtyDTAttachment);
-    } else if (key == HdxDrawTargetTokens->depthClearValue) {
+            id, HdStDrawTarget::DirtyDTAttachment);
+    } else if (key == HdStDrawTargetTokens->depthClearValue) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdxDrawTarget::DirtyDTDepthClearValue);
-    } else if (key == HdxDrawTargetTokens->collection) {
+            id, HdStDrawTarget::DirtyDTDepthClearValue);
+    } else if (key == HdStDrawTargetTokens->collection) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdxDrawTarget::DirtyDTCollection);
+            id, HdStDrawTarget::DirtyDTCollection);
     }
 }
 
@@ -836,7 +839,7 @@ HdTextureResourceSharedPtr
 Hdx_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
 {
     if (_drawTargets.find(textureId) != _drawTargets.end()) {
-        HdxDrawTarget const *drawTarget = static_cast<HdxDrawTarget const *> (
+        HdStDrawTarget const *drawTarget = static_cast<HdStDrawTarget const *> (
                         GetRenderIndex().GetSprim(HdPrimTypeTokens->drawTarget,
                                                   textureId));
 

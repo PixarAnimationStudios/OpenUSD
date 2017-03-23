@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_DRAW_TARGET_ATTACHMENT_DESC_H
-#define HDX_DRAW_TARGET_ATTACHMENT_DESC_H
+#ifndef HDST_DRAW_TARGET_ATTACHMENT_DESC_H
+#define HDST_DRAW_TARGET_ATTACHMENT_DESC_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 
@@ -36,36 +36,37 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class HdxDrawTargetAttachmentDesc
+/// \class HdStDrawTargetAttachmentDesc
 ///
 /// Represents an render to texture render pass.
 ///
 /// \note This is a temporary API to aid transition to hydra, and is subject
 /// to major changes.
 ///
-class HdxDrawTargetAttachmentDesc final
+class HdStDrawTargetAttachmentDesc final
 {
 public:
     /// default constructor - only for use by containers.
-    HDX_API
-    HdxDrawTargetAttachmentDesc();
+    HDST_API
+    HdStDrawTargetAttachmentDesc();
 
     /// Construct a draw target attachment description
-    HDX_API
-    HdxDrawTargetAttachmentDesc(const std::string &name,
+    HDST_API
+    HdStDrawTargetAttachmentDesc(const std::string &name,
                                 HdFormat           format,
                                 const VtValue     &clearColor,
                                 HdWrap             wrapS,
                                 HdWrap             wrapT,
                                 HdMinFilter        minFilter,
                                 HdMagFilter        magFilter);
-    ~HdxDrawTargetAttachmentDesc() = default;
+    ~HdStDrawTargetAttachmentDesc() = default;
 
     // Copy for container support.
-    HDX_API
-    HdxDrawTargetAttachmentDesc(const HdxDrawTargetAttachmentDesc &copy);
-    HDX_API
-    HdxDrawTargetAttachmentDesc &operator =(const HdxDrawTargetAttachmentDesc &copy);
+    HDST_API
+    HdStDrawTargetAttachmentDesc(const HdStDrawTargetAttachmentDesc &copy);
+    HDST_API
+    HdStDrawTargetAttachmentDesc &operator =(
+                                      const HdStDrawTargetAttachmentDesc &copy);
 
     const std::string &GetName()       const { return _name; }
     HdFormat           GetFormat()     const { return _format; }
@@ -76,14 +77,14 @@ public:
     HdMagFilter        GetMagFilter()  const { return _magFilter; }
 
     // VtValue requirements
-    HDX_API
+    HDST_API
     size_t GetHash() const;
-    HDX_API
+    HDST_API
     void   Dump(std::ostream &out) const;
-    HDX_API
-    bool operator==(const HdxDrawTargetAttachmentDesc &other) const;
-    HDX_API
-    bool operator!=(const HdxDrawTargetAttachmentDesc &other) const;
+    HDST_API
+    bool operator==(const HdStDrawTargetAttachmentDesc &other) const;
+    HDST_API
+    bool operator!=(const HdStDrawTargetAttachmentDesc &other) const;
 
 private:
     std::string _name;
@@ -95,12 +96,13 @@ private:
     HdMagFilter _magFilter;
 };
 
-HDX_API
-size_t hash_value(HdxDrawTargetAttachmentDesc const &attachment);
-HDX_API
-std::ostream &operator <<(std::ostream &out, const HdxDrawTargetAttachmentDesc &pv);
+HDST_API
+size_t hash_value(HdStDrawTargetAttachmentDesc const &attachment);
+HDST_API
+std::ostream &operator <<(std::ostream &out,
+                          const HdStDrawTargetAttachmentDesc &pv);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HDX_DRAW_TARGET_ATTACHMENT_DESC_H
+#endif  // HDST_DRAW_TARGET_ATTACHMENT_DESC_H

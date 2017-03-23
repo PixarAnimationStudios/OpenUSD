@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_DRAW_TARGET_RENDER_PASS_STATE_H
-#define HDX_DRAW_TARGET_RENDER_PASS_STATE_H
+#ifndef HDST_DRAW_TARGET_RENDER_PASS_STATE_H
+#define HDST_DRAW_TARGET_RENDER_PASS_STATE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class VtValue;
 
-/// \class HdxDrawTargetRenderPassState
+/// \class HdStDrawTargetRenderPassState
 ///
 /// Represents common non-gl context specific render pass state for a draw
 /// target.
@@ -43,15 +43,15 @@ class VtValue;
 /// to major changes.  It is likely this functionality will be absorbed into
 /// the base class.
 ///
-class HdxDrawTargetRenderPassState final {
+class HdStDrawTargetRenderPassState final {
 public:
-    HDX_API
-    HdxDrawTargetRenderPassState();
-    HDX_API
-    ~HdxDrawTargetRenderPassState();  // final no need to be virtual
+    HDST_API
+    HdStDrawTargetRenderPassState();
+    HDST_API
+    ~HdStDrawTargetRenderPassState();  // final no need to be virtual
 
     /// Set the number of color buffer's to use.
-    HDX_API
+    HDST_API
     void SetNumColorAttachments(size_t numAttachments);
 
     /// Set the clear value for a color buffer that is applied at the beginning
@@ -61,19 +61,19 @@ public:
     /// color values.
     /// An unexpected formats results in an error and the buffer not being
     /// cleared.
-    HDX_API
+    HDST_API
     void SetColorClearValue(size_t attachmentIdx, const VtValue &clearValue);
 
     /// Set the clear value for the depth buffer.  It is expected the
     /// clear value is a normalize float.
-    HDX_API
+    HDST_API
     void SetDepthClearValue(float clearValue);
 
     /// Set the path to the camera to use to draw this render path from.
-    HDX_API
+    HDST_API
     void SetCamera(const SdfPath &cameraId);
 
-    HDX_API
+    HDST_API
     void SetRprimCollection(HdRprimCollection const& col);
 
     /// Returns the number of color buffers attached to the draw target.
@@ -117,11 +117,11 @@ private:
     HdRprimCollection    _rprimCollection;
     unsigned int         _rprimCollectionVersion;
 
-    HdxDrawTargetRenderPassState(const HdxDrawTargetRenderPassState &) = delete;
-    HdxDrawTargetRenderPassState &operator =(const HdxDrawTargetRenderPassState &) = delete;
+    HdStDrawTargetRenderPassState(const HdStDrawTargetRenderPassState &) = delete;
+    HdStDrawTargetRenderPassState &operator =(const HdStDrawTargetRenderPassState &) = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDX_DRAW_TARGET_RENDER_PASS_STATE_H
+#endif // HDST_DRAW_TARGET_RENDER_PASS_STATE_H

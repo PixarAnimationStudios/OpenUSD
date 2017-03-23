@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdx/drawTargetAttachmentDescArray.h"
+#include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray()
+HdStDrawTargetAttachmentDescArray::HdStDrawTargetAttachmentDescArray()
  : _attachments()
  , _depthWrapS(HdWrapRepeat)
  , _depthWrapT(HdWrapRepeat)
@@ -36,7 +36,7 @@ HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray()
 
 }
 
-HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray(
+HdStDrawTargetAttachmentDescArray::HdStDrawTargetAttachmentDescArray(
                                                          size_t attachmentCount)
  : _attachments()
 {
@@ -44,8 +44,8 @@ HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray(
 }
 
 
-HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray(
-                                    const HdxDrawTargetAttachmentDescArray &copy)
+HdStDrawTargetAttachmentDescArray::HdStDrawTargetAttachmentDescArray(
+                                  const HdStDrawTargetAttachmentDescArray &copy)
   : _attachments(copy._attachments)
   , _depthWrapS(copy._depthWrapS)
   , _depthWrapT(copy._depthWrapT)
@@ -56,9 +56,9 @@ HdxDrawTargetAttachmentDescArray::HdxDrawTargetAttachmentDescArray(
 }
 
 
-HdxDrawTargetAttachmentDescArray &
-HdxDrawTargetAttachmentDescArray::operator =(
-                                    const HdxDrawTargetAttachmentDescArray &copy)
+HdStDrawTargetAttachmentDescArray &
+HdStDrawTargetAttachmentDescArray::operator =(
+                                  const HdStDrawTargetAttachmentDescArray &copy)
 {
     _attachments    = copy._attachments;
     _depthWrapS     = copy._depthWrapS;
@@ -71,7 +71,8 @@ HdxDrawTargetAttachmentDescArray::operator =(
 
 
 void
-HdxDrawTargetAttachmentDescArray::AddAttachment(const std::string &name,
+HdStDrawTargetAttachmentDescArray::AddAttachment(
+                                                const std::string &name,
                                                 HdFormat           format,
                                                 const VtValue      &clearColor,
                                                 HdWrap             wrapS,
@@ -90,20 +91,21 @@ HdxDrawTargetAttachmentDescArray::AddAttachment(const std::string &name,
 
 
 size_t
-HdxDrawTargetAttachmentDescArray::GetNumAttachments() const
+HdStDrawTargetAttachmentDescArray::GetNumAttachments() const
 {
     return _attachments.size();
 }
 
 
-const HdxDrawTargetAttachmentDesc &
-HdxDrawTargetAttachmentDescArray::GetAttachment(size_t idx) const
+const HdStDrawTargetAttachmentDesc &
+HdStDrawTargetAttachmentDescArray::GetAttachment(size_t idx) const
 {
     return _attachments[idx];
 }
 
 void
-HdxDrawTargetAttachmentDescArray::SetDepthSampler(HdWrap      depthWrapS,
+HdStDrawTargetAttachmentDescArray::SetDepthSampler(
+                                                  HdWrap      depthWrapS,
                                                   HdWrap      depthWrapT,
                                                   HdMinFilter depthMinFilter,
                                                   HdMagFilter depthMagFilter)
@@ -116,7 +118,7 @@ HdxDrawTargetAttachmentDescArray::SetDepthSampler(HdWrap      depthWrapS,
 
 
 size_t
-HdxDrawTargetAttachmentDescArray::GetHash() const
+HdStDrawTargetAttachmentDescArray::GetHash() const
 {
     size_t hash = boost::hash_value(_attachments);
     boost::hash_combine(hash, _depthWrapS);
@@ -129,7 +131,7 @@ HdxDrawTargetAttachmentDescArray::GetHash() const
 
 
 void
-HdxDrawTargetAttachmentDescArray::Dump(std::ostream &out) const
+HdStDrawTargetAttachmentDescArray::Dump(std::ostream &out) const
 {
     size_t numAttachments = _attachments.size();
 
@@ -138,7 +140,7 @@ HdxDrawTargetAttachmentDescArray::Dump(std::ostream &out) const
     for (size_t attachmentNum = 0; attachmentNum < numAttachments;
                                                                 ++attachmentNum)
     {
-        const HdxDrawTargetAttachmentDesc &desc = _attachments[attachmentNum];
+        const HdStDrawTargetAttachmentDesc &desc = _attachments[attachmentNum];
         out << desc;
     }
 
@@ -150,8 +152,8 @@ HdxDrawTargetAttachmentDescArray::Dump(std::ostream &out) const
 
 
 bool
-HdxDrawTargetAttachmentDescArray::operator==(
-                             const HdxDrawTargetAttachmentDescArray &other) const
+HdStDrawTargetAttachmentDescArray::operator==(
+                           const HdStDrawTargetAttachmentDescArray &other) const
 {
     return ((_attachments     == other._attachments)    &&
             (_depthWrapS      == other._depthWrapS)     &&
@@ -162,8 +164,8 @@ HdxDrawTargetAttachmentDescArray::operator==(
 
 
 bool
-HdxDrawTargetAttachmentDescArray::operator!=(
-                            const HdxDrawTargetAttachmentDescArray &other) const
+HdStDrawTargetAttachmentDescArray::operator!=(
+                           const HdStDrawTargetAttachmentDescArray &other) const
 {
     return ((_attachments     != other._attachments)    ||
             (_depthWrapS      != other._depthWrapS)     ||
@@ -173,13 +175,13 @@ HdxDrawTargetAttachmentDescArray::operator!=(
 }
 
 
-size_t hash_value(HdxDrawTargetAttachmentDescArray const &attachments)
+size_t hash_value(HdStDrawTargetAttachmentDescArray const &attachments)
 {
     return attachments.GetHash();
 }
 
 std::ostream &operator <<(std::ostream &out,
-                          const HdxDrawTargetAttachmentDescArray &pv)
+                          const HdStDrawTargetAttachmentDescArray &pv)
 {
     pv.Dump(out);
 

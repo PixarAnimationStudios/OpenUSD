@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdx/drawTargetAttachmentDesc.h"
+#include "pxr/imaging/hdSt/drawTargetAttachmentDesc.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc()
+HdStDrawTargetAttachmentDesc::HdStDrawTargetAttachmentDesc()
  : _name()
  , _format(HdFormatUnknown)
  , _clearColor()
@@ -39,7 +39,8 @@ HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc()
 }
 
 
-HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc(const std::string &name,
+HdStDrawTargetAttachmentDesc::HdStDrawTargetAttachmentDesc(
+                                                  const std::string &name,
                                                   HdFormat           format,
                                                   const VtValue     &clearColor,
                                                   HdWrap             wrapS,
@@ -58,8 +59,8 @@ HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc(const std::string &name
 }
 
 
-HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc(
-                                         const HdxDrawTargetAttachmentDesc &copy)
+HdStDrawTargetAttachmentDesc::HdStDrawTargetAttachmentDesc(
+                                       const HdStDrawTargetAttachmentDesc &copy)
   : _name(copy._name)
   , _format(copy._format)
   , _clearColor(copy._clearColor)
@@ -72,8 +73,9 @@ HdxDrawTargetAttachmentDesc::HdxDrawTargetAttachmentDesc(
 }
 
 
-HdxDrawTargetAttachmentDesc &
-HdxDrawTargetAttachmentDesc::operator =(const HdxDrawTargetAttachmentDesc &copy)
+HdStDrawTargetAttachmentDesc &
+HdStDrawTargetAttachmentDesc::operator =(
+                                       const HdStDrawTargetAttachmentDesc &copy)
 {
     _name       = copy._name;
     _format     = copy._format;
@@ -88,7 +90,7 @@ HdxDrawTargetAttachmentDesc::operator =(const HdxDrawTargetAttachmentDesc &copy)
 
 
 size_t
-HdxDrawTargetAttachmentDesc::GetHash() const
+HdStDrawTargetAttachmentDesc::GetHash() const
 {
     size_t hash = boost::hash_value(_name);
     boost::hash_combine(hash, _format);
@@ -103,7 +105,7 @@ HdxDrawTargetAttachmentDesc::GetHash() const
 
 
 void
-HdxDrawTargetAttachmentDesc::Dump(std::ostream &out) const
+HdStDrawTargetAttachmentDesc::Dump(std::ostream &out) const
 {
     out << _name        << " "
         << _format      << " "
@@ -116,8 +118,8 @@ HdxDrawTargetAttachmentDesc::Dump(std::ostream &out) const
 
 
 bool
-HdxDrawTargetAttachmentDesc::operator==(
-                                  const HdxDrawTargetAttachmentDesc &other) const
+HdStDrawTargetAttachmentDesc::operator==(
+                                const HdStDrawTargetAttachmentDesc &other) const
 {
     return ((_name       == other._name)   &&
             (_format     == other._format) &&
@@ -130,8 +132,8 @@ HdxDrawTargetAttachmentDesc::operator==(
 
 
 bool
-HdxDrawTargetAttachmentDesc::operator!=(
-                                  const HdxDrawTargetAttachmentDesc &other) const
+HdStDrawTargetAttachmentDesc::operator!=(
+                                const HdStDrawTargetAttachmentDesc &other) const
 {
     return ((_name       != other._name)       ||
             (_format     != other._format)     ||
@@ -143,13 +145,13 @@ HdxDrawTargetAttachmentDesc::operator!=(
 }
 
 
-size_t hash_value(HdxDrawTargetAttachmentDesc const &attachment)
+size_t hash_value(HdStDrawTargetAttachmentDesc const &attachment)
 {
     return attachment.GetHash();
 }
 
 std::ostream &operator <<(std::ostream &out,
-                          const HdxDrawTargetAttachmentDesc &pv)
+                          const HdStDrawTargetAttachmentDesc &pv)
 {
     pv.Dump(out);
 

@@ -24,10 +24,11 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdx/shadowTask.h"
-#include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/package.h"
+
+#include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -36,7 +37,6 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/lightingShader.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -160,9 +160,9 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
                 params.lightIncludePaths,
                 params.lightExcludePaths);
         
-        HdxLightPtrConstVector lights;
+        HdStLightPtrConstVector lights;
         TF_FOR_ALL (it, lightPaths) {
-             const HdxLight *light = static_cast<const HdxLight *>(
+             const HdStLight *light = static_cast<const HdStLight *>(
                                          renderIndex.GetSprim(
                                                  HdPrimTypeTokens->light, *it));
 
@@ -187,7 +187,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
             
             // Extract the collection from the HD light
             VtValue vtShadowCollection =
-                lights[lightId]->Get(HdxLightTokens->shadowCollection);
+                lights[lightId]->Get(HdStLightTokens->shadowCollection);
             const HdRprimCollection &col =
                 vtShadowCollection.IsHolding<HdRprimCollection>() ?
                     vtShadowCollection.Get<HdRprimCollection>() : HdRprimCollection();

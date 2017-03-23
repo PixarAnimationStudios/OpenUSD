@@ -23,16 +23,17 @@
 //
 #include "pxr/usdImaging/usdImagingGL/defaultTaskDelegate.h"
 
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/imaging/hdx/camera.h"
-#include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/simpleLightBypassTask.h"
 #include "pxr/imaging/hdx/tokens.h"
+
+#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/light.h"
+
+#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -93,10 +94,10 @@ UsdImagingGL_DefaultTaskDelegate::UsdImagingGL_DefaultTaskDelegate(
 
     // camera
     {
-        renderIndex.InsertSprim<HdxCamera>(this, _cameraId);
+        renderIndex.InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
-        cache[HdxCameraTokens->windowPolicy] = VtValue(); // no window policy.
-        cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices());
+        cache[HdStCameraTokens->windowPolicy] = VtValue(); // no window policy.
+        cache[HdStCameraTokens->matrices] = VtValue(HdStCameraMatrices());
     }
 
     // selection task
@@ -400,7 +401,7 @@ UsdImagingGL_DefaultTaskDelegate::_UpdateRenderParams(
 
     if (renderParams.clipPlanes != oldRenderParams.clipPlanes) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-                            _cameraId, HdxCamera::DirtyClipPlanes);
+                            _cameraId, HdStCamera::DirtyClipPlanes);
     }
 
 
@@ -430,7 +431,7 @@ UsdImagingGL_DefaultTaskDelegate::SetLightingState(
                            (int)_lightIds.size()));
         _lightIds.push_back(lightId);
 
-        GetRenderIndex().InsertSprim<HdxLight>(this, lightId);
+        GetRenderIndex().InsertSprim(HdPrimTypeTokens->light, this, lightId);
         hasNumLightsChanged = true;
     }
     // Remove unused light Ids from HdRenderIndex
@@ -444,17 +445,17 @@ UsdImagingGL_DefaultTaskDelegate::SetLightingState(
     for (size_t i = 0; i < lights.size(); ++i) {
         _ValueCache &cache = _valueCacheMap[_lightIds[i]];
         // store GlfSimpleLight directly.
-        cache[HdxLightTokens->params] = VtValue(lights[i]);
-        cache[HdxLightTokens->transform] = VtValue();
-        cache[HdxLightTokens->shadowParams] = VtValue(HdxShadowParams());
-        cache[HdxLightTokens->shadowCollection] = VtValue();
+        cache[HdStLightTokens->params] = VtValue(lights[i]);
+        cache[HdStLightTokens->transform] = VtValue();
+        cache[HdStLightTokens->shadowParams] = VtValue(HdxShadowParams());
+        cache[HdStLightTokens->shadowCollection] = VtValue();
 
         // Only mark as dirty the parameters to avoid unnecessary invalidation
         // specially marking as dirty lightShadowCollection will trigger
         // a collection dirty on geometry and we don't want that to happen
         // always
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            _lightIds[i], HdxLight::DirtyParams);
+            _lightIds[i], HdStLight::DirtyParams);
     }
 
     // sadly the material also comes from lighting context right now...
@@ -501,13 +502,13 @@ UsdImagingGL_DefaultTaskDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache &cache = _valueCacheMap[_cameraId];
-    cache[HdxCameraTokens->windowPolicy]  = VtValue(); // no window policy.
-    cache[HdxCameraTokens->matrices] = 
-        VtValue(HdxCameraMatrices(viewMatrix, projectionMatrix));
+    cache[HdStCameraTokens->windowPolicy]  = VtValue(); // no window policy.
+    cache[HdStCameraTokens->matrices] =
+        VtValue(HdStCameraMatrices(viewMatrix, projectionMatrix));
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
-                                                       HdxCamera::AllDirty);
+                                                       HdStCamera::AllDirty);
 
     if (_viewport != viewport) {
         // viewport is also read by HdxRenderTaskParam. invalidate it.

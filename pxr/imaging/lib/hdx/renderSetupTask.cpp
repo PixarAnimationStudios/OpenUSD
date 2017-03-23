@@ -22,10 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdx/renderSetupTask.h"
-#include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
+
+#include "pxr/imaging/hdSt/camera.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/glslfxShader.h"
@@ -34,7 +35,6 @@
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
@@ -146,7 +146,7 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
     _renderTags = params.renderTags;
 
     const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
-    _camera = static_cast<const HdxCamera *>(
+    _camera = static_cast<const HdStCamera *>(
                 renderIndex.GetSprim(HdPrimTypeTokens->camera,
                                      params.camera));
 }
@@ -155,14 +155,14 @@ void
 HdxRenderSetupTask::SyncCamera()
 {
     if (_camera && _renderPassState) {
-        VtValue modelViewVt  = _camera->Get(HdxCameraTokens->worldToViewMatrix);
-        VtValue projectionVt = _camera->Get(HdxCameraTokens->projectionMatrix);
+        VtValue modelViewVt  = _camera->Get(HdStCameraTokens->worldToViewMatrix);
+        VtValue projectionVt = _camera->Get(HdStCameraTokens->projectionMatrix);
         GfMatrix4d modelView = modelViewVt.Get<GfMatrix4d>();
         GfMatrix4d projection= projectionVt.Get<GfMatrix4d>();
 
         // If there is a window policy available in this camera
         // we will extract it and adjust the projection accordingly.
-        VtValue windowPolicy = _camera->Get(HdxCameraTokens->windowPolicy);
+        VtValue windowPolicy = _camera->Get(HdStCameraTokens->windowPolicy);
         if (windowPolicy.IsHolding<CameraUtilConformWindowPolicy>()) {
             const CameraUtilConformWindowPolicy policy = 
                 windowPolicy.Get<CameraUtilConformWindowPolicy>();
@@ -171,7 +171,7 @@ HdxRenderSetupTask::SyncCamera()
                 _viewport[3] != 0.0 ? _viewport[2] / _viewport[3] : 1.0);
         }
 
-        const VtValue &vClipPlanes = _camera->Get(HdxCameraTokens->clipPlanes);
+        const VtValue &vClipPlanes = _camera->Get(HdStCameraTokens->clipPlanes);
         const HdRenderPassState::ClipPlanesVector &clipPlanes =
             vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 

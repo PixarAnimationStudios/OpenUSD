@@ -12,6 +12,7 @@ pxr_shared_library(hdx
         glf
         pxOsd
         hd
+        hdSt
         cameraUtil
         sdf
         ${GLEW_LIBRARY}
@@ -20,16 +21,10 @@ pxr_shared_library(hdx
         ${GLEW_INCLUDE_DIR}
 
     PUBLIC_CLASSES
-        camera
-        drawTarget
-        drawTargetAttachmentDesc
-        drawTargetAttachmentDescArray
         drawTargetRenderPass
-        drawTargetRenderPassState
         drawTargetTask
         drawTargetResolveTask
         intersector
-        light
         package
         rendererPlugin
         rendererPluginRegistry
@@ -52,7 +47,6 @@ pxr_shared_library(hdx
 
     PRIVATE_CLASSES
         debugCodes
-        drawTargetTextureResource
         unitTestDelegate
 
     PRIVATE_HEADERS

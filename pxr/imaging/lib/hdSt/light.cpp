@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdx/light.h"
+#include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -33,20 +33,20 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(HdxLightTokens, HDX_LIGHT_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdStLightTokens, HDST_LIGHT_TOKENS);
 
-HdxLight::HdxLight(SdfPath const &id)
+HdStLight::HdStLight(SdfPath const &id)
  : HdSprim(id)
 {
 }
 
-HdxLight::~HdxLight()
+HdStLight::~HdStLight()
 {
 }
 
 /* virtual */
 void
-HdxLight::Sync(HdSceneDelegate *sceneDelegate,
+HdStLight::Sync(HdSceneDelegate *sceneDelegate,
                HdRenderParam   *renderParam,
                HdDirtyBits     *dirtyBits)
 {
@@ -61,7 +61,7 @@ HdxLight::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    // HdxLight communicates to the scene graph and caches all interesting
+    // HdStLight communicates to the scene graph and caches all interesting
     // values within this class.
 
     // later on Get() is called from TaskState (RenderPass) to perform
@@ -74,38 +74,38 @@ HdxLight::Sync(HdSceneDelegate *sceneDelegate,
 
     // Transform
     if (bits & DirtyTransform) {
-        VtValue transform = sceneDelegate->Get(id, HdxLightTokens->transform);
+        VtValue transform = sceneDelegate->Get(id, HdStLightTokens->transform);
         if (transform.IsHolding<GfMatrix4d>()) {
-            _params[HdxLightTokens->transform] = transform;
+            _params[HdStLightTokens->transform] = transform;
         } else {
-            _params[HdxLightTokens->transform] = GfMatrix4d(1);
+            _params[HdStLightTokens->transform] = GfMatrix4d(1);
         }
     }
 
     // Lighting Params
     if (bits & DirtyParams) {
-        _params[HdxLightTokens->params] =
-                sceneDelegate->Get(id, HdxLightTokens->params);
+        _params[HdStLightTokens->params] =
+                sceneDelegate->Get(id, HdStLightTokens->params);
     }
 
     // Shadow Params
     if (bits & DirtyShadowParams) {
-        _params[HdxLightTokens->shadowParams] =
-                sceneDelegate->Get(id, HdxLightTokens->shadowParams);
+        _params[HdStLightTokens->shadowParams] =
+                sceneDelegate->Get(id, HdStLightTokens->shadowParams);
     }
 
     // Shadow Collection
     if (bits & DirtyCollection) {
         VtValue vtShadowCollection =
-                sceneDelegate->Get(id, HdxLightTokens->shadowCollection);
+                sceneDelegate->Get(id, HdStLightTokens->shadowCollection);
 
         // Optional
         if (vtShadowCollection.IsHolding<HdRprimCollection>()) {
             HdRprimCollection newCollection =
                 vtShadowCollection.UncheckedGet<HdRprimCollection>();
 
-            if (_params[HdxLightTokens->shadowCollection] != newCollection) {
-                _params[HdxLightTokens->shadowCollection] = newCollection;
+            if (_params[HdStLightTokens->shadowCollection] != newCollection) {
+                _params[HdStLightTokens->shadowCollection] = newCollection;
 
                 HdChangeTracker& changeTracker =
                              sceneDelegate->GetRenderIndex().GetChangeTracker();
@@ -114,7 +114,7 @@ HdxLight::Sync(HdSceneDelegate *sceneDelegate,
             }
 
         } else {
-            _params[HdxLightTokens->shadowCollection] = HdRprimCollection();
+            _params[HdStLightTokens->shadowCollection] = HdRprimCollection();
         }
     }
 
@@ -123,7 +123,7 @@ HdxLight::Sync(HdSceneDelegate *sceneDelegate,
 
 /* virtual */
 VtValue
-HdxLight::Get(TfToken const &token) const
+HdStLight::Get(TfToken const &token) const
 {
     VtValue val;
     TfMapLookup(_params, token, &val);
@@ -132,7 +132,7 @@ HdxLight::Get(TfToken const &token) const
 
 /* virtual */
 HdDirtyBits
-HdxLight::GetInitialDirtyBitsMask() const
+HdStLight::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
 }

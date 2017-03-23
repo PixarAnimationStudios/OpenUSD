@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -23,14 +23,14 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hdx/drawTargetTextureResource.h"
+#include "pxr/imaging/hdSt/drawTargetTextureResource.h"
 #include "pxr/imaging/hd/conversions.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-Hdx_DrawTargetTextureResource::Hdx_DrawTargetTextureResource()
+HdSt_DrawTargetTextureResource::HdSt_DrawTargetTextureResource()
  : HdTextureResource()
  , _attachment()
  , _sampler(0)
@@ -43,7 +43,7 @@ Hdx_DrawTargetTextureResource::Hdx_DrawTargetTextureResource()
 
 }
 
-Hdx_DrawTargetTextureResource::~Hdx_DrawTargetTextureResource()
+HdSt_DrawTargetTextureResource::~HdSt_DrawTargetTextureResource()
 {
     // GL initialization guard for headless unit test
     if (glDeleteSamplers) {
@@ -52,13 +52,14 @@ Hdx_DrawTargetTextureResource::~Hdx_DrawTargetTextureResource()
 }
 
 void
-Hdx_DrawTargetTextureResource::SetAttachment(const GlfDrawTarget::AttachmentRefPtr &attachment)
+HdSt_DrawTargetTextureResource::SetAttachment(
+                              const GlfDrawTarget::AttachmentRefPtr &attachment)
 {
     _attachment = attachment;
 }
 
 void
-Hdx_DrawTargetTextureResource::SetSampler(HdWrap wrapS,
+HdSt_DrawTargetTextureResource::SetSampler(HdWrap wrapS,
                                           HdWrap wrapT,
                                           HdMinFilter minFilter,
                                           HdMagFilter magFilter)
@@ -81,25 +82,25 @@ Hdx_DrawTargetTextureResource::SetSampler(HdWrap wrapS,
 
 
 bool
-Hdx_DrawTargetTextureResource::IsPtex() const
+HdSt_DrawTargetTextureResource::IsPtex() const
 {
     return false;
 }
 
 GLuint
-Hdx_DrawTargetTextureResource::GetTexelsTextureId()
+HdSt_DrawTargetTextureResource::GetTexelsTextureId()
 {
     return _attachment->GetGlTextureName();
 }
 
 GLuint
-Hdx_DrawTargetTextureResource::GetTexelsSamplerId()
+HdSt_DrawTargetTextureResource::GetTexelsSamplerId()
 {
     return _sampler;
 }
 
 GLuint64EXT
-Hdx_DrawTargetTextureResource::GetTexelsTextureHandle()
+HdSt_DrawTargetTextureResource::GetTexelsTextureHandle()
 {
     GLuint textureId = GetTexelsTextureId();
 
@@ -118,21 +119,21 @@ Hdx_DrawTargetTextureResource::GetTexelsTextureHandle()
 }
 
 GLuint
-Hdx_DrawTargetTextureResource::GetLayoutTextureId()
+HdSt_DrawTargetTextureResource::GetLayoutTextureId()
 {
     TF_CODING_ERROR("Draw targets are not ptex");
     return 0;
 }
 
 GLuint64EXT
-Hdx_DrawTargetTextureResource::GetLayoutTextureHandle()
+HdSt_DrawTargetTextureResource::GetLayoutTextureHandle()
 {
     TF_CODING_ERROR("Draw targets are not ptex");
     return 0;
 }
 
 size_t
-Hdx_DrawTargetTextureResource::GetMemoryUsed()
+HdSt_DrawTargetTextureResource::GetMemoryUsed()
 {
     return _attachment->GetMemoryUsed();
 }

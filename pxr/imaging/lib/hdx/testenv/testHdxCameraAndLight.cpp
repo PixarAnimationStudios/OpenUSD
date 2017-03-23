@@ -28,9 +28,12 @@
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdx/camera.h"
-#include "pxr/imaging/hdx/light.h"
+
+#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/light.h"
+
 #include "pxr/imaging/hdx/unitTestDelegate.h"
+
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
@@ -65,7 +68,7 @@ static void CameraAndLightTest()
 
     delegate.AddCamera(camera);
     delegate.AddLight(light, GlfSimpleLight());
-    delegate.SetLight(light, HdxLightTokens->shadowCollection,
+    delegate.SetLight(light, HdStLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->hull)));
 
@@ -75,7 +78,7 @@ static void CameraAndLightTest()
 
     // Update camera matrix
     delegate.SetCamera(camera, GfMatrix4d(2), GfMatrix4d(2));
-    tracker.MarkSprimDirty(camera, HdxCamera::DirtyMatrices);
+    tracker.MarkSprimDirty(camera, HdStCamera::DirtyMatrices);
 
     engine.Draw(index, renderPass, renderPassState);
 
@@ -83,10 +86,10 @@ static void CameraAndLightTest()
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
 
     // Update shadow collection
-    delegate.SetLight(light, HdxLightTokens->shadowCollection,
+    delegate.SetLight(light, HdStLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->refined)));
-    tracker.MarkSprimDirty(light, HdxLight::DirtyCollection);
+    tracker.MarkSprimDirty(light, HdStLight::DirtyCollection);
 
     engine.Draw(index, renderPass, renderPassState);
 
@@ -94,10 +97,10 @@ static void CameraAndLightTest()
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 2);
 
     // Update shadow collection again with the same data
-    delegate.SetLight(light, HdxLightTokens->shadowCollection,
+    delegate.SetLight(light, HdStLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->refined)));
-    tracker.MarkSprimDirty(light, HdxLight::DirtyCollection);
+    tracker.MarkSprimDirty(light, HdStLight::DirtyCollection);
 
     engine.Draw(index, renderPass, renderPassState);
 

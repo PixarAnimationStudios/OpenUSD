@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hdx/drawTarget.h"
-#include "pxr/imaging/hdx/drawTargetAttachmentDescArray.h"
-#include "pxr/imaging/hdx/drawTargetTextureResource.h"
-#include "pxr/imaging/hdx/camera.h"
+#include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
+#include "pxr/imaging/hdSt/drawTargetTextureResource.h"
+#include "pxr/imaging/hdSt/camera.h"
 
 #include "pxr/imaging/hd/conversions.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -42,9 +42,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static const std::string DEPTH_ATTACHMENT_NAME = "depth";
 
-TF_DEFINE_PUBLIC_TOKENS(HdxDrawTargetTokens, HDX_DRAW_TARGET_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdStDrawTargetTokens, HDST_DRAW_TARGET_TOKENS);
 
-HdxDrawTarget::HdxDrawTarget(SdfPath const &id)
+HdStDrawTarget::HdStDrawTarget(SdfPath const &id)
     : HdSprim(id)
     , _version(1) // Clients tacking start at 0.
     , _enabled(true)
@@ -58,15 +58,15 @@ HdxDrawTarget::HdxDrawTarget(SdfPath const &id)
 {
 }
 
-HdxDrawTarget::~HdxDrawTarget()
+HdStDrawTarget::~HdStDrawTarget()
 {
 }
 
 /*virtual*/
 void
-HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
-                    HdRenderParam   *renderParam,
-                    HdDirtyBits     *dirtyBits)
+HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
+                     HdRenderParam   *renderParam,
+                     HdDirtyBits     *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -81,21 +81,21 @@ HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
     HdDirtyBits bits = *dirtyBits;
 
     if (bits & DirtyDTEnable) {
-        VtValue vtValue =  sceneDelegate->Get(id, HdxDrawTargetTokens->enable);
+        VtValue vtValue =  sceneDelegate->Get(id, HdStDrawTargetTokens->enable);
 
         // Optional attribute.
         _enabled = vtValue.GetWithDefault<bool>(true);
     }
 
     if (bits & DirtyDTCamera) {
-        VtValue vtValue =  sceneDelegate->Get(id, HdxDrawTargetTokens->camera);
+        VtValue vtValue =  sceneDelegate->Get(id, HdStDrawTargetTokens->camera);
         _cameraId = vtValue.Get<SdfPath>();
         _renderPassState.SetCamera(_cameraId);
     }
 
     if (bits & DirtyDTResolution) {
         VtValue vtValue =
-                        sceneDelegate->Get(id, HdxDrawTargetTokens->resolution);
+                        sceneDelegate->Get(id, HdStDrawTargetTokens->resolution);
 
         _resolution = vtValue.Get<GfVec2i>();
 
@@ -109,12 +109,12 @@ HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
     if (bits & DirtyDTAttachment) {
         // Depends on resolution being set correctly.
         VtValue vtValue =
-                       sceneDelegate->Get(id, HdxDrawTargetTokens->attachments);
+                       sceneDelegate->Get(id, HdStDrawTargetTokens->attachments);
 
 
-        const HdxDrawTargetAttachmentDescArray &attachments =
-            vtValue.GetWithDefault<HdxDrawTargetAttachmentDescArray>(
-                    HdxDrawTargetAttachmentDescArray());
+        const HdStDrawTargetAttachmentDescArray &attachments =
+            vtValue.GetWithDefault<HdStDrawTargetAttachmentDescArray>(
+                    HdStDrawTargetAttachmentDescArray());
 
         _SetAttachments(sceneDelegate, attachments);
     }
@@ -122,7 +122,7 @@ HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyDTDepthClearValue) {
         VtValue vtValue =
-                   sceneDelegate->Get(id, HdxDrawTargetTokens->depthClearValue);
+                   sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
 
         float depthClearValue = vtValue.GetWithDefault<float>(1.0f);
 
@@ -131,7 +131,7 @@ HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyDTCollection) {
         VtValue vtValue =
-                        sceneDelegate->Get(id, HdxDrawTargetTokens->collection);
+                        sceneDelegate->Get(id, HdStDrawTargetTokens->collection);
 
         const HdRprimCollectionVector &collections =
                 vtValue.GetWithDefault<HdRprimCollectionVector>(
@@ -169,23 +169,23 @@ HdxDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
 // virtual
 VtValue
-HdxDrawTarget::Get(TfToken const &token) const
+HdStDrawTarget::Get(TfToken const &token) const
 {
     // nothing here, since right now all draw target tasks accessing
-    // HdxDrawTarget perform downcast from Sprim To HdxDrawTarget
+    // HdStDrawTarget perform downcast from Sprim To HdStDrawTarget
     // and use the C++ interface (e.g. IsEnabled(), GetRenderPassState()).
     return VtValue();
 }
 
 // virtual
 HdDirtyBits
-HdxDrawTarget::GetInitialDirtyBitsMask() const
+HdStDrawTarget::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
 }
 
 bool
-HdxDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
+HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
                            const std::string &attachment,
                            const std::string &path) const
 {
@@ -207,7 +207,7 @@ HdxDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
         return false;
     }
 
-    const HdxCamera *camera = _GetCamera(renderIndex);
+    const HdStCamera *camera = _GetCamera(renderIndex);
     if (camera == nullptr) {
         TF_WARN("Missing camera\n");
         return false;
@@ -234,8 +234,9 @@ HdxDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
 }
 
 void
-HdxDrawTarget::_SetAttachments(HdSceneDelegate *sceneDelegate,
-                            const HdxDrawTargetAttachmentDescArray &attachments)
+HdStDrawTarget::_SetAttachments(
+                           HdSceneDelegate *sceneDelegate,
+                           const HdStDrawTargetAttachmentDescArray &attachments)
 {
     HF_MALLOC_TAG_FUNCTION();
 
@@ -282,7 +283,7 @@ HdxDrawTarget::_SetAttachments(HdSceneDelegate *sceneDelegate,
 
     for (size_t attachmentNum = 0; attachmentNum < numAttachments;
                                                               ++attachmentNum) {
-      const HdxDrawTargetAttachmentDesc &desc =
+      const HdStDrawTargetAttachmentDesc &desc =
                                        attachments.GetAttachment(attachmentNum);
 
         GLenum format = GL_RGBA;
@@ -303,8 +304,8 @@ HdxDrawTarget::_SetAttachments(HdSceneDelegate *sceneDelegate,
                                  name,
                                  &_colorTextureResources[attachmentNum]);
 
-        Hdx_DrawTargetTextureResource *resource =
-                static_cast<Hdx_DrawTargetTextureResource *>(
+        HdSt_DrawTargetTextureResource *resource =
+                static_cast<HdSt_DrawTargetTextureResource *>(
                                  _colorTextureResources[attachmentNum].get());
 
         resource->SetAttachment(_drawTarget->GetAttachment(name));
@@ -328,8 +329,8 @@ HdxDrawTarget::_SetAttachments(HdSceneDelegate *sceneDelegate,
                              &_depthTextureResource);
 
 
-    Hdx_DrawTargetTextureResource *depthResource =
-                    static_cast<Hdx_DrawTargetTextureResource *>(
+    HdSt_DrawTargetTextureResource *depthResource =
+                    static_cast<HdSt_DrawTargetTextureResource *>(
                                                   _depthTextureResource.get());
 
     depthResource->SetAttachment(_drawTarget->GetAttachment(DEPTH_ATTACHMENT_NAME));
@@ -346,15 +347,15 @@ HdxDrawTarget::_SetAttachments(HdSceneDelegate *sceneDelegate,
 }
 
 
-const HdxCamera *
-HdxDrawTarget::_GetCamera(const HdRenderIndex &renderIndex) const
+const HdStCamera *
+HdStDrawTarget::_GetCamera(const HdRenderIndex &renderIndex) const
 {
-    return static_cast<const HdxCamera *>(
+    return static_cast<const HdStCamera *>(
             renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
 }
 
 void
-HdxDrawTarget::_ResizeDrawTarget()
+HdStDrawTarget::_ResizeDrawTarget()
 {
     HF_MALLOC_TAG_FUNCTION();
 
@@ -375,7 +376,8 @@ HdxDrawTarget::_ResizeDrawTarget()
 }
 
 void
-HdxDrawTarget::_RegisterTextureResource(HdSceneDelegate *sceneDelegate,
+HdStDrawTarget::_RegisterTextureResource(
+                                        HdSceneDelegate *sceneDelegate,
                                         const std::string &name,
                                         HdTextureResourceSharedPtr *resourcePtr)
 {
@@ -397,7 +399,7 @@ HdxDrawTarget::_RegisterTextureResource(HdSceneDelegate *sceneDelegate,
 
     if (texInstance.IsFirstInstance()) {
         texInstance.SetValue(HdTextureResourceSharedPtr(
-                                          new Hdx_DrawTargetTextureResource()));
+                                         new HdSt_DrawTargetTextureResource()));
     }
 
     *resourcePtr =  texInstance.GetValue();
@@ -406,8 +408,8 @@ HdxDrawTarget::_RegisterTextureResource(HdSceneDelegate *sceneDelegate,
 
 /*static*/
 void
-HdxDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
-                              HdxDrawTargetPtrConstVector *drawTargets)
+HdStDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
+                               HdStDrawTargetPtrConstVector *drawTargets)
 {
     HF_MALLOC_TAG_FUNCTION();
 
@@ -423,7 +425,7 @@ HdxDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
 
         if (drawTarget != nullptr)
         {
-            drawTargets->push_back(static_cast<HdxDrawTarget const *>(drawTarget));
+            drawTargets->push_back(static_cast<HdStDrawTarget const *>(drawTarget));
         }
     }
 }

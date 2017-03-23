@@ -23,14 +23,15 @@
 //
 #include "pxr/imaging/hdx/simpleLightBypassTask.h"
 
-#include "pxr/imaging/hdx/camera.h"
 #include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
+
+#include "pxr/imaging/hdSt/camera.h"
+
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/sprim.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -67,7 +68,7 @@ HdxSimpleLightBypassTask::_Sync(HdTaskContext* ctx)
 
         _simpleLightingContext = params.simpleLightingContext;
         const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
-        _camera = static_cast<const HdxCamera *>(
+        _camera = static_cast<const HdStCamera *>(
                     renderIndex.GetSprim(HdPrimTypeTokens->camera,
                                          params.cameraPath));
     }
