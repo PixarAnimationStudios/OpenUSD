@@ -165,6 +165,15 @@ _ExportShadingNode(const UsdPrim& materialPrim,
     return risObj.GetPrim();
 }
 
+static UsdPrim
+_ExportShadingNodes(const UsdPrim& materialPrim,
+                   const MFnDependencyNode& depNode,
+                   const PxrUsdMayaShadingModeExportContext* context)
+{
+    SdfPathSet processedShaders;
+    return _ExportShadingNode(materialPrim, depNode, context, &processedShaders, true);
+}
+
 }; // namespace _exporter
 
 DEFINE_SHADING_MODE_EXPORTER(pxrRis, context)
@@ -185,11 +194,9 @@ DEFINE_SHADING_MODE_EXPORTER(pxrRis, context)
     if (!status) {
         return;
     }
-    SdfPathSet  processedShaders;
-    if (UsdPrim shaderPrim = _exporter::_ExportShadingNode(materialPrim,
+    if (UsdPrim shaderPrim = _exporter::_ExportShadingNodes(materialPrim,
                                                            ssDepNode,
-                                                           context,
-                                                           &processedShaders, true)) {
+                                                           context)) {
         UsdRiLookAPI riLook = UsdRiLookAPI(materialPrim);
         std::vector<SdfPath> bxdfTargets;
         bxdfTargets.push_back(shaderPrim.GetPath());
