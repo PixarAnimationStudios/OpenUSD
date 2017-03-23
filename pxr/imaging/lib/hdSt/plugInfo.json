@@ -3,17 +3,17 @@
         {
             "Info": {
                 "Types": {
-                    "HdStreamRendererPlugin": {
+                    "HdStRenderDelegate": {
                         "bases": [
-                            "HdxRendererPlugin"
+                            "HdRenderDelegate"
                         ],
-                        "displayName": "Hydra Stream Renderer",
+                        "displayName": "Hydra Stream Render Delegate",
                         "priority": 0
                     }
                 }
             },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
-            "Name": "hdStream",
+            "Name": "hdSt",
             "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
             "Root": "@PLUG_INFO_ROOT@",
             "Type": "library"

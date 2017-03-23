@@ -25,6 +25,7 @@ pxr_shared_library(hdSt
         light      
         mesh
         points
+        renderDelegate
         shader
 
     PUBLIC_HEADERS
@@ -42,4 +43,7 @@ pxr_shared_library(hdSt
         subdivision
         subdivision3
         triangulate
+
+    RESOURCE_FILES
+        plugInfo.json
 )

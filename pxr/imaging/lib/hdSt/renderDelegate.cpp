@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdStream/renderDelegate.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
 #include "pxr/imaging/hdSt/camera.h"
@@ -45,10 +45,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    HdRenderDelegateRegistry::Define<HdStreamRenderDelegate>();
+    HdRenderDelegateRegistry::Define<HdStRenderDelegate>();
 }
 
-const TfTokenVector HdStreamRenderDelegate::SUPPORTED_SPRIM_TYPES =
+const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
     HdPrimTypeTokens->light,
@@ -56,37 +56,37 @@ const TfTokenVector HdStreamRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->shader
 };
 
-const TfTokenVector HdStreamRenderDelegate::SUPPORTED_BPRIM_TYPES =
+const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
     HdPrimTypeTokens->texture
 };
 
-HdStreamRenderDelegate::HdStreamRenderDelegate()
+HdStRenderDelegate::HdStRenderDelegate()
 {
     static std::once_flag reprsOnce;
     std::call_once(reprsOnce, _ConfigureReprs);
 }
 
 const TfTokenVector &
-HdStreamRenderDelegate::GetSupportedSprimTypes() const
+HdStRenderDelegate::GetSupportedSprimTypes() const
 {
     return SUPPORTED_SPRIM_TYPES;
 }
 
 const TfTokenVector &
-HdStreamRenderDelegate::GetSupportedBprimTypes() const
+HdStRenderDelegate::GetSupportedBprimTypes() const
 {
     return SUPPORTED_BPRIM_TYPES;
 }
 
 HdRenderParam *
-HdStreamRenderDelegate::GetRenderParam() const
+HdStRenderDelegate::GetRenderParam() const
 {
     return nullptr;
 }
 
 HdRprim *
-HdStreamRenderDelegate::CreateRprim(TfToken const& typeId,
+HdStRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId,
                                     SdfPath const& instancerId)
 {
@@ -104,13 +104,13 @@ HdStreamRenderDelegate::CreateRprim(TfToken const& typeId,
 }
 
 void
-HdStreamRenderDelegate::DestroyRprim(HdRprim *rPrim)
+HdStRenderDelegate::DestroyRprim(HdRprim *rPrim)
 {
     delete rPrim;
 }
 
 HdSprim *
-HdStreamRenderDelegate::CreateSprim(TfToken const& typeId,
+HdStRenderDelegate::CreateSprim(TfToken const& typeId,
                                     SdfPath const& sprimId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
@@ -129,7 +129,7 @@ HdStreamRenderDelegate::CreateSprim(TfToken const& typeId,
 }
 
 HdSprim *
-HdStreamRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
+HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdStCamera(SdfPath::EmptyPath());
@@ -148,13 +148,13 @@ HdStreamRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 
 
 void
-HdStreamRenderDelegate::DestroySprim(HdSprim *sPrim)
+HdStRenderDelegate::DestroySprim(HdSprim *sPrim)
 {
     delete sPrim;
 }
 
 HdBprim *
-HdStreamRenderDelegate::CreateBprim(TfToken const& typeId,
+HdStRenderDelegate::CreateBprim(TfToken const& typeId,
                                     SdfPath const& bprimId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
@@ -168,7 +168,7 @@ HdStreamRenderDelegate::CreateBprim(TfToken const& typeId,
 }
 
 HdBprim *
-HdStreamRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
+HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
         return new HdTexture(SdfPath::EmptyPath());
@@ -180,14 +180,14 @@ HdStreamRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 }
 
 void
-HdStreamRenderDelegate::DestroyBprim(HdBprim *bPrim)
+HdStRenderDelegate::DestroyBprim(HdBprim *bPrim)
 {
     delete bPrim;
 }
 
 // static
 void
-HdStreamRenderDelegate::_ConfigureReprs()
+HdStRenderDelegate::_ConfigureReprs()
 {
     // pre-defined reprs (to be deprecated or minimalized)
     HdStMesh::ConfigureRepr(HdTokens->hull,
@@ -267,7 +267,7 @@ HdStreamRenderDelegate::_ConfigureReprs()
 }
 
 HdSprim *
-HdStreamRenderDelegate::_CreateFallbackShaderPrim()
+HdStRenderDelegate::_CreateFallbackShaderPrim()
 {
     GlfGLSLFXSharedPtr glslfx(new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
 
@@ -281,7 +281,7 @@ HdStreamRenderDelegate::_CreateFallbackShaderPrim()
 
 
 void
-HdStreamRenderDelegate::CommitResources(HdChangeTracker *tracker)
+HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
     HdResourceRegistry &resourceRegistry = HdResourceRegistry::GetInstance();
 

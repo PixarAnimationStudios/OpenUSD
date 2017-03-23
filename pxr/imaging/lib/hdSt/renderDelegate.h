@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -20,8 +20,8 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-#ifndef HDSTREAM_RENDER_DELEGATE_H
-#define HDSTREAM_RENDER_DELEGATE_H
+#ifndef HDST_RENDER_DELEGATE_H
+#define HDST_RENDER_DELEGATE_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -30,15 +30,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 ///
-/// HdStreamRenderDelegate
+/// HdStRenderDelegate
 ///
 /// The Stream Render Delegate provides a Hydra render that uses a
-/// streaming graphics implementation (abstracted by the Gal) to draw the scene.
+/// streaming graphics implementation to draw the scene.
 ///
-class HdStreamRenderDelegate final : public HdRenderDelegate {
+class HdStRenderDelegate final : public HdRenderDelegate {
 public:
-    HdStreamRenderDelegate();
-    virtual ~HdStreamRenderDelegate() = default;
+    HdStRenderDelegate();
+    virtual ~HdStRenderDelegate() = default;
 
     virtual HdRenderParam *GetRenderParam() const override;
 
@@ -69,11 +69,11 @@ private:
     static void _ConfigureReprs();
     HdSprim *_CreateFallbackShaderPrim();
 
-    HdStreamRenderDelegate(const HdStreamRenderDelegate &)             = delete;
-    HdStreamRenderDelegate &operator =(const HdStreamRenderDelegate &) = delete;
+    HdStRenderDelegate(const HdStRenderDelegate &)             = delete;
+    HdStRenderDelegate &operator =(const HdStRenderDelegate &) = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDSTREAM_RENDER_DELEGATE_H
+#endif // HDST_RENDER_DELEGATE_H
