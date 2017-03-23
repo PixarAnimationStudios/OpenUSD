@@ -209,7 +209,11 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
             
             // XXX : This can be removed when Hydra has support for 
             //       transparent objects.
-            renderPassState->SetAlphaThreshold(1.0 /* params.alphaThreshold */);
+            //       We use an epsilon offset from 1.0 to allow for 
+            //       calculation during primvar interpolation which
+            //       doesn't fully saturate back to 1.0.
+            const float TRANSPARENT_ALPHA_THRESHOLD = (1.0f - 1e-6f);
+            renderPassState->SetAlphaThreshold(TRANSPARENT_ALPHA_THRESHOLD);
             renderPassState->SetTessLevel(params.tessLevel);
             renderPassState->SetDrawingRange(params.drawingRange);
             renderPassState->SetCullStyle(params.cullStyle);
