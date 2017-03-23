@@ -27,10 +27,8 @@
 #include "pxr/usd/kind/registry.h"
 
 #include "pxr/usd/usdGeom/boundable.h"
-#include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/debugCodes.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
-#include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdGeom/xform.h"
 
@@ -869,56 +867,6 @@ UsdGeomBBoxCache::_GetBBoxFromExtentsHint(
     return true;
 }
 
-bool
-UsdGeomBBoxCache::_ComputeMissingExtent(
-    const UsdGeomPointBased &pointBasedObj, 
-    const VtVec3fArray &points,
-    VtVec3fArray* extent)
-{
-    //  We provide this method to compute extent for PointBased prims.
-    //  Specifically, if a pointbased prim does not have a valid authored 
-    //  extent we try to compute it here.
-    //  See Bugzilla #s 97111, 115735.
-
-    // Calculate Extent Based on Prim Type
-    if (UsdGeomPoints pointsObj = UsdGeomPoints(pointBasedObj.GetPrim())) {
-        
-        // Extract any width data
-        VtFloatArray widths;
-        bool hasWidth = pointsObj.GetWidthsAttr().Get(&widths);
-
-        if (hasWidth) {
-            return UsdGeomPoints::ComputeExtent(points, widths, extent);
-        }
-
-    } else if (UsdGeomCurves curvesObj = 
-                    UsdGeomCurves(pointBasedObj.GetPrim())) {
-        // Calculate Extent for a Curve;
-
-        // XXX: All curves can be bounded by their control points, excluding
-        //      catmull rom and hermite. For now, we treat hermite and catmull
-        //      rom curves like their convex-hull counterparts. While there are
-        //      some bounds approximations we could perform, hermite's
-        //      implementation is not fully supported and catmull rom splines
-        //      are very rare. For simplicity, we ignore these odd corner cases
-        //      and provide a still reasonable approximation, but we also 
-        //      recognize there could be some out-of-bounds error. 
-        //      For the purposes of BBox-Cache extent fallback, some small 
-        //      chance of error is probably OK.
-
-        // Extract any width data; if no width, create 0 width array
-        VtFloatArray widths;
-        if (!curvesObj.GetWidthsAttr().Get(&widths)) {
-            widths.push_back(0);
-        }
-
-        return UsdGeomCurves::ComputeExtent(points, widths, extent);
-    }
-
-    // The prim should be calculated as a PointBased;
-    return UsdGeomPointBased::ComputeExtent(points, extent);
-}
-
 void 
 UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task, 
                                const UsdPrim& prim, 
@@ -1066,16 +1014,14 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                         prim.GetPath().GetString().c_str());
 
                     // Create extent
-                    VtVec3fArray points;
-                    if (pointBasedObj.GetPointsAttr().Get(&points)) {
-                        successGettingExtent = _ComputeMissingExtent(
-                            pointBasedObj, points, &extent);
+                    successGettingExtent = 
+                        UsdGeomBoundable::ComputeExtentFromPlugins(
+                            pointBasedObj, _time, &extent);
 
-                        if (!successGettingExtent) {
-                            TF_DEBUG(USDGEOM_BBOX).Msg(
-                                "[BBox Cache] WARNING: Unable to compute extent for "
-                                "<%s>.", prim.GetPath().GetString().c_str());
-                        }
+                    if (!successGettingExtent) {
+                        TF_DEBUG(USDGEOM_BBOX).Msg(
+                            "[BBox Cache] WARNING: Unable to compute extent for "
+                            "<%s>.", prim.GetPath().GetString().c_str());
                     }
                 }
 

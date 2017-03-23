@@ -172,6 +172,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/tf/registryManager.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TfToken 
@@ -220,6 +223,31 @@ UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
     (*extent)[1] = GfVec3f(bbox.GetMax());
     
     return true;
+}
+
+static bool
+_ComputeExtentForPointBased(
+    const UsdGeomBoundable& boundable, 
+    const UsdTimeCode& time, 
+    VtVec3fArray* extent) 
+{
+    const UsdGeomPointBased pointBased(boundable);
+    if (!TF_VERIFY(pointBased)) {
+        return false;
+    }
+
+    VtVec3fArray points;
+    if (!pointBased.GetPointsAttr().Get(&points, time)) {
+        return false;
+    }
+
+    return UsdGeomPointBased::ComputeExtent(points, extent);
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdGeomPointBased>(
+        _ComputeExtentForPointBased);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

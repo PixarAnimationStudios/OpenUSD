@@ -657,6 +657,11 @@ class "PointBased" (
     providing common attributes such as normals and velocities."""
     
     inherits = </Gprim>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
 ) {
     # positional
     point3f[] points (
@@ -963,6 +968,11 @@ class NurbsPatch "NurbsPatch" (
 }
 
 class "Curves" (
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
     inherits = </PointBased>
     doc = """Base class for BasisCurves and NurbsCurves.  The BasisCurves
              schema is designed to be analagous to RenderMan's RiCurves 
@@ -1152,6 +1162,11 @@ class NurbsCurves "NurbsCurves" (
 }
 
 class Points "Points" (
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
     inherits = </PointBased>
     doc = """Points are analogous to the <A HREF="https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html">RiPoints spec</A>.  
     
