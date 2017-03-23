@@ -54,6 +54,11 @@ HdRprim::~HdRprim()
     /*NOTHING*/
 }
 
+void
+HdRprim::Finalize(HdRenderParam *renderParam)
+{
+}
+
 std::vector<HdDrawItem>* 
 HdRprim::GetDrawItems(HdSceneDelegate* delegate,
                       TfToken const &defaultReprName, bool forced)

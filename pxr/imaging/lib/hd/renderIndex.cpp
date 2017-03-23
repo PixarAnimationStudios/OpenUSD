@@ -269,6 +269,7 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
     _tracker.RprimRemoved(id);
 
     // Ask delegate to actually delete the rprim
+    rprimInfo.rprim->Finalize(_renderDelegate->GetRenderParam());
     _renderDelegate->DestroyRprim(rprimInfo.rprim);
     rprimInfo.rprim = nullptr;
 

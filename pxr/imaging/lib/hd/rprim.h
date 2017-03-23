@@ -74,7 +74,10 @@ public:
                       TfToken const&   reprName,
                       bool             forcedRepr) = 0;
 
- 
+    /// Finalizes object resources. This function might not delete resources,
+    /// but it should deal with resource ownership so that the rprim is deletable.
+    HD_API
+    virtual void Finalize(HdRenderParam *renderParam);
 
     /// Returns the draw items for the requested reprName, these draw items
     /// should be constructed and cached beforehand by Sync().
@@ -133,7 +136,7 @@ public:
     inline TfTokenVector GetPrimVarFacevaryingNames(HdSceneDelegate* delegate) const;
     inline TfTokenVector GetPrimVarUniformNames(HdSceneDelegate* delegate)     const;
 
-     inline VtValue GetPrimVar(HdSceneDelegate* delegate, const TfToken &name) const;
+    inline VtValue GetPrimVar(HdSceneDelegate* delegate, const TfToken &name)  const;
 
 protected:
     /// Update objects representation based on dirty bits.
