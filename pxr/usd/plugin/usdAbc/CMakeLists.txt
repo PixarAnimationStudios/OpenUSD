@@ -31,18 +31,18 @@ pxr_plugin(usdAbc
         alembicData
         alembicFileFormat
         alembicReader
+        alembicTest
         alembicUtil
         alembicWriter
 
     PRIVATE_HEADERS
-        alembicTest.h
+        api.h
 
     CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
-        alembicTest.cpp
         wrapAlembicTest.cpp
 
     PYTHON_FILES
