@@ -118,7 +118,24 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static object
+_ComputeExtentFromPlugins(
+    const UsdGeomBoundable &boundable,
+    const UsdTimeCode &time)
+{
+    VtVec3fArray extent;
+    if (!UsdGeomBoundable::ComputeExtentFromPlugins(boundable, time, &extent)) {
+        return object();
+    }
+    return object(extent);
+}
+
 WRAP_CUSTOM {
+    _class
+        .def("ComputeExtentFromPlugins", &_ComputeExtentFromPlugins,
+             (arg("boundable"), arg("time")))
+        .staticmethod("ComputeExtentFromPlugins")
+    ;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
