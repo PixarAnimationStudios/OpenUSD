@@ -85,3 +85,29 @@ class "NodeGraphNodeAPI"(
         }
     )
 }
+
+
+class "SceneGraphPrimAPI"(
+    doc = """
+    Utility schema for display properties of a prim
+    """
+) {
+    uniform token ui:displayName (
+        doc = """When publishing a nodegraph or a material, it can be useful to
+        provide an optional display name, for readability.
+        """
+        customData = {
+            string apiName = "displayName"
+        }
+    )
+    uniform token ui:displayGroup (
+        doc = """When publishing a nodegraph or a material, it can be useful to
+        provide an optional display group, for organizational purposes and 
+        readability. This is because often the usd shading hiearchy is rather 
+        flat while we want to display it in organized groups.
+        """
+        customData = {
+            string apiName = "displayGroup"
+        }
+    )
+}

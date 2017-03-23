@@ -29,6 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_WRAP_MODULE
 {
     TF_WRAP(UsdUINodeGraphNodeAPI); 
+    TF_WRAP(UsdUISceneGraphPrimAPI);
     TF_WRAP(UsdUITokens);
 }
 
