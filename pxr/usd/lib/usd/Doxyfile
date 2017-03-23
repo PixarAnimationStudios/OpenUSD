@@ -722,7 +722,7 @@ EXCLUDE                = src/modules/gf/matrix.template.h \
                          src/modules/gf/quat.template.h \
                          src/modules/gf/range.template.h \
                          src/modules/gf/vec.template.h \
-                         src/modules/usd/crateDataTypes.h
+                         src/modules/usd/crateDataTypes.h 
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -738,7 +738,8 @@ EXCLUDE_SYMLINKS       = NO
 
 EXCLUDE_PATTERNS       = *~ \
                          */testenv/* \
-                         */codegenTemplates/*
+                         */codegenTemplates/* \
+                         */rapidjson/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
