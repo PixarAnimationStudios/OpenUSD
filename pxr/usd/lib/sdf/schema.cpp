@@ -1452,7 +1452,11 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                     .MetadataField(fieldName, displayGroup);
             }
 
-            if (appliesTo.empty() || appliesTo.count("variants")) {
+            // All metadata on prims should also apply to variants.
+            // This matches how the variant spec definition is copied
+            // from the prim spec definition in _RegisterStandardFields.
+            if (appliesTo.empty() || appliesTo.count("variants") || 
+                appliesTo.count("prims")) {
                 _ExtendSpecDefinition(SdfSpecTypeVariant)
                     .MetadataField(fieldName, displayGroup);
             }

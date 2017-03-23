@@ -203,11 +203,13 @@ By default, a plugin metadata field can be used with any spec type.  However, th
 "appliesTo" value | Spec type
 ------------------|-----------
 layers            | SdfLayer (SdfPseudoRootSpec)
-prims             | SdfPrimSpec
+prims             | SdfPrimSpec, SdfVariantSpec
 properties        | SdfPropertySpec
 attributes        | SdfAttributeSpec
 relationships     | SdfRelationshipSpec
 variants          | SdfVariantSpec
+
+Note that metadata that "appliesTo" prims also applies to variants, as variants can hold the same scene description as prims.
 
 \subsection sdf_metadata_displayGroup Display Groups
 
