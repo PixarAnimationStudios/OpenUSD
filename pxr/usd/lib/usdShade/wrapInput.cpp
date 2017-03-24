@@ -69,6 +69,10 @@ void wrapUsdShadeInput()
         .def("GetRenderType", &Input::GetRenderType)
         .def("HasRenderType", &Input::HasRenderType)
 
+        .def("SetConnectability", &Input::SetConnectability)
+        .def("GetConnectability", &Input::GetConnectability)
+        .def("ClearConnectability", &Input::ClearConnectability)
+
         .def("GetAttr", &Input::GetAttr,
              return_value_policy<return_by_value>())
         ;

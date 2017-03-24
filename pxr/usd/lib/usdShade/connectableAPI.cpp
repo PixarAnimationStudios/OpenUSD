@@ -141,6 +141,116 @@ UsdShadeConnectableAPI::_IsCompatible(const UsdPrim &prim) const
     return IsShader() || IsNodeGraph();
 }
 
+static bool 
+_CanConnectOutputToSource(const UsdShadeOutput &output, 
+                          const UsdAttribute &source,
+                          std::string *reason)
+{
+    if (not output.IsDefined()) {
+        if (reason) {
+            *reason = TfStringPrintf("Invalid output");
+        }
+        return false;
+    }
+
+    // Only outputs on node-graphs are connectable.
+    if (not UsdShadeConnectableAPI(output.GetPrim()).IsNodeGraph()) {
+        if (reason) {
+            *reason = "Output does not belong to a node-graph.";
+        }
+        return false;
+    }
+
+    if (source) {
+        // Ensure that the source prim is a descendent of the node-graph owning 
+        // the output.
+        const SdfPath sourcePrimPath = source.GetPrim().GetPath();
+        const SdfPath outputPrimPath = output.GetPrim().GetPath();
+
+        if (not sourcePrimPath.HasPrefix(outputPrimPath)) {
+            if (reason) {
+                *reason = TfStringPrintf("Source of output '%s' on node-graph "
+                    "at path <%s> is outside the node-graph: <%s>",
+                    source.GetName().GetText(), outputPrimPath.GetText(),
+                    sourcePrimPath.GetText());
+            }
+            return false;
+        }
+        
+    }
+
+    return true;
+}
+
+bool
+UsdShadeConnectableAPI::CanConnect(
+    const UsdShadeOutput &output, 
+    const UsdAttribute &source)
+{
+    std::string reason;
+    // The reason why a connection can't be made isn't exposed currently.
+    // We may want to expose it in the future, especially when we have 
+    // validation in USD.
+    return _CanConnectOutputToSource(output, source, &reason);
+}
+
+bool
+_CanConnectInputToSource(const UsdShadeInput &input, 
+                         const UsdAttribute &source,
+                         std::string *reason)
+{
+    if (not input.IsDefined()) {
+        if (reason) {
+            *reason = TfStringPrintf("Invalid input: %s",  
+                input.GetAttr().GetPath().GetText());
+        }
+        return false;
+    }
+
+    if (not source) {
+        if (reason) {
+            *reason = TfStringPrintf("Invalid source: %s", 
+                source.GetPath().GetText());
+        }
+        return false;
+    }
+
+    TfToken inputConnectability = input.GetConnectability();
+    if (inputConnectability == UsdShadeTokens->full) {
+        return true;
+    } else if (inputConnectability == UsdShadeTokens->interfaceOnly) {
+        if (UsdShadeInput::IsInput(source)) {
+            if (source.GetPrim().IsA<UsdShadeNodeGraph>()) {
+                return true;
+            }
+
+            TfToken sourceConnectability = UsdShadeInput(source).GetConnectability();
+            if (sourceConnectability == UsdShadeTokens->interfaceOnly) {
+                return true;
+            }
+        }
+    }
+
+    if (reason) {
+        *reason = TfStringPrintf("Input connectability is 'interfaceOnly' and "
+            "source does not have 'interfaceOnly' connectability.");
+    }
+
+    return false;
+}
+
+bool
+UsdShadeConnectableAPI::CanConnect(
+    const UsdShadeInput &input, 
+    const UsdAttribute &source)
+{
+    std::string reason;
+    // The reason why a connection can't be made isn't exposed currently.
+    // We may want to expose it in the future, especially when we have 
+    // validation in USD.
+    return _CanConnectInputToSource(input, source, &reason);
+}
+
 static TfToken 
 _GetConnectionRelName(const TfToken &attrName)
 {
@@ -176,15 +286,6 @@ _GetConnectionRel(
     return UsdRelationship();
 }
 
-static 
-TfToken
-_GetPropertyName(const TfToken &sourceName, 
-                 const UsdShadeAttributeType sourceType)
-{
-    return TfToken(UsdShadeUtils::GetPrefixForAttributeType(sourceType) + 
-                   sourceName.GetString());
-}
-
 /* static */
 bool  
 UsdShadeConnectableAPI::ConnectToSource(
@@ -194,34 +295,6 @@ UsdShadeConnectableAPI::ConnectToSource(
     UsdShadeAttributeType const sourceType,
     SdfValueTypeName typeName)
 {
-    UsdShadeAttributeType shadingPropType = 
-        UsdShadeUtils::GetBaseNameAndType(shadingProp.GetName()).second;
-    if (shadingPropType == UsdShadeAttributeType::Output) {
-        // Only outputs belonging to node-graphs are connectable. We don't allow 
-        // connecting outputs of shaders as it's not meaningful.
-        // 
-        // Note: this warning will not be issued if the prim is untyped or 
-        // if the type is unknown.
-        if (UsdShadeConnectableAPI(shadingProp.GetPrim()).IsShader()) {
-            TF_WARN("Attempted to connect an output of a shader <%s> to <%s>.",
-                shadingProp.GetPath().GetText(), 
-                source.GetPath().AppendProperty(
-                    _GetPropertyName(sourceName, sourceType)).GetText());
-            return false;
-        }
-
-        // Ensure that the source prim is a descendent of the node-graph owning 
-        // the output.
-        const SdfPath sourcePrimPath = source.GetPrim().GetPath();
-        const SdfPath outputOwnerPath = shadingProp.GetPrim().GetPath();
-        if (!sourcePrimPath.HasPrefix(outputOwnerPath)) {
-            TF_WARN("Source of output '%s' on node-graph at path <%s> is outside "
-                "the node-graph: <%s>", sourceName.GetText(), 
-                outputOwnerPath.GetText(), sourcePrimPath.GetText());
-            // Issue a warning, but allow this connnection for now.
-        }
-    }
-
     UsdPrim sourcePrim = source.GetPrim();
     bool  success = true;
     

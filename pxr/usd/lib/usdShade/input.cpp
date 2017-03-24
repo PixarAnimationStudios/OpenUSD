@@ -44,6 +44,7 @@ using std::string;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (connectability)
     (renderType)
 );
 
@@ -155,6 +156,50 @@ UsdShadeInput::IsInput(const UsdAttribute &attr)
             (UsdShadeUtils::ReadOldEncoding() ? true :
              TfStringStartsWith(attr.GetName().GetString(), 
                                 UsdShadeTokens->inputs));
+}
+
+bool 
+UsdShadeInput::SetConnectability(const TfToken &connectability) const
+{
+    return _attr.SetMetadata(_tokens->connectability, connectability);
+}
+
+TfToken 
+UsdShadeInput::GetConnectability() const
+{
+    TfToken connectability; 
+    _attr.GetMetadata(_tokens->connectability, &connectability);
+
+    // If there's no authored connectability, then check the owner of the 
+    // input to see if it's a node-graph or a shader.
+    // If it's a node-graph, the default connectability is "interfaceOnly".
+    // If it's a shader, the default connectability is "full".
+    // 
+    // If the owner's type is unknown, then get the fallback value from the  
+    // schema registry.
+    // 
+    if (connectability.IsEmpty()) {
+        UsdShadeConnectableAPI connectable(GetPrim());
+        if (connectable.IsNodeGraph())
+            return UsdShadeTokens->interfaceOnly;
+        else if (connectable.IsShader()) {
+            return UsdShadeTokens->full;
+        }
+    } else {
+        return connectability;
+    }
+
+    static const VtValue fallback = SdfSchema::GetInstance().GetFallback(
+        _tokens->connectability);
+
+    return fallback.IsHolding<TfToken>() ? fallback.UncheckedGet<TfToken>()
+                                         : UsdShadeTokens->full;
+}
+
+bool 
+UsdShadeInput::ClearConnectability() const
+{
+    return _attr.ClearMetadata(_tokens->connectability);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

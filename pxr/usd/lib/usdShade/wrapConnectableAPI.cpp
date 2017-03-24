@@ -104,6 +104,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#include <boost/python/tuple.hpp>
+
 static object
 _GetConnectedSource(const UsdProperty &shadingProp)
 {
@@ -113,7 +115,7 @@ _GetConnectedSource(const UsdProperty &shadingProp)
     
     if (UsdShadeConnectableAPI::GetConnectedSource(shadingProp, 
             &source, &sourceName, &sourceType)){
-        return make_tuple(source, sourceName, sourceType);
+        return boost::python::make_tuple(source, sourceName, sourceType);
     } else {
         return object();
     }
@@ -141,6 +143,14 @@ WRAP_CUSTOM {
         UsdProperty const &,
         UsdShadeOutput const &) = &UsdShadeConnectableAPI::ConnectToSource;
 
+    bool (*CanConnect_Input)(
+        UsdShadeInput const &,
+        UsdAttribute const &) = &UsdShadeConnectableAPI::CanConnect;
+       
+    bool (*CanConnect_Output)(
+        UsdShadeOutput const &,
+        UsdAttribute const &) = &UsdShadeConnectableAPI::CanConnect;
+
     _class
         .def(init<UsdShadeShader const &>(arg("shader")))
         .def(init<UsdShadeNodeGraph const&>(arg("nodeGraph")))
@@ -148,13 +158,19 @@ WRAP_CUSTOM {
         .def("IsShader", &UsdShadeConnectableAPI::IsShader)
         .def("IsNodeGraph", &UsdShadeConnectableAPI::IsNodeGraph)
 
+        .def("CanConnect", CanConnect_Input,
+            (arg("input"), arg("source")))
+        .def("CanConnect", CanConnect_Output,
+            (arg("output"), arg("source")=UsdAttribute()))
+        .staticmethod("CanConnect")
+
         .def("ConnectToSource", ConnectToSource_1, 
             (arg("shadingProp"), 
              arg("source"), arg("sourceName"), 
              arg("sourceType")=UsdShadeAttributeType::Output,
              arg("typeName")=SdfValueTypeName()))
         .def("ConnectToSource", ConnectToSource_2,
-            (arg("shadingProp"), arg("path")))
+            (arg("shadingProp"), arg("sourcePath")))
         .def("ConnectToSource", ConnectToSource_3,
             (arg("shadingProp"), arg("input")))
         .def("ConnectToSource", ConnectToSource_4,

@@ -185,6 +185,31 @@ public:
     /// 
     /// @{
 
+    /// Determines whether the given input can be connected to the given 
+    /// source attribute, which can be an input or an output.
+    /// 
+    /// The result depends on the "connectability" of the input and the source 
+    /// attributes and the types of prims they belong to.
+    /// 
+    /// \sa UsdShadeInput::SetConnectability
+    USDSHADE_API
+    static bool CanConnect(const UsdShadeInput &input, 
+                           const UsdAttribute &source);
+
+    /// Determines whether the given output can be connected to the given 
+    /// source attribute, which can be an input or an output.
+    /// 
+    /// An output is considered to be connectable only if it belongs to a 
+    /// node-graph. Shader outputs are not connectable.
+    /// 
+    /// \p source is an optional argument. If a valid UsdAttribute is supplied
+    /// for it, this method will return true only if the source attribute is 
+    /// owned by a descendant of the node-graph owning the output.
+    ///
+    USDSHADE_API
+    static bool CanConnect(const UsdShadeOutput &output, 
+                           const UsdAttribute &source=UsdAttribute());
+    
     /// Authors a connection for a given shading property \p shadingProp. 
     /// 
     /// \p shadingProp can represent a parameter, an interface attribute or 
