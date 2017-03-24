@@ -73,15 +73,12 @@ static
 UsdImagingGLEngine* _InitEngine(const SdfPath& rootPath,
                               const SdfPathVector& excludedPaths,
                               const SdfPathVector& invisedPaths,
-                              const SdfPath& sharedId =
-                                        SdfPath::AbsoluteRootPath(),
-                              const UsdImagingGLEngineSharedPtr& sharedEngine =
-                                        UsdImagingGLEngineSharedPtr())
+                              const SdfPath& delegateID =
+                                        SdfPath::AbsoluteRootPath())
 {
     if (UsdImagingGL::IsEnabledHydra()) {
-        return new UsdImagingGLHdEngine(rootPath, excludedPaths, invisedPaths, 
-            sharedId, 
-            boost::dynamic_pointer_cast<UsdImagingGLHdEngine>(sharedEngine));
+        return new UsdImagingGLHdEngine(rootPath, excludedPaths,
+                                        invisedPaths, delegateID);
     } else {
         // In the refEngine, both excluded paths and invised paths are treated
         // the same way.
@@ -101,11 +98,10 @@ UsdImagingGL::UsdImagingGL()
 UsdImagingGL::UsdImagingGL(const SdfPath& rootPath,
                            const SdfPathVector& excludedPaths,
                            const SdfPathVector& invisedPaths,
-                           const SdfPath& sharedId,
-                           const UsdImagingGLSharedPtr& sharedImaging)
+                           const SdfPath& delegateID)
 {
-    _engine.reset(_InitEngine(rootPath, excludedPaths, invisedPaths, sharedId,
-        (sharedImaging ? sharedImaging->_engine : UsdImagingGLEngineSharedPtr())));
+    _engine.reset(_InitEngine(rootPath, excludedPaths,
+                              invisedPaths, delegateID));
 }
 
 UsdImagingGL::~UsdImagingGL()

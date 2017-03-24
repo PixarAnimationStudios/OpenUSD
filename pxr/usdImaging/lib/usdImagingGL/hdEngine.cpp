@@ -55,16 +55,13 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
         const SdfPath& rootPath,
         const SdfPathVector& excludedPrimPaths,
         const SdfPathVector& invisedPrimPaths,
-        const SdfPath& sharedId,
-        const UsdImagingGLHdEngineSharedPtr& sharedEngine)
-    : _renderIndex(sharedEngine 
-                        ? sharedEngine->GetRenderIndex() 
-                        : HdRenderIndexSharedPtr(new HdRenderIndex()))
+        const SdfPath& delegateID)
+    : _renderIndex(HdRenderIndexSharedPtr(new HdRenderIndex()))
     , _selTracker(new HdxSelectionTracker)
     , _intersector(new HdxIntersector(_renderIndex))
-    , _delegate(_renderIndex, sharedId)
+    , _delegate(_renderIndex, delegateID)
     , _defaultTaskDelegate(new UsdImagingGL_DefaultTaskDelegate(
-                               _renderIndex, sharedId))
+                               _renderIndex, delegateID))
     , _pluginDiscovered(false)
     , _rootPath(rootPath)
     , _excludedPrimPaths(excludedPrimPaths)

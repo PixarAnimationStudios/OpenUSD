@@ -62,9 +62,7 @@ public:
     UsdImagingGLHdEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
-                       const SdfPath& sharedId = SdfPath::AbsoluteRootPath(),
-                       const UsdImagingGLHdEngineSharedPtr& sharedImaging =
-                           UsdImagingGLHdEngineSharedPtr());
+                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath());
 
     USDIMAGINGGL_API
     virtual ~UsdImagingGLHdEngine();
