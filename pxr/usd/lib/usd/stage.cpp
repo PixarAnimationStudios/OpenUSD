@@ -1637,6 +1637,12 @@ UsdStage::HasDefaultPrim() const
 UsdPrim
 UsdStage::GetPrimAtPath(const SdfPath &path) const
 {
+    // Silently return an invalid UsdPrim if the given path is not an
+    // absolute path to maintain existing behavior.
+    if (!path.IsAbsolutePath()) {
+        return UsdPrim();
+    }
+
     // If this path points to a prim beneath an instance, return
     // an instance proxy that uses the prim data from the corresponding
     // prim in the master but appears to be a prim at the given path.
