@@ -20,6 +20,5 @@ pxr_shared_library(pxOsd
         stencilPerVertex
         subdivTags
         tokens
-        uniformEvaluator
 
 )
