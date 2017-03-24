@@ -56,9 +56,20 @@ void wrapUsdShadeUtils()
     scope thisScope = class_<UsdShadeUtils>("Utils", no_init)
         .def("GetPrefixForAttributeType", 
             UsdShadeUtils::GetPrefixForAttributeType)
+        .staticmethod("GetPrefixForAttributeType")
+
         .def("GetBaseNameAndType", _GetBaseNameAndType)
+        .staticmethod("GetBaseNameAndType")
+
         .def("GetFullName", UsdShadeUtils::GetFullName)
-   ;
+        .staticmethod("GetFullName")
+
+        .def("WriteNewEncoding", UsdShadeUtils::WriteNewEncoding)
+        .staticmethod("WriteNewEncoding")
+        
+        .def("ReadOldEncoding", UsdShadeUtils::ReadOldEncoding)
+        .staticmethod("ReadOldEncoding")
+    ;
 
 }
 

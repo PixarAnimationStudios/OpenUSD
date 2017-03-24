@@ -364,6 +364,10 @@ public:
     /// inside the material. Note that inputs on node-graphs that don't have 
     /// value consumers will continue to be included in the result.
     /// 
+    /// \p renderTarget exists for backwards compatibility to allow retrieving 
+    /// the input-consumers map when the shading network has old-style interface 
+    /// attributes.
+    /// 
     /// This API is provided for use by DCC's that want to present node-graph
     /// interface / shader connections in the opposite direction than they are 
     /// encoded in USD.
@@ -371,6 +375,21 @@ public:
     USDSHADE_API
     InterfaceInputConsumersMap ComputeInterfaceInputConsumersMap(
         bool computeTransitiveConsumers=false) const;
+
+protected:
+    friend class UsdRiLookAPI;
+
+    /// \overload
+    /// \deprecated
+    /// This overload takes an additonal "renderTarget" argument which needs to 
+    /// be considered when collecting old-style interface-input connections. 
+    /// 
+    /// Provided for use by UsdRiLookAPI. 
+    /// 
+    USDSHADE_API
+    InterfaceInputConsumersMap _ComputeInterfaceInputConsumersMap(
+        bool computeTransitiveConsumers, 
+        const TfToken &renderTarget) const;
 
     /// @}
 

@@ -135,9 +135,7 @@ UsdShadeParameter::ConnectToSource(
         TfToken const &outputName,
         UsdShadeAttributeType const sourceType) const
 {
-    UsdRelationship rel = _GetConnectionRel(GetAttr(), true);
-
-    return UsdShadeConnectableAPI::ConnectToSource(rel, 
+    return UsdShadeConnectableAPI::ConnectToSource(GetAttr(), 
         source, outputName, sourceType, GetTypeName());
 }
 

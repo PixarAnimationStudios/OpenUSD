@@ -209,7 +209,7 @@ public:
     USDSHADE_API
     static bool CanConnect(const UsdShadeOutput &output, 
                            const UsdAttribute &source=UsdAttribute());
-    
+
     /// Authors a connection for a given shading property \p shadingProp. 
     /// 
     /// \p shadingProp can represent a parameter, an interface attribute or 
@@ -231,6 +231,9 @@ public:
     /// \c true if a connection was created successfully. 
     /// \c false if \p shadingProp or \p source is invalid.
     /// 
+    /// \note This method does not verify the connectability of the shading
+    /// property to the source. Clients must invoke CanConnect() themselves
+    /// to ensure compatibility.
     /// \note The source shading property is created if it doesn't exist 
     /// already.
     ///
@@ -265,6 +268,35 @@ public:
     USDSHADE_API
     static bool ConnectToSource(UsdProperty const &shadingProp, 
                                 UsdShadeOutput const &sourceOutput);
+
+private:
+    /// \deprecated 
+    /// Provided for use by UsdRiLookAPI to author old-style interface 
+    /// attribute connections, which require the \p renderTarget argument. 
+    /// 
+    static bool _ConnectToSource(
+        UsdProperty const &shadingProp,
+        UsdShadeConnectableAPI const &source, 
+        TfToken const &sourceName, 
+        TfToken const &renderTarget,
+        UsdShadeAttributeType const sourceType=UsdShadeAttributeType::Output,
+        SdfValueTypeName typeName=SdfValueTypeName());
+
+protected:
+    friend class UsdRiLookAPI;
+    
+    /// \deprecated
+    /// Connect the given shading property to the given source input. 
+    /// 
+    /// Provided for use by UsdRiLookAPI to author old-style interface 
+    /// attribute connections, which require the \p renderTarget argument. 
+    /// 
+    USDSHADE_API
+    static bool _ConnectToSource(UsdProperty const &shadingProp, 
+                                UsdShadeInput const &sourceInput,
+                                TfToken const &renderTarget);
+    
+public:
 
     /// Finds the source of a connection for the given shading property.
     /// 

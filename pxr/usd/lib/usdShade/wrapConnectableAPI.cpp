@@ -193,6 +193,18 @@ WRAP_CUSTOM {
             (arg("shadingProp")))
             .staticmethod("ClearSource")
         
+        .def("CreateOutput", &UsdShadeConnectableAPI::CreateOutput,
+             (arg("name"), arg("type")))
+        .def("GetOutput", &UsdShadeConnectableAPI::GetOutput, arg("name"))
+        .def("GetOutputs", &UsdShadeConnectableAPI::GetOutputs,
+             return_value_policy<TfPySequenceToList>())
+
+        .def("CreateInput", &UsdShadeConnectableAPI::CreateInput,
+             (arg("name"), arg("type")))
+        .def("GetInput", &UsdShadeConnectableAPI::GetInput, arg("name"))
+        .def("GetInputs", &UsdShadeConnectableAPI::GetInputs,
+             return_value_policy<TfPySequenceToList>())
+
     ;
 
     implicitly_convertible<UsdShadeConnectableAPI, UsdShadeNodeGraph>();

@@ -113,7 +113,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
     USD_SHADE_BACK_COMPAT, true,
-    "Set to false to terminate support for older encodings of the UsdShading model.");
+    "Set to false to terminate support for older encodings of the UsdShading "
+    "model.");
+
+TF_DEFINE_ENV_SETTING(
+    USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS, false,
+    "Enables authoring of connections to interface attributes from shader "
+    "inputs (or parameters). This allows multiple connections to the same "
+    "interface attribute when authoring shading networks with the old "
+    "encoding.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -288,28 +296,26 @@ _GetConnectionRel(
 
 /* static */
 bool  
-UsdShadeConnectableAPI::ConnectToSource(
+UsdShadeConnectableAPI::_ConnectToSource(
     UsdProperty const &shadingProp,
     UsdShadeConnectableAPI const &source, 
-    TfToken const &sourceName, 
+    TfToken const &sourceName,
+    TfToken const &renderTarget,
     UsdShadeAttributeType const sourceType,
     SdfValueTypeName typeName)
 {
     UsdPrim sourcePrim = source.GetPrim();
     bool  success = true;
-    
-    UsdRelationship rel = _GetConnectionRel(shadingProp, /* create */ true);
 
     // XXX it WBN to be able to validate source itself, guaranteeing
     // that the source is, in fact connectable (i.e., a shader or node-graph).
     // However, it remains useful to be able to target a pure-over.
-    if (rel && sourcePrim) {
+    if (sourcePrim) {
         std::string prefix = UsdShadeUtils::GetPrefixForAttributeType(
             sourceType);
         TfToken sourceAttrName(prefix + sourceName.GetString());
 
         UsdAttribute sourceAttr = sourcePrim.GetAttribute(sourceAttrName);
-
         if (!sourceAttr) {
             // If the sourcePrim contains a relationship with the source 
             // name, then it must be a terminal output on a node-graph and 
@@ -324,6 +330,20 @@ UsdShadeConnectableAPI::ConnectToSource(
             }
         }
 
+        if (not UsdShadeUtils::WriteNewEncoding() and 
+            sourceType == UsdShadeAttributeType::InterfaceAttribute) 
+        {
+            // Author "interfaceRecipientsOf" pointing in the reverse direction
+            // if we're authoring the old-style encoding.
+            success = UsdShadeInterfaceAttribute(sourceAttr).SetRecipient(
+                renderTarget, shadingProp.GetPath());
+
+            if (not TfGetEnvSetting(
+                USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS)) {
+                return success;
+            }
+        }
+
         // If a typeName isn't specified, 
         if (!typeName) {
             // If shadingProp is not an attribute, it must be a terminal output 
@@ -335,44 +355,62 @@ UsdShadeConnectableAPI::ConnectToSource(
         // First make sure there is a source attribute of the proper type
         // on the sourcePrim.
         if (sourceAttr){
-            const SdfValueTypeName sourceType = sourceAttr.GetTypeName();
-            const SdfValueTypeName sinkType   = typeName;
+            const SdfValueTypeName sourceTypeName = sourceAttr.GetTypeName();
+            const SdfValueTypeName &sinkTypeName  = typeName;
             // Comparing the TfType allows us to connect parameters with 
             // different "roles" of the same underlying type, 
             // e.g. float3 and color3f
-            if (sourceType.GetType() != sinkType.GetType()) {
+            if (sourceTypeName.GetType() != sinkTypeName.GetType()) {
                 TF_DEBUG(KATANA_USDBAKE_CONNECTIONS).Msg(
                         "Connecting parameter <%s> of type %s to source <%s>, "
                         "of potentially incompatible type %s. \n",
                         shadingProp.GetPath().GetText(),
-                        sinkType.GetAsToken().GetText(),
+                        sinkTypeName.GetAsToken().GetText(),
                         sourceAttr.GetPath().GetText(),
-                        sourceType.GetAsToken().GetText());
+                        sourceTypeName.GetAsToken().GetText());
             }
         } else {
             sourceAttr = sourcePrim.CreateAttribute(sourceAttrName, typeName,
                 /* custom = */ false);
         }
+
+        UsdRelationship rel = _GetConnectionRel(shadingProp, /* create */ true);
+        if (!rel) {
+            TF_CODING_ERROR("Failed connecting shading property <%s>. "
+                            "Unable to make the connection to source <%s>.", 
+                            shadingProp.GetPath().GetText(),
+                            sourcePrim.GetPath().GetText());
+            return false;
+        }
+
         SdfPathVector  target(1, sourceAttr.GetPath());
         success = rel.SetTargets(target);
-    }
-    else if (!source){
+
+    } else if (!source) {
         TF_CODING_ERROR("Failed connecting shading property <%s>. "
                         "The given source shader prim <%s> is not defined", 
                         shadingProp.GetPath().GetText(),
-                        sourcePrim ? sourcePrim.GetPath().GetText() :
+                        source.GetPrim() ? source.GetPath().GetText() :
                         "invalid-prim");
         return false;
     }
-    else if (!rel){
-        TF_CODING_ERROR("Failed connecting shading property <%s>. "
-                        "Unable to make the connection to source <%s>.", 
-                        shadingProp.GetPath().GetText(),
-                        sourcePrim.GetPath().GetText());
-        return false;
-    }
+
 
     return success;
+}
+
+/* static */
+bool  
+UsdShadeConnectableAPI::ConnectToSource(
+    UsdProperty const &shadingProp,
+    UsdShadeConnectableAPI const &source, 
+    TfToken const &sourceName, 
+    UsdShadeAttributeType const sourceType,
+    SdfValueTypeName typeName)
+{
+    return UsdShadeConnectableAPI::_ConnectToSource(shadingProp, source, 
+        sourceName, /* renderTarget */ TfToken(), 
+        sourceType, typeName);
 }
 
 /* static */
@@ -408,7 +446,18 @@ UsdShadeConnectableAPI::ConnectToSource(
 bool 
 UsdShadeConnectableAPI::ConnectToSource(
     UsdProperty const &shadingProp, 
-    UsdShadeInput const &sourceInput)
+    UsdShadeInput const &sourceInput) 
+{
+    return UsdShadeConnectableAPI::_ConnectToSource(shadingProp, sourceInput, 
+        /* renderTarget */ TfToken());
+}
+
+/* static */
+bool 
+UsdShadeConnectableAPI::_ConnectToSource(
+    UsdProperty const &shadingProp, 
+    UsdShadeInput const &sourceInput,
+    TfToken const &renderTarget)
 {
     // An interface attribute may be wrapped in the UsdShadeInput, hence get the 
     // 
@@ -417,9 +466,11 @@ UsdShadeConnectableAPI::ConnectToSource(
     std::tie(sourceName, sourceType) = UsdShadeUtils::GetBaseNameAndType(
         sourceInput.GetFullName());
 
-    return UsdShadeConnectableAPI::ConnectToSource(shadingProp, 
+    return _ConnectToSource(
+        shadingProp, 
         UsdShadeConnectableAPI(sourceInput.GetPrim()),
-        sourceName, sourceType, 
+        sourceName, renderTarget,
+        sourceType, 
         sourceInput.GetTypeName());
 }
 
@@ -645,9 +696,13 @@ UsdShadeConnectableAPI::GetInputs() const
         // Support for old style encoding containing interface attributes 
         // and parameters.
         if (UsdShadeUtils::ReadOldEncoding()) {
+            static const TfToken interfaceNSToken(TfStringPrintf(":%s", 
+                UsdShadeTokens->interface_.GetText()));
             if (IsNodeGraph() && 
-                TfStringStartsWith(attr.GetName().GetString(), 
-                                   UsdShadeTokens->interface_)) {                    
+                (TfStringContains(attr.GetName().GetString(), 
+                                 interfaceNSToken) or 
+                 TfStringStartsWith(attr.GetName().GetString(), 
+                                  UsdShadeTokens->interface_))) {                    
                 // If it's an interface attribute on a node-graph, wrap it in a 
                 // UsdShadeInput object and add it to the list of inputs.
                 ret.push_back(UsdShadeInput(attr));

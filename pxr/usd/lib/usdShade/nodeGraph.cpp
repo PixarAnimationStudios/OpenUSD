@@ -251,7 +251,8 @@ _IsValidInput(UsdShadeConnectableAPI const &source,
 
 static 
 UsdShadeNodeGraph::InterfaceInputConsumersMap 
-_ComputeNonTransitiveInputConsumersMap(const UsdShadeNodeGraph &nodeGraph)
+_ComputeNonTransitiveInputConsumersMap(const UsdShadeNodeGraph &nodeGraph,
+                                       const TfToken &renderTarget)
 {
     UsdShadeNodeGraph::InterfaceInputConsumersMap result;
 
@@ -266,7 +267,7 @@ _ComputeNonTransitiveInputConsumersMap(const UsdShadeNodeGraph &nodeGraph)
                 UsdShadeInterfaceAttribute interfaceAttr(input.GetAttr());
                 // How do we get all driven params of all render targets?!
                 std::vector<UsdShadeParameter> consumerParams = 
-                    interfaceAttr.GetRecipientParameters(TfToken());
+                    interfaceAttr.GetRecipientParameters(renderTarget);
                 for (const auto &param: consumerParams) {
                     consumers.push_back(UsdShadeInput(param.GetAttr()));
                 }
@@ -312,7 +313,8 @@ static
 void
 _RecursiveComputeNodeGraphInterfaceInputConsumers(
     const UsdShadeNodeGraph::InterfaceInputConsumersMap &inputConsumersMap,
-    UsdShadeNodeGraph::NodeGraphInputConsumersMap *nodeGraphInputConsumers) 
+    UsdShadeNodeGraph::NodeGraphInputConsumersMap *nodeGraphInputConsumers,
+    const TfToken &renderTarget) 
 {
     for (const auto &inputAndConsumers : inputConsumersMap) {
         const std::vector<UsdShadeInput> &consumers = inputAndConsumers.second;
@@ -322,11 +324,11 @@ _RecursiveComputeNodeGraphInterfaceInputConsumers(
                 if (!nodeGraphInputConsumers->count(connectable)) {
 
                     const auto &irMap = _ComputeNonTransitiveInputConsumersMap(
-                        UsdShadeNodeGraph(connectable));
+                        UsdShadeNodeGraph(connectable), renderTarget);
                     (*nodeGraphInputConsumers)[connectable] = irMap;
                     
                     _RecursiveComputeNodeGraphInterfaceInputConsumers(irMap, 
-                        nodeGraphInputConsumers);
+                        nodeGraphInputConsumers, renderTarget);
                 }
             }
         }
@@ -374,8 +376,16 @@ UsdShadeNodeGraph::InterfaceInputConsumersMap
 UsdShadeNodeGraph::ComputeInterfaceInputConsumersMap(
     bool computeTransitiveConsumers) const
 {
+    return _ComputeInterfaceInputConsumersMap(computeTransitiveConsumers, TfToken());
+}
+
+UsdShadeNodeGraph::InterfaceInputConsumersMap 
+UsdShadeNodeGraph::_ComputeInterfaceInputConsumersMap(
+    bool computeTransitiveConsumers,
+    const TfToken &renderTarget) const
+{
     InterfaceInputConsumersMap result = 
-        _ComputeNonTransitiveInputConsumersMap(*this);
+        _ComputeNonTransitiveInputConsumersMap(*this, renderTarget);
 
     if (!computeTransitiveConsumers)
         return result;
@@ -383,7 +393,8 @@ UsdShadeNodeGraph::ComputeInterfaceInputConsumersMap(
     // Collect all node-graphs for which we must compute the input-consumers map.
     NodeGraphInputConsumersMap nodeGraphInputConsumers;
     _RecursiveComputeNodeGraphInterfaceInputConsumers(result, 
-                                                      &nodeGraphInputConsumers);
+                                                      &nodeGraphInputConsumers,
+                                                      renderTarget);
 
     // If the are no consumers belonging to node-graphs, we're done.
     if (nodeGraphInputConsumers.empty())
