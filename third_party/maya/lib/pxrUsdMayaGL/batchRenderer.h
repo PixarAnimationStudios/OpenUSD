@@ -29,6 +29,7 @@
 #define PXRUSDMAYAGL_BATCHRENDERER_H
 
 #include "pxr/pxr.h"
+#include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 
 #include "pxr/base/arch/hash.h"
@@ -92,8 +93,10 @@ public:
     /// \brief Init the BatchRenderer class before using it.  This should be
     /// called at least once and it is OK to call it multiple times.  This
     /// handles things like initializing Gl/Glew.
+    PXRUSDMAYAGL_API
     static void Init();
 
+    PXRUSDMAYAGL_API
     static UsdMayaGLBatchRenderer& GetGlobalRenderer();
 
     struct RenderParams
@@ -142,8 +145,10 @@ public:
     public:
             
         /// \brief Construct a new uninitialized \c ShapeRenderer.
+        PXRUSDMAYAGL_API
         ShapeRenderer();
 
+        PXRUSDMAYAGL_API
         void Init(const HdRenderIndexSharedPtr &renderIndex,
                   const SdfPath& sharedId,
                   const UsdPrim& rootPrim,
@@ -152,6 +157,7 @@ public:
         /// \brief Register the \c ShapeRenderer with the specific DAG object
         /// in question. This should be called once per frame, per
         /// \c ShapeRenderer in use.
+        PXRUSDMAYAGL_API
         void PrepareForQueue(
                 const MDagPath& objPath,
                 UsdTimeCode time,
@@ -165,6 +171,7 @@ public:
         ///
         /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
         /// and/or bounding box rendering is indicated from the state.
+        PXRUSDMAYAGL_API
         RenderParams GetRenderParams(
                 const MDagPath& objPath,
                 const M3dView::DisplayStyle& displayStyle,
@@ -176,6 +183,7 @@ public:
         ///
         /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
         /// and/or bounding box rendering is indicated from the state.
+        PXRUSDMAYAGL_API
         RenderParams GetRenderParams(
                 const MDagPath& objPath,
                 const unsigned int& displayStyle,
@@ -188,6 +196,7 @@ public:
         /// 
         /// \p boxToDraw may be set to NULL if no box is desired to be drawn.
         ///
+        PXRUSDMAYAGL_API
         void QueueShapeForDraw(
                 MPxSurfaceShapeUI *shapeUI,
                 MDrawRequest& drawRequest,
@@ -204,6 +213,7 @@ public:
         /// 
         /// \p boxToDraw may be set to NULL if no box is desired to be drawn.
         ///
+        PXRUSDMAYAGL_API
         void QueueShapeForDraw(
                 MUserData* &userData,
                 const RenderParams& params,
@@ -214,6 +224,7 @@ public:
         /// 
         /// \p hitPoint yields the point of interesection if \c true is returned.
         ///
+        PXRUSDMAYAGL_API
         bool TestIntersection(
                 M3dView& aView, 
                 unsigned int pickResolution,
@@ -240,32 +251,41 @@ public:
     /// \brief hd task
     class TaskDelegate : public HdSceneDelegate {
     public:
+        PXRUSDMAYAGL_API
         TaskDelegate(HdRenderIndexSharedPtr const& renderIndex,
                      SdfPath const& delegateID);
 
         // HdSceneDelegate interface
+        PXRUSDMAYAGL_API
         virtual VtValue Get(SdfPath const& id, TfToken const& key);
 
+        PXRUSDMAYAGL_API
         void SetCameraState(const GfMatrix4d& viewMatrix,
                             const GfMatrix4d& projectionMatrix,
                             const GfVec4d& viewport);
 
         // VP 1.0 only.
+        PXRUSDMAYAGL_API
         void SetLightingStateFromVP1(const MMatrix& viewMatForLights);
 
         // VP 2.0 only.
+        PXRUSDMAYAGL_API
         void SetLightingStateFromMayaDrawContext(
                 const MHWRender::MDrawContext& context);
 
+        PXRUSDMAYAGL_API
         HdTaskSharedPtrVector GetSetupTasks();
 
+        PXRUSDMAYAGL_API
         HdTaskSharedPtr GetRenderTask(size_t hash,
                                       RenderParams const &params,
                                       SdfPathVector const &roots);
 
     protected:
+        PXRUSDMAYAGL_API
         void _InsertRenderTask(SdfPath const &id);
 
+        PXRUSDMAYAGL_API
         void _SetLightingStateFromLightingContext();
 
         template <typename T>
@@ -305,6 +325,7 @@ public:
     /// The objected pointed to is owned by the
     /// \c UsdMayaGLBatchRenderer and will be valid for as long as the
     /// \c UsdMayaGLBatchRenderer object is valid.
+    PXRUSDMAYAGL_API
     ShapeRenderer *GetShapeRenderer(
                     const UsdPrim& usdPrim, 
                     const SdfPathVector& excludePrimPaths,
@@ -312,10 +333,12 @@ public:
     
     /// \brief Gets UsdMayaGLSoftSelectHelper that this batchRenderer maintains.
     /// This should only be used by ShapeRenderer::GetRenderParams
+    PXRUSDMAYAGL_API
     const UsdMayaGLSoftSelectHelper& GetSoftSelectHelper();
 
     /// \brief Construct a new, unique BatchRenderer. In almost all cases,
     /// this should not be used -- use \c GetGlobalRenderer() instead.
+    PXRUSDMAYAGL_API
     UsdMayaGLBatchRenderer();
 
     /// \brief Reset the internal state of the global UsdMayaGLBatchRenderer.
@@ -323,14 +346,17 @@ public:
     /// Maya scene so that any UsdImagingDelegates held by ShapeRenderers that
     /// have been populated with USD stages can have those stages released,
     /// since the delegates hold a strong pointers to their stages.
+    PXRUSDMAYAGL_API
     static void Reset();
 
     /// \brief Render batch or bounds in VP1 based on \p request
+    PXRUSDMAYAGL_API
     void Draw(
             const MDrawRequest& request,
             M3dView &view );
     
     /// \brief Render batch or bounds in VP2 based on \p userData
+    PXRUSDMAYAGL_API
     void Draw(
             const MHWRender::MDrawContext& context,
             const MUserData *userData );

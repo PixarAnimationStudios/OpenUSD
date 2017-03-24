@@ -35,6 +35,7 @@
 /// displayColor importer is used.  See DisplayColorShading.cpp
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeImporter.h"
 
@@ -65,11 +66,14 @@ public:
         return GetInstance()._GetImporter(name);
     }
 
+    PXRUSDMAYA_API
     static PxrUsdMayaShadingModeRegistry& GetInstance();
+    PXRUSDMAYA_API
     bool RegisterExporter(
             const std::string& name, 
             PxrUsdMayaShadingModeExporter fn);
 
+    PXRUSDMAYA_API
     bool RegisterImporter(
             const std::string& name, 
             PxrUsdMayaShadingModeImporter fn);

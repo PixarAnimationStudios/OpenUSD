@@ -76,7 +76,7 @@ UsdMayaProxyDrawOverride::isBounded(
     const MDagPath& objPath,
     const MDagPath& /* cameraPath */) const
 {
-    return TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE);
+    return UsdMayaIsBoundingBoxModeEnabled();
 }
 
 MBoundingBox

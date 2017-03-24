@@ -68,6 +68,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(PIXMAYA_ENABLE_BOUNDING_BOX_MODE, false,
                       "Enable bounding box rendering (slows refresh rate)");
 
+bool
+UsdMayaIsBoundingBoxModeEnabled()
+{
+    return TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE);
+}
+
 // ========================================================
 
 /* static */

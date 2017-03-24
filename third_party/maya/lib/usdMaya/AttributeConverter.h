@@ -27,6 +27,7 @@
 /// \file AttributeConverter.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -75,10 +76,12 @@ public:
     typedef std::function< bool (const UsdPrim&, MFnDependencyNode&,
             UsdTimeCode) > UsdToMayaFn;
 
+    PXRUSDMAYA_API
     virtual bool MayaToUsd(
             const MFnDependencyNode& depNode,
             UsdPrim& destPrim,
             const UsdTimeCode usdTime) const override;
+    PXRUSDMAYA_API
     virtual bool UsdToMaya(
             const UsdPrim& srcPrim,
             MFnDependencyNode& destNode,
@@ -89,6 +92,7 @@ public:
     ///
     /// The functions can be empty functions, in which case MayaToUsd and/or
     /// UsdToMaya will return false.
+    PXRUSDMAYA_API
     FunctionalAttributeConverter(
             MayaToUsdFn mayaToUsdFn,
             UsdToMayaFn usdToMayaFn);

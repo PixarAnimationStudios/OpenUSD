@@ -27,6 +27,7 @@
 /// \file primWriterArgs.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec3f.h"
 
@@ -46,23 +47,31 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PxrUsdMayaPrimWriterArgs
 {
 public:
+    PXRUSDMAYA_API
     PxrUsdMayaPrimWriterArgs(
             const MDagPath& dagPath,
             const bool exportRefsAsInstanceable);
 
     /// \brief returns the MObject that should be exported. 
+    PXRUSDMAYA_API
     MObject GetMObject() const;
 
+    PXRUSDMAYA_API
     const MDagPath& GetMDagPath() const;
 
+    PXRUSDMAYA_API
     bool GetExportRefsAsInstanceable() const;
 
     /// helper functions to get data from attribute named \p from the current
     /// MObject.  
     /// \{
+    PXRUSDMAYA_API
     bool ReadAttribute(const std::string& name, std::string* val) const;
+    PXRUSDMAYA_API
     bool ReadAttribute(const std::string& name, VtIntArray* val) const;
+    PXRUSDMAYA_API
     bool ReadAttribute(const std::string& name, VtFloatArray* val) const;
+    PXRUSDMAYA_API
     bool ReadAttribute(const std::string& name, VtVec3fArray* val) const;
     /// \}
 

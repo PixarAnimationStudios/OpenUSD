@@ -27,6 +27,7 @@
 /// \file FunctorPrimWriter.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/JobArgs.h"
 
@@ -55,29 +56,37 @@ public:
             const PxrUsdMayaPrimWriterArgs&,
             PxrUsdMayaPrimWriterContext*) > WriterFn;
 
+    PXRUSDMAYA_API
     FunctorPrimWriter(
             MDagPath& iDag,
             UsdStageRefPtr& stage,
             const JobExportArgs& iArgs,
             WriterFn plugFn);
 
+    PXRUSDMAYA_API
     virtual ~FunctorPrimWriter();
 
     // Overrides for MayaTransformWriter
+    PXRUSDMAYA_API
     virtual UsdPrim write(const UsdTimeCode &usdTime);
     
+    PXRUSDMAYA_API
     virtual bool exportsGprims() const override;
     
+    PXRUSDMAYA_API
     virtual bool exportsReferences() const override;
 
+    PXRUSDMAYA_API
     virtual bool shouldPruneChildren() const override;    
 
+    PXRUSDMAYA_API
     static MayaPrimWriterPtr Create(
             MDagPath& dag,
             UsdStageRefPtr& stage,
             const JobExportArgs& args,
             WriterFn plugFn);
 
+    PXRUSDMAYA_API
     static std::function< MayaPrimWriterPtr(
             MDagPath&,
             UsdStageRefPtr&,

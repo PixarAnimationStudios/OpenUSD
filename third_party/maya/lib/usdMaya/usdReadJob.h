@@ -27,6 +27,7 @@
 /// \file usdReadJob.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/JobArgs.h"
 #include "usdMaya/primReaderContext.h"
 
@@ -48,6 +49,7 @@ class usdReadJob
 {
   public:
 
+    PXRUSDMAYA_API
     usdReadJob(const std::string& iFileName, 
         const std::string& iPrimPath, 
         const std::map<std::string, std::string>& iVariants,
@@ -59,10 +61,14 @@ class usdReadJob
         const std::string& assemblyTypeName,
         const std::string& proxyShapeTypeName);
 
+    PXRUSDMAYA_API
     ~usdReadJob();
 
+    PXRUSDMAYA_API
     bool doIt(std::vector<MDagPath>* addedDagPaths);
+    PXRUSDMAYA_API
     bool redoIt();
+    PXRUSDMAYA_API
     bool undoIt();
 
     // Getters/Setters

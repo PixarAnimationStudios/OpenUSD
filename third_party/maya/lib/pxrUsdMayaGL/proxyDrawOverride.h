@@ -25,6 +25,7 @@
 #define PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H
 
 #include "pxr/pxr.h"
+#include "pxrUsdMayaGL/api.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 
@@ -46,29 +47,38 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {
 public:
+    PXRUSDMAYAGL_API
     static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
 
+    PXRUSDMAYAGL_API
     virtual ~UsdMayaProxyDrawOverride();
 
+    PXRUSDMAYAGL_API
     virtual bool isBounded(
         const MDagPath& objPath,
         const MDagPath& cameraPath) const;
 
+    PXRUSDMAYAGL_API
     virtual MBoundingBox boundingBox(
         const MDagPath& objPath,
         const MDagPath& cameraPath) const;
 
+    PXRUSDMAYAGL_API
     virtual MUserData* prepareForDraw(
         const MDagPath& objPath,
         const MDagPath& cameraPath,
         const MHWRender::MFrameContext& frameContext,
         MUserData* oldData);
 
+    PXRUSDMAYAGL_API
     static MString sm_drawDbClassification;
+    PXRUSDMAYAGL_API
     static MString sm_drawRegistrantId;
 
+    PXRUSDMAYAGL_API
     static void draw(const MHWRender::MDrawContext& context, const MUserData* data);
 
+    PXRUSDMAYAGL_API
     static UsdMayaProxyShape* getShape(const MDagPath& objPath);
 
 private:

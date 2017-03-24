@@ -27,6 +27,7 @@
 /// \file primReaderRegistry.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 
@@ -63,6 +64,7 @@ struct PxrUsdMayaPrimReaderRegistry
             PxrUsdMayaPrimReaderContext*) > ReaderFn;
 
     /// \brief Register \p fn as a reader provider for \p type.
+    PXRUSDMAYA_API
     static void Register(const TfType& type, ReaderFn fn);
 
     /// \brief Register \p fn as a reader provider for \p T.
@@ -85,6 +87,7 @@ struct PxrUsdMayaPrimReaderRegistry
     /// \code
     /// prim.GetTypeName()
     /// \endcode
+    PXRUSDMAYA_API
     static ReaderFn Find(
             const TfToken& usdTypeName);
 

@@ -25,6 +25,7 @@
 #define PXRUSDMAYA_TRANSLATOR_PRIM_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/usd/usd/prim.h"
 
 #include "usdMaya/primReaderContext.h"
@@ -39,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// accurately take a UsdGeomImageable.
 struct PxrUsdMayaTranslatorPrim
 {
+    PXRUSDMAYA_API
     static void Read(
             const UsdPrim& prim, 
             MObject mayaNode,

@@ -25,6 +25,7 @@
 #define PXRUSDMAYA_PLUGINSTATICDATA_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
 #include "usdMaya/stageData.h"
@@ -51,6 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// function and then a reference is held by each class through the creator().
 class PxrUsdMayaPluginStaticData : public boost::noncopyable {
 public:
+    PXRUSDMAYA_API
     PxrUsdMayaPluginStaticData(
             const MTypeId& proxyShapeId,
             const MString& proxyShapeName,
@@ -67,6 +69,7 @@ public:
 
     // instance of PxrUsdMayaPluginStaticData used by the "pxrUsd" plugin.
     // Should not be used until the pxrUsd class is initialized.
+    PXRUSDMAYA_API
     static PxrUsdMayaPluginStaticData pxrUsd;
 };
 

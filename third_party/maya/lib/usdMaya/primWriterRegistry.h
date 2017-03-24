@@ -27,6 +27,7 @@
 /// \file primWriterRegistry.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/MayaPrimWriter.h"
 #include "usdMaya/FunctorPrimWriter.h"
 
@@ -88,12 +89,14 @@ struct PxrUsdMayaPrimWriterRegistry
     ///             MyWriter::Create);
     /// }
     /// \endcode
+    PXRUSDMAYA_API
     static void Register(const std::string& mayaType, WriterFactoryFn fn);
 
     /// \brief Finds a writer if one exists for \p mayaTypeName.
     ///
     /// If there is no writer plugin for \p mayaTypeName, this will return 
     /// a value that evaluates to false.
+    PXRUSDMAYA_API
     static WriterFactoryFn Find(const std::string& mayaTypeName);
 };
 

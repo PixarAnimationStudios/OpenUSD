@@ -26,8 +26,10 @@ pxr_shared_library(${PXR_PACKAGE}
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
 
+    PUBLIC_HEADERS
+        api.h
+
     PUBLIC_CLASSES
-        debugCodes
         editUtil
         stageCache
         stageData
@@ -80,6 +82,7 @@ pxr_shared_library(${PXR_PACKAGE}
         UserTaggedAttribute
 
     PRIVATE_CLASSES
+        debugCodes
         registryHelper
         MayaCameraWriter
         MayaMeshWriter

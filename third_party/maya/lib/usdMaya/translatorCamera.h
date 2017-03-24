@@ -25,6 +25,7 @@
 #define PXRUSDMAYA_TRANSLATOR_CAMERA_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 
@@ -41,6 +42,7 @@ struct PxrUsdMayaTranslatorCamera
 {
     /// Reads a UsdGeomCamera \p usdCamera from USD and creates a Maya
     /// MFnCamera under \p parentNode.
+    PXRUSDMAYA_API
     static bool Read(
             const UsdGeomCamera& usdCamera,
             MObject parentNode,
@@ -49,6 +51,7 @@ struct PxrUsdMayaTranslatorCamera
 
     /// Helper function to access just the logic that writes from a non-animated
     /// camera into an existing maya camera.
+    PXRUSDMAYA_API
     static bool ReadToCamera(
             const UsdGeomCamera& usdCamera,
             MFnCamera& cameraObject);

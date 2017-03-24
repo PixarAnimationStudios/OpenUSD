@@ -25,6 +25,7 @@
 #define USD_MAYA_USDPRIMPROVIDER_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/usd/usd/prim.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,6 +38,7 @@ public:
     // returns the prim that this node is holding
     virtual UsdPrim usdPrim() const = 0;
 
+    PXRUSDMAYA_API
     virtual ~PxrUsdMayaUsdPrimProvider();
 };
 

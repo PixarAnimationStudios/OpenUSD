@@ -27,6 +27,7 @@
 /// \file JobArgs.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -57,6 +58,7 @@ TF_DECLARE_PUBLIC_TOKENS(PxUsdExportJobArgsTokens,
 
 struct JobExportArgs
 {
+    PXRUSDMAYA_API
     JobExportArgs();
 
     bool exportRefsAsInstanceable;
@@ -105,6 +107,7 @@ struct JobExportArgs
 
 struct JobImportArgs
 {
+    PXRUSDMAYA_API
     JobImportArgs();
 
     TfToken shadingMode;

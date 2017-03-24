@@ -23,6 +23,9 @@ pxr_shared_library(${PXR_PACKAGE}
         ${Boost_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
 
+    PUBLIC_HEADERS
+        api.h
+
     PUBLIC_CLASSES
         batchRenderer
         hdRenderer

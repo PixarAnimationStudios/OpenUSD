@@ -27,6 +27,7 @@
 /// \file ChaserRegistry.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/Chaser.h"
 #include "usdMaya/JobArgs.h"
 #include "usdMaya/util.h"
@@ -67,6 +68,7 @@ public:
     public:
         typedef PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type DagToUsdMap;
 
+        PXRUSDMAYA_API
         FactoryContext(
                 const UsdStagePtr& stage, 
                 const DagToUsdMap& dagToUsdMap,
@@ -76,18 +78,21 @@ public:
         ///
         /// It is safe for the \p PxrUsdMayaChaser to save this return value and
         /// use it during it's execution.
+        PXRUSDMAYA_API
         UsdStagePtr GetStage() const;
 
         /// \brief Returns a map that maps full MDagPath's to Usd prim paths.
         ///
         /// It is safe for the \p PxrUsdMayaChaser to save this return value by
         /// reference and use it during it's execution.
+        PXRUSDMAYA_API
         const DagToUsdMap& GetDagToUsdMap() const;
 
         /// \brief Returns the current job args.
         ///
         /// It is safe for the \p PxrUsdMayaChaser to save this return value by
         /// reference and use it during it's execution.
+        PXRUSDMAYA_API
         const JobExportArgs& GetJobArgs() const;
 
     private:
@@ -102,18 +107,22 @@ public:
     ///
     /// Please use the \p PXRUSDMAYA_DEFINE_CHASER_FACTORY instead of calling
     /// this directly.
+    PXRUSDMAYA_API
     bool RegisterFactory(
             const std::string& name, 
             FactoryFn fn);
 
     /// \brief Creates a chaser using the factoring registered to \p name.
+    PXRUSDMAYA_API
     PxrUsdMayaChaserRefPtr Create(
             const std::string& name, 
             const FactoryContext& context) const;
 
     /// \brief Returns the names of all registered chasers.
+    PXRUSDMAYA_API
     std::vector<std::string> GetAllRegisteredChasers() const;
 
+    PXRUSDMAYA_API
     static PxrUsdMayaChaserRegistry& GetInstance();
 
 private:

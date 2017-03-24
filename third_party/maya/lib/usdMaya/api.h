@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,31 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USD_MAYA_QUERY_H
-#define USD_MAYA_QUERY_H
+#ifndef PXRUSDMAYA_API_H
+#define PXRUSDMAYA_API_H
 
-#include "pxr/pxr.h"
-#include "usdMaya/api.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/prim.h"
+#include "pxr/base/arch/export.h"
 
-#include <string>
-#include <vector>
+#if defined(USDMAYA_STATIC)
+#   define PXRUSDMAYA_API
+#   define PXRUSDMAYA_API_TEMPLATE_CLASS(...)
+#   define PXRUSDMAYA_API_TEMPLATE_STRUCT(...)
+#   define PXRUSDMAYA_LOCAL
+#else
+#   if defined(USDMAYA_EXPORTS)
+#       define PXRUSDMAYA_API ARCH_EXPORT
+#       define PXRUSDMAYA_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define PXRUSDMAYA_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define PXRUSDMAYA_API ARCH_IMPORT
+#       define PXRUSDMAYA_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define PXRUSDMAYA_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define PXRUSDMAYA_LOCAL ARCH_HIDDEN
+#endif
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
-struct PxrUsdMayaQuery
-{
-    /*! \brief converts a dagPath of a usdStageShapeNode into a usdprim
-     */
-    PXRUSDMAYA_API
-    static UsdPrim GetPrim(const std::string& shapeName);
-    PXRUSDMAYA_API
-    static void ReloadStage(const std::string& shapeName);
-};
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // USD_MAYA_QUERY_H
+#endif
