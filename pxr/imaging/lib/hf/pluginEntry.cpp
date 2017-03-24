@@ -123,9 +123,9 @@ Hf_PluginEntry::operator <(const Hf_PluginEntry &other) const
     int aPriority = this->_priority;
     int bPriority = other._priority;
 
-    if (aPriority > bPriority) {
+    if (aPriority < bPriority) {
         return true;
-    } else if (aPriority < bPriority) {
+    } else if (aPriority > bPriority) {
         return false;
     } else {
         // Use TypeName string rather than machine name token
