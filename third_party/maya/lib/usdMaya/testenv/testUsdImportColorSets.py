@@ -497,7 +497,7 @@ class testUsdImportColorSets(unittest.TestCase):
 
     def testImportClampedColorSet(self):
         """
-        Tests that a color set primvar on a USD cube mesh tagged as 'Clamped'
+        Tests that a color set primvar on a USD cube mesh tagged as 'Maya[clamped]'
         is imported correctly.
         """
         mayaCubeMesh = self._GetMayaMesh('ColorSetsCubeShape')
@@ -512,7 +512,7 @@ class testUsdImportColorSets(unittest.TestCase):
     def testImportNonAuthoredDisplayColor(self):
         """
         Tests that a color set primvar on a USD cube mesh named 'displayColor'
-        is NOT imported if it is not tagged as 'Authored'.
+        is NOT imported if it is tagged as 'Maya[generated] = 1'.
         """
         mayaCubeMesh = self._GetMayaMesh('DisplayColorNotAuthoredCubeShape')
         self.assertEqual(mayaCubeMesh.numColorSets, 0)
@@ -520,7 +520,7 @@ class testUsdImportColorSets(unittest.TestCase):
     def testImportAuthoredDisplayColor(self):
         """
         Tests that a color set primvar on a USD cube mesh named 'displayColor'
-        IS imported when it is tagged as 'Authored'.
+        IS imported when it does not have an opinion for 'Maya[generated]'
         """
         mayaCubeMesh = self._GetMayaMesh('DisplayColorAuthoredCubeShape')
 
@@ -534,7 +534,7 @@ class testUsdImportColorSets(unittest.TestCase):
     def testImportNonAuthoredDisplayOpacityColor(self):
         """
         Tests that a color set primvar on a USD cube mesh named 'displayOpacity'
-        is NOT imported if it is not tagged as 'Authored'.
+        is NOT imported if it is tagged as 'Maya[generated] = 1'.
         """
         mayaCubeMesh = self._GetMayaMesh('DisplayOpacityNotAuthoredCubeShape')
         self.assertEqual(mayaCubeMesh.numColorSets, 0)
@@ -542,8 +542,8 @@ class testUsdImportColorSets(unittest.TestCase):
     def testImportAuthoredDisplayOpacity(self):
         """
         Tests that a color set primvar on a USD cube mesh named 'displayOpacity'
-        IS imported and called 'displayColor' when it is tagged as 'Authored'
-        and there is no authored displayColor primvar.
+        S imported and called 'displayColor' when it does not have an opinion
+        for 'Maya[generated]' and there is no authored displayColor primvar.
         """
         mayaCubeMesh = self._GetMayaMesh('DisplayOpacityAuthoredCubeShape')
 

@@ -21,20 +21,42 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "usdMaya/roundTripUtil.h"
+
+#include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/conversions.h"
+
+#include <boost/python.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using namespace std;
+using namespace boost::python;
+using namespace boost;
 
-TF_WRAP_MODULE {
-    TF_WRAP(Assembly);
-    TF_WRAP(EditUtil);
-    TF_WRAP(Query);
-    TF_WRAP(RoundTripUtil);
-    TF_WRAP(StageCache);
-    TF_WRAP(UserTaggedAttribute);
+void wrapRoundTripUtil()
+{
+    typedef PxrUsdMayaRoundTripUtil This;
+    scope RoundTripUtil = class_<This>("RoundTripUtil", no_init)
+        .def("IsAttributeUserAuthored", This::IsAttributeUserAuthored)
+        .staticmethod("IsAttributeUserAuthored")
+
+        .def("IsAttributeMayaGenerated", This::IsAttributeMayaGenerated)
+        .staticmethod("IsAttributeMayaGenerated")
+        .def("MarkAttributeAsMayaGenerated", This::MarkAttributeAsMayaGenerated)
+        .staticmethod("MarkAttributeAsMayaGenerated")
+
+        .def("IsPrimvarClamped", This::IsPrimvarClamped)
+        .staticmethod("IsPrimvarClamped")
+
+        .def("MarkPrimvarAsClamped", This::MarkPrimvarAsClamped)
+        .staticmethod("MarkPrimvarAsClamped")
+    ;
+        
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

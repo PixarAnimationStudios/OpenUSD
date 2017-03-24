@@ -24,11 +24,13 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 
+#include "usdMaya/roundTripUtil.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/transform.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
 #include <maya/MColor.h>
@@ -38,8 +40,6 @@
 #include <maya/MItMeshFaceVertex.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
 
 bool
 MayaMeshWriter::_GetMeshUVSetData(
@@ -340,16 +340,6 @@ bool MayaMeshWriter::_GetMeshColorSetData(
     return true;
 }
 
-// We assumed that primvars in USD are always unclamped so we add the
-// clamped custom data ONLY when clamping is set to true in the colorset
-static void SetPVCustomData(UsdAttribute obj, bool clamped)
-{
-    if (clamped) {
-        obj.SetCustomDataByKey(TfToken("Clamped"), VtValue(clamped));
-    }
-}
-
-
 bool MayaMeshWriter::_createAlphaPrimVar(
         UsdGeomGprim &primSchema,
         const TfToken& name,
@@ -383,7 +373,9 @@ bool MayaMeshWriter::_createAlphaPrimVar(
         }
     }
 
-    SetPVCustomData(primVar.GetAttr(), clamped);
+    if (clamped) {
+        PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
+    }
 
     return true;
 }
@@ -421,7 +413,9 @@ bool MayaMeshWriter::_createRGBPrimVar(
         }
     }
 
-    SetPVCustomData(primVar.GetAttr(), clamped);
+    if (clamped) {
+        PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
+    }
 
     return true;
 }
@@ -466,7 +460,9 @@ bool MayaMeshWriter::_createRGBAPrimVar(
         }
     }
 
-    SetPVCustomData(primVar.GetAttr(), clamped);
+    if (clamped) {
+        PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
+    }
 
     return true;
 }
@@ -536,8 +532,12 @@ bool MayaMeshWriter::_addDisplayPrimvars(
             authRGB = false;
         }
         if (authRGB) {
-            colorAttr.SetCustomDataByKey(TfToken("Authored"), VtValue(authRGB));
-            SetPVCustomData(colorAttr, clamped);
+            if (clamped) {
+                PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(displayColor);
+            }
+        }
+        else {
+            PxrUsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(colorAttr);
         }
     }
 
@@ -563,8 +563,12 @@ bool MayaMeshWriter::_addDisplayPrimvars(
                 authAlpha = false;
             }
             if (authAlpha) {
-                alphaAttr.SetCustomDataByKey(TfToken("Authored"), VtValue(authAlpha));
-                SetPVCustomData(alphaAttr, clamped);
+                if (clamped) {
+                    PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(displayOpacity);
+                }
+            }
+            else {
+                PxrUsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(alphaAttr);
             }
         }
     }

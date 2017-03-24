@@ -51,6 +51,7 @@ pxr_shared_library(${PXR_PACKAGE}
         translatorPrim
         translatorUtil
         translatorXformable
+        roundTripUtil
         shadingModeExporter
         shadingModeImporter
         shadingModeRegistry
@@ -115,6 +116,7 @@ pxr_shared_library(${PXR_PACKAGE}
         wrapAssembly.cpp
         wrapEditUtil.cpp
         wrapQuery.cpp
+        wrapRoundTripUtil.cpp
         wrapStageCache.cpp
         wrapUserTaggedAttribute.cpp
 

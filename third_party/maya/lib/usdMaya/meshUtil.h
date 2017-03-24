@@ -40,8 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdGeomMesh;
 
 #define PXRUSDMAYA_MESH_COLOR_SET_TOKENS \
-    (Authored) \
-    (Clamped) \
     ((DisplayColorColorSetName, "displayColor")) \
     ((DisplayOpacityColorSetName, "displayOpacity"))
 
