@@ -88,6 +88,24 @@ nb.setHintsForParameter('instanceMode', {
     """,
 })
 
+gb.set('prePopulate', FnAttribute.IntAttribute(0))
+nb.setHintsForParameter('prePopulate', {
+    'widget' : 'mapper',
+    'options' : {
+        'yes': 0,
+        'no': 1,
+        'only when non-interactive': 2,
+    },
+    'help' : """
+      Controls USD pre-population.  Pre-population loads all payloads
+      and pre-populates the stage.  Assuming the entire stage will be
+      needed, this is more efficient since USD can use its internal
+      multithreading.  However, this may not be desired during interactive
+      use, since it may be preferable to lazily populate the stage as
+      locations are visited.
+    """,
+})
+
 gb.set('verbose', 0)
 nb.setHintsForParameter('verbose', {
     'widget' : 'checkBox',
@@ -125,6 +143,9 @@ def buildOpChain(self, interface):
     
     gb.set('instanceMode', interface.buildAttrFromParam(
         self.getParameter('instanceMode')))
+    
+    gb.set('prePopulate', interface.buildAttrFromParam(
+        self.getParameter('prePopulate')))
 
     sessionValues = (
             interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))

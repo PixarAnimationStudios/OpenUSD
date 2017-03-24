@@ -62,6 +62,14 @@ namespace FnKat = Foundry::Katana;
     interface.setAttr("errorMessage", Foundry::Katana::StringAttribute(\
         TfStringPrintf(__VA_ARGS__)));
 
+// Return true if katana is running interactively
+// (i.e., not batch or via script).
+static bool
+_IsInteractiveKatana()
+{
+    return getenv("KATANA_UI_MODE");
+}
+
 // see overview.dox for more documentation.
 class PxrUsdInOp : public FnKat::GeolibOp
 {
@@ -562,11 +570,34 @@ public:
             }
         }
 
+        // Determine whether to force-populate the USD stage.
+        bool forcePopulate = true;
+        int prePopulate(FnKat::FloatAttribute(interface.getOpArg("prePopulate"))
+                        .getValue(0, false));
+        switch(prePopulate) {
+        case 0:
+        default:
+            forcePopulate = true;
+            break;
+        case 1:
+            forcePopulate = false;
+            break;
+        case 2:
+            // Pre-load and populate payloads when running non-interactive.
+            // This provides maximum efficiency for batch jobs.  Assuming
+            // that we will visit everything, populating USD up-front allows
+            // it to use internal multithreading.
+            // We do not do this for interactive jobs since we prefer katana
+            // to stay responsive, and only pull in payloads as locations
+            // are cooked.
+            forcePopulate = !_IsInteractiveKatana();
+        }
+
         ab.stage =  UsdKatanaCache::GetInstance().GetStage(
                 fileName, 
                 sessionAttr, sessionLocation,
                 ab.ignoreLayerRegex, 
-                true /* forcePopulate */);
+                forcePopulate);
 
         if (!ab.stage) {
             return ab.buildWithError("PxrUsdIn: USD Stage cannot be loaded.");
