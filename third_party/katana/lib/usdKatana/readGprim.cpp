@@ -137,7 +137,7 @@ _ConvertGeomAttr(
     // Used to compare value sizes to identify varying topology.
     int arraySize = -1;
 
-    const bool isMotionBackward = data.GetUsdInArgs()->IsMotionBackward();
+    const bool isMotionBackward = data.IsMotionBackward();
 
     FnKat::DataBuilder<T_ATTR> attrBuilder(tupleSize);
     TF_FOR_ALL(iter, motionSampleTimes)

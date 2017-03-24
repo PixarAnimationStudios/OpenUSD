@@ -134,7 +134,7 @@ PxrUsdKatanaReadCamera(
         const std::vector<double>& motionSampleTimes =
             data.GetMotionSampleTimes(camera.GetFocalLengthAttr());
 
-        const bool isMotionBackward = data.GetUsdInArgs()->IsMotionBackward();
+        const bool isMotionBackward = data.IsMotionBackward();
 
         FnKat::DoubleBuilder fovBuilder(1);
         TF_FOR_ALL(iter, motionSampleTimes)

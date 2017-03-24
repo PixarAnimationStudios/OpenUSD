@@ -59,9 +59,6 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
     _extraAttributesOrNamespaces(extraAttributesOrNamespaces),
     _verbose(verbose)
 {
-    _isMotionBackward = _motionSampleTimes.size() > 1 &&
-        _motionSampleTimes.front() > _motionSampleTimes.back();
-
     if (errorMessage)
     {
         _errorMessage = errorMessage;

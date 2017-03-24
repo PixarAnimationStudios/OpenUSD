@@ -254,13 +254,31 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     }
 }
 
+const bool
+PxrUsdKatanaUsdInPrivateData::IsMotionBackward() const
+{
+    if (_motionSampleTimesOverride.size() > 0)
+    {
+        return (_motionSampleTimesOverride.size() > 1 &&
+            _motionSampleTimesOverride.front() >
+            _motionSampleTimesOverride.back());
+    }
+    else
+    {
+        return (_motionSampleTimesFallback.size() > 1 &&
+            _motionSampleTimesFallback.front() >
+            _motionSampleTimesFallback.back());
+    }
+}
+
 const std::vector<double>
 PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
     const UsdAttribute& attr) const
 {
     static std::vector<double> noMotion = {0.0};
 
-    if (attr && !PxrUsdKatanaUtils::IsAttributeVarying(attr, _currentTime))
+    if ((attr && !PxrUsdKatanaUtils::IsAttributeVarying(attr, _currentTime)) ||
+            _motionSampleTimesFallback.size() < 2)
     {
         return noMotion;
     }
@@ -291,7 +309,7 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
 
     // Calculate shutter start and close times based on
     // the direction of motion blur.
-    if (_usdInArgs->IsMotionBackward())
+    if (IsMotionBackward())
     {
         shutterStartTime = _currentTime - _shutterClose;
         shutterCloseTime = _currentTime - _shutterOpen;

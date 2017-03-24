@@ -677,9 +677,11 @@ private:
             usdInArgs->GetMotionSampleTimes();
 
         bool hasInfiniteBounds = false;
+        bool isMotionBackward = motionSampleTimes.size() > 1 &&
+            motionSampleTimes.front() > motionSampleTimes.back();
         FnKat::DoubleAttribute boundsAttr = 
             PxrUsdKatanaUtils::ConvertBoundsToAttribute(
-                bounds, motionSampleTimes, usdInArgs->IsMotionBackward(), 
+                bounds, motionSampleTimes, isMotionBackward, 
                 &hasInfiniteBounds);
 
         // Report infinite bounds as a warning.

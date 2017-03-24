@@ -103,7 +103,7 @@ _BuildMatrixAttr(
     const std::vector<double>& motionSampleTimes = 
         data.GetMotionSampleTimes(constraintAttr);
 
-    const bool isMotionBackward = data.GetUsdInArgs()->IsMotionBackward();
+    const bool isMotionBackward = data.IsMotionBackward();
 
     FnKat::DoubleBuilder matBuilder(16);
     TF_FOR_ALL(iter, motionSampleTimes) {

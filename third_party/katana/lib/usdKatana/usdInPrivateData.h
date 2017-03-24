@@ -85,6 +85,13 @@ public:
         return _shutterClose;
     }
 
+    /// \brief Return true if motion blur is backward.
+    ///
+    /// PxrUsdIn supports both forward and backward motion blur. Motion
+    /// blur is considered backward if multiple samples are requested
+    /// and the first specified sample is later than the last sample.
+    const bool IsMotionBackward() const;
+
     const std::vector<double> GetMotionSampleTimes(
         const UsdAttribute& attr = UsdAttribute()) const;
 

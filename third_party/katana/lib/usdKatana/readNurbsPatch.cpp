@@ -329,7 +329,7 @@ PxrUsdKatanaReadNurbsPatch(
     //
 
     attrs.set("geometry.point.Pw", _GetPwAttr(
-        nurbsPatch, currentTime, motionSampleTimes, data.GetUsdInArgs()->IsMotionBackward()));
+        nurbsPatch, currentTime, motionSampleTimes, data.IsMotionBackward()));
     attrs.set("geometry.u", _GetUAttr(nurbsPatch, currentTime));
     attrs.set("geometry.v", _GetVAttr(nurbsPatch, currentTime));
     attrs.set("geometry.uSize", _GetUSizeAttr(nurbsPatch, currentTime));       
