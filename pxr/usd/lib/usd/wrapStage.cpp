@@ -336,6 +336,9 @@ void wrapUsdStage()
         .def("Close", &UsdStage::Close)
         .def("Reload", &UsdStage::Reload)
 
+        .def("Save", &UsdStage::Save)
+        .def("SaveSessionLayers", &UsdStage::SaveSessionLayers)
+
         .def("GetGlobalVariantFallbacks",
              &UsdStage::GetGlobalVariantFallbacks,
              return_value_policy<TfPyMapToDictionary>())
