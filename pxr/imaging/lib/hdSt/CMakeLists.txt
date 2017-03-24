@@ -47,3 +47,14 @@ pxr_shared_library(hdSt
     RESOURCE_FILES
         plugInfo.json
 )
+
+if (X11_FOUND OR APPLE)
+pxr_build_test(testHdStBasicDrawing
+    LIBRARIES
+        hd
+        garch
+        glf
+    CPPFILES
+        testenv/testHdStBasicDrawing.cpp
+)
+endif()
