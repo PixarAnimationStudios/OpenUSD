@@ -22,9 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/alembicTest.h"
 
 #include <boost/python/def.hpp>
+
+#include "pxr/usd/usdAbc/alembicTest.h"
 
 using namespace boost::python;
 
