@@ -36,8 +36,55 @@ from maya import cmds
 from maya import OpenMaya as OM
 from maya.app.general import mayaMixin
 
-from PySide import QtCore
-from PySide import QtGui
+# Maya 2017 and later use PyQt5/PySide2 while Maya 2016 and earlier use
+# PyQt4/PySide. We test whether we're running in Maya 2017+ by trying to import
+# PySide2, which should only be available there. If that succeeds, we import
+# the rest of the modules from PySide2. Otherwise, we assume we're in 2016 or
+# earlier and we import everything from PySide.
+#
+# Note also that the default signature for the dataChanged signal of
+# QAbstractTableModel and QStringListModel changed from two arguments to three
+# between PyQt4 and PyQt5, so we have to use PyQt's mechanism for explicitly
+# selecting the two-argument overload to support both versions of PyQt.
+#
+# See here for more info:
+# https://bugreports.qt.io/browse/PYSIDE-462
+# http://pyqt.sourceforge.net/Docs/PyQt5/signals_slots.html#connecting-disconnecting-and-emitting-signals
+#
+try:
+    import PySide2
+    usePySide2 = True
+except ImportError:
+    usePySide2 = False
+
+if usePySide2:
+    # Maya 2017 and later
+    from PySide2 import QtCore
+    from PySide2.QtCore import QStringListModel
+    from PySide2.QtWidgets import QAbstractItemView
+    from PySide2.QtWidgets import QCheckBox
+    from PySide2.QtWidgets import QComboBox
+    from PySide2.QtWidgets import QLabel
+    from PySide2.QtWidgets import QListView
+    from PySide2.QtWidgets import QPushButton
+    from PySide2.QtWidgets import QStyledItemDelegate
+    from PySide2.QtWidgets import QTableView
+    from PySide2.QtWidgets import QVBoxLayout
+    from PySide2.QtWidgets import QWidget
+else:
+    # Maya 2016 and earlier
+    from PySide import QtCore
+    from PySide.QtGui import QAbstractItemView
+    from PySide.QtGui import QCheckBox
+    from PySide.QtGui import QComboBox
+    from PySide.QtGui import QLabel
+    from PySide.QtGui import QListView
+    from PySide.QtGui import QPushButton
+    from PySide.QtGui import QStringListModel
+    from PySide.QtGui import QStyledItemDelegate
+    from PySide.QtGui import QTableView
+    from PySide.QtGui import QVBoxLayout
+    from PySide.QtGui import QWidget
 
 EXPORTED_ATTRS_MAYA_ATTR_NAME = 'USD_UserExportedAttributesJson'
 
@@ -412,7 +459,8 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
     @exportedAttributes.setter
     def exportedAttributes(self, exportedAttrs):
         self._exportedAttrs = exportedAttrs
-        self.reset()
+        self.beginResetModel()
+        self.endResetModel()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         if not self._exportedAttrs:
@@ -502,7 +550,7 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
             ExportedAttribute.UpdateExportedAttributesForNode(selectedNodeName,
                 self._exportedAttrs)
 
-        self.dataChanged.emit(index, index)
+        self.dataChanged[QtCore.QModelIndex, QtCore.QModelIndex].emit(index, index)
         return True
 
     def flags(self, index):
@@ -560,18 +608,18 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
                 exportedAttrs)
 
         index = self.createIndex(row, column)
-        self.dataChanged.emit(index, index)
+        self.dataChanged[QtCore.QModelIndex, QtCore.QModelIndex].emit(index, index)
         return True
 
 
-class ExportedAttributesViewItemDelegate(QtGui.QStyledItemDelegate):
+class ExportedAttributesViewItemDelegate(QStyledItemDelegate):
 
     def __init__(self, choices, parent=None):
         super(ExportedAttributesViewItemDelegate, self).__init__(parent=parent)
         self._choices = choices
 
     def createEditor(self, parent, option, index):
-        editor = QtGui.QComboBox(parent)
+        editor = QComboBox(parent)
         editor.addItems(self._choices)
 
         # Use the model data to pre-select a choice in the combo box.
@@ -595,7 +643,7 @@ class ExportedAttributesViewItemDelegate(QtGui.QStyledItemDelegate):
         self.commitData.emit(self.sender())
 
 
-class ExportedAttributesView(QtGui.QTableView):
+class ExportedAttributesView(QTableView):
 
     def __init__(self, parent=None):
         super(ExportedAttributesView, self).__init__(parent=parent)
@@ -619,7 +667,7 @@ class ExportedAttributesView(QtGui.QTableView):
         return super(ExportedAttributesView, self).dragEnterEvent(event)
 
 
-class AddAttributesModel(QtGui.QStringListModel):
+class AddAttributesModel(QStringListModel):
 
     def flags(self, index):
         if not index.isValid():
@@ -655,17 +703,17 @@ class AddAttributesModel(QtGui.QStringListModel):
                 mayaAttrNames)
 
         index = self.createIndex(row, column)
-        self.dataChanged.emit(index, index)
+        self.dataChanged[QtCore.QModelIndex, QtCore.QModelIndex].emit(index, index)
         return True
 
 
-class AddAttributesView(QtGui.QListView):
+class AddAttributesView(QListView):
 
     def __init__(self, parent=None):
         super(AddAttributesView, self).__init__(parent=parent)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
     def dragEnterEvent(self, event):
         if event.source() == self:
@@ -675,7 +723,7 @@ class AddAttributesView(QtGui.QListView):
         return super(AddAttributesView, self).dragEnterEvent(event)
 
 
-class UserExportedAttributeWidget(mayaMixin.MayaQWidgetDockableMixin, QtGui.QWidget):
+class UserExportedAttributeWidget(mayaMixin.MayaQWidgetDockableMixin, QWidget):
 
     _currentInstance = None
 
@@ -714,10 +762,10 @@ class UserExportedAttributeWidget(mayaMixin.MayaQWidgetDockableMixin, QtGui.QWid
 
     def _setupUI(self):
         self.setWindowTitle("Export Attributes to USD")
-        layout = QtGui.QVBoxLayout()
+        layout = QVBoxLayout()
 
         # This section contains the attributes tagged for export.
-        label = QtGui.QLabel()
+        label = QLabel()
         label.setText('Exported Attributes:')
         layout.addWidget(label)
 
@@ -730,17 +778,17 @@ class UserExportedAttributeWidget(mayaMixin.MayaQWidgetDockableMixin, QtGui.QWid
         self.exportedAttrsModel.dataChanged.connect(self._onModelDataChanged)
         layout.addWidget(self.exportedAttrsView)
 
-        self.removeExportedAttrButton = QtGui.QPushButton("Remove Exported Attribute")
+        self.removeExportedAttrButton = QPushButton("Remove Exported Attribute")
         self.removeExportedAttrButton.clicked.connect(self._onRemoveExportedAttrPressed)
         self.removeExportedAttrButton.setEnabled(False)
         layout.addWidget(self.removeExportedAttrButton)
 
         # This section contains the attributes available for export.
-        label = QtGui.QLabel()
+        label = QLabel()
         label.setText('Available Attributes:')
         layout.addWidget(label)
 
-        self.userDefinedCheckBox = QtGui.QCheckBox('User Defined')
+        self.userDefinedCheckBox = QCheckBox('User Defined')
         self.userDefinedCheckBox.setToolTip('Show only user-defined (dynamic) attributes')
         self.userDefinedCheckBox.setChecked(True)
         self.userDefinedCheckBox.stateChanged.connect(self._syncUI)
@@ -754,7 +802,7 @@ class UserExportedAttributeWidget(mayaMixin.MayaQWidgetDockableMixin, QtGui.QWid
         self.addAttrsModel.dataChanged.connect(self._onModelDataChanged)
         layout.addWidget(self.addAttrsView)
 
-        self.addExportedAttrButton = QtGui.QPushButton("Add Exported Attribute")
+        self.addExportedAttrButton = QPushButton("Add Exported Attribute")
         self.addExportedAttrButton.clicked.connect(self._onAddExportedAttrPressed)
         self.addExportedAttrButton.setEnabled(False)
         layout.addWidget(self.addExportedAttrButton)
