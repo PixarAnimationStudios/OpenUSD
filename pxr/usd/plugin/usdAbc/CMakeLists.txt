@@ -51,3 +51,114 @@ pxr_plugin(usdAbc
     RESOURCE_FILES
         plugInfo.json
 )
+
+pxr_test_scripts(
+    testenv/testUsdAbcAlembicData.py       
+    testenv/testUsdAbcBugs.py              
+    testenv/testUsdAbcCamera.py  
+    testenv/testUsdAbcConversionSubdiv.py 
+    testenv/testUsdAbcInstancing.py 
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcAlembicData
+    DEST testUsdAbcAlembicData
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcBugs
+    DEST testUsdAbcBugs
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcCamera
+    DEST testUsdAbcCamera
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcConversionSubdiv
+    DEST testUsdAbcConversionSubdiv
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcInstancing
+    DEST testUsdAbcInstancing
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcInstancingXinst
+    DEST testUsdAbcInstancingXinst
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcInstancingNinst
+    DEST testUsdAbcInstancingNinst
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcInstancingPinst
+    DEST testUsdAbcInstancingPinst
+)
+
+pxr_register_test(testUsdAbcAlembicData
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcAlembicData"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcBugs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcBugs"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcCamera
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcCamera"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcConversionSubdiv
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcConversionSubdiv"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcInstancing
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing"
+    DIFF_COMPARE nestedInstancing.def.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_TESTSUFFIX=def
+)
+
+pxr_register_test(testUsdAbcInstancingXinst
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing"
+    DIFF_COMPARE nestedInstancing.xinst.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_TESTSUFFIX=xinst
+        USD_ABC_EXPAND_INSTANCES=1
+)
+
+pxr_register_test(testUsdAbcInstancingPinst
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing"
+    DIFF_COMPARE nestedInstancing.pinst.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_TESTSUFFIX=pinst
+        USD_ABC_PARENT_INSTANCES=0
+)
+
+pxr_register_test(testUsdAbcInstancingNinst
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing"
+    DIFF_COMPARE nestedInstancing.ninst.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_TESTSUFFIX=ninst
+        USD_ABC_DISABLE_INSTANCING=1
+)
