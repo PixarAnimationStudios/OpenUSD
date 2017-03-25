@@ -1,0 +1,19 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "TestKindModule",
+            "Info": {
+                "Kinds": {
+                    # Add "test_model_kind" as a kind of model.
+                    "test_model_kind": {
+                        "baseKind": "model"
+                    },
+                    # Add "test_root_kind" as a root kind.
+                    "test_root_kind": {
+                    }
+                }
+            }
+        }
+    ]
+}
