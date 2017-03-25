@@ -346,7 +346,8 @@ class UsdGeomPrimvar
     // ---------------------------------------------------------------
     /// \name UsdAttribute API
     // ---------------------------------------------------------------
-    
+    /// @{
+
     /// Allow UsdGeomPrimvar to auto-convert to UsdAttribute, so you can
     /// pass a UsdGeomPrimvar to any function that accepts a UsdAttribute or
     /// const-ref thereto.
@@ -399,6 +400,35 @@ class UsdGeomPrimvar
     bool Set(const T& value, UsdTimeCode time = UsdTimeCode::Default()) const {
         return _attr.Set(value, time);
     }
+
+    /// Populates a vector with authored sample times for this primvar.
+    /// Returns false on error.
+    /// 
+    /// This considers any timeSamples authored on the associated "indices"
+    /// attribute if the primvar is indexed.
+    /// 
+    /// \sa UsdAttribute::GetTimeSamples
+    bool GetTimeSamples(std::vector<double>* times) const;
+
+    /// Populates a vector with authored sample times in \p interval. 
+    /// 
+    /// This considers any timeSamples authored on the associated "indices"
+    /// attribute if the primvar is indexed.
+    /// 
+    /// \sa UsdAttribute::GetTimeSamplesInInterval
+    bool GetTimeSamplesInInterval(const GfInterval& interval,
+                                  std::vector<double>* times) const;
+
+    /// Return true if it is possible, but not certain, that this primvar's
+    /// value changes over time, false otherwise. 
+    /// 
+    /// This considers time-varyingness of the associated "indices" attribute 
+    /// if the primvar is indexed.
+    /// 
+    /// \sa UsdAttribute::ValueMightBeTimeVarying
+    bool ValueMightBeTimeVarying() const;
+
+    /// @}
 
     // ---------------------------------------------------------------
     /// @{

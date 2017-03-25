@@ -495,6 +495,60 @@ UsdGeomPrimvar::Get(
     return _attr.Get(value, time);
 }
 
+// Sort and remove duplicates.
+static 
+void _SortAndRemoveDupes(std::vector<double> *times) 
+{
+    std::sort(times->begin(), times->end());
+    times->erase(std::unique(times->begin(), times->end()), times->end());
+}
+
+bool 
+UsdGeomPrimvar::GetTimeSamples(std::vector<double>* times) const
+{
+    bool success = _attr.GetTimeSamples(times);
+    if (IsIndexed()) {
+        if (UsdAttribute indicesAttr = _GetIndicesAttr(false)) {
+            success = indicesAttr.GetTimeSamples(times) and success;
+            _SortAndRemoveDupes(times);
+        }
+    }
+
+    return success;
+}
+
+bool 
+UsdGeomPrimvar::GetTimeSamplesInInterval(
+    const GfInterval& interval,
+    std::vector<double>* times) const
+{
+    bool success = _attr.GetTimeSamplesInInterval(interval, times);
+
+    if (IsIndexed()) {
+        if (UsdAttribute indicesAttr = _GetIndicesAttr(false)) {
+            success = indicesAttr.GetTimeSamplesInInterval(interval, times) and 
+                success;
+            _SortAndRemoveDupes(times);
+        }
+    }
+
+    return success;
+}
+
+bool 
+UsdGeomPrimvar::ValueMightBeTimeVarying() const
+{
+    if (IsIndexed()) {
+        if (UsdAttribute indicesAttr = _GetIndicesAttr(false)) {
+            if (indicesAttr.ValueMightBeTimeVarying()) {
+                return true;
+            }
+        }
+    }
+
+    return _attr.ValueMightBeTimeVarying();
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

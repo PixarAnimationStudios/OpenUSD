@@ -32,7 +32,10 @@
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
 
+#include <vector>
+
 using namespace boost::python;
+using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -80,6 +83,23 @@ _ComputeFlattened(const UsdGeomPrimvar &self,
     return UsdVtValueToPython(retValue);
 }    
 
+static vector<double>
+_GetTimeSamples(const UsdGeomPrimvar &self) 
+{
+    vector<double> result;
+    self.GetTimeSamples(&result);
+    return result;
+}
+
+static vector<double>
+_GetTimeSamplesInInterval(const UsdGeomPrimvar &self,
+                          const GfInterval& interval) 
+{
+    vector<double> result;
+    self.GetTimeSamplesInInterval(interval, &result);
+    return result;
+}
+
 } // anonymous namespace 
 
 void wrapUsdGeomPrimvar()
@@ -119,6 +139,10 @@ void wrapUsdGeomPrimvar()
         .def("GetTypeName", &Primvar::GetTypeName)
         .def("Get", _Get, (arg("time")=UsdTimeCode::Default()))
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
+
+        .def("GetTimeSamples", _GetTimeSamples)
+        .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval)
+        .def("ValueMightBeTimeVarying", &Primvar::ValueMightBeTimeVarying)
 
         .def("SetIndices", &Primvar::SetIndices, 
             (arg("indices"),
