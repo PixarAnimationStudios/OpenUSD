@@ -37,6 +37,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporter.h"
+#include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/shadingModeImporter.h"
 
 #include "pxr/base/tf/registryManager.h"
@@ -58,9 +59,8 @@ class PxrUsdMayaShadingModeRegistry : public TfWeakBase
 {
 public:
 
-    static PxrUsdMayaShadingModeExporter GetExporter(const TfToken& name) {
+    static PxrUsdMayaShadingModeExporterCreator GetExporter(const TfToken& name) {
         return GetInstance()._GetExporter(name);
-
     }
     static PxrUsdMayaShadingModeImporter GetImporter(const TfToken& name) {
         return GetInstance()._GetImporter(name);
@@ -71,7 +71,7 @@ public:
     PXRUSDMAYA_API
     bool RegisterExporter(
             const std::string& name, 
-            PxrUsdMayaShadingModeExporter fn);
+            PxrUsdMayaShadingModeExporterCreator fn);
 
     PXRUSDMAYA_API
     bool RegisterImporter(
@@ -79,20 +79,13 @@ public:
             PxrUsdMayaShadingModeImporter fn);
 
 private:
-    PxrUsdMayaShadingModeExporter _GetExporter(const TfToken& name);
+    PxrUsdMayaShadingModeExporterCreator _GetExporter(const TfToken& name);
     PxrUsdMayaShadingModeImporter _GetImporter(const TfToken& name);
 
     PxrUsdMayaShadingModeRegistry();
     ~PxrUsdMayaShadingModeRegistry();
     friend class TfSingleton<PxrUsdMayaShadingModeRegistry>;
 };
-
-#define DEFINE_SHADING_MODE_EXPORTER(name, contextName) \
-static void _ShadingModeExporter_##name(PxrUsdMayaShadingModeExportContext*); \
-TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaShadingModeExportContext, name) {\
-    PxrUsdMayaShadingModeRegistry::GetInstance().RegisterExporter(#name, &_ShadingModeExporter_##name); \
-}\
-void _ShadingModeExporter_##name(PxrUsdMayaShadingModeExportContext* contextName)
 
 #define DEFINE_SHADING_MODE_IMPORTER(name, contextName) \
 static MPlug _ShadingModeImporter_##name(PxrUsdMayaShadingModeImportContext*); \
