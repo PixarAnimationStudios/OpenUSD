@@ -1,0 +1,87 @@
+#usda 1.0
+
+def Xform "BottleMedical" (
+    kind = "prop"
+    payload = @./BottleMedical_payload.usd@</BottleMedical>
+    variants = {
+        string modelingVariant = "LiquidBottleLg"
+        string shadingComplexity = "full"
+    }
+    add variantSets = ["modelingVariant", "shadingComplexity"]
+)
+{
+    variantSet "modelingVariant" = {
+        "ALL_VARIANTS" {
+            custom Vec3f[] extentsHint = [(-8.00956, -8.01046, 0), (8.01001, 8.00911, 26.9571)]
+        }
+        "GlassJar" {
+            custom Vec3f[] extentsHint = [(-8.00956, -8.01046, 0), (8.01001, 8.00911, 25.1278)]
+        }
+        "LiquidBottleLg" {
+            custom Vec3f[] extentsHint = [(-5.71975, -5.72171, 0), (5.71887, 5.7169, 26.9571)]
+        }
+        "LiquidBottleMed" {
+            custom Vec3f[] extentsHint = [(-5.71749, -5.72408, 0), (5.72113, 5.71453, 23.6611)]
+        }
+        "LiquidBottleSm" {
+            custom Vec3f[] extentsHint = [(-4.45622, -4.45985, 0), (4.46081, 4.45718, 23.6611)]
+        }
+        "LotionTube" {
+            custom Vec3f[] extentsHint = [(-2.37189, -3.20838, 0), (2.37145, 3.20756, 11.8009)]
+        }
+        "PillBottleLg" {
+            custom Vec3f[] extentsHint = [(-3.81936, -3.82008, 0), (3.82065, 3.81993, 15.8072)]
+        }
+        "PillBottleMed" {
+            custom Vec3f[] extentsHint = [(-3.82019, -3.82182, 0), (3.81982, 3.81819, 12.0863)]
+        }
+        "PillBottleSm" {
+            custom Vec3f[] extentsHint = [(-2.90512, -2.90576, 0), (2.9055, 2.90486, 9.01365)]
+        }
+        "RxBottleLg" {
+            custom Vec3f[] extentsHint = [(-3.93262, -3.93535, 0), (3.93548, 3.93275, 9.29102)]
+        }
+        "RxBottleMed" {
+            custom Vec3f[] extentsHint = [(-3.3798, -3.38146, 0), (3.38061, 3.37895, 9.29102)]
+        }
+        "RxBottleSm" {
+            custom Vec3f[] extentsHint = [(-2.71806, -2.71984, 0), (2.71851, 2.71672, 9.29102)]
+        }
+        "SyringeBottleLg" {
+            custom Vec3f[] extentsHint = [(-2.67612, -2.67785, 0), (2.67623, 2.6745, 9.61767)]
+        }
+        "SyringeBottleMed" {
+            custom Vec3f[] extentsHint = [(-2.15384, -2.15551, 0), (2.1547, 2.15304, 9.61767)]
+        }
+        "SyringeBottleSm" {
+            custom Vec3f[] extentsHint = [(-1.64349, -1.64481, 0), (1.64378, 1.64246, 9.61767)]
+        }
+        "VialLg" {
+            custom Vec3f[] extentsHint = [(-1.3032, -1.30577, 0), (1.30564, 1.30306, 17.6081)]
+        }
+        "VialMed" {
+            custom Vec3f[] extentsHint = [(-1.30373, -1.30567, 0), (1.30511, 1.30317, 13.8744)]
+        }
+        "VialSm" {
+            custom Vec3f[] extentsHint = [(-1.30373, -1.30513, 0), (1.30511, 1.3037, 10.3735)]
+        }
+        "WaterBottle" {
+            custom Vec3f[] extentsHint = [(-5.08, -5.08, 0), (5.08, 5.08, 22.695)]
+        }
+    }
+    variantSet "shadingComplexity" = {
+        "display" {
+
+        }
+        "full" {
+
+        }
+        "modeling" {
+
+        }
+        "none" {
+
+        }
+    }
+}
+

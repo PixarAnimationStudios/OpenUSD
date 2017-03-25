@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    baseAsset = @./base_a.usd@
+    subLayers = [
+        @./sub_a.usd@,
+        @./sub_b.usd@,
+    ]
+)
+
+def "foo" (
+    assetInfo = {
+        asset meta_a = @./meta_a.usd@
+        asset[] meta_b = [@./meta_b.usd@, @./meta_c.usd@]
+    }
+    payload = @./payload_a.usd@
+    variantSets = "standin"
+)
+{
+    asset attr_a = @./attr_a.usd@
+    asset[] attr_b = [@./attr_b.usd@, @./attr_c.usd@]
+
+    def "bar" (
+        references = [
+            @./ref_a.usd@,
+            @./ref_b.usd@
+        ]
+    )
+    {
+    }
+
+    variantSet "standin" = {
+        "full" (
+            assetInfo = {
+                asset[] v_meta_a = [@./v_meta_a.usda@, @./v_meta_b.usda@]
+            }
+            references = @./v_ref_a.usd@
+        ) {
+            asset v_attr_a = @./v_attr_a.usd@
+            asset[] v_attr_b = [@./v_attr_b.usd@, @./v_attr_c.usd@]
+        }
+    }
+}
