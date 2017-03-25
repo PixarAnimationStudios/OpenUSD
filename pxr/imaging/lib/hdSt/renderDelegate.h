@@ -24,6 +24,7 @@
 #define HDST_RENDER_DELEGATE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,29 +38,42 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdStRenderDelegate final : public HdRenderDelegate {
 public:
+    HDST_API
     HdStRenderDelegate();
     virtual ~HdStRenderDelegate() = default;
 
+    HDST_API
     virtual HdRenderParam *GetRenderParam() const override;
 
+    HDST_API
     virtual const TfTokenVector &GetSupportedSprimTypes() const override;
+    HDST_API
     virtual const TfTokenVector &GetSupportedBprimTypes() const override;
 
+    HDST_API
     virtual HdRprim *CreateRprim(TfToken const& typeId,
                                  SdfPath const& rprimId,
                                  SdfPath const& instancerId) override;
+    HDST_API
     virtual void DestroyRprim(HdRprim *rPrim) override;
 
+    HDST_API
     virtual HdSprim *CreateSprim(TfToken const& typeId,
                                  SdfPath const& sprimId) override;
+    HDST_API
     virtual HdSprim *CreateFallbackSprim(TfToken const& typeId) override;
+    HDST_API
     virtual void DestroySprim(HdSprim *sPrim) override;
 
+    HDST_API
     virtual HdBprim *CreateBprim(TfToken const& typeId,
                                  SdfPath const& bprimId) override;
+    HDST_API
     virtual HdBprim *CreateFallbackBprim(TfToken const& typeId) override;
+    HDST_API
     virtual void DestroyBprim(HdBprim *bPrim) override;
 
+    HDST_API
     virtual void CommitResources(HdChangeTracker *tracker) override;
 
 private:

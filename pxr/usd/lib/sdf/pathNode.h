@@ -177,6 +177,7 @@ public:
     inline TfToken GetElement() const;
 
     // Return the stringified path to this node as a TfToken.
+    SDF_API
     const TfToken &GetPathToken() const;
     
     // Lexicographic ordering for Compare().

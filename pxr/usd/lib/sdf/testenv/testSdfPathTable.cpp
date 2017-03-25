@@ -28,13 +28,8 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/diagnostic.h"
-
 #include "pxr/base/tf/hashmap.h"
-
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "pxr/base/arch/fileSystem.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -233,26 +228,17 @@ static void ReadPaths(string const &fileName, vector<SdfPath> *out)
     printf("Reading paths...");
     fflush(stdout);
 
-    int fd = open(fileName.c_str(), O_RDONLY);
-    if (fd == -1)
+    FILE* fp = fopen(fileName.c_str(), "rb");
+    if (!fp)
         return;
 
-    struct stat sb;
-    if (fstat(fd, &sb) == -1)           /* To obtain file size */
-        return;
-
-    size_t length = sb.st_size;
-
-    char *src = static_cast<char *>(
-        mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, 0));
-    if (src == MAP_FAILED)
-        return;
-
+    const size_t length = ArchGetFileLength(fp);
+    auto src = ArchMapFileReadOnly(fp);
     TfStopwatch sw; sw.Start();
-    string all(src, length);
+    string all(src.get(), length);
     sw.Stop(); printf("reading all took %f sec\n", sw.GetSeconds());
-
-    munmap(src, length);
+    src.reset();
+    fclose(fp);
 
     sw.Reset(); sw.Start();
     vector<string> lines = TfStringTokenize(all);

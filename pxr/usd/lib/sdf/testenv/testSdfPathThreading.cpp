@@ -62,7 +62,7 @@ TF_MAKE_STATIC_DATA(vector<TfToken>, nameTokens)
 static TfToken
 _GetRandomNameToken()
 {
-    return (*nameTokens)[random() % nameTokens->size()];
+    return (*nameTokens)[rand() % nameTokens->size()];
 }
 
 static SdfPath
@@ -70,7 +70,7 @@ _MakeRandomPrimPath()
 {
     static const size_t maxDepth = 2;
     SdfPath ret = SdfPath::AbsoluteRootPath();
-    for (size_t i = 0, depth = random() % maxDepth; i <= depth; ++i)
+    for (size_t i = 0, depth = rand() % maxDepth; i <= depth; ++i)
         ret = ret.AppendChild(_GetRandomNameToken());
     return ret;
 }
@@ -79,7 +79,7 @@ static SdfPath
 _MakeRandomPrimOrPropertyPath()
 {
     SdfPath ret = _MakeRandomPrimPath();
-    return random() & 1 ? ret : ret.AppendProperty(_GetRandomNameToken());
+    return rand() & 1 ? ret : ret.AppendProperty(_GetRandomNameToken());
 }
 
 static SdfPath
@@ -92,21 +92,21 @@ _MakeRandomPath(SdfPath const &path = SdfPath::AbsoluteRootPath())
         ret = _MakeRandomPrimPath();
 
     // Extend a PrimPath.
-    if (ret.IsPrimPath() && (random() & 1)) {
+    if (ret.IsPrimPath() && (rand() & 1)) {
         ret = ret.AppendVariantSelection(_GetRandomNameToken().GetString(),
                                          _GetRandomNameToken().GetString());
     }
 
     // Extend a PrimPath or a PrimVariantSelectionPath.
     if ((ret.IsPrimPath() || ret.IsPrimVariantSelectionPath())) {
-        return (random() & 1) ? ret :
+        return (rand() & 1) ? ret :
             _MakeRandomPath(ret.AppendProperty(_GetRandomNameToken()));
     }
 
     // Extend a PrimPropertyPath
     if (ret.IsPrimPropertyPath()) {
         // options: target path, mapper path, expression path, or leave alone.
-        switch (random() & 3) {
+        switch (rand() & 3) {
         case 0:
             return _MakeRandomPath(
                 ret.AppendTarget(_MakeRandomPrimOrPropertyPath()));
@@ -122,20 +122,20 @@ _MakeRandomPath(SdfPath const &path = SdfPath::AbsoluteRootPath())
 
     // Extend a TargetPath
     if (ret.IsTargetPath()) {
-        return (random() & 1) ? ret :
+        return (rand() & 1) ? ret :
             _MakeRandomPath(
             ret.AppendRelationalAttribute(_GetRandomNameToken()));
     }
 
     // Extend a MapperPath
     if (ret.IsMapperPath()) {
-        return (random() & 1) ? ret :
+        return (rand() & 1) ? ret :
             _MakeRandomPath(ret.AppendMapperArg(_GetRandomNameToken()));
     }
 
     // Extend a RelationalAttributePath
     if (ret.IsRelationalAttributePath()) {
-        return (random() & 1) ? ret :
+        return (rand() & 1) ? ret :
             _MakeRandomPath(ret.AppendTarget(_MakeRandomPrimOrPropertyPath()));
     }
 
@@ -155,14 +155,14 @@ static TfStaticData<std::mutex> pathCacheMutex;
 static void _PutPath(SdfPath const &path)
 {
     std::lock_guard<std::mutex> lock(*pathCacheMutex);
-    size_t index = random() % pathCache->size();
+    size_t index = rand() % pathCache->size();
     (*pathCache)[index] = path;
 }
 
 static SdfPath _GetPath()
 {
     std::lock_guard<std::mutex> lock(*pathCacheMutex);
-    size_t index = random() % pathCache->size();
+    size_t index = rand() % pathCache->size();
     return (*pathCache)[index];
 }
 
@@ -174,7 +174,7 @@ static TfStopwatch _DoPathOperations()
 
     while (static_cast<size_t>(sw.GetMilliseconds()) < msecsToRun) {
         sw.Start();
-        SdfPath p = (random() & 1) ? _GetPath() : SdfPath::AbsoluteRootPath();
+        SdfPath p = (rand() & 1) ? _GetPath() : SdfPath::AbsoluteRootPath();
         // If the path is not very extensible, trim it back to the prim path.
         if (p.IsExpressionPath() || p.IsMapperArgPath() || p.IsMapperPath())
             p = p.GetPrimPath();
@@ -220,7 +220,7 @@ int main(int argc, char const **argv)
     }
 
     // Initialize. 
-    srandom(randomSeed);
+    srand(randomSeed);
     printf("Using random seed: %d\n", randomSeed);
     printf("Using %zu threads\n", numThreads);
 
