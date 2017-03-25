@@ -32,10 +32,11 @@
 #include <boost/python/class.hpp>
 #include <boost/python/overloads.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static void _RequiresGarbageCollection()
 {
@@ -55,6 +56,8 @@ static void _Reset()
 {
     GlfTextureRegistry::GetInstance().Reset();
 }
+
+} // anonymous namespace 
 
 void wrapTextureRegistry()
 {    
@@ -77,8 +80,3 @@ void wrapTextureRegistry()
         .staticmethod("Reset")
         ;
 }
-    
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

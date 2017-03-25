@@ -107,13 +107,13 @@ pxr_shared_library(sdf
         markerUtils
         parserHelpers
         parserValueContext
+        pathParser
         subLayerListEditor
         textParserContext
         valueTypeRegistry
         vectorListEditor
 
     PRIVATE_HEADERS
-        pathParser.h
         valueTypePrivate.h
 
     CPPFILES

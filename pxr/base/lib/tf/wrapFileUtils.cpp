@@ -34,11 +34,9 @@ using std::string;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapFileUtils() {
 
     def("TouchFile", &TfTouchFile, (arg("fileName"), arg("create")=bool(false)));
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -32,9 +32,13 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 TF_INSTANTIATE_NOTICE_WRAPPER(TfPyModuleWasLoaded, TfNotice);
+
+} // anonymous namespace 
 
 void wrapPyModuleNotice() {
 
@@ -43,5 +47,3 @@ void wrapPyModuleNotice() {
                                    return_value_policy<return_by_value>()))
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

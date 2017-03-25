@@ -40,12 +40,13 @@
 
 #include <boost/python/class.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bool
 _Export(const UsdStagePtr &self, const std::string& filename, 
@@ -152,6 +153,8 @@ _ExpandPopulationMask(UsdStage &self, boost::python::object pypred)
         pred = boost::python::extract<Predicate>(pypred);
     return self.ExpandPopulationMask(pred);
 }
+
+} // anonymous namespace 
 
 void wrapUsdStage()
 {
@@ -472,5 +475,3 @@ void wrapUsdStage()
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(UsdStage)
-
-PXR_NAMESPACE_CLOSE_SCOPE

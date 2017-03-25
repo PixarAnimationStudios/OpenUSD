@@ -39,8 +39,9 @@
 
 #include <string>
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
 
 static std::vector<PxrUsdMayaUserTaggedAttribute>
 _GetUserTaggedAttributesForNode(
@@ -56,6 +57,8 @@ _GetUserTaggedAttributesForNode(
     return PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
             dagPath);
 }
+
+} // anonymous namespace 
 
 void wrapUserTaggedAttribute() {
     using namespace boost::python;
@@ -87,6 +90,3 @@ void wrapUserTaggedAttribute() {
             .staticmethod("GetUserTaggedAttributesForNode")
     ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

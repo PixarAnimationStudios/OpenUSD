@@ -30,7 +30,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static SdfPrimSpecHandleVector
 _GetPrimStack(const PcpPrimIndex& self)
@@ -64,6 +66,8 @@ _ComputePrimPropertyNames( PcpPrimIndex &index )
     index.ComputePrimPropertyNames(&result);
     return result;
 }
+
+} // anonymous namespace 
 
 void wrapPrimIndex()
 {
@@ -102,5 +106,3 @@ void wrapPrimIndex()
               args("includeMaps") = false))
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

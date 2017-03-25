@@ -32,7 +32,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 #define PCP_GET_NODE_FN(nodeFn)                                         \
     static boost::python::object                                        \
@@ -52,6 +54,8 @@ _GetChildren(const PcpNodeRef& node)
 {
     return Pcp_GetChildren(node);
 }
+
+} // anonymous namespace 
 
 void
 wrapNode()
@@ -108,5 +112,3 @@ wrapNode()
         .def(self != self)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

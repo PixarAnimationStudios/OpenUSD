@@ -36,7 +36,9 @@
 using namespace boost::python;
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string
 _Repr(const SdfPayload &self)
@@ -59,6 +61,8 @@ _Repr(const SdfPayload &self)
 
     return TF_PY_REPR_PREFIX + "Payload(" + args + ")";
 }
+
+} // anonymous namespace 
 
 void wrapPayload()
 {    
@@ -98,5 +102,3 @@ void wrapPayload()
         SdfPayloadVector,
         TfPyContainerConversions::variable_capacity_policy >();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

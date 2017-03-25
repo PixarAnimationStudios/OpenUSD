@@ -30,7 +30,9 @@
 using std::string;
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string
 _GetFileString(TfCallContext const& cc) {
@@ -47,6 +49,8 @@ _GetPrettyFunctionString(TfCallContext const& cc) {
     return string(cc.GetPrettyFunction());
 }
 
+} // anonymous namespace 
+
 void wrapCallContext() {
     typedef TfCallContext This;
 
@@ -57,5 +61,3 @@ void wrapCallContext() {
         .add_property("prettyFunction", &_GetPrettyFunctionString)
     ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

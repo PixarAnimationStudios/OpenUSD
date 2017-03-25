@@ -40,6 +40,8 @@ using std::type_info;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+extern void Tf_DiagnosticNoticeDefineTypes();
+
 TF_INSTANTIATE_SINGLETON(Tf_NoticeRegistry);
 
 Tf_NoticeRegistry::Tf_NoticeRegistry()
@@ -62,7 +64,6 @@ Tf_NoticeRegistry::Tf_NoticeRegistry()
 
     TfSingleton<Tf_NoticeRegistry>::SetInstanceConstructed(*this);
     
-    void Tf_DiagnosticNoticeDefineTypes();
     Tf_DiagnosticNoticeDefineTypes();
 }
 

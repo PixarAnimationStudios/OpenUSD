@@ -24,10 +24,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/wrapUtils.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 static converter::to_python_function_t originalConverters[Usd_NumObjTypes];
 static Usd_ObjectSubclass::DowncastFn downcastFns[Usd_NumObjTypes];

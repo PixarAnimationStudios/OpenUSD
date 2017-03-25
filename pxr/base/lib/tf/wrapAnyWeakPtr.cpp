@@ -39,6 +39,12 @@ object Tf_GetPythonObjectFromAnyWeakPtr(TfAnyWeakPtr const &self) {
     return self._GetPythonObject();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+
 struct Tf_AnyWeakPtrToPython {
 
     Tf_AnyWeakPtrToPython() {
@@ -50,6 +56,8 @@ struct Tf_AnyWeakPtrToPython {
     }
 };
 
+} // anonymous namespace
+
 void wrapAnyWeakPtr()
 {
     to_python_converter<TfAnyWeakPtr, Tf_AnyWeakPtrToPython>();
@@ -58,5 +66,3 @@ void wrapAnyWeakPtr()
         std::set<TfAnyWeakPtr>,
         TfPyContainerConversions::set_policy>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

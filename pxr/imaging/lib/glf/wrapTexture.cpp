@@ -30,10 +30,9 @@
 #include <boost/python/class.hpp>
 #include <boost/python/overloads.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapTexture()
 {    
@@ -65,6 +64,3 @@ void wrapTexture()
 }
     
 TF_REFPTR_CONST_VOLATILE_GET(GlfTexture)
-
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -32,7 +32,9 @@
 using namespace boost::python;
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string
 _DependencyRepr(const PcpDependency &dep)
@@ -52,6 +54,8 @@ _DependencyInit(
     return new PcpDependency{indexPath, sitePath, mapFunc};
 }
 
+} // anonymous namespace 
+
 void 
 wrapDependency()
 {
@@ -67,5 +71,3 @@ wrapDependency()
 
     TfPyWrapEnum<PcpDependencyType>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

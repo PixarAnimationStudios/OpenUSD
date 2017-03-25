@@ -30,10 +30,9 @@
 
 #include <boost/python/def.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapMetrics()
 {
@@ -42,6 +41,3 @@ void wrapMetrics()
         (arg("stage"), arg("upAxis")));
     def("GetFallbackUpAxis", UsdGeomGetFallbackUpAxis);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

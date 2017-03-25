@@ -56,7 +56,9 @@
 using namespace boost::python;
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 struct Sdf_TimeSampleMapConverter {
 public:
@@ -295,15 +297,13 @@ _SdfValueBlockHash(const SdfValueBlock &self)
     return boost::hash<SdfValueBlock>()(self);  
 }
 
-namespace {
-
 SdfValueTypeName
 _FindType(const std::string& typeName)
 {
     return SdfSchema::GetInstance().FindType(typeName);
 }
 
-}
+} // anonymous namespace 
 
 void wrapTypes()
 {
@@ -532,5 +532,3 @@ void wrapTypes()
         .def("__hash__", _SdfValueBlockHash);
     VtValueFromPython<SdfValueBlock>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

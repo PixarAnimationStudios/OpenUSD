@@ -35,7 +35,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static
 std::string
@@ -64,6 +66,8 @@ _ReportTracesForWatched(TfRefPtrTracker& tracker, uintptr_t ptr)
     return s.str();
 }
 
+} // anonymous namespace 
+
 void
 wrapRefPtrTracker()
 {
@@ -78,5 +82,3 @@ wrapRefPtrTracker()
         .def("GetTracesReportForWatched", _ReportTracesForWatched)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

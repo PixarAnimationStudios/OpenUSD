@@ -29,18 +29,21 @@
 #include "pxr/usd/usd/stagePopulationMask.h"
 #include "pxr/base/tf/pyUtils.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string __repr__(UsdStagePopulationMask const &self)
 {
     return TF_PY_REPR_PREFIX + "StagePopulationMask(" +
         TfPyRepr(self.GetPaths()) + ")";
 }
+
+} // anonymous namespace 
 
 void wrapUsdStagePopulationMask()
 {
@@ -110,6 +113,3 @@ void wrapUsdStagePopulationMask()
 
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

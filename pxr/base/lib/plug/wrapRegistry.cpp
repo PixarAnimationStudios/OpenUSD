@@ -49,7 +49,9 @@ using std::vector;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 typedef TfWeakPtr<PlugRegistry> PlugRegistryPtr;
 
@@ -88,7 +90,6 @@ _GetAllDerivedTypes(TfType const &type)
 }
 
 // For testing -- load plugins in parallel.
-namespace {
 
 typedef bool PluginPredicateSig(PlugPluginPtr);
 typedef boost::function<PluginPredicateSig> PluginPredicateFn;
@@ -194,7 +195,7 @@ void _LoadPluginsConcurrently(PluginPredicateFn pred,
     }
 }
 
-} // anon
+} // anonymous namespace 
 
 void wrapRegistry()
 {
@@ -237,5 +238,3 @@ void wrapRegistry()
         _LoadPluginsConcurrently,
         (arg("predicate"), arg("numThreads")=0, arg("verbose")=false));
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

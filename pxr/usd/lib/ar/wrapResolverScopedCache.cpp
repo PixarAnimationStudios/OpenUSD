@@ -31,10 +31,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace
-{
+namespace {
 
 class _PyResolverScopedCache
     : public boost::noncopyable
@@ -63,7 +62,7 @@ private:
     std::unique_ptr<ArResolverScopedCache> _scopedCache;
 };
 
-};
+} // anonymous namespace 
 
 void
 wrapResolverScopedCache()
@@ -76,5 +75,3 @@ wrapResolverScopedCache()
         .def("__exit__", &This::Exit)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

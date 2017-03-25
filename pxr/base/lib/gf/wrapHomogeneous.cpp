@@ -28,7 +28,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapHomogeneous()
 {    
@@ -41,5 +41,3 @@ void wrapHomogeneous()
     def("Project", (GfVec3d (*)(const GfVec4d &)) GfProject);
     def("Project", (GfVec3f (*)(const GfVec4f &)) GfProject);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

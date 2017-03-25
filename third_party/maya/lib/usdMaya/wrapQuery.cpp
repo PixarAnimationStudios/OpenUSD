@@ -29,18 +29,14 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace std;
 using namespace boost::python;
 using namespace boost;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapQuery()
 {
     def("GetPrim", PxrUsdMayaQuery::GetPrim);
     def("ReloadStage", PxrUsdMayaQuery::ReloadStage);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -36,13 +36,14 @@
 #include <string>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 using std::vector;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static vector<double>
 _GetTimeSamples(const UsdAttribute &self) {
@@ -91,6 +92,8 @@ __repr__(const UsdAttribute &self) {
         : "invalid " + self.GetDescription();
 }
 
+} // anonymous namespace 
+
 void wrapUsdAttribute()
 {
     class_<UsdAttribute, bases<UsdProperty> >("Attribute")
@@ -138,7 +141,3 @@ void wrapUsdAttribute()
         ;
     TfPyRegisterStlSequencesFromPython<UsdAttribute>();
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

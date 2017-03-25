@@ -45,7 +45,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 ////////////////////////////////////////////////////////////////////////
 // Wrappers for constructors and proxy constructors
@@ -190,8 +192,9 @@ _ApplyPropertyOrder(
     return result;
 }
 
-void
-wrapPrimSpec()
+} // anonymous namespace 
+
+void wrapPrimSpec()
 {
     def("CreatePrimInLayer", SdfCreatePrimInLayer);
 
@@ -527,5 +530,3 @@ wrapPrimSpec()
         .setattr("VariantSetNamesKey", SdfFieldKeys->VariantSetNames)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

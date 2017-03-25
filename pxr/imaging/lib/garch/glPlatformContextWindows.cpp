@@ -26,6 +26,9 @@
 #include <boost/functional/hash.hpp>
 #include <Windows.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+
 class GarchWGLContextState::_Detail {
 public:
     _Detail(HDC hdc, HGLRC hglrc) : hdc(hdc), hglrc(hglrc) { }
@@ -90,3 +93,6 @@ GarchGetNullGLPlatformContextState()
 {
     return GarchWGLContextState(GarchWGLContextState::NullState::nullstate);
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

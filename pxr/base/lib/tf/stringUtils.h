@@ -48,6 +48,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class TfToken;
+
 /// \addtogroup group_tf_String
 ///@{
 
@@ -227,7 +229,7 @@ TfStringStartsWith(const std::string& s, const std::string& prefix) {
 
 /// \overload
 TF_API
-bool TfStringStartsWith(const std::string &s, const class TfToken& prefix);
+bool TfStringStartsWith(const std::string &s, const TfToken& prefix);
 
 inline bool
 Tf_StringEndsWithImpl(char const *s, size_t slen,
@@ -252,7 +254,7 @@ TfStringEndsWith(const std::string& s, const std::string& suffix)
 
 /// \overload
 TF_API
-bool TfStringEndsWith(const std::string &s, const class TfToken& suffix);
+bool TfStringEndsWith(const std::string &s, const TfToken& suffix);
 
 /// Returns true if \p s contains \p substring.
 // \ingroup group_tf_String
@@ -267,7 +269,7 @@ TfStringContains(const std::string &s, const std::string &substring) {
 
 /// \overload
 TF_API
-bool TfStringContains(const std::string &s, const class TfToken& substring);
+bool TfStringContains(const std::string &s, const TfToken& substring);
 
 /// Makes all characters in \p source lowercase, and returns the result.
 TF_API

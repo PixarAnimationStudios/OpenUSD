@@ -32,10 +32,11 @@
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 // The python wrapping of ComputeInWorldSpace does not take an xform cache.
 static GfMatrix4d
@@ -45,6 +46,8 @@ _ComputeInWorldSpace(
 {
     return self.ComputeInWorldSpace(time);
 }
+
+} // anonymous namespace 
 
 void wrapUsdGeomConstraintTarget()
 {
@@ -77,6 +80,3 @@ void wrapUsdGeomConstraintTarget()
 
     implicitly_convertible<ConstraintTarget, UsdAttribute>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

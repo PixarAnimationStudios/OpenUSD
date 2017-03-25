@@ -70,6 +70,11 @@ Vt_GetPythonObjectFromHeldValue(VtValue const &self)
     return self._GetPythonObject();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 // This is only for testing and hitting code coverage.
 static string _test_ValueTypeName(VtValue const &val) {
@@ -238,6 +243,10 @@ struct Vt_ValueFromPython {
     }
 };
 
+} // anonymous namespace 
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 // XXX: Disable rvalue conversion of TfType.  It causes a mysterious
 //      crash and we don't need any implicit conversions.
 template <>
@@ -245,6 +254,8 @@ VtValue Vt_ValueFromPythonRegistry::
 _Extractor::_RValueHolder<TfType>::Invoke(PyObject *obj) const {
     return VtValue();
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 void wrapValue()
 {
@@ -329,5 +340,3 @@ void wrapValue()
     TfPyFunctionFromPython<VtValue ()>();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

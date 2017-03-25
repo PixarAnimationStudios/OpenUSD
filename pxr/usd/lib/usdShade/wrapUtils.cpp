@@ -31,10 +31,11 @@
 
 #include "pxr/usd/usdShade/utils.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static object 
 _GetBaseNameAndType(const TfToken &fullName)
@@ -42,6 +43,8 @@ _GetBaseNameAndType(const TfToken &fullName)
     const auto &result = UsdShadeUtils::GetBaseNameAndType(fullName);
     return make_tuple(result.first, result.second);
 }
+
+} // anonymous namespace 
 
 void wrapUsdShadeUtils()
 {
@@ -72,6 +75,4 @@ void wrapUsdShadeUtils()
     ;
 
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
 

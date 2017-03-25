@@ -31,7 +31,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 class Sdf_PythonChangeBlock {
 public:
@@ -80,6 +82,8 @@ _EndBlock()
     Sdf_ChangeManager::Get().CloseChangeBlock();
 }
 
+} // anonymous namespace 
+
 void
 wrapChangeBlock()
 {
@@ -97,5 +101,3 @@ wrapChangeBlock()
     def("BeginChangeBlock", &_BeginBlock);
     def("EndChangeBlock", &_EndBlock);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

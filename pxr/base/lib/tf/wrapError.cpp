@@ -49,7 +49,9 @@ using std::vector;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static void
 _RaiseCodingError(string const &msg,
@@ -210,6 +212,8 @@ _SetPythonExceptionDebugTracingEnabled(bool enable)
     }
 }
 
+} // anonymous namespace 
+
 void wrapError() {
     def("_RaiseCodingError", &_RaiseCodingError);
     def("_RaiseRuntimeError", &_RaiseRuntimeError);
@@ -284,5 +288,3 @@ void wrapError() {
         ;
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

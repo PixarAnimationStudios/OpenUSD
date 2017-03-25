@@ -34,7 +34,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapGamma()
 {    
@@ -52,5 +52,3 @@ void wrapGamma()
     def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec4f>);
     def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec4d>);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

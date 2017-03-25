@@ -30,16 +30,12 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapAuthoring()
 {
     def("CopyLayerMetadata", UsdUtilsCopyLayerMetadata, 
         (arg("source"), arg("destination"), arg("skipSublayers") = false ));
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

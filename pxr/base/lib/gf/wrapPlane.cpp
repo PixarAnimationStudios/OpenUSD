@@ -42,12 +42,16 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string _Repr(GfPlane const &self) {
     return TF_PY_REPR_PREFIX + "Plane(" + TfPyRepr(self.GetNormal()) + ", " +
         TfPyRepr(self.GetDistanceFromOrigin()) + ")";
 }
+
+} // anonymous namespace 
 
 void wrapPlane()
 {    
@@ -102,5 +106,3 @@ void wrapPlane()
         TfPySequenceToPython<std::vector<This> > >();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

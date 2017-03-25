@@ -29,7 +29,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static void
 _SetOutputFile(object const &file)
@@ -39,6 +41,8 @@ _SetOutputFile(object const &file)
         TfPyThrowTypeError("expected file object");
     TfDebug::SetOutputFile(fp);
 }
+
+} // anonymous namespace 
 
 void wrapDebug()
 {
@@ -66,5 +70,3 @@ void wrapDebug()
 
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

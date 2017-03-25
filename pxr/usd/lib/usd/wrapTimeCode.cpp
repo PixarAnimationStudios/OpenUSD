@@ -32,12 +32,13 @@
 
 #include <string>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static size_t __hash__(const UsdTimeCode &self) { return hash_value(self); }
 
@@ -50,6 +51,8 @@ static string __repr__(const UsdTimeCode &self)
     }
     return TF_PY_REPR_PREFIX + "TimeCode" + tail;
 }
+
+} // anonymous namespace 
 
 void wrapUsdTimeCode()
 {
@@ -84,7 +87,3 @@ void wrapUsdTimeCode()
 
     implicitly_convertible<double, UsdTimeCode>();
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

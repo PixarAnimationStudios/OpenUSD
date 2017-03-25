@@ -39,11 +39,12 @@
 
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::vector;
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bool
 _Set(const UsdShadeParameter &self, object val, const UsdTimeCode &time) {
@@ -64,6 +65,8 @@ _GetConnectedSource(const UsdShadeParameter &self)
         return object();
     }
 }
+
+} // anonymous namespace 
 
 void wrapUsdShadeParameter()
 {
@@ -125,7 +128,4 @@ void wrapUsdShadeParameter()
         std::vector<Parameter>,
         TfPySequenceToPython<std::vector<Parameter> > >();
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
 

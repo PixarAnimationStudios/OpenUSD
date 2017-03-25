@@ -29,10 +29,9 @@
 
 #include <boost/python.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdEditTarget()
 {
@@ -63,6 +62,3 @@ void wrapUsdEditTarget()
     // Allow passing SdLayerHandle to wrapped functions expecting UsdEditTarget.
     implicitly_convertible<SdfLayerHandle, UsdEditTarget>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

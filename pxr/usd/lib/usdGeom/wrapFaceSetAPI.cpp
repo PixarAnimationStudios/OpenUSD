@@ -29,11 +29,14 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python.hpp>
-using namespace boost::python;
 
 #include <string>
 
-PXR_NAMESPACE_OPEN_SCOPE
+using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 using std::string;
 
@@ -143,6 +146,8 @@ _AppendFaceGroup(const UsdGeomFaceSetAPI &self,
     return false;
 }
 
+} // anonymous namespace 
+
 void wrapUsdGeomFaceSetAPI()
 {
     typedef UsdGeomFaceSetAPI This;
@@ -218,6 +223,3 @@ void wrapUsdGeomFaceSetAPI()
         .staticmethod("GetFaceSets")
     ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

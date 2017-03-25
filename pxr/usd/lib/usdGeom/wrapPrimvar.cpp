@@ -32,10 +32,11 @@
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static tuple
 _GetDeclarationInfo(const UsdGeomPrimvar &self)
@@ -78,6 +79,8 @@ _ComputeFlattened(const UsdGeomPrimvar &self,
     self.ComputeFlattened(&retValue, time);
     return UsdVtValueToPython(retValue);
 }    
+
+} // anonymous namespace 
 
 void wrapUsdGeomPrimvar()
 {
@@ -138,6 +141,4 @@ void wrapUsdGeomPrimvar()
 
     implicitly_convertible<Primvar, UsdAttribute>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
 

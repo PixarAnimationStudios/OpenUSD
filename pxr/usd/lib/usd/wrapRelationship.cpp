@@ -32,12 +32,13 @@
 #include <boost/python/class.hpp>
 #include <boost/python/tuple.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static SdfPathVector
 _GetTargets(const UsdRelationship &self,
@@ -69,6 +70,8 @@ __repr__(const UsdRelationship &self)
     }
 }
 
+} // anonymous namespace 
+
 void wrapUsdRelationship()
 {
     class_<UsdRelationship, bases<UsdProperty> >("Relationship")
@@ -89,7 +92,3 @@ void wrapUsdRelationship()
         ;
     TfPyRegisterStlSequencesFromPython<UsdRelationship>();
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

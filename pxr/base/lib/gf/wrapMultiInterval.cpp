@@ -38,7 +38,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string
 _Repr(GfMultiInterval const &self)
@@ -58,6 +60,8 @@ _Repr(GfMultiInterval const &self)
     r += ")";
     return r;
 }
+
+} // anonymous namespace 
 
 void wrapMultiInterval()
 {    
@@ -125,5 +129,3 @@ void wrapMultiInterval()
         .def("__iter__", iterator<This>())
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

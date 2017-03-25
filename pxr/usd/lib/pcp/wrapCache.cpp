@@ -41,7 +41,9 @@
 using namespace boost::python;
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static std::auto_ptr<PcpCache>
 _New(const PcpLayerStackIdentifier& identifier,
@@ -228,6 +230,8 @@ _Reload( PcpCache & cache )
     changes.Apply();
 }
 
+} // anonymous namespace 
+
 void 
 wrapCache()
 {
@@ -307,5 +311,3 @@ wrapCache()
         .def("Reload", &_Reload)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

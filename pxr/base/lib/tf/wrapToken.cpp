@@ -40,6 +40,14 @@ namespace bp = boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+void TfDumpTokenStats(); // Defined in token.cpp.
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+
 struct Tf_TokenFromPythonString
 {
     Tf_TokenFromPythonString() {
@@ -67,7 +75,7 @@ struct Tf_TokenToPythonString {
     }
 };
 
-void TfDumpTokenStats(); // Defined in token.cpp.
+} // anonymous namespace 
 
 void wrapToken()
 {    
@@ -90,5 +98,3 @@ void wrapToken()
     // Stats.
     bp::def("DumpTokenStats", TfDumpTokenStats);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

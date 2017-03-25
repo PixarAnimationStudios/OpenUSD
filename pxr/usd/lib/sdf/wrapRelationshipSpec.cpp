@@ -44,6 +44,41 @@ using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+template <>
+class Sdf_PyMarkerPolicy<SdfRelationshipSpec> 
+{
+public:
+    static SdfPathVector GetMarkerPaths(const SdfRelationshipSpecHandle& spec)
+    {
+        return spec->GetTargetMarkerPaths();
+    }
+
+    static std::string GetMarker(const SdfRelationshipSpecHandle& spec,
+                                 const SdfPath& path)
+    {
+        return spec->GetTargetMarker(path);
+    }
+
+    static void SetMarker(const SdfRelationshipSpecHandle& spec,
+                          const SdfPath& path, const std::string& marker)
+    {
+        spec->SetTargetMarker(path, marker);
+    }
+
+    static void SetMarkers(const SdfRelationshipSpecHandle& spec,
+                           const std::map<SdfPath, std::string>& markers)
+    {
+        SdfRelationshipSpec::TargetMarkerMap m(markers.begin(), markers.end());
+        spec->SetTargetMarkers(m);
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+
 class Sdf_RelationalAttributesProxy {
 public:
     typedef std::string key_type;
@@ -1066,35 +1101,6 @@ _WrapSetTargetAttributeOrders(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <>
-class Sdf_PyMarkerPolicy<SdfRelationshipSpec> 
-{
-public:
-    static SdfPathVector GetMarkerPaths(const SdfRelationshipSpecHandle& spec)
-    {
-        return spec->GetTargetMarkerPaths();
-    }
-
-    static std::string GetMarker(const SdfRelationshipSpecHandle& spec,
-                                 const SdfPath& path)
-    {
-        return spec->GetTargetMarker(path);
-    }
-
-    static void SetMarker(const SdfRelationshipSpecHandle& spec,
-                          const SdfPath& path, const std::string& marker)
-    {
-        spec->SetTargetMarker(path, marker);
-    }
-
-    static void SetMarkers(const SdfRelationshipSpecHandle& spec,
-                           const std::map<SdfPath, std::string>& markers)
-    {
-        SdfRelationshipSpec::TargetMarkerMap m(markers.begin(), markers.end());
-        spec->SetTargetMarkers(m);
-    }
-};
-
 static
 SdfPyMarkerProxy<SdfRelationshipSpec>
 _WrapGetMarkers(const SdfRelationshipSpec& spec)
@@ -1160,6 +1166,8 @@ _WrapInsertAttributeForTargetPathWithIndex(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+} // anonymous namespace 
 
 void wrapRelationshipSpec()
 {    
@@ -1253,5 +1261,3 @@ void wrapRelationshipSpec()
         ;
 
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

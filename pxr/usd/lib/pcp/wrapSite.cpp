@@ -29,7 +29,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static std::string
 _PcpSiteStr(const PcpSite& x)
@@ -42,6 +44,8 @@ _PcpLayerStackSiteStr(const PcpLayerStackSite& x)
 {
     return TfStringify(x);
 }
+
+} // anonymous namespace 
 
 void wrapSite()
 {    
@@ -71,5 +75,3 @@ void wrapSite()
         .def("__str__", &_PcpLayerStackSiteStr)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

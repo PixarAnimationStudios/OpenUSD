@@ -29,13 +29,15 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python.hpp>
-using namespace boost::python;
 
 #include <string>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
+using namespace boost::python;
 using std::string;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static TfPyObjWrapper 
 _GetTargetFaceCounts(const UsdGeomCollectionAPI &self, const UsdTimeCode &time)
@@ -133,8 +135,9 @@ _AppendTarget(const UsdGeomCollectionAPI &self,
         SdfValueTypeNames->IntArray).Get<VtIntArray>(), time);
 }
 
-void 
-wrapUsdGeomCollectionAPI()
+} // anonymous namespace 
+
+void wrapUsdGeomCollectionAPI()
 {
     typedef UsdGeomCollectionAPI This;
 
@@ -208,6 +211,3 @@ wrapUsdGeomCollectionAPI()
         .staticmethod("GetCollections")
     ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

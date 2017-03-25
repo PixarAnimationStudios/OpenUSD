@@ -29,7 +29,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapThreadLimits()
 {
@@ -40,5 +40,3 @@ void wrapThreadLimits()
     def("SetConcurrencyLimitArgument", &WorkSetConcurrencyLimitArgument);
     def("SetMaximumConcurrencyLimit", &WorkSetMaximumConcurrencyLimit);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

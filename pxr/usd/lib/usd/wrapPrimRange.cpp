@@ -32,10 +32,11 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/converter/from_python.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 class Usd_PyPrimRange
 {
@@ -180,6 +181,8 @@ _TestPrimRangeRoundTrip(const UsdPrimRange &treeRange) {
     return treeRange;
 }
 
+} // anonymous namespace 
+
 void wrapUsdPrimRange()
 {
     class_<Usd_PyPrimRange>("PrimRange", no_init)
@@ -234,7 +237,3 @@ void wrapUsdPrimRange()
 
     def("_TestPrimRangeRoundTrip", _TestPrimRangeRoundTrip);
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

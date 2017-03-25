@@ -36,10 +36,9 @@
 
 #include <boost/python.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void
 wrapConformWindow()
@@ -79,6 +78,3 @@ wrapConformWindow()
 
     TfPyWrapEnum<CameraUtilConformWindowPolicy>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

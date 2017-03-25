@@ -40,13 +40,14 @@
 #include <string>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 using std::vector;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static TfPyObjWrapper
 _GetMetadata(const UsdObject &self, const TfToken &key)
@@ -168,6 +169,8 @@ __getattribute__(object selfObj, const char *name) {
     return object();
 }
 
+} // anonymous namespace 
+
 void wrapUsdObject()
 {
     class_<UsdObject> clsObj("Object");
@@ -267,6 +270,3 @@ void wrapUsdObject()
 
     TfPyRegisterStlSequencesFromPython<UsdObject>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

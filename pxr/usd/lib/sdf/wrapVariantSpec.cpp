@@ -33,7 +33,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 typedef SdfPyChildrenProxy<SdfVariantSetView> VariantSetProxy;
 
@@ -43,6 +45,8 @@ _WrapGetVariantSetsProxy(const SdfVariantSpec& owner)
 {
     return VariantSetProxy(owner.GetVariantSets());
 }
+
+} // anonymous namespace 
 
 void wrapVariantSpec()
 {
@@ -68,5 +72,3 @@ void wrapVariantSpec()
         .def("GetVariantNames", &This::GetVariantNames)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

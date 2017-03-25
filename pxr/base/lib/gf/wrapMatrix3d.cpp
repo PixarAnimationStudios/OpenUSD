@@ -54,7 +54,9 @@ using namespace boost::python;
 using std::string;
 using std::vector;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
@@ -257,6 +259,8 @@ struct GfMatrix3d_Pickle_Suite : boost::python::pickle_suite
 
 static size_t __hash__(GfMatrix3d const &m) { return hash_value(m); }
 
+} // anonymous namespace 
+
 void wrapMatrix3d()
 {    
     typedef GfMatrix3d This;
@@ -369,5 +373,3 @@ void wrapMatrix3d()
                           Py_TPFLAGS_HAVE_GETCHARBUFFER);
 
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

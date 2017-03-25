@@ -30,10 +30,11 @@
 
 #include "pxr/usd/usdUtils/dependencies.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 namespace bp = boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bp::tuple
 _ExtractExternalReferences(
@@ -45,11 +46,9 @@ _ExtractExternalReferences(
     return bp::make_tuple(subLayers, references, payloads);
 }
 
-void
-wrapDependencies()
+} // anonymous namespace 
+
+void wrapDependencies()
 {
     bp::def("ExtractExternalReferences", _ExtractExternalReferences);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

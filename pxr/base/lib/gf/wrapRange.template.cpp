@@ -46,7 +46,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static const int _dimension = {{ DIM }};
 
@@ -56,6 +58,8 @@ static string _Repr({{ RNG }} const &self) {
 }
 
 static size_t __hash__({{ RNG }} const &r) { return hash_value(r); }
+
+} // anonymous namespace 
 
 void wrapRange{{ SUFFIX }}()
 {    
@@ -145,5 +149,3 @@ void wrapRange{{ SUFFIX }}()
         TfPySequenceToPython<std::vector<{{ RNG }}> > >();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

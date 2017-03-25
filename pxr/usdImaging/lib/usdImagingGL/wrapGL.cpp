@@ -36,12 +36,13 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace std;
 using namespace boost::python;
 using namespace boost;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static boost::python::tuple
 _TestIntersection(
@@ -90,6 +91,8 @@ _SetLightingState(UsdImagingGL &self, GlfSimpleLightVector const &lights,
 {
     self.SetLightingState(lights, material, sceneAmbient);
 }
+
+} // anonymous namespace 
 
 void wrapGL()
 {
@@ -173,6 +176,3 @@ void wrapGL()
                 TfPyContainerConversions::variable_capacity_policy>();
     }
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

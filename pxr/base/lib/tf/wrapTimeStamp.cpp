@@ -35,12 +35,16 @@
 using std::string;
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static std::string _Repr(const TfTimeStamp &self)
 {
     return TF_PY_REPR_PREFIX + "TimeStamp(" + TfPyRepr(self.Get()) + ")";
 }
+
+} // anonymous namespace
 
 void wrapTimeStamp() {
 
@@ -66,5 +70,3 @@ void wrapTimeStamp() {
         .def("Decrement", &This::Decrement)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

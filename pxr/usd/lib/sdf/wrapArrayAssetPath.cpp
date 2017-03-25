@@ -41,9 +41,11 @@ SdfAssetPath VtZero() {
     return SdfAssetPath();
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 void wrapArrayAssetPath() {
     VtWrapArray<VtArray<SdfAssetPath> >();
     VtValueFromPython<VtArray<SdfAssetPath> >();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

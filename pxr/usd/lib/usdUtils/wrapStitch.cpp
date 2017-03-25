@@ -28,10 +28,9 @@
 
 #include "pxr/usd/usdUtils/stitch.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void 
 wrapStitch()
@@ -42,6 +41,3 @@ wrapStitch()
     def("StitchInfo", UsdUtilsStitchInfo, arg("strongObj"), arg("weakObj"),
                                           arg("ignoreTimeSamples") = false);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

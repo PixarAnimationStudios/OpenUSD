@@ -27,10 +27,11 @@
 #include "pxr/base/tf/pyEnum.h"
 #include <boost/python.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static tuple 
 _GetXformVectors(
@@ -64,6 +65,7 @@ _GetXformVectorsByAccumulation(
                   : tuple();
 }
 
+} // anonymous namespace 
 
 void wrapUsdGeomXformCommonAPI()
 {
@@ -123,6 +125,4 @@ void wrapUsdGeomXformCommonAPI()
             arg("resetXformStack"))
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
 

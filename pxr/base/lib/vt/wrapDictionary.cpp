@@ -44,7 +44,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 // Converter from std::vector<VtValue> to python list
 struct VtValueArrayToPython
@@ -283,12 +285,12 @@ _CanVtValueFromPython(object pVal)
 }
 
 
-
 static VtDictionary
 _ReturnDictionary(VtDictionary const &x) {
     return x;
 }
 
+} // anonymous namespace 
 
 void wrapDictionary()
 {
@@ -305,5 +307,3 @@ void wrapDictionary()
     def("DictionaryPrettyPrint",
         (std::string(*)(const VtDictionary &)) VtDictionaryPrettyPrint);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

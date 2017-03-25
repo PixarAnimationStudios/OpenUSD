@@ -45,7 +45,10 @@ using std::string;
 using std::vector;
 
 using namespace boost::python;
-PXR_NAMESPACE_OPEN_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bool
 _Initialize()
@@ -164,6 +167,7 @@ _LogReport(
     return tmpFile;
 }
 
+} // anonymous namespace 
 
 void wrapMallocTag()
 {
@@ -215,8 +219,6 @@ void wrapMallocTag()
         .def_readonly("name", &This::CallTree::CallSite::name)
         .def_readonly("nBytes", &This::CallTree::CallSite::nBytes)
         ;
-}
-                 
-}
+    }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+}

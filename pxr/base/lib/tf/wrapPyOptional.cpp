@@ -30,7 +30,7 @@
 #include <string>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapPyOptional() {
     TfPyOptional::python_optional<std::string>();
@@ -46,5 +46,3 @@ void wrapPyOptional() {
     TfPyOptional::python_optional<char>();
     TfPyOptional::python_optional<unsigned char>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

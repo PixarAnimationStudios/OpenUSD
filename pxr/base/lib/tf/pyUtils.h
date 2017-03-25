@@ -186,6 +186,12 @@ TfPyGetClassObject() {
     return TfPyGetClassObject(typeid(T));
 }
 
+TF_API
+void
+Tf_PyWrapOnceImpl(boost::python::type_info const &,
+                  boost::function<void()> const&,
+                  bool *);
+
 /// Invokes \p wrapFunc to wrap type \c T if \c T is not already wrapped.
 ///
 /// Executing \p wrapFunc *must* register \c T with boost python.  Otherwise,
@@ -206,11 +212,6 @@ TfPyWrapOnce(boost::function<void()> const &wrapFunc)
     if (isTypeWrapped) {
         return;
     }
-
-    TF_API void Tf_PyWrapOnceImpl(
-        boost::python::type_info const &,
-        boost::function<void()> const&,
-        bool *);
 
     Tf_PyWrapOnceImpl(boost::python::type_id<T>(), wrapFunc, &isTypeWrapped);
 }

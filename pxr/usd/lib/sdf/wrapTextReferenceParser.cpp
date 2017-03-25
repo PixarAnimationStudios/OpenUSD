@@ -32,7 +32,9 @@
 
 namespace bp = boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bp::tuple
 _ExtractExternalReferences(
@@ -55,12 +57,11 @@ _ExtractExternalReferencesFromString(
         subLayers, references, payloads);
 }
 
-void
-wrapTextReferenceParser()
+} // anonymous namespace 
+
+void wrapTextReferenceParser()
 {
     bp::def("ExtractExternalReferences", _ExtractExternalReferences);
     bp::def("ExtractExternalReferencesFromString",
         _ExtractExternalReferencesFromString);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

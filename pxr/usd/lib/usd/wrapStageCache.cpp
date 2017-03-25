@@ -32,12 +32,13 @@
 
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::vector;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static size_t __hash__(UsdStageCache::Id id) { return hash_value(id); }
 
@@ -50,6 +51,8 @@ static UsdStageCache::Id
 GetId(const UsdStageCache &self, const UsdStagePtr &stage) {
     return self.GetId(stage);
 }
+
+} // anonymous namespace 
 
 void wrapUsdStageCache()
 {
@@ -164,6 +167,3 @@ void wrapUsdStageCache()
         .def("__hash__", __hash__)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

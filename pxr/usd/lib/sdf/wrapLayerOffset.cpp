@@ -34,7 +34,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static std::string
 _Repr(const SdfLayerOffset &self) {
@@ -51,6 +53,8 @@ _Repr(const SdfLayerOffset &self) {
     s << ")";
     return s.str();
 }
+
+} // anonymous namespace 
 
 void wrapLayerOffset()
 {    
@@ -90,5 +94,3 @@ void wrapLayerOffset()
 
     VtValueFromPython<SdfLayerOffset>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

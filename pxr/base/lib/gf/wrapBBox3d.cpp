@@ -39,12 +39,16 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
-static string _Repr(GfBBox3d const &self) {
+namespace {
+
+string _Repr(GfBBox3d const &self) {
     return TF_PY_REPR_PREFIX + "BBox3d(" + TfPyRepr(self.GetRange()) + ", " +
         TfPyRepr(self.GetMatrix()) + ")";
 }
+
+} // anonymous namespace
 
 void wrapBBox3d()
 {    
@@ -130,5 +134,3 @@ void wrapBBox3d()
         TfPySequenceToPython<std::vector<This> > >();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

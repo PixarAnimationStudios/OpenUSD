@@ -39,7 +39,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 void SetAxisHelper( GfRotation &rotation, const GfVec3d &axis )
 {
@@ -117,6 +119,8 @@ static string _Repr(GfRotation const &self) {
     return TF_PY_REPR_PREFIX + "Rotation(" + TfPyRepr(self.GetAxis()) + ", " +
         TfPyRepr(self.GetAngle()) + ")";
 }
+
+} // anonymous namespace 
 
 void wrapRotation()
 {    
@@ -206,5 +210,3 @@ void wrapRotation()
         TfPySequenceToPython<std::vector<This> > >();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

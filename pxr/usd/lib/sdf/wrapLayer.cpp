@@ -43,7 +43,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 typedef SdfPyChildrenProxy<SdfLayer::RootPrimsView> RootPrimsProxy;
 
@@ -454,6 +456,8 @@ _FindOrOpenRelativeToLayer(
     return SdfFindOrOpenRelativeToLayer(anchor, &mutableLayerPath, args);
 }
 
+} // anonymous namespace 
+
 void wrapLayer()
 {
     typedef SdfLayer       This;
@@ -840,5 +844,3 @@ void wrapLayer()
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(SdfLayer)
-
-PXR_NAMESPACE_CLOSE_SCOPE

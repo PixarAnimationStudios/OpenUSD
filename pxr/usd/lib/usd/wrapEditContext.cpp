@@ -28,10 +28,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/python.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct Usd_PyEditContextAccess {
     static void __enter__(UsdPyEditContext &self) {
@@ -45,6 +44,10 @@ struct Usd_PyEditContextAccess {
     }
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 void wrapUsdEditContext()
 {
     class_<UsdPyEditContext>(
@@ -54,6 +57,3 @@ void wrapUsdEditContext()
         .def("__exit__", &Usd_PyEditContextAccess::__exit__)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

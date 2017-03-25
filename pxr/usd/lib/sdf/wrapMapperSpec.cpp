@@ -41,6 +41,10 @@ WrapGetArgs(const SdfMapperSpec& self)
     return SdfPyChildrenProxy<SdfMapperArgSpecView>(self.GetArgs());
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 void wrapMapperSpec()
 {    
     typedef SdfMapperSpec This;
@@ -86,5 +90,3 @@ void wrapMapperSpec()
             "The mapper's symmetry args.")
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

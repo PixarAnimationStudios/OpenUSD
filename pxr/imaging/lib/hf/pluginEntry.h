@@ -34,7 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HfPluginBase;
-class HfPluginDesc;
+struct HfPluginDesc;
 
 
 

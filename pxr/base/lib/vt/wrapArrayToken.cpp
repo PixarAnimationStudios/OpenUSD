@@ -26,11 +26,9 @@
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapArrayToken() {
     VtWrapArray<VtArray<TfToken> >();
     VtWrapComparisonFunctions<VtArray<TfToken> >();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

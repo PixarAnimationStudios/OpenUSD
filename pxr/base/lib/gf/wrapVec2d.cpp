@@ -57,7 +57,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
@@ -317,7 +319,6 @@ static V *__init__() {
     return new V(0);
 }
 
-namespace {
 struct FromPythonTuple {
     FromPythonTuple() {
         converter::registry::
@@ -367,7 +368,8 @@ struct PickleSuite : boost::python::pickle_suite
         return boost::python::make_tuple(v[0], v[1]);
     }
 };
-} // anon
+
+} // anonymous namespace 
 
 void wrapVec2d()
 {
@@ -482,5 +484,3 @@ void wrapVec2d()
         std::vector<GfVec2d>,
         TfPyContainerConversions::variable_capacity_policy >();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

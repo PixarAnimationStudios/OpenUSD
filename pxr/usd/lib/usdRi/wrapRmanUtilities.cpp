@@ -30,10 +30,9 @@
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/return_by_value.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdRiRmanUtilities()
 {
@@ -53,6 +52,3 @@ void wrapUsdRiRmanUtilities()
         UsdRiConvertFromRManFaceVaryingLinearInterpolation,
         return_value_policy<return_by_value>());
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

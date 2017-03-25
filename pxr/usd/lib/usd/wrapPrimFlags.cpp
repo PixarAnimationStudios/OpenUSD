@@ -33,12 +33,13 @@
 
 #include <string>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
 
 using std::string;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 // Python does not allow overloading logical operators ('and', 'or', etc).  Also
 // python's __nonzero__ (invoked by 'not') must return a python bool or int.
@@ -82,6 +83,8 @@ size_t __hash__Term(const Usd_Term &t) {
 size_t __hash__Predicate(const Usd_PrimFlagsPredicate &p) {
     return hash_value(p);
 }
+
+} // anonymous namespace 
 
 void wrapUsdPrimFlags()
 {
@@ -142,6 +145,3 @@ void wrapUsdPrimFlags()
             &UsdTraverseInstanceProxies, 
         arg("predicate"));
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

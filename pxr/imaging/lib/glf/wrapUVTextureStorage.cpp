@@ -30,10 +30,11 @@
 #include <boost/python/class.hpp>
 #include <boost/python/overloads.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static GlfUVTextureStorageRefPtr _NewUVTextureStorage(
     unsigned int width,
@@ -42,6 +43,8 @@ static GlfUVTextureStorageRefPtr _NewUVTextureStorage(
 {
     return GlfUVTextureStorage::New(width, height, storageData);
 }
+
+} // anonymous namespace 
 
 void wrapUVTextureStorage()
 {    
@@ -57,6 +60,3 @@ void wrapUVTextureStorage()
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(GlfUVTextureStorage)
-    
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -38,7 +38,9 @@ using std::string;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static void
 _Warn(string const &msg, string const& moduleName, string const& functionName,
@@ -65,6 +67,8 @@ TfWarning__repr__(TfWarning const &self)
     return ret;
 }
 
+} // anonymous namespace 
+
 void wrapWarning() {
     def("_Warn", &_Warn);
 
@@ -76,5 +80,3 @@ void wrapWarning() {
         .def("__repr__", TfWarning__repr__)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -30,9 +30,9 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/converter/from_python.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -80,15 +80,13 @@ private:
     }
 };
 
-} // end anonymous namespace
-
 // Simple test function that takes and returns a GfHalf.
 static GfHalf _HalfRoundTrip(GfHalf in) { return in; }
+
+} // anonymous namespace 
 
 void wrapHalf()
 {
     HalfPythonConversions::Register();
     boost::python::def("_HalfRoundTrip", _HalfRoundTrip);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

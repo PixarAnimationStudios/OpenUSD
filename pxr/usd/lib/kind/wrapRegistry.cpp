@@ -31,7 +31,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapRegistry()
 {
@@ -53,5 +53,3 @@ void wrapRegistry()
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(KindRegistry)
-
-PXR_NAMESPACE_CLOSE_SCOPE

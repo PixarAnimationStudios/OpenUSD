@@ -510,7 +510,8 @@ def GatherTokens(classes, libName, libTokens):
 
 
 def GenerateCode(codeGenPath, tokenData, classes, 
-                 namespaceOpen, namespaceClose, useExportAPI, env):
+                 namespaceOpen, namespaceClose, namespaceUsing,
+                 useExportAPI, env):
     #
     # Load Templates
     #
@@ -574,10 +575,9 @@ def GenerateCode(codeGenPath, tokenData, classes,
         # wrap file
         clsWrapFilePath = os.path.join(codeGenPath, cls.GetWrapFile())
         customCode = _ExtractCustomCode(clsWrapFilePath, default=(
-                                        '\n%s\n'
+                                        '\nnamespace {\n'
                                         '\nWRAP_CUSTOM {\n}\n'
-                                        '\n%s' % (namespaceOpen, 
-                                                  namespaceClose)))
+                                        '\n}'))
         _WriteFile(clsWrapFilePath,
                    wrapTemplate.render(cls=cls) + customCode)
 
@@ -776,10 +776,12 @@ if __name__ == '__main__':
 
     if args.namespace:
         namespaceOpen  = ' '.join('namespace %s {' % n for n in args.namespace)
-        namespaceClose = '}'*len(args.namespace) 
+        namespaceClose = '}'*len(args.namespace)
+        namespaceUsing = 'using namespace ' + '::'.join(n for n in args.namespace)
     else:
         namespaceOpen  = 'PXR_NAMESPACE_OPEN_SCOPE'
         namespaceClose = 'PXR_NAMESPACE_CLOSE_SCOPE'
+        namespaceUsing = 'PXR_NAMESPACE_USING_DIRECTIVE'
 
     #
     # Error Checking
@@ -824,13 +826,15 @@ if __name__ == '__main__':
                               Lower=_LowerCase,
                               namespaceOpen=namespaceOpen,
                               namespaceClose=namespaceClose,
+                              namespaceUsing=namespaceUsing,
                               libraryName=libName,
                               libraryPath=libPath,
                               libraryPrefix=libPrefix,
                               tokensPrefix=tokensPrefix,
                               useExportAPI=useExportAPI)
         GenerateCode(codeGenPath, tokenData, classes,
-                     namespaceOpen, namespaceClose, useExportAPI, j2_env)
+                     namespaceOpen, namespaceClose, namespaceUsing,
+                     useExportAPI, j2_env)
         GenerateRegistry(codeGenPath, schemaPath, classes, j2_env)
     
     except Exception as e:

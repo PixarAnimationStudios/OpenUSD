@@ -38,13 +38,13 @@ void testPaths(char const *paths[], int expect) {
     Sdf_PathParserContext context;
 
     // Initialize the scanner, allowing it to be reentrant.
-    pathYylex_init(&context.scanner);
+    SdfPathYylex_init(&context.scanner);
 
     while(*paths) {
 
         printf("testing: %s\n", *paths);
-        pathYy_scan_string(*paths, context.scanner);
-        int result = pathYyparse(&context);
+        SdfPathYy_scan_string(*paths, context.scanner);
+        int result = SdfPathYyparse(&context);
 
         // Report parse errors.
         if (result != expect) {
@@ -68,7 +68,7 @@ void testPaths(char const *paths[], int expect) {
 
     }
     // Clean up.
-    pathYylex_destroy(context.scanner);
+    SdfPathYylex_destroy(context.scanner);
 }
 
 int main()

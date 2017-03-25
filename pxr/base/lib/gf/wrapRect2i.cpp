@@ -39,12 +39,16 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string _Repr(GfRect2i const &self) {
     return TF_PY_REPR_PREFIX + "Rect2i(" + TfPyRepr(self.GetLower()) + ", " +
         TfPyRepr(self.GetHigher()) + ")";
 }
+
+} // anonymous namespace 
 
 void wrapRect2i()
 {    
@@ -117,5 +121,3 @@ void wrapRect2i()
         TfPySequenceToPython<std::vector<This> > >();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

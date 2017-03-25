@@ -44,7 +44,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static const int _dimension = 1;
 
@@ -54,6 +56,8 @@ static string _Repr(GfRange1d const &self) {
 }
 
 static size_t __hash__(GfRange1d const &r) { return hash_value(r); }
+
+} // anonymous namespace 
 
 void wrapRange1d()
 {    
@@ -132,5 +136,3 @@ void wrapRange1d()
         TfPySequenceToPython<std::vector<GfRange1d> > >();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

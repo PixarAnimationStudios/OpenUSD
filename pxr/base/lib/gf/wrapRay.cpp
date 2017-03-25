@@ -45,7 +45,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static void
 SetStartPointHelper( GfRay &self, const GfVec3d &startPoint ) {
@@ -146,6 +148,8 @@ static string _Repr(GfRay const &self) {
     return TF_PY_REPR_PREFIX + "Ray(" + TfPyRepr(self.GetStartPoint()) + ", " +
         TfPyRepr(self.GetDirection()) + ")";
 }
+
+} // anonymous namespace 
 
 void wrapRay()
 {    
@@ -291,5 +295,3 @@ void wrapRay()
         ;
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,17 +21,29 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#define NUMERIC_OPERATORS
-
 #include "pxr/pxr.h"
-#include "pxr/base/vt/typeHeaders.h"
-#include "pxr/base/vt/wrapArray.h"
+#include "pxr/usd/sdf/pathParser.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+PXR_NAMESPACE_OPEN_SCOPE
 
-void wrapArrayFloat() {
-    BOOST_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~,
-                          VT_FLOATING_POINT_BUILTIN_VALUE_TYPES);
-    BOOST_PP_SEQ_FOR_EACH(VT_WRAP_COMPARISON, ~,
-                          VT_FLOATING_POINT_BUILTIN_VALUE_TYPES);
+int SdfPathYyparse(Sdf_PathParserContext *context)
+{
+    return pathYyparse(context);
 }
+
+int SdfPathYylex_init(yyscan_t *yyscanner)
+{
+    return pathYylex_init(yyscanner);
+}
+
+int SdfPathYylex_destroy(yyscan_t yyscanner)
+{
+    return pathYylex_destroy(yyscanner);
+}
+
+yy_buffer_state *SdfPathYy_scan_string(const char* str, yyscan_t yyscanner)
+{
+    return pathYy_scan_string(str, yyscanner);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -29,10 +29,11 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 VtDictionary 
 _WrapUsdUtilsComputeUsdStageStats_1(const std::string &rootLayerPath) {
@@ -48,6 +49,8 @@ _WrapUsdUtilsComputeUsdStageStats_2(const UsdStageWeakPtr &stage) {
     return stats;
 }
 
+} // anonymous namespace 
+
 void wrapIntrospection()
 {
     TF_PY_WRAP_PUBLIC_TOKENS("UsdStageStatsKeys", UsdUtilsUsdStageStatsKeys, 
@@ -56,6 +59,3 @@ void wrapIntrospection()
     def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_1);
     def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_2);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
