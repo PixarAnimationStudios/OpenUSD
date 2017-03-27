@@ -25,6 +25,7 @@
 #define PXRUSDMAYA_SHADINGMODEEXPORTERCONTEXT_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/util.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -39,6 +40,7 @@ public:
     MObject GetShadingEngine() const { return _shadingEngine; }
     const UsdStageRefPtr& GetUsdStage() const { return _stage; }
 
+    PXRUSDMAYA_API
     MObject GetSurfaceShader() const;
 
     /// An assignment contains a bound prim path and a list of faceIndices. 
@@ -53,11 +55,13 @@ public:
 
     /// Returns a vector of binding assignments associated with the shading 
     /// engine.
+    PXRUSDMAYA_API
     AssignmentVector GetAssignments() const;
 
     /// Use this function to create a UsdShadeMaterial prim at the "standard"
     /// location.  The "standard" location may change depending on arguments
     /// that are passed to the export script.
+    PXRUSDMAYA_API
     UsdPrim MakeStandardMaterialPrim(
             const AssignmentVector& assignmentsToBind,
             const std::string& name=std::string()) const;
@@ -65,8 +69,10 @@ public:
     /// Use this function to get a "standard" usd attr name for \p attrPlug.
     /// The definition of "standard" may depend on arguments passed to the
     /// script (i.e. stripping namespaces, etc.).
+    PXRUSDMAYA_API
     std::string GetStandardAttrName(const MPlug& attrPlug) const;
 
+    PXRUSDMAYA_API
     PxrUsdMayaShadingModeExportContext(
             const MObject& shadingEngine,
             const UsdStageRefPtr& stage,
