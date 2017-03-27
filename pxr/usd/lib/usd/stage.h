@@ -453,12 +453,6 @@ public:
     /// These methods provide control over the policy to use when composing
     /// prims that specify a variant set but do not specify a selection.
     ///
-    /// For example, a model might provide a "shadingComplexity" variant
-    /// set, providing multiple levels of detail or fidelity in shading.
-    /// Some sites of use might specify a particular selection, but others
-    /// may want to use a standardized default.  There are two ways to
-    /// specify a default.
-    ///
     /// The first is to declare a list of preferences in plugInfo.json
     /// metadata on a plugin using this structure:
     ///
@@ -471,18 +465,23 @@ public:
     ///     },
     /// \endcode
     ///
-    /// This example ensures that we will get the full shadingComplexity
-    /// for any prim with that variant set that doesn't otherwise specify
-    /// a selection.
+    /// This example ensures that we will get the "full" shadingComplexity
+    /// for any prim with a shadingComplexity VariantSet that doesn't
+    /// otherwise specify a selection, \em and has a "full" variant; if its
+    /// shadingComplexity does not have a "full" variant, but \em does have
+    /// a "light" variant, then the selection will be "light".  In other
+    /// words, the entries in the "shadingComplexity" list in the plugInfo.json
+    /// represent a priority-ordered list of fallback selections.
     ///
     /// The plugin metadata is discovered and applied before the first
     /// UsdStage is constructed in a given process.  It can be defined
     /// in any plugin.  However, if multiple plugins express contrary
     /// lists for the same named variant set, the result is undefined.
     /// 
-    /// The plugin metadata approach is useful for ensuring that default
-    /// sensible behavior applies across a pipeline without requiring
-    /// explicit proper configuration in every script, binary, etc.
+    /// The plugin metadata approach is useful for ensuring that sensible
+    /// default behavior applies across a pipeline without requiring
+    /// every script and binary to explicitly configure every VariantSet
+    /// that subscribes to fallback in the pipeline.
     /// There may be times when you want to override this behavior in a
     /// particular script -- for example, a pipeline script that knows
     /// it wants to entirely ignore shading in order to minimize
@@ -499,7 +498,7 @@ public:
     static PcpVariantFallbackMap GetGlobalVariantFallbacks();
 
     /// Set the global variant fallback preferences used in new
-    /// UsdStages. This overrides any defaults configured in plugin
+    /// UsdStages. This overrides any fallbacks configured in plugin
     /// metadata, and only affects stages created after this call.
     ///
     /// \note This does not affect existing UsdStages.
