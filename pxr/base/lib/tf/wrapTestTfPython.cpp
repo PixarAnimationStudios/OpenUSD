@@ -64,7 +64,7 @@ using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Base
 typedef TfWeakPtr<class Tf_TestBase> Tf_TestBasePtr;
@@ -437,7 +437,7 @@ _MakeClassWithVarArgInit(bool allowExtraArgs,
     return rval;
 }
 
-} // anonymous namespace 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 void wrapTf_TestTfPython()
 {
