@@ -509,7 +509,7 @@ UsdGeomPrimvar::GetTimeSamples(std::vector<double>* times) const
     bool success = _attr.GetTimeSamples(times);
     if (IsIndexed()) {
         if (UsdAttribute indicesAttr = _GetIndicesAttr(false)) {
-            success = indicesAttr.GetTimeSamples(times) and success;
+            success = indicesAttr.GetTimeSamples(times) && success;
             _SortAndRemoveDupes(times);
         }
     }
@@ -526,7 +526,7 @@ UsdGeomPrimvar::GetTimeSamplesInInterval(
 
     if (IsIndexed()) {
         if (UsdAttribute indicesAttr = _GetIndicesAttr(false)) {
-            success = indicesAttr.GetTimeSamplesInInterval(interval, times) and 
+            success = indicesAttr.GetTimeSamplesInInterval(interval, times) && 
                 success;
             _SortAndRemoveDupes(times);
         }

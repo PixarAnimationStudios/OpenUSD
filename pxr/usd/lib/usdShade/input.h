@@ -205,15 +205,18 @@ public:
     /// The default connectability of a shader input is UsdShadeTokens->full. 
     /// 
     /// \sa SetConnectability()
+    USDSHADE_API
     bool SetConnectability(const TfToken &connectability) const;
 
     /// \brief Returns the connectability of the Input.
     /// 
     /// \sa SetConnectability()
+    USDSHADE_API
     TfToken GetConnectability() const;
 
     /// \brief Clears any authored connectability on the Input.
     /// 
+    USDSHADE_API
     bool ClearConnectability() const;
 
     /// @}

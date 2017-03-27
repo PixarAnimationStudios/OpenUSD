@@ -59,7 +59,7 @@ UsdShadeInput::GetBaseName() const
     string name = GetFullName();
     if (TfStringStartsWith(name, UsdShadeTokens->inputs)) {
         return TfToken(name.substr(UsdShadeTokens->inputs.GetString().size()));
-    } else if (UsdShadeUtils::ReadOldEncoding() and 
+    } else if (UsdShadeUtils::ReadOldEncoding() && 
                TfStringStartsWith(name, UsdShadeTokens->interface_)) {
         return TfToken(name.substr(
             UsdShadeTokens->interface_.GetString().size()));
@@ -161,7 +161,7 @@ UsdShadeInput::IsInput(const UsdAttribute &attr)
             // If support for reading the old encoding is disabled, then only
             // identify as an input if the attr is in the "inputs:" namespace.
             (UsdShadeUtils::ReadOldEncoding() ? 
-             not TfStringStartsWith(attr.GetName().GetString(), 
+             !TfStringStartsWith(attr.GetName().GetString(), 
                                 UsdShadeTokens->outputs) :
              TfStringStartsWith(attr.GetName().GetString(), 
                                 UsdShadeTokens->inputs));

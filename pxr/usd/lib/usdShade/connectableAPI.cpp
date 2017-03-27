@@ -154,7 +154,7 @@ _CanConnectOutputToSource(const UsdShadeOutput &output,
                           const UsdAttribute &source,
                           std::string *reason)
 {
-    if (not output.IsDefined()) {
+    if (!output.IsDefined()) {
         if (reason) {
             *reason = TfStringPrintf("Invalid output");
         }
@@ -162,7 +162,7 @@ _CanConnectOutputToSource(const UsdShadeOutput &output,
     }
 
     // Only outputs on node-graphs are connectable.
-    if (not UsdShadeConnectableAPI(output.GetPrim()).IsNodeGraph()) {
+    if (!UsdShadeConnectableAPI(output.GetPrim()).IsNodeGraph()) {
         if (reason) {
             *reason = "Output does not belong to a node-graph.";
         }
@@ -175,7 +175,7 @@ _CanConnectOutputToSource(const UsdShadeOutput &output,
         const SdfPath sourcePrimPath = source.GetPrim().GetPath();
         const SdfPath outputPrimPath = output.GetPrim().GetPath();
 
-        if (not sourcePrimPath.HasPrefix(outputPrimPath)) {
+        if (!sourcePrimPath.HasPrefix(outputPrimPath)) {
             if (reason) {
                 *reason = TfStringPrintf("Source of output '%s' on node-graph "
                     "at path <%s> is outside the node-graph: <%s>",
@@ -207,7 +207,7 @@ _CanConnectInputToSource(const UsdShadeInput &input,
                          const UsdAttribute &source,
                          std::string *reason)
 {
-    if (not input.IsDefined()) {
+    if (!input.IsDefined()) {
         if (reason) {
             *reason = TfStringPrintf("Invalid input: %s",  
                 input.GetAttr().GetPath().GetText());
@@ -215,7 +215,7 @@ _CanConnectInputToSource(const UsdShadeInput &input,
         return false;
     }
 
-    if (not source) {
+    if (!source) {
         if (reason) {
             *reason = TfStringPrintf("Invalid source: %s", 
                 source.GetPath().GetText());
@@ -330,7 +330,7 @@ UsdShadeConnectableAPI::_ConnectToSource(
             }
         }
 
-        if (not UsdShadeUtils::WriteNewEncoding() and 
+        if (!UsdShadeUtils::WriteNewEncoding() &&
             sourceType == UsdShadeAttributeType::InterfaceAttribute) 
         {
             // Author "interfaceRecipientsOf" pointing in the reverse direction
@@ -338,7 +338,7 @@ UsdShadeConnectableAPI::_ConnectToSource(
             success = UsdShadeInterfaceAttribute(sourceAttr).SetRecipient(
                 renderTarget, shadingProp.GetPath());
 
-            if (not TfGetEnvSetting(
+            if (!TfGetEnvSetting(
                 USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS)) {
                 return success;
             }
@@ -700,7 +700,7 @@ UsdShadeConnectableAPI::GetInputs() const
                 UsdShadeTokens->interface_.GetText()));
             if (IsNodeGraph() && 
                 (TfStringContains(attr.GetName().GetString(), 
-                                 interfaceNSToken) or 
+                                 interfaceNSToken) || 
                  TfStringStartsWith(attr.GetName().GetString(), 
                                   UsdShadeTokens->interface_))) {                    
                 // If it's an interface attribute on a node-graph, wrap it in a 

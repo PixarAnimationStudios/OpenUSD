@@ -408,6 +408,7 @@ class UsdGeomPrimvar
     /// attribute if the primvar is indexed.
     /// 
     /// \sa UsdAttribute::GetTimeSamples
+    USDGEOM_API
     bool GetTimeSamples(std::vector<double>* times) const;
 
     /// Populates a vector with authored sample times in \p interval. 
@@ -416,6 +417,7 @@ class UsdGeomPrimvar
     /// attribute if the primvar is indexed.
     /// 
     /// \sa UsdAttribute::GetTimeSamplesInInterval
+    USDGEOM_API
     bool GetTimeSamplesInInterval(const GfInterval& interval,
                                   std::vector<double>* times) const;
 
@@ -426,6 +428,7 @@ class UsdGeomPrimvar
     /// if the primvar is indexed.
     /// 
     /// \sa UsdAttribute::ValueMightBeTimeVarying
+    USDGEOM_API
     bool ValueMightBeTimeVarying() const;
 
     /// @}
