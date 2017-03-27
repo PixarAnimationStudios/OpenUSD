@@ -777,7 +777,8 @@ if __name__ == '__main__':
     if args.namespace:
         namespaceOpen  = ' '.join('namespace %s {' % n for n in args.namespace)
         namespaceClose = '}'*len(args.namespace)
-        namespaceUsing = 'using namespace ' + '::'.join(n for n in args.namespace)
+        namespaceUsing = ('using namespace ' 
+                          + '::'.join(n for n in args.namespace) + ';')
     else:
         namespaceOpen  = 'PXR_NAMESPACE_OPEN_SCOPE'
         namespaceClose = 'PXR_NAMESPACE_CLOSE_SCOPE'
