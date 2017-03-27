@@ -52,18 +52,16 @@ using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace Detail {
-
-bool Usd_PrimIsA(const UsdPrim& prim, const TfType& schemaType)
+bool 
+Usd_PrimIsA(const UsdPrim& prim, const TfType& schemaType)
 {
     return prim._IsA(schemaType);
 }
 
-const PcpPrimIndex &Usd_PrimGetSourcePrimIndex(const UsdPrim& prim)
+const PcpPrimIndex &
+Usd_PrimGetSourcePrimIndex(const UsdPrim& prim)
 {
     return prim._GetSourcePrimIndex();
-}
-
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
@@ -170,7 +168,7 @@ void wrapUsdPrim()
 
         .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, arg("order"))
 
-        .def("IsA", &Detail::Usd_PrimIsA, arg("schemaType"))
+        .def("IsA", &Usd_PrimIsA, arg("schemaType"))
 
         .def("GetChild", &UsdPrim::GetChild, arg("name"))
 
@@ -284,7 +282,7 @@ void wrapUsdPrim()
         .def("GetPrimInMaster", &UsdPrim::GetPrimInMaster)
 
         // Exposed only for testing and debugging.
-        .def("_GetSourcePrimIndex", &Detail::Usd_PrimGetSourcePrimIndex,
+        .def("_GetSourcePrimIndex", &Usd_PrimGetSourcePrimIndex,
              return_value_policy<return_by_value>())
         ;
 

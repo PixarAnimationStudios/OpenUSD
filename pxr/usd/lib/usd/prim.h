@@ -73,11 +73,6 @@ typedef boost::iterator_range<UsdPrimSiblingIterator> UsdPrimSiblingRange;
 class UsdPrimSubtreeIterator;
 typedef boost::iterator_range<UsdPrimSubtreeIterator> UsdPrimSubtreeRange;
 
-namespace Detail {
-bool Usd_PrimIsA(const UsdPrim& prim, const TfType& schemaType);
-const PcpPrimIndex &Usd_PrimGetSourcePrimIndex(const UsdPrim& prim);
-}
-
 /// \class UsdPrim
 ///
 /// UsdPrim is the sole persistent scenegraph object on a UsdStage, and
@@ -388,7 +383,7 @@ public:
     bool HasProperty(const TfToken &propName) const;
 
 private:
-    friend bool Detail::Usd_PrimIsA(const UsdPrim&, const TfType& schemaType);
+    friend bool Usd_PrimIsA(const UsdPrim&, const TfType& schemaType);
     /// The non-templated implementation of UsdPrim::IsA using the
     /// TfType system.
     USD_API
@@ -1014,8 +1009,7 @@ private:
     USD_API
     bool _PrimPathIsInMaster() const;
 
-    friend
-    const PcpPrimIndex &Detail::Usd_PrimGetSourcePrimIndex(const UsdPrim&);
+    friend const PcpPrimIndex &Usd_PrimGetSourcePrimIndex(const UsdPrim&);
     // Return a const reference to the source PcpPrimIndex for this prim.
     //
     // For all prims in masters (which includes the master prim itself), 
