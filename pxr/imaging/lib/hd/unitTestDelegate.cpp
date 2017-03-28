@@ -52,14 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_DEFINE_PUBLIC_TOKENS(Hd_UnitTestTokens, HD_UNIT_TEST_TOKENS);
 
-Hd_UnitTestDelegate::Hd_UnitTestDelegate()
-  : _hasInstancePrimVars(true), _refineLevel(0)
-{
-    HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
-    tracker.AddCollection(Hd_UnitTestTokens->geometryAndGuides);
-}
-
-Hd_UnitTestDelegate::Hd_UnitTestDelegate(HdRenderIndexSharedPtr const& parentIndex,
+Hd_UnitTestDelegate::Hd_UnitTestDelegate(HdRenderIndex *parentIndex,
                                          SdfPath const& delegateID)
   : HdSceneDelegate(parentIndex, delegateID)
   , _hasInstancePrimVars(true), _refineLevel(0)

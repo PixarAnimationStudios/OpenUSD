@@ -52,7 +52,6 @@ class HdRprimCollection;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdRenderIndex> HdRenderIndexSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 
@@ -66,7 +65,7 @@ public:
     struct Hit;
 
     HDX_API
-    HdxIntersector(HdRenderIndexSharedPtr index);
+    HdxIntersector(HdRenderIndex *index);
     HDX_API
     ~HdxIntersector() = default;
 
@@ -164,7 +163,7 @@ public:
                std::unique_ptr<unsigned char[]> instanceIds,
                std::unique_ptr<unsigned char[]> elementIds,
                std::unique_ptr<float[]> depths,
-               HdRenderIndexSharedPtr const& index,
+               HdRenderIndex const *index,
                Params params,
                GfVec4i viewport);
         HDX_API
@@ -204,7 +203,7 @@ public:
         std::unique_ptr<unsigned char[]> _instanceIds;
         std::unique_ptr<unsigned char[]> _elementIds;
         std::unique_ptr<float[]> _depths;
-        HdRenderIndexSharedPtr _index;
+        HdRenderIndex const *_index;
         Params _params;
         GfVec4i _viewport;
     };
@@ -223,7 +222,7 @@ private:
     GlfDrawTargetRefPtr _drawTarget;
 
     // The render index for which this intersector is valid.
-    HdRenderIndexSharedPtr _index;
+    HdRenderIndex *_index;
 };
 
 HDX_API

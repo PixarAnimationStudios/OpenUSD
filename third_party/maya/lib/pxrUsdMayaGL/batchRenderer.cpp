@@ -129,7 +129,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::ShapeRenderer()
 
 void
 UsdMayaGLBatchRenderer::ShapeRenderer::Init(
-    HdRenderIndexSharedPtr const &renderIndex,
+    HdRenderIndex *renderIndex,
     const SdfPath& sharedId,
     const UsdPrim& rootPrim,
     const SdfPathVector& excludedPaths)
@@ -485,7 +485,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::TestIntersection(
 }
 
 UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
-    HdRenderIndexSharedPtr const& renderIndex, SdfPath const& delegateID)
+    HdRenderIndex *renderIndex, SdfPath const& delegateID)
     : HdSceneDelegate(renderIndex, delegateID)
 {
     _lightingContext = GlfSimpleLightingContext::New();
@@ -795,10 +795,20 @@ _OnMayaSceneUpdateCallback(void* clientData)
 }
 
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
-    : _renderIndex(new HdRenderIndex())
-    , _taskDelegate(new TaskDelegate(_renderIndex, SdfPath("/mayaTask")))
-    , _intersector(new HdxIntersector(_renderIndex))
+    : _renderIndex(nullptr)
+    , _renderDelegate()
+    , _taskDelegate()
+    , _intersector()
 {
+    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    if (!TF_VERIFY(_renderIndex == nullptr)) {
+        return;
+    }
+    _taskDelegate = TaskDelegateSharedPtr(
+                          new TaskDelegate(_renderIndex, SdfPath("/mayaTask")));
+    _intersector = HdxIntersectorSharedPtr(new HdxIntersector(_renderIndex));
+
+
     static MCallbackId sceneUpdateCallbackId = 0;
     if (sceneUpdateCallbackId == 0) {
         sceneUpdateCallbackId =
@@ -806,6 +816,14 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
                                        _OnMayaSceneUpdateCallback);
     }
 }
+
+UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
+{
+    _intersector.reset();
+    _taskDelegate.reset();
+    delete _renderIndex;
+}
+
 
 /* static */
 void UsdMayaGLBatchRenderer::Reset()

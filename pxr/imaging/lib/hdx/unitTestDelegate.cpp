@@ -160,15 +160,7 @@ private:
 }
 
 // ------------------------------------------------------------------------
-
-Hdx_UnitTestDelegate::Hdx_UnitTestDelegate()
-    : Hdx_UnitTestDelegate(HdRenderIndexSharedPtr(new HdRenderIndex()))
-{
-    GetRenderIndex().GetChangeTracker().AddState(
-        HdStDrawTargetTokens->drawTargetSet);
-}
-
-Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndexSharedPtr const &index)
+Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndex *index)
     : HdSceneDelegate(index, SdfPath::AbsoluteRootPath())
     , _refineLevel(0)
 {
@@ -178,6 +170,10 @@ Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndexSharedPtr const &index)
     GfFrustum frustum;
     frustum.SetPosition(GfVec3d(0, 0, 3));
     SetCamera(frustum.ComputeViewMatrix(), frustum.ComputeProjectionMatrix());
+
+    // Add draw target state tracking support.
+    GetRenderIndex().GetChangeTracker().AddState(
+            HdStDrawTargetTokens->drawTargetSet);
 }
 
 void

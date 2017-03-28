@@ -33,6 +33,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -68,7 +69,7 @@ public:
     virtual ~UsdImagingGLHdEngine();
 
     USDIMAGINGGL_API
-    HdRenderIndexSharedPtr GetRenderIndex() const;
+    HdRenderIndex *GetRenderIndex() const;
 
     USDIMAGINGGL_API
     virtual void InvalidateBuffers();
@@ -201,10 +202,11 @@ private:
         const RenderParams &params) const ;
 
     HdEngine _engine;
-    HdRenderIndexSharedPtr _renderIndex;
+    HdRenderIndex *_renderIndex;
     HdxSelectionTrackerSharedPtr _selTracker;
     HdxIntersectorSharedPtr _intersector;
-    UsdImagingDelegate _delegate;
+    UsdImagingDelegate *_delegate;
+    HdStRenderDelegate _renderDelegate;
 
     // built-in render graph delegate
     UsdImagingGL_DefaultTaskDelegateSharedPtr _defaultTaskDelegate;

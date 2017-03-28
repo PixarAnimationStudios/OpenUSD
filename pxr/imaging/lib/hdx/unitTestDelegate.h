@@ -49,8 +49,7 @@ TF_DECLARE_PUBLIC_TOKENS(Hdx_UnitTestTokens, HDX_UNIT_TEST_TOKENS);
 class Hdx_UnitTestDelegate : public HdSceneDelegate
 {
 public:
-    Hdx_UnitTestDelegate();
-    Hdx_UnitTestDelegate(HdRenderIndexSharedPtr const &renderIndex);
+    Hdx_UnitTestDelegate(HdRenderIndex *renderIndex);
 
     void SetRefineLevel(int level);
 

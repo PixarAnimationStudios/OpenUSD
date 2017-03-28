@@ -91,12 +91,8 @@ public:
         CollectionMap;
 
     USDIMAGING_API
-    UsdImagingDelegate();
-
-    /// Constructor used for nested delegate objects which share a RenderIndex.
-    USDIMAGING_API
-    UsdImagingDelegate(HdRenderIndexSharedPtr const& parentIndex, 
-                    SdfPath const& delegateID);
+    UsdImagingDelegate(HdRenderIndex *parentIndex,
+                       SdfPath const& delegateID);
 
     USDIMAGING_API
     virtual ~UsdImagingDelegate();
@@ -679,6 +675,10 @@ private:
     CollectionMap _collectionMap;
 
     UsdImagingShaderAdapterSharedPtr _shaderAdapter;
+
+    UsdImagingDelegate() = delete;
+    UsdImagingDelegate(UsdImagingDelegate const &) = delete;
+    UsdImagingDelegate &operator =(UsdImagingDelegate const &) = delete;
 };
 
 /// \class UsdImagingIndexProxy

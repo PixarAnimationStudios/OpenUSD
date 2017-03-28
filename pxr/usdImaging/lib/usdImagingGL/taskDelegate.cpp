@@ -35,9 +35,9 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 UsdImagingGLTaskDelegate::UsdImagingGLTaskDelegate(
-    HdRenderIndexSharedPtr const& parentIndex,
+    HdRenderIndex *renderIndex,
     SdfPath const& delegateID)
-    : HdSceneDelegate(parentIndex, delegateID)
+    : HdSceneDelegate(renderIndex, delegateID)
 {
     /* nothing */
 }

@@ -40,6 +40,7 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -149,7 +150,7 @@ public:
         ShapeRenderer();
 
         PXRUSDMAYAGL_API
-        void Init(const HdRenderIndexSharedPtr &renderIndex,
+        void Init(HdRenderIndex *renderIndex,
                   const SdfPath& sharedId,
                   const UsdPrim& rootPrim,
                   const SdfPathVector& excludedPaths);
@@ -252,7 +253,7 @@ public:
     class TaskDelegate : public HdSceneDelegate {
     public:
         PXRUSDMAYAGL_API
-        TaskDelegate(HdRenderIndexSharedPtr const& renderIndex,
+        TaskDelegate(HdRenderIndex *renderIndex,
                      SdfPath const& delegateID);
 
         // HdSceneDelegate interface
@@ -340,6 +341,10 @@ public:
     /// this should not be used -- use \c GetGlobalRenderer() instead.
     PXRUSDMAYAGL_API
     UsdMayaGLBatchRenderer();
+
+    PXRUSDMAYAGL_API
+    ~UsdMayaGLBatchRenderer();
+
 
     /// \brief Reset the internal state of the global UsdMayaGLBatchRenderer.
     /// In particular, it's important that this happen when switching to a new
@@ -435,7 +440,8 @@ private:
     /// \brief Master \c UsdImagingGL renderer used to render batches.
 
     HdEngine _hdEngine;
-    HdRenderIndexSharedPtr _renderIndex;
+    HdRenderIndex *_renderIndex;
+    HdStRenderDelegate _renderDelegate;
     TaskDelegateSharedPtr _taskDelegate;
     HdxIntersectorSharedPtr _intersector;
     UsdMayaGLSoftSelectHelper _softSelectHelper;

@@ -64,15 +64,6 @@ typedef tbb::concurrent_unordered_map<TfToken,
                         tbb::concurrent_vector<HdDrawItem const*>, 
                         TfToken::HashFunctor > _ConcurrentDrawItemView; 
 
-HdRenderIndex*
-HdRenderIndex::New(HdRenderDelegate *renderDelegate)
-{
-    if (renderDelegate == nullptr) {
-        TF_CODING_ERROR("Null Render Delegate provided to create render index");
-        return nullptr;
-    }
-    return new HdRenderIndex(renderDelegate);
-}
 
 HdRenderIndex::HdRenderIndex()
     : _delegateRprimMap()

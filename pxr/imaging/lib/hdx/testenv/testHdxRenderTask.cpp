@@ -34,6 +34,8 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 
+#include "pxr/imaging/hdSt/renderDelegate.h"
+
 #include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -51,20 +53,24 @@ int main(int argc, char *argv[])
     // wrap into GlfGLContext so that GlfDrawTarget works
     GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
 
-    Hdx_UnitTestDelegate delegate;
     HdEngine engine;
+    HdStRenderDelegate renderDelegate;
+    std::unique_ptr<HdRenderIndex> index(HdRenderIndex::New(&renderDelegate));
+    TF_VERIFY(index != nullptr);
+    std::unique_ptr<Hdx_UnitTestDelegate> delegate(
+                                         new Hdx_UnitTestDelegate(index.get()));
 
     // prep render task
     SdfPath renderSetupTask1("/renderSetupTask1");
     SdfPath renderTask1("/renderTask1");
-    delegate.AddRenderSetupTask(renderSetupTask1);
-    delegate.AddRenderTask(renderTask1);
+    delegate->AddRenderSetupTask(renderSetupTask1);
+    delegate->AddRenderTask(renderTask1);
     HdTaskSharedPtrVector tasks;
-    tasks.push_back(delegate.GetRenderIndex().GetTask(renderSetupTask1));
-    tasks.push_back(delegate.GetRenderIndex().GetTask(renderTask1));
+    tasks.push_back(index->GetTask(renderSetupTask1));
+    tasks.push_back(index->GetTask(renderTask1));
 
     // prep scene
-    delegate.AddGrid(SdfPath("/grid"), GfMatrix4d(1));
+    delegate->AddGrid(SdfPath("/grid"), GfMatrix4d(1));
 
     // prep draw target
     GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(GfVec2i(512, 512));
@@ -81,21 +87,21 @@ int main(int argc, char *argv[])
     drawTarget->Bind();
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    engine.Execute(delegate.GetRenderIndex(), tasks);
+    engine.Execute(*index, tasks);
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color1.png");
 
     // update render param
-    VtValue vParam = delegate.GetTaskParam(renderSetupTask1, HdTokens->params);
+    VtValue vParam = delegate->GetTaskParam(renderSetupTask1, HdTokens->params);
     HdxRenderTaskParams param = vParam.Get<HdxRenderTaskParams>();
     param.overrideColor = GfVec4f(1, 0, 0, 1);
-    delegate.SetTaskParam(renderSetupTask1, HdTokens->params, VtValue(param));
+    delegate->SetTaskParam(renderSetupTask1, HdTokens->params, VtValue(param));
 
     // draw #2
     drawTarget->Bind();
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    engine.Execute(delegate.GetRenderIndex(), tasks);
+    engine.Execute(*index, tasks);
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color2.png");
 
@@ -103,13 +109,13 @@ int main(int argc, char *argv[])
     HdRprimCollectionVector collections;
     collections.push_back(HdRprimCollection(HdTokens->geometry, HdTokens->wire));
     collections.push_back(HdRprimCollection(HdTokens->geometry, HdTokens->wire));
-    delegate.SetTaskParam(renderTask1, HdTokens->collection, VtValue(collections));
+    delegate->SetTaskParam(renderTask1, HdTokens->collection, VtValue(collections));
 
     // draw #3
     drawTarget->Bind();
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    engine.Execute(delegate.GetRenderIndex(), tasks);
+    engine.Execute(*index, tasks);
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color3.png");
 

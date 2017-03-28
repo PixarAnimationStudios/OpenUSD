@@ -31,6 +31,9 @@
 #include "pxr/base/gf/frustum.h"
 
 #include "pxr/imaging/hd/engine.h"
+
+#include "pxr/imaging/hdSt/renderDelegate.h"
+
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
@@ -64,7 +67,11 @@ int main(int argc, char *argv[])
     GLfloat clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
     GLfloat clearDepth[1] = { 1.0f };
 
-    Hdx_UnitTestDelegate delegate;
+    HdStRenderDelegate renderDelegate;
+    std::unique_ptr<HdRenderIndex> index(HdRenderIndex::New(&renderDelegate));
+    TF_VERIFY(index);
+    std::unique_ptr<Hdx_UnitTestDelegate> delegate(
+                                         new Hdx_UnitTestDelegate(index.get()));
     HdEngine engine;
 
     // --------------------------------------------------------------------
@@ -74,51 +81,51 @@ int main(int argc, char *argv[])
     SdfPath shadowTask("/shadowTask");
     SdfPath renderSetupTask("/renderSetupTask");
     SdfPath renderTask("/renderTask");
-    delegate.AddSimpleLightTask(simpleLightTask);
-    delegate.AddShadowTask(shadowTask);
-    delegate.AddRenderSetupTask(renderSetupTask);
-    delegate.AddRenderTask(renderTask);
+    delegate->AddSimpleLightTask(simpleLightTask);
+    delegate->AddShadowTask(shadowTask);
+    delegate->AddRenderSetupTask(renderSetupTask);
+    delegate->AddRenderTask(renderTask);
     HdTaskSharedPtrVector tasks;
-    tasks.push_back(delegate.GetRenderIndex().GetTask(simpleLightTask));
-    tasks.push_back(delegate.GetRenderIndex().GetTask(shadowTask));
-    tasks.push_back(delegate.GetRenderIndex().GetTask(renderSetupTask));
-    tasks.push_back(delegate.GetRenderIndex().GetTask(renderTask));
+    tasks.push_back(index->GetTask(simpleLightTask));
+    tasks.push_back(index->GetTask(shadowTask));
+    tasks.push_back(index->GetTask(renderSetupTask));
+    tasks.push_back(index->GetTask(renderTask));
 
     // prep lights
     GlfSimpleLight light1;
     light1.SetDiffuse(GfVec4f(0.5, 0.5, 0.5, 1.0));
     light1.SetPosition(GfVec4f(1,0.5,1,0));
     light1.SetHasShadow(true);
-    delegate.AddLight(SdfPath("/light1"), light1);
+    delegate->AddLight(SdfPath("/light1"), light1);
 
     // prep scene
-    delegate.AddGrid(SdfPath("/grid"),
+    delegate->AddGrid(SdfPath("/grid"),
                      GfMatrix4d(10,0,0,0, 0,10,0,0, 0,0,10,0, 0,0,0,1));
-    delegate.AddCube(SdfPath("/cube"),
+    delegate->AddCube(SdfPath("/cube"),
                      GfMatrix4d( 1,0,0,0, 0,1,0,0,  0,0,1,0, -3,0,5,1));
-    delegate.AddTet(SdfPath("/tet"),
+    delegate->AddTet(SdfPath("/tet"),
                      GfMatrix4d( 1,0,0,0, 0,1,0,0,  0,0,1,0,  3,0,5,1));
-    delegate.SetRefineLevel(SdfPath("/cube"), 4);
-    delegate.SetRefineLevel(SdfPath("/tet"), 3);
+    delegate->SetRefineLevel(SdfPath("/cube"), 4);
+    delegate->SetRefineLevel(SdfPath("/tet"), 3);
 
     // camera
     GfFrustum frustum;
     frustum.SetNearFar(GfRange1d(0.1, 1000.0));
     frustum.SetPosition(GfVec3d(0, -5, 10));
     frustum.SetRotation(GfRotation(GfVec3d(1, 0, 0), 45));
-    delegate.SetCamera(frustum.ComputeViewMatrix(),
+    delegate->SetCamera(frustum.ComputeViewMatrix(),
                        frustum.ComputeProjectionMatrix());
 
     // set renderTask
-    delegate.SetTaskParam(
+    delegate->SetTaskParam(
         renderTask, HdTokens->collection,
         VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->refined)));
 
     // set render setup param
-    VtValue vParam = delegate.GetTaskParam(renderSetupTask, HdTokens->params);
+    VtValue vParam = delegate->GetTaskParam(renderSetupTask, HdTokens->params);
     HdxRenderTaskParams param = vParam.Get<HdxRenderTaskParams>();
     param.enableLighting = true;
-    delegate.SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
+    delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
 
     // --------------------------------------------------------------------
     // draw.
@@ -128,7 +135,7 @@ int main(int argc, char *argv[])
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
 
-    engine.Execute(delegate.GetRenderIndex(), tasks);
+    engine.Execute(*index, tasks);
 
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color1.png");
@@ -139,7 +146,7 @@ int main(int argc, char *argv[])
     light2.SetDiffuse(GfVec4f(0.7, 0.5, 0.3, 1.0));
     light2.SetPosition(GfVec4f(0.3,-0.2,1,0));
     light2.SetHasShadow(true);
-    delegate.AddLight(SdfPath("/light2"), light2);
+    delegate->AddLight(SdfPath("/light2"), light2);
 
     // --------------------------------------------------------------------
     // draw.
@@ -149,7 +156,7 @@ int main(int argc, char *argv[])
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
 
-    engine.Execute(delegate.GetRenderIndex(), tasks);
+    engine.Execute(*index, tasks);
 
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color2.png");
@@ -159,7 +166,7 @@ int main(int argc, char *argv[])
     // --------------------------------------------------------------------
     // move light
     light2.SetPosition(GfVec4f(-0.3,-0.2,1,0));
-    delegate.SetLight(SdfPath("/light2"), HdStLightTokens->params,
+    delegate->SetLight(SdfPath("/light2"), HdStLightTokens->params,
                       VtValue(light2));
 
     // --------------------------------------------------------------------
@@ -170,7 +177,7 @@ int main(int argc, char *argv[])
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
 
-    engine.Execute(delegate.GetRenderIndex(), tasks);
+    engine.Execute(*index, tasks);
 
     drawTarget->Unbind();
     drawTarget->WriteToFile("color", "color3.png");

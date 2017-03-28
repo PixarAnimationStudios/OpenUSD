@@ -52,8 +52,7 @@ TF_DECLARE_PUBLIC_TOKENS(Hd_UnitTestTokens, HD_UNIT_TEST_TOKENS);
 ///
 class Hd_UnitTestDelegate : public HdSceneDelegate {
 public:
-    Hd_UnitTestDelegate();
-    Hd_UnitTestDelegate(HdRenderIndexSharedPtr const& parentIndex,
+    Hd_UnitTestDelegate(HdRenderIndex *parentIndex,
                         SdfPath const& delegateID);
 
     void SetUseInstancePrimVars(bool v) { _hasInstancePrimVars = v; }

@@ -47,8 +47,8 @@ typedef boost::shared_ptr<class UsdImagingGLTaskDelegate> UsdImagingGLTaskDelega
 class UsdImagingGLTaskDelegate : public HdSceneDelegate {
 public:
     USDIMAGINGGL_API
-    UsdImagingGLTaskDelegate(HdRenderIndexSharedPtr const& renderIndex,
-                           SdfPath const& delegateID);
+    UsdImagingGLTaskDelegate(HdRenderIndex *renderIndex,
+                             SdfPath const& delegateID);
 
     USDIMAGINGGL_API
     ~UsdImagingGLTaskDelegate();
@@ -92,7 +92,7 @@ public:
 class UsdImagingGLTaskDelegateFactoryBase : public TfType::FactoryBase {
 public:
     virtual UsdImagingGLTaskDelegateSharedPtr
-    New(HdRenderIndexSharedPtr const& renderIndex,
+    New(HdRenderIndex *renderIndex,
         SdfPath const& delegateID) const = 0;
 };
 
@@ -100,7 +100,7 @@ template <class T>
 class UsdImagingGLTaskDelegateFactory : public UsdImagingGLTaskDelegateFactoryBase {
 public:
     virtual UsdImagingGLTaskDelegateSharedPtr
-    New(HdRenderIndexSharedPtr const& renderIndex,
+    New(HdRenderIndex *renderIndex,
         SdfPath const& delegateID) const
     {
         return UsdImagingGLTaskDelegateSharedPtr(new T(renderIndex, delegateID));

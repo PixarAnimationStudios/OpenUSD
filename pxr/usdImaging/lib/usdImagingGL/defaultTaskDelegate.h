@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Task Delegate for built-in render graph
 class UsdImagingGL_DefaultTaskDelegate : public UsdImagingGLTaskDelegate {
 public:
-    UsdImagingGL_DefaultTaskDelegate(HdRenderIndexSharedPtr const&renderIndex,
+    UsdImagingGL_DefaultTaskDelegate(HdRenderIndex *renderIndex,
                   SdfPath const& delegateID);
     ~UsdImagingGL_DefaultTaskDelegate();
 

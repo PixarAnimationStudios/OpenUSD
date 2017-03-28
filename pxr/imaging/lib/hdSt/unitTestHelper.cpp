@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/unitTestHelper.h"
+#include "pxr/imaging/hdSt/unitTestHelper.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -59,8 +59,15 @@ _BuildArray(T values[], int numValues)
     return result;
 }
 
-Hd_TestDriver::Hd_TestDriver()
-    : _renderPassState(new HdRenderPassState())
+HdSt_TestDriver::HdSt_TestDriver()
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _sceneDelegate(nullptr)
+ , _reprName()
+ , _geomPass()
+ , _geomAndGuidePass()
+ , _renderPassState(new HdRenderPassState())
 {
     TfToken reprName = HdTokens->hull;
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
@@ -70,15 +77,34 @@ Hd_TestDriver::Hd_TestDriver()
     _Init(reprName);
 }
 
-Hd_TestDriver::Hd_TestDriver(TfToken const &reprName)
-    : _renderPassState(new HdRenderPassState())
+HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _sceneDelegate(nullptr)
+ , _reprName()
+ , _geomPass()
+ , _geomAndGuidePass()
+ , _renderPassState(new HdRenderPassState())
 {
     _Init(reprName);
 }
 
-void
-Hd_TestDriver::_Init(TfToken const &reprName)
+HdSt_TestDriver::~HdSt_TestDriver()
 {
+    delete _sceneDelegate;
+    delete _renderIndex;
+}
+
+void
+HdSt_TestDriver::_Init(TfToken const &reprName)
+{
+    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    TF_VERIFY(_renderIndex != nullptr);
+
+    _sceneDelegate = new Hd_UnitTestDelegate(_renderIndex,
+                                             SdfPath::AbsoluteRootPath());
+
     _reprName = reprName;
 
     GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
@@ -96,21 +122,21 @@ Hd_TestDriver::_Init(TfToken const &reprName)
 }
 
 void
-Hd_TestDriver::Draw(bool withGuides)
+HdSt_TestDriver::Draw(bool withGuides)
 {
     Draw(GetRenderPass(withGuides));
 }
 
 void
-Hd_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
+HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
 {
-    _engine.Draw(_delegate.GetRenderIndex(), renderPass, _renderPassState);
+    _engine.Draw(_sceneDelegate->GetRenderIndex(), renderPass, _renderPassState);
 
     GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
-Hd_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
+HdSt_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
                          GfMatrix4d const &projectionMatrix,
                          GfVec4d const &viewport)
 {
@@ -120,18 +146,18 @@ Hd_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
 }
 
 void
-Hd_TestDriver::SetCullStyle(HdCullStyle cullStyle)
+HdSt_TestDriver::SetCullStyle(HdCullStyle cullStyle)
 {
     _renderPassState->SetCullStyle(cullStyle);
 }
 
 HdRenderPassSharedPtr const &
-Hd_TestDriver::GetRenderPass(bool withGuides)
+HdSt_TestDriver::GetRenderPass(bool withGuides)
 {
     if (withGuides) {
         if (!_geomAndGuidePass) 
             _geomAndGuidePass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_delegate.GetRenderIndex(),
+                new HdRenderPass(&_sceneDelegate->GetRenderIndex(),
                                  HdRprimCollection(
                                      Hd_UnitTestTokens->geometryAndGuides,
                                      _reprName)));
@@ -139,7 +165,7 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
     } else {
         if (!_geomPass)
             _geomPass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_delegate.GetRenderIndex(),
+                new HdRenderPass(&_sceneDelegate->GetRenderIndex(),
                                  HdRprimCollection(
                                      HdTokens->geometry,
                                      _reprName)));
@@ -148,7 +174,7 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
 }
 
 void
-Hd_TestDriver::SetRepr(TfToken const &reprName)
+HdSt_TestDriver::SetRepr(TfToken const &reprName)
 {
     _reprName = reprName;
 
@@ -164,7 +190,7 @@ Hd_TestDriver::SetRepr(TfToken const &reprName)
 
 // --------------------------------------------------------------------------
 
-Hd_TestLightingShader::Hd_TestLightingShader()
+HdSt_TestLightingShader::HdSt_TestLightingShader()
 {
     const char *lightingShader =
         "-- glslfx version 0.1                                              \n"
@@ -190,13 +216,13 @@ Hd_TestLightingShader::Hd_TestLightingShader()
     _glslfx.reset(new GlfGLSLFX(ss));
 }
 
-Hd_TestLightingShader::~Hd_TestLightingShader()
+HdSt_TestLightingShader::~HdSt_TestLightingShader()
 {
 }
 
 /* virtual */
-Hd_TestLightingShader::ID
-Hd_TestLightingShader::ComputeHash() const
+HdSt_TestLightingShader::ID
+HdSt_TestLightingShader::ComputeHash() const
 {
     HD_TRACE_FUNCTION();
 
@@ -206,7 +232,7 @@ Hd_TestLightingShader::ComputeHash() const
 
 /* virtual */
 std::string
-Hd_TestLightingShader::GetSource(TfToken const &shaderStageKey) const
+HdSt_TestLightingShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -217,7 +243,7 @@ Hd_TestLightingShader::GetSource(TfToken const &shaderStageKey) const
 
 /* virtual */
 void
-Hd_TestLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
+HdSt_TestLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
                                  GfMatrix4d const &projectionMatrix)
 {
     for (int i = 0; i < 2; ++i) {
@@ -228,7 +254,7 @@ Hd_TestLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
 
 /* virtual */
 void
-Hd_TestLightingShader::BindResources(Hd_ResourceBinder const &binder,
+HdSt_TestLightingShader::BindResources(Hd_ResourceBinder const &binder,
                                       int program)
 {
     binder.BindUniformf(_tokens->l0dir,   3, _lights[0].eyeDir.GetArray());
@@ -240,14 +266,14 @@ Hd_TestLightingShader::BindResources(Hd_ResourceBinder const &binder,
 
 /* virtual */
 void
-Hd_TestLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
+HdSt_TestLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
                                         int program)
 {
 }
 
 /*virtual*/
 void
-Hd_TestLightingShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_TestLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     customBindings->push_back(
         HdBindingRequest(HdBinding::UNIFORM, _tokens->l0dir, _tokens->vec3));
@@ -262,13 +288,13 @@ Hd_TestLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 }
 
 void
-Hd_TestLightingShader::SetSceneAmbient(GfVec3f const &color)
+HdSt_TestLightingShader::SetSceneAmbient(GfVec3f const &color)
 {
     _sceneAmbient = color;
 }
 
 void
-Hd_TestLightingShader::SetLight(int light,
+HdSt_TestLightingShader::SetLight(int light,
                                 GfVec3f const &dir, GfVec3f const &color)
 {
     if (light < 2) {

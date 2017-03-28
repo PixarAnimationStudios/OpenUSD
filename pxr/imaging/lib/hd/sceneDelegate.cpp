@@ -32,15 +32,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-HdSceneDelegate::HdSceneDelegate()
-    : _index(new HdRenderIndex)
-    , _delegateID(SdfPath::AbsoluteRootPath())
-{
-}
-
-HdSceneDelegate::HdSceneDelegate(HdRenderIndexSharedPtr const& parentIndex, 
-                    SdfPath const& delegateID)
+HdSceneDelegate::HdSceneDelegate(HdRenderIndex *parentIndex,
+                                 SdfPath const& delegateID)
     : _index(parentIndex)
     , _delegateID(delegateID)
 {

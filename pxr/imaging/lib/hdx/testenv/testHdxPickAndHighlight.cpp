@@ -31,6 +31,9 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/imaging/hdSt/renderDelegate.h"
+
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
@@ -80,7 +83,8 @@ protected:
 
 private:
     HdEngine _engine;
-    HdRenderIndexSharedPtr _renderIndex;
+    HdStRenderDelegate _renderDelegate;
+    HdRenderIndex *_renderIndex;
     boost::scoped_ptr<HdxIntersector> _intersector;
     boost::scoped_ptr<Hdx_UnitTestDelegate> _delegate;
     HdxSelectionTrackerSharedPtr _selectionTracker;
@@ -106,6 +110,10 @@ _GetTranslate(float tx, float ty, float tz)
 
 My_TestGLDrawing::~My_TestGLDrawing()
 {
+    _intersector.reset();
+    _selectionTracker.reset();
+    _delegate.reset();
+    delete _renderIndex;
 }
 
 void
@@ -145,7 +153,8 @@ My_TestGLDrawing::InitTest()
     glDeleteShader(vShader);
     glDeleteShader(fShader);
 
-    _renderIndex.reset(new HdRenderIndex());
+    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    TF_VERIFY(_renderIndex != nullptr);
     _intersector.reset(new HdxIntersector(_renderIndex));
     _delegate.reset(new Hdx_UnitTestDelegate(_renderIndex));
     _delegate->SetRefineLevel(_refineLevel);
@@ -452,7 +461,7 @@ My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos)
     _intersector->Query(params, col, &_engine, &result);
 
     HdxIntersector::HitSet hits;
-    HdxSelectionSharedPtr selection(new HdxSelection(_renderIndex.get()));
+    HdxSelectionSharedPtr selection(new HdxSelection(_renderIndex));
     if (result.ResolveUnique(&hits)) {
         TF_FOR_ALL(it, hits) {
             std::cout << "object: " << it->objectId << " "

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,10 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_UNIT_TEST_HELPER
-#define HD_UNIT_TEST_HELPER
+#ifndef HDST_UNIT_TEST_HELPER
+#define HDST_UNIT_TEST_HELPER
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
+
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/hd/renderPass.h"
@@ -41,7 +43,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class Hd_TestDriver
+/// \class HdSt_TestDriver
 ///
 /// A unit test driver that exercises the core engine.
 ///
@@ -49,10 +51,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// that is is not available, all OpenGL calls become no-ops, but all other work
 /// is performed as usual.
 ///
-class Hd_TestDriver {
+class HdSt_TestDriver final {
 public:
-    Hd_TestDriver();
-    Hd_TestDriver(TfToken const &reprName);
+    HdSt_TestDriver();
+    HdSt_TestDriver(TfToken const &reprName);
+    ~HdSt_TestDriver();
 
     /// Draw
     void Draw(bool withGuides=false);
@@ -77,7 +80,7 @@ public:
     }
 
     /// Returns the UnitTest delegate
-    Hd_UnitTestDelegate& GetDelegate() { return _delegate; }
+    Hd_UnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
     void SetRepr(TfToken const &reprName);
@@ -87,23 +90,25 @@ private:
     void _Init(TfToken const &reprName);
 
     HdEngine _engine;
-    Hd_UnitTestDelegate _delegate;
+    HdStRenderDelegate   _renderDelegate;
+    HdRenderIndex       *_renderIndex;
+    Hd_UnitTestDelegate *_sceneDelegate;
     TfToken _reprName;
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;
     HdRenderPassStateSharedPtr _renderPassState;
 };
 
-/// \class Hd_TestLightingShader
+/// \class HdSt_TestLightingShader
 ///
 /// A custom lighting shader for unit tests.
 ///
-typedef boost::shared_ptr<class Hd_TestLightingShader> Hd_TestLightingShaderSharedPtr;
+typedef boost::shared_ptr<class HdSt_TestLightingShader> HdSt_TestLightingShaderSharedPtr;
 
-class Hd_TestLightingShader : public HdLightingShader {
+class HdSt_TestLightingShader : public HdLightingShader {
 public:
-    Hd_TestLightingShader();
-    virtual ~Hd_TestLightingShader();
+    HdSt_TestLightingShader();
+    virtual ~HdSt_TestLightingShader();
 
     /// HdShaderCode overrides
     virtual ID ComputeHash() const;
@@ -133,4 +138,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_UNIT_TEST_HELPER
+#endif  // HDST_UNIT_TEST_HELPER

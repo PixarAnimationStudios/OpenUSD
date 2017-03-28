@@ -114,28 +114,8 @@ UsdImagingDelegate::_InitializeCollectionsByPurpose(HdChangeTracker &tracker)
 }
 
 
-UsdImagingDelegate::UsdImagingDelegate()
-    : HdSceneDelegate()
-    , _valueCache()
-    , _compensationPath(SdfPath::AbsoluteRootPath())
-    , _rootXf(1.0)
-    , _rootIsVisible(true)
-    , _time(std::numeric_limits<double>::infinity())
-    , _refineLevelFallback(0)
-    , _reprFallback()
-    , _cullStyleFallback(HdCullStyleDontCare)
-    , _xformCache(GetTime(), GetRootCompensation())
-    , _materialBindingCache(GetTime(), GetRootCompensation())
-    , _visCache(GetTime(), GetRootCompensation())
-    , _shaderAdapter(boost::make_shared<UsdImagingShaderAdapter>(this))
-{
-    // this constructor create a new render index.
-    HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
-    _InitializeCollectionsByPurpose(tracker);
-}
-
 UsdImagingDelegate::UsdImagingDelegate(
-        HdRenderIndexSharedPtr const& parentIndex, 
+        HdRenderIndex *parentIndex,
         SdfPath const& delegateID)
     : HdSceneDelegate(parentIndex, delegateID)
     , _valueCache()

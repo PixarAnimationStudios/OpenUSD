@@ -43,7 +43,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdxIntersector::HdxIntersector(HdRenderIndexSharedPtr index)
+HdxIntersector::HdxIntersector(HdRenderIndex *index)
     : _index(index)
 { 
 }
@@ -327,7 +327,7 @@ HdxIntersector::Result::Result(std::unique_ptr<unsigned char[]> primIds,
                         std::unique_ptr<unsigned char[]> instanceIds,
                         std::unique_ptr<unsigned char[]> elementIds,
                         std::unique_ptr<float[]> depths,
-                        HdRenderIndexSharedPtr const& index,
+                        HdRenderIndex const *index,
                         HdxIntersector::Params params,
                         GfVec4i viewport)
     : _primIds(std::move(primIds))
@@ -343,7 +343,6 @@ HdxIntersector::Result::Result(std::unique_ptr<unsigned char[]> primIds,
 HdxIntersector::Result::~Result()
 {
     _params = Params();
-    _index.reset();
     _viewport = GfVec4i(0,0,0,0);
 }
 

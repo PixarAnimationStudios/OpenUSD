@@ -28,6 +28,9 @@
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPassState.h"
+
+#include "pxr/imaging/hdSt/renderDelegate.h"
+
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/unitTestGLDrawing.h"
@@ -75,8 +78,10 @@ protected:
     virtual void ParseArgs(int argc, char *argv[]);
 
 private:
-    HdEngine _engine;
-    Hdx_UnitTestDelegate _delegate;
+    HdEngine              _engine;
+    HdStRenderDelegate    _renderDelegate;
+    HdRenderIndex        *_renderIndex;
+    Hdx_UnitTestDelegate *_delegate;
 
     TfToken _reprName;
     int _refineLevel;
@@ -97,32 +102,36 @@ _GetTranslate(float tx, float ty, float tz)
 void
 My_TestGLDrawing::InitTest()
 {
-    _delegate.SetRefineLevel(_refineLevel);
+    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    TF_VERIFY(_renderIndex != nullptr);
+    _delegate = new Hdx_UnitTestDelegate(_renderIndex);
+
+    _delegate->SetRefineLevel(_refineLevel);
 
     // prepare render task
     SdfPath renderSetupTask("/renderSetupTask");
     SdfPath renderTask("/renderTask");
-    _delegate.AddRenderSetupTask(renderSetupTask);
-    _delegate.AddRenderTask(renderTask);
+    _delegate->AddRenderSetupTask(renderSetupTask);
+    _delegate->AddRenderTask(renderTask);
 
     // render task parameters.
     HdxRenderTaskParams param
-        = _delegate.GetTaskParam(
+        = _delegate->GetTaskParam(
             renderSetupTask, HdTokens->params).Get<HdxRenderTaskParams>();
     param.enableLighting = true; // use default lighting
-    _delegate.SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
-    _delegate.SetTaskParam(renderTask, HdTokens->collection,
+    _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
+    _delegate->SetTaskParam(renderTask, HdTokens->collection,
                            VtValue(HdRprimCollection(HdTokens->geometry, _reprName)));
 
     // prepare scene
-    _delegate.AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5));
-    _delegate.AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5));
-    _delegate.AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
-    _delegate.AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5));
+    _delegate->AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5));
+    _delegate->AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5));
+    _delegate->AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
+    _delegate->AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5));
 
     {
-        _delegate.AddInstancer(SdfPath("/instancerTop"));
-        _delegate.AddCube(SdfPath("/protoTop"),
+        _delegate->AddInstancer(SdfPath("/instancerTop"));
+        _delegate->AddCube(SdfPath("/protoTop"),
                          GfMatrix4d(1), false, SdfPath("/instancerTop"));
 
         std::vector<SdfPath> prototypes;
@@ -148,14 +157,14 @@ My_TestGLDrawing::InitTest()
         translate[2] = GfVec3f(-3, 0, 2);
         prototypeIndex[2] = 0;
 
-        _delegate.SetInstancerProperties(SdfPath("/instancerTop"),
+        _delegate->SetInstancerProperties(SdfPath("/instancerTop"),
                                         prototypeIndex,
                                         scale, rotate, translate);
     }
 
     {
-        _delegate.AddInstancer(SdfPath("/instancerBottom"));
-        _delegate.AddCube(SdfPath("/protoBottom"),
+        _delegate->AddInstancer(SdfPath("/instancerBottom"));
+        _delegate->AddCube(SdfPath("/protoBottom"),
                          GfMatrix4d(1), false, SdfPath("/instancerBottom"));
 
         std::vector<SdfPath> prototypes;
@@ -181,7 +190,7 @@ My_TestGLDrawing::InitTest()
         translate[2] = GfVec3f(-3, 0, -2);
         prototypeIndex[2] = 0;
 
-        _delegate.SetInstancerProperties(SdfPath("/instancerBottom"),
+        _delegate->SetInstancerProperties(SdfPath("/instancerBottom"),
                                         prototypeIndex,
                                         scale, rotate, translate);
     }
@@ -197,6 +206,8 @@ My_TestGLDrawing::InitTest()
 void
 My_TestGLDrawing::UninitTest()
 {
+    delete _delegate;
+    delete _renderIndex;
 }
 
 void
@@ -247,29 +258,29 @@ DrawScene(PickParam const * pickParam)
     }
 
     GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
-    _delegate.SetCamera(viewMatrix, projMatrix);
+    _delegate->SetCamera(viewMatrix, projMatrix);
 
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
     HdTaskSharedPtrVector tasks;
     SdfPath renderSetupTask("/renderSetupTask");
     SdfPath renderTask("/renderTask");
-    tasks.push_back(_delegate.GetRenderIndex().GetTask(renderSetupTask));
-    tasks.push_back(_delegate.GetRenderIndex().GetTask(renderTask));
+    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderSetupTask));
+    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderTask));
 
     HdxRenderTaskParams param
-        = _delegate.GetTaskParam(
+        = _delegate->GetTaskParam(
             renderSetupTask, HdTokens->params).Get<HdxRenderTaskParams>();
     param.enableIdRender = (pickParam != NULL);
     param.viewport = viewport;
-    _delegate.SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
+    _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
 
 
     glEnable(GL_DEPTH_TEST);
 
     glBindVertexArray(vao);
 
-    _engine.Execute(_delegate.GetRenderIndex(), tasks);
+    _engine.Execute(_delegate->GetRenderIndex(), tasks);
 
     glBindVertexArray(0);
 }
@@ -356,7 +367,7 @@ My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
             instanceId[idIndex+2],
             instanceId[idIndex+3]);
 
-        result = _delegate.GetRenderIndex().GetPrimPathFromPrimIdColor(
+        result = _delegate->GetRenderIndex().GetPrimPathFromPrimIdColor(
                         primIdColor, instanceIdColor, outInstanceIndex);
     }
 

@@ -123,6 +123,7 @@ pxr_shared_library(hd
         renderIndexManager
         unitTestDelegate
         unitTestHelper
+        unitTestNullRenderDelegate
         ${optionalPrivateClasses}
 
     RESOURCE_FILES

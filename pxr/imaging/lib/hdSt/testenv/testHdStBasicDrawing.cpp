@@ -27,7 +27,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/unitTestGLDrawing.h"
-#include "pxr/imaging/hd/unitTestHelper.h"
+#include "pxr/imaging/hdSt/unitTestHelper.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3d.h"
@@ -59,8 +59,8 @@ protected:
     virtual void ParseArgs(int argc, char *argv[]);
 
 private:
-    Hd_TestDriver* _driver;
-    Hd_TestLightingShaderSharedPtr _lightingShader;
+    HdSt_TestDriver* _driver;
+    HdSt_TestLightingShaderSharedPtr _lightingShader;
     std::vector<GfVec4d> _clipPlanes;
 
     TfToken _reprName;
@@ -79,7 +79,7 @@ My_TestGLDrawing::InitTest()
 {
     std::cout << "My_TestGLDrawing::InitTest() " << _reprName << "\n";
 
-    _driver = new Hd_TestDriver(_reprName);
+    _driver = new HdSt_TestDriver(_reprName);
     Hd_UnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 
@@ -97,7 +97,7 @@ My_TestGLDrawing::InitTest()
     glBindVertexArray(0);
 
     if (_testLighting) {
-        _lightingShader.reset(new Hd_TestLightingShader());
+        _lightingShader.reset(new HdSt_TestLightingShader());
         _driver->GetRenderPassState()->SetLightingShader(
             _lightingShader);
     }

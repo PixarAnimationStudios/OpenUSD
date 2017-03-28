@@ -70,9 +70,9 @@ _ShouldEnableLighting(UsdImagingGLEngine::RenderParams params)
 }
 
 UsdImagingGL_DefaultTaskDelegate::UsdImagingGL_DefaultTaskDelegate(
-    HdRenderIndexSharedPtr const& parentIndex,
+    HdRenderIndex *renderIndex,
     SdfPath const& delegateID)
-    : UsdImagingGLTaskDelegate(parentIndex, delegateID)
+    : UsdImagingGLTaskDelegate(renderIndex, delegateID)
     , _viewport(0,0,1,1)
     , _selectionColor(1,1,0,1)
 {
@@ -88,13 +88,9 @@ UsdImagingGL_DefaultTaskDelegate::UsdImagingGL_DefaultTaskDelegate(
     _cameraId                   = _rootId.AppendChild(_tokens->camera);
     _activeSimpleLightTaskId    = SdfPath();
 
-    // TODO: tasks of shadow map generation, accumulation etc will be
-    // prepared here.
-    HdRenderIndex &renderIndex = GetRenderIndex();
-
-    // camera
+        // camera
     {
-        renderIndex.InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
+        renderIndex->InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
         cache[HdStCameraTokens->windowPolicy] = VtValue(); // no window policy.
         cache[HdStCameraTokens->matrices] = VtValue(HdStCameraMatrices());
@@ -102,7 +98,7 @@ UsdImagingGL_DefaultTaskDelegate::UsdImagingGL_DefaultTaskDelegate(
 
     // selection task
     {
-        renderIndex.InsertTask<HdxSelectionTask>(this, _selectionTaskId);
+        renderIndex->InsertTask<HdxSelectionTask>(this, _selectionTaskId);
         _ValueCache &cache = _valueCacheMap[_selectionTaskId];
         HdxSelectionTaskParams params;
         params.enableSelection = true;
@@ -114,7 +110,7 @@ UsdImagingGL_DefaultTaskDelegate::UsdImagingGL_DefaultTaskDelegate(
 
     // simple lighting task (for Hydra native)
     {
-        renderIndex.InsertTask<HdxSimpleLightTask>(this, _simpleLightTaskId);
+        renderIndex->InsertTask<HdxSimpleLightTask>(this, _simpleLightTaskId);
         _ValueCache &cache = _valueCacheMap[_simpleLightTaskId];
         HdxSimpleLightTaskParams params;
         params.cameraPath = _cameraId;
@@ -124,7 +120,7 @@ UsdImagingGL_DefaultTaskDelegate::UsdImagingGL_DefaultTaskDelegate(
 
     // simple lighting task (for Presto UsdBaseIc compatible)
     {
-        renderIndex.InsertTask<HdxSimpleLightBypassTask>(this,
+        renderIndex->InsertTask<HdxSimpleLightBypassTask>(this,
                                                          _simpleLightBypassTaskId);
         _ValueCache &cache = _valueCacheMap[_simpleLightBypassTaskId];
         HdxSimpleLightBypassTaskParams params;

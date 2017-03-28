@@ -50,8 +50,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdRenderIndex> HdRenderIndexSharedPtr;
-
 /// \class HdSyncRequestVector
 ///
 /// The SceneDelegate is requested to synchronize prims as the result of
@@ -73,14 +71,9 @@ struct HdSyncRequestVector {
 ///
 class HdSceneDelegate {
 public:
-
-    /// Default constructor initializes its own RenderIndex.
-    HD_API
-    HdSceneDelegate();
-    
     /// Constructor used for nested delegate objects which share a RenderIndex.
     HD_API
-    HdSceneDelegate(HdRenderIndexSharedPtr const& parentIndex, 
+    HdSceneDelegate(HdRenderIndex *parentIndex,
                     SdfPath const& delegateID);
 
     HD_API
@@ -314,8 +307,12 @@ public:
     virtual int GetPrimVarComponents(SdfPath const& id, TfToken const& key);
 
 private:
-    HdRenderIndexSharedPtr _index;
+    HdRenderIndex *_index;
     SdfPath _delegateID;
+
+    HdSceneDelegate() = delete;
+    HdSceneDelegate(HdSceneDelegate &) =  delete;
+    HdSceneDelegate &operator=(HdSceneDelegate &) =  delete;
 };
 
 

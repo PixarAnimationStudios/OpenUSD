@@ -56,25 +56,38 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
         const SdfPathVector& excludedPrimPaths,
         const SdfPathVector& invisedPrimPaths,
         const SdfPath& delegateID)
-    : _renderIndex(HdRenderIndexSharedPtr(new HdRenderIndex()))
+    : UsdImagingGLEngine()
+    , _renderIndex(nullptr)
     , _selTracker(new HdxSelectionTracker)
-    , _intersector(new HdxIntersector(_renderIndex))
-    , _delegate(_renderIndex, delegateID)
-    , _defaultTaskDelegate(new UsdImagingGL_DefaultTaskDelegate(
-                               _renderIndex, delegateID))
+    , _intersector(nullptr)
+    , _delegate(nullptr)
+    , _defaultTaskDelegate()
     , _pluginDiscovered(false)
     , _rootPath(rootPath)
     , _excludedPrimPaths(excludedPrimPaths)
     , _invisedPrimPaths(invisedPrimPaths)
     , _isPopulated(false)
 {
+    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    if (_renderIndex == nullptr) {
+        TF_CODING_ERROR("Failed to create render index");
+        return;
+    }
+    _delegate = new UsdImagingDelegate(_renderIndex, delegateID);
+    _defaultTaskDelegate = UsdImagingGL_DefaultTaskDelegateSharedPtr(
+                new UsdImagingGL_DefaultTaskDelegate(_renderIndex, delegateID));
+    _intersector = HdxIntersectorSharedPtr(new HdxIntersector(_renderIndex));
 }
 
 UsdImagingGLHdEngine::~UsdImagingGLHdEngine() 
 {
+    _defaultTaskDelegate.reset();
+    _pluginTaskDelegates.clear();
+    delete _delegate;
+    delete _renderIndex;
 }
 
-HdRenderIndexSharedPtr
+HdRenderIndex *
 UsdImagingGLHdEngine::GetRenderIndex() const
 {
     return _renderIndex;
@@ -83,7 +96,7 @@ UsdImagingGLHdEngine::GetRenderIndex() const
 void
 UsdImagingGLHdEngine::InvalidateBuffers()
 {
-    //_delegate.GetRenderIndex().GetChangeTracker().MarkPrimDirty(path, flag);
+    //_delegate->GetRenderIndex().GetChangeTracker().MarkPrimDirty(path, flag);
 }
 
 static int
@@ -149,7 +162,7 @@ UsdImagingGLHdEngine::_PreSetTime(const UsdPrim& root, const RenderParams& param
 
     // Set the fallback refine level, if this changes from the existing value,
     // all prim refine levels will be dirtied. 
-    _delegate.SetRefineLevelFallback(_GetRefineLevel(params.complexity));
+    _delegate->SetRefineLevelFallback(_GetRefineLevel(params.complexity));
 }
 
 void
@@ -162,7 +175,7 @@ UsdImagingGLHdEngine::_PostSetTime(const UsdPrim& root, const RenderParams& para
     // The delegate may have been populated from somewhere other than
     // where we are drawing. This applys a compensating transformation that
     // cancels out any accumulated transformation from the population root.
-    _delegate.SetRootCompensation(root.GetPath());
+    _delegate->SetRootCompensation(root.GetPath());
 }
 
 UsdImagingGLTaskDelegateSharedPtr
@@ -188,15 +201,15 @@ UsdImagingGLHdEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
 
     if (_CanPrepareBatch(root, params)) {
         if (!_isPopulated) {
-            _delegate.Populate(root.GetStage()->GetPrimAtPath(_rootPath), 
+            _delegate->Populate(root.GetStage()->GetPrimAtPath(_rootPath),
                                _excludedPrimPaths);
-            _delegate.SetInvisedPrimPaths(_invisedPrimPaths);
+            _delegate->SetInvisedPrimPaths(_invisedPrimPaths);
             _isPopulated = true;
         }
 
         _PreSetTime(root, params);
         // Will only react if time actually changes.
-        _delegate.SetTime(params.frame);
+        _delegate->SetTime(params.frame);
         _PostSetTime(root, params);
     }
 }
@@ -272,7 +285,7 @@ UsdImagingGLHdEngine::_SetTimes(const UsdImagingGLHdEngineSharedPtrVector& engin
 
     for (size_t i = 0; i < engines.size(); ++i) {
         engines[i]->_PreSetTime(rootPrims[i], params);
-        delegates.push_back(&engines[i]->_delegate);
+        delegates.push_back(engines[i]->_delegate);
     }
 
     UsdImagingDelegate::SetTimes(delegates, times);
@@ -301,7 +314,7 @@ UsdImagingGLHdEngine::_Populate(const UsdImagingGLHdEngineSharedPtrVector& engin
 
     for (size_t i = 0; i < engines.size(); ++i) {
         if (!engines[i]->_isPopulated) {
-            delegatesToPopulate.push_back(&engines[i]->_delegate);
+            delegatesToPopulate.push_back(engines[i]->_delegate);
             primsToPopulate.push_back(
                 rootPrims[i].GetStage()->GetPrimAtPath(engines[i]->_rootPath));
             pathsToExclude.push_back(engines[i]->_excludedPrimPaths);
@@ -327,7 +340,7 @@ UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, RenderParams param
     _GetTaskDelegate(params)->SetCollectionAndRenderParams(
         paths, params);
 
-    Render(_delegate.GetRenderIndex(), params);
+    Render(_delegate->GetRenderIndex(), params);
 }
 
 /*virtual*/
@@ -336,13 +349,13 @@ UsdImagingGLHdEngine::Render(const UsdPrim& root, RenderParams params)
 {
     PrepareBatch(root, params);
 
-    SdfPath rootPath = _delegate.GetPathForIndex(root.GetPath());
+    SdfPath rootPath = _delegate->GetPathForIndex(root.GetPath());
     SdfPathVector roots(1, rootPath);
 
     _GetTaskDelegate(params)->SetCollectionAndRenderParams(
         roots, params);
 
-    Render(_delegate.GetRenderIndex(), params);
+    Render(_delegate->GetRenderIndex(), params);
 }
 
 bool
@@ -366,7 +379,7 @@ UsdImagingGLHdEngine::TestIntersection(
         return false;
     }
 
-    SdfPath rootPath = _delegate.GetPathForIndex(root.GetPath());
+    SdfPath rootPath = _delegate->GetPathForIndex(root.GetPath());
     SdfPathVector roots(1, rootPath);
     _GetTaskDelegate(params)->SetCollectionAndRenderParams(roots, params);
     HdRprimCollection const& col = 
@@ -572,7 +585,7 @@ UsdImagingGLHdEngine::GetPrimPathFromPrimIdColor(GfVec4i const & primIdColor,
                                                GfVec4i const & instanceIdColor,
                                                int * instanceIndexOut)
 {
-    return _delegate.GetRenderIndex().GetPrimPathFromPrimIdColor(
+    return _delegate->GetRenderIndex().GetPrimPathFromPrimIdColor(
                         primIdColor, instanceIdColor, instanceIndexOut);
 }
 
@@ -585,7 +598,7 @@ UsdImagingGLHdEngine::GetPrimPathFromInstanceIndex(
     SdfPath * rprimPath,
     SdfPathVector *instanceContext)
 {
-    return _delegate.GetPathForInstanceIndex(protoPrimPath, instanceIndex,
+    return _delegate->GetPathForInstanceIndex(protoPrimPath, instanceIndex,
                                              absoluteInstanceIndex, rprimPath,
                                              instanceContext);
 }
@@ -645,14 +658,14 @@ UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 void
 UsdImagingGLHdEngine::SetRootTransform(GfMatrix4d const& xf)
 {
-    _delegate.SetRootTransform(xf);
+    _delegate->SetRootTransform(xf);
 }
 
 /* virtual */
 void
 UsdImagingGLHdEngine::SetRootVisibility(bool isVisible)
 {
-    _delegate.SetRootVisibility(isVisible);
+    _delegate->SetRootVisibility(isVisible);
 }
 
 
@@ -663,7 +676,7 @@ UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
     // populate new selection
     HdxSelectionSharedPtr selection(new HdxSelection(&*_renderIndex));
     for (SdfPath const& path : paths) {
-        _delegate.PopulateSelection(path,
+        _delegate->PopulateSelection(path,
                                     UsdImagingDelegate::ALL_INSTANCES,
                                     selection);
     }
@@ -689,7 +702,7 @@ UsdImagingGLHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
         selection.reset(new HdxSelection(&*_renderIndex));
     }
 
-    _delegate.PopulateSelection(path, instanceIndex, selection);
+    _delegate->PopulateSelection(path, instanceIndex, selection);
 
     // set the result back to selection tracker
     _selTracker->SetSelection(selection);
@@ -782,7 +795,7 @@ UsdImagingGLHdEngine::SetRenderGraphPlugin(TfType const &type)
     }
 
     UsdImagingGLTaskDelegateSharedPtr taskDelegate =
-        factory->New(_renderIndex, _delegate.GetDelegateID()/*=shareId*/);
+        factory->New(_renderIndex, _delegate->GetDelegateID()/*=shareId*/);
     if (!taskDelegate) {
         TF_WARN("Fail to manufacture plugin %s\n", type.GetTypeName().c_str());
         return false;

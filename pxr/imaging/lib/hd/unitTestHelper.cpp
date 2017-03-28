@@ -60,7 +60,14 @@ _BuildArray(T values[], int numValues)
 }
 
 Hd_TestDriver::Hd_TestDriver()
-    : _renderPassState(new HdRenderPassState())
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _sceneDelegate(nullptr)
+ , _reprName()
+ , _geomPass()
+ , _geomAndGuidePass()
+ , _renderPassState(new HdRenderPassState())
 {
     TfToken reprName = HdTokens->hull;
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
@@ -71,14 +78,33 @@ Hd_TestDriver::Hd_TestDriver()
 }
 
 Hd_TestDriver::Hd_TestDriver(TfToken const &reprName)
-    : _renderPassState(new HdRenderPassState())
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _sceneDelegate(nullptr)
+ , _reprName()
+ , _geomPass()
+ , _geomAndGuidePass()
+ , _renderPassState(new HdRenderPassState())
 {
     _Init(reprName);
+}
+
+Hd_TestDriver::~Hd_TestDriver()
+{
+    delete _sceneDelegate;
+    delete _renderIndex;
 }
 
 void
 Hd_TestDriver::_Init(TfToken const &reprName)
 {
+    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    TF_VERIFY(_renderIndex != nullptr);
+
+    _sceneDelegate = new Hd_UnitTestDelegate(_renderIndex,
+                                             SdfPath::AbsoluteRootPath());
+
     _reprName = reprName;
 
     GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
@@ -104,7 +130,7 @@ Hd_TestDriver::Draw(bool withGuides)
 void
 Hd_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
 {
-    _engine.Draw(_delegate.GetRenderIndex(), renderPass, _renderPassState);
+    _engine.Draw(_sceneDelegate->GetRenderIndex(), renderPass, _renderPassState);
 
     GLF_POST_PENDING_GL_ERRORS();
 }
@@ -131,7 +157,7 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
     if (withGuides) {
         if (!_geomAndGuidePass) 
             _geomAndGuidePass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_delegate.GetRenderIndex(),
+                new HdRenderPass(&_sceneDelegate->GetRenderIndex(),
                                  HdRprimCollection(
                                      Hd_UnitTestTokens->geometryAndGuides,
                                      _reprName)));
@@ -139,7 +165,7 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
     } else {
         if (!_geomPass)
             _geomPass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_delegate.GetRenderIndex(),
+                new HdRenderPass(&_sceneDelegate->GetRenderIndex(),
                                  HdRprimCollection(
                                      HdTokens->geometry,
                                      _reprName)));
