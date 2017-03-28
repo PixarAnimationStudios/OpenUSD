@@ -58,6 +58,17 @@ public:
         return _renderIndex;
     }
 
+    // XXX: persisting selection across render index changes is complicated
+    // right now, because of the HdRenderIndex pointer.  CopySelection
+    // exists as a copy-constructor that ignores the render index.  In
+    // the glorious future, we should delete this function and delete
+    // the render index member variable.
+    void CopySelection(HdxSelection const &other) {
+        selectedPrims = other.selectedPrims;
+        selectedInstances = other.selectedInstances;
+        selectedFaces = other.selectedFaces;
+    }
+
     void AddRprim(SdfPath const &path) {
         selectedPrims.push_back(path);
     }

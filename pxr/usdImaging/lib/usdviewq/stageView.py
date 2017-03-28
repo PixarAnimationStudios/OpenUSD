@@ -1096,14 +1096,14 @@ class StageView(QtOpenGL.QGLWidget):
         if not self._noRender:
             self._renderer = UsdImagingGL.GL()
 
-    def GetRenderGraphPlugins(self):
+    def GetRendererPlugins(self):
         if self._renderer:
-            return self._renderer.GetRenderGraphPlugins()
+            return self._renderer.GetRendererPlugins()
         else:
             return []
 
-    def SetRenderGraphPlugin(self, name):
-        self._renderer.SetRenderGraphPlugin(name)
+    def SetRendererPlugin(self, name):
+        self._renderer.SetRendererPlugin(name)
 
     def GetStage(self):
         return self._stage

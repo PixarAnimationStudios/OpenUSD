@@ -1647,18 +1647,14 @@
       <string>Interpolation</string>
      </property>
     </widget>
-    <widget class="QMenu" name="menuRenderGraph">
-     <property name="tearOffEnabled">
-      <bool>true</bool>
-     </property>
+    <widget class="QMenu" name="menuRendererPlugin">
      <property name="title">
-      <string>Render Graph...</string>
+      <string>Viewer Renderer Plugin...</string>
      </property>
-     <addaction name="actionRenderGraphDefault"/>
     </widget>
     <addaction name="actionToggle_Viewer_Mode"/>
     <addaction name="separator"/>
-    <addaction name="menuRenderGraph"/>
+    <addaction name="menuRendererPlugin"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
     <addaction name="actionAdjust_FOV"/>
@@ -2634,17 +2630,6 @@
    </property>
    <property name="shortcut">
     <string>F11</string>
-   </property>
-  </action>
-  <action name="actionRenderGraphDefault">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Default(GL)</string>
    </property>
   </action>
   <action name="useExtentsHint">

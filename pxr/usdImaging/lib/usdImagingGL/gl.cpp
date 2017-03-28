@@ -52,9 +52,17 @@ _IsEnabledHydra()
         TF_CODING_ERROR("OpenGL context required, using reference renderer");
         return false;
     }
+    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
+        return false;
+    }
+    if (TfGetenv("HD_ENABLED", "1") != "1") {
+        return false;
+    }
+    if (!UsdImagingGLHdEngine::IsDefaultPluginAvailable()) {
+        return false;
+    }
 
-    return HdRenderContextCaps::GetInstance().SupportsHydra()
-        && (TfGetenv("HD_ENABLED", "1") == "1");
+    return true;
 }
 
 }
@@ -283,16 +291,16 @@ UsdImagingGL::IsConverged() const
 
 /* virtual */
 std::vector<TfType>
-UsdImagingGL::GetRenderGraphPlugins()
+UsdImagingGL::GetRendererPlugins()
 {
-    return _engine->GetRenderGraphPlugins();
+    return _engine->GetRendererPlugins();
 }
 
 /* virtual */
 bool
-UsdImagingGL::SetRenderGraphPlugin(TfType const &type)
+UsdImagingGL::SetRendererPlugin(TfType const &type)
 {
-    return _engine->SetRenderGraphPlugin(type);
+    return _engine->SetRendererPlugin(type);
 }
 
 bool

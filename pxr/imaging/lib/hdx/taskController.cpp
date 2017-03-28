@@ -25,6 +25,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(HdxTaskSetTokens, HDX_TASK_SET_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdxIntersectionModeTokens, \
+    HDX_INTERSECTION_MODE_TOKENS);
+
 //
 // As this class is a pure interface class, it does not need a
 // vtable.  However, it is possible that some users will use rtti.

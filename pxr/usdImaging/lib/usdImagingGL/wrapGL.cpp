@@ -118,9 +118,9 @@ void wrapGL()
             .def("IsEnabledHydra", &UsdImagingGL::IsEnabledHydra)
                 .staticmethod("IsEnabledHydra")
             .def("IsConverged", &UsdImagingGL::IsConverged)
-            .def("GetRenderGraphPlugins", &UsdImagingGL::GetRenderGraphPlugins,
+            .def("GetRendererPlugins", &UsdImagingGL::GetRendererPlugins,
                  return_value_policy< TfPySequenceToTuple >())
-            .def("SetRenderGraphPlugin", &UsdImagingGL::SetRenderGraphPlugin)
+            .def("SetRendererPlugin", &UsdImagingGL::SetRendererPlugin)
             .def("GetResourceAllocation", &UsdImagingGL::GetResourceAllocation)
         ;
 

@@ -729,10 +729,6 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('triggered()'),
                                self._toggleViewerMode)
 
-        QtCore.QObject.connect(self._ui.actionRenderGraphDefault,
-                               QtCore.SIGNAL('triggered()'),
-                               self._defaultRenderGraph)
-
         QtCore.QObject.connect(self._ui.showBBoxes,
                                QtCore.SIGNAL('toggled(bool)'),
                                self._showBBoxes)
@@ -1140,8 +1136,8 @@ class MainWindow(QtGui.QMainWindow):
         if self._printTiming and not self._noRender:
             t.PrintTime("create first image")
 
-        # configure render graph plugins after stageView initialized its renderer.
-        self._configureRenderGraphPlugins()
+        # configure render plugins after stageView initialized its renderer.
+        self._configureRendererPlugins()
         
         if self._mallocTags == 'stageAndImaging':
             DumpMallocTags(self._stage, "stage-loading and imaging")
@@ -1351,34 +1347,40 @@ class MainWindow(QtGui.QMainWindow):
         self._refreshCameraListAndMenu(preserveCurrCamera = False)
 
 
-    # Render graph plugin support
-    def _defaultRenderGraph(self):
-        self._stageView.SetRenderGraphPlugin(Tf.Type())
+    # Render plugin support
+    def _rendererPluginChanged(self, plugin):
+        self._stageView.SetRendererPlugin(plugin)
 
-    def _pluginRenderGraphChanged(self, plugin):
-        self._stageView.SetRenderGraphPlugin(plugin)
-
-    def _configureRenderGraphPlugins(self):
+    def _configureRendererPlugins(self):
         if self._stageView:
-            self._ui.renderGraphActionGroup = QtGui.QActionGroup(self)
-            self._ui.renderGraphActionGroup.setExclusive(True)
-            self._ui.renderGraphActionGroup.addAction(
-                self._ui.actionRenderGraphDefault)
+            self._ui.rendererPluginActionGroup = QtGui.QActionGroup(self)
+            self._ui.rendererPluginActionGroup.setExclusive(True)
 
-            pluginTypes = self._stageView.GetRenderGraphPlugins()
+            pluginTypes = self._stageView.GetRendererPlugins()
             for pluginType in pluginTypes:
                 name = Plug.Registry().GetStringFromPluginMetaData(
                     pluginType, 'displayName')
-                action = self._ui.menuRenderGraph.addAction(name)
+                action = self._ui.menuRendererPlugin.addAction(name)
                 action.setCheckable(True)
                 action.pluginType = pluginType
-                self._ui.renderGraphActionGroup.addAction(action)
+                self._ui.rendererPluginActionGroup.addAction(action)
 
                 QtCore.QObject.connect(
                     action,
                     QtCore.SIGNAL('triggered()'),
                     lambda pluginType = pluginType:
-                        self._pluginRenderGraphChanged(pluginType))
+                        self._rendererPluginChanged(pluginType))
+
+            # If any plugins exist, the first render plugin is the default one.
+            if len(self._ui.rendererPluginActionGroup.actions()) > 0:
+                self._ui.rendererPluginActionGroup.actions()[0].setChecked(True)
+
+            # Otherwise, put a no-op placeholder in.
+            else:
+                action = self._ui.menuRendererPlugin.addAction('Default')
+                action.setCheckable(True)
+                action.setChecked(True)
+                self._ui.rendererPluginActionGroup.addAction(action)
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):

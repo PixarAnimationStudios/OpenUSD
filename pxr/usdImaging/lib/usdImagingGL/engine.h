@@ -346,12 +346,12 @@ public:
 
     /// Return the typevector of available render-graph delegate plugins.
     USDIMAGINGGL_API
-    virtual std::vector<TfType> GetRenderGraphPlugins();
+    virtual std::vector<TfType> GetRendererPlugins();
 
     /// Set the current render-graph delegate to \p type.
     /// the plugin for the type will be loaded if not yet.
     USDIMAGINGGL_API
-    virtual bool SetRenderGraphPlugin(TfType const &type);
+    virtual bool SetRendererPlugin(TfType const &type);
 
     /// Returns GPU resource allocation info
     USDIMAGINGGL_API

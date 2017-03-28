@@ -652,14 +652,14 @@ UsdImagingGLEngine::IsConverged() const
 
 /* virtual */
 std::vector<TfType>
-UsdImagingGLEngine::GetRenderGraphPlugins()
+UsdImagingGLEngine::GetRendererPlugins()
 {
     return std::vector<TfType>();
 }
 
 /* virtual */
 bool
-UsdImagingGLEngine::SetRenderGraphPlugin(TfType const &type)
+UsdImagingGLEngine::SetRendererPlugin(TfType const &type)
 {
     return false;
 }
