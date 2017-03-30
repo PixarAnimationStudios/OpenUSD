@@ -76,6 +76,7 @@ public:
 
     /// Return the render index this controller is bound to.
     HdRenderIndex* GetRenderIndex() { return _index; }
+    HdRenderIndex const* GetRenderIndex() const { return _index; }
 
     /// Return the controller's scene-graph id (prefixed to any
     /// scene graph objects it creates).
