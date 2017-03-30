@@ -138,7 +138,7 @@ HdStreamTaskController::_CreateRenderTasks()
         _renderTaskId,
         _idRenderTaskId,
     };
-    for (int i = 0; i < sizeof(renderTasks)/sizeof(renderTasks[0]); ++i) {
+    for (size_t i = 0; i < sizeof(renderTasks)/sizeof(renderTasks[0]); ++i) {
         GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate,
             renderTasks[i]);
 
@@ -217,7 +217,7 @@ HdStreamTaskController::~HdStreamTaskController()
         _simpleLightTaskId,
         _simpleLightBypassTaskId,
     };
-    for (int i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
+    for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
         GetRenderIndex()->RemoveTask(tasks[i]);
     }
     TF_FOR_ALL (id, _lightIds) {
@@ -268,7 +268,7 @@ HdStreamTaskController::SetCollection(HdRprimCollection const& collection)
         return;
     }
 
-    for(int i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
+    for(size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
         _delegate.SetParameter(tasks[i], HdTokens->collection,
             collection);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
@@ -518,7 +518,7 @@ HdStreamTaskController::SetCameraViewport(GfVec4d const& viewport)
         return;
     }
 
-    for(int i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
+    for(size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
         HdxRenderTaskParams params =
             _delegate.GetParameter<HdxRenderTaskParams>(
                 tasks[i], HdTokens->params);
