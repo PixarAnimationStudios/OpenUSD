@@ -869,7 +869,7 @@ UsdImagingGLHdEngine::GetRendererPlugins()
     HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescriptors);
 
     std::vector<TfType> plugins;
-    for(int i = 0; i < pluginDescriptors.size(); ++i) {
+    for(size_t i = 0; i < pluginDescriptors.size(); ++i) {
         plugins.push_back(
                 TfType::FindByName(pluginDescriptors[i].id.GetString()));
     }
@@ -902,7 +902,7 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfType const &type)
     }
     // General case: find the matching type id.
     else {
-        for(int i = 0; i < pluginDescriptors.size(); ++i) {
+        for(size_t i = 0; i < pluginDescriptors.size(); ++i) {
             if(pluginDescriptors[i].id == type.GetTypeName()) {
                 plugin = HdxRendererPluginRegistry::GetInstance().
                     GetRendererPlugin(pluginDescriptors[i].id);
