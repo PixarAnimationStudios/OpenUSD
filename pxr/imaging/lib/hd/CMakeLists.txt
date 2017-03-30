@@ -120,7 +120,6 @@ pxr_shared_library(hd
 
     PRIVATE_CLASSES
         cullingShaderKey
-        renderIndexManager
         unitTestDelegate
         unitTestHelper
         unitTestNullRenderDelegate

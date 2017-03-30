@@ -30,7 +30,6 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderDelegateRegistry.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/renderIndexManager.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -51,44 +50,6 @@ HdEngine::HdEngine()
 
 HdEngine::~HdEngine()
 {
-}
-
-// static
-HdRenderIndex *
-HdEngine::CreateRenderIndex(HdRenderDelegate *renderDelegate)
-{
-    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
-
-    return riMgr.CreateRenderIndex(renderDelegate);
-}
-
-// static
-void
-HdEngine::AddRenderIndexReference(HdRenderIndex *renderIndex)
-{
-    if (renderIndex == nullptr) {
-        TF_CODING_ERROR("Null context passed to add render index reference");
-        return;
-    }
-
-    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
-
-    riMgr.AddRenderIndexReference(renderIndex);
-}
-
-// static
-void
-HdEngine::ReleaseRenderIndex(HdRenderIndex *renderIndex)
-{
-    if (renderIndex == nullptr) {
-        // No error reported as releasing null in the event of an error
-        // is desirable use-case.
-        return;
-    }
-
-    Hd_RenderIndexManager &riMgr = Hd_RenderIndexManager::GetInstance();
-
-    riMgr.ReleaseRenderIndex(renderIndex);
 }
 
 void 

@@ -52,24 +52,6 @@ public:
     HD_API
     virtual ~HdEngine();
 
-    /// \name Render Index
-    ///
-    /// The Render Index object is Hydra's primary scene management tool.
-    /// Typically there would be one render index in the scene shared between
-    /// multiple contexts providing different outputs for the same scene.
-    ///
-    /// @{
-
-    HD_API
-    static HdRenderIndex *CreateRenderIndex(HdRenderDelegate *renderDelegate);
-    HD_API
-    static void AddRenderIndexReference(HdRenderIndex *renderIndex);
-    HD_API
-    static void ReleaseRenderIndex(HdRenderIndex *renderIndex);
-
-    /// @}
-
-
     /// \name Task Context
     ///
     /// External interface to set data/state in the task context passed to
