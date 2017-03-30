@@ -1572,6 +1572,8 @@ private:
     // recompose.
     void _Recompose(const PcpChanges &changes,
                     SdfPathSet *initialPathsToRecompose);
+    void _RecomposePrims(const PcpChanges &changes,
+                         SdfPathSet *pathsToRecompose);
 
     // Helper for _Recompose to find the subtrees that need to be
     // fully recomposed and to recompose the name children of the
