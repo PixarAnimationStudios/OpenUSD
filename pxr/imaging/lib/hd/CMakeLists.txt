@@ -105,6 +105,7 @@ pxr_shared_library(hd
         textureResource
         tokens
         topology
+        unitTestDelegate
         unitTestGLDrawing
         vboMemoryManager
         vboSimpleMemoryManager
@@ -119,7 +120,6 @@ pxr_shared_library(hd
 
     PRIVATE_CLASSES
         cullingShaderKey
-        unitTestDelegate
         unitTestHelper
         unitTestNullRenderDelegate
         ${optionalPrivateClasses}
