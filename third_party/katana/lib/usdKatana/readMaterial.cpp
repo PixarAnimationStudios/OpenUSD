@@ -40,6 +40,7 @@
 #include "pxr/usd/usdRi/risObject.h"
 #include "pxr/usd/usdRi/risOslPattern.h"
 #include "pxr/usd/usdUI/nodeGraphNodeAPI.h"
+#include "pxr/usd/usdUI/sceneGraphPrimAPI.h"
 
 #include <FnGeolibServices/FnAttributeFunctionUtil.h>
 #include <FnLogging/FnLogging.h>
@@ -88,24 +89,44 @@ PxrUsdKatanaReadMaterial(
         PxrUsdKatanaAttrMap& attrs,
         const std::string& looksGroupLocation)
 {
-    UsdStageRefPtr stage = material.GetPrim().GetStage();
-    SdfPath primPath = material.GetPrim().GetPath();
+    UsdPrim prim = material.GetPrim();
+    UsdStageRefPtr stage = prim.GetStage();
+    SdfPath primPath = prim.GetPath();
+    std::string katanaPath = prim.GetName();
+    std::string displayGroup;
 
     // we do this before ReadPrim because ReadPrim calls ReadBlindData 
     // (primvars only) which we don't want to stomp here.
     attrs.set("material", _GetMaterialAttr(
         material, data.GetCurrentTime(), flatten));
 
-    const std::string& parentPrefix = (looksGroupLocation.empty()) ?
-        data.GetUsdInArgs()->GetRootLocationPath() : looksGroupLocation;
-    
-    std::string katanaPath = 
-        PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
-            primPath, data).substr(parentPrefix.size()+1);
+    UsdUISceneGraphPrimAPI sgp(material.GetPrim());
+    UsdAttribute displayNameAttr = sgp.GetDisplayNameAttr();
+    if (displayNameAttr) {
+        // override prim name
+        displayNameAttr.Get(&katanaPath);
+    }
+    UsdAttribute displayGroupAttr = sgp.GetDisplayGroupAttr();
+    if (displayGroupAttr) {
+        displayGroupAttr.Get(&displayGroup);
+        displayGroup = TfStringReplace(displayGroup, ":", "/");
+        if (displayGroup.length()) {
+            katanaPath = displayGroup + "/" + katanaPath;
+        }
+    }
+    else {
+        // infer the metadata
+        const std::string& parentPrefix = (looksGroupLocation.empty()) ?
+            data.GetUsdInArgs()->GetRootLocationPath() : looksGroupLocation;
+        
+        katanaPath = 
+            PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
+                primPath, data).substr(parentPrefix.size()+1);
 
-    // these paths are relative in katana
-    if (!katanaPath.empty() > 0 && katanaPath[0] == '/') {
-        katanaPath = katanaPath.substr(1);
+        // these paths are relative in katana
+        if (!katanaPath.empty() > 0 && katanaPath[0] == '/') {
+            katanaPath = katanaPath.substr(1);
+        }
     }
 
     attrs.set("material.katanaPath", FnKat::StringAttribute(katanaPath));
