@@ -43,6 +43,7 @@ pxr_shared_library(hdSt
         subdivision
         subdivision3
         triangulate
+        unitTestHelper
 
     RESOURCE_FILES
         plugInfo.json
@@ -51,6 +52,7 @@ pxr_shared_library(hdSt
 if (X11_FOUND OR APPLE)
 pxr_build_test(testHdStBasicDrawing
     LIBRARIES
+        hdSt
         hd
         garch
         glf
