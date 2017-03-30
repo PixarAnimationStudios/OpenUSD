@@ -80,7 +80,6 @@ pxr_shared_library(hd
         primTypeIndex
         renderContextCaps
         renderDelegate
-        renderDelegateRegistry
         renderIndex
         renderPass
         renderPassShader

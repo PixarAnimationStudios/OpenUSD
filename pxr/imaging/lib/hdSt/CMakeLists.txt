@@ -46,7 +46,6 @@ pxr_shared_library(hdSt
         unitTestHelper
 
     RESOURCE_FILES
-        plugInfo.json
 )
 
 if (X11_FOUND OR APPLE)

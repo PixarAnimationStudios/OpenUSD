@@ -34,7 +34,6 @@
 
 #include "pxr/imaging/hd/glslfxShader.h"
 #include "pxr/imaging/hd/package.h"
-#include "pxr/imaging/hd/renderDelegateRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/texture.h"
 
@@ -42,11 +41,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_REGISTRY_FUNCTION(TfType)
-{
-    HdRenderDelegateRegistry::Define<HdStRenderDelegate>();
-}
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
