@@ -94,13 +94,6 @@ public:
         return new HdRenderIndex(renderDelegate);
     }
 
-    /// \deprecated {
-    ///   Create a render index with no bound render delegate.
-    ///   XXX: This method will be deleted soon.
-    /// }
-    HD_API
-    HdRenderIndex();
-
     HD_API
     ~HdRenderIndex();
 
@@ -384,16 +377,6 @@ private:
 
     HdRenderDelegate *_renderDelegate;
 
-    // XXX: This is a temporary variable to aid in transition to the new
-    // context api.  Under the new API, the render delegate is owned by
-    // the context.  However, as clients are not creating the delegate
-    // yet, the render index will create one on their behalf.
-    //
-    // It was preferred to add this variable than use the reference counting
-    // mechanism.  As that impacted the new code path, rather than explicitly
-    // calling out the transitional elements.
-    bool _ownsDelegateXXX;
-
     /// Register the render delegate's list of supported prim types.
     void _InitPrimTypes();
 
@@ -403,6 +386,8 @@ private:
     /// Release the fallback prims.
     void _DestroyFallbackPrims();
 
+    // Remove default constructor
+    HdRenderIndex() = delete;
 };
 
 template <typename T>

@@ -33,7 +33,6 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/renderDelegateRegistry.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -64,30 +63,6 @@ typedef tbb::concurrent_unordered_map<TfToken,
                         tbb::concurrent_vector<HdDrawItem const*>, 
                         TfToken::HashFunctor > _ConcurrentDrawItemView; 
 
-
-HdRenderIndex::HdRenderIndex()
-    : _delegateRprimMap()
-    , _rprimMap()
-    , _rprimIDSet()
-    , _rprimPrimIdMap()
-    , _taskMap()
-    , _sprimIndex()
-    , _bprimIndex()
-    , _tracker()
-    , _nextPrimId(1)
-    , _instancerMap()
-    , _syncQueue()
-    , _renderDelegate(nullptr)
-    , _ownsDelegateXXX(false)
-{
-
-    // Register well-known collection types (to be deprecated)
-    // XXX: for compatibility and smooth transition,
-    //      leave geometry collection for a while.
-    _tracker.AddCollection(HdTokens->geometry);
-
-}
-
 HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     : _delegateRprimMap()
     , _rprimMap()
@@ -101,7 +76,6 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     , _instancerMap()
     , _syncQueue()
     , _renderDelegate(renderDelegate)
-    , _ownsDelegateXXX(false)
 {
     // Note: HdRenderIndex::New(...) guarantees renderDelegate is non-null.
 
@@ -121,21 +95,6 @@ HdRenderIndex::~HdRenderIndex()
     HD_TRACE_FUNCTION();
     Clear();
     _DestroyFallbackPrims();
-
-    {
-        // XXX: Transitional Code - to be removed.
-        // If the render index created the render delegate, it needs
-        // to release it.
-        if (_ownsDelegateXXX)
-        {
-            HdRenderDelegateRegistry &renderRegistry =
-                                        HdRenderDelegateRegistry::GetInstance();
-
-            renderRegistry.ReleasePlugin(_renderDelegate);
-            _renderDelegate = nullptr;
-        }
-    }
-
 }
 
 void
@@ -158,27 +117,6 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
 
     if (ARCH_UNLIKELY(TfMapLookupPtr(_rprimMap, rprimId)))
         return;
-
-    {
-        // XXX: Transitional code.
-        // If the application didn't use the new context api to
-        // create a render delegate, create one on its behalf.
-        //
-        // In the future, this would be an error condition as the context api
-        // would create the delegate and provide it to the render index..
-        if (_renderDelegate == nullptr)
-        {
-            HdRenderDelegateRegistry &renderRegistry =
-                                        HdRenderDelegateRegistry::GetInstance();
-            const TfToken &defaultRenderDelegateId =
-                                          renderRegistry.GetDefaultPluginId();
-             _renderDelegate =
-                      renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
-             _ownsDelegateXXX = true;
-             _InitPrimTypes();
-             _CreateFallbackPrims();
-        }
-    }
 
     HdRprim *rprim = _renderDelegate->CreateRprim(typeId,
                                                   rprimId,
@@ -389,27 +327,6 @@ HdRenderIndex::InsertSprim(TfToken const& typeId,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    {
-        // XXX: Transitional code.
-        // If the application didn't use the new context api to
-        // create a render delegate, create one on its behalf.
-        //
-        // In the future, this would be an error condition as the context api
-        // would create the delegate and provide it to the render index..
-        if (_renderDelegate == nullptr)
-        {
-            HdRenderDelegateRegistry &renderRegistry =
-                                        HdRenderDelegateRegistry::GetInstance();
-            const TfToken &defaultRenderDelegateId =
-                                          renderRegistry.GetDefaultPluginId();
-             _renderDelegate =
-                      renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
-             _ownsDelegateXXX = true;
-             _InitPrimTypes();
-             _CreateFallbackPrims();
-        }
-    }
-
     _sprimIndex.InsertPrim(typeId, sceneDelegate, sprimId,
                            _tracker, _renderDelegate);
 }
@@ -465,27 +382,6 @@ HdRenderIndex::InsertBprim(TfToken const& typeId,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
-    {
-        // XXX: Transitional code.
-        // If the application didn't use the new context api to
-        // create a render delegate, create one on its behalf.
-        //
-        // In the future, this would be an error condition as the context api
-        // would create the delegate and provide it to the render index..
-        if (_renderDelegate == nullptr)
-        {
-            HdRenderDelegateRegistry &renderRegistry =
-                                        HdRenderDelegateRegistry::GetInstance();
-            const TfToken &defaultRenderDelegateId =
-                                          renderRegistry.GetDefaultPluginId();
-             _renderDelegate =
-                      renderRegistry.GetRenderDelegate(defaultRenderDelegateId);
-             _ownsDelegateXXX = true;
-             _InitPrimTypes();
-             _CreateFallbackPrims();
-        }
-    }
 
     _bprimIndex.InsertPrim(typeId, sceneDelegate, bprimId,
                            _tracker, _renderDelegate);
