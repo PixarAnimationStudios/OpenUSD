@@ -184,6 +184,16 @@ UsdMayaProxyDrawOverride::prepareForDraw(
     return userData;
 }
 
+MHWRender::DrawAPI
+UsdMayaProxyDrawOverride::supportedDrawAPIs() const
+{
+#if MAYA_API_VERSION >= 201600
+    return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile;
+#else
+    return MHWRender::kOpenGL;
+#endif
+}
+
 void
 UsdMayaProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUserData *data)
 {
