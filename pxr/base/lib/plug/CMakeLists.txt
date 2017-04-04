@@ -98,16 +98,18 @@ pxr_build_test_shared_lib(TestPlugDsoUnloadable
 # but some linkers by default will error out when building this due
 # to the references to undefined symbols. So we need to specify a
 # link flag to force these symbols to be looked up at runtime.
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set_target_properties(TestPlugDsoUnloadable
-        PROPERTIES
-        LINK_FLAGS "-undefined dynamic_lookup"
-    )
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set_target_properties(TestPlugDsoUnloadable
-        PROPERTIES
-        LINK_FLAGS "/FORCE:UNRESOLVED"
-    )
+if (PXR_BUILD_TESTS)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set_target_properties(TestPlugDsoUnloadable
+            PROPERTIES
+            LINK_FLAGS "-undefined dynamic_lookup"
+        )
+    elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        set_target_properties(TestPlugDsoUnloadable
+            PROPERTIES
+            LINK_FLAGS "/FORCE:UNRESOLVED"
+        )
+    endif()
 endif()
 
 pxr_create_test_module(TestPlugModule1
