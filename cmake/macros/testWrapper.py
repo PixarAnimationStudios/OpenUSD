@@ -38,6 +38,7 @@
 #
 import argparse
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -78,6 +79,10 @@ def _parseArgs():
             help='Expected return code of this test.')
     parser.add_argument('--env-var', dest='envVars', default=[], type=str, 
             action='append', help='Variable to set in the test environment.')
+    parser.add_argument('--pre-path', dest='prePaths', default=[], type=str, 
+            action='append', help='Path to prepend to the PATH env var.')
+    parser.add_argument('--post-path', dest='postPaths', default=[], type=str, 
+            action='append', help='Path to append to the PATH env var.')
     parser.add_argument('--verbose', '-v', action='store_true',
             help='Verbose output.')
     parser.add_argument('cmd', metavar='CMD', type=str, nargs='+',
@@ -165,6 +170,7 @@ def _runCommand(raw_command, stdout_redir, stderr_redir, env,
     cmd = _splitCmd(raw_command)
     fout, ferr = _getRedirects(stdout_redir, stderr_redir)
     try:
+        print "cmd: %s" % (cmd, )
         retcode = _convertRetCode(subprocess.call(cmd, shell=False, env=env,
                                   stdout=(fout or sys.stdout), 
                                   stderr=(ferr or sys.stderr)))
@@ -214,6 +220,9 @@ if __name__ == '__main__':
     # Add any envvars specified with --env-var options into the environment
     env = os.environ.copy()
     for varStr in args.envVars:
+        if varStr == 'PATH':
+            print sys.stderr, "Error: use --pre-path or --post-path to edit PATH"
+            sys.exit(1)
         try:
             k, v = varStr.split('=')
             env[k] = v
@@ -221,6 +230,12 @@ if __name__ == '__main__':
             print sys.stderr, "Error: envvar '{0}' not of the form key=value" \
                     .format(varStr)
             sys.exit(1)
+
+    # Modify the PATH env var.  The delimiter depends on the platform.
+    pathDelim = ';' if platform.system() == 'Windows' else ':'
+    paths = env.get('PATH', '').split(pathDelim)
+    paths = args.prePaths + paths + args.postPaths
+    env['PATH'] = pathDelim.join(paths)
 
     # Avoid the just-in-time debugger where possible when running tests.
     env['ARCH_AVOID_JIT'] = '1'

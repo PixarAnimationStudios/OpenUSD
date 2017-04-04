@@ -993,7 +993,7 @@ function(pxr_register_test TEST_NAME)
         cmake_parse_arguments(bt
             "PYTHON" 
             "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
-            "ENV"
+            "ENV;PRE_PATH;POST_PATH"
             ${ARGN}
         )
 
@@ -1077,17 +1077,27 @@ function(pxr_register_test TEST_NAME)
             endforeach()
         endif()
 
+        if (bt_PRE_PATH)
+            foreach(path ${bt_PRE_PATH})
+                set(testWrapperCmd ${testWrapperCmd} --pre-path=${path})
+            endforeach()
+        endif()
+
+        if (bt_POST_PATH)
+            foreach(path ${bt_POST_PATH})
+                set(testWrapperCmd ${testWrapperCmd} --post-path=${path})
+            endforeach()
+        endif()
+
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.
-        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PYTHONPATH}")
+        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;$ENV{PYTHONPATH}")
         if(WIN32)
             string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
         else()
             string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
         endif()
-        set(testWrapperCmd ${testWrapperCmd}
-            "--env-var=PYTHONPATH=${_testPythonPath}")
 
         # Ensure we run with the python executable known to the build
         if (bt_PYTHON)
@@ -1098,7 +1108,8 @@ function(pxr_register_test TEST_NAME)
 
         add_test(
             NAME ${TEST_NAME}
-            COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd} ${testCmd}
+            COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
+                    "--env-var=PYTHONPATH=${_testPythonPath}" ${testCmd}
         )
     endif()
 endfunction() # pxr_register_test

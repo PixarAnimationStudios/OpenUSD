@@ -38,8 +38,9 @@ else()
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit write_protected.usda"
         EXPECTED_RETURN_CODE 1 
         ENV
-            PATH=${CMAKE_INSTALL_PREFIX}/bin/:$ENV{PATH}
             EDITOR="${HEADBIN}"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
     )
 
     pxr_install_test_dir(
@@ -53,8 +54,9 @@ else()
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit -n write_protected.usda"
         EXPECTED_RETURN_CODE 0
         ENV
-            PATH=${CMAKE_INSTALL_PREFIX}/bin/:$ENV{PATH}
             EDITOR="${HEADBIN}"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
     )
 
     pxr_install_test_dir(
@@ -68,8 +70,9 @@ else()
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit -f write_protected.usda"
         EXPECTED_RETURN_CODE 0
         ENV
-            PATH=${CMAKE_INSTALL_PREFIX}/bin/:$ENV{PATH}
             EDITOR="${HEADBIN}"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
     )
 
     pxr_install_test_dir(
@@ -85,8 +88,9 @@ else()
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE ascii_output.txt
         ENV
-            PATH=${CMAKE_INSTALL_PREFIX}/bin/:$ENV{PATH}
             EDITOR="sed -i 's/hello/goodbye/g'"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
     )
 
     pxr_install_test_dir(
@@ -102,7 +106,8 @@ else()
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE crate_output.txt
         ENV
-            PATH=${CMAKE_INSTALL_PREFIX}/bin/:$ENV{PATH}
             EDITOR="sed -i 's/hello/goodbye/g'"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
     )
 endif()
