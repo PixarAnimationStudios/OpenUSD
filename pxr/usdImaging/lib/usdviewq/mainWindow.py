@@ -4129,6 +4129,11 @@ class MainWindow(QtGui.QMainWindow):
                     pathParts[-1] = "<b>%s</b>" % pathParts[-1]
                 return '/'.join(pathParts)
     
+            def _HTMLEscape(s):
+                return s.replace('&', '&amp;'). \
+                         replace('<', '&lt;'). \
+                         replace('>', '&gt;')
+
             # First add in all model-related data, if present
             if model:
                 groupPath = model.GetPath().GetParentPath()
@@ -4145,12 +4150,12 @@ class MainWindow(QtGui.QMainWindow):
                 if assetInfo and len(assetInfo) > 0:
                     from common import GetAssetCreationTime
                     specs = model.GetPrimStack()
-                    results = GetAssetCreationTime(specs, 
+                    name, time, owner = GetAssetCreationTime(specs, 
                                                    mAPI.GetAssetIdentifier())
                     for key, value in assetInfo.iteritems():
-                        aiStr += "<br> -- <em>%s</em> : %s" % (key, str(value))
+                        aiStr += "<br> -- <em>%s</em> : %s" % (key, _HTMLEscape(str(value)))
                     aiStr += "<br><em><small>%s created on %s by %s</small></em>" % \
-                        results
+                        (_HTMLEscape(name), time, _HTMLEscape(owner))
                 else:
                     aiStr += "<br><small><em>No assetInfo!</em></small>"
                 
