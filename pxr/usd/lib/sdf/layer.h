@@ -653,13 +653,6 @@ public:
     SDF_API
     std::vector<TfToken> ListFields(const SdfPath& path) const;
 
-    /// Return a list of the keys of the (sub) dictionary identified by
-    /// \p keyPath.  The \p keyPath is a ':'-separated path addressing an
-    /// element in sub-dictionaries.
-    SDF_API
-    std::vector<TfToken> ListFieldDictKeys(const SdfPath& path,
-                                           const TfToken &keyPath) const;
-
     template <class T>
     bool HasField(const SdfPath& path,
                   const TfToken& fieldName, T* value) const;
