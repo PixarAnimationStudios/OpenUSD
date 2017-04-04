@@ -209,13 +209,22 @@ class MainWindow(QtGui.QMainWindow):
     @classmethod
     def clearSettings(cls):
         settingsPath = cls._outputBaseDirectory()
-        settingsPath = os.path.join(settingsPath, 'state')
-        if not os.path.exists(settingsPath):
-            print "INFO: ClearSettings requested, but there were no settings " \
-                    "currently stored"
-            return
-        os.remove(settingsPath)
-        print "INFO: Settings restored to default"
+        if settingsPath is None:
+            return None
+        else:
+            settingsPath = os.path.join(settingsPath, 'state')
+            if not os.path.exists(settingsPath):
+                print 'INFO: ClearSettings requested, but there ' \
+                      'were no settings currently stored.'
+                return None
+
+            if not os.access(settingsPath, os.W_OK):
+                print 'ERROR: Could not remove settings file.'
+                return None
+            else:
+                os.remove(settingsPath)
+
+        print 'INFO: Settings restored to default.'
 
     def _configurePlugins(self):
         from plugContext import PlugContext
@@ -289,37 +298,41 @@ class MainWindow(QtGui.QMainWindow):
         self.setStatusBar(self._statusBar)
 
         settingsPathDir = self._outputBaseDirectory()
-        settingsPath = os.path.join(settingsPathDir, self._statusFileName)
-        deprecatedSettingsPath = \
-            os.path.join(settingsPathDir, self._deprecatedStatusFileName)
-        if (os.path.isfile(deprecatedSettingsPath) and
-            not os.path.isfile(settingsPath)):
-            warning = ('\nWARNING: The settings file at: '
-                       + str(deprecatedSettingsPath) + ' is deprecated.\n'
-                       + 'These settings are not being used, the new '
-                       + 'settings file will be located at: '
-                       + str(settingsPath) + '.\n')
-            print warning
+        if settingsPathDir is None:
+            # Create an ephemeral settings object with a non existent filepath
+            self._settings = Settings('', seq=None, ephemeral=True) 
+        else:
+            settingsPath = os.path.join(settingsPathDir, self._statusFileName)
+            deprecatedSettingsPath = \
+                os.path.join(settingsPathDir, self._deprecatedStatusFileName)
+            if (os.path.isfile(deprecatedSettingsPath) and
+                not os.path.isfile(settingsPath)):
+                warning = ('\nWARNING: The settings file at: '
+                           + str(deprecatedSettingsPath) + ' is deprecated.\n'
+                           + 'These settings are not being used, the new '
+                           + 'settings file will be located at: '
+                           + str(settingsPath) + '.\n')
+                print warning
 
-        self._settings = Settings(settingsPath)
+            self._settings = Settings(settingsPath)
 
-        try:
-            self._settings.load()
-        except IOError:
-            # try to force out a new settings file
             try:
-                self._settings.save()
+                self._settings.load()
+            except IOError:
+                # try to force out a new settings file
+                try:
+                    self._settings.save()
+                except:
+                    _settingsWarning(settingsPath)
+
+            except EOFError:
+                # try to force out a new settings file
+                try:
+                    self._settings.save()
+                except:
+                    _settingsWarning(settingsPath)
             except:
                 _settingsWarning(settingsPath)
-
-        except EOFError:
-            # try to force out a new settings file
-            try:
-                self._settings.save()
-            except:
-                _settingsWarning(settingsPath)
-        except:
-            _settingsWarning(settingsPath)
 
         QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
@@ -1935,13 +1948,19 @@ class MainWindow(QtGui.QMainWindow):
 
     @classmethod
     def _outputBaseDirectory(cls):
-        import os
+        import os, sys
 
         baseDir = os.path.join(os.path.expanduser('~'), '.usdview')
 
-        if not os.path.exists(baseDir):
-            os.makedirs(baseDir)
-        return baseDir
+        try:
+            if not os.path.exists(baseDir):
+                os.makedirs(baseDir)
+            return baseDir
+
+        except OSError:
+            sys.stderr.write('ERROR: Unable to create base directory '
+                             'for settings file, settings will not be saved.\n')
+            return None 
                    
     # View adjustment functionality ===========================================
 
