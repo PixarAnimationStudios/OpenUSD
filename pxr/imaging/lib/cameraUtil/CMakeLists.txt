@@ -24,3 +24,13 @@ pxr_shared_library(cameraUtil
     PYTHON_FILES
         __init__.py
 )
+
+pxr_test_scripts(
+    testenv/testCameraUtil.py
+)
+
+pxr_register_test(testCameraUtil
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testCameraUtil"
+    EXPECTED_RETURN_CODE 0
+)
