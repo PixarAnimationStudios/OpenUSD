@@ -28,13 +28,31 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/glf/ptexTexture.h"
+
+#include "pxr/base/tf/stringUtils.h"
+
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool GlfIsSupportedPtexTexture(std::string const & imageFilePath)
+{
+#ifdef PXR_PTEX_SUPPORT_ENABLED
+    return (TfStringEndsWith(imageFilePath, ".ptx") || 
+            TfStringEndsWith(imageFilePath, ".ptex"));
+#else
+    return false;
+#endif
+}
+
+
+#ifdef PXR_PTEX_SUPPORT_ENABLED
+
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/ptexMipmapTextureLoader.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
 
@@ -45,9 +63,6 @@
 #include <vector>
 #include <list>
 #include <algorithm>
-
-PXR_NAMESPACE_OPEN_SCOPE
-
 
 using std::string;
 using namespace boost;
@@ -78,14 +93,6 @@ GlfPtexTexture::GlfPtexTexture(const TfToken &imageFilePath) :
 GlfPtexTexture::~GlfPtexTexture()
 { 
     _FreePtexTextureObject();
-}
-
-//------------------------------------------------------------------------------
-
-bool
-GlfPtexTexture::IsPtexTexture(std::string const & imageFilePath)
-{
-    return (TfStringEndsWith(imageFilePath, ".ptx") || TfStringEndsWith(imageFilePath, ".ptex"));
 }
 
 //------------------------------------------------------------------------------
@@ -322,6 +329,7 @@ GlfPtexTexture::IsMagFilterSupported(GLenum filter)
     }
 }
 
+#endif // PXR_PTEX_SUPPORT_ENABLED
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -28,15 +28,32 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+
+#include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+/// Returns true if the file given by \p imageFilePath represents a ptex file,
+/// and false otherwise.
+/// 
+/// This function simply checks the extension of the file name and does not
+/// otherwise guarantee that the file is in any way valid for reading.
+/// 
+/// If ptex support is disabled, this function will always return false.
+///
+GLF_API bool GlfIsSupportedPtexTexture(std::string const & imageFilePath);
+
+
+
+#ifdef PXR_PTEX_SUPPORT_ENABLED
+
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfPtexTexture);
 
@@ -66,9 +83,6 @@ public:
     /// Creates a new instance.
     GLF_API
     static GlfPtexTextureRefPtr New(const TfToken &imageFilePath);
-
-    GLF_API
-    static bool IsPtexTexture(std::string const & imageFilePath);
 
     /// GlfTexture overrides
     GLF_API
@@ -117,6 +131,8 @@ private:
 
     const TfToken	_imageFilePath;
 };
+
+#endif // PXR_PTEX_SUPPORT_ENABLED
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

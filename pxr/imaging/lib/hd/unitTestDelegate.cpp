@@ -652,11 +652,13 @@ Hd_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
 
     // Simple way to detect if the glf texture is ptex or not
     bool isPtex = false;
+#ifdef PXR_PTEX_SUPPORT_ENABLED
     GlfPtexTextureRefPtr pTex = 
         TfDynamic_cast<GlfPtexTextureRefPtr>(_textures[textureId].texture);
     if (pTex) {
         isPtex = true;
     }
+#endif
 
     return HdTextureResourceSharedPtr(
         new HdSimpleTextureResource(texture, isPtex));

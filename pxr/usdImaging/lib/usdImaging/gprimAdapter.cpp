@@ -293,7 +293,8 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
             VtValue v;
             UsdGeomPrimvar primvarAttr;
             texAttr.Get(&ap, UsdTimeCode::Default());
-            bool isPtex = GlfPtexTexture::IsPtexTexture(TfToken(ap.GetAssetPath()));
+
+            bool isPtex = GlfIsSupportedPtexTexture(TfToken(ap.GetAssetPath()));
             if (isPtex) {
                 t = UsdImagingTokens->ptexFaceIndex;
                 // Allow the client to override this name

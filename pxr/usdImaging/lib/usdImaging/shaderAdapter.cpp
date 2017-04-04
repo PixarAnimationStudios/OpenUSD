@@ -294,7 +294,7 @@ UsdImagingShaderAdapter::GetSurfaceShaderParams(SdfPath const &usdPath) const
                     if (resolvedPath.IsEmpty()) {
                         resolvedPath = TfToken(ap.GetAssetPath());
                     }
-                    isPtex = GlfPtexTexture::IsPtexTexture(resolvedPath);
+                    isPtex = GlfIsSupportedPtexTexture(resolvedPath);
                     if (!isPtex) {
                         TF_VERIFY(texAttr.GetMetadata(
                                               UsdImagingTokens->uvPrimvar, &t),

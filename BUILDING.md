@@ -23,6 +23,10 @@ Disable this component by specifying the cmake flag ```PXR_BUILD_IMAGING=FALSE``
 invoking cmake. Disabling this component will also disable the [USD Imaging](#usd-imaging)
 component.
 
+Support for Ptex can optionally be disabled by specifying the cmake flag
+```PXR_ENABLE_PTEX_SUPPORT=FALSE```.
+
+
 ##### USD Imaging
 
 This component provides the USD imaging delegates for Hydra, as well as

@@ -60,15 +60,15 @@ The Imaging and UsdImaging components (located in pxr/imaging and pxr/usdImaging
 respectively) have the following additional dependencies. These components can
 be disabled at build-time, for further details see [Advanced Build Configuration](BUILDING.md).
 
-| Name | Version |
-| ---- | --------- |
-| [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5                                  |
-| [GLEW](http://glew.sourceforge.net/)                              | 1.10.0                                 |
-| [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                  |
-| [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11                                 |
-| [Ptex](http://ptex.us/)                                           | 2.0.30                                 |
-| [Pyside](http://wiki.qt.io/PySide)                                | 1.2.2                                  |
-| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0                                  |
+| Name | Version | Optional |
+| ---- | --------- | ---------- |
+| [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5                                  |  |
+| [GLEW](http://glew.sourceforge.net/)                              | 1.10.0                                 |  |
+| [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                  |  |
+| [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11                                 |  |
+| [Ptex](http://ptex.us/)                                           | 2.0.30                                 | Y |
+| [Pyside](http://wiki.qt.io/PySide)                                | 1.2.2                                  |  |
+| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0                                  | |
 
 
 Getting and Building the Code

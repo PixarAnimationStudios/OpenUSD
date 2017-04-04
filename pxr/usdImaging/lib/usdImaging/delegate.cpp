@@ -2836,7 +2836,7 @@ UsdImagingDelegate::GetTextureResourceID(SdfPath const &textureId)
     if (filePath.IsEmpty())
         filePath = TfToken(asset.GetAssetPath());
 
-    isPtex = GlfPtexTexture::IsPtexTexture(filePath);
+    isPtex = GlfIsSupportedPtexTexture(filePath);
     
     if (!TfPathExists(filePath)) {
         if (isPtex) {
@@ -2907,7 +2907,8 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
         if (filePath.IsEmpty())
             filePath = TfToken(asset.GetAssetPath());
 
-        isPtex = GlfPtexTexture::IsPtexTexture(filePath);
+        isPtex = GlfIsSupportedPtexTexture(filePath);
+
         TF_DEBUG(USDIMAGING_TEXTURES).Msg(
                 "Loading texture: id(%s), isPtex(%s)\n",
                 usdPath.GetText(),
@@ -2939,7 +2940,7 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
         if (filePath.IsEmpty())
             filePath = TfToken(asset.GetAssetPath());
 
-        isPtex = GlfPtexTexture::IsPtexTexture(filePath);
+        isPtex = GlfIsSupportedPtexTexture(filePath);
         if (!isPtex) {
             UsdHydraUvTexture uvt(shader);
             uvt.GetWrapSAttr().Get(&wrapS);
