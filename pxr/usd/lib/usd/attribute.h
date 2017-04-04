@@ -416,15 +416,15 @@ private:
     friend class Usd_PrimData;
 
     UsdAttribute(const Usd_PrimDataHandle &prim,
-                 const SdfPath &primPath,
+                 const SdfPath &proxyPrimPath,
                  const TfToken &attrName)
-        : UsdProperty(UsdTypeAttribute, prim, primPath, attrName) {}
+        : UsdProperty(UsdTypeAttribute, prim, proxyPrimPath, attrName) {}
 
     UsdAttribute(UsdObjType objType,
                  const Usd_PrimDataHandle &prim,
-                 const SdfPath &primPath,
+                 const SdfPath &proxyPrimPath,
                  const TfToken &propName)
-        : UsdProperty(objType, prim, primPath, propName) {}
+        : UsdProperty(objType, prim, proxyPrimPath, propName) {}
 
     SdfAttributeSpecHandle
     _CreateSpec(const SdfValueTypeName &typeName, bool custom,

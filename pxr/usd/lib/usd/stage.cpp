@@ -1604,7 +1604,7 @@ _IsPrivateFieldKey(const TfToken& fieldKey)
 UsdPrim
 UsdStage::GetPseudoRoot() const
 {
-    return UsdPrim(_pseudoRoot, SdfPath::AbsoluteRootPath());
+    return UsdPrim(_pseudoRoot, SdfPath());
 }
 
 UsdPrim
@@ -1647,7 +1647,9 @@ UsdStage::GetPrimAtPath(const SdfPath &path) const
     // an instance proxy that uses the prim data from the corresponding
     // prim in the master but appears to be a prim at the given path.
     Usd_PrimDataConstPtr primData = _GetPrimDataAtPathOrInMaster(path);
-    return UsdPrim(primData, primData ? path : SdfPath());
+    const SdfPath& proxyPrimPath = 
+        primData && primData->GetPath() != path ? path : SdfPath::EmptyPath();
+    return UsdPrim(primData, proxyPrimPath);
 }
 
 Usd_PrimDataConstPtr

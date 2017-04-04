@@ -247,12 +247,13 @@ private:
     }
 
     // Convenience method for evaluating \p pred using \p prim and 
-    // \p primPath to determine whether this is for an instance proxy prim.
+    // \p proxyPrimPath to determine whether this is for an instance proxy 
+    // prim.
     template <class PrimPtr>
     friend bool 
     Usd_EvalPredicate(const Usd_PrimFlagsPredicate &pred, const PrimPtr &prim,
-                      const SdfPath &primPath) {
-        return pred._Eval(prim, Usd_IsInstanceProxy(prim, primPath));
+                      const SdfPath &proxyPrimPath) {
+        return pred._Eval(prim, Usd_IsInstanceProxy(prim, proxyPrimPath));
     }
 
     // Equality comparison.

@@ -79,10 +79,18 @@ public:
     //@{
 
     /// Return this schema object's held prim.
-    UsdPrim GetPrim() const { return UsdPrim(_primData, _primPath); }
+    UsdPrim GetPrim() const { return UsdPrim(_primData, _proxyPrimPath); }
 
     /// Shorthand for GetPrim()->GetPath().
-    SdfPath GetPath() const { return _primPath; }
+    SdfPath GetPath() const { 
+        if (!_proxyPrimPath.IsEmpty()) {
+            return _proxyPrimPath;
+        }
+        else if (Usd_PrimDataConstPtr p = get_pointer(_primData)) {
+            return p->GetPath();
+        }
+        return SdfPath::EmptyPath();
+    }
 
     //@}
 
@@ -117,7 +125,7 @@ public:
 #else
     operator _UnspecifiedBoolType() const {
         return (_primData &&
-                _IsCompatible(UsdPrim(_primData, _primPath)))
+                _IsCompatible(UsdPrim(_primData, _proxyPrimPath)))
                     ? &UsdSchemaBase::_primData : NULL;
     }
 #endif // doxygen
@@ -149,9 +157,9 @@ private:
     USD_API
     virtual const TfType &_GetTfType() const;
 
-    // The held prim and prim path.
+    // The held prim and proxy prim path.
     Usd_PrimDataHandle _primData;
-    SdfPath _primPath;
+    SdfPath _proxyPrimPath;
 };
 
 

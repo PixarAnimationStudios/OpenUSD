@@ -165,7 +165,7 @@ UsdPrim::GetProperty(const TfToken &propName) const
     else if (specType == SdfSpecTypeRelationship) {
         return GetRelationship(propName);
     }
-    return UsdProperty(UsdTypeProperty, _Prim(), GetPrimPath(), propName);
+    return UsdProperty(UsdTypeProperty, _Prim(), _ProxyPrimPath(), propName);
 }
 
 bool
@@ -368,7 +368,7 @@ UsdPrim::GetAttribute(const TfToken& attrName) const
 {
     // An invalid prim will present a coding error, and then return an
     // invalid attribute
-    return UsdAttribute(_Prim(), GetPrimPath(), attrName);
+    return UsdAttribute(_Prim(), _ProxyPrimPath(), attrName);
 }
 
 bool
@@ -427,7 +427,7 @@ UsdPrim::GetAuthoredRelationships() const
 UsdRelationship
 UsdPrim::GetRelationship(const TfToken& relName) const
 {
-    return UsdRelationship(_Prim(), GetPrimPath(), relName);
+    return UsdRelationship(_Prim(), _ProxyPrimPath(), relName);
 }
 
 bool
@@ -663,7 +663,7 @@ UsdPrim
 UsdPrim::GetFilteredNextSibling(const Usd_PrimFlagsPredicate &inPred) const
 {
     Usd_PrimDataConstPtr sibling = get_pointer(_Prim());
-    SdfPath siblingPath = GetPrimPath();
+    SdfPath siblingPath = _ProxyPrimPath();
     const Usd_PrimFlagsPredicate pred = 
         Usd_CreatePredicateForTraversal(sibling, siblingPath, inPred);
 
@@ -678,8 +678,7 @@ UsdPrim::GetMaster() const
 {
     Usd_PrimDataConstPtr masterPrimData = 
         _GetStage()->_GetMasterForInstance(get_pointer(_Prim()));
-    return UsdPrim(masterPrimData, 
-                   masterPrimData ? masterPrimData->GetPath() : SdfPath());
+    return UsdPrim(masterPrimData, SdfPath());
 }
 
 bool 

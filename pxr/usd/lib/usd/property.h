@@ -242,9 +242,9 @@ private:
 
     UsdProperty(UsdObjType objType,
                 const Usd_PrimDataHandle &prim,
-                const SdfPath &primPath,
+                const SdfPath &proxyPrimPath,
                 const TfToken &propName)
-        : UsdObject(objType, prim, primPath, propName) {}
+        : UsdObject(objType, prim, proxyPrimPath, propName) {}
 
 };
 

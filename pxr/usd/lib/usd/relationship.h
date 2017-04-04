@@ -273,15 +273,15 @@ private:
     friend struct UsdPrim_TargetFinder;
 
     UsdRelationship(const Usd_PrimDataHandle &prim,
-                    const SdfPath &primPath,
+                    const SdfPath &proxyPrimPath,
                     const TfToken& relName)
-        : UsdProperty(UsdTypeRelationship, prim, primPath, relName) {}
+        : UsdProperty(UsdTypeRelationship, prim, proxyPrimPath, relName) {}
 
     UsdRelationship(UsdObjType objType,
                     const Usd_PrimDataHandle &prim,
-                    const SdfPath &primPath,
+                    const SdfPath &proxyPrimPath,
                     const TfToken &propName)
-        : UsdProperty(objType, prim, primPath, propName) {}
+        : UsdProperty(objType, prim, proxyPrimPath, propName) {}
 
     SdfRelationshipSpecHandle _CreateSpec(bool fallbackCustom=true) const;
     bool _Create(bool fallbackCustom) const;

@@ -121,7 +121,7 @@ public:
     explicit UsdPrimRange(const UsdPrim &start)
         : iterator_adaptor_(get_pointer(start._Prim())) {
         _Init(base(), base() ? base()->GetNextPrim() : NULL, 
-              start.GetPrimPath());
+              start._ProxyPrimPath());
     }
 
     /// Construct a PrimRange that traverses the subtree rooted at \p start,
@@ -130,7 +130,7 @@ public:
                     const Usd_PrimFlagsPredicate &predicate)
         : iterator_adaptor_(get_pointer(start._Prim())) {
         _Init(base(), base() ? base()->GetNextPrim() : NULL, 
-              start.GetPrimPath(), predicate);
+              start._ProxyPrimPath(), predicate);
     }
 
     /// Create a PrimRange that traverses the subtree rooted at \p start,
@@ -194,7 +194,7 @@ public:
     UsdPrimRange GetEnd() const {
         UsdPrimRange r(*this);
         r.base_reference() = r._end;
-        r._primPath = SdfPath();
+        r._proxyPrimPath = SdfPath();
         r._depth = 0;
         r._isPost = false;
         return r;
@@ -216,32 +216,33 @@ public:
 private:
     UsdPrimRange(Usd_PrimDataConstPtr start,
                     Usd_PrimDataConstPtr end,
-                    const SdfPath& primPath,
+                    const SdfPath& proxyPrimPath,
                     const Usd_PrimFlagsPredicate &predicate =
                         UsdPrimDefaultPredicate)
         : iterator_adaptor_(start) {
-        _Init(start, end, primPath, predicate);
+        _Init(start, end, proxyPrimPath, predicate);
     }
 
     ////////////////////////////////////////////////////////////////////////
     // Helpers.
     void _Init(const Usd_PrimData *start,
                const Usd_PrimData *end,
-               const SdfPath &primPath,
+               const SdfPath &proxyPrimPath,
                const Usd_PrimFlagsPredicate &predicate = 
                    UsdPrimDefaultPredicate) {
         _end = end;
-        _primPath = primPath;
+        _proxyPrimPath = proxyPrimPath;
         _predicate = base() ? 
-            Usd_CreatePredicateForTraversal(base(), _primPath, predicate) :
-            predicate;
+            Usd_CreatePredicateForTraversal(base(), _proxyPrimPath, 
+                predicate) : predicate;
         _depth = 0;
         _postOrder = false;
         _pruneChildrenFlag = false;
         _isPost = false;
 
         // Advance to the first prim that passes the predicate.
-        if (base() != _end && !Usd_EvalPredicate(_predicate, base(), primPath)) {
+        if (base() != _end && 
+            !Usd_EvalPredicate(_predicate, base(), proxyPrimPath)) {
             _pruneChildrenFlag = true;
             increment();
         }
@@ -254,7 +255,7 @@ private:
         return
             base() == other.base() &&
             _end == other._end &&
-            _primPath == other._primPath &&
+            _proxyPrimPath == other._proxyPrimPath &&
             _predicate == other._predicate &&
             _depth == other._depth &&
             _postOrder == other._postOrder &&
@@ -265,7 +266,7 @@ private:
     USD_API void increment();
 
     reference dereference() const { 
-        return UsdPrim(base(), _primPath); 
+        return UsdPrim(base(), _proxyPrimPath); 
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -273,7 +274,7 @@ private:
 
     // These members are fixed for the life of the iterator.
     base_type _end;
-    SdfPath _primPath;
+    SdfPath _proxyPrimPath;
     Usd_PrimFlagsPredicate _predicate;
     unsigned int _depth;
     bool _postOrder;

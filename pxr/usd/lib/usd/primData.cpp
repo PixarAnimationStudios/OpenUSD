@@ -120,7 +120,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
     } 
     else {
         // Compose and cache 'active'.
-        UsdPrim self(Usd_PrimDataIPtr(this), _path);
+        UsdPrim self(Usd_PrimDataIPtr(this), SdfPath());
         bool active = true;
         self.GetMetadata(SdfFieldKeys->Active, &active);
         _flags[Usd_PrimActiveFlag] = active;

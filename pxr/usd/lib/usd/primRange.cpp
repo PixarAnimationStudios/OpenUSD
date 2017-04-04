@@ -38,9 +38,7 @@ UsdPrimRange::Stage(const UsdStagePtr &stage,
 {
     Usd_PrimDataConstPtr firstChild = 
         stage->GetPseudoRoot()._Prim()->GetFirstChild();
-    UsdPrimRange ret(firstChild, /* end = */ nullptr, 
-                        firstChild ? firstChild->GetPath() : SdfPath(), 
-                        predicate);
+    UsdPrimRange ret(firstChild, /* end = */ nullptr, SdfPath(), predicate);
     // The PrimRange uses a depth count to know when it's about to pop out of
     // the subtree it was walking so it can stop and avoid walking into siblings
     // of the initial prim.  Since we're proactively descending to the first
@@ -73,29 +71,30 @@ UsdPrimRange::increment()
     base_type &base = base_reference();
     if (ARCH_UNLIKELY(_isPost)) {
         _isPost = false;
-        if (Usd_MoveToNextSiblingOrParent(base, _primPath, _end, _predicate)) {
+        if (Usd_MoveToNextSiblingOrParent(base, _proxyPrimPath, _end, 
+                                          _predicate)) {
             if (_depth) {
                 --_depth;
                 _isPost = true;
             } else {
                 base = _end;
-                _primPath = SdfPath();
+                _proxyPrimPath = SdfPath();
             }
         }
     } else if (!_pruneChildrenFlag &&
-               Usd_MoveToChild(base, _primPath, _end, _predicate)) {
+               Usd_MoveToChild(base, _proxyPrimPath, _end, _predicate)) {
         ++_depth;
     } else {
         if (_postOrder) {
             _isPost = true;
         } else {
-            while (Usd_MoveToNextSiblingOrParent(base, _primPath, _end, 
+            while (Usd_MoveToNextSiblingOrParent(base, _proxyPrimPath, _end, 
                                                  _predicate)) {
                 if (_depth) {
                     --_depth;
                 } else {
                     base = _end;
-                    _primPath = SdfPath();
+                    _proxyPrimPath = SdfPath();
                     break;
                 }
             }
