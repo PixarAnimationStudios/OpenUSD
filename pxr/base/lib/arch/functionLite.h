@@ -35,16 +35,15 @@
 #include "pxr/base/arch/defines.h"
 // Note: this file specifically does not include <string>.
 
+#define __ARCH_FUNCTION__ __func__
+
 #if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_ICC) || \
     defined(ARCH_COMPILER_CLANG)
-#    define __ARCH_FUNCTION__ __FUNCTION__
 #    define __ARCH_PRETTY_FUNCTION__ __PRETTY_FUNCTION__
 #elif defined(ARCH_COMPILER_MSVC)
-#    define __ARCH_FUNCTION__ __FUNCTION__
-#    define __ARCH_PRETTY_FUNCTION__ __FUNCTION__
+#    define __ARCH_PRETTY_FUNCTION__ __FUNCSIG__
 #else
-#    define __ARCH_FUNCTION__ "(unknown)"
-#    define __ARCH_PRETTY_FUNCTION__ "(unknown)"
+#    define __ARCH_PRETTY_FUNCTION__ __ARCH_FUNCTION__
 #endif /* defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_ICC) ||
           defined(ARCH_COMPILER_CLANG)*/
 
