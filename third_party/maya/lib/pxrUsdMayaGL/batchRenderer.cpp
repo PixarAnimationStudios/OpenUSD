@@ -801,7 +801,7 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
     , _intersector()
 {
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
-    if (!TF_VERIFY(_renderIndex == nullptr)) {
+    if (!TF_VERIFY(_renderIndex != nullptr)) {
         return;
     }
     _taskDelegate = TaskDelegateSharedPtr(
