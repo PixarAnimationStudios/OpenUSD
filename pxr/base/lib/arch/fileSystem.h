@@ -70,6 +70,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     // See https://msdn.microsoft.com/en-us/library/1w06ktdy.aspx
     // XXX -- Should probably have Arch enum for these.
     #define F_OK    0       // Test for existence.
+    #define X_OK    1       // Test for execute permission.
     #define W_OK    2       // Test for write permission.
     #define R_OK    4       // Test for read permission.
 #endif

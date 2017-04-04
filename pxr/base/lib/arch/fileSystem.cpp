@@ -46,6 +46,7 @@
 #include <io.h>
 #include <process.h>
 #include <Windows.h>
+#include <WinIoCtl.h>
 #else
 #include <alloca.h>
 #include <sys/mman.h>
@@ -589,72 +590,132 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
 static inline DWORD ArchModeToAccess(int mode)
 {
     switch (mode) {
-    case F_OK: return FILE_GENERIC_EXECUTE;
+    case X_OK: return FILE_GENERIC_EXECUTE;
     case W_OK: return FILE_GENERIC_WRITE;
     case R_OK: return FILE_GENERIC_READ;
     default:   return FILE_ALL_ACCESS;
     }
 }
 
+static int Arch_FileAccessError()
+{
+    switch (GetLastError()) {
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+        // No such file.
+        errno = ENOENT;
+        return -1;
+
+    case ERROR_FILENAME_EXCED_RANGE:
+        // path too long
+        errno = ENAMETOOLONG;
+        return -1;
+
+    case ERROR_INVALID_NAME:
+    case ERROR_BAD_PATHNAME:
+    case ERROR_BAD_NETPATH:
+        // Invalid path.
+        errno = ENOTDIR;
+        return -1;
+
+    case ERROR_INVALID_DRIVE:
+    case ERROR_NOT_READY:
+        // Media is missing.
+        errno = EIO;
+        return -1;
+
+    case ERROR_INVALID_PARAMETER:
+        errno = EINVAL;
+        return -1;
+
+    default:
+        // Unexpected error.  Fall through to report access denied.
+
+    case ERROR_ACCESS_DENIED:
+        errno = EACCES;
+        return -1;
+    }
+}
+
 int ArchFileAccess(const char* path, int mode)
 {
-    SECURITY_INFORMATION securityInfo = OWNER_SECURITY_INFORMATION |
-                                        GROUP_SECURITY_INFORMATION |
-                                        DACL_SECURITY_INFORMATION;
-    bool result = false;
+    // Simple existence check is handled specially.
+    if (mode == F_OK) {
+        return (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES)
+                ? 0 : Arch_FileAccessError();
+    }
+
+    const SECURITY_INFORMATION securityInfo = OWNER_SECURITY_INFORMATION |
+                                              GROUP_SECURITY_INFORMATION |
+                                              DACL_SECURITY_INFORMATION;
+
+    // Get the SECURITY_DESCRIPTOR size.
     DWORD length = 0;
-
-    if (!GetFileSecurity(path, securityInfo, NULL, NULL, &length))
-    {
-        std::unique_ptr<unsigned char[]> buffer(new unsigned char[length]);
-        PSECURITY_DESCRIPTOR security = (PSECURITY_DESCRIPTOR)buffer.get();
-        if (GetFileSecurity(path, securityInfo, security, length, &length))
-        {
-            HANDLE token;
-            DWORD desiredAccess = TOKEN_IMPERSONATE | TOKEN_QUERY |
-                                  TOKEN_DUPLICATE | STANDARD_RIGHTS_READ;
-            if (!OpenThreadToken(GetCurrentThread(), desiredAccess, TRUE, &token))
-            {
-                if (!OpenProcessToken(GetCurrentProcess(), desiredAccess, &token))
-                {
-                    CloseHandle(token);
-                    return -1;
-                }
-            }
-
-            HANDLE duplicateToken;
-            if (DuplicateToken(token, SecurityImpersonation, &duplicateToken))
-            {
-                PRIVILEGE_SET privileges = {0};
-                DWORD grantedAccess = 0;
-                DWORD privilegesLength = sizeof(privileges);
-                BOOL accessStatus = FALSE;
-
-                GENERIC_MAPPING mapping;
-                mapping.GenericRead = FILE_GENERIC_READ;
-                mapping.GenericWrite = FILE_GENERIC_WRITE;
-                mapping.GenericExecute = FILE_GENERIC_EXECUTE;
-                mapping.GenericAll = FILE_ALL_ACCESS;
-
-                DWORD accessMask = ArchModeToAccess(mode);
-                MapGenericMask(&accessMask, &mapping);
-
-                if (AccessCheck(security,
-                                duplicateToken,
-                                accessMask,
-                                &mapping,
-                                &privileges,
-                                &privilegesLength,
-                                &grantedAccess,
-                                &accessStatus))
-                {
-                    result = (accessStatus == TRUE);
-                }
-                CloseHandle(duplicateToken);
-            }
-            CloseHandle(token);
+    if (!GetFileSecurity(path, securityInfo, NULL, 0, &length)) {
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+            return Arch_FileAccessError();
         }
     }
+
+    // Get the SECURITY_DESCRIPTOR.
+    std::unique_ptr<unsigned char[]> buffer(new unsigned char[length]);
+    PSECURITY_DESCRIPTOR security = (PSECURITY_DESCRIPTOR)buffer.get();
+    if (!GetFileSecurity(path, securityInfo, security, length, &length)) {
+        return Arch_FileAccessError();
+    }
+
+
+    HANDLE token;
+    DWORD desiredAccess = TOKEN_IMPERSONATE | TOKEN_QUERY |
+                          TOKEN_DUPLICATE | STANDARD_RIGHTS_READ;
+    if (!OpenThreadToken(GetCurrentThread(), desiredAccess, TRUE, &token))
+    {
+        if (!OpenProcessToken(GetCurrentProcess(), desiredAccess, &token))
+        {
+            CloseHandle(token);
+            errno = EACCES;
+            return -1;
+        }
+    }
+
+    bool result = false;
+    HANDLE duplicateToken;
+    if (DuplicateToken(token, SecurityImpersonation, &duplicateToken))
+    {
+        PRIVILEGE_SET privileges = {0};
+        DWORD grantedAccess = 0;
+        DWORD privilegesLength = sizeof(privileges);
+        BOOL accessStatus = FALSE;
+
+        GENERIC_MAPPING mapping;
+        mapping.GenericRead = FILE_GENERIC_READ;
+        mapping.GenericWrite = FILE_GENERIC_WRITE;
+        mapping.GenericExecute = FILE_GENERIC_EXECUTE;
+        mapping.GenericAll = FILE_ALL_ACCESS;
+
+        DWORD accessMask = ArchModeToAccess(mode);
+        MapGenericMask(&accessMask, &mapping);
+
+        if (AccessCheck(security,
+                        duplicateToken,
+                        accessMask,
+                        &mapping,
+                        &privileges,
+                        &privilegesLength,
+                        &grantedAccess,
+                        &accessStatus))
+        {
+            if (accessStatus) {
+                result = true;
+            }
+            else {
+                errno = EACCES;
+            }
+        }
+        CloseHandle(duplicateToken);
+    }
+    CloseHandle(token);
+
     return result ? 0 : -1;
 }
 
