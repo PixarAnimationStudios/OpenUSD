@@ -45,6 +45,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 GLF_API bool GlfIsSupportedPtexTexture(std::string const & imageFilePath);
 
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #ifdef PXR_PTEX_SUPPORT_ENABLED
 
@@ -54,6 +56,8 @@ GLF_API bool GlfIsSupportedPtexTexture(std::string const & imageFilePath);
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfPtexTexture);
 
@@ -132,9 +136,8 @@ private:
     const TfToken	_imageFilePath;
 };
 
-#endif // PXR_PTEX_SUPPORT_ENABLED
-
-
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_PTEX_SUPPORT_ENABLED
 
 #endif // GLF_TEXTURE_H

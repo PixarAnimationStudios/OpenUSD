@@ -44,6 +44,7 @@ bool GlfIsSupportedPtexTexture(std::string const & imageFilePath)
 #endif
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #ifdef PXR_PTEX_SUPPORT_ENABLED
 
@@ -66,6 +67,8 @@ bool GlfIsSupportedPtexTexture(std::string const & imageFilePath)
 
 using std::string;
 using namespace boost;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -329,7 +332,8 @@ GlfPtexTexture::IsMagFilterSupported(GLenum filter)
     }
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // PXR_PTEX_SUPPORT_ENABLED
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
