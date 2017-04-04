@@ -192,7 +192,6 @@ Hd_SmoothNormalsComputationGPU::Execute(
     if (!glDispatchCompute)
         return;
 
-    int numPoints = range->GetNumElements();
 
     TF_VERIFY(_adjacency);
     HdBufferArrayRangeSharedPtr const &adjacencyRange = _adjacency->GetAdjacencyRange();
@@ -258,6 +257,18 @@ Hd_SmoothNormalsComputationGPU::Execute(
     // interleaved offset/stride to normals
     uniform.normalsOffset = normals->GetOffset() / normals->GetComponentSize();
     uniform.normalsStride = normals->GetStride() / normals->GetComponentSize();
+
+    // The number of points is based off the size of the input,
+    // However, the number of points in the adjacency table
+    // is computed based off the largest vertex indexed from
+    // to topology (aka topology->ComputeNumPoints).
+    //
+    // Therefore, we need to clamp the number of points
+    // to the number of entries.
+    int numPoints = range->GetNumElements();
+    int numEntries = static_cast<int>(_adjacency->GetEntry().size() /
+                                      uniform.adjacencyStride);
+    numPoints = std::min(numPoints, numEntries);
 
     // transfer uniform buffer
     GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();
