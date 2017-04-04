@@ -27,20 +27,8 @@ import os, unittest, shutil
 
 class TestKindRegistry(unittest.TestCase):
     def test_Basic(self):
-        # Create testing environment
-        testRoot = os.path.join(os.path.dirname(__file__), 'KindPlugins')
-        testPluginsPython = testRoot + '/lib/python'
-        targetDirectory = testPluginsPython+'/TestKindModule'
-    
-        if not os.path.exists(targetDirectory):
-            os.makedirs(targetDirectory)
-            shutil.copyfile('TestKindModule_plugInfo.json', 
-                            os.path.join(targetDirectory, 'plugInfo.json'))
-            shutil.copyfile('TestKindModule__init__.py',
-                            os.path.join(targetDirectory, '__init__.py'))
-
         # Register python module plugins
-        Plug.Registry().RegisterPlugins(testPluginsPython + "/**/")
+        Plug.Registry().RegisterPlugins(os.getcwd() + "/**/")
 
         reg = Kind.Registry()
         self.assertTrue(reg)
