@@ -571,8 +571,8 @@ _ArchAvoidJIT()
 bool
 ArchDebuggerAttach()
 {
-    return ArchDebuggerIsAttached() ||
-            (!_ArchAvoidJIT() && Arch_DebuggerAttach());
+    return !_ArchAvoidJIT() &&
+            (ArchDebuggerIsAttached() || Arch_DebuggerAttach());
 }
 
 bool
@@ -590,7 +590,7 @@ ArchDebuggerIsAttached()
 void
 ArchAbort(bool logging)
 {
-    if (ArchDebuggerIsAttached() || !_ArchAvoidJIT()) {
+    if (!_ArchAvoidJIT() || ArchDebuggerIsAttached()) {
         if (!logging) {
 #if !defined(ARCH_OS_WINDOWS)
             // Remove signal handler.
