@@ -94,7 +94,7 @@ class SdfAssetPath;
 /// will provide the topology and unvarying data for the model, while           
 /// the clips will provide the time-sampled animation.
 /// 
-/// For further information, see \ref Usd_AdvancedFeatures_ClipsOverview 
+/// For further information, see \ref Usd_Page_ValueClips
 /// 
 ///
 class UsdClipsAPI : public UsdSchemaBase

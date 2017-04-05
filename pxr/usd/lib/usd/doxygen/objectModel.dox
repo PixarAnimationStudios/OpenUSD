@@ -204,7 +204,7 @@ layer just as UsdAttribute values can be, \em within a given layer, a metadatum
 can have only a single value - i.e. it cannot be sampled over time.  Removing
 time as an axis of variation allows metadata to be evaluated and stored more
 efficiently than attribute values, and also means that metadata authored in
-\ref Usd_AdvancedFeatures_ClipsOverview "Value Clips" will be ignored by USD.
+\ref Usd_Page_ValueClips "Value Clips" will be ignored by USD.
 
 \li *Core metadata resolution rules vary.* 
 \ref Usd_ValueResolution "Attribute Value Resolution" is fixed for all

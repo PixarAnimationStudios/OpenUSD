@@ -892,7 +892,7 @@ public:
     /// if it has one. If \a includeClipLayers is true, we will also include
     /// all of the layers that this stage has had to open so far to perform
     /// value resolution of attributes affected by 
-    /// \ref Usd_AdvancedFeatures_ClipsOverview "Value Clips"
+    /// \ref Usd_Page_ValueClips "Value Clips"
     USD_API
     SdfLayerHandleVector GetUsedLayers(bool includeClipLayers=true) const;
 

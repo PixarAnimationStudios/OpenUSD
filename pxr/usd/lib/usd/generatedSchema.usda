@@ -69,7 +69,7 @@ class "ClipsAPI" (
     will provide the topology and unvarying data for the model, while           
     the clips will provide the time-sampled animation.
 
-    For further information, see 
+    For further information, see \\ref Usd_Page_ValueClips
     """
 )
 {

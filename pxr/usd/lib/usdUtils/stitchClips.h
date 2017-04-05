@@ -28,7 +28,7 @@
 ///
 /// Collection of utilities for sequencing multiple layers each holding
 /// sequential time-varying data into
-/// \ref Usd_AdvancedFeatures_ClipsOverview "USD Value Clips".
+/// \ref Usd_Page_ValueClips "USD Value Clips".
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/api.h"
@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 SDF_DECLARE_HANDLES(SdfLayer);
 
 /// A function that creates layers that use
-/// \ref Usd_AdvancedFeatures_ClipsOverview "USD Value Clips"
+/// \ref Usd_Page_ValueClips "USD Value Clips"
 /// to effectively merge the time samples in the given \p clipLayers under \p
 /// clipPath without copying the samples into a separate layer.
 ///
