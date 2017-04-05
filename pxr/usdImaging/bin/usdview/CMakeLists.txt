@@ -17,6 +17,7 @@ pxr_install_test_dir(
 )
 
 pxr_register_test(testUsdviewAlive                                               
+    REQUIRES_DISPLAY
     PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdview --quitAfterStartup test.usda"   
