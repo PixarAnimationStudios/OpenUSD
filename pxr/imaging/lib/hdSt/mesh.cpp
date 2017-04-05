@@ -159,11 +159,17 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // stream extended representation
         // note: if we add topologyId computation in delegate,
         // we can move this copy into topologyInstance.IsFirstInstance() block
-        HdSt_MeshTopologySharedPtr topology =
-                    HdSt_MeshTopology::New(GetMeshTopology(sceneDelegate),
-                                           GetRefineLevel(sceneDelegate));
+        int refineLevel = GetRefineLevel(sceneDelegate);
+        HdMeshTopology meshTopology = GetMeshTopology(sceneDelegate);
 
-        int refineLevel = topology->GetRefineLevel();
+        // If the topology requires none subdivision scheme then force
+        // refinement level to be 0 since we do not want subdivision.
+        if (meshTopology.GetScheme() == PxOsdOpenSubdivTokens->none) {
+            refineLevel = 0;
+        }
+
+        HdSt_MeshTopologySharedPtr topology =
+                    HdSt_MeshTopology::New(meshTopology, refineLevel);
         if (refineLevel > 0) {
             // add subdiv tags before compute hash
             // XXX: calling GetSubdivTags on implicit prims raises an error.
@@ -973,10 +979,11 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _cullStyle = GetCullStyle(sceneDelegate);
     }
 
-    // disable smoothNormals for bilinear scheme mesh.
+    // disable smoothNormals for bilinear and none scheme mesh.
     // normal dirtiness will be cleared without computing/populating normals.
     TfToken scheme = _topology->GetScheme();
-    if (scheme == PxOsdOpenSubdivTokens->bilinear) {
+    if (scheme == PxOsdOpenSubdivTokens->bilinear ||
+        scheme == PxOsdOpenSubdivTokens->none) {
         requireSmoothNormals = false;
     }
 
@@ -1066,7 +1073,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
     // here since the geometric shader needs to know if we are actually
     // using normals or not.
     bool smoothNormals = desc.smoothNormals &&
-        _topology->GetScheme() != PxOsdOpenSubdivTokens->bilinear;
+        _topology->GetScheme() != PxOsdOpenSubdivTokens->bilinear &&
+        _topology->GetScheme() != PxOsdOpenSubdivTokens->none;
 
     // if the prim doesn't have an opinion about cullstyle,
     // use repr's default (it could also be DontCare, then renderPass's

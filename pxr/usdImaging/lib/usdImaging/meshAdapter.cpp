@@ -214,8 +214,6 @@ UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
     HF_MALLOC_TAG_FUNCTION();
     TfToken schemeToken;
     _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);
-    if (schemeToken == UsdGeomTokens->none)
-        schemeToken = PxOsdOpenSubdivTokens->bilinear;
 
     *topo = HdMeshTopology(
         schemeToken,
