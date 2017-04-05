@@ -82,38 +82,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 // -------------------------------------------------------------------------- //
 constexpr int UsdImagingDelegate::ALL_INSTANCES;
 
-void
-UsdImagingDelegate::_InitializeCollectionsByPurpose(HdChangeTracker &tracker)
-{
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAllPurposes);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndGuides);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndProxy);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndProxyAndGuides);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndProxyAndRender);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndGuides);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndRenderAndGuides);
-    tracker.AddCollection(UsdImagingCollectionTokens->geometryAndRender);
-
-    // initialize pre-defined collections for compatibility
-    SetInCollection(HdTokens->geometry,
-                    PurposeDefault);
-    SetInCollection(UsdImagingCollectionTokens->geometryAllPurposes,
-                    PurposeDefault|PurposeGuide|PurposeProxy|PurposeRender);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndGuides,
-                    PurposeDefault|PurposeGuide);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndProxy,
-                    PurposeDefault|PurposeProxy);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndProxyAndGuides,
-                    PurposeDefault|PurposeGuide|PurposeProxy);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndProxyAndRender,
-                    PurposeDefault|PurposeProxy|PurposeRender);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndRenderAndGuides,
-                    PurposeDefault|PurposeGuide|PurposeRender);
-    SetInCollection(UsdImagingCollectionTokens->geometryAndRender,
-                    PurposeDefault|PurposeRender);
-}
-
-
 UsdImagingDelegate::UsdImagingDelegate(
         HdRenderIndex *parentIndex,
         SdfPath const& delegateID)
@@ -130,9 +98,8 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _materialBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
     , _shaderAdapter(boost::make_shared<UsdImagingShaderAdapter>(this))
+    , _displayGuides(true)
 {
-    HdChangeTracker &tracker = GetRenderIndex().GetChangeTracker();
-    _InitializeCollectionsByPurpose(tracker);
 }
 
 UsdImagingDelegate::~UsdImagingDelegate()
@@ -610,6 +577,7 @@ UsdImagingIndexProxy::_ProcessRemovals()
         _delegate->_valueCache.Clear(*it);
         _delegate->_dirtyMap.erase(*it);
         _delegate->_refineLevelMap.erase(*it);
+        _delegate->_pickablesMap.erase(*it);
 
         // General Rprim-specific data:
         index.RemoveRprim(_delegate->GetPathForIndex(*it));
@@ -623,6 +591,7 @@ UsdImagingIndexProxy::_ProcessRemovals()
         _delegate->_valueCache.Clear(*it);
         _delegate->_dirtyMap.erase(*it);
         _delegate->_refineLevelMap.erase(*it);
+        _delegate->_pickablesMap.erase(*it);
 
         // Instancer-specific data:
         _delegate->_instancerPrimPaths.erase(*it);
@@ -1614,32 +1583,6 @@ UsdImagingDelegate::_UpdateSingleValue(SdfPath const& usdPath, int requestBits)
     }
 }
 
-// Given a a map from paths to purpose mask values, find the longest prefix
-// of usdPath in the map, and return the corresponding value, or PurposeNone
-// if no prefix is found.
-static int
-_GetPurposeMask(const UsdImagingDelegate::CollectionMembershipMap &map,
-                const SdfPath &path)
-{
-    // Use upper_bound to find the first item that's greater than path.
-    // Then search backwards to find the longest prefix of path, if there's
-    // a prefix in the map.
-    //
-    // In the worst case, this is log(N) + N in the number of paths in the map.
-    // If we expect these maps to get large, we can consider other approaches,
-    // such as using an unordered_map and calling find() repeatedly on parent
-    // paths.
-    auto it = map.upper_bound(path);
-    while (it != map.begin()) {
-        it = std::prev(it);
-        if (path.HasPrefix(it->first)) {
-            return it->second;
-        }
-    }
-
-    return UsdImagingDelegate::PurposeNone;
-}
-
 /*virtual*/
 bool 
 UsdImagingDelegate::IsInCollection(SdfPath const& id, 
@@ -1653,27 +1596,30 @@ UsdImagingDelegate::IsInCollection(SdfPath const& id,
         return false;
     }
 
-    // Visible collection.
-    TfToken purpose = UsdGeomTokens->default_;
-    TF_VERIFY(_valueCache.FindPurpose(usdPath, &purpose), "%s", id.GetText());
+    bool res = true;
 
-    // lookup user-configured collections
-    int purposeMask = PurposeNone;
-    auto it = _collectionMap.find(collectionName);
-    if (it != _collectionMap.end()) {
-        purposeMask = _GetPurposeMask(it->second, usdPath);
+    // If guide rendering is enabled (for the whole delegate) 
+    // and we are rendering a prim that is a guide, let's render it
+    TfToken const & tag = GetRenderTag(id);
+    if (tag == UsdGeomTokens->guide) {
+        res = false;
+        if (_displayGuides) {
+            res = true;
+        }
     }
-    
-    bool res = false;
 
-    if (purpose == UsdGeomTokens->default_) {
-        res = (purposeMask & PurposeDefault) != 0;
-    } else if (purpose == UsdGeomTokens->render) {
-        res = (purposeMask & PurposeRender) != 0;
-    } else if (purpose == UsdGeomTokens->proxy) {
-        res = (purposeMask & PurposeProxy) != 0;
-    } else if (purpose == UsdGeomTokens->guide) {
-        res = (purposeMask & PurposeGuide) != 0;
+    // Only render points for those paths that have been identified in the
+    // data structure that collects prims with point rendering.
+    if (collectionName == UsdGeomTokens->points) {
+        res = false;
+
+        auto itCol = _collectionMap.find(collectionName);
+        if (itCol != _collectionMap.end()) {
+            auto itPrim = itCol->second.find(usdPath);
+            if (itPrim != itCol->second.end()) {
+                res = true;
+            }
+        }
     }
 
     TF_DEBUG(USDIMAGING_COLLECTIONS).Msg("IsInCollection %s -> %s, "
@@ -1681,8 +1627,70 @@ UsdImagingDelegate::IsInCollection(SdfPath const& id,
                                     collectionName.GetText(),
                                     res ? "true " : "false",
                                     usdPath.GetText());
-
     return res;
+}
+
+void
+UsdImagingDelegate::ClearPickabilityMap()
+{
+    _pickablesMap.clear();
+}
+
+void 
+UsdImagingDelegate::SetPickability(SdfPath const& path, bool pickable)
+{
+    _pickablesMap[GetPathForIndex(path)] = pickable;
+}
+
+PickabilityMap
+UsdImagingDelegate::GetPickabilityMap() const
+{
+    return _pickablesMap; 
+}
+
+void
+UsdImagingDelegate::SetDisplayGuides(bool displayGuides) 
+{
+    _displayGuides = displayGuides;
+    
+    // Geometry that was assigned to a command buffer to be rendered might
+    // now be hidden or the contrary, so we need to rebuild the collections.
+    GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
+}
+
+/*virtual*/
+TfToken
+UsdImagingDelegate::GetRenderTag(SdfPath const& id)
+{
+    SdfPath usdPath = GetPathForUsd(id);
+
+    // Check the purpose of the rpim
+    TfToken purpose = UsdGeomTokens->default_;
+    TF_VERIFY(_valueCache.FindPurpose(usdPath, &purpose), "%s", 
+              usdPath.GetText());
+
+    // If it is a property path then let's resolve it.
+    // parent opinion wins if it is not default
+    if (usdPath.IsPropertyPath()) {
+        SdfPath usdPathParent = usdPath.GetPrimPath();
+        TfToken purposeParent = UsdGeomTokens->default_;
+        TF_VERIFY(_valueCache.FindPurpose(usdPathParent, &purposeParent), "%s", 
+                  usdPathParent.GetText());
+        
+        if (purposeParent != UsdGeomTokens->default_) {
+            purpose = purposeParent;
+        }
+    }
+
+    // Simple mapping so all render tags in multiple delegates match
+    if (purpose == UsdGeomTokens->default_) {
+        purpose = HdTokens->geometry;    
+    }
+
+    TF_DEBUG(USDIMAGING_COLLECTIONS).Msg("GetRenderTag %s -> %s \n",
+                                usdPath.GetText(),
+                                purpose.GetText());
+    return purpose;
 }
 
 /*virtual*/
@@ -2144,29 +2152,6 @@ UsdImagingDelegate::SetRootVisibility(bool isVisible)
     TF_FOR_ALL(it, _dirtyMap) {
         _MarkRprimOrInstancerDirty(it->first, HdChangeTracker::DirtyVisibility);
     }
-}
-
-void
-UsdImagingDelegate::SetInCollection(TfToken const &collectionName,
-                                    int purposeMask)
-{
-    // Create a membership map containing just the absolute root.
-    CollectionMembershipMap membershipMap;
-    membershipMap.insert(
-        std::make_pair(SdfPath::AbsoluteRootPath(), purposeMask));
-    _collectionMap[collectionName] = std::move(membershipMap);
-
-    GetRenderIndex().GetChangeTracker().MarkCollectionDirty(collectionName);
-}
-
-void
-UsdImagingDelegate::TransferCollectionMembershipMap(
-    TfToken const &collectionName,
-    CollectionMembershipMap &&membershipMap)
-{
-    _collectionMap[collectionName] = membershipMap;
-
-    GetRenderIndex().GetChangeTracker().MarkCollectionDirty(collectionName);
 }
 
 void

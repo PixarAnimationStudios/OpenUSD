@@ -67,11 +67,8 @@ public:
     virtual void SetPickResolution(unsigned int size);
     virtual bool TestIntersection(
             HdEngine* engine,
-            GfMatrix4d const& viewMatrix,
-            GfMatrix4d const& projMatrix,
             HdRprimCollection const& collection,
-            float alphaThreshold,
-            HdCullStyle cullStyle,
+            HdxIntersector::Params const& qparams,
             TfToken const& intersectionMode,
             HdxIntersector::HitVector *allHits);
 

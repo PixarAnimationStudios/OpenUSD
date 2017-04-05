@@ -138,6 +138,45 @@ HdxIntersector::SetResolution(GfVec2i const& widthHeight)
     }
 }
 
+class HdxIntersector_DrawTask final : public HdTask
+{
+public:
+    HdxIntersector_DrawTask(HdRenderPassSharedPtr const &renderPass,
+                HdRenderPassStateSharedPtr const &renderPassState,
+                TfTokenVector const &renderTags)
+    : HdTask()
+    , _renderPass(renderPass)
+    , _renderPassState(renderPassState)
+    , _renderTags(renderTags)
+    {
+    }
+
+protected:
+    virtual void _Sync( HdTaskContext* ctx) override
+    {
+        _renderPass->Sync();
+        _renderPassState->Sync();
+    }
+
+    virtual void _Execute(HdTaskContext* ctx) override
+    {
+        _renderPassState->Bind();
+        if(_renderTags.size()) {
+            TF_FOR_ALL(rt, _renderTags) {
+                _renderPass->Execute(_renderPassState, *rt);
+            }
+        } else {
+            _renderPass->Execute(_renderPassState);
+        }
+        _renderPassState->Unbind();
+    }
+
+private:
+    HdRenderPassSharedPtr _renderPass;
+    HdRenderPassStateSharedPtr _renderPassState;
+    TfTokenVector _renderTags;
+};
+
 bool
 HdxIntersector::Query(HdxIntersector::Params const& params,
                       HdRprimCollection const& col,
@@ -258,7 +297,11 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         // Execute
         //
         // XXX: make intersector a Task
-        engine->Draw(*_index, _renderPass, _renderPassState);
+        HdTaskSharedPtrVector tasks;
+        tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(_renderPass,
+                                                               _renderPassState,
+                                                            params.renderTags));
+        engine->Execute(*_index, tasks);
 
         glDisable(GL_STENCIL_TEST);
 

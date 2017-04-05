@@ -50,6 +50,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (proxy)
+    (render)
+);
 
 UsdImagingGLHdEngine::UsdImagingGLHdEngine(
         const SdfPath& rootPath,
@@ -68,6 +73,7 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
     , _excludedPrimPaths(excludedPrimPaths)
     , _invisedPrimPaths(invisedPrimPaths)
     , _isPopulated(false)
+    , _renderTags()
 {
     // _renderIndex, _taskController, and _delegate are initialized
     // by the plugin system.
@@ -321,7 +327,8 @@ UsdImagingGLHdEngine::_Populate(const UsdImagingGLHdEngineSharedPtrVector& engin
 void
 UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
                           SdfPathVector const& roots,
-                          UsdImagingGLEngine::RenderParams const& params)
+                          UsdImagingGLEngine::RenderParams const& params,
+                          TfTokenVector *renderTags)
 {
     if (collection == nullptr) {
         TF_CODING_ERROR("Null passed to _UpdateHydraCollection");
@@ -348,25 +355,40 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
         reprName = refined ? HdTokens->refined : HdTokens->smoothHull;
     }
 
-    // By default, show only default geometry, and default is *always* included
-    TfToken colName = HdTokens->geometry;
+    // Calculate the rendertags needed based on the parameters passed by
+    // the application
+    renderTags->clear();
+    renderTags->push_back(HdTokens->geometry);
 
     // Pickup proxy, guide, and render geometry if requested:
     if (params.showGuides && !params.showRender) {
-        colName = params.showProxy ?
-            UsdImagingCollectionTokens->geometryAndProxyAndGuides :
-            UsdImagingCollectionTokens->geometryAndGuides;
+        if (params.showProxy){
+            renderTags->push_back(HdxRenderTagsTokens->guide);
+            renderTags->push_back(_tokens->proxy);
+        } else {
+            renderTags->push_back(HdxRenderTagsTokens->guide);
+        }
     } else if (!params.showGuides && params.showRender) {
-        colName = params.showProxy ?
-            UsdImagingCollectionTokens->geometryAndProxyAndRender :
-            UsdImagingCollectionTokens->geometryAndRender;
+        if (params.showProxy){
+            renderTags->push_back(_tokens->render);
+            renderTags->push_back(_tokens->proxy);
+        } else {
+            renderTags->push_back(_tokens->render);
+        }
     } else if (params.showGuides && params.showRender) {
-        colName = params.showProxy ?
-            UsdImagingCollectionTokens->geometryAllPurposes :
-            UsdImagingCollectionTokens->geometryAndRenderAndGuides;
+        if (params.showProxy){
+            renderTags->push_back(_tokens->render);
+            renderTags->push_back(_tokens->proxy);
+            renderTags->push_back(HdxRenderTagsTokens->guide);
+        } else {
+            renderTags->push_back(_tokens->render);
+            renderTags->push_back(HdxRenderTagsTokens->guide);
+        }
     } else if (params.showProxy){
-        colName = UsdImagingCollectionTokens->geometryAndProxy;
+        renderTags->push_back(_tokens->proxy);
     }
+    
+    TfToken colName = HdTokens->geometry;
 
     // Check if the collection needs to be updated (so we can avoid the sort).
     SdfPathVector const& oldRoots = collection->GetRootPaths();
@@ -403,7 +425,8 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
 /* static */
 HdxRenderTaskParams
 UsdImagingGLHdEngine::_MakeHydraRenderParams(
-                  UsdImagingGLHdEngine::RenderParams const& renderParams)
+                  UsdImagingGLHdEngine::RenderParams const& renderParams,
+                  TfTokenVector const& renderTags)
 {
     static const HdCullStyle USD_2_HD_CULL_STYLE[] =
     {
@@ -452,8 +475,9 @@ UsdImagingGLHdEngine::_MakeHydraRenderParams(
 
     params.enableHardwareShading = renderParams.enableHardwareShading;
 
+    params.renderTags = renderTags;
+
     // Leave default values for:
-    // - params.renderTags
     // - params.geomStyle
     // - params.complexity
     // - params.hullVisibility
@@ -471,9 +495,10 @@ void
 UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, RenderParams params)
 {
     _taskController->SetCameraClipPlanes(params.clipPlanes);
-    _UpdateHydraCollection(&_renderCollection, paths, params);
+    _UpdateHydraCollection(&_renderCollection, paths, params, &_renderTags);
     _taskController->SetCollection(_renderCollection);
-    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params);
+
+    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params, _renderTags);
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
@@ -490,9 +515,10 @@ UsdImagingGLHdEngine::Render(const UsdPrim& root, RenderParams params)
     SdfPathVector roots(1, rootPath);
 
     _taskController->SetCameraClipPlanes(params.clipPlanes);
-    _UpdateHydraCollection(&_renderCollection, roots, params);
+    _UpdateHydraCollection(&_renderCollection, roots, params, &_renderTags);
     _taskController->SetCollection(_renderCollection);
-    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params);
+
+    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params, _renderTags);
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
@@ -519,18 +545,20 @@ UsdImagingGLHdEngine::TestIntersection(
 
     SdfPath rootPath = _delegate->GetPathForIndex(root.GetPath());
     SdfPathVector roots(1, rootPath);
-    _UpdateHydraCollection(&_intersectCollection,
-        roots, params);
+    _UpdateHydraCollection(&_intersectCollection, roots, params, &_renderTags);
 
     HdxIntersector::HitVector allHits;
+    HdxIntersector::Params qparams;
+    qparams.viewMatrix = worldToLocalSpace * viewMatrix;
+    qparams.projectionMatrix = projectionMatrix;
+    qparams.alphaThreshold = params.alphaThreshold;
+    qparams.renderTags = _renderTags;
+    qparams.cullStyle = HdCullStyleNothing;
 
     if (!_taskController->TestIntersection(
             &_engine,
-            worldToLocalSpace * viewMatrix,
-            projectionMatrix,
             _intersectCollection,
-            params.alphaThreshold,
-            HdCullStyleNothing,
+            qparams,
             HdxIntersectionModeTokens->nearest,
             &allHits)) {
         return false;
@@ -576,8 +604,7 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
        return false;
     }
 
-    _UpdateHydraCollection(&_intersectCollection,
-        paths, params);
+    _UpdateHydraCollection(&_intersectCollection, paths, params, &_renderTags);
 
     static const HdCullStyle USD_2_HD_CULL_STYLE[] =
     {
@@ -592,15 +619,18 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
                 == UsdImagingGLEngine::CULL_STYLE_COUNT),"enum size mismatch");
 
     HdxIntersector::HitVector allHits;
+    HdxIntersector::Params qparams;
+    qparams.viewMatrix = worldToLocalSpace * viewMatrix;
+    qparams.projectionMatrix = projectionMatrix;
+    qparams.alphaThreshold = params.alphaThreshold;
+    qparams.cullStyle = USD_2_HD_CULL_STYLE[params.cullStyle];
+    qparams.renderTags = _renderTags;
 
     _taskController->SetPickResolution(pickResolution);
     if (!_taskController->TestIntersection(
             &_engine,
-            worldToLocalSpace * viewMatrix,
-            projectionMatrix,
             _intersectCollection,
-            params.alphaThreshold,
-            USD_2_HD_CULL_STYLE[params.cullStyle],
+            qparams,
             HdxIntersectionModeTokens->unique,
             &allHits)) {
         return false;
@@ -690,6 +720,8 @@ UsdImagingGLHdEngine::Render(RenderParams params)
 
     VtValue selectionValue(_selTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
+    VtValue renderTags(_renderTags);
+    _engine.SetTaskContextData(HdxTokens->renderTags, renderTags);
 
     TfToken const& renderMode = params.enableIdRender ?
         HdxTaskSetTokens->idRender : HdxTaskSetTokens->colorRender;

@@ -204,9 +204,11 @@ private:
     // Create a hydra collection given root paths and render params
     static void _UpdateHydraCollection(HdRprimCollection *collection,
                           SdfPathVector const& roots,
-                          UsdImagingGLEngine::RenderParams const& params);
+                          UsdImagingGLEngine::RenderParams const& params,
+                          TfTokenVector *renderTags);
     static HdxRenderTaskParams _MakeHydraRenderParams(
-                          UsdImagingGLEngine::RenderParams const& params);
+                          UsdImagingGLEngine::RenderParams const& params,
+                          TfTokenVector const& renderTags);
 
     // This function disposes of: the render index, the render plugin,
     // the task controller, and the usd imaging delegate.
@@ -240,6 +242,8 @@ private:
     SdfPathVector _excludedPrimPaths;
     SdfPathVector _invisedPrimPaths;
     bool _isPopulated;
+
+    TfTokenVector _renderTags;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

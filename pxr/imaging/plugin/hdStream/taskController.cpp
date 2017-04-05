@@ -342,11 +342,8 @@ HdStreamTaskController::SetPickResolution(unsigned int size)
 bool
 HdStreamTaskController::TestIntersection(
         HdEngine* engine,
-        GfMatrix4d const& viewMatrix,
-        GfMatrix4d const& projMatrix,
         HdRprimCollection const& collection,
-        float alphaThreshold,
-        HdCullStyle cullStyle,
+        HdxIntersector::Params const& qparams,
         TfToken const& intersectionMode,
         HdxIntersector::HitVector *allHits)
 {
@@ -354,12 +351,6 @@ HdStreamTaskController::TestIntersection(
         TF_CODING_ERROR("Null hit vector passed to TestIntersection");
         return false;
     }
-
-    HdxIntersector::Params qparams;
-    qparams.viewMatrix = viewMatrix;
-    qparams.projectionMatrix = projMatrix;
-    qparams.alphaThreshold = alphaThreshold;
-    qparams.cullStyle = cullStyle;
 
     HdxIntersector::Result result;
     if (!_intersector->Query(qparams, collection, engine, &result)) {

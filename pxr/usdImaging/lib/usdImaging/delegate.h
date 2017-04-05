@@ -71,9 +71,9 @@ class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
 class UsdImagingDefaultShaderAdapter;
 
+typedef boost::container::flat_map<SdfPath, bool> PickabilityMap;
 typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
-
-typedef boost::shared_ptr<UsdImagingShaderAdapter> UsdImagingShaderAdapterSharedPtr ;
+typedef boost::shared_ptr<UsdImagingShaderAdapter> UsdImagingShaderAdapterSharedPtr;
 
 /// \class UsdImagingDelegate
 ///
@@ -237,29 +237,6 @@ public:
     USDIMAGING_API
     void SetRigidXformOverrides(RigidXformOverridesMap const &overrides);
 
-    enum PurposeMask {
-        PurposeNone    = 0,
-        PurposeDefault = (1<<0),
-        PurposeRender  = (1<<1),
-        PurposeProxy   = (1<<2),
-        PurposeGuide   = (1<<3)
-    };
-
-    /// Sets the membership flag of user-defined \p collectionName for the
-    /// entire delegate. IsInCollection responds based on this setting.
-    USDIMAGING_API
-    void SetInCollection(TfToken const &collectionName, int purposeMask);
-
-    /// Sets the membership of user-defined \p collectionName as determined
-    /// by \p membershipMap, a SdfPathMap to purposeMask (int) from rprim
-    /// memership (or not) can be determined.
-    ///
-    /// IsInCollection responds based on this setting.
-    USDIMAGING_API
-    void TransferCollectionMembershipMap(
-        TfToken const &collectionName,
-        CollectionMembershipMap &&membershipMap);
-
     /// Sets the collection map
     /// (discard previously set existing map by SetInCollection)
     USDIMAGING_API
@@ -268,12 +245,31 @@ public:
     /// Returns the collection map
     CollectionMap GetCollectionMap() const { return _collectionMap; }
 
+    /// Returns the root paths of pickable objects.
+    USDIMAGING_API
+    PickabilityMap GetPickabilityMap() const;
+
+    /// Sets pickability for a specific path.
+    USDIMAGING_API
+    void SetPickability(SdfPath const& path, bool pickable);
+
+    /// Clears any pickability opinions that this delegates might have.
+    USDIMAGING_API
+    void ClearPickabilityMap();
+
+    /// Sets display guides rendering
+    USDIMAGING_API
+    void SetDisplayGuides(bool displayGuides);
+
+
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
     virtual bool IsInCollection(SdfPath const& id, 
                                 TfToken const& collectionName);
+    USDIMAGING_API
+    virtual TfToken GetRenderTag(SdfPath const& id);
     USDIMAGING_API
     virtual HdMeshTopology GetMeshTopology(SdfPath const& id);
     USDIMAGING_API
@@ -595,9 +591,6 @@ private:
     // This will never return a nullptr.  
     _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
 
-    // Innitialization shared by ctors
-    void _InitializeCollectionsByPurpose(HdChangeTracker &tracker);
-
     // XXX: These maps could be store as individual member paths on the Rprim
     // itself, which seems like a much nicer way of maintaining the mapping.
     tbb::spin_rw_mutex _indexToUsdPathMapMutex;
@@ -673,7 +666,13 @@ private:
     // Collection
     CollectionMap _collectionMap;
 
+    // Pickability
+    PickabilityMap _pickablesMap;
+
     UsdImagingShaderAdapterSharedPtr _shaderAdapter;
+
+    // Display guides rendering
+    bool _displayGuides;
 
     UsdImagingDelegate() = delete;
     UsdImagingDelegate(UsdImagingDelegate const &) = delete;

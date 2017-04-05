@@ -103,6 +103,7 @@ public:
             , alphaThreshold(0.0f)
             , cullStyle(HdCullStyleNothing)
             , depthMaskCallback(HdxNoDepthMask)
+            , renderTags()
         {}
 
         HitMode hitMode;
@@ -112,6 +113,7 @@ public:
         HdCullStyle cullStyle;
         std::vector<GfVec4d> clipPlanes;
         DepthMaskCallback depthMaskCallback;
+        TfTokenVector renderTags;
     };
 
     struct Hit {
