@@ -489,11 +489,45 @@ _AppendDrawItem(HdSceneDelegate* delegate,
         std::vector<HdDrawItem> *drawItems =
                 rprim->GetDrawItems(delegate, reprName, forcedRepr);
 
+        TfToken const & t =  rprim->GetRenderTag(delegate);
         TF_FOR_ALL(drawItemIt, *drawItems) {
-            TfToken t =  rprim->GetRenderTag(delegate);
             (*result)[t].push_back(&(*drawItemIt));
         }
     }
+}
+
+static
+bool
+_IsPathExcluded(SdfPath const & path,
+                SdfPathVector const & rootPaths,
+                SdfPathVector const & excludePaths)
+{
+    // XXX : We will need something more efficient
+    //       specially if the list of excluded paths is big.
+    //       Also, since the array of excluded paths is sorted
+    //       we could for instance use lower_bound
+    bool isExcludedPath = false;
+
+    for (SdfPathVector::const_iterator excludeIt = excludePaths.begin();
+            excludeIt != excludePaths.end(); excludeIt++) {
+
+        SdfPath const& excludePath = *excludeIt;
+        if (path.HasPrefix(excludePath)) { 
+            isExcludedPath = true;
+
+            // Looking for paths that might be included inside the 
+            // excluded paths
+            for (SdfPathVector::const_iterator includedIt = rootPaths.begin();
+                    includedIt != rootPaths.end(); includedIt++) 
+            {
+                if (path.HasPrefix(*includedIt) && 
+                        includedIt->HasPrefix(excludePath)) {
+                    isExcludedPath = false;
+                }
+            }
+        }
+    }
+    return isExcludedPath;
 }
 
 HdRenderIndex::HdDrawItemView 
@@ -543,7 +577,9 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
         }
 
         dispatcher.Run(
-          [children, collectionName, reprName, forcedRepr, &result, this](){
+          [children, collectionName, reprName, forcedRepr, 
+            rootPaths, excludePaths, &result, this]() {
+            
             // In the loop below, we process the previous item while fetching
             // the next, this is done to hide the memory latency of accessing
             // each item.
@@ -557,6 +593,10 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 
             // Main loop.
             for (; pathIt != children->end(); pathIt++) {
+                if (_IsPathExcluded(*pathIt, rootPaths, excludePaths)) {
+                    continue;
+                }
+                
                 // Grab the current item.
                 HdRprim*         rprim         = info->rprim;
                 HdSceneDelegate *sceneDelegate = info->sceneDelegate;
@@ -611,22 +651,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
         } else {
             // Here we know the path is potentially renderable
             // now we need to check if the path is excluded
-            // XXX : We will need something more efficient
-            //       specially if the list of excluded paths is big.
-            //       Also, since the array of excluded paths is sorted
-            //       we could for instance use lower_bound
-            bool isExcludedPath = false;
-            for (SdfPathVector::const_iterator excludeIt = excludePaths.begin();
-                    excludeIt != excludePaths.end(); excludeIt++) {
-
-                SdfPath const& excludePath = *excludeIt;
-                if (pathIt->HasPrefix(excludePath)) { 
-                    isExcludedPath = true;
-                    break;
-                }
-            }
-
-            if (isExcludedPath) {
+            if (_IsPathExcluded(*pathIt, rootPaths, excludePaths)) {
                 pathIt++;
                 continue;
             }
