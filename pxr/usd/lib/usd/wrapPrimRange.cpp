@@ -260,8 +260,10 @@ void wrapUsdPrimRange()
             ;
 
         class_<Usd_PyPrimRangeIterator>("_Iterator", no_init)
-            // This a lambda that does nothing cast to a function pointer.
-            .def("__iter__", +[](Usd_PyPrimRangeIterator){}, return_self<>())
+            // This is a lambda that does nothing cast to a function pointer.
+            // All we want is to return 'self'.
+            .def("__iter__", static_cast<void (*)(Usd_PyPrimRangeIterator)>
+                     ([](Usd_PyPrimRangeIterator){}), return_self<>())
             .def("next", &Usd_PyPrimRangeIterator::next)
             .def("IsPostVisit", &Usd_PyPrimRangeIterator::IsPostVisit)
             .def("PruneChildren", &Usd_PyPrimRangeIterator::PruneChildren)
