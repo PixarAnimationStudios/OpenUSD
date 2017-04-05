@@ -442,9 +442,9 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
                 UsdEditContext editContext(mStage, editTarget);
 
                 // == Activate/Deactivate UsdPrims
-                UsdPrimRange it = UsdPrimRange::AllPrims(mStage->GetPseudoRoot());
+                UsdPrimRange rng = UsdPrimRange::AllPrims(mStage->GetPseudoRoot());
                 std::vector<UsdPrim> primsToDeactivate;
-                for ( ; it; ++it) {
+                for (auto it = rng.begin(); it != rng.end(); ++it) {
                     UsdPrim usdPrim = *it;
                     // For all xformable usdPrims...
                     if (usdPrim && usdPrim.IsA<UsdGeomXformable>()) {

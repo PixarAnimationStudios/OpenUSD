@@ -1294,7 +1294,7 @@ public:
     /// Advance this range's end iterator.
     iterator_range& advance_end(difference_type n);
 
-    ;    /// Return begin() == end().
+    /// Return begin() == end().
     bool empty() const;
 
 private:

@@ -182,7 +182,7 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
         mArgs.shadingMode = ASSEMBLY_SHADING_MODE;
     }
 
-    UsdPrimRange primIt(usdRootPrim);
+    UsdPrimRange range(usdRootPrim);
 
     // We maintain a registry mapping SdfPaths to MObjects as we create Maya
     // nodes, so prime the registry with the root Maya node and the
@@ -192,7 +192,7 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
     if (isImportingPsuedoRoot || isSceneAssembly) {
         // Skip the root prim if it is the pseudoroot, or if we are importing
         // on behalf of a scene assembly.
-        ++primIt;
+        range.increment_begin();
     } else {
         // Otherwise, associate the usdRootPrim's *parent* with the root Maya
         // node instead.
@@ -204,9 +204,9 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
                 mMayaRootDagPath.node()));
 
     if (mArgs.importWithProxyShapes) {
-        _DoImportWithProxies(primIt);
+        _DoImportWithProxies(range);
     } else {
-        _DoImport(primIt, usdRootPrim);
+        _DoImport(range, usdRootPrim);
     }
 
     SdfPathSet topImportedPaths;
@@ -233,10 +233,10 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
 }
 
 
-bool usdReadJob::_DoImport(UsdPrimRange& primIt,
+bool usdReadJob::_DoImport(UsdPrimRange& range,
                            const UsdPrim& usdRootPrim)
 {
-    for(; primIt; ++primIt) {
+    for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
         const UsdPrim& prim = *primIt;
 
         PxrUsdMayaPrimReaderArgs args(prim,

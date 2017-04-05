@@ -82,9 +82,9 @@ class usdReadJob
     // usdImport, and an 'Expanded' representation-style import, respectively.
     // It would be great if we could combine these into a single traversal at
     // some point.
-    bool _DoImport(UsdPrimRange& primIt,
+    bool _DoImport(UsdPrimRange& range,
                    const UsdPrim& usdRootPrim);
-    bool _DoImportWithProxies(UsdPrimRange& primIt);
+    bool _DoImportWithProxies(UsdPrimRange& range);
 
     // These are helper methods for the proxy import method.
     bool _ProcessProxyPrims(

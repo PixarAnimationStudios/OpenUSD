@@ -957,39 +957,38 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
     leafPaths.reserve(pathsToRepopulate.size());
 
     TF_FOR_ALL(rootPathIt, pathsToRepopulate) {
-        UsdPrimRange treeIt(_GetPrim(*rootPathIt));
-
         // Discover and insert all renderable prims into the worker for later
         // execution.
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Root path: <%s>\n",
                             rootPathIt->GetText());
 
-        for (; treeIt; ++treeIt) {
-            if (!treeIt->GetPath().HasPrefix(_rootPrimPath)) {
-                treeIt.PruneChildren();
+        UsdPrimRange range(_GetPrim(*rootPathIt));
+        for (auto iter = range.begin(); iter != range.end(); ++iter) {
+            if (!iter->GetPath().HasPrefix(_rootPrimPath)) {
+                iter.PruneChildren();
                 TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned at <%s> "
                             "not under root prim path <%s>\n",
-                            treeIt->GetPath().GetText(),
+                            iter->GetPath().GetText(),
                             _rootPrimPath.GetText());
                 continue;
             }
-            if (excludedSet.find(treeIt->GetPath()) != excludedSet.end()) {
-                treeIt.PruneChildren();
+            if (excludedSet.find(iter->GetPath()) != excludedSet.end()) {
+                iter.PruneChildren();
                 TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned at <%s> "
                             "due to exclusion list\n",
-                            treeIt->GetPath().GetText());
+                            iter->GetPath().GetText());
                 continue;
             }
-            if (_AdapterSharedPtr adapter = _AdapterLookup(*treeIt)) {
+            if (_AdapterSharedPtr adapter = _AdapterLookup(*iter)) {
                 _PopulateMaterialBindingCache wu = 
-                    { *treeIt, &_materialBindingCache };
+                    { *iter, &_materialBindingCache };
                 bindingDispatcher.Run(wu);
-                leafPaths.push_back(std::make_pair(*treeIt, adapter));
-                if (adapter->ShouldCullChildren(*treeIt)) {
+                leafPaths.push_back(std::make_pair(*iter, adapter));
+                if (adapter->ShouldCullChildren(*iter)) {
                    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned "
                                     "children of <%s> due to adapter\n",
-                            treeIt->GetPath().GetText());
-                   treeIt.PruneChildren();
+                            iter->GetPath().GetText());
+                   iter.PruneChildren();
                 }
             }
         }
@@ -1383,22 +1382,22 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
         // If this path was not pruned by a parent, discover all prims that were
         // newly added with this change.
         if (!prunedByParent) {
-            UsdPrimRange treeIt(prim);
+            UsdPrimRange range(prim);
 
-            for (;treeIt;++treeIt) {
+            for (auto iter = range.begin(); iter != range.end(); ++iter) {
                 if (prunedByParent)
                     break;
 
                 // If this prim in the tree wants to prune children, we must
                 // respect that and ignore any additions under this descendant.
                 if (_AdapterSharedPtr adapter = 
-                                      _AdapterLookupByPath(treeIt->GetPath())) {
-                    if (adapter->ShouldCullChildren(*treeIt)) {
-                        treeIt.PruneChildren();
+                                      _AdapterLookupByPath(iter->GetPath())) {
+                    if (adapter->ShouldCullChildren(*iter)) {
+                        iter.PruneChildren();
                         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: "
                                 "[Re]population of children of <%s> pruned by "
                                 "adapter\n",
-                                    treeIt->GetPath().GetText());
+                                    iter->GetPath().GetText());
                     }
                     continue;
                 }
@@ -1406,7 +1405,7 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                 // The prim wasn't in the _pathAdapterMap, this could happen
                 // because the prim just came into existence.
 
-                _AdapterSharedPtr adapter = _AdapterLookup(*treeIt);
+                _AdapterSharedPtr adapter = _AdapterLookup(*iter);
                 if (!adapter) {
                     // This prim has no prim adapter, continue traversing
                     // descendants.    
@@ -1419,9 +1418,9 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                 // prune children (repopulation is recursive).
                 TF_DEBUG(USDIMAGING_CHANGES).Msg(
                                             "[Resync Prim]: Populating <%s>\n",
-                                            treeIt->GetPath().GetText());
-                proxy->Repopulate(treeIt->GetPath());
-                treeIt.PruneChildren();
+                                            iter->GetPath().GetText());
+                proxy->Repopulate(iter->GetPath());
+                iter.PruneChildren();
             }
         }
     }

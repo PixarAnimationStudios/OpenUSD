@@ -1767,9 +1767,9 @@ UsdStage::_WalkPrimsWithMastersImpl(
     tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash> *seenMasterPrimPaths
     ) const
 {
-    UsdPrimRange childIt = UsdPrimRange::AllPrims(prim);
+    UsdPrimRange children = UsdPrimRange::AllPrims(prim);
     WorkParallelForEach(
-        childIt, childIt.GetEnd(),
+        children.begin(), children.end(),
         [=](UsdPrim const &child) {
             cb(child);
             if (child.IsInstance()) {
@@ -4119,10 +4119,8 @@ UsdStage::Flatten(bool addSourceFileComment) const
         _CopyMasterPrim(master, flatLayer, masterToFlattened);
     }
 
-    for (auto childIt = UsdPrimRange::AllPrims(GetPseudoRoot()); 
-         childIt; ++childIt) {
-        UsdPrim usdPrim = *childIt;
-        _FlattenPrim(usdPrim, flatLayer, usdPrim.GetPath(), masterToFlattened);
+    for (UsdPrim prim: UsdPrimRange::AllPrims(GetPseudoRoot())) {
+        _FlattenPrim(prim, flatLayer, prim.GetPath(), masterToFlattened);
     }
 
     if (addSourceFileComment) {
@@ -4200,10 +4198,8 @@ UsdStage::_CopyMasterPrim(const UsdPrim &masterPrim,
 {
     const auto& flattenedMasterPath 
         = masterToFlattened.at(masterPrim.GetPath());
-   
-    for (auto primIt = UsdPrimRange::AllPrims(masterPrim); primIt; primIt++){
-        UsdPrim child = *primIt;
-        
+
+    for (UsdPrim child: UsdPrimRange::AllPrims(masterPrim)) {
         // We need to update the child path to use the Flatten name.
         const auto flattenedChildPath = child.GetPath().ReplacePrefix(
             masterPrim.GetPath(), flattenedMasterPath);

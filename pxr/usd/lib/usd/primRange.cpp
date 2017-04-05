@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdPrimRange
 UsdPrimRange::Stage(const UsdStagePtr &stage,
-                       const Usd_PrimFlagsPredicate &predicate)
+                    const Usd_PrimFlagsPredicate &predicate)
 {
     Usd_PrimDataConstPtr firstChild = 
         stage->GetPseudoRoot()._Prim()->GetFirstChild();
@@ -44,15 +44,15 @@ UsdPrimRange::Stage(const UsdStagePtr &stage,
     // of the initial prim.  Since we're proactively descending to the first
     // child under the stage's pseudo-root, we need to preincrement _depth so we
     // *do* continue to siblings of the initial prim.
-    if (ret)
-        ++ret._depth;
+    if (!ret.empty())
+        ++ret._initDepth;
     return ret;
 }
 
 void
-UsdPrimRange::PruneChildren()
+UsdPrimRange::iterator::PruneChildren()
 {
-    if (!*this) {
+    if (base() == _range->_end) {
         TF_CODING_ERROR("Iterator past-the-end");
         return;
     }
@@ -66,34 +66,35 @@ UsdPrimRange::PruneChildren()
 }
 
 void
-UsdPrimRange::increment()
+UsdPrimRange::iterator::increment()
 {
     base_type &base = base_reference();
+    base_type end = _range->_end;
     if (ARCH_UNLIKELY(_isPost)) {
         _isPost = false;
-        if (Usd_MoveToNextSiblingOrParent(base, _proxyPrimPath, _end, 
-                                          _predicate)) {
+        if (Usd_MoveToNextSiblingOrParent(
+                base, _proxyPrimPath, end, _range->_predicate)) {
             if (_depth) {
                 --_depth;
                 _isPost = true;
             } else {
-                base = _end;
+                base = end;
                 _proxyPrimPath = SdfPath();
             }
         }
     } else if (!_pruneChildrenFlag &&
-               Usd_MoveToChild(base, _proxyPrimPath, _end, _predicate)) {
+               Usd_MoveToChild(base, _proxyPrimPath, end, _range->_predicate)) {
         ++_depth;
     } else {
-        if (_postOrder) {
+        if (_range->_postOrder) {
             _isPost = true;
         } else {
-            while (Usd_MoveToNextSiblingOrParent(base, _proxyPrimPath, _end, 
-                                                 _predicate)) {
+            while (Usd_MoveToNextSiblingOrParent(
+                       base, _proxyPrimPath, end, _range->_predicate)) {
                 if (_depth) {
                     --_depth;
                 } else {
-                    base = _end;
+                    base = end;
                     _proxyPrimPath = SdfPath();
                     break;
                 }

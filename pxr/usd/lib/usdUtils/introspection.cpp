@@ -149,9 +149,7 @@ UsdUtilsComputeUsdStageStats(const UsdStageWeakPtr &stage,
     PrimTypeAndCountMap primCountsByType;
     
     std::set<string> seenAssetNames;
-    for (UsdPrimRange iter = stage->TraverseAll(); iter; ++iter ) {
-        const UsdPrim &prim = *iter;
-
+    for (UsdPrim prim: stage->TraverseAll()) {
         _UpdateCountsHelper(prim, &seenAssetNames, 
             &totalPrimCount, &primaryPrimCount, 
             &modelCount, &instancedModelCount, 
@@ -171,9 +169,7 @@ UsdUtilsComputeUsdStageStats(const UsdStageWeakPtr &stage,
         PrimTypeAndCountMap mastersPrimCountsByType;
 
         for (const UsdPrim &masterPrim : masters) {
-            UsdPrimRange iter(masterPrim);
-            for (; iter; ++iter ) {
-                const UsdPrim &prim = *iter;
+            for (UsdPrim prim: UsdPrimRange(masterPrim)) {
                 _UpdateCountsHelper(prim, &seenAssetNames, 
                     &totalPrimCount, &mastersPrimCount, 
                     &modelCount, &instancedModelCount, 

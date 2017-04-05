@@ -373,7 +373,8 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
     }
 
     GfBBox3d result;
-    for (UsdPrimRange it(prim); it ; ++it) {
+    UsdPrimRange range(prim);
+    for (auto it = range.begin(); it != range.end(); ++it) {
         const UsdPrim &p = *it;
         const SdfPath &primPath = p.GetPath();
 
@@ -731,10 +732,9 @@ UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
 
     TfHashSet<UsdPrim, _UsdPrimHash> seenMasterPrims;
 
-    for (UsdPrimRange it(
-            prim, (UsdPrimIsActive && UsdPrimIsDefined 
-                   && !UsdPrimIsAbstract)); it; ++it) {
-
+    UsdPrimRange range(
+        prim, (UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract));
+    for (auto it = range.begin(); it != range.end(); ++it) {
         _PrimBBoxHashMap::iterator cacheIt = _bboxCache.insert(
             std::make_pair(*it, _Entry())).first;
         if (_ShouldPruneChildren(*it, &cacheIt->second)) {

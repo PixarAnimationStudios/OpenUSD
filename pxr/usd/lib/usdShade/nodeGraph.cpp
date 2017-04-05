@@ -276,14 +276,9 @@ _ComputeNonTransitiveInputConsumersMap(const UsdShadeNodeGraph &nodeGraph,
         result[input] = consumers;
     }
 
-    UsdPrimRange iter(nodeGraph.GetPrim());
-    // Skip the node-graph root in the traversal.
-    ++iter;
-
     // XXX: This traversal isn't instancing aware. We must update this 
     // once we have instancing aware USD objects. See http://bug/126053
-    for ( ; iter ; ++iter) {
-        const UsdPrim &prim = *iter;
+    for (UsdPrim prim: nodeGraph.GetPrim().GetDescendants()) {
 
         UsdShadeConnectableAPI connectable(prim);
         if (!connectable)

@@ -133,11 +133,12 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
     // In this case, we dispatch to the underlying PrimAdapter and disable
     // instancing.
     if (instancedPrimAdapter) {
-        UsdPrimRange treeIt(prim);
+        UsdPrimRange range(prim);
+        auto iter = range.begin();
 
         bool isLeafInstancer;
         const SdfPath protoPath = 
-            _InsertProtoRprim(&treeIt, TfToken(),
+            _InsertProtoRprim(&iter, TfToken(),
                               instanceShaderBinding,
                               SdfPath(), instancedPrimAdapter, index,
                               &isLeafInstancer);
@@ -177,21 +178,21 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
         // The master is a typeless stub for instancing and should
         // never itself be a renderable gprim, so we can skip it initially
         // and just iterate over its children;
-        UsdPrimRange treeIt(masterPrim);
-        ++treeIt;
+        UsdPrimRange range(masterPrim);
+        range.increment_begin();
 
         int primCount = 0;
-        for (; treeIt; ++treeIt) {
+        for (auto iter = range.begin(); iter != range.end(); ++iter) {
             // If we encounter an instance in this master, save it aside
             // for a subsequent population pass since we'll need to populate
             // its master once we're done with this one.
-            if (treeIt->IsInstance()) {
-                nestedInstances.push_back(*treeIt);
+            if (iter->IsInstance()) {
+                nestedInstances.push_back(*iter);
                 continue;
             }
 
-            UsdImagingPrimAdapterSharedPtr const& adapter = 
-                _GetPrimAdapter(*treeIt);
+            UsdImagingPrimAdapterSharedPtr const& adapter =
+                _GetPrimAdapter(*iter);
             if (!adapter) {
                 continue;
             }
@@ -200,12 +201,12 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
             // Rprim allocation. 
             //
             const TfToken protoName(TfStringPrintf(
-                "proto_%s_id%d", treeIt->GetName().GetText(), protoID++));
+                "proto_%s_id%d", iter->GetName().GetText(), protoID++));
 
             bool isLeafInstancer;
 
             const SdfPath protoPath = 
-                _InsertProtoRprim(&treeIt, protoName,
+                _InsertProtoRprim(&iter, protoName,
                                   instanceShaderBinding,
                                   instancerPath, instancerAdapter, index,
                                   &isLeafInstancer);
@@ -214,7 +215,7 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
             // Update instancer data.
             //
             _ProtoRprim& rproto = instancerData.primMap[protoPath];
-            rproto.path =  treeIt->GetPath();
+            rproto.path = iter->GetPath();
             rproto.adapter = adapter;
             rproto.protoGroup = grp;
             ++primCount;
@@ -225,7 +226,8 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
                 "[Add Instance NI] <%s>  %s (%s), adapter = %p\n",
-                instancerPath.GetText(), protoPath.GetText(), treeIt->GetName().GetText(),
+                instancerPath.GetText(), protoPath.GetText(),
+                iter->GetName().GetText(),
                 adapter.get());
         }
         if (primCount > 0) {
@@ -290,13 +292,14 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 }
 
 SdfPath
-UsdImagingInstanceAdapter::_InsertProtoRprim(UsdPrimRange* it,
-                        TfToken const& protoName,
-                        SdfPath instanceShaderBinding,
-                        SdfPath instancerPath,
-                        UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
-                        UsdImagingIndexProxy* index,
-                        bool *isLeafInstancer)
+UsdImagingInstanceAdapter::_InsertProtoRprim(
+    UsdPrimRange::iterator *it,
+    TfToken const& protoName,
+    SdfPath instanceShaderBinding,
+    SdfPath instancerPath,
+    UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
+    UsdImagingIndexProxy* index,
+    bool *isLeafInstancer)
 {
     UsdPrim const& prim = **it;
     SdfPath protoPath;

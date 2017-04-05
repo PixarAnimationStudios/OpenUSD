@@ -611,17 +611,17 @@ UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
 {
     // Instead of using root.begin(), setup a special iterator that does both
     // pre-order and post-order traversal so we can push and pop state.
-    UsdPrimRange primIt = UsdPrimRange::PreAndPostVisit(root);
+    UsdPrimRange range = UsdPrimRange::PreAndPostVisit(root);
 
     UsdPrim pseudoRoot = root.GetStage()->GetPseudoRoot();
 
     // Traverse the stage to extract data for drawing.
-    while (primIt) {
-        if (!primIt.IsPostVisit()) {
+    for (auto iter = range.begin(); iter != range.end(); ++iter) {
+        if (!iter.IsPostVisit()) {
 
-            if (_excludedSet.find(primIt->GetPath()) != _excludedSet.end()) {
-                primIt.PruneChildren();
-                ++primIt;
+            if (_excludedSet.find(iter->GetPath()) != _excludedSet.end()) {
+                iter.PruneChildren();
+                ++iter;
                 continue;
             }
 
@@ -630,9 +630,9 @@ UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
             // Because we are pruning invisible subtrees, we can assume all
             // parent prims have "inherited" visibility.
             TfToken visibility;
-            if (*primIt != pseudoRoot &&
-                primIt->GetAttribute(UsdGeomTokens->visibility)
-                                        .Get(&visibility, _params.frame) &&
+            if (*iter != pseudoRoot &&
+                iter->GetAttribute(UsdGeomTokens->visibility)
+                    .Get(&visibility, _params.frame) &&
                 visibility == UsdGeomTokens->invisible) {
                 
                 visible = false;
@@ -640,9 +640,9 @@ UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
 
             // Treat only the purposes we've been asked to show as visible
             TfToken purpose;
-            if (*primIt != pseudoRoot
-                && primIt->GetAttribute(UsdGeomTokens->purpose)
-                                            .Get(&purpose, _params.frame)
+            if (*iter != pseudoRoot
+                && iter->GetAttribute(UsdGeomTokens->purpose)
+                   .Get(&purpose, _params.frame)
                 && purpose != UsdGeomTokens->default_  // fast/common out
                 && (
                      (purpose == UsdGeomTokens->guide 
@@ -657,43 +657,41 @@ UsdImagingGLRefEngine::_TraverseStage(const UsdPrim& root)
 
             // Do pre-visit data extraction.
             if (visible) {
-                if (primIt->IsA<UsdGeomXform>())
-                    _HandleXform(*primIt);
-                else if (primIt->IsA<UsdGeomMesh>())
-                    _HandleMesh(*primIt);
-                else if (primIt->IsA<UsdGeomCurves>())
-                    _HandleCurves(*primIt);
-                else if (primIt->IsA<UsdGeomCube>())
-                    _HandleCube(*primIt);
-                else if (primIt->IsA<UsdGeomSphere>())
-                    _HandleSphere(*primIt);
-                else if (primIt->IsA<UsdGeomCone>())
-                    _HandleCone(*primIt);
-                else if (primIt->IsA<UsdGeomCylinder>())
-                    _HandleCylinder(*primIt);
-                else if (primIt->IsA<UsdGeomCapsule>())
-                    _HandleCapsule(*primIt);
-                else if (primIt->IsA<UsdGeomPoints>())
-                    _HandlePoints(*primIt);
-                else if (primIt->IsA<UsdGeomNurbsPatch>())
-                    _HandleNurbsPatch(*primIt);                    
+                if (iter->IsA<UsdGeomXform>())
+                    _HandleXform(*iter);
+                else if (iter->IsA<UsdGeomMesh>())
+                    _HandleMesh(*iter);
+                else if (iter->IsA<UsdGeomCurves>())
+                    _HandleCurves(*iter);
+                else if (iter->IsA<UsdGeomCube>())
+                    _HandleCube(*iter);
+                else if (iter->IsA<UsdGeomSphere>())
+                    _HandleSphere(*iter);
+                else if (iter->IsA<UsdGeomCone>())
+                    _HandleCone(*iter);
+                else if (iter->IsA<UsdGeomCylinder>())
+                    _HandleCylinder(*iter);
+                else if (iter->IsA<UsdGeomCapsule>())
+                    _HandleCapsule(*iter);
+                else if (iter->IsA<UsdGeomPoints>())
+                    _HandlePoints(*iter);
+                else if (iter->IsA<UsdGeomNurbsPatch>())
+                    _HandleNurbsPatch(*iter);                    
             } else {
-                primIt.PruneChildren();
+                iter.PruneChildren();
             }
 
         } else {
             if (!_xformStack.empty()) {
                 const std::pair<UsdPrim, GfMatrix4d> &entry =
                     _xformStack.back();
-                if (entry.first == *primIt) {
+                if (entry.first == *iter) {
                     // pop state
                     _xformStack.pop_back();
                     _ctm = entry.second;
                 }
             }
         }
-
-        ++primIt;
     }
 
     // Apply the additional offset from the polygon vertex indices, which are

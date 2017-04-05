@@ -64,10 +64,11 @@ UsdviewqUtils::_GetAllPrimsOfType(UsdStagePtr const &stage,
                                   TfType const& schemaType)
 {
     std::vector<UsdPrim> result;
-    for(UsdPrimRange it = stage->Traverse(); it; ++it) {
-        if (_IsA(*it, schemaType))
-            result.push_back(*it);
-    }
+    UsdPrimRange range = stage->Traverse();
+    std::copy_if(range.begin(), range.end(), std::back_inserter(result),
+                 [schemaType](UsdPrim const &prim) {
+                     return _IsA(prim, schemaType);
+                 });
     return result;
 }
 
