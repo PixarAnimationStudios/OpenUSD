@@ -501,9 +501,8 @@ private:
     UsdPrim _GetPrim(SdfPath const& usdPath) {
         UsdPrim const& p = 
                     _stage->GetPrimAtPath(usdPath.GetAbsoluteRootOrPrimPath());
-        if (!TF_VERIFY(p))
-            TF_CODING_ERROR("No prim found for id: %s", 
-                                usdPath.GetAbsoluteRootOrPrimPath().GetText());
+        TF_VERIFY(p, "No prim found for id: %s",
+                  usdPath.GetAbsoluteRootOrPrimPath().GetText());
         return p;
     }
 
