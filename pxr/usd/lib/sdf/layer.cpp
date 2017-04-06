@@ -814,6 +814,11 @@ SdfLayer::_Reload(bool force)
         }
 
         _assetModificationTime.Swap(timestamp);
+
+        if (realPath != oldRealPath) {
+            Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(
+                SdfLayerHandle(this));
+        }
     }
 
     _MarkCurrentStateAsClean();
@@ -1236,6 +1241,7 @@ SdfLayer::_InitializeFromIdentifier(
     // must occur prior to updating the layer registry, as the new layer
     // information is used to recompute registry indices.
     string oldIdentifier = _assetInfo->identifier;
+    string oldRealPath = _assetInfo->realPath;
     _assetInfo.swap(newInfo);
 
     // Update layer state delegate.
@@ -1249,9 +1255,15 @@ SdfLayer::_InitializeFromIdentifier(
     // Only send a notice if the identifier has changed (this notice causes
     // mass invalidation. See http://bug/33217). If the old identifier was
     // empty, this is a newly constructed layer, so don't send the notice.
-    if (!oldIdentifier.empty() && (oldIdentifier != GetIdentifier())) {
+    if (!oldIdentifier.empty()) {
         SdfChangeBlock block;
-        Sdf_ChangeManager::Get().DidChangeLayerIdentifier(self, oldIdentifier);
+        if (oldIdentifier != GetIdentifier()) {
+            Sdf_ChangeManager::Get().DidChangeLayerIdentifier(
+                self, oldIdentifier);
+        }
+        if (oldRealPath != GetRealPath()) {
+            Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(self);
+        }
     }
 }
 

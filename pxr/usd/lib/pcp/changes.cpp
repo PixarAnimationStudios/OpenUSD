@@ -301,10 +301,11 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                       const SdfLayerChangeListMap& changes)
 {
     // LayerStack changes
-    static const int LayerStackLayersChange      = 1;
-    static const int LayerStackOffsetsChange     = 2;
-    static const int LayerStackRelocatesChange   = 4;
-    static const int LayerStackSignificantChange = 8;
+    static const int LayerStackLayersChange       = 1;
+    static const int LayerStackOffsetsChange      = 2;
+    static const int LayerStackRelocatesChange    = 4;
+    static const int LayerStackSignificantChange  = 8;
+    static const int LayerStackResolvedPathChange = 16;
     typedef int LayerStackChangeBitmask;
     typedef std::map<PcpLayerStackPtr, LayerStackChangeBitmask>
         LayerStackChangeMap;
@@ -395,7 +396,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
             PcpLayerStackPtrVector stacks =
                 cache->FindAllLayerStacksUsingLayer(layer);
             if (!stacks.empty()) {
-                cacheLayerStacks.push_back(std::make_pair( cache, stacks) );
+                cacheLayerStacks.emplace_back(cache, std::move(stacks));
             }
         }
         if (cacheLayerStacks.empty()) {
@@ -552,6 +553,10 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                                          layer->GetIdentifier().c_str());
                     }
                     break;
+                }
+
+                if (entry.flags.didChangeResolvedPath) {
+                    layerStackChangeMask |= LayerStackResolvedPathChange;
                 }
             }
 
@@ -864,17 +869,27 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
 
     // Process layer stack changes.  This will handle both blowing
     // caches (as needed) for the layer stack contents and offsets,
-    // as well as  analyzing relocation changes in the layer stack.
-    TF_FOR_ALL(layerStackChange, layerStackChangesMap) {
-        _DidChangeLayerStack(
-            layerStackChange->first,
-            layerStackChange->second & LayerStackLayersChange,
-            layerStackChange->second & LayerStackOffsetsChange,
-            layerStackChange->second & LayerStackSignificantChange);
-        if (layerStackChange->second & LayerStackRelocatesChange) {
-            _DidChangeLayerStackRelocations(caches, layerStackChange->first,
-                                            debugSummary);
+    // as well as analyzing relocation changes in the layer stack.
+    for (const auto& entry : layerStackChangesMap) {
+        const PcpLayerStackPtr& layerStack = entry.first;
+        LayerStackChangeBitmask layerStackChanges = entry.second;
+
+        if (layerStackChanges & LayerStackResolvedPathChange) {
+            _DidChangeLayerStackResolvedPath(caches, layerStack, debugSummary);
+            if (Pcp_NeedToRecomputeDueToAssetPathChange(layerStack)) {
+                layerStackChanges |= LayerStackSignificantChange;
+            }
         }
+
+        if (layerStackChanges & LayerStackRelocatesChange) {
+            _DidChangeLayerStackRelocations(caches, layerStack, debugSummary);
+        }
+
+        _DidChangeLayerStack(
+            layerStack,
+            layerStackChanges & LayerStackLayersChange,
+            layerStackChanges & LayerStackOffsetsChange,
+            layerStackChanges & LayerStackSignificantChange);
     }
 
     if (debugSummary && !debugSummary->empty()) {
@@ -1081,36 +1096,6 @@ PcpChanges::DidChangeLayerOffsets(PcpCache* cache)
     PcpLayerStackChanges& changes = _GetLayerStackChanges(cache);
     if (!changes.didChangeLayers) {
         changes.didChangeLayerOffsets = true;
-    }
-}
-
-void 
-PcpChanges::DidChangeLayerStack(PcpCache* cache, 
-                                const PcpLayerStackPtr& layerStack)
-{
-    _DidChangeLayerStack(
-        layerStack, 
-        /* requiresLayerStackChange = */ true,
-        /* requiresLayerStackOffsetChange = */ true,
-        /* requiresSignificantChange = */ true);
-
-    // Since this layer stack will be recomputed, need to register
-    // significant changes to all prim indexes that use it so that
-    // they pick up the new contents.
-    
-    const PcpDependencyVector deps = cache->FindSiteDependencies(
-        layerStack, SdfPath::AbsoluteRootPath(), 
-        PcpDependencyTypeAnyIncludingVirtual,
-        /* recurseOnSite */ true,
-        /* recurseOnIndex */ true,
-        /* filter */ true);
-
-    for (const PcpDependency& dep : deps) {
-        if (!dep.indexPath.IsAbsoluteRootOrPrimPath()) {
-            // Filter to only prims; see comment above re: properties.
-            continue;
-        }
-        DidChangeSignificantly(cache, dep.indexPath);
     }
 }
 
@@ -1816,6 +1801,50 @@ PcpChanges::_DidChangeLayerStackRelocations(
         for (const SdfPath& depPath : depPathSet) {
             PCP_APPEND_DEBUG("      <%s>\n", depPath.GetText());
             DidChangeSignificantly(cache, depPath);
+        }
+    }
+}
+
+void 
+PcpChanges::_DidChangeLayerStackResolvedPath(
+    const std::vector<PcpCache*>& caches,
+    const PcpLayerStackPtr& layerStack,
+    std::string* debugSummary)
+{
+    for (PcpCache* cache : caches) {
+        PcpDependencyVector deps = 
+            cache->FindSiteDependencies(
+                layerStack, SdfPath::AbsoluteRootPath(),
+                PcpDependencyTypeAnyIncludingVirtual,
+                /* recurseOnSite */ true,
+                /* recurseOnIndex */ false,
+                /* filterForExisting */ true);
+
+        auto noResyncNeeded = [cache](const PcpDependency& dep) {
+            if (!dep.indexPath.IsPrimPath()) { 
+                return false; 
+            }
+            const PcpPrimIndex* primIndex = cache->FindPrimIndex(dep.indexPath);
+            return (TF_VERIFY(primIndex) && 
+                    !Pcp_NeedToRecomputeDueToAssetPathChange(*primIndex));
+        };
+
+        deps.erase(
+            std::remove_if(deps.begin(), deps.end(), noResyncNeeded),
+            deps.end());
+        if (deps.empty()) {
+            continue;
+        }
+
+        PCP_APPEND_DEBUG(
+            "   Resync following in @%s@ significant due to layer "
+            "resolved path change:\n",
+            cache->GetLayerStackIdentifier().rootLayer->
+                GetIdentifier().c_str());
+
+        for (const PcpDependency& dep : deps) {
+            PCP_APPEND_DEBUG("    <%s>\n", dep.indexPath.GetText());
+            DidChangeSignificantly(cache, dep.indexPath);
         }
     }
 }

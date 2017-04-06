@@ -217,12 +217,6 @@ public:
     PCP_API
     void DidChangeLayerOffsets(PcpCache* cache);
 
-    /// The layer stack \p layerStack changed significantly, requiring
-    /// the layer stack to be recomputed.
-    PCP_API 
-    void DidChangeLayerStack(PcpCache* cache, 
-                             const PcpLayerStackPtr& layerStack);
-
     /// The object at \p path changed significantly enough to require
     /// recomputing the entire prim or property index.  A significant change
     /// implies changes to every namespace descendant's index, specs, and
@@ -412,6 +406,12 @@ private:
     void _DidChangeLayerStackRelocations( const std::vector<PcpCache*>& caches,
                                           const PcpLayerStackPtr & layerStack,
                                           std::string* debugSummary );
+
+    // Register changes to any prim indexes in \p caches that are affected
+    // by a change to a layer's resolved path used by \p layerStack.
+    void _DidChangeLayerStackResolvedPath(const std::vector<PcpCache*>& caches,
+                                          const PcpLayerStackPtr& layerStack,
+                                          std::string* debugSummary);
 
     // The spec stack for the prim or property index at \p path must be
     // recomputed due to a change that affects only the internal representation

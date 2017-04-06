@@ -226,6 +226,14 @@ Sdf_ChangeManager::DidChangeLayerIdentifier(const SdfLayerHandle &layer,
     _data.local().changes[layer].DidChangeLayerIdentifier(oldIdentifier);
 }
 
+void 
+Sdf_ChangeManager::DidChangeLayerResolvedPath(const SdfLayerHandle &layer)
+{
+    if (!layer->_ShouldNotify())
+        return;
+    _data.local().changes[layer].DidChangeLayerResolvedPath();
+}
+
 static bool
 _IsOrderChangeOnly(const VtValue & oldVal, const VtValue & newVal )
 {

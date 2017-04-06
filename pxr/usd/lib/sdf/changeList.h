@@ -57,6 +57,7 @@ public:
 
     void DidReplaceLayerContent();
     void DidReloadLayerContent();
+    void DidChangeLayerResolvedPath();
     void DidChangeLayerIdentifier(const std::string &oldIdentifier);
     void DidChangeSublayerPaths(const std::string &subLayerPath,
                                 SubLayerChangeType changeType);
@@ -127,6 +128,7 @@ public:
             
             // SdfLayer
             bool didChangeIdentifier:1;
+            bool didChangeResolvedPath:1;
             bool didReplaceContent:1;
             bool didReloadContent:1;
 

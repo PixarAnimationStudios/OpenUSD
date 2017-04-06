@@ -66,6 +66,7 @@ public:
     void DidReloadLayerContent(const SdfLayerHandle &layer);
     void DidChangeLayerIdentifier(const SdfLayerHandle &layer,
                                   const std::string &oldIdentifier);
+    void DidChangeLayerResolvedPath(const SdfLayerHandle &layer);
     void DidChangeField(const SdfLayerHandle &layer,
                         const SdfPath & path, const TfToken &field,
                         const VtValue & oldValue, const VtValue & newValue );
