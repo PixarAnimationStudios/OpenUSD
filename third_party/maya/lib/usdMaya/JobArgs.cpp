@@ -40,11 +40,73 @@ TF_DEFINE_PUBLIC_TOKENS(PxUsdExportJobArgsTokens,
         PXRUSDMAYA_JOBARGS_TOKENS);
 
 
+JobSharedArgs::JobSharedArgs()
+    :
+        fileName(""),
+        shadingMode(PxrUsdMayaShadingModeTokens->displayColor),
+        defaultMeshScheme(UsdGeomTokens->catmullClark),
+        startTime(1.0),
+        endTime(1.0)
+{
+}
+
+bool JobSharedArgs::parseSharedOption(const MStringArray& theOption)
+{
+    if (theOption[0] == MString("shadingMode")) {
+        if (theOption[1]=="None") {
+            shadingMode = PxrUsdMayaShadingModeTokens->none;
+        } else if (theOption[1]=="GPrim Colors") {
+            shadingMode = PxrUsdMayaShadingModeTokens->displayColor;
+        } else if (theOption[1]=="Material Colors") {
+            shadingMode = PxrUsdMayaShadingModeTokens->displayColor;
+        } else if (theOption[1]=="RfM Shaders") {
+            TfToken rfmShadingMode("pxrRis");
+            if (PxrUsdMayaShadingModeRegistry::GetInstance().GetExporter(rfmShadingMode)) {
+                shadingMode = rfmShadingMode;
+            } else {
+                MGlobal::displayError(
+                        TfStringPrintf("No shadingMode '%s' found.  Setting shadingMode='none'",
+                                       rfmShadingMode.GetText()).c_str());
+                shadingMode = PxrUsdMayaShadingModeTokens->none;
+            }
+        }
+        return true;
+    } else if (theOption[0] == MString("defaultMeshScheme")) {
+        setDefaultMeshScheme(theOption[1]);
+        return true;
+    }
+    else if (theOption[0] == MString("startTime")) {
+        startTime = theOption[1].asDouble();
+        return true;
+    }
+    else if (theOption[0] == MString("endTime")) {
+        endTime = theOption[1].asDouble();
+        return true;
+    }
+    return false;
+}
+
+void JobSharedArgs::setDefaultMeshScheme(const MString& stringVal)
+{
+    if (stringVal=="none" || stringVal=="Polygonal Mesh") {
+        defaultMeshScheme = UsdGeomTokens->none;
+    } else if (stringVal=="catmullClark" || stringVal=="CatmullClark SDiv") {
+        defaultMeshScheme = UsdGeomTokens->catmullClark;
+    } else if (stringVal=="loop" || stringVal=="Loop SDiv") {
+        defaultMeshScheme = UsdGeomTokens->loop;
+    } else if (stringVal=="bilinear" || stringVal=="Bilinear SubDiv") {
+        defaultMeshScheme = UsdGeomTokens->bilinear;
+    } else {
+        MGlobal::displayWarning("Incorrect Default Mesh Schema: " + stringVal +
+                                " defaulting to: " +
+                                MString(defaultMeshScheme.GetText()));
+    }
+}
+
 JobExportArgs::JobExportArgs()
     :
         exportRefsAsInstanceable(false),
         exportDisplayColor(true),
-        shadingMode(PxrUsdMayaShadingModeTokens->displayColor),
         mergeTransformAndShape(true),
         exportAnimation(false),
         excludeInvisible(false),
@@ -56,23 +118,84 @@ JobExportArgs::JobExportArgs()
         nurbsExplicitUVType(PxUsdExportJobArgsTokens->Uniform),
         exportColorSets(true),
         renderLayerMode(PxUsdExportJobArgsTokens->defaultLayer),
-        defaultMeshScheme(UsdGeomTokens->catmullClark),
         exportVisibility(true)
 {
+}
+
+void JobExportArgs::parseSingleOption(const MStringArray& theOption)
+{
+    if (parseSharedOption(theOption)) return;
+
+    if (theOption[0] == MString("exportReferencesAsInstanceable")) {
+        exportRefsAsInstanceable = theOption[1].asInt();
+    }
+    else if (theOption[0] == MString("exportUVs")) {
+        exportMeshUVs = theOption[1].asInt();
+        exportNurbsExplicitUV = theOption[1].asInt();
+    }
+    else if (theOption[0] == MString("normalizeUVs")) {
+        normalizeMeshUVs = theOption[1].asInt();
+        nurbsExplicitUVType = PxUsdExportJobArgsTokens->Uniform;
+    }
+    else if (theOption[0] == MString("exportColorSets")) {
+        exportColorSets = theOption[1].asInt();
+    }
+    else if (theOption[0] == MString("renderableOnly")) {
+        excludeInvisible = theOption[1].asInt();
+    }
+    else if (theOption[0] == MString("allCameras")) {
+        exportDefaultCameras = theOption[1].asInt();
+    }
+    else if (theOption[0] == MString("renderLayerMode")) {
+        renderLayerMode = PxUsdExportJobArgsTokens->defaultLayer;
+
+        if (theOption[1]=="Use Current Layer") {
+            renderLayerMode = PxUsdExportJobArgsTokens->currentLayer;
+        } else if (theOption[1]=="Modeling Variant Per Layer") {
+            renderLayerMode = PxUsdExportJobArgsTokens->modelingVariant;
+        }
+    }
+    else if (theOption[0] == MString("mergeXForm")) {
+        mergeTransformAndShape = theOption[1].asInt();
+    }
+    else if (theOption[0] == MString("exportVisibility")) {
+        exportVisibility = theOption[1].asInt();
+    }
+    else if (theOption[0] == MString("animation")) {
+        exportAnimation = theOption[1].asInt();
+    }
+    else if (theOption[0] == MString("frameSample")) {
+        frameSamples.insert(theOption[1].asDouble());
+    }    
 }
 
 
 JobImportArgs::JobImportArgs()
     :
-        shadingMode(PxrUsdMayaShadingModeTokens->displayColor),
-        defaultMeshScheme(UsdGeomTokens->catmullClark),
+        primPath("/"),
         assemblyRep(PxUsdExportJobArgsTokens->Collapsed),
         readAnimData(false),
         useCustomFrameRange(false),
-        startTime(1.0),
-        endTime(1.0),
         importWithProxyShapes(false)
 {
+}
+
+
+void JobImportArgs::parseSingleOption(const MStringArray& theOption)
+{
+    if (parseSharedOption(theOption)) return;
+
+    if (theOption[0] == MString("readAnimData")) {
+        readAnimData = theOption[1].asInt();
+    } else if (theOption[0] == MString("assemblyRep")) {
+        assemblyRep = TfToken(theOption[1].asChar());
+    } else if (theOption[0] == MString("useCustomFrameRange")) {
+        useCustomFrameRange = theOption[1].asInt();
+    } else if (theOption[0] == MString("importWithProxyShapes")) {
+        importWithProxyShapes = theOption[1].asInt();
+    } else if (theOption[0] == MString("primPath")) {
+        primPath = theOption[1].asChar();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

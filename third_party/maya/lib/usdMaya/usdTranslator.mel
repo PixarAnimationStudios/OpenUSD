@@ -1,0 +1,66 @@
+global proc int usdTranslator(string $parent,
+                                 string $action,
+                                 string $initialSettings,
+                                 string $resultCallback )
+//
+//  Description:
+//    This script posts the USDImport/Export file translator options.
+//    The optionsString is of the form:
+//    varName1=value1;varName2=value2;...
+//
+//  Parameters:
+//    $parent - the elf parent layout for this options layout. It is
+//            always a scrollLayout.
+//    $action - the action that is to be performed with this invokation of this proc.
+//        Valid options are:
+//        "query" - construct the options string and pass it to the resultCallback.
+//        "post" - post all the elf controls.
+//    $initialSettings - the current options string in effect at the time this script is invoked.
+//    $resultCallback - This is the proc to be called with the result string.
+//            resultCallback ( string $optionsString )
+//
+//    Returns:
+//        1 if successfull.
+//        0 otherwise.
+//
+{
+    // Because we have a translator that does both import and export, we want
+    // to try to figure out whether we're importing or exporting, so we can
+    // display appropriate options. Unfortunately, this information is not passed
+    // directly into us, so we have to infer it from some global variables...
+
+    global string $gActionProc;
+    global string $gv_operationMode;
+
+    // If the user hit the "option box" to the right of, say, "Open" in the
+    // file menu, then "$gActionProc" should be set to, ie,
+    // "projectViewer Open"; if, on the other hand, they simply clicked "Open",
+    // then "$gActionProc" will be "None", but "$gv_operationMode" should be set
+    // correctly...
+
+    string $myMode = $gv_operationMode;
+    if (startsWith($gActionProc, "projectViewer "))
+    {
+        $myMode = substring($gActionProc, size("projectViewer ") + 1,
+                            size($gActionProc));
+    }
+
+    // Known actions/modes are:
+    //					Open, Import, Reference, ExportAll, ExportActive, Save,
+    //					Proxy, ExportOfflineFile, ApplyOfflineFile, AssignTemplate,
+    //                  ExportOfflineFileFromRefEd, ApplyOfflineFileFromRefEd,
+    //                  ExportSelectionAsReference
+    if (startsWith($myMode, "Open")
+        || startsWith($myMode, "Import")
+        || startsWith($myMode, "Reference")
+        || startsWith($myMode, "Proxy"))
+    {
+        return usdTranslatorImport($parent, $action, $initialSettings,
+                                   $resultCallback);
+    }
+    else
+    {
+        return usdTranslatorExport($parent, $action, $initialSettings,
+                                   $resultCallback);
+    }
+}

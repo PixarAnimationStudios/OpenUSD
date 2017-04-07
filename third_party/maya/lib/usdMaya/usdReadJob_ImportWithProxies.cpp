@@ -257,7 +257,7 @@ usdReadJob::_ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrim
         // We use the file path of the file currently being imported and
         // the path to the prim within that file when creating the
         // subassembly.
-        std::string subAssemblyUsdFilePath = mFileName;
+        std::string subAssemblyUsdFilePath = mArgs.fileName;
         SdfPath subAssemblyUsdPrimPath = subAssemblyPrim.GetPath();
 
         if (!_CreateParentTransformNodes(subAssemblyPrim, args, &ctx)) {
