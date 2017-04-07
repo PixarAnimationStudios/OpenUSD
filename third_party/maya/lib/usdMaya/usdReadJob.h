@@ -50,9 +50,7 @@ class usdReadJob
   public:
 
     PXRUSDMAYA_API
-    usdReadJob(const std::string& iFileName, 
-        const std::string& iPrimPath, 
-        const std::map<std::string, std::string>& iVariants,
+    usdReadJob(const std::map<std::string, std::string>& iVariants,
         const JobImportArgs & iArgs,
 
         // We need to know the names of the assembly and proxy shape types for
@@ -96,8 +94,6 @@ class usdReadJob
 
     // Data
     JobImportArgs mArgs;
-    std::string mFileName;
-    std::string mPrimPath;
     std::map<std::string,std::string> mVariants;
     MDagModifier mDagModifierUndo;
     bool mDagModifierSeeded;

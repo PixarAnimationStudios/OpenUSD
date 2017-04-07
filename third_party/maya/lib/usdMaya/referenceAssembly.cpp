@@ -1271,10 +1271,10 @@ bool UsdMayaRepresentationHierBase::activate()
         // In this mode, sub-assembly nodes we create should come in unloaded.
         importArgs.assemblyRep = TfToken();
     }
+    importArgs.fileName = usdFilePath.asChar();
+    importArgs.primPath = usdPrimPath.asChar();
 
-    usdReadJob readJob(usdFilePath.asChar(),
-                       usdPrimPath.asChar(),
-                       variantSetSelections,
+    usdReadJob readJob(variantSetSelections,
                        importArgs,
                        _psData.typeName.asChar(),
                        _psData.proxyShape.typeName.asChar());

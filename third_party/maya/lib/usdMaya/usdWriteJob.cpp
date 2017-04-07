@@ -82,10 +82,7 @@ usdWriteJob::~usdWriteJob()
 {
 }
 
-bool usdWriteJob::beginJob(const std::string &iFileName,
-                         bool append,
-                         double startTime,
-                         double endTime)
+bool usdWriteJob::beginJob(bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
@@ -107,37 +104,35 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     }  // for m
 
     // Make sure the file name is a valid one with a proper USD extension.
-    const std::string iFileExtension = TfStringGetSuffix(iFileName, '.');
-    if (iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault   || 
-            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII || 
-            iFileExtension == PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate) {
-        mFileName = iFileName;
-    } else {
-        mFileName = TfStringPrintf("%s.%s",
-                                   iFileName.c_str(),
+    const std::string iFileExtension = TfStringGetSuffix(mArgs.fileName, '.');
+    if (iFileExtension != PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault &&
+            iFileExtension != PxrUsdMayaTranslatorTokens->UsdFileExtensionASCII &&
+            iFileExtension != PxrUsdMayaTranslatorTokens->UsdFileExtensionCrate) {
+        mArgs.fileName = TfStringPrintf("%s.%s",
+                                   TfStringGetBeforeSuffix(mArgs.fileName, '.').c_str(),
                                    PxrUsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
     }
 
-    MGlobal::displayInfo("usdWriteJob::beginJob: Create stage file "+MString(mFileName.c_str()));
+    MGlobal::displayInfo("usdWriteJob::beginJob: Create stage file "+MString(mArgs.fileName.c_str()));
 
     ArResolverContext resolverCtx = ArGetResolver().GetCurrentContext();
     if (append) {
-        mStage = UsdStage::Open(SdfLayer::FindOrOpen(mFileName), resolverCtx);
+        mStage = UsdStage::Open(SdfLayer::FindOrOpen(mArgs.fileName), resolverCtx);
         if (!mStage) {
-            MGlobal::displayError("Failed to open stage file "+MString(mFileName.c_str()));
+            MGlobal::displayError("Failed to open stage file "+MString(mArgs.fileName.c_str()));
             return false;
             }
     } else {
-        mStage = UsdStage::CreateNew(mFileName, resolverCtx);
+        mStage = UsdStage::CreateNew(mArgs.fileName, resolverCtx);
         if (!mStage) {
-            MGlobal::displayError("Failed to create stage file "+MString(mFileName.c_str()));
+            MGlobal::displayError("Failed to create stage file "+MString(mArgs.fileName.c_str()));
             return false;
         }
     }
 
     // Set time range for the USD file
-    mStage->SetStartTimeCode(startTime);
-    mStage->SetEndTimeCode(endTime);
+    mStage->SetStartTimeCode(mArgs.startTime);
+    mStage->SetEndTimeCode(mArgs.endTime);
     
     mModelKindWriter.Reset();
 
