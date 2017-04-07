@@ -400,9 +400,6 @@ public:
     /// Resolve and return all metadata (including both authored and
     /// fallback values) on this object, sorted lexicographically.
     ///
-    /// The keys returned in this map exactly match the keys returned by
-    /// ListMetadata().
-    ///
     /// \note This method does not return field keys for composition arcs,
     /// such as references, inherits, payloads, sublayers, variants, or
     /// primChildren, nor does it return the default value or timeSamples.
@@ -411,8 +408,6 @@ public:
 
     /// Resolve and return all user-authored metadata on this object,
     /// sorted lexicographically.
-    ///
-    /// This method returns a subset of the keys returned by ListMetadata.
     ///
     /// \note This method does not return field keys for composition arcs,
     /// such as references, inherits, payloads, sublayers, variants, or
