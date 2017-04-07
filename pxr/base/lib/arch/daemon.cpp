@@ -26,7 +26,7 @@
 #include "pxr/base/arch/daemon.h"
 
 #include <errno.h>
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+#if !defined(ARCH_OS_WINDOWS)
 #include <stdio.h>
 #include <signal.h>
 #include <sys/param.h>

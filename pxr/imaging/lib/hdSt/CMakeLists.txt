@@ -15,6 +15,9 @@ pxr_shared_library(hdSt
         tf
         tracelite
 
+    INCLUDE_DIRS
+        ${OPENSUBDIV_INCLUDE_DIR}
+
     PUBLIC_CLASSES
         basisCurves
         camera

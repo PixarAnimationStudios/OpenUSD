@@ -32,5 +32,7 @@ pxr_shared_library(${PXR_PACKAGE}
         proxyDrawOverride
         proxyShapeUI
         softSelectHelper
+
+    DISABLE_PRECOMPILED_HEADERS
 )
 

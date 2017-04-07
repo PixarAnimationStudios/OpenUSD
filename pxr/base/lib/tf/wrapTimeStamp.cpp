@@ -39,6 +39,11 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
+static std::string _Str(const TfTimeStamp &self)
+{
+    return boost::lexical_cast<std::string>(self);
+}
+
 static std::string _Repr(const TfTimeStamp &self)
 {
     return TF_PY_REPR_PREFIX + "TimeStamp(" + TfPyRepr(self.Get()) + ")";
@@ -62,7 +67,8 @@ void wrapTimeStamp() {
         .def(self <= self)
         .def(self >= self)
 
-        .def( str(self) )
+//        .def( str(self) )
+        .def("__str__", _Str)
 
         .def("Get", &This::Get)
         .def("Set", &This::Set)

@@ -55,12 +55,12 @@ public:
     int GetHeight() const { return _height; }
 
     enum Buttons {
-        Button1 = 0,
-        Button2 = 1,
-        Button3 = 2
+        MyButton1 = 0,
+        MyButton2 = 1,
+        MyButton3 = 2
     };
     enum ModifierKeys {
-        None  = 0,
+        NoModifiers = 0,
         Shift = 1,
         Alt   = 2,
         Ctrl  = 4

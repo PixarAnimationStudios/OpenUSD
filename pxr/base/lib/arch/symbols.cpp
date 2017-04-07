@@ -25,7 +25,9 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/defines.h"
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+#if defined(ARCH_OS_LINUX)
+#include <dlfcn.h>
+#elif defined(ARCH_OS_DARWIN)
 #include <dlfcn.h>
 #elif defined(ARCH_OS_WINDOWS)
 #include <Windows.h>

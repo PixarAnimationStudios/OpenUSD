@@ -5,6 +5,9 @@ pxr_shared_library(js
     LIBRARIES
         tf
 
+    INCLUDE_DIRS
+        ${Boost_INCLUDE_DIRS}
+
     PUBLIC_CLASSES
         json
         utils

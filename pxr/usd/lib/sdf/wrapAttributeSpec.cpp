@@ -23,7 +23,9 @@
 //
 /// \file wrapAttributeSpec.cpp
 
+#ifndef TF_MAX_ARITY
 #define TF_MAX_ARITY 8
+#endif
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"

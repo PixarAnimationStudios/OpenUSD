@@ -24,5 +24,7 @@ pxr_shared_library(${PXR_PACKAGE}
         glslProgram
         utils
         utils_legacy
+
+    DISABLE_PRECOMPILED_HEADERS
 )
 

@@ -42,6 +42,11 @@ namespace {
 
 static size_t __hash__(const UsdTimeCode &self) { return hash_value(self); }
 
+static std::string _Str(const UsdTimeCode &self)
+{
+    return boost::lexical_cast<std::string>(self);
+}
+
 static string __repr__(const UsdTimeCode &self)
 {
     string tail = ".Default()";
@@ -82,7 +87,8 @@ void wrapUsdTimeCode()
 
         .def("__hash__", __hash__)
         .def("__repr__", __repr__)
-        .def(str(self))
+//        .def(str(self))
+        .def("__str__", _Str)
         ;
 
     implicitly_convertible<double, UsdTimeCode>();

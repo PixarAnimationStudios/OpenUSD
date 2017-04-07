@@ -41,6 +41,11 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
+static std::string _Str(SdfAssetPath const &self)
+{
+    return boost::lexical_cast<std::string>(self);
+}
+
 static std::string
 _Repr(SdfAssetPath const &self)
 {
@@ -85,7 +90,8 @@ void wrapAssetPath()
 
         .def( self == self )
         .def( self != self )
-        .def( str(self) )
+//        .def( str(self) )
+        .def("__str__", _Str)
 
         .add_property("path", 
                       make_function(&This::GetAssetPath,

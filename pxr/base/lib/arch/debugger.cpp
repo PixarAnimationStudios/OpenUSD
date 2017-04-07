@@ -32,7 +32,9 @@
 #include "pxr/base/arch/systemInfo.h"
 
 #include <atomic>
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#else
 #include "pxr/base/arch/inttypes.h"
 #include <sys/types.h>
 #include <sys/ptrace.h>
@@ -46,9 +48,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string>
-#endif
-#if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE

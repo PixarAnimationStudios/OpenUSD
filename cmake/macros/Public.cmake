@@ -158,8 +158,12 @@ function(pxr_cpp_bin BIN_NAME)
 endfunction()
 
 function(pxr_shared_library LIBRARY_NAME)
-    set(options PYTHON_LIBRARY)
+    set(options
+        DISABLE_PRECOMPILED_HEADERS
+        PYTHON_LIBRARY
+    )
     set(oneValueArgs
+        PRECOMPILED_HEADER_NAME
         PYTHON_WRAPPED_LIB_PREFIX
     )
     set(multiValueArgs
@@ -419,6 +423,7 @@ function(pxr_shared_library LIBRARY_NAME)
             PYTHON_WRAPPED_LIB_PREFIX ${LIB_INSTALL_PREFIX}
             CPPFILES ${sl_PYMODULE_CPPFILES}
             LIBRARIES ${LIBRARY_NAME}
+            INCLUDE_DIRS ${sl_INCLUDE_DIRS}
         )
     endif()
 
@@ -441,9 +446,29 @@ function(pxr_shared_library LIBRARY_NAME)
         _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
     endif()        
 
+    if(NOT "${PXR_PREFIX}" STREQUAL "")
+        if(NOT sl_DISABLE_PRECOMPILED_HEADERS)
+            if(NOT sl_PYTHON_LIBRARY)
+                _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                    SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+                )
+            else()
+                _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                    OUTPUT_NAME_PREFIX "py"
+                    SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+                )
+            endif()
+        endif()
+    endif()
 endfunction() # pxr_shared_library
 
 function(pxr_static_library LIBRARY_NAME)
+    set(options
+        DISABLE_PRECOMPILED_HEADERS
+    )
+    set(oneValueArgs
+        PRECOMPILED_HEADER_NAME
+    )
     set(multiValueArgs
         PUBLIC_CLASSES
         PUBLIC_HEADERS
@@ -456,7 +481,7 @@ function(pxr_static_library LIBRARY_NAME)
 
     cmake_parse_arguments(sl
         "${options}"
-        ""
+        "${oneValueArgs}"
         "${multiValueArgs}"
         ${ARGN}
     )
@@ -572,13 +597,23 @@ function(pxr_static_library LIBRARY_NAME)
             ${sl_INCLUDE_DIRS}
         )
     endif()
+
+    if(NOT "${PXR_PREFIX}" STREQUAL "")
+        if(NOT sl_DISABLE_PRECOMPILED_HEADERS)
+            _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+            )
+        endif()
+    endif()
 endfunction() # pxr_static_library
 
 function(pxr_plugin PLUGIN_NAME)
     set(options
+        DISABLE_PRECOMPILED_HEADERS
         KATANA_PLUGIN
     )
     set(oneValueArgs 
+        PRECOMPILED_HEADER_NAME
         PREFIX 
     )
     set(multiValueArgs
@@ -800,7 +835,23 @@ function(pxr_plugin PLUGIN_NAME)
             PYTHON_WRAPPED_LIB_PREFIX ${PLUGIN_INSTALL_PREFIX}
             CPPFILES ${sl_PYMODULE_CPPFILES}
             LIBRARIES ${PLUGIN_NAME}
+            INCLUDE_DIRS ${sl_INCLUDE_DIRS}
         )
+    endif()
+
+    if(NOT "${PXR_PREFIX}" STREQUAL "")
+        if(NOT sl_DISABLE_PRECOMPILED_HEADERS)
+            if(NOT sl_PYTHON_LIBRARY)
+                _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                    SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+                )
+            else()
+                _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                    OUTPUT_NAME_PREFIX "py"
+                    SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+                )
+            endif()
+        endif()
     endif()
 endfunction() # pxr_plugin
 

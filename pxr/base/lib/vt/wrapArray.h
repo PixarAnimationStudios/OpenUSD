@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef VT_WRAP_ARRAY_H
+#define VT_WRAP_ARRAY_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
@@ -407,6 +409,11 @@ VTOPERATOR_WRAP_BOOL(LessOrEqual,<=)
 ARCH_PRAGMA_POP
 }
 
+template <typename T>
+static std::string _VtStr(T const &self)
+{
+    return boost::lexical_cast<std::string>(self);
+}
 
 template <typename T>
 void VtWrapArray()
@@ -446,7 +453,8 @@ void VtWrapArray()
         .def("__repr__", __repr1__<Type>)
         .def("__repr2__", __repr2__<Type>)
 
-        .def(str(self))
+//        .def(str(self))
+        .def("__str__", _VtStr<T>)
         .def(self == self)
         .def(self != self)
 
@@ -586,3 +594,5 @@ void VtRegisterValueCastsFromPythonSequencesToArray()
     VtWrapComparisonFunctions< VtArray< VT_TYPE(elem) > >();
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // VT_WRAP_ARRAY_H

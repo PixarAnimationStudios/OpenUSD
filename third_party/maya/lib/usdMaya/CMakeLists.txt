@@ -156,6 +156,8 @@ pxr_shared_library(${PXR_PACKAGE}
         usdMaya.mel
         usdTranslatorExport.mel
         usdTranslatorImport.mel
+
+    DISABLE_PRECOMPILED_HEADERS
 )
 
 pxr_test_scripts(

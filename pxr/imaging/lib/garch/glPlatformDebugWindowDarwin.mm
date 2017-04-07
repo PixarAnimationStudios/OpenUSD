@@ -127,7 +127,7 @@ Garch_GetModifierKeys(NSUInteger flags)
     NSPoint p = [event locationInWindow];
     NSRect r = [self frame];
     NSUInteger modflags = [event modifierFlags];
-    _callback->OnMousePress(GarchGLDebugWindow::Button1,
+    _callback->OnMousePress(GarchGLDebugWindow::MyButton1,
                             p.x, r.size.height - 1 - p.y,
                             Garch_GetModifierKeys(modflags));
 
@@ -139,7 +139,7 @@ Garch_GetModifierKeys(NSUInteger flags)
     NSPoint p = [event locationInWindow];
     NSRect r = [self frame];
     NSUInteger modflags = [event modifierFlags];
-    _callback->OnMouseRelease(GarchGLDebugWindow::Button1,
+    _callback->OnMouseRelease(GarchGLDebugWindow::MyButton1,
                               p.x, r.size.height - 1 - p.y,
                               Garch_GetModifierKeys(modflags));
 

@@ -31,7 +31,7 @@
 
 #include <iostream>
 #include <typeinfo>
-#ifdef ARCH_OS_WINDOWS
+#if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #define GETSYM(handle, name) GetProcAddress((HMODULE)handle, name)
 #else
