@@ -96,6 +96,7 @@ public:
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
             const StringListMap& extraAttributesOrNamespaces,
+            bool prePopulate,
             bool verbose,
             const char * errorMessage = 0) {
         return TfCreateRefPtr(new PxrUsdKatanaUsdInArgs(
@@ -110,6 +111,7 @@ public:
                     shutterClose, 
                     motionSampleTimes,
                     extraAttributesOrNamespaces,
+                    prePopulate,
                     verbose,
                     errorMessage));
     }
@@ -167,6 +169,10 @@ public:
         return _extraAttributesOrNamespaces;
     }
 
+    bool GetPrePopulate() const {
+        return _prePopulate;
+    }
+
     bool IsVerbose() const {
         return _verbose;
     }
@@ -192,6 +198,7 @@ private:
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
             const StringListMap& extraAttributesOrNamespaces,
+            bool prePopulate,
             bool verbose,
             const char * errorMessage = 0);
 
@@ -214,6 +221,7 @@ private:
     // maps the root-level attribute name to the specified attributes or namespaces
     StringListMap _extraAttributesOrNamespaces;
 
+    bool _prePopulate;
     bool _verbose;
 
     typedef tbb::enumerable_thread_specific< std::vector<UsdGeomBBoxCache> > _ThreadLocalBBoxCaches;
@@ -238,6 +246,7 @@ struct ArgsBuilder
     double shutterClose;
     std::vector<double> motionSampleTimes;
     PxrUsdKatanaUsdInArgs::StringListMap extraAttributesOrNamespaces;
+    bool prePopulate;
     bool verbose;
     const char * errorMessage;
     
@@ -246,7 +255,8 @@ struct ArgsBuilder
     : currentTime(0.0)
     , shutterOpen(0.0)
     , shutterClose(0.0)
-    , verbose(false)
+    , prePopulate(false)
+    , verbose(true)
     , errorMessage(0)
     {
     }
@@ -266,6 +276,7 @@ struct ArgsBuilder
             shutterClose,
             motionSampleTimes,
             extraAttributesOrNamespaces,
+            prePopulate,
             verbose,
             errorMessage);
     }
@@ -283,6 +294,7 @@ struct ArgsBuilder
         shutterClose = other->GetShutterClose();
         motionSampleTimes = other->GetMotionSampleTimes();
         extraAttributesOrNamespaces = other->GetExtraAttributesOrNamespaces();
+        prePopulate = other->GetPrePopulate();
         verbose = other->IsVerbose();
         errorMessage = other->GetErrorMessage().c_str();
     }

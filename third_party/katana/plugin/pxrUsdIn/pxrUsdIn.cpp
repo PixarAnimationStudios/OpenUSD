@@ -62,14 +62,6 @@ namespace FnKat = Foundry::Katana;
     interface.setAttr("errorMessage", Foundry::Katana::StringAttribute(\
         TfStringPrintf(__VA_ARGS__)));
 
-// Return true if katana is running interactively
-// (i.e., not batch or via script).
-static bool
-_IsInteractiveKatana()
-{
-    return getenv("KATANA_UI_MODE");
-}
-
 // see overview.dox for more documentation.
 class PxrUsdInOp : public FnKat::GeolibOp
 {
@@ -173,51 +165,6 @@ public:
             }
             
             interface.setAttr("info.usdOpArgs", opArgs);
-            
-            FnKat::GroupAttribute masterMapping =
-                    opArgs.getChildByName("masterMapping");
-            if (masterMapping.isValid() && masterMapping.getNumberOfChildren())
-            {
-                FnGeolibServices::StaticSceneCreateOpArgsBuilder sscb(false);
-                
-                
-                
-                for (size_t i = 0, e = masterMapping.getNumberOfChildren();
-                        i != e; ++i)
-                {
-                    std::string masterName = FnKat::DelimiterDecode(
-                            masterMapping.getChildName(i));
-                    
-                    std::string katanaPath =  FnKat::StringAttribute(
-                            masterMapping.getChildByIndex(i)
-                                    ).getValue("", false);
-                    
-                    if (katanaPath.empty())
-                    {
-                        continue;
-                    }
-                    
-                    sscb.createEmptyLocation(katanaPath, "instance source");
-                    sscb.setAttrAtLocation(katanaPath,
-                            "tabs.scenegraph.stopExpand", 
-                            FnKat::IntAttribute(1));
-                    sscb.setAttrAtLocation(katanaPath, "childPrimPath",
-                            FnKat::StringAttribute(masterName));
-                }
-                
-                interface.createChild(
-                        "Masters",
-                        "PxrUsdIn.MasterIntermediate",
-                        FnKat::GroupBuilder()
-                            .update(opArgs)
-                            .set("staticScene", sscb.build())
-                            .build(),
-                        FnKat::GeolibCookInterface::ResetRootFalse,
-                        new PxrUsdKatanaUsdInPrivateData(
-                                usdInArgs->GetRootPrim(),
-                                usdInArgs, privateData),
-                        PxrUsdKatanaUsdInPrivateData::Delete);
-            }
         }
 
         bool verbose = usdInArgs->IsVerbose();
@@ -232,6 +179,26 @@ public:
                 return;
             }
             readerLock.lock();
+        }
+
+        // When in "as sources and instances" mode, scan for instances
+        // and masters at each location that contains a payload.
+        if (prim.HasPayload() &&
+            FnAttribute::StringAttribute(
+                 interface.getOpArg("instanceMode")
+                 ).getValue("expanded", false) == 
+                "as sources and instances")
+        {
+            FnKat::GroupAttribute masterMapping =
+                PxrUsdKatanaUtils::BuildInstanceMasterMapping(
+                        prim.GetStage(), prim.GetPath());
+            if (masterMapping.isValid() &&
+                masterMapping.getNumberOfChildren()) {
+                opArgs = FnKat::GroupBuilder()
+                    .update(opArgs)
+                    .set("masterMapping", masterMapping)
+                    .build();
+            }
         }
 
         //
@@ -382,6 +349,55 @@ public:
                     FnAttribute::StringAttribute(
                             variantSet.GetVariantSelection()));
             
+        }
+            
+        // Emit "Masters".
+        // When prepopulating these must go under the root;
+        // otherwise they go under each payload scope.
+        if ((interface.atRoot() && usdInArgs->GetPrePopulate()) ||
+            (prim.HasPayload() && !usdInArgs->GetPrePopulate())) {
+            FnKat::GroupAttribute masterMapping =
+                    opArgs.getChildByName("masterMapping");
+            if (masterMapping.isValid() && masterMapping.getNumberOfChildren())
+            {
+                FnGeolibServices::StaticSceneCreateOpArgsBuilder sscb(false);
+                
+                for (size_t i = 0, e = masterMapping.getNumberOfChildren();
+                        i != e; ++i)
+                {
+                    std::string masterName = FnKat::DelimiterDecode(
+                            masterMapping.getChildName(i));
+                    
+                    std::string katanaPath =  FnKat::StringAttribute(
+                            masterMapping.getChildByIndex(i)
+                                    ).getValue("", false);
+                    
+                    if (katanaPath.empty())
+                    {
+                        continue;
+                    }
+                    
+                    sscb.createEmptyLocation(katanaPath, "instance source");
+                    sscb.setAttrAtLocation(katanaPath,
+                            "tabs.scenegraph.stopExpand", 
+                            FnKat::IntAttribute(1));
+                    sscb.setAttrAtLocation(katanaPath, "childPrimPath",
+                            FnKat::StringAttribute(masterName));
+                }
+                
+                interface.createChild(
+                        "Masters",
+                        "PxrUsdIn.MasterIntermediate",
+                        FnKat::GroupBuilder()
+                            .update(opArgs)
+                            .set("staticScene", sscb.build())
+                            .build(),
+                        FnKat::GeolibCookInterface::ResetRootFalse,
+                        new PxrUsdKatanaUsdInPrivateData(
+                                usdInArgs->GetRootPrim(),
+                                usdInArgs, privateData),
+                        PxrUsdKatanaUsdInPrivateData::Delete);
+            }
         }
 
         if (!skipAllChildren) {
@@ -570,34 +586,16 @@ public:
             }
         }
 
-        // Determine whether to force-populate the USD stage.
-        bool forcePopulate = true;
-        int prePopulate(FnKat::FloatAttribute(interface.getOpArg("prePopulate"))
-                        .getValue(0, false));
-        switch(prePopulate) {
-        case 0:
-        default:
-            forcePopulate = true;
-            break;
-        case 1:
-            forcePopulate = false;
-            break;
-        case 2:
-            // Pre-load and populate payloads when running non-interactive.
-            // This provides maximum efficiency for batch jobs.  Assuming
-            // that we will visit everything, populating USD up-front allows
-            // it to use internal multithreading.
-            // We do not do this for interactive jobs since we prefer katana
-            // to stay responsive, and only pull in payloads as locations
-            // are cooked.
-            forcePopulate = !_IsInteractiveKatana();
-        }
+        // Determine whether to prepopulate the USD stage.
+        ab.prePopulate =
+            FnKat::FloatAttribute(interface.getOpArg("prePopulate"))
+                        .getValue(0, false);
 
         ab.stage =  UsdKatanaCache::GetInstance().GetStage(
                 fileName, 
                 sessionAttr, sessionLocation,
                 ab.ignoreLayerRegex, 
-                forcePopulate);
+                ab.prePopulate);
 
         if (!ab.stage) {
             return ab.buildWithError("PxrUsdIn: USD Stage cannot be loaded.");
@@ -609,7 +607,8 @@ public:
                 "as sources and instances")
         {
             additionalOpArgs = FnKat::GroupAttribute("masterMapping",
-                PxrUsdKatanaUtils::BuildInstanceMasterMapping(ab.stage), true);
+                PxrUsdKatanaUtils::BuildInstanceMasterMapping(ab.stage,
+                                      SdfPath::AbsoluteRootPath()), true);
         }
         
         ab.isolatePath = FnKat::StringAttribute(

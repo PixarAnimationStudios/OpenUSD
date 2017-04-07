@@ -44,6 +44,7 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
         double shutterClose,
         const std::vector<double>& motionSampleTimes,
         const StringListMap& extraAttributesOrNamespaces,
+        bool prePopulate,
         bool verbose,
         const char * errorMessage) :
     _stage(stage),
@@ -57,6 +58,7 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
     _shutterClose(shutterClose),
     _motionSampleTimes(motionSampleTimes),
     _extraAttributesOrNamespaces(extraAttributesOrNamespaces),
+    _prePopulate(prePopulate),
     _verbose(verbose)
 {
     if (errorMessage)

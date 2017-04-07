@@ -94,15 +94,12 @@ nb.setHintsForParameter('prePopulate', {
     'options' : {
         'yes': 0,
         'no': 1,
-        'only when non-interactive': 2,
     },
     'help' : """
       Controls USD pre-population.  Pre-population loads all payloads
       and pre-populates the stage.  Assuming the entire stage will be
       needed, this is more efficient since USD can use its internal
-      multithreading.  However, this may not be desired during interactive
-      use, since it may be preferable to lazily populate the stage as
-      locations are visited.
+      multithreading.
     """,
 })
 

@@ -154,8 +154,11 @@ struct PxrUsdKatanaUtils {
             bool* hasInfiniteBounds);
     /// \}
     
+    /// Build and return, as a group attribute for convenience, a map
+    /// from instances to masters.  Only traverses paths at and below
+    /// the given rootPath.
     static FnKat::GroupAttribute BuildInstanceMasterMapping(
-            const UsdStageRefPtr& stage);
+            const UsdStageRefPtr& stage, const SdfPath &rootPath);
     
 };
 

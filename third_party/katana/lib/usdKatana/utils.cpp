@@ -1364,12 +1364,11 @@ namespace
 
 FnKat::GroupAttribute
 PxrUsdKatanaUtils::BuildInstanceMasterMapping(
-        const UsdStageRefPtr& stage)
+        const UsdStageRefPtr& stage, const SdfPath &rootPath)
 {
     StringMap masterToKey;
     StringSetMap keyToMasters;
-    _walkForMasters(stage->GetPseudoRoot(), masterToKey, keyToMasters);
-    
+    _walkForMasters(stage->GetPrimAtPath(rootPath), masterToKey, keyToMasters);
     
     FnKat::GroupBuilder gb;
     TF_FOR_ALL(I, keyToMasters)
