@@ -56,7 +56,7 @@ void wrapDiagnostic()
     def("TF_DIAGNOSTIC_NONFATAL_ERROR", &wrapped_TF_DIAGNOSTIC_NONFATAL_ERROR);
     def("TF_DIAGNOSTIC_WARNING", &wrapped_TF_DIAGNOSTIC_WARNING);
 
-    def("TfInstallTerminateAndCrashHandlers",
+    def("InstallTerminateAndCrashHandlers",
         TfInstallTerminateAndCrashHandlers);
 
 }
