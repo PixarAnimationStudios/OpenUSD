@@ -1,0 +1,28 @@
+#usda 1.0
+
+def "ModelShading"
+{
+    def "Materials"
+    {
+        def Material "ParentMaterial"
+        {
+            def Shader "Shader_1"
+            {
+                float floatParameter = 1
+            }
+        }
+
+        def Material "ChildMaterial_1" (
+            specializes = </ModelShading/Materials/ParentMaterial>
+        )
+        {
+        }
+
+        def Material "ChildMaterial_2" (
+            specializes = </ModelShading/Materials/ParentMaterial>
+        )
+        {
+        }
+    }
+}
+
