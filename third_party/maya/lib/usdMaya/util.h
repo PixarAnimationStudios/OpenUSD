@@ -308,6 +308,9 @@ void Connect(
         const MPlug& dstPlug,
         bool clearDstPlug);
 
+PXRUSDMAYA_API
+std::string MDagPathToUsdPathString(const MDagPath& dagPath);
+
 /// For \p dagPath, returns a UsdPath corresponding to it.  
 /// If \p mergeTransformAndShape and the dagPath is a shapeNode, it will return
 /// the same value as MDagPathToUsdPath(transformPath) where transformPath is
