@@ -38,9 +38,6 @@ from pxr import Sdf, Usd, UsdGeom, UsdUtils
 from pxr import UsdImagingGL
 from pxr import CameraUtil
 
-# default includedPurposes for the bbox cache
-BBOXPURPOSES = [UsdGeom.Tokens.default_, UsdGeom.Tokens.proxy]
-
 DEBUG_CLIPPING = "USDVIEWQ_DEBUG_CLIPPING"
 
 # FreeCamera inherits from QObject only so that it can send signals...
@@ -210,7 +207,7 @@ class FreeCamera(QtCore.QObject):
             # from the near-clipping plane, the less depth precision we will 
             # have to resolve nearly colinear/incident polygons (which we get
             # especially with any doubleSided geometry).  We can run into such
-            # situations astonishngly easily with large sets when we are 
+            # situations astonishingly easily with large sets when we are 
             # focussing in on just a part of a set that spans 10^5 units or
             # more.
             #
@@ -699,8 +696,44 @@ class HUD():
 
 class StageView(QtOpenGL.QGLWidget):
     '''
-    QGLWidget that displays a USD Stage.
+    QGLWidget that displays a USD Stage.  A StageView requires a dataModel
+    object from which it will query state it needs to properly image its
+    given UsdStage.  See the nested DefaultDataModel class for the expected
+    API.
     '''
+
+    # TODO: most, if not all of the state StageView requires (except possibly
+    # the stage?), should be migrated to come from the dataModel, and redrawing
+    # should be triggered by signals the dataModel emits.
+    class DefaultDataModel(object):
+
+        BBOXPURPOSES = [UsdGeom.Tokens.default_, UsdGeom.Tokens.proxy]
+
+        signalDefaultMaterialChanged = QtCore.Signal()
+
+        def __init__(self):
+            self._bboxCache = UsdGeom.BBoxCache(0, 
+                                                BBOXPURPOSES,
+                                                useExtentsHint=True)
+
+            self._defaultMaterialAmbient = 0.2
+            self._defaultMaterialSpecular = 0.1
+
+        @property
+        def bboxCache(self):
+            return self._bboxCache
+
+        @property
+        def defaultMaterialAmbient(self):
+            return self._defaultMaterialAmbient
+
+        @property
+        def defaultMaterialSpecular(self):
+            return self._defaultMaterialSpecular
+
+    ###########
+    # Signals #
+    ###########
 
     signalBboxUpdateTimeChanged = QtCore.Signal(int)
 
@@ -713,19 +746,11 @@ class StageView(QtOpenGL.QGLWidget):
     # Only raised when StageView has been told to do so, setting
     # rolloverPicking to True
     signalPrimRollover = QtCore.Signal(Sdf.Path, int, QtCore.Qt.KeyboardModifiers)
-    signalCurrentFrameChanged = QtCore.Signal(int)
     signalMouseDrag = QtCore.Signal()
     signalErrorMessage = QtCore.Signal(str)
     
     signalSwitchedToFreeCam = QtCore.Signal()
 
-    @property
-    def bboxCache(self):
-        return self._bboxCache
-        
-    @bboxCache.setter
-    def bboxCache(self, cache):
-        self._bboxCache = cache
         
     @property
     def complexity(self):
@@ -758,14 +783,6 @@ class StageView(QtOpenGL.QGLWidget):
     @timeSamples.setter
     def timeSamples(self, samples):
         self._timeSamples = samples
-        
-    @property
-    def xformCache(self):
-        return self._xformCache
-        
-    @xformCache.setter
-    def xformCache(self, cache):
-        self._xformCache = cache
         
     @property
     def showBBoxes(self):
@@ -965,8 +982,14 @@ class StageView(QtOpenGL.QGLWidget):
     @allSceneCameras.setter
     def allSceneCameras(self, value):
         self._allSceneCameras = value
-    
-    def __init__(self, parent=None, bboxCache=None, xformCache=None):
+
+    def __init__(self, parent=None, dataModel=None):
+        self._dataModel = dataModel or DefaultDataModel()
+
+        QtCore.QObject.connect(self._dataModel,
+                               QtCore.SIGNAL('signalDefaultMaterialChanged()'),
+                               self.updateGL)
+        
         glFormat = QtOpenGL.QGLFormat()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
         if msaa == "1":
@@ -992,10 +1015,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._stageIsZup = True
         self._cameraIsZup = True
         self._currentFrame = 0
-        self._bboxCache = bboxCache or UsdGeom.BBoxCache(self._currentFrame, 
-                                                         BBOXPURPOSES, 
-                                                         useExtentsHint=True)
-        self._xformCache = xformCache or UsdGeom.XformCache(self._currentFrame)
         self._cameraMode = "none"
         self._rolloverPicking = False
         self._dragActive = False
@@ -1298,7 +1317,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
     def _updateBboxPurposes(self):
-        includedPurposes =  set(self._bboxCache.GetIncludedPurposes())
+        includedPurposes =  set(self._dataModel.bboxCache.GetIncludedPurposes())
 
         if self._displayGuide:
             includedPurposes.add(UsdGeom.Tokens.guide)
@@ -1315,7 +1334,7 @@ class StageView(QtOpenGL.QGLWidget):
         elif UsdGeom.Tokens.render in includedPurposes:
             includedPurposes.remove(UsdGeom.Tokens.render)
 
-        self._bboxCache.SetIncludedPurposes(includedPurposes)
+        self._dataModel.bboxCache.SetIncludedPurposes(includedPurposes)
         # force the bbox to refresh
         self._bbox = Gf.BBox3d()
 
@@ -1427,7 +1446,7 @@ class StageView(QtOpenGL.QGLWidget):
         return Gf.BBox3d(Gf.Range3d((-10,-10,-10), (10,10,10)))
 
     def getStageBBox(self):
-        bbox = self._bboxCache.ComputeWorldBound(self._stage.GetPseudoRoot())
+        bbox = self._dataModel.bboxCache.ComputeWorldBound(self._stage.GetPseudoRoot())
         if bbox.GetRange().IsEmpty():
             bbox = self._getEmptyBBox()
         return bbox
@@ -1436,7 +1455,7 @@ class StageView(QtOpenGL.QGLWidget):
         bbox = Gf.BBox3d()
         for n in self._nodes:
             if n.IsActive() and not n.IsInMaster():
-                primBBox = self._bboxCache.ComputeWorldBound(n)
+                primBBox = self._dataModel.bboxCache.ComputeWorldBound(n)
                 bbox = Gf.BBox3d.Combine(bbox, primBBox)
         return bbox
 
@@ -1732,8 +1751,10 @@ class StageView(QtOpenGL.QGLWidget):
                         lights.append(l)
 
                 material = Glf.SimpleMaterial()
-                material.ambient = (0.2, 0.2, 0.2, 1.0)
-                material.specular = (0.5, 0.5, 0.5, 1.0)
+                kA = self._dataModel.defaultMaterialAmbient
+                kS = self._dataModel.defaultMaterialSpecular
+                material.ambient = (kA, kA, kA, 1.0)
+                material.specular = (kS, kS, kS, 1.0)
                 material.shininess = 32.0
                 sceneAmbient = (0.01, 0.01, 0.01, 1.0)
 

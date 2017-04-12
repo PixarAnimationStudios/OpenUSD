@@ -1660,6 +1660,7 @@
     <addaction name="actionAdjust_FOV"/>
     <addaction name="actionRecompute_Clipping_Planes"/>
     <addaction name="actionAdjust_Clipping"/>
+    <addaction name="actionAdjust_Default_Material"/>
     <addaction name="actionComplexity"/>
     <addaction name="menuBBox"/>
     <addaction name="separator"/>
@@ -2794,6 +2795,14 @@
    </property>
    <property name="text">
     <string>Proxy</string>
+   </property>
+  </action>
+  <action name="actionAdjust_Default_Material">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Adjust Default Material...</string>
    </property>
   </action>
  </widget>

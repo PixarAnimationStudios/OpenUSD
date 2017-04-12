@@ -51,6 +51,7 @@ pxr_shared_library(usdviewq
         settings.py
         watchWindow.py
         adjustClipping.py
+        adjustDefaultMaterial.py
         nodeViewItem.py
         common.py
         attributeValueEditor.py
@@ -67,6 +68,7 @@ pxr_shared_library(usdviewq
         mainWindowUI.ui
         watchWindowUI.ui
         adjustClippingUI.ui
+        adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui
         pythonExpressionPromptUI.ui
         referenceEditorUI.ui

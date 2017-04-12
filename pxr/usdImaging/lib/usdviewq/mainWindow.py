@@ -47,6 +47,7 @@ import re, sys, os
 import prettyPrint
 import watchWindow
 import adjustClipping
+import adjustDefaultMaterial
 import referenceEditor
 from settings import Settings
 
@@ -206,6 +207,13 @@ def _GetShortString(prop, frame):
 
 class MainWindow(QtGui.QMainWindow):
 
+    ###########
+    # Signals #
+    ###########
+
+    # emitted when any aspect of the defaultMaterial changes
+    signalDefaultMaterialChanged = QtCore.Signal()
+
     @classmethod
     def clearSettings(cls):
         settingsPath = cls._outputBaseDirectory()
@@ -357,6 +365,14 @@ class MainWindow(QtGui.QMainWindow):
         # initialization without inverting the name->value logic
         self._selHighlightMode = "Only when paused"
         self._highlightColorName = "Yellow"
+
+        self.ResetDefaultMaterialSettings(store=False)
+        self._defaultMaterialAmbient = \
+           self._settings.get("DefaultMaterialAmbient",
+                              self._defaultMaterialAmbient)
+        self._defaultMaterialSpecular = \
+           self._settings.get("DefaultMaterialSpecular",
+                              self._defaultMaterialSpecular)
 
         # Initialize the upper HUD info
         self._upperHUDInfo = dict()
@@ -781,6 +797,12 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self._ui.actionAdjust_Clipping,
                                QtCore.SIGNAL('triggered(bool)'),
                                self._adjustClippingPlanes)
+
+
+        QtCore.QObject.connect(self._ui.actionAdjust_Default_Material,
+                               QtCore.SIGNAL('triggered(bool)'),
+                               self._adjustDefaultMaterial)
+
 
         QtCore.QObject.connect(self._ui.actionOpen,
                                QtCore.SIGNAL('triggered()'),
@@ -1351,11 +1373,10 @@ class MainWindow(QtGui.QMainWindow):
     def _clearCaches(self):
         self._valueCache = dict()
 
-        # create new bounding box cache and xform cache. If there was an instance
-        # of the cache before, this will effectively clear the cache.
+        # create new xform, bounding box, and camera caches. If there was an
+        # instance of the cache before, this will effectively clear the
+        # cache.
         self._xformCache = UsdGeom.XformCache(self._currentFrame)
-        if self._stageView:
-            self._stageView.xformCache = self._xformCache
         self._setUseExtentsHint(self._ui.useExtentsHint.isChecked())
         self._refreshCameraListAndMenu(preserveCurrCamera = False)
 
@@ -1429,17 +1450,13 @@ class MainWindow(QtGui.QMainWindow):
         # on the GL state established by the StageView (bug 56866).
         Glf.TextureRegistry.Reset()
         if not self._stageView:
-            self._stageView = StageView(parent=self, 
-                                        xformCache=self._xformCache,
-                                        bboxCache=self._bboxCache)
+            self._stageView = StageView(parent=self, dataModel=self)
             self._stageView.SetStage(self._stage)
             self._stageView.noRender = self._noRender
 
             self._stageView.fpsHUDInfo = self._fpsHUDInfo
             self._stageView.fpsHUDKeys = self._fpsHUDKeys
             
-            self._stageView.signalCurrentFrameChanged.connect(
-                self.onCurrentFrameChanged)
             self._stageView.signalPrimSelected.connect(self.onPrimSelected)
             self._stageView.signalPrimRollover.connect(self.onRollover)
             self._stageView.signalMouseDrag.connect(self.onStageViewMouseDrag)
@@ -1572,6 +1589,55 @@ class MainWindow(QtGui.QMainWindow):
         else:
             self._adjustClipping = adjustClipping.AdjustClipping(self)
             self._adjustClipping.show()
+
+    @property
+    def xformCache(self):
+        return self._xformCache
+
+    @property
+    def bboxCache(self):
+        return self._bboxCache
+
+    @property
+    def defaultMaterialAmbient(self):
+        return self._defaultMaterialAmbient
+
+    @defaultMaterialAmbient.setter
+    def defaultMaterialAmbient(self, value):
+        if value != self._defaultMaterialAmbient:
+            self._defaultMaterialAmbient = value
+            self._settings.setAndSave(DefaultMaterialAmbient=value)
+            self.signalDefaultMaterialChanged.emit()
+
+    @property
+    def defaultMaterialSpecular(self):
+        return self._defaultMaterialSpecular
+
+    @defaultMaterialSpecular.setter
+    def defaultMaterialSpecular(self, value):
+        if value != self._defaultMaterialSpecular:
+            self._defaultMaterialSpecular = value
+            self._settings.setAndSave(DefaultMaterialSpecular=value)
+            self.signalDefaultMaterialChanged.emit()
+
+    def ResetDefaultMaterialSettings(self, store=True):
+        self._defaultMaterialAmbient = .2
+        self._defaultMaterialSpecular = .1
+        if store:
+            self._settings.setAndSave(DefaultMaterialAmbient=self._defaultMaterialAmbient)
+            self._settings.setAndSave(DefaultMaterialSpecular=self._defaultMaterialSpecular)
+        self.signalDefaultMaterialChanged.emit()
+        
+    def _adjustDefaultMaterial(self, checked):
+        if (checked):
+            self._adjustDefaultMaterialDlg = adjustDefaultMaterial.AdjustDefaultMaterial(self, self)
+            QtCore.QObject.connect(self._adjustDefaultMaterialDlg,
+                                   QtCore.SIGNAL('finished(int)'),
+                                   lambda status : self._ui.actionAdjust_Default_Material.setChecked(False))
+
+            self._adjustDefaultMaterialDlg.show()
+        else:
+            self._adjustDefaultMaterialDlg.close()
 
     def _redrawOptionToggled(self, checked):
         self._settings.setAndSave(RedrawOnScrub=checked)
@@ -2313,12 +2379,10 @@ class MainWindow(QtGui.QMainWindow):
 
     def _setUseExtentsHint(self, state):
         self._bboxCache = UsdGeom.BBoxCache(self._currentFrame, 
-                                            stageView.BBOXPURPOSES, 
+                                            stageView.StageView.DefaultDataModel.BBOXPURPOSES, 
                                             useExtentsHint=state)
 
-        if self._stageView:
-            self._stageView.bboxCache = self._bboxCache
-            self._updateAttributeView()
+        self._updateAttributeView()
 
         #recompute and display bbox
         self._refreshBBox()
@@ -2430,7 +2494,7 @@ class MainWindow(QtGui.QMainWindow):
         '''Returns a QImage of the full usdview window '''
         # generate an image of the window. Due to how Qt's rendering
         # works, this will not pick up the GL Widget(_stageView)'s 
-        # contents, and well need to compose it separately.
+        # contents, and we'll need to compose it separately.
         windowShot = QtGui.QImage(self.size(), 
                                   QtGui.QImage.Format_ARGB32_Premultiplied)
         painter = QtGui.QPainter(windowShot)
@@ -3176,6 +3240,10 @@ class MainWindow(QtGui.QMainWindow):
 
             self._currentFrame = closestFrame
 
+        # XXX Why do we *always* update the widget, but only
+        # conditionally update?  All this function should do, after
+        # computing a new frame number, is emit a signal that the 
+        # time has changed.  Future work.
         self._ui.frameField.setText(str(round(self._currentFrame,2)))
 
         if self._currentFrame != frameAtStart or forceUpdate:
