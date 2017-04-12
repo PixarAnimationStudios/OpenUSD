@@ -101,11 +101,11 @@ public:
     HD_API
     void Clear();
 
-    /// Given a prim id and instance id, returns the prim path of the owner
+    // ---------------------------------------------------------------------- //
+    /// Given a prim id, returns the path of the correspoding rprim
+    /// or an empty path if none is found.
     HD_API
-    SdfPath GetPrimPathFromPrimIdColor(GfVec4i const& primIdColor,
-                                       GfVec4i const& instanceIdColor,
-                                       int* instanceIndexOut = NULL) const;
+    SdfPath GetRprimPathFromPrimId(int primId) const;
  
     // ---------------------------------------------------------------------- //
     /// \name Synchronization

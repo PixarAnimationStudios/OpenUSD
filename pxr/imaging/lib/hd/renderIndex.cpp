@@ -1041,23 +1041,11 @@ HdRenderIndex::_AllocatePrimId(HdRprim *prim)
 }
 
 SdfPath
-HdRenderIndex::GetPrimPathFromPrimIdColor(GfVec4i const& primIdColor,
-                                          GfVec4i const& instanceIdColor,
-                                          int* instanceIndexOut) const
+HdRenderIndex::GetRprimPathFromPrimId(int primId) const
 {
-    int32_t primId = ((primIdColor[0] & 0xff) <<  0) | 
-                     ((primIdColor[1] & 0xff) <<  8) |
-                     ((primIdColor[2] & 0xff) << 16);
-
     _RprimPrimIDMap::const_iterator it = _rprimPrimIdMap.find(primId);
     if(it == _rprimPrimIdMap.end()) {
         return SdfPath();
-    }
-
-    if (instanceIndexOut) {
-        *instanceIndexOut = ((instanceIdColor[0] & 0xff) <<  0) | 
-                            ((instanceIdColor[1] & 0xff) <<  8) |
-                            ((instanceIdColor[2] & 0xff) << 16);
     }
 
     return it->second;

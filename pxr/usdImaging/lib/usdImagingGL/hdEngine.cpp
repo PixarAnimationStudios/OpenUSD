@@ -535,7 +535,8 @@ UsdImagingGLHdEngine::TestIntersection(
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
-    int *outHitInstanceIndex)
+    int *outHitInstanceIndex,
+    int *outHitElementIndex)
 {
     if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
@@ -583,6 +584,9 @@ UsdImagingGLHdEngine::TestIntersection(
     }
     if (outHitInstanceIndex) {
         *outHitInstanceIndex = hit.instanceIndex;
+    }
+    if (outHitElementIndex) {
+        *outHitElementIndex = hit.elementIndex;
     }
 
     return true;
@@ -757,13 +761,10 @@ UsdImagingGLHdEngine::SetCameraState(const GfMatrix4d& viewMatrix,
 }
 
 /*virtual*/
-SdfPath 
-UsdImagingGLHdEngine::GetPrimPathFromPrimIdColor(GfVec4i const & primIdColor,
-                                               GfVec4i const & instanceIdColor,
-                                               int * instanceIndexOut)
+SdfPath
+UsdImagingGLHdEngine::GetRprimPathFromPrimId(int primId) const 
 {
-    return _delegate->GetRenderIndex().GetPrimPathFromPrimIdColor(
-                        primIdColor, instanceIdColor, instanceIndexOut);
+    return _delegate->GetRenderIndex().GetRprimPathFromPrimId(primId);
 }
 
 /* virtual */

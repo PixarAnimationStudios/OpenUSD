@@ -57,6 +57,7 @@ _TestIntersection(
     SdfPath hitPrimPath;
     SdfPath hitInstancerPath;
     int hitInstanceIndex;
+    int hitElementIndex;
 
     self.TestIntersection(
         viewMatrix,
@@ -67,9 +68,10 @@ _TestIntersection(
         &hitPoint,
         &hitPrimPath,
         &hitInstancerPath,
-        &hitInstanceIndex);
+        &hitInstanceIndex,
+        &hitElementIndex);
 
-    return boost::python::make_tuple(hitPoint, hitPrimPath, hitInstancerPath, hitInstanceIndex);
+    return boost::python::make_tuple(hitPoint, hitPrimPath, hitInstancerPath, hitInstanceIndex, hitElementIndex);
 }
 
 static boost::python::tuple
@@ -112,7 +114,7 @@ void wrapGL()
             .def("ClearSelected", &UsdImagingGL::ClearSelected)
             .def("AddSelected", &UsdImagingGL::AddSelected)
             .def("SetSelectionColor", &UsdImagingGL::SetSelectionColor)
-            .def("GetPrimPathFromPrimIdColor", &UsdImagingGL::GetPrimPathFromPrimIdColor)
+            .def("GetRprimPathFromPrimId", &UsdImagingGL::GetRprimPathFromPrimId)
             .def("GetPrimPathFromInstanceIndex", &_GetPrimPathFromInstanceIndex)
             .def("TestIntersection", &_TestIntersection)
             .def("IsEnabledHydra", &UsdImagingGL::IsEnabledHydra)

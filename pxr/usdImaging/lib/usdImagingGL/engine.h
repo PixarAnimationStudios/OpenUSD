@@ -257,7 +257,8 @@ public:
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL);
+        int *outHitInstanceIndex = NULL,
+        int *outHitElementIndex = NULL);
 
     /// A callback function to control collating intersection test hits.
     /// See the documentation for TestIntersectionBatch() below for more detail.
@@ -301,10 +302,22 @@ public:
         PathTranslatorCallback pathTranslator,
         HitBatch *outHit);
 
+    /// Using an Id extracted from an Id render, returns the associated
+    /// rprim path.
+    ///
+    /// Note that this function doesn't resolve instancer relationship.
+    /// returning prim can be a prototype mesh which may not exist in usd stage.
+    /// It can be resolved to the actual usd prim and corresponding instance
+    /// index by GetPrimPathFromInstanceIndex().
+    ///
+    USDIMAGINGGL_API
+    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
+
+
     /// Using colors extracted from an Id render, returns the associated
     /// prim path and optional instance index.
     ///
-    /// note that this function doesn't resolve instancer relationship.
+    /// Note that this function doesn't resolve instancer relationship.
     /// returning prim can be a prototype mesh which may not exist in usd stage.
     /// It can be resolved to the actual usd prim and corresponding instance
     /// index by GetPrimPathFromInstanceIndex().

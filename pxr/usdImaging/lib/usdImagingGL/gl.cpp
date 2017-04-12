@@ -197,15 +197,10 @@ UsdImagingGL::SetCameraState(const GfMatrix4d& viewMatrix,
 }
 
 /*virtual*/
-SdfPath 
-UsdImagingGL::GetPrimPathFromPrimIdColor(
-        GfVec4i const& primIdColor,
-        GfVec4i const& instanceIdColor,
-        int* instanceIndexOut)
+SdfPath
+UsdImagingGL::GetRprimPathFromPrimId(int primId) const
 {
-    return _engine->GetPrimPathFromPrimIdColor(primIdColor,
-                                               instanceIdColor,
-                                               instanceIndexOut);
+    return _engine->GetRprimPathFromPrimId(primId);
 }
 
 /* virtual */
@@ -313,11 +308,13 @@ UsdImagingGL::TestIntersection(
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
-    int *outHitInstanceIndex)
+    int *outHitInstanceIndex,
+    int *outHitElementIndex)
 {
     return _engine->TestIntersection(viewMatrix, projectionMatrix,
                 worldToLocalSpace, root, params, outHitPoint,
-                outHitPrimPath, outHitInstancerPath, outHitInstanceIndex);
+                outHitPrimPath, outHitInstancerPath, outHitInstanceIndex,
+                outHitElementIndex);
 }
 
 bool

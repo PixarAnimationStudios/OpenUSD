@@ -195,13 +195,10 @@ UsdImagingGLRefEngine::_PopulateBuffers()
 }
 
 /*virtual*/ 
-SdfPath 
-UsdImagingGLRefEngine::GetPrimPathFromPrimIdColor(
-        GfVec4i const& primIdColor,
-        GfVec4i const& instanceIdColor,
-        int* instanceIndexOut)
+SdfPath
+UsdImagingGLRefEngine::GetRprimPathFromPrimId(int primId) const 
 {
-    _PrimIDMap::const_iterator it = _primIDMap.find(_PrimID::Pack(primIdColor));
+    _PrimIDMap::const_iterator it = _primIDMap.find(primId);
     if(it != _primIDMap.end()) {
         return it->second;
     }

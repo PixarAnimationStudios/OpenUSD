@@ -72,11 +72,8 @@ public:
     virtual void InvalidateBuffers();
 
     USDIMAGINGGL_API
-    virtual SdfPath GetPrimPathFromPrimIdColor(
-        GfVec4i const& primIdColor,
-        GfVec4i const& instanceIdColor,
-        int* instanceIndexOut = NULL);
-    
+    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
+
 private:
     bool _SupportsPrimitiveRestartIndex();
 

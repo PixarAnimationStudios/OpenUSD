@@ -2065,7 +2065,7 @@ class StageView(QtOpenGL.QGLWidget):
         whether 'button' is None.
         '''
 
-        selectedPoint, selectedPrimPath, selectedInstancerPath, selectedInstanceIndex = \
+        selectedPoint, selectedPrimPath, selectedInstancerPath, selectedInstanceIndex, selectedElementIndex = \
             self.pick(self.computePickFrustum(x, y))
 
         # The call to TestIntersection will return the path to a master prim

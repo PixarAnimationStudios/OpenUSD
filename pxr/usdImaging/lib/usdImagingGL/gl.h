@@ -160,10 +160,7 @@ public:
     virtual void SetSelectionColor(GfVec4f const& color);
 
     USDIMAGINGGL_API
-    virtual SdfPath GetPrimPathFromPrimIdColor(
-        GfVec4i const& primIdColor,
-        GfVec4i const& instanceIdColor,
-        int* instanceIndexOut = NULL);
+    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
 
     USDIMAGINGGL_API
     virtual SdfPath GetPrimPathFromInstanceIndex(
@@ -192,7 +189,8 @@ public:
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL);
+        int *outHitInstanceIndex = NULL,
+        int *outHitElementIndex = NULL);
 
     USDIMAGINGGL_API
     virtual bool TestIntersectionBatch(

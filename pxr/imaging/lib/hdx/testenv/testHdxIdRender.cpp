@@ -64,7 +64,9 @@ public:
 
     void DrawScene(PickParam const * pickParam = NULL);
 
-    SdfPath PickScene(int pickX, int pickY, int * outInstanceIndex = NULL);
+    SdfPath PickScene(int pickX, int pickY,
+            int * outInstanceIndex = NULL,
+            int * outElementIndex = NULL);
 
     // Hdx_UnitTestGLDrawing overrides
     virtual void InitTest();
@@ -121,7 +123,8 @@ My_TestGLDrawing::InitTest()
     param.enableLighting = true; // use default lighting
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
-                           VtValue(HdRprimCollection(HdTokens->geometry, _reprName)));
+                           VtValue(HdRprimCollection(HdTokens->geometry,
+                                   _reprName)));
 
     // prepare scene
     _delegate->AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5));
@@ -227,15 +230,29 @@ My_TestGLDrawing::OffscreenTest()
 {
     SdfPath primId;
     int instanceIndex = -1;
+    int elementIndex = -1;
+    bool refined = (_reprName == HdTokens->refined);
 
-    primId = PickScene(180, 100, &instanceIndex);
-    TF_VERIFY(primId == SdfPath("/cube1") && instanceIndex == 0);
+    primId = PickScene(180, 100, &instanceIndex, &elementIndex);
+    TF_VERIFY(primId == SdfPath("/cube1") &&
+            instanceIndex == 0 &&
+            elementIndex == 3);
 
-    primId = PickScene(250, 190, &instanceIndex);
-    TF_VERIFY(primId == SdfPath("/protoTop") && instanceIndex == 2);
+    primId = PickScene(250, 190, &instanceIndex, &elementIndex);
+    if (refined) {
+        TF_VERIFY(primId == SdfPath("/protoTop") &&
+                instanceIndex == 2 &&
+                elementIndex == 4);
+    } else {
+        TF_VERIFY(primId == SdfPath("/protoTop") &&
+                instanceIndex == 2 &&
+                elementIndex == 3);
+    }
 
-    primId = PickScene(320, 290, &instanceIndex);
-    TF_VERIFY(primId == SdfPath("/protoBottom") && instanceIndex == 1);
+    primId = PickScene(320, 290, &instanceIndex, &elementIndex);
+    TF_VERIFY(primId == SdfPath("/protoBottom") &&
+            instanceIndex == 1 &&
+            elementIndex == 3);
 }
 
 void
@@ -286,7 +303,9 @@ DrawScene(PickParam const * pickParam)
 }
 
 SdfPath
-My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
+My_TestGLDrawing::PickScene(int pickX, int pickY,
+        int * outInstanceIndex,
+        int * outElementIndex)
 {
     int width = 128;
     int height = 128;
@@ -298,13 +317,19 @@ My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
     drawTarget->AddAttachment(
         "instanceId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
     drawTarget->AddAttachment(
+        "elementId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
+    drawTarget->AddAttachment(
         "depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
     drawTarget->Unbind();
 
     drawTarget->Bind();
 
-    GLenum drawBuffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    glDrawBuffers(2, drawBuffers);
+    GLenum drawBuffers[] = { 
+        GL_COLOR_ATTACHMENT0,
+        GL_COLOR_ATTACHMENT1,
+        GL_COLOR_ATTACHMENT2
+    };
+    glDrawBuffers(3, drawBuffers);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -333,6 +358,11 @@ My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
         drawTarget->GetAttachments().at("instanceId")->GetGlTextureName());
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId);
 
+    GLubyte elementId[width*height*4];
+    glBindTexture(GL_TEXTURE_2D,
+        drawTarget->GetAttachments().at("elementId")->GetGlTextureName());
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, elementId);
+
     GLfloat depths[width*height];
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("depth")->GetGlTextureName());
@@ -355,20 +385,16 @@ My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
     if (didHit) {
         int idIndex = zMinIndex*4;
 
-        GfVec4i primIdColor(
-            primId[idIndex+0],
-            primId[idIndex+1],
-            primId[idIndex+2],
-            primId[idIndex+3]);
-
-        GfVec4i instanceIdColor(
-            instanceId[idIndex+0],
-            instanceId[idIndex+1],
-            instanceId[idIndex+2],
-            instanceId[idIndex+3]);
-
-        result = _delegate->GetRenderIndex().GetPrimPathFromPrimIdColor(
-                        primIdColor, instanceIdColor, outInstanceIndex);
+        result = _delegate->GetRenderIndex().GetRprimPathFromPrimId(
+                HdxRenderSetupTask::DecodeIDRenderColor(&primId[idIndex]));
+        if (outInstanceIndex) {
+            *outInstanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+                    &instanceId[idIndex]);
+        }
+        if (outElementIndex) {
+            *outElementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+                    &elementId[idIndex]);
+        }
     }
 
     return result;
@@ -379,12 +405,14 @@ My_TestGLDrawing::MousePress(int button, int x, int y, int modKeys)
 {
     Hdx_UnitTestGLDrawing::MousePress(button, x, y, modKeys);
     int instanceIndex = 0;
-    SdfPath primId = PickScene(x, y, &instanceIndex);
+    int elementIndex = -1;
+    SdfPath primId = PickScene(x, y, &instanceIndex, &elementIndex);
 
     if (!primId.IsEmpty()) {
         std::cout << "pick(" << x << ", " << y << "): "
                   << "primId == " << primId << " "
-                  << "instance == " << instanceIndex << "\n";
+                  << "instance == " << instanceIndex << " "
+                  << "element == " << elementIndex <<  "\n";
     }
 }
 

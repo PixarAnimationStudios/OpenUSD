@@ -25,6 +25,7 @@
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 #include "pxr/imaging/hdx/package.h"
+#include "pxr/imaging/hdx/renderSetupTask.h"
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -413,34 +414,17 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
 
     int idIndex = index*4;
 
-    GfVec4i primIdColor(
-        primIds[idIndex+0],
-        primIds[idIndex+1],
-        primIds[idIndex+2],
-        primIds[idIndex+3]);
-
-    GfVec4i instanceIdColor(
-        instanceIds[idIndex+0],
-        instanceIds[idIndex+1],
-        instanceIds[idIndex+2],
-        instanceIds[idIndex+3]);
-
-    int instanceIndex = 0;
-    hit->objectId = _index->GetPrimPathFromPrimIdColor(primIdColor,
-                        instanceIdColor, &instanceIndex);
+    int primId = HdxRenderSetupTask::DecodeIDRenderColor(&primIds[idIndex]);
+    hit->objectId = _index->GetRprimPathFromPrimId(primId);
 
     if (!hit->IsValid()) {
         return false;
     }
 
-    // XXX: either this should be done in the render index or all render index
-    // logic should be moved here. If moved here, the shader logic should move
-    // into Hdx as well.
-    int elemIndex = ((elementIds[idIndex+0] & 0xff) <<  0) |
-                    ((elementIds[idIndex+1] & 0xff) <<  8) |
-                    ((elementIds[idIndex+2] & 0xff) << 16);
-
-
+    int instanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            &instanceIds[idIndex]);
+    int elementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            &elementIds[idIndex]);
 
     bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit->objectId,
                                                            &(hit->delegateId),
@@ -453,7 +437,7 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
     hit->worldSpaceHitPoint = GfVec3f(hitPoint);
     hit->ndcDepth = float(z);
     hit->instanceIndex = instanceIndex;
-    hit->elementIndex = elemIndex; 
+    hit->elementIndex = elementIndex; 
 
     if (TfDebug::IsEnabled(HDX_INTERSECT)) {
         std::cout << *hit << std::endl;
@@ -471,26 +455,17 @@ HdxIntersector::Result::_GetHash(int index) const
 
     int idIndex = index*4;
 
-    GfVec4i primIdColor(
-        primIds[idIndex+0],
-        primIds[idIndex+1],
-        primIds[idIndex+2],
-        primIds[idIndex+3]);
-
-    GfVec4i instanceIdColor(
-        instanceIds[idIndex+0],
-        instanceIds[idIndex+1],
-        instanceIds[idIndex+2],
-        instanceIds[idIndex+3]);
-
-    int elemIndex = ((elementIds[idIndex+0] & 0xff) <<  0) |
-                    ((elementIds[idIndex+1] & 0xff) <<  8) |
-                    ((elementIds[idIndex+2] & 0xff) << 16);
+    int primId = HdxRenderSetupTask::DecodeIDRenderColor(
+            &primIds[idIndex]);
+    int instanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            &instanceIds[idIndex]);
+    int elementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            &elementIds[idIndex]);
 
     size_t hash = 0;
-    boost::hash_combine(hash, primIdColor);
-    boost::hash_combine(hash, instanceIdColor);
-    boost::hash_combine(hash, elemIndex);
+    boost::hash_combine(hash, primId);
+    boost::hash_combine(hash, instanceIndex);
+    boost::hash_combine(hash, elementIndex);
 
     return hash;
 }
