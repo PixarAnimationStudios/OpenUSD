@@ -442,24 +442,24 @@ struct TestCase<double>
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testDouble"), SdfValueTypeNames->Double);
-        TF_VERIFY(attr.Set(0.0d, UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(2.0d, UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(0.0, UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(2.0, UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testDouble"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), 0.0d);
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), 1.0d);
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), 2.0d);
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), 0.0);
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), 1.0);
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), 2.0);
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testDouble"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), 0.0d);
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), 0.0d);
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), 2.0d);
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), 0.0);
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), 0.0);
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), 2.0);
     }
 };
 
@@ -470,24 +470,24 @@ struct TestCase<VtArray<double> >
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testDoubleArray"), SdfValueTypeNames->DoubleArray);
-        TF_VERIFY(attr.Set(CreateVtArray(0.0d), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateVtArray(2.0d), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(0.0), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(2.0), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testDoubleArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(1.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(2.0d));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(1.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(2.0));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testDoubleArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(2.0d));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(2.0));
     }
 };
 
@@ -757,24 +757,24 @@ struct TestCase<GfVec2d>
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testVec2d"), SdfValueTypeNames->Double2);
-        TF_VERIFY(attr.Set(GfVec2d(0.0d), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(GfVec2d(2.0d), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(GfVec2d(0.0), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(GfVec2d(2.0), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec2d"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec2d(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec2d(1.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec2d(2.0d));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec2d(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec2d(1.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec2d(2.0));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec2d"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec2d(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec2d(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec2d(2.0d));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec2d(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec2d(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec2d(2.0));
     }
 };
 
@@ -785,24 +785,24 @@ struct TestCase<VtArray<GfVec2d> >
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testVec2dArray"), SdfValueTypeNames->Double2Array);
-        TF_VERIFY(attr.Set(CreateVtArray(GfVec2d(0.0d)), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateVtArray(GfVec2d(2.0d)), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(GfVec2d(0.0)), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(GfVec2d(2.0)), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec2dArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec2d(0.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec2d(1.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec2d(2.0d)));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec2d(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec2d(1.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec2d(2.0)));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec2dArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec2d(0.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec2d(0.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec2d(2.0d)));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec2d(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec2d(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec2d(2.0)));
     }
 };
 
@@ -975,24 +975,24 @@ struct TestCase<GfVec3d>
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testVec3d"), SdfValueTypeNames->Double3);
-        TF_VERIFY(attr.Set(GfVec3d(0.0d), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(GfVec3d(2.0d), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(GfVec3d(0.0), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(GfVec3d(2.0), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec3d"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec3d(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec3d(1.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec3d(2.0d));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec3d(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec3d(1.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec3d(2.0));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec3d"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec3d(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec3d(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec3d(2.0d));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec3d(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec3d(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec3d(2.0));
     }
 };
 
@@ -1003,24 +1003,24 @@ struct TestCase<VtArray<GfVec3d> >
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testVec3dArray"), SdfValueTypeNames->Double3Array);
-        TF_VERIFY(attr.Set(CreateVtArray(GfVec3d(0.0d)), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateVtArray(GfVec3d(2.0d)), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(GfVec3d(0.0)), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(GfVec3d(2.0)), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec3dArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec3d(0.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec3d(1.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec3d(2.0d)));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec3d(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec3d(1.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec3d(2.0)));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec3dArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec3d(0.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec3d(0.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec3d(2.0d)));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec3d(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec3d(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec3d(2.0)));
     }
 };
 
@@ -1193,24 +1193,24 @@ struct TestCase<GfVec4d>
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testVec4d"), SdfValueTypeNames->Double4);
-        TF_VERIFY(attr.Set(GfVec4d(0.0d), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(GfVec4d(2.0d), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(GfVec4d(0.0), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(GfVec4d(2.0), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec4d"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec4d(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec4d(1.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec4d(2.0d));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec4d(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec4d(1.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec4d(2.0));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec4d"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec4d(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec4d(0.0d));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec4d(2.0d));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfVec4d(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfVec4d(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfVec4d(2.0));
     }
 };
 
@@ -1221,24 +1221,24 @@ struct TestCase<VtArray<GfVec4d> >
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testVec4dArray"), SdfValueTypeNames->Double4Array);
-        TF_VERIFY(attr.Set(CreateVtArray(GfVec4d(0.0d)), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateVtArray(GfVec4d(2.0d)), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(GfVec4d(0.0)), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(GfVec4d(2.0)), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec4dArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec4d(0.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec4d(1.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec4d(2.0d)));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec4d(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec4d(1.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec4d(2.0)));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testVec4dArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec4d(0.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec4d(0.0d)));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec4d(2.0d)));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfVec4d(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfVec4d(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfVec4d(2.0)));
     }
 };
 
@@ -1411,30 +1411,30 @@ struct TestCase<GfMatrix2d>
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testMatrix2d"), SdfValueTypeNames->Matrix2d);
-        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix2d>(0.0d), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix2d>(2.0d), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix2d>(0.0), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix2d>(2.0), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix2d"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateGfMatrix<GfMatrix2d>(0.0d));
+                             CreateGfMatrix<GfMatrix2d>(0.0));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateGfMatrix<GfMatrix2d>(1.0d));
+                             CreateGfMatrix<GfMatrix2d>(1.0));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateGfMatrix<GfMatrix2d>(2.0d));
+                             CreateGfMatrix<GfMatrix2d>(2.0));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix2d"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateGfMatrix<GfMatrix2d>(0.0d));
+                             CreateGfMatrix<GfMatrix2d>(0.0));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateGfMatrix<GfMatrix2d>(0.0d));
+                             CreateGfMatrix<GfMatrix2d>(0.0));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateGfMatrix<GfMatrix2d>(2.0d));
+                             CreateGfMatrix<GfMatrix2d>(2.0));
     }
 };
 
@@ -1445,9 +1445,9 @@ struct TestCase<VtArray<GfMatrix2d> >
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testMatrix2dArray"), SdfValueTypeNames->Matrix2dArray);
-        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix2d>(0.0d)),
+        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix2d>(0.0)),
                            UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix2d>(2.0d)),
+        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix2d>(2.0)),
                            UsdTimeCode(2.0)));
     }
 
@@ -1455,22 +1455,22 @@ struct TestCase<VtArray<GfMatrix2d> >
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix2dArray"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(0.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(0.0)));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(1.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(1.0)));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(2.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(2.0)));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix2dArray"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(0.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(0.0)));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(0.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(0.0)));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(2.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix2d>(2.0)));
     }
 };
 
@@ -1481,30 +1481,30 @@ struct TestCase<GfMatrix3d>
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testMatrix3d"), SdfValueTypeNames->Matrix3d);
-        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix3d>(0.0d), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix3d>(2.0d), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix3d>(0.0), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix3d>(2.0), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix3d"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateGfMatrix<GfMatrix3d>(0.0d));
+                             CreateGfMatrix<GfMatrix3d>(0.0));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateGfMatrix<GfMatrix3d>(1.0d));
+                             CreateGfMatrix<GfMatrix3d>(1.0));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateGfMatrix<GfMatrix3d>(2.0d));
+                             CreateGfMatrix<GfMatrix3d>(2.0));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix3d"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateGfMatrix<GfMatrix3d>(0.0d));
+                             CreateGfMatrix<GfMatrix3d>(0.0));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateGfMatrix<GfMatrix3d>(0.0d));
+                             CreateGfMatrix<GfMatrix3d>(0.0));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateGfMatrix<GfMatrix3d>(2.0d));
+                             CreateGfMatrix<GfMatrix3d>(2.0));
     }
 };
 
@@ -1515,9 +1515,9 @@ struct TestCase<VtArray<GfMatrix3d> >
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testMatrix3dArray"), SdfValueTypeNames->Matrix3dArray);
-        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix3d>(0.0d)),
+        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix3d>(0.0)),
                            UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix3d>(2.0d)),
+        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix3d>(2.0)),
                            UsdTimeCode(2.0)));
     }
 
@@ -1525,22 +1525,22 @@ struct TestCase<VtArray<GfMatrix3d> >
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix3dArray"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(0.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(0.0)));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(1.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(1.0)));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(2.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(2.0)));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix3dArray"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(0.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(0.0)));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(0.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(0.0)));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(2.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix3d>(2.0)));
     }
 };
 
@@ -1551,30 +1551,30 @@ struct TestCase<GfMatrix4d>
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testMatrix4d"), SdfValueTypeNames->Matrix4d);
-        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix4d>(0.0d), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix4d>(2.0d), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix4d>(0.0), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(CreateGfMatrix<GfMatrix4d>(2.0), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix4d"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateGfMatrix<GfMatrix4d>(0.0d));
+                             CreateGfMatrix<GfMatrix4d>(0.0));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateGfMatrix<GfMatrix4d>(1.0d));
+                             CreateGfMatrix<GfMatrix4d>(1.0));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateGfMatrix<GfMatrix4d>(2.0d));
+                             CreateGfMatrix<GfMatrix4d>(2.0));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix4d"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateGfMatrix<GfMatrix4d>(0.0d));
+                             CreateGfMatrix<GfMatrix4d>(0.0));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateGfMatrix<GfMatrix4d>(0.0d));
+                             CreateGfMatrix<GfMatrix4d>(0.0));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateGfMatrix<GfMatrix4d>(2.0d));
+                             CreateGfMatrix<GfMatrix4d>(2.0));
     }
 };
 
@@ -1585,9 +1585,9 @@ struct TestCase<VtArray<GfMatrix4d> >
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testMatrix4dArray"), SdfValueTypeNames->Matrix4dArray);
-        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix4d>(0.0d)),
+        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix4d>(0.0)),
                            UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix4d>(2.0d)),
+        TF_VERIFY(attr.Set(CreateVtArray(CreateGfMatrix<GfMatrix4d>(2.0)),
                            UsdTimeCode(2.0)));
     }
 
@@ -1595,22 +1595,22 @@ struct TestCase<VtArray<GfMatrix4d> >
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix4dArray"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(0.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(0.0)));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(1.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(1.0)));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(2.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(2.0)));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testMatrix4dArray"));
         VerifyAttributeValue(attr, UsdTimeCode(0.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(0.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(0.0)));
         VerifyAttributeValue(attr, UsdTimeCode(1.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(0.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(0.0)));
         VerifyAttributeValue(attr, UsdTimeCode(2.0), 
-                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(2.0d)));
+                             CreateVtArray(CreateGfMatrix<GfMatrix4d>(2.0)));
     }
 };
 
