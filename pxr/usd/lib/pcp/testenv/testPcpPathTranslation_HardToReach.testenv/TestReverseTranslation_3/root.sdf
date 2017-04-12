@@ -1,0 +1,18 @@
+#sdf 1.4.32
+(
+    """
+    LArm is an anim scope relocated from under an LArm rig that inherits a SymArm rig. Even though it has been relocated, it needs to retain the knowledge of its ancestor's inherits arc to SymArm, in order to include the the class's anim prim.
+    """
+)
+
+def __AnyType__ "CharRig" (
+    add references = @./humanRig.sdf@</HumanRig>
+)
+{
+    over "Anim"
+    {
+        over "LArm"
+        {
+        }
+    }
+}

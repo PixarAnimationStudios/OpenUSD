@@ -1,0 +1,147 @@
+Loading @TrickyInheritsAndRelocates4/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak>
+
+Prim Stack:
+    root.sdf             /FergusCloak
+
+Child names:
+     ['rig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig>
+
+Prim Stack:
+    root.sdf             /FergusCloak/rig
+
+Child names:
+     ['LArmRig']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig>
+
+Prim Stack:
+    root.sdf             /FergusCloak/rig/LArmRig
+    root.sdf             /_class_MultiLevelCurveRig
+    CurveTrackRig.sdf    /CurveTrackRig
+    CurveTrackRig.sdf    /_class_MultiLevelCurveRig
+
+Child names:
+     ['rig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig/rig>
+
+Prim Stack:
+    root.sdf             /_class_MultiLevelCurveRig/rig
+    CurveTrackRig.sdf    /CurveTrackRig/rig
+    CurveTrackRig.sdf    /_class_MultiLevelCurveRig/rig
+
+Child names:
+     ['ConstRig']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig/rig/ConstRig>
+
+Prim Stack:
+    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig
+    CurveTrackRig.sdf    /CurveTrackRig/rig/ConstRig
+    CurveTrackRig.sdf    /_class_MultiLevelCurveRig/rig/ConstRig
+    ConstraintRig.sdf    /ConstraintRig
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig/rig/ConstRig/Anim>
+
+Prim Stack:
+    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig/Anim
+    CurveTrackRig.sdf    /_class_MultiLevelCurveRig/rig/ConstRig/Anim
+    ConstraintRig.sdf    /ConstraintRig/Anim
+
+Prohibited child names:
+     ['Const']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LArmRig/Anim>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/Anim
+
+Prohibited child names:
+     ['Curve']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/Anim>
+
+Prim Stack:
+    root.sdf             /FergusCloak/Anim
+
+Child names:
+     ['LArm']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/Anim/LArm>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/Anim/Curve
+
+Child names:
+     ['Const']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/Anim/LArm/Const>
+
+Prim Stack:
+    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
+    CurveTrackRig.sdf    /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
+    ConstraintRig.sdf    /ConstraintRig/Anim/Const
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig>
+
+Prim Stack:
+    root.sdf             /_class_MultiLevelCurveRig
+
+Child names:
+     ['rig']
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig/rig>
+
+Prim Stack:
+    root.sdf             /_class_MultiLevelCurveRig/rig
+
+Child names:
+     ['ConstRig']
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig/rig/ConstRig>
+
+Prim Stack:
+    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig/rig/ConstRig/Anim>
+
+Prim Stack:
+    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig/Anim
+
+Child names:
+     ['Const']
+
+------------------------------------------------------------------------
+Results for composing </_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const>
+
+Prim Stack:
+    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
+

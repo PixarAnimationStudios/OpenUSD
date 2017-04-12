@@ -1,0 +1,50 @@
+Loading @BasicReferenceAndClassDiamond/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model_1>
+
+Prim Stack:
+    root.sdf             /Model_1
+    model.sdf            /Model
+
+Child names:
+     ['LocalClass', 'Instance']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/LocalClass>
+
+Prim Stack:
+    root.sdf             /Model_1/LocalClass
+    model.sdf            /Model/LocalClass
+
+Property names:
+     ['attr']
+
+Property stacks:
+/Model_1/LocalClass.attr:
+    root.sdf             /Model_1/LocalClass.attr
+    model.sdf            /Model/LocalClass.attr
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance>
+
+Prim Stack:
+    root.sdf             /Model_1/Instance
+    root.sdf             /Model_1/LocalClass
+    model.sdf            /Model/Instance
+    model.sdf            /Model/LocalClass
+
+Property names:
+     ['attr']
+
+Property stacks:
+/Model_1/Instance.attr:
+    root.sdf             /Model_1/Instance.attr
+    root.sdf             /Model_1/LocalClass.attr
+    model.sdf            /Model/Instance.attr
+    model.sdf            /Model/LocalClass.attr
+

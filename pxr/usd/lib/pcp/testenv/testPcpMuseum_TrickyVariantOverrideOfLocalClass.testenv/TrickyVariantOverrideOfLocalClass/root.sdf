@@ -1,0 +1,42 @@
+#sdf 1.4.32
+(
+    """
+    This example is from M2's global HandRig.
+    A rig has a child prim that inherits a sibling local-class prim.
+    The rig also has a variant that overrides the class.
+    """
+)
+
+def Scope "HandRig" (
+    variantSets = "FingerRigArmature"
+    variants = {
+        string FingerRigArmature = "off"
+    }
+)
+{
+    def Scope "IndexRig" (
+        inherits = </HandRig/_Class_FingerRig>
+    )
+    {
+    }
+
+    class Scope "_Class_FingerRig"
+    {
+    }
+
+    variantSet "FingerRigArmature" = {
+        "off" {
+            class "_Class_FingerRig"
+            {
+                bool armature_enabled = 0
+            }
+        }
+        "on" {
+            class "_Class_FingerRig"
+            {
+                bool armature_enabled = 1
+            }
+        }
+    }
+}
+

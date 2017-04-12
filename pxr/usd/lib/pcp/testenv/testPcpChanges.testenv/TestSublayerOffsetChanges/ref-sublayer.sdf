@@ -1,0 +1,7 @@
+#sdf 1.4.32
+
+def "A" (
+    references = @./ref2.sdf@</A>
+)
+{
+}

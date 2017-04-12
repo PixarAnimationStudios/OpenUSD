@@ -1,0 +1,29 @@
+Loading @TrickyVariantInPayload/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </A1>
+
+Prim Stack:
+    root.sdf             /A1
+    model.sdf            /A
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </A1/B>
+
+Prim Stack:
+    root.sdf             /A1/B
+    model.sdf            /B
+    model.sdf            /B{v=v2}
+    model.sdf            /A/B
+    model.sdf            /A/B{v=v2}
+
+Variant Selections:
+    {v = v2}
+

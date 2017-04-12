@@ -1,0 +1,41 @@
+#sdf 1.4.32
+
+def "CurveTrackRig" (
+    inherits = </_class_MultiLevelCurveRig>
+    relocates = {
+        <rig/ConstRig/Anim/Const>: <Anim/Curve/Const>
+    }
+)
+{
+    def "Anim"
+    {
+        def "Curve"
+        {
+        }
+    }
+
+    def "rig"
+    {
+        def "ConstRig" (
+            references = @./ConstraintRig.sdf@</ConstraintRig>
+        )
+        {
+        }
+    }        
+}
+
+class "_class_MultiLevelCurveRig"
+{
+    def "rig"
+    {
+        def "ConstRig"
+        {
+            def "Anim"
+            {
+                def "Const"
+                {
+                }
+            }
+        }
+    }
+}

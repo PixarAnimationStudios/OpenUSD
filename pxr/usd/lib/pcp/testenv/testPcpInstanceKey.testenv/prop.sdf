@@ -1,0 +1,18 @@
+#sdf 1.4.32
+
+class "_class_Prop"
+{
+}
+
+def "Prop" (
+    inherits = </_class_Prop>
+    references = @./prop_ref.sdf@</Prop>
+)
+{
+    double a = 1.0
+
+    def "geom"
+    {
+        double x = 1.0
+    }
+}

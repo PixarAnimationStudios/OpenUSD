@@ -1,0 +1,24 @@
+#sdf 1.4.32
+
+def Scope "Rig"
+{
+    def Scope "SymRigBase"
+    {
+        def Scope "Anim"
+        {
+            custom double foo = 10.0
+        }
+    }
+
+    def Scope "SymRig" (
+        add inherits = </Rig/SymRigBase>
+    )
+    {
+    }
+
+    def Scope "LRig" (
+        add inherits = </Rig/SymRig>
+    )
+    {
+    }
+}

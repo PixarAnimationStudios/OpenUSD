@@ -1,0 +1,17 @@
+#sdf 1.4.32
+
+def "Model" (
+    add references = @./mcat.sdf@</Model>
+)
+{
+    custom double a
+}
+
+class "Class" (
+    variants = {
+        string pin = "latest"
+    }
+)
+{
+    custom double a
+}

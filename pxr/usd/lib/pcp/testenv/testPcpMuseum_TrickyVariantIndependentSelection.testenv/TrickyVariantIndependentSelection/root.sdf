@@ -1,0 +1,45 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates variant selection behavior across
+    multiple sibling arcs of the same type. Pcp and Csd differ in the
+    way they handle this situation.
+
+    /Model in model.sdf has three separate references, each with the
+    same variant sets but with different selections. 
+
+    In Csd, the selections authored within each reference are expected to 
+    be independent of each other. In other words, the selection in the 
+    strongest reference shouldn't affect the selection in the weaker references.
+
+    In Pcp, variant selections from sibling arcs are NOT independent. 
+    Selections in stronger arcs will be carried into and override selections
+    in weaker arcs.
+
+    So in this exhibit, in Csd mode the selections for the 'transformVariant'
+    set authored in each individual reference will be used. In Pcp mode, the
+    selection of 'a' authored in the strongest reference, Model_1, will be used.
+    In both modes, the 'test' variant for the 'pin' set should be used because
+    that selection is authored in a stronger class.
+
+    In general, the variants for most assets are authored in a consistent
+    manner and don't run into this behavior. This wasn't true for the
+    M2TeaserScalability* tests; these relied on Csd's behavior and failed
+    verifies in exec without it.
+    """
+)
+
+class Scope "_class_Model" (
+    variants = {
+        string pin = "test"
+    }
+)
+{
+}
+
+def Scope "Model" (
+    references = @./model.sdf@</Model>
+    inherits = </_class_Model>
+)
+{
+}

@@ -1,0 +1,5 @@
+------------------------------------------------------------------------
+Errors while composing </CharRig/Anim/Path>
+
+The layer @ErrorOpinionAtRelocationSource/root.sdf@ has an invalid opinion at the relocation source path </CharRig/Rig/PathRig/Path>, which will be ignored.
+

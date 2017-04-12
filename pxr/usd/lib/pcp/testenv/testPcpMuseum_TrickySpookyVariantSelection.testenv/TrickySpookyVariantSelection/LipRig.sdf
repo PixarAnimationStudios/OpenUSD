@@ -1,0 +1,25 @@
+#sdf 1.4.32
+
+def Scope "LipRig" (
+    variantSets = "LipRigStyle"
+    variants = {
+        string LipRigStyle = "SingleLip"
+    }
+)
+{
+    variantSet "LipRigStyle" = {
+        "SingleLip" (
+            references = @./SingleLip.sdf@</LipsRig>
+        )
+        {
+        }
+        "TwoLips" (
+            references = @./TwoLips.sdf@</LipsRig>
+        )
+        {
+        }
+    }
+
+    def Scope "Anim" {
+    }
+}

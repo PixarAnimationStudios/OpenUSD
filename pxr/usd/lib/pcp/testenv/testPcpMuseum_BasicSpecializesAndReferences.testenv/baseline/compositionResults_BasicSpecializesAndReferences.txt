@@ -1,0 +1,61 @@
+Loading @BasicSpecializesAndReferences/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </ShaderBindings>
+
+Prim Stack:
+    root.sdf             /ShaderBindings
+    root.sdf             /ShaderBindings_defaultShadingVariant
+
+Child names:
+     ['ShinyPlastic', 'ShinyPlastic_BlueShinyPlastic']
+
+------------------------------------------------------------------------
+Results for composing </ShaderBindings/ShinyPlastic>
+
+Prim Stack:
+    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic
+    root.sdf             /ShinyPlasticLook
+
+------------------------------------------------------------------------
+Results for composing </ShaderBindings/ShinyPlastic_BlueShinyPlastic>
+
+Prim Stack:
+    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic_BlueShinyPlastic
+    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic
+    root.sdf             /ShinyPlasticLook
+
+------------------------------------------------------------------------
+Results for composing </ShinyPlasticLook>
+
+Prim Stack:
+    root.sdf             /ShinyPlasticLook
+
+------------------------------------------------------------------------
+Results for composing </ShaderBindings_defaultShadingVariant>
+
+Prim Stack:
+    root.sdf             /ShaderBindings_defaultShadingVariant
+
+Child names:
+     ['ShinyPlastic', 'ShinyPlastic_BlueShinyPlastic']
+
+------------------------------------------------------------------------
+Results for composing </ShaderBindings_defaultShadingVariant/ShinyPlastic>
+
+Prim Stack:
+    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic
+    root.sdf             /ShinyPlasticLook
+
+------------------------------------------------------------------------
+Results for composing </ShaderBindings_defaultShadingVariant/ShinyPlastic_BlueShinyPlastic>
+
+Prim Stack:
+    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic_BlueShinyPlastic
+    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic
+    root.sdf             /ShinyPlasticLook
+

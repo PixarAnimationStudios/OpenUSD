@@ -1,0 +1,17 @@
+#sdf 1.4.32
+
+class "Inherits_2"
+{
+}
+
+class "Specializes_2" (
+    inherits = </Inherits_2>
+)
+{
+}
+
+def "Ref" (
+    specializes = </Specializes_2>
+)
+{
+}

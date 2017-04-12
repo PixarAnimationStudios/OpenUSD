@@ -1,0 +1,196 @@
+Loading session @BasicReference/session.sdf@
+
+Loading @BasicReference/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     session.sdf
+     root.sdf
+     sublayer.sdf
+
+------------------------------------------------------------------------
+Results for composing </InternalSublayerReference>
+
+Prim Stack:
+    root.sdf             /InternalSublayerReference
+    sublayer.sdf         /InternalSublayerReference
+
+Child names:
+     ['InternalSublayerReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </InternalSublayerReference/InternalSublayerReference_Child>
+
+Prim Stack:
+    root.sdf             /InternalSublayerReference/InternalSublayerReference_Child
+    sublayer.sdf         /InternalSublayerReference/InternalSublayerReference_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimInSublayerWithInternalReference>
+
+Prim Stack:
+    sublayer.sdf         /PrimInSublayerWithInternalReference
+    root.sdf             /InternalSublayerReference
+    sublayer.sdf         /InternalSublayerReference
+
+Child names:
+     ['InternalSublayerReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimInSublayerWithInternalReference/InternalSublayerReference_Child>
+
+Prim Stack:
+    root.sdf             /InternalSublayerReference/InternalSublayerReference_Child
+    sublayer.sdf         /InternalSublayerReference/InternalSublayerReference_Child
+
+------------------------------------------------------------------------
+Results for composing </SublayerPrim>
+
+Prim Stack:
+    sublayer.sdf         /SublayerPrim
+
+------------------------------------------------------------------------
+Results for composing </PrimInSublayerWithInternalReference2>
+
+Prim Stack:
+    sublayer.sdf         /PrimInSublayerWithInternalReference2
+    sublayer.sdf         /SublayerPrim
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferences>
+
+Prim Stack:
+    root.sdf             /PrimWithReferences
+    ref.sdf              /PrimA
+    ref2.sdf             /PrimC
+    ref2.sdf             /PrimB
+
+Child names:
+     ['PrimB_Child', 'PrimC_Child', 'PrimA_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferences/PrimB_Child>
+
+Prim Stack:
+    ref2.sdf             /PrimB/PrimB_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferences/PrimC_Child>
+
+Prim Stack:
+    ref2.sdf             /PrimC/PrimC_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithReferences/PrimA_Child>
+
+Prim Stack:
+    ref.sdf              /PrimA/PrimA_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimB>
+
+Prim Stack:
+    root.sdf             /PrimB
+
+Child names:
+     ['PrimB_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimB/PrimB_Child>
+
+Prim Stack:
+    root.sdf             /PrimB/PrimB_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithSelfReference>
+
+Prim Stack:
+    root.sdf             /PrimWithSelfReference
+    root.sdf             /InternalReference
+    sublayer.sdf         /InternalSublayerReference
+
+Child names:
+     ['InternalSublayerReference_Child', 'InternalReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithSelfReference/InternalSublayerReference_Child>
+
+Prim Stack:
+    sublayer.sdf         /InternalSublayerReference/InternalSublayerReference_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithSelfReference/InternalReference_Child>
+
+Prim Stack:
+    root.sdf             /InternalReference/InternalReference_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithInternalReference>
+
+Prim Stack:
+    root.sdf             /PrimWithInternalReference
+    root.sdf             /InternalReference
+    session.sdf          /InternalReference2
+
+Child names:
+     ['InternalReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithInternalReference/InternalReference_Child>
+
+Prim Stack:
+    root.sdf             /InternalReference/InternalReference_Child
+
+------------------------------------------------------------------------
+Results for composing </InternalReference>
+
+Prim Stack:
+    root.sdf             /InternalReference
+
+Child names:
+     ['InternalReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </InternalReference/InternalReference_Child>
+
+Prim Stack:
+    root.sdf             /InternalReference/InternalReference_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultReferenceTarget>
+
+Prim Stack:
+    root.sdf             /PrimWithDefaultReferenceTarget
+    defaultRef.sdf       /Default
+
+Child names:
+     ['Default_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultReferenceTarget/Default_Child>
+
+Prim Stack:
+    defaultRef.sdf       /Default/Default_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultReferenceTarget2>
+
+Prim Stack:
+    root.sdf             /PrimWithDefaultReferenceTarget2
+    root.sdf             /InternalReference
+
+Child names:
+     ['InternalReference_Child']
+
+------------------------------------------------------------------------
+Results for composing </PrimWithDefaultReferenceTarget2/InternalReference_Child>
+
+Prim Stack:
+    root.sdf             /InternalReference/InternalReference_Child
+
+------------------------------------------------------------------------
+Results for composing </InternalReference2>
+
+Prim Stack:
+    session.sdf          /InternalReference2
+

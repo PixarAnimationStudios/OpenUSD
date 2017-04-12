@@ -1,0 +1,68 @@
+#sdf 1.4.32
+
+def Scope "Reference"
+{
+    custom double privateAttrFromRef (permission = private)
+    custom double publicAttrFromRef
+
+    def Scope "PrivatePrimFromRef" (
+        permission = private
+    )
+    {
+    }
+
+    def Scope "PublicPrimFromRef"
+    {
+    }
+
+    def Scope "ChildFromRef"
+    {
+        custom rel relInRef = [ 
+            </Reference/PrivatePrimFromRef>,
+            </Reference/PublicPrimFromRef>,
+            </Reference.privateAttrFromRef>,
+            </Reference.publicAttrFromRef>
+        ]
+    }
+}
+
+def Scope "ReferenceWithLocalClass"
+{
+    class Scope "Class"
+    {
+        custom double privateAttrFromClass (permission = private)
+        custom double publicAttrFromClass
+
+        def Scope "PrivatePrimFromClass" (
+            permission = private
+        )
+        {
+        }
+
+        def Scope "PublicPrimFromClass"
+        {
+        }
+
+        def Scope "ChildFromClass"
+        {
+            custom rel relInClass = [ 
+                </ReferenceWithLocalClass/Class/PrivatePrimFromClass>,
+                </ReferenceWithLocalClass/Class/PublicPrimFromClass>,
+                </ReferenceWithLocalClass/Class.privateAttrFromClass>,
+                </ReferenceWithLocalClass/Class.publicAttrFromClass>
+            ]
+        }
+    }
+
+    def Scope "Instance" (
+        add inherits = </ReferenceWithLocalClass/Class>
+    )
+    {
+        custom rel relInInstance = [
+           </ReferenceWithLocalClass/Instance/PrivatePrimFromClass>,
+           </ReferenceWithLocalClass/Instance/PublicPrimFromClass>,
+           </ReferenceWithLocalClass/Instance.privateAttrFromClass>,
+           </ReferenceWithLocalClass/Instance.publicAttrFromClass>
+        ]
+    }
+}

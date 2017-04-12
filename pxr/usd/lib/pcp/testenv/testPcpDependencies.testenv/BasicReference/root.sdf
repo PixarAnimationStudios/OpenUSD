@@ -1,0 +1,81 @@
+#sdf 1.4.32
+(
+    """
+    This museum exhibit demonstrates basic referencing behavior
+    supported by Pcp.
+    """
+    subLayers = [
+        @./sublayer.sdf@
+    ]
+    defaultPrim = "InternalReference"
+)
+
+def Scope "PrimWithReferences" (
+    references = [
+        @./ref.sdf@</PrimA>,
+        @./ref2.sdf@</PrimB>
+    ]
+)
+{
+}
+
+over "PrimB" (
+    """
+    These overs for prims referenced by PrimWithReferences above
+    should not factor into composition.
+    """
+)
+{
+    over "PrimB_Child"
+    {
+    }
+}
+
+def Scope "PrimWithSelfReference" (
+    references = [
+        @./root.sdf@</InternalReference>,
+        @./sublayer.sdf@</InternalSublayerReference>
+    ]
+)
+{
+}
+
+def Scope "PrimWithInternalReference" (
+    references = [
+        </InternalReference>,
+        </InternalReference2>
+    ]
+)
+{
+}       
+
+def Scope "InternalReference"
+{
+    def Scope "InternalReference_Child"
+    {
+    }
+}
+
+over "InternalSublayerReference" (
+     """
+     These overs for prims referenced by PrimWithInternalReference above
+     should not factor into composition.
+     """
+)
+{
+    over "InternalSublayerReference_Child"
+    {
+    }
+}
+
+def Scope "PrimWithDefaultReferenceTarget" (
+    references = @./defaultRef.sdf@
+)
+{
+}
+
+def Scope "PrimWithDefaultReferenceTarget2" (
+    references = <>
+)
+{
+}

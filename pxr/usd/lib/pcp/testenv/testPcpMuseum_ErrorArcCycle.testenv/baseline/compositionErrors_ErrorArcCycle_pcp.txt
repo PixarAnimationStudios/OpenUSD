@@ -1,0 +1,95 @@
+------------------------------------------------------------------------
+Errors while composing </GroupRoot>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</GroupRoot>
+references:
+@ErrorArcCycle/A.sdf@</GroupA>
+which references:
+@ErrorArcCycle/B.sdf@</GroupB>
+which CANNOT reference:
+@ErrorArcCycle/A.sdf@</GroupA>
+
+
+------------------------------------------------------------------------
+Errors while composing </Parent/Child1>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</Parent/Child1>
+inherits from:
+@ErrorArcCycle/root.sdf@</Parent/Child2>
+which CANNOT inherit from:
+@ErrorArcCycle/root.sdf@</Parent/Child1>
+
+
+------------------------------------------------------------------------
+Errors while composing </Parent/Child2>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</Parent/Child2>
+inherits from:
+@ErrorArcCycle/root.sdf@</Parent/Child1>
+which CANNOT inherit from:
+@ErrorArcCycle/root.sdf@</Parent/Child2>
+
+
+------------------------------------------------------------------------
+Errors while composing </AnotherParent/AnotherChild>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</AnotherParent/AnotherChild>
+references:
+@ErrorArcCycle/model.sdf@</Model>
+which CANNOT reference:
+@ErrorArcCycle/root.sdf@</AnotherParent>
+
+
+------------------------------------------------------------------------
+Errors while composing </YetAnotherParent/Child>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</YetAnotherParent/Child>
+CANNOT inherit from:
+@ErrorArcCycle/root.sdf@</YetAnotherParent>
+
+
+------------------------------------------------------------------------
+Errors while composing </CoRecursiveParent1/Child1/Child2>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</CoRecursiveParent1/Child1/Child2>
+inherits from:
+@ErrorArcCycle/root.sdf@</CoRecursiveParent2/Child2>
+which CANNOT inherit from:
+@ErrorArcCycle/root.sdf@</CoRecursiveParent1>
+
+
+------------------------------------------------------------------------
+Errors while composing </CoRecursiveParent2/Child2/Child1>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</CoRecursiveParent2/Child2/Child1>
+inherits from:
+@ErrorArcCycle/root.sdf@</CoRecursiveParent1/Child1>
+which CANNOT inherit from:
+@ErrorArcCycle/root.sdf@</CoRecursiveParent2>
+
+
+------------------------------------------------------------------------
+Errors while composing </InheritOfChild>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</InheritOfChild>
+CANNOT inherit from:
+@ErrorArcCycle/root.sdf@</InheritOfChild/Child>
+
+
+------------------------------------------------------------------------
+Errors while composing </RelocatedInheritOfChild/Child>
+
+Cycle detected:
+@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Child>
+CANNOT inherit from:
+@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Child/Class>
+
+

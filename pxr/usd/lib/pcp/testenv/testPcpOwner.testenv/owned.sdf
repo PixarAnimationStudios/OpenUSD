@@ -1,0 +1,9 @@
+#sdf 1.4.32
+(
+    owner = "_PLACEHOLDER_"
+)
+
+over "Sphere"
+{
+    double radius = 999;
+}

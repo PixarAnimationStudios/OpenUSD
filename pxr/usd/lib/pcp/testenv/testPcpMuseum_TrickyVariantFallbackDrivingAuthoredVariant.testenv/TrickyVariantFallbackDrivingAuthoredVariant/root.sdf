@@ -1,0 +1,53 @@
+#sdf 1.4.32
+(
+    """
+    This example exercises a case with two sibling variant sets,
+    where a fallback applied to one introduces an authored selection
+    for the other.  Since they are on the same node/site this
+    requires restarting the variant evaluation process.
+    """
+)
+
+def Scope "A" (
+    add variantSets = ["vset1", "vset2"]
+)
+{
+    variantSet "vset1" = {
+        "fallback" (
+            variants = {
+                string vset2 = "authored"
+            }
+        ) {
+        }
+    }
+    variantSet "vset2" = {
+        "authored" (
+        ) {
+            def Scope "vset2_authored_child"
+            {
+            }
+        }
+    }
+}
+
+def Scope "B" (
+    add variantSets = ["vset2", "vset1"]
+)
+{
+    variantSet "vset1" = {
+        "fallback" (
+            variants = {
+                string vset2 = "authored"
+            }
+        ) {
+        }
+    }
+    variantSet "vset2" = {
+        "authored" (
+        ) {
+            def Scope "vset2_authored_child"
+            {
+            }
+        }
+    }
+}

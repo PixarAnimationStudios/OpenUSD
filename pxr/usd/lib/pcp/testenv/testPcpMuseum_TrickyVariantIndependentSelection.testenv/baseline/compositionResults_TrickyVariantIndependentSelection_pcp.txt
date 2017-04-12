@@ -1,0 +1,72 @@
+Loading @TrickyVariantIndependentSelection/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </_class_Model>
+
+Prim Stack:
+    root.sdf             /_class_Model
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    root.sdf             /_class_Model
+    model.sdf            /Model
+    ref.sdf              /Model_1
+    ref.sdf              /Model_1{transformVariant=a}
+    ref.sdf              /Model_1{pin=test}
+    ref.sdf              /Model_2
+    ref.sdf              /Model_2{transformVariant=a}
+    ref.sdf              /Model_2{pin=test}
+    ref.sdf              /Model_3
+    ref.sdf              /Model_3{transformVariant=a}
+    ref.sdf              /Model_3{pin=test}
+
+Variant Selections:
+    {pin = test}
+    {transformVariant = a}
+
+Child names:
+     ['Model_3_Pin_Test', 'Model_3_Transform_A', 'Model_2_Pin_Test', 'Model_2_Transform_A', 'Model_1_Pin_Test', 'Model_1_Transform_A']
+
+------------------------------------------------------------------------
+Results for composing </Model/Model_3_Pin_Test>
+
+Prim Stack:
+    ref.sdf              /Model_3{pin=test}Model_3_Pin_Test
+
+------------------------------------------------------------------------
+Results for composing </Model/Model_3_Transform_A>
+
+Prim Stack:
+    ref.sdf              /Model_3{transformVariant=a}Model_3_Transform_A
+
+------------------------------------------------------------------------
+Results for composing </Model/Model_2_Pin_Test>
+
+Prim Stack:
+    ref.sdf              /Model_2{pin=test}Model_2_Pin_Test
+
+------------------------------------------------------------------------
+Results for composing </Model/Model_2_Transform_A>
+
+Prim Stack:
+    ref.sdf              /Model_2{transformVariant=a}Model_2_Transform_A
+
+------------------------------------------------------------------------
+Results for composing </Model/Model_1_Pin_Test>
+
+Prim Stack:
+    ref.sdf              /Model_1{pin=test}Model_1_Pin_Test
+
+------------------------------------------------------------------------
+Results for composing </Model/Model_1_Transform_A>
+
+Prim Stack:
+    ref.sdf              /Model_1{transformVariant=a}Model_1_Transform_A
+

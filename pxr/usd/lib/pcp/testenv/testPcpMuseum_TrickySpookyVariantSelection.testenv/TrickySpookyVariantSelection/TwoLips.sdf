@@ -1,0 +1,22 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @./SingleLip.sdf@
+    ]
+)
+
+def Scope "LipsRig"
+{
+    over "Anim"
+    {
+        double Lip2
+    }
+
+    over "Rig"
+    {
+        def Scope "Lip2Sculpt"
+        {
+            double amount.connect = </LipsRig/Anim.Lip2>
+        }
+    }
+}

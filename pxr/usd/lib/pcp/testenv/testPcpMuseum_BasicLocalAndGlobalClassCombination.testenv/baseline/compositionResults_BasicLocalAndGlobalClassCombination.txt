@@ -1,0 +1,89 @@
+Loading @BasicLocalAndGlobalClassCombination/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model_1>
+
+Prim Stack:
+    root.sdf             /Model_1
+    model.sdf            /Model
+    model.sdf            /_class_Model
+
+Child names:
+     ['_class_Nested', 'Instance']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/_class_Nested>
+
+Prim Stack:
+    root.sdf             /Model_1/_class_Nested
+    model.sdf            /Model/_class_Nested
+    model.sdf            /_class_Model/_class_Nested
+
+Child names:
+     ['Sym', 'Left']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/_class_Nested/Sym>
+
+Prim Stack:
+    root.sdf             /Model_1/_class_Nested/Sym
+    model.sdf            /Model/_class_Nested/Sym
+    model.sdf            /_class_Model/_class_Nested/Sym
+
+------------------------------------------------------------------------
+Results for composing </Model_1/_class_Nested/Left>
+
+Prim Stack:
+    root.sdf             /Model_1/_class_Nested/Left
+    root.sdf             /Model_1/_class_Nested/Sym
+    model.sdf            /Model/_class_Nested/Left
+    model.sdf            /Model/_class_Nested/Sym
+    model.sdf            /_class_Model/_class_Nested/Left
+    model.sdf            /_class_Model/_class_Nested/Sym
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance>
+
+Prim Stack:
+    root.sdf             /Model_1/Instance
+    root.sdf             /Model_1/_class_Nested
+    model.sdf            /Model/Instance
+    model.sdf            /Model/_class_Nested
+    model.sdf            /_class_Model/Instance
+    model.sdf            /_class_Model/_class_Nested
+
+Child names:
+     ['Sym', 'Left']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance/Sym>
+
+Prim Stack:
+    root.sdf             /Model_1/Instance/Sym
+    root.sdf             /Model_1/_class_Nested/Sym
+    model.sdf            /Model/Instance/Sym
+    model.sdf            /Model/_class_Nested/Sym
+    model.sdf            /_class_Model/Instance/Sym
+    model.sdf            /_class_Model/_class_Nested/Sym
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance/Left>
+
+Prim Stack:
+    root.sdf             /Model_1/Instance/Left
+    root.sdf             /Model_1/Instance/Sym
+    root.sdf             /Model_1/_class_Nested/Left
+    root.sdf             /Model_1/_class_Nested/Sym
+    model.sdf            /Model/Instance/Left
+    model.sdf            /Model/Instance/Sym
+    model.sdf            /Model/_class_Nested/Left
+    model.sdf            /Model/_class_Nested/Sym
+    model.sdf            /_class_Model/Instance/Left
+    model.sdf            /_class_Model/Instance/Sym
+    model.sdf            /_class_Model/_class_Nested/Left
+    model.sdf            /_class_Model/_class_Nested/Sym
+

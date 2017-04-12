@@ -1,0 +1,104 @@
+Loading @TrickyMultipleRelocations/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Char>
+
+Prim Stack:
+    root.sdf             /Char
+    rig.sdf              /CharRig
+
+Child names:
+     ['Anim2', 'Rig2']
+
+Prohibited child names:
+     ['Anim', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim2>
+
+Prim Stack:
+    root.sdf             /Char/Anim2
+    rig.sdf              /CharRig/Anim
+
+Child names:
+     ['AnimScope']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim2/AnimScope>
+
+Prim Stack:
+    subrig.sdf           /SubRig/Anim/AnimScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Char/Anim2/AnimScope.x:
+    subrig.sdf           /SubRig/Anim/AnimScope.x
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2>
+
+Prim Stack:
+    root.sdf             /Char/Rig2
+    rig.sdf              /CharRig/Rig
+
+Child names:
+     ['SubRig2']
+
+Prohibited child names:
+     ['SubRig']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2/SubRig2>
+
+Prim Stack:
+    root.sdf             /Char/Rig2/SubRig2
+    rig.sdf              /CharRig/Rig/SubRig
+    subrig.sdf           /SubRig
+
+Child names:
+     ['Anim', 'Rig2']
+
+Prohibited child names:
+     ['Rig']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2/SubRig2/Anim>
+
+Prim Stack:
+    subrig.sdf           /SubRig/Anim
+
+Prohibited child names:
+     ['AnimScope']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2/SubRig2/Rig2>
+
+Prim Stack:
+    subrig.sdf           /SubRig/Rig
+
+Child names:
+     ['RigScope']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig2/SubRig2/Rig2/RigScope>
+
+Prim Stack:
+    subrig.sdf           /SubRig/Rig/RigScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Char/Rig2/SubRig2/Rig2/RigScope.x:
+    subrig.sdf           /SubRig/Rig/RigScope.x
+
+Attribute connections:
+/Char/Rig2/SubRig2/Rig2/RigScope.x:
+    /Char/Anim2/AnimScope.x
+

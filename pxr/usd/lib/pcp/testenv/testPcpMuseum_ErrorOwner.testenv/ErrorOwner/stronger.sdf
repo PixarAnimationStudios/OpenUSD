@@ -1,0 +1,9 @@
+#sdf 1.4.32
+(
+    owner = "foo"
+)
+
+over "Sphere"
+{
+    double radius = -1;
+}

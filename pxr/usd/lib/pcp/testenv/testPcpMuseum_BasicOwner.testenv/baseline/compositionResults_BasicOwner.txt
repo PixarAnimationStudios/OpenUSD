@@ -1,0 +1,29 @@
+Loading session @BasicOwner/session.sdf@
+
+Loading @BasicOwner/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     session.sdf
+     root.sdf
+     owned.sdf
+     stronger.sdf
+     weaker.sdf
+
+------------------------------------------------------------------------
+Results for composing </Sphere>
+
+Prim Stack:
+    owned.sdf            /Sphere
+    stronger.sdf         /Sphere
+    weaker.sdf           /Sphere
+
+Property names:
+     ['radius']
+
+Property stacks:
+/Sphere.radius:
+    owned.sdf            /Sphere.radius
+    stronger.sdf         /Sphere.radius
+    weaker.sdf           /Sphere.radius
+

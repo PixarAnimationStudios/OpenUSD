@@ -1,0 +1,36 @@
+Loading @bug74847/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.sdf             /A
+    payload.sdf          /A
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </A/B>
+
+Prim Stack:
+    payload.sdf          /A/B
+    ref.sdf              /A
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </A/B/B>
+
+Prim Stack:
+    ref.sdf              /A/B
+    ref.sdf              /A/B{deformable=off}
+
+Variant Selections:
+    {deformable = off}
+

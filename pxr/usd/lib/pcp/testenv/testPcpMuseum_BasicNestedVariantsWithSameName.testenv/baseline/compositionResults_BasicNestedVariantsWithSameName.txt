@@ -1,0 +1,38 @@
+Loading @BasicNestedVariantsWithSameName/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </foo>
+
+Prim Stack:
+    root.sdf             /foo
+    root.sdf             /foo{commonName=c}
+
+Variant Selections:
+    {commonName = c}
+
+Child names:
+     ['bar']
+
+------------------------------------------------------------------------
+Results for composing </foo/bar>
+
+Prim Stack:
+    root.sdf             /foo/bar
+    root.sdf             /foo/bar{commonName=c}
+    root.sdf             /foo{commonName=c}bar
+
+Variant Selections:
+    {commonName = c}
+
+Property names:
+     ['value']
+
+Property stacks:
+/foo/bar.value:
+    root.sdf             /foo/bar.value
+    root.sdf             /foo/bar{commonName=c}.value
+

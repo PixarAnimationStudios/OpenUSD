@@ -1,0 +1,88 @@
+Loading @BasicInstancingAndVariants/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </InstancedModel>
+
+Prim Stack:
+    root.sdf             /InstancedModel
+    root.sdf             /InstancedModel{x=a}
+    ref.sdf              /Model
+    ref.sdf              /Model{y=a}
+
+Variant Selections:
+    {x = a}
+    {y = a}
+
+Child names:
+     ['geom']
+
+Property names:
+     ['x']
+
+Property stacks:
+/InstancedModel.x:
+    root.sdf             /InstancedModel{x=a}.x
+    ref.sdf              /Model.x
+
+------------------------------------------------------------------------
+Results for composing </InstancedModel/geom>
+
+Prim Stack:
+    ref.sdf              /Model{y=a}geom
+
+Property names:
+     ['x']
+
+Property stacks:
+/InstancedModel/geom.x:
+    ref.sdf              /Model{y=a}geom.x
+
+------------------------------------------------------------------------
+Results for composing </UninstancedModel>
+
+Prim Stack:
+    root.sdf             /UninstancedModel
+    root.sdf             /UninstancedModel{x=b}
+    ref.sdf              /Model
+    ref.sdf              /Model{y=b}
+
+Variant Selections:
+    {x = b}
+    {y = b}
+
+Child names:
+     ['geom', 'from_b_variant']
+
+Property names:
+     ['x']
+
+Property stacks:
+/UninstancedModel.x:
+    root.sdf             /UninstancedModel{x=b}.x
+    ref.sdf              /Model.x
+
+------------------------------------------------------------------------
+Results for composing </UninstancedModel/geom>
+
+Prim Stack:
+    root.sdf             /UninstancedModel{x=b}geom
+    ref.sdf              /Model{y=b}geom
+
+Property names:
+     ['x']
+
+Property stacks:
+/UninstancedModel/geom.x:
+    root.sdf             /UninstancedModel{x=b}geom.x
+    ref.sdf              /Model{y=b}geom.x
+
+------------------------------------------------------------------------
+Results for composing </UninstancedModel/from_b_variant>
+
+Prim Stack:
+    root.sdf             /UninstancedModel{x=b}from_b_variant
+

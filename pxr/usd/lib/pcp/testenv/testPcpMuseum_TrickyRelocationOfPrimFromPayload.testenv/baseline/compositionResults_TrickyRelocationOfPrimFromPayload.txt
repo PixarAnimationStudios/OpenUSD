@@ -1,0 +1,204 @@
+Loading @TrickyRelocationOfPrimFromPayload/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel>
+
+Prim Stack:
+    root.sdf             /PayloadedModel
+    model_payload.sdf    /Model
+
+Child names:
+     ['Rig', 'Test']
+
+Property names:
+     ['doc']
+
+Property stacks:
+/PayloadedModel.doc:
+    model_payload.sdf    /Model.doc
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig>
+
+Prim Stack:
+    model_payload.sdf    /Model/Rig
+    rig.sdf              /Rig
+
+Child names:
+     ['SymRigBase', 'SymRig', 'LRig']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/SymRigBase>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRigBase
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/SymRigBase/Anim>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/PayloadedModel/Rig/SymRigBase/Anim.foo:
+    rig.sdf              /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/SymRig>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRig
+    rig.sdf              /Rig/SymRigBase
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/SymRig/Anim>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/PayloadedModel/Rig/SymRig/Anim.foo:
+    rig.sdf              /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Rig/LRig>
+
+Prim Stack:
+    rig.sdf              /Rig/LRig
+    rig.sdf              /Rig/SymRig
+    rig.sdf              /Rig/SymRigBase
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Test>
+
+Prim Stack:
+    root.sdf             /PayloadedModel/Test
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Test/Anim>
+
+Prim Stack:
+    model_payload.sdf    /Model/Anim
+
+Child names:
+     ['LRig']
+
+------------------------------------------------------------------------
+Results for composing </PayloadedModel/Test/Anim/LRig>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/PayloadedModel/Test/Anim/LRig.foo:
+    rig.sdf              /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel>
+
+Prim Stack:
+    root.sdf             /ReferencePayloadedModel
+    model.sdf            /Model
+    model_payload.sdf    /Model
+
+Child names:
+     ['Rig', 'Test']
+
+Property names:
+     ['doc']
+
+Property stacks:
+/ReferencePayloadedModel.doc:
+    model_payload.sdf    /Model.doc
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig>
+
+Prim Stack:
+    model_payload.sdf    /Model/Rig
+    rig.sdf              /Rig
+
+Child names:
+     ['SymRigBase', 'SymRig', 'LRig']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/SymRigBase>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRigBase
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/SymRigBase/Anim>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/ReferencePayloadedModel/Rig/SymRigBase/Anim.foo:
+    rig.sdf              /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/SymRig>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRig
+    rig.sdf              /Rig/SymRigBase
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/SymRig/Anim>
+
+Prim Stack:
+    rig.sdf              /Rig/SymRigBase/Anim
+
+Property names:
+     ['foo']
+
+Property stacks:
+/ReferencePayloadedModel/Rig/SymRig/Anim.foo:
+    rig.sdf              /Rig/SymRigBase/Anim.foo
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Rig/LRig>
+
+Prim Stack:
+    rig.sdf              /Rig/LRig
+    rig.sdf              /Rig/SymRig
+    rig.sdf              /Rig/SymRigBase
+
+------------------------------------------------------------------------
+Results for composing </ReferencePayloadedModel/Test>
+
+Prim Stack:
+    model.sdf            /Model/Test
+

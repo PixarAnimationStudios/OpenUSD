@@ -1,0 +1,13 @@
+#sdf 1.4.32
+
+def Scope "Y"
+{
+    def Scope "A"
+    {
+    }
+
+    def Scope "A2"
+    {
+    }
+}
+

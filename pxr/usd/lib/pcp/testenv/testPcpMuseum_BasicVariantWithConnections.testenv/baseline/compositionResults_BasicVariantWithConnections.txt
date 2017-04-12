@@ -1,0 +1,93 @@
+Loading @BasicVariantWithConnections/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </main_cam>
+
+Prim Stack:
+    root.sdf             /main_cam
+    camera.sdf           /camera
+    camera.sdf           /camera{projection=perspective}
+    camera_perspective.sdf /camera
+    camera_perspective.sdf /_class_camera
+    camera_perspective.sdf /_class_StdAvarsModel
+
+Variant Selections:
+    {projection = perspective}
+
+Child names:
+     ['Lens', '_localclass_Lens', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </main_cam/Lens>
+
+Prim Stack:
+    camera.sdf           /camera{projection=perspective}Lens
+    camera.sdf           /camera{projection=perspective}_localclass_Lens
+    camera_perspective.sdf /camera/Lens
+    camera_perspective.sdf /camera/_localclass_Lens
+
+Property names:
+     ['focus', 'focalLength', 'breathingScale']
+
+Property stacks:
+/main_cam/Lens.breathingScale:
+    camera.sdf           /camera{projection=perspective}Lens.breathingScale
+/main_cam/Lens.focalLength:
+    camera.sdf           /camera{projection=perspective}Lens.focalLength
+/main_cam/Lens.focus:
+    camera.sdf           /camera{projection=perspective}_localclass_Lens.focus
+    camera_perspective.sdf /camera/_localclass_Lens.focus
+
+------------------------------------------------------------------------
+Results for composing </main_cam/_localclass_Lens>
+
+Prim Stack:
+    camera.sdf           /camera{projection=perspective}_localclass_Lens
+    camera_perspective.sdf /camera/_localclass_Lens
+
+Property names:
+     ['focus']
+
+Property stacks:
+/main_cam/_localclass_Lens.focus:
+    camera.sdf           /camera{projection=perspective}_localclass_Lens.focus
+    camera_perspective.sdf /camera/_localclass_Lens.focus
+
+------------------------------------------------------------------------
+Results for composing </main_cam/Rig>
+
+Prim Stack:
+    camera.sdf           /camera{projection=perspective}Rig
+    camera_perspective.sdf /camera/Rig
+
+Property names:
+     ['controls', 'focusDistance', 'focalLength', 'breathingScale']
+
+Property stacks:
+/main_cam/Rig.breathingScale:
+    camera.sdf           /camera{projection=perspective}Rig.breathingScale
+/main_cam/Rig.controls:
+    camera.sdf           /camera{projection=perspective}Rig.controls
+    camera_perspective.sdf /camera/Rig.controls
+/main_cam/Rig.focalLength:
+    camera.sdf           /camera{projection=perspective}Rig.focalLength
+/main_cam/Rig.focusDistance:
+    camera_perspective.sdf /camera/Rig.focusDistance
+
+Relationship targets:
+/main_cam/Rig.controls:
+    /main_cam/Lens.focus
+    /main_cam/Lens.focalLength
+
+Attribute connections:
+/main_cam/Rig.breathingScale:
+    /main_cam/Lens.breathingScale
+/main_cam/Rig.focalLength:
+    /main_cam/Lens.focalLength
+/main_cam/Rig.focusDistance:
+    /main_cam/Lens.focus
+

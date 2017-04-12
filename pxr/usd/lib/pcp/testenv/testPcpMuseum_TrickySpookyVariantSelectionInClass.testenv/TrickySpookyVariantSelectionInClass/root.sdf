@@ -1,0 +1,66 @@
+#sdf 1.4.32
+(
+    """
+    This is a variation on TrickySpookyVariantSelection that
+    adds the additional twist of a class inherit:
+
+    - This Char references a CharRig, which in turn has a SymLeg scope
+      reference to a LegRig, and Left/RightLegRig that inherit SymLeg.
+    - LegRig has a variantSet controlling which style of leg it rigs up.
+    - CharRig relocates the Left/RightLegRig controls into its anim interface.
+    - Back in Char, we override the default variant selection in SymLegRig.
+      This should be enough to affect LeftLegRig, but it doesn't work today.
+    - By contrast, RightLegRig has a direct selection.  This works in
+      Pcp (thanks to the fix for bug 54719) but not in Pcp.
+
+    This last aspect is what means the fix for TrickySpookyVariantSelection
+    is insufficient to support this case.
+
+    Also, it's important to note that relocates are not the issue here.
+    Any kind of arc that requires ancestral opinions to be integrated
+    can cause this issue.
+
+    See bug 69100.
+    """
+)
+
+def Scope "Char" (
+    add references = @./CharRig.sdf@</CharRig>
+)
+{
+    over "Rig" {
+        over "SymLegRig" (
+            variants = {
+                string LegRigStyle = "1Leg"
+            }
+        )
+        {
+        }
+
+        over "RightLegRig" (
+            variants = {
+                string LegRigStyle = "2Leg"
+            }
+        )
+        {
+        }
+
+        over "LeftLegRig"
+        {
+        }
+    }
+
+    over "InheritTest" {
+        over "_class_X" (
+            variants = {
+                string LegRigStyle = "2Leg"
+            }
+        )
+        {
+        }
+
+        over "X"
+        {
+        }
+    }
+}

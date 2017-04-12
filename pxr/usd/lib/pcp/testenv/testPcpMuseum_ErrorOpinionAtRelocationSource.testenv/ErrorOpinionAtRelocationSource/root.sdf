@@ -1,0 +1,35 @@
+#sdf 1.4.32
+(
+    """
+    This file has a CharRig with a reference to a nested PathRig.
+    The Path prim under the PathRig is relocated to the anim scope,
+    but there is also an illegal override at the old location.
+    This should be reported as an error and ignored.
+    """
+)
+
+def "CharRig" (
+    relocates = {
+        </CharRig/Rig/PathRig/Path>: </CharRig/Anim/Path>
+    }
+)
+{
+    def Scope "Anim"
+    {
+    }
+
+    def Scope "Rig"
+    {
+        def Scope "PathRig" (
+            add references = @./pathRig.sdf@</PathRig>
+        )
+        {
+            over "Path" (
+                doc = "This opinion is prohibited, and should cause and error."
+                add references = @./bogus.sdf@</Bogus>
+            )
+            {
+            }
+        }
+    }
+}

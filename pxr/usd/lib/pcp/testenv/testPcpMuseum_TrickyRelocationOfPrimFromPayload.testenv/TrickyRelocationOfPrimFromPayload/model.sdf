@@ -1,0 +1,13 @@
+#sdf 1.4.32
+
+def "Model" (
+    payload = @./model_payload.sdf@</Model>
+    relocates = {
+        <Anim> : <Test/Anim>
+    }
+)
+{
+    def Scope "Test"
+    {
+    }
+}

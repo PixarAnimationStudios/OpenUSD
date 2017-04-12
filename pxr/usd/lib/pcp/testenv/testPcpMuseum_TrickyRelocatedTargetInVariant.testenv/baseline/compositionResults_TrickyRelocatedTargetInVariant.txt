@@ -1,0 +1,124 @@
+Loading @TrickyRelocatedTargetInVariant/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    root.sdf             /Root{v=a}
+    ref.sdf              /Ref
+
+Variant Selections:
+    {v = a}
+
+Child names:
+     ['Rig', 'Anim']
+
+Prohibited child names:
+     ['Child', 'Child2']
+
+Property names:
+     ['myRel']
+
+Property stacks:
+/Root.myRel:
+    root.sdf             /Root.myRel
+    root.sdf             /Root{v=a}.myRel
+
+Relationship targets:
+/Root.myRel:
+    /Root/Anim/Child2
+    /Root/Anim/Child
+
+------------------------------------------------------------------------
+Results for composing </Root/Rig>
+
+Prim Stack:
+    root.sdf             /Root{v=a}Rig
+    ref.sdf              /Ref
+
+Prohibited child names:
+     ['Child', 'Child2']
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim>
+
+Prim Stack:
+    root.sdf             /Root/Anim
+
+Child names:
+     ['Child', 'Child2', 'Child3', 'Child4']
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim/Child>
+
+Prim Stack:
+    root.sdf             /Root/Anim/Child
+    ref.sdf              /Ref/Child
+
+Property names:
+     ['sibling']
+
+Property stacks:
+/Root/Anim/Child.sibling:
+    ref.sdf              /Ref/Child.sibling
+
+Relationship targets:
+/Root/Anim/Child.sibling:
+    /Root/Anim/Child2
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim/Child2>
+
+Prim Stack:
+    ref.sdf              /Ref/Child2
+
+Property names:
+     ['sibling']
+
+Property stacks:
+/Root/Anim/Child2.sibling:
+    ref.sdf              /Ref/Child2.sibling
+
+Relationship targets:
+/Root/Anim/Child2.sibling:
+    /Root/Anim/Child
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim/Child3>
+
+Prim Stack:
+    ref.sdf              /Ref/Child
+
+Property names:
+     ['sibling']
+
+Property stacks:
+/Root/Anim/Child3.sibling:
+    ref.sdf              /Ref/Child.sibling
+
+Relationship targets:
+/Root/Anim/Child3.sibling:
+    /Root/Anim/Child4
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim/Child4>
+
+Prim Stack:
+    ref.sdf              /Ref/Child2
+
+Property names:
+     ['sibling']
+
+Property stacks:
+/Root/Anim/Child4.sibling:
+    ref.sdf              /Ref/Child2.sibling
+
+Relationship targets:
+/Root/Anim/Child4.sibling:
+    /Root/Anim/Child3
+

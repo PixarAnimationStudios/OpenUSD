@@ -1,0 +1,7 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @./anim.sdf@,
+        @./sequence.sdf@,
+    ]
+)

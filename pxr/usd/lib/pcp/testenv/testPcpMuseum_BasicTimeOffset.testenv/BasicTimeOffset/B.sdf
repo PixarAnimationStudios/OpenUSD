@@ -1,0 +1,9 @@
+#sdf 1.4.32
+
+def Prim "Model" 
+{
+    def Prim "Anim" {
+    }
+    def Prim "Frame" {
+    }
+}

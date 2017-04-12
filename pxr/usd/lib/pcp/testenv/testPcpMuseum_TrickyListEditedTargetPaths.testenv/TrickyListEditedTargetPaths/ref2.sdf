@@ -1,0 +1,12 @@
+#sdf 1.4.32
+
+def "PermissionsRef_2"
+{
+    double PrivateProp = 1.0 (permission = private)
+
+    def "PrivateChild" (
+        permission = private
+    )
+    {
+    }
+}

@@ -1,0 +1,53 @@
+#sdf 1.4.32
+(
+    """
+    This museum case exercises a variant in a class which selects
+    a variant for the root node.  This requires us to defer evaluation
+    of the root node variant until the weaker variant has been
+    evaluated.
+    """
+)
+
+class "_class_geotype" (
+    add variantSets = ["geotype_selector", "geotype"]
+)
+{
+    variantSet "geotype_selector" = {
+        "select_cube" (
+            variants = {
+                string geotype = "cube"
+            }
+        ) {
+
+        }
+        "select_sphere" (
+            variants = {
+                string geotype = "sphere"
+            }
+        ) {
+
+        }
+    }
+}
+
+def "bob" (
+    add inherits = </_class_geotype>
+    variants = {
+        string geotype_selector = "select_cube"
+    }
+    add variantSets = "geotype"
+)
+{
+    variantSet "geotype" = {
+        "cube" (
+            payload = @./geo.sdf@</bob_root_cube>
+        ) {
+
+        }
+        "sphere" (
+            payload = @./geo.sdf@</bob_root_sphere>
+        ) {
+
+        }
+    }
+}

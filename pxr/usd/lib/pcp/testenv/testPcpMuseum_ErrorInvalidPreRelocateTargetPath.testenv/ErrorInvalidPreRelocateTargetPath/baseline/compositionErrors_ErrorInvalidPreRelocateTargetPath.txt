@@ -1,0 +1,14 @@
+------------------------------------------------------------------------
+Errors while composing </SublayerRoot>
+
+The relationship target </SublayerRoot/Rig/Scope> from </SublayerRoot.badRelA> in layer @ErrorInvalidPreRelocateTargetPath/sub2.sdf@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+The relationship target </SublayerRoot/Rig/Scope.x> from </SublayerRoot.badRelB> in layer @ErrorInvalidPreRelocateTargetPath/sub2.sdf@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+The attribute connection </SublayerRoot/Rig/Scope.x> from </SublayerRoot.badAttrA> in layer @ErrorInvalidPreRelocateTargetPath/sub2.sdf@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </Root>
+
+The relationship target </Root/Rig/Scope> from </Root.badRelA> in layer @ErrorInvalidPreRelocateTargetPath/root.sdf@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+The relationship target </Root/Rig/Scope.x> from </Root.badRelB> in layer @ErrorInvalidPreRelocateTargetPath/root.sdf@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+The attribute connection </Root/Rig/Scope.x> from </Root.badAttrA> in layer @ErrorInvalidPreRelocateTargetPath/root.sdf@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+

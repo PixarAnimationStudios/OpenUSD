@@ -1,0 +1,22 @@
+#sdf 1.4.32
+
+def Model "KiltRig" (
+    inherits = </_class_ClothRig>
+)
+{
+    over "rig"
+    {
+        def "KiltHemRig" (
+            add references = @./ClothHemRig.sdf@</ClothHemRig>
+        )
+        {
+        }
+    }
+}
+
+class Model "_class_ClothRig" (
+    references = @./ClothRig.sdf@</ClothRig>
+)
+{
+}
+

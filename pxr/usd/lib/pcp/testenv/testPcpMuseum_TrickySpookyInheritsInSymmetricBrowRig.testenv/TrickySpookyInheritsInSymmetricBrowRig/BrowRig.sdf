@@ -1,0 +1,36 @@
+#sdf 1.4.32
+
+def MfScope "BrowRig" (
+    relocates = {
+        <LBrow/Anim/Brow>: <Anim/LBrow>, 
+        <RBrow/Anim/Brow>: <Anim/RBrow>
+    }
+)
+{
+    class GprimPivot "SymBrow"
+    {
+        def Scope "Anim"
+        {
+            def Scope "Brow"
+            {
+            }
+        }
+    }
+
+    def GprimPivot "LBrow" (
+        inherits = </BrowRig/SymBrow>
+    )
+    {
+    }
+
+    def GprimPivot "RBrow" (
+        inherits = </BrowRig/SymBrow>
+    )
+    {
+    }
+
+    def Scope "Anim"
+    {
+    }
+}
+

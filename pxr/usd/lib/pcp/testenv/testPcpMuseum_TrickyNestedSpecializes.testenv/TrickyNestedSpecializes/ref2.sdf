@@ -1,0 +1,23 @@
+#sdf 1.4.32
+
+class "NestedSpecializes"
+{
+}
+
+class "Specializes"
+{
+    def "Nested" (
+        references = @./ref3.sdf@</Ref3>
+    )
+    {
+    }
+}
+
+def "Ref2" (
+    specializes = </Specializes>
+)
+{
+    over "Nested"
+    {
+    }
+}

@@ -1,0 +1,31 @@
+Loading @BasicPayload/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+
+Child names:
+     ['GoodPayload']
+
+------------------------------------------------------------------------
+Results for composing </Root/GoodPayload>
+
+Prim Stack:
+    root.sdf             /Root/GoodPayload
+    payload.sdf          /GoodPayload
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </Root/GoodPayload/Child>
+
+Prim Stack:
+    payload.sdf          /GoodPayload/Child
+

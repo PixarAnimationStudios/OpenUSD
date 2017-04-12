@@ -1,0 +1,50 @@
+#sdf 1.4.32
+(
+    """
+    Museum case demonstrating interaction between inherits
+    and multiple levels of relocations. The most interesting prim to
+    consider in this case is /FergusCloak/Anim/LArm/Curve/Const.
+    That prim has relocations applied directly in the referenced
+    CurveTrackRig.sdf and ancestrally in this layer. It also pulls in 
+    opinions from a class via an inherit authored in that reference.
+    Spooky inherits means we should also pull in opinions in the class
+    authored locally, in the pre-relocated namespace.
+
+    """
+)        
+
+def "FergusCloak" (
+    relocates = {
+        <rig/LArmRig/Anim/Curve>: <Anim/LArm>
+    }
+)
+{
+    def "rig"
+    {
+        def "LArmRig" (
+            add references = @./CurveTrackRig.sdf@</CurveTrackRig>
+        )
+        {
+        }
+    }
+
+    def "Anim"
+    {
+    }
+}
+
+over "_class_MultiLevelCurveRig"
+{
+    def "rig"
+    {
+        def "ConstRig"
+        {
+            def "Anim"
+            {
+                def "Const"
+                {
+                }
+            }
+        }
+    }
+}

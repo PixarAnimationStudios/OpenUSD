@@ -1,0 +1,12 @@
+#sdf 1.4.32
+
+def Scope "Ref"
+{
+    def Scope "Rig"
+    {
+        def Scope "Scope"
+        {
+            custom double x
+        }
+    }
+}

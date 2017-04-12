@@ -1,0 +1,10 @@
+------------------------------------------------------------------------
+Errors while composing </BadPayload_NonExistentFile>
+
+Could not open asset @ErrorInvalidPayload/payload_non_existent_file.sdf@ for payload on prim @ErrorInvalidPayload/root.sdf@</BadPayload_NonExistentFile>.
+
+------------------------------------------------------------------------
+Errors while composing </BadPayload_NonExistentPrim>
+
+Unresolved payload path </NonExistentPrim> on prim @ErrorInvalidPayload/root.sdf@</BadPayload_NonExistentPrim>.
+

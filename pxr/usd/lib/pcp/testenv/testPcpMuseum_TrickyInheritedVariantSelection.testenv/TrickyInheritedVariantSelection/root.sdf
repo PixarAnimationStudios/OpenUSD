@@ -1,0 +1,43 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates the ability for inherited classes to specify
+    variant selections. This is a very tricky case; the ShotPin variant that's
+    selected by _pinclass_Sullivan brings in a class, _extraclass_Sullivan.
+    Even though it's brought in by a variant, this class needs to be stronger
+    than the direct inherits on Sullivan in order for the desired shade variant
+    (PhongShade) to be selected.
+    
+    From bugs 35704 and 35500.
+    """
+)
+
+def "Sullivan" (
+    add references = @./sequence.sdf@</Sullivan>
+)
+{
+}
+
+over "_pinclass_Sullivan" (
+    variants = {
+        string pin = "ShotPin"
+    }
+)
+{
+}
+
+over "_shadeclass_Sullivan" (
+    variants = {
+        string shade = "NoShade"
+    }
+)
+{
+}
+
+over "_extraclass_Sullivan" (
+    variants = {
+        string shade = "PhongShade"
+    }
+)
+{
+}

@@ -1,0 +1,40 @@
+#sdf 1.4.32
+
+def Scope "Model" (
+    inherits = </_class_Model>
+    relocates = {
+        <Rig/LRig> : <Anim/LAnim>
+    }
+)
+{
+    def Scope "Rig" (
+        references = @./rig.sdf@</Rig>
+    )
+    {
+    }
+
+    def Scope "Anim"
+    {
+    }
+}
+
+class Scope "_class_Model"
+{
+    over "Rig"
+    {
+        over "SymRig"
+        {
+        }
+
+        over "LRig"
+        {
+        }
+    }
+
+    over "Anim"
+    {
+        over "LAnim"
+        {
+        }
+    }
+}

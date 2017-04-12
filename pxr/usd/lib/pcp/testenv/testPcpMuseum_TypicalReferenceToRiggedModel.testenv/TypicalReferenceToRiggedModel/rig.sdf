@@ -1,0 +1,14 @@
+#sdf 1.4.32
+
+def Prim "Rig"
+{
+    def Prim "Anim"
+    {
+        custom double Tx = 0 (doc = "The rig default.")
+    }
+
+    def Prim "Mover"
+    {
+        add double Tx.connect = </Rig/Anim.Tx>
+    }
+}

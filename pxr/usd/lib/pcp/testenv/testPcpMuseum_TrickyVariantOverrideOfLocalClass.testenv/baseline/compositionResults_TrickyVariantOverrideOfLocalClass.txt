@@ -1,0 +1,48 @@
+Loading @TrickyVariantOverrideOfLocalClass/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </HandRig>
+
+Prim Stack:
+    root.sdf             /HandRig
+    root.sdf             /HandRig{FingerRigArmature=off}
+
+Variant Selections:
+    {FingerRigArmature = off}
+
+Child names:
+     ['_Class_FingerRig', 'IndexRig']
+
+------------------------------------------------------------------------
+Results for composing </HandRig/_Class_FingerRig>
+
+Prim Stack:
+    root.sdf             /HandRig/_Class_FingerRig
+    root.sdf             /HandRig{FingerRigArmature=off}_Class_FingerRig
+
+Property names:
+     ['armature_enabled']
+
+Property stacks:
+/HandRig/_Class_FingerRig.armature_enabled:
+    root.sdf             /HandRig{FingerRigArmature=off}_Class_FingerRig.armature_enabled
+
+------------------------------------------------------------------------
+Results for composing </HandRig/IndexRig>
+
+Prim Stack:
+    root.sdf             /HandRig/IndexRig
+    root.sdf             /HandRig/_Class_FingerRig
+    root.sdf             /HandRig{FingerRigArmature=off}_Class_FingerRig
+
+Property names:
+     ['armature_enabled']
+
+Property stacks:
+/HandRig/IndexRig.armature_enabled:
+    root.sdf             /HandRig{FingerRigArmature=off}_Class_FingerRig.armature_enabled
+

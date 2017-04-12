@@ -1,0 +1,28 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates the behavior when specializes
+    arcs (and reference arcs) are nested in namespace descendants
+    of a specialized class.
+    """
+)
+
+over "NestedSpecializes"
+{
+}
+
+over "Specializes"
+{
+    over "Nested"
+    {
+    }
+}
+
+def "Root" (
+    references = @./ref.sdf@</Ref>
+)
+{
+    over "Nested"
+    {
+    }
+}

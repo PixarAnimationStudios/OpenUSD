@@ -1,0 +1,42 @@
+#sdf 1.4.32
+
+def Scope "Model" (
+    references = @./model.sdf@</Model>
+)
+{
+    over "Rig"
+    {
+        class Scope "SymScope" (
+        )
+        {
+        }
+
+        def Scope "LScope" (
+            inherits = </Model/Rig/SymScope>
+        )
+        {
+        }
+    }
+}
+
+class Scope "_class_Model"
+{
+    over "Rig" ( variants = { } )
+    {
+        over "SymRig"
+        {
+        }
+
+        over "LRig"
+        {
+        }
+    }
+
+    over "Anim"
+    {
+        over "LAnim"
+        {
+        }
+    }
+}
+

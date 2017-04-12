@@ -1,0 +1,27 @@
+#sdf 1.4.32
+
+def "Ref"
+{
+    rel relToExternalPrim = </Ref2>    
+    rel relToExternalPrim2 = </Ref2>
+    rel relToExternalPrim3 = [ </Ref2>, </Ref/Child> ]
+    rel relToExternalPrim4 = [ </Ref2>, </Ref/Child> ]
+
+    def "Child"
+    {
+    }
+}
+
+def "Ref2"
+{
+}
+
+def "PermissionsRef_1" (
+    references = @./ref2.sdf@</PermissionsRef_2>
+)
+{
+    rel relToPrivateProp = </PermissionsRef_1.PrivateProp>
+    rel relToPrivateProp2 = </PermissionsRef_1.PrivateProp>
+    rel relToPrivatePrim = </PermissionsRef_1/PrivateChild>
+    rel relToPrivatePrim2 = </PermissionsRef_1/PrivateChild>
+}

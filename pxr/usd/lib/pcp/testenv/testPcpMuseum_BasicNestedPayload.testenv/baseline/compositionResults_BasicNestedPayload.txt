@@ -1,0 +1,130 @@
+Loading @BasicNestedPayload/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Set>
+
+Prim Stack:
+    root.sdf             /Set
+    set.sdf              /Set
+    set_payload.sdf      /Set
+
+Child names:
+     ['Prop']
+
+------------------------------------------------------------------------
+Results for composing </Set/Prop>
+
+Prim Stack:
+    set.sdf              /Set/Prop
+    set_payload.sdf      /Set/Prop
+    prop.sdf             /Prop
+    prop_payload.sdf     /Prop
+
+Child names:
+     ['PropScope']
+
+------------------------------------------------------------------------
+Results for composing </Set/Prop/PropScope>
+
+Prim Stack:
+    set.sdf              /Set/Prop/PropScope
+    set_payload.sdf      /Set/Prop/PropScope
+    prop.sdf             /Prop/PropScope
+    prop_payload.sdf     /Prop/PropScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Set/Prop/PropScope.x:
+    set_payload.sdf      /Set/Prop/PropScope.x
+    prop_payload.sdf     /Prop/PropScope.x
+
+------------------------------------------------------------------------
+Results for composing </Set2>
+
+Prim Stack:
+    root.sdf             /Set2
+    set_payload.sdf      /Set
+
+Child names:
+     ['Prop']
+
+------------------------------------------------------------------------
+Results for composing </Set2/Prop>
+
+Prim Stack:
+    root.sdf             /Set2/Prop
+    prop_payload.sdf     /Prop
+    set_payload.sdf      /Set/Prop
+    prop.sdf             /Prop
+    prop_payload.sdf     /Prop
+
+Child names:
+     ['PropScope']
+
+------------------------------------------------------------------------
+Results for composing </Set2/Prop/PropScope>
+
+Prim Stack:
+    prop_payload.sdf     /Prop/PropScope
+    set_payload.sdf      /Set/Prop/PropScope
+    prop.sdf             /Prop/PropScope
+    prop_payload.sdf     /Prop/PropScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Set2/Prop/PropScope.x:
+    prop_payload.sdf     /Prop/PropScope.x
+    set_payload.sdf      /Set/Prop/PropScope.x
+    prop_payload.sdf     /Prop/PropScope.x
+
+------------------------------------------------------------------------
+Results for composing </Set3>
+
+Prim Stack:
+    root.sdf             /Set3
+    set.sdf              /Set
+    set_payload.sdf      /Set
+
+Child names:
+     ['Prop']
+
+------------------------------------------------------------------------
+Results for composing </Set3/Prop>
+
+Prim Stack:
+    root.sdf             /Set3/Prop
+    set.sdf              /Set/Prop
+    set_payload.sdf      /Set/Prop
+    prop.sdf             /Prop
+    prop_payload.sdf     /Prop
+
+Child names:
+     ['PropScope']
+
+------------------------------------------------------------------------
+Results for composing </Set3/Prop/PropScope>
+
+Prim Stack:
+    root.sdf             /Set3/Prop/PropScope
+    set.sdf              /Set/Prop/PropScope
+    set_payload.sdf      /Set/Prop/PropScope
+    prop.sdf             /Prop/PropScope
+    prop_payload.sdf     /Prop/PropScope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Set3/Prop/PropScope.x:
+    root.sdf             /Set3/Prop/PropScope.x
+    set_payload.sdf      /Set/Prop/PropScope.x
+    prop_payload.sdf     /Prop/PropScope.x
+

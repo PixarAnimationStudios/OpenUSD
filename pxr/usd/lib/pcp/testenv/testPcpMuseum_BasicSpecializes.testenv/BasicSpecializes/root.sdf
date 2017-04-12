@@ -1,0 +1,71 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates the basic behavior of the specializes arc.
+    """
+)
+
+over "Base"
+{
+}
+
+over "Specializes"
+{
+}
+
+def "Root" (
+    # This basic test case has a specializes arc to a class hierarchy
+    # involving </Specializes> and </Base> defined across the reference. 
+    # Opinions in this hierarchy in both the reference layer stack and
+    # this layer stack are included in this prim. However, these
+    # opinions are weaker than all other opinions.
+    references = @./ref.sdf@</Ref>
+)
+{
+}
+
+over "_class_Material"
+{
+}
+
+def "Model" (
+    # This test case has a mixture of local and global specializes
+    # arcs defined across the reference. Again, the opinions from
+    # across the specializes arcs are weaker than all other opinions.
+)
+{
+    def "Looks" (
+        references = @./looks.sdf@</Looks>
+    )
+    {
+        over "Material"
+        {
+        }
+
+        over "Metal"
+        {
+        }
+
+        over "Brass"
+        {
+        }
+    }
+}
+
+over "Specializes_1"
+{
+}
+
+over "Specializes_2"
+{
+}
+
+def "MultipleSpecializes" (
+    # This test case shows the behavior when multiple specializes
+    # arcs are defined. The specializes opinions are still weaker than
+    # the local opinions and the reference opinions, but their relative
+    # strength ordering is defined by the order of the specializes arcs.
+    references = @./ref.sdf@</Multi>
+)
+{
+}

@@ -1,0 +1,31 @@
+#sdf 1.4.32
+(
+    """
+    This test has a reference to a model prim.
+    Internally, the model inherits from _Class_Sullivan, which
+    in turn inherits _Class_Char, which inherits _Class_Model.
+    Back in this file, there are opinions about each
+    of those global classes.
+    """
+)
+
+def "Sullivan_1" (
+    add references = @./Sullivan.sdf@</Sullivan>
+)
+{
+}
+
+class Scope "_Class_Sullivan"
+{
+    string name = "_Class_Sullivan"
+}
+
+class Scope "_Class_Char"
+{
+    string name = "_Class_Char"
+}
+
+class Scope "_Class_Model"
+{
+    string name = "_Class_Model"
+}

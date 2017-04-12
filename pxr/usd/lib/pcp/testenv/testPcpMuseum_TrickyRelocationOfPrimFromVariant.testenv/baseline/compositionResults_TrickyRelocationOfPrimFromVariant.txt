@@ -1,0 +1,62 @@
+Loading @TrickyRelocationOfPrimFromVariant/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Char>
+
+Prim Stack:
+    root.sdf             /Char
+    CharRig.sdf          /CharRig
+    CharRig.sdf          /CharRig{TailRigVersion=Standard}
+
+Variant Selections:
+    {TailRigVersion = Standard}
+
+Child names:
+     ['TailRig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </Char/TailRig>
+
+Prim Stack:
+    CharRig.sdf          /CharRig{TailRigVersion=Standard}TailRig
+    TailRig.sdf          /TailRig
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim>
+
+Prim Stack:
+    CharRig.sdf          /CharRig/Anim
+
+Child names:
+     ['Tail']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim/Tail>
+
+Prim Stack:
+    TailRig.sdf          /TailRig/Tail
+
+------------------------------------------------------------------------
+Results for composing </Char2>
+
+Prim Stack:
+    root.sdf             /Char2
+    CharRig.sdf          /CharRig2
+    CharRig.sdf          /CharRig2{TailRigVersion=None}
+
+Variant Selections:
+    {TailRigVersion = None}
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </Char2/Anim>
+
+Prim Stack:
+    CharRig.sdf          /CharRig2/Anim
+

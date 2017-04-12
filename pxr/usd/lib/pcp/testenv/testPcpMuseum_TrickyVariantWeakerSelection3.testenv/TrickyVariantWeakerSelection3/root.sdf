@@ -1,0 +1,21 @@
+#sdf 1.4.32
+
+def __AnyType__ "Model" (
+    add references = @./geo.sdf@</Model>
+    add variantSets = ["modelComplexity"]
+    variants = {
+        string modelComplexity = "full"
+    }
+)
+{
+    variantSet "modelComplexity" = {
+        "full" (
+            variants = {
+                string K_hierarchy = "full"
+            }
+        ) {
+
+        }
+    }
+}
+

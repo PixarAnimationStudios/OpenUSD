@@ -1,0 +1,35 @@
+#sdf 1.4.32
+
+def Scope "LegsRig" (
+    relocates = {
+        <LLegRig/TentacleRig/Tentacle>: <Legs/LHip>, 
+        <LLegRig/TentacleRig/Tentacle/Seg2>: <Legs/LHip/Knee>, 
+    }
+)
+{
+    def Scope "Legs"
+    {
+    }
+
+    def Scope "SymLegRig" (
+        references = @./SymLegRig.sdf@</SymLegRig>
+    )
+    {
+        over "TentacleRig"
+        {
+            over "Tentacle"
+            {
+                over "Seg2"
+                {
+                }
+            }
+        }
+    }
+
+    def Scope "LLegRig" (
+        inherits = </LegsRig/SymLegRig>
+    )
+    {
+    }
+}
+

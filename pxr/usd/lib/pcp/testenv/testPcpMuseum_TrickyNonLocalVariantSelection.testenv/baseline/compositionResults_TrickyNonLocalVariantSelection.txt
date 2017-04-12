@@ -1,0 +1,24 @@
+Loading @TrickyNonLocalVariantSelection/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    model.sdf            /Model
+    model.sdf            /Model{costume=basicCostume}
+
+Variant Selections:
+    {costume = basicCostume}
+
+Property names:
+     ['b']
+
+Property stacks:
+/Model.b:
+    model.sdf            /Model{costume=basicCostume}.b
+

@@ -1,0 +1,49 @@
+Loading @TypicalReferenceToChargroupWithRename/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Group_1>
+
+Prim Stack:
+    root.sdf             /Group_1
+    group.sdf            /Group
+
+Child names:
+     ['Model_1']
+
+Prohibited child names:
+     ['Model']
+
+------------------------------------------------------------------------
+Results for composing </Group_1/Model_1>
+
+Prim Stack:
+    root.sdf             /Group_1/Model_1
+    group.sdf            /Group/Model
+    model.sdf            /Model
+
+Child names:
+     ['LArm', 'SymArm']
+
+------------------------------------------------------------------------
+Results for composing </Group_1/Model_1/LArm>
+
+Prim Stack:
+    root.sdf             /Group_1/Model_1/LArm
+    root.sdf             /Group_1/Model_1/SymArm
+    group.sdf            /Group/Model/LArm
+    group.sdf            /Group/Model/SymArm
+    model.sdf            /Model/LArm
+    model.sdf            /Model/SymArm
+
+------------------------------------------------------------------------
+Results for composing </Group_1/Model_1/SymArm>
+
+Prim Stack:
+    root.sdf             /Group_1/Model_1/SymArm
+    group.sdf            /Group/Model/SymArm
+    model.sdf            /Model/SymArm
+

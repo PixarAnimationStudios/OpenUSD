@@ -1,0 +1,75 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates behavior when mixing specializes
+    and inherit arcs.
+    """
+)
+
+class "Inherits_1"
+{
+}
+
+class "Specializes_1" (
+    inherits = </Inherits_1>
+)
+{
+}
+
+def "Instance_1" (
+    # When a specialized class inherits other classes (or vice versa), 
+    # those classes form a hierarchy and are propagated together.
+    # In this case, that means the opinions from class /Inherits_1
+    # do not pierce the encapsulation of the specializes arc to
+    # /Specializes_1. Opinions from /Specializes_1 are stronger than
+    # /Inherits_1, but still weaker than those in /Instance_1.
+    specializes = </Specializes_1>
+)
+{
+}
+
+over "Inherits_2"
+{
+}
+
+over "Specializes_2"
+{
+}
+
+def "Instance_2" (
+    # This example is similar to the above case, except it defines
+    # the specializes and inherit arcs across a reference. Again,
+    # the opinions in the inherited class /Inherits_1 in both the 
+    # referenced layer stack and this layer stack do not pierce
+    # the encapsulation of the specialized class /Specializes_1.
+    references = @./ref.sdf@</Ref>
+)
+{
+}
+
+def "Model" (
+    # This is a more complicated example involving an inherited class
+    # hierarchy, but the result is the same as the above cases.
+)
+{
+    def "Looks" (
+        references = @./looks.sdf@</Looks>
+    )
+    {
+        over "BaseMaterial"
+        {
+        }
+
+        over "Material"
+        {
+        }
+
+        over "Metal"
+        {
+        }
+
+        over "Brass"
+        {
+        }
+    }
+}

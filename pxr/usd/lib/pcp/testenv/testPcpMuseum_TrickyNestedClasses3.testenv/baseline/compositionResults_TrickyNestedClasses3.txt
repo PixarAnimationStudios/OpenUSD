@@ -1,0 +1,109 @@
+Loading @TrickyNestedClasses3/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Rig>
+
+Prim Stack:
+    root.sdf             /Rig
+    rig.sdf              /Rig
+
+Child names:
+     ['SymRig', '_class_SubRig', 'LRig', 'RRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymRig>
+
+Prim Stack:
+    root.sdf             /Rig/SymRig
+    rig.sdf              /Rig/SymRig
+
+Child names:
+     ['SubRig1', 'SubRig2']
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymRig/SubRig1>
+
+Prim Stack:
+    root.sdf             /Rig/SymRig/SubRig1
+    root.sdf             /Rig/_class_SubRig
+    rig.sdf              /Rig/SymRig/SubRig1
+    rig.sdf              /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymRig/SubRig2>
+
+Prim Stack:
+    root.sdf             /Rig/SymRig/SubRig2
+    root.sdf             /Rig/_class_SubRig
+    rig.sdf              /Rig/SymRig/SubRig2
+    rig.sdf              /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/_class_SubRig>
+
+Prim Stack:
+    root.sdf             /Rig/_class_SubRig
+    rig.sdf              /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/LRig>
+
+Prim Stack:
+    root.sdf             /Rig/SymRig
+    rig.sdf              /Rig/LRig
+    rig.sdf              /Rig/SymRig
+
+Child names:
+     ['SubRig1', 'SubRig2']
+
+------------------------------------------------------------------------
+Results for composing </Rig/LRig/SubRig1>
+
+Prim Stack:
+    root.sdf             /Rig/SymRig/SubRig1
+    root.sdf             /Rig/_class_SubRig
+    rig.sdf              /Rig/SymRig/SubRig1
+    rig.sdf              /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/LRig/SubRig2>
+
+Prim Stack:
+    root.sdf             /Rig/SymRig/SubRig2
+    root.sdf             /Rig/_class_SubRig
+    rig.sdf              /Rig/SymRig/SubRig2
+    rig.sdf              /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/RRig>
+
+Prim Stack:
+    root.sdf             /Rig/SymRig
+    rig.sdf              /Rig/RRig
+    rig.sdf              /Rig/SymRig
+
+Child names:
+     ['SubRig1', 'SubRig2']
+
+------------------------------------------------------------------------
+Results for composing </Rig/RRig/SubRig1>
+
+Prim Stack:
+    root.sdf             /Rig/SymRig/SubRig1
+    root.sdf             /Rig/_class_SubRig
+    rig.sdf              /Rig/SymRig/SubRig1
+    rig.sdf              /Rig/_class_SubRig
+
+------------------------------------------------------------------------
+Results for composing </Rig/RRig/SubRig2>
+
+Prim Stack:
+    root.sdf             /Rig/SymRig/SubRig2
+    root.sdf             /Rig/_class_SubRig
+    rig.sdf              /Rig/SymRig/SubRig2
+    rig.sdf              /Rig/_class_SubRig
+

@@ -1,0 +1,31 @@
+#sdf 1.4.32
+
+def "C"
+{
+    def MfScope "CollisionRig"
+    {
+        class MfScope "_Class_CollisionRig"
+        {
+            class Scope "_class_Region"
+            {
+                def PepBase "Region"
+                {
+                }
+            }
+
+            def PepBase "CollBody"
+            {
+                def Scope "SimRegions"
+                {
+                }
+            }
+        }
+
+        def MfScope "Body" (
+            inherits = </C/CollisionRig/_Class_CollisionRig>
+        )
+        {
+        }
+    }
+}
+

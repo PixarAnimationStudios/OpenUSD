@@ -1,0 +1,92 @@
+Loading @BasicClassOverride/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Group>
+
+Prim Stack:
+    root.sdf             /Group
+    group.sdf            /Group
+
+Child names:
+     ['Model_1', 'Model_2', 'Model_Special']
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_1>
+
+Prim Stack:
+    root.sdf             /_class_Model
+    group.sdf            /Group/Model_1
+    group.sdf            /_class_Model
+    model.sdf            /Model
+    model.sdf            /_class_Model
+
+Property names:
+     ['value']
+
+Property stacks:
+/Group/Model_1.value:
+    root.sdf             /_class_Model.value
+    group.sdf            /_class_Model.value
+    model.sdf            /Model.value
+    model.sdf            /_class_Model.value
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_2>
+
+Prim Stack:
+    root.sdf             /Group/Model_2
+    root.sdf             /_class_Model
+    group.sdf            /Group/Model_2
+    group.sdf            /_class_Model
+    model.sdf            /Model
+    model.sdf            /_class_Model
+
+Property names:
+     ['value']
+
+Property stacks:
+/Group/Model_2.value:
+    root.sdf             /Group/Model_2.value
+    root.sdf             /_class_Model.value
+    group.sdf            /_class_Model.value
+    model.sdf            /Model.value
+    model.sdf            /_class_Model.value
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_Special>
+
+Prim Stack:
+    root.sdf             /_class_Model
+    group.sdf            /Group/Model_Special
+    group.sdf            /_class_Model
+    model.sdf            /Model
+    model.sdf            /_class_Model
+
+Property names:
+     ['value']
+
+Property stacks:
+/Group/Model_Special.value:
+    root.sdf             /_class_Model.value
+    group.sdf            /Group/Model_Special.value
+    group.sdf            /_class_Model.value
+    model.sdf            /Model.value
+    model.sdf            /_class_Model.value
+
+------------------------------------------------------------------------
+Results for composing </_class_Model>
+
+Prim Stack:
+    root.sdf             /_class_Model
+
+Property names:
+     ['value']
+
+Property stacks:
+/_class_Model.value:
+    root.sdf             /_class_Model.value
+

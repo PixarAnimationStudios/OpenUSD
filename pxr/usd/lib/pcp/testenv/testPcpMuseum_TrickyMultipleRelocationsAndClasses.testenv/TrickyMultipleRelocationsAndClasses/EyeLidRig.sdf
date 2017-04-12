@@ -1,0 +1,22 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Scope "EyeLidRig"
+{
+    def Scope "Anim"
+    {
+        def Scope "Lids"
+        {
+            custom double value = 8
+        }
+    }
+
+    def Scope "Mover" (prefix = "$Side")
+    {
+        custom double input
+        double input.connect = </EyeLidRig/Anim/Lids.value>
+    }
+}

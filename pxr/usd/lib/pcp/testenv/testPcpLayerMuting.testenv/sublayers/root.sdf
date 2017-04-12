@@ -1,0 +1,10 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @./sublayer.sdf@
+    ]
+)
+
+over "Root"
+{
+}

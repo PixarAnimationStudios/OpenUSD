@@ -1,0 +1,54 @@
+Loading @TrickyVariantOverrideOfRelocatedPrim/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    root.sdf             /Model{vset=vsel}
+    model.sdf            /Model
+
+Variant Selections:
+    {vset = vsel}
+
+Child names:
+     ['RelocatedSphere']
+
+Prohibited child names:
+     ['UnrelocatedSphere']
+
+------------------------------------------------------------------------
+Results for composing </Model/RelocatedSphere>
+
+Prim Stack:
+    root.sdf             /Model{vset=vsel}RelocatedSphere
+    model.sdf            /Model/UnrelocatedSphere
+
+Child names:
+     ['Geom']
+
+------------------------------------------------------------------------
+Results for composing </Model/RelocatedSphere/Geom>
+
+Prim Stack:
+    root.sdf             /Model{vset=vsel}RelocatedSphere/Geom
+    model.sdf            /Model/UnrelocatedSphere/Geom
+
+Property names:
+     ['x', 'r']
+
+Property stacks:
+/Model/RelocatedSphere/Geom.r:
+    root.sdf             /Model{vset=vsel}RelocatedSphere/Geom.r
+/Model/RelocatedSphere/Geom.x:
+    root.sdf             /Model{vset=vsel}RelocatedSphere/Geom.x
+    model.sdf            /Model/UnrelocatedSphere/Geom.x
+
+Relationship targets:
+/Model/RelocatedSphere/Geom.r:
+    /Model
+

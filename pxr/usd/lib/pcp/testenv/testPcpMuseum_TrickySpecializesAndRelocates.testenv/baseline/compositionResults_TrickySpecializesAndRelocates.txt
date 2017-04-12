@@ -1,0 +1,35 @@
+Loading @TrickySpecializesAndRelocates/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    ref.sdf              /Ref
+
+Child names:
+     ['Brass_2', 'Metal']
+
+Prohibited child names:
+     ['Brass']
+
+------------------------------------------------------------------------
+Results for composing </Model/Brass_2>
+
+Prim Stack:
+    root.sdf             /Model/Brass_2
+    ref.sdf              /Ref/Brass
+    root.sdf             /Model/Metal
+    ref.sdf              /Ref/Metal
+
+------------------------------------------------------------------------
+Results for composing </Model/Metal>
+
+Prim Stack:
+    root.sdf             /Model/Metal
+    ref.sdf              /Ref/Metal
+

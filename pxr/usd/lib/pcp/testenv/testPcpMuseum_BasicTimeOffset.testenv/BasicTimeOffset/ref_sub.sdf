@@ -1,0 +1,13 @@
+#sdf 1.4.32
+
+def "Ref" (
+    payload = @./B.sdf@</Model>
+)
+{
+}
+
+def "Ref2" (
+    references = @./B.sdf@</Model>
+)
+{
+}

@@ -1,0 +1,35 @@
+#sdf 1.4.32
+
+def Prim "CharRig" (
+    relocates = {
+        <Rig/PathRig/Path>: <Anim/Path>
+    }
+)
+{
+    def Scope "Anim" (
+        doc = "This scope has an additional relocation that must compose together with the ancestral relocation above."
+        relocates = {
+            <Path/Anim>: <Path/AnimScope>
+        }
+    )
+    {
+        over "Path" (
+            doc = "This path prim is relocated out from the PathRig into charRig's anim interface."
+        )
+        {
+            over "AnimScope"
+            {
+                custom double track
+            }
+        }
+    }
+
+    def Scope "Rig"
+    {
+        def Scope "PathRig" (
+            add references = @./pathRig.sdf@</PathRig>
+        )
+        {
+        }
+    }
+}

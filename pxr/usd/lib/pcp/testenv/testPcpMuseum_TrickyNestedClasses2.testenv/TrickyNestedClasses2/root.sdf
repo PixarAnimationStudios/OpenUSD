@@ -1,0 +1,38 @@
+#sdf 1.4.32
+(
+    '''
+    This combines a global class with some nested sim classes;
+    this combination exercises the strength semantics of
+    global vs. local classes, as well as inherited classes.
+    '''
+)
+
+def Model "Kilt" (
+    references = @./rig.sdf@</KiltRig>
+)
+{
+    over "rig" {
+        over "KiltHemRig" {
+            over "rig" {
+                over "PatchWeightRig" {
+                    over "PatchWeightsClass" {
+                        over "PatchClass" {
+                        }
+                        over "Patch0" {
+                        }
+                    }
+                    over "SimPatchWeights" {
+                        over "PatchClass" {
+                        }
+                        over "Patch0" {
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+class Scope "_class_ClothRig"
+{
+}

@@ -1,0 +1,17 @@
+#sdf 1.4.32
+
+def "SublayerRoot" (
+    references = @ref.sdf@</Ref>
+)
+{
+    custom rel badRelA = </SublayerRoot/Rig/Scope>
+    custom rel badRelB = </SublayerRoot/Rig/Scope.x>
+    custom rel goodRelA = </SublayerRoot/Anim/Scope>
+    custom rel goodRelB = </SublayerRoot/Anim/Scope.x>
+
+    custom double badAttrA
+    double badAttrA.connect = </SublayerRoot/Rig/Scope.x>
+
+    custom double goodAttrA
+    double goodAttrA.connect = </SublayerRoot/Anim/Scope.x>
+}

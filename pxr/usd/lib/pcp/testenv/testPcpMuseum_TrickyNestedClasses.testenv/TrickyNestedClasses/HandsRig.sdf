@@ -1,0 +1,41 @@
+#sdf 1.4.32
+
+def Scope "HandsRig"
+{
+    class MfScope "_Class_HandRig" (
+        references = @./HandRig.sdf@</HandRig>
+    )
+    {
+        over "IndexRig"
+        {
+        }
+        over "_Class_FingerRig"
+        {
+        }
+    }
+
+    class MfScope "SymHandRig" (
+        inherits = </HandsRig/_Class_HandRig>
+    )
+    {
+        over "IndexRig"
+        {
+        }
+        over "_Class_FingerRig"
+        {
+        }
+    }
+
+    def MfScope "LHandRig" (
+        inherits = </HandsRig/SymHandRig>
+    )
+    {
+        over "IndexRig"
+        {
+        }
+        over "_Class_FingerRig"
+        {
+        }
+    }
+}
+

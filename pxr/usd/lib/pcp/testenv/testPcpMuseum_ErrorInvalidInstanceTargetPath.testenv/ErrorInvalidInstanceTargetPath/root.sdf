@@ -1,0 +1,70 @@
+#sdf 1.4.32
+(
+    """
+    Pcp museum case that tests that composition errors are
+    emitted when relationships or attribute connections
+    within local classes target instances of those classes.
+    This is not allowed, as it breaks the invertibility of
+    path translation.
+    
+    """
+)
+
+def "ConnectionToLocalClass" (
+    """
+    Simple test case where connections in a local class
+    point to multiple instances of that class.
+    """
+)
+{
+    class "LocalClass"
+    {
+         double x
+         add double x.connect = [
+             </ConnectionToLocalClass/Instance_1.y>,
+             </ConnectionToLocalClass/Instance_2.y>
+         ]
+
+         double y
+    }
+
+    def "Instance_1" (
+        add inherits = </ConnectionToLocalClass/LocalClass>
+    )
+    {
+    }
+
+    def "Instance_2" (
+        add inherits = </ConnectionToLocalClass/LocalClass>
+    )
+    {
+    }
+}
+
+def "FaceRig" (
+   """
+   This is a trickier test case involving relocates
+   and reference arcs.
+   """
+   relocates = {
+       <BrowRig/Anim/LBrow>: <Anim/Face/Eyes/LBrow>, 
+       <BrowRig/Anim/RBrow>: <Anim/Face/Eyes/RBrow>, 
+   }
+)
+{
+    def "BrowRig" (
+        references = @./ref.sdf@</BrowRig>
+    )
+    {
+    }
+
+    def Scope "Anim"
+    {
+        def Scope "Face"
+        {
+            def Scope "Eyes"
+            {
+            }
+        }
+    }
+}

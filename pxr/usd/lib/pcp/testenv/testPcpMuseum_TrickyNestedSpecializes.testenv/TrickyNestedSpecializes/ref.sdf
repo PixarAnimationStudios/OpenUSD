@@ -1,0 +1,21 @@
+#sdf 1.4.32
+
+over "NestedSpecializes"
+{
+}
+
+over "Specializes"
+{
+    over "Nested"
+    {
+    }
+}
+
+def "Ref" (
+    references = @./ref2.sdf@</Ref2>
+)
+{
+    over "Nested"
+    {
+    }
+}

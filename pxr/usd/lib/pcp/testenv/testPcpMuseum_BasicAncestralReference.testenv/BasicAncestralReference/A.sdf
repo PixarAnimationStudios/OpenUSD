@@ -1,0 +1,11 @@
+#sdf 1.4.32
+
+def Prim "A"
+{
+    custom double A_attr
+
+    def Prim "B"
+    {
+        custom double B_attr
+    }
+}

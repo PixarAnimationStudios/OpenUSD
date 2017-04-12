@@ -1,0 +1,51 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates the expected behavior with instances
+    that are nested in namespace. The same restrictions on overrides on
+    descendant objects apply to all instances, including the nested ones.
+    """
+)    
+
+def "Set_1" (
+    references = @./set.sdf@</Set>
+    instanceable = true
+)
+{
+    over "PropInstance_1"
+    {
+        over "geom"
+        {
+        }
+    }
+
+    over "PropInstance_2"
+    {
+        over "geom"
+        {
+        }
+    }
+
+    over "PropNotAnInstance_1"
+    {
+        over "geom"
+        {
+        }
+    }
+
+    def "PropInstance_3" (
+        references = @./prop.sdf@</Prop>
+        instanceable = true
+    )
+    {
+    }
+
+    def "PropNotAnInstance_2" (
+        references = @./prop.sdf@</Prop>
+        instanceable = true
+    )
+    {
+    }
+
+    
+}

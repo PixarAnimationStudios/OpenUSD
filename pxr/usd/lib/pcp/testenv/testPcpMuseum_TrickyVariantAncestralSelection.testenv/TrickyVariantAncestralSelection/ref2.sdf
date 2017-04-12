@@ -1,0 +1,97 @@
+#sdf 1.4.32
+
+def Scope "A"
+{
+    def Scope "B"
+    {
+        over "C" (
+            variantSets = ["v1", "v2"]
+            variants = {
+                string v1 = "A"
+                string v2 = "X"
+            }
+        )
+        {
+            variantSet "v1" = {
+                "A" { }
+                "B" { }
+                "C" { }
+            }
+    
+            variantSet "v2" = {
+                "X" { }
+                "Y" { }
+                "Z" { }
+            }
+        }
+    }
+}
+
+def Scope "B"
+{
+    over "C" (
+        variantSets = ["v1", "v2"]
+        variants = {
+            string v1 = "B"
+            string v2 = "Y"
+        }
+    )
+    {
+        variantSet "v1" = {
+            "A" { }
+            "B" { }
+            "C" { }
+        }
+
+        variantSet "v2" = {
+            "X" { }
+            "Y" { }
+            "Z" { }
+        }
+    }
+}
+
+def Scope "C" (
+    variantSets = ["v1", "v2"]
+    variants = {
+        string v1 = "C"
+        string v2 = "Z"
+    }
+)
+{
+    variantSet "v1" = {
+        "A" {
+            def Scope "v1_A"
+            {
+            }
+        }
+        "B" {
+            def Scope "v1_B"
+            {
+            }
+        }
+        "C" {
+            def Scope "v1_C"
+            {
+            }
+        }
+    }
+
+    variantSet "v2" = {
+        "X" {
+            def Scope "v2_X"
+            {
+            }
+        }
+        "Y" {
+            def Scope "v2_Y"
+            {
+            }
+        }
+        "Z" {
+            def Scope "v2_Z"
+            {
+            }
+        }
+    }
+}

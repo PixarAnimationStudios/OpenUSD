@@ -1,0 +1,35 @@
+#sdf 1.4.32
+(
+    """
+    This museum exhibits behavior involving nested classes and ancestral
+    arcs. In this case, the target prim /Rig/_Class_ToesRig/ThumbToeLOCALRig 
+    inherits from source /Rig/_Class_ToesRig/_Class_Toe. Both target and
+    source involve the same ancestral inherit arc between /Rig and 
+    /_class_CharRig, but ultimately resolve to different paths across the
+    inherit arc. In this case, Pcp must expand the ancestral inherit arc
+    again to ensure all valid opinions are picked up.
+    
+    This example came from bug 69423, which involved M2's Pigeon character and
+    rig.
+    """
+)
+
+class Scope "_class_CharRig" (
+    references = @./ref.sdf@</CharRig>
+)
+{
+}
+
+def Scope "Rig" (
+    inherits = </_class_CharRig>
+)
+{
+    over "_Class_ToesRig"
+    {
+        def Scope "ThumbToeLOCALRig" (
+            inherits = </Rig/_Class_ToesRig/_Class_Toe>
+        )
+        {
+        }
+    }
+}

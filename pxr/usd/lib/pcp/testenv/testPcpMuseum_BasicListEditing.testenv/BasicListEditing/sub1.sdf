@@ -1,0 +1,20 @@
+#sdf 1.4.32
+
+over "A" (
+    '''This layer results in the order z,a,x,y,b,c.'''
+)
+{
+    reorder properties = ["z", "x", "b"]
+    reorder nameChildren = ["z", "x", "b"]
+
+    double a
+    double b
+    double c
+
+    over "a" {
+    }
+    over "b" {
+    }
+    over "c" {
+    }
+}

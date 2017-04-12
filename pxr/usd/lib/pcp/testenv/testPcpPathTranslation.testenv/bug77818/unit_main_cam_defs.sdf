@@ -1,0 +1,8 @@
+#sdf 1.4.32
+
+def "main_cam"
+{
+    def Scope "Lens"
+    {
+    }
+}

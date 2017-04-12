@@ -1,0 +1,19 @@
+------------------------------------------------------------------------
+Errors while composing </PermissionsAcrossReferences/ChildFromRoot>
+
+The relationship target </PermissionsAcrossReferences/PrivatePrimFromRef> from </PermissionsAcrossReferences/ChildFromRoot.relInRoot> in layer @ErrorConnectionPermissionDenied/root.sdf@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+The relationship target </PermissionsAcrossReferences.privateAttrFromRef> from </PermissionsAcrossReferences/ChildFromRoot.relInRoot> in layer @ErrorConnectionPermissionDenied/root.sdf@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </PermissionsAcrossInherits/Instance>
+
+The relationship target <ErrorConnectionPermissionDenied/ref.sdf@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+The relationship target <ErrorConnectionPermissionDenied/ref.sdf@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+The relationship target </PermissionsAcrossInherits/Instance/PrivatePrimFromClass> from </PermissionsAcrossInherits/Instance.relInRootInstance> in layer @ErrorConnectionPermissionDenied/root.sdf@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+The relationship target </PermissionsAcrossInherits/Instance.privateAttrFromClass> from </PermissionsAcrossInherits/Instance.relInRootInstance> in layer @ErrorConnectionPermissionDenied/root.sdf@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+
+------------------------------------------------------------------------
+Errors while composing </CulledPermissions_3>
+
+The relationship target <ErrorConnectionPermissionDenied/culled_stable.sdf@ targets an object that is private on the far side of a reference or inherit.  This target will be ignored.
+

@@ -1,0 +1,19 @@
+#sdf 1.4.32
+
+def "main_cam" (
+    references = @./unit_main_cam_defs.sdf@</main_cam>
+    add variantSets = ["lenses"]
+    variants = {
+        string lenses = "Cooke_S4"
+    }
+)
+{
+    variantSet "lenses" = {
+        "Cooke_S4" {
+            over "Lens"
+            {
+                double k1
+            }
+        }
+    }
+}

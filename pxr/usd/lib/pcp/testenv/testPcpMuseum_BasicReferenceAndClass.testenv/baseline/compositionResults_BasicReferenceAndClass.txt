@@ -1,0 +1,28 @@
+Loading @BasicReferenceAndClass/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    root.sdf             /Class
+    model.sdf            /Model
+    model.sdf            /Class
+
+Property names:
+     ['x']
+
+Property stacks:
+/Model.x:
+    model.sdf            /Class.x
+
+------------------------------------------------------------------------
+Results for composing </Class>
+
+Prim Stack:
+    root.sdf             /Class
+

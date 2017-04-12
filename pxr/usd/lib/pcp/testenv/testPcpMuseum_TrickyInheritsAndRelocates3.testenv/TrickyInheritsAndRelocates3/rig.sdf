@@ -1,0 +1,45 @@
+#sdf 1.4.32
+
+def "GuitarRig" (
+    relocates = {
+        <Rig/StringsRig/Strings>: <Anim/Strings>,
+        <Rig/StringsRig/String1Rig/String>: <Anim/Strings/String1>, 
+        <Rig/StringsRig/String2Rig/String>: <Anim/Strings/String2>, 
+    }
+)
+{
+    def "Anim"
+    {
+        over "Strings"
+        {
+            over "String1"
+            {
+            }
+
+
+            over "String2"
+            {
+            }
+        }
+    }
+
+    def "Rig"
+    {
+        def "StringsRig" (
+            add references = @./strings_rig.sdf@</StringsRig>
+        )
+        {
+            def Scope "String1Rig" (
+                inherits = </GuitarRig/Rig/StringsRig/_Class_StringRig>
+            )
+            {
+            }
+
+            def Scope "String2Rig" (
+                inherits = </GuitarRig/Rig/StringsRig/_Class_StringRig>
+            )
+            {
+            }
+        }
+    }
+}

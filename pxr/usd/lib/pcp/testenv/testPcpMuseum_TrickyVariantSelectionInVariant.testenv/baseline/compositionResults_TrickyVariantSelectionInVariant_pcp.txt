@@ -1,0 +1,50 @@
+Loading @TrickyVariantSelectionInVariant/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </SlugJ>
+
+Prim Stack:
+    root.sdf             /SlugJ
+    SlugJ_payload.sdf    /SlugJ
+    SlugJ_modelInterface.gen.sdf /SlugJ
+    SlugJ_modelInterface.gen.sdf /SlugJ{shaderBindingVariant=Wet}
+    SlugJ_modelInterface.gen.sdf /SlugJ{shadingVariant=Axel}
+    SlugJ_shaderDisplayDefs.sdf /SlugJ
+    SlugJ_shaderDisplayDefs.sdf /ShaderBindingVariants
+    SlugJ_shaderDisplayDefs.sdf /ShaderBindingVariants{shaderBindingVariant=Wet}
+
+Variant Selections:
+    {shaderBindingVariant = Wet}
+    {shadingVariant = Axel}
+
+Child names:
+     ['Shaders']
+
+------------------------------------------------------------------------
+Results for composing </SlugJ/Shaders>
+
+Prim Stack:
+    SlugJ_shaderDisplayDefs.sdf /SlugJ/Shaders
+    SlugJ_shaderDisplayDefs.sdf /ShaderBindingVariants{shaderBindingVariant=Wet}Shaders
+
+Child names:
+     ['BGVariant_Surface']
+
+------------------------------------------------------------------------
+Results for composing </SlugJ/Shaders/BGVariant_Surface>
+
+Prim Stack:
+    SlugJ_shaderDisplayDefs.sdf /SlugJ/Shaders/BGVariant_Surface
+    SlugJ_shaderDisplayDefs.sdf /ShaderBindingVariants{shaderBindingVariant=Wet}Shaders/BGVariant_Surface
+
+Property names:
+     ['activeBinding']
+
+Property stacks:
+/SlugJ/Shaders/BGVariant_Surface.activeBinding:
+    SlugJ_shaderDisplayDefs.sdf /ShaderBindingVariants{shaderBindingVariant=Wet}Shaders/BGVariant_Surface.activeBinding
+

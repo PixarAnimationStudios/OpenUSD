@@ -1,0 +1,29 @@
+#sdf 1.4.32
+
+def Scope "TentacleRig" (
+    relocates = {
+        <TentacleInterface/Knot03Rig/Anim>: <Tentacle/Knot03>
+    }
+)
+{
+    def Scope "TentacleInterface"
+    {
+        class Scope "_Class_KnotRig"
+        {
+            def Scope "Anim"
+            {
+                custom string foo = "from TentacleRig"
+            }
+        }
+
+        def Scope "Knot03Rig" (
+             inherits = </TentacleRig/TentacleInterface/_Class_KnotRig>
+        )
+        {
+        }
+    }
+
+    def Scope "Tentacle"
+    {
+    }
+}

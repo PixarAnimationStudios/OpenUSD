@@ -1,0 +1,103 @@
+Loading @case1/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak>
+
+Prim Stack:
+    root.sdf             /FergusCloak
+    FergusCloak_standins.sdf /FergusCloak
+    FergusCloak_standins.sdf /FergusCloak{standin=render}
+    FergusCloak_render.sdf /FergusCloak
+
+Variant Selections:
+    {standin = render}
+
+Child names:
+     ['rig']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig>
+
+Prim Stack:
+    FergusCloak_render.sdf /FergusCloak/rig
+
+Child names:
+     ['LEdgeRig']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LEdgeRig>
+
+Prim Stack:
+    FergusCloak_render.sdf /FergusCloak/rig/LEdgeRig
+    CurveTrackRig.sdf    /CurveTrackRig
+
+Child names:
+     ['rig']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LEdgeRig/rig>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/rig
+
+Child names:
+     ['PatchWeightRig']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig
+
+Child names:
+     ['PatchWeightsClass', 'SimPatchWeights']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/PatchWeightsClass>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass
+
+Child names:
+     ['PatchClass_math', 'Patch0_math']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/PatchWeightsClass/Patch0_math>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/Patch0_math
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/SimPatchWeights>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/SimPatchWeights
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass
+
+Child names:
+     ['PatchClass_math', 'Patch0_math']
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/SimPatchWeights/PatchClass_math>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
+
+------------------------------------------------------------------------
+Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/SimPatchWeights/Patch0_math>
+
+Prim Stack:
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/Patch0_math
+    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
+

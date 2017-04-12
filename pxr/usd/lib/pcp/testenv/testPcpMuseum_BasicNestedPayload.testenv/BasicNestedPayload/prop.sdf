@@ -1,0 +1,10 @@
+#sdf 1.4.32
+
+def Scope "Prop" (
+    payload = @./prop_payload.sdf@</Prop>
+)
+{
+    over "PropScope"
+    {
+    }
+}

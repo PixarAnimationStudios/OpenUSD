@@ -1,0 +1,48 @@
+Loading @TrickyVariantFallbackDrivingAuthoredVariant/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.sdf             /A
+    root.sdf             /A{vset1=fallback}
+    root.sdf             /A{vset2=authored}
+
+Variant Selections:
+    {vset1 = fallback}
+    {vset2 = authored}
+
+Child names:
+     ['vset2_authored_child']
+
+------------------------------------------------------------------------
+Results for composing </A/vset2_authored_child>
+
+Prim Stack:
+    root.sdf             /A{vset2=authored}vset2_authored_child
+
+------------------------------------------------------------------------
+Results for composing </B>
+
+Prim Stack:
+    root.sdf             /B
+    root.sdf             /B{vset2=authored}
+    root.sdf             /B{vset1=fallback}
+
+Variant Selections:
+    {vset1 = fallback}
+    {vset2 = authored}
+
+Child names:
+     ['vset2_authored_child']
+
+------------------------------------------------------------------------
+Results for composing </B/vset2_authored_child>
+
+Prim Stack:
+    root.sdf             /B{vset2=authored}vset2_authored_child
+

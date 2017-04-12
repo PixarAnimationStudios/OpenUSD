@@ -1,0 +1,39 @@
+Loading @BasicAncestralReference/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.sdf             /A
+    A.sdf                /A
+
+Child names:
+     ['B']
+
+Property names:
+     ['A_attr']
+
+Property stacks:
+/A.A_attr:
+    A.sdf                /A.A_attr
+
+------------------------------------------------------------------------
+Results for composing </A/B>
+
+Prim Stack:
+    root.sdf             /A/B
+    B.sdf                /B
+    A.sdf                /A/B
+
+Property names:
+     ['B_attr']
+
+Property stacks:
+/A/B.B_attr:
+    B.sdf                /B.B_attr
+    A.sdf                /A/B.B_attr
+

@@ -1,0 +1,18 @@
+Loading @ErrorInvalidPayload/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </BadPayload_NonExistentFile>
+
+Prim Stack:
+    root.sdf             /BadPayload_NonExistentFile
+
+------------------------------------------------------------------------
+Results for composing </BadPayload_NonExistentPrim>
+
+Prim Stack:
+    root.sdf             /BadPayload_NonExistentPrim
+

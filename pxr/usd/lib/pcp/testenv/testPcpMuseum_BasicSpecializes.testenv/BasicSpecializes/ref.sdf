@@ -1,0 +1,29 @@
+#sdf 1.4.32
+
+over "Base"
+{
+}
+
+over "Specializes"
+{
+}
+
+def "Ref" (
+    references = @./ref2.sdf@</Ref>
+)
+{
+}
+
+class "Specializes_1"
+{
+}
+
+class "Specializes_2"
+{
+}
+
+def "Multi" (
+    specializes = [</Specializes_1>, </Specializes_2>]
+)
+{
+}

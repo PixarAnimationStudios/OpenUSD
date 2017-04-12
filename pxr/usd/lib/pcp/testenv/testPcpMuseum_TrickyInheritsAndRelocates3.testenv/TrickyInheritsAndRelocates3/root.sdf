@@ -1,0 +1,15 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates a combination of relocations
+    and inherits.
+
+    This is a stripped down case pulled from bug 112645.
+    """
+)
+
+def "GuitarRigX" (
+    references = @./rig.sdf@</GuitarRig>
+)
+{
+}

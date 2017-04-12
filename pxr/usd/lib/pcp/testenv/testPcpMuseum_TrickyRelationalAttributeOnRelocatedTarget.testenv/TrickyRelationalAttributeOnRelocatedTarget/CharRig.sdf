@@ -1,0 +1,30 @@
+#sdf 1.4.32
+
+def Scope "CharRig" (
+    relocates = {
+        <EyeLidRig/Lids>: <Eye/Lids>
+    }
+)
+{
+    def "EyeLidRig" (
+        add references = @./EyeLidRig.sdf@</EyeLidRig>
+    )
+    {
+    }
+
+    def Scope "Eye"
+    {
+    }
+
+    def Scope "EyeRig"
+    {
+        def Scope "Widget"
+        {
+            custom rel rel
+            rel rel = </CharRig/Eye/Lids.attr> {
+                double rel_attr = 3
+            }
+        }
+    }
+}
+

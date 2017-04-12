@@ -1,0 +1,147 @@
+Loading @TrickyNestedClasses4/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig>
+
+Prim Stack:
+    root.sdf             /_class_CharRig
+    ref.sdf              /CharRig
+
+Child names:
+     ['_Class_ToesRig', 'SymToesRig', 'LToesRig']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/_Class_ToesRig>
+
+Prim Stack:
+    ref.sdf              /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/_Class_ToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.sdf              /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/SymToesRig>
+
+Prim Stack:
+    ref.sdf              /CharRig/SymToesRig
+    ref.sdf              /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/SymToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.sdf              /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/LToesRig>
+
+Prim Stack:
+    ref.sdf              /CharRig/LToesRig
+    ref.sdf              /CharRig/SymToesRig
+    ref.sdf              /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharRig/LToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.sdf              /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig>
+
+Prim Stack:
+    root.sdf             /Rig
+    root.sdf             /_class_CharRig
+    ref.sdf              /CharRig
+
+Child names:
+     ['_Class_ToesRig', 'SymToesRig', 'LToesRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/_Class_ToesRig>
+
+Prim Stack:
+    root.sdf             /Rig/_Class_ToesRig
+    ref.sdf              /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe', 'ThumbToeLOCALRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/_Class_ToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.sdf              /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/_Class_ToesRig/ThumbToeLOCALRig>
+
+Prim Stack:
+    root.sdf             /Rig/_Class_ToesRig/ThumbToeLOCALRig
+    ref.sdf              /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymToesRig>
+
+Prim Stack:
+    root.sdf             /Rig/_Class_ToesRig
+    ref.sdf              /CharRig/SymToesRig
+    ref.sdf              /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe', 'ThumbToeLOCALRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.sdf              /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/SymToesRig/ThumbToeLOCALRig>
+
+Prim Stack:
+    root.sdf             /Rig/_Class_ToesRig/ThumbToeLOCALRig
+    ref.sdf              /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/LToesRig>
+
+Prim Stack:
+    root.sdf             /Rig/_Class_ToesRig
+    ref.sdf              /CharRig/LToesRig
+    ref.sdf              /CharRig/SymToesRig
+    ref.sdf              /CharRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe', 'ThumbToeLOCALRig']
+
+------------------------------------------------------------------------
+Results for composing </Rig/LToesRig/_Class_Toe>
+
+Prim Stack:
+    ref.sdf              /CharRig/_Class_ToesRig/_Class_Toe
+
+------------------------------------------------------------------------
+Results for composing </Rig/LToesRig/ThumbToeLOCALRig>
+
+Prim Stack:
+    root.sdf             /Rig/_Class_ToesRig/ThumbToeLOCALRig
+    ref.sdf              /CharRig/_Class_ToesRig/_Class_Toe
+

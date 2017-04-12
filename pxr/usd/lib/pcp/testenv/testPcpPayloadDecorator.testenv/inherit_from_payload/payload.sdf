@@ -1,0 +1,14 @@
+#sdf 1.4.32
+
+class "_class_Model" (
+    documentation = "class"
+)
+{
+}
+
+def "Model" (
+    inherits = </_class_Model>
+    documentation = "payload"
+)
+{
+}

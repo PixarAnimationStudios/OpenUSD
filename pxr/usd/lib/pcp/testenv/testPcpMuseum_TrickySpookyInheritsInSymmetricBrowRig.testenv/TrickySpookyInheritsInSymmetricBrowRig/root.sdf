@@ -1,0 +1,66 @@
+#sdf 1.4.32
+(
+    '''
+    This exercises path translation in the presence of
+    multiple levels of relocations.
+    '''
+)
+
+def MfScope "FaceRig" (
+    relocates = {
+        <BrowRig/Anim/LBrow>: <Anim/Face/Eyes/LBrow>, 
+        <BrowRig/Anim/RBrow>: <Anim/Face/Eyes/RBrow>, 
+    }
+)
+{
+    def MfScope "BrowRig" (
+        references = @./BrowRig.sdf@</BrowRig>
+    )
+    {
+        over "SymBrow"
+        {
+            over "Anim"
+            {
+                over "Brow"
+                {
+                }
+            }
+        }
+
+        over "LBrow"
+        {
+            over "Anim"
+            {
+            }
+        }
+
+        over "RBrow"
+        {
+            over "Anim"
+            {
+            }
+        }
+
+        over "Anim"
+        {
+        }
+    }
+
+    def Scope "Anim"
+    {
+        def Scope "Face"
+        {
+            def Scope "Eyes"
+            {
+                over "LBrow"
+                {
+                }
+
+                over "RBrow"
+                {
+                }
+            }
+        }
+    }
+}
+

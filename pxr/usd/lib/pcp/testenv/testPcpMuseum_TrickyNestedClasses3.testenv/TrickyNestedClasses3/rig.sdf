@@ -1,0 +1,35 @@
+#sdf 1.4.32
+
+def Scope "Rig"
+{
+    class Scope "SymRig"
+    {
+        def Scope "SubRig1" (
+            inherits = </Rig/_class_SubRig>
+        )
+        {
+        }
+
+        def Scope "SubRig2" (
+            inherits = </Rig/_class_SubRig>
+        )
+        {
+        }
+    }
+
+    class Scope "_class_SubRig"
+    {
+    }
+
+    def Scope "LRig" (
+        inherits = </Rig/SymRig>
+    )
+    {
+    }
+
+    def Scope "RRig" (
+        inherits = </Rig/SymRig>
+    )
+    {
+    }
+}

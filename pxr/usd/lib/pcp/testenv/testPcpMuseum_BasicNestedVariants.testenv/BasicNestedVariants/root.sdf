@@ -1,0 +1,102 @@
+#sdf 1.4.32
+(
+    '''
+    This case exercises simple nesting of variant sets in one file.
+    This came from bug 63723.
+    '''
+)
+
+def StdAvarsModel "Foo" (
+    add variantSets = "which"
+    variants = {
+        string which = "A"
+    }
+)
+{
+    variantSet "which" = {
+        "A" {
+            def GprimPivot "A" 
+            {
+                def GprimPivot "Number" (
+                    add variantSets = "count"
+                    variants = {
+                        string count = "one"
+                    }
+                )
+                {
+                    variantSet "count" = {
+                        "one" {
+                            def GprimPivot "one"
+                            {
+                            }
+
+                        }
+                        "two" {
+                            def GprimPivot "two"
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        "B" {
+            def GprimPivot "B"
+            {
+            }
+        }
+    }
+}
+
+def Scope "DirectlyNestedVariants" (
+    add variantSets = ['standin']
+    variants = {
+        string shadingVariant = "spooky"
+        string standin = "anim"
+    }
+)
+{
+    variantSet "standin" = {
+        "anim" (
+            add variantSets = ['shadingVariant']
+        ) {
+            variantSet "shadingVariant" = {
+                "default" {
+                    def Cone "anim_default_cone"
+                    {
+                    }
+                }
+                "spooky" (
+                    add variantSets = ['standin']
+                ) {
+                    def Sphere "anim_spooky_sphere"
+                    {
+                    }
+                    variantSet "standin" = {
+                        "anim" {
+                            def Sphere "anim_spooky_anim_sphere"
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        "render" (
+            add variantSets = ['shadingVariant']
+        ) {
+            variantSet "shadingVariant" = {
+                "default" {
+                    def Cube "render_default_cube"
+                    {
+                    }
+                }
+                "spooky" {
+                    def Cylinder "render_spooky_cylinder"
+                    {
+                    }
+                }
+            }
+        }
+    }
+}

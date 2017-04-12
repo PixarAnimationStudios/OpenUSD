@@ -1,0 +1,11 @@
+#sdf 1.4.32
+
+class "NestedClass"
+{
+}
+
+def "Ref3" (
+    inherits = </NestedClass>
+)
+{
+}

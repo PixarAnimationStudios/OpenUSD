@@ -1,0 +1,28 @@
+#sdf 1.4.32
+(
+    """
+    This example tests error handling for properties with specs
+    that conflict in various ways.
+    """
+)
+
+def "InconsistentPropertyType" (
+    references = @./ref.sdf@</InconsistentPropType>
+)
+{
+    double x = 1.0
+}
+
+def "InconsistentValueType" (
+    references = @./ref.sdf@</InconsistentValType>
+)
+{
+    double x = 1.0
+}
+
+def "InconsistentVariability" (
+    references = @./ref.sdf@</InconsistentVar>
+)
+{
+    double x = 1.0
+}

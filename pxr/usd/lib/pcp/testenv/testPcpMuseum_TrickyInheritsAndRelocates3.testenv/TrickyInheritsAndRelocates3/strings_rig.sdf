@@ -1,0 +1,20 @@
+#sdf 1.4.32
+
+def "StringsRig"
+{
+    class "_Class_StringRig"
+    {
+        def "String"
+        {
+        }
+
+        def "Vibrate"
+        {
+            double amount
+        }
+    }
+
+    def "Strings"
+    {
+    }
+}

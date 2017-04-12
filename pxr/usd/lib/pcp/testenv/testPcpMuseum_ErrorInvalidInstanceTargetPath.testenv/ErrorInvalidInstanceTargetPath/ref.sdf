@@ -1,0 +1,44 @@
+#sdf 1.4.32
+
+def "BrowRig" (
+    relocates = {
+        <LBrow/Anim/Brow> : <Anim/LBrow>,
+        <RBrow/Anim/Brow> : <Anim/RBrow>,
+    }
+)
+{
+    class "SymBrow"
+    {
+        def "BrowInnUDPosBrowInnUDNeg_sculpt"
+        {
+            double amount = 0.001
+            add double amount.connect = [
+                </BrowRig/Anim/RBrow.InnUD>,
+                </BrowRig/Anim/LBrow.InnUD>,
+            ]
+        }
+
+        def "Anim"
+        {
+            def "Brow"
+            {
+            }
+        }
+    }
+
+    def "LBrow" (
+        inherits = </BrowRig/SymBrow>
+    )
+    {
+    }
+
+    def "RBrow" (
+        inherits = </BrowRig/SymBrow>
+    )
+    {
+    }
+
+    def "Anim"
+    {
+    }
+}

@@ -1,0 +1,139 @@
+Loading @TrickySpookyInheritsInSymmetricArmRig/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </CharRig>
+
+Prim Stack:
+    root.sdf             /CharRig
+    humanRig.sdf         /HumanRig
+
+Child names:
+     ['Anim', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Anim>
+
+Prim Stack:
+    root.sdf             /CharRig/Anim
+    humanRig.sdf         /HumanRig/Anim
+
+Child names:
+     ['LArm']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Anim/LArm>
+
+Prim Stack:
+    root.sdf             /CharRig/Anim/LArm
+    humanRig.sdf         /HumanRig/Anim/LArm
+    armRig.sdf           /ArmRig/Anim
+
+Property names:
+     ['bendAmount']
+
+Property stacks:
+/CharRig/Anim/LArm.bendAmount:
+    armRig.sdf           /ArmRig/Anim.bendAmount
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig>
+
+Prim Stack:
+    humanRig.sdf         /HumanRig/Rig
+
+Child names:
+     ['SymArm', 'LArm']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/SymArm>
+
+Prim Stack:
+    humanRig.sdf         /HumanRig/Rig/SymArm
+    armRig.sdf           /ArmRig
+
+Child names:
+     ['Rig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/SymArm/Rig>
+
+Prim Stack:
+    armRig.sdf           /ArmRig/Rig
+
+Child names:
+     ['Some_Internal_Rig_Prim']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim>
+
+Prim Stack:
+    armRig.sdf           /ArmRig/Rig/Some_Internal_Rig_Prim
+
+Property names:
+     ['bendAmount']
+
+Property stacks:
+/CharRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim.bendAmount:
+    armRig.sdf           /ArmRig/Rig/Some_Internal_Rig_Prim.bendAmount
+
+Attribute connections:
+/CharRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim.bendAmount:
+    /CharRig/Rig/SymArm/Anim.bendAmount
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/SymArm/Anim>
+
+Prim Stack:
+    armRig.sdf           /ArmRig/Anim
+
+Property names:
+     ['bendAmount']
+
+Property stacks:
+/CharRig/Rig/SymArm/Anim.bendAmount:
+    armRig.sdf           /ArmRig/Anim.bendAmount
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/LArm>
+
+Prim Stack:
+    humanRig.sdf         /HumanRig/Rig/LArm
+    humanRig.sdf         /HumanRig/Rig/SymArm
+    armRig.sdf           /ArmRig
+
+Child names:
+     ['Rig']
+
+Prohibited child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/LArm/Rig>
+
+Prim Stack:
+    armRig.sdf           /ArmRig/Rig
+
+Child names:
+     ['Some_Internal_Rig_Prim']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/LArm/Rig/Some_Internal_Rig_Prim>
+
+Prim Stack:
+    armRig.sdf           /ArmRig/Rig/Some_Internal_Rig_Prim
+
+Property names:
+     ['bendAmount']
+
+Property stacks:
+/CharRig/Rig/LArm/Rig/Some_Internal_Rig_Prim.bendAmount:
+    armRig.sdf           /ArmRig/Rig/Some_Internal_Rig_Prim.bendAmount
+
+Attribute connections:
+/CharRig/Rig/LArm/Rig/Some_Internal_Rig_Prim.bendAmount:
+    /CharRig/Anim/LArm.bendAmount
+
