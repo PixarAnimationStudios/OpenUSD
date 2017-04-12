@@ -878,6 +878,8 @@ public:
 
     // --------------------------------------------------------------------- //
     /// \name Instancing
+    /// See \ref Usd_Page_ScenegraphInstancing for more details.
+    /// @{
     // --------------------------------------------------------------------- //
 
     /// Return true if this prim has been marked as instanceable.
@@ -951,6 +953,8 @@ public:
         }
         return UsdPrim();
     }
+
+    /// @}
 
 private:
     friend class UsdObject;

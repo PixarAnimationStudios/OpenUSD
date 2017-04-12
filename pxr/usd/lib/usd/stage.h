@@ -1036,10 +1036,11 @@ public:
     /// object. Composition arcs authored on the class itself will be flattend
     /// into the class.
     ///
-    /// Flatten preserves \ref Usd_ExplicitInstancing "stage-level instancing"
-    /// by creating indepedent roots for each master currently composed on
-    /// this stage, and adding a single internal reference arc on each 
-    /// instance prim to its corresponding master.
+    /// Flatten preserves 
+    /// \ref Usd_Page_ScenegraphInstancing "scenegraph instancing" by creating 
+    /// indepedent roots for each master currently composed on this stage, and 
+    /// adding a single internal reference arc on each instance prim to its 
+    /// corresponding master.
     ///
     /// Time samples across sublayer offsets will will have the time offset and
     /// scale applied to each time index.
@@ -1324,7 +1325,7 @@ public:
     // --------------------------------------------------------------------- //
     /// \anchor Usd_instancing
     /// \name Instancing
-    /// See \ref Usd_ExplicitInstancing for more details.
+    /// See \ref Usd_Page_ScenegraphInstancing for more details.
     /// @{
     // --------------------------------------------------------------------- //
 

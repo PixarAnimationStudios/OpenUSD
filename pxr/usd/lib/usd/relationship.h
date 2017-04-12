@@ -92,6 +92,9 @@ typedef std::vector<UsdRelationship> UsdRelationshipVector;
 /// master prim.  This ensures that consumers will always receive the
 /// appropriate target path regardless of whether the target has been made
 /// instanceable.
+///
+/// See \ref Usd_ScenegraphInstancing_Relationships "instancing documentation" 
+/// for more details and examples.
 /// 
 /// \section usd_relationship_restrictions Relationship Restrictions
 ///
@@ -217,7 +220,8 @@ public:
     /// paths to prims in masters. However, note that doing this on a
     /// relationship within a master may yield different results across
     /// runs due to the selection of different instances to serve as the
-    /// master's source instance.
+    /// master's source instance. See \ref usd_relationship_instancing for
+    /// more details.
     ///
     /// This function may return duplicate target paths if the authored
     /// targets point to objects in different instanceable prims that
@@ -250,8 +254,7 @@ public:
     /// when composition errors occur, relationships would be included,
     /// potentially triggering additional down stream errors.
     ///
-    /// See description of \ref usd_relationship_forwarding "Relationship
-    /// Forwarding" for details on the semantics.
+    /// See \ref usd_relationship_forwarding for details on the semantics.
     ///
     /// The result is not cached, so will be recomputed on every query.
     USD_API
