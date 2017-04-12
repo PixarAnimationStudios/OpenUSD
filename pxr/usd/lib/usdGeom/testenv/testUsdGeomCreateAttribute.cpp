@@ -28,8 +28,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/vt/value.h" 
-
-#include <unistd.h>
+#include "pxr/base/arch/fileSystem.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -43,7 +42,7 @@ TestPrim()
     std::string result = "not Foobar";
     VtValue tmp;
 
-    unlink("foo.usd");
+    ArchUnlinkFile("foo.usd");
     UsdStageRefPtr stage = UsdStage::CreateNew("foo.usd");
     SdfLayerHandle layer = stage->GetRootLayer();
 
