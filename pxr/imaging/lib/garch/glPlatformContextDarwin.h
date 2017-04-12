@@ -56,7 +56,6 @@ public:
 private:
     class Detail;
     std::shared_ptr<Detail> _detail;
-    bool _defaultCtor;
 };
 
 // Hide the platform specific type name behind a common name.
