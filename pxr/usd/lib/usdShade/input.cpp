@@ -168,6 +168,46 @@ UsdShadeInput::IsInput(const UsdAttribute &attr)
 }
 
 bool 
+UsdShadeInput::SetDocumentation(const std::string& docs) const
+{
+    if (!_attr) {
+        return false;
+    }
+
+    return _attr.SetDocumentation(docs);
+}
+
+std::string 
+UsdShadeInput::GetDocumentation() const
+{
+    if (!_attr) {
+        return "";
+    }
+
+    return _attr.GetDocumentation();
+}
+
+bool 
+UsdShadeInput::SetDisplayGroup(const std::string& docs) const
+{
+    if (!_attr) {
+        return false;
+    }
+
+    return _attr.SetDisplayGroup(docs);
+}
+
+std::string 
+UsdShadeInput::GetDisplayGroup() const
+{
+    if (!_attr) {
+        return "";
+    }
+
+    return _attr.GetDisplayGroup();
+}
+
+bool 
 UsdShadeInput::SetConnectability(const TfToken &connectability) const
 {
     return _attr.SetMetadata(_tokens->connectability, connectability);

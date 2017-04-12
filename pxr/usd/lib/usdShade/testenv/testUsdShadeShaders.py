@@ -214,6 +214,17 @@ class TestUsdShadeShaders(unittest.TestCase):
         ################################
 
         usdShadeInput = pale.CreateInput('myFloatInput', Sdf.ValueTypeNames.Float)
+
+        # test set/get documentation.
+        doc = "My shade input"
+        usdShadeInput.SetDocumentation(doc)
+        self.assertEqual(usdShadeInput.GetDocumentation(), doc)
+        
+        # test set/get dislayGroup
+        displayGroup = "floats"
+        usdShadeInput.SetDisplayGroup(displayGroup)
+        self.assertEqual(usdShadeInput.GetDisplayGroup(), displayGroup)
+
         self.assertEqual(usdShadeInput.GetBaseName(), 'myFloatInput')
         self.assertEqual(usdShadeInput.GetTypeName(), Sdf.ValueTypeNames.Float)
         usdShadeInput.Set(1.0)

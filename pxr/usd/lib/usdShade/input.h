@@ -162,6 +162,28 @@ public:
         return _attr && IsInput(_attr);
     }
 
+    /// Set documentation string for this Input.
+    /// \sa UsdObject::SetDocumentation()
+    USDSHADE_API
+    bool SetDocumentation(const std::string& docs) const;
+
+    /// Get documentation string for this Input.
+    /// \sa UsdObject::GetDocumentation()
+    USDSHADE_API
+    std::string GetDocumentation() const;
+
+    /// Set the displayGroup metadata for this Input,  i.e. hinting for the
+    /// location and nesting of the attribute.
+    /// \sa UsdProperty::SetDisplayGroup(), UsdProperty::SetNestedDisplayGroup()
+    USDSHADE_API
+    bool SetDisplayGroup(const std::string& displayGroup) const;
+
+    /// Get the displayGroup metadata for this Input, i.e. hint for the location 
+    /// and nesting of the attribute.
+    /// \sa UsdProperty::GetDisplayGroup(), UsdProperty::GetNestedDisplayGroup()
+    USDSHADE_API
+    std::string GetDisplayGroup() const;
+
     /// @}
 
     /// Return true if this Input is valid for querying and authoring
