@@ -121,8 +121,8 @@ _IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
     UsdAttribute attr = shaderInput.GetAttr();
 
     TfToken baseName = attr.GetBaseName();
-    return  attr.SplitName().size() >= 2 and 
-            (baseName =="texture" or baseName=="primvar");
+    return  attr.SplitName().size() >= 2 && 
+            (baseName =="texture" || baseName=="primvar");
 }
 
 TfTokenVector
