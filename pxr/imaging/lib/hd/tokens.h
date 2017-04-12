@@ -63,6 +63,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (extent)                                    \
     (faceColors)                                \
     (geometry)                                  \
+    (guide)                                     \
     (hull)                                      \
     (hullIndices)                               \
     (indices)                                   \
@@ -90,6 +91,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primVar)                                   \
     (primID)                                    \
     (primitiveParam)                            \
+    (proxy)                                     \
     (quadInfo)                                  \
     (refineLevel)                               \
     (refined)                                   \

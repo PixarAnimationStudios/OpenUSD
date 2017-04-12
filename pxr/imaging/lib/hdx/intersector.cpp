@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdx/debugCodes.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
+#include "pxr/imaging/hdx/tokens.h"
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -153,7 +154,7 @@ public:
     }
 
 protected:
-    virtual void _Sync( HdTaskContext* ctx) override
+    virtual void _Sync(HdTaskContext* ctx) override
     {
         _renderPass->Sync();
         _renderPassState->Sync();
@@ -161,6 +162,14 @@ protected:
 
     virtual void _Execute(HdTaskContext* ctx) override
     {
+	// Try to extract render tags from the context in case
+        // there are render tags passed to the graph that 
+        // we should be using while rendering the id buffer
+        // XXX If this was a task (in the render graph) we could
+        // just connect it to the render pass setup which receives
+        // its rendertags from the viewer.
+        _GetTaskContextData(ctx, HdxTokens->renderTags, &_renderTags);
+
         _renderPassState->Bind();
         if(_renderTags.size()) {
             TF_FOR_ALL(rt, _renderTags) {
