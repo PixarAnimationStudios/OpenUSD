@@ -979,6 +979,7 @@ public:
     /// This function may be relatively slow, since it will recompute the prim
     /// index on every call. Clients should prefer UsdPrim::GetPrimIndex unless 
     /// the additional site information is truly needed.
+    USD_API
     PcpPrimIndex ComputeExpandedPrimIndex() const;
 
     /// @}
