@@ -265,16 +265,37 @@ public:
     USDRI_API
     std::vector<UsdRiRisPattern> GetPatterns();
 
+    /// Set the input consumer of the named \p interfaceInput.
+    USDRI_API
+    bool SetInterfaceInputConsumer(UsdShadeInput &interfaceInput, 
+                                   const UsdShadeInput &consumer);
+
+    /// Walks the namespace subtree below the material and computes a map 
+    /// containing the list of all inputs on the material and the associated 
+    /// vector of consumers of their values. The consumers can be inputs on 
+    /// shaders within the material or on node-graphs under it).
+    USDSHADE_API
+    UsdShadeNodeGraph::InterfaceInputConsumersMap
+    ComputeInterfaceInputConsumersMap(
+            bool computeTransitiveConsumers=false) const;
+
+    /// Returns all the interface inputs belonging to the material.
+    USDRI_API
+    std::vector<UsdShadeInput> GetInterfaceInputs() const;
+
     /// Set the ri shadeParameter recipient of the named
     ///  \p interfaceAttr, which may also drive parameters in other shading
     /// API's with which we are not concerned.
     /// \sa UsdShadeInterfaceAttribute::SetRecipient()
+    /// 
+    /// \deprecated
     USDRI_API
     bool SetInterfaceRecipient(
             UsdShadeInterfaceAttribute& interfaceAttr,
             const SdfPath& recipientPath);
 
     /// \overload
+    /// \deprecated
     USDRI_API
     bool SetInterfaceRecipient(
             UsdShadeInterfaceAttribute& interfaceAttr,
@@ -283,6 +304,7 @@ public:
     /// Retrieve all ri shadeParameters driven by the named 
     /// \p interfaceAttr
     /// \sa UsdShadeInterfaceAttribute::GetRecipientParameters()
+    /// \deprecated
     USDRI_API
     std::vector<UsdShadeParameter> GetInterfaceRecipientParameters(
             const UsdShadeInterfaceAttribute& interfaceAttr) const;

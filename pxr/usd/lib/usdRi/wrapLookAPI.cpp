@@ -168,9 +168,19 @@ WRAP_CUSTOM {
         .def("GetBxdf", &This::GetBxdf)
         .def("GetPatterns", &This::GetPatterns,
              return_value_policy<TfPySequenceToList>())
+
+        .def("SetInterfaceInputConsumer", &This::SetInterfaceInputConsumer)
+        .def("ComputeInterfaceInputConsumersMap", 
+            &This::ComputeInterfaceInputConsumersMap, 
+            (arg("computeTransitiveConsumers")=false))
+        .def("GetInterfaceInputs", &This::GetInterfaceInputs,
+             return_value_policy<TfPySequenceToList>())
+
+        // These are deprecated.
         .def("SetInterfaceRecipient", &_SetInterfaceRecipient0)
         .def("SetInterfaceRecipient", &_SetInterfaceRecipient1)
         .def("GetInterfaceRecipientParameters", &This::GetInterfaceRecipientParameters)
+
     ;
 }
 
