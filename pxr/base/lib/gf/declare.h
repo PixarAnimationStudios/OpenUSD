@@ -44,15 +44,12 @@ class GfQuatd;
 class GfQuatf;
 class GfQuath;
 class GfQuaternion;
-template<class T > class GfRandom;
 class GfRay;
 class GfRect2i;
 class GfRect2i;
 class GfRotation;
 class GfSize2;
 class GfSize3;
-template<class T > class GfSpline;
-
 class GfMatrix2d;
 class GfMatrix2f;
 class GfMatrix3d;
