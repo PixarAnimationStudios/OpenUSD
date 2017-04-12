@@ -751,7 +751,8 @@ class StageView(QtOpenGL.QGLWidget):
     
     signalSwitchedToFreeCam = QtCore.Signal()
 
-        
+    signalFrustumChanged = QtCore.Signal()
+
     @property
     def complexity(self):
         return self._complexity
@@ -982,6 +983,14 @@ class StageView(QtOpenGL.QGLWidget):
     @allSceneCameras.setter
     def allSceneCameras(self, value):
         self._allSceneCameras = value
+
+    @property
+    def cameraFrustum(self):
+        """Unlike the StageView.freeCamera property, which is invalid/None
+        whenever we are viewing from a scene/stage camera, the 'cameraFrustum'
+        property will always return the last-computed camera frustum, regardless
+        of source."""
+        return self._lastComputedGfCamera.frustum
 
     def __init__(self, parent=None, dataModel=None):
         self._dataModel = dataModel or DefaultDataModel()
@@ -1547,7 +1556,12 @@ class StageView(QtOpenGL.QGLWidget):
         CameraUtil.ConformWindow(
             camera, CameraUtil.MatchVertically, targetAspect)
 
-        self._lastComputedGfCamera = camera
+        frustumChanged = ((not self._lastComputedGfCamera) or
+                          self._lastComputedGfCamera.frustum != camera.frustum)
+        # We need to COPY the camera, not assign it...
+        self._lastComputedGfCamera = Gf.Camera(camera)
+        if frustumChanged:
+            self.signalFrustumChanged.emit()
         return camera
 
     def copyViewState(self):

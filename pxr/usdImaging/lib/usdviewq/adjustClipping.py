@@ -25,24 +25,33 @@ from PySide import QtGui, QtCore
 from adjustClippingUI import Ui_AdjustClipping
 
 class AdjustClipping(QtGui.QDialog):
-    def __init__(self, parent):
+    """The dataModel provided to this VC must conform to the following
+    interface:
+    
+    Editable properties:
+       overrideNear (float or None, which indicates the override is disabled)
+       overrideFar  (float or None, which indicates the override is disabled)
+
+    Readable properties:
+       cameraFrustum (Gf.Frustum, or struct that has a Gf.Range1d 'nearFar' member)
+
+    Signals:
+       signalFrustumChanged() - whenever the near/far clipping values
+                                may have changed.
+    """
+    def __init__(self, parent, dataModel):
         QtGui.QDialog.__init__(self,parent)
         self._ui = Ui_AdjustClipping()
         self._ui.setupUi(self)
 
-        self._parent = parent
-        self._viewer = parent._stageView
-        clipRange = self._viewer.computeGfCamera().frustum.nearFar
-        self._nearCache = self._viewer.overrideNear or clipRange.min
-        self._farCache = self._viewer.overrideFar or clipRange.max
+        self._dataModel = dataModel
+        clipRange = self._dataModel.cameraFrustum.nearFar
+        self._nearCache = self._dataModel.overrideNear or clipRange.min
+        self._farCache = self._dataModel.overrideFar or clipRange.max
 
-        self._refreshTimer = QtCore.QTimer(self)
-        self._refreshTimer.setInterval(250)
-        self._refreshTimer.start()
-
-        # Connect timer
-        QtCore.QObject.connect(self._refreshTimer, QtCore.SIGNAL('timeout()'),
-                               self._updateAutomaticValues)
+        QtCore.QObject.connect(self._dataModel, 
+                               QtCore.SIGNAL('signalFrustumChanged()'),
+                               self.update)
 
         # When the checkboxes change, we want to update instantly
         QtCore.QObject.connect(self._ui.overrideNear,
@@ -62,15 +71,10 @@ class AdjustClipping(QtGui.QDialog):
                                QtCore.SIGNAL('textChanged(QString)'),
                                self._farChanged)
 
-        # uncheck the main window menu item when the window is closed
-        QtCore.QObject.connect(self,
-                               QtCore.SIGNAL('finished(int)'),
-                               self._cleanUpAndClose)
-
         # Set the checkboxes to their initial state
-        self._ui.overrideNear.setChecked(self._viewer.overrideNear \
+        self._ui.overrideNear.setChecked(self._dataModel.overrideNear \
                                              is not None)
-        self._ui.overrideFar.setChecked(self._viewer.overrideFar \
+        self._ui.overrideFar.setChecked(self._dataModel.overrideFar \
                                             is not None)
 
         # load the initial values for the text boxes, but first deactivate them
@@ -85,10 +89,10 @@ class AdjustClipping(QtGui.QDialog):
         self._ui.nearEdit.setValidator(QtGui.QDoubleValidator(self))
         self._ui.farEdit.setValidator(QtGui.QDoubleValidator(self))
 
-    def _updateAutomaticValues(self):
-        """Read the automatically computed clipping planes and put them
-           in the text boxes when they are deactivated"""
-        clipRange = self._viewer.computeGfCamera().frustum.nearFar
+    def _updateEditorsFromDataModel(self):
+        """Read the dataModel-computed clipping planes and put them
+           in the text boxes when they are deactivated."""
+        clipRange = self._dataModel.cameraFrustum.nearFar
         if (not self._ui.overrideNear.isChecked()) and \
                 self._nearCache != clipRange.min :
             self._nearCache = clipRange.min
@@ -99,21 +103,27 @@ class AdjustClipping(QtGui.QDialog):
             self._farCache = clipRange.max
             self._ui.farEdit.setText(str(self._farCache))
 
+    def paintEvent(self, paintEvent):
+        """Overridden from base class so we can perform JIT updating
+        of editors to limit the number of redraws we perform"""
+        self._updateEditorsFromDataModel()
+        super(AdjustClipping, self).paintEvent(paintEvent)
+
     def _overrideNearToggled(self, state):
         """Called when the "Override Near" checkbox is toggled"""
         self._ui.nearEdit.setEnabled(state)
         if state:
-            self._viewer.overrideNear = self._nearCache
+            self._dataModel.overrideNear = self._nearCache
         else:
-            self._viewer.overrideNear = None
+            self._dataModel.overrideNear = None
 
     def _overrideFarToggled(self, state):
         """Called when the "Override Far" checkbox is toggled"""
         self._ui.farEdit.setEnabled(state)
         if state:
-            self._viewer.overrideFar = self._farCache
+            self._dataModel.overrideFar = self._farCache
         else:
-            self._viewer.overrideFar = None
+            self._dataModel.overrideFar = None
 
     def _nearChanged(self, text):
         """Called when the Near text box changed.  This can happen when we
@@ -123,7 +133,7 @@ class AdjustClipping(QtGui.QDialog):
             return
 
         try:
-            self._viewer.overrideNear = float(text)
+            self._dataModel.overrideNear = float(text)
         except ValueError:
             pass
 
@@ -135,10 +145,19 @@ class AdjustClipping(QtGui.QDialog):
             return
 
         try:
-            self._viewer.overrideFar = float(text)
+            self._dataModel.overrideFar = float(text)
         except ValueError:
             pass
 
-    def _cleanUpAndClose(self, result):
-        self._refreshTimer.stop()
-        self._parent._ui.actionAdjust_Clipping.setChecked(False)
+    def closeEvent(self, event):
+        # Ensure that even if the dialog doesn't get destroyed right away,
+        # we'll stop doing work.
+        QtCore.QObject.disconnect(self._dataModel, 
+                                  QtCore.SIGNAL('signalFrustumChanged()'),
+                                  self.update)
+
+        event.accept()
+        # Since the dialog is the immediate-edit kind, we consider
+        # window-close to be an accept, so our clients can know the dialog is
+        # done by listening for the finished(int) signal
+        self.accept()

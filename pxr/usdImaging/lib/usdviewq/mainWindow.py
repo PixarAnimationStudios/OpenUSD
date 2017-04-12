@@ -1584,11 +1584,16 @@ class MainWindow(QtGui.QMainWindow):
             self._stageView.update()
 
     def _adjustClippingPlanes(self, checked):
-        if (not checked):
-            self._adjustClipping.accept()
+        if (checked):
+            self._adjustClippingDlg = adjustClipping.AdjustClipping(self, 
+                                                                 self._stageView)
+            QtCore.QObject.connect(self._adjustClippingDlg,
+                                   QtCore.SIGNAL('finished(int)'),
+                                   lambda status : self._ui.actionAdjust_Clipping.setChecked(False))
+
+            self._adjustClippingDlg.show()
         else:
-            self._adjustClipping = adjustClipping.AdjustClipping(self)
-            self._adjustClipping.show()
+            self._adjustClippingDlg.close()
 
     @property
     def xformCache(self):
