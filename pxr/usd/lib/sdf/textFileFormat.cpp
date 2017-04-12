@@ -107,7 +107,7 @@ SdfTextFileFormat::CanRead(const string& filePath) const
     bool canRead = false;
 
     const string& cookie = GetFileCookie();
-    if (FILE *f = ArchOpenFile(filePath.c_str(), "rt")) {
+    if (FILE *f = ArchOpenFile(filePath.c_str(), "rb")) {
         char aLine[512];
 
         if (fgets(aLine, sizeof(aLine), f)) {
@@ -124,10 +124,8 @@ SdfTextFileFormat::CanRead(const string& filePath) const
 class Sdf_ScopedFilePointer : boost::noncopyable
 {
 public:
-    explicit Sdf_ScopedFilePointer(
-        const string& filePath,
-        const string& mode = string("rt"))
-        : _fp(ArchOpenFile(filePath.c_str(), mode.c_str()))
+    explicit Sdf_ScopedFilePointer(const string& filePath)
+        : _fp(ArchOpenFile(filePath.c_str(), "rb"))
     { }
 
     ~Sdf_ScopedFilePointer() {
@@ -151,7 +149,7 @@ SdfTextFileFormat::Read(
 {
     TRACE_FUNCTION();
 
-    Sdf_ScopedFilePointer fp(resolvedPath.c_str());
+    Sdf_ScopedFilePointer fp(resolvedPath);
     if (!*fp)
         return false;
 

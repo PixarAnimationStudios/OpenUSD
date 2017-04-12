@@ -169,7 +169,7 @@ boost::python::handle<>
 TfPyRunFile(const std::string &filename, int start,
             object const &globals, object const &locals)
 {
-    FILE *f = ArchOpenFile(filename.c_str(), "rt");
+    FILE *f = ArchOpenFile(filename.c_str(), "r");
     if (!f) {
         TF_CODING_ERROR("Could not open file '%s'!", filename.c_str());
         return handle<>();
