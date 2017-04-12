@@ -124,8 +124,6 @@ pxr_shared_library(tf
         cxxCast.h
         declarePtrs.h
         diagnosticLite.h
-        executeAtStartup.h
-        executeAtUnload.h
         hashmap.h
         hashset.h
         instantiateSingleton.h
