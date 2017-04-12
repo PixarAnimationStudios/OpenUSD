@@ -53,8 +53,6 @@
 #include <boost/preprocessor/variadic/size.hpp>
 #include <boost/vmd/is_tuple.hpp>
 #endif
-#include <PtexUtils.h>
-#include <Ptexture.h>
 #include <algorithm>
 #include <atomic>
 #include <cassert>
