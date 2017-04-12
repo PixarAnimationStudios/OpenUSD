@@ -40,7 +40,7 @@ find_package(Boost
 )
 
 # --TBB
-find_package(TBB REQUIRED)
+find_package(TBB REQUIRED COMPONENTS tbb)
 add_definitions(${TBB_DEFINITIONS})
 
 # --OpenEXR
