@@ -209,19 +209,30 @@ public:
     /// time samples for this attribute, opening them if needed. This may be
     /// expensive, especially if many clips are involved.     
     /// 
+    /// \param times - on return, will contain the \em sorted, ascending
+    /// timeSample ordinates.  Any data in \p times will be lost, as this
+    /// method clears \p times. 
+    ///
     /// \sa UsdAttribute::GetTimeSamplesInInterval
     USD_API
     bool GetTimeSamples(std::vector<double>* times) const;
 
     /// Populates a vector with authored sample times in \p interval. 
-    /// The interval may have any combination of open/infinite and 
-    /// closed/finite endpoints; it may not have open/finite endpoints, however,
-    /// this restriction may be lifted in the future.
     /// Returns false only on an error.
     ///
     /// \note This function will only query the value clips that may 
     /// contribute time samples for this attribute in the given interval, 
     /// opening them if necessary.
+    /// 
+    /// \param interval -  may have any combination of open/infinite and 
+    /// closed/finite endpoints; it may not have open/finite endpoints, however,
+    /// this restriction may be lifted in the future.
+    ///
+    /// \param times - on return, will contain the \em sorted, ascending
+    /// timeSample ordinates.  Any data in \p times will be lost, as this
+    /// method clears \p times. 
+    ///
+    /// \sa UsdAttribute::GetTimeSamples
     USD_API
     bool GetTimeSamplesInInterval(const GfInterval& interval,
                                   std::vector<double>* times) const;

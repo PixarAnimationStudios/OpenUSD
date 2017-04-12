@@ -6003,6 +6003,9 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
         return false;
     }
 
+    // This is the lowest-level site for guaranteeing that all GetTimeSample
+    // queries clear out the return vector
+    times->clear();
     const auto copySamplesInInterval = [](const std::set<double>& samples, 
                                           vector<double>* target, 
                                           const GfInterval& interval) 

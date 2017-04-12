@@ -44,9 +44,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Object for efficiently making repeated queries for attribute values.
 ///
 /// Retrieving an attribute's value at a particular time requires determining
-/// the source of strongest opinion for that value.  This source does not vary 
-/// over time.  UsdAttributeQuery uses this fact to speed up repeated queries 
-/// by caching the source information for an attribute.
+/// the source of strongest opinion for that value.  Often (i.e.  unless the
+/// attribute is affected by \ref Usd_Page_ValueClips "Value Clips") this
+/// source does not vary over time.  UsdAttributeQuery uses this fact to
+/// speed up repeated value queries by caching the source information for an
+/// attribute.  It is safe to use a UsdAttributeQuery for any attribute - if
+/// the attribute \em is affected by Value Clips, the performance gain will
+/// just be less.
 ///
 /// \section Thread safety
 /// This object provides the basic thread-safety guarantee.  Multiple threads
@@ -136,18 +140,16 @@ public:
     /// Populates a vector with authored sample times. 
     /// Returns false only on error. 
     //
-    /// \sa UsdAttribute::GetTimeSamples
+    /// Behaves identically to UsdAttribute::GetTimeSamples()
+    ///
     /// \sa UsdAttributeQuery::GetTimeSamplesInInterval
     USD_API
     bool GetTimeSamples(std::vector<double>* times) const;
 
     /// Populates a vector with authored sample times in \p interval.
-    /// The interval may have any combination of open/infinite and 
-    /// closed/finite endpoints; it may not have open/finite endpoints, however,
-    /// this restriction may be lifted in the future.
     /// Returns false only on an error.
     ///
-    /// \sa UsdAttribute::GetTimeSamplesInInterval
+    /// Behaves identically to UsdAttribute::GetTimeSamplesInInterval()
     USD_API
     bool GetTimeSamplesInInterval(const GfInterval& interval,
                                   std::vector<double>* times) const;
