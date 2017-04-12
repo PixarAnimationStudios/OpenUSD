@@ -224,7 +224,7 @@ _FilterTemplateList(const string& prettyFunction,
     string::size_type pos = prettyFunction.find("<");
     while (pos != string::npos) {
         const auto identifier = _GetNextIdentifier(prettyFunction, pos);
-        if (not identifier.empty()) {
+        if (!identifier.empty()) {
             auto i = templates.find(identifier);
             if (i != templates.end()) {
                 result.insert(*i);
