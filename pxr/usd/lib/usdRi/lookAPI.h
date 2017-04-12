@@ -274,7 +274,7 @@ public:
     /// containing the list of all inputs on the material and the associated 
     /// vector of consumers of their values. The consumers can be inputs on 
     /// shaders within the material or on node-graphs under it).
-    USDSHADE_API
+    USDRI_API
     UsdShadeNodeGraph::InterfaceInputConsumersMap
     ComputeInterfaceInputConsumersMap(
             bool computeTransitiveConsumers=false) const;
