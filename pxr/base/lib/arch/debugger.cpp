@@ -30,11 +30,7 @@
 #include "pxr/base/arch/export.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/systemInfo.h"
-
-#include <atomic>
-#if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
-#else
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 #include "pxr/base/arch/inttypes.h"
 #include <sys/types.h>
 #include <sys/ptrace.h>
@@ -49,6 +45,13 @@
 #include <unistd.h>
 #include <string>
 #endif
+#if defined(ARCH_OS_DARWIN)
+#include <sys/sysctl.h>
+#endif
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#endif
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -340,16 +343,14 @@ Arch_DebuggerAttachExecPosix(void* data)
     return false;
 }
 
+#endif // defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+
+#if defined(ARCH_OS_LINUX)
+
 static
 bool
 Arch_DebuggerIsAttachedPosix()
 {
-#if defined(ARCH_OS_DARWIN)
-    const int PTRACE_ATTACH = PT_ATTACHEXC;
-    const int PTRACE_DETACH = PT_DETACH;
-    return false;
-#endif
-
     // Check for a ptrace based debugger by trying to ptrace.
     pid_t parent = getpid();
     pid_t pid = nonLockingFork();
@@ -392,7 +393,45 @@ Arch_DebuggerIsAttachedPosix()
 
 }
 
-#endif // defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+#elif defined(ARCH_OS_DARWIN)
+
+// From Apple:
+//   https://developer.apple.com/library/content/qa/qa1361/_index.html
+//
+// Returns true if the current process is being debugged (either 
+// running under the debugger or has a debugger attached post facto).
+static bool
+AmIBeingDebugged()
+{
+    int                 junk;
+    int                 mib[4];
+    struct kinfo_proc   info;
+    size_t              size;
+
+    // Initialize the flags so that, if sysctl fails for some bizarre 
+    // reason, we get a predictable result.
+
+    info.kp_proc.p_flag = 0;
+
+    // Initialize mib, which tells sysctl the info we want, in this case
+    // we're looking for information about a specific process ID.
+
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_PROC;
+    mib[2] = KERN_PROC_PID;
+    mib[3] = getpid();
+
+    // Call sysctl.
+
+    size = sizeof(info);
+    junk = sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0);
+
+    // We're being debugged if the P_TRACED flag is set.
+
+    return junk == 0 && ( (info.kp_proc.p_flag & P_TRACED) != 0 );
+}
+
+#endif // defined(ARCH_OS_LINUX)
 
 static
 bool
@@ -400,6 +439,11 @@ Arch_DebuggerAttach()
 {
     // Be very careful here to avoid using the heap.  We're not even sure
     // the stack is available but there's only so much we can do about that.
+
+    // We assume Arch_DebuggerInit() has been called.
+    if (!_archDebuggerEnabled) {
+        return false;
+    }
 
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 
@@ -420,6 +464,15 @@ Arch_DebuggerAttach()
     // debugged program, however, does stop so users simply need to click
     // TotalView's pause button to see the program state.  Unfortunately,
     // there's no obvious indication that the program has stopped.
+    //
+    // To attach to lldb on Darwin:
+    //   ARCH_DEBUGGER='osascript -e "tell application \"Terminal\"" -e "activate" -e "set newTab to do script(\"lldb -p %p\")" -e "end tell"'
+    // This will bring up lldb in a (new) terminal window.  If your system
+    // has System Integrity Protection then this won't work but there's a
+    // workaround:  make a copy of Terminal (in /Applications/Utilities);
+    // put it in /Applications with a new name, say, TerminalCopy;  then
+    // use that new name in the environment variable above instead of
+    // "Terminal".
 
     if (_archDebuggerAttachArgs) {
         // We need to start a process unrelated to this process so the
@@ -524,27 +577,32 @@ Arch_InitDebuggerAttach()
         // Terminate the command string.
         *a = '\0';
     }
+#elif defined(ARCH_OS_WINDOWS)
+    // If ARCH_DEBUGGER is in the environment then enable attaching.
+    size_t requiredSize;
+    getenv_s(&requiredSize, nullptr, 0, "ARCH_DEBUGGER");
+    if (requiredSize) {
+        _archDebuggerAttachArgs = (char**)&_archDebuggerAttachArgs;
+    }
 #endif
 }
 
 void
 ArchDebuggerTrap()
 {
-    Arch_DebuggerInit();
+    // Trap if a debugger is attached or we try and fail to attach one.
+    // If we attach one we assume it will automatically stop this process.
+    if (ArchDebuggerIsAttached() || !Arch_DebuggerAttach()) {
     if (_archDebuggerEnabled) {
 #if defined(ARCH_OS_WINDOWS)
-        if (IsDebuggerPresent()) {
             DebugBreak();
-        }
-#elif defined(ARCH_CPU_INTEL) && \
-      (defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG))
-        // Send a trap if a debugger is attached or we fail to start one.
-        // If we start one we assume it will automatically stop this process.
-        if (Arch_DebuggerIsAttachedPosix() || !Arch_DebuggerAttach()) {
+#elif defined(ARCH_CPU_INTEL)
             asm("int $3");
-        }
+#else
+            raise(SIGTRAP);
 #endif
     }
+}
 }
 
 void
@@ -580,7 +638,9 @@ ArchDebuggerIsAttached()
     Arch_DebuggerInit();
 #if defined(ARCH_OS_WINDOWS)
     return IsDebuggerPresent() == TRUE;
-#elif defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+#elif defined(ARCH_OS_DARWIN)
+    return AmIBeingDebugged();
+#elif defined(ARCH_OS_LINUX)
     return Arch_DebuggerIsAttachedPosix();
 #endif
     return false;
