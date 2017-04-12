@@ -58,10 +58,6 @@ pxr_shared_library(usdviewq
         pythonExpressionPrompt.py
         referenceEditor.py
         overridableLineEdit.py
-        icons/branch-closed.png
-        icons/branch-closed-selected.png
-        icons/branch-open.png
-        icons/branch-open-selected.png
         usdviewstyle.qss
 
     PYSIDE_UI_FILES
