@@ -706,5 +706,33 @@ UsdPrim::GetPrimStack() const
     return primStack;
 }
 
+PcpPrimIndex 
+UsdPrim::ComputeExpandedPrimIndex() const
+{
+    // Get the prim index path to compute from the index stored in the prim
+    // data. This ensures we get consistent behavior when dealing with 
+    // instancing and instance proxies.
+    const PcpPrimIndex& cachedPrimIndex = _Prim()->GetPrimIndex();
+    if (!cachedPrimIndex.IsValid()) {
+        return PcpPrimIndex();
+    }
+    
+    const SdfPath& primIndexPath = cachedPrimIndex.GetPath();
+    PcpCache* cache = _GetStage()->_GetPcpCache();
+    
+    PcpPrimIndexOutputs outputs;
+    PcpComputePrimIndex(
+        primIndexPath, cache->GetLayerStack(),
+        cache->GetPrimIndexInputs().Cull(false), 
+        &outputs);
+
+    _GetStage()->_ReportPcpErrors(
+        outputs.allErrors, 
+        TfStringPrintf(
+            "Computing expanded prim index for <%s>", GetPath().GetText()));
+    
+    return outputs.primIndex;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

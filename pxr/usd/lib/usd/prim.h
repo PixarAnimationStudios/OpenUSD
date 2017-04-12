@@ -563,25 +563,6 @@ public:
     USD_API
     bool HasVariantSets() const;
 
-
-    /// Return a const reference to the PcpPrimIndex for this prim.
-    ///
-    /// The prim's PcpPrimIndex can be used to examine the scene description
-    /// sites that contribute to the prim's property and metadata values in
-    /// minute detail.
-    ///
-    /// For master prims this prim index will be empty; this ensures
-    /// that these prims do not provide any attribute or metadata
-    /// values. 
-    ///
-    /// For all other prims in masters, this is the prim index for the 
-    /// instance that was chosen to serve as the master for all other 
-    /// instances.  
-    ///
-    /// In either of the above two cases, this prim index will not have the 
-    /// same path as the prim's path.
-    const PcpPrimIndex &GetPrimIndex() const { return _Prim()->GetPrimIndex(); }
-
     // --------------------------------------------------------------------- //
     /// \name Attributes 
     // --------------------------------------------------------------------- //
@@ -953,6 +934,52 @@ public:
         }
         return UsdPrim();
     }
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \name Composition Structure
+    /// @{
+    // --------------------------------------------------------------------- //
+
+    /// Return the cached prim index containing all sites that contribute 
+    /// opinions to this prim.
+    ///
+    /// The prim index can be used to examine the composition arcs and scene 
+    /// description sites that contribute to this prim's property and metadata 
+    /// values. 
+    ///
+    /// The prim index returned by this function is optimized and may not
+    /// include sites that do not contribute opinions to this prim. Use 
+    /// UsdPrim::ComputeExpandedPrimIndex to compute a prim index that includes 
+    /// all possible sites that could contribute opinions.
+    ///
+    /// This prim index will be empty for master prims. This ensures that these 
+    /// prims do not provide any attribute or metadata values. For all other 
+    /// prims in masters, this is the prim index that was chosen to be shared 
+    /// with all other instances. In either case, the prim index's path will 
+    /// not be the same as the prim's path.
+    ///
+    /// Prim indexes may be invalidated by changes to the UsdStage and cannot
+    /// detect if they are expired. Clients should avoid keeping copies of the 
+    /// prim index across such changes, which include scene description
+    /// changes or changes to load state.
+    const PcpPrimIndex &GetPrimIndex() const { return _Prim()->GetPrimIndex(); }
+
+    /// Compute the prim index containing all sites that could contribute
+    /// opinions to this prim.
+    ///
+    /// This function is similar to UsdPrim::GetPrimIndex. However, the
+    /// returned prim index includes all sites that could possibly contribute 
+    /// opinions to this prim, not just the sites that currently do so. This is 
+    /// useful in certain situations; for example, this could be used to 
+    /// generate a list of sites where clients could make edits to affect this 
+    /// prim, or for debugging purposes.
+    ///
+    /// This function may be relatively slow, since it will recompute the prim
+    /// index on every call. Clients should prefer UsdPrim::GetPrimIndex unless 
+    /// the additional site information is truly needed.
+    PcpPrimIndex ComputeExpandedPrimIndex() const;
 
     /// @}
 

@@ -671,5 +671,49 @@ class TestUsdPrim(unittest.TestCase):
 
         self.assertEqual(prim.GetAllMetadata()['typeName'], "Xform")
 
+    def test_GetPrimIndex(self):
+        def _CreateTestStage(fmt):
+            s = Usd.Stage.CreateInMemory('GetPrimIndex.'+fmt)
+
+            c = s.DefinePrim('/Class')
+
+            r = s.DefinePrim('/Ref')
+            s.DefinePrim('/Ref/Child')
+
+            p = s.DefinePrim('/Instance')
+            p.GetInherits().AppendInherit('/Class')
+            p.GetReferences().AppendInternalReference('/Ref')
+            p.SetInstanceable(True)
+            return s
+
+        def _ValidatePrimIndexes(prim):
+            # Assert that the prim indexes for the prim at this path
+            # are valid. Also dump them to a string just to force
+            # all nodes in the prim index to be touched.
+            self.assertTrue(prim.GetPrimIndex().IsValid())
+            self.assertTrue(prim.GetPrimIndex().DumpToString())
+            self.assertTrue(prim.ComputeExpandedPrimIndex().IsValid())
+            self.assertTrue(prim.ComputeExpandedPrimIndex().DumpToString())
+
+        def _ValidateNoPrimIndexes(prim):
+            self.assertFalse(prim.GetPrimIndex().IsValid())
+            self.assertFalse(prim.GetPrimIndex().DumpToString())
+
+        for fmt in allFormats:
+            s = _CreateTestStage(fmt)
+
+            _ValidatePrimIndexes(s.GetPseudoRoot())
+            _ValidatePrimIndexes(s.GetPrimAtPath('/Ref'))
+            _ValidatePrimIndexes(s.GetPrimAtPath('/Ref/Child'))
+
+            # Master prims do not expose a valid prim index.
+            master = s.GetMasters()[0]
+            _ValidateNoPrimIndexes(master)
+
+            # However, prims beneath masters do expose a valid prim index.
+            # Note this prim index may change from run to run depending on
+            # which is selected as the source for the master.
+            _ValidatePrimIndexes(master.GetChild('Child'))
+
 if __name__ == "__main__":
     unittest.main()

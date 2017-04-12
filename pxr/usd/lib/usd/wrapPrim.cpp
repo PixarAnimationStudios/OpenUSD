@@ -194,6 +194,7 @@ void wrapUsdPrim()
 
         .def("GetPrimIndex", &UsdPrim::GetPrimIndex,
              return_value_policy<return_by_value>())
+        .def("ComputeExpandedPrimIndex", &UsdPrim::ComputeExpandedPrimIndex)
 
         .def("CreateAttribute",
              (UsdAttribute (UsdPrim::*)(
