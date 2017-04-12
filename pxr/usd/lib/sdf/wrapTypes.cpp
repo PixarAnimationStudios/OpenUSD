@@ -351,9 +351,6 @@ void wrapTypes()
     BOOST_PP_LIST_FOR_EACH(_WRAP_ENUM, ~, _SDF_UNITS)
     #undef _WRAP_ENUM
 
-
-    class_<SdfMapperParametersMap>("MapperParametersMap");
-
     SdfPyWrapListProxy<SdfNameOrderProxy>();
     SdfPyWrapListProxy<SdfSubLayerProxy>();
     SdfPyWrapListEditorProxy<SdfConnectionsProxy>();
