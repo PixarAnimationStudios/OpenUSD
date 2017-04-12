@@ -39,13 +39,30 @@ class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
 
     def _TestShading(self, stage, materialsPath):
 
+        ConnAPI = UsdShade.ConnectableAPI
         # Create parent material
         parentMaterialPath = materialsPath.AppendChild('ParentMaterial')
         parentMaterial = UsdShade.Material.Define(stage, parentMaterialPath)
-        parentShader = UsdShade.Shader.Define(
+        floatInterfaceInput = parentMaterial.CreateInput('floatVal', 
+                Sdf.ValueTypeNames.Float)
+        parentShader1 = UsdShade.Shader.Define(
             stage, parentMaterialPath.AppendChild("Shader_1"))
-        parentShader.CreateParameter(
-            'floatParameter', Sdf.ValueTypeNames.Float).Set(1.0)
+        floatShaderInput = parentShader1.CreateInput(
+            'floatInput', Sdf.ValueTypeNames.Float)
+        floatShaderInput.Set(1.0)
+
+        parentShader2 = UsdShade.Shader.Define(
+            stage, parentMaterialPath.AppendChild("Shader_2"))
+        floatShaderOutput = parentShader2.CreateOutput('floatOutput', 
+            Sdf.ValueTypeNames.Float)
+        
+        self.assertTrue(ConnAPI.ConnectToSource(floatShaderInput, 
+                                                floatShaderOutput))
+
+        print stage.GetRootLayer().ExportToString()
+        print ConnAPI.GetConnectedSource(floatShaderInput)
+        self.assertTrue(ConnAPI.HasConnectedSource(floatShaderInput))
+        self.assertFalse(ConnAPI.IsSourceFromBaseMaterial(floatShaderInput))
         self.assertTrue(not parentMaterial.HasBaseMaterial())
 
         # Create child materials
@@ -76,9 +93,10 @@ class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
                 self.assertEqual(bool(childShaderPrim), True)
                 childShader = UsdShade.Shader(childShaderPrim)
                 self.assertTrue(childShader)
-                self.assertEqual(childShader.GetParameter(
-                    'floatParameter').GetAttr().Get(), 1.0)
-
+                childShaderInput = childShader.GetInput('floatInput')
+                self.assertEqual(childShaderInput.GetAttr().Get(), 1.0)
+                self.assertTrue(ConnAPI.IsSourceFromBaseMaterial(
+                    childShaderInput))
             else:
                 # OLD encoding
                 # verify that child shader is not found by default 

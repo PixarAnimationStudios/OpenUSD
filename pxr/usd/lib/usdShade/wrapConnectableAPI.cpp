@@ -162,6 +162,9 @@ WRAP_CUSTOM {
         UsdShadeOutput const &,
         UsdAttribute const &) = &UsdShadeConnectableAPI::CanConnect;
 
+    bool (*IsSourceFromBaseMaterial)(UsdProperty const &) = 
+        &UsdShadeConnectableAPI::IsSourceFromBaseMaterial;
+
     bool (*HasConnectedSource)(UsdProperty const &) = 
         &UsdShadeConnectableAPI::HasConnectedSource;
 
@@ -209,6 +212,10 @@ WRAP_CUSTOM {
         .def("HasConnectedSource", HasConnectedSource,
             (arg("shadingProp")))
             .staticmethod("HasConnectedSource")
+
+        .def("IsSourceFromBaseMaterial", IsSourceFromBaseMaterial,
+            (arg("shadingProp")))
+            .staticmethod("IsSourceFromBaseMaterial")
         
         .def("DisconnectSource", DisconnectSource,
             (arg("shadingProp")))

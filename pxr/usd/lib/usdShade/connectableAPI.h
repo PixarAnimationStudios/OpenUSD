@@ -496,6 +496,25 @@ public:
         return HasConnectedSource(output.GetProperty());
     }
 
+    /// Returns true if the given shading property's source, as returned by 
+    /// UsdShadeConnectableAPI::GetConnectedSource(), is authored across a 
+    /// specializes arc, which is used to denote a base material.
+    /// 
+    USDSHADE_API
+    static bool IsSourceFromBaseMaterial(const UsdProperty &shadingProp);
+
+    /// \overload
+    USDSHADE_API
+    static bool IsSourceFromBaseMaterial(const UsdShadeInput &input) {
+        return IsSourceFromBaseMaterial(input.GetAttr());
+    }
+
+    /// \overload
+    USDSHADE_API
+    static bool IsSourceFromBaseMaterial(const UsdShadeOutput &output) {
+        return IsSourceFromBaseMaterial(output.GetProperty());
+    }
+
     /// Disconnect source for this shading property.
     ///
     /// This may author more scene description than you might expect - we define

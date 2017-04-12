@@ -6,9 +6,17 @@ def "ModelShading"
     {
         def Material "ParentMaterial"
         {
+            float interface:floatVal
+
             def Shader "Shader_1"
             {
-                float floatParameter = 1
+                rel connectedSourceFor:floatInput = </ModelShading/Materials/ParentMaterial/Shader_2.outputs:floatOutput>
+                float floatInput = 1
+            }
+
+            def Shader "Shader_2"
+            {
+                float outputs:floatOutput
             }
         }
 
