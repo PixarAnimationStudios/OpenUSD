@@ -696,17 +696,14 @@ UsdShadeConnectableAPI::GetInputs() const
         // Support for old style encoding containing interface attributes 
         // and parameters.
         if (UsdShadeUtils::ReadOldEncoding()) {
-            static const TfToken interfaceNSToken(TfStringPrintf(":%s", 
-                UsdShadeTokens->interface_.GetText()));
             if (IsNodeGraph() && 
-                (TfStringContains(attr.GetName().GetString(), 
-                                 interfaceNSToken) || 
-                 TfStringStartsWith(attr.GetName().GetString(), 
-                                  UsdShadeTokens->interface_))) {                    
+                (TfStringStartsWith(attr.GetName().GetString(), 
+                                  UsdShadeTokens->interface_))) {
                 // If it's an interface attribute on a node-graph, wrap it in a 
                 // UsdShadeInput object and add it to the list of inputs.
                 ret.push_back(UsdShadeInput(attr));
-            } else if (IsShader() && attr.GetNamespace().IsEmpty()) {
+            } else if (attr.GetNamespace().IsEmpty()) {
+                // Assume that the attribute belongs to a shader.
                 // If it's an unnamespaced (parameter) attribute on a shader, 
                 // wrap it in a UsdShadeInput object and add it to the list of 
                 // inputs.
