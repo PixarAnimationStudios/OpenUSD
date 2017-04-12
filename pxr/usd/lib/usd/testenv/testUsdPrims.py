@@ -614,7 +614,7 @@ class TestUsdPrim(unittest.TestCase):
             make(s, names, 4)
             test(s.GetPseudoRoot())
 
-    def PrimOrder():
+    def test_PrimOrder(self):
         # Create a stage with three root prims.
         orderBefore = ['Foo', 'Bar', 'Baz']
         orderAfter = ['Baz', 'Foo', 'Bar']
