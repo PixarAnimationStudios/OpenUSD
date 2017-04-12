@@ -183,6 +183,12 @@ _GetNextIdentifier(const string& prettyFunction, string::size_type &pos)
     // Skip '<' or leading space.
     const string::size_type first = prettyFunction.find_first_not_of("< ", pos);
 
+    // If we found nothing or '<' then this is probably operator< or <<.
+    if (first == string::npos || prettyFunction[first] == '<') {
+        pos = string::npos;
+        return string();
+    }
+
     // Find the next separator, which should be a ',', unless we are on
     // the last identifier, and then it should be a '>'.  Update pos to
     // be just before the next identifier.
@@ -209,18 +215,20 @@ _GetNextIdentifier(const string& prettyFunction, string::size_type &pos)
 // prettyFunction.  For example, if "Foo<A, B>::Bar" is passed as
 // prettyFunction then only the 'A' and 'B' elements of templates
 // will be returned.
-static  std::map<string, string>
+static std::map<string, string>
 _FilterTemplateList(const string& prettyFunction,
-                       const std::map<string, string>& templates)
+                    const std::map<string, string>& templates)
 {
     std::map<string, string> result;
 
     string::size_type pos = prettyFunction.find("<");
     while (pos != string::npos) {
         const auto identifier = _GetNextIdentifier(prettyFunction, pos);
-        auto i = templates.find(identifier);
-        if (i != templates.end()) {
-            result.insert(*i);
+        if (not identifier.empty()) {
+            auto i = templates.find(identifier);
+            if (i != templates.end()) {
+                result.insert(*i);
+            }
         }
     }
 

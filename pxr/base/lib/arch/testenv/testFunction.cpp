@@ -79,6 +79,14 @@ int main()
                 "int __cdecl X<Z<char,double> >::Y<Z<char,double>::W<short> >::foo<bool>(Z<char,double>,Z<char,double>::W<short>,bool)")
              == "X<Z<char,double> >::Y<Z<char,double>::W<short> >::foo");
 
+    // Edge cases.
+    ARCH_AXIOM(ArchGetPrettierFunctionName("operator<", "bool operator<(X, Y)") 
+             == "operator<");
+    ARCH_AXIOM(ArchGetPrettierFunctionName("operator<", "bool Z<W>::operator<(Y) const [with W = int]") 
+             == "Z<W>::operator< [with W = int]");
+    ARCH_AXIOM(ArchGetPrettierFunctionName("operator<<", "int operator<<(X, int)") 
+             == "operator<<");
+
     return 0;
 }
 
