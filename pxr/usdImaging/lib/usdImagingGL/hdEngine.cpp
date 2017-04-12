@@ -845,7 +845,7 @@ void
 UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
 {
     // populate new selection
-    HdxSelectionSharedPtr selection(new HdxSelection(_renderIndex));
+    HdxSelectionSharedPtr selection(new HdxSelection);
     for (SdfPath const& path : paths) {
         _delegate->PopulateSelection(path,
                                      UsdImagingDelegate::ALL_INSTANCES,
@@ -860,7 +860,7 @@ UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
 void
 UsdImagingGLHdEngine::ClearSelected()
 {
-    HdxSelectionSharedPtr selection(new HdxSelection(_renderIndex));
+    HdxSelectionSharedPtr selection(new HdxSelection);
     _selTracker->SetSelection(selection);
 }
 
@@ -870,7 +870,7 @@ UsdImagingGLHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
     HdxSelectionSharedPtr selection = _selTracker->GetSelectionMap();
     if (!selection) {
-        selection.reset(new HdxSelection(_renderIndex));
+        selection.reset(new HdxSelection);
     }
 
     _delegate->PopulateSelection(path, instanceIndex, selection);
@@ -957,7 +957,10 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfType const &type)
         rootTransform = _delegate->GetRootTransform();
         isVisible = _delegate->GetRootVisibility();
     }
-    HdxSelectionSharedPtr oldSelection = _selTracker->GetSelectionMap();
+    HdxSelectionSharedPtr selection = _selTracker->GetSelectionMap();
+    if (!selection) {
+        selection.reset(new HdxSelection);
+    }
 
     // Delete hydra state.
     _DeleteHydraResources();
@@ -978,10 +981,6 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfType const &type)
             this))));
 
     // Rebuild state in the new delegate/task controller.
-    HdxSelectionSharedPtr selection(new HdxSelection(_renderIndex));
-    if (oldSelection) {
-        selection->CopySelection(*oldSelection);
-    }
     _delegate->SetRootVisibility(isVisible);
     _delegate->SetRootTransform(rootTransform);
     _selTracker->SetSelection(selection);

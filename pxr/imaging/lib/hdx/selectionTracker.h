@@ -51,23 +51,7 @@ typedef boost::weak_ptr<class HdxSelectionTracker> HdxSelectionTrackerWeakPtr;
 ///
 class HdxSelection {
 public:
-    HdxSelection(HdRenderIndex * renderIndex)
-        : _renderIndex(renderIndex) { }
-
-    HdRenderIndex * GetRenderIndex() const {
-        return _renderIndex;
-    }
-
-    // XXX: persisting selection across render index changes is complicated
-    // right now, because of the HdRenderIndex pointer.  CopySelection
-    // exists as a copy-constructor that ignores the render index.  In
-    // the glorious future, we should delete this function and delete
-    // the render index member variable.
-    void CopySelection(HdxSelection const &other) {
-        selectedPrims = other.selectedPrims;
-        selectedInstances = other.selectedInstances;
-        selectedFaces = other.selectedFaces;
-    }
+    HdxSelection() = default;
 
     void AddRprim(SdfPath const &path) {
         selectedPrims.push_back(path);
@@ -102,9 +86,6 @@ public:
     // The selected elements (faces, points, edges) , if any, for the selected
     // objects. This maps from object path to a vector of element indices.
     ElementMap selectedFaces;
-
-private:
-    HdRenderIndex * _renderIndex;
 };
 
 /// \class HdxSelectionTracker

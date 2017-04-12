@@ -461,7 +461,7 @@ My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos)
     _intersector->Query(params, col, &_engine, &result);
 
     HdxIntersector::HitSet hits;
-    HdxSelectionSharedPtr selection(new HdxSelection(_renderIndex));
+    HdxSelectionSharedPtr selection(new HdxSelection);
     if (result.ResolveUnique(&hits)) {
         TF_FOR_ALL(it, hits) {
             std::cout << "object: " << it->objectId << " "
