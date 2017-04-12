@@ -588,8 +588,8 @@ public:
 
         // Determine whether to prepopulate the USD stage.
         ab.prePopulate =
-            FnKat::FloatAttribute(interface.getOpArg("prePopulate"))
-                        .getValue(0, false);
+            FnKat::IntAttribute(interface.getOpArg("prePopulate"))
+                        .getValue(1 /* default prePopulate=yes */ , false);
 
         ab.stage =  UsdKatanaCache::GetInstance().GetStage(
                 fileName, 
