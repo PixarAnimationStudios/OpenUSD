@@ -75,12 +75,6 @@ public:
     void Execute(HdRenderIndex& index, 
                  HdTaskSharedPtrVector const &tasks);
 
-    /// (deprecated: use Execute instead) Draw a renderpass.
-    HD_API
-    void Draw(HdRenderIndex& index,
-              HdRenderPassSharedPtr const &renderPass,
-              HdRenderPassStateSharedPtr const &renderPassState);
-
     HD_API
     void ReloadAllShaders(HdRenderIndex& index);
 

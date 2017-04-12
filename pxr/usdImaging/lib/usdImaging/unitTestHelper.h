@@ -101,6 +101,21 @@ private:
                TfToken const &reprName);
 };
 
+/// A simple drawing task that just executes a render pass.
+class UsdImaging_DrawTask final : public HdTask
+{
+public:
+    UsdImaging_DrawTask(HdRenderPassSharedPtr const &renderPass,
+                        HdRenderPassStateSharedPtr const &renderPassState);
+
+protected:
+    virtual void _Sync(HdTaskContext* ctx) override;
+    virtual void _Execute(HdTaskContext* ctx) override;
+
+private:
+    HdRenderPassSharedPtr _renderPass;
+    HdRenderPassStateSharedPtr _renderPassState;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

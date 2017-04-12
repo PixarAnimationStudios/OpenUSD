@@ -50,6 +50,36 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vec3)
 );
 
+class Hd_DrawTask final : public HdTask
+{
+public:
+    Hd_DrawTask(HdRenderPassSharedPtr const &renderPass,
+                HdRenderPassStateSharedPtr const &renderPassState)
+    : HdTask()
+    , _renderPass(renderPass)
+    , _renderPassState(renderPassState)
+    {
+    }
+
+protected:
+    virtual void _Sync(HdTaskContext* ctx) override
+    {
+        _renderPass->Sync();
+        _renderPassState->Sync();
+    }
+
+    virtual void _Execute(HdTaskContext* ctx) override
+    {
+        _renderPassState->Bind();
+        _renderPass->Execute(_renderPassState);
+        _renderPassState->Unbind();
+    }
+
+private:
+    HdRenderPassSharedPtr _renderPass;
+    HdRenderPassStateSharedPtr _renderPassState;
+};
+
 template <typename T>
 static VtArray<T>
 _BuildArray(T values[], int numValues)
@@ -130,7 +160,10 @@ Hd_TestDriver::Draw(bool withGuides)
 void
 Hd_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
 {
-    _engine.Draw(_sceneDelegate->GetRenderIndex(), renderPass, _renderPassState);
+    HdTaskSharedPtrVector tasks = {
+        boost::make_shared<Hd_DrawTask>(renderPass, _renderPassState)
+    };
+    _engine.Execute(_sceneDelegate->GetRenderIndex(), tasks);
 
     GLF_POST_PENDING_GL_ERRORS();
 }

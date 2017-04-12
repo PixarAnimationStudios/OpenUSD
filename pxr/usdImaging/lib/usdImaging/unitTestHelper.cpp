@@ -31,7 +31,33 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// UsdImaging_DrawTask 
+UsdImaging_DrawTask::UsdImaging_DrawTask(
+        HdRenderPassSharedPtr const &renderPass,
+        HdRenderPassStateSharedPtr const &renderPassState)
+    : HdTask()
+    , _renderPass(renderPass)
+    , _renderPassState(renderPassState)
+{}
 
+/* virtual */
+void
+UsdImaging_DrawTask::_Sync(HdTaskContext* ctx)
+{
+    _renderPass->Sync();
+    _renderPassState->Sync();
+}
+
+/* virtual */
+void
+UsdImaging_DrawTask::_Execute(HdTaskContext* ctx)
+{
+    _renderPassState->Bind();
+    _renderPass->Execute(_renderPassState);
+    _renderPassState->Unbind();
+}
+
+// UsdImaging_TestDriver
 void
 UsdImaging_TestDriver::_Init(UsdStageRefPtr const& usdStage,
                              TfToken const &collectionName,
@@ -111,7 +137,10 @@ UsdImaging_TestDriver::~UsdImaging_TestDriver()
 void
 UsdImaging_TestDriver::Draw()
 {
-    _engine.Draw(_delegate->GetRenderIndex(), _geometryPass, _renderPassState);
+    HdTaskSharedPtrVector tasks = {
+        boost::make_shared<UsdImaging_DrawTask>(_geometryPass, _renderPassState)
+    };
+    _engine.Execute(_delegate->GetRenderIndex(), tasks);
 }
 
 void

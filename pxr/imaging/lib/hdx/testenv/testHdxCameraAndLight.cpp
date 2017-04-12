@@ -94,10 +94,9 @@ static void CameraAndLightTest()
     HdRenderPassSharedPtr renderPass(new HdRenderPass(index.get(), collection));
     HdEngine engine;
 
-    HdTaskSharedPtrVector tasks;
-    tasks.push_back(boost::make_shared<Hd_TestTask>(renderPass,
-                                                    renderPassState));
-
+    HdTaskSharedPtr drawTask = boost::make_shared<Hd_TestTask>(renderPass,
+                                                               renderPassState);
+    HdTaskSharedPtrVector tasks = { drawTask };
 
     GfMatrix4d tx(1.0f);
     tx.SetRow(3, GfVec4f(5, 0, 5, 1.0));
@@ -113,7 +112,7 @@ static void CameraAndLightTest()
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->hull)));
 
-    engine.Draw(*index, renderPass, renderPassState);
+    engine.Execute(*index, tasks);
 
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
 
