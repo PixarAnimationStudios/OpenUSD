@@ -546,11 +546,11 @@ UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
 {
     TfToken relName = _GetConnectionRelName(shadingProp.GetName());
     UsdRelationship rel = shadingProp.GetPrim().GetRelationship(relName);
-    if (not rel) {
+    if (!rel) {
         return false;
     }
 
-    if (not rel.GetTargets(sourcePaths)) {
+    if (!rel.GetTargets(sourcePaths)) {
         TF_WARN("Unable to get targets for relationship <%s>",
                 rel.GetPath().GetText());
         return false;
