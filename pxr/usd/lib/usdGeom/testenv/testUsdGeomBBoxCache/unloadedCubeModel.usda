@@ -1,0 +1,14 @@
+#usda 1.0
+
+def Xform "World" (
+    kind = "group"
+)
+{
+    def Xform "CubeModel" (
+        kind = "component"
+        payload = @./cubePayload.usda@</_class_Cube>
+    )
+    {
+        float3[] extentsHint = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)] 
+    }
+}

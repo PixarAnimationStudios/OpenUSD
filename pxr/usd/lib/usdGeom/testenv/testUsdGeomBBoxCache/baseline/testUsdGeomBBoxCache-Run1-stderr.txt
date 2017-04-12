@@ -1,0 +1,806 @@
+#  SEV_ENABLE_AUTO_CONFIGURATION is overridden to 'false'.  Default is 'true'.  #
+#  USD_ASSIGN_MASTERS_DETERMINISTICALLY is overridden to 'true'.  Default is 'false'.  #
+#################################################################################
+#################################################################################
+########################################################################################
+########################################################################################
+======| 3 Expected Errors Follow @ Line 167 |======
+======| 3 Expected Errors Follow @ Line 167 |======
+======| 3 Expected Errors Follow @ Line 167 |======
+======| 3 Expected Errors Follow @ Line 167 |======
+======| End Of Expected Error Output @ Line 170 |======
+======| End Of Expected Error Output @ Line 170 |======
+======| End Of Expected Error Output @ Line 170 |======
+======| End Of Expected Error Output @ Line 170 |======
+Warning: in _ResolvePrim at line 985 of pxr/usd/lib/usdGeom/bboxCache.cpp -- [BBox Cache] Extent for </ErrorPrims/illAuthoredExtent> is of size 1 instead of 2.
+Warning: in _ResolvePrim at line 985 of pxr/usd/lib/usdGeom/bboxCache.cpp -- [BBox Cache] Extent for </ErrorPrims/illAuthoredSphere> is of size 1 instead of 2.
+[BBox Cache] Dependent cache miss: /
+[BBox Cache] Dependent cache miss: /
+[BBox Cache] Dependent cache miss: /ErrorPrims/illAuthoredExtent
+[BBox Cache] Dependent cache miss: /ErrorPrims/illAuthoredSphere
+[BBox Cache] Dependent cache miss: /ErrorPrims/invalidNumWidthsAndPoints
+[BBox Cache] Dependent cache miss: /Rotated
+[BBox Cache] Dependent cache miss: /Rotated
+[BBox Cache] Dependent cache miss: /Rotated
+[BBox Cache] Dependent cache miss: /Rotated
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /Rotated/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /Rotated/Trans
+[BBox Cache] Dependent cache miss: /Rotated/Trans
+[BBox Cache] Dependent cache miss: /Rotated/Trans
+[BBox Cache] Dependent cache miss: /Rotated/Trans
+[BBox Cache] Dependent cache miss: /Rotated/Trans/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Trans/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Trans/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Trans/Rot45
+[BBox Cache] Dependent cache miss: /Rotated/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /Rotated/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /Rotated/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /Rotated/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /ValidPrims/bezierWExtent
+[BBox Cache] Dependent cache miss: /ValidPrims/empty
+[BBox Cache] Dependent cache miss: /ValidPrims/extentAuthored
+[BBox Cache] Dependent cache miss: /ValidPrims/noGeometricDataAuthored
+[BBox Cache] Dependent cache miss: /WarningPrims/bezierWoWidth
+[BBox Cache] Dependent cache miss: /WarningPrims/bezierWwidth
+[BBox Cache] Dependent cache miss: /WarningPrims/emptyPointsData
+[BBox Cache] Dependent cache miss: /WarningPrims/fourPointsWWidth
+[BBox Cache] Dependent cache miss: /WarningPrims/pointsNoWidth
+[BBox Cache] Dependent cache miss: /WarningPrims/threePointsDecimalWidth
+[BBox Cache] Dependent cache miss: /WarningPrims/zeroVolumeExtent
+[BBox Cache] Dependent cache miss: /World
+[BBox Cache] Dependent cache miss: /World
+[BBox Cache] Dependent cache miss: /World/CubeModel
+[BBox Cache] Dependent cache miss: /World/CubeModel
+[BBox Cache] Dependent cache miss: /__Master_1
+[BBox Cache] Dependent cache miss: /__Master_1
+[BBox Cache] Dependent cache miss: /__Master_1
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate90
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate90
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate90
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /__Master_1/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /__Master_1/Trans
+[BBox Cache] Dependent cache miss: /__Master_1/Trans
+[BBox Cache] Dependent cache miss: /__Master_1/Trans
+[BBox Cache] Dependent cache miss: /__Master_1/Trans/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Trans/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Trans/Rot45
+[BBox Cache] Dependent cache miss: /__Master_1/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /__Master_1/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /__Master_1/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /__Master_2
+[BBox Cache] Dependent cache miss: /__Master_2
+[BBox Cache] Dependent cache miss: /__Master_2
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform/Child
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform/Child
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform/PurposeIsGuide
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform/PurposeIsGuide
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform/PurposeIsProxy
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform/PurposeIsProxy
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform/PurposeIsRender
+[BBox Cache] Dependent cache miss: /__Master_2/primWithLocalXform/PurposeIsRender
+[BBox Cache] Dependent cache miss: /_class_UnitCube
+[BBox Cache] Dependent cache miss: /inactiveCube1
+[BBox Cache] Dependent cache miss: /instanced_Rotated
+[BBox Cache] Dependent cache miss: /instanced_Rotated
+[BBox Cache] Dependent cache miss: /instanced_Rotated
+[BBox Cache] Dependent cache miss: /instanced_parent
+[BBox Cache] Dependent cache miss: /instanced_parent
+[BBox Cache] Dependent cache miss: /instanced_parent
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/Child
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/Child
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/InvisibleChild
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/InvisibleChild
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/InvisibleChild
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/InvisibleChild
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/InvisibleChild/NestedVisible
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/InvisibleChild/NestedVisible
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/InvisibleChild/NestedVisible
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/InvisibleChild/NestedVisible
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/PurposeIsGuide
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/PurposeIsGuide
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/PurposeIsGuide/GuideMesh
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/PurposeIsGuide/GuideMesh
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/PurposeIsProxy
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/PurposeIsProxy
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/PurposeIsRender
+[BBox Cache] Dependent cache miss: /parent/primWithLocalXform/PurposeIsRender
+[BBox Cache] Dependent cache miss: /undefinedCube1
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate90
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate90
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate90
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate90/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Rotate90/Rot45/CubeRot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Trans
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Trans
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Trans
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Trans/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Trans/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Trans/Rot45
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /uninstanced_Rotated/Trans/Rot45/Cube
+[BBox Cache] Dependent cache miss: /uninstanced_parent
+[BBox Cache] Dependent cache miss: /uninstanced_parent
+[BBox Cache] Dependent cache miss: /uninstanced_parent
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform/Child
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform/Child
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform/PurposeIsGuide
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform/PurposeIsGuide
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform/PurposeIsProxy
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform/PurposeIsProxy
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform/PurposeIsRender
+[BBox Cache] Dependent cache miss: /uninstanced_parent/primWithLocalXform/PurposeIsRender
+[BBox Cache] Found cached extentsHint for model /World/CubeModel.
+[BBox Cache] Found cached extentsHint for model /__Master_2/primWithLocalXform.
+[BBox Cache] Found cached extentsHint for model /parent/primWithLocalXform.
+[BBox Cache] Found cached extentsHint for model /parent/primWithLocalXform.
+[BBox Cache] Found cached extentsHint for model /uninstanced_parent/primWithLocalXform.
+[BBox Cache] Setting time: 1.000000  clearUnvarying: true
+[BBox Cache] Setting time: 1.000000  clearUnvarying: true
+[BBox Cache] Setting time: 1.000000  clearUnvarying: true
+[BBox Cache] WARNING: No valid extent authored for </ErrorPrims/illAuthoredExtent>. Computing a fallback value.[BBox Cache] resolved value: /ErrorPrims/illAuthoredExtent [([(-2, -1, 0)...(-2, -1, 0)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] WARNING: No valid extent authored for </ErrorPrims/illAuthoredSphere>.[BBox Cache] resolved value: /ErrorPrims/illAuthoredSphere [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] WARNING: No valid extent authored for </ErrorPrims/invalidNumWidthsAndPoints>. Computing a fallback value.[BBox Cache] WARNING: Unable to compute extent for </ErrorPrims/invalidNumWidthsAndPoints>.[BBox Cache] resolved value: /ErrorPrims/invalidNumWidthsAndPoints [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] WARNING: No valid extent authored for </WarningPrims/bezierWoWidth>. Computing a fallback value.[BBox Cache] resolved value: /WarningPrims/bezierWoWidth [([(-1, 0, -1)...(0, 0, 1)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] WARNING: No valid extent authored for </WarningPrims/bezierWwidth>. Computing a fallback value.[BBox Cache] resolved value: /WarningPrims/bezierWwidth [([(-1.100000023841858, -0.10000000149011612, -1.100000023841858)...(0.10000000149011612, 0.10000000149011612, 1.100000023841858)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] WARNING: No valid extent authored for </WarningPrims/emptyPointsData>. Computing a fallback value.[BBox Cache] resolved value: /WarningPrims/emptyPointsData [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] WARNING: No valid extent authored for </WarningPrims/fourPointsWWidth>. Computing a fallback value.[BBox Cache] resolved value: /WarningPrims/fourPointsWWidth [([(-5.5, -4.5, -6.5)...(6, 5, 8)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] WARNING: No valid extent authored for </WarningPrims/pointsNoWidth>. Computing a fallback value.[BBox Cache] resolved value: /WarningPrims/pointsNoWidth [([(-3, -5, -3)...(2, 1, 3)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] WARNING: No valid extent authored for </WarningPrims/threePointsDecimalWidth>. Computing a fallback value.[BBox Cache] resolved value: /WarningPrims/threePointsDecimalWidth [([(-2.5, 1, -1.75)...(2.25, 3.75, 2.25)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] WARNING: No valid extent authored for </WarningPrims/zeroVolumeExtent>. Computing a fallback value.[BBox Cache] resolved value: /WarningPrims/zeroVolumeExtent [([(-6, 0, 3)...(-6, 0, 3)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] excluded for VISIBILITY. prim: /__Master_2/primWithLocalXform/InvisibleChild visibility at time 1: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /__Master_2/primWithLocalXform/InvisibleChild visibility at time DEFAULT: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild visibility at time 1: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild visibility at time 1: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild visibility at time 1: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild visibility at time DEFAULT: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild visibility at time DEFAULT: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild visibility at time DEFAULT: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild/NestedInvisible visibility at time 1: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild/NestedInvisible visibility at time 1: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild/NestedInvisible visibility at time DEFAULT: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /parent/primWithLocalXform/InvisibleChild/NestedInvisible visibility at time DEFAULT: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /uninstanced_parent/primWithLocalXform/InvisibleChild visibility at time 1: invisible
+[BBox Cache] excluded for VISIBILITY. prim: /uninstanced_parent/primWithLocalXform/InvisibleChild visibility at time DEFAULT: invisible
+[BBox Cache] excluded, not IMAGEABLE type. prim: /, primType: 
+[BBox Cache] excluded, not IMAGEABLE type. prim: /, primType: 
+[BBox Cache] excluded, not IMAGEABLE type. prim: /__Master_1, primType: 
+[BBox Cache] excluded, not IMAGEABLE type. prim: /__Master_1, primType: 
+[BBox Cache] excluded, not IMAGEABLE type. prim: /__Master_1, primType: 
+[BBox Cache] excluded, not IMAGEABLE type. prim: /__Master_2, primType: 
+[BBox Cache] excluded, not IMAGEABLE type. prim: /__Master_2, primType: 
+[BBox Cache] excluded, not IMAGEABLE type. prim: /__Master_2, primType: 
+[BBox Cache] excluded, not IMAGEABLE type. prim: /_class_UnitCube, primType: 
+[BBox Cache] excluded, not IMAGEABLE type. prim: /undefinedCube1, primType: 
+[BBox Cache] hit: /ErrorPrims/illAuthoredExtent [([(-2, -1, 0)...(-2, -1, 0)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /ErrorPrims/illAuthoredSphere [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /ErrorPrims/invalidNumWidthsAndPoints [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false]
+[BBox Cache] hit: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false]
+[BBox Cache] hit: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false]
+[BBox Cache] hit: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false]
+[BBox Cache] hit: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false]
+[BBox Cache] hit: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false]
+[BBox Cache] hit: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false]
+[BBox Cache] hit: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false]
+[BBox Cache] hit: /instanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /instanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /instanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /instanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /instanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /instanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false]
+[BBox Cache] hit: /instanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false]
+[BBox Cache] hit: /instanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false]
+[BBox Cache] hit: /instanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false]
+[BBox Cache] hit: /instanced_parent [([(10.5, 17.5, 81.5)...(11.5, 18.5, 82.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-11, -18, -82, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-0.5, -2.5, -3.5)...(0.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-0.5, -2.5, -3.5)...(0.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-0.5, -2.5, -3.5)...(0.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-0.5, -2.5, -3.5)...(0.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-0.5, -2.5, -3.5)...(0.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-0.5, -2.5, -3.5)...(0.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-0.5, -2.5, -3.5)...(0.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-0.5, -2.5, -3.5)...(0.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-2.5, -2.5, -3.5)...(-1.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-2.5, -2.5, -3.5)...(-1.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-2.5, -2.5, -3.5)...(-1.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-2.5, -2.5, -3.5)...(-1.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-2.5, -2.5, -3.5)...(-1.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-2.5, -2.5, -3.5)...(-1.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-2.5, -2.5, -3.5)...(-1.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(-2.5, -2.5, -3.5)...(-1.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(1.5, -2.5, -3.5)...(2.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(1.5, -2.5, -3.5)...(2.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(1.5, -2.5, -3.5)...(2.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(1.5, -2.5, -3.5)...(2.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(1.5, -2.5, -3.5)...(2.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(1.5, -2.5, -3.5)...(2.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(1.5, -2.5, -3.5)...(2.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform [([(1.5, -2.5, -3.5)...(2.5, -1.5, -2.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform/InvisibleChild [([(5.5, -1.5, -1.5)...(6.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, -0, 1, 0), (1, 1, 1, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform/InvisibleChild [([(5.5, -1.5, -1.5)...(6.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, -0, 1, 0), (1, 1, 1, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform/InvisibleChild [([(6.5, -0.5, -0.5)...(7.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /parent/primWithLocalXform/InvisibleChild [([(6.5, -0.5, -0.5)...(7.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /uninstanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /uninstanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /uninstanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /uninstanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /uninstanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false]
+[BBox Cache] hit: /uninstanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false]
+[BBox Cache] hit: /uninstanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false]
+[BBox Cache] hit: /uninstanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false]
+[BBox Cache] hit: /uninstanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false]
+[BBox Cache] hit: /uninstanced_parent [([(10.5, 17.5, 81.5)...(11.5, 18.5, 82.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-11, -18, -82, 1) )) false]
+[BBox Cache] invalidating /Rotated for time change
+[BBox Cache] invalidating /Rotated for time change
+[BBox Cache] invalidating /Rotated/Rotate135 for time change
+[BBox Cache] invalidating /Rotated/Rotate135 for time change
+[BBox Cache] invalidating /Rotated/Rotate135/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135/Rot45/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135/Rot45/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135/Rot45/Rot45/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135/Rot45/Rot45/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans for time change
+[BBox Cache] invalidating /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans for time change
+[BBox Cache] invalidating /Rotated/Rotate90 for time change
+[BBox Cache] invalidating /Rotated/Rotate90 for time change
+[BBox Cache] invalidating /Rotated/Rotate90/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate90/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate90/Rot45/CubeRot45 for time change
+[BBox Cache] invalidating /Rotated/Rotate90/Rot45/CubeRot45 for time change
+[BBox Cache] invalidating /Rotated/Trans for time change
+[BBox Cache] invalidating /Rotated/Trans for time change
+[BBox Cache] invalidating /Rotated/Trans/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Trans/Rot45 for time change
+[BBox Cache] invalidating /Rotated/Trans/Rot45/Cube for time change
+[BBox Cache] invalidating /Rotated/Trans/Rot45/Cube for time change
+[BBox Cache] invalidating /__Master_1 for time change
+[BBox Cache] invalidating /__Master_1/Rotate135 for time change
+[BBox Cache] invalidating /__Master_1/Rotate135/Rot45 for time change
+[BBox Cache] invalidating /__Master_1/Rotate135/Rot45/Rot45 for time change
+[BBox Cache] invalidating /__Master_1/Rotate135/Rot45/Rot45/Rot45 for time change
+[BBox Cache] invalidating /__Master_1/Rotate135/Rot45/Rot45/Rot45/CubeRot45 for time change
+[BBox Cache] invalidating /__Master_1/Rotate135AndTranslate for time change
+[BBox Cache] invalidating /__Master_1/Rotate135AndTranslate/Rot45 for time change
+[BBox Cache] invalidating /__Master_1/Rotate135AndTranslate/Rot45/Rot45 for time change
+[BBox Cache] invalidating /__Master_1/Rotate135AndTranslate/Rot45/Rot45/CubeTrans for time change
+[BBox Cache] invalidating /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45 for time change
+[BBox Cache] invalidating /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans for time change
+[BBox Cache] invalidating /__Master_1/Rotate90 for time change
+[BBox Cache] invalidating /__Master_1/Rotate90/Rot45 for time change
+[BBox Cache] invalidating /__Master_1/Rotate90/Rot45/CubeRot45 for time change
+[BBox Cache] invalidating /__Master_1/Trans for time change
+[BBox Cache] invalidating /__Master_1/Trans/Rot45 for time change
+[BBox Cache] invalidating /__Master_1/Trans/Rot45/Cube for time change
+[BBox Cache] invalidating /__Master_2 for time change
+[BBox Cache] invalidating /__Master_2/primWithLocalXform for time change
+[BBox Cache] invalidating /__Master_2/primWithLocalXform/Child for time change
+[BBox Cache] invalidating /__Master_2/primWithLocalXform/InvisibleChild for time change
+[BBox Cache] invalidating /__Master_2/primWithLocalXform/InvisibleChild/NestedInvisible for time change
+[BBox Cache] invalidating /__Master_2/primWithLocalXform/InvisibleChild/NestedVisible for time change
+[BBox Cache] invalidating /__Master_2/primWithLocalXform/PurposeIsGuide for time change
+[BBox Cache] invalidating /__Master_2/primWithLocalXform/PurposeIsProxy for time change
+[BBox Cache] invalidating /__Master_2/primWithLocalXform/PurposeIsRender for time change
+[BBox Cache] invalidating /instanced_Rotated for time change
+[BBox Cache] invalidating /instanced_parent for time change
+[BBox Cache] invalidating /parent/primWithLocalXform for time change
+[BBox Cache] invalidating /parent/primWithLocalXform for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/Child for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/InvisibleChild for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/InvisibleChild for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/InvisibleChild/NestedInvisible for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/InvisibleChild/NestedInvisible for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/InvisibleChild/NestedVisible for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/InvisibleChild/NestedVisible for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/PurposeIsGuide for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/PurposeIsGuide/GuideMesh for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/PurposeIsProxy for time change
+[BBox Cache] invalidating /parent/primWithLocalXform/PurposeIsRender for time change
+[BBox Cache] invalidating /uninstanced_Rotated for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135/Rot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135/Rot45/Rot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135AndTranslate for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135AndTranslate/Rot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate90 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate90/Rot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Rotate90/Rot45/CubeRot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Trans for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Trans/Rot45 for time change
+[BBox Cache] invalidating /uninstanced_Rotated/Trans/Rot45/Cube for time change
+[BBox Cache] invalidating /uninstanced_parent for time change
+[BBox Cache] invalidating /uninstanced_parent/primWithLocalXform for time change
+[BBox Cache] invalidating /uninstanced_parent/primWithLocalXform/Child for time change
+[BBox Cache] invalidating /uninstanced_parent/primWithLocalXform/InvisibleChild for time change
+[BBox Cache] invalidating /uninstanced_parent/primWithLocalXform/InvisibleChild/NestedInvisible for time change
+[BBox Cache] invalidating /uninstanced_parent/primWithLocalXform/InvisibleChild/NestedVisible for time change
+[BBox Cache] invalidating /uninstanced_parent/primWithLocalXform/PurposeIsGuide for time change
+[BBox Cache] invalidating /uninstanced_parent/primWithLocalXform/PurposeIsProxy for time change
+[BBox Cache] invalidating /uninstanced_parent/primWithLocalXform/PurposeIsRender for time change
+[BBox Cache] miss: /
+[BBox Cache] miss: /
+[BBox Cache] miss: /ErrorPrims/illAuthoredExtent
+[BBox Cache] miss: /ErrorPrims/illAuthoredSphere
+[BBox Cache] miss: /ErrorPrims/invalidNumWidthsAndPoints
+[BBox Cache] miss: /Rotated
+[BBox Cache] miss: /Rotated
+[BBox Cache] miss: /Rotated
+[BBox Cache] miss: /Rotated
+[BBox Cache] miss: /ValidPrims/bezierWExtent
+[BBox Cache] miss: /ValidPrims/empty
+[BBox Cache] miss: /ValidPrims/extentAuthored
+[BBox Cache] miss: /ValidPrims/noGeometricDataAuthored
+[BBox Cache] miss: /WarningPrims/bezierWoWidth
+[BBox Cache] miss: /WarningPrims/bezierWwidth
+[BBox Cache] miss: /WarningPrims/emptyPointsData
+[BBox Cache] miss: /WarningPrims/fourPointsWWidth
+[BBox Cache] miss: /WarningPrims/pointsNoWidth
+[BBox Cache] miss: /WarningPrims/threePointsDecimalWidth
+[BBox Cache] miss: /WarningPrims/zeroVolumeExtent
+[BBox Cache] miss: /__Master_1
+[BBox Cache] miss: /__Master_1
+[BBox Cache] miss: /__Master_1
+[BBox Cache] miss: /__Master_2
+[BBox Cache] miss: /__Master_2
+[BBox Cache] miss: /__Master_2
+[BBox Cache] miss: /_class_UnitCube
+[BBox Cache] miss: /inactiveCube1
+[BBox Cache] miss: /instanced_Rotated
+[BBox Cache] miss: /instanced_Rotated
+[BBox Cache] miss: /instanced_Rotated
+[BBox Cache] miss: /instanced_parent
+[BBox Cache] miss: /instanced_parent
+[BBox Cache] miss: /instanced_parent
+[BBox Cache] miss: /parent/primWithLocalXform
+[BBox Cache] miss: /parent/primWithLocalXform
+[BBox Cache] miss: /parent/primWithLocalXform
+[BBox Cache] miss: /parent/primWithLocalXform
+[BBox Cache] miss: /parent/primWithLocalXform/InvisibleChild
+[BBox Cache] miss: /parent/primWithLocalXform/InvisibleChild
+[BBox Cache] miss: /parent/primWithLocalXform/InvisibleChild
+[BBox Cache] miss: /parent/primWithLocalXform/InvisibleChild
+[BBox Cache] miss: /undefinedCube1
+[BBox Cache] miss: /uninstanced_Rotated
+[BBox Cache] miss: /uninstanced_Rotated
+[BBox Cache] miss: /uninstanced_Rotated
+[BBox Cache] miss: /uninstanced_parent
+[BBox Cache] miss: /uninstanced_parent
+[BBox Cache] miss: /uninstanced_parent
+[BBox Cache] resolved value: / [([(-1, -1, -1)...(1, 1, 1)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: / [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /Rotated/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /ValidPrims/bezierWExtent [([(-1, -1, -1)...(1, 1, 1)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /ValidPrims/empty [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /ValidPrims/extentAuthored [([(-3, 0, -2)...(1, 2, 1)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /ValidPrims/noGeometricDataAuthored [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /World [([(-1, -1, -1)...(1, 1, 1)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /World [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /World/CubeModel [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1 [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1 [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1 [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_1/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform/Child [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform/Child [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform/PurposeIsGuide [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform/PurposeIsGuide [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform/PurposeIsProxy [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform/PurposeIsProxy [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform/PurposeIsRender [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /__Master_2/primWithLocalXform/PurposeIsRender [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /_class_UnitCube [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /inactiveCube1 [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /instanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /instanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /instanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /instanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /instanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /instanced_parent [([(10.5, 17.5, 81.5)...(11.5, 18.5, 82.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-11, -18, -82, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/Child [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/Child [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/InvisibleChild [([(5.5, -1.5, -1.5)...(6.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, -0, 1, 0), (1, 1, 1, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/InvisibleChild [([(5.5, -1.5, -1.5)...(6.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, -0, 1, 0), (1, 1, 1, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/InvisibleChild [([(6.5, -0.5, -0.5)...(7.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/InvisibleChild [([(6.5, -0.5, -0.5)...(7.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/InvisibleChild/NestedVisible [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/InvisibleChild/NestedVisible [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/InvisibleChild/NestedVisible [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/InvisibleChild/NestedVisible [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/PurposeIsGuide [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/PurposeIsGuide [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/PurposeIsGuide/GuideMesh [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/PurposeIsGuide/GuideMesh [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/PurposeIsProxy [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/PurposeIsProxy [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/PurposeIsRender [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /parent/primWithLocalXform/PurposeIsRender [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /undefinedCube1 [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated [([(-0.5, -7.535533905932739, -0.7071067811865475)...(8.5, -3.292893218813452, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45 [([(7.5, -4.5, -0.5000000000000001)...(8.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135/Rot45/Rot45/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-8, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-8, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -3.2928932188134534, 4.707106781186548)]) (( (1, 0, 0, 0), (0, -1.9967346175427393e-16, -1, 0), (0, 1, -1.7938038903913487e-16, 0), (-8, -7.986938470170957e-16, -4, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45 [([(-0.5, -7.535533905932739, 2.121320343559642)...(0.5, -6.121320343559643, 3.535533905932737)]) (( (1, 0, 0, 0), (0, -0.7071067811865477, -0.7071067811865474, 0), (0, 0.7071067811865474, -0.7071067811865477, 0), (-8, -2.8284271247461907, -2.8284271247461894, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate135AndTranslate/Rot45/Rot45/Rot45/CubeTrans [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate90 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate90/Rot45 [([(-0.5, -4.5, -0.5000000000000001)...(0.5, -3.5, 0.5000000000000001)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (0, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Rotate90/Rot45/CubeRot45 [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Trans [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 4, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Trans/Rot45 [([(3.5, -4.707106781186548, -0.7071067811865475)...(4.5, -3.292893218813452, 0.7071067811865475)]) (( (1, 0, 0, 0), (0, 0.7071067811865475, -0.7071067811865476, 0), (0, 0.7071067811865476, 0.7071067811865475, 0), (-4, 2.82842712474619, -2.8284271247461903, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_Rotated/Trans/Rot45/Cube [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent [([(0.5, 0.5, 0.5)...(1.5, 1.5, 1.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, -1, -1, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent [([(10.5, 17.5, 81.5)...(11.5, 18.5, 82.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-11, -18, -82, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform [([(-1.5, -1.5, -1.5)...(-0.5, -0.5, -0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform/Child [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform/Child [([(-0.5, -0.5, -0.5)...(0.5, 0.5, 0.5)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform/PurposeIsGuide [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform/PurposeIsGuide [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform/PurposeIsProxy [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform/PurposeIsProxy [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform/PurposeIsRender [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
+[BBox Cache] resolved value: /uninstanced_parent/primWithLocalXform/PurposeIsRender [([(3.4028234663852886e38, 3.4028234663852886e38, 3.4028234663852886e38)...(-3.4028234663852886e38, -3.4028234663852886e38, -3.4028234663852886e38)]) (( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )) false] (varying: false)
