@@ -275,6 +275,14 @@ class TestUsdCreateProperties(unittest.TestCase):
             assert attr.HasValue()
             assert attr.HasAuthoredValueOpinion()
 
+            attr.ClearAtTime(1.0)
+            assert not attr.HasValue()
+            assert not attr.HasAuthoredValueOpinion()
+            
+            attr.Set("val", 1.0)
+            assert attr.HasValue()
+            assert attr.HasAuthoredValueOpinion()
+
             attr.Clear()
             assert not attr.HasValue()
             assert not attr.HasAuthoredValueOpinion()
@@ -424,7 +432,7 @@ class TestUsdCreateProperties(unittest.TestCase):
                  Tf.NamedTemporaryFile(suffix='.'+fmt) as targetFile:
 
                 self.assertEqual(os.path.split(rootFile.name)[0],
-                            os.path.split(targetFile.name)[0])
+                                 os.path.split(targetFile.name)[0])
                 print rootFile.name, targetFile.name
 
                 s = Usd.Stage.CreateNew(rootFile.name)
@@ -448,8 +456,6 @@ class TestUsdCreateProperties(unittest.TestCase):
                 arrayAssetValue = arrayAsset.Get()
                 singleAssetQueryValue = singleAssetQuery.Get()
                 arrayAssetQueryValue = arrayAssetQuery.Get()
-
-                print s.GetRootLayer().ExportToString()
 
                 self.assertEqual(singleAssetValue.path, relPath)
                 self.assertTrue(all([ap.path == relPath for ap in arrayAssetValue]))
