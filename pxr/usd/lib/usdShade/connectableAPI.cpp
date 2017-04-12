@@ -538,6 +538,27 @@ UsdShadeConnectableAPI::GetConnectedSource(
     return *source;
 }
 
+/* static  */
+bool 
+UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
+    UsdProperty const &shadingProp, 
+    SdfPathVector *sourcePaths)
+{
+    TfToken relName = _GetConnectionRelName(shadingProp.GetName());
+    UsdRelationship rel = shadingProp.GetPrim().GetRelationship(relName);
+    if (not rel) {
+        return false;
+    }
+
+    if (not rel.GetTargets(sourcePaths)) {
+        TF_WARN("Unable to get targets for relationship <%s>",
+                rel.GetPath().GetText());
+        return false;
+    }
+
+    return true;
+}
+
 /* static */
 bool 
 UsdShadeConnectableAPI::HasConnectedSource(const UsdProperty &shadingProp)

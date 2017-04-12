@@ -60,7 +60,8 @@ class TestUsdShadeConnectability(unittest.TestCase):
         # Create all inputs and connections.
 
         # Create a float interface input on the material.
-        floatInterfaceInput = material.CreateInput("floatInput",
+        matConnectable = material.ConnectableAPI()
+        floatInterfaceInput = matConnectable.CreateInput("floatInput",
                                                    Sdf.ValueTypeNames.Float)
         # default connectability of an interface-input is 'interfaceOnly'
         self.assertEqual(floatInterfaceInput.GetConnectability(), 
@@ -85,8 +86,9 @@ class TestUsdShadeConnectability(unittest.TestCase):
                                                     Sdf.ValueTypeNames.Color3f)
 
         # Create shader inputs.
-        shaderInputFloat = shader.CreateInput("shaderFloat", 
-                                              Sdf.ValueTypeNames.Float)
+        shaderConnectable = shader.ConnectableAPI()
+        shaderInputFloat = shaderConnectable.CreateInput("shaderFloat", 
+            Sdf.ValueTypeNames.Float)
         shaderInputColor = shader.CreateInput("shaderColor",
                                               Sdf.ValueTypeNames.Color3f)
 
@@ -97,9 +99,20 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self.assertTrue(UsdShade.ConnectableAPI.ConnectToSource(shaderInputColor, 
                                                        colorInterfaceInput))
 
+        if UsdShade.Utils.WriteNewEncoding():
+            self.assertEqual(
+                UsdShade.ConnectableAPI.GetRawConnectedSourcePaths(
+                    shaderInputColor),
+                [colorInterfaceInput.GetAttr().GetPath()])
+    
         self._CanConnect(shaderInputFloat, floatInterfaceInput)
         self.assertTrue(UsdShade.ConnectableAPI.ConnectToSource(shaderInputFloat, 
                                                        floatInterfaceInput))
+
+        if UsdShade.Utils.WriteNewEncoding():
+            self.assertEqual(
+                UsdShade.ConnectableAPI.GetRawConnectedSourcePaths(shaderInputFloat),
+                [floatInterfaceInput.GetAttr().GetPath()])
 
         shaderOutputColor = shader.CreateOutput("color", Sdf.ValueTypeNames.Color3f)
         shaderOutputFloat = shader.CreateOutput("fOut", Sdf.ValueTypeNames.Float)

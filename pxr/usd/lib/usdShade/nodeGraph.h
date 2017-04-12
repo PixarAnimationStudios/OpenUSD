@@ -184,6 +184,17 @@ public:
     USDSHADE_API
     operator UsdShadeConnectableAPI () const;
 
+    /// Contructs and returns a UsdShadeConnectableAPI object with this 
+    /// node-graph.
+    /// 
+    /// Note that most tasks can be accomplished without explicitly constructing 
+    /// a UsdShadeConnectable API, since connection-related API such as
+    /// UsdShadeConnectableAPI::ConnectToSource() are static methods, and 
+    /// UsdShadeNodeGraph will auto-convert to a UsdShadeConnectableAPI when 
+    /// passed to functions that want to act generically on a connectable
+    /// UsdShadeConnectableAPI object.
+    UsdShadeConnectableAPI ConnectableAPI() const;
+
     /// \anchor UsdShadeNodeGraph_Interfaces
     /// \name Interface Attributes
     ///

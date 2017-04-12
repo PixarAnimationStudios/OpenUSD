@@ -131,6 +131,12 @@ UsdShadeNodeGraph::operator UsdShadeConnectableAPI () const {
     return UsdShadeConnectableAPI(GetPrim());
 }
 
+UsdShadeConnectableAPI 
+UsdShadeNodeGraph::ConnectableAPI() const
+{
+    return UsdShadeConnectableAPI(GetPrim());
+}
+
 UsdShadeInterfaceAttribute
 UsdShadeNodeGraph::CreateInterfaceAttribute(
         const TfToken& interfaceAttrName,

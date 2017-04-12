@@ -221,6 +221,11 @@ class TestUsdShadeShaders(unittest.TestCase):
         
         UsdShade.ConnectableAPI.ConnectToSource(usdShadeInput, whiterPale, 'Fout')
         self.assertTrue(UsdShade.ConnectableAPI.HasConnectedSource(usdShadeInput))
+
+        self.assertEqual(
+                UsdShade.ConnectableAPI.GetRawConnectedSourcePaths(usdShadeInput),
+                [whiterPale.GetPath().AppendProperty("outputs:Fout")])
+
         self.assertTrue(self._ConnectionsEqual(
                 UsdShade.ConnectableAPI.GetConnectedSource(usdShadeInput),
                 (whiterPale, 'Fout', UsdShade.AttributeType.Output)))

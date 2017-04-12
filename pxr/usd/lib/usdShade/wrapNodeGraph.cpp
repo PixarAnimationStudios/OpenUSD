@@ -112,6 +112,8 @@ namespace {
 
 WRAP_CUSTOM {
     _class
+        .def("ConnectableAPI", &UsdShadeNodeGraph::ConnectableAPI)
+
         .def("CreateInterfaceAttribute", 
              &UsdShadeNodeGraph::CreateInterfaceAttribute,
              (arg("interfaceAttrName"), arg("typeName")))

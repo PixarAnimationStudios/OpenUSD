@@ -126,6 +126,8 @@ namespace {
 
 WRAP_CUSTOM {
     _class
+        .def("ConnectableAPI", &UsdShadeShader::ConnectableAPI)
+
         .def("CreateParameter", &UsdShadeShader::CreateParameter,
              (arg("name"), arg("type")))
         .def("GetParameter", &UsdShadeShader::GetParameter, arg("name"))
