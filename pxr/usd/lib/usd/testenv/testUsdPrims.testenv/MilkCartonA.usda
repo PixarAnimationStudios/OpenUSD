@@ -1,0 +1,44 @@
+#usda 1.0
+(
+    defaultPrim = "MilkCartonA"
+)
+
+def Xform "MilkCartonA" (
+    kind = "prop"
+    variants = {
+        string modelingVariant = "Carton_Opened"
+        string shadingComplexity = "full"
+    }
+    add variantSets = ["modelingVariant", "shadingComplexity"]
+)
+{
+    variantSet "modelingVariant" = {
+        "ALL_VARIANTS" {
+            custom Vec3f[] extentsHint = [(-6.27056, -6.53532, 0), (6.14027, 6.10374, 29.8274)]
+
+        }
+        "Carton_Opened" {
+            custom Vec3f[] extentsHint = [(-6.27056, -6.53532, 0), (6.14027, 6.10374, 29.8274)]
+
+        }
+        "Carton_Sealed" {
+            custom Vec3f[] extentsHint = [(-6.27056, -6.44992, 0), (6.14027, 6.10374, 29.2792)]
+
+        }
+    }
+    variantSet "shadingComplexity" = {
+        "display" {
+
+        }
+        "full" {
+
+        }
+        "modeling" {
+
+        }
+        "none" {
+
+        }
+    }
+}
+

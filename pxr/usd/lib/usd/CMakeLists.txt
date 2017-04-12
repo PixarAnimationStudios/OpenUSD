@@ -131,3 +131,480 @@ else()
             usd
     )
 endif()
+
+pxr_test_scripts(
+    testenv/testUsdFlatten.py
+    testenv/testUsdFlatten2.py
+    testenv/testUsdNotices.py
+    testenv/testUsdMetadata.py
+    testenv/testUsdPayloads.py
+    testenv/testUsdPrims.py
+    testenv/testUsdReferences.py
+    testenv/testUsdRelationships.py
+    testenv/testUsdSpecializes.py
+    testenv/testUsdStageCache.py
+    testenv/testUsdStageLoadUnload.py
+    testenv/testUsdStagePopulationMasks.py
+    testenv/testUsdStage.py
+    testenv/testUsdTimeOffsets.py
+    testenv/testUsdTimeSamples.py
+    testenv/testUsdTreeIterator.py
+    testenv/testUsdValueClips.py
+    testenv/testUsdVariantEditing.py
+    testenv/testUsdVariantFallbacks.py
+    testenv/testUsdVariants.py
+    testenv/testUsdAttributeBlocking.py
+    testenv/testUsdBug119633.py
+    testenv/testUsdBug141491.py
+    testenv/testUsdChangeProcessing.py
+    testenv/testUsdClasses.py
+    testenv/testUsdCreateProperties.py
+    testenv/testUsdDataFormats.py
+    testenv/testUsdFileFormats.py
+    testenv/testUsdInherits.py
+    testenv/testUsdInstanceProxy.py
+    testenv/testUsdInstancing.py
+    testenv/testUsdModel.py
+)
+
+pxr_build_test(testUsdAttributeBlockingCpp
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdAttributeBlocking.cpp
+)
+
+pxr_build_test(testUsdAttributeInterpolationCpp
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdAttributeInterpolationCpp.cpp
+)
+
+pxr_build_test(testUsdCreateAttributeCpp
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdCreateAttributeCpp.cpp
+)
+
+pxr_build_test(testUsdMetadataCpp
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdMetadata.cpp
+)
+
+pxr_build_test(testUsdPrimGetDescendants
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdPrimGetDescendants.cpp
+)
+
+pxr_build_test(testUsdStageNotification
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdStageNotification.cpp
+)
+
+pxr_build_test(testUsdStageNoPython
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdStageNoPython.cpp
+)
+
+pxr_build_test(testUsdTemplatedIO
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdTemplatedIO.cpp
+)
+
+pxr_build_test(testUsdStageThreading
+    LIBRARIES
+        arch
+        tf
+        work
+        sdf
+        usd
+        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+    CPPFILES
+        testenv/testUsdStageThreading.cpp
+)
+
+pxr_build_test(testUsdThreadedAuthoring
+    LIBRARIES
+        arch
+        tf
+        work
+        sdf
+        usd
+    CPPFILES
+        testenv/testUsdThreadedAuthoring.cpp
+)
+
+pxr_build_test(testUsdSchemaBase
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdSchemaBase.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdStageThreading
+    DEST testUsdStageThreading
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFlatten
+    DEST testUsdFlatten
+)
+
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFlatten2
+    DEST testUsdFlatten2
+)
+
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFlatten2
+    DEST testUsdFlatten3
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFlatten2
+    DEST testUsdFlatten4
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFileFormats
+    DEST testUsdFileFormats
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdVariantEditing.testenv
+    DEST testUsdEditVariantEditing
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdInstancing
+    DEST testUsdInstancing
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdInstanceProxy
+    DEST testUsdInstanceProxy
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdMetadata
+    DEST testUsdMetadata
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdNotices.testenv
+    DEST testUsdNotices
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdPrims.testenv
+    DEST testUsdPrims
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdPrimGetDescendants.testenv
+    DEST testUsdPrimGetDescendants
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdVariantEditing.testenv
+    DEST testUsdVariantEditing
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdVariantFallbacks.testenv
+    DEST testUsdVariantFallbacks
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdSchemaGen
+    DEST testUsdSchemaGen
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdBug119633.testenv
+    DEST testUsdBug119633
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdBug141491.testenv
+    DEST testUsdBug141491
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdStageNoPython.testenv
+    DEST testUsdStageNoPython
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdTreeIterator
+    DEST testUsdTreeIterator
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdVariants
+    DEST testUsdVariants
+)
+
+pxr_register_test(testUsdAttributeBlocking
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeBlocking"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAttributeBlockingCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeBlockingCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdVariantEditing
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdVariantEditing"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdVariantFallbacks
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdVariantFallbacks"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdVariants
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdVariants"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAttributeInterpolationCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeInterpolationCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdBug119633
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdBug119633"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdBug141491
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdBug141491"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdChangeProcessing
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdChangeProcessing"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdClasses
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdClasses"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdCreateProperties
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCreateProperties"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdCreateAttributeCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCreateAttributeCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdInstancing
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInstancing"
+    ENV
+        USD_ASSIGN_MASTERS_DETERMINISTICALLY=1
+)
+
+pxr_register_test(testUsdInstanceProxy
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInstanceProxy"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdDataFormats
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdDataFormats"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeSamples
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeSamples"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdReferences
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdReferences"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTemplatedIO
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTemplatedIO"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdPrimGetDescendants
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPrimGetDescendants"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdPrims
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPrims"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdFileFormats
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFileFormats"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdMetadataCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadataCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdStageNoPython
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStageNoPython"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdStageNotification
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStageNotification"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdStageThreading
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStageThreading"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdThreadedAuthoring
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdThreadedAuthoring"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdStage
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStage"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeOffsets"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTreeIterator
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTreeIterator"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdStageLoadUnload
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStageLoadUnload"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdPayloads
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPayloads"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdInherits
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInherits"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdModel
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdModel"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSpecializes
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSpecializes"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdMetadata
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadata"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdFlatten
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFlatten"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdFlatten2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFlatten2 BasicInstancingAndVariants/root.usda"
+    STDOUT_REDIRECT flat_BasicInstancingAndVariants.usda
+    DIFF_COMPARE flat_BasicInstancingAndVariants.usda
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdFlatten3
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFlatten2 BasicInstancing/root.usda"
+    STDOUT_REDIRECT flat_BasicInstancing.usda
+    DIFF_COMPARE flat_BasicInstancing.usda
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdFlatten4
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFlatten2 BasicInstancingAndNestedInstances/root.usda"
+    STDOUT_REDIRECT flat_BasicInstancingAndNestedInstances.usda
+    DIFF_COMPARE flat_BasicInstancingAndNestedInstances.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ASSIGN_MASTERS_DETERMINISTICALLY=1
+)
+
+pxr_register_test(testUsdNotices
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNotices"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdRelationships
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRelationships"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSchemaBase
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaBase"
+    EXPECTED_RETURN_CODE 0
+)

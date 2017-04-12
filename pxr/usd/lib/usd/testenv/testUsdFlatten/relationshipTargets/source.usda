@@ -1,0 +1,16 @@
+#usda 1.0
+
+def "bar" (
+    instanceable = True
+    references = @./asset.usda@</main>
+)
+{
+    rel foo = </bar/baz>
+
+    def "baz" (
+        instanceable = True
+    )
+    {
+
+    }
+}

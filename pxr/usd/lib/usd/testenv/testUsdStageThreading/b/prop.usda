@@ -1,0 +1,13 @@
+#usda 1.0
+
+def Scope "Prop"
+{
+    def Scope "geom"
+    {
+        double x = 1.0
+    }
+
+    def Scope "anim"
+    {
+    }
+}

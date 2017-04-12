@@ -1,0 +1,48 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates the expected behavior with instances
+    that are nested in namespace. The same restrictions on overrides on
+    descendant objects apply to all instances, including the nested ones.
+    """
+)
+
+over "Flattened_Master_1"
+{
+    def "PropInstance_1" (
+        instanceable = true
+        add references = </Flattened_Master_2>
+    )
+    {
+    }
+
+    def "PropInstance2" (
+        instanceable = true
+        add references = </Flattened_Master_2>
+    )
+    {
+    }
+
+    def "PropNotAnInstance_1"
+    {
+        def "geom"
+        {
+        }
+    }
+}
+
+over "Flattened_Master_2"
+{
+    def "geom"
+    {
+    }
+}
+
+def "Set_1" (
+    instanceable = true
+    add references = </Flattened_Master_1>
+)
+{
+}
+
+

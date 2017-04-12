@@ -1,0 +1,40 @@
+#usda 1.0
+(
+    endFrame = 101
+    endTimeCode = 104
+    startFrame = 101
+    startTimeCode = 101
+)
+
+def Xform "World" (
+    customData = {
+        bool zUp = 1
+    }
+    kind = "group"
+)
+{
+    def Xform "fx" (
+        kind = "group"
+    )
+    {
+        def Xform "Particles_Splash" (
+            kind = "component"
+        )
+        {
+            def Points "points"
+            {
+                Vec3f[] extent
+                PointFloat[] points
+                custom int[] primvars:id (
+                    elementSize = 1
+                    interpolation = "varying"
+                )
+                VectorFloat[] velocities
+                float[] widths
+                custom Matrix4d xformOp:transform
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+    }
+}
+

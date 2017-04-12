@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "WithManifestClip" (
+    clipActive = [(0, 0), (2, 1)]
+    clipAssetPaths = [@./clip_1.usda@, @./clip_2.usda@]
+    clipPrimPath = "/Clip"
+    clipTimes = [(0, 0), (1, 1), (2, 0), (3, 1)]
+    clipManifestAssetPath = @./clip_manifest.usda@
+    references = @./ref.usda@</Ref>
+)
+{
+}

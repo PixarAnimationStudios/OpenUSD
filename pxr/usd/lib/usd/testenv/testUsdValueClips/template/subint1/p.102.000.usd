@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    endTimeCode = 102
+    startTimeCode = 102
+)
+
+def Xform "World" (
+    customData = {
+        bool zUp = 1
+    }
+    kind = "group"
+)
+{
+    def Xform "fx" (
+        kind = "group"
+    )
+    {
+        def Xform "Particles_Splash" (
+            kind = "component"
+        )
+        {
+            def Points "points"
+            {
+                Vec3f[] extent.timeSamples = {
+                    102: [(102, 102, 102), (102, 102, 102)],
+                }
+            }
+        }
+    }
+}
+

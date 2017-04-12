@@ -1,0 +1,7 @@
+#usda 1.0
+
+def Scope "Payload"
+{
+    def Scope "PayloadChild" {}
+    def Scope "UndefinedModelChild" {}
+}

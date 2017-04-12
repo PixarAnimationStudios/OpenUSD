@@ -1,0 +1,17 @@
+#usda 1.0
+
+class "_class_Prop"
+{
+}
+
+def "Prop" (
+    inherits = </_class_Prop>
+)
+{
+    double a = 1.0
+
+    def "geom"
+    {
+        double x = 1.0
+    }
+}

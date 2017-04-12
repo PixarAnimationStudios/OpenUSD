@@ -1,0 +1,30 @@
+#usda 1.0
+
+class Model "_class_Model"
+{
+}
+
+def Model "Model" (
+    kind = "model"
+    inherits = </_class_Model>
+)
+{
+    float ref = 1.0
+    float ref.timeSamples = {
+        5: 5.0,
+        10: 10.0,
+        15: 15.0,
+        20: 20.0
+    }
+
+    def "Child"
+    {
+        float attr = 1.0
+        float attr.timeSamples = {
+            5: 5.0,
+            10: 10.0,
+            15: 15.0,
+            20: 20.0
+        }
+    }
+}

@@ -1,0 +1,21 @@
+#usda 1.0
+
+def "Set"
+{
+    def "props"
+    {
+        def "Prop_1" (
+            payload = @./prop.usda@</Prop>
+            instanceable = True
+        )
+        {
+        }
+
+        def "Prop_2" (
+            payload = @./prop.usda@</Prop>
+            instanceable = True
+        )
+        {
+        }
+    }
+}

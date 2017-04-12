@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "SingleClip" (
+    clipAssetPaths = [@./clip.usda@]
+    clipPrimPath = "/Model"
+    clipActive = [(0, 0)]
+
+    references = @./ref.usda@</Model>
+)
+{
+}

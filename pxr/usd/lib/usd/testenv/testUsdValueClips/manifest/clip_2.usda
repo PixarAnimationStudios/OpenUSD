@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "Clip"
+{
+    double notInManifestAndInClip.timeSamples = {
+        0: 0.0,
+        1: -10.0,
+    }
+
+    uniform double uniformInManifestAndInClip = 0.0
+}
