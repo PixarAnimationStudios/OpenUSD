@@ -1,11 +1,7 @@
+# Doxyfile 1.8.4
+
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project.
-#
-# ---------------------------------------------------------------------------
-# It targets Doxygen versions 1.84 and later!!!!!!!!!!!
-# See http://wiki.pixar.com/display/PPL/Pushing+out+New+USD+Doxygen+Docs
-# For instructions on building public USD Dox
-# ---------------------------------------------------------------------------
 #
 # All text after a double hash (##) is considered a comment and is placed
 # in front of the TAG it is preceding .
@@ -749,8 +745,27 @@ EXCLUDE_PATTERNS       = *~ \
 
 EXCLUDE_SYMBOLS        = Usd_* \
                          UsdGeom_* \
+                         UsdRi_* \
+                         UsdShade_* \
+                         UsdHydra_* \
+                         UsdUI_* \
+                         UsdUtils_* \
                          Sdf_* \
-                         Pcp_* 
+                         Pcp_* \
+                         Ar_* \
+                         Vt_* \
+                         Tracelite_* \
+                         Plug_* \
+                         Js_* \
+                         Tf_* \
+                         Work_* \
+                         Arch_* \
+                         Hd_* \
+                         Hdx_* \
+                         HdSt_* \
+                         Glf_* \
+                         UsdImaging_* \
+                         UsdImagingGL_* 
                          
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or
