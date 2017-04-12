@@ -148,7 +148,6 @@ _GatherShadingParameters(
     const UsdShadeShader &shaderSchema, 
     const string &handle,
     double currentTime,
-
     GroupBuilder& nodesBuilder,
     GroupBuilder& paramsBuilder,
     GroupBuilder& interfaceBuilder,
@@ -159,48 +158,46 @@ _GatherShadingParameters(
     UsdPrim prim = shaderSchema.GetPrim();
     string primName = prim.GetName();
 
-    std::vector<UsdShadeParameter> shaderParams = shaderSchema.GetParameters();
-    TF_FOR_ALL(shadeParamIter, shaderParams) {
-        UsdShadeParameter shaderParam = *shadeParamIter;
-        std::string inputParamId = shaderParam.GetAttr().GetName();
+    std::vector<UsdShadeInput> shaderInputs = shaderSchema.GetInputs();
+    TF_FOR_ALL(shaderInputIter, shaderInputs) {
+        UsdShadeInput shaderInput = *shaderInputIter;
+        std::string inputId = shaderInput.GetFullName();
 
         // We do not try to extract presentation metadata from parameters -
         // only material interface attributes should bother recording such.
-        
-        if (shaderParam.IsConnected()) {
-            UsdShadeConnectableAPI source;
-            TfToken outputName;
-            UsdShadeAttributeType sourceType;
+        UsdShadeConnectableAPI source;
+        TfToken outputName;
+        UsdShadeAttributeType sourceType;
 
-            if (shaderParam.GetConnectedSource(&source, &outputName, &sourceType)) 
-            {
-                std::string targetHandle = _CreateShadingNode(
-                        source.GetPrim(), 
-                        currentTime,
-                        nodesBuilder, 
-                        interfaceBuilder,
-                        targetName,
-                        flatten);
+        if (UsdShadeConnectableAPI::GetConnectedSource(shaderInput, 
+                &source, &outputName, &sourceType))
+        {
+            std::string targetHandle = _CreateShadingNode(
+                    source.GetPrim(), 
+                    currentTime,
+                    nodesBuilder, 
+                    interfaceBuilder,
+                    targetName,
+                    flatten);
 
-                // Check the relationship representing this connection
-                // to see if the targets come from a base material.
-                // Ignore them if so.
-                const TfToken relName = shaderParam.GetConnectionRelName();
-                const UsdRelationship rel = prim.GetRelationship(relName);
-                if (flatten || 
-                    !PxrUsdKatana_AreRelTargetsFromBaseMaterial(rel)) {
-                    // These targets are local, so include them.
-                    connectionsBuilder.set(
-                        inputParamId, 
-                        FnKat::StringAttribute(
-                            outputName.GetString() + "@" + targetHandle));
-                }
+            // Check the relationship representing this connection
+            // to see if the targets come from a base material.
+            // Ignore them if so.
+            
+
+            if (flatten || 
+                !UsdShadeConnectableAPI::IsSourceFromBaseMaterial(shaderInput)) {
+                // These targets are local, so include them.
+                connectionsBuilder.set(
+                    inputId, 
+                    FnKat::StringAttribute(
+                        outputName.GetString() + "@" + targetHandle));
             }
         }
 
         // produce the value here and let katana handle the connection part
         // correctly..
-        UsdAttribute attr = shaderParam.GetAttr();
+        UsdAttribute attr = shaderInput.GetAttr();
         VtValue vtValue;
         if (!attr.Get(&vtValue, currentTime)) {
             continue;
@@ -210,7 +207,7 @@ _GatherShadingParameters(
         // empty -- we will inherit it from the parent katana material.
         if (flatten || 
             !PxrUsdKatana_IsAttrValFromBaseMaterial(attr)) {
-            paramsBuilder.set(inputParamId,
+            paramsBuilder.set(inputId,
                     PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true));
         }
     }
@@ -716,29 +713,29 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
 {
     UsdStageRefPtr stage = prim.GetStage();
 
-
     // TODO: Right now, the exporter doesn't always move thing into
     // the right spot.  for example, we have "Paint_Base_Color" on
     // /PaintedMetal_Material.Paint_Base_Color
-    // Which makes it so we can't use the riLookAPI.GetInterfaceAttributes
+    // Which makes it so we can't use the materialSchema.GetInterfaceInputs()
     // (because /PaintedMetal_Material.Paint_Base_Color doesn't have the
-    // corresponding "ri" interface connection).
+    // corresponding "ri" interfaceInput connection).
     //
     // that should really be on
     // /PaintedMetal_Material/Paint_.Base_Color  which does have that
     // connection.
     // 
     UsdShadeMaterial materialSchema(prim);
-    std::vector<UsdShadeInterfaceAttribute> interfaceAttrs = materialSchema.GetInterfaceAttributes(TfToken());
-    TF_FOR_ALL(interfaceAttrIter, interfaceAttrs) {
-        UsdShadeInterfaceAttribute interfaceAttribute = *interfaceAttrIter;
+    std::vector<UsdShadeInput> interfaceInputs = 
+        materialSchema.GetInterfaceInputs();
+    TF_FOR_ALL(interfaceInputIter, interfaceInputs) {
+        UsdShadeInput interfaceInput = *interfaceInputIter;
 
-        const TfToken& paramName = interfaceAttribute.GetName();
+        const TfToken& paramName = interfaceInput.GetBaseName();
         const std::string renamedParam = paramPrefix + paramName.GetString();
 
         // handle parameters with values 
         VtValue attrVal;
-        if (interfaceAttribute.Get(&attrVal) && !attrVal.IsEmpty()) {
+        if (interfaceInput.GetAttr().Get(&attrVal) && !attrVal.IsEmpty()) {
             materialBuilder.set(
                     TfStringPrintf("parameters.%s", renamedParam.c_str()),
                     PxrUsdKatanaUtils::ConvertVtValueToKatAttr(attrVal, true));
@@ -746,24 +743,32 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
 
     }
 
-    UsdRiLookAPI riLookAPI(prim);
-    std::vector<UsdShadeInterfaceAttribute> riInterfaceAttrs = riLookAPI.GetInterfaceAttributes();
-    TF_FOR_ALL(interfaceAttrIter, riInterfaceAttrs) {
-        UsdShadeInterfaceAttribute interfaceAttribute = *interfaceAttrIter;
+    UsdRiLookAPI lookAPI(prim);
+    UsdShadeNodeGraph::InterfaceInputConsumersMap interfaceInputConsumers =
+        lookAPI.ComputeInterfaceInputConsumersMap(
+            /*computeTransitiveMapping*/ true);
 
-        const TfToken& paramName = interfaceAttribute.GetName();
+    for (const auto &interfaceInputAndConsumers : interfaceInputConsumers) {
+        const UsdShadeInput &interfaceInput = interfaceInputAndConsumers.first;
+
+        // Skip invalid interface inputs.
+        if (!interfaceInput.GetAttr()) { 
+            continue;
+        }
+
+        const std::vector<UsdShadeInput> &consumers = 
+            interfaceInputAndConsumers.second;
+
+        const TfToken& paramName = interfaceInput.GetBaseName();
         const std::string renamedParam = paramPrefix + paramName.GetString();
 
-        // handle parameter connections
-        std::vector<UsdShadeParameter> recipients = riLookAPI.GetInterfaceRecipientParameters(
-                interfaceAttribute);
-        TF_FOR_ALL(recipientIter, recipients) {
-            UsdShadeParameter recipient = *recipientIter;
+        for (const UsdShadeInput &consumer : consumers) {
+            UsdPrim consumerPrim = consumer.GetPrim();
+            
+            TfToken inputName = consumer.GetFullName();
 
-            UsdPrim recipientPrim = recipient.GetAttr().GetPrim();
-            TfToken inputName = recipient.GetAttr().GetName();
-
-            std::string handle = PxrUsdKatanaUtils::GenerateShadingNodeHandle(recipientPrim);
+            std::string handle = PxrUsdKatanaUtils::GenerateShadingNodeHandle(
+                consumerPrim);
 
             std::string srcKey = renamedParam + ".src";
 
@@ -780,13 +785,13 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
 
         // USD's group delimeter is :, whereas Katana's is .
         std::string page = TfStringReplace(
-                interfaceAttribute.GetDisplayGroup(), ":", ".");
+                interfaceInput.GetDisplayGroup(), ":", ".");
         if (!page.empty()) {
             std::string pageKey = renamedParam + ".hints.page";
             interfaceBuilder.set(pageKey, FnKat::StringAttribute(page), true);
         }
 
-        std::string doc = interfaceAttribute.GetDocumentation();
+        std::string doc = interfaceInput.GetDocumentation();
         if (!doc.empty()) {
             std::string docKey = renamedParam + ".hints.help";
 
