@@ -187,7 +187,9 @@ void
 Pcp_IndexingUpdate(PcpPrimIndex const *index,
                    const PcpNodeRef& node, std::string &&msg);
 
+PCP_API
 std::string Pcp_FormatSite(const PcpSite& site);
+PCP_API
 std::string Pcp_FormatSite(const PcpLayerStackSite& site);
 
 PXR_NAMESPACE_CLOSE_SCOPE
