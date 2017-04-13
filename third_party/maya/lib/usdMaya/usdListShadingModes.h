@@ -21,10 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _usdListShadingModes_usdListShadingModes_h_
-#define _usdListShadingModes_usdListShadingModes_h_
+#ifndef PXRUSDMAYA_USD_LIST_SHADING_MODES_H
+#define PXRUSDMAYA_USD_LIST_SHADING_MODES_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include <maya/MPxCommand.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -32,16 +33,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 class usdListShadingModes : public MPxCommand
 {
 public:
+    PXRUSDMAYA_API
     usdListShadingModes();
+    PXRUSDMAYA_API
     virtual ~usdListShadingModes();
 
+    PXRUSDMAYA_API
     virtual MStatus doIt(const MArgList& args);
     virtual bool  isUndoable () const { return false; };
 
+    PXRUSDMAYA_API
     static MSyntax  createSyntax();
+    PXRUSDMAYA_API
     static void* creator();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // _usdListShadingModes_usdListShadingModes_h_
+#endif  // PXRUSDMAYA_USD_LIST_SHADING_MODES_H
