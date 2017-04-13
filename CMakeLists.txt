@@ -63,3 +63,41 @@ if (${PXR_BUILD_MAYA_PLUGIN})
         _enableThirdPartyPlugin("maya")
     endif()
 endif()
+
+if (${PXR_BUILD_DOCUMENTATION})                                                  
+
+    # Ensure we have doxygen+graphviz available
+    find_program(DOXYGEN_EXECUTABLE                                              
+        NAMES doxygen                                                            
+    )                                                                            
+    if (NOT EXISTS ${DOXYGEN_EXECUTABLE})                                        
+        message(WARNING "Cannot run doc generation, doxygen not found.")           
+        return()                                                                 
+    endif()                                                                      
+
+    find_program(DOT_EXECUTABLE
+        NAMES dot 
+    )                                                                            
+    if (NOT EXISTS ${DOT_EXECUTABLE})                                        
+        message(WARNING "Cannot run doc generation, dot not found.")           
+        return()                                                                 
+    endif()                          
+    
+    set(DOCS_DIR "${CMAKE_BINARY_DIR}") 
+    set(GEN_SCRIPT "${PROJECT_SOURCE_DIR}/cmake/macros/generateDocs.py")         
+    set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/pxr")
+    set(DOXYGEN_CONFIG "${CMAKE_SOURCE_DIR}/pxr/usd/lib/usd/Doxyfile")
+                                                                                 
+    add_custom_target(                                                           
+        documentation                                                            
+        ALL                                                                      
+        COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${SOURCE_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOXYGEN_CONFIG} ${DOT_EXECUTABLE}
+    ) 
+
+    set(BUILT_DOCS "${DOCS_DIR}/docs/doxy_html")
+    set(INST_DOCS  "${CMAKE_INSTALL_PREFIX}/docs")
+    install(
+        DIRECTORY ${BUILT_DOCS}
+        DESTINATION ${INST_DOCS}
+    )
+endif()   
