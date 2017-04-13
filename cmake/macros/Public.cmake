@@ -247,18 +247,20 @@ function(pxr_shared_library LIBRARY_NAME)
         set(rpath ${CMAKE_INSTALL_RPATH})
 
         # Python modules need to be able to access their corresponding
-        # wrapped library, so compute a relative path and append that to
-        # the module's rpath.
-        # 
-        # XXX: Only do this on Linux for now, since $ORIGIN only exists
-        # on that platform. We will need to figure out the correct thing
-        # to do here for other platforms.
+        # wrapped library so append to the rpath.
         if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            # Use $ORIGIN on Linux to allow relocatable installs.
             file(RELATIVE_PATH
                 PYTHON_RPATH
                 "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}"
                 "${CMAKE_INSTALL_PREFIX}/${sl_PYTHON_WRAPPED_LIB_PREFIX}")
             _append_to_rpath(${rpath} "$ORIGIN/${PYTHON_RPATH}" rpath)
+        elseif(APPLE)
+            # SIP on OSX disallows relative rpaths.
+            _append_to_rpath(
+                ${rpath}
+                "${CMAKE_INSTALL_PREFIX}/${sl_PYTHON_WRAPPED_LIB_PREFIX}"
+                rpath)
         endif()
 
         # Python modules must be suffixed with .pyd on Windows and .so on

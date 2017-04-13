@@ -343,7 +343,7 @@ function(_append_to_rpath orig_rpath new_rpath output)
     string(REGEX REPLACE "/+$" "" new_rpath ${new_rpath})
     string(FIND ${orig_rpath} ${new_rpath} rpath_exists)
     if (rpath_exists EQUAL -1)
-        set(${output} "${orig_rpath}:${new_rpath}" PARENT_SCOPE)
+        set(${output} "${orig_rpath};${new_rpath}" PARENT_SCOPE)
     endif()
 endfunction() # _add_to_rpath
 
