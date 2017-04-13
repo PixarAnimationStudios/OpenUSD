@@ -240,9 +240,9 @@ ArDefaultResolver::GetModificationTimestamp(
     // Since the default resolver always resolves paths to local
     // paths, we can just look at the mtime of the file indicated
     // by resolvedPath.
-    struct stat fileInfo;
-    if (stat(resolvedPath.c_str(), &fileInfo) == 0) {
-        return VtValue(ArchGetModificationTime(fileInfo));
+    double time;
+    if (ArchGetModificationTime(resolvedPath.c_str(), &time)) {
+        return VtValue(time);
     }
     return VtValue();
 }

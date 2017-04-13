@@ -112,6 +112,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     #define ARCH_REL_PATH_IDENT "./"
 #endif
 
+#if defined(ARCH_OS_WINDOWS)
+typedef struct __stat64 ArchStatType;
+#else
+typedef struct stat ArchStatType;
+#endif
+
 /// \file fileSystem.h
 /// Architecture dependent file system access
 /// \ingroup group_arch_SystemFunctions
@@ -179,13 +185,20 @@ ARCH_API int64_t ArchGetFileLength(FILE *file);
 /// This returns true if the struct pointer is valid, and the stat indicates
 /// the target is writable by the effective user, effective group, or all
 /// users.
-ARCH_API bool ArchStatIsWritable(const struct stat *st);
+ARCH_API bool ArchStatIsWritable(const ArchStatType *st);
+
+/// Returns the modification time (mtime) in seconds for a file.
+///
+/// This function stores the modification time with as much precision as is
+/// available in the stat structure for the current platform in \p time and
+/// returns \c true on success, otherwise just returns \c false.
+ARCH_API bool ArchGetModificationTime(const char* pathname, double* time);
 
 /// Returns the modification time (mtime) in seconds from the stat struct.
 ///
 /// This function returns the modification time with as much precision as is
 /// available in the stat structure for the current platform.
-ARCH_API double ArchGetModificationTime(const struct stat& st);
+ARCH_API double ArchGetModificationTime(const ArchStatType& st);
 
 /// Return the path to a temporary directory for this platform.
 ///

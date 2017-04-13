@@ -87,7 +87,7 @@ int ArchRmDir(const char* path)
 #endif
 
 bool
-ArchStatIsWritable(const struct stat *st)
+ArchStatIsWritable(const ArchStatType *st)
 {
 #if defined(ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
     if (st) {
@@ -107,8 +107,24 @@ ArchStatIsWritable(const struct stat *st)
 #endif
 }
 
+bool
+ArchGetModificationTime(const char* pathname, double* time)
+{
+    ArchStatType st;
+#if defined(ARCH_OS_WINDOWS)
+    if (_stat64(pathname, &st) == 0)
+#else
+    if (stat(pathname, &st) == 0)
+#endif
+    {
+        *time = ArchGetModificationTime(st);
+        return true;
+    }
+    return false;
+}
+
 double
-ArchGetModificationTime(const struct stat& st)
+ArchGetModificationTime(const ArchStatType& st)
 {
 #if defined(ARCH_OS_LINUX)
     return st.st_mtim.tv_sec + 1e-9*st.st_mtim.tv_nsec;
