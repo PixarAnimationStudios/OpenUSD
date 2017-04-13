@@ -350,7 +350,7 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     // seems to be the only way to ensure that the assembly's namespace and
     // container are setup correctly.
     const std::string assemblyCmd =
-        TfStringPrintf("cmds.assembly(name=\'%s\', type=\'%s\')",
+        TfStringPrintf("import maya.cmds; maya.cmds.assembly(name=\'%s\', type=\'%s\')",
                        prim.GetName().GetText(),
                        assemblyTypeName.c_str());
     MString newAssemblyName;
