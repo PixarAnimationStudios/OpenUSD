@@ -166,7 +166,7 @@ _ClipDerivationMsg(const TfToken& metadataName,
                    const V& v)
 {
     TF_DEBUG(USD_CLIPS).Msg(
-        "%s for prim <%s> derived: %s",
+        "%s for prim <%s> derived: %s\n",
         metadataName.GetText(),
         node.GetRootNode().GetPath().GetText(),
         TfStringify(v).c_str());
@@ -214,8 +214,7 @@ _DeriveClipInfo(const std::string& templateAssetPath,
                 boost::optional<VtVec2dArray>* clipActive,
                 boost::optional<VtArray<SdfAssetPath>>* clipAssetPaths,
                 const PcpNodeRef& node,
-                const SdfLayerHandle& layer,
-                const PcpLayerStackPtr& layerStack)
+                const SdfLayerHandle& layer)
 {
     if (stride == 0) {
         TF_WARN("Invalid clipTemplateStride %f on <%s> in LayerStack %s "
@@ -284,7 +283,7 @@ _DeriveClipInfo(const std::string& templateAssetPath,
     *clipAssetPaths = VtArray<SdfAssetPath>();
 
     const ArResolverContextBinder binder(
-        layerStack->GetIdentifier().pathResolverContext);
+        node.GetLayerStack()->GetIdentifier().pathResolverContext);
     ArResolverScopedCache resolverScopedCache;
     auto& resolver = ArGetResolver();
 
@@ -337,9 +336,6 @@ Usd_ResolveClipInfo(
     bool nontemplateMetadataSeen = false;
     bool templateMetadataSeen    = false;
 
-    boost::optional<double> templateStartTime;
-    boost::optional<double> templateEndTime;
-    boost::optional<double> templateStride;
     boost::optional<std::string> templateAssetPath;
 
     for (size_t i = 0, j = layers.size(); i != j; ++i) {
@@ -431,14 +427,16 @@ Usd_ResolveClipInfo(
                 }
             }
         } else {
+            boost::optional<double> templateStartTime;
+            boost::optional<double> templateEndTime;
+            boost::optional<double> templateStride;
+
             if (!templateStride) {
                 double clipTemplateStride;
                 if (layer->HasField(primPath, UsdTokens->clipTemplateStride,
                                     &clipTemplateStride)) {
                     _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStride); 
-                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
-                    layerOffset.SetOffset(0);
-                    templateStride = layerOffset * clipTemplateStride;
+                    templateStride = clipTemplateStride;
                 }
             }
 
@@ -447,8 +445,7 @@ Usd_ResolveClipInfo(
                 if (layer->HasField(primPath, UsdTokens->clipTemplateStartTime,
                                     &clipTemplateStartTime)) {
                     _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStartTime); 
-                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
-                    templateStartTime = layerOffset * clipTemplateStartTime;
+                    templateStartTime = clipTemplateStartTime;
                 }
             }
 
@@ -457,18 +454,38 @@ Usd_ResolveClipInfo(
                 if (layer->HasField(primPath, UsdTokens->clipTemplateEndTime,
                                     &clipTemplateEndTime)) {
                     _ClipDebugMsg(node, layer, UsdTokens->clipTemplateEndTime); 
-                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
-                    templateEndTime  = layerOffset * clipTemplateEndTime;
+                    templateEndTime = clipTemplateEndTime;
                 }
             }
 
             if (templateStride && templateStartTime && templateEndTime) {
+                const SdfLayerRefPtr& layerWhereAssetPathsFound = 
+                    layers[clipInfo->indexOfLayerWhereAssetPathsFound];
+
                 _DeriveClipInfo(*templateAssetPath, *templateStride,
                                 *templateStartTime, *templateEndTime,
                                 &clipInfo->clipTimes, &clipInfo->clipActive,
-                                &clipInfo->clipAssetPaths, node, 
-                                layers[clipInfo->indexOfLayerWhereAssetPathsFound],
-                                layerStack);
+                                &clipInfo->clipAssetPaths, 
+                                node, layerWhereAssetPathsFound);
+
+                // Apply layer offsets to clipActive and clipTimes afterwards
+                // so that they don't affect the derived asset paths. Consumers
+                // expect offsets to affect what clip is being used at a given
+                // time, not the set of clips that are available.
+                //
+                // We use the layer offset for the layer where the template
+                // asset path pattern was found. Although the start/end/stride
+                // values may be authored on different layers with different
+                // offsets, this is an uncommon situation -- consumers usually
+                // author all clip metadata in the same layer -- and it's not
+                // clear what the desired result in that case would be anyway.
+                auto layerOffset = 
+                    _GetLayerOffsetToRoot(node, layerWhereAssetPathsFound);
+                _ApplyLayerOffsetToExternalTimes(
+                    layerOffset, &*clipInfo->clipTimes);
+                _ApplyLayerOffsetToExternalTimes(
+                    layerOffset, &*clipInfo->clipActive);
+
                 break;
             }
         }

@@ -877,5 +877,21 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, attr, time=10.10, expected=Vt.Vec3fArray(2, (10.10, 10.10, 10.10)))
         _Check(self.assertEqual, attr, time=10.15, expected=Vt.Vec3fArray(2, (10.15, 10.15, 10.15)))
 
+    def test_ClipTemplateWithOffsets(self):
+        stage = Usd.Stage.Open('template/layerOffsets/root.usda')
+        prim = stage.GetPrimAtPath('/Model')
+        attr = prim.GetAttribute('a')
+
+        # Times are offset by 2 via reference and layer offsets,
+        # so we expect the value at time 0 to read from clip 2, etc.
+        _Check(self.assertEqual, attr, time=-1.0, expected=1.0)
+        _Check(self.assertEqual, attr, time=0.0, expected=2.0)
+        _Check(self.assertEqual, attr, time=1.0, expected=3.0)
+
+        # Because of the time offset, this should try to read clip 4,
+        # but since we only have 3 clips we hold the value from the
+        # last one.
+        _Check(self.assertEqual, attr, time=2.0, expected=3.0)
+
 if __name__ == "__main__":
     unittest.main()
