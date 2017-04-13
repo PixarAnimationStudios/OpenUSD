@@ -72,6 +72,7 @@ pxr_shared_library(${PXR_PACKAGE}
         referenceAssembly
         usdImport
         usdExport
+        usdListShadingModes
         usdTranslatorExport
         usdTranslatorImport
 
