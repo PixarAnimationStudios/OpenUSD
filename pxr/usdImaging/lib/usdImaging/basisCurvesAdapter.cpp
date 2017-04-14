@@ -49,6 +49,12 @@ UsdImagingBasisCurvesAdapter::~UsdImagingBasisCurvesAdapter()
 {
 }
 
+bool
+UsdImagingBasisCurvesAdapter::IsSupported(HdRenderIndex* renderIndex)
+{
+    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
+}
+
 SdfPath
 UsdImagingBasisCurvesAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,

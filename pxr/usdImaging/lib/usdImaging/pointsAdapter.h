@@ -51,6 +51,9 @@ public:
                      UsdImagingIndexProxy* index,
                      UsdImagingInstancerContext const* instancerContext = NULL);
 
+    USDIMAGING_API
+    virtual bool IsSupported(HdRenderIndex* renderIndex);
+
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //

@@ -109,6 +109,13 @@ private:
     Hd_NullShader &operator =(const Hd_NullShader &) = delete;
 };
 
+const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_RPRIM_TYPES =
+{
+    HdPrimTypeTokens->mesh,
+    HdPrimTypeTokens->basisCurves,
+    HdPrimTypeTokens->points
+};
+
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->shader
@@ -119,6 +126,11 @@ const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_BPRIM_TYPES =
     HdPrimTypeTokens->texture
 };
 
+const TfTokenVector &
+Hd_UnitTestNullRenderDelegate::GetSupportedRprimTypes() const
+{
+    return SUPPORTED_RPRIM_TYPES;
+}
 
 const TfTokenVector &
 Hd_UnitTestNullRenderDelegate::GetSupportedSprimTypes() const

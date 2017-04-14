@@ -53,6 +53,12 @@ UsdImagingCylinderAdapter::~UsdImagingCylinderAdapter()
 {
 }
 
+bool
+UsdImagingCylinderAdapter::IsSupported(HdRenderIndex* renderIndex)
+{
+    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+}
+
 SdfPath
 UsdImagingCylinderAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,

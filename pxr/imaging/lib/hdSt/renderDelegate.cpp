@@ -42,6 +42,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
+{
+    HdPrimTypeTokens->mesh,
+    HdPrimTypeTokens->basisCurves,
+    HdPrimTypeTokens->points
+};
+
 const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
@@ -59,6 +66,12 @@ HdStRenderDelegate::HdStRenderDelegate()
 {
     static std::once_flag reprsOnce;
     std::call_once(reprsOnce, _ConfigureReprs);
+}
+
+const TfTokenVector &
+HdStRenderDelegate::GetSupportedRprimTypes() const
+{
+    return SUPPORTED_RPRIM_TYPES;
 }
 
 const TfTokenVector &

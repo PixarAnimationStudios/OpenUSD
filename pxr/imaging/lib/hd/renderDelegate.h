@@ -65,6 +65,12 @@ public:
     virtual ~HdRenderDelegate();
 
     ///
+    /// Returns a list of typeId's of all supported Rprims by this render
+    /// delegate.
+    ///
+    virtual const TfTokenVector &GetSupportedRprimTypes() const = 0;
+
+    ///
     /// Returns a list of typeId's of all supported Sprims by this render
     /// delegate.
     ///

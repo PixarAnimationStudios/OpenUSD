@@ -472,9 +472,7 @@ Hdx_UnitTestDelegate::AddGrid(SdfPath const &id, GfMatrix4d const &transform,
     _CreateGrid(10, 10, &points, &numVerts, &verts);
     _meshes[id] = _Mesh(transform, points, numVerts, verts, guide);
 
-    SdfPath shaderId;
-    TfMapLookup(_surfaceShaderBindings, id, &shaderId);
-    GetRenderIndex().InsertRprim<HdMesh>(this, id, shaderId, instancerId);
+    GetRenderIndex().InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
@@ -511,9 +509,7 @@ Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform,
                         guide);
     _meshes[id].color = GfVec4f(1,1,1,1);
 
-    SdfPath shaderId;
-    TfMapLookup(_surfaceShaderBindings, id, &shaderId);
-    GetRenderIndex().InsertRprim<HdMesh>(this, id, shaderId, instancerId);
+    GetRenderIndex().InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
@@ -565,7 +561,7 @@ Hdx_UnitTestDelegate::AddTet(SdfPath const &id, GfMatrix4d const &transform,
 
     SdfPath shaderId;
     TfMapLookup(_surfaceShaderBindings, id, &shaderId);
-    GetRenderIndex().InsertRprim<HdMesh>(this, id, shaderId, instancerId);
+    GetRenderIndex().InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }

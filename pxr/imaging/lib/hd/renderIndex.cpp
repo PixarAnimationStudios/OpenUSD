@@ -1164,4 +1164,25 @@ HdRenderIndex::_InitPrimTypes()
     _bprimIndex.InitPrimTypes(_renderDelegate->GetSupportedBprimTypes());
 }
 
+bool
+HdRenderIndex::IsRprimTypeSupported(TfToken const& typeId) const
+{
+    TfTokenVector const& supported = _renderDelegate->GetSupportedRprimTypes();
+    return (std::find(supported.begin(), supported.end(), typeId) != supported.end());
+}
+
+bool
+HdRenderIndex::IsSprimTypeSupported(TfToken const& typeId) const
+{
+    TfTokenVector const& supported = _renderDelegate->GetSupportedSprimTypes();
+    return (std::find(supported.begin(), supported.end(), typeId) != supported.end());
+}
+
+bool
+HdRenderIndex::IsBprimTypeSupported(TfToken const& typeId) const
+{
+    TfTokenVector const& supported = _renderDelegate->GetSupportedBprimTypes();
+    return (std::find(supported.begin(), supported.end(), typeId) != supported.end());
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

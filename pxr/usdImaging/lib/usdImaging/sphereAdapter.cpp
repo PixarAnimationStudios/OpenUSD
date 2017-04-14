@@ -51,6 +51,12 @@ UsdImagingSphereAdapter::~UsdImagingSphereAdapter()
 {
 }
 
+bool
+UsdImagingSphereAdapter::IsSupported(HdRenderIndex* renderIndex)
+{
+    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+}
+
 SdfPath
 UsdImagingSphereAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,

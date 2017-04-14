@@ -110,9 +110,7 @@ Hd_UnitTestDelegate::AddMesh(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    SdfPath shaderId;
-    TfMapLookup(_surfaceShaderBindings, id, &shaderId);
-    index.InsertRprim<HdMesh>(this, id, shaderId, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, PxOsdSubdivTags(),
@@ -140,9 +138,7 @@ Hd_UnitTestDelegate::AddMesh(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    SdfPath shaderId;
-    TfMapLookup(_surfaceShaderBindings, id, &shaderId);
-    index.InsertRprim<HdMesh>(this, id, shaderId, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, subdivTags,
@@ -169,7 +165,7 @@ Hd_UnitTestDelegate::AddBasisCurves(SdfPath const &id,
     HdRenderIndex& index = GetRenderIndex();
     SdfPath shaderId;
     TfMapLookup(_surfaceShaderBindings, id, &shaderId);
-    index.InsertRprim<HdBasisCurves>(this, id, shaderId, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->basisCurves, this, id, instancerId);
 
     _curves[id] = _Curves(points, curveVertexCounts, 
                           normals,
@@ -195,7 +191,7 @@ Hd_UnitTestDelegate::AddPoints(SdfPath const &id,
     HdRenderIndex& index = GetRenderIndex();
     SdfPath shaderId;
     TfMapLookup(_surfaceShaderBindings, id, &shaderId);
-    index.InsertRprim<HdPoints>(this, id, shaderId, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->points, this, id, instancerId);
 
     _points[id] = _Points(points,
                           color, colorInterpolation,

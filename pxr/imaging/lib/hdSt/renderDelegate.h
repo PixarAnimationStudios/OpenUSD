@@ -46,6 +46,8 @@ public:
     virtual HdRenderParam *GetRenderParam() const override;
 
     HDST_API
+    virtual const TfTokenVector &GetSupportedRprimTypes() const override;
+    HDST_API
     virtual const TfTokenVector &GetSupportedSprimTypes() const override;
     HDST_API
     virtual const TfTokenVector &GetSupportedBprimTypes() const override;
@@ -77,6 +79,7 @@ public:
     virtual void CommitResources(HdChangeTracker *tracker) override;
 
 private:
+    static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;
 

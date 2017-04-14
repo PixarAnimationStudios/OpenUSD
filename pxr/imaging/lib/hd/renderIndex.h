@@ -143,23 +143,15 @@ public:
     /// \name Rprim Support
     // ---------------------------------------------------------------------- //
 
+    /// Returns whether the rprim type is supported by this render index.
+    HD_API
+    bool IsRprimTypeSupported(TfToken const& typeId) const;
+
     /// Insert a rprim into index
     HD_API
     void InsertRprim(TfToken const& typeId,
                      HdSceneDelegate* sceneDelegate,
                      SdfPath const& rprimId,
-                     SdfPath const& instancerId = SdfPath());
-
-    /// \deprecated {
-    ///   Old templated mathod of inserting a rprim into the index.
-    ///   This API has been superseeded by passing the typeId token.
-    ///   XXX: This method still exists to aid transition but may be
-    ///   removed at any time.
-    /// }
-    template <typename T>
-    void InsertRprim(HdSceneDelegate* delegate,
-                     SdfPath const& id,
-                     SdfPath const&,   // Unused
                      SdfPath const& instancerId = SdfPath());
 
     /// Remove a rprim from index
@@ -243,6 +235,10 @@ public:
     /// \name Scene state prims (e.g. camera, light)
     // ---------------------------------------------------------------------- //
 
+    /// Returns whether the sprim type is supported by this render index.
+    HD_API
+    bool IsSprimTypeSupported(TfToken const& typeId) const;
+
     /// Insert a sprim into index
     HD_API
     void InsertSprim(TfToken const& typeId,
@@ -269,6 +265,10 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Buffer prims (e.g. textures, buffers)
     // ---------------------------------------------------------------------- //
+
+    /// Returns whether the bprim type is supported by this render index.
+    HD_API
+    bool IsBprimTypeSupported(TfToken const& typeId) const;
 
     /// Insert a bprim into index
     HD_API
@@ -400,67 +400,6 @@ HdRenderIndex::InsertTask(HdSceneDelegate* delegate, SdfPath const& id)
     HdTaskSharedPtr task = boost::make_shared<T>(delegate, id);
     _TrackDelegateTask(delegate, id, task);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Transitional support routines to convert from the templated InsertRprim()
-// to the one that takes a typeId token.
-//
-// XXX: To be removed with the InsertRprim<> API.
-//
-///////////////////////////////////////////////////////////////////////////////
-class HdMesh;
-class HdBasisCurves;
-class HdPoints;
-
-namespace HdRenderIndexInternal
-{  
-    template <typename T>
-    inline const TfToken & _GetTypeId();
-
-    template <>
-    inline
-    const TfToken &
-    _GetTypeId<HdMesh>()
-    {
-        return HdPrimTypeTokens->mesh;
-    }
-    
-    template <>
-    inline
-    const TfToken &
-    _GetTypeId<HdBasisCurves>()
-    {
-        return HdPrimTypeTokens->basisCurves;
-    }
-    
-    template <>
-    inline
-    const TfToken &
-    _GetTypeId<HdPoints>()
-    {
-        return HdPrimTypeTokens->points;
-    }
-
-} 
-
-template <typename T>
-void
-HdRenderIndex::InsertRprim(HdSceneDelegate* delegate, SdfPath const& id,
-                           SdfPath const&,
-                           SdfPath const& instancerId)
-{
-    InsertRprim(HdRenderIndexInternal::_GetTypeId<T>(), delegate, id, instancerId);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// XXX: End Transitional support routines
-//
-///////////////////////////////////////////////////////////////////////////////
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

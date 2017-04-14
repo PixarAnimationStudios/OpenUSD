@@ -501,6 +501,10 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
 
     // camera
     {
+        // Since we're hardcoded to use HdStRenderDelegate, we expect to
+        // have camera Sprims.
+        TF_VERIFY(renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->camera));
+
         renderIndex->InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
         cache[HdStCameraTokens->matrices] = VtValue(HdStCameraMatrices());
@@ -630,6 +634,10 @@ UsdMayaGLBatchRenderer::TaskDelegate::_SetLightingStateFromLightingContext()
                            _rootId.GetText(),
                            (int)_lightIds.size()));
         _lightIds.push_back(lightId);
+
+        // Since we're hardcoded to use HdStRenderDelegate, we expect to have
+        // light Sprims.
+        TF_VERIFY(GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->light));
 
         GetRenderIndex().InsertSprim(HdPrimTypeTokens->light, this, lightId);
         hasNumLightsChanged = true;

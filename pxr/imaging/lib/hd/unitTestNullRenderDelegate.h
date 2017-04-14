@@ -35,6 +35,7 @@ public:
     Hd_UnitTestNullRenderDelegate() = default;
     virtual ~Hd_UnitTestNullRenderDelegate() = default;
 
+    virtual const TfTokenVector &GetSupportedRprimTypes() const override;
     virtual const TfTokenVector &GetSupportedSprimTypes() const override;
     virtual const TfTokenVector &GetSupportedBprimTypes() const override;
     virtual HdRenderParam *GetRenderParam() const override;
@@ -75,6 +76,7 @@ public:
 
 
 private:
+    static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;
 

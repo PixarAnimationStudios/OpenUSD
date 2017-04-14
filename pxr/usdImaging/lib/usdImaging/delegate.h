@@ -765,10 +765,10 @@ private:
     //
     // Note that this method does not implicitly add a dependency because the
     // child is likely to represent a different prim in the Usd scene graph.
-    template <typename T>
-    SdfPath _InsertRprim(SdfPath const& usdPath,
-                        SdfPath const& shaderBinding,
-                        UsdImagingInstancerContext const* instancerContext);
+    SdfPath _InsertRprim(TfToken const& primType,
+                         SdfPath const& usdPath,
+                         SdfPath const& shaderBinding,
+                         UsdImagingInstancerContext const* instancerContext);
 
     void _AddTask(SdfPath const& usdPath);   
 
