@@ -201,6 +201,11 @@ MStatus uninitializePlugin(
         status.perror("deregisterCommand usdExport");
     }
 
+    status = plugin.deregisterCommand("usdListShadingModes");
+    if (!status) {
+        status.perror("deregisterCommand usdListShadingModes");
+    }
+
     status = plugin.deregisterFileTranslator("pxrUsdImport");
     if (!status) {
         status.perror("pxrUsd: unable to deregister USD Import translator.");
@@ -209,11 +214,6 @@ MStatus uninitializePlugin(
     status = plugin.deregisterFileTranslator("pxrUsdExport");
     if (!status) {
         status.perror("pxrUsd: unable to deregister USD Export translator.");
-    }
-
-    status = plugin.deregisterFileTranslator("usdListShadingModes");
-    if (!status) {
-        status.perror("deregisterCommand usdListShadingModes");
     }
 
     status = MGlobal::executeCommand("assembly -e -deregister " + _data.referenceAssembly.typeName);
