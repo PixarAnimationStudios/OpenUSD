@@ -119,6 +119,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (wireOnSurf)
 
 #define HD_PERF_TOKENS                          \
+    (adjacencyBufSize)                          \
     (basisCurvesTopology)                       \
     (bufferSourcesResolved)                     \
     (bufferArrayRangeMerged)                    \

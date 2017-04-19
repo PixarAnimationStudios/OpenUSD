@@ -54,7 +54,7 @@ class HdMeshTopology;
 /// which is used for smooth normal computation.
 ///
 /// Hd_VertexAdjacency provides 4 buffer computations. They are
-/// adajancey building and compute smooth normals on CPU or GPU.
+/// adjacency building and compute smooth normals on CPU or GPU.
 /// The dependencies between them will be internally created if necessary
 /// (i.e. adjacency builder always runs before smooth normals).
 ///
@@ -64,10 +64,42 @@ class HdMeshTopology;
 ///                                ---> SmoothNormals (CPU smooth normals)
 ///                                ---> SmoothNormalsGPU (GPU smooth normals)
 ///
-class Hd_VertexAdjacency {
+/// The Adjacency table (built by the AdjacencyBuilder computation)
+/// provides the index of the previous and next vertex for each face
+/// that uses that vertex.
+///
+/// The table is split into two parts. The first part of the table
+/// provides a offset to the prev/next data for the vertex as well as the
+/// number of faces that use the vertex.  The second part of the table
+/// provides the actual prev/next indices.
+///
+/// For example, The following prim has 4 vertices and 2 faces and uses
+/// a CCW winding order:
+///
+///     3.---.2
+///      |  /|
+///      | / |
+///      |/  |
+///     0.---.1
+///
+/// Picking one vertex, 0, it is used by 2 faces, so it contains 2 previous/
+/// next pairs: (2, 1) and (3, 2)
+///
+///
+/// The full adjacency table for this prim would be:
+///
+///  0  1 |  2  3 |  4  5 |  6  7 || 8  9  10 11 | 12 13 | 14 15 16 17 | 18 19
+///  8  2 | 12  1 | 14  2 | 18  1 || 2  1   3  2 |  0  2 |  1  0  0  3 |  2  0
+///   Offset / Count pairs        ||            Prev / Next Pairs
+///      per vertex               ||           Per Vertex, Per Face.
+///
+class Hd_VertexAdjacency final {
 public:
     HD_API
     Hd_VertexAdjacency();
+
+    HD_API
+    ~Hd_VertexAdjacency();
 
     /// Returns an array of the same size and type as the source points
     /// containing normal vectors computed by averaging the cross products
@@ -130,22 +162,22 @@ public:
         return _adjacencyRange;
     }
 
-    /// Returns the stride of adjacency entry table.
-    int GetStride() const {
-        return _stride;
+    /// Returns the number of points in the adjacency table.
+    int GetNumPoints() const {
+        return _numPoints;
     }
 
-    /// Returns the adjacency entry table.
-    std::vector<int> const &GetEntry() const {
-        return _entry;
+    /// Returns the adjacency table.
+    std::vector<int> const &GetAdjacencyTable() const {
+        return _adjacencyTable;
     }
 
 private:
     // only AdjacencyBuilder can generate _entry and _stride.
     friend class Hd_AdjacencyBuilderComputation;
 
-    int _stride;
-    std::vector<int> _entry;
+    int _numPoints;
+    std::vector<int> _adjacencyTable;
 
     // adjacency buffer range on GPU
     HdBufferArrayRangeSharedPtr _adjacencyRange;

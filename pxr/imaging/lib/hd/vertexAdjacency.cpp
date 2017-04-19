@@ -36,21 +36,29 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 Hd_VertexAdjacency::Hd_VertexAdjacency()
-    : _stride(0)
+    : _numPoints(0)
+    , _adjacencyTable()
+    , _adjacencyRange()
+    , _adjacencyBuilder()
 {
 }
+
+Hd_VertexAdjacency::~Hd_VertexAdjacency()
+{
+    HD_PERF_COUNTER_SUBTRACT(HdPerfTokens->adjacencyBufSize,
+                             _adjacencyTable.size() * sizeof(int));
+}
+
 
 template <typename SrcVec3Type, typename DstType>
 class _SmoothNormalsWorker
 {
 public:
     _SmoothNormalsWorker(SrcVec3Type const * pointsPtr,
-                         std::vector<int> const &entry,
-                         int stride,
+                         std::vector<int> const &adjacencyTable,
                          DstType *normals)
     : _pointsPtr(pointsPtr)
-    , _entry(entry)
-    , _stride(stride)
+    , _adjacencyTable(adjacencyTable)
     , _normals(normals)
     {
     }
@@ -58,8 +66,11 @@ public:
     void Compute(size_t begin, size_t end)
     {
         for(size_t i = begin; i < end; ++i) {
-            int const * e = &_entry[i * _stride];
-            int valence = *e++;
+            int offsetIdx = i * 2;
+            int offset  = _adjacencyTable[offsetIdx];
+            int valence = _adjacencyTable[offsetIdx + 1];
+
+            int const * e = &_adjacencyTable[offset];
             SrcVec3Type normal(0);
             SrcVec3Type const & curr = _pointsPtr[i];
             for (int j=0; j<valence; ++j) {
@@ -77,8 +88,7 @@ public:
 
 private:
     SrcVec3Type const * _pointsPtr;
-    std::vector<int> const &_entry;
-    int _stride;
+    std::vector<int> const &_adjacencyTable;
     DstType *_normals;
 };
 
@@ -88,18 +98,17 @@ private:
 template <typename SrcVec3Type, typename DstType=SrcVec3Type>
 VtArray<DstType>
 _ComputeSmoothNormals(int numPoints, SrcVec3Type const * pointsPtr,
-                      std::vector<int> const &entry, int stride)
+                      std::vector<int> const &entry, int numAdjPoints)
 {
     // to be safe.
     // numPoints of input pointer could be different from the number of points
     // in adjacency table.
-    numPoints = std::min(numPoints,
-                         (int)entry.size()/stride);
+    numPoints = std::min(numPoints, numAdjPoints);
 
     VtArray<DstType> normals(numPoints);
 
     _SmoothNormalsWorker<SrcVec3Type, DstType> workerState
-        (pointsPtr, entry, stride, normals.data());
+        (pointsPtr, entry, normals.data());
 
     WorkParallelForN(
         numPoints,
@@ -115,16 +124,16 @@ VtArray<GfVec3f>
 Hd_VertexAdjacency::ComputeSmoothNormals(int numPoints,
                                          GfVec3f const * pointsPtr) const
 {
-    return _ComputeSmoothNormals(numPoints, pointsPtr,
-                                 _entry, _stride);
+    return _ComputeSmoothNormals(
+                             numPoints, pointsPtr, _adjacencyTable, _numPoints);
 }
 
 VtArray<GfVec3d>
 Hd_VertexAdjacency::ComputeSmoothNormals(int numPoints,
                                          GfVec3d const * pointsPtr) const
 {
-    return _ComputeSmoothNormals(numPoints, pointsPtr,
-                                 _entry, _stride);
+    return _ComputeSmoothNormals(
+                             numPoints, pointsPtr, _adjacencyTable, _numPoints);
 }
 
 VtArray<HdVec4f_2_10_10_10_REV>
@@ -132,7 +141,8 @@ Hd_VertexAdjacency::ComputeSmoothNormalsPacked(int numPoints,
                                          GfVec3f const * pointsPtr) const
 {
     return _ComputeSmoothNormals<GfVec3f, HdVec4f_2_10_10_10_REV>(
-        numPoints, pointsPtr, _entry, _stride);
+                             numPoints, pointsPtr, _adjacencyTable, _numPoints);
+
 }
 
 VtArray<HdVec4f_2_10_10_10_REV>
@@ -140,7 +150,7 @@ Hd_VertexAdjacency::ComputeSmoothNormalsPacked(int numPoints,
                                          GfVec3d const * pointsPtr) const
 {
     return _ComputeSmoothNormals<GfVec3d, HdVec4f_2_10_10_10_REV>(
-        numPoints, pointsPtr, _entry, _stride);
+                             numPoints, pointsPtr, _adjacencyTable, _numPoints);
 }
 
 HdBufferSourceSharedPtr
@@ -180,7 +190,9 @@ Hd_VertexAdjacency::GetAdjacencyBuilderComputation(
     }
 
     // if cpu adjacency table exists, no need to compute again
-    if (_stride > 0) return Hd_AdjacencyBuilderComputationSharedPtr();
+    if (!_adjacencyTable.empty()) {
+        return Hd_AdjacencyBuilderComputationSharedPtr();
+    }
 
     Hd_AdjacencyBuilderComputationSharedPtr builder =
         Hd_AdjacencyBuilderComputationSharedPtr(
@@ -232,9 +244,19 @@ Hd_AdjacencyBuilderComputation::Resolve()
         _topology->GetFaceVertexIndices());
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
 
-    // Find the max vertex valence, we'll use this 
-    // to determine how to lay out our adjacency entries.
+    // Store the number of points
+    _adjacency->_numPoints = numPoints;
+
+
+    // Track the number of entries needed the adjacency table.
+    // We start by needing 2 per point (offset and valence).
+    size_t numEntries = numPoints * 2;
+
+
+    // Compute the size of each entry, so we can work out the offsets.
     std::vector<int> vertexValence(numPoints);
+
+
     int vertIndex = 0;
     for (int i=0; i<numFaces; ++i) {
         int nv = numVertsPtr[i];
@@ -247,18 +269,34 @@ Hd_AdjacencyBuilderComputation::Resolve()
             }
             ++vertexValence[index];
         }
+
+        // Increase the number of entries needed by 2 (prev & next index).
+        // for every vertex in the face.
+        numEntries += 2 * nv;
     }
-    int maxVertexValence = 0;
-    for (int i=0; i<numPoints; ++i) {
-        maxVertexValence = std::max(maxVertexValence, vertexValence[i]);
-    }
+
 
     // Each entry is a count followed by pairs of adjacent vertex indices.
     // We use a uniform entry size for all vertices, this allows faster
     // lookups at the cost of some additional memory.
-    _adjacency->_stride = 1+2*maxVertexValence;
-    _adjacency->_entry.clear();
-    _adjacency->_entry.resize(numPoints * _adjacency->_stride, 0);
+    std::vector<int> &adjTable = _adjacency->_adjacencyTable;
+    HD_PERF_COUNTER_SUBTRACT(HdPerfTokens->adjacencyBufSize,
+                                                 adjTable.size() * sizeof(int));
+
+
+    adjTable.clear();
+    adjTable.resize(numEntries, 0);
+    HD_PERF_COUNTER_ADD(HdPerfTokens->adjacencyBufSize,
+                                                      numEntries * sizeof(int));
+
+    // Fill out first part of buffer with offsets.  Even though we
+    // know counts, don't fill them out now, so we know how many indices
+    // we've written so far.
+    int currentOffset = numPoints * 2;
+    for (int pointNum = 0; pointNum < numPoints; ++pointNum) {
+        adjTable[pointNum * 2] = currentOffset;
+        currentOffset += 2*vertexValence[pointNum];
+    }
 
     vertIndex = 0;
     for (int i=0; i<numFaces; ++i) {
@@ -268,10 +306,15 @@ Hd_AdjacencyBuilderComputation::Resolve()
             int curr = vertsPtr[vertIndex+j];
             int next = vertsPtr[vertIndex+(j+1)%nv];
             if (flip) std::swap(prev, next);
-            int * entry = &_adjacency->_entry[curr * _adjacency->_stride];
-            int index = (*entry)++ * 2 + 1; // increment count
-            entry[index+0] = prev;
-            entry[index+1] = next;
+
+            int entryOffset = adjTable[curr * 2 + 0];
+            int &entryCount = adjTable[curr * 2 + 1];
+
+            int pairOffset = entryOffset + entryCount * 2;
+            ++entryCount;
+
+            adjTable[pairOffset + 0] = prev;
+            adjTable[pairOffset + 1] = next;
         }
         vertIndex += nv;
     }
@@ -306,7 +349,7 @@ Hd_AdjacencyBuilderForGPUComputation::Resolve()
     HF_MALLOC_TAG_FUNCTION();
 
     // prepare buffer source to be transferred.
-    std::vector<int> const &adjacency = _adjacency->GetEntry();
+    std::vector<int> const &adjacency = _adjacency->GetAdjacencyTable();
 
     // create buffer source
     VtIntArray array(adjacency.size());
