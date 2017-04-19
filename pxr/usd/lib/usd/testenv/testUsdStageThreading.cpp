@@ -124,12 +124,6 @@ _ComputeResult(const std::string & inputAssetPath)
 
     UsdStageRefPtr stage = UsdStage::Open(inputAssetPath);
     result.didLoad = bool(stage);
-    if (!result.didLoad) {
-        TF_RUNTIME_ERROR("Failed to open %s, test exiting",
-                         inputAssetPath.c_str());
-        std::exit(1);
-    }
-
     if (stage) {
         _DumpResults(stage, SdfPath::AbsoluteRootPath(), &result.digest);
     }
@@ -229,6 +223,17 @@ int main(int argc, char const **argv)
     TF_VERIFY(SdfLayer::GetLoadedLayers().size() == baselineNumLayers,
               "Expected no additional layers in memory, got %zu",
               SdfLayer::GetLoadedLayers().size() - baselineNumLayers);
+
+    // Verify that at least one test case loaded.  If not, that's probably a
+    // bug in the test setup.
+    bool loadedAny = false;
+    for (const auto &p: _testCases) {
+        if (p.second.didLoad) {
+            loadedAny = true;
+            break;
+        }
+    }
+    TF_VERIFY(loadedAny, "Expected at least one asset to load successfully.");
 
     // Run.
     printf("==================================================\n");
