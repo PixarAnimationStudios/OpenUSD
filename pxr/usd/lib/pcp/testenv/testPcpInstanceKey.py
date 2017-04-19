@@ -99,12 +99,10 @@ class TestPcpInstanceKey(unittest.TestCase):
         self.assertNotEqual(key1, key5)
         self.assertNotEqual(key1, key6)
 
-        # Model_5 and 6 have locally-defined variant sets, but this doesn't
-        # matter for the instance key because those variant sets can't
-        # have opinions on name children. This means that composing values
-        # under any descendants of Model_5 and 6 will have the same value,
-        # so long as they both have the same variant selection.
-        self.assertEqual(key5, key6)
+        # Model_5 and 6 have locally-defined variant sets, which can introduce
+        # different sets of name children. Because of this, they must also have
+        # different instance keys.
+        self.assertNotEqual(key5, key6)
 
 if __name__ == "__main__":
     unittest.main()

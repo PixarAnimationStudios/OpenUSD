@@ -84,12 +84,22 @@ Pcp_TraverseInstanceableWeakToStrong(
 
 // Implementation ----------------------------------------
 
+inline bool
+Pcp_ChildNodeIsInstanceable(
+    const PcpNodeRef& node)
+{
+    // Non-ancestral nodes are instanceable: they represent a direct
+    // composition arc to a portion of scenegraph that could be shared
+    // with other prim indexes, as long as the other criteria laid out
+    // in PcpInstanceKey are met. 
+    return !node.IsDueToAncestor();
+}
+
 template <class Visitor>
 inline void
 Pcp_TraverseInstanceableStrongToWeakHelper(
     const PcpNodeRef& node,
-    Visitor* visitor,
-    bool nodeIsLocallyDefinedVariant)
+    Visitor* visitor)
 {
     // If the node is culled, the entire subtree rooted at this node
     // does not contribute to the prim index, so we can prune the 
@@ -98,27 +108,13 @@ Pcp_TraverseInstanceableStrongToWeakHelper(
         return;
     }
 
-    // Non-ancestral nodes are instanceable: they represent a direct
-    // composition arc to a portion of scenegraph that could be shared
-    // with other prim indexes, as long as the other criteria laid out
-    // in PcpInstanceKey are met. 
-    //
-    // Locally-defined variant sets are exceptions to this rule, as the
-    // variants they define cannot be shared among prim indexes.
-    const bool nodeIsInstanceable = 
-        (!nodeIsLocallyDefinedVariant && !node.IsDueToAncestor());
-    if (!visitor->Visit(node, nodeIsInstanceable)) {
+    if (!visitor->Visit(node, Pcp_ChildNodeIsInstanceable(node))) {
         return;
     }
 
     TF_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
         const PcpNodeRef& childNode = *childIt;
-        const bool childNodeIsLocallyDefinedVariant = 
-            (nodeIsLocallyDefinedVariant &&
-                childNode.GetArcType() == PcpArcTypeVariant);
-
-        Pcp_TraverseInstanceableStrongToWeakHelper(
-            childNode, visitor, childNodeIsLocallyDefinedVariant);
+        Pcp_TraverseInstanceableStrongToWeakHelper(childNode, visitor);
     }
 }
 
@@ -135,11 +131,7 @@ Pcp_TraverseInstanceableStrongToWeak(
 
     TF_FOR_ALL(childIt, Pcp_GetChildrenRange(rootNode)) {
         const PcpNodeRef& childNode = *childIt;
-        const bool childNodeIsLocallyDefinedVariant = 
-            (childNode.GetArcType() == PcpArcTypeVariant);
-
-        Pcp_TraverseInstanceableStrongToWeakHelper(
-            childNode, visitor, childNodeIsLocallyDefinedVariant);
+        Pcp_TraverseInstanceableStrongToWeakHelper(childNode, visitor);
     }
 }
 
@@ -147,8 +139,7 @@ template <class Visitor>
 inline void
 Pcp_TraverseInstanceableWeakToStrongHelper(
     const PcpNodeRef& node,
-    Visitor* visitor,
-    bool nodeIsLocallyDefinedVariant)
+    Visitor* visitor)
 {
     // If the node is culled, the entire subtree rooted at this node
     // does not contribute to the prim index, so we can prune the 
@@ -159,18 +150,10 @@ Pcp_TraverseInstanceableWeakToStrongHelper(
 
     TF_REVERSE_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
         const PcpNodeRef& childNode = *childIt;
-        const bool childNodeIsLocallyDefinedVariant = 
-            (nodeIsLocallyDefinedVariant &&
-             childNode.GetArcType() == PcpArcTypeVariant);
-
-        Pcp_TraverseInstanceableWeakToStrongHelper(
-            childNode, visitor, childNodeIsLocallyDefinedVariant);
+        Pcp_TraverseInstanceableWeakToStrongHelper(childNode, visitor);
     }
 
-    // See comment in Pcp_TraverseInstanceableStrongToWeakHelper.
-    const bool nodeIsInstanceable =
-        (!nodeIsLocallyDefinedVariant && !node.IsDueToAncestor());
-    visitor->Visit(node, nodeIsInstanceable);
+    visitor->Visit(node, Pcp_ChildNodeIsInstanceable(node));
 }
 
 template <class Visitor>
@@ -182,11 +165,7 @@ Pcp_TraverseInstanceableWeakToStrong(
     const PcpNodeRef& rootNode = primIndex.GetRootNode();
     TF_REVERSE_FOR_ALL(childIt, Pcp_GetChildrenRange(rootNode)) {
         const PcpNodeRef& childNode = *childIt;
-        const bool childNodeIsLocallyDefinedVariant = 
-            (childNode.GetArcType() == PcpArcTypeVariant);
-
-        Pcp_TraverseInstanceableWeakToStrongHelper(
-            childNode, visitor, childNodeIsLocallyDefinedVariant);
+        Pcp_TraverseInstanceableWeakToStrongHelper(childNode, visitor);
     }
 
     visitor->Visit(rootNode, /* nodeIsInstanceable = */ false);

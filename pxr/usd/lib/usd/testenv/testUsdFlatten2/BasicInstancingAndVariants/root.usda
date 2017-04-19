@@ -2,9 +2,7 @@
 (
     """
     This museum case tests instancing functionality when instanced
-    prims contain variants. Locally-defined variants at the instance
-    root are treated like the instance root: they may override property
-    values but may not override or define new name children.
+    prims contain variants.
     """
 )
 

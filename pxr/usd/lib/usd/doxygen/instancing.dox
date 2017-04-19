@@ -209,8 +209,8 @@ def "Car"
 
 UsdStage can only create master prims for portions of the scenegraph
 that are brought into a scene via a composition arc.  Because of this,
-a prim must use at least one non-VariantSet composition arc in order to be 
-eligible for instancing.
+a prim must use at least one composition arc in order to be eligible 
+for instancing.
 
 Prims may be marked as instanceable by using UsdPrim::SetInstanceable or
 SdfPrimSpec::SetInstanceable.  If no value is explicitly authored, this value 

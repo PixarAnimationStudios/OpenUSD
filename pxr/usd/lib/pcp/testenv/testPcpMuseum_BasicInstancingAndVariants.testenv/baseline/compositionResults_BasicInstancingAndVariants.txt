@@ -18,7 +18,7 @@ Variant Selections:
     {y = a}
 
 Child names:
-     ['geom']
+     ['geom', 'from_a_variant']
 
 Property names:
      ['x']
@@ -32,6 +32,7 @@ Property stacks:
 Results for composing </InstancedModel/geom>
 
 Prim Stack:
+    root.sdf             /InstancedModel{x=a}geom
     ref.sdf              /Model{y=a}geom
 
 Property names:
@@ -39,7 +40,14 @@ Property names:
 
 Property stacks:
 /InstancedModel/geom.x:
+    root.sdf             /InstancedModel{x=a}geom.x
     ref.sdf              /Model{y=a}geom.x
+
+------------------------------------------------------------------------
+Results for composing </InstancedModel/from_a_variant>
+
+Prim Stack:
+    root.sdf             /InstancedModel{x=a}from_a_variant
 
 ------------------------------------------------------------------------
 Results for composing </UninstancedModel>
