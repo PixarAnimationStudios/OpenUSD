@@ -150,6 +150,7 @@ private:
     size_t _numTotalElements;
 
     _CullingProgram _cullingProgram;
+    bool _lastTinyPrimCulling;
 
     bool _useDrawArrays;
     bool _useInstancing;

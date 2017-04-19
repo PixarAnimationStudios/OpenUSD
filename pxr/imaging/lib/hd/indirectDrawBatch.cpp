@@ -70,6 +70,7 @@ Hd_IndirectDrawBatch::Hd_IndirectDrawBatch(
     , _drawCommandBufferDirty(false)
     , _numVisibleItems(0)
     , _numTotalElements(0)
+    , _lastTinyPrimCulling(false)
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
     , _cullResultSync(0)
@@ -108,7 +109,9 @@ Hd_IndirectDrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
 Hd_IndirectDrawBatch::_CullingProgram &
 Hd_IndirectDrawBatch::_GetCullingProgram()
 {
-    if (!_cullingProgram.GetGLSLProgram()) {
+    if (!_cullingProgram.GetGLSLProgram() || 
+        _lastTinyPrimCulling != IsEnabledGPUTinyPrimCulling()) {
+    
         // create a culling shader key
         Hd_CullingShaderKey shaderKey(_useGpuInstanceCulling,
                                       IsEnabledGPUTinyPrimCulling(),
@@ -121,6 +124,9 @@ Hd_IndirectDrawBatch::_GetCullingProgram()
 
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
                                       /*indirect=*/true);
+        // track the last tiny prim culling state as it can be modified at
+        // runtime via TF_DEBUG_CODE HD_DISABLE_TINY_PRIM_CULLING
+        _lastTinyPrimCulling = IsEnabledGPUTinyPrimCulling();
     }
     return _cullingProgram;
 }
@@ -158,7 +164,8 @@ Hd_IndirectDrawBatch::IsEnabledGPUTinyPrimCulling()
 {
     static bool isEnabledGPUTinyPrimCulling =
         TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING);
-    return isEnabledGPUTinyPrimCulling;
+    return isEnabledGPUTinyPrimCulling &&
+        !TfDebug::IsEnabled(HD_DISABLE_TINY_PRIM_CULLING);
 }
 
 /* static */
