@@ -1,0 +1,19 @@
+#usda 1.0
+
+def "Model" (
+    variantSets = ["type"]
+)
+{
+    variantSet "type" = {
+        "a" {
+            def "Child_A"
+            {
+            }
+        }
+        "b" {
+            def "Child_B"
+            {
+            }
+        }
+    }
+}

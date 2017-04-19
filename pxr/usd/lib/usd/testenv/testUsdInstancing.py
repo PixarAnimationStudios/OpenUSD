@@ -650,6 +650,80 @@ class TestUsdInstancing(unittest.TestCase):
             { '/__Master_2': ['/Instance_1', '/Instance_2'] })
         ValidateExpectedChanges(nl, ['/Instance_2'])
 
+    def test_VariantSelections(self):
+        """Test instancing and change processing with variant selections."""
+        nl = NoticeListener()
+
+        s = OpenStage('variants/root.usda')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Model_A_1', '/Model_A_2'],
+              '/__Master_2': ['/Model_B_1', '/Model_B_2'] })
+
+        # Ensure the master prims have the expected children based
+        # on variant selection.
+        assert s.GetPrimAtPath('/__Master_1/Child_A')
+        assert s.GetPrimAtPath('/__Master_2/Child_B')
+
+        # Changing the variant selections on the /Model_B_* prims should
+        # cause them to attach to /__Master_1.
+        master = s.GetPrimAtPath('/__Master_2')
+        primPathToSwitch = master._GetSourcePrimIndex().rootNode.path
+
+        print "-" * 60
+        print "Changing variant selection on %s" % (primPathToSwitch)
+        primToSwitch = s.GetPrimAtPath(primPathToSwitch)
+        primToSwitch.GetVariantSet('type').SetVariantSelection('a')
+
+        if primPathToSwitch == '/Model_B_1':
+            ValidateExpectedInstances(s,
+                { '/__Master_1': ['/Model_A_1', '/Model_A_2', '/Model_B_1'],
+                  '/__Master_2': ['/Model_B_2'] })
+        else:
+            ValidateExpectedInstances(s,
+                { '/__Master_1': ['/Model_A_1', '/Model_A_2', '/Model_B_2'],
+                  '/__Master_2': ['/Model_B_1'] })
+        ValidateExpectedChanges(nl, [primPathToSwitch, '/__Master_2'])
+
+        # Since all instances are now assigned to __Master_1, __Master_2
+        # is reaped.
+        if primPathToSwitch == '/Model_B_1':
+            primPathToSwitch = '/Model_B_2'
+        else:
+            primPathToSwitch = '/Model_B_1'
+
+        print "-" * 60
+        print "Changing variant selection on %s" % (primPathToSwitch)
+        primToSwitch = s.GetPrimAtPath(primPathToSwitch)
+        primToSwitch.GetVariantSet('type').SetVariantSelection('a')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Model_A_1', '/Model_A_2', '/Model_B_1', 
+                              '/Model_B_2']})
+        ValidateExpectedChanges(nl, [primPathToSwitch, '/__Master_2'])
+
+        # Changing a variant selection back to "type=b" should cause a new
+        # master to be generated.
+        print "-" * 60
+        print "Changing variant selection on /Model_B_1"
+        s.GetPrimAtPath('/Model_B_1').GetVariantSet('type').SetVariantSelection('b')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Model_A_1', '/Model_A_2', '/Model_B_2'],
+              '/__Master_3': ['/Model_B_1'] })
+        ValidateExpectedChanges(nl, ['/Model_B_1', '/__Master_3'])
+
+    def test_LocalVariants(self):
+        """Test expected instancing behavior for prims with local variants"""
+        s = OpenStage('local_variants/root.usda')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Model_LocalVariants_1'],
+              '/__Master_2': ['/Model_LocalVariants_2'] })
+
+        assert s.GetPrimAtPath('/__Master_1/Child_1')
+        assert s.GetPrimAtPath('/__Master_2/Child_2')
+
 if __name__ == "__main__":
     # Default to verbosity=2 and redirect unittest's output to
     # stdout so that the output from each test case is nicely
