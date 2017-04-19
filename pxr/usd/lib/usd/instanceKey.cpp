@@ -36,16 +36,15 @@ Usd_InstanceKey::Usd_InstanceKey()
 Usd_InstanceKey::Usd_InstanceKey(const PcpPrimIndex& instance)
     : _pcpInstanceKey(instance)
 {
-    for (Usd_Resolver res(&instance); res.IsValid(); res.NextNode()) {
-        Usd_ResolvedClipInfo clipInfo;
-        Usd_ResolveClipInfo(res.GetNode(), &clipInfo);
-        if (clipInfo.clipAssetPaths
-            || clipInfo.clipManifestAssetPath
-            || clipInfo.clipPrimPath
-            || clipInfo.clipActive
-            || clipInfo.clipTimes) {
-            _clipInfo.push_back(clipInfo);
-        }
+    Usd_ResolvedClipInfo clipInfo;
+    Usd_ResolveClipInfo(instance, &clipInfo);
+    
+    if (clipInfo.clipAssetPaths
+        || clipInfo.clipManifestAssetPath
+        || clipInfo.clipPrimPath
+        || clipInfo.clipActive
+        || clipInfo.clipTimes) {
+        _clipInfo.push_back(clipInfo);
     }
 }
 

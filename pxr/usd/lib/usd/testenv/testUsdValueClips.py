@@ -892,6 +892,41 @@ class TestUsdValueClips(unittest.TestCase):
         # but since we only have 3 clips we hold the value from the
         # last one.
         _Check(self.assertEqual, attr, time=2.0, expected=3.0)
+    
+    def ClipsWithSparseOverrides(self):
+        # This layer overrides the clipActive metadata to flip
+        # the active clips
+        stage = Usd.Stage.Open('sparseOverrides/over_root.usda')
+        prim = stage.GetPrimAtPath('/main')
+        attr = prim.GetAttribute('foo')
+
+        _Check(self.assertEqual, attr,  time=101.0, expected=3.0)
+        _Check(self.assertEqual, attr,  time=103.0, expected=1.0)
+
+        # This is the original layer with the clip metadata authored.
+        stage = Usd.Stage.Open('sparseOverrides/root.usda')
+        prim = stage.GetPrimAtPath('/main')
+        attr = prim.GetAttribute('foo')
+
+        _Check(self.assertEqual, attr,  time=101.0, expected=1.0)
+        _Check(self.assertEqual, attr,  time=103.0, expected=3.0)
+
+        # This layer overrides the startTime from the template metadata
+        # to be equal to the endTime, effectively giving us only one clip
+        stage = Usd.Stage.Open('sparseOverrides/template_over_root.usda')
+        prim = stage.GetPrimAtPath('/main')
+        attr = prim.GetAttribute('foo')
+
+        _Check(self.assertEqual, attr,  time=101.0, expected=1.0)
+        _Check(self.assertEqual, attr,  time=103.0, expected=1.0)
+
+        # This is the original layer with the template metadata authored. 
+        stage = Usd.Stage.Open('sparseOverrides/template_root.usda')
+        prim = stage.GetPrimAtPath('/main')
+        attr = prim.GetAttribute('foo')
+
+        _Check(self.assertEqual, attr,  time=101.0, expected=1.0)
+        _Check(self.assertEqual, attr,  time=103.0, expected=3.0)
 
 if __name__ == "__main__":
     unittest.main()

@@ -28,14 +28,14 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/resolver.h"
 #include "pxr/usd/usd/tokens.h"
-
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node.h"
+#include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/array.h"
 
+#include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
@@ -139,17 +139,16 @@ _ValidateClipFields(
 }
 
 static void
-_AddClipsFromNode(
-    const PcpNodeRef& node,
-    Usd_ClipCache::Clips* clips)
+_AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
 {
     Usd_ResolvedClipInfo clipInfo;
-    Usd_ResolveClipInfo(node, &clipInfo);
+    auto node = Usd_ResolveClipInfo(primIndex, &clipInfo);
 
     // If we haven't found all of the required clip metadata we can just 
     // bail out. Note that clipTimes and clipManifestAssetPath are *not* 
     // required.
-    if (!clipInfo.clipAssetPaths || !clipInfo.clipPrimPath 
+    if (!clipInfo.clipAssetPaths 
+        || !clipInfo.clipPrimPath 
         || !clipInfo.clipActive) {
         return;
     }
@@ -159,12 +158,9 @@ _AddClipsFromNode(
     // issue a message indicating if one hasn't been specified.
     if (!clipInfo.clipManifestAssetPath) {
         TF_DEBUG(USD_CLIPS).Msg(
-            "No clip manifest specified for prim <%s> in LayerStack "
-            "%s at spec <%s>. Performance may be improved if a "
-            "manifest is specified.",
-            node.GetRootNode().GetPath().GetString().c_str(),
-            TfStringify(node.GetLayerStack()).c_str(),
-            node.GetPath().GetString().c_str());
+            "No clip manifest specified for prim <%s>. " 
+            "Performance may be improved if a manifest is specified.",
+            primIndex.GetPath().GetString().c_str());
     }
 
     // XXX: Possibly want a better way to inform consumers of the error
@@ -269,13 +265,11 @@ Usd_ClipCache::PopulateClipsForPrim(
     TRACE_FUNCTION();
 
     std::vector<Clips> allClips;
-    for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextNode()) {
-        Clips clipsFromNode;
-        _AddClipsFromNode(res.GetNode(), &clipsFromNode);
-        if (!clipsFromNode.valueClips.empty()) {
-            allClips.push_back(clipsFromNode);
-        }
-    };
+    Clips clipsFromNode;
+    _AddClipsFromNode(primIndex, &clipsFromNode);
+    if (!clipsFromNode.valueClips.empty()) {
+        allClips.push_back(clipsFromNode);
+    }
 
     const bool primHasClips = !allClips.empty();
     if (primHasClips) {
