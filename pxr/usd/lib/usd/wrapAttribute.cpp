@@ -84,6 +84,14 @@ _Set(const UsdAttribute &self, object val, const UsdTimeCode &time) {
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
 
+static SdfPathVector
+_GetConnections(const UsdAttribute &self, bool forwardToObjectsInMasters)
+{
+    SdfPathVector result;
+    self.GetConnections(&result, forwardToObjectsInMasters);
+    return result;
+}
+
 static string
 __repr__(const UsdAttribute &self) {
     return self ? TfStringPrintf("%s.GetAttribute(%s)",
@@ -138,6 +146,17 @@ void wrapUsdAttribute()
         .def("ClearDefault", &UsdAttribute::ClearDefault)
 
         .def("Block", &UsdAttribute::Block)
+
+        .def("AppendConnection", &UsdAttribute::AppendConnection, arg("source"))
+        .def("RemoveConnection", &UsdAttribute::RemoveConnection, arg("source"))
+        .def("BlockConnections", &UsdAttribute::BlockConnections)
+        .def("SetConnections", &UsdAttribute::SetConnections, arg("sources"))
+        .def("ClearConnections", &UsdAttribute::ClearConnections)
+        .def("GetConnections", _GetConnections,
+             (arg("forwardToObjectsInMasters") = true),
+             return_value_policy<TfPySequenceToList>())
+        .def("HasAuthoredConnections", &UsdAttribute::HasAuthoredConnections)
         ;
+
     TfPyRegisterStlSequencesFromPython<UsdAttribute>();
 }

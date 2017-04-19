@@ -461,5 +461,76 @@ class TestUsdInstanceProxy(unittest.TestCase):
                 '/Root/Instance_2/NestedInstance_2/B',
                 '/Root/Instance_2/NestedInstance_2/B.attr'])
 
+    def testGetConnections(self):
+        s = Usd.Stage.Open('attrs/root.usda')
+
+        def _ValidateConnections(attrPath, expectedSrcs):
+            attrPath = Sdf.Path(attrPath)
+            prim = s.GetPrimAtPath(attrPath.GetPrimPath())
+            self._ValidateInstanceProxy(attrPath.GetPrimPath(), prim)
+
+            attr = prim.GetAttribute(attrPath.name)
+            self.assertTrue(attr)
+            self.assertEqual(attr.GetPath(), attrPath)
+            self.assertEqual(
+                attr.GetConnections(forwardToObjectsInMasters=False),
+                [Sdf.Path(p) for p in expectedSrcs])
+
+        _ValidateConnections(
+            attrPath = '/Root/Instance_1/A.con',
+            expectedSrcs = [
+                '/Root/Instance_1',
+                '/Root/Instance_1.attr',
+                '/Root/Instance_1/A',
+                '/Root/Instance_1/A.attr',
+                '/Root/Instance_1/NestedInstance_1',
+                '/Root/Instance_1/NestedInstance_1.attr',
+                '/Root/Instance_1/NestedInstance_1/B',
+                '/Root/Instance_1/NestedInstance_1/B.attr',
+                '/Root/Instance_1/NestedInstance_2',
+                '/Root/Instance_1/NestedInstance_2.attr',
+                '/Root/Instance_1/NestedInstance_2/B',
+                '/Root/Instance_1/NestedInstance_2/B.attr'])
+
+        _ValidateConnections(
+            attrPath = '/Root/Instance_2/A.con',
+            expectedSrcs = [
+                '/Root/Instance_2',
+                '/Root/Instance_2.attr',
+                '/Root/Instance_2/A',
+                '/Root/Instance_2/A.attr',
+                '/Root/Instance_2/NestedInstance_1',
+                '/Root/Instance_2/NestedInstance_1.attr',
+                '/Root/Instance_2/NestedInstance_1/B',
+                '/Root/Instance_2/NestedInstance_1/B.attr',
+                '/Root/Instance_2/NestedInstance_2',
+                '/Root/Instance_2/NestedInstance_2.attr',
+                '/Root/Instance_2/NestedInstance_2/B',
+                '/Root/Instance_2/NestedInstance_2/B.attr'])
+
+        _ValidateConnections(
+            attrPath = '/Root/Instance_1/NestedInstance_1/B.con',
+            expectedSrcs = [
+                '/Root/Instance_1/NestedInstance_1/B',
+                '/Root/Instance_1/NestedInstance_1/B.attr'])
+
+        _ValidateConnections(
+            attrPath = '/Root/Instance_1/NestedInstance_2/B.con',
+            expectedSrcs = [
+                '/Root/Instance_1/NestedInstance_2/B',
+                '/Root/Instance_1/NestedInstance_2/B.attr'])
+
+        _ValidateConnections(
+            attrPath = '/Root/Instance_2/NestedInstance_1/B.con',
+            expectedSrcs = [
+                '/Root/Instance_2/NestedInstance_1/B',
+                '/Root/Instance_2/NestedInstance_1/B.attr'])
+
+        _ValidateConnections(
+            attrPath = '/Root/Instance_2/NestedInstance_2/B.con',
+            expectedSrcs = [
+                '/Root/Instance_2/NestedInstance_2/B',
+                '/Root/Instance_2/NestedInstance_2/B.attr'])
+        
 if __name__ == '__main__':
     unittest.main()
