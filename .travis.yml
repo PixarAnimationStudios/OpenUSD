@@ -141,7 +141,7 @@ cache:
 
 script:
   - mkdir build && cd build
-  - cmake -DTBB_ROOT_DIR=$HOME/tbb43_20141023oss -DOPENEXR_LOCATION=$HOME/openexr -DOIIO_LOCATION=$HOME/oiio -DOPENSUBDIV_ROOT_DIR=$HOME/osd -DPTEX_LOCATION=$HOME/ptex -DPXR_VALIDATE_GENERATED_CODE=OFF ..
+  - cmake -DTBB_ROOT_DIR=$HOME/tbb43_20141023oss -DOPENEXR_LOCATION=$HOME/openexr -DOIIO_LOCATION=$HOME/oiio -DOPENSUBDIV_ROOT_DIR=$HOME/osd -DPTEX_LOCATION=$HOME/ptex -DPXR_VALIDATE_GENERATED_CODE=OFF -DPXR_BUILD_TESTS=ON -DPXR_ENABLE_NAMESPACES=ON ..
   - echo 'Building with -j4'
   - make -j4
   # Default install location is /usr/local; we need sudo access to write there.
