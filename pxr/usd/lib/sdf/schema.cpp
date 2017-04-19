@@ -1062,11 +1062,13 @@ SdfSchemaBase::IsValidAttributeConnectionPath(const SdfPath& path)
         return SdfAllowed("Attribute connection paths cannot contain "
                           "variant selections");
     }
-    if (path.IsAbsolutePath() && path.IsPropertyPath()) {
+    if (path.IsAbsolutePath() && (path.IsPropertyPath() || path.IsPrimPath())) {
         return true;
     }
     else {
-        return SdfAllowed("Connection paths must be absolute property paths");
+        return SdfAllowed(
+            TfStringPrintf("Connection paths must be absolute prim or "
+                           "property paths: <%s>", path.GetText()));
     }
 }
 

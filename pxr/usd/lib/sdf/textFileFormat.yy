@@ -599,8 +599,7 @@ _AttributeAppendConnectionPath(Sdf_TextParserContext *context)
         TF_WARN("Connection path <%s> (in file @%s@, line %i) has a variant "
                 "selection, but variant selections are not meaningful in "
                 "connection paths.  Stripping the variant selection and "
-                "using <%s> instead.  Resaving the menva file will fix "
-                "this issue.  (See also bug 68132.)",
+                "using <%s> instead.  Resaving the file will fix this issue.",
                 absPath.GetText(),
                 context->fileContext.c_str(),
                 context->menvaLineNo,
@@ -911,6 +910,23 @@ _PathSetProperty(const Value& arg1, Sdf_TextParserContext *context)
     context->savedPath = SdfPath(pathStr);
     if (!context->savedPath.IsPropertyPath()) {
         Err(context, "'%s' is not a valid property path", pathStr.c_str());
+    }
+}
+
+static void
+_PathSetPrimOrPropertyScenePath(const Value& arg1,
+                                Sdf_TextParserContext *context)
+{
+    const std::string& pathStr = arg1.Get<std::string>();
+    context->savedPath = SdfPath(pathStr);
+    // Valid paths are prim or property paths that do not contain variant
+    // selections.
+    SdfPath const &path = context->savedPath;
+    bool pathValid = (path.IsPrimPath() || path.IsPropertyPath()) &&
+        !path.ContainsPrimVariantSelection();
+    if (!pathValid) {
+        Err(context, "'%s' is not a valid prim or property scene path",
+            pathStr.c_str());
     }
 }
 
@@ -2269,7 +2285,7 @@ connect_list:
     ;
 
 connect_item:
-    property_path {
+    prim_or_property_scene_path {
             _AttributeAppendConnectionPath(context);
         }
     | property_path {
@@ -2976,6 +2992,12 @@ prim_path:
 property_path:
     TOK_PATHREF {
             _PathSetProperty($1, context);
+        }
+    ;
+
+prim_or_property_scene_path:
+    TOK_PATHREF {
+            _PathSetPrimOrPropertyScenePath($1, context);
         }
     ;
 

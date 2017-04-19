@@ -153,7 +153,7 @@ class TestSdfParsing(unittest.TestCase):
         54_bad_value.sdf
         53_bad_typeName.sdf
         52_bad_attr.sdf
-        51_bad_propPath.sdf
+        51_propPath.sdf
         50_bad_primPath.sdf
         49_bad_list.sdf
         47_miscSceneInfo.sdf
