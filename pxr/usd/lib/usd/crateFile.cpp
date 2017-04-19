@@ -155,11 +155,11 @@ constexpr _SectionName _KnownSections[] = {
 template <class T>
 constexpr bool _IsInlinedType() {
     using std::is_same;
-    return is_same<T, string>::value    ||
-        is_same<T, TfToken>::value      ||
-        is_same<T, SdfPath>::value      ||
+    return is_same<T, string>::value ||
+        is_same<T, TfToken>::value ||
+        is_same<T, SdfPath>::value ||
         is_same<T, SdfAssetPath>::value ||
-        (sizeof(T) <= sizeof(uint32_t)  && _IsBitwiseReadWrite<T>::value);
+        (sizeof(T) <= sizeof(uint32_t) && _IsBitwiseReadWrite<T>::value);
 }
 
 template <class T>
@@ -1090,7 +1090,10 @@ public:
 // ValueHandler class hierarchy.  See comment for _ValueHandler itself for more
 // information.
 
-struct CrateFile::_ValueHandlerBase {};
+struct CrateFile::_ValueHandlerBase {
+    // Base Clear() does nothing.
+    void Clear() {}
+};
 
 // Scalar handler for non-inlined types -- does deduplication.
 template <class T, class Enable>
@@ -1133,6 +1136,9 @@ struct CrateFile::_ScalarValueHandlerBase : _ValueHandlerBase
         // Otherwise we have to read it from the file.
         reader.Seek(rep.GetPayload());
         *out = reader.template Read<T>();
+    }
+    void Clear() {
+        _valueDedup.reset();
     }
     std::unique_ptr<std::unordered_map<T, ValueRep, _Hasher>> _valueDedup;
 };
@@ -1235,6 +1241,12 @@ struct CrateFile::_ArrayValueHandlerBase<
         }
     }
 
+    void Clear() {
+        // Invoke base implementation to clear scalar table.
+        _ScalarValueHandlerBase<T>::Clear();
+        _arrayDedup.reset();
+    }
+    
     std::unique_ptr<
         std::unordered_map<VtArray<T>, ValueRep, _Hasher>> _arrayDedup;
 };
@@ -1650,6 +1662,9 @@ CrateFile::_Write()
 
     _toc = toc;
     _boot = boot;
+
+    // Clear dedup tables.
+    _ClearValueHandlerDedupTables();
 
     return true;
 }
@@ -2097,12 +2112,10 @@ CrateFile::_ReadPathsRecursively(Reader reader,
 
     auto const &elemToken = _tokens[h.elementTokenIndex.value];
 
-    auto thisPath = isPrimPropertyPath ?
+    // Create this path.
+    _paths[h.index.value] = isPrimPropertyPath ?
         parentPath.AppendProperty(elemToken) :
         parentPath.AppendElementToken(elemToken);
-
-    // Create this path.
-    _paths[h.index.value] = thisPath;
 
     // If this one has a sibling, read out the pointer.
     auto siblingOffset =
@@ -2415,6 +2428,17 @@ CrateFile::_DeleteValueHandlers() {
 #define xx(_unused1, _unused2, T, _unused3)                                    \
     delete static_cast<_ValueHandler<T> *>(                                    \
         _valueHandlers[static_cast<int>(TypeEnumFor<T>())]);
+
+#include "crateDataTypes.h"
+
+#undef xx
+}
+
+void
+CrateFile::_ClearValueHandlerDedupTables() {
+#define xx(_unused1, _unused2, T, _unused3)                                    \
+    static_cast<_ValueHandler<T> *>(                                           \
+        _valueHandlers[static_cast<int>(TypeEnumFor<T>())])->Clear();
 
 #include "crateDataTypes.h"
 
