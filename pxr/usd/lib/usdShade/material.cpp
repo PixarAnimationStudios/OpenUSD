@@ -391,15 +391,27 @@ UsdShadeMaterial::CreateMasterMaterialVariant(const UsdPrim &masterPrim,
 // old vs new style controlled by env var:
 // USD_USE_LEGACY_BASE_MATERIAL
 
+static
+UsdShadeMaterial
+_GetMaterialAtPath(
+        const UsdPrim & prim,
+        const SdfPath & path)
+{
+    if (prim && !path.IsEmpty()) {
+        auto material =
+            UsdShadeMaterial(prim.GetStage()->GetPrimAtPath(path));
+        if (material) {
+            return material;
+        }
+    }
+    return UsdShadeMaterial();
+
+}
 
 UsdShadeMaterial
 UsdShadeMaterial::GetBaseMaterial() const 
 {
-    SdfPath basePath = GetBaseMaterialPath();
-    if (!basePath.IsEmpty()) {
-        return UsdShadeMaterial(GetPrim().GetStage()->GetPrimAtPath(basePath));
-    }
-    return UsdShadeMaterial();
+    return _GetMaterialAtPath(GetPrim(), GetBaseMaterialPath());
 }
 
 SdfPath
@@ -418,14 +430,26 @@ UsdShadeMaterial::GetBaseMaterialPath() const
         }
     }
 
-    ////////////////
-    const PcpPrimIndex &index = GetPrim().GetPrimIndex();
-    SdfPath parentPath;
-    for(const PcpNodeRef &node: index.GetNodeRange()) {
+    return FindBaseMaterialPathInPrimIndex(
+            GetPrim().GetPrimIndex(),
+            [=](const SdfPath &p)
+                {return bool(_GetMaterialAtPath(GetPrim(), p));});
+}
+
+/* static */
+SdfPath
+UsdShadeMaterial::FindBaseMaterialPathInPrimIndex(
+        const PcpPrimIndex & primIndex,
+        const PathPredicate & pathIsMaterialPredicate)
+{
+    for(const PcpNodeRef &node: primIndex.GetNodeRange()) {
         if (PcpIsSpecializesArc(node.GetArcType()))
-                // && node.GetOriginNode() == index.GetRootNode()) {
         {
-            // Found a root specializes arc.
+            // We only consider children of the prim's root node because any
+            // specializes arc we care about that is authored inside referenced
+            // scene description will "imply" up into the root layer stack.
+            // This enables us to trim our search space, potentially
+            // significantly.
             if (node.GetParentNode() != node.GetRootNode()) {
                 continue;
             }
@@ -433,17 +457,18 @@ UsdShadeMaterial::GetBaseMaterialPath() const
             if (node.GetMapToParent().MapSourceToTarget(
                 SdfPath::AbsoluteRootPath()).IsEmpty()) {
                 // Skip this child node because it crosses a reference arc.
-                // (Reference mappings never map the absoluteyroot path </>.)
+                // (Reference mappings never map the absolute root path </>.)
                 continue;
             }
-            
-            // stop at the first one
-            parentPath = node.GetPath();
-            break;
+
+            // stop at the first one that's a material
+            const SdfPath & path = node.GetPath();
+            if (pathIsMaterialPredicate(path)) {
+                return path;
+            }
         }
     }
-
-    return parentPath;
+    return SdfPath();
 }
 
 void

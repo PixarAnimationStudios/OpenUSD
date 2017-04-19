@@ -1,0 +1,13 @@
+#usda 1.0
+
+def Material "BaseMaterial" {
+}
+
+def Material "ChildMaterial" (
+        specializes = [ </BaseMaterial> ]
+)
+{
+}
+
+# Evaluating on a Stage with this layer as root, BaseMaterial should
+# evaluate as the base material for ChildMaterial

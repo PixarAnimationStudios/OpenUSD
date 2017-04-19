@@ -61,6 +61,7 @@ pxr_test_scripts(
     testenv/testUsdShadeMaterialFaceSet.py
     testenv/testUsdShadeMaterialAuthoring.py
     testenv/testUsdShadeMaterialBaseMaterial.py
+    testenv/testUsdShadeMaterialSpecializesBaseComposition.py
     testenv/testUsdShadeNodeGraphs.py
     testenv/testUsdShadeShaders.py
 )
@@ -85,6 +86,10 @@ pxr_install_test_dir(
     DEST testUsdShadeMaterialBaseMaterial_specializes
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeMaterialSpecializesBaseComposition
+    DEST testUsdShadeMaterialSpecializesBaseComposition
+)
 pxr_register_test(testUsdShadeBinding
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeBinding"
@@ -135,6 +140,12 @@ pxr_register_test(testUsdShadeMaterialBaseMaterial_specializes
     DIFF_COMPARE test_base_material_specializes.usda
     ENV
         USD_USE_LEGACY_BASE_MATERIAL=0
+)
+
+pxr_register_test(testUsdShadeMaterialSpecializesBaseComposition
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialSpecializesBaseComposition"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdShadeInterfaceInputConsumers_OldEncoding

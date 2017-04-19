@@ -1,0 +1,37 @@
+#usda 1.0
+
+def Xform "Asset" {
+    def "Looks" {
+        def Material "BaseMaterial" {
+        }
+    }
+}
+
+def Xform "Set" {
+    def "SetChild" {
+        def "ReferencedAsset" (
+            references = [ </Asset> ]
+        )
+        {
+        }
+    }
+}
+
+def Xform "Shot" {
+    def "Set" (
+        references = [ </Set> ]
+    )
+    {
+        over "SetChild" {
+            over "ReferencedAsset" {
+                over "Looks" {
+                    def Material "ChildMaterial" (
+                        specializes = [ </Shot/Set/SetChild/ReferencedAsset/Looks/BaseMaterial> ]
+                    )
+                    {
+                    }
+                }
+            }
+        }
+    }
+}
