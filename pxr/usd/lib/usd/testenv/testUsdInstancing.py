@@ -29,6 +29,7 @@
 # by this test should always be valid.
 
 from pxr import Usd, Sdf, Tf
+import unittest
 
 def ValidateExpectedInstances(stage, expectedInstances):
     """
@@ -160,500 +161,499 @@ class NoticeListener:
         self.changedInfoPaths = notice.GetChangedInfoOnlyPaths()
         ValidateAndDumpUsdStage(notice.GetStage())
 
-def TestBasic():
-    """Test instancing and change processing with basic asset structure
-    involving references and classes."""
-    s = OpenStage('basic/root.usda')
-    nl = NoticeListener()
+class TestUsdInstancing(unittest.TestCase):
+    def setUp(self):
+        # Print a newline before each test so that the output for
+        # each test case starts on a newline instead of the last
+        # line of the unittest output.
+        print "\n"
 
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
-                          '/World/sets/Set_1/Prop_2'] })
+    def test_Basic(self):
+        """Test instancing and change processing with basic asset structure
+        involving references and classes."""
+        s = OpenStage('basic/root.usda')
+        nl = NoticeListener()
 
-    print "-" * 60
-    print "Adding prim /Prop/Scope to referenced prop"
-    propLayer = Sdf.Layer.Find('basic/prop.usda')
-    scope = Sdf.PrimSpec(propLayer.GetPrimAtPath('/Prop'),
-                         'Scope', Sdf.SpecifierDef)
-
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
-                          '/World/sets/Set_1/Prop_2'] })
-    ValidateExpectedChanges(nl,
-        ['/World/sets/Set_1/Prop_3/Scope', '/__Master_1/Scope'])
-
-    print "-" * 60
-    print "Adding prim /Prop/Scope/Scope2 to referenced prop"
-    scope2 = Sdf.PrimSpec(scope, 'Scope2', Sdf.SpecifierDef)
-
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
-                          '/World/sets/Set_1/Prop_2'] })
-    ValidateExpectedChanges(nl,
-        ['/World/sets/Set_1/Prop_3/Scope/Scope2', '/__Master_1/Scope/Scope2'])
-
-    # Test that making a master prim's source prim index uninstanceable
-    # causes Usd to assign another index as that master prim's source.
-    master = s.GetPrimAtPath('/__Master_1')
-    primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
-
-    print "-" * 60
-    print "Uninstancing prim %s" % primPathToUninstance
-    p2 = s.GetPrimAtPath(primPathToUninstance)
-    p2.SetInstanceable(False)
-
-    if primPathToUninstance == '/World/sets/Set_1/Prop_1':
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1/Prop_2'] })
-        ValidateExpectedChanges(nl,
-            ['/World/sets/Set_1/Prop_1', '/__Master_1'])
-    elif primPathToUninstance == '/World/sets/Set_1/Prop_2':
+            { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
+                              '/World/sets/Set_1/Prop_2'] })
+
+        print "-" * 60
+        print "Adding prim /Prop/Scope to referenced prop"
+        propLayer = Sdf.Layer.Find('basic/prop.usda')
+        scope = Sdf.PrimSpec(propLayer.GetPrimAtPath('/Prop'),
+                             'Scope', Sdf.SpecifierDef)
+
         ValidateExpectedInstances(s,
-            { '/__Master_1': ['/World/sets/Set_1/Prop_1'] })
+            { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
+                              '/World/sets/Set_1/Prop_2'] })
         ValidateExpectedChanges(nl,
-            ['/World/sets/Set_1/Prop_2', '/__Master_1'])
-    else:
-        assert False, 'Unexpected prim <%s>' % primPathToUninstance
+            ['/World/sets/Set_1/Prop_3/Scope', '/__Master_1/Scope'])
 
-    # Test that making a master prim's source prim index uninstanceable
-    # causes Usd to destroy the master prim when no more instances are
-    # available.
-    primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
+        print "-" * 60
+        print "Adding prim /Prop/Scope/Scope2 to referenced prop"
+        scope2 = Sdf.PrimSpec(scope, 'Scope2', Sdf.SpecifierDef)
 
-    print "-" * 60
-    print "Uninstancing prim %s" % primPathToUninstance
-    p1 = s.GetPrimAtPath(primPathToUninstance)
-    p1.SetInstanceable(False)
-
-    if primPathToUninstance == '/World/sets/Set_1/Prop_1':
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
+                              '/World/sets/Set_1/Prop_2'] })
         ValidateExpectedChanges(nl,
-            ['/World/sets/Set_1/Prop_1', '/__Master_1'])
-    elif primPathToUninstance == '/World/sets/Set_1/Prop_2':
+            ['/World/sets/Set_1/Prop_3/Scope/Scope2', '/__Master_1/Scope/Scope2'])
+
+        # Test that making a master prim's source prim index uninstanceable
+        # causes Usd to assign another index as that master prim's source.
+        master = s.GetPrimAtPath('/__Master_1')
+        primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
+
+        print "-" * 60
+        print "Uninstancing prim %s" % primPathToUninstance
+        p2 = s.GetPrimAtPath(primPathToUninstance)
+        p2.SetInstanceable(False)
+
+        if primPathToUninstance == '/World/sets/Set_1/Prop_1':
+            ValidateExpectedInstances(s,
+                { '/__Master_1': ['/World/sets/Set_1/Prop_2'] })
+            ValidateExpectedChanges(nl,
+                ['/World/sets/Set_1/Prop_1', '/__Master_1'])
+        elif primPathToUninstance == '/World/sets/Set_1/Prop_2':
+            ValidateExpectedInstances(s,
+                { '/__Master_1': ['/World/sets/Set_1/Prop_1'] })
+            ValidateExpectedChanges(nl,
+                ['/World/sets/Set_1/Prop_2', '/__Master_1'])
+        else:
+            assert False, 'Unexpected prim <%s>' % primPathToUninstance
+
+        # Test that making a master prim's source prim index uninstanceable
+        # causes Usd to destroy the master prim when no more instances are
+        # available.
+        primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
+
+        print "-" * 60
+        print "Uninstancing prim %s" % primPathToUninstance
+        p1 = s.GetPrimAtPath(primPathToUninstance)
+        p1.SetInstanceable(False)
+
+        if primPathToUninstance == '/World/sets/Set_1/Prop_1':
+            ValidateExpectedChanges(nl,
+                ['/World/sets/Set_1/Prop_1', '/__Master_1'])
+        elif primPathToUninstance == '/World/sets/Set_1/Prop_2':
+            ValidateExpectedChanges(nl,
+                ['/World/sets/Set_1/Prop_2', '/__Master_1'])
+        else:
+            assert False, 'Unexpected prim <%s>' % primPathToUninstance
+
+        ValidateExpectedInstances(s, {})
+
+        # Test that making a prim index instanceable causes a new master to
+        # be created if it's the first one.
+        print "-" * 60
+        print "Instancing prim /World/sets/Set_1/Prop_3"
+        p3 = s.GetPrimAtPath('/World/sets/Set_1/Prop_3')
+        p3.SetInstanceable(True)
+
+        ValidateExpectedInstances(s, 
+            { '/__Master_2': ['/World/sets/Set_1/Prop_3'] })
         ValidateExpectedChanges(nl,
-            ['/World/sets/Set_1/Prop_2', '/__Master_1'])
-    else:
-        assert False, 'Unexpected prim <%s>' % primPathToUninstance
+            ['/World/sets/Set_1/Prop_3', '/__Master_2'])
 
-    ValidateExpectedInstances(s, {})
-        
-    # Test that making a prim index instanceable causes a new master to
-    # be created if it's the first one.
-    print "-" * 60
-    print "Instancing prim /World/sets/Set_1/Prop_3"
-    p3 = s.GetPrimAtPath('/World/sets/Set_1/Prop_3')
-    p3.SetInstanceable(True)
+        # Test that modifying the composition structure of an instanceable
+        # prim index causes new masters to be created.
+        print "-" * 60
+        print "Removing inherit arc from referenced prop"
+        propSpec = propLayer.GetPrimAtPath('/Prop')
+        propSpec.inheritPathList.ClearEdits()
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_2': ['/World/sets/Set_1/Prop_3'] })
-    ValidateExpectedChanges(nl,
-        ['/World/sets/Set_1/Prop_3', '/__Master_2'])
+        ValidateExpectedInstances(s, 
+            { '/__Master_3': ['/World/sets/Set_1/Prop_3'] })
+        ValidateExpectedChanges(nl,
+            ['/World/sets/Set_1/Prop_1', '/World/sets/Set_1/Prop_2', 
+             '/World/sets/Set_1/Prop_3', 
+             '/__Master_2', '/__Master_3'])
 
-    # Test that modifying the composition structure of an instanceable
-    # prim index causes new masters to be created.
-    print "-" * 60
-    print "Removing inherit arc from referenced prop"
-    propSpec = propLayer.GetPrimAtPath('/Prop')
-    propSpec.inheritPathList.ClearEdits()
+        print "-" * 60
+        print "Readd inherit arc from referenced prop"
+        propSpec.inheritPathList.Add('/_class_Prop')
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_3': ['/World/sets/Set_1/Prop_3'] })
-    ValidateExpectedChanges(nl,
-        ['/World/sets/Set_1/Prop_1', '/World/sets/Set_1/Prop_2', 
-         '/World/sets/Set_1/Prop_3', 
-         '/__Master_2', '/__Master_3'])
+        ValidateExpectedInstances(s, 
+            { '/__Master_4': ['/World/sets/Set_1/Prop_3'] })
+        ValidateExpectedChanges(nl,
+            ['/World/sets/Set_1/Prop_1', '/World/sets/Set_1/Prop_2', 
+             '/World/sets/Set_1/Prop_3', 
+             '/__Master_3', '/__Master_4'])
 
-    print "-" * 60
-    print "Readd inherit arc from referenced prop"
-    propSpec.inheritPathList.Add('/_class_Prop')
+        # Test that removing prims from beneath instanceable prim indexes
+        # only affects the master.
+        print "-" * 60
+        print "Remove /Prop/Scope/Scope2 from referenced prop"
+        del scope2.nameParent.nameChildren[scope2.name]
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_4': ['/World/sets/Set_1/Prop_3'] })
-    ValidateExpectedChanges(nl,
-        ['/World/sets/Set_1/Prop_1', '/World/sets/Set_1/Prop_2', 
-         '/World/sets/Set_1/Prop_3', 
-         '/__Master_3', '/__Master_4'])
+        ValidateExpectedInstances(s, 
+            { '/__Master_4': ['/World/sets/Set_1/Prop_3'] })
+        ValidateExpectedChanges(nl,
+            ['/World/sets/Set_1/Prop_1/Scope/Scope2', 
+             '/World/sets/Set_1/Prop_2/Scope/Scope2', 
+             '/__Master_4/Scope/Scope2'])
 
-    # Test that removing prims from beneath instanceable prim indexes
-    # only affects the master.
-    print "-" * 60
-    print "Remove /Prop/Scope/Scope2 from referenced prop"
-    del scope2.nameParent.nameChildren[scope2.name]
+        print "-" * 60
+        print "Remove /Prop/Scope from referenced prop"
+        del scope.nameParent.nameChildren[scope.name]
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_4': ['/World/sets/Set_1/Prop_3'] })
-    ValidateExpectedChanges(nl,
-        ['/World/sets/Set_1/Prop_1/Scope/Scope2', 
-         '/World/sets/Set_1/Prop_2/Scope/Scope2', 
-         '/__Master_4/Scope/Scope2'])
+        ValidateExpectedInstances(s, 
+            { '/__Master_4': ['/World/sets/Set_1/Prop_3'] })
+        ValidateExpectedChanges(nl,
+            ['/World/sets/Set_1/Prop_1/Scope', 
+             '/World/sets/Set_1/Prop_2/Scope', 
+             '/__Master_4/Scope'])
 
-    print "-" * 60
-    print "Remove /Prop/Scope from referenced prop"
-    del scope.nameParent.nameChildren[scope.name]
-
-    ValidateExpectedInstances(s, 
-        { '/__Master_4': ['/World/sets/Set_1/Prop_3'] })
-    ValidateExpectedChanges(nl,
-        ['/World/sets/Set_1/Prop_1/Scope', 
-         '/World/sets/Set_1/Prop_2/Scope', 
-         '/__Master_4/Scope'])
-
-def TestNested():
-    """Test instancing and change processing with basic asset structure
-    involving instances nested in namespace."""
-    s = OpenStage('nested/root.usda')
-    nl = NoticeListener()
-
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/World/sets/Set_1'],
-          '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
-
-    print "-" * 60
-    print "Adding prim /Prop/Scope to referenced prop"
-    propLayer = Sdf.Layer.Find('nested/prop.usda')
-    scope = Sdf.PrimSpec(propLayer.GetPrimAtPath('/Prop'),
-                         'Scope', Sdf.SpecifierDef)    
-
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/World/sets/Set_1'],
-          '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
-    ValidateExpectedChanges(nl, 
-        ['/__Master_1/Prop_3/Scope', '/__Master_2/Scope'])
-
-    print "-" * 60
-    print "Adding prim /Prop/Scope/Scope2 to referenced prop"
-    scope2 = Sdf.PrimSpec(scope, 'Scope2', Sdf.SpecifierDef)
-
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/World/sets/Set_1'],
-          '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
-    ValidateExpectedChanges(nl, 
-        ['/__Master_1/Prop_3/Scope/Scope2', '/__Master_2/Scope/Scope2'])
-
-    setLayer = Sdf.Layer.Find('nested/set.usda')
-
-    # Test that making a master prim's source prim index uninstanceable
-    # causes Usd to assign another index as that master prim's source.
-    master = s.GetPrimAtPath('/__Master_2')
-    primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
-
-    print "-" * 60
-    print "Uninstancing prim %s" % primPathToUninstance
-
-    if primPathToUninstance == "/World/sets/Set_1/Prop_1":
-        p2 = setLayer.GetPrimAtPath("/Set/Prop_1")
-        p2.SetInfo('instanceable', False)
+    def test_Nested(self):
+        """Test instancing and change processing with basic asset structure
+        involving instances nested in namespace."""
+        s = OpenStage('nested/root.usda')
+        nl = NoticeListener()
 
         ValidateExpectedInstances(s,
             { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_2': ['/__Master_1/Prop_2'] })
-        ValidateExpectedChanges(nl, 
-            ['/__Master_1/Prop_1', '/__Master_2'])
-    elif primPathToUninstance == '/World/sets/Set_1/Prop_2':
-        p2 = setLayer.GetPrimAtPath("/Set/Prop_2")
-        p2.SetInfo('instanceable', False)
+              '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
+
+        print "-" * 60
+        print "Adding prim /Prop/Scope to referenced prop"
+        propLayer = Sdf.Layer.Find('nested/prop.usda')
+        scope = Sdf.PrimSpec(propLayer.GetPrimAtPath('/Prop'),
+                             'Scope', Sdf.SpecifierDef)    
 
         ValidateExpectedInstances(s,
             { '/__Master_1': ['/World/sets/Set_1'],
-              '/__Master_2': ['/__Master_1/Prop_1'] })
+              '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
         ValidateExpectedChanges(nl, 
-            ['/__Master_1/Prop_2', '/__Master_2'])
-    else:
-        assert False, 'Unexpected prim <%s>' % primPathToUninstance
+            ['/__Master_1/Prop_3/Scope', '/__Master_2/Scope'])
 
-    # Test that making a master prim's source prim index uninstanceable
-    # causes Usd to destroy the master prim when no more instances are
-    # available.
-    primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
+        print "-" * 60
+        print "Adding prim /Prop/Scope/Scope2 to referenced prop"
+        scope2 = Sdf.PrimSpec(scope, 'Scope2', Sdf.SpecifierDef)
 
-    print "-" * 60
-    print "Uninstancing prim %s" % primPathToUninstance
-
-    if primPathToUninstance == "/World/sets/Set_1/Prop_1":
-        p1 = setLayer.GetPrimAtPath('/Set/Prop_1')
-        p1.SetInfo('instanceable', False)
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/World/sets/Set_1'],
+              '/__Master_2': ['/__Master_1/Prop_1', '/__Master_1/Prop_2'] })
         ValidateExpectedChanges(nl, 
-            ['/__Master_1/Prop_1', '/__Master_2'])
-    elif primPathToUninstance == "/World/sets/Set_1/Prop_2":
-        p1 = setLayer.GetPrimAtPath('/Set/Prop_2')
-        p1.SetInfo('instanceable', False)
+            ['/__Master_1/Prop_3/Scope/Scope2', '/__Master_2/Scope/Scope2'])
+
+        setLayer = Sdf.Layer.Find('nested/set.usda')
+
+        # Test that making a master prim's source prim index uninstanceable
+        # causes Usd to assign another index as that master prim's source.
+        master = s.GetPrimAtPath('/__Master_2')
+        primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
+
+        print "-" * 60
+        print "Uninstancing prim %s" % primPathToUninstance
+
+        if primPathToUninstance == "/World/sets/Set_1/Prop_1":
+            p2 = setLayer.GetPrimAtPath("/Set/Prop_1")
+            p2.SetInfo('instanceable', False)
+
+            ValidateExpectedInstances(s,
+                { '/__Master_1': ['/World/sets/Set_1'],
+                  '/__Master_2': ['/__Master_1/Prop_2'] })
+            ValidateExpectedChanges(nl, 
+                ['/__Master_1/Prop_1', '/__Master_2'])
+        elif primPathToUninstance == '/World/sets/Set_1/Prop_2':
+            p2 = setLayer.GetPrimAtPath("/Set/Prop_2")
+            p2.SetInfo('instanceable', False)
+
+            ValidateExpectedInstances(s,
+                { '/__Master_1': ['/World/sets/Set_1'],
+                  '/__Master_2': ['/__Master_1/Prop_1'] })
+            ValidateExpectedChanges(nl, 
+                ['/__Master_1/Prop_2', '/__Master_2'])
+        else:
+            assert False, 'Unexpected prim <%s>' % primPathToUninstance
+
+        # Test that making a master prim's source prim index uninstanceable
+        # causes Usd to destroy the master prim when no more instances are
+        # available.
+        primPathToUninstance = master._GetSourcePrimIndex().rootNode.path
+
+        print "-" * 60
+        print "Uninstancing prim %s" % primPathToUninstance
+
+        if primPathToUninstance == "/World/sets/Set_1/Prop_1":
+            p1 = setLayer.GetPrimAtPath('/Set/Prop_1')
+            p1.SetInfo('instanceable', False)
+            ValidateExpectedChanges(nl, 
+                ['/__Master_1/Prop_1', '/__Master_2'])
+        elif primPathToUninstance == "/World/sets/Set_1/Prop_2":
+            p1 = setLayer.GetPrimAtPath('/Set/Prop_2')
+            p1.SetInfo('instanceable', False)
+            ValidateExpectedChanges(nl, 
+               ['/__Master_1/Prop_2', '/__Master_2'])
+        else:
+            assert False, 'Unexpected prim <%s>' % primPathToUninstance
+
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/World/sets/Set_1'] })
+
+        # Test that making a prim index instanceable causes a new master to
+        # be created if it's the first one.
+        print "-" * 60
+        print "Instancing prim /World/sets/Set_1/Prop_3"
+        p3 = setLayer.GetPrimAtPath('/Set/Prop_3')
+        p3.SetInfo('instanceable', True)
+
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/World/sets/Set_1'],
+              '/__Master_3': ['/__Master_1/Prop_3'] })
         ValidateExpectedChanges(nl, 
-           ['/__Master_1/Prop_2', '/__Master_2'])
-    else:
-        assert False, 'Unexpected prim <%s>' % primPathToUninstance
+            ['/__Master_1/Prop_3', '/__Master_3'])
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/World/sets/Set_1'] })
+        # Test that modifying the composition structure of an instanceable
+        # prim index causes new masters to be created.
+        print "-" * 60
+        print "Removing inherit arc from referenced prop"
+        propSpec = propLayer.GetPrimAtPath('/Prop')
+        propSpec.inheritPathList.ClearEdits()
 
-    # Test that making a prim index instanceable causes a new master to
-    # be created if it's the first one.
-    print "-" * 60
-    print "Instancing prim /World/sets/Set_1/Prop_3"
-    p3 = setLayer.GetPrimAtPath('/Set/Prop_3')
-    p3.SetInfo('instanceable', True)
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/World/sets/Set_1'],
+              '/__Master_4': ['/__Master_1/Prop_3'] })
+        ValidateExpectedChanges(nl,
+            ['/__Master_1/Prop_1', '/__Master_1/Prop_2', '/__Master_1/Prop_3', 
+             '/__Master_3', '/__Master_4',])
 
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/World/sets/Set_1'],
-          '/__Master_3': ['/__Master_1/Prop_3'] })
-    ValidateExpectedChanges(nl, 
-        ['/__Master_1/Prop_3', '/__Master_3'])
+        print "-" * 60
+        print "Readd inherit arc from referenced prop"
+        propSpec.inheritPathList.Add('/_class_Prop')
 
-    # Test that modifying the composition structure of an instanceable
-    # prim index causes new masters to be created.
-    print "-" * 60
-    print "Removing inherit arc from referenced prop"
-    propSpec = propLayer.GetPrimAtPath('/Prop')
-    propSpec.inheritPathList.ClearEdits()
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/World/sets/Set_1'],
+              '/__Master_5': ['/__Master_1/Prop_3'] })
+        ValidateExpectedChanges(nl,
+            ['/__Master_1/Prop_1', '/__Master_1/Prop_2', '/__Master_1/Prop_3', 
+             '/__Master_4', '/__Master_5',])
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/World/sets/Set_1'],
-          '/__Master_4': ['/__Master_1/Prop_3'] })
-    ValidateExpectedChanges(nl,
-        ['/__Master_1/Prop_1', '/__Master_1/Prop_2', '/__Master_1/Prop_3', 
-         '/__Master_3', '/__Master_4',])
+        # Test that removing prims from beneath instanceable prim indexes
+        # only affects the master.
+        print "-" * 60
+        print "Remove /Prop/Scope/Scope2 from referenced prop"
+        del scope2.nameParent.nameChildren[scope2.name]
 
-    print "-" * 60
-    print "Readd inherit arc from referenced prop"
-    propSpec.inheritPathList.Add('/_class_Prop')
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/World/sets/Set_1'],
+              '/__Master_5': ['/__Master_1/Prop_3'] })
+        ValidateExpectedChanges(nl,
+            ['/__Master_1/Prop_1/Scope/Scope2', '/__Master_1/Prop_2/Scope/Scope2', 
+             '/__Master_5/Scope/Scope2',])
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/World/sets/Set_1'],
-          '/__Master_5': ['/__Master_1/Prop_3'] })
-    ValidateExpectedChanges(nl,
-        ['/__Master_1/Prop_1', '/__Master_1/Prop_2', '/__Master_1/Prop_3', 
-         '/__Master_4', '/__Master_5',])
+        print "-" * 60
+        print "Remove /Prop/Scope from referenced prop"
+        del scope.nameParent.nameChildren[scope.name]
 
-    # Test that removing prims from beneath instanceable prim indexes
-    # only affects the master.
-    print "-" * 60
-    print "Remove /Prop/Scope/Scope2 from referenced prop"
-    del scope2.nameParent.nameChildren[scope2.name]
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/World/sets/Set_1'],
+              '/__Master_5': ['/__Master_1/Prop_3'] })
+        ValidateExpectedChanges(nl,
+            ['/__Master_1/Prop_1/Scope', '/__Master_1/Prop_2/Scope', 
+             '/__Master_5/Scope',])
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/World/sets/Set_1'],
-          '/__Master_5': ['/__Master_1/Prop_3'] })
-    ValidateExpectedChanges(nl,
-        ['/__Master_1/Prop_1/Scope/Scope2', '/__Master_1/Prop_2/Scope/Scope2', 
-         '/__Master_5/Scope/Scope2',])
+    def test_Payloads(self):
+        """Test instancing and change processing with asset structure involving
+        payloads, including payloads nested inside instances and masters."""
+        nl = NoticeListener()
 
-    print "-" * 60
-    print "Remove /Prop/Scope from referenced prop"
-    del scope.nameParent.nameChildren[scope.name]
+        print "Opening stage with everything loaded initially"
+        s = OpenStage('payloads/root.usda')
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/World/sets/Set_1'],
-          '/__Master_5': ['/__Master_1/Prop_3'] })
-    ValidateExpectedChanges(nl,
-        ['/__Master_1/Prop_1/Scope', '/__Master_1/Prop_2/Scope', 
-         '/__Master_5/Scope',])
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/ModelGroup_1', '/ModelGroup_2'],
+              '/__Master_2': ['/Model_1', '/Model_2', '/__Master_1/Model'] })
 
-def TestPayloads():
-    """Test instancing and change processing with asset structure involving
-    payloads, including payloads nested inside instances and masters."""
-    nl = NoticeListener()
+        print "-" * 60
+        print "Opening stage with nothing loaded initially"
+        s = OpenStage('payloads/root.usda', Usd.Stage.LoadNone)
 
-    print "Opening stage with everything loaded initially"
-    s = OpenStage('payloads/root.usda')
+        ValidateExpectedInstances(s, {})
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/ModelGroup_1', '/ModelGroup_2'],
-          '/__Master_2': ['/Model_1', '/Model_2', '/__Master_1/Model'] })
+        print "-" * 60
+        print "Loading instance /Model_1"
+        model_1 = s.GetPrimAtPath('/Model_1')
+        model_1.Load()
 
-    print "-" * 60
-    print "Opening stage with nothing loaded initially"
-    s = OpenStage('payloads/root.usda', Usd.Stage.LoadNone)
+        ValidateExpectedInstances(s, { '/__Master_1': ['/Model_1'] })
+        ValidateExpectedChanges(nl, ['/Model_1'])
 
-    ValidateExpectedInstances(s, {})
+        print "-" * 60
+        print "Loading instance /Model_2"
+        model_2 = s.GetPrimAtPath('/Model_2')
+        model_2.Load()
 
-    print "-" * 60
-    print "Loading instance /Model_1"
-    model_1 = s.GetPrimAtPath('/Model_1')
-    model_1.Load()
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/Model_1', '/Model_2'] })
+        ValidateExpectedChanges(nl, ['/Model_2'])
 
-    ValidateExpectedInstances(s, { '/__Master_1': ['/Model_1'] })
-    ValidateExpectedChanges(nl, ['/Model_1'])
+        print "-" * 60
+        print "Unloading instance /Model_1"
+        model_1.Unload()
 
-    print "-" * 60
-    print "Loading instance /Model_2"
-    model_2 = s.GetPrimAtPath('/Model_2')
-    model_2.Load()
+        ValidateExpectedInstances(s, { '/__Master_1': ['/Model_2'] })
+        ValidateExpectedChanges(nl, ['/Model_1'])
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/Model_1', '/Model_2'] })
-    ValidateExpectedChanges(nl, ['/Model_2'])
+        print "-" * 60
+        print "Loading instance /ModelGroup_1"
+        group_1 = s.GetPrimAtPath('/ModelGroup_1')
+        group_1.Load()
 
-    print "-" * 60
-    print "Unloading instance /Model_1"
-    model_1.Unload()
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/Model_2', '/__Master_2/Model'],
+              '/__Master_2': ['/ModelGroup_1'] })
+        ValidateExpectedChanges(nl, ['/ModelGroup_1'])
 
-    ValidateExpectedInstances(s, { '/__Master_1': ['/Model_2'] })
-    ValidateExpectedChanges(nl, ['/Model_1'])
+        print "-" * 60
+        print "Loading instance /ModelGroup_2"
+        group_2 = s.GetPrimAtPath('/ModelGroup_2')
+        group_2.Load()
 
-    print "-" * 60
-    print "Loading instance /ModelGroup_1"
-    group_1 = s.GetPrimAtPath('/ModelGroup_1')
-    group_1.Load()
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/Model_2', '/__Master_2/Model'],
+              '/__Master_2': ['/ModelGroup_1', '/ModelGroup_2'] })
+        ValidateExpectedChanges(nl, ['/ModelGroup_2'])
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/Model_2', '/__Master_2/Model'],
-          '/__Master_2': ['/ModelGroup_1'] })
-    ValidateExpectedChanges(nl, ['/ModelGroup_1'])
+        print "-" * 60
+        print "Unloading nested instance in ModelGroup"
+        group_1.GetMaster().GetChild('Model').Unload()
 
-    print "-" * 60
-    print "Loading instance /ModelGroup_2"
-    group_2 = s.GetPrimAtPath('/ModelGroup_2')
-    group_2.Load()
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/Model_2'],
+              '/__Master_2': ['/ModelGroup_1', '/ModelGroup_2'] })
+        # XXX: This seems like a bug. Unloading the nested model in the master
+        # should result in a resync of the master path:
+        # ValidateExpectedChanges(nl, ['/__Master_2/Model'])
+        ValidateExpectedChanges(nl, ['/ModelGroup_1/Model'])
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/Model_2', '/__Master_2/Model'],
-          '/__Master_2': ['/ModelGroup_1', '/ModelGroup_2'] })
-    ValidateExpectedChanges(nl, ['/ModelGroup_2'])
+        print "-" * 60
+        print "Unloading instance /ModelGroup_1"
+        group_1.Unload()
 
-    print "-" * 60
-    print "Unloading nested instance in ModelGroup"
-    group_1.GetMaster().GetChild('Model').Unload()
+        ValidateExpectedInstances(s, 
+            { '/__Master_1': ['/Model_2'],
+              '/__Master_2': ['/ModelGroup_2'] })
+        ValidateExpectedChanges(nl, ['/ModelGroup_1'])
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/Model_2'],
-          '/__Master_2': ['/ModelGroup_1', '/ModelGroup_2'] })
-    # XXX: This seems like a bug. Unloading the nested model in the master
-    # should result in a resync of the master path:
-    # ValidateExpectedChanges(nl, ['/__Master_2/Model'])
-    ValidateExpectedChanges(nl, ['/ModelGroup_1/Model'])
+    def test_Payloads2(self):
+        """Test instancing and change processing when unloading the last
+        instance of a master and loading a new instance of that master at the
+        same time."""
+        nl = NoticeListener()
 
-    print "-" * 60
-    print "Unloading instance /ModelGroup_1"
-    group_1.Unload()
+        print "Opening stage with nothing loaded initially"
+        s = OpenStage('payloads_2/root.usda', Usd.Stage.LoadNone)
 
-    ValidateExpectedInstances(s, 
-        { '/__Master_1': ['/Model_2'],
-          '/__Master_2': ['/ModelGroup_2'] })
-    ValidateExpectedChanges(nl, ['/ModelGroup_1'])
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Model_1', '/Model_2', '/Model_3', '/Model_4' ] })
 
-def TestPayloads2():
-    """Test instancing and change processing when unloading the last
-    instance of a master and loading a new instance of that master at the
-    same time."""
-    nl = NoticeListener()
+        # Loading Model_1 should result in two different masters, one for
+        # Model_1 and one shared by all the unloaded instances.
+        print "-" * 60
+        print "Loading instance /Model_1"
+        s.Load('/Model_1')
 
-    print "Opening stage with nothing loaded initially"
-    s = OpenStage('payloads_2/root.usda', Usd.Stage.LoadNone)
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Model_2', '/Model_3', '/Model_4' ],
+              '/__Master_2': ['/Model_1'] })
+        ValidateExpectedChanges(nl, ['/Model_1'])
 
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/Model_1', '/Model_2', '/Model_3', '/Model_4' ] })
+        # Now unload Model_1 and load Model_2 in the same call. Model_2
+        # should now be attached to the master previously used by Model_1,
+        # and Model_1 should reattach to the master being used for the
+        # unloaded instances.
+        print "-" * 60
+        print "Unload instance /Model_1, load instance /Model_2"
+        s.LoadAndUnload(['/Model_2'], ['/Model_1'])
 
-    # Loading Model_1 should result in two different masters, one for
-    # Model_1 and one shared by all the unloaded instances.
-    print "-" * 60
-    print "Loading instance /Model_1"
-    s.Load('/Model_1')
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Model_1', '/Model_3', '/Model_4' ],
+              '/__Master_2': ['/Model_2'] })
+        ValidateExpectedChanges(nl, ['/Model_1', '/Model_2'])
 
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/Model_2', '/Model_3', '/Model_4' ],
-          '/__Master_2': ['/Model_1'] })
-    ValidateExpectedChanges(nl, ['/Model_1'])
+        # Continue loading and unloading instances in the same way.
+        print "-" * 60
+        print "Unload instance /Model_2, load instance /Model_3"
+        s.LoadAndUnload(['/Model_3'], ['/Model_2'])
 
-    # Now unload Model_1 and load Model_2 in the same call. Model_2
-    # should now be attached to the master previously used by Model_1,
-    # and Model_1 should reattach to the master being used for the
-    # unloaded instances.
-    print "-" * 60
-    print "Unload instance /Model_1, load instance /Model_2"
-    s.LoadAndUnload(['/Model_2'], ['/Model_1'])
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Model_1', '/Model_2', '/Model_4' ],
+              '/__Master_2': ['/Model_3'] })
+        ValidateExpectedChanges(nl, ['/Model_2', '/Model_3'])
 
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/Model_1', '/Model_3', '/Model_4' ],
-          '/__Master_2': ['/Model_2'] })
-    ValidateExpectedChanges(nl, ['/Model_1', '/Model_2'])
-    
-    # Continue loading and unloading instances in the same way.
-    print "-" * 60
-    print "Unload instance /Model_2, load instance /Model_3"
-    s.LoadAndUnload(['/Model_3'], ['/Model_2'])
+        print "-" * 60
+        print "Unload instance /Model_3, load instance /Model_4"
+        s.LoadAndUnload(['/Model_4'], ['/Model_3'])
 
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/Model_1', '/Model_2', '/Model_4' ],
-          '/__Master_2': ['/Model_3'] })
-    ValidateExpectedChanges(nl, ['/Model_2', '/Model_3'])
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Model_1', '/Model_2', '/Model_3' ],
+              '/__Master_2': ['/Model_4'] })
+        ValidateExpectedChanges(nl, ['/Model_3', '/Model_4'])
 
-    print "-" * 60
-    print "Unload instance /Model_3, load instance /Model_4"
-    s.LoadAndUnload(['/Model_4'], ['/Model_3'])
+    def test_Deactivated(self):
+        """Test instancing and change processing when activating and
+        deactivating instances."""
+        nl = NoticeListener()
 
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/Model_1', '/Model_2', '/Model_3' ],
-          '/__Master_2': ['/Model_4'] })
-    ValidateExpectedChanges(nl, ['/Model_3', '/Model_4'])
+        s = OpenStage('deactivated/root.usda')
 
-def TestDeactivated():
-    """Test instancing and change processing when activating and
-    deactivating instances."""
-    nl = NoticeListener()
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Instance_1', '/Instance_2' ] })
 
-    s = OpenStage('deactivated/root.usda')
+        # Deactivate the primary instance being used by the master.
+        # This should cause the master to select the other available
+        # instance.
+        primPathToDeactivate = \
+            s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex().rootNode.path
 
-    ValidateExpectedInstances(s,
-        { '/__Master_1': ['/Instance_1', '/Instance_2' ] })
+        print "-" * 60
+        print "Deactivating instance %s" % primPathToDeactivate
+        s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
 
-    # Deactivate the primary instance being used by the master.
-    # This should cause the master to select the other available
-    # instance.
-    primPathToDeactivate = \
-        s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex().rootNode.path
+        if primPathToDeactivate == '/Instance_1':
+            ValidateExpectedInstances(s, { '/__Master_1': ['/Instance_2' ] })
+            ValidateExpectedChanges(nl, ['/Instance_1', '/__Master_1'])
+        elif primPathToDeactivate == '/Instance_2':
+            ValidateExpectedInstances(s, { '/__Master_1': ['/Instance_1' ] })
+            ValidateExpectedChanges(nl, ['/Instance_2', '/__Master_1'])
+        else:
+            assert False, 'Unexpected prim <%s>' % primPathToDeactivate
 
-    print "-" * 60
-    print "Deactivating instance %s" % primPathToDeactivate
-    s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
+        # Deactivate the last remaining instance. This should cause the
+        # master to be removed.
+        primPathToDeactivate = \
+            s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex().rootNode.path
 
-    if primPathToDeactivate == '/Instance_1':
-        ValidateExpectedInstances(s, { '/__Master_1': ['/Instance_2' ] })
-        ValidateExpectedChanges(nl, ['/Instance_1', '/__Master_1'])
-    elif primPathToDeactivate == '/Instance_2':
-        ValidateExpectedInstances(s, { '/__Master_1': ['/Instance_1' ] })
-        ValidateExpectedChanges(nl, ['/Instance_2', '/__Master_1'])
-    else:
-        assert False, 'Unexpected prim <%s>' % primPathToDeactivate
+        print "-" * 60
+        print "Deactivating instance %s" % primPathToDeactivate
+        s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
 
-    # Deactivate the last remaining instance. This should cause the
-    # master to be removed.
-    primPathToDeactivate = \
-        s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex().rootNode.path
+        ValidateExpectedInstances(s, {})
+        ValidateExpectedChanges(nl, [primPathToDeactivate, '/__Master_1'])
 
-    print "-" * 60
-    print "Deactivating instance %s" % primPathToDeactivate
-    s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
+        # Reactivate /Instance_1, which should cause a new master to be created
+        print "-" * 60
+        print "Activating instance /Instance_1"
+        s.GetPrimAtPath('/Instance_1').SetActive(True)
 
-    ValidateExpectedInstances(s, {})
-    ValidateExpectedChanges(nl, [primPathToDeactivate, '/__Master_1'])
+        ValidateExpectedInstances(s, { '/__Master_2': ['/Instance_1'] })
+        ValidateExpectedChanges(nl, ['/Instance_1', '/__Master_2'])
 
-    # Reactivate /Instance_1, which should cause a new master to be created
-    print "-" * 60
-    print "Activating instance /Instance_1"
-    s.GetPrimAtPath('/Instance_1').SetActive(True)
+        # Reactivate /Instance_2, which should attach to the existing master
+        print "-" * 60
+        print "Activating instance /Instance_2"
+        s.GetPrimAtPath('/Instance_2').SetActive(True)
 
-    ValidateExpectedInstances(s, { '/__Master_2': ['/Instance_1'] })
-    ValidateExpectedChanges(nl, ['/Instance_1', '/__Master_2'])
-
-    # Reactivate /Instance_2, which should attach to the existing master
-    print "-" * 60
-    print "Activating instance /Instance_2"
-    s.GetPrimAtPath('/Instance_2').SetActive(True)
-
-    ValidateExpectedInstances(s, 
-        { '/__Master_2': ['/Instance_1', '/Instance_2'] })
-    ValidateExpectedChanges(nl, ['/Instance_2'])
+        ValidateExpectedInstances(s, 
+            { '/__Master_2': ['/Instance_1', '/Instance_2'] })
+        ValidateExpectedChanges(nl, ['/Instance_2'])
 
 if __name__ == "__main__":
-    print "========= TestBasic ...\n"
-    TestBasic()
-
-    print "========= TestNested ...\n"
-    TestNested()
-
-    print "========= TestPayloads ...\n"
-    TestPayloads()
-
-    print "========= TestPayloads2 ...\n"
-    TestPayloads2()
-
-    print "========= TestDeactivated ...\n"
-    TestDeactivated()
+    # Default to verbosity=2 and redirect unittest's output to
+    # stdout so that the output from each test case is nicely
+    # grouped.
+    import sys
+    runner = unittest.TextTestRunner(stream=sys.stdout,verbosity=2)
+    unittest.main(testRunner=runner)
