@@ -24,6 +24,8 @@
 #ifndef AR_ASSET_INFO_H
 #define AR_ASSET_INFO_H
 
+/// \file ar/assetInfo.h
+
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/base/vt/value.h"
@@ -53,10 +55,12 @@ public:
     VtValue resolverInfo;
 };
 
+/// \relates ArAssetInfo
 AR_API
 bool 
 operator==(const ArAssetInfo& lhs, const ArAssetInfo& rhs);
 
+/// \relates ArAssetInfo
 AR_API
 bool 
 operator!=(const ArAssetInfo& lhs, const ArAssetInfo& rhs);

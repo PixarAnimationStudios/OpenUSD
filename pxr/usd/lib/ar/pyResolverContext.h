@@ -24,9 +24,8 @@
 #ifndef AR_PY_RESOLVER_CONTEXT_H
 #define AR_PY_RESOLVER_CONTEXT_H
 
-/// \file ar/pyResolverContext.h
-/// Private helper functions for converting ArResolverContext
-/// objects to and from Python.
+// Private helper functions for converting ArResolverContext
+// objects to and from Python.
 
 #include <Python.h>
 #include <boost/python/extract.hpp>

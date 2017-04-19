@@ -24,6 +24,9 @@
 #ifndef AR_DEFINE_RESOLVER_H
 #define AR_DEFINE_RESOLVER_H
 
+/// \file ar/defineResolver.h
+/// Macros for defining a custom resolver implementation.
+
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolver.h"
@@ -37,12 +40,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \def AR_DEFINE_RESOLVER(ResolverClass, BaseClass1, BaseClass2, ...)
+/// \def AR_DEFINE_RESOLVER
 ///
 /// Performs registrations required for the specified resolver class
 /// to be discovered by Ar's plugin mechanism. This typically would be
-/// invoked in the source file defining the resolver class.
+/// invoked in the source file defining the resolver class. For example:
 ///
+/// \code
+/// // in .cpp file
+/// AR_DEFINE_RESOLVER(CustomResolverClass, ArResolver);
+/// \endcode
+#ifdef doxygen
+#define AR_DEFINE_RESOLVER(ResolverClass, BaseClass1, ...)
+#else
 #define AR_DEFINE_RESOLVER(c, ...)                                  \
 TF_REGISTRY_FUNCTION(TfType) {                                      \
     TfType t = TfType::Define<                                      \
@@ -51,6 +61,7 @@ TF_REGISTRY_FUNCTION(TfType) {                                      \
             TfType::Bases<__VA_ARGS__>, BOOST_PP_EMPTY) >();        \
     t.SetFactory<ArResolverFactory<c> >();                          \
 }
+#endif // doxygen
 
 class ArResolverFactoryBase : public TfType::FactoryBase {
 public:

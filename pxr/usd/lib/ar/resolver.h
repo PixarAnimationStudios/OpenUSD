@@ -24,6 +24,8 @@
 #ifndef AR_RESOLVER_H
 #define AR_RESOLVER_H
 
+/// \file ar/resolver.h
+
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include <boost/noncopyable.hpp>
@@ -41,6 +43,10 @@ class VtValue;
 /// responsible for resolving asset information (including the asset's
 /// physical path) from a logical path.
 ///
+/// See \ref ar_implementing_resolver for information on how to customize
+/// asset resolution behavior by implementing a subclass of ArResolver.
+/// Clients may use #ArGetResolver to access the configured asset resolver.
+///
 class ArResolver 
     : public boost::noncopyable
 {
@@ -49,6 +55,7 @@ public:
     virtual ~ArResolver();
 
     // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_resolution
     /// \name Path Resolution Operations
     ///
     /// @{
@@ -111,7 +118,8 @@ public:
     /// @}
 
     // --------------------------------------------------------------------- //
-    /// \name Path Resolver Context Operations
+    /// \anchor ArResolver_context
+    /// \name Asset Resolver Context Operations
     /// @{
 
     /// Return a default ArResolverContext that may be bound to this resolver
@@ -153,6 +161,7 @@ public:
     /// @}
 
     // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_files
     /// \name File/asset-specific Operations
     ///
     /// @{
@@ -242,7 +251,8 @@ public:
 
 protected:
     // --------------------------------------------------------------------- //
-    /// \name Scoped Resolution Caches
+    /// \anchor ArResolver_scopedCache
+    /// \name Scoped Resolution Cache
     ///
     /// A scoped resolution cache indicates to the resolver that results of
     /// calls to Resolve should be cached for a certain scope. This is
@@ -251,10 +261,10 @@ protected:
     /// return the same result.
     ///
     /// Scoped caches are managed by ArResolverScopedCache instances, which
-    /// call _BeginCacheScope on construction and _EndCacheScope on 
-    /// destruction. Note that these instances may be nested. The resolver 
-    /// must cache the results of Resolve until the last instance is 
-    /// destroyed.
+    /// call ArResolver::_BeginCacheScope on construction and 
+    /// ArResolver::_EndCacheScope on destruction. Note that these instances 
+    /// may be nested. The resolver must cache the results of Resolve until 
+    /// the last instance is destroyed.
     ///
     /// ArResolverScopedCache instances only apply to the thread in
     /// which they are created. If multiple threads are running and an
@@ -289,7 +299,7 @@ protected:
     /// caching scope.
     ///
     /// \p cacheScopeData will contain the data stored in the 
-    /// ArResolverScopedCache from the call to _BeginCacheScope.
+    /// ArResolverScopedCache from the call to ArResolver::_BeginCacheScope.
     AR_API
     virtual void _EndCacheScope(
         VtValue* cacheScopeData) = 0;
@@ -297,7 +307,8 @@ protected:
     /// @}
 
     // --------------------------------------------------------------------- //
-    /// \name Path Resolver Context Operations
+    /// \anchor ArResolver_contextBinder
+    /// \name Asset Resolver Context Binder
     ///
     /// \see ArResolverContext
     /// \see ArResolverContextBinder
@@ -324,6 +335,16 @@ protected:
 };
 
 /// Returns the configured asset resolver.
+///
+/// When first called, this function will check if any plugins contain a
+/// subclass of ArResolver. If so, that plugin will be loaded and a new
+/// instance of that subclass will be constructed. Otherwise, a new instance
+/// of ArDefaultResolver will be used instead. This instance will be returned
+/// by this and all subsequent calls to this function.
+///
+/// If ArResolver subclasses are found in multiple plugins, the subclass
+/// whose typename is lexicographically first will be selected and a
+/// warning will be issued.
 AR_API
 ArResolver& ArGetResolver();
 
