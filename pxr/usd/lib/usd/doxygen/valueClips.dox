@@ -40,7 +40,8 @@ indicating:
 Before going further, let's establish some terminology:
 
 - **Value Clip**: An individual \ref SdfLayer "layer" containing time varying data
-  over some interval.  **All metadata, relationships, and <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-DefaultValue">default values</a> 
+  over some interval.  **All metadata, relationships, and 
+  <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-DefaultValue">default values</a> 
   present in a layer are ignored when the layer is consumed as a Value Clip.**
 
 - **Static Scene Topology**: An individual layer containing the aggregate of all
@@ -52,6 +53,11 @@ Before going further, let's establish some terminology:
 
 - **Clip Metadata**: A set of prim-level metadata which control USD's value
   resolution semantics.
+
+- \anchor Usd_ValueClips_AnchorPoint **Anchor Point**: The strongest layer 
+  in which either clipAssetPaths or clipTemplateAssetPath is authored. 
+  This determines the \em strength of clips with respect to
+  value resolution, see \ref Usd_ValueClips_ClipValueResolution for details.
 
 \subsection Metadata
 
@@ -146,11 +152,11 @@ The presence of Value Clips introduces a new behavior to value resolution of
 any attribute affected by the clips. "Affected by the clips" means all 
 attributes on the prim hosting the value clip metadata, and all of its 
 descendant prims' attributes. The \em strength of data in a set of value clips
-is set by the layer in which the clip metadata is anchored, i.e. the layer
-in which \em clipAssetPaths or \em clipTemplateAssetPath is authored: the
-clip data is just weaker than the "Local" (L in <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-LIVRPSStrengthOrdering">LIVRPS</a> data of
-the anchoring layer.  Thus, within a LayerStack, clip data can be overridden by
-adding overrides to a stronger SubLayer or in a local opinion, just as for any other kind of data.
+is based on the \ref Usd_ValueClips_AnchorPoint "anchor point". 
+The clip data is just weaker than the "Local" (L in 
+<a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-LIVRPSStrengthOrdering">LIVRPS</a>)
+data of the anchoring layer.  Clip data can be overridden by adding overrides to a 
+stronger layer or in a local opinion, just as for any other kind of data.
 
 When an attribute is affected by a clip, value resolution performs the 
 following extra computation:
@@ -198,6 +204,21 @@ sets the stage for it, so it may be worthwhile understanding how it works:
   derived clipAssetPath, the clipTime (t, t) will be authored; similarly,
   the clipActive (t, n) will be authored, where n represents the index of the
   derived clipAssetPath.
+
+\subsection Usd_ValueClips_ClipValueResolution_LayerOffsets Layer Offsets
+
+Layer offsets affect value clips in the following ways:
+
+- If using template metadata encoding:
+    - Layer offsets are applied to generated clipTimes and clipActive relative
+    to the \ref Usd_ValueClips_AnchorPoint "anchor point". Note that layer offsets
+    will *not* affect the generated set of asset paths, as they are not
+    applied to clipTemplateStartTime, clipTemplateEndTime and clipTemplateStride. 
+
+- If using explicit metadata encoding:
+    - Layer offsets are applied to clipTimes and clipActive metadata relative to the
+    strongest layer in which they were authored. Note that this layer may be different from
+    the \ref Usd_ValueClips_AnchorPoint "anchor point".
 
 
 \section Usd_ValueClips_ClipPerformance Performance Characteristics and Maximizing Clip Performance
