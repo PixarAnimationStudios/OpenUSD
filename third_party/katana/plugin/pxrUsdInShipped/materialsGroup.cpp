@@ -46,13 +46,16 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LooksGroupOp, privateData, interfa
 
     FnKat::GroupBuilder gb;
 
-    bool flatten = false;
     TF_FOR_ALL(childIter, privateData.GetUsdPrim().GetChildren()) {
         const UsdPrim& child = *childIter;
         UsdShadeMaterial materialSchema(child);
         if (!materialSchema) {
             continue;
         }
+
+        // do not flatten child material (specialize arcs) 
+        // if we have any.
+        bool flatten = !materialSchema.HasBaseMaterial();
 
         std::string location = 
             PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
