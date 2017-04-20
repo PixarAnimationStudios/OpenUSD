@@ -259,7 +259,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         handleid_array = gp.CreatePrimvar('handleid_array', Sdf.ValueTypeNames.StringArray)
         self.assertTrue(handleid_array.SetIdTarget(gp.GetPath()))
 
-    def testBug124579(self):
+    def test_Bug124579(self):
         from pxr import Usd
         from pxr import UsdGeom
         from pxr import Vt

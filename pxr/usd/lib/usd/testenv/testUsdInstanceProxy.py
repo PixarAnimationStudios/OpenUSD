@@ -46,7 +46,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
         else:
             self.assertFalse(prim.IsInMaster())            
 
-    def testGetPrimAtPath(self):
+    def test_GetPrimAtPath(self):
         s = Usd.Stage.Open('nested/root.usda')
 
         # Test that getting a prim for a non-nested instance
@@ -76,7 +76,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
             self._ValidateInstanceProxy(path, s.GetPrimAtPath(path),
                                         expectedPathInMaster=True)
 
-    def testGetParent(self):
+    def test_GetParent(self):
         s = Usd.Stage.Open('nested/root.usda')
 
         # Test getting parents of instance proxies
@@ -119,7 +119,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
             self.assertTrue(prim.IsMaster())
             self.assertFalse(prim.IsInstanceProxy())
             
-    def testGetChildren(self):
+    def test_GetChildren(self):
         s = Usd.Stage.Open('nested/root.usda')
 
         def _ValidateChildren(parentPath, expectedChildrenPaths):
@@ -175,7 +175,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
                 '/World/sets/Set_2/Prop_2/geom',
                 '/World/sets/Set_2/Prop_2/anim'])
 
-    def testGetPrimInMaster(self):
+    def test_GetPrimInMaster(self):
         s = Usd.Stage.Open('nested/root.usda')
 
         setMaster = s.GetPrimAtPath('/World/sets/Set_1').GetMaster()
@@ -209,7 +209,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
             s.GetPrimAtPath('/World/sets/Set_2/Prop_2/geom').GetPrimInMaster(),
             propMaster.GetChild('geom'))
 
-    def testLoadSet(self):
+    def test_LoadSet(self):
         s = Usd.Stage.Open('nested_payloads/root.usda',
                       Usd.Stage.LoadNone)
 
@@ -259,7 +259,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
         s.LoadAndUnload([], ['/World/sets/Set_1/props'])
         self.assertFalse(all([p.IsLoaded() for p in loadableProps]))
 
-    def testPrimRange(self):
+    def test_PrimRange(self):
         s = Usd.Stage.Open('nested/root.usda')
 
         # Test iterating over all prims on the stage
@@ -365,7 +365,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
                 master.GetPath().AppendPath('geom'),
                 master.GetPath().AppendPath('anim')])
 
-    def testGetAttributeValue(self):
+    def test_GetAttributeValue(self):
         s = Usd.Stage.Open('nested/root.usda')
 
         def _ValidateAttributeValue(attrPath, expectedValue):
@@ -390,7 +390,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
         _ValidateAttributeValue(
             attrPath = '/World/sets/Set_2/Prop_2/geom.x', expectedValue = 1.0)
 
-    def testGetRelationshipTargets(self):
+    def test_GetRelationshipTargets(self):
         s = Usd.Stage.Open('rels/root.usda')
 
         def _ValidateRelationshipTargets(relPath, expectedTargets):
@@ -461,7 +461,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
                 '/Root/Instance_2/NestedInstance_2/B',
                 '/Root/Instance_2/NestedInstance_2/B.attr'])
 
-    def testGetConnections(self):
+    def test_GetConnections(self):
         s = Usd.Stage.Open('attrs/root.usda')
 
         def _ValidateConnections(attrPath, expectedSrcs):

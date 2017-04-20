@@ -26,7 +26,7 @@ from pxr import UsdUtils, Sdf, Usd
 import unittest
 
 class TestUsdUtilsStageCache(unittest.TestCase):
-    def testBasic(self):
+    def test_Basic(self):
         # Verify that the UsdUtils.StageCache singleton 
         # does not crash upon system teardown.
         lyr = Sdf.Layer.CreateAnonymous()
