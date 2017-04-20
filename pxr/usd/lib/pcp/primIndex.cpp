@@ -3826,20 +3826,31 @@ _ComputedAssetPathWouldCreateDifferentNode(
 {
     // Compute the same asset path that would be used during composition
     // to open layers via SdfFindOrOpenRelativeToLayer.
-    const std::string assetPath = 
+    const std::string newAssetPath = 
         SdfComputeAssetPathRelativeToLayer(anchorLayer, authoredAssetPath);
+
+    // Get any file format arguments that were originally used to open the
+    // layer so we can apply them to the new asset path.
+    const SdfLayerRefPtr& nodeRootLayer = 
+        node.GetLayerStack()->GetIdentifier().rootLayer;
+    
+    std::string oldAssetPath;
+    SdfLayer::FileFormatArguments oldArgs;
+    if (!TF_VERIFY(SdfLayer::SplitIdentifier(
+            nodeRootLayer->GetIdentifier(), &oldAssetPath, &oldArgs))) {
+        return true;
+    }
 
     // If no such layer is already open, this asset path must indicate a
     // layer that differs from the given node's root layer.
-    const SdfLayerHandle layer = SdfLayer::Find(assetPath);
-    if (!layer) {
+    const SdfLayerHandle newLayer = SdfLayer::Find(newAssetPath, oldArgs);
+    if (!newLayer) {
         return true;
     }
 
     // Otherwise, if this layer differs from the given node's root layer,
     // this asset path would result in a different node during composition.
-    const PcpLayerStackPtr nodeLayerStack = node.GetLayerStack();
-    return nodeLayerStack->GetIdentifier().rootLayer != layer;
+    return nodeRootLayer != newLayer;
 }
 
 bool

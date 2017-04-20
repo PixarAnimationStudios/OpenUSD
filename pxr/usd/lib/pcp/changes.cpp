@@ -1811,6 +1811,9 @@ PcpChanges::_DidChangeLayerStackResolvedPath(
     const PcpLayerStackPtr& layerStack,
     std::string* debugSummary)
 {
+    const ArResolverContextBinder binder(
+        layerStack->GetIdentifier().pathResolverContext);
+
     for (PcpCache* cache : caches) {
         PcpDependencyVector deps = 
             cache->FindSiteDependencies(
@@ -1822,7 +1825,7 @@ PcpChanges::_DidChangeLayerStackResolvedPath(
 
         auto noResyncNeeded = [cache](const PcpDependency& dep) {
             if (!dep.indexPath.IsPrimPath()) { 
-                return false; 
+                return true; 
             }
             const PcpPrimIndex* primIndex = cache->FindPrimIndex(dep.indexPath);
             return (TF_VERIFY(primIndex) && 

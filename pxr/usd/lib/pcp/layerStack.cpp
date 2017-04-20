@@ -280,6 +280,9 @@ _FilterRelocationsForPath(const SdfRelocatesMap & relocates,
 bool
 Pcp_NeedToRecomputeDueToAssetPathChange(const PcpLayerStackPtr& layerStack)
 {
+    ArResolverContextBinder binder(
+        layerStack->GetIdentifier().pathResolverContext);
+
     // Iterate through _sublayerSourceInfo to see if recomputing the
     // asset paths used to open sublayers would result in different
     // sublayers being opened.
