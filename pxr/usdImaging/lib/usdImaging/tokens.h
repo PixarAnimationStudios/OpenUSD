@@ -49,19 +49,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_API, USDIMAGING_TOKENS);
 
-#define USDIMAGING_COLLECTION_TOKENS                    \
-    (geometryAllPurposes)                               \
-    (geometryAndGuides)                                 \
-    (geometryAndProxy)                                  \
-    (geometryAndProxyAndGuides)                         \
-    (geometryAndProxyAndRender)                         \
-    (geometryAndRenderAndGuides)                        \
-    (geometryAndRender)
-
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingCollectionTokens,
-                         USDIMAGING_API, USDIMAGING_COLLECTION_TOKENS);
-
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //USDIMAGING_TOKENS_H

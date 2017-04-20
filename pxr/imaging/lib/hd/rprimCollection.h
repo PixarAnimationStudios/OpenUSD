@@ -135,6 +135,18 @@ public:
     HD_API
     SdfPathVector const& GetExcludePaths() const;
 
+    /// Sets the render tags that this collection will render.
+    HD_API
+    void SetRenderTags(TfTokenVector const& renderTags);
+
+    /// Returns the render tags.
+    HD_API
+    TfTokenVector const& GetRenderTags() const;
+
+    /// Returns if a tag is used by this collection
+    HD_API
+    bool HasRenderTag(TfToken const & renderTag) const;
+
     HD_API
     size_t ComputeHash() const;
 
@@ -159,6 +171,7 @@ private:
     bool _forcedRepr;
     SdfPathVector _rootPaths;
     SdfPathVector _excludePaths;
+    TfTokenVector _renderTags;
 };
 
 typedef std::vector<HdRprimCollection> HdRprimCollectionVector;

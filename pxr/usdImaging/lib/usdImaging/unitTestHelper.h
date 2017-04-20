@@ -56,11 +56,13 @@ public:
     UsdImaging_TestDriver(std::string const& usdFilePath);
     UsdImaging_TestDriver(std::string const& usdFilePath,
                           TfToken const &collectioName,
-                          TfToken const &reprName);
+                          TfToken const &reprName,
+                          TfTokenVector const &renderTags);
     UsdImaging_TestDriver(UsdStageRefPtr const& usdStage);
     UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,
                           TfToken const &collectioName,
-                          TfToken const &reprName);
+                          TfToken const &reprName,
+                          TfTokenVector const &renderTags);
 
     ~UsdImaging_TestDriver();
 
@@ -98,7 +100,8 @@ private:
 
     void _Init(UsdStageRefPtr const& usdStage,
                TfToken const &collectionName,
-               TfToken const &reprName);
+               TfToken const &reprName,
+               TfTokenVector const &renderTags);
 };
 
 /// A simple drawing task that just executes a render pass.

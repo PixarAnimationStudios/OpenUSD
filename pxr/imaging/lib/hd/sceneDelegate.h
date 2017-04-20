@@ -105,14 +105,6 @@ public:
     HD_API
     virtual bool IsEnabled(TfToken const& option) const;
 
-    // -----------------------------------------------------------------------//
-    /// \name Collections
-    // -----------------------------------------------------------------------//
-
-    /// Returns true if the prim identified by \p id is in the named collection.
-    HD_API
-    virtual bool IsInCollection(SdfPath const& id, 
-                                TfToken const& collectionName);
 
     // -----------------------------------------------------------------------//
     /// \name Rprim Aspects
@@ -165,10 +157,10 @@ public:
     HD_API
     virtual TfToken GetReprName(SdfPath const &id);
 
-    /// Returns the render tag that will be used to bucked prims during
+    /// Returns the render tag that will be used to bucket prims during
     /// render pass bucketing.
     HD_API
-    virtual TfToken GetRenderTag(SdfPath const& id);
+    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
 
     // -----------------------------------------------------------------------//
     /// \name Instancer prototypes

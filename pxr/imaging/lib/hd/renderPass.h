@@ -129,7 +129,6 @@ private:
                                HdCommandBuffer,
                                boost::hash<TfToken> > _HdCommandBufferMap;
     _HdCommandBufferMap _cmdBuffers;
-    TfTokenVector _renderTags;
 
     bool _lastCullingDisabledState;
 

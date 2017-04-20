@@ -42,11 +42,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HD_UNIT_TEST_TOKENS                             \
-    (geometryAndGuides)
-
-TF_DECLARE_PUBLIC_TOKENS(Hd_UnitTestTokens, HD_API, HD_UNIT_TEST_TOKENS);
-
 /// \class Hd_UnitTestDelegate
 ///
 /// A simple delegate class for unit test driver.
@@ -271,12 +266,11 @@ public:
     // See HdSceneDelegate for documentation of virtual methods.
     // ---------------------------------------------------------------------- //
     HD_API
-    virtual bool IsInCollection(SdfPath const& id,
-                                TfToken const& collectionName);
-    HD_API
     virtual HdMeshTopology GetMeshTopology(SdfPath const& id);
     HD_API
     virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
+    HD_API
+    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
     HD_API
     virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id);
     HD_API

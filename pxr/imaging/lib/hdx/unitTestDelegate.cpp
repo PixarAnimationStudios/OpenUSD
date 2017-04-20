@@ -58,8 +58,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (translate)
 );
 
-TF_DEFINE_PUBLIC_TOKENS(Hdx_UnitTestTokens, HDX_UNIT_TEST_TOKENS);
-
 static void
 _CreateGrid(int nx, int ny, VtVec3fArray *points,
             VtIntArray *numVerts, VtIntArray *verts)
@@ -694,29 +692,6 @@ Hdx_UnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId,
         return GfMatrix4d(instancer->rootTransform);
     }
     return GfMatrix4d(1);
-}
-
-bool 
-Hdx_UnitTestDelegate::IsInCollection(SdfPath const& id,
-                    TfToken const& collectionName)
-{
-    HD_TRACE_FUNCTION();
-
-    // Visible collection.
-    if (collectionName == HdTokens->geometry) {
-        if (_Mesh *mesh = TfMapLookupPtr(_meshes, id)) {
-            return !mesh->guide;
-        }
-    } else if (collectionName == Hdx_UnitTestTokens->geometryAndGuides) {
-        return (_meshes.count(id));
-    }
-
-    // All other collections are considered coding errors, with no constituent
-    // prims.
-    TF_CODING_ERROR("Rprim Collection is unknown to Hdx_UnitTestDelegate: %s",
-            collectionName.GetString().c_str());
-
-    return false;
 }
 
 int

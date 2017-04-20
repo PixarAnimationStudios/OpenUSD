@@ -67,16 +67,8 @@ HdSceneDelegate::IsEnabled(TfToken const& option) const
 }
 
 /*virtual*/
-bool
-HdSceneDelegate::IsInCollection(SdfPath const& id, 
-                            TfToken const& collectionName)
-{
-    return true;
-}
-
-/*virtual*/
 TfToken
-HdSceneDelegate::GetRenderTag(SdfPath const& id)
+HdSceneDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
 {
     return HdTokens->geometry;
 }

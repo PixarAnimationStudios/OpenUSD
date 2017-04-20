@@ -178,9 +178,9 @@ public:
                                          SdfPath* sceneDelegateId,
                                          SdfPath* instancerId) const;
 
-    /// Returns true if the given RprimID is a member of the collection.
+    /// Returns the render tag for the given rprim
     HD_API
-    bool IsInCollection(SdfPath const& id, TfToken const& collectionName) const;
+    TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName) const;
 
     /// Returns the subtree rooted under the given path.
     HD_API

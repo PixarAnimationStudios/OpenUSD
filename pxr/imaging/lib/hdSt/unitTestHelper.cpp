@@ -54,7 +54,7 @@ class HdSt_DrawTask final : public HdTask
 {
 public:
     HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
-                  HdRenderPassStateSharedPtr const &renderPassState)
+                HdRenderPassStateSharedPtr const &renderPassState)
     : HdTask()
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
@@ -188,20 +188,31 @@ HdRenderPassSharedPtr const &
 HdSt_TestDriver::GetRenderPass(bool withGuides)
 {
     if (withGuides) {
-        if (!_geomAndGuidePass) 
+        if (!_geomAndGuidePass){
+            TfTokenVector renderTags;
+            renderTags.push_back(HdTokens->geometry);
+            renderTags.push_back(HdTokens->guide);
+            
+            HdRprimCollection col = HdRprimCollection(
+                                     HdTokens->geometry,
+                                     _reprName);
+            col.SetRenderTags(renderTags);
             _geomAndGuidePass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_sceneDelegate->GetRenderIndex(),
-                                 HdRprimCollection(
-                                     Hd_UnitTestTokens->geometryAndGuides,
-                                     _reprName)));
+                new HdRenderPass(&_sceneDelegate->GetRenderIndex(), col));
+        }
         return _geomAndGuidePass;
     } else {
-        if (!_geomPass)
+        if (!_geomPass){
+            TfTokenVector renderTags;
+            renderTags.push_back(HdTokens->geometry);
+
+            HdRprimCollection col = HdRprimCollection(
+                                        HdTokens->geometry,
+                                        _reprName);
+            col.SetRenderTags(renderTags);
             _geomPass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_sceneDelegate->GetRenderIndex(),
-                                 HdRprimCollection(
-                                     HdTokens->geometry,
-                                     _reprName)));
+                new HdRenderPass(&_sceneDelegate->GetRenderIndex(), col));
+        }
         return _geomPass;
     }
 }
@@ -212,12 +223,25 @@ HdSt_TestDriver::SetRepr(TfToken const &reprName)
     _reprName = reprName;
 
     if (_geomAndGuidePass) {
-        _geomAndGuidePass->SetRprimCollection(
-            HdRprimCollection(Hd_UnitTestTokens->geometryAndGuides, _reprName));
+        TfTokenVector renderTags;
+        renderTags.push_back(HdTokens->geometry);
+        renderTags.push_back(HdTokens->guide);
+        
+        HdRprimCollection col = HdRprimCollection(
+                                 HdTokens->geometry,
+                                 _reprName);
+        col.SetRenderTags(renderTags);
+        _geomAndGuidePass->SetRprimCollection(col);
     }
     if (_geomPass) {
-        _geomPass->SetRprimCollection(
-            HdRprimCollection(HdTokens->geometry, _reprName));
+        TfTokenVector renderTags;
+        renderTags.push_back(HdTokens->geometry);
+        
+        HdRprimCollection col = HdRprimCollection(
+                                 HdTokens->geometry,
+                                 _reprName);
+        col.SetRenderTags(renderTags);
+        _geomPass->SetRprimCollection(col);
     }
 }
 

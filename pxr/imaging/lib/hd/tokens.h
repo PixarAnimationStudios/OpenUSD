@@ -64,6 +64,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (faceColors)                                \
     (geometry)                                  \
     (guide)                                     \
+    (hidden)                                    \
     (hull)                                      \
     (hullIndices)                               \
     (indices)                                   \

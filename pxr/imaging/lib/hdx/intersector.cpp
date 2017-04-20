@@ -168,7 +168,9 @@ protected:
         // XXX If this was a task (in the render graph) we could
         // just connect it to the render pass setup which receives
         // its rendertags from the viewer.
-        _GetTaskContextData(ctx, HdxTokens->renderTags, &_renderTags);
+        if(_renderTags.empty()) {
+            _GetTaskContextData(ctx, HdxTokens->renderTags, &_renderTags);
+        }
 
         _renderPassState->Bind();
         if(_renderTags.size()) {

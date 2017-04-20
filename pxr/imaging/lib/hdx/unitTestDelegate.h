@@ -41,11 +41,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HDX_UNIT_TEST_TOKENS                             \
-    (geometryAndGuides)
-
-TF_DECLARE_PUBLIC_TOKENS(Hdx_UnitTestTokens, HDX_UNIT_TEST_TOKENS);
-
 class Hdx_UnitTestDelegate : public HdSceneDelegate
 {
 public:
@@ -119,7 +114,6 @@ public:
     virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId,
                                              SdfPath const& prototypeId);
     virtual int GetRefineLevel(SdfPath const& id);
-    virtual bool IsInCollection(SdfPath const& id, TfToken const& collectionName);
 
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
     virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &shaderId);

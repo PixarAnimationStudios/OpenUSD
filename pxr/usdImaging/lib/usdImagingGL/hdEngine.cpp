@@ -359,35 +359,17 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
     // the application
     renderTags->clear();
     renderTags->push_back(HdTokens->geometry);
-
-    // Pickup proxy, guide, and render geometry if requested:
-    if (params.showGuides && !params.showRender) {
-        if (params.showProxy){
-            renderTags->push_back(HdxRenderTagsTokens->guide);
-            renderTags->push_back(_tokens->proxy);
-        } else {
-            renderTags->push_back(HdxRenderTagsTokens->guide);
-        }
-    } else if (!params.showGuides && params.showRender) {
-        if (params.showProxy){
-            renderTags->push_back(_tokens->render);
-            renderTags->push_back(_tokens->proxy);
-        } else {
-            renderTags->push_back(_tokens->render);
-        }
-    } else if (params.showGuides && params.showRender) {
-        if (params.showProxy){
-            renderTags->push_back(_tokens->render);
-            renderTags->push_back(_tokens->proxy);
-            renderTags->push_back(HdxRenderTagsTokens->guide);
-        } else {
-            renderTags->push_back(_tokens->render);
-            renderTags->push_back(HdxRenderTagsTokens->guide);
-        }
-    } else if (params.showProxy){
+    if (params.showGuides) {
+        renderTags->push_back(HdxRenderTagsTokens->guide);
+    }
+    if (params.showProxy) {
         renderTags->push_back(_tokens->proxy);
     }
-    
+    if (params.showRender) {
+        renderTags->push_back(_tokens->render);
+    } 
+
+    // By default our main collection will be called geometry
     TfToken colName = HdTokens->geometry;
 
     // Check if the collection needs to be updated (so we can avoid the sort).
@@ -396,7 +378,8 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
     // inexpensive comparison first
     bool match = collection->GetName() == colName &&
                  oldRoots.size() == roots.size() &&
-                 collection->GetReprName() == reprName;
+                 collection->GetReprName() == reprName &&
+                 collection->GetRenderTags().size() == renderTags->size();
 
     // Only take the time to compare root paths if everything else matches.
     if (match) {
@@ -406,13 +389,18 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
             if (oldRoots[i] == roots[i])
                 continue;
             // Binary search to find the current root.
-            if (!std::binary_search(oldRoots.begin(), oldRoots.end(),
-                                       roots[i])) 
+            if (!std::binary_search(oldRoots.begin(), oldRoots.end(), roots[i])) 
             {
                 match = false;
                 break;
             }
         }
+
+        // Compare if rendertags match
+        if (*renderTags != collection->GetRenderTags()) {
+            match = false;
+        }
+
         // if everything matches, do nothing.
         if (match) return;
     }
@@ -420,13 +408,13 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
     // Recreate the collection.
     *collection = HdRprimCollection(colName, reprName);
     collection->SetRootPaths(roots);
+    collection->SetRenderTags(*renderTags);
 }
 
 /* static */
 HdxRenderTaskParams
 UsdImagingGLHdEngine::_MakeHydraRenderParams(
-                  UsdImagingGLHdEngine::RenderParams const& renderParams,
-                  TfTokenVector const& renderTags)
+                  UsdImagingGLHdEngine::RenderParams const& renderParams)
 {
     static const HdCullStyle USD_2_HD_CULL_STYLE[] =
     {
@@ -475,8 +463,6 @@ UsdImagingGLHdEngine::_MakeHydraRenderParams(
 
     params.enableHardwareShading = renderParams.enableHardwareShading;
 
-    params.renderTags = renderTags;
-
     // Leave default values for:
     // - params.geomStyle
     // - params.complexity
@@ -498,7 +484,7 @@ UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, RenderParams param
     _UpdateHydraCollection(&_renderCollection, paths, params, &_renderTags);
     _taskController->SetCollection(_renderCollection);
 
-    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params, _renderTags);
+    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params);
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 
@@ -518,7 +504,7 @@ UsdImagingGLHdEngine::Render(const UsdPrim& root, RenderParams params)
     _UpdateHydraCollection(&_renderCollection, roots, params, &_renderTags);
     _taskController->SetCollection(_renderCollection);
 
-    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params, _renderTags);
+    HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params);
     _taskController->SetRenderParams(hdParams);
     _taskController->SetEnableSelection(params.highlight);
 

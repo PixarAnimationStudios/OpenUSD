@@ -116,6 +116,7 @@ public:
         //
         HdCullStyle cullStyle = HdCullStyleNothing;
         TfToken drawRepr = HdTokens->refined;
+        TfTokenVector renderTags;
 
         // Color Params
         //

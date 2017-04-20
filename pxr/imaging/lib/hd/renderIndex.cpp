@@ -480,19 +480,25 @@ static
 void
 _AppendDrawItem(HdSceneDelegate* delegate,
                 HdRprim* rprim,
-                TfToken const& collectionName,
+                HdRprimCollection const& collection,
                 TfToken const& reprName,
                 bool forcedRepr,
                 _ConcurrentDrawItemView* result)
 {
-    if (rprim->IsInCollection(delegate, collectionName)) {
-        std::vector<HdDrawItem> *drawItems =
-                rprim->GetDrawItems(delegate, reprName, forcedRepr);
+    // Get the tag for this rprim and if the tag is included in the collection
+    // we will add it to the buffer
+    TfToken const & rprimTag =  rprim->GetRenderTag(delegate, reprName);
+    if (!collection.HasRenderTag(rprimTag)){
+        return;  
+    } 
 
-        TfToken const & t =  rprim->GetRenderTag(delegate);
-        TF_FOR_ALL(drawItemIt, *drawItems) {
-            (*result)[t].push_back(&(*drawItemIt));
-        }
+    // Extract the draw items and assign them to the right command buffer
+    // based on the tag
+    std::vector<HdDrawItem> *drawItems =
+            rprim->GetDrawItems(delegate, reprName, forcedRepr);
+
+    TF_FOR_ALL(drawItemIt, *drawItems) {
+        (*result)[rprimTag].push_back(&(*drawItemIt));
     }
 }
 
@@ -542,7 +548,6 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     // Note that root paths are always sorted and will never be an empty vector.
     SdfPathVector const& rootPaths = collection.GetRootPaths();
     SdfPathVector const& excludePaths = collection.GetExcludePaths();
-    TfToken const& collectionName = collection.GetName();
     TfToken const& reprName = collection.GetReprName();
     bool forcedRepr = collection.IsForcedRepr();
 
@@ -577,7 +582,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
         }
 
         dispatcher.Run(
-          [children, collectionName, reprName, forcedRepr, 
+          [children, collection, reprName, forcedRepr, 
             rootPaths, excludePaths, &result, this]() {
             
             // In the loop below, we process the previous item while fetching
@@ -605,12 +610,12 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
                 info = TfMapLookupPtr(_rprimMap, *pathIt);
 
                 // Process the current item.
-                _AppendDrawItem(sceneDelegate, rprim, collectionName, reprName,
+                _AppendDrawItem(sceneDelegate, rprim, collection, reprName,
                                 forcedRepr, &result);
             }
 
             // Process the last item.
-            _AppendDrawItem(info->sceneDelegate, info->rprim, collectionName,
+            _AppendDrawItem(info->sceneDelegate, info->rprim, collection,
                             reprName, forcedRepr, &result);
         });
     }
@@ -658,7 +663,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
         }
 
         _RprimInfo const* info = TfMapLookupPtr(_rprimMap, *pathIt);
-        _AppendDrawItem(info->sceneDelegate, info->rprim, collectionName,
+        _AppendDrawItem(info->sceneDelegate, info->rprim, collection,
                         reprName, forcedRepr, &result);
         pathIt++;
     }
@@ -675,17 +680,15 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     return finalResult;
 }
 
-bool 
-HdRenderIndex::IsInCollection(SdfPath const& id,
-                              TfToken const& collectionName) const 
+TfToken 
+HdRenderIndex::GetRenderTag(SdfPath const& id, TfToken const& reprName) const 
 {
     _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
     if (info == nullptr) {
-        return false;
+        return HdTokens->hidden;
     }
 
-    return info->rprim->IsInCollection(info->sceneDelegate,
-                                       collectionName);
+    return info->rprim->GetRenderTag(info->sceneDelegate, reprName);
 }
 
 SdfPathVector

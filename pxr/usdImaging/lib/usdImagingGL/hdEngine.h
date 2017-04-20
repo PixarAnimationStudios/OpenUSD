@@ -206,8 +206,7 @@ private:
                           UsdImagingGLEngine::RenderParams const& params,
                           TfTokenVector *renderTags);
     static HdxRenderTaskParams _MakeHydraRenderParams(
-                          UsdImagingGLEngine::RenderParams const& params,
-                          TfTokenVector const& renderTags);
+                          UsdImagingGLEngine::RenderParams const& params);
 
     // This function disposes of: the render index, the render plugin,
     // the task controller, and the usd imaging delegate.

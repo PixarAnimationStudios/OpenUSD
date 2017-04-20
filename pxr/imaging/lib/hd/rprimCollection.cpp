@@ -126,6 +126,34 @@ HdRprimCollection::GetExcludePaths() const
     return _excludePaths;
 }
 
+void 
+HdRprimCollection::SetRenderTags(TfTokenVector const& renderTags)
+{
+    _renderTags = renderTags;
+}
+
+TfTokenVector const& 
+HdRprimCollection::GetRenderTags() const
+{
+    return _renderTags;
+}
+
+bool
+HdRprimCollection::HasRenderTag(TfToken const & renderTag) const
+{
+    if (_renderTags.empty()) {
+        return true;  
+    } 
+
+    TF_FOR_ALL (t, _renderTags) {
+        if (renderTag == *t) {
+            return true;  
+        } 
+    }
+
+    return false;
+}
+
 size_t
 HdRprimCollection::ComputeHash() const
 {
@@ -138,6 +166,9 @@ HdRprimCollection::ComputeHash() const
     TF_FOR_ALL(pathIt, _excludePaths) {
         boost::hash_combine(h, SdfPath::Hash()(*pathIt));
     }
+    TF_FOR_ALL(rtIt, _renderTags) {
+        boost::hash_combine(h, rtIt->Hash());
+    }
     return h;
 }
 
@@ -147,7 +178,8 @@ bool HdRprimCollection::operator==(HdRprimCollection const & other) const
        && _reprName == other._reprName
        && _forcedRepr == other._forcedRepr
        && _rootPaths == other._rootPaths
-       && _excludePaths == other._excludePaths;
+       && _excludePaths == other._excludePaths
+       && _renderTags == other._renderTags;
 }
 
 bool HdRprimCollection::operator!=(HdRprimCollection const & other) const 

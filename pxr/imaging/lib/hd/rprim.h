@@ -88,7 +88,7 @@ public:
 
     /// Returns the render tag associated to this rprim
     HD_API
-    TfToken GetRenderTag(HdSceneDelegate* delegate) const;
+    TfToken GetRenderTag(HdSceneDelegate* delegate, TfToken const& reprName) const;
 
     /// Returns the identifier of this Rprim. This is both used in the
     /// RenderIndex and the SceneDelegate and acts as the associative key for
@@ -123,10 +123,6 @@ public:
 
     /// Returns the bounds of the rprim in local, untransformed space.
     inline GfRange3d GetExtent(HdSceneDelegate* delegate) const;
-
-    /// Returns true if the rprim exists in the named collection.
-    inline bool IsInCollection(HdSceneDelegate* delegate,
-                               TfToken const& collectionName) const;
 
     ///
     /// Primvar Query
@@ -253,13 +249,6 @@ GfRange3d
 HdRprim::GetExtent(HdSceneDelegate* delegate) const
 {
     return delegate->GetExtent(GetId());
-}
-
-bool
-HdRprim::IsInCollection(HdSceneDelegate* delegate,
-                        TfToken const& collectionName) const
-{
-    return delegate->IsInCollection(GetId(), collectionName);
 }
 
 inline TfTokenVector
