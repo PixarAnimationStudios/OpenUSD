@@ -131,18 +131,14 @@ class TestUsdGeomCamera(unittest.TestCase):
 
         usdCamera.SetFromCamera(camera, 1.0)
             
-        # Investigate this numerical instability
-        #actual = usdCamera.GetLocalTransformation(Usd.TimeCode(1.0))
-        #expected  = Gf.Matrix4d( 0.9858929135, 0.14139860385,-0.089563373740, 0.0,
-        #                        -0.1370579618, 0.98914839500, 0.052920390613, 0.0,
-        #                         0.0960743367,-0.03989846462, 0.994574197504, 0.0,
-        #                         4.0         , 5.0          , 6.0           , 1.0)
+        actual = usdCamera.GetLocalTransformation(Usd.TimeCode(1.0))
+        expected  = Gf.Matrix4d( 0.9858929135, 0.14139860385,-0.089563373740, 0.0,
+                                -0.1370579618, 0.98914839500, 0.052920390613, 0.0,
+                                 0.0960743367,-0.03989846462, 0.994574197504, 0.0,
+                                 4.0         , 5.0          , 6.0           , 1.0)
 
-        #for a, e in zip([actual.GetRow(i) for i in range(0, 5)],
-        #                [expected.GetRow(i) for i in range(0, 5)]):
-        #    if any(map(math.isnan, a)) or any(map(math.isnan, e)):
-        #        continue
-        #    self.assertTrue(Gf.IsClose(a, e, 1e-2))
+        for a, e in zip(actual, expected):
+            self.assertTrue(Gf.IsClose(a, e, 1e-2))
 
 if __name__ == '__main__':
     unittest.main()

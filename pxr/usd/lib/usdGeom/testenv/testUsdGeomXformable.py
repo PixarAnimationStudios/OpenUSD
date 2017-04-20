@@ -27,14 +27,8 @@ import unittest, math
 
 class TestUsdGeomXformable(unittest.TestCase):
     def _AssertCloseXf(self, a, b):
-        aRows = [a.GetRow(i) for i in range(0,5)]
-        bRows = [b.GetRow(i) for i in range(0,5)]
-                
-        # XXX: Figure out numerical instability
-        #for av, bv in zip(aRows, bRows):
-        #    if any(map(math.isnan, av)) or any(map(math.isnan, bv)):
-        #        continue
-        #    self.assertTrue(Gf.IsClose(av, bv, 1e-4), '%s != %s'%(str(av),str(bv)))
+        for av, bv in zip(a, b):
+            self.assertTrue(Gf.IsClose(av, bv, 1e-4))
 
     def test_TranslateOp(self):
         s = Usd.Stage.CreateInMemory()

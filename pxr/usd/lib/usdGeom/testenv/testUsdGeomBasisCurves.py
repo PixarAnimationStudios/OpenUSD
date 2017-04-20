@@ -41,7 +41,4 @@ class TestUsdGeomBasisCurves(unittest.TestCase):
         self.assertFalse(c.ComputeInterpolationForSize(0, t))
 
 if __name__ == '__main__':
-    import os
-    print os.listdir(os.getcwd())
-    print os.getcwd()
     unittest.main()

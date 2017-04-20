@@ -70,13 +70,11 @@ class TestUsdGeomPointInstancer(unittest.TestCase):
 
         self.assertEqual(len(xforms), len(expectedXforms))
 
-        # XXX: Investigate numerical instability        
-        # for i in xrange(len(xforms)):
-        #     xf = xforms[i]
-        #     ex = expectedXforms[i]
-        #     for a, b in zip([xf.GetRow(j) for j in range(0,5)],
-        #                     [ex.GetRow(j) for j in range(0,5)]):
-        #         self.assertTrue(Gf.IsClose(a, b, 1e-5))
+        for i in xrange(len(xforms)):
+            xf = xforms[i]
+            ex = expectedXforms[i]
+            for a, b in zip(xf, ex):
+                self.assertTrue(Gf.IsClose(a, b, 1e-5))
 
     def setUp(self):
         self.stage = Usd.Stage.CreateInMemory()
