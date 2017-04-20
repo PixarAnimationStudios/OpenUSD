@@ -893,7 +893,7 @@ class TestUsdValueClips(unittest.TestCase):
         # last one.
         _Check(self.assertEqual, attr, time=2.0, expected=3.0)
     
-    def ClipsWithSparseOverrides(self):
+    def test_ClipsWithSparseOverrides(self):
         # This layer overrides the clipActive metadata to flip
         # the active clips
         stage = Usd.Stage.Open('sparseOverrides/over_root.usda')
@@ -917,8 +917,8 @@ class TestUsdValueClips(unittest.TestCase):
         prim = stage.GetPrimAtPath('/main')
         attr = prim.GetAttribute('foo')
 
-        _Check(self.assertEqual, attr,  time=101.0, expected=1.0)
-        _Check(self.assertEqual, attr,  time=103.0, expected=1.0)
+        _Check(self.assertEqual, attr,  time=101.0, expected=3.0)
+        _Check(self.assertEqual, attr,  time=103.0, expected=3.0)
 
         # This is the original layer with the template metadata authored. 
         stage = Usd.Stage.Open('sparseOverrides/template_root.usda')
