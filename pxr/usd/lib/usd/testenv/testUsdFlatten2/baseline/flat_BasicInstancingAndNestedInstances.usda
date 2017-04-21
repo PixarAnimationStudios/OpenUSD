@@ -14,17 +14,31 @@ over "Flattened_Master_1"
         add references = </Flattened_Master_2>
     )
     {
+        rel propInstanceRel = [
+            </Flattened_Master_1/PropInstance_1/geom>,
+            </Flattened_Master_1/PropInstance_2/geom>,
+            </Flattened_Master_1/PropNotAnInstance_1/geom>,
+        ]
+        rel propRel = </Flattened_Master_1/PropInstance_1/geom>
     }
 
-    def "PropInstance2" (
+    def "PropInstance_2" (
         instanceable = true
         add references = </Flattened_Master_2>
     )
     {
+        rel propInstanceRel = [
+            </Flattened_Master_1/PropInstance_1/geom>,
+            </Flattened_Master_1/PropInstance_2/geom>,
+            </Flattened_Master_1/PropNotAnInstance_1/geom>,
+        ]
+        rel propRel = </Flattened_Master_1/PropInstance_2/geom>
     }
 
     def "PropNotAnInstance_1"
     {
+        rel propRel = </Flattened_Master_1/PropNotAnInstance_1/geom>
+
         def "geom"
         {
         }
@@ -43,6 +57,22 @@ def "Set_1" (
     add references = </Flattened_Master_1>
 )
 {
+    rel setInstanceRel = [
+        </Set_1/PropInstance_1>,
+        </Set_1/PropInstance_1/geom>,
+        </Set_1/PropInstance_2>,
+        </Set_1/PropInstance_2/geom>,
+        </Set_1/PropNotAnInstance_1>,
+        </Set_1/PropNotAnInstance_1/geom>,
+    ]
+    rel setRel = [
+        </Set_1/PropInstance_1>,
+        </Set_1/PropInstance_1/geom>,
+        </Set_1/PropInstance_2>,
+        </Set_1/PropInstance_2/geom>,
+        </Set_1/PropNotAnInstance_1>,
+        </Set_1/PropNotAnInstance_1/geom>,
+    ]
 }
 
 

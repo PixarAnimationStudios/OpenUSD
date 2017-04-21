@@ -4014,30 +4014,6 @@ namespace {
 using _MasterToFlattenedPathMap 
     = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
 
-SdfPath
-_GenerateTranslatedTargetPath(const SdfPath& inputPath,
-                              const _MasterToFlattenedPathMap& masterToFlattened)
-{
-    if (inputPath == SdfPath::AbsoluteRootPath()) {
-        return inputPath;
-    }
-
-    // Master prims will always be the root        
-    auto prefix = inputPath;
-    for ( ; prefix.GetParentPath() != SdfPath::AbsoluteRootPath(); 
-            prefix = prefix.GetParentPath()) { 
-
-        // Nothing to do here, just climbing to the parent path
-    }
-
-    auto replacement = masterToFlattened.find(prefix);
-    if (replacement == end(masterToFlattened)) {
-        return inputPath;
-    }
-
-    return inputPath.ReplacePrefix(prefix, replacement->second);
-}
-
 // We want to give generated masters in the flattened stage
 // reserved(using '__' as a prefix), unclashing paths, however,
 // we don't want to use the '__Master' paths which have special
@@ -4264,13 +4240,33 @@ UsdStage::_CopyProperty(const UsdProperty &prop,
          _CopyMetadata(rel, sdfRel);
 
          SdfPathVector targets;
-         rel.GetTargets(&targets);
+         rel.GetTargets(&targets, /* forwardToObjectsInMasters = */ false);
+         if (targets.empty()) {
+             sdfRel->GetTargetPathList().ClearEditsAndMakeExplicit();
+         }
+         else {
+             // If this relationship is in a master, we need to translate
+             // any targets that point to a prim in this master to the
+             // corresponding flattened master.
+             if (prop.GetPrim().IsInMaster()) {
+                 UsdPrim master = prop.GetPrim();
+                 while (!master.IsMaster()) {
+                     master = master.GetParent();
+                 }
 
-         SdfTargetsProxy sdfTargets = sdfRel->GetTargetPathList();
-         sdfTargets.ClearEditsAndMakeExplicit();
-         for (auto const& path : targets) {
-             sdfTargets.Add(_GenerateTranslatedTargetPath(path, 
-                                                          masterToFlattened));
+                 const SdfPath* flattenedMasterPath = 
+                     TfMapLookupPtr(masterToFlattened, master.GetPath());
+                 if (TF_VERIFY(flattenedMasterPath)) {
+                     const SdfPath& masterSourcePrimIndexPath =
+                         master._GetSourcePrimIndex().GetPath();
+
+                     for (auto& path : targets) {
+                         path = path.ReplacePrefix(
+                             masterSourcePrimIndexPath, *flattenedMasterPath);
+                     }
+                 }
+             }
+             sdfRel->GetTargetPathList().GetExplicitItems() = targets;
          }
      }
 }

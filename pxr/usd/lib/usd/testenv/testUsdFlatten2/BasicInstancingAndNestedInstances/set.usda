@@ -2,21 +2,42 @@
 
 def "Set"
 {
+    rel setRel = [
+        </Set/PropInstance_1>,
+        </Set/PropInstance_1/geom>,
+        </Set/PropInstance_2>,
+        </Set/PropInstance_2/geom>,
+        </Set/PropNotAnInstance_1>,
+        </Set/PropNotAnInstance_1/geom>
+    ]
+
     def "PropInstance_1" (
         references = @./prop.usda@</Prop>
         instanceable = true
     )
     {
+        rel propInstanceRel = [
+            </Set/PropInstance_1/geom>,
+            </Set/PropInstance_2/geom>,
+            </Set/PropNotAnInstance_1/geom>
+        ]
+
         over "geom"
         {
         }
     }
 
-    def "PropInstance2" (
+    def "PropInstance_2" (
         references = @./prop.usda@</Prop>
         instanceable = true
     )
     {
+        rel propInstanceRel = [
+            </Set/PropInstance_1/geom>,
+            </Set/PropInstance_2/geom>,
+            </Set/PropNotAnInstance_1/geom>
+        ]
+
         over "geom"
         {
         }

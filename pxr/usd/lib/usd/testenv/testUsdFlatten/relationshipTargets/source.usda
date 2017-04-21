@@ -6,11 +6,4 @@ def "bar" (
 )
 {
     rel foo = </bar/baz>
-
-    def "baz" (
-        instanceable = True
-    )
-    {
-
-    }
 }

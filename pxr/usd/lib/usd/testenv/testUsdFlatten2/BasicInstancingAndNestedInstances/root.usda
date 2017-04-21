@@ -12,6 +12,15 @@ def "Set_1" (
     instanceable = true
 )
 {
+    rel setInstanceRel = [
+        </Set_1/PropInstance_1>,
+        </Set_1/PropInstance_1/geom>,
+        </Set_1/PropInstance_2>,
+        </Set_1/PropInstance_2/geom>,
+        </Set_1/PropNotAnInstance_1>,
+        </Set_1/PropNotAnInstance_1/geom>
+    ]
+
     over "PropInstance_1"
     {
         over "geom"

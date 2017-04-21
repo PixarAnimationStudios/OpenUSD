@@ -196,8 +196,15 @@ class TestUsdFlatten(unittest.TestCase):
     def test_FlattenRelationshipTargets(self):
         basePath = 'relationshipTargets/'
         stageFile = basePath+'source.usda'
+
         stage = Usd.Stage.Open(stageFile)
         assert stage
+        prim = stage.GetPrimAtPath('/bar')
+        assert prim
+        rel  = prim.GetRelationship('foo')
+        assert rel
+        self.assertEqual(rel.GetTargets(), 
+                         [prim.GetMaster().GetChild('baz').GetPath()])
 
         resultFile = basePath+'result.usda'
         stage.Export(resultFile)
@@ -209,7 +216,8 @@ class TestUsdFlatten(unittest.TestCase):
         assert prim
         rel  = prim.GetRelationship('foo')
         assert rel
-        assert rel.GetTargets() == [Sdf.Path('/Flattened_Master_1/baz')]
+        self.assertEqual(rel.GetTargets(), 
+                         [prim.GetMaster().GetChild('baz').GetPath()])
 
 if __name__ == "__main__":
     unittest.main()

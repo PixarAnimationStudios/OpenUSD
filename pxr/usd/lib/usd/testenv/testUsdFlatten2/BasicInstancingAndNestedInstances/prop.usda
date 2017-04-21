@@ -2,6 +2,8 @@
 
 def "Prop"
 {
+    rel propRel = </Prop/geom>
+
     def "geom"
     {
     }
