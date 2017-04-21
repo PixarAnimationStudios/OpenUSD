@@ -144,6 +144,10 @@ public:
     GLF_API
     GlfGLSLFXConfig::Attributes GetAttributes() const;
 
+    /// Return the metadata specified in the configuration
+    GLF_API
+    GlfGLSLFXConfig::MetadataDictionary GetMetadata() const;
+
     /// Returns true if this is a valid glslfx file
     GLF_API
     bool IsValid(std::string *reason=NULL) const;
