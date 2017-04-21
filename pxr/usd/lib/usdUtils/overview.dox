@@ -1,0 +1,38 @@
+/*!
+\page usdUtils_page_front UsdUtils: USD Utilities 
+\if ( PIXAR_MFB_BUILD )
+\mainpage  UsdUtils: USD Utility Libraries 
+\publicLib
+\endif
+
+\section usdUtils_overview Overview
+
+UsdUtils contains utility classes and functions for managing, inspecting, editing and 
+creating USD assets. The high-level grouping of classes and functions is as follows:
+
+\li \ref usdUtils/authoring.h "Authoring" provides 
+    functionality for copying metadata between layers. 
+
+\li \ref usdUtils/stitch.h "Stitching" 
+    provides functionality for merging layers together as well as  
+    generating \ref Usd_Page_ValueClips "value clips" 
+    from sets of layers (see \ref usdUtils/stitchClips.h "stitchClips").
+
+\li \ref usdUtils/dependencies.h "Dependency Analysis"
+    provides functionality for extracting \ref SdfReference "references",
+    \ref SdfPayload "payloads", and \ref SdfLayer "sublayers" used by a given
+    layer. 
+
+\li \ref usdUtils/introspection.h "Introspection" 
+    provides functionality for understanding various charactersitics
+    of a \ref UsdStage including memory usage, prim counts, master counts
+    and more.
+
+\li \ref usdUtils/pipeline.h "Pipeline" provides utilities for
+    establishing pipeline conventions.
+    
+\li \ref usdUtils/stageCache.h "StageCache" provides a class,
+    \ref UsdUtilsStageCache for managing a singleton instance \ref UsdStageCache
+    to be shared amongst various clients.
+
+*/

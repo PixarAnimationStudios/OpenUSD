@@ -82,22 +82,30 @@ if (${PXR_BUILD_DOCUMENTATION})
         message(WARNING "Cannot run doc generation, dot not found.")           
         return()                                                                 
     endif()                          
+
+    _pxrDoxyConfig_subst() 
     
     set(DOCS_DIR "${CMAKE_BINARY_DIR}") 
     set(GEN_SCRIPT "${PROJECT_SOURCE_DIR}/cmake/macros/generateDocs.py")         
     set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/pxr")
-    set(DOXYGEN_CONFIG "${CMAKE_SOURCE_DIR}/pxr/usd/lib/usd/Doxyfile")
                                                                                  
     add_custom_target(                                                           
         documentation                                                            
         ALL                                                                      
-        COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${SOURCE_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOXYGEN_CONFIG} ${DOT_EXECUTABLE}
+        COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${SOURCE_DIR} ${CMAKE_BINARY_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOT_EXECUTABLE}
+        DEPENDS ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
     ) 
 
-    set(BUILT_DOCS "${DOCS_DIR}/docs/doxy_html")
-    set(INST_DOCS  "${CMAKE_INSTALL_PREFIX}/docs")
+    set(BUILT_HTML_DOCS "${DOCS_DIR}/docs/doxy_html")
+    set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")
     install(
-        DIRECTORY ${BUILT_DOCS}
-        DESTINATION ${INST_DOCS}
+        DIRECTORY ${BUILT_HTML_DOCS}
+        DESTINATION ${INST_DOCS_ROOT}
+    )
+
+    set(BUILT_XML_DOCS "${DOCS_DIR}/docs/doxy_xml")
+    install(
+        DIRECTORY ${BUILT_XML_DOCS}
+        DESTINATION ${INST_DOCS_ROOT}
     )
 endif()   

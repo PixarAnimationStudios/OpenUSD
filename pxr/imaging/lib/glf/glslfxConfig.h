@@ -59,7 +59,7 @@ public:
         RoleColor = 1,
     };
 
-    /// \class GlfGLSLFXConfig::Parameter
+    /// \class Parameter
     ///
     /// A class representing a parameter.
     ///
@@ -82,7 +82,7 @@ public:
 
     typedef std::vector<Parameter> Parameters;
 
-    /// \class GlfGLSLFXConfig::Texture
+    /// \class Texture
     ///
     /// A class representing a texture.
     ///
@@ -102,7 +102,7 @@ public:
 
     typedef std::vector<Texture> Textures;
 
-    /// \class GlfGLSLFXConfig::Attribute
+    /// \class Attribute
     ///
     /// A class representing an attribute.
     ///

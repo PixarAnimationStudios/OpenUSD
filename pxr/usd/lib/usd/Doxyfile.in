@@ -447,7 +447,7 @@ HIDE_SCOPE_NAMES       = YES
 # will put a list of the files that are included by a file in the documentation
 # of that file.
 
-SHOW_INCLUDE_FILES     = YES
+SHOW_INCLUDE_FILES     = NO
 
 # If the FORCE_LOCAL_INCLUDES tag is set to YES then Doxygen
 # will list include files with double quotes in the documentation
@@ -665,7 +665,6 @@ WARN_LOGFILE           =
 # to be ordered by "package" and low-to-high-level module order.
 
 INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
-                         clientModuleHeader.dox \
                          src/modules/ar \
                          src/modules/sdf \
                          src/modules/usd \
@@ -675,7 +674,6 @@ INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
                          src/modules/usdShade \
                          src/modules/usdUtils \
                          src/modules/vt \
-                         foundationModuleHeader.dox \
                          src/modules
                          
 
@@ -752,6 +750,8 @@ EXCLUDE_SYMBOLS        = Usd_* \
                          UsdUtils_* \
                          Sdf_* \
                          Pcp_* \
+                         PcpNodeRef_* \
+                         PcpPrimIndex_* \
                          Ar_* \
                          Vt_* \
                          Tracelite_* \
@@ -760,6 +760,7 @@ EXCLUDE_SYMBOLS        = Usd_* \
                          Tf_* \
                          Work_* \
                          Arch_* \
+                         Hf_* \
                          Hd_* \
                          Hdx_* \
                          HdSt_* \
@@ -1530,13 +1531,13 @@ MAN_LINKS              = NO
 # generate an XML file that captures the structure of
 # the code including all documentation.
 
-GENERATE_XML           = NO
+GENERATE_XML           = YES 
 
 # The XML_OUTPUT tag is used to specify where the XML pages will be put.
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be
 # put in front of it. If left blank `xml' will be used as the default path.
 
-XML_OUTPUT             = xml
+XML_OUTPUT             = doxy_xml
 
 # The XML_SCHEMA tag can be used to specify an XML schema,
 # which can be used by a validating XML parser to check the
@@ -1668,9 +1669,11 @@ INCLUDE_FILE_PATTERNS  =
 # undefined via #undef or recursively expanded use the := operator
 # instead of the = operator.
 
-PREDEFINED             = doxygen \
-                         "PXR_NAMESPACE_OPEN_SCOPE" \
-                         "PXR_NAMESPACE_CLOSE_SCOPE"
+PREDEFINED             = doxygen                                                         \
+                         "TF_DEFINE_STACKED(name, x, y)=class name"                      \
+                         "PXR_NAMESPACE_OPEN_SCOPE=namespace @PXR_EXTERNAL_NAMESPACE@ {" \
+                         "PXR_NAMESPACE_CLOSE_SCOPE=}"                                   \
+                         "PXR_NS=@PXR_EXTERNAL_NAMESPACE@"
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
 # this tag can be used to specify a list of macro names that should be expanded.
@@ -1897,7 +1900,7 @@ INTERACTIVE_SVG        = NO
 # The tag DOT_PATH can be used to specify the path where the dot tool can be
 # found. If left blank, it is assumed the dot tool can be found in the path.
 
-DOT_PATH               =
+DOT_PATH               = @DOT_EXECUTABLE@
 
 # The DOTFILE_DIRS tag can be used to specify one or more directories that
 # contain dot files that are included in the documentation (see the

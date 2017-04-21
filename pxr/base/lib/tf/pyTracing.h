@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \struct PyTraceInfo
+/// \struct TfPyTraceInfo
 /// Structure passed to python trace functions.  See the Python C API
 /// documentation reference for the meaning of \a what and \a arg.
 struct TfPyTraceInfo {

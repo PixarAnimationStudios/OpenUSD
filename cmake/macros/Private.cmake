@@ -101,6 +101,13 @@ function(_pxrNamespace_subst)
     )
 endfunction()
 
+# Generate a doxygen config file
+function(_pxrDoxyConfig_subst)
+    configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/lib/usd/Doxyfile.in
+                   ${CMAKE_BINARY_DIR}/Doxyfile
+    )  
+endfunction()
+
 # Install compiled python files alongside the python object,
 # e.g. lib/python/pxr/Ar/__init__.pyc
 function(_install_python LIBRARY_NAME)

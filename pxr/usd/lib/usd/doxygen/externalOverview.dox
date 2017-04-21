@@ -63,7 +63,7 @@ Following is an overview of the architecture, followed by information for
 \section Usd_ArchitecturalOverview Architectural Overview
 
 The USD repository is divided into four "core" packages, plus 3rd-party
-application plugins.  The four packages are:
+application plugins and extras:
 
 \li <b>base</b> - Contains application-agnostic, foundation modules, upon
 which most Pixar software builds, including possible future open-source 
@@ -80,6 +80,8 @@ as other low-level, imaging-related services.
 to Hydra that reads data directly and efficiently from a UsdStage.  Defines
 a plugin interface by which the adapter can be extended, and provides
 \em usdview , the standalone graphical USD inspector tool. 
+
+\li <b>third_party</b> - Contains USD plugins for DCC applications.
 
 \li <b>extras</b> - Contains a collection of tutorial material, sample code,
 and small example USD assets.
@@ -136,9 +138,9 @@ Following is a deeper indexing of the four packages.
   core and higher-level services for multi-threading.
 
 - \ref plug_page_front module provides the organization and access API for
-  all plugins to Pixar open software.  It identifies plugins by the existence
-  of a plugInfo.json manifest file, which enumerates the number and kinds of
-  plugins provided by a module.  
+  all plugins.  It identifies plugins by the existence of a plugInfo.json 
+  manifest file, which enumerates the number and kinds of plugins provided 
+  by a module.  
 
 
 \subsection Usd_Package_Usd The "usd" package

@@ -342,7 +342,7 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// \class UsdGeomXformable::XformQuery
+    /// \class XformQuery
     /// 
     /// Helper class that caches the ordered vector of UsGeomXformOps that 
     /// contribute to the local transformation of an xformable prim

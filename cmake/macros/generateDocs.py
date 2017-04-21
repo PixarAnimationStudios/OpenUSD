@@ -50,9 +50,8 @@ def _getModules(pxrSourceRoot):
                 modules.append(path)
     return modules
 
-def _generateDocs(pxrSourceRoot, installLoc, doxygenBin, doxyConfig, dotBin):
-    platformIsWindows = platform.system() == 'Windows'
-
+def _generateDocs(pxrSourceRoot, pxrBuildRoot, installLoc, 
+                  doxygenBin, dotBin):
     docsLoc = os.path.join(installLoc, 'src/modules')
     if not os.path.exists(docsLoc):
         os.makedirs(docsLoc)
@@ -70,45 +69,34 @@ def _generateDocs(pxrSourceRoot, installLoc, doxygenBin, doxyConfig, dotBin):
                     print >>sys.stderr, "Failed to remove %s: %s" % (path, str(exc))
             shutil.rmtree(target, onerror=_removeReadOnly)
         shutil.copytree(mod, target) 
+
     
+    
+    # We need to copy the namespace header separately because
+    # its a generated file from CMake
+    pxrMod = os.path.join(docsLoc, 'pxr')
+    if not os.path.exists(pxrMod):
+        os.makedirs(pxrMod)
+
+    pxrHeaderSrc = os.path.join(pxrBuildRoot, 'include', 'pxr', 'pxr.h')
+    pxrHeaderDest = os.path.join(pxrMod, 'pxr.h')
+    if os.path.exists(pxrHeaderDest):
+        os.remove(pxrHeaderDest)
+
+    shutil.copyfile(pxrHeaderSrc, pxrHeaderDest)
+
+    doxyConfigSrc  = os.path.join(pxrBuildRoot, 'Doxyfile')
+    doxyConfigDest = os.path.join(docsLoc, 'usd', 'Doxyfile')
+    if os.path.exists(doxyConfigDest):
+        os.remove(doxyConfigDest)
+    shutil.copyfile(doxyConfigSrc, doxyConfigDest)
+
     os.chdir(installLoc)
-
-    # Generate a new doxyConfig containing the dot executable path
-    with open(doxyConfig, 'r') as doxyConfigHandle:
-        doxyConfigContents = doxyConfigHandle.read()
-        doxyConfigContents += ('DOT_PATH\t\t = %s' % str(dotBin))
-    
-    outputDoxyConfig = os.path.join(docsLoc, 'Doxyfile')
-    with open(outputDoxyConfig, 'w') as outputDoxyConfigHandle:
-        outputDoxyConfigHandle.write(doxyConfigContents)
-
-    cmd = [doxygenBin, outputDoxyConfig] 
+    cmd = [doxygenBin, doxyConfigDest] 
     with tempfile.TemporaryFile() as tmpFile:
         if subprocess.call(cmd, stdout=tmpFile, stderr=tmpFile) != 0:
             sys.stderr.write(tmpFile.read())
             sys.exit('Error: doxygen failed to complete.')
-
-def _generateHeaderImpl(targetPath, targetContent):
-    if os.path.exists(targetPath):
-        os.remove(targetPath)
-
-    with open(targetPath, 'w') as targetHandle:
-        targetHandle.write(targetContent)
-
-def _generateHeaders(installLoc):
-    headerLoc = os.path.join(installLoc, 'src/')
-    if not os.path.exists(headerLoc):
-        os.mkdir(headerLoc)
-
-    clientContent = ("/*!\n\page Usd_Separator_Header_Primary Primary "
-                     "Client-Facing Modules\n*/") 
-    clientFilePath = os.path.join(installLoc, "clientModuleHeader.dox")
-    _generateHeaderImpl(clientFilePath, clientContent)    
-
-    moduleContent = ("/*!\n\page Usd_Separator_Header_Foundation "
-                     "Foundation/Support Modules\n*/")
-    moduleFilePath = os.path.join(installLoc, "foundationModuleHeader.dox")
-    _generateHeaderImpl(moduleFilePath, moduleContent)
 
 def _checkPath(path, ident, perm):
     if not os.path.exists(path):
@@ -134,19 +122,18 @@ def _generateInstallLoc(installRoot):
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Generate USD documentation.") 
     p.add_argument("source",  help="The path to the pxr source root.")
+    p.add_argument("build",   help="The path to the build directory root.")
     p.add_argument("install", help="The install root for generated docs.")
     p.add_argument("doxygen", help="The path to the doxygen executable.")
-    p.add_argument("config",  help="The path to the doxygen config.")
     p.add_argument("dot",     help="The path to the dot executable.")
     args = p.parse_args()
 
     # Ensure all paths exist first
     _checkPath(args.doxygen, 'doxygen', os.X_OK)
+    _checkPath(args.build, 'build', os.R_OK)
     _checkPath(args.install, 'install', os.W_OK)
     _checkPath(args.source, 'source', os.R_OK)
-    _checkPath(args.config, 'config', os.R_OK)
     _checkPath(args.dot, 'dot', os.X_OK)
      
     installPath = _generateInstallLoc(args.install)
-    _generateHeaders(installPath)
-    _generateDocs(args.source, installPath, args.doxygen, args.config, args.dot) 
+    _generateDocs(args.source, args.build, installPath, args.doxygen, args.dot) 
