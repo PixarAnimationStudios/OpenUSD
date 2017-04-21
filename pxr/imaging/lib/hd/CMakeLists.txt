@@ -24,7 +24,7 @@ pxr_shared_library(hd
         pxOsd
         ${OPENSUBDIV_LIBRARIES}
         ${GLEW_LIBRARY}
-        ${TBB_LIBRARIES}
+        ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
         ${OPENSUBDIV_INCLUDE_DIR}

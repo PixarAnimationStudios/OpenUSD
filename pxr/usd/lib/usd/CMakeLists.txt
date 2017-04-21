@@ -14,7 +14,7 @@ pxr_shared_library(usd
         vt
         work
         ${Boost_PYTHON_LIBRARY}
-        ${TBB_LIBRARIES}
+        ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
