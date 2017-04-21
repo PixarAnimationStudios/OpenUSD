@@ -374,6 +374,12 @@ pxr_register_test(testUsdAttributeBlockingCpp
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdAttributeConnections
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeConnections"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdVariantEditing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdVariantEditing"
