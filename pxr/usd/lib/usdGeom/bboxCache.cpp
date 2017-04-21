@@ -169,9 +169,11 @@ private:
                                _ThreadXformCache* xfCaches,
                                WorkDispatcher* dispatcher)
     {
-        UsdGeomBBoxCache::_BBoxTask& rootTask = *new(tbb::task::allocate_root()) 
-            UsdGeomBBoxCache::_BBoxTask(master, GfMatrix4d(1.0), 
-                                        _owner, xfCaches);
+        tbb::task_group_context context;
+        UsdGeomBBoxCache::_BBoxTask& rootTask =
+            *new(tbb::task::allocate_root(context)) 
+                UsdGeomBBoxCache::_BBoxTask(master, GfMatrix4d(1.0), 
+                                            _owner, xfCaches);
         tbb::task::spawn_root_and_wait(rootTask);
 
         // Update all of the master prims that depended on the completed master
