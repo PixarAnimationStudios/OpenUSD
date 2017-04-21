@@ -147,7 +147,7 @@ TF_DEFINE_ENV_SETTING(
     "If on, keep reading look bindings when material bindings are missing.");
 
 TF_DEFINE_ENV_SETTING(
-    USD_USE_LEGACY_BASE_MATERIAL, true,
+    USD_USE_LEGACY_BASE_MATERIAL, false,
     "If on, store base material as derivesFrom relationship.");
 
 TF_DEFINE_ENV_SETTING(
