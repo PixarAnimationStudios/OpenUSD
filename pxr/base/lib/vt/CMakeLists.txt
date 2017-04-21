@@ -9,7 +9,6 @@ pxr_shared_library(vt
         tracelite
         ${Boost_PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
-        ${TBB_tbbmalloc_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}

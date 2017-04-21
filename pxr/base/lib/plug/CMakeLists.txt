@@ -10,7 +10,6 @@ pxr_shared_library(plug
         work
         ${Boost_PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
-        ${TBB_tbbmalloc_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
