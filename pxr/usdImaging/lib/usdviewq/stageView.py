@@ -705,15 +705,16 @@ class StageView(QtOpenGL.QGLWidget):
     # TODO: most, if not all of the state StageView requires (except possibly
     # the stage?), should be migrated to come from the dataModel, and redrawing
     # should be triggered by signals the dataModel emits.
-    class DefaultDataModel(object):
+    class DefaultDataModel(QtCore.QObject):
 
         BBOXPURPOSES = [UsdGeom.Tokens.default_, UsdGeom.Tokens.proxy]
 
         signalDefaultMaterialChanged = QtCore.Signal()
 
         def __init__(self):
+            super(StageView.DefaultDataModel, self).__init__()
             self._bboxCache = UsdGeom.BBoxCache(0, 
-                                                BBOXPURPOSES,
+                                                StageView.DefaultDataModel.BBOXPURPOSES,
                                                 useExtentsHint=True)
 
             self._defaultMaterialAmbient = 0.2
@@ -993,7 +994,7 @@ class StageView(QtOpenGL.QGLWidget):
         return self._lastComputedGfCamera.frustum
 
     def __init__(self, parent=None, dataModel=None):
-        self._dataModel = dataModel or DefaultDataModel()
+        self._dataModel = dataModel or StageView.DefaultDataModel()
 
         QtCore.QObject.connect(self._dataModel,
                                QtCore.SIGNAL('signalDefaultMaterialChanged()'),
