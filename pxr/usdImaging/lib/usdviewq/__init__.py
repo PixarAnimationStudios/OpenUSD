@@ -79,6 +79,10 @@ class Launcher(object):
                             dest='primPath', type=str,
                             help='A prim path to initially select and frame')
 
+        parser.add_argument('--camera', action='store', default="main_cam",
+                            type=str, help='Which camera to set the view to on '
+                            'open')
+
         parser.add_argument('--mask', action='store', nargs='+',
                             dest='populationMask', metavar='PRIMPATH',
                             help='Limit stage population to these prims, '

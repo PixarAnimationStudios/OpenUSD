@@ -300,6 +300,7 @@ class MainWindow(QtGui.QMainWindow):
         self._timeSamples = None
         self._stageView = None
         self._startingPrimCamera = None
+        self._startingPrimCameraName = parserData.camera
 
         self.setWindowTitle(parserData.usdFile)
         self._statusBar = QtGui.QStatusBar(self)
@@ -2689,9 +2690,7 @@ class MainWindow(QtGui.QMainWindow):
 
         if not preserveCurrCamera:
             for camera in self._allSceneCameras:
-                # XXX This logic needs to be de-pixarified.  Perhaps
-                # a "primaryCamera" attribute on UsdGeomCamera?
-                if camera.GetName() == "main_cam":
+                if camera.GetName() == self._startingPrimCameraName:
                     self._startingPrimCamera = currCamera = camera
                     if self._stageView:
                         self._stageView.setCameraPrim(camera)
