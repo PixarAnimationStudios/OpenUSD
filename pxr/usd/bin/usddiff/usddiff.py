@@ -127,8 +127,8 @@ def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
     else:
         return call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt))
 
-def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
-    if composed:
+def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, flattened):
+    if flattened:
         _exit('Error: Cannot write out flattened result.', ERROR_EXIT_CODE)
 
     if not os.access(fileName, os.W_OK):
@@ -137,7 +137,7 @@ def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
     
     return _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
 
-def _runDiff(baseline, comparison, compose, noeffect):
+def _runDiff(baseline, comparison, flatten, noeffect):
     from pxr import Tf
 
     diffResult = 0
@@ -168,11 +168,11 @@ def _runDiff(baseline, comparison, compose, noeffect):
         # Dump the contents of our files into the temporaries
         convertError = 'Error: failed to convert from %s to %s.'
         if _convertTo(baseline, tempBaseline.name, usdcatCmd, 
-                      flatten=compose, fmt=None) != 0:
+                      flatten, fmt=None) != 0:
             _exit(convertError % (baseline, tempBaseline.name),
                   ERROR_EXIT_CODE)
         if _convertTo(comparison, tempComparison.name, usdcatCmd,
-                      flatten=compose, fmt=None) != 0:
+                      flatten, fmt=None) != 0:
             _exit(convertError % (comparison, tempComparison.name),
                   ERROR_EXIT_CODE) 
 
@@ -190,12 +190,12 @@ def _runDiff(baseline, comparison, compose, noeffect):
         if not noeffect:
             if tempBaselineChanged:
                 if _tryEdit(baseline, tempBaseline.name, 
-                            usdcatCmd, baselineFileType, compose) != 0:
+                            usdcatCmd, baselineFileType, flatten) != 0:
                     _exit(convertError % (baseline, tempBaseline.name),
                           ERROR_EXIT_CODE)
             if tempComparisonChanged:
                 if _tryEdit(comparison, tempComparison.name,
-                            usdcatCmd, comparisonFileType, compose) != 0:
+                            usdcatCmd, comparisonFileType, flatten) != 0:
                     _exit(convertError % (comparison, tempComparison.name),
                           ERROR_EXIT_CODE)
     return diffResult
@@ -278,8 +278,9 @@ def main():
                              'DIR DIR, FILE... DIR, DIR FILE... or FILE FILE. ')
     parser.add_argument('-n', '--noeffect', action='store_true',
                         help='Do not edit either file.') 
-    parser.add_argument('-c', '--compose', action='store_true',
-                        help='Fully compose both layers as Usd Stages.')
+    parser.add_argument('-f', '--flatten', action='store_true',
+                        help='Fully compose both layers as Usd Stages and '
+                             'flatten into single layers.')
 
     results = parser.parse_args()
     diffResult = NO_DIFF_FOUND_EXIT_CODE 
@@ -289,7 +290,7 @@ def main():
 
         for (baseline, comparison) in common:
             if _runDiff(baseline, comparison, 
-                        results.compose, results.noeffect):
+                        results.flatten, results.noeffect):
                 diffResult = DIFF_FOUND_EXIT_CODE
 
         mismatchMsg = 'No corresponding file found for %s, skipping.'

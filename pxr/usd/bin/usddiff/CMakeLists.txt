@@ -171,7 +171,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffComposedResults2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usd b.usd --noeffect --compose"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usd b.usd --noeffect --flatten"
     EXPECTED_RETURN_CODE 1 
     STDOUT_REDIRECT composed_diff.txt
     DIFF_COMPARE composed_diff.txt
