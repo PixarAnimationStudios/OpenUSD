@@ -76,8 +76,7 @@ class TestUsdAttributeConnections(unittest.TestCase):
         # Simple connect list with correct order
         r = stage.GetPrimAtPath("/Foo").GetAttribute("testAttr")
         sol = map(Sdf.Path, ['/Qux', '/Bar', '/Baz', '/Foo.someAttr'])
-        self.assertEqual(r.GetConnections(forwardToObjectsInMasters=True), sol) 
-        self.assertEqual(r.GetConnections(forwardToObjectsInMasters=False), sol) 
+        self.assertEqual(r.GetConnections(), sol) 
 
         # Recursive finding
         recursive = stage.GetPrimAtPath("/Recursive")
@@ -321,40 +320,8 @@ class TestUsdAttributeConnections(unittest.TestCase):
                 self.assertTrue(not attr.SetConnections(
                     ["/Root/Instance_1", master.AppendChild("A")]))
 
-            # Connections pointing to prims within instances will be forwarded
-                # to the corresponding master by default.
             connections = attr.GetConnections()
             expected = [
-                Sdf.Path("/Root/Instance_1"),
-                Sdf.Path("/Root/Instance_1.attr"),
-                master.AppendChild("A"),
-                master.AppendChild("A").AppendProperty("attr"),
-                master.AppendChild("NestedInstance_1"),
-                master.AppendChild("NestedInstance_1").AppendProperty("attr"),
-                nestedMaster.AppendChild("B"),
-                nestedMaster.AppendChild("B").AppendProperty("attr"),
-                master.AppendChild("NestedInstance_2"),
-                master.AppendChild("NestedInstance_2").AppendProperty("attr"),
-                nestedMaster.AppendChild("B"),
-                nestedMaster.AppendChild("B").AppendProperty("attr"),
-                Sdf.Path("/Root/Instance_2"),
-                Sdf.Path("/Root/Instance_2.attr"),
-                master.AppendChild("A"),
-                master.AppendChild("A").AppendProperty("attr"),
-                master.AppendChild("NestedInstance_1"),
-                master.AppendChild("NestedInstance_1").AppendProperty("attr"),
-                nestedMaster.AppendChild("B"),
-                nestedMaster.AppendChild("B").AppendProperty("attr"),
-                master.AppendChild("NestedInstance_2"),
-                master.AppendChild("NestedInstance_2").AppendProperty("attr"),
-                nestedMaster.AppendChild("B"),
-                nestedMaster.AppendChild("B").AppendProperty("attr")]
-            self.assertEqual(connections, expected)
-
-            # GetConnections will not forward paths to objects in masters if
-                # requested.
-            connections = attr.GetConnections(forwardToObjectsInMasters=False)
-            expected2 = [
                 Sdf.Path("/Root/Instance_1"),
                 Sdf.Path("/Root/Instance_1.attr"),
                 Sdf.Path("/Root/Instance_1/A"),
@@ -379,7 +346,7 @@ class TestUsdAttributeConnections(unittest.TestCase):
                 Sdf.Path("/Root/Instance_2/NestedInstance_2.attr"),
                 Sdf.Path("/Root/Instance_2/NestedInstance_2/B"),
                 Sdf.Path("/Root/Instance_2/NestedInstance_2/B.attr")]
-            self.assertEqual(connections, expected2)
+            self.assertEqual(connections, expected)
 
         attr = stage.GetPrimAtPath("/Root").GetAttribute("cattr")
         _TestConnection(attr)

@@ -464,24 +464,12 @@ public:
     /// Compose this attribute's connections and fill \p sources with the
     /// result.  All preexisting elements in \p sources are lost.
     ///
-    /// By default, paths that point to a prim or property descendant to an
-    /// instanceable prim are forwarded to the corresponding object in the
-    /// instance's master.  This can be disabled by setting
-    /// \p forwardToObjectsInMasters to false. This is useful when copying
-    /// connections from one attribute to another, since the connection editing
-    /// API does not accept paths to prims in masters. However, note that doing
-    /// this on an attribute within a master may yield different results across
-    /// runs due to the selection of different instances to serve as the
-    /// master's source instance.
-    ///
-    /// This function may return duplicate connection source paths if the
-    /// authored connections point to objects in different instanceable prims
-    /// that ultimately correspond to the same master.
+    /// See \ref Usd_ScenegraphInstancing_TargetsAndConnections for details on 
+    /// behavior when targets point to objects beneath instance prims.
     ///
     /// The result is not cached, and thus recomputed on each query.
     USD_API
-    bool GetConnections(SdfPathVector* sources,
-                        bool forwardToObjectsInMasters = true) const;
+    bool GetConnections(SdfPathVector* sources) const;
 
     /// Return true if this attribute has any authored opinions regarding
     /// connections.  Note that this includes opinions that remove connections,

@@ -347,7 +347,10 @@ _BuildCollections(
         FnKat::StringBuilder collectionBuilder;
         UsdGeomCollectionAPI &collection = collections[iCollection];
         TfToken name = collection.GetCollectionName();
-        collection.GetTargets(&targets, false);
+
+        // XXX: This code probably needs some work to be made
+        // instancing-aware.
+        collection.GetTargets(&targets);
         for (size_t iTarget = 0; iTarget < targets.size(); ++iTarget)
         {
             std::string targetPath = targets[iTarget].GetString();

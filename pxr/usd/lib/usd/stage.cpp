@@ -4240,7 +4240,7 @@ UsdStage::_CopyProperty(const UsdProperty &prop,
          _CopyMetadata(rel, sdfRel);
 
          SdfPathVector targets;
-         rel.GetTargets(&targets, /* forwardToObjectsInMasters = */ false);
+         rel.GetTargets(&targets);
          if (targets.empty()) {
              sdfRel->GetTargetPathList().ClearEditsAndMakeExplicit();
          }
@@ -4257,12 +4257,9 @@ UsdStage::_CopyProperty(const UsdProperty &prop,
                  const SdfPath* flattenedMasterPath = 
                      TfMapLookupPtr(masterToFlattened, master.GetPath());
                  if (TF_VERIFY(flattenedMasterPath)) {
-                     const SdfPath& masterSourcePrimIndexPath =
-                         master._GetSourcePrimIndex().GetPath();
-
                      for (auto& path : targets) {
                          path = path.ReplacePrefix(
-                             masterSourcePrimIndexPath, *flattenedMasterPath);
+                             master.GetPath(), *flattenedMasterPath);
                      }
                  }
              }

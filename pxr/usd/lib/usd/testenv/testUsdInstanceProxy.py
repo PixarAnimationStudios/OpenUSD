@@ -402,8 +402,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
             self.assertTrue(rel)
             self.assertEqual(rel.GetPath(), relPath)
             self.assertEqual(
-                rel.GetTargets(forwardToObjectsInMasters=False),
-                [Sdf.Path(p) for p in expectedTargets])
+                rel.GetTargets(), [Sdf.Path(p) for p in expectedTargets])
 
         _ValidateRelationshipTargets(
             relPath = '/Root/Instance_1/A.rel',
@@ -473,8 +472,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
             self.assertTrue(attr)
             self.assertEqual(attr.GetPath(), attrPath)
             self.assertEqual(
-                attr.GetConnections(forwardToObjectsInMasters=False),
-                [Sdf.Path(p) for p in expectedSrcs])
+                attr.GetConnections(), [Sdf.Path(p) for p in expectedSrcs])
 
         _ValidateConnections(
             attrPath = '/Root/Instance_1/A.con',

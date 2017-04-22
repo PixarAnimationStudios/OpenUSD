@@ -461,8 +461,7 @@ private:
     void _VisitRel(UsdRelationship const &rel) {
         SdfPathVector targets;
         rel._GetForwardedTargets(&targets,
-                                 /*includeForwardingRels=*/true,
-                                 /*forwardToObjectsInMasters=*/true);
+                                 /*includeForwardingRels=*/true);
         
         if (!targets.empty()) {
             for (SdfPath const &p: targets) {

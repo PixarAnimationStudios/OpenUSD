@@ -411,16 +411,21 @@ achieve many of the same effects.  For example, a consumer could add inherit or
 specializes arcs to instances, then make edits to the class targeted by those
 arcs.  Those edits would then affect all of the specified instances.
 
-\subsection Usd_ScenegraphInstancing_Relationships Relationships and Instancing
+\subsection Usd_ScenegraphInstancing_TargetsAndConnections Relationship Targets and Attribute Connections
 
-Relationships may target prims beneath instances or one of their properties.
-When using UsdRelationship::GetTargets or UsdRelationship::GetForwardedTargets,
-consumers may request these targets be forwarded to the corresponding object
-in the instance's master by specifying the ```forwardToObjectsInMaster``` 
-parameter.  This is the default behavior; however, consumers working with
-\ref Usd_ScenegraphInstancing_InstanceProxies "instance proxies" will likely
-want to set this parameter to \c false so that the returned targets never
-return a path in a master.
+Relationships and attributes may have authored target and connection paths that
+point to objects beneath an instance prim.  In these cases, the API for 
+retrieving these paths, such as UsdRelationship::GetTargets or 
+UsdAttribute::GetConnections, will not translate them to the corresponding 
+object in the instance's master prim. Consumers can use 
+\ref Usd_ScenegraphInstancing_InstanceProxies "instance proxies" to interact 
+with these paths and retrieve the corresponding object in the master prim if 
+needed.  However, if these functions are called on a UsdRelationship or 
+UsdAttribute that belong to a prim in a master, paths that point to objects in 
+instances of that master will be returned as paths in that master.
+
+\note The following example demonstrates behavior with relationship targets,
+but the same behavior holds for attribute connections.
 
 <center>
 <table border="0">
@@ -491,18 +496,19 @@ def "Car"
 
 # 'bodyRel' is a relationship on a prim that is not being instanced. Its 
 # targets point to prims beneath Car_1 and Car_2, which are both instances 
-# in this scene. By default, Usd.Relationship will forward these targets 
-# to the corresponding object in the instances' master. Specifying 
-# forwardToObjectsInMasters=False disables this forwarding.
+# in this scene.
 >>> cart_bodyRel.GetTargets()
-[Sdf.Path('/__Master_1/Body'), Sdf.Path('/__Master_1/Body')]
-
->>> cart_bodyRel.GetTargets(forwardToObjectsInMasters=False)
 [Sdf.Path('/ParkingLot/Car_1/Body'), Sdf.Path('/ParkingLot/Car_2/Body')]
 
+# Calling Usd.Stage.GetPrimAtPath with these targets will return instance
+# proxies, so consumers can easily interact with these targets even though
+# they are prims beneath instances.
+>>> [stage.GetPrimAtPath(p) for p in cart_bodyRel.GetTargets()]
+[Usd.Prim(</ParkingLot/Car_1/Body>), Usd.Prim(</ParkingLot/Car_2/Body>)]
+
 # 'doorRel' is a relationship on a prim beneath an instance. If accessed
-# through the instance's master, the targets returned will be returned
-# as master prims.
+# through the instance's master, the target paths returned will be returned
+# as paths in the instance's master.
 >>> master = stage.GetPrimAtPath('/ParkingLot/Car_1').GetMaster()
 >>> master_doorRel = master.GetChild('Body').GetRelationship('doorRel')
 
@@ -512,32 +518,24 @@ Sdf.Path('/__Master_1/Body.doorRel')
 >>> master_doorRel.GetTargets()
 [Sdf.Path('/__Master_1/Door')]
 
-# NOTE: Using a Usd.Relationship in a master with forwardToObjectsInMasters
-# set to False is only useful in very limited situations. Consumers that do
-# not want this forwarding likely want to use instance proxies instead. 
-# See API documentation and below for more details. 
->>> master_doorRel.GetTargets(forwardToObjectsInMasters=False)
-[Sdf.Path('/ParkingLot/Car_2/Door')]
-
-# If the relationship is accessed through instance proxies, forwarding to
-# objects in masters works as before. Disabling this forwarding causes targets
-# to be returned as if instancing were not enabled.
+# If the relationship is accessed through instance proxies, the relationship
+# target API behaves as though instancing is not present.
 >>> instanceProxy = stage.GetPrimAtPath('/ParkingLot/Car_1/Body')
 >>> instanceProxy_doorRel = instanceProxy.GetRelationship('doorRel')
 
->>> instanceProxy_doorRel.GetTargets()
-[Sdf.Path('/__Master_1/Door')]
+>>> instanceProxy_doorRel.GetPath()
+Sdf.Path('/ParkingLot/Car_1/Body.doorRel')
 
->>> instanceProxy_doorRel.GetTargets(False)
+>>> instanceProxy_doorRel.GetTargets()
 [Sdf.Path('/ParkingLot/Car_1/Door')]
 
 >>> instanceProxy_2 = stage.GetPrimAtPath('/ParkingLot/Car_2/Body')
 >>> instanceProxy_2_doorRel = instanceProxy_2.GetRelationship('doorRel')
 
->>> instanceProxy_2_doorRel.GetTargets()
-[Sdf.Path('/__Master_1/Door')]
+>>> instanceProxy_2_doorRel.GetPath()
+Sdf.Path('/ParkingLot/Car_2/Body.doorRel')
 
->>> instanceProxy_2_doorRel.GetTargets(False)
+>>> instanceProxy_2_doorRel.GetTargets()
 [Sdf.Path('/ParkingLot/Car_2/Door')]
 \endcode
 

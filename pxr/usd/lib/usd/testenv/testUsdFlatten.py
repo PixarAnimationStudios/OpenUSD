@@ -203,8 +203,7 @@ class TestUsdFlatten(unittest.TestCase):
         assert prim
         rel  = prim.GetRelationship('foo')
         assert rel
-        self.assertEqual(rel.GetTargets(), 
-                         [prim.GetMaster().GetChild('baz').GetPath()])
+        self.assertEqual(rel.GetTargets(), [Sdf.Path('/bar/baz')])
 
         resultFile = basePath+'result.usda'
         stage.Export(resultFile)
@@ -216,8 +215,7 @@ class TestUsdFlatten(unittest.TestCase):
         assert prim
         rel  = prim.GetRelationship('foo')
         assert rel
-        self.assertEqual(rel.GetTargets(), 
-                         [prim.GetMaster().GetChild('baz').GetPath()])
+        self.assertEqual(rel.GetTargets(), [Sdf.Path('/bar/baz')])
 
 if __name__ == "__main__":
     unittest.main()

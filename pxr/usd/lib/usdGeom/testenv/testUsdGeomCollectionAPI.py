@@ -115,12 +115,8 @@ class TestUsdGeomCollectionAPI(unittest.TestCase):
 
         hasInstancedTargetCollection = UsdGeom.CollectionAPI(root, 
                                                              "hasInstancedTarget")
-        forwardedTargetPath = hasInstancedTargetCollection.GetTargets()[0]
-        self.assertTrue(stage.GetPrimAtPath(forwardedTargetPath).IsInMaster())
-
-        unforwardedTargetPath = hasInstancedTargetCollection.GetTargets(
-            forwardToObjectsInMasters=False)[0]
-        self.assertEqual(unforwardedTargetPath, 
+        targetPath = hasInstancedTargetCollection.GetTargets()[0]
+        self.assertEqual(targetPath, 
                     Sdf.Path('/CollectionTest/Geom/iCube/Geom/cube'))
 
     def test_ValidCases(self):

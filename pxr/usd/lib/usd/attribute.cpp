@@ -476,8 +476,7 @@ UsdAttribute::ClearConnections() const
 }
 
 bool
-UsdAttribute::GetConnections(SdfPathVector *sources,
-                             bool forwardToObjectsInMasters) const
+UsdAttribute::GetConnections(SdfPathVector *sources) const
 {
     TRACE_FUNCTION();
 
@@ -505,36 +504,23 @@ UsdAttribute::GetConnections(SdfPathVector *sources,
     }
 
     sources->swap(targetIndex.paths);
-    if (!sources->empty()) {
-        const Usd_InstanceCache* instanceCache = stage->_instanceCache.get();
-
-        const bool attributeInMaster = _Prim()->IsInMaster();
-        Usd_PrimDataConstPtr master = nullptr;
-        if (attributeInMaster) {
-            master = get_pointer(_Prim());
-            while (!master->IsMaster()) { 
-                master = master->GetParent();
-            }
+    if (!sources->empty() && _Prim()->IsInMaster()) {
+        Usd_PrimDataConstPtr master = get_pointer(_Prim());
+        while (!master->IsMaster()) { 
+            master = master->GetParent();
         }
 
-        // XXX: 
-        // If this connection is in a master, we should probably always
-        // forward to master paths. Otherwise, we return the objects from
-        // whatever source prim index was selected, which will vary from
-        // run to run.
-        if (forwardToObjectsInMasters) {
+        const SdfPath& masterSourcePrimIndexPath = 
+            master->GetSourcePrimIndex().GetPath();
+
+        if (GetPrim().IsInMaster()) {
             // Translate any paths that point to descendents of instance prims
             // to the corresponding prim in the instance's master.
             for (SdfPath& path : *sources) {
-                const SdfPath& primPath = path.GetPrimPath();
-                const SdfPath& primInMasterPath = 
-                    instanceCache->GetPrimInMasterForPrimIndexAtPath(primPath);
-                const bool pathIsObjectInMaster = !primInMasterPath.IsEmpty();
+                path = path.ReplacePrefix(
+                    masterSourcePrimIndexPath, master->GetPath());
 
-                if (pathIsObjectInMaster) {
-                    path = path.ReplacePrefix(primPath, primInMasterPath);
-                }
-                else if (attributeInMaster) {
+                if (path.GetPrimPath() == master->GetPath()) {
                     // Connections authored within an instance cannot target
                     // the instance itself or any its properties, since doing so
                     // would break the encapsulation of the instanced scene
@@ -550,21 +536,18 @@ UsdAttribute::GetConnections(SdfPathVector *sources,
                     // consistency with instance proxy case, we think this
                     // shouldn't error out and should return the master path
                     // instead.
-                    if (instanceCache->GetMasterForPrimIndexAtPath(primPath)
-                        == master->GetPath()) {
-                        // XXX: 
-                        // The path in this error message is potentially
-                        // confusing because it is the composed target path and
-                        // not necessarily what's authored in a layer. In order
-                        // to be more useful, we'd need to return more info
-                        // from the relationship target composition.
-                        otherErrors.push_back(TfStringPrintf(
-                            "Source path <%s> is not allowed because it is "
-                            "authored in instanced scene description but "
-                            "targets its owning instance.",
-                            path.GetText()));
-                        path = SdfPath();
-                    }
+                    // XXX: 
+                    // The path in this error message is potentially
+                    // confusing because it is the composed target path and
+                    // not necessarily what's authored in a layer. In order
+                    // to be more useful, we'd need to return more info
+                    // from the relationship target composition.
+                    otherErrors.push_back(TfStringPrintf(
+                        "Source path <%s> is not allowed because it is "
+                        "authored in instanced scene description but "
+                        "targets its owning instance.",
+                        path.GetText()));
+                    path = SdfPath();
                 }
             }
 
@@ -575,11 +558,6 @@ UsdAttribute::GetConnections(SdfPathVector *sources,
         else if (GetPrim().IsInstanceProxy()) {
             // Translate any paths that point to an object within the shared
             // master to our instance.
-
-            // Since we're under an instance proxy, this attribute must be in a
-            // master. Walk up to find the corresponding instance.
-            TF_VERIFY(attributeInMaster && master);
-
             UsdPrim instance = GetPrim();
             while (!instance.IsInstance()) { 
                 instance = instance.GetParent();
@@ -588,8 +566,6 @@ UsdAttribute::GetConnections(SdfPathVector *sources,
             // Paths that point to an object under the master's source prim
             // index are internal to the master and need to be translated to the
             // instance we're currently looking at.
-            const SdfPath& masterSourcePrimIndexPath = 
-                master->GetSourcePrimIndex().GetPath();
             for (SdfPath &path : *sources) {
                 path = path.ReplacePrefix(masterSourcePrimIndexPath,
                                           instance.GetPath());

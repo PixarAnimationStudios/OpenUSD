@@ -110,11 +110,10 @@ UsdGeomCollectionAPI::SetTargets(const SdfPathVector &targets) const
 }
 
 bool 
-UsdGeomCollectionAPI::GetTargets(SdfPathVector *targets,
-                                 bool forwardToObjectsInMasters) const
+UsdGeomCollectionAPI::GetTargets(SdfPathVector *targets) const
 {
     UsdRelationship rel = _GetTargetsRel();
-    return rel && rel.GetTargets(targets, forwardToObjectsInMasters);
+    return rel && rel.GetTargets(targets);
 }
 
 bool 

@@ -85,10 +85,10 @@ _Set(const UsdAttribute &self, object val, const UsdTimeCode &time) {
 }
 
 static SdfPathVector
-_GetConnections(const UsdAttribute &self, bool forwardToObjectsInMasters)
+_GetConnections(const UsdAttribute &self)
 {
     SdfPathVector result;
-    self.GetConnections(&result, forwardToObjectsInMasters);
+    self.GetConnections(&result);
     return result;
 }
 
@@ -153,7 +153,6 @@ void wrapUsdAttribute()
         .def("SetConnections", &UsdAttribute::SetConnections, arg("sources"))
         .def("ClearConnections", &UsdAttribute::ClearConnections)
         .def("GetConnections", _GetConnections,
-             (arg("forwardToObjectsInMasters") = true),
              return_value_policy<TfPySequenceToList>())
         .def("HasAuthoredConnections", &UsdAttribute::HasAuthoredConnections)
         ;

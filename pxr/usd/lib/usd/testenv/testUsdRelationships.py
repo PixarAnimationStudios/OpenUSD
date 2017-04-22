@@ -106,20 +106,17 @@ class TestUsdRelationships(unittest.TestCase):
             # Simple target list with correct order
             r = stage.GetPrimAtPath("/Foo").GetRelationship("testRel")
             sol = map(Sdf.Path, ['/Qux', '/Bar', '/Baz', '/Foo.someAttr'])
-            self.assertEqual(r.GetTargets(forwardToObjectsInMasters=True), sol) 
-            self.assertEqual(r.GetTargets(forwardToObjectsInMasters=False), sol) 
+            self.assertEqual(r.GetTargets(), sol) 
 
             # Forwarded targets
             r = stage.GetPrimAtPath("/Bar").GetRelationship("fwd")
             sol = map(Sdf.Path, ['/Baz', '/Qux', '/Bar', '/Foo.someAttr'])
-            self.assertEqual(r.GetForwardedTargets(forwardToObjectsInMasters=True), sol)
-            self.assertEqual(r.GetForwardedTargets(forwardToObjectsInMasters=False), sol)
+            self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Forwarded targets
             r = stage.GetPrimAtPath("/Bar").GetRelationship("fwd2")
             sol = map(Sdf.Path, ['/Qux', '/Baz', '/Bar'])
-            self.assertEqual(r.GetForwardedTargets(forwardToObjectsInMasters=True), sol)
-            self.assertEqual(r.GetForwardedTargets(forwardToObjectsInMasters=False), sol)
+            self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Forwarded targets, bug 138452.  With that bug, the forwarded targets
             # would be ['/Qux']
@@ -129,14 +126,12 @@ class TestUsdRelationships(unittest.TestCase):
             # Cycle detection
             r = stage.GetPrimAtPath("/Bar").GetRelationship("cycle")
             sol = map(Sdf.Path, ['/Baz', '/Qux', '/Bar', '/Foo.someAttr'])
-            self.assertEqual(r.GetForwardedTargets(forwardToObjectsInMasters=True), sol)
-            self.assertEqual(r.GetForwardedTargets(forwardToObjectsInMasters=False), sol)
+            self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Bogus target path
             r = stage.GetPrimAtPath("/Baz").GetRelationship("bogus")
             sol = [Sdf.Path('/MissingTargetPath')]
-            self.assertEqual(r.GetForwardedTargets(forwardToObjectsInMasters=True), sol)
-            self.assertEqual(r.GetForwardedTargets(forwardToObjectsInMasters=False), sol)
+            self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Recursive finding
             recursive = stage.GetPrimAtPath("/Recursive")
@@ -283,7 +278,8 @@ class TestUsdRelationships(unittest.TestCase):
 
     def test_TargetsToObjectsInInstances(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory('TestTargetsToObjectsInInstances.'+fmt)
+            stage = Usd.Stage.CreateInMemory(
+                'TestTargetsToObjectsInInstances.'+fmt)
             stage.GetRootLayer().ImportFromString('''#usda 1.0
             def "Instance"
             {
@@ -416,57 +412,23 @@ class TestUsdRelationships(unittest.TestCase):
             master = stage.GetPrimAtPath("/Root/Instance_1").GetMaster()
             nestedMaster = master.GetChild("NestedInstance_1").GetMaster()
 
-            master = master.GetPath()
-            nestedMaster = nestedMaster.GetPath()
-
             # Test retrieving relationship targets that point to instances and
             # prims within instances.
             def _TestRelationship(rel):
                 self.assertTrue(rel)
 
                 # Targets to objects in masters cannot be authored.
+                primInMasterPath = master.GetPath().AppendChild("A")
                 with self.assertRaises(Tf.ErrorException):
-                    self.assertTrue(not rel.AppendTarget(master.AppendChild("A")))
+                    self.assertFalse(rel.AppendTarget(primInMasterPath))
                 with self.assertRaises(Tf.ErrorException):
-                    self.assertTrue(not rel.RemoveTarget(master.AppendChild("A")))
+                    self.assertFalse(rel.RemoveTarget(primInMasterPath))
                 with self.assertRaises(Tf.ErrorException):
-                    self.assertTrue(not rel.SetTargets(
-                            ["/Root/Instance_1", master.AppendChild("A")]))
+                    self.assertFalse(rel.SetTargets(
+                        ["/Root/Instance_1", primInMasterPath]))
 
-                # Targets pointing to prims within instances will be forwarded
-                # to the corresponding master by default.
                 targets = rel.GetTargets()
                 expected = [
-                    Sdf.Path("/Root/Instance_1"),
-                    Sdf.Path("/Root/Instance_1.attr"),
-                    master.AppendChild("A"),
-                    master.AppendChild("A").AppendProperty("attr"),
-                    master.AppendChild("NestedInstance_1"),
-                    master.AppendChild("NestedInstance_1").AppendProperty("attr"),
-                    nestedMaster.AppendChild("B"),
-                    nestedMaster.AppendChild("B").AppendProperty("attr"),
-                    master.AppendChild("NestedInstance_2"),
-                    master.AppendChild("NestedInstance_2").AppendProperty("attr"),
-                    nestedMaster.AppendChild("B"),
-                    nestedMaster.AppendChild("B").AppendProperty("attr"),
-                    Sdf.Path("/Root/Instance_2"),
-                    Sdf.Path("/Root/Instance_2.attr"),
-                    master.AppendChild("A"),
-                    master.AppendChild("A").AppendProperty("attr"),
-                    master.AppendChild("NestedInstance_1"),
-                    master.AppendChild("NestedInstance_1").AppendProperty("attr"),
-                    nestedMaster.AppendChild("B"),
-                    nestedMaster.AppendChild("B").AppendProperty("attr"),
-                    master.AppendChild("NestedInstance_2"),
-                    master.AppendChild("NestedInstance_2").AppendProperty("attr"),
-                    nestedMaster.AppendChild("B"),
-                    nestedMaster.AppendChild("B").AppendProperty("attr")]
-                self.assertEqual(targets, expected)
-
-                # GetTargets will not forward target paths to objects in masters if
-                # requested.
-                targets = rel.GetTargets(forwardToObjectsInMasters=False)
-                expected2 = [
                     Sdf.Path("/Root/Instance_1"),
                     Sdf.Path("/Root/Instance_1.attr"),
                     Sdf.Path("/Root/Instance_1/A"),
@@ -491,13 +453,35 @@ class TestUsdRelationships(unittest.TestCase):
                     Sdf.Path("/Root/Instance_2/NestedInstance_2.attr"),
                     Sdf.Path("/Root/Instance_2/NestedInstance_2/B"),
                     Sdf.Path("/Root/Instance_2/NestedInstance_2/B.attr")]
-                self.assertEqual(targets, expected2)
+                self.assertEqual(targets, expected)
 
             rel = stage.GetPrimAtPath("/Root").GetRelationship("rel")
             _TestRelationship(rel)
 
             rel = stage.GetPrimAtPath("/Root/Instance_1").GetRelationship("rel")
             _TestRelationship(rel)
+
+            def _TestRelationshipInMaster(rel):
+                self.assertTrue(rel)
+                self.assertTrue(rel.GetPrim().IsInMaster())
+
+                targets = rel.GetTargets()
+                masterPath = master.GetPath()
+                expected = [
+                    masterPath.AppendPath("A"),
+                    masterPath.AppendPath("A.attr"),
+                    masterPath.AppendPath("NestedInstance_1"),
+                    masterPath.AppendPath("NestedInstance_1.attr"),
+                    masterPath.AppendPath("NestedInstance_1/B"),
+                    masterPath.AppendPath("NestedInstance_1/B.attr"),
+                    masterPath.AppendPath("NestedInstance_2"),
+                    masterPath.AppendPath("NestedInstance_2.attr"),
+                    masterPath.AppendPath("NestedInstance_2/B"),
+                    masterPath.AppendPath("NestedInstance_2/B.attr")]
+                self.assertEqual(targets, expected)
+
+            rel = master.GetChild("A").GetRelationship("rel")
+            _TestRelationshipInMaster(rel)
 
             def _TestRelationshipForwarding(rel):
                 self.assertTrue(rel)
@@ -506,18 +490,6 @@ class TestUsdRelationships(unittest.TestCase):
                 # that point to the instance root.
                 targets = rel.GetForwardedTargets()
                 expected = [
-                    master.AppendChild("A"),
-                    master.AppendChild("A").AppendProperty("attr"),
-                    master.AppendChild("NestedInstance_1"),
-                    master.AppendChild("NestedInstance_1").AppendProperty("attr"),
-                    nestedMaster.AppendChild("B"),
-                    nestedMaster.AppendChild("B").AppendProperty("attr"),
-                    master.AppendChild("NestedInstance_2"),
-                    master.AppendChild("NestedInstance_2").AppendProperty("attr")]
-                self.assertEqual(targets, expected)
-
-                targets = rel.GetForwardedTargets(forwardToObjectsInMasters=False)
-                expected2 = [
                     Sdf.Path("/Root/Instance_1"),
                     Sdf.Path("/Root/Instance_1.attr"),
                     Sdf.Path("/Root/Instance_1/A"),
@@ -541,8 +513,9 @@ class TestUsdRelationships(unittest.TestCase):
                     Sdf.Path("/Root/Instance_2/NestedInstance_2"),
                     Sdf.Path("/Root/Instance_2/NestedInstance_2.attr"),
                     Sdf.Path("/Root/Instance_2/NestedInstance_2/B"),
-                    Sdf.Path("/Root/Instance_2/NestedInstance_2/B.attr")]
-                self.assertEqual(targets, expected2)
+                    Sdf.Path("/Root/Instance_2/NestedInstance_2/B.attr")
+                ]
+                self.assertEqual(targets, expected)
 
             rel = stage.GetPrimAtPath("/Root").GetRelationship("fwdRel")
             _TestRelationshipForwarding(rel)
