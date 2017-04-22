@@ -213,7 +213,7 @@ class TestUsdRelationships(unittest.TestCase):
                 def Scope "Baz"
                 {
                     add rel bogus = </Ref/MissingTargetPath>
-                    add rel bogus2 = </Ref>
+                    add rel root = </Ref>
                 }
 
                 def Scope "Qux"
@@ -269,10 +269,9 @@ class TestUsdRelationships(unittest.TestCase):
             self.assertEqual(r.GetTargets(), sol)
             self.assertEqual(r.GetForwardedTargets(), sol)
 
-            # Another bogus target path -- target paths authored inside instances
-            # cannot target the instance root.
-            r = master.GetChild("Baz").GetRelationship("bogus2")
-            sol = []
+            # Path inside an instance that points to the instance root
+            r = master.GetChild("Baz").GetRelationship("root")
+            sol = [master.GetPath()]
             self.assertEqual(r.GetTargets(), sol)
             self.assertEqual(r.GetForwardedTargets(), sol)
 
@@ -468,6 +467,8 @@ class TestUsdRelationships(unittest.TestCase):
                 targets = rel.GetTargets()
                 masterPath = master.GetPath()
                 expected = [
+                    masterPath,
+                    masterPath.AppendPath(".attr"),
                     masterPath.AppendPath("A"),
                     masterPath.AppendPath("A.attr"),
                     masterPath.AppendPath("NestedInstance_1"),

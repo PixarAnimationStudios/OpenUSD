@@ -130,7 +130,7 @@ class TestUsdAttributeConnections(unittest.TestCase):
                 def Scope "Foo"
                 {
                     custom int someAttr
-                add int testAttr.connect = [
+                    add int testAttr.connect = [
                         </Ref/Qux>,
                         </Ref/Bar>,
                         </Ref/Baz>,
@@ -140,8 +140,8 @@ class TestUsdAttributeConnections(unittest.TestCase):
 
                 def Scope "Baz"
                 {
-                add int bogus.connect = </Ref/MissingConnectionPath>
-                add int bogus2.connect = </Ref>
+                    add int bogus.connect = </Ref/MissingConnectionPath>
+                    add int root.connect = </Ref>
                 }
 
             }
@@ -170,11 +170,9 @@ class TestUsdAttributeConnections(unittest.TestCase):
             sol = [master.GetPath().AppendChild("MissingConnectionPath")]
             self.assertEqual(a.GetConnections(), sol)
 
-            # Another bogus path -- paths inside instances cannot point to the
-            # instance root.
-            #with ExpectedWarnings(2):
-            a = master.GetChild("Baz").GetAttribute("bogus2")
-            sol = []
+            # Path inside an instance that points to the instance root
+            a = master.GetChild("Baz").GetAttribute("root")
+            sol = [master.GetPath()]
             self.assertEqual(a.GetConnections(), sol)
 
     def test_ConnectionsToObjectsInInstances(self):
@@ -189,7 +187,7 @@ class TestUsdAttributeConnections(unittest.TestCase):
                     def "A"
                     {
                         double attr = 1.0
-                    int cattr.connect = [
+                        int cattr.connect = [
                             </Instance>,
                             </Instance.attr>,
                             </Instance/A>,
@@ -231,7 +229,7 @@ class TestUsdAttributeConnections(unittest.TestCase):
 
                 def "Root"
                 {
-                int cattr.connect = [ 
+                    int cattr.connect = [ 
                         </Root/Instance_1>,
                         </Root/Instance_1.attr>,
                         </Root/Instance_1/A>,
@@ -263,7 +261,7 @@ class TestUsdAttributeConnections(unittest.TestCase):
                         references = </Instance>
                     )
                     {
-                    int cattr.connect = [ 
+                        int cattr.connect = [ 
                             </Root/Instance_1>,
                             </Root/Instance_1.attr>,
                             </Root/Instance_1/A>,
@@ -300,11 +298,8 @@ class TestUsdAttributeConnections(unittest.TestCase):
                 }
                 ''')
 
-            master = stage.GetPrimAtPath("/Root/Instance_1").GetMaster()
-            nestedMaster = master.GetChild("NestedInstance_1").GetMaster()
-
-            master = master.GetPath()
-            nestedMaster = nestedMaster.GetPath()
+        master = stage.GetPrimAtPath("/Root/Instance_1").GetMaster()
+        nestedMaster = master.GetChild("NestedInstance_1").GetMaster()
 
         # Test retrieving connections that point to instances and prims within
         # instances.
@@ -312,13 +307,14 @@ class TestUsdAttributeConnections(unittest.TestCase):
             self.assertTrue(attr)
 
             # Connections to objects in masters cannot be authored.
+            primInMasterPath = master.GetPath().AppendChild("A")
             with self.assertRaises(Tf.ErrorException):
-                self.assertTrue(not attr.AppendConnection(master.AppendChild("A")))
+                self.assertFalse(attr.AppendConnection(primInMasterPath))
             with self.assertRaises(Tf.ErrorException):
-                self.assertTrue(not attr.RemoveConnection(master.AppendChild("A")))
+                self.assertFalse(attr.RemoveConnection(primInMasterPath))
             with self.assertRaises(Tf.ErrorException):
-                self.assertTrue(not attr.SetConnections(
-                    ["/Root/Instance_1", master.AppendChild("A")]))
+                self.assertFalse(attr.SetConnections(
+                    ["/Root/Instance_1", primInMasterPath]))
 
             connections = attr.GetConnections()
             expected = [
@@ -353,6 +349,30 @@ class TestUsdAttributeConnections(unittest.TestCase):
 
         attr = stage.GetPrimAtPath("/Root/Instance_1").GetAttribute("cattr")
         _TestConnection(attr)
+
+        def _TestConnectionInMaster(attr):
+            self.assertTrue(attr)
+            self.assertTrue(attr.GetPrim().IsInMaster())
+
+            connections = attr.GetConnections()
+            masterPath = master.GetPath()
+            expected = [
+                masterPath,
+                masterPath.AppendPath(".attr"),
+                masterPath.AppendPath("A"),
+                masterPath.AppendPath("A.attr"),
+                masterPath.AppendPath("NestedInstance_1"),
+                masterPath.AppendPath("NestedInstance_1.attr"),
+                masterPath.AppendPath("NestedInstance_1/B"),
+                masterPath.AppendPath("NestedInstance_1/B.attr"),
+                masterPath.AppendPath("NestedInstance_2"),
+                masterPath.AppendPath("NestedInstance_2.attr"),
+                masterPath.AppendPath("NestedInstance_2/B"),
+                masterPath.AppendPath("NestedInstance_2/B.attr")]
+            self.assertEqual(connections, expected)
+
+        attr = master.GetChild("A").GetAttribute("cattr")
+        _TestConnectionInMaster(attr)
 
 if __name__ == '__main__':
     unittest.main()

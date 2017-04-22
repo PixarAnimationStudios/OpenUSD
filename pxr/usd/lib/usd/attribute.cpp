@@ -510,65 +510,31 @@ UsdAttribute::GetConnections(SdfPathVector *sources) const
             master = master->GetParent();
         }
 
+        // Paths that point to an object under the master's source prim index
+        // are internal to the master and need to be translated to either
+        // the master or instance we're currently looking at.
         const SdfPath& masterSourcePrimIndexPath = 
             master->GetSourcePrimIndex().GetPath();
 
         if (GetPrim().IsInMaster()) {
-            // Translate any paths that point to descendents of instance prims
-            // to the corresponding prim in the instance's master.
+            // Translate any paths that point to an object at or under the
+            // source prim index to our master.
             for (SdfPath& path : *sources) {
                 path = path.ReplacePrefix(
                     masterSourcePrimIndexPath, master->GetPath());
-
-                if (path.GetPrimPath() == master->GetPath()) {
-                    // Connections authored within an instance cannot target
-                    // the instance itself or any its properties, since doing so
-                    // would break the encapsulation of the instanced scene
-                    // description and the ability to share that data across 
-                    // multiple instances.
-                    // 
-                    // We can detect this situation by checking whether this
-                    // path has a corresponding master prim. If so, issue
-                    // an error and elide this path.
-                    //
-                    // XXX: 
-                    // Not certain if this is the right behavior. For
-                    // consistency with instance proxy case, we think this
-                    // shouldn't error out and should return the master path
-                    // instead.
-                    // XXX: 
-                    // The path in this error message is potentially
-                    // confusing because it is the composed target path and
-                    // not necessarily what's authored in a layer. In order
-                    // to be more useful, we'd need to return more info
-                    // from the relationship target composition.
-                    otherErrors.push_back(TfStringPrintf(
-                        "Source path <%s> is not allowed because it is "
-                        "authored in instanced scene description but "
-                        "targets its owning instance.",
-                        path.GetText()));
-                    path = SdfPath();
-                }
             }
-
-            sources->erase(
-                std::remove(sources->begin(), sources->end(), SdfPath()),
-                sources->end());
         }
         else if (GetPrim().IsInstanceProxy()) {
-            // Translate any paths that point to an object within the shared
-            // master to our instance.
+            // Translate any paths that point to an object at or under the
+            // source prim index to our instance.
             UsdPrim instance = GetPrim();
             while (!instance.IsInstance()) { 
                 instance = instance.GetParent();
             }
 
-            // Paths that point to an object under the master's source prim
-            // index are internal to the master and need to be translated to the
-            // instance we're currently looking at.
             for (SdfPath &path : *sources) {
-                path = path.ReplacePrefix(masterSourcePrimIndexPath,
-                                          instance.GetPath());
+                path = path.ReplacePrefix(
+                    masterSourcePrimIndexPath, instance.GetPath());
             }
         }
     }
