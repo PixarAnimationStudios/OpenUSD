@@ -1562,7 +1562,7 @@
     <addaction name="separator"/>
     <addaction name="menuNode_View_Depth"/>
     <addaction name="actionShow_Inactive_Nodes"/>
-    <addaction name="actionShow_Master_Prims"/>
+    <addaction name="actionShow_All_Master_Prims"/>
     <addaction name="actionShow_Undefined_Prims"/>
     <addaction name="actionShow_Abstract_Prims"/>
     <addaction name="separator"/>
@@ -1701,7 +1701,6 @@
     <addaction name="actionJump_to_Stage_Root"/>
     <addaction name="actionJump_to_Model_Root"/>
     <addaction name="actionJump_to_Bound_Material"/>
-    <addaction name="actionJump_to_Master"/>
     <addaction name="separator"/>
     <addaction name="actionMake_Visible"/>
     <addaction name="actionVis_Only"/>
@@ -2577,7 +2576,7 @@
     <string>Geom Id</string>
    </property>
   </action>
-  <action name="actionShow_Master_Prims">
+  <action name="actionShow_All_Master_Prims">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -2736,14 +2735,6 @@
    </property>
    <property name="shortcut">
     <string>Shift+L</string>
-   </property>
-  </action>
-  <action name="actionJump_to_Master">
-   <property name="text">
-    <string>Jump to Master</string>
-   </property>
-   <property name="shortcut">
-    <string>Shift+M</string>
    </property>
   </action>
   <action name="actionRollover_Prim_Info">

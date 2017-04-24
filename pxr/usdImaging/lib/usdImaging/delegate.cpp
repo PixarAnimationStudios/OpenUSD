@@ -2214,11 +2214,26 @@ UsdImagingDelegate::PopulateSelection(SdfPath const &path,
     // handled.
     _ProcessPendingUpdates();
 
+    // UsdImagingDelegate currently only supports hiliting an instance in its
+    // entirety.  With the advent of UsdPrim "instance proxies", it will be
+    // natural to select prims inside of instances.  When 'path' is such
+    // a sub-instance path, rather than hilite nothing, we will find and hilite
+    // our top-level instance.
     SdfPath usdPath = GetPathForUsd(path);
+    UsdPrim usdPrim = _stage->GetPrimAtPath(usdPath);
+    // Should not need to check for pseudoroot since it can never be 
+    // an instance proxy
+    while (usdPrim && usdPrim.IsInstanceProxy()){
+        usdPrim = usdPrim.GetParent();
+    }
+    if (usdPrim){
+        usdPath = usdPrim.GetPath();
+    }
+    
     _AdapterSharedPtr const& adapter = _AdapterLookupByPath(usdPath);
     bool added = false;
 
-    // UsdImagingDelegate only supports top-most level instance highlighting
+    // UsdImagingDelegate only supports top-most level per-instance highlighting
     VtIntArray instanceIndices;
     if (instanceIndex != ALL_INSTANCES) {
         instanceIndices.push_back(instanceIndex);

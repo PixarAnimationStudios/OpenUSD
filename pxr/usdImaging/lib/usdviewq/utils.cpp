@@ -93,7 +93,13 @@ UsdviewqUtils::GetPrimInfo(UsdPrim prim, UsdTimeCode time)
     info.isImageable = img;
     info.isDefined = prim.IsDefined();
     info.isAbstract = prim.IsAbstract();
-    info.isInMaster = prim.IsInMaster();
+    // isInMaster is meant to guide UI to consider the prim's "source",
+    // so even if the prim is a proxy prim, then unlike the core 
+    // UsdPrim.IsInMaster(), we want to consider it as coming from a master
+    // to make it visually distinctive.  If in future we need to decouple
+    // the two concepts we can, but we're sensitive here to python marshalling
+    // costs.
+    info.isInMaster = prim.IsInMaster() || prim.IsInstanceProxy();
     info.isInstance = prim.IsInstance();
     info.isVisibilityInherited = false;
     if (img){

@@ -35,7 +35,6 @@ import sys
 def _GetContextMenuItems(mainWindow, item):
     return [JumpToEnclosingModelItem(mainWindow, item),
             JumpToBoundMaterialMenuItem(mainWindow, item),
-            JumpToMasterMenuItem(mainWindow, item),
             SeparatorMenuItem(mainWindow, item),
             ToggleVisibilityMenuItem(mainWindow, item),
             VisOnlyMenuItem(mainWindow, item),
@@ -130,22 +129,6 @@ class JumpToBoundMaterialMenuItem(NodeContextMenuItem):
     def RunCommand(self):
         self._mainWindow.jumpToBoundMaterialSelectedPrims()
 
-#
-# Replace each selected instance prim with its master prim.
-#
-class JumpToMasterMenuItem(NodeContextMenuItem):
-
-    def IsEnabled(self):
-        for p in self._currentNodes:
-            if p.IsInstance():
-                return True
-        return False
-
-    def GetText(self):
-        return "Jump to Master"
-
-    def RunCommand(self):
-        self._mainWindow.jumpToMasterSelectedPrims()
 
 #
 # Allows you to activate/deactivate a prim in the graph
