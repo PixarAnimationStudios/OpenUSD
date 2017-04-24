@@ -104,5 +104,16 @@ class TestUsdUtilsStitch(unittest.TestCase):
         addedPaths = relationshipInPrim.targetPathList.addedItems
         self.assertEqual(len(addedPaths), 3, 'Paths missing in relationship')
 
+    def test_ConnectionPathCopy(self):
+        attrPath = '/World/fx/Letters/points.internalValue'
+        attrWithConnections = self.layers[3].GetAttributeAtPath(attrPath) 
+        pathList = attrWithConnections.connectionPathList.addedItems
+        self.assertTrue(len(pathList) > 0,
+                        'Connection missing on attribute')
+        self.assertEqual(pathList,
+                         [Sdf.Path('/World/fx/Letters.interface:value')],
+                         'Connection on attribute has wrong target')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -50,6 +50,7 @@ def Xform "World" (
                     {
                     }
                 }
+                float internalValue;
             }
         }
     }

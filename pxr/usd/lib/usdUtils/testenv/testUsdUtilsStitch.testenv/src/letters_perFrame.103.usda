@@ -20,6 +20,8 @@ def Xform "World" (
             kind = "component"
         )
         {
+            float interface:value = 0
+
             def PxPointInstancer "points"
             {
                 int[] indices.timeSamples = {
@@ -46,6 +48,10 @@ def Xform "World" (
                     {
                     }
                 }
+                # Create a connection to an interface attribute.  This tests
+                # merging connection paths.
+                float internalValue;
+                add float internalValue.connect = </World/fx/Letters.interface:value>
             }
         }
     }
