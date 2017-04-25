@@ -238,6 +238,18 @@ static void __setitem__(GfVec2f &self, int index, float value) {
     self[normalizeIndex(index)] = value;
 }
 
+// Handles refcounting & extraction for PySequence_GetItem.
+static float _SequenceGetItem(PyObject *seq, ssize_t i) {
+    boost::python::handle<> h(PySequence_GetItem(seq, i));
+    return extract<float>(boost::python::object(h));
+}
+
+static bool _SequenceCheckItem(PyObject *seq, ssize_t i) {
+    boost::python::handle<> h(PySequence_GetItem(seq, i));
+    extract<float> e((boost::python::object(h)));
+    return e.check();
+}
+
 static void __setslice__(GfVec2f &self, slice indices, object values) {
     // Verify our arguments
     //
@@ -292,15 +304,12 @@ static void __setslice__(GfVec2f &self, slice indices, object values) {
     // Make sure that all items can be extracted before changing the GfVec2f.
     //
     for (Py_ssize_t i = 0; i < sliceLength; ++i) {
-        // This will throw a TypeError if any of the items cannot be
-        // converted.
-        //
-        (void)extract<float>(PySequence_GetItem(valuesObj, i));
+        // This will throw a TypeError if any of the items cannot be converted.
+        _SequenceGetItem(valuesObj, i);
     }
 
     for (Py_ssize_t i = 0; i < sliceLength; ++i) {
-        *bounds.start =
-            extract<float>(PySequence_GetItem(valuesObj, i));
+        *bounds.start = _SequenceGetItem(valuesObj, i);
         bounds.start += bounds.step;
     }
 }
@@ -339,8 +348,8 @@ struct FromPythonTuple {
         // depend on this behavior.
         if ((PyTuple_Check(obj_ptr) || PyList_Check(obj_ptr)) &&
             PySequence_Size(obj_ptr) == 2 &&
-            extract<Scalar>(PySequence_GetItem(obj_ptr, 0)).check() &&
-            extract<Scalar>(PySequence_GetItem(obj_ptr, 1)).check()) {
+            _SequenceCheckItem(obj_ptr, 0) &&
+            _SequenceCheckItem(obj_ptr, 1)) {
             return obj_ptr;
         }
         return 0;
@@ -353,8 +362,8 @@ struct FromPythonTuple {
 	    ->storage.bytes;
         new (storage)
 	    GfVec2f(
-                extract<Scalar>(PySequence_GetItem(obj_ptr, 0)),
-                extract<Scalar>(PySequence_GetItem(obj_ptr, 1)));
+                _SequenceGetItem(obj_ptr, 0),
+                _SequenceGetItem(obj_ptr, 1));
         data->convertible = storage;
     }
 };
