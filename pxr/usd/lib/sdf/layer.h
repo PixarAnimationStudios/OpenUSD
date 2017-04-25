@@ -1439,10 +1439,17 @@ private:
 
     // Helper function to try to find the layer with \p identifier and
     // pre-resolved path \p resolvedPath in the registry.  Caller must hold
-    // registry lock.  If layer found succesfully and returned, this function
-    // unlocks the registry, otherwise the lock remains held.
-    static SdfLayerRefPtr _TryToFindLayer(const std::string &identifier,
-                                          const std::string &resolvedPath);
+    // registry \p lock for reading.  If \p retryAsWriter is false, lock is
+    // released upon return.  Otherwise the lock is released upon return if a
+    // layer is found succesfully.  If no layer is found then the lock is
+    // upgraded to a writer lock upon return.  Note that this upgrade may not be
+    // atomic, but this function ensures that if upon return there does not
+    // exist a matching layer in the registry.
+    template <class ScopedLock>
+    static SdfLayerRefPtr
+    _TryToFindLayer(const std::string &identifier,
+                    const std::string &resolvedPath,
+                    ScopedLock &lock, bool retryAsWriter);
 
     /// Returns true if the spec at the specified path has no effect on the 
     /// scene.
