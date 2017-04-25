@@ -2220,14 +2220,19 @@ UsdImagingDelegate::PopulateSelection(SdfPath const &path,
     // a sub-instance path, rather than hilite nothing, we will find and hilite
     // our top-level instance.
     SdfPath usdPath = GetPathForUsd(path);
-    UsdPrim usdPrim = _stage->GetPrimAtPath(usdPath);
-    // Should not need to check for pseudoroot since it can never be 
-    // an instance proxy
-    while (usdPrim && usdPrim.IsInstanceProxy()){
-        usdPrim = usdPrim.GetParent();
-    }
-    if (usdPrim){
-        usdPath = usdPrim.GetPath();
+    // Since it is technically possible to call PopulateSelection() before
+    // Populate(), we guard access to _stage.  Ideally this would be a TF_VERIFY
+    // but some clients need to be fixed first.
+    if (_stage) {
+        UsdPrim usdPrim = _stage->GetPrimAtPath(usdPath);
+        // Should not need to check for pseudoroot since it can never be 
+        // an instance proxy
+        while (usdPrim && usdPrim.IsInstanceProxy()){
+            usdPrim = usdPrim.GetParent();
+        }
+        if (usdPrim){
+            usdPath = usdPrim.GetPath();
+        }
     }
     
     _AdapterSharedPtr const& adapter = _AdapterLookupByPath(usdPath);
