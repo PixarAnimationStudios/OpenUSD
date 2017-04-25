@@ -219,12 +219,12 @@ static void __setitem__(GfVec4i &self, int index, int value) {
 }
 
 // Handles refcounting & extraction for PySequence_GetItem.
-static int _SequenceGetItem(PyObject *seq, ssize_t i) {
+static int _SequenceGetItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
     return extract<int>(boost::python::object(h));
 }
 
-static bool _SequenceCheckItem(PyObject *seq, ssize_t i) {
+static bool _SequenceCheckItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
     extract<int> e((boost::python::object(h)));
     return e.check();

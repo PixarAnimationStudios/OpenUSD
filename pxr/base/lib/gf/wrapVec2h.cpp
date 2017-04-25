@@ -239,12 +239,12 @@ static void __setitem__(GfVec2h &self, int index, GfHalf value) {
 }
 
 // Handles refcounting & extraction for PySequence_GetItem.
-static GfHalf _SequenceGetItem(PyObject *seq, ssize_t i) {
+static GfHalf _SequenceGetItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
     return extract<GfHalf>(boost::python::object(h));
 }
 
-static bool _SequenceCheckItem(PyObject *seq, ssize_t i) {
+static bool _SequenceCheckItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
     extract<GfHalf> e((boost::python::object(h)));
     return e.check();
