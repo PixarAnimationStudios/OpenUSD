@@ -12,7 +12,7 @@ over "PureOver"
 }
 
 def "Group" (
-    payload = @payload.usda@</Payload>
+    payload = @./payload.usda@</Payload>
     kind = "group"
 )
 {
