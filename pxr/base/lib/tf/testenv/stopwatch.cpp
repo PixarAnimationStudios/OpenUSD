@@ -51,10 +51,17 @@ Pause(double seconds)
 }
 
 static bool
-IsClose(double a, double b)
+IsClose(double a, double b, double epsilon=1e-3)
 {
-    return fabs(a-b) < (1e-3);
+    auto diff = fabs(a-b);
+    return diff <= epsilon * abs(a)
+           && diff <= epsilon * abs(b);
 }
+
+// XXX: We use a rather large epsilon to account for
+// systems with very large sleep times. We still expect
+// variance to be within 10% (see IsClose above) for details.
+constexpr double EPSILON = 1e-1;
 
 static bool
 Test_TfStopwatch()
@@ -89,8 +96,8 @@ Test_TfStopwatch()
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     watch1.Stop();
 
-    // The value of watch1 should be at least 0.5 seconds
-    if (watch1.GetSeconds() < 0.5) {
+    // The value of watch1 should be near 0.5 seconds
+    if (!IsClose(watch1.GetSeconds(), 0.5, EPSILON)) {
         cout << "Sleep for .5 seconds but measured time was "
              << watch1.GetSeconds()
              << " seconds."
@@ -104,8 +111,8 @@ Test_TfStopwatch()
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     watch1.Stop();
 
-    // The value of watch1 should be at least 1.0 seconds
-    if (watch1.GetSeconds() < 1.0) {
+    // The value of watch1 should be near 1.0 seconds
+    if (!IsClose(watch1.GetSeconds(), 1.0, EPSILON)) {
         cout << "Sleep for 1.0 seconds but measured time was "
              << watch1.GetSeconds()
              << " seconds."
@@ -198,8 +205,8 @@ Test_TfStopwatch()
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     swatch1.Stop();
 
-    // The value of swatch1 should be at least 0.5 seconds
-    if (swatch1.GetSeconds() < 0.5) {
+    // The value of swatch1 should be near 0.5 seconds
+    if (!IsClose(swatch1.GetSeconds(), 0.5, EPSILON)) {
         cout << "Sleep for .5 seconds but measured time was "
              << swatch1.GetSeconds()
              << " seconds."
@@ -207,13 +214,13 @@ Test_TfStopwatch()
         ok = false;
     }
 
-    // Delay another .5 seconds and see if swatch is at least 1
+    // Delay another .5 seconds and see if swatch is near 1
     swatch1.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     swatch1.Stop();
 
-    // The value of swatch1 should be at least 1.0 seconds
-    if (swatch1.GetSeconds() < 1.0) {
+    // The value of swatch1 should be near 1.0 seconds
+    if (!IsClose(swatch1.GetSeconds(), 1.0, EPSILON)) {
         cout << "Sleep for 1.0 seconds but measured time was "
              << swatch1.GetSeconds()
              << " seconds."
@@ -318,7 +325,7 @@ Test_TfStopwatch()
     
     TfStopwatch pauseWatch = TfStopwatch::GetNamedStopwatch("pwatch");
 
-    if (pauseWatch.GetSeconds() < 0.5) {
+    if (!IsClose(pauseWatch.GetSeconds(), 0.5, EPSILON)) {
         cout << "pause for .5 seconds but measured time was "
              << pauseWatch.GetSeconds()
              << " seconds."
@@ -331,7 +338,7 @@ Test_TfStopwatch()
     Pause(0.5);
 
     pauseWatch = TfStopwatch::GetNamedStopwatch("pwatch");
-    if (pauseWatch.GetSeconds() < 1.0) {
+    if (!IsClose(pauseWatch.GetSeconds(), 1.0, EPSILON)) {
         cout << "pause for 1.0 seconds but measured time was "
              << pauseWatch.GetSeconds()
              << " seconds."
