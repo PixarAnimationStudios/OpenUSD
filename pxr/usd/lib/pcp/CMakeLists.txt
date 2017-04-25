@@ -881,6 +881,13 @@ pxr_register_test(testPcpMuseum_TypicalReferenceToChargroupWithRename
     DIFF_COMPARE compositionResults_TypicalReferenceToChargroupWithRename.txt 
 )
 
+pxr_register_test(testPcpMuseum_TrickyListEditedTargetPaths
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyListEditedTargetPaths/root.sdf"
+    STDOUT_REDIRECT compositionResults_TrickyListEditedTargetPaths.txt
+    DIFF_COMPARE compositionResults_TrickyListEditedTargetPaths.txt
+)
+
 pxr_register_test(testPcpMuseum_TrickySpookyInherits
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyInherits/root.sdf" 
