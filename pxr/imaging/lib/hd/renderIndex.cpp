@@ -582,8 +582,8 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
         }
 
         dispatcher.Run(
-          [children, collection, reprName, forcedRepr, 
-            rootPaths, excludePaths, &result, this]() {
+          [children, &collection, &reprName, forcedRepr, 
+            &rootPaths, &excludePaths, &result, this]() {
             
             // In the loop below, we process the previous item while fetching
             // the next, this is done to hide the memory latency of accessing
@@ -619,7 +619,6 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
                             reprName, forcedRepr, &result);
         });
     }
-
     
     dispatcher.Wait();
 
