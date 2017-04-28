@@ -274,18 +274,16 @@ TfRefPtr<T>
 TfCreateRefPtrFromProtectedWeakPtr(TfWeakPtr<T> const &p) {
     typedef typename TfRefPtr<T>::_Counter Counter;
     if (T *rawPtr = get_pointer(p)) {
-        // Atomically increment the ref-count and check if the old
-        // count (which is returned by AddRef) was zero.
-        if (Counter::AddRef(rawPtr, TfRefBase::_uniqueChangedListener) == 0) {
-            // There were 0 refs to this object, so we know it is
-            // expiring and we cannot use it.  Drop our ref.
-            Counter::RemoveRef(rawPtr, TfRefBase::_uniqueChangedListener);
-        } else {
-            // There was at least 1 other ref at the time we acquired
-            // our ref, so this object is safe from destruction.
-            // Transfer ownership of the ref to a new TfRefPtr.
+        // Atomically increment the ref-count iff it's nonzero.
+        if (Counter::AddRefIfNonzero(
+                rawPtr, TfRefBase::_uniqueChangedListener)) {
+            // There was at least 1 other ref at the time we acquired our ref,
+            // so this object is safe from destruction.  Transfer ownership of
+            // the ref to a new TfRefPtr.
             return TfCreateRefPtr(rawPtr);
         }
+        // There were 0 refs to this object, so we know it is expiring and
+        // we cannot use it.
     }
     return TfNullPtr;
 }
