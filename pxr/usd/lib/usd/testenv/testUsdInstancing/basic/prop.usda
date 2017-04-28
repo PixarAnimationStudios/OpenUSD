@@ -13,6 +13,7 @@ def Scope "Prop" (
         def Scope "Scope"
         {
             double x = 1.0
+            rel y = </Prop/geom/Scope>
         }
     }
 }

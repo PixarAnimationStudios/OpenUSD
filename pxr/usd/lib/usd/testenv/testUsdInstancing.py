@@ -724,6 +724,80 @@ class TestUsdInstancing(unittest.TestCase):
         assert s.GetPrimAtPath('/__Master_1/Child_1')
         assert s.GetPrimAtPath('/__Master_2/Child_2')
 
+    def test_Editing(self):
+        """Test that edits cannot be made on objects in masters"""
+
+        # Verify that edits cannot be made via instance proxies,
+        # since they represent prims beneath instances, or any other
+        # objects beneath instance proxies.
+        s = Usd.Stage.Open('basic/root.usda')
+
+        master = s.GetPrimAtPath('/World/sets/Set_1/Prop_1').GetMaster()
+        assert master
+
+        with self.assertRaises(Tf.ErrorException):
+            s.DefinePrim(master.GetPath())
+        with self.assertRaises(Tf.ErrorException):
+            s.OverridePrim(master.GetPath())
+        with self.assertRaises(Tf.ErrorException):
+            s.CreateClassPrim(master.GetPath())
+
+        with self.assertRaises(Tf.ErrorException):
+            master.SetDocumentation('test')
+        with self.assertRaises(Tf.ErrorException):
+            master.ClearDocumentation()
+        with self.assertRaises(Tf.ErrorException):
+            master.CreateRelationship('testRel')
+        with self.assertRaises(Tf.ErrorException):
+            master.CreateAttribute('testAttr', Sdf.ValueTypeNames.Int)
+
+        primInMaster = master.GetChild('geom')
+        assert primInMaster
+        
+        with self.assertRaises(Tf.ErrorException):
+            s.DefinePrim(primInMaster.GetPath())
+        with self.assertRaises(Tf.ErrorException):
+            s.OverridePrim(primInMaster.GetPath())
+        with self.assertRaises(Tf.ErrorException):
+            s.CreateClassPrim(primInMaster.GetPath())
+
+        with self.assertRaises(Tf.ErrorException):
+            primInMaster.SetDocumentation('test')
+        with self.assertRaises(Tf.ErrorException):
+            primInMaster.ClearDocumentation()
+        with self.assertRaises(Tf.ErrorException):
+            primInMaster.CreateRelationship('testRel')
+        with self.assertRaises(Tf.ErrorException):
+            primInMaster.CreateAttribute('testAttr', Sdf.ValueTypeNames.Int)
+
+        attrInMaster = primInMaster.GetChild('Scope').GetAttribute('x')
+        assert attrInMaster
+
+        with self.assertRaises(Tf.ErrorException):
+            attrInMaster.SetDocumentation('test')
+        with self.assertRaises(Tf.ErrorException):
+            attrInMaster.ClearDocumentation()
+        with self.assertRaises(Tf.ErrorException):
+            attrInMaster.Set(2.0, time=1.0)
+        with self.assertRaises(Tf.ErrorException):
+            attrInMaster.Set(2.0, time=Usd.TimeCode.Default())
+        with self.assertRaises(Tf.ErrorException):
+            attrInMaster.Clear()
+        with self.assertRaises(Tf.ErrorException):
+            attrInMaster.ClearAtTime(time=1.0)
+        with self.assertRaises(Tf.ErrorException):
+            attrInMaster.SetConnections(['/Some/Connection'])
+            
+        relInMaster = primInMaster.GetChild('Scope').GetRelationship('y')
+        assert relInMaster
+
+        with self.assertRaises(Tf.ErrorException):
+            relInMaster.SetDocumentation('test')
+        with self.assertRaises(Tf.ErrorException):
+            relInMaster.ClearDocumentation()
+        with self.assertRaises(Tf.ErrorException):
+            relInMaster.SetTargets(['/Some/Target'])
+
 if __name__ == "__main__":
     # Default to verbosity=2 and redirect unittest's output to
     # stdout so that the output from each test case is nicely

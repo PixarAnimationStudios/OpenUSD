@@ -1092,6 +1092,14 @@ UsdStage::_GetRelationshipDefinition(const UsdRelationship &rel) const
 SdfPrimSpecHandle
 UsdStage::_CreatePrimSpecForEditing(const SdfPath& path)
 {
+    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathMasterOrInMaster(path))) {
+        TF_CODING_ERROR("Cannot create prim spec at path <%s>; "
+                        "authoring to a prim in an instancing master "
+                        "is not allowed.",
+                        path.GetText());
+        return TfNullPtr;
+    }
+
     const UsdEditTarget &editTarget = GetEditTarget();
     const SdfPath &targetPath = editTarget.MapToSpecPath(path);
     return targetPath.IsEmpty() ? SdfPrimSpecHandle() :
@@ -1134,6 +1142,15 @@ template <class PropType>
 SdfHandle<PropType>
 UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
 {
+    UsdPrim prim = prop.GetPrim();
+    if (ARCH_UNLIKELY(prim.IsInMaster())) {
+        TF_CODING_ERROR("Cannot create property spec at path <%s>; "
+                        "authoring to a property in an instancing master "
+                        "is not allowed.",
+                        prop.GetPath().GetText());
+        return TfNullPtr;
+    }
+
     typedef SdfHandle<PropType> TypedSpecHandle;
 
     const UsdEditTarget &editTarget = GetEditTarget();
@@ -1167,7 +1184,6 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
     TypedSpecHandle specToCopy;
 
     // Get definition, if any.
-    UsdPrim prim = prop.GetPrim();
     specToCopy = _GetPropertyDefinition<PropType>(prop);
 
     if (!specToCopy) {
@@ -1264,14 +1280,6 @@ UsdStage::_SetMetadataImpl(const UsdObject &obj,
 {
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
 
-    if (ARCH_UNLIKELY(obj.GetPrim().IsInMaster())) {
-        TF_CODING_ERROR("Cannot set metadata at path <%s>; "
-                        "authoring to a prim in an instancing master is not "
-                        "allowed.",
-                        obj.GetPath().GetText());
-        return false;
-    }
-
     SdfSpecHandle spec;
 
     if (obj.Is<UsdProperty>()) {
@@ -1286,7 +1294,6 @@ UsdStage::_SetMetadataImpl(const UsdObject &obj,
         return false;
     }
 
-    // XXX: why is this not caught by SdfLayer? Is this a BdData bug?
     if (!spec) {
         TF_CODING_ERROR("Cannot set metadata. Failed to create spec <%s> in "
                         "layer @%s@",
@@ -1368,14 +1375,6 @@ bool
 UsdStage::_SetValueImpl(
     UsdTimeCode time, const UsdAttribute &attr, const T& newValue)
 {
-    if (ARCH_UNLIKELY(attr.GetPrim().IsInMaster())) {
-        TF_CODING_ERROR("Cannot set attribute value at path <%s>; "
-                        "authoring to a prim in an instancing master is not "
-                        "allowed.",
-                        attr.GetPath().GetText());
-        return false;
-    }
-
     // if we are setting a value block, we don't want type checking
     if (!_ValueContainsBlock(&newValue)) {
         // Do a type check.  Obtain typeName.
@@ -1460,8 +1459,8 @@ UsdStage::_ClearValue(UsdTimeCode time, const UsdAttribute &attr)
 {
     if (ARCH_UNLIKELY(attr.GetPrim().IsInMaster())) {
         TF_CODING_ERROR("Cannot clear attribute value at path <%s>; "
-                        "authoring to a prim in an instancing master is not "
-                        "allowed.",
+                        "authoring to an attribute in an instancing master "
+                        "is not allowed.",
                         attr.GetPath().GetText());
         return false;
     }
@@ -1506,8 +1505,8 @@ UsdStage::_ClearMetadata(const UsdObject &obj, const TfToken& fieldName,
 {
     if (ARCH_UNLIKELY(obj.GetPrim().IsInMaster())) {
         TF_CODING_ERROR("Cannot clear metadata at path <%s>; "
-                        "authoring to a prim in an instancing master is not "
-                        "allowed.",
+                        "authoring to a prim in an instancing master "
+                        "is not allowed.",
                         obj.GetPath().GetText());
         return false;
     }
@@ -2825,7 +2824,7 @@ UsdStage::SaveSessionLayers()
 }
 
 static bool
-_CheckAbsolutePrimPath(const SdfPath &path)
+_IsValidPathForCreatingPrim(const SdfPath &path)
 {
     // Path must be absolute.
     if (ARCH_UNLIKELY(!path.IsAbsolutePath())) {
@@ -2846,6 +2845,12 @@ _CheckAbsolutePrimPath(const SdfPath &path)
         return false;
     }
 
+    // Path must not be in a master.
+    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathMasterOrInMaster(path))) {
+        TF_CODING_ERROR("Path must not be in a master: <%s>", path.GetText());
+        return false;
+    }
+
     return true;
 }
 
@@ -2858,7 +2863,7 @@ UsdStage::OverridePrim(const SdfPath &path)
         return GetPseudoRoot();
     
     // Validate path input.
-    if (!_CheckAbsolutePrimPath(path))
+    if (!_IsValidPathForCreatingPrim(path))
         return UsdPrim();
 
     // If there is already a UsdPrim at the given path, grab it.
@@ -2897,7 +2902,7 @@ UsdStage::DefinePrim(const SdfPath &path,
         return GetPseudoRoot();
 
     // Validate path input.
-    if (!_CheckAbsolutePrimPath(path))
+    if (!_IsValidPathForCreatingPrim(path))
         return UsdPrim();
 
     // Define all ancestors.
@@ -2941,6 +2946,10 @@ UsdStage::DefinePrim(const SdfPath &path,
 UsdPrim
 UsdStage::CreateClassPrim(const SdfPath &path)
 {
+    // Validate path input.
+    if (!_IsValidPathForCreatingPrim(path))
+        return UsdPrim();
+
     // Classes must be root prims.
     if (!path.IsRootPrimPath()) {
         TF_CODING_ERROR("Classes must be root prims.  <%s> is not a root prim "
