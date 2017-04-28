@@ -151,6 +151,7 @@ pxr_test_scripts(
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
     testenv/testUsdPayloads.py
+    testenv/testUsdPrimRange.py
     testenv/testUsdPrims.py
     testenv/testUsdReferences.py
     testenv/testUsdRelationships.py
@@ -161,7 +162,6 @@ pxr_test_scripts(
     testenv/testUsdStagePopulationMasks.py
     testenv/testUsdTimeOffsets.py
     testenv/testUsdTimeSamples.py
-    testenv/testUsdTreeIterator.py
     testenv/testUsdValueClips.py
     testenv/testUsdVariantEditing.py
     testenv/testUsdVariantFallbacks.py
@@ -354,8 +354,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdTreeIterator
-    DEST testUsdTreeIterator
+    SRC testenv/testUsdPrimRange
+    DEST testUsdPrimRange
 )
 
 pxr_install_test_dir(
@@ -525,9 +525,9 @@ pxr_register_test(testUsdTimeOffsets
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdTreeIterator
+pxr_register_test(testUsdPrimRange
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTreeIterator"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPrimRange"
     EXPECTED_RETURN_CODE 0
 )
 

@@ -27,10 +27,10 @@ UsdPrim::GetDescendants() returns a range for all of a prim's "canonical"
 decendants, and UsdPrim::GetFilteredDescendants() allows the range's
 predicate to be specified.
 
-UsdTreeIterator enables highly customized iterations, adding the ability
+UsdPrimRange enables highly customized iterations, adding the ability
 to perform pre-and-post-order traversals, and to prune subtrees.  
-The convenience method UsdStage::Traverse() returns a UsdTreeIterator::Stage() 
-iterator that visits all descendants of the pseudo-root, but not the
+The convenience method UsdStage::Traverse() returns a UsdPrimRange
+that visits all descendants of the pseudo-root, but not the
 pseudo-root itself.
 
 \section Usd_WorkingWithSchemas Working With Schema Classes
