@@ -119,13 +119,16 @@ PxrUsdKatanaReadMaterial(
         const std::string& parentPrefix = (looksGroupLocation.empty()) ?
             data.GetUsdInArgs()->GetRootLocationPath() : looksGroupLocation;
         
-        katanaPath = 
+        std::string fullKatanaPath = 
             PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
-                primPath, data).substr(parentPrefix.size()+1);
+                primPath, data);
+        if (!fullKatanaPath.empty()) {
+            katanaPath = fullKatanaPath.substr(parentPrefix.size()+1);
 
-        // these paths are relative in katana
-        if (!katanaPath.empty() > 0 && katanaPath[0] == '/') {
-            katanaPath = katanaPath.substr(1);
+            // these paths are relative in katana
+            if (!katanaPath.empty() && katanaPath[0] == '/') {
+                katanaPath = katanaPath.substr(1);
+            }
         }
     }
 

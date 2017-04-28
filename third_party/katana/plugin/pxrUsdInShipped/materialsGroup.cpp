@@ -73,10 +73,12 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LooksGroupOp, privateData, interfa
         // where rootLocation is "/root/world/geo/Model/"
         // want to get, "c.Wood.c.Walnut.c.Aged"
 
-        std::string cPath = "c." + TfStringReplace(
+        std::string childPath = "c.";
+        childPath += TfStringReplace(
                 location.substr(rootLocation.size()+1), "/", ".c.");
+        childPath += ".a";
 
-        gb.set(cPath + ".a", attrs.build());
+        gb.set(childPath, attrs.build());
     }
 
     interface.execOp("StaticSceneCreate", gb.build());
