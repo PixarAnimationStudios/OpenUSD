@@ -20,7 +20,7 @@ def Xform "World" (
             kind = "component"
         )
         {
-            def PxPointInstancer "points"
+            def PointInstancer "points"
             {
                 float3[] extent.timeSamples = {
                     101: [(-0.737668, -0.695789, -0.740559), (0.780061, 0.7452, 0.733875)],

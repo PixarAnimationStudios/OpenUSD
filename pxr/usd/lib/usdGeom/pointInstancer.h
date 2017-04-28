@@ -209,7 +209,7 @@ class SdfAssetPath;
 /// to protect prototypes from all generic traversals and processing, place
 /// them under a prim that is just an "over".  For example,
 /// \code
-/// 01 def PxPointInstancer "Crowd_Mid"
+/// 01 def PointInstancer "Crowd_Mid"
 /// 02 {
 /// 03     rel prototypes = [ </Crowd_Mid/Prototypes/MaleThin_Business>, </Crowd_Mid/Prototypes/MaleTine_Casual> ]
 /// 04     
