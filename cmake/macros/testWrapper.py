@@ -240,7 +240,7 @@ if __name__ == '__main__':
             sys.stderr.write("Error: use --pre-path or --post-path to edit PATH.")
             sys.exit(1)
         try:
-            k, v = varStr.split('=')
+            k, v = varStr.split('=', 1)
             env[k] = v
         except IndexError:
             sys.stderr.write("Error: envvar '{0}' not of the form "
