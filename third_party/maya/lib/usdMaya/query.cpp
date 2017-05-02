@@ -64,19 +64,6 @@ PxrUsdMayaQuery::GetPrim(const std::string& shapeName)
     return usdPrim;
 }
 
-std::string
-PxrUsdMayaQuery::ResolvePath(const std::string &filePath)
-{
-    ArResolver& resolver = ArGetResolver();
-
-    ArResolverContext ctx = 
-        resolver.CreateDefaultContextForDirectory(ArchGetCwd());
-    resolver.RefreshContext(ctx);
-
-    ArResolverContextBinder boundCtx(ctx);
-    return resolver.Resolve(filePath);
-}
-
 void
 PxrUsdMayaQuery::ReloadStage(const std::string& shapeName)
 {

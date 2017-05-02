@@ -6,13 +6,14 @@
         {
             "Info": {
                 "SdfMetadata": {
-                    "arrayConnectionSize": {
+                    "connectability": {
                         "appliesTo": [
                             "attributes"
                         ], 
-                        "default": -1, 
+                        "default": "full", 
                         "displayGroup": "Shading", 
-                        "type": "int"
+                        "documentation": "Metadata authored on UsdShadeInput's to specify what they can be connected to. Can be either \"full\" or \"interfaceOnly\". \"full\" implies that  the input can be connected to any other input or output.  \"interfaceOnly\" implies that the input can only connect to a NodeGraph Input (which represents an interface override, not a render-time dataflow connection), or another Input whose connectability is also \"interfaceOnly\".", 
+                        "type": "token"
                     }, 
                     "outputName": {
                         "appliesTo": [

@@ -46,13 +46,16 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LooksGroupOp, privateData, interfa
 
     FnKat::GroupBuilder gb;
 
-    bool flatten = false;
     TF_FOR_ALL(childIter, privateData.GetUsdPrim().GetChildren()) {
         const UsdPrim& child = *childIter;
         UsdShadeMaterial materialSchema(child);
         if (!materialSchema) {
             continue;
         }
+
+        // do not flatten child material (specialize arcs) 
+        // if we have any.
+        bool flatten = !materialSchema.HasBaseMaterial();
 
         std::string location = 
             PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
@@ -70,10 +73,12 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LooksGroupOp, privateData, interfa
         // where rootLocation is "/root/world/geo/Model/"
         // want to get, "c.Wood.c.Walnut.c.Aged"
 
-        std::string cPath = "c." + TfStringReplace(
+        std::string childPath = "c.";
+        childPath += TfStringReplace(
                 location.substr(rootLocation.size()+1), "/", ".c.");
+        childPath += ".a";
 
-        gb.set(cPath + ".a", attrs.build());
+        gb.set(childPath, attrs.build());
     }
 
     interface.execOp("StaticSceneCreate", gb.build());

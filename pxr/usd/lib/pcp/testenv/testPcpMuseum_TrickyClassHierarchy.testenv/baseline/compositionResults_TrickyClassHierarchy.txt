@@ -1,0 +1,67 @@
+Loading @TrickyClassHierarchy/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Sullivan_1>
+
+Prim Stack:
+    root.sdf             /Sullivan_1
+    root.sdf             /_Class_Sullivan
+    root.sdf             /_Class_Char
+    root.sdf             /_Class_Model
+    Sullivan.sdf         /Sullivan
+    Sullivan.sdf         /_Class_Sullivan
+    Sullivan.sdf         /_Class_Char
+    Sullivan.sdf         /_Class_Model
+
+Property names:
+     ['name']
+
+Property stacks:
+/Sullivan_1.name:
+    root.sdf             /_Class_Sullivan.name
+    root.sdf             /_Class_Char.name
+    root.sdf             /_Class_Model.name
+
+------------------------------------------------------------------------
+Results for composing </_Class_Sullivan>
+
+Prim Stack:
+    root.sdf             /_Class_Sullivan
+
+Property names:
+     ['name']
+
+Property stacks:
+/_Class_Sullivan.name:
+    root.sdf             /_Class_Sullivan.name
+
+------------------------------------------------------------------------
+Results for composing </_Class_Char>
+
+Prim Stack:
+    root.sdf             /_Class_Char
+
+Property names:
+     ['name']
+
+Property stacks:
+/_Class_Char.name:
+    root.sdf             /_Class_Char.name
+
+------------------------------------------------------------------------
+Results for composing </_Class_Model>
+
+Prim Stack:
+    root.sdf             /_Class_Model
+
+Property names:
+     ['name']
+
+Property stacks:
+/_Class_Model.name:
+    root.sdf             /_Class_Model.name
+

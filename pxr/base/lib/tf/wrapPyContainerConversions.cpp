@@ -30,7 +30,9 @@
 #include <utility>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 template <typename CONTAINER_TYPE>
 struct Set_ToPython
@@ -52,6 +54,8 @@ void _RegisterToAndFromSetConversions()
     TfPyContainerConversions::from_python_sequence<std::set<T>,
 						   TfPyContainerConversions::set_policy >();
 }
+
+} // anonymous namespace 
 
 void wrapPyContainerConversions()
 {
@@ -160,5 +164,3 @@ void wrapPyContainerConversions()
     _RegisterToAndFromSetConversions<double>();
     _RegisterToAndFromSetConversions<std::string>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

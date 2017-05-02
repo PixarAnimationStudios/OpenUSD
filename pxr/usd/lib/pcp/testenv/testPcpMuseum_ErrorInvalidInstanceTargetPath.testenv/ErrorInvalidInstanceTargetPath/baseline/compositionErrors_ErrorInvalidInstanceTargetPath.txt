@@ -1,0 +1,34 @@
+------------------------------------------------------------------------
+Errors while composing </ConnectionToLocalClass/Instance_1>
+
+The attribute connection </ConnectionToLocalClass/Instance_1.y> from </ConnectionToLocalClass/LocalClass.x> in layer @ErrorInvalidInstanceTargetPath/root.sdf@ refers to a path outside the scope of the local inherit from </ConnectionToLocalClass/Instance_1>.  Ignoring.
+The attribute connection </ConnectionToLocalClass/Instance_2.y> from </ConnectionToLocalClass/LocalClass.x> in layer @ErrorInvalidInstanceTargetPath/root.sdf@ is authored in a class but refers to an instance of that class.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </ConnectionToLocalClass/Instance_2>
+
+The attribute connection </ConnectionToLocalClass/Instance_1.y> from </ConnectionToLocalClass/LocalClass.x> in layer @ErrorInvalidInstanceTargetPath/root.sdf@ is authored in a class but refers to an instance of that class.  Ignoring.
+The attribute connection </ConnectionToLocalClass/Instance_2.y> from </ConnectionToLocalClass/LocalClass.x> in layer @ErrorInvalidInstanceTargetPath/root.sdf@ refers to a path outside the scope of the local inherit from </ConnectionToLocalClass/Instance_2>.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </FaceRig/BrowRig/LBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
+
+Cycle detected:
+@ErrorInvalidInstanceTargetPath/root.sdf@</FaceRig/BrowRig/Anim/LBrow>
+CANNOT inherit from:
+@ErrorInvalidInstanceTargetPath/root.sdf@</FaceRig/BrowRig/Anim/LBrow>
+
+The attribute connection </BrowRig/Anim/RBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @ErrorInvalidInstanceTargetPath/ref.sdf@ is authored in a class but refers to an instance of that class.  Ignoring.
+The attribute connection </BrowRig/Anim/LBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @ErrorInvalidInstanceTargetPath/ref.sdf@ is authored in a class but refers to an instance of that class.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </FaceRig/BrowRig/RBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
+
+Cycle detected:
+@ErrorInvalidInstanceTargetPath/root.sdf@</FaceRig/BrowRig/Anim/RBrow>
+CANNOT inherit from:
+@ErrorInvalidInstanceTargetPath/root.sdf@</FaceRig/BrowRig/Anim/RBrow>
+
+The attribute connection </BrowRig/Anim/RBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @ErrorInvalidInstanceTargetPath/ref.sdf@ is authored in a class but refers to an instance of that class.  Ignoring.
+The attribute connection </BrowRig/Anim/LBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @ErrorInvalidInstanceTargetPath/ref.sdf@ is authored in a class but refers to an instance of that class.  Ignoring.
+

@@ -1511,7 +1511,7 @@ SdfPath::RemoveDescendentPaths(SdfPathVector *paths)
 void
 SdfPath::RemoveAncestorPaths(SdfPathVector *paths)
 {
-    // To remove descendents, first parition paths into prefix-related groups
+    // To remove ancestors, first parition paths into prefix-related groups
     // via sort.
     std::sort(paths->begin(), paths->end());
 

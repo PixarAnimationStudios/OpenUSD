@@ -21,7 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
+// glew must be included before any other GL header.
+#include "pxr/imaging/glf/glew.h"
+
 #include "px_vp20/utils.h"
 
 #include "px_vp20/glslProgram.h"
@@ -30,7 +32,6 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
-#include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/glf/simpleMaterial.h"

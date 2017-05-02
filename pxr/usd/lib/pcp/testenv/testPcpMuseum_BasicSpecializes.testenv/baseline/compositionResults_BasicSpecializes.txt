@@ -1,0 +1,113 @@
+Loading @BasicSpecializes/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Base>
+
+Prim Stack:
+    root.sdf             /Base
+
+------------------------------------------------------------------------
+Results for composing </Specializes>
+
+Prim Stack:
+    root.sdf             /Specializes
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    ref.sdf              /Ref
+    ref2.sdf             /Ref
+    root.sdf             /Specializes
+    ref.sdf              /Specializes
+    ref2.sdf             /Specializes
+    root.sdf             /Base
+    ref.sdf              /Base
+    ref2.sdf             /Base
+
+------------------------------------------------------------------------
+Results for composing </_class_Material>
+
+Prim Stack:
+    root.sdf             /_class_Material
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks>
+
+Prim Stack:
+    root.sdf             /Model/Looks
+    looks.sdf            /Looks
+
+Child names:
+     ['Material', 'Metal', 'Brass']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Material>
+
+Prim Stack:
+    root.sdf             /Model/Looks/Material
+    looks.sdf            /Looks/Material
+    root.sdf             /_class_Material
+    looks.sdf            /_class_Material
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Metal>
+
+Prim Stack:
+    root.sdf             /Model/Looks/Metal
+    looks.sdf            /Looks/Metal
+    root.sdf             /Model/Looks/Material
+    looks.sdf            /Looks/Material
+    root.sdf             /_class_Material
+    looks.sdf            /_class_Material
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Brass>
+
+Prim Stack:
+    root.sdf             /Model/Looks/Brass
+    looks.sdf            /Looks/Brass
+    root.sdf             /Model/Looks/Metal
+    looks.sdf            /Looks/Metal
+    root.sdf             /Model/Looks/Material
+    looks.sdf            /Looks/Material
+    root.sdf             /_class_Material
+    looks.sdf            /_class_Material
+
+------------------------------------------------------------------------
+Results for composing </Specializes_1>
+
+Prim Stack:
+    root.sdf             /Specializes_1
+
+------------------------------------------------------------------------
+Results for composing </Specializes_2>
+
+Prim Stack:
+    root.sdf             /Specializes_2
+
+------------------------------------------------------------------------
+Results for composing </MultipleSpecializes>
+
+Prim Stack:
+    root.sdf             /MultipleSpecializes
+    ref.sdf              /Multi
+    root.sdf             /Specializes_1
+    ref.sdf              /Specializes_1
+    root.sdf             /Specializes_2
+    ref.sdf              /Specializes_2
+

@@ -10,13 +10,14 @@ pxr_shared_library(hf
         tracelite
 
     PUBLIC_HEADERS
-        pluginDelegateDesc.h
+        api.h
+        pluginDesc.h
         perfLog.h
 
     PUBLIC_CLASSES
-        pluginDelegateBase
-        pluginDelegateRegistry
+        pluginBase
+        pluginRegistry
         
     PRIVATE_CLASSES
-        pluginDelegateEntry
+        pluginEntry
 )

@@ -121,9 +121,9 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
 static int
 Garch_GetButton(unsigned int button)
 {
-    if (button == Button1) return 0;
-    else if (button == Button2) return 1;
-    else if (button == Button3) return 2;
+    if (button == Button1) return GarchGLDebugWindow::MyButton1;
+    else if (button == Button2) return GarchGLDebugWindow::MyButton2;
+    else if (button == Button3) return GarchGLDebugWindow::MyButton3;
     return 0;
 }
 

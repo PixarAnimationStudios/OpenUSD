@@ -32,28 +32,27 @@
 #include <boost/python/class.hpp>
 #include <boost/python/tuple.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 
 using namespace boost::python;
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+
 static SdfPathVector
-_GetTargets(const UsdRelationship &self,
-            bool forwardToObjectsInMasters)
+_GetTargets(const UsdRelationship &self)
 {
     SdfPathVector result;
-    self.GetTargets(&result, forwardToObjectsInMasters);
+    self.GetTargets(&result);
     return result;
 }
 
 static SdfPathVector
-_GetForwardedTargets(const UsdRelationship &self,
-                     bool forwardToObjectsInMasters)
+_GetForwardedTargets(const UsdRelationship &self)
 {
     SdfPathVector result;
-    self.GetForwardedTargets(&result, forwardToObjectsInMasters);
+    self.GetForwardedTargets(&result);
     return result;
 }
 
@@ -69,6 +68,8 @@ __repr__(const UsdRelationship &self)
     }
 }
 
+} // anonymous namespace 
+
 void wrapUsdRelationship()
 {
     class_<UsdRelationship, bases<UsdProperty> >("Relationship")
@@ -80,16 +81,10 @@ void wrapUsdRelationship()
         .def("SetTargets", &UsdRelationship::SetTargets, arg("targets"))
         .def("ClearTargets", &UsdRelationship::ClearTargets, arg("removeSpec"))
         .def("GetTargets", _GetTargets,
-             (arg("forwardToObjectsInMasters") = true),
              return_value_policy<TfPySequenceToList>())
         .def("GetForwardedTargets", _GetForwardedTargets,
-             (arg("forwardToObjectsInMasters") = true),
              return_value_policy<TfPySequenceToList>())
         .def("HasAuthoredTargets", &UsdRelationship::HasAuthoredTargets)
         ;
     TfPyRegisterStlSequencesFromPython<UsdRelationship>();
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

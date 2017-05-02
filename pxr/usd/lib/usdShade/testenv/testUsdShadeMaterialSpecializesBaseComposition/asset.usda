@@ -1,0 +1,17 @@
+#usda 1.0
+
+def Xform "Asset" {
+    def "Looks" {
+        def "NotAChildMaterial" (
+            references = @./library.usda@</ChildMaterial>
+        )
+        {
+        }
+    }
+}
+
+# Although the referenced ChildMaterial specializes BaseMaterial in its own 
+# layer, BaseMaterial does not have a presence (other than implied) on this,
+# the referencing stage; therefore for clients that care about 
+# "material inheritance", for all intents and purposes, NotAChildMaterial
+# should *not* be considered to have a base material.

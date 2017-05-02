@@ -949,21 +949,38 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
     // If the current prim is in a master for the sake of processing
     // an instance, replace the master path by the instance path before
     // converting to a katana location.
-    SdfPath resolvedPath;
+    SdfPath resolvedPath = path;
     if (data.GetUsdPrim().IsInMaster() && !data.GetInstancePath().IsEmpty())
     {
-        resolvedPath = path.ReplacePrefix(data.GetMasterPath(), data.GetInstancePath());
-    }
-    else
-    {
-        resolvedPath = path;
+        resolvedPath = resolvedPath.ReplacePrefix(
+            data.GetMasterPath(), data.GetInstancePath());
     }
 
     // Convert to the corresponding katana location by stripping
     // off the leading rootPath and prepending rootLocation.
-    return TfNormPath(
-        data.GetUsdInArgs()->GetRootLocationPath()+"/"+
-        resolvedPath.GetString().substr(data.GetUsdInArgs()->GetIsolatePath().size()) );
+    std::string isolatePathString = data.GetUsdInArgs()->GetIsolatePath();
+
+    std::string result = data.GetUsdInArgs()->GetRootLocationPath();
+    result += "/";
+    std::string resolvedPathString = resolvedPath.GetString();
+
+    if (!isolatePathString.empty()) {
+        if (resolvedPathString.find(isolatePathString) == 0) {
+            resolvedPathString = resolvedPathString.substr(
+                isolatePathString.size());
+        } else {
+            // no good guess about the katana target location: 
+            //   isolatePath is not a prefix of the prim being cooked
+            std::cerr << "UsdIn: Failed to compute katana path for"
+                " usd path: " << path << " with given isolatePath: " <<
+                isolatePathString << std::endl;
+            return std::string();
+        }
+    }
+    result += resolvedPathString;
+
+    // clean up result
+    return TfNormPath(result);
 }
 
 std::string
@@ -987,30 +1004,6 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
     if (materialSchema.HasBaseMaterial()) {
         // This base material is defined as a derivesFrom relationship
         parentPath = materialSchema.GetBaseMaterialPath();
-    }
-    else {
-        const PcpPrimIndex &index = prim.GetPrimIndex();
-        for(const PcpNodeRef &node: index.GetNodeRange()) {
-            if (PcpIsSpecializesArc(node.GetArcType()))
-                    // && node.GetOriginNode() == index.GetRootNode()) {
-            {
-                // Found a root specializes arc.
-                if (node.GetParentNode() != node.GetRootNode()) {
-                    continue;
-                }
-
-                if (node.GetMapToParent().MapSourceToTarget(
-                    SdfPath::AbsoluteRootPath()).IsEmpty()) {
-                    // Skip this child node because it crosses a reference arc.
-                    // (Reference mappings never map the absoluteyroot path </>.)
-                    continue;
-                }
-                
-                // stop at the first one
-                parentPath = node.GetPath();
-                break;
-            }
-        }
     }
 
     UsdPrim parentPrim = 
@@ -1052,13 +1045,19 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
 
     std::string parentKatLoc = 
         ConvertUsdMaterialPathToKatLocation(parentPath, data);
-
-    std::string primName = prim.GetName();
-    UsdAttribute primNameAttr = UsdKatanaLookAPI(prim).GetPrimNameAttr();
-    if (primNameAttr.IsValid()) {
-        primNameAttr.Get(&primName);
+    if (not parentKatLoc.empty()) {
+        // only use primName if available and a parent path was found
+        std::string primName = prim.GetName();
+        UsdAttribute primNameAttr = UsdKatanaLookAPI(prim).GetPrimNameAttr();
+        if (primNameAttr.IsValid()) {
+            primNameAttr.Get(&primName);
+        }
+        return parentKatLoc + "/" + primName;
+        
     }
-    return parentKatLoc + "/" + primName;
+    else
+        // parent path could not be computed correctly
+        return basePath;
 }
 
 bool 
@@ -1388,12 +1387,11 @@ namespace
 
 FnKat::GroupAttribute
 PxrUsdKatanaUtils::BuildInstanceMasterMapping(
-        const UsdStageRefPtr& stage)
+        const UsdStageRefPtr& stage, const SdfPath &rootPath)
 {
     StringMap masterToKey;
     StringSetMap keyToMasters;
-    _walkForMasters(stage->GetPseudoRoot(), masterToKey, keyToMasters);
-    
+    _walkForMasters(stage->GetPrimAtPath(rootPath), masterToKey, keyToMasters);
     
     FnKat::GroupBuilder gb;
     TF_FOR_ALL(I, keyToMasters)

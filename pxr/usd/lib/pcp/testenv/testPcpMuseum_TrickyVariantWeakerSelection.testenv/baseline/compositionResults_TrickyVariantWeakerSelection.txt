@@ -1,0 +1,16 @@
+Loading @TrickyVariantWeakerSelection/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.sdf             /A
+    model.sdf            /A
+
+Variant Selections:
+    {v = v2}
+

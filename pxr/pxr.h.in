@@ -24,6 +24,14 @@
 #ifndef PXR_H
 #define PXR_H
 
+/// \file pxr/pxr.h
+
+#define PXR_MAJOR_VERSION @PXR_MAJOR_VERSION@
+#define PXR_MINOR_VERSION @PXR_MINOR_VERSION@
+#define PXR_PATCH_VERSION @PXR_PATCH_VERSION@
+
+#define PXR_VERSION @PXR_MAJOR_VERSION@@PXR_MINOR_VERSION@@PXR_PATCH_VERSION@
+
 #define PXR_USE_NAMESPACES @PXR_USE_NAMESPACES@
 
 #if PXR_USE_NAMESPACES
@@ -33,6 +41,11 @@
 #define PXR_NS_GLOBAL ::PXR_NS
 
 namespace PXR_INTERNAL_NS { }
+
+/// \namespace @PXR_EXTERNAL_NAMESPACE@ 
+///
+/// The root level namespace for all source in the USD distribution.
+///
 namespace PXR_NS {
     using namespace PXR_INTERNAL_NS;
 }

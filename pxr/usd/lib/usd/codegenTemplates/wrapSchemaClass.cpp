@@ -39,7 +39,9 @@
 using namespace boost::python;
 
 {% if useExportAPI %}
-{{ namespaceOpen }}
+{{ namespaceUsing }}
+
+namespace {
 
 {% endif %}
 #define WRAP_CUSTOM                                                     \
@@ -57,6 +59,10 @@ _Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
         UsdPythonToSdfType(defaultVal, {{ attr.usdType }}), writeSparsely);
 }
 {% endfor %}
+{% if useExportAPI %}
+
+} // anonymous namespace
+{% endif %}
 
 void wrap{{ cls.cppClassName }}()
 {
@@ -111,10 +117,6 @@ void wrap{{ cls.cppClassName }}()
 
     _CustomWrapCode(cls);
 }
-{% if useExportAPI %}
-
-{{ namespaceClose }}
-{% endif %}
 
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
@@ -131,7 +133,7 @@ void wrap{{ cls.cppClassName }}()
 {% if useExportAPI %}
 // 
 // Just remember to wrap code in the appropriate delimiters:
-// '{{ namespaceOpen }}', '{{ namespaceClose }}'.
+// 'namespace {', '}'.
 //
 {% endif %}
 // ===================================================================== //

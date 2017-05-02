@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdResourceRegistry;
 class HdSt_Subdivision;
-struct HdSt_QuadInfo;
+struct HdQuadInfo;
 class SdfPath;
 
 typedef boost::weak_ptr<class HdBufferSource> HdBufferSourceWeakPtr;
@@ -116,10 +116,10 @@ public:
 
     /// Sets the quadrangulation struct. HdMeshTopology takes an
     /// ownership of quadInfo (caller shouldn't free)
-    void SetQuadInfo(HdSt_QuadInfo const *quadInfo);
+    void SetQuadInfo(HdQuadInfo const *quadInfo);
 
     /// Returns the quadrangulation struct.
-    HdSt_QuadInfo const *GetQuadInfo() const {
+    HdQuadInfo const *GetQuadInfo() const {
         return _quadInfo;
     }
 
@@ -175,20 +175,9 @@ public:
 
     /// @}
 
-    // Per-primitive coarse-face-param encoding/decoding functions
-    static int EncodeCoarseFaceParam(int faceIndex, int edgeFlag) {
-        return ((faceIndex << 2) | (edgeFlag & 3));
-    }
-    static int DecodeFaceIndexFromCoarseFaceParam(int coarseFaceParam) {
-        return (coarseFaceParam >> 2);
-    }
-    static int DecodeEdgeFlagFromCoarseFaceParam(int coarseFaceParam) {
-        return (coarseFaceParam & 3);
-    }
-
 private:
     // quadrangulation info on CPU
-    HdSt_QuadInfo const *_quadInfo;
+    HdQuadInfo const *_quadInfo;
 
     // quadrangulation info on GPU
     HdBufferArrayRangeSharedPtr _quadrangulateTableRange;

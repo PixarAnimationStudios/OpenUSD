@@ -31,7 +31,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static void
 _PrintStackTrace(object &obj, const std::string &reason)
@@ -46,6 +48,8 @@ _PrintStackTrace(object &obj, const std::string &reason)
         TfPyThrowTypeError("Expected file object.");
     }
 }
+
+} // anonymous namespace 
 
 void
 wrapStackTrace()
@@ -66,5 +70,3 @@ wrapStackTrace()
         "Return the time (in seconds since the epoch) at which "
         "the application was started.");
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

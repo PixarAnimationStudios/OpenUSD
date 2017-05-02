@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/inherits.h"
+#include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/resolver.h"
@@ -31,7 +32,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
 
 #include "pxr/usd/pcp/primIndex.h"
@@ -164,7 +165,7 @@ UsdPrim::GetProperty(const TfToken &propName) const
     else if (specType == SdfSpecTypeRelationship) {
         return GetRelationship(propName);
     }
-    return UsdProperty(UsdTypeProperty, _Prim(), propName);
+    return UsdProperty(UsdTypeProperty, _Prim(), _ProxyPrimPath(), propName);
 }
 
 bool
@@ -367,7 +368,7 @@ UsdPrim::GetAttribute(const TfToken& attrName) const
 {
     // An invalid prim will present a coding error, and then return an
     // invalid attribute
-    return UsdAttribute(_Prim(), attrName);
+    return UsdAttribute(_Prim(), _ProxyPrimPath(), attrName);
 }
 
 bool
@@ -426,7 +427,7 @@ UsdPrim::GetAuthoredRelationships() const
 UsdRelationship
 UsdPrim::GetRelationship(const TfToken& relName) const
 {
-    return UsdRelationship(_Prim(), relName);
+    return UsdRelationship(_Prim(), _ProxyPrimPath(), relName);
 }
 
 bool
@@ -460,8 +461,7 @@ private:
     void _VisitRel(UsdRelationship const &rel) {
         SdfPathVector targets;
         rel._GetForwardedTargets(&targets,
-                                 /*includeForwardingRels=*/true,
-                                 /*forwardToObjectsInMasters=*/true);
+                                 /*includeForwardingRels=*/true);
         
         if (!targets.empty()) {
             for (SdfPath const &p: targets) {
@@ -616,12 +616,6 @@ UsdPrim::HasPayload() const
 }
 
 bool
-UsdPrim::GetPayload(SdfPayload* payload) const
-{
-    return GetMetadata(SdfFieldKeys->Payload, payload);
-}
-
-bool
 UsdPrim::SetPayload(const SdfPayload& payload) const
 {
     return SetMetadata(SdfFieldKeys->Payload, payload);
@@ -665,20 +659,31 @@ UsdPrim::GetNextSibling() const
 }
 
 UsdPrim
-UsdPrim::GetFilteredNextSibling(const Usd_PrimFlagsPredicate &pred) const
+UsdPrim::GetFilteredNextSibling(const Usd_PrimFlagsPredicate &inPred) const
 {
-    Usd_PrimDataPtr s = _Prim()->GetNextSibling();
-    while (s && !pred(s))
-        s = s->GetNextSibling();
+    Usd_PrimDataConstPtr sibling = get_pointer(_Prim());
+    SdfPath siblingPath = _ProxyPrimPath();
+    const Usd_PrimFlagsPredicate pred = 
+        Usd_CreatePredicateForTraversal(sibling, siblingPath, inPred);
 
-    return UsdPrim(s);
+    if (Usd_MoveToNextSiblingOrParent(sibling, siblingPath, pred)) {
+        return UsdPrim();
+    }
+    return UsdPrim(sibling, siblingPath);
 }
 
 UsdPrim
 UsdPrim::GetMaster() const
 {
-    return UsdPrim(
-        _GetStage()->_GetMasterForInstance(get_pointer(_Prim())));
+    Usd_PrimDataConstPtr masterPrimData = 
+        _GetStage()->_GetMasterForInstance(get_pointer(_Prim()));
+    return UsdPrim(masterPrimData, SdfPath());
+}
+
+bool 
+UsdPrim::_PrimPathIsInMaster() const
+{
+    return Usd_InstanceCache::IsPathMasterOrInMaster(GetPrimPath());
 }
 
 SdfPrimSpecHandleVector 
@@ -698,6 +703,34 @@ UsdPrim::GetPrimStack() const
     }
 
     return primStack;
+}
+
+PcpPrimIndex 
+UsdPrim::ComputeExpandedPrimIndex() const
+{
+    // Get the prim index path to compute from the index stored in the prim
+    // data. This ensures we get consistent behavior when dealing with 
+    // instancing and instance proxies.
+    const PcpPrimIndex& cachedPrimIndex = _Prim()->GetPrimIndex();
+    if (!cachedPrimIndex.IsValid()) {
+        return PcpPrimIndex();
+    }
+    
+    const SdfPath& primIndexPath = cachedPrimIndex.GetPath();
+    PcpCache* cache = _GetStage()->_GetPcpCache();
+    
+    PcpPrimIndexOutputs outputs;
+    PcpComputePrimIndex(
+        primIndexPath, cache->GetLayerStack(),
+        cache->GetPrimIndexInputs().Cull(false), 
+        &outputs);
+
+    _GetStage()->_ReportPcpErrors(
+        outputs.allErrors, 
+        TfStringPrintf(
+            "Computing expanded prim index for <%s>", GetPath().GetText()));
+    
+    return outputs.primIndex;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

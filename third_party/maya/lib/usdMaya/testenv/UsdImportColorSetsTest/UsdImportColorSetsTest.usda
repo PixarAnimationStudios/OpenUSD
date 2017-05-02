@@ -47,7 +47,9 @@ def Xform "UsdImportColorSetsTest" (
                 int[] primvars:ConstantColor_kRGBA:indices = [0]
                 color4f[] primvars:ConstantColorClamped_kRGBA = [(1, 1, 0, 0.5)] (
                     customData = {
-                        bool Clamped = 1
+                        dictionary Maya = {
+                            bool clamped = 1
+                        }
                     }
                     interpolation = "constant"
                 )
@@ -148,9 +150,6 @@ def Xform "UsdImportColorSetsTest" (
                 int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
                 point3f[] points = [(-5, -5, 10), (5, -5, 10), (-5, 5, 10), (5, 5, 10), (-5, 5, 0), (5, 5, 0), (-5, -5, 0), (5, -5, 0)]
                 color3f[] primvars:displayColor = [(1, 0, 1)] (
-                    customData = {
-                        bool Authored = 1
-                    }
                     interpolation = "constant"
                 )
                 int[] primvars:displayColor:indices = [0]
@@ -170,6 +169,11 @@ def Xform "UsdImportColorSetsTest" (
                 int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
                 point3f[] points = [(-5, -5, 10), (5, -5, 10), (-5, 5, 10), (5, 5, 10), (-5, 5, 0), (5, 5, 0), (-5, -5, 0), (5, -5, 0)]
                 color3f[] primvars:displayColor = [(1, 0, 1)] (
+                    customData = {
+                        dictionary Maya = {
+                            bool generated = 1
+                        }
+                    }
                     interpolation = "constant"
                 )
                 int[] primvars:displayColor:indices = [0]
@@ -189,9 +193,6 @@ def Xform "UsdImportColorSetsTest" (
                 int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
                 point3f[] points = [(-5, -5, 10), (5, -5, 10), (-5, 5, 10), (5, 5, 10), (-5, 5, 0), (5, 5, 0), (-5, -5, 0), (5, -5, 0)]
                 float[] primvars:displayOpacity = [0.5] (
-                    customData = {
-                        bool Authored = 1
-                    }
                     interpolation = "constant"
                 )
                 int[] primvars:displayOpacity:indices = [0]
@@ -211,6 +212,11 @@ def Xform "UsdImportColorSetsTest" (
                 int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
                 point3f[] points = [(-5, -5, 10), (5, -5, 10), (-5, 5, 10), (5, 5, 10), (-5, 5, 0), (5, 5, 0), (-5, -5, 0), (5, -5, 0)]
                 float[] primvars:displayOpacity = [0.5] (
+                    customData = {
+                        dictionary Maya = {
+                            bool generated = 1
+                        }
+                    }
                     interpolation = "constant"
                 )
                 int[] primvars:displayOpacity:indices = [0]
@@ -230,16 +236,10 @@ def Xform "UsdImportColorSetsTest" (
                 int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
                 point3f[] points = [(-5, -5, 10), (5, -5, 10), (-5, 5, 10), (5, 5, 10), (-5, 5, 0), (5, 5, 0), (-5, -5, 0), (5, -5, 0)]
                 color3f[] primvars:displayColor = [(1, 0, 1)] (
-                    customData = {
-                        bool Authored = 1
-                    }
                     interpolation = "constant"
                 )
                 int[] primvars:displayColor:indices = [0]
                 float[] primvars:displayOpacity = [0.5] (
-                    customData = {
-                        bool Authored = 1
-                    }
                     interpolation = "constant"
                 )
                 int[] primvars:displayOpacity:indices = [0]
@@ -259,9 +259,6 @@ def Xform "UsdImportColorSetsTest" (
                 int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
                 point3f[] points = [(-5, -5, 10), (5, -5, 10), (-5, 5, 10), (5, 5, 10), (-5, 5, 0), (5, 5, 0), (-5, -5, 0), (5, -5, 0)]
                 color3f[] primvars:displayColor = [(0.21763764321804047, 0.21763764321804047, 0.21763764321804047)] (
-                    customData = {
-                        bool Authored = 1
-                    }
                     interpolation = "constant"
                 )
                 int[] primvars:displayColor:indices = [0]

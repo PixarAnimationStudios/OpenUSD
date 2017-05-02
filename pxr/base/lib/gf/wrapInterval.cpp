@@ -37,7 +37,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string
 _Repr(GfInterval const &self)
@@ -53,6 +55,8 @@ _Repr(GfInterval const &self)
     r += ")";
     return r;
 }
+
+} // anonymous namespace 
 
 void wrapInterval()
 {    
@@ -162,5 +166,3 @@ void wrapInterval()
     TfPyContainerConversions::from_python_sequence< std::vector<GfInterval>,
         TfPyContainerConversions::variable_capacity_policy >();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

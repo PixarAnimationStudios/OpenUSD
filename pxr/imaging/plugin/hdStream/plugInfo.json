@@ -3,11 +3,11 @@
         {
             "Info": {
                 "Types": {
-                    "HdStreamRenderDelegate": {
+                    "HdStreamRendererPlugin": {
                         "bases": [
-                            "HdRenderDelegate"
+                            "HdxRendererPlugin"
                         ],
-                        "displayName": "Hydra Stream Renderer",
+                        "displayName": "Hydra Stream (GL) Renderer",
                         "priority": 0
                     }
                 }

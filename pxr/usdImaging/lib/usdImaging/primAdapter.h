@@ -201,7 +201,7 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
-    virtual bool PopulateSelection(SdfPath const &path,
+    virtual bool PopulateSelection(SdfPath const &usdPath,
                                    VtIntArray const &instanceIndices,
                                    HdxSelectionSharedPtr const &result);
 
@@ -239,6 +239,13 @@ public:
     /// Returns the depending rprim paths which don't exist in descendants.
     /// Used for change tracking over subtree boundary (e.g. instancing)
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Render Index Compatibility
+    // ---------------------------------------------------------------------- //
+
+    /// Returns whether the adapter can be populated into the target render index.
+    virtual bool IsSupported(HdRenderIndex* renderIndex) { return true; }
 
 protected:
     typedef std::vector<UsdImagingValueCache::PrimvarInfo> PrimvarInfoVector;

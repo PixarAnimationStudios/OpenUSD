@@ -1,0 +1,59 @@
+Loading @BasicListEditingWithInherits/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    model.sdf            /Model
+
+Child names:
+     ['SymRig', 'LeftRig']
+
+------------------------------------------------------------------------
+Results for composing </Model/SymRig>
+
+Prim Stack:
+    model.sdf            /Model/SymRig
+
+Child names:
+     ['C2', 'C1']
+
+------------------------------------------------------------------------
+Results for composing </Model/SymRig/C2>
+
+Prim Stack:
+    model.sdf            /Model/SymRig/C2
+
+------------------------------------------------------------------------
+Results for composing </Model/SymRig/C1>
+
+Prim Stack:
+    model.sdf            /Model/SymRig/C1
+
+------------------------------------------------------------------------
+Results for composing </Model/LeftRig>
+
+Prim Stack:
+    model.sdf            /Model/LeftRig
+    model.sdf            /Model/SymRig
+
+Child names:
+     ['C1', 'C2']
+
+------------------------------------------------------------------------
+Results for composing </Model/LeftRig/C1>
+
+Prim Stack:
+    model.sdf            /Model/SymRig/C1
+
+------------------------------------------------------------------------
+Results for composing </Model/LeftRig/C2>
+
+Prim Stack:
+    model.sdf            /Model/SymRig/C2
+

@@ -41,7 +41,9 @@ using std::pair;
 using std::string;
 using std::vector;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static vector<SdfPath> GetPrefixesHelper( const SdfPath &path ) {
     return path.GetPrefixes();
@@ -121,6 +123,8 @@ __nonzero__(SdfPath const &self)
 {
     return !self.IsEmpty();
 }
+
+} // anonymous namespace 
 
 void wrapPath() {    
     typedef SdfPath This;
@@ -321,5 +325,3 @@ void wrapPath() {
                                             "errorMessage");
 
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

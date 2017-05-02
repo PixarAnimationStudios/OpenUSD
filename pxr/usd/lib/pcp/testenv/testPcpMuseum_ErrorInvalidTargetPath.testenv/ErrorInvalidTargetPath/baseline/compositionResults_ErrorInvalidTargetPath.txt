@@ -1,0 +1,76 @@
+Loading @ErrorInvalidTargetPath/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    root.sdf             /_Class1
+    A.sdf                /A
+
+Property names:
+     ['A', 'B', 'prohibitedConnectionToInstance', 'x']
+
+Property stacks:
+/Root.A:
+    A.sdf                /A.A
+/Root.B:
+    A.sdf                /A.B
+/Root.prohibitedConnectionToInstance:
+    root.sdf             /_Class1.prohibitedConnectionToInstance
+/Root.x:
+    root.sdf             /Root.x
+
+Attribute connections:
+/Root.prohibitedConnectionToInstance:
+    /Root.x
+
+------------------------------------------------------------------------
+Results for composing </RootWithReferenceUnderVariant>
+
+Prim Stack:
+    root.sdf             /RootWithReferenceUnderVariant
+    root.sdf             /RootWithReferenceUnderVariant{standin=anim}
+    A.sdf                /A
+
+Variant Selections:
+    {standin = anim}
+
+Property names:
+     ['A', 'B']
+
+Property stacks:
+/RootWithReferenceUnderVariant.A:
+    A.sdf                /A.A
+/RootWithReferenceUnderVariant.B:
+    A.sdf                /A.B
+
+Relationship targets:
+/RootWithReferenceUnderVariant.B:
+    /PrimOutsideReferenceRoot
+
+Attribute connections:
+/RootWithReferenceUnderVariant.A:
+    /PrimOutsideReferenceRoot.A
+
+------------------------------------------------------------------------
+Results for composing </_Class1>
+
+Prim Stack:
+    root.sdf             /_Class1
+
+Property names:
+     ['prohibitedConnectionToInstance']
+
+Property stacks:
+/_Class1.prohibitedConnectionToInstance:
+    root.sdf             /_Class1.prohibitedConnectionToInstance
+
+Attribute connections:
+/_Class1.prohibitedConnectionToInstance:
+    /Root.x
+

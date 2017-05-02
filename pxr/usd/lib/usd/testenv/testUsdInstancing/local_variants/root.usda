@@ -1,0 +1,41 @@
+#usda 1.0
+
+def "Model"
+{
+}
+
+def "Model_LocalVariants_1" (
+    instanceable = true
+    references = </Model>
+    add variantSets = ["type"]
+    variants = {
+        string type = "a"
+    }
+)
+{
+    variantSet "type" = {
+        "a" {
+            def "Child_1"
+            {
+            }
+        }
+    }
+}
+
+def "Model_LocalVariants_2" (
+    instanceable = true
+    references = </Model>
+    add variantSets = ["type"]
+    variants = {
+        string type = "a"
+    }
+)
+{
+    variantSet "type" = {
+        "a" {
+            def "Child_2"
+            {
+            }
+        }
+    }
+}

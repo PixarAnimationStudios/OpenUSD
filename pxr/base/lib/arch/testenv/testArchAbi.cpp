@@ -31,7 +31,7 @@
 
 #include <iostream>
 #include <typeinfo>
-#ifdef ARCH_OS_WINDOWS
+#if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #define GETSYM(handle, name) GetProcAddress((HMODULE)handle, name)
 #else
@@ -54,7 +54,7 @@ main(int argc, char** argv)
 
     // Load the plugin and get the factory function.
 #if defined(ARCH_OS_WINDOWS)
-    path += "\\testArchAbiPlugin.dll";
+    path += "\\lib\\testArchAbiPlugin.dll";
 #elif defined(ARCH_OS_DARWIN)
     path += "/lib/libtestArchAbiPlugin.dylib";
 #else

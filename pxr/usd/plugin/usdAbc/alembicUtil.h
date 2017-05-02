@@ -53,6 +53,15 @@
 #include <string>
 #include <vector>
 
+
+namespace Alembic {
+namespace Util {
+namespace ALEMBIC_VERSION_NS {
+    template <> struct PODTraitsFromType<PXR_NS::GfHalf> 
+        : public Float16PODTraits {};
+}}}// end namespace Alembic
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 

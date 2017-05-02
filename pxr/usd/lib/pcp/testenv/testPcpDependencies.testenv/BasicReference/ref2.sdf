@@ -1,0 +1,15 @@
+#sdf 1.4.32
+
+def Scope "PrimB"
+{
+    def Scope "PrimB_Child"
+    {
+    }
+}
+
+def Scope "PrimC"
+{
+    def Scope "PrimC_Child"
+    {
+    }
+}

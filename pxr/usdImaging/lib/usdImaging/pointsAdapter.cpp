@@ -47,6 +47,12 @@ UsdImagingPointsAdapter::~UsdImagingPointsAdapter()
 {
 }
 
+bool
+UsdImagingPointsAdapter::IsSupported(HdRenderIndex* renderIndex)
+{
+    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->points);
+}
+
 SdfPath
 UsdImagingPointsAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,

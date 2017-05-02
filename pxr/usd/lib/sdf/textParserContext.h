@@ -40,10 +40,10 @@
 #include <string>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
 // Lexical scanner type.
 typedef void *yyscan_t;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // This class contains the global state while parsing a menva file.
 // It contains the data structures that we use to create the scene description

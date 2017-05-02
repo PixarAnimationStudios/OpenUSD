@@ -32,7 +32,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static SdfPath
 TranslatePathFromNodeToRoot(const PcpNodeRef& sourceNode,
@@ -48,6 +50,8 @@ TranslatePathFromRootToNode(const PcpNodeRef& destNode,
     return PcpTranslatePathFromRootToNode(destNode, pathInRootNamespace);
 }
 
+} // anonymous namespace 
+
 void wrapPathTranslation()
 {
     def("TranslatePathFromNodeToRoot", TranslatePathFromNodeToRoot,
@@ -56,5 +60,3 @@ void wrapPathTranslation()
     def("TranslatePathFromRootToNode", TranslatePathFromRootToNode,
         arg("destNode"), arg("pathInRootNamespace"));
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

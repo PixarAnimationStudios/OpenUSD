@@ -38,12 +38,14 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdSchemaBase::UsdSchemaBase(const UsdPrim& prim) 
     : _primData(prim._Prim())
+    , _proxyPrimPath(prim._ProxyPrimPath())
 {
     /* NOTHING */
 }
 
 UsdSchemaBase::UsdSchemaBase(const UsdSchemaBase& schema) 
     : _primData(schema._primData)
+    , _proxyPrimPath(schema._proxyPrimPath)
 {
     /* NOTHING YET */
 }

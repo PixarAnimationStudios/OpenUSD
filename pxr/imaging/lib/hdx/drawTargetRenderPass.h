@@ -25,6 +25,7 @@
 #define HDX_DRAW_TARGET_RENDER_PASS_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
@@ -37,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
-class HdxDrawTargetRenderPassState;
+class HdStDrawTargetRenderPassState;
 
 /// \class HdxDrawTargetRenderPass
 ///
@@ -49,27 +50,35 @@ class HdxDrawTargetRenderPassState;
 ///
 class HdxDrawTargetRenderPass : boost::noncopyable {
 public:
+    HDX_API
     HdxDrawTargetRenderPass(HdRenderIndex *index);
+    HDX_API
     virtual ~HdxDrawTargetRenderPass();
 
     /// Sets the target draw object of this render pass containing
     /// the color buffers and depth buffer to use.
+    HDX_API
     void SetDrawTarget(const GlfDrawTargetRefPtr &drawTarget);
 
     /// Returns the draw target associated to this render pass.
+    HDX_API
     GlfDrawTargetRefPtr GetDrawTarget();
 
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
-    void SetRenderPassState(const HdxDrawTargetRenderPassState *renderPassState);
+    HDX_API
+    void SetRenderPassState(const HdStDrawTargetRenderPassState *renderPassState);
 
     /// Sets the collection of rprims associated to this render pass.
+    HDX_API
     void SetRprimCollection(HdRprimCollection const& col);
 
     /// Execute render pass task
+    HDX_API
     void Sync();
 
     /// Sync the render pass resources
+    HDX_API
     void Execute(HdRenderPassStateSharedPtr const &renderPassState);
 
 private:
@@ -77,7 +86,7 @@ private:
     HdRenderPass _renderPass;
 
     /// drawtarget renderPass state
-    const HdxDrawTargetRenderPassState *_drawTargetRenderPassState;
+    const HdStDrawTargetRenderPassState *_drawTargetRenderPassState;
 
     /// Local copy of the draw target object.
     GlfDrawTargetRefPtr  _drawTarget;

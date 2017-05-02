@@ -67,9 +67,11 @@ public:
         GetBaseNameAndType(const TfToken &fullName);
 
     /// Returns the full shading attribute name given the basename and the type.
+    /// \p baseName is the name of the input or output on the shading node.
+    /// \p type is the \ref UsdShadeAttributeType of the shading attribute.
     USDSHADE_API
     static TfToken GetFullName(const TfToken &baseName, 
-                                    const UsdShadeAttributeType type);
+                               const UsdShadeAttributeType type);
 
     /// Whether the env-setting that enables the reading of old-style encoding 
     /// of shading networks is set to 'true'.

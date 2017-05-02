@@ -1,0 +1,146 @@
+Loading @ErrorInvalidPreRelocateTargetPath/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+     sub1.sdf
+     sub2.sdf
+
+------------------------------------------------------------------------
+Results for composing </SublayerRoot>
+
+Prim Stack:
+    root.sdf             /SublayerRoot
+    sub1.sdf             /SublayerRoot
+    sub2.sdf             /SublayerRoot
+    ref.sdf              /Ref
+
+Child names:
+     ['Rig', 'Anim']
+
+Property names:
+     ['badRelA', 'badRelB', 'goodRelA', 'goodRelB', 'badAttrA', 'goodAttrA']
+
+Property stacks:
+/SublayerRoot.badAttrA:
+    sub2.sdf             /SublayerRoot.badAttrA
+/SublayerRoot.badRelA:
+    sub2.sdf             /SublayerRoot.badRelA
+/SublayerRoot.badRelB:
+    sub2.sdf             /SublayerRoot.badRelB
+/SublayerRoot.goodAttrA:
+    sub2.sdf             /SublayerRoot.goodAttrA
+/SublayerRoot.goodRelA:
+    sub2.sdf             /SublayerRoot.goodRelA
+/SublayerRoot.goodRelB:
+    sub2.sdf             /SublayerRoot.goodRelB
+
+Relationship targets:
+/SublayerRoot.goodRelA:
+    /SublayerRoot/Anim/Scope
+/SublayerRoot.goodRelB:
+    /SublayerRoot/Anim/Scope.x
+
+Attribute connections:
+/SublayerRoot.goodAttrA:
+    /SublayerRoot/Anim/Scope.x
+
+------------------------------------------------------------------------
+Results for composing </SublayerRoot/Rig>
+
+Prim Stack:
+    ref.sdf              /Ref/Rig
+
+Prohibited child names:
+     ['Scope']
+
+------------------------------------------------------------------------
+Results for composing </SublayerRoot/Anim>
+
+Prim Stack:
+    sub1.sdf             /SublayerRoot/Anim
+
+Child names:
+     ['Scope']
+
+------------------------------------------------------------------------
+Results for composing </SublayerRoot/Anim/Scope>
+
+Prim Stack:
+    ref.sdf              /Ref/Rig/Scope
+
+Property names:
+     ['x']
+
+Property stacks:
+/SublayerRoot/Anim/Scope.x:
+    ref.sdf              /Ref/Rig/Scope.x
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    ref.sdf              /Ref
+
+Child names:
+     ['Rig', 'Anim']
+
+Property names:
+     ['badRelA', 'badRelB', 'goodRelA', 'goodRelB', 'badAttrA', 'goodAttrA']
+
+Property stacks:
+/Root.badAttrA:
+    root.sdf             /Root.badAttrA
+/Root.badRelA:
+    root.sdf             /Root.badRelA
+/Root.badRelB:
+    root.sdf             /Root.badRelB
+/Root.goodAttrA:
+    root.sdf             /Root.goodAttrA
+/Root.goodRelA:
+    root.sdf             /Root.goodRelA
+/Root.goodRelB:
+    root.sdf             /Root.goodRelB
+
+Relationship targets:
+/Root.goodRelA:
+    /Root/Anim/Scope
+/Root.goodRelB:
+    /Root/Anim/Scope.x
+
+Attribute connections:
+/Root.goodAttrA:
+    /Root/Anim/Scope.x
+
+------------------------------------------------------------------------
+Results for composing </Root/Rig>
+
+Prim Stack:
+    ref.sdf              /Ref/Rig
+
+Prohibited child names:
+     ['Scope']
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim>
+
+Prim Stack:
+    root.sdf             /Root/Anim
+
+Child names:
+     ['Scope']
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim/Scope>
+
+Prim Stack:
+    ref.sdf              /Ref/Rig/Scope
+
+Property names:
+     ['x']
+
+Property stacks:
+/Root/Anim/Scope.x:
+    ref.sdf              /Ref/Rig/Scope.x
+

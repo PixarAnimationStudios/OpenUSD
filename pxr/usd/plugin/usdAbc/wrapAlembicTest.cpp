@@ -22,14 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+
 #include <boost/python/def.hpp>
 
 #include "pxr/usd/usdAbc/alembicTest.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdAbcAlembicTest()
 {
@@ -37,6 +37,3 @@ void wrapUsdAbcAlembicTest()
     def("_WriteAlembic", UsdAbc_WriteAlembic,
         (arg("srcPathname"), arg("dstPathname")));
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

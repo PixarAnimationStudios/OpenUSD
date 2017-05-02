@@ -24,6 +24,8 @@
 #ifndef AR_DEFAULT_RESOLVER_H
 #define AR_DEFAULT_RESOLVER_H
 
+/// \file ar/defaultResolver.h
+
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolver.h"

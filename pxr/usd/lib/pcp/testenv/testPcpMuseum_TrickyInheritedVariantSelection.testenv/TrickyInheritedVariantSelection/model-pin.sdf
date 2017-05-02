@@ -1,0 +1,68 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Scope "SullivanNoPin" (
+    variantSets = ["pin", "shade"]
+    references = @./model-shade.sdf@</SullivanNoPinNoShade>
+)
+{
+    variantSet "shade" = {
+        "NoShade" (
+            references = @./model-shade.sdf@</SullivanNoPinNoShade>
+        ) {
+        }
+        "FlatShade" (
+            references = @./model-shade.sdf@</SullivanNoPinFlatShade>
+        ) {
+        }
+        "PhongShade" (
+            references = @./model-shade.sdf@</SullivanNoPinPhongShade>
+        ) {
+        }
+    }
+}
+
+def Scope "SullivanModelPin" (
+    references = @./model-shade.sdf@</SullivanModelPinNoShade>
+    variantSets = ["pin", "shade"]
+)
+{
+    variantSet "shade" = {
+        "NoShade" (
+            references = @./model-shade.sdf@</SullivanModelPinNoShade>
+        ) {
+        }
+        "FlatShade" (
+            references = @./model-shade.sdf@</SullivanModelPinFlatShade>
+        ) {
+        }
+        "PhongShade" (
+            references = @./model-shade.sdf@</SullivanModelPinPhongShade>
+        ) {
+        }
+    }
+}
+
+def Scope "SullivanShotPin" (
+    references = @model-shade.sdf@</SullivanShotPinNoShade>
+    variantSets = ["pin", "shade"]
+)
+{
+    variantSet "shade" = {
+        "NoShade" (
+            references = @./model-shade.sdf@</SullivanShotPinNoShade>
+        ) {
+        }
+        "FlatShade" (
+            references = @./model-shade.sdf@</SullivanShotPinFlatShade>
+        ) {
+        }
+        "PhongShade" (
+            references = @./model-shade.sdf@</SullivanShotPinPhongShade>
+        ) {
+        }
+    }
+}

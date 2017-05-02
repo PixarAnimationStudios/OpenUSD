@@ -1,0 +1,12 @@
+#sdf 1.4.32
+
+over "SublayerRoot" (
+    relocates = {
+        <Rig/Scope> : <Anim/Scope>
+    }
+)
+{
+    def Scope "Anim"
+    {
+    }
+}

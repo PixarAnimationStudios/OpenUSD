@@ -1,0 +1,32 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates class inheritance behavior in a somewhat
+    tricky rig construction. In the referenced rig, there is a symmetric rig
+    that contains sub-rigs as namespace children. These sub-rigs inherit from
+    a class that is a sibling to the symmetric rig, not the sub-rigs. (The
+    latter case is covered in other museum cases like TrickyNestedClasses).
+
+    This case was encountered in bug 69423 and distilled from m2's Pigeon_rig.
+    """
+)
+
+def Scope "Rig" (
+    add references = @./rig.sdf@</Rig>
+)
+{
+    over "_class_SubRig"
+    {
+    }
+
+    over "SymRig"
+    {
+        over "SubRig1"
+        {
+        }
+
+        over "SubRig2"
+        {
+        }
+    }
+}

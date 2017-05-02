@@ -1,0 +1,78 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates the expected behavior with instances
+    that are nested in namespace. The same restrictions on overrides on
+    descendant objects apply to all instances, including the nested ones.
+    """
+)
+
+over "Flattened_Master_1"
+{
+    def "PropInstance_1" (
+        instanceable = true
+        add references = </Flattened_Master_2>
+    )
+    {
+        rel propInstanceRel = [
+            </Flattened_Master_1/PropInstance_1/geom>,
+            </Flattened_Master_1/PropInstance_2/geom>,
+            </Flattened_Master_1/PropNotAnInstance_1/geom>,
+        ]
+        rel propRel = </Flattened_Master_1/PropInstance_1/geom>
+    }
+
+    def "PropInstance_2" (
+        instanceable = true
+        add references = </Flattened_Master_2>
+    )
+    {
+        rel propInstanceRel = [
+            </Flattened_Master_1/PropInstance_1/geom>,
+            </Flattened_Master_1/PropInstance_2/geom>,
+            </Flattened_Master_1/PropNotAnInstance_1/geom>,
+        ]
+        rel propRel = </Flattened_Master_1/PropInstance_2/geom>
+    }
+
+    def "PropNotAnInstance_1"
+    {
+        rel propRel = </Flattened_Master_1/PropNotAnInstance_1/geom>
+
+        def "geom"
+        {
+        }
+    }
+}
+
+over "Flattened_Master_2"
+{
+    def "geom"
+    {
+    }
+}
+
+def "Set_1" (
+    instanceable = true
+    add references = </Flattened_Master_1>
+)
+{
+    rel setInstanceRel = [
+        </Set_1/PropInstance_1>,
+        </Set_1/PropInstance_1/geom>,
+        </Set_1/PropInstance_2>,
+        </Set_1/PropInstance_2/geom>,
+        </Set_1/PropNotAnInstance_1>,
+        </Set_1/PropNotAnInstance_1/geom>,
+    ]
+    rel setRel = [
+        </Set_1/PropInstance_1>,
+        </Set_1/PropInstance_1/geom>,
+        </Set_1/PropInstance_2>,
+        </Set_1/PropInstance_2/geom>,
+        </Set_1/PropNotAnInstance_1>,
+        </Set_1/PropNotAnInstance_1/geom>,
+    ]
+}
+
+

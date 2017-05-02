@@ -1,0 +1,44 @@
+#sdf 1.4.32
+
+def "Sarah" (
+    add variantSets = "modelComplexity"
+    variants = {
+        string modelComplexity = "tidscene"
+    }
+)
+{
+    variantSet "modelComplexity" = {
+        "full" (
+            add references = @./Sarah_rig.sdf@</Sarah>
+        ) {
+            over "FaceRig"
+            {
+                over "EyesRig"
+                {
+                    over "SymEyeRig"
+                    {
+                    }
+                    over "LEyeRig"
+                    {
+                    }
+                }
+            }
+        }
+        "tidscene" (
+            add references = @./Sarah_rig2.sdf@</Sarah>
+        ) {
+            over "FaceRig"
+            {
+                over "EyesRig"
+                {
+                    over "SymEyeRig"
+                    {
+                    }
+                    over "LEyeRig"
+                    {
+                    }
+                }
+            }
+        }
+    }
+}

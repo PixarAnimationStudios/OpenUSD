@@ -1,0 +1,45 @@
+#sdf 1.4.32
+(
+    """
+    In this test, we have a Char that references a CharRig.
+    CharRig in turn references a SubRig.
+
+    In addition to the typical relocation to move CharRig's
+    internal anim scopes out to the public Anim scope, Char
+    uses relocations to rename everything to add a -2 suffix.
+
+    Lastly, subrig also contains a "shadow" spec at the source
+    path of a relocation in the Char.  This tests that that
+    spec is correctly ignored, both when composing the relocation
+    target and when composing child names of the parent.
+    """
+)
+
+def "Char" (
+    add references = @./rig.sdf@</CharRig>
+    relocates = {
+        <Anim>: <Anim2>, 
+        <Rig>: <Rig2>
+    }
+)
+{
+    over "Anim2"
+    {
+    }
+
+    over "Rig2" (
+        relocates = {
+            <SubRig>: <SubRig2>
+        }
+    )
+    {
+        over "SubRig2" (
+            relocates = {
+                <Rig>: <Rig2>
+            }
+        )
+        {
+        }
+    }
+}
+

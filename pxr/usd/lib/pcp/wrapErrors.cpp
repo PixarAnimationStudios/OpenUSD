@@ -33,7 +33,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void 
 wrapErrors()
@@ -211,5 +211,3 @@ TF_REFPTR_CONST_VOLATILE_GET(PcpErrorPrimPermissionDenied)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorSublayerCycle)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorTargetPermissionDenied)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorUnresolvedPrimPath)
-
-PXR_NAMESPACE_CLOSE_SCOPE

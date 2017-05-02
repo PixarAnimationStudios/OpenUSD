@@ -1,0 +1,950 @@
+{
+    "Plugins": [
+        {
+            "Type": "resource",
+            "Name": "testSdfMetaDataPlugInfo",
+            "Info": {
+                "SdfMetadata": {
+                    "matrix2d_shaped": {
+                        "type": "matrix2d[]"
+                    }, 
+                    "matrix2d_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5, 
+                            6.5, 
+                            7.5, 
+                            8.5, 
+                            9.5, 
+                            10.5, 
+                            11.5
+                        ], 
+                        "type": "matrix2d[]"
+                    }, 
+                    "matrix2d_single": {
+                        "type": "matrix2d"
+                    }, 
+                    "matrix2d_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5
+                        ], 
+                        "type": "matrix2d"
+                    }, 
+                    "matrix3d_shaped": {
+                        "type": "matrix3d[]"
+                    }, 
+                    "matrix3d_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5, 
+                            6.5, 
+                            7.5, 
+                            8.5, 
+                            9.5, 
+                            10.5, 
+                            11.5, 
+                            12.5, 
+                            13.5, 
+                            14.5, 
+                            15.5, 
+                            16.5, 
+                            17.5, 
+                            18.5, 
+                            19.5, 
+                            20.5, 
+                            21.5, 
+                            22.5, 
+                            23.5, 
+                            24.5, 
+                            25.5, 
+                            26.5
+                        ], 
+                        "type": "matrix3d[]"
+                    }, 
+                    "matrix3d_single": {
+                        "type": "matrix3d"
+                    }, 
+                    "matrix3d_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5, 
+                            6.5, 
+                            7.5, 
+                            8.5
+                        ], 
+                        "type": "matrix3d"
+                    }, 
+                    "matrix4d_shaped": {
+                        "type": "matrix4d[]"
+                    }, 
+                    "matrix4d_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5, 
+                            6.5, 
+                            7.5, 
+                            8.5, 
+                            9.5, 
+                            10.5, 
+                            11.5, 
+                            12.5, 
+                            13.5, 
+                            14.5, 
+                            15.5, 
+                            16.5, 
+                            17.5, 
+                            18.5, 
+                            19.5, 
+                            20.5, 
+                            21.5, 
+                            22.5, 
+                            23.5, 
+                            24.5, 
+                            25.5, 
+                            26.5, 
+                            27.5, 
+                            28.5, 
+                            29.5, 
+                            30.5, 
+                            31.5, 
+                            32.5, 
+                            33.5, 
+                            34.5, 
+                            35.5, 
+                            36.5, 
+                            37.5, 
+                            38.5, 
+                            39.5, 
+                            40.5, 
+                            41.5, 
+                            42.5, 
+                            43.5, 
+                            44.5, 
+                            45.5, 
+                            46.5, 
+                            47.5
+                        ], 
+                        "type": "matrix4d[]"
+                    }, 
+                    "matrix4d_single": {
+                        "type": "matrix4d"
+                    }, 
+                    "matrix4d_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5, 
+                            6.5, 
+                            7.5, 
+                            8.5, 
+                            9.5, 
+                            10.5, 
+                            11.5, 
+                            12.5, 
+                            13.5, 
+                            14.5, 
+                            15.5
+                        ], 
+                        "type": "matrix4d"
+                    }, 
+                    "quatd_single_default": {
+                        "default": [
+                            1.0, 
+                            1.0, 
+                            1.0, 
+                            1.0
+                        ], 
+                        "type": "quatd"
+                    }, 
+                    "quatd_single": {
+                        "type": "quatd"
+                    }, 
+                    "quatd_shaped_default": {
+                        "default": [
+                            1.0, 
+                            1.0, 
+                            1.0, 
+                            1.0,
+                            2.0,
+                            2.0,
+                            2.0,
+                            2.0,
+                            3.0,
+                            3.0,
+                            3.0,
+                            3.0
+                        ], 
+                        "type": "quatd[]"
+                    }, 
+                    "quatd_shaped": {
+                        "type": "quatd[]"
+                    }, 
+                    "quatf_single_default": {
+                        "default": [
+                            1.0, 
+                            1.0, 
+                            1.0, 
+                            1.0
+                        ], 
+                        "type": "quatf"
+                    }, 
+                    "quatf_single": {
+                        "type": "quatf"
+                    }, 
+                    "quatf_shaped_default": {
+                        "default": [
+                            1.0, 
+                            1.0, 
+                            1.0, 
+                            1.0,
+                            2.0,
+                            2.0,
+                            2.0,
+                            2.0,
+                            3.0,
+                            3.0,
+                            3.0,
+                            3.0
+                        ], 
+                        "type": "quatf[]"
+                    }, 
+                    "quatf_shaped": {
+                        "type": "quatf[]"
+                    }, 
+                    "quath_single_default": {
+                        "default": [
+                            1.0, 
+                            1.0, 
+                            1.0, 
+                            1.0
+                        ], 
+                        "type": "quath"
+                    }, 
+                    "quath_single": {
+                        "type": "quath"
+                    }, 
+                    "quath_shaped_default": {
+                        "default": [
+                            1.0, 
+                            1.0, 
+                            1.0, 
+                            1.0,
+                            2.0,
+                            2.0,
+                            2.0,
+                            2.0,
+                            3.0,
+                            3.0,
+                            3.0,
+                            3.0
+                        ], 
+                        "type": "quath[]"
+                    }, 
+                    "quath_shaped": {
+                        "type": "quath[]"
+                    }, 
+                    "double2_shaped": {
+                        "type": "double2[]"
+                    }, 
+                    "double2_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5
+                        ], 
+                        "type": "double2[]"
+                    }, 
+                    "double2_single": {
+                        "type": "double2"
+                    }, 
+                    "double2_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5
+                        ], 
+                        "type": "double2"
+                    }, 
+                    "float2_shaped": {
+                        "type": "float2[]"
+                    }, 
+                    "float2_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5
+                        ], 
+                        "type": "float2[]"
+                    }, 
+                    "float2_single": {
+                        "type": "float2"
+                    }, 
+                    "float2_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5
+                        ], 
+                        "type": "float2"
+                    }, 
+                    "half2_shaped": {
+                        "type": "half2[]"
+                    }, 
+                    "half2_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5
+                        ], 
+                        "type": "half2[]"
+                    }, 
+                    "half2_single": {
+                        "type": "half2"
+                    }, 
+                    "half2_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5
+                        ], 
+                        "type": "half2"
+                    }, 
+                    "int2_shaped": {
+                        "type": "int2[]"
+                    }, 
+                    "int2_shaped_default": {
+                        "default": [
+                            0, 
+                            1, 
+                            2, 
+                            3, 
+                            4, 
+                            5
+                        ], 
+                        "type": "int2[]"
+                    }, 
+                    "int2_single": {
+                        "type": "int2"
+                    }, 
+                    "int2_single_default": {
+                        "default": [
+                            0, 
+                            1
+                        ], 
+                        "type": "int2"
+                    }, 
+
+                    "double3_shaped": {
+                        "type": "double3[]"
+                    }, 
+                    "double3_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5, 
+                            6.5, 
+                            7.5, 
+                            8.5
+                        ], 
+                        "type": "double3[]"
+                    }, 
+                    "double3_single": {
+                        "type": "double3"
+                    }, 
+                    "double3_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5
+                        ], 
+                        "type": "double3"
+                    }, 
+                    "float3_shaped": {
+                        "type": "float3[]"
+                    }, 
+                    "float3_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5, 
+                            6.5, 
+                            7.5, 
+                            8.5
+                        ], 
+                        "type": "float3[]"
+                    }, 
+                    "float3_single": {
+                        "type": "float3"
+                    }, 
+                    "float3_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5
+                        ], 
+                        "type": "float3"
+                    },
+                    "half3_shaped": {
+                        "type": "half3[]"
+                    }, 
+                    "half3_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5, 
+                            6.5, 
+                            7.5, 
+                            8.5
+                        ], 
+                        "type": "half3[]"
+                    }, 
+                    "half3_single": {
+                        "type": "half3"
+                    }, 
+                    "half3_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5
+                        ], 
+                        "type": "half3"
+                    },
+                    "int3_shaped": {
+                        "type": "int3[]"
+                    }, 
+                    "int3_shaped_default": {
+                        "default": [
+                            0, 
+                            1, 
+                            2, 
+                            3, 
+                            4, 
+                            5, 
+                            6, 
+                            7, 
+                            8
+                        ], 
+                        "type": "int3[]"
+                    }, 
+                    "int3_single": {
+                        "type": "int3"
+                    }, 
+                    "int3_single_default": {
+                        "default": [
+                            0, 
+                            1, 
+                            2
+                        ], 
+                        "type": "int3"
+                    }, 
+                    "double4_shaped": {
+                        "type": "double4[]"
+                    }, 
+                    "double4_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5, 
+                            4.5, 
+                            5.5, 
+                            6.5, 
+                            7.5, 
+                            8.5, 
+                            9.5, 
+                            10.5, 
+                            11.5
+                        ], 
+                        "type": "double4[]"
+                    }, 
+                    "double4_single": {
+                        "type": "double4"
+                    }, 
+                    "double4_single_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5, 
+                            3.5
+                        ], 
+                        "type": "double4"
+                    }, 
+                    "float4_shaped": {
+                        "type": "float4[]"
+                    }, 
+                    "float4_shaped_default": {
+                        "default": [
+                             1.3, 
+                             2.3, 
+                             3.3, 
+                             4.3, 
+                             5.3, 
+                             6.3, 
+                             7.3, 
+                             8.3, 
+                             9.3, 
+                            10.3, 
+                            11.3, 
+                            12.3
+                        ], 
+                        "type": "float4[]"
+                    }, 
+                    "float4_single": {
+                        "type": "float4"
+                    }, 
+                    "float4_single_default": {
+                        "default": [
+                            1.3, 
+                            2.3, 
+                            3.3, 
+                            4.3
+                        ], 
+                        "type": "float4"
+                    },
+                    "half4_shaped": {
+                        "type": "half4[]"
+                    }, 
+                    "half4_shaped_default": {
+                        "default": [
+                             1.3, 
+                             2.3, 
+                             3.3, 
+                             4.3, 
+                             5.3, 
+                             6.3, 
+                             7.3, 
+                             8.3, 
+                             9.3, 
+                            10.3, 
+                            11.3, 
+                            12.3
+                        ], 
+                        "type": "half4[]"
+                    }, 
+                    "half4_single": {
+                        "type": "half4"
+                    }, 
+                    "half4_single_default": {
+                        "default": [
+                            1.3, 
+                            2.3, 
+                            3.3, 
+                            4.3
+                        ], 
+                        "type": "half4"
+                    },
+                    "int4_shaped": {
+                        "type": "int4[]"
+                    }, 
+                    "int4_shaped_default": {
+                        "default": [
+                            1, 
+                            2, 
+                            3, 
+                            4, 
+                            5, 
+                            6, 
+                            7, 
+                            8, 
+                            9, 
+                            10, 
+                            11, 
+                            12
+                        ], 
+                        "type": "int4[]"
+                    }, 
+                    "int4_single": {
+                        "type": "int4"
+                    }, 
+                    "int4_single_default": {
+                        "default": [
+                            1, 
+                            2, 
+                            3, 
+                            4
+                        ], 
+                        "type": "int4"
+                    }, 
+                    "asset_shaped": {
+                        "type": "asset[]"
+                    }, 
+                    "asset_shaped_default": {
+                        "default": [
+                            "a", 
+                            "b", 
+                            "c"
+                        ], 
+                        "type": "asset[]"
+                    }, 
+                    "asset_single": {
+                        "type": "asset"
+                    }, 
+                    "asset_single_default": {
+                        "default": "a", 
+                        "type": "asset"
+                    }, 
+                    "bad_1": 1, 
+                    "bad_2": [], 
+                    "bad_3": {}, 
+                    "bad_4": {
+                        "type": 1
+                    }, 
+                    "bad_5": {
+                        "type": []
+                    }, 
+                    "bad_6": {
+                        "type": {}
+                    }, 
+                    "bad_7": {
+                        "type": "!!INVALID TYPE!!"
+                    }, 
+                    "bad_8": {
+                        "default": 1, 
+                        "type": "double3"
+                    }, 
+                    "bad_9": {
+                        "default": [
+                            1, 
+                            2
+                        ], 
+                        "type": "double3"
+                    }, 
+                    "bad_10": {
+                        "default": {},
+                        "type": "dictionary"
+                    },
+                    "bad_11": {
+                        "type": "dictionary[]"
+                    },
+                    "bad_12": {
+                        "type": "intlistop[]"
+                    },
+                    "bad_13": {
+                        "type": "intlistop",
+                        "default" : []
+                    },
+                    "bad_14": {
+                        "type": "int64listop[]"
+                    },
+                    "bad_15": {
+                        "type": "int64listop",
+                        "default" : []
+                    },
+                    "bad_16": {
+                        "type": "uintlistop[]"
+                    },
+                    "bad_17": {
+                        "type": "uintlistop",
+                        "default" : []
+                    },
+                    "bad_18": {
+                        "type": "uint64listop[]"
+                    },
+                    "bad_19": {
+                        "type": "uint64listop",
+                        "default" : []
+                    },
+                    "bad_20": {
+                        "type": "stringlistop[]"
+                    },
+                    "bad_21": {
+                        "type": "stringlistop",
+                        "default" : []
+                    },
+                    "bad_22": {
+                        "type": "tokenlistop[]"
+                    },
+                    "bad_23": {
+                        "type": "tokenlistop",
+                        "default" : []
+                    },
+                    "bool_shaped": {
+                        "type": "bool[]"
+                    }, 
+                    "bool_shaped_default": {
+                        "default": [
+                            1, 
+                            0, 
+                            1
+                        ], 
+                        "type": "bool[]"
+                    }, 
+                    "bool_single": {
+                        "type": "bool"
+                    }, 
+                    "bool_single_default": {
+                        "default": 1, 
+                        "type": "bool"
+                    }, 
+                    "double_shaped": {
+                        "type": "double[]"
+                    }, 
+                    "double_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5
+                        ], 
+                        "type": "double[]"
+                    }, 
+                    "double_single": {
+                        "type": "double"
+                    }, 
+                    "double_single_default": {
+                        "default": 0.5, 
+                        "type": "double"
+                    }, 
+                    "float_shaped": {
+                        "type": "float[]"
+                    }, 
+                    "float_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5
+                        ], 
+                        "type": "float[]"
+                    }, 
+                    "float_single": {
+                        "type": "float"
+                    }, 
+                    "float_single_default": {
+                        "default": 0.5, 
+                        "type": "float"
+                    }, 
+                    "half_shaped": {
+                        "type": "half[]"
+                    }, 
+                    "half_shaped_default": {
+                        "default": [
+                            0.5, 
+                            1.5, 
+                            2.5
+                        ], 
+                        "type": "half[]"
+                    }, 
+                    "half_single": {
+                        "type": "half"
+                    }, 
+                    "half_single_default": {
+                        "default": 0.5, 
+                        "type": "half"
+                    }, 
+                    "uchar_shaped": {
+                        "type": "uchar[]"
+                    }, 
+                    "uchar_shaped_default": {
+                        "default": [
+                            1, 
+                            2, 
+                            3
+                        ], 
+                        "type": "uchar[]"
+                    }, 
+                    "uchar_single": {
+                        "type": "uchar"
+                    }, 
+                    "uchar_single_default": {
+                        "default": 1, 
+                        "type": "uchar"
+                    }, 
+                    "int_shaped": {
+                        "type": "int[]"
+                    }, 
+                    "int_shaped_default": {
+                        "default": [
+                            1, 
+                            2, 
+                            3
+                        ], 
+                        "type": "int[]"
+                    }, 
+                    "int_single": {
+                        "type": "int"
+                    }, 
+                    "int_single_default": {
+                        "default": 1, 
+                        "type": "int"
+                    }, 
+                    "uint_shaped": {
+                        "type": "uint[]"
+                    }, 
+                    "uint_shaped_default": {
+                        "default": [
+                            1, 
+                            2, 
+                            3
+                        ], 
+                        "type": "uint[]"
+                    }, 
+                    "uint_single": {
+                        "type": "uint"
+                    }, 
+                    "uint_single_default": {
+                        "default": 1, 
+                        "type": "uint"
+                    }, 
+
+                    "int64_shaped": {
+                        "type": "int64[]"
+                    }, 
+                    "int64_shaped_default": {
+                        "default": [
+                            1, 
+                            2, 
+                            3
+                        ], 
+                        "type": "int64[]"
+                    }, 
+                    "int64_single": {
+                        "type": "int64"
+                    }, 
+                    "int64_single_default": {
+                        "default": 1, 
+                        "type": "int64"
+                    },
+                    "uint64_shaped": {
+                        "type": "uint64[]"
+                    }, 
+                    "uint64_shaped_default": {
+                        "default": [
+                            1, 
+                            2, 
+                            3
+                        ], 
+                        "type": "uint64[]"
+                    }, 
+                    "uint64_single": {
+                        "type": "uint64"
+                    }, 
+                    "uint64_single_default": {
+                        "default": 1, 
+                        "type": "uint64"
+                    },
+                    "string_shaped": {
+                        "type": "string[]"
+                    }, 
+                    "string_shaped_default": {
+                        "default": [
+                            "a", 
+                            "b", 
+                            "c"
+                        ], 
+                        "type": "string[]"
+                    }, 
+                    "string_single": {
+                        "type": "string"
+                    }, 
+                    "string_single_default": {
+                        "default": "a", 
+                        "type": "string"
+                    },
+                    "token_shaped": {
+                        "type": "token[]"
+                    }, 
+                    "token_shaped_default": {
+                        "default": [
+                            "a", 
+                            "b", 
+                            "c"
+                        ], 
+                        "type": "token[]"
+                    }, 
+                    "token_single": {
+                        "type": "token"
+                    }, 
+                    "token_single_default": {
+                        "default": "a", 
+                        "type": "token"
+                    },
+                    "dictionary_single": {
+                        "type": "dictionary"
+                    },
+                    "intlistop_single": {
+                        "type": "intlistop"
+                    },
+                    "int64listop_single": {
+                        "type": "int64listop"
+                    },
+                    "uintlistop_single": {
+                        "type": "uintlistop"
+                    },
+                    "uint64listop_single": {
+                        "type": "uint64listop"
+                    },
+                    "stringlistop_single": {
+                        "type": "stringlistop"
+                    },
+                    "tokenlistop_single": {
+                        "type": "tokenlistop"
+                    },
+                    "applies_to_layers": {
+                        "appliesTo": "layers",
+                        "type": "int"
+                    },
+                    "applies_to_prims": {
+                        "appliesTo": "prims",
+                        "type": "int"
+                    },
+                    "applies_to_properties": {
+                        "appliesTo": "properties",
+                        "type": "int"
+                    },
+                    "applies_to_attributes": {
+                        "appliesTo": "attributes",
+                        "type": "int"
+                    },
+                    "applies_to_relationships": {
+                        "appliesTo": "relationships",
+                        "type": "int"
+                    },
+                    "applies_to_variants": {
+                        "appliesTo": "variants",
+                        "type": "int"
+                    },
+                    "applies_to_prims_and_properties": {
+                        "appliesTo": ["prims", "properties"],
+                        "type": "int"
+                    }
+                }
+            }
+        }
+    ]
+}

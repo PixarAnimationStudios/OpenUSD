@@ -1,0 +1,7 @@
+#sdf 1.4.32
+
+over "Prim"
+{
+    custom double badConn
+    double badConn.connect = </Variant/Selection{vset=sel}Is/Invalid>
+}

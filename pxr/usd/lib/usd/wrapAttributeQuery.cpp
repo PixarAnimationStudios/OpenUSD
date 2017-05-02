@@ -37,13 +37,14 @@
 #include <string>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 using std::vector;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static vector<double>
 _GetTimeSamples(const UsdAttributeQuery& query) 
@@ -82,8 +83,9 @@ _Get(const UsdAttributeQuery& self, UsdTimeCode time)
     return UsdVtValueToPython(val);
 }
 
-void
-wrapUsdAttributeQuery()
+} // anonymous namespace 
+
+void wrapUsdAttributeQuery()
 {
     class_<UsdAttributeQuery, boost::noncopyable>
         ("AttributeQuery", no_init)
@@ -127,6 +129,3 @@ wrapUsdAttributeQuery()
          
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

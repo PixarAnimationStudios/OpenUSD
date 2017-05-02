@@ -26,14 +26,12 @@
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include <stdio.h>
+#include <csignal>
+#include <cstdio>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-/**
- * This executable performs an integer divide by zero (SIGFPE)
- * for testing of the Tf crash handler
- */
+// This test raises SIGFPE to test the Tf crash handler
 
 int
 main(int argc, char **argv)
@@ -45,11 +43,11 @@ main(int argc, char **argv)
     // as we leave them off by default.
     TfInstallTerminateAndCrashHandlers();
 
-    // Avoid compiler doing the constant math expression
-    volatile int a = 1;
-    volatile int b = 0;
-    int c = a/b;
-    printf("%d",c);
+    // Raise SIGFPE.
+    raise(SIGFPE);
+
+    // We shouldn't get here.  Exit with zero because we expect a non-zero
+    // exit code from this test.
+    printf("failed\n");
+    exit(0);
 }
-
-

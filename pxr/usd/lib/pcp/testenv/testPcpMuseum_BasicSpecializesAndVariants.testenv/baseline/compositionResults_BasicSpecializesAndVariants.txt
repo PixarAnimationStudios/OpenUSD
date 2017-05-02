@@ -1,0 +1,68 @@
+Loading @BasicSpecializesAndVariants/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Specializes>
+
+Prim Stack:
+    root.sdf             /Specializes
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    ref.sdf              /Ref
+    ref.sdf              /Ref{v=ref}
+    root.sdf             /Specializes
+    ref.sdf              /Specializes
+
+Variant Selections:
+    {v = ref}
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks>
+
+Prim Stack:
+    root.sdf             /Model/Looks
+    looks.sdf            /Looks
+
+Child names:
+     ['Metal', 'Brass']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Metal>
+
+Prim Stack:
+    root.sdf             /Model/Looks/Metal
+    looks.sdf            /Looks/Metal
+    looks.sdf            /Looks/Metal{v=from_metal}
+
+Variant Selections:
+    {v = from_metal}
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Brass>
+
+Prim Stack:
+    root.sdf             /Model/Looks/Brass
+    looks.sdf            /Looks/Brass
+    root.sdf             /Model/Looks/Metal
+    looks.sdf            /Looks/Metal
+    looks.sdf            /Looks/Metal{v=from_brass}
+
+Variant Selections:
+    {v = from_brass}
+

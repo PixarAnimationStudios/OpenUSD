@@ -1,0 +1,22 @@
+#usda 1.0
+
+def "Class"
+{
+}
+
+def "Set"
+{
+}
+
+def "World"
+{
+    def "sets"
+    {
+        def "Set_1" (
+            instanceable = True
+            references = </Set>
+        )
+        {
+        }
+    }
+}

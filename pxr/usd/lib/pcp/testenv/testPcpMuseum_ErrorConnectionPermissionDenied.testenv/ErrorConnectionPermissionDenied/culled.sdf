@@ -1,0 +1,27 @@
+#sdf 1.4.32
+
+def Scope "CulledPermissions_1"
+{
+    custom rel rel = </CulledPermissions_1/Foo/NonExistentPrim>
+
+    def Scope "Foo" (
+        permission = private
+    )
+    {
+    }
+}
+
+def Scope "CulledPermissions_2_1"
+{
+    def Scope "Foo" (
+        permission = private
+    )
+    {
+        custom double x = 1.0
+    }
+}
+
+def Scope "CulledPermissions_2_2"
+{
+    custom rel rel = </CulledPermissions_2_2/Foo.x>
+}

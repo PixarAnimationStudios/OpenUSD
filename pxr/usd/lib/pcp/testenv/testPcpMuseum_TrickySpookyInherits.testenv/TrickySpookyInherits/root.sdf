@@ -1,0 +1,45 @@
+#sdf 1.4.32
+(
+    """
+    This museum case exhibits the interaction between relocated prims and
+    inherited opinions. A relocated prim will still inherit the same 
+    opinions it would have had it not been relocated. This is commonly 
+    referred to as 'spooky inherits'.
+
+    In this museum case, we have a symmetric rig defined in rig.sdf
+    that is referenced by the model in model.sdf. Within the model, the
+    LRig instance is relocated to the Anim scope. Finally, this model is
+    referenced in by root.sdf.
+
+    Due to spooky inherits, the final composed prim for /Model_1/Anim/LAnim
+    should include opinions from the global class /_class_Model in root.sdf
+    and model.sdf.
+    """
+)
+
+def Scope "Model_1" (
+    references = @./model.sdf@</Model>
+)
+{
+}
+
+class Scope "_class_Model"
+{
+    over "Rig"
+    {
+        over "SymRig"
+        {
+        }
+
+        over "LRig"
+        {
+        }
+    }
+
+    over "Anim"
+    {
+        over "LAnim"
+        {
+        }
+    }
+}

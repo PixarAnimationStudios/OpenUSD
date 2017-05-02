@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    """
+    This museum case tests instancing functionality when instanced
+    prims contain variants.
+    """
+)
+
+over "Flattened_Master_1"
+{
+    def "geom"
+    {
+        double x = 1
+    }
+
+    def "from_a_variant"
+    {
+    }
+}
+
+def "InstancedModel" (
+    instanceable = true
+    add references = </Flattened_Master_1>
+)
+{
+    double x = 1
+}
+
+def "UninstancedModel" (
+    instanceable = false
+)
+{
+    double x = 4
+
+    def "geom"
+    {
+        double x = 4
+    }
+
+    def "from_b_variant"
+    {
+    }
+}
+
+

@@ -30,8 +30,6 @@
 
 #include "pxr/usd/ar/resolverContext.h"
 
-#include "pxr/base/arch/nap.h"
-
 #include <boost/bind.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/multi_index_container.hpp>
@@ -44,6 +42,7 @@
 
 #include <atomic>
 #include <vector>
+#include <thread>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -190,8 +189,9 @@ struct UsdStageCacheRequest::_Mailbox {
     _Mailbox() : state(0) {}
 
     UsdStageRefPtr Wait() {
-        while (state == 1)
-            ArchThreadYield();
+        while (state == 1) {
+            std::this_thread::yield();
+        }
         return stage;
     }
 

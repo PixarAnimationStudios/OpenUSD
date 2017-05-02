@@ -83,7 +83,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 //
 //   UsdAbc_AlembicData
 //     Forwards most calls to UsdAbc_AlembicDataReader.  It has a static
-//     method for writing an Alembic file.
+//     method for writing an Alembic file.  The UsdAbc_AlembicDataReader
+//     exists between a successful Open() and Close().  When there is no
+//     reader the data acts as if there's a pseudo-root prim spec at the
+//     absolute root path.
 //
 
 using namespace UsdAbc_AlembicUtil;
@@ -206,7 +209,8 @@ UsdAbc_AlembicData::CreateSpec(
 bool
 UsdAbc_AlembicData::HasSpec(const SdfAbstractDataSpecId& id) const
 {
-    return _reader->HasSpec(id);
+    return _reader ? _reader->HasSpec(id)
+                   : (id.GetFullSpecPath() == SdfPath::AbsoluteRootPath());
 }
 
 void
@@ -226,13 +230,21 @@ UsdAbc_AlembicData::MoveSpec(
 SdfSpecType
 UsdAbc_AlembicData::GetSpecType(const SdfAbstractDataSpecId& id) const
 {
-    return _reader->GetSpecType(id);
+    if (_reader) {
+        return _reader->GetSpecType(id);
+    }
+    if (id.GetFullSpecPath() == SdfPath::AbsoluteRootPath()) {
+        return SdfSpecTypePseudoRoot;
+    }
+    return SdfSpecTypeUnknown;
 }
 
 void
 UsdAbc_AlembicData::_VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const
 {
-    _reader->VisitSpecs(*this, visitor);
+    if (_reader) {
+        _reader->VisitSpecs(*this, visitor);
+    }
 }
 
 bool
@@ -241,7 +253,7 @@ UsdAbc_AlembicData::Has(
     const TfToken& fieldName,
     SdfAbstractDataValue* value) const
 {
-    return _reader->HasField(id, fieldName, value);
+    return _reader ? _reader->HasField(id, fieldName, value) : false;
 }
 
 bool
@@ -250,7 +262,7 @@ UsdAbc_AlembicData::Has(
     const TfToken& fieldName,
     VtValue* value) const
 {
-    return _reader->HasField(id, fieldName, value);
+    return _reader ? _reader->HasField(id, fieldName, value) : false;
 }
 
 VtValue
@@ -259,7 +271,9 @@ UsdAbc_AlembicData::Get(
     const TfToken& fieldName) const
 {
     VtValue result;
-    _reader->HasField(id, fieldName, &result);
+    if (_reader) {
+        _reader->HasField(id, fieldName, &result);
+    }
     return result;
 }
 
@@ -292,19 +306,20 @@ UsdAbc_AlembicData::Erase(
 std::vector<TfToken>
 UsdAbc_AlembicData::List(const SdfAbstractDataSpecId& id) const
 {
-    return _reader->List(id);
+    return _reader ? _reader->List(id) : std::vector<TfToken>();
 }
 
 std::set<double>
 UsdAbc_AlembicData::ListAllTimeSamples() const
 {
-    return _reader->ListAllTimeSamples();
+    return _reader ? _reader->ListAllTimeSamples() : std::set<double>();
 }
 
 std::set<double>
 UsdAbc_AlembicData::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
 {
-    return _reader->ListTimeSamplesForPath(id).GetTimes();
+    return _reader ? _reader->ListTimeSamplesForPath(id).GetTimes()
+                   : std::set<double>();
 }
 
 bool
@@ -313,14 +328,14 @@ UsdAbc_AlembicData::GetBracketingTimeSamples(
 {
     const std::set<double>& samples = _reader->ListAllTimeSamples();
     return UsdAbc_AlembicDataReader::TimeSamples::Bracket(samples, time,
-                                                     tLower, tUpper);
+                                                          tLower, tUpper);
 }
 
 size_t
 UsdAbc_AlembicData::GetNumTimeSamplesForPath(
     const SdfAbstractDataSpecId& id) const
 {
-    return _reader->ListTimeSamplesForPath(id).GetSize();
+    return _reader ? _reader->ListTimeSamplesForPath(id).GetSize() : 0u;
 }
 
 bool
@@ -328,7 +343,8 @@ UsdAbc_AlembicData::GetBracketingTimeSamplesForPath(
     const SdfAbstractDataSpecId& id,
     double time, double* tLower, double* tUpper) const
 {
-    return _reader->ListTimeSamplesForPath(id).Bracket(time, tLower, tUpper);
+    return _reader &&
+           _reader->ListTimeSamplesForPath(id).Bracket(time, tLower, tUpper);
 }
 
 bool
@@ -338,7 +354,8 @@ UsdAbc_AlembicData::QueryTimeSample(
     SdfAbstractDataValue* value) const
 {
     UsdAbc_AlembicDataReader::Index index;
-    return _reader->ListTimeSamplesForPath(id).FindIndex(time, &index) && 
+    return _reader &&
+           _reader->ListTimeSamplesForPath(id).FindIndex(time, &index) && 
            _reader->HasValue(id, index, value);
 }
 

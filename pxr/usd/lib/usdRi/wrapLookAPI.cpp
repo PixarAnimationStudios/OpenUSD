@@ -38,7 +38,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -46,6 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 // fwd decl.
 WRAP_CUSTOM;
 
+
+} // anonymous namespace
 
 void wrapUsdRiLookAPI()
 {
@@ -111,8 +115,6 @@ void wrapUsdRiLookAPI()
     _CustomWrapCode(cls);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
 // the code generator.  The entry point for your custom code should look
@@ -127,12 +129,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // Of course any other ancillary or support code may be provided.
 // 
 // Just remember to wrap code in the appropriate delimiters:
-// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
+// 'namespace {', '}'.
 //
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace {
 
 bool
 _SetInterfaceRecipient0(
@@ -166,10 +168,20 @@ WRAP_CUSTOM {
         .def("GetBxdf", &This::GetBxdf)
         .def("GetPatterns", &This::GetPatterns,
              return_value_policy<TfPySequenceToList>())
+
+        .def("SetInterfaceInputConsumer", &This::SetInterfaceInputConsumer)
+        .def("ComputeInterfaceInputConsumersMap", 
+            &This::ComputeInterfaceInputConsumersMap, 
+            (arg("computeTransitiveConsumers")=false))
+        .def("GetInterfaceInputs", &This::GetInterfaceInputs,
+             return_value_policy<TfPySequenceToList>())
+
+        // These are deprecated.
         .def("SetInterfaceRecipient", &_SetInterfaceRecipient0)
         .def("SetInterfaceRecipient", &_SetInterfaceRecipient1)
         .def("GetInterfaceRecipientParameters", &This::GetInterfaceRecipientParameters)
+
     ;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // anonymous namespace

@@ -28,6 +28,7 @@
 #define USDIMAGINGGL_ENGINE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
@@ -63,6 +64,7 @@ TF_DECLARE_WEAK_PTRS(GlfSimpleLightingContext);
 ///
 class UsdImagingGLEngine : private boost::noncopyable {
 public:
+    USDIMAGINGGL_API
     virtual ~UsdImagingGLEngine();
 
     enum DrawMode {
@@ -168,7 +170,9 @@ public:
     typedef TfHashMap<SdfPath, HitInfo, SdfPath::Hash> HitBatch;
 
     /// Support for batched drawing
+    USDIMAGINGGL_API
     virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
+    USDIMAGINGGL_API
     virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
 
     /// Entry point for kicking off a render
@@ -176,30 +180,37 @@ public:
 
     virtual void InvalidateBuffers() = 0;
 
+    USDIMAGINGGL_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
     /// Helper function to extract camera state from opengl and then
     /// call SetCameraState.
+    USDIMAGINGGL_API
     void SetCameraStateFromOpenGL();
 
     /// Helper function to extract lighting state from opengl and then
     /// call SetLights.
+    USDIMAGINGGL_API
     virtual void SetLightingStateFromOpenGL();
 
     /// Copy lighting state from another lighting context.
+    USDIMAGINGGL_API
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
     /// Set lighting state
+    USDIMAGINGGL_API
     virtual void SetLightingState(GlfSimpleLightVector const &lights,
                                   GlfSimpleMaterial const &material,
                                   GfVec4f const &sceneAmbient);
 
     /// Sets the root transform.
+    USDIMAGINGGL_API
     virtual void SetRootTransform(GfMatrix4d const& xf);
 
     /// Sets the root visibility.
+    USDIMAGINGGL_API
     virtual void SetRootVisibility(bool isVisible);
 
     // selection highlighting
@@ -207,18 +218,22 @@ public:
     /// Sets (replaces) the list of prim paths that should be included in selection
     /// highlighting. These paths may include root paths which will be expanded
     /// internally.
+    USDIMAGINGGL_API
     virtual void SetSelected(SdfPathVector const& paths);
 
     /// Clear the list of prim paths that should be included in selection
     /// highlighting.
+    USDIMAGINGGL_API
     virtual void ClearSelected();
 
     /// Add a path with instanceIndex to the list of prim paths that should be
     /// included in selection highlighting. UsdImagingDelegate::ALL_INSTANCES
     /// can be used for highlighting all instances if path is an instancer.
+    USDIMAGINGGL_API
     virtual void AddSelected(SdfPath const &path, int instanceIndex);
 
     /// Sets the selection highlighting color.
+    USDIMAGINGGL_API
     virtual void SetSelectionColor(GfVec4f const& color);
 
     /// Finds closest point of interesection with a frustum by rendering.
@@ -232,6 +247,7 @@ public:
     /// intersection point in world space (i.e. \p projectionMatrix and
     /// \p viewMatrix factored back out of the result).
     ///
+    USDIMAGINGGL_API
     virtual bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -241,7 +257,8 @@ public:
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL);
+        int *outHitInstanceIndex = NULL,
+        int *outHitElementIndex = NULL);
 
     /// A callback function to control collating intersection test hits.
     /// See the documentation for TestIntersectionBatch() below for more detail.
@@ -274,6 +291,7 @@ public:
     /// hits to be accumulated across multiple calls to \cTestIntersection. Hits
     /// to any single SdfPath will be overwritten on successive calls.
     ///
+    USDIMAGINGGL_API
     virtual bool TestIntersectionBatch(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -284,16 +302,29 @@ public:
         PathTranslatorCallback pathTranslator,
         HitBatch *outHit);
 
+    /// Using an Id extracted from an Id render, returns the associated
+    /// rprim path.
+    ///
+    /// Note that this function doesn't resolve instancer relationship.
+    /// returning prim can be a prototype mesh which may not exist in usd stage.
+    /// It can be resolved to the actual usd prim and corresponding instance
+    /// index by GetPrimPathFromInstanceIndex().
+    ///
+    USDIMAGINGGL_API
+    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
+
+
     /// Using colors extracted from an Id render, returns the associated
     /// prim path and optional instance index.
     ///
-    /// note that this function doesn't resolve instancer relationship.
+    /// Note that this function doesn't resolve instancer relationship.
     /// returning prim can be a prototype mesh which may not exist in usd stage.
     /// It can be resolved to the actual usd prim and corresponding instance
     /// index by GetPrimPathFromInstanceIndex().
     ///
     /// XXX: consider renaming to GetRprimPathFromPrimIdColor
     ///
+    USDIMAGINGGL_API
     virtual SdfPath GetPrimPathFromPrimIdColor(
         GfVec4i const & primIdColor,
         GfVec4i const & instanceIdColor,
@@ -313,6 +344,7 @@ public:
     /// instance roots that must be traversed to get to the rprim. The last prim
     /// in this vector is always the resolved (or forwarded) rprim.
     /// 
+    USDIMAGINGGL_API
     virtual SdfPath GetPrimPathFromInstanceIndex(
         SdfPath const& protoRprimPath,
         int instanceIndex,
@@ -322,16 +354,20 @@ public:
 
     /// Returns true if the resulting image is fully converged.
     /// (otherwise, caller may need to call Render() again to refine the result)
+    USDIMAGINGGL_API
     virtual bool IsConverged() const;
 
     /// Return the typevector of available render-graph delegate plugins.
-    virtual std::vector<TfType> GetRenderGraphPlugins();
+    USDIMAGINGGL_API
+    virtual std::vector<TfType> GetRendererPlugins();
 
     /// Set the current render-graph delegate to \p type.
     /// the plugin for the type will be loaded if not yet.
-    virtual bool SetRenderGraphPlugin(TfType const &type);
+    USDIMAGINGGL_API
+    virtual bool SetRendererPlugin(TfType const &type);
 
     /// Returns GPU resource allocation info
+    USDIMAGINGGL_API
     virtual VtDictionary GetResourceAllocation() const;
 
 protected:

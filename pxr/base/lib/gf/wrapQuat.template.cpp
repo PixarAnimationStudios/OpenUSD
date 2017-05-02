@@ -50,7 +50,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string __repr__({{ QUAT }} const &self) {
     return TF_PY_REPR_PREFIX + "Quat{{ SUFFIX }}(" +
@@ -60,6 +62,8 @@ static string __repr__({{ QUAT }} const &self) {
 
 // Zero-initialized default ctor for python.
 static {{ QUAT }} *__init__() { return new {{ QUAT }}(0); }
+
+} // anonymous namespace 
 
 void wrapQuat{{ SUFFIX }}()
 {    
@@ -142,5 +146,3 @@ void wrapQuat{{ SUFFIX }}()
         TfPySequenceToPython<std::vector<{{ QUAT }}> > >();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

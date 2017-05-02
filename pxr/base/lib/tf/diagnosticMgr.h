@@ -242,24 +242,24 @@ public:
         }
 
         TF_API
-        ErrorIterator Post(const char* fmt, ...) const
+        void Post(const char* fmt, ...) const
             ARCH_PRINTF_FUNCTION(2,3);
 
         TF_API
-        ErrorIterator PostQuietly(const char* fmt, ...) const
+        void PostQuietly(const char* fmt, ...) const
             ARCH_PRINTF_FUNCTION(2,3);
 
         TF_API
-        ErrorIterator Post(const std::string& msg) const;
+        void Post(const std::string& msg) const;
 
         TF_API
-        ErrorIterator PostWithInfo(
+        void PostWithInfo(
                 const std::string& msg,
                 TfDiagnosticInfo info = TfDiagnosticInfo()) const;
 
         TF_API
-        ErrorIterator PostQuietly(const std::string& msg,
-                            TfDiagnosticInfo info = TfDiagnosticInfo()) const;
+        void PostQuietly(const std::string& msg,
+                         TfDiagnosticInfo info = TfDiagnosticInfo()) const;
 
       private:
         TfCallContext _context;

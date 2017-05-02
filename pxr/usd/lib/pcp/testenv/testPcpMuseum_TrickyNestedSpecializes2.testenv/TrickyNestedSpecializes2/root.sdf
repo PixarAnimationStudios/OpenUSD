@@ -1,0 +1,30 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates the expected behavior when nesting
+    specializes arcs in namespace. In this test case, /Root and
+    /Root/Child have two separate specializes arcs. For /Root/Child,
+    the specializes arc that is more local (/Class_2) is selected
+    as stronger than the ancestral opinion from /Class_1.
+    """
+)
+
+class "Class_1"
+{
+    over "Child"
+    {
+    }
+}
+
+class "Class_2"
+{
+}
+
+def "Root" (
+    references = @./ref.sdf@</Ref>
+)
+{
+    over "Child"
+    {
+    }
+}

@@ -1,0 +1,327 @@
+Loading @ErrorConnectionPermissionDenied/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences>
+
+Prim Stack:
+    root.sdf             /PermissionsAcrossReferences
+    ref.sdf              /Reference
+
+Child names:
+     ['PrivatePrimFromRef', 'PublicPrimFromRef', 'ChildFromRef', 'PrivatePrimFromRoot', 'PublicPrimFromRoot', 'ChildFromRoot']
+
+Property names:
+     ['privateAttrFromRef', 'publicAttrFromRef', 'privateAttrFromRoot', 'publicAttrFromRoot']
+
+Property stacks:
+/PermissionsAcrossReferences.privateAttrFromRef:
+    ref.sdf              /Reference.privateAttrFromRef
+/PermissionsAcrossReferences.privateAttrFromRoot:
+    root.sdf             /PermissionsAcrossReferences.privateAttrFromRoot
+/PermissionsAcrossReferences.publicAttrFromRef:
+    ref.sdf              /Reference.publicAttrFromRef
+/PermissionsAcrossReferences.publicAttrFromRoot:
+    root.sdf             /PermissionsAcrossReferences.publicAttrFromRoot
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/PrivatePrimFromRef>
+
+Prim Stack:
+    ref.sdf              /Reference/PrivatePrimFromRef
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/PublicPrimFromRef>
+
+Prim Stack:
+    ref.sdf              /Reference/PublicPrimFromRef
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/ChildFromRef>
+
+Prim Stack:
+    ref.sdf              /Reference/ChildFromRef
+
+Property names:
+     ['relInRef']
+
+Property stacks:
+/PermissionsAcrossReferences/ChildFromRef.relInRef:
+    ref.sdf              /Reference/ChildFromRef.relInRef
+
+Relationship targets:
+/PermissionsAcrossReferences/ChildFromRef.relInRef:
+    /PermissionsAcrossReferences/PrivatePrimFromRef
+    /PermissionsAcrossReferences/PublicPrimFromRef
+    /PermissionsAcrossReferences.privateAttrFromRef
+    /PermissionsAcrossReferences.publicAttrFromRef
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/PrivatePrimFromRoot>
+
+Prim Stack:
+    root.sdf             /PermissionsAcrossReferences/PrivatePrimFromRoot
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/PublicPrimFromRoot>
+
+Prim Stack:
+    root.sdf             /PermissionsAcrossReferences/PublicPrimFromRoot
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossReferences/ChildFromRoot>
+
+Prim Stack:
+    root.sdf             /PermissionsAcrossReferences/ChildFromRoot
+
+Property names:
+     ['relInRoot']
+
+Property stacks:
+/PermissionsAcrossReferences/ChildFromRoot.relInRoot:
+    root.sdf             /PermissionsAcrossReferences/ChildFromRoot.relInRoot
+
+Relationship targets:
+/PermissionsAcrossReferences/ChildFromRoot.relInRoot:
+    /PermissionsAcrossReferences/PublicPrimFromRef
+    /PermissionsAcrossReferences/PrivatePrimFromRoot
+    /PermissionsAcrossReferences/PublicPrimFromRoot
+    /PermissionsAcrossReferences.publicAttrFromRef
+    /PermissionsAcrossReferences.privateAttrFromRoot
+    /PermissionsAcrossReferences.publicAttrFromRoot
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits>
+
+Prim Stack:
+    root.sdf             /PermissionsAcrossInherits
+    ref.sdf              /ReferenceWithLocalClass
+
+Child names:
+     ['Class', 'Instance']
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Class>
+
+Prim Stack:
+    ref.sdf              /ReferenceWithLocalClass/Class
+
+Child names:
+     ['PrivatePrimFromClass', 'PublicPrimFromClass', 'ChildFromClass']
+
+Property names:
+     ['privateAttrFromClass', 'publicAttrFromClass']
+
+Property stacks:
+/PermissionsAcrossInherits/Class.privateAttrFromClass:
+    ref.sdf              /ReferenceWithLocalClass/Class.privateAttrFromClass
+/PermissionsAcrossInherits/Class.publicAttrFromClass:
+    ref.sdf              /ReferenceWithLocalClass/Class.publicAttrFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Class/PrivatePrimFromClass>
+
+Prim Stack:
+    ref.sdf              /ReferenceWithLocalClass/Class/PrivatePrimFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Class/PublicPrimFromClass>
+
+Prim Stack:
+    ref.sdf              /ReferenceWithLocalClass/Class/PublicPrimFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Class/ChildFromClass>
+
+Prim Stack:
+    ref.sdf              /ReferenceWithLocalClass/Class/ChildFromClass
+
+Property names:
+     ['relInClass']
+
+Property stacks:
+/PermissionsAcrossInherits/Class/ChildFromClass.relInClass:
+    ref.sdf              /ReferenceWithLocalClass/Class/ChildFromClass.relInClass
+
+Relationship targets:
+/PermissionsAcrossInherits/Class/ChildFromClass.relInClass:
+    /PermissionsAcrossInherits/Class/PrivatePrimFromClass
+    /PermissionsAcrossInherits/Class/PublicPrimFromClass
+    /PermissionsAcrossInherits/Class.privateAttrFromClass
+    /PermissionsAcrossInherits/Class.publicAttrFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Instance>
+
+Prim Stack:
+    root.sdf             /PermissionsAcrossInherits/Instance
+    ref.sdf              /ReferenceWithLocalClass/Instance
+    ref.sdf              /ReferenceWithLocalClass/Class
+
+Child names:
+     ['PrivatePrimFromClass', 'PublicPrimFromClass', 'ChildFromClass']
+
+Property names:
+     ['privateAttrFromClass', 'publicAttrFromClass', 'relInInstance', 'relInRootInstance']
+
+Property stacks:
+/PermissionsAcrossInherits/Instance.privateAttrFromClass:
+    ref.sdf              /ReferenceWithLocalClass/Class.privateAttrFromClass
+/PermissionsAcrossInherits/Instance.publicAttrFromClass:
+    ref.sdf              /ReferenceWithLocalClass/Class.publicAttrFromClass
+/PermissionsAcrossInherits/Instance.relInInstance:
+    ref.sdf              /ReferenceWithLocalClass/Instance.relInInstance
+/PermissionsAcrossInherits/Instance.relInRootInstance:
+    root.sdf             /PermissionsAcrossInherits/Instance.relInRootInstance
+
+Relationship targets:
+/PermissionsAcrossInherits/Instance.relInInstance:
+    /PermissionsAcrossInherits/Instance/PublicPrimFromClass
+    /PermissionsAcrossInherits/Instance.publicAttrFromClass
+/PermissionsAcrossInherits/Instance.relInRootInstance:
+    /PermissionsAcrossInherits/Instance/PublicPrimFromClass
+    /PermissionsAcrossInherits/Instance.publicAttrFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Instance/PrivatePrimFromClass>
+
+Prim Stack:
+    ref.sdf              /ReferenceWithLocalClass/Class/PrivatePrimFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Instance/PublicPrimFromClass>
+
+Prim Stack:
+    ref.sdf              /ReferenceWithLocalClass/Class/PublicPrimFromClass
+
+------------------------------------------------------------------------
+Results for composing </PermissionsAcrossInherits/Instance/ChildFromClass>
+
+Prim Stack:
+    ref.sdf              /ReferenceWithLocalClass/Class/ChildFromClass
+
+Property names:
+     ['relInClass']
+
+Property stacks:
+/PermissionsAcrossInherits/Instance/ChildFromClass.relInClass:
+    ref.sdf              /ReferenceWithLocalClass/Class/ChildFromClass.relInClass
+
+Relationship targets:
+/PermissionsAcrossInherits/Instance/ChildFromClass.relInClass:
+    /PermissionsAcrossInherits/Instance/PrivatePrimFromClass
+    /PermissionsAcrossInherits/Instance/PublicPrimFromClass
+    /PermissionsAcrossInherits/Instance.privateAttrFromClass
+    /PermissionsAcrossInherits/Instance.publicAttrFromClass
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_1>
+
+Prim Stack:
+    root.sdf             /CulledPermissions_1
+    culled.sdf           /CulledPermissions_1
+
+Child names:
+     ['Foo']
+
+Property names:
+     ['rel']
+
+Property stacks:
+/CulledPermissions_1.rel:
+    culled.sdf           /CulledPermissions_1.rel
+
+Relationship targets:
+/CulledPermissions_1.rel:
+    /CulledPermissions_1/Foo/NonExistentPrim
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_1/Foo>
+
+Prim Stack:
+    culled.sdf           /CulledPermissions_1/Foo
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_2>
+
+Prim Stack:
+    root.sdf             /CulledPermissions_2
+    culled.sdf           /CulledPermissions_2_1
+    culled.sdf           /CulledPermissions_2_2
+
+Child names:
+     ['Foo']
+
+Property names:
+     ['rel']
+
+Property stacks:
+/CulledPermissions_2.rel:
+    culled.sdf           /CulledPermissions_2_2.rel
+
+Relationship targets:
+/CulledPermissions_2.rel:
+    /CulledPermissions_2/Foo.x
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_2/Foo>
+
+Prim Stack:
+    culled.sdf           /CulledPermissions_2_1/Foo
+
+Property names:
+     ['x']
+
+Property stacks:
+/CulledPermissions_2/Foo.x:
+    culled.sdf           /CulledPermissions_2_1/Foo.x
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_3>
+
+Prim Stack:
+    root.sdf             /CulledPermissions_3
+    root.sdf             /CulledPermissions_3{pin=stable}
+    culled_stable.sdf    /CulledModel
+    culled_payload.sdf   /CulledModelPayload
+
+Variant Selections:
+    {pin = stable}
+
+Child names:
+     ['sim']
+
+Property names:
+     ['colliders']
+
+Property stacks:
+/CulledPermissions_3.colliders:
+    culled_stable.sdf    /CulledModel.colliders
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_3/sim>
+
+Prim Stack:
+    culled_payload.sdf   /CulledModelPayload/sim
+
+Child names:
+     ['CollisionRig']
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_3/sim/CollisionRig>
+
+Prim Stack:
+    culled_payload.sdf   /CulledModelPayload/sim/CollisionRig
+
+Child names:
+     ['FiztCollBody']
+
+------------------------------------------------------------------------
+Results for composing </CulledPermissions_3/sim/CollisionRig/FiztCollBody>
+
+Prim Stack:
+    culled_payload.sdf   /CulledModelPayload/sim/CollisionRig/FiztCollBody
+

@@ -25,6 +25,7 @@
 #define USD_ADAPTER_REGISTRY_H
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
@@ -42,7 +43,8 @@ typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
 #define USD_IMAGING_ADAPTER_KEY_TOKENS          \
     ((instanceAdapterKey, "__instanceAdapter")) \
 
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens, 
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens,
+                         USDIMAGING_API,
                          USD_IMAGING_ADAPTER_KEY_TOKENS);
 
 /// \class UsdImagingAdapterRegistry
@@ -66,8 +68,10 @@ public:
     /// crashing or executing slowly.
     ///
     /// Driven by by the USDIMAGING_ENABLE_PLUGINS environment variable.
+    USDIMAGING_API
     static bool AreExternalPluginsEnabled();
 
+    USDIMAGING_API
     static UsdImagingAdapterRegistry& GetInstance() {
         return TfSingleton<UsdImagingAdapterRegistry>::GetInstance();
     }
@@ -76,9 +80,11 @@ public:
     /// registered to handle the given \p adapterKey. This key is either
     /// a prim typename or a key specified in UsdImagingAdapterKeyTokens.
     /// Returns NULL if no adapter was registered for this key.
+    USDIMAGING_API
     UsdImagingPrimAdapterSharedPtr ConstructAdapter(TfToken const& adapterKey);
 };
 
+USDIMAGING_API_TEMPLATE_CLASS(TfSingleton<UsdImagingAdapterRegistry>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

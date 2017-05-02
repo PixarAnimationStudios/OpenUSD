@@ -28,6 +28,7 @@
 #define __PX_VP20_UTILS_H__
 
 #include "pxr/pxr.h"
+#include "px_vp20/api.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
@@ -43,14 +44,18 @@ class px_vp20Utils
 {
 public:
     /// Take VP2.0 lighting information and import it into opengl lights
+    PX_VP20_API
     static bool setupLightingGL(const MHWRender::MDrawContext& context);
+    PX_VP20_API
     static void unsetLightingGL(const MHWRender::MDrawContext& context);
 
     /// Translate a Maya MDrawContext into a GlfSimpleLightingContext.
+    PX_VP20_API
     static GlfSimpleLightingContextRefPtr GetLightingContextFromDrawContext(
             const MHWRender::MDrawContext& context);
 
     /// Renders the given bounding box in the given \p color via OpenGL.
+    PX_VP20_API
     static bool RenderBoundingBox(
             const MBoundingBox& bounds,
             const GfVec4f& color,

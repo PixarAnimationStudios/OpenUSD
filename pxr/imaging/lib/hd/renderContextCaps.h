@@ -25,8 +25,10 @@
 #define HD_RENDER_CONTEXT_CAPS_H
 
 #include "pxr/pxr.h"
-#include <boost/noncopyable.hpp>
+#include "pxr/imaging/hd/api.h"
 #include "pxr/base/tf/singleton.h"
+
+#include <boost/noncopyable.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -51,12 +53,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdRenderContextCaps : boost::noncopyable {
 public:
-
+    HD_API
     static HdRenderContextCaps &GetInstance();
 
     /// Returns true if the current GL context supports Hydra.
     /// Minimum OpenGL version to run Hydra is currently OpenGL 4.0.
     /// Note that glew needs to be initialized too.
+    HD_API
     bool SupportsHydra() const;
 
     // GL version
@@ -96,6 +99,7 @@ private:
     friend class TfSingleton<HdRenderContextCaps>;
 };
 
+HD_API_TEMPLATE_CLASS(TfSingleton<HdRenderContextCaps>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

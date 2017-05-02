@@ -38,17 +38,20 @@
 
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::vector;
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bool
 _Set(const UsdShadeOutput &self, object val, const UsdTimeCode &time) 
 {
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
+
+} // anonymous namespace 
 
 void wrapUsdShadeOutput()
 {
@@ -83,6 +86,4 @@ void wrapUsdShadeOutput()
         TfPySequenceToPython<std::vector<Output> > >();
 }
 
-
-PXR_NAMESPACE_CLOSE_SCOPE
 

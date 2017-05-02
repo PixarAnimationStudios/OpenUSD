@@ -1,0 +1,34 @@
+#usda 1.0
+
+def Xform "Asset" {
+    def "Looks" {
+        def Material "BaseMaterial" {
+        }
+        def Material "ChildMaterial" (
+            specializes = [ </Asset/Looks/BaseMaterial> ]
+        )
+        {
+        }
+    }
+}
+
+def Xform "Set" {
+    def "SetChild" {
+        def "ReferencedAsset" (
+            references = [ </Asset> ]
+        )
+        {
+        }
+    }
+}
+
+def Xform "Shot" {
+    def "Set" (
+        references = [ </Set> ]
+    )
+    {
+        # We want to validate that, at the shot-level, BaseMaterial
+        # still does evaluate as *the* base material for ChildMaterial,
+        # even across a reference arc.
+    }
+}

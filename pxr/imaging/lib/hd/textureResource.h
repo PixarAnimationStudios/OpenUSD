@@ -25,17 +25,21 @@
 #define HD_TEXTURE_RESOURCE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/enums.h"
+
+#include "pxr/imaging/glf/texture.h"
+#include "pxr/imaging/glf/textureHandle.h"
 #include "pxr/imaging/garch/gl.h"
+
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/gf/vec4f.h"
 
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/glf/texture.h"
-#include "pxr/imaging/glf/textureHandle.h"
-
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+
+#include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,20 +51,24 @@ public:
     typedef size_t ID;
 
     /// Returns the hash value of the texture for \a sourceFile
+    HD_API
     static ID ComputeHash(TfToken const & sourceFile);
+    HD_API
     static ID ComputeFallbackPtexHash();
+    HD_API
     static ID ComputeFallbackUVHash();
 
+    HD_API
     virtual ~HdTextureResource();
 
     virtual bool IsPtex() const = 0;
 
     virtual GLuint GetTexelsTextureId() = 0;
     virtual GLuint GetTexelsSamplerId() = 0;
-    virtual GLuint64EXT GetTexelsTextureHandle() = 0;
+    virtual uint64_t GetTexelsTextureHandle() = 0;
 
     virtual GLuint GetLayoutTextureId() = 0;
-    virtual GLuint64EXT GetLayoutTextureHandle() = 0;
+    virtual uint64_t GetLayoutTextureHandle() = 0;
 
     virtual size_t GetMemoryUsed() = 0;
 };
@@ -68,20 +76,30 @@ public:
 class HdSimpleTextureResource : public HdTextureResource
                               , boost::noncopyable {
 public:
+    HD_API
     HdSimpleTextureResource(GlfTextureHandleRefPtr const &textureHandle, bool isPtex);
+    HD_API
     HdSimpleTextureResource(GlfTextureHandleRefPtr const &textureHandle, bool isPtex, 
         HdWrap wrapS, HdWrap wrapT, HdMinFilter minFilter, HdMagFilter magFilter);
+    HD_API
     virtual ~HdSimpleTextureResource();
 
+    HD_API
     virtual bool IsPtex() const;
 
+    HD_API
     virtual GLuint GetTexelsTextureId();
+    HD_API
     virtual GLuint GetTexelsSamplerId();
-    virtual GLuint64EXT GetTexelsTextureHandle();
+    HD_API
+    virtual uint64_t GetTexelsTextureHandle();
 
+    HD_API
     virtual GLuint GetLayoutTextureId();
-    virtual GLuint64EXT GetLayoutTextureHandle();
+    HD_API
+    virtual uint64_t GetLayoutTextureHandle();
 
+    HD_API
     virtual size_t GetMemoryUsed();
 
 private:

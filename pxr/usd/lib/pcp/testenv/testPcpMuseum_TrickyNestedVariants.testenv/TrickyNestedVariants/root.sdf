@@ -1,0 +1,44 @@
+#sdf 1.4.32
+(
+    """
+    This example has variants on prims inside variants.
+    It exercises nested variant composition and strength order.
+    """
+)
+
+def MfScope "A" (
+    variantSets = ["v1"]
+    variants = { string v1 = "x" }
+)
+{
+    variantSet "v1" = {
+        "x" ( add references = [ @./ref.sdf@</RAx> ] ) {
+            over "B" (
+                add variantSets = ["v2"]
+                variants = { string v2 = "y" }
+            )
+            {
+                variantSet "v2" = {
+                    "y" ( add references = [ @./ref.sdf@</RBxy> ] ) {
+                        over "C" (
+                            add variantSets = ["v3"]
+                            variants = { string v3 = "z" }
+                        )
+                        {
+                            variantSet "v3" = {
+                                "z" ( add references = [ @./ref.sdf@</RCxyz> ] ) {
+                                }
+                            }
+                        }
+                    }
+                }
+                def MfScope "C" ( add references = [ @./ref.sdf@</RCx> ] ) {
+                }
+            }
+        }
+    }
+    def MfScope "B" ( add references = [ @./ref.sdf@</RB> ] ) {
+        def MfScope "C" ( add references = [ @./ref.sdf@</RC> ] ) {
+        }
+    }
+}

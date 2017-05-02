@@ -164,8 +164,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outputs)
 );
 
-UsdShadeShader::operator UsdShadeConnectableAPI () const {
-        return UsdShadeConnectableAPI(GetPrim());
+UsdShadeShader::operator UsdShadeConnectableAPI () const 
+{
+    return UsdShadeConnectableAPI(GetPrim());
+}
+
+UsdShadeConnectableAPI 
+UsdShadeShader::ConnectableAPI() const
+{
+    return UsdShadeConnectableAPI(GetPrim());
 }
 
 UsdShadeParameter

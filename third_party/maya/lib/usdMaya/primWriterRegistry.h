@@ -27,8 +27,9 @@
 /// \file primWriterRegistry.h
 
 #include "pxr/pxr.h"
-#include "usdMaya/primWriterArgs.h"
-#include "usdMaya/primWriterContext.h"
+#include "usdMaya/api.h"
+#include "usdMaya/MayaPrimWriter.h"
+#include "usdMaya/FunctorPrimWriter.h"
 
 #include <boost/function.hpp>
 
@@ -65,28 +66,62 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// general support to come in the future.
 struct PxrUsdMayaPrimWriterRegistry
 {
-    typedef boost::function< bool (
-            const PxrUsdMayaPrimWriterArgs&,
-            PxrUsdMayaPrimWriterContext*) > WriterFn;
+    typedef std::function< MayaPrimWriterPtr (
+            MDagPath &curDag,
+            UsdStageRefPtr& stage,
+            const JobExportArgs& args) > WriterFactoryFn;
 
-    /// \brief Register \p fn as a writer provider for \p mayaType.
-    static void Register(const std::string& mayaType, WriterFn fn);
+    /// \brief Register \p fn as a factory function providing a
+    /// \link MayaPrimWriter subclass that can be used to write \p mayaType.
+    /// If you can't provide a MayaPrimWriter for the given arguments,
+    /// return a null pointer.
+    ///
+    /// Example for registering a writer factory in your custom plugin:
+    /// \code{.cpp}
+    /// class MyWriter : public MayaPrimWriter {
+    ///     static MayaPrimWriterPtr Create(
+    ///             MDagPath &curDag,
+    ///             UsdStageRefPtr& stage,
+    ///             const JobExportArgs& args);
+    /// };
+    /// TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimWriterRegistry, MyWriter) {
+    ///     PxrUsdMayaPrimWriterRegistry::Register("MyCustomPrim",
+    ///             MyWriter::Create);
+    /// }
+    /// \endcode
+    PXRUSDMAYA_API
+    static void Register(const std::string& mayaType, WriterFactoryFn fn);
 
     /// \brief Finds a writer if one exists for \p mayaTypeName.
     ///
     /// If there is no writer plugin for \p mayaTypeName, this will return 
     /// a value that evaluates to false.
-    static WriterFn Find(const std::string& mayaTypeName);
+    PXRUSDMAYA_API
+    static WriterFactoryFn Find(const std::string& mayaTypeName);
 };
 
 // Note, TF_REGISTRY_FUNCTION_WITH_TAG needs a type to register with so we
 // create a dummy struct in the macro.
+
+/// \brief Defines a writer function for the given Maya type; the function
+/// should write a USD prim for the given Maya node. The return status indicates
+/// whether the operation succeeded.
+///
+/// Example:
+/// \code{.cpp}
+/// PXRUSDMAYA_DEFINE_WRITER(myCustomMayaNode, args, context) {
+///     context->GetUsdStage()->DefinePrim(context->GetAuthorPath());
+///     return true;
+/// }
+/// \endcode
 #define PXRUSDMAYA_DEFINE_WRITER(mayaTypeName, argsVarName, ctxVarName)\
 struct PxrUsdMayaWriterDummy_##mayaTypeName { }; \
 static bool PxrUsdMaya_PrimWriter_##mayaTypeName(const PxrUsdMayaPrimWriterArgs&, PxrUsdMayaPrimWriterContext*); \
 TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimWriterRegistry, PxrUsdMayaWriterDummy_##mayaTypeName) \
 {\
-    PxrUsdMayaPrimWriterRegistry::Register(#mayaTypeName, PxrUsdMaya_PrimWriter_##mayaTypeName);\
+    PxrUsdMayaPrimWriterRegistry::Register(#mayaTypeName,\
+            FunctorPrimWriter::CreateFactory(\
+            PxrUsdMaya_PrimWriter_##mayaTypeName));\
 }\
 bool PxrUsdMaya_PrimWriter_##mayaTypeName(const PxrUsdMayaPrimWriterArgs& argsVarName, PxrUsdMayaPrimWriterContext* ctxVarName)
 

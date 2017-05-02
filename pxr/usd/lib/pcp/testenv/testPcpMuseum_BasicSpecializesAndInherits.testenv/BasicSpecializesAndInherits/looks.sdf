@@ -1,0 +1,20 @@
+#sdf 1.4.32
+
+def "Looks"
+{
+    def "BaseMaterial"
+    {
+    }
+
+    def "Material" (inherits = </Looks/BaseMaterial>)
+    {
+    }
+
+    def "Metal" (inherits = </Looks/Material>)
+    {
+    }
+
+    def "Brass" (specializes = </Looks/Metal>)
+    {
+    }
+}

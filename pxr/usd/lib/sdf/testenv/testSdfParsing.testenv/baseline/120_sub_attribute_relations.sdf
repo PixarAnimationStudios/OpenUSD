@@ -1,0 +1,20 @@
+#sdf 1.4.32
+(
+    endFrame = 1
+    framePrecision = 3
+    framesPerSecond = 24
+    startFrame = 1
+)
+
+def Scope "World"
+{
+    point3d[] points
+    rel test = </World.points> {
+        uniform int[] indices = [0, 1]
+        corresponding double[] weight = [0, 1]
+        indexing int[] autoSmoothedIndices = [0]
+        uniform corresponding double[] nothing
+    }
+    double tz.connect = </Some/Path.tz>
+}
+

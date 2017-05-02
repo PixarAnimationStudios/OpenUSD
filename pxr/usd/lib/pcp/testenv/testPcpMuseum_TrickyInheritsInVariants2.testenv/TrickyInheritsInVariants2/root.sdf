@@ -1,0 +1,31 @@
+#sdf 1.4.32
+(
+    """
+    This museum case is similar to TrickyInheritsInVariants. It demonstrates
+    how the variant selection for a set remains consistent throughout a 
+    prim index across multiple arcs. Inherit arcs in particular are tricky
+    because they require a recursive prim index computation, which then
+    needs a way to determine if there any relevant variant selections have
+    already been made in the parent computation.
+
+    This museum case has been distilled from bug 83587. With that bug,
+    this museum case would wind up including opinions from both the
+    full and tidscene modelComplexity variants; the correct behavior
+    is to include only the full variant.
+    """
+)
+
+class "_class_Model" (
+    variants = {
+        string modelComplexity = "full"
+    }
+)
+{
+}
+
+def Model "Sarah" (
+    inherits = </_class_Model>
+    references = @./Sarah_modelComplexity.sdf@</Sarah>
+)
+{
+}

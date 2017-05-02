@@ -1,0 +1,19 @@
+Loading @TrickyVariantWeakerSelection3/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    root.sdf             /Model{modelComplexity=full}
+    geo.sdf              /Model
+    geo.sdf              /Model{K_hierarchy=full}
+
+Variant Selections:
+    {K_hierarchy = full}
+    {modelComplexity = full}
+

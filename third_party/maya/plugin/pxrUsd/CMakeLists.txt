@@ -21,6 +21,8 @@ pxr_plugin(${PXR_PACKAGE}
     PYTHON_FILES
         plugInfo.json
         testenv/testPxrUsdAlembicChaser.py
+
+    DISABLE_PRECOMPILED_HEADERS
 )
 
 pxr_test_scripts(

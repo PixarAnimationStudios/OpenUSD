@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import argparse, sys, signal, os
+import argparse, sys, os
 from pxr import Sdf, Usd
 
 def Err(msg):
@@ -45,10 +45,6 @@ def PrintReport(fname, info, summaryOnly):
     print ''
 
 def main():
-    # restore nix signal handling defaults to allow output
-    # redirection and the like.
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
-
     parser = argparse.ArgumentParser(
         prog=os.path.basename(sys.argv[0]), 
         description='Write information about a usd crate (usdc) file to stdout')
@@ -73,4 +69,9 @@ def main():
         PrintReport(fname, info, args.summary)
             
 if __name__ == "__main__":
+    # Restore signal handling defaults to allow output redirection and the like.
+    import platform
+    if platform.system() != 'Windows':
+        import signal
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     main()

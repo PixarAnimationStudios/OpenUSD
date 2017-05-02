@@ -32,15 +32,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-HdSceneDelegate::HdSceneDelegate()
-    : _index(new HdRenderIndex)
-    , _delegateID(SdfPath::AbsoluteRootPath())
-{
-}
-
-HdSceneDelegate::HdSceneDelegate(HdRenderIndexSharedPtr const& parentIndex, 
-                    SdfPath const& delegateID)
+HdSceneDelegate::HdSceneDelegate(HdRenderIndex *parentIndex,
+                                 SdfPath const& delegateID)
     : _index(parentIndex)
     , _delegateID(delegateID)
 {
@@ -74,16 +67,8 @@ HdSceneDelegate::IsEnabled(TfToken const& option) const
 }
 
 /*virtual*/
-bool
-HdSceneDelegate::IsInCollection(SdfPath const& id, 
-                            TfToken const& collectionName)
-{
-    return true;
-}
-
-/*virtual*/
 TfToken
-HdSceneDelegate::GetRenderTag(SdfPath const& id)
+HdSceneDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
 {
     return HdTokens->geometry;
 }

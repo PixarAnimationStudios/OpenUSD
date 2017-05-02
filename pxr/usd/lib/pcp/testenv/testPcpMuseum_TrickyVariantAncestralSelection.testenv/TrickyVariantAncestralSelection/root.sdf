@@ -1,0 +1,33 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates how ancestral variant selections
+    are incorporated during composition. 
+
+    The prim /Root/B/C has ancestral variant selections from references 
+    /A/B/C and /B/C in ref2.sdf, as well as a non-ancestral selection
+    in /C. /C is the stronger source, so we have {v1=C} for /Root/B/C.
+    Variant selections from stronger arc types also take precedence,
+    so we also have {v2=Z} (from the implied inherit arc).
+    """
+)
+
+over "_class_A1" 
+{
+    over "B"
+    {
+        over "C" (
+            variants = {
+                string v2 = "Z"
+            }
+        )
+        {
+        }
+    }
+}
+
+def Scope "Root" (
+    references = @./ref.sdf@</A1>
+)
+{
+}

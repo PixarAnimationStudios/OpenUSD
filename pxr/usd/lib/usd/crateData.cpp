@@ -592,15 +592,22 @@ public:
                                 newSamples.times.Get().end(), time);
         if (iter == newSamples.times.Get().end() || *iter != time)
             return;
-        
-        auto index = iter-newSamples.times.Get().begin();
-        // Make the samples mutable, which may invalidate 'iter'.
-        _crateFile->MakeTimeSampleTimesAndValuesMutable(newSamples);
-        newSamples.times.GetMutable().erase(
-            newSamples.times.GetMutable().begin() + index);
-        newSamples.values.erase(newSamples.values.begin() + index);
-        
-        fieldValue->UncheckedSwap(newSamples);
+
+        // If we're removing the last sample, remove the entire field to be
+        // consistent with SdfData's implementation.
+        if (newSamples.times.Get().size() == 1) {
+            Erase(id, SdfDataTokens->TimeSamples);
+        } else {
+            // Otherwise remove just the one sample.
+            auto index = iter-newSamples.times.Get().begin();
+            // Make the samples mutable, which may invalidate 'iter'.
+            _crateFile->MakeTimeSampleTimesAndValuesMutable(newSamples);
+            newSamples.times.GetMutable().erase(
+                newSamples.times.GetMutable().begin() + index);
+            newSamples.values.erase(newSamples.values.begin() + index);
+            
+            fieldValue->UncheckedSwap(newSamples);
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////

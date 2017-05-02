@@ -103,18 +103,6 @@ try:
 except Exception:
     pass
 
-def setDebugSymbols(pattern, value=True):
-    """Set all TfDebug symbols matching pattern to value (either True or False).
-    The only wild-card matching supported is that pattern may end in a '*',
-    which matches all symbols which begin with pattern.  The symbol names set by this
-    call are returned."""
-    return Debug.SetDebugSymbolsByName(pattern, value)
-    
-def listDebugSymbols(prefix=""):
-    """Returns a list of all registered TfDebug symbols starting with prefix."""
-
-    return [s for s in Debug.GetDebugSymbolNames() if s and s.startswith(prefix)]
-
 def Warn(msg, template=""):
     """Issue a warning via the TfDiagnostic system.
 

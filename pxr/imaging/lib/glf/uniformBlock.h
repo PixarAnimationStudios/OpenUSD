@@ -27,10 +27,11 @@
 /// \file glf/uniformBlock.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
-#include "pxr/imaging/garch/gl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,19 +47,24 @@ class GlfUniformBlock : public TfRefBase, public TfWeakBase {
 public:
 
     /// Returns a new instance.
+    GLF_API
     static GlfUniformBlockRefPtr New();
 
+    GLF_API
     virtual ~GlfUniformBlock();
 
     /// Binds the uniform buffer using a bindingMap and identifier.
+    GLF_API
     void Bind(GlfBindingMapPtr const & bindingMap,
               std::string const & identifier);
 
     /// Updates the content of the uniform buffer. If the size
     /// is different, the buffer will be reallocated.
+    GLF_API
     void Update(const void *data, int size);
 
 protected:
+    GLF_API
     GlfUniformBlock();
 
 private:

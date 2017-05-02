@@ -39,14 +39,14 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
         (PrimWriter)
 );
 
-typedef std::map<std::string, PxrUsdMayaPrimWriterRegistry::WriterFn> _Registry;
+typedef std::map<std::string, PxrUsdMayaPrimWriterRegistry::WriterFactoryFn> _Registry;
 static _Registry _reg;
 
 /* static */
 void 
 PxrUsdMayaPrimWriterRegistry::Register(
         const std::string& mayaTypeName,
-        PxrUsdMayaPrimWriterRegistry::WriterFn fn)
+        PxrUsdMayaPrimWriterRegistry::WriterFactoryFn fn)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
             "Registering UsdMayaPrimWriter for maya type %s.\n", mayaTypeName.c_str());
@@ -60,7 +60,7 @@ PxrUsdMayaPrimWriterRegistry::Register(
 }
 
 /* static */
-PxrUsdMayaPrimWriterRegistry::WriterFn
+PxrUsdMayaPrimWriterRegistry::WriterFactoryFn
 PxrUsdMayaPrimWriterRegistry::Find(
         const std::string& mayaTypeName)
 {
@@ -68,7 +68,7 @@ PxrUsdMayaPrimWriterRegistry::Find(
 
     // unfortunately, usdTypeName is diff from the tfTypeName which we use to
     // register.  do the conversion here.
-    WriterFn ret = NULL;
+    WriterFactoryFn ret = NULL;
     if (TfMapLookup(_reg, mayaTypeName, &ret)) {
         return ret;
     }

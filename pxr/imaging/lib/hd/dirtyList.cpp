@@ -44,6 +44,7 @@ _FilterByRootPaths(SdfPathVector* paths, HdRenderIndex const& index,
     SdfPathVector::iterator idIt, idEnd;
     SdfPathVector::const_iterator rootIt = collection.GetRootPaths().begin();
     SdfPathVector::const_iterator rootItEnd = collection.GetRootPaths().end();
+    TfToken const& repr = collection.GetReprName();
 
     // If the collection is empty no processing is required and
     // we will early out, otherwise dereferencing rootIt will crash hd
@@ -106,7 +107,7 @@ _FilterByRootPaths(SdfPathVector* paths, HdRenderIndex const& index,
         // SdfPath::operator<, which is slow. It would be nice to improve this
         // in the future, but caching it here is better for playback
         // performance, despite the std::map hit.
-        if (index.IsInCollection(*idIt, collection.GetName())) {
+        if (collection.HasRenderTag(index.GetRenderTag(*idIt, repr))) {
             newPaths.push_back(*idIt);
         }
 
@@ -146,7 +147,8 @@ HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdDirtyBits mask)
     HD_TRACE_FUNCTION();
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyListsRebuilt);
     ids->resize(0);
-
+    
+    TfToken const & repr = _collection.GetReprName();
     SdfPathVector roots = _collection.GetRootPaths();
     SdfPathVector delegateIDs;
     _renderIndex.GetDelegateIDsWithDirtyRprims(mask, &delegateIDs);
@@ -199,9 +201,10 @@ HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdDirtyBits mask)
         TF_FOR_ALL(it, directAdd) {
             TF_FOR_ALL(rprimID, _renderIndex.GetDelegateRprimIDs(*it)) {
                 if (mask == 0 || tracker.GetRprimDirtyBits(*rprimID) & mask) {
-                    if (_renderIndex.IsInCollection(*rprimID,
-                                                    _collection.GetName()))
+                    if (_collection.HasRenderTag(
+                            _renderIndex.GetRenderTag(*rprimID, repr))) {
                         ids->push_back(*rprimID);
+                    }
                 }
             }
         }
@@ -266,7 +269,8 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
     // DirtyBits may change.
     if (col.GetName() != _collection.GetName()
         || col.GetReprName() != _collection.GetReprName()
-        || col.IsForcedRepr() != _collection.IsForcedRepr()) {
+        || col.IsForcedRepr() != _collection.IsForcedRepr()
+        || col.GetRenderTags() != _collection.GetRenderTags()) {
         return false;
     }
 
@@ -285,6 +289,7 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
     ITR oldI = _collection.GetRootPaths().cbegin();
     ITR oldEnd = _collection.GetRootPaths().cend();
     HdRenderIndex& index = _renderIndex;
+    TfToken const & repr = col.GetReprName();
 
     TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): ApplyEdit\n", (void*)this);
 
@@ -321,7 +326,7 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
             if (!d.empty()) {
                 _dirtyIds.reserve(_dirtyIds.size() + d.size());
                 for (auto const& path : d) {
-                    if (index.IsInCollection(path, col.GetName())) {
+                    if (col.HasRenderTag(index.GetRenderTag(path, repr))) {
                         _dirtyIds.push_back(path);
                     }
                 }
@@ -329,7 +334,7 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
                 SdfPathVector const& r = index.GetRprimSubtree(*newI);
                 _dirtyIds.reserve(_dirtyIds.size() + r.size());
                 for (auto const& path : r) {
-                    if (index.IsInCollection(path, col.GetName())) {
+                    if (col.HasRenderTag(index.GetRenderTag(path, repr))) {
                         _dirtyIds.push_back(path);
                     }
                 }

@@ -32,10 +32,14 @@
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
+#include <vector>
 
 using namespace boost::python;
+using std::vector;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static tuple
 _GetDeclarationInfo(const UsdGeomPrimvar &self)
@@ -79,6 +83,25 @@ _ComputeFlattened(const UsdGeomPrimvar &self,
     return UsdVtValueToPython(retValue);
 }    
 
+static vector<double>
+_GetTimeSamples(const UsdGeomPrimvar &self) 
+{
+    vector<double> result;
+    self.GetTimeSamples(&result);
+    return result;
+}
+
+static vector<double>
+_GetTimeSamplesInInterval(const UsdGeomPrimvar &self,
+                          const GfInterval& interval) 
+{
+    vector<double> result;
+    self.GetTimeSamplesInInterval(interval, &result);
+    return result;
+}
+
+} // anonymous namespace 
+
 void wrapUsdGeomPrimvar()
 {
     typedef UsdGeomPrimvar Primvar;
@@ -117,6 +140,10 @@ void wrapUsdGeomPrimvar()
         .def("Get", _Get, (arg("time")=UsdTimeCode::Default()))
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
 
+        .def("GetTimeSamples", _GetTimeSamples)
+        .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval)
+        .def("ValueMightBeTimeVarying", &Primvar::ValueMightBeTimeVarying)
+
         .def("SetIndices", &Primvar::SetIndices, 
             (arg("indices"),
              arg("time")=UsdTimeCode::Default()))
@@ -138,6 +165,4 @@ void wrapUsdGeomPrimvar()
 
     implicitly_convertible<Primvar, UsdAttribute>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
 

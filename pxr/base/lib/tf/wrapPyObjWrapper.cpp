@@ -30,7 +30,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 struct Tf_PyObjWrapperFromPython {
     Tf_PyObjWrapperFromPython() {
@@ -84,6 +86,8 @@ _RoundTripWrapperIndexTest(TfPyObjWrapper const &wrapper, int index)
     return boost::python::object(wrapper[index]);
 }
 
+} // anonymous namespace 
+
 void wrapPyObjWrapper()
 {
     to_python_converter<TfPyObjWrapper, Tf_PyObjWrapperToPython>();
@@ -93,5 +97,3 @@ void wrapPyObjWrapper()
     def("_RoundTripWrapperCallTest", _RoundTripWrapperCallTest);
     def("_RoundTripWrapperIndexTest", _RoundTripWrapperIndexTest);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

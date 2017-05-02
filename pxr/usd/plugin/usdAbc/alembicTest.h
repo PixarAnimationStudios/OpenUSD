@@ -25,15 +25,18 @@
 #define USDABC_ALEMBICTEST_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdAbc/api.h"
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// Test Alembic conversion.
+USDABC_API
 bool UsdAbc_TestAlembic(const std::string& pathname);
 
 /// Read Usd file from \p srcPathname and write as Alembic to \p dstPathname.
+USDABC_API
 bool UsdAbc_WriteAlembic(const std::string& srcPathname,
                          const std::string& dstPathname);
 

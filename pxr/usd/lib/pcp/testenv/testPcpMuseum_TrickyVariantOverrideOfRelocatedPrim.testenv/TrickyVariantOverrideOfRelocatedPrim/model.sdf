@@ -1,0 +1,13 @@
+#sdf 1.4.32
+
+def Scope "Model"
+{
+    def Scope "UnrelocatedSphere"
+    {
+        def GprimSphere "Geom"
+        {
+            custom string x = "model_default"
+        }
+    }
+}
+

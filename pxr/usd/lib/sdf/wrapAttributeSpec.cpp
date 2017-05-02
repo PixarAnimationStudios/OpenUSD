@@ -23,7 +23,9 @@
 //
 /// \file wrapAttributeSpec.cpp
 
+#ifndef TF_MAX_ARITY
 #define TF_MAX_ARITY 8
+#endif
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
@@ -39,33 +41,6 @@
 using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-static 
-std::vector<TfToken> 
-_WrapGetAllowedTokens(
-    const SdfAttributeSpec& spec)
-{
-    VtTokenArray tokenArray = spec.GetAllowedTokens();
-    return std::vector<TfToken>(tokenArray.begin(), tokenArray.end());
-}
-
-static void 
-_WrapSetAllowedTokens(
-    SdfAttributeSpec& spec,
-    const std::vector<TfToken>& tokens)
-{
-    VtTokenArray tokenArray;
-    tokenArray.assign(tokens.begin(), tokens.end());
-    spec.SetAllowedTokens(tokenArray);
-}
-
-static
-SdfPyChildrenProxy<SdfConnectionMappersView>
-_WrapGetConnectionMappersProxy(const SdfAttributeSpec& self)
-{
-    return SdfPyChildrenProxy<SdfConnectionMappersView>(
-        self.GetConnectionMappers());
-}
 
 template <>
 class Sdf_PyMarkerPolicy<SdfAttributeSpec> 
@@ -96,6 +71,39 @@ public:
     }
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+
+static 
+std::vector<TfToken> 
+_WrapGetAllowedTokens(
+    const SdfAttributeSpec& spec)
+{
+    VtTokenArray tokenArray = spec.GetAllowedTokens();
+    return std::vector<TfToken>(tokenArray.begin(), tokenArray.end());
+}
+
+static void 
+_WrapSetAllowedTokens(
+    SdfAttributeSpec& spec,
+    const std::vector<TfToken>& tokens)
+{
+    VtTokenArray tokenArray;
+    tokenArray.assign(tokens.begin(), tokens.end());
+    spec.SetAllowedTokens(tokenArray);
+}
+
+static
+SdfPyChildrenProxy<SdfConnectionMappersView>
+_WrapGetConnectionMappersProxy(const SdfAttributeSpec& self)
+{
+    return SdfPyChildrenProxy<SdfConnectionMappersView>(
+        self.GetConnectionMappers());
+}
+
 static
 SdfPyMarkerProxy<SdfAttributeSpec>
 _WrapGetMarkers(const SdfAttributeSpec& spec)
@@ -121,6 +129,8 @@ _WrapSetMarkers(SdfAttributeSpec& attr, const dict& d)
     }
     attr.SetConnectionMarkers(markers);
 }
+
+} // anonymous namespace 
 
 void wrapAttributeSpec()
 {
@@ -252,5 +262,3 @@ void wrapAttributeSpec()
         .setattr("DisplayUnitKey", SdfFieldKeys->DisplayUnit)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

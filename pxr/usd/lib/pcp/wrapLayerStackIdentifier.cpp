@@ -33,7 +33,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static
 std::string
@@ -45,6 +47,8 @@ _Repr(const PcpLayerStackIdentifier& x)
                           TfPyRepr(x.sessionLayer).c_str(),
                           TfPyRepr(x.pathResolverContext).c_str());
 }
+
+} // anonymous namespace 
 
 void wrapLayerStackIdentifier()
 {
@@ -81,5 +85,3 @@ void wrapLayerStackIdentifier()
         .def(self >= self)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

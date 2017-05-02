@@ -42,9 +42,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #if defined(ARCH_OS_WINDOWS)
+#include <functional>
 #include <io.h>
 #include <process.h>
 #include <Windows.h>
+#include <WinIoCtl.h>
 #else
 #include <alloca.h>
 #include <sys/mman.h>
@@ -85,7 +87,7 @@ int ArchRmDir(const char* path)
 #endif
 
 bool
-ArchStatIsWritable(const struct stat *st)
+ArchStatIsWritable(const ArchStatType *st)
 {
 #if defined(ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
     if (st) {
@@ -105,8 +107,24 @@ ArchStatIsWritable(const struct stat *st)
 #endif
 }
 
+bool
+ArchGetModificationTime(const char* pathname, double* time)
+{
+    ArchStatType st;
+#if defined(ARCH_OS_WINDOWS)
+    if (_stat64(pathname, &st) == 0)
+#else
+    if (stat(pathname, &st) == 0)
+#endif
+    {
+        *time = ArchGetModificationTime(st);
+        return true;
+    }
+    return false;
+}
+
 double
-ArchGetModificationTime(const struct stat& st)
+ArchGetModificationTime(const ArchStatType& st)
 {
 #if defined(ARCH_OS_LINUX)
     return st.st_mtim.tv_sec + 1e-9*st.st_mtim.tv_nsec;
@@ -230,72 +248,88 @@ ArchMakeTmpFile(const std::string& prefix, std::string* pathname)
     return ArchMakeTmpFile(ArchGetTmpDir(), prefix, pathname);
 }
 
+#if defined (ARCH_OS_WINDOWS)
+
+namespace {
+std::string
+MakeUnique(
+    const std::string& sTemplate,
+    std::function<bool(const char* name)> func,
+    int maxRetry = 1000)
+{
+    static const bool init = (srand(GetTickCount()), true);
+
+    // Copy template to a writable buffer.
+    const auto length = sTemplate.size();
+    char* cTemplate = reinterpret_cast<char*>(alloca(length + 1));
+    strcpy_s(cTemplate, length + 1, sTemplate.c_str());
+
+    // Fill template with random characters from table.
+    const char* table = "abcdefghijklmnopqrstuvwxyz123456";
+    std::string::size_type offset = length - 6;
+    int retry = 0;
+    do {
+        unsigned int x = (static_cast<unsigned int>(rand()) << 15) + rand();
+        cTemplate[offset + 0] = table[(x >> 25) & 31];
+        cTemplate[offset + 1] = table[(x >> 20) & 31];
+        cTemplate[offset + 2] = table[(x >> 15) & 31];
+        cTemplate[offset + 3] = table[(x >> 10) & 31];
+        cTemplate[offset + 4] = table[(x >>  5) & 31];
+        cTemplate[offset + 5] = table[(x      ) & 31];
+
+        // Invoke callback and if successful return the path.  Otherwise
+        // repeat with a different random name for up to maxRetry times.
+        if (func(cTemplate)) {
+            return cTemplate;
+        }
+    } while (++retry < maxRetry);
+
+    return std::string();
+}
+
+}
+
+#endif
+
 int
 ArchMakeTmpFile(const std::string& tmpdir,
                 const std::string& prefix, std::string* pathname)
 {
-#if defined(ARCH_OS_WINDOWS)
-    char filename[ARCH_PATH_MAX];
-    UINT ret = ::GetTempFileName(tmpdir.c_str(), prefix.c_str(), 0, filename);
-    if (ret == 0)
-    {
-        std::string errorMsg("Call to GetTempFileName failed because ");
-        errorMsg.append(ArchStrSysError(::GetLastError()));
-        ARCH_ERROR(errorMsg.c_str());
-        return -1;
-    }
-
-    // Attempt to create the file
-    HANDLE fileHandle = ::CreateFile(filename,
-            GENERIC_WRITE,          // open for write
-            0,                      // not for sharing
-            NULL,                   // default security
-            CREATE_ALWAYS,          // overwrite existing
-            FILE_ATTRIBUTE_NORMAL,  //normal file
-            NULL);                  // no template
-
-    if (fileHandle == INVALID_HANDLE_VALUE) {
-        std::string errorMsg("Call to CreateFile failed because ");
-        errorMsg.append(ArchStrSysError(::GetLastError()));
-        ARCH_ERROR(errorMsg.c_str());
-        return -1;
-    }
-
-    // Close the file
-    ::CloseHandle(fileHandle);
-
-    if (pathname)
-    {
-        *pathname = filename;
-    }
-
-    int fd = 0;
-    _sopen_s(&fd, filename, _O_RDWR, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    return fd;
-#else
     // Format the template.
     std::string sTemplate =
         ArchStringPrintf("%s/%s.XXXXXX", tmpdir.c_str(), prefix.c_str());
 
+#if defined(ARCH_OS_WINDOWS)
+    int fd = -1;
+    auto cTemplate =
+        MakeUnique(sTemplate, [&fd](const char* name){
+            _sopen_s(&fd, name, _O_CREAT | _O_EXCL | _O_RDWR,
+                     _SH_DENYNO, _S_IREAD | _S_IWRITE);
+            return fd != -1;
+        });
+#else
     // Copy template to a writable buffer.
     char* cTemplate = reinterpret_cast<char*>(alloca(sTemplate.size() + 1));
     strcpy(cTemplate, sTemplate.c_str());
+
     // Open the file.
     int fd = mkstemp(cTemplate);
+    if (fd != -1) {
+        // Make sure file is readable by group.  mkstemp created the
+        // file with 0600 permissions.  We want 0640.
+        //
+        fchmod(fd, 0640);
+    }
+#endif
 
     if (fd != -1) {
         // Save the path.
         if (pathname) {
             *pathname = cTemplate;
         }
-
-        // Make sure file is readable by group.  mkstemp created the
-        // file with 0600 permissions.  We want 0640.
-        //
-        fchmod(fd, 0640);
     }
+
     return fd;
-#endif
 }
 
 std::string
@@ -309,10 +343,10 @@ ArchMakeTmpSubdir(const std::string& tmpdir,
         ArchStringPrintf("%s/%s.XXXXXX", tmpdir.c_str(), prefix.c_str());
 
 #if defined(ARCH_OS_WINDOWS)
-    if (::CreateDirectory(sTemplate.c_str(), NULL))
-    {
-        retstr = sTemplate;
-    }
+    retstr =
+        MakeUnique(sTemplate, [](const char* name){
+            return CreateDirectory(name, NULL) != FALSE;
+        });
 #else
     // Copy template to a writable buffer.
     char* cTemplate = reinterpret_cast<char*>(alloca(sTemplate.size() + 1));
@@ -572,72 +606,132 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
 static inline DWORD ArchModeToAccess(int mode)
 {
     switch (mode) {
-    case F_OK: return FILE_GENERIC_EXECUTE;
+    case X_OK: return FILE_GENERIC_EXECUTE;
     case W_OK: return FILE_GENERIC_WRITE;
     case R_OK: return FILE_GENERIC_READ;
     default:   return FILE_ALL_ACCESS;
     }
 }
 
+static int Arch_FileAccessError()
+{
+    switch (GetLastError()) {
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+        // No such file.
+        errno = ENOENT;
+        return -1;
+
+    case ERROR_FILENAME_EXCED_RANGE:
+        // path too long
+        errno = ENAMETOOLONG;
+        return -1;
+
+    case ERROR_INVALID_NAME:
+    case ERROR_BAD_PATHNAME:
+    case ERROR_BAD_NETPATH:
+        // Invalid path.
+        errno = ENOTDIR;
+        return -1;
+
+    case ERROR_INVALID_DRIVE:
+    case ERROR_NOT_READY:
+        // Media is missing.
+        errno = EIO;
+        return -1;
+
+    case ERROR_INVALID_PARAMETER:
+        errno = EINVAL;
+        return -1;
+
+    default:
+        // Unexpected error.  Fall through to report access denied.
+
+    case ERROR_ACCESS_DENIED:
+        errno = EACCES;
+        return -1;
+    }
+}
+
 int ArchFileAccess(const char* path, int mode)
 {
-    SECURITY_INFORMATION securityInfo = OWNER_SECURITY_INFORMATION |
-                                        GROUP_SECURITY_INFORMATION |
-                                        DACL_SECURITY_INFORMATION;
-    bool result = false;
+    // Simple existence check is handled specially.
+    if (mode == F_OK) {
+        return (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES)
+                ? 0 : Arch_FileAccessError();
+    }
+
+    const SECURITY_INFORMATION securityInfo = OWNER_SECURITY_INFORMATION |
+                                              GROUP_SECURITY_INFORMATION |
+                                              DACL_SECURITY_INFORMATION;
+
+    // Get the SECURITY_DESCRIPTOR size.
     DWORD length = 0;
-
-    if (!GetFileSecurity(path, securityInfo, NULL, NULL, &length))
-    {
-        std::unique_ptr<unsigned char[]> buffer(new unsigned char[length]);
-        PSECURITY_DESCRIPTOR security = (PSECURITY_DESCRIPTOR)buffer.get();
-        if (GetFileSecurity(path, securityInfo, security, length, &length))
-        {
-            HANDLE token;
-            DWORD desiredAccess = TOKEN_IMPERSONATE | TOKEN_QUERY |
-                                  TOKEN_DUPLICATE | STANDARD_RIGHTS_READ;
-            if (!OpenThreadToken(GetCurrentThread(), desiredAccess, TRUE, &token))
-            {
-                if (!OpenProcessToken(GetCurrentProcess(), desiredAccess, &token))
-                {
-                    CloseHandle(token);
-                    return -1;
-                }
-            }
-
-            HANDLE duplicateToken;
-            if (DuplicateToken(token, SecurityImpersonation, &duplicateToken))
-            {
-                PRIVILEGE_SET privileges = {0};
-                DWORD grantedAccess = 0;
-                DWORD privilegesLength = sizeof(privileges);
-                BOOL accessStatus = FALSE;
-
-                GENERIC_MAPPING mapping;
-                mapping.GenericRead = FILE_GENERIC_READ;
-                mapping.GenericWrite = FILE_GENERIC_WRITE;
-                mapping.GenericExecute = FILE_GENERIC_EXECUTE;
-                mapping.GenericAll = FILE_ALL_ACCESS;
-
-                DWORD accessMask = ArchModeToAccess(mode);
-                MapGenericMask(&accessMask, &mapping);
-
-                if (AccessCheck(security,
-                                duplicateToken,
-                                accessMask,
-                                &mapping,
-                                &privileges,
-                                &privilegesLength,
-                                &grantedAccess,
-                                &accessStatus))
-                {
-                    result = (accessStatus == TRUE);
-                }
-                CloseHandle(duplicateToken);
-            }
-            CloseHandle(token);
+    if (!GetFileSecurity(path, securityInfo, NULL, 0, &length)) {
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+            return Arch_FileAccessError();
         }
     }
+
+    // Get the SECURITY_DESCRIPTOR.
+    std::unique_ptr<unsigned char[]> buffer(new unsigned char[length]);
+    PSECURITY_DESCRIPTOR security = (PSECURITY_DESCRIPTOR)buffer.get();
+    if (!GetFileSecurity(path, securityInfo, security, length, &length)) {
+        return Arch_FileAccessError();
+    }
+
+
+    HANDLE token;
+    DWORD desiredAccess = TOKEN_IMPERSONATE | TOKEN_QUERY |
+                          TOKEN_DUPLICATE | STANDARD_RIGHTS_READ;
+    if (!OpenThreadToken(GetCurrentThread(), desiredAccess, TRUE, &token))
+    {
+        if (!OpenProcessToken(GetCurrentProcess(), desiredAccess, &token))
+        {
+            CloseHandle(token);
+            errno = EACCES;
+            return -1;
+        }
+    }
+
+    bool result = false;
+    HANDLE duplicateToken;
+    if (DuplicateToken(token, SecurityImpersonation, &duplicateToken))
+    {
+        PRIVILEGE_SET privileges = {0};
+        DWORD grantedAccess = 0;
+        DWORD privilegesLength = sizeof(privileges);
+        BOOL accessStatus = FALSE;
+
+        GENERIC_MAPPING mapping;
+        mapping.GenericRead = FILE_GENERIC_READ;
+        mapping.GenericWrite = FILE_GENERIC_WRITE;
+        mapping.GenericExecute = FILE_GENERIC_EXECUTE;
+        mapping.GenericAll = FILE_ALL_ACCESS;
+
+        DWORD accessMask = ArchModeToAccess(mode);
+        MapGenericMask(&accessMask, &mapping);
+
+        if (AccessCheck(security,
+                        duplicateToken,
+                        accessMask,
+                        &mapping,
+                        &privileges,
+                        &privilegesLength,
+                        &grantedAccess,
+                        &accessStatus))
+        {
+            if (accessStatus) {
+                result = true;
+            }
+            else {
+                errno = EACCES;
+            }
+        }
+        CloseHandle(duplicateToken);
+    }
+    CloseHandle(token);
+
     return result ? 0 : -1;
 }
 

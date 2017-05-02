@@ -77,21 +77,6 @@ typedef std::vector<UsdRelationship> UsdRelationshipVector;
 ///
 /// Unlike UsdAttribute s, which can either be uniform over all time
 /// or vary in value over time, UsdRelationship is <b>always uniform</b>.
-///
-/// \section usd_relationship_instancing Relationships and Instancing
-///
-/// Relationships may have authored targets that point to objects beneath
-/// an instance prim.  Recall that these objects are exposed in the scenegraph
-/// under the instance's corresponding master prim and \em not under the 
-/// instance prim itself.  So, in these cases there will not be an object
-/// at the authored path.  Instead, the path to the corresponding object
-/// in the master prim must be used.
-///
-/// By default, GetTargets() and GetForwardedTargets() will automatically
-/// forward authored target paths to the corresponding path in the associated
-/// master prim.  This ensures that consumers will always receive the
-/// appropriate target path regardless of whether the target has been made
-/// instanceable.
 /// 
 /// \section usd_relationship_restrictions Relationship Restrictions
 ///
@@ -144,7 +129,8 @@ class UsdRelationship : public UsdProperty {
 public:
     /// Construct an invalid relationship.
     UsdRelationship()
-        : UsdProperty(UsdTypeRelationship, Usd_PrimDataHandle(), TfToken())
+        : UsdProperty(UsdTypeRelationship, Usd_PrimDataHandle(), SdfPath(), 
+                      TfToken())
     {
     }
 
@@ -207,36 +193,17 @@ public:
     /// Compose this relationship's targets and fill \p targets with the result.
     /// All preexisting elements in \p targets are lost.
     ///
-    /// By default, any relationship targets that point to a child prim or
-    /// a property of a child prim beneath an instanceable prim will be
-    /// forwarded to the corresponding object in the instance's master.
-    /// This can be disabled by setting \p forwardToObjectsInMasters
-    /// to false. This is useful when copying targets from one relationship
-    /// to another, since the relationship editing API does not accept
-    /// paths to prims in masters. However, note that doing this on a
-    /// relationship within a master may yield different results across
-    /// runs due to the selection of different instances to serve as the
-    /// master's source instance.
-    ///
-    /// This function may return duplicate target paths if the authored
-    /// targets point to objects in different instanceable prims that
-    /// ultimately correspond to the same master.
+    /// See \ref Usd_ScenegraphInstancing_TargetsAndConnections for details on 
+    /// behavior when targets point to objects beneath instance prims.
     ///
     /// The result is not cached, so will be recomputed on every query.
     USD_API
-    bool GetTargets(SdfPathVector* targets,
-                    bool forwardToObjectsInMasters = true) const;
+    bool GetTargets(SdfPathVector* targets) const;
 
     /// Compose this relationship's \em ultimate targets, taking into account
     /// "relationship forwarding", and fill \p targets with the result.  All
     /// preexisting elements in \p targets are lost.  This method never inserts
     /// relationship paths in \p targets.
-    ///
-    /// See documentation on GetTargets for information on the 
-    /// \p forwardToObjectsInMasters parameter. Note that setting this
-    /// parameter to false will stop the relationship forwarding process
-    /// at any targets that correspond to an object in a master. In this
-    /// case, this method will never return paths to an object in a master.
     ///
     /// When composition errors occur, continue to collect successfully
     /// composed targets, but return false to indicate to the caller that
@@ -252,13 +219,11 @@ public:
     /// when composition errors occur, relationships would be included,
     /// potentially triggering additional down stream errors.
     ///
-    /// See description of \ref usd_relationship_forwarding "Relationship
-    /// Forwarding" for details on the semantics.
+    /// See \ref usd_relationship_forwarding for details on the semantics.
     ///
     /// The result is not cached, so will be recomputed on every query.
     USD_API
-    bool GetForwardedTargets(SdfPathVector* targets,
-                             bool forwardToObjectsInMasters = true) const;
+    bool GetForwardedTargets(SdfPathVector* targets) const;
 
     /// Returns true if any target path opinions have been authored. 
     /// Note that this may include opinions that clear targets and may not 
@@ -275,26 +240,26 @@ private:
     friend struct UsdPrim_TargetFinder;
 
     UsdRelationship(const Usd_PrimDataHandle &prim,
+                    const SdfPath &proxyPrimPath,
                     const TfToken& relName)
-        : UsdProperty(UsdTypeRelationship, prim, relName) {}
+        : UsdProperty(UsdTypeRelationship, prim, proxyPrimPath, relName) {}
 
     UsdRelationship(UsdObjType objType,
                     const Usd_PrimDataHandle &prim,
+                    const SdfPath &proxyPrimPath,
                     const TfToken &propName)
-        : UsdProperty(objType, prim, propName) {}
+        : UsdProperty(objType, prim, proxyPrimPath, propName) {}
 
     SdfRelationshipSpecHandle _CreateSpec(bool fallbackCustom=true) const;
     bool _Create(bool fallbackCustom) const;
 
     bool _GetForwardedTargets(SdfPathVector* targets,
-                              bool includeForwardingRels,
-                              bool forwardToObjectsInMasters) const;
+                              bool includeForwardingRels) const;
 
     bool _GetForwardedTargets(SdfPathSet* visited, 
                               SdfPathSet* uniqueTargets,
                               SdfPathVector* targets,
-                              bool includeForwardingRels,
-                              bool forwardToObjectsInMasters) const;
+                              bool includeForwardingRels) const;
 
     SdfPath _GetTargetForAuthoring(const SdfPath &targetPath,
                                    std::string* whyNot = 0) const;

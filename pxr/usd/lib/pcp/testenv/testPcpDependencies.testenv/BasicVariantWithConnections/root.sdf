@@ -1,0 +1,19 @@
+#sdf 1.4.32
+(
+    """
+    This test exercises a reference to a main_cam model that
+    contains a variant with attribute connection and relationship
+    target paths.
+
+    In particular, note that the target paths do NOT include
+    variant selections.  This is because variant selections are
+    an aspect of paths as used to store opinions in a layer,
+    and are never used to identify objects in the scene.
+    """
+)
+
+def "main_cam" (
+    add references = @./camera.sdf@</camera>
+)
+{
+}

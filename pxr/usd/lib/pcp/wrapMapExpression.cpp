@@ -31,13 +31,17 @@
 using namespace boost::python;
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string
 _Str(const PcpMapExpression& e)
 {
     return e.GetString();
 }
+
+} // anonymous namespace 
 
 void
 wrapMapExpression()
@@ -74,5 +78,3 @@ wrapMapExpression()
         .add_property("isNull", &This::IsNull)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

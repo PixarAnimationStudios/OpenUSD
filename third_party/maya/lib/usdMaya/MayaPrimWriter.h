@@ -23,7 +23,9 @@
 //
 #ifndef PXRUSDMAYA_MAYAPRIMWRITER_H
 #define PXRUSDMAYA_MAYAPRIMWRITER_H
+
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "usdMaya/JobArgs.h"
 
 #include "pxr/usd/usd/stage.h"
@@ -42,6 +44,7 @@ class UsdTimeCode;
 class MayaPrimWriter
 {
   public:
+    PXRUSDMAYA_API
     MayaPrimWriter(
             MDagPath & iDag, 
             UsdStageRefPtr stage, 
@@ -55,17 +58,20 @@ class MayaPrimWriter
     ///
     /// Base implementation returns \c false, so gprim/shape-derived classes
     /// should override.
+    PXRUSDMAYA_API
     virtual bool exportsGprims() const;
     
     /// Does this PrimWriter add references on the UsdStage?
     ///
     /// Base implementation returns \c false.
+    PXRUSDMAYA_API
     virtual bool exportsReferences() const;
 
     /// Does this PrimWriter request that the traversal code skip its child
     /// nodes because this PrimWriter will handle its child nodes by itself?
     ///
     /// Base implementation returns \c false.
+    PXRUSDMAYA_API
     virtual bool shouldPruneChildren() const;
 
 public:
@@ -78,6 +84,7 @@ public:
 protected:
     void setValid(bool isValid) { mIsValid = isValid;};
     void setUsdPath(const SdfPath &newPath) { mUsdPath = newPath;};
+    PXRUSDMAYA_API
     bool writePrimAttrs(const MDagPath & iDag2, const UsdTimeCode &usdTime, UsdGeomImageable &primSchema);
 
   private:

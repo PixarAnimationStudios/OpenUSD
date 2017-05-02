@@ -32,10 +32,14 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 TF_INSTANTIATE_NOTICE_WRAPPER(PlugNotice::Base, TfNotice);
 TF_INSTANTIATE_NOTICE_WRAPPER(PlugNotice::DidRegisterPlugins, PlugNotice::Base);
+
+} // anonymous namespace 
 
 void
 wrapNotice()
@@ -51,5 +55,3 @@ wrapNotice()
                            return_value_policy<TfPySequenceToList>()))
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

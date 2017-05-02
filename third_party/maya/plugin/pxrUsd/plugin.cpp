@@ -33,6 +33,7 @@
 #include "usdMaya/pluginStaticData.h"
 #include "usdMaya/usdImport.h"
 #include "usdMaya/usdExport.h"
+#include "usdMaya/usdListShadingModes.h"
 #include "usdMaya/usdTranslatorImport.h"
 #include "usdMaya/usdTranslatorExport.h"
 
@@ -147,6 +148,14 @@ MStatus initializePlugin(
         status.perror("registerCommand usdImport");
     }
 
+    status = plugin.registerCommand("usdListShadingModes",
+                                    usdListShadingModes::creator,
+                                    usdListShadingModes::createSyntax);
+
+    if (!status) {
+        status.perror("registerCommand usdListShadingModes");
+    }
+    
     status = plugin.registerFileTranslator("pxrUsdImport", 
                                     "", 
                                     []() { 
@@ -190,6 +199,11 @@ MStatus uninitializePlugin(
     status = plugin.deregisterCommand("usdExport");
     if (!status) {
         status.perror("deregisterCommand usdExport");
+    }
+
+    status = plugin.deregisterCommand("usdListShadingModes");
+    if (!status) {
+        status.perror("deregisterCommand usdListShadingModes");
     }
 
     status = plugin.deregisterFileTranslator("pxrUsdImport");

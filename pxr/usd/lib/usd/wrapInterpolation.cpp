@@ -25,14 +25,10 @@
 #include "pxr/usd/usd/interpolation.h"
 #include "pxr/base/tf/pyEnum.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void
 wrapUsdInterpolationType()
 {
     TfPyWrapEnum<UsdInterpolationType>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

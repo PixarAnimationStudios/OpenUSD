@@ -34,7 +34,7 @@ using namespace std;
 using namespace boost::python;
 using namespace boost;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapStageCache()
 {
@@ -48,6 +48,3 @@ void wrapStageCache()
         .staticmethod("Clear")
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -1,0 +1,47 @@
+#sdf 1.4.32
+(
+    """
+    This museum case exercises the behavior when a target path authored
+    within a variant points to a relocated prim. Since a variant can
+    be thought of as a simple switch for local opinions, these target
+    paths should behave just like target paths authored directly on
+    the owning prim itself: they should use the post-relocation paths 
+    instead of the pre-relocation paths.
+    """
+)
+
+def "Root" (
+    references = @./ref.sdf@</Ref>
+    relocates = {
+        <Child> : <Anim/Child>,
+        <Child2> : <Anim/Child2>,
+        <Rig/Child> : <Anim/Child3>,
+        <Rig/Child2> : <Anim/Child4>
+    }
+    variantSets = ["v"]
+    variants = {
+        string v = "a"
+    }
+)
+{
+    add rel myRel = </Root/Anim/Child>
+
+    def "Anim"
+    {
+        over "Child"
+        {
+        }
+    }
+
+    variantSet "v" = {
+        "a" {
+            add rel myRel = </Root/Anim/Child2>
+            def "Rig" (
+                references = @./ref.sdf@</Ref>
+            )
+            {
+            }
+        }
+    }
+}
+

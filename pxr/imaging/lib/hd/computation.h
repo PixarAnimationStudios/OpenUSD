@@ -25,6 +25,7 @@
 #define HD_COMPUTATION_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -49,6 +50,7 @@ typedef std::vector<HdComputationSharedPtr> HdComputationVector;
 class HdComputation
 {
 public:
+    HD_API
     virtual ~HdComputation();
 
     /// Execute computation.

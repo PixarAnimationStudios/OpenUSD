@@ -1,0 +1,99 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class "Base" (
+    doc = 'This doc should only exist on the "Base" class.'
+)
+{
+    color3f myColorFloat = (1, 1, 1)
+    custom double myDouble
+    float myFloat = 1
+    normal3f[] myNormals
+    point3f[] myPoints
+    uniform bool myUniformBool = 0 (
+        doc = "Uniform bool, default false"
+    )
+    token myVaryingToken = "VariableTokenDefault" (
+        allowedTokens = ["VariableTokenAllowed1", "VariabletokenAllowed2"]
+        doc = "VariableToken attribute docs."
+    )
+    vector3f[] myVelocities
+    uchar unsignedChar
+    uint unsignedInt
+    uint64[] unsignedInt64Array
+}
+
+class Derived "Derived" (
+    doc = "Emphasized! Test Section"
+)
+{
+    rel binding = None (
+        doc = "This is my awesome relationship."
+    )
+    int[] cornerIndices = [] (
+        doc = "The vertex indices of all vertices that are sharp corners."
+    )
+    float[] cornerSharpnesses = [] (
+        doc = """The sharpness values for corners: each corner gets a single
+        sharpness value (Usd.Mesh.SHARPNESS_INFINITE for a perfectly sharp
+        corner), so the size of this array must match that of
+        'cornerIndices'"""
+    )
+    int[] creaseLengths = [] (
+        doc = """The length of this array specifies the number of creases on the
+        surface. Each element gives the number of (must be adjacent) vertices in
+        each crease, whose indices are linearly laid out in the 'creaseIndices'
+        attribute. Since each crease must be at least one edge long, each
+        element of this array should be greater than one."""
+    )
+    int[] holeIndices = [] (
+        doc = """The face indices (indexing into the 'faceVertexCounts'
+        attribute) of all faces that should be made invisible."""
+    )
+    token justDefault = "newToken" (
+        doc = "newToken should be included in the global token set."
+    )
+    color3f myColorFloat = (1, 1, 1)
+    custom double myDouble
+    float myFloat = 1
+    normal3f[] myNormals
+    point3f[] myPoints
+    uniform bool myUniformBool = 0 (
+        doc = "Uniform bool, default false"
+    )
+    token myVaryingToken = "VariableTokenDefault" (
+        allowedTokens = ["VariableTokenAllowed1", "VariabletokenAllowed2"]
+        doc = "VariableToken attribute docs."
+    )
+    float3[] myVecfArray
+    vector3f[] myVelocities
+    float namespaced:property = 1
+    float3 pivotPosition = (0, 0, 0) (
+        doc = """Rotation pivot position for this prim's transformation. 
+         Provided as advisory data only for use by authoring applications,
+         and should have no effect on the transformation encoded in the
+         'transform' attribute."""
+    )
+    asset[] testingAsset
+    matrix4d transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ) (
+        doc = """Double-precision transformation matrix, which should encode
+        the entire local transformation for a prim."""
+    )
+    uchar unsignedChar
+    uint unsignedInt
+    uint64[] unsignedInt64Array
+}
+
+class TestPxHairman "TestPxHairman"
+{
+    rel relCanShareApiNameWithAttr = None (
+        doc = "This exercises custom API naming."
+    )
+    float riStatements:attributes:user:Gofur_GeomOnHairdensity (
+        doc = "This exercises custom API naming."
+    )
+    custom float temp
+}
+

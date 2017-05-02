@@ -25,6 +25,7 @@
 #define HD_GLSL_PROGRAM_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resource.h"
 
@@ -45,37 +46,43 @@ class HdGLSLProgram
 public:
     typedef size_t ID;
 
+    HD_API
     HdGLSLProgram(TfToken const &role);
+    HD_API
     ~HdGLSLProgram();
 
     /// Returns the hash value of the program for \a sourceFile
+    HD_API
     static ID ComputeHash(TfToken const & sourceFile);
 
     /// Compile shader source of type
+    HD_API
     bool CompileShader(GLenum type, std::string const & source);
 
     /// Link the compiled shaders together.
+    HD_API
     bool Link();
 
     /// Validate if this program is a valid progam in the current context.
+    HD_API
     bool Validate() const;
 
     /// Returns HdResource of the program object.
-    HdResource const &GetProgram() const { return _program; };
+    HdResource const &GetProgram() const { return _program; }
 
     /// Returns HdResource of the global uniform buffer object for this program.
     HdResource const &GetGlobalUniformBuffer() const {
         return _uniformBuffer;
-    };
+    }
 
     /// Convenience method to get a shared compute shader program
+    HD_API
     static HdGLSLProgramSharedPtr GetComputeProgram(TfToken const &shaderToken);
 
 private:
     HdResource _program;
     HdResource _uniformBuffer;
 };
-
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

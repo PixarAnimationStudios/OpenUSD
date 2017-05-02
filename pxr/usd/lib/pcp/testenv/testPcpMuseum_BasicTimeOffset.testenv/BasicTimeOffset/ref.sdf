@@ -1,0 +1,6 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @./ref_sub.sdf@ (offset = 20) 
+    ]
+)

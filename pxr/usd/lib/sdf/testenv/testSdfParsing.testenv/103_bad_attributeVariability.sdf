@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+def MfScope "Test"
+{
+    # Can't change variability
+    double foo = 10
+    uniform double foo.connect = None
+}

@@ -46,6 +46,12 @@ TF_DEFINE_ENV_SETTING(GLF_IMAGE_PLUGIN_RESTRICTION, "",
 
 TF_INSTANTIATE_SINGLETON(GlfImageRegistry);
 
+GlfImageRegistry&
+GlfImageRegistry::GetInstance()
+{
+    return TfSingleton<GlfImageRegistry>::GetInstance();
+}
+
 GlfImageRegistry::GlfImageRegistry() :
     _typeMap(new GlfRankedTypeMap)
 {

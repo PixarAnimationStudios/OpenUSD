@@ -25,11 +25,13 @@
 #define HD_GL_UTILS_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/vt/value.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -75,6 +77,7 @@ class HdGLUtils {
 public:
     /// Reads the content of VBO back to VtArray.
     /// The \p vboOffset is expressed in bytes.
+    HD_API
     static VtValue ReadBuffer(GLint vbo,
                               int glDataType,
                               int numComponents,
@@ -85,11 +88,13 @@ public:
 
     /// Returns true if the shader has been successfully compiled.
     /// if not, returns false and fills the error log into reason.
+    HD_API
     static bool GetShaderCompileStatus(GLuint shader,
                                        std::string * reason = NULL);
 
     /// Returns true if the program has been successfully linked.
     /// if not, returns false and fills the error log into reason.
+    HD_API
     static bool GetProgramLinkStatus(GLuint program,
                                      std::string * reason = NULL);
 
@@ -106,16 +111,18 @@ public:
 
     /// Schedule the range to be copied. The consecutive ranges could be
     /// aggregated into a single copy where possible.
-    void AddRange(GLintptr readOffset,
-                  GLintptr writeOffset,
-                  GLsizeiptr copySize);
+    HD_API
+    void AddRange(ptrdiff_t readOffset,
+                  ptrdiff_t writeOffset,
+                  ptrdiff_t copySize);
 
     /// Execute GL buffer copy command to flush all scheduled range copies.
+    HD_API
     void Commit();
 
 private:
     struct _CopyUnit {
-        _CopyUnit(GLintptr read, GLintptr write, GLsizeiptr size)
+        _CopyUnit(ptrdiff_t read, ptrdiff_t write, ptrdiff_t size)
             : readOffset(read), writeOffset(write), copySize(size) {}
 
         bool Concat(_CopyUnit const &next) {
@@ -127,9 +134,9 @@ private:
             return false;
         }
 
-        GLintptr readOffset;
-        GLintptr writeOffset;
-        GLsizeiptr copySize;
+        ptrdiff_t readOffset;
+        ptrdiff_t writeOffset;
+        ptrdiff_t copySize;
     };
 
     std::vector<_CopyUnit> _queue;

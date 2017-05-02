@@ -1,0 +1,17 @@
+#sdf 1.4.32
+
+def Prim "Group"
+{
+    def "Model" (
+        add references = @./model.sdf@</Model>
+    )
+    {
+        over "LArm"
+        {
+        }
+
+        over "SymArm"
+        {
+        }
+    }
+}

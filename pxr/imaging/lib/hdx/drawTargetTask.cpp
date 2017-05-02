@@ -25,16 +25,16 @@
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
-#include "pxr/imaging/hdx/camera.h"
-#include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
 #include "pxr/imaging/hdx/drawTargetTask.h"
 #include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
+#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/drawTarget.h"
+
 #include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/sprim.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 
@@ -62,7 +62,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     HF_MALLOC_TAG_FUNCTION();
 
     TRACE_FUNCTION();
-    TfAutoMallocTag2 tag("GlimRg", __PRETTY_FUNCTION__);
+    TfAutoMallocTag2 tag("GlimRg", __ARCH_PRETTY_FUNCTION__);
 
     HdDirtyBits bits = _GetTaskDirtyBits();
 
@@ -104,11 +104,11 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
     HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
 
     unsigned drawTargetVersion
-        = changeTracker.GetStateVersion(HdxDrawTargetTokens->drawTargetSet);
+        = changeTracker.GetStateVersion(HdStDrawTargetTokens->drawTargetSet);
 
     if (_currentDrawTargetSetVersion != drawTargetVersion) {
-        HdxDrawTargetPtrConstVector drawTargets;
-        HdxDrawTarget::GetDrawTargets(delegate, &drawTargets);
+        HdStDrawTargetPtrConstVector drawTargets;
+        HdStDrawTarget::GetDrawTargets(delegate, &drawTargets);
 
         _renderPassesInfo.clear();
         _renderPasses.clear();
@@ -121,7 +121,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
              drawTargetNum < numDrawTargets;
              ++drawTargetNum) {
 
-            const HdxDrawTarget *drawTarget = drawTargets[drawTargetNum];
+            const HdStDrawTarget *drawTarget = drawTargets[drawTargetNum];
             if (drawTarget) {
                 if (drawTarget->IsEnabled()) {
                     HdxDrawTargetRenderPassUniquePtr pass(
@@ -156,7 +156,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
              ++renderPassIdx) {
             RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
 
-            const HdxDrawTarget *target = renderPassInfo.target;
+            const HdStDrawTarget *target = renderPassInfo.target;
             unsigned int targetVersion = target->GetVersion();
 
             if (renderPassInfo.version != targetVersion) {
@@ -186,13 +186,13 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
         RenderPassInfo &renderPassInfo =  _renderPassesInfo[renderPassIdx];
         HdxDrawTargetRenderPass *renderPass = _renderPasses[renderPassIdx].get();
         HdRenderPassStateSharedPtr &renderPassState = renderPassInfo.renderPassState;
-        const HdxDrawTarget *drawTarget = renderPassInfo.target;
+        const HdStDrawTarget *drawTarget = renderPassInfo.target;
 
         const SdfPath &cameraId = drawTarget->GetRenderPassState()->GetCamera();
 
         // XXX: Need to detect when camera changes and only update if
         // needed
-        const HdxCamera *camera = static_cast<const HdxCamera *>(
+        const HdStCamera *camera = static_cast<const HdStCamera *>(
                                   renderIndex.GetSprim(HdPrimTypeTokens->camera,
                                                        cameraId));
 
@@ -205,8 +205,8 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
 
         GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
 
-        VtValue viewMatrixVt  = camera->Get(HdxCameraTokens->worldToViewMatrix);
-        VtValue projMatrixVt  = camera->Get(HdxCameraTokens->projectionMatrix);
+        VtValue viewMatrixVt  = camera->Get(HdStCameraTokens->worldToViewMatrix);
+        VtValue projMatrixVt  = camera->Get(HdStCameraTokens->projectionMatrix);
         GfMatrix4d viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
 
         // XXX : If you need to change the following code that generates a 
@@ -218,7 +218,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
             resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0);
         projectionMatrix = projectionMatrix * yflip;
 
-        const VtValue &vClipPlanes = camera->Get(HdxCameraTokens->clipPlanes);
+        const VtValue &vClipPlanes = camera->Get(HdStCameraTokens->clipPlanes);
         const HdRenderPassState::ClipPlanesVector &clipPlanes =
                         vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 

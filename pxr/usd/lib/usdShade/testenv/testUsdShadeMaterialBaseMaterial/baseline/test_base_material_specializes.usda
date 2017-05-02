@@ -1,0 +1,36 @@
+#usda 1.0
+
+def "ModelShading"
+{
+    def "Materials"
+    {
+        def Material "ParentMaterial"
+        {
+            float interface:floatVal
+
+            def Shader "Shader_1"
+            {
+                rel connectedSourceFor:floatInput = </ModelShading/Materials/ParentMaterial/Shader_2.outputs:floatOutput>
+                float floatInput = 1
+            }
+
+            def Shader "Shader_2"
+            {
+                float outputs:floatOutput
+            }
+        }
+
+        def Material "ChildMaterial_1" (
+            specializes = </ModelShading/Materials/ParentMaterial>
+        )
+        {
+        }
+
+        def Material "ChildMaterial_2" (
+            specializes = </ModelShading/Materials/ParentMaterial>
+        )
+        {
+        }
+    }
+}
+

@@ -27,6 +27,7 @@
 /// \file glf/diagnostic.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/diagnostic.h"
 
@@ -44,20 +45,24 @@ PXR_NAMESPACE_OPEN_SCOPE
         GlfPostPendingGLErrors(__ARCH_PRETTY_FUNCTION__)
 
 /// Posts diagnostic errors for all GL errors in the current context.
+GLF_API
 void GlfPostPendingGLErrors(std::string const & where = std::string());
 
 /// Registers GlfDefaultDebugOutputMessageCallback as the 
 /// debug message callback for the current GL context.
+GLF_API
 void GlfRegisterDefaultDebugOutputMessageCallback();
 
 /// A GL debug output message callback method which posts diagnostic
 /// errors for messages of type DEBUG_TYPE_ERROR and diagnostic warnings
 /// for other message types.
+GLF_API
 void GlfDefaultDebugOutputMessageCallback(
         GLenum source, GLenum type, GLuint id, GLenum severity,
-        GLsizei length, GLchar const * message, GLvoid * userParam);
+        GLsizei length, char const * message, GLvoid const * userParam);
 
 /// Returns a string representation of debug output enum values.
+GLF_API
 char const * GlfDebugEnumToString(GLenum debugEnum);
 
 /// \class GlfGLQueryObject
@@ -66,7 +71,9 @@ char const * GlfDebugEnumToString(GLenum debugEnum);
 ///
 class GlfGLQueryObject : public boost::noncopyable {
 public:
+    GLF_API
     GlfGLQueryObject();
+    GLF_API
     ~GlfGLQueryObject();
 
     /// Begin query for the given \p target
@@ -75,32 +82,39 @@ public:
     ///   GL_ANY_SAMPLES_PASSED_CONSERVATIVE, GL_PRIMITIVES_GENERATED
     ///   GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN
     ///   GL_TIME_ELAPSED, GL_TIMESTAMP
+    GLF_API
     void Begin(GLenum target);
 
     /// equivalent to Begin(GL_SAMPLES_PASSED).
     /// The number of samples that pass the depth test for all drawing
     /// commands within the scope of the query will be returned.
+    GLF_API
     void BeginSamplesPassed();
 
     /// equivalent to Begin(GL_PRIMITIVES_GENERATED).
     /// The number of primitives sent to the rasterizer by the scoped
     /// drawing command will be returned.
+    GLF_API
     void BeginPrimitivesGenerated();
 
     /// equivalent to Begin(GL_TIME_ELAPSED).
     /// The time that it takes for the GPU to execute all of the scoped commands
     /// will be returned in nanoseconds.
+    GLF_API
     void BeginTimeElapsed();
 
     /// End query
+    GLF_API
     void End();
 
     /// Return the query result (synchronous)
     /// stalls CPU until the result becomes available.
+    GLF_API
     int64_t GetResult();
 
     /// Return the query result (asynchronous)
     /// returns 0 if the result hasn't been available.
+    GLF_API
     int64_t GetResultNoWait();
 
 private:

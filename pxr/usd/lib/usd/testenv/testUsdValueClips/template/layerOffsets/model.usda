@@ -1,0 +1,6 @@
+#usda 1.0
+(
+    subLayers = [
+        @./model_sub.usda@ (offset = 1)
+    ]
+)

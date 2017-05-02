@@ -54,7 +54,6 @@ HdRenderPass::HdRenderPass(HdRenderIndex *index)
     : _renderIndex(index)
     , _collectionVersion(0)
     , _collectionChanged(false)
-    , _renderTags()
     , _lastCullingDisabledState(false)
 {
 }
@@ -64,7 +63,6 @@ HdRenderPass::HdRenderPass(HdRenderIndex *index,
     : _renderIndex(index)
     , _collectionVersion(0)
     , _collectionChanged(false)
-    , _renderTags()
     , _lastCullingDisabledState(false)
 {
     // initialize
@@ -108,6 +106,10 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
             s << "    - " << i << "\n";
         }
         s << "  Repr: " << col.GetReprName() << "\n";
+        s << "  Render Tags: \n";
+        for (auto i : col.GetRenderTags()) {
+            s << "    - " << i << "\n";
+        }
 
         TF_DEBUG(HD_DIRTY_LIST).Msg("RenderPass(%p)::SetRprimCollection (%s) - "
             "constructing new DirtyList(%p) minorChange(%d) \n%s\n",
@@ -177,11 +179,9 @@ HdRenderPass::_PrepareCommandBuffer(
         // This loop will extract the tags and bucket the geometry in 
         // the different command buffers.
         size_t itemCount = 0;
-        _renderTags.clear();
         _cmdBuffers.clear();
         for (HdRenderIndex::HdDrawItemView::iterator it = items.begin();
                                                     it != items.end(); it++ ) {
-            _renderTags.push_back(it->first);
             _cmdBuffers[it->first].SwapDrawItems(&it->second, 
                                                  shaderBindingsVersion);
             itemCount += _cmdBuffers[it->first].GetTotalSize();
@@ -285,25 +285,7 @@ HdRenderPass::GetRenderTags()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // If this function is called after changing a collection and 
-    // before Execute, it is pretty expensive since it needs to 
-    // go through the rprims to figure out the bucketing everytime
-    HdChangeTracker& tracker = _renderIndex->GetChangeTracker();
-    const int  collectionVersion = 
-                            tracker.GetCollectionVersion(_collection.GetName());
-    
-    if (_collectionChanged || (_collectionVersion != collectionVersion)) {
-        HdRenderIndex::HdDrawItemView items = 
-                          _renderIndex->GetDrawItems(_collection);
-
-        _renderTags.clear();
-        for (HdRenderIndex::HdDrawItemView::iterator it = items.begin();
-                                                    it != items.end(); it++ ) {
-            _renderTags.push_back(it->first);
-        }
-    }
-
-    return _renderTags;
+    return _collection.GetRenderTags();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

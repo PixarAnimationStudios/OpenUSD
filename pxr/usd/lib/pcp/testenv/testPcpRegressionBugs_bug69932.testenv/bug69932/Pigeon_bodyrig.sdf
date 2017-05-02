@@ -1,0 +1,47 @@
+#sdf 1.4.32
+
+def Scope "CharRig" (
+    relocates = {
+        <Rig/LegsRig/LLegRig/Toes>: <Anim/Legs/LToes>
+    }
+)
+{
+    def Scope "Rig"
+    {
+        def Scope "LegsRig" (
+            add references = @./LegsRig.sdf@</LegsRig>
+        )
+        {
+            over "LLegRig"
+            {
+            }
+        }
+
+        def Scope "ToesRig"
+        {
+            class Scope "_Class_ToesRig"
+            {
+                def Scope "_Class_Toe"
+                {
+                    def Scope "Toe"
+                    {
+                    }
+                }
+            }
+
+            class Scope "LToesRig" (
+                inherits = <../_Class_ToesRig>
+            )
+            {
+            }
+        }
+    }
+
+    def Scope "Anim"
+    {
+        def Scope "Legs"
+        {
+        }
+    }
+}
+

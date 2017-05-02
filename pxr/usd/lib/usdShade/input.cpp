@@ -44,6 +44,7 @@ using std::string;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (connectability)
     (renderType)
 );
 
@@ -58,7 +59,12 @@ UsdShadeInput::GetBaseName() const
     string name = GetFullName();
     if (TfStringStartsWith(name, UsdShadeTokens->inputs)) {
         return TfToken(name.substr(UsdShadeTokens->inputs.GetString().size()));
+    } else if (UsdShadeUtils::ReadOldEncoding() && 
+               TfStringStartsWith(name, UsdShadeTokens->interface_)) {
+        return TfToken(name.substr(
+            UsdShadeTokens->interface_.GetString().size()));
     }
+    
     return GetFullName();
 }
 
@@ -150,11 +156,99 @@ bool
 UsdShadeInput::IsInput(const UsdAttribute &attr)
 {
     return attr && attr.IsDefined() && 
-            // Check the attribute's namespace only if reading of old encoding 
-            // is not supported.
-            (UsdShadeUtils::ReadOldEncoding() ? true :
+            // If reading of old encoding is supported, then assume it's      
+            // an input as long as it's not in the "outputs:" namespace.
+            // If support for reading the old encoding is disabled, then only
+            // identify as an input if the attr is in the "inputs:" namespace.
+            (UsdShadeUtils::ReadOldEncoding() ? 
+             !TfStringStartsWith(attr.GetName().GetString(), 
+                                UsdShadeTokens->outputs) :
              TfStringStartsWith(attr.GetName().GetString(), 
                                 UsdShadeTokens->inputs));
+}
+
+bool 
+UsdShadeInput::SetDocumentation(const std::string& docs) const
+{
+    if (!_attr) {
+        return false;
+    }
+
+    return _attr.SetDocumentation(docs);
+}
+
+std::string 
+UsdShadeInput::GetDocumentation() const
+{
+    if (!_attr) {
+        return "";
+    }
+
+    return _attr.GetDocumentation();
+}
+
+bool 
+UsdShadeInput::SetDisplayGroup(const std::string& docs) const
+{
+    if (!_attr) {
+        return false;
+    }
+
+    return _attr.SetDisplayGroup(docs);
+}
+
+std::string 
+UsdShadeInput::GetDisplayGroup() const
+{
+    if (!_attr) {
+        return "";
+    }
+
+    return _attr.GetDisplayGroup();
+}
+
+bool 
+UsdShadeInput::SetConnectability(const TfToken &connectability) const
+{
+    return _attr.SetMetadata(_tokens->connectability, connectability);
+}
+
+TfToken 
+UsdShadeInput::GetConnectability() const
+{
+    TfToken connectability; 
+    _attr.GetMetadata(_tokens->connectability, &connectability);
+
+    // If there's no authored connectability, then check the owner of the 
+    // input to see if it's a node-graph or a shader.
+    // If it's a node-graph, the default connectability is "interfaceOnly".
+    // If it's a shader, the default connectability is "full".
+    // 
+    // If the owner's type is unknown, then get the fallback value from the  
+    // schema registry.
+    // 
+    if (connectability.IsEmpty()) {
+        UsdShadeConnectableAPI connectable(GetPrim());
+        if (connectable.IsNodeGraph())
+            return UsdShadeTokens->interfaceOnly;
+        else if (connectable.IsShader()) {
+            return UsdShadeTokens->full;
+        }
+    } else {
+        return connectability;
+    }
+
+    static const VtValue fallback = SdfSchema::GetInstance().GetFallback(
+        _tokens->connectability);
+
+    return fallback.IsHolding<TfToken>() ? fallback.UncheckedGet<TfToken>()
+                                         : UsdShadeTokens->full;
+}
+
+bool 
+UsdShadeInput::ClearConnectability() const
+{
+    return _attr.ClearMetadata(_tokens->connectability);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

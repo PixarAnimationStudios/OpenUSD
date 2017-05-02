@@ -1,0 +1,107 @@
+Loading @bug92827/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Rig>
+
+Prim Stack:
+    root.sdf             /Rig
+
+Child names:
+     ['B', 'Class', 'Other']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Class>
+
+Prim Stack:
+    root.sdf             /Rig/Class
+
+Child names:
+     ['A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Class/A>
+
+Prim Stack:
+    root.sdf             /Rig/Class/A
+
+Property names:
+     ['foo']
+
+Property stacks:
+/Rig/Class/A.foo:
+    root.sdf             /Rig/Class/A.foo
+
+------------------------------------------------------------------------
+Results for composing </Rig/Class/B>
+
+Prim Stack:
+    root.sdf             /Rig/Class/B
+
+Property names:
+     ['bar']
+
+Property stacks:
+/Rig/Class/B.bar:
+    root.sdf             /Rig/Class/B.bar
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other>
+
+Prim Stack:
+    root.sdf             /Rig/Other
+
+Child names:
+     ['A']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other/A>
+
+Prim Stack:
+    root.sdf             /Rig/Other/A
+
+Child names:
+     ['Instance']
+
+Prohibited child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other/A/Instance>
+
+Prim Stack:
+    root.sdf             /Rig/Other/A/Instance
+    root.sdf             /Rig/Class
+
+Child names:
+     ['A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other/A/Instance/A>
+
+Prim Stack:
+    root.sdf             /Rig/Class/A
+
+Property names:
+     ['foo']
+
+Property stacks:
+/Rig/Other/A/Instance/A.foo:
+    root.sdf             /Rig/Class/A.foo
+
+------------------------------------------------------------------------
+Results for composing </Rig/Other/A/Instance/B>
+
+Prim Stack:
+    root.sdf             /Rig/Class/B
+
+Property names:
+     ['bar']
+
+Property stacks:
+/Rig/Other/A/Instance/B.bar:
+    root.sdf             /Rig/Class/B.bar
+

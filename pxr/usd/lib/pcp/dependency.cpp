@@ -46,6 +46,28 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(PcpDependencyTypeAnyIncludingVirtual, "any dependency");
 }
 
+bool 
+PcpNodeIntroducesDependency(const PcpNodeRef &node)
+{
+    if (node.IsInert()) {
+        switch(node.GetArcType()) {
+        case PcpArcTypeLocalInherit:
+        case PcpArcTypeGlobalInherit:
+        case PcpArcTypeLocalSpecializes:
+        case PcpArcTypeGlobalSpecializes:
+            // Special case: inert, propagated class-based arcs do not
+            // represent dependencies.
+            if (node.GetOriginNode() != node.GetParentNode()) {
+                return false;
+            }
+            // Fall through
+        default:
+            break;
+        }
+    }
+    return true;
+}
+
 PcpDependencyFlags
 PcpClassifyNodeDependency(const PcpNodeRef &node)
 {
@@ -63,26 +85,16 @@ PcpClassifyNodeDependency(const PcpNodeRef &node)
     // - arcs whose target prims are (currently) private
     // - references/payloads without a prim or defaultPrim
     //
-    // Tracking these dependencies is crucial for procedssing scene
+    // Tracking these dependencies is crucial for processing scene
     // edits in the presence of spooky ancestral opinions, and for
     // edits that resolve the condition causing the node to be inert,
     // such as permissions.
     //
     if (node.IsInert()) {
-        switch(node.GetArcType()) {
-        case PcpArcTypeLocalInherit:
-        case PcpArcTypeGlobalInherit:
-        case PcpArcTypeLocalSpecializes:
-        case PcpArcTypeGlobalSpecializes:
-            // Special case: inert, propagated class-based arcs do not
-            // represent dependencies.
-            if (node.GetOriginNode() != node.GetParentNode()) {
-                return PcpDependencyTypeNone;
-            }
-            // Fall through.
-        default:
-            flags |= PcpDependencyTypeVirtual;
+        if (!PcpNodeIntroducesDependency(node)) {
+            return PcpDependencyTypeNone;
         }
+        flags |= PcpDependencyTypeVirtual;
     }
 
     // Classify as ancestral or direct: if there is any non-ancestral

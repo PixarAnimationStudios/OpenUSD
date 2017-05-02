@@ -37,7 +37,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class UsdGeomModelAPI;
-class UsdGeomPointBased;
 
 /// \class UsdGeomBBoxCache
 ///
@@ -85,7 +84,10 @@ class UsdGeomPointBased;
 ///    the stage in the master-thread prior to spawning the workers.  Querying
 ///    the root will cause all sub-results to be cached.
 ///
-///  * Querying bounds will use multiple threads, upto the limit set in libWork.
+///  * Querying bounds will use multiple threads, up to the limit set in libWork.
+///
+///  * Plugins may be loaded in order to compute extents for prim types provided
+///    by that plugin.  See UsdGeomBoundable::ComputeExtentFromPlugins
 ///
 class UsdGeomBBoxCache
 {
@@ -294,13 +296,6 @@ private:
         const UsdGeomModelAPI &geomModel, 
         const UsdAttributeQuery &extentsHintQuery,
         _PurposeToBBoxMap *bboxes);
-
-    // Computes the extent for a UsdGeomPointBased prim and stores the result
-    // in extent. This function will return false if the extent could not be 
-    // computed, true otherwise.
-    bool _ComputeMissingExtent(const UsdGeomPointBased& pointBasedObj,
-        const VtVec3fArray &points,
-        VtVec3fArray* extent);
 
     // Returns whether the children of the given prim can be pruned 
     // from the traversal to pre-populate entries.

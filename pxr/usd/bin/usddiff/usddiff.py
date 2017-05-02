@@ -22,40 +22,72 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import os, sys 
+import os, sys
 from subprocess import call
+
+import platform
+isWindows = (platform.system() == 'Windows')
+
+NO_DIFF_FOUND_EXIT_CODE = 0
+DIFF_FOUND_EXIT_CODE = 1
+ERROR_EXIT_CODE = 2
+
+def _exit(msg, exitCode):
+    if msg is not None:
+        sys.stderr.write(msg + "\n")
+    sys.exit(exitCode)
 
 # generates a command list representing a call which will generate
 # a temporary ascii file used during diffing. 
 def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
-    if os.stat(inPath).st_size > 0:
-        command = [usdcatCmd, inPath, '--out', outPath]
-        if flatten:
-            command.append('--flatten')
+    command = [usdcatCmd, inPath, '--out', outPath]
+    if flatten:
+        command.append('--flatten')
 
-        if fmt and os.path.splitext(outPath)[1] == '.usd':
-            command.append('--usdFormat')
-            command.append(fmt)
-        
-        return command
+    if fmt and os.path.splitext(outPath)[1] == '.usd':
+        command.append('--usdFormat')
+        command.append(fmt)
 
-    return ['cat', inPath]
+    return command
+
+def _findExe(name):
+    from distutils.spawn import find_executable
+    cmd = find_executable(name)
+    if cmd:
+        return cmd
+    if isWindows:
+        # find_executable under Windows only returns *.EXE files
+        # so we need to traverse PATH.
+        for path in os.environ['PATH'].split(os.pathsep):
+            base = os.path.join(path, name)
+            # We need to test for name.cmd first because on Windows, the USD
+            # executables are wrapped due to lack of N*IX style shebang support
+            # on Windows.
+            for ext in ['.cmd', '']:
+                cmd = base + ext
+                if os.access(cmd, os.X_OK):
+                    return cmd
+    return None
 
 # looks up a suitable diff tool, and locates usdcat
 def _findDiffTools():
-    from distutils.spawn import find_executable
-    usdcatCmd = find_executable("usdcat")
+    usdcatCmd = _findExe("usdcat")
     if not usdcatCmd:
-        sys.exit("Error: Could not find 'usdcat'. Expected it to be in PATH")
+        _exit("Error: Could not find 'usdcat'. Expected it to be in PATH", 
+              ERROR_EXIT_CODE)
+
+    diffBuiltin = 'diff'
+    if isWindows:
+        diffBuiltin = 'fc'
 
     # prefer USD_DIFF, then DIFF, else 'diff' 
     diffCmd = (os.environ.get('USD_DIFF') or 
                os.environ.get('DIFF') or 
-               find_executable('diff'))
+               _findExe(diffBuiltin))
     if not diffCmd:
-        sys.exit("Error: Failed to find suitable diff tool. "
-                 "Expected $USD_DIFF/$DIFF to be set, or 'diff' "
-                 "to be installed.")
+        _exit("Error: Failed to find suitable diff tool. "
+              "Expected $USD_DIFF/$DIFF to be set, or '%s' "
+              "to be installed." % (diffBuiltin, ), ERROR_EXIT_CODE)
 
     return (usdcatCmd, diffCmd)
 
@@ -76,33 +108,50 @@ def _getFileFormat(path):
          
         fileFormat = Sdf.FileFormat.FindByExtension(prunedExtension)
 
-    if fileFormat and fileFormat.CanRead(path):
+    # Allow an empty file.
+    if fileFormat and (os.stat(path).st_size == 0 or fileFormat.CanRead(path)):
         return fileFormat.formatId
 
     return None
 
 def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
-    command = _generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt)
+    # Just copy empty files -- we want something to diff against but
+    # the file isn't valid usd.
+    if os.stat(inPath).st_size == 0:
+        import shutil
+        try:
+            shutil.copy(inPath, outPath)
+            return 0
+        except:
+            return 1
+    else:
+        return call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt))
 
-    # We are redirecting to stdout for the case where a user
-    # provides an empty file and we have to use regular 'cat'
-    # which doesn't offer the redirection usdcat does through --out
-    with open(outPath) as outFile:
-        call(command, stdout=outFile) 
-
-def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, composed):
-    if composed:
-        sys.exit('Error: Cannot write out flattened result.')
+def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, flattened):
+    if flattened:
+        _exit('Error: Cannot write out flattened result.', ERROR_EXIT_CODE)
 
     if not os.access(fileName, os.W_OK):
-        sys.exit('Error: Cannot write to %s, insufficient permissions' % fileName)
+        _exit('Error: Cannot write to %s, insufficient permissions' % fileName,
+              ERROR_EXIT_CODE)
     
-    _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
+    return _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
 
-def _runDiff(baseline, comparison, compose, noeffect):
+def _runDiff(baseline, comparison, flatten, noeffect):
     from pxr import Tf
 
     diffResult = 0
+
+    usdcatCmd, diffCmd = _findDiffTools()
+    baselineFileType = _getFileFormat(baseline)
+    comparisonFileType = _getFileFormat(comparison)
+
+    pluginError = 'Error: Cannot find supported file format plugin for %s'
+    if baselineFileType is None:
+        _exit(pluginError % baseline, ERROR_EXIT_CODE)
+
+    if comparisonFileType is None:
+        _exit(pluginError % comparison, ERROR_EXIT_CODE)
 
     # Generate recognizable suffixes for our files in the temp dir
     # location of the form /temp/string__originalFileName.usda 
@@ -116,22 +165,16 @@ def _runDiff(baseline, comparison, compose, noeffect):
     with Tf.NamedTemporaryFile(suffix=tempBaselineFileName) as tempBaseline, \
          Tf.NamedTemporaryFile(suffix=tempComparisonFileName) as tempComparison:
 
-        usdcatCmd, diffCmd = _findDiffTools()
-        baselineFileType = _getFileFormat(baseline)
-        comparisonFileType = _getFileFormat(comparison)
-
-        pluginError = 'Error: Cannot find supported file format plugin for %s'
-        if baselineFileType is None:
-            sys.exit(pluginError % baseline)
-
-        if comparisonFileType is None:
-            sys.exit(pluginError % comparison)
-
         # Dump the contents of our files into the temporaries
-        _convertTo(baseline, tempBaseline.name, usdcatCmd, 
-                   flatten=compose, fmt=None)
-        _convertTo(comparison, tempComparison.name, usdcatCmd,
-                   flatten=compose, fmt=None)
+        convertError = 'Error: failed to convert from %s to %s.'
+        if _convertTo(baseline, tempBaseline.name, usdcatCmd, 
+                      flatten, fmt=None) != 0:
+            _exit(convertError % (baseline, tempBaseline.name),
+                  ERROR_EXIT_CODE)
+        if _convertTo(comparison, tempComparison.name, usdcatCmd,
+                      flatten, fmt=None) != 0:
+            _exit(convertError % (comparison, tempComparison.name),
+                  ERROR_EXIT_CODE) 
 
         tempBaselineTimestamp = os.path.getmtime(tempBaseline.name)
         tempComparisonTimestamp = os.path.getmtime(tempComparison.name)
@@ -146,12 +189,15 @@ def _runDiff(baseline, comparison, compose, noeffect):
         # If we intend to edit either of the files
         if not noeffect:
             if tempBaselineChanged:
-                _tryEdit(baseline, tempBaseline.name, 
-                         usdcatCmd, baselineFileType, compose)
-
+                if _tryEdit(baseline, tempBaseline.name, 
+                            usdcatCmd, baselineFileType, flatten) != 0:
+                    _exit(convertError % (baseline, tempBaseline.name),
+                          ERROR_EXIT_CODE)
             if tempComparisonChanged:
-                _tryEdit(comparison, tempComparison.name,
-                         usdcatCmd, comparisonFileType, compose)
+                if _tryEdit(comparison, tempComparison.name,
+                            usdcatCmd, comparisonFileType, flatten) != 0:
+                    _exit(convertError % (comparison, tempComparison.name),
+                          ERROR_EXIT_CODE)
     return diffResult
 
 def _findFiles(args):
@@ -232,18 +278,20 @@ def main():
                              'DIR DIR, FILE... DIR, DIR FILE... or FILE FILE. ')
     parser.add_argument('-n', '--noeffect', action='store_true',
                         help='Do not edit either file.') 
-    parser.add_argument('-c', '--compose', action='store_true',
-                        help='Fully compose both layers as Usd Stages.')
+    parser.add_argument('-f', '--flatten', action='store_true',
+                        help='Fully compose both layers as Usd Stages and '
+                             'flatten into single layers.')
 
     results = parser.parse_args()
-    diffResult = 0
+    diffResult = NO_DIFF_FOUND_EXIT_CODE 
 
     try:
         baselineOnly, common, comparisonOnly = _findFiles(results.files)
 
         for (baseline, comparison) in common:
-            diffResult += _runDiff(baseline, comparison, 
-                                   results.compose, results.noeffect)
+            if _runDiff(baseline, comparison, 
+                        results.flatten, results.noeffect):
+                diffResult = DIFF_FOUND_EXIT_CODE
 
         mismatchMsg = 'No corresponding file found for %s, skipping.'
         for b in baselineOnly:
@@ -253,9 +301,9 @@ def main():
             print mismatchMsg % c
 
     except ValueError as err:
-        sys.exit(err)
+        _exit(str(err), ERROR_EXIT_CODE)
     
-    sys.exit(diffResult)
+    _exit(None, diffResult)
 
 if __name__ == "__main__":
     main()

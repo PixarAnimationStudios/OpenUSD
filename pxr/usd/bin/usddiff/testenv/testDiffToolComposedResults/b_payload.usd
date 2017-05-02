@@ -1,0 +1,9 @@
+#usda 1.0
+
+def Xform "StoolDorm" (
+    kind = "prop"
+)
+{
+    matrix4d transform = ( (2, 0, 0, 0), (0, 2, 0, 0), (0, 0, 2, 0), (0, 0, 0, 2) )
+}
+

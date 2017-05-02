@@ -70,6 +70,7 @@ Hd_IndirectDrawBatch::Hd_IndirectDrawBatch(
     , _drawCommandBufferDirty(false)
     , _numVisibleItems(0)
     , _numTotalElements(0)
+    , _lastTinyPrimCulling(false)
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
     , _cullResultSync(0)
@@ -108,7 +109,9 @@ Hd_IndirectDrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
 Hd_IndirectDrawBatch::_CullingProgram &
 Hd_IndirectDrawBatch::_GetCullingProgram()
 {
-    if (!_cullingProgram.GetGLSLProgram()) {
+    if (!_cullingProgram.GetGLSLProgram() || 
+        _lastTinyPrimCulling != IsEnabledGPUTinyPrimCulling()) {
+    
         // create a culling shader key
         Hd_CullingShaderKey shaderKey(_useGpuInstanceCulling,
                                       IsEnabledGPUTinyPrimCulling(),
@@ -121,6 +124,9 @@ Hd_IndirectDrawBatch::_GetCullingProgram()
 
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
                                       /*indirect=*/true);
+        // track the last tiny prim culling state as it can be modified at
+        // runtime via TF_DEBUG_CODE HD_DISABLE_TINY_PRIM_CULLING
+        _lastTinyPrimCulling = IsEnabledGPUTinyPrimCulling();
     }
     return _cullingProgram;
 }
@@ -158,7 +164,8 @@ Hd_IndirectDrawBatch::IsEnabledGPUTinyPrimCulling()
 {
     static bool isEnabledGPUTinyPrimCulling =
         TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING);
-    return isEnabledGPUTinyPrimCulling;
+    return isEnabledGPUTinyPrimCulling &&
+        !TfDebug::IsEnabled(HD_DISABLE_TINY_PRIM_CULLING);
 }
 
 /* static */
@@ -1201,7 +1208,9 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
     GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
     binder.BindUniformui(HdTokens->ulocDrawCommandNumUints, 1, &drawCommandNumUints);
     binder.BindUniformf(HdTokens->ulocCullMatrix, 16, cullMatrix.GetArray());
-    binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+    if (IsEnabledGPUTinyPrimCulling()) {
+        binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+    }
 
     // run culling shader
     bool validProgram = true;
@@ -1220,7 +1229,8 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
         binder.BindUniformi(HdTokens->ulocResetPass, 1, &resetPass);
         glMultiDrawArraysIndirect(
             GL_POINTS,
-            reinterpret_cast<const GLvoid*>(cullCommandBuffer->GetOffset()),
+            reinterpret_cast<const GLvoid*>(
+                static_cast<intptr_t>(cullCommandBuffer->GetOffset())),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
 
@@ -1232,7 +1242,8 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
         binder.BindUniformi(HdTokens->ulocResetPass, 1, &resetPass);
         glMultiDrawArraysIndirect(
             GL_POINTS,
-            reinterpret_cast<const GLvoid*>(cullCommandBuffer->GetOffset()),
+            reinterpret_cast<const GLvoid*>(
+                static_cast<intptr_t>(cullCommandBuffer->GetOffset())),
             _dispatchBufferCullInput->GetCount(),
             cullCommandBuffer->GetStride());
 
@@ -1314,7 +1325,9 @@ Hd_IndirectDrawBatch::_GPUFrustumCullingXFB(
     GfMatrix4f cullMatrix(renderPassState->GetCullMatrix());
     GfVec2f drawRangeNDC(renderPassState->GetDrawingRangeNDC());
     binder.BindUniformf(HdTokens->ulocCullMatrix, 16, cullMatrix.GetArray());
-    binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+    if (IsEnabledGPUTinyPrimCulling()) {
+        binder.BindUniformf(HdTokens->ulocDrawRangeNDC, 2, drawRangeNDC.GetArray());
+    }
 
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0,
                      _dispatchBuffer->GetEntireResource()->GetId());

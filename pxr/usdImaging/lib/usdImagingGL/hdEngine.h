@@ -28,11 +28,17 @@
 #define USDIMAGINGGL_HDENGINE_H
 
 #include "pxr/pxr.h"
+
+#include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/engine.h"
+
+#include "pxr/imaging/hdx/rendererPlugin.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
+#include "pxr/imaging/hdx/taskController.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 
@@ -44,74 +50,92 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 
 class HdRenderIndex;
-typedef boost::shared_ptr<class UsdImagingGLTaskDelegate>
-                                        UsdImagingGLTaskDelegateSharedPtr;
-typedef boost::shared_ptr<class UsdImagingGL_DefaultTaskDelegate>
-                                        UsdImagingGL_DefaultTaskDelegateSharedPtr;
-typedef boost::shared_ptr<class UsdImagingGLHdEngine> UsdImagingGLHdEngineSharedPtr;
+typedef boost::shared_ptr<class UsdImagingGLHdEngine> 
+                                        UsdImagingGLHdEngineSharedPtr;
 typedef std::vector<UsdImagingGLHdEngineSharedPtr> 
                                         UsdImagingGLHdEngineSharedPtrVector;
 typedef std::vector<UsdPrim> UsdPrimVector;
-typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 
 class UsdImagingGLHdEngine : public UsdImagingGLEngine
 {
 public:
+    // Important! Call UsdImagingGLHdEngine::IsDefaultPluginAvailable() before
+    // construction; if no plugins are available, the class will only
+    // get halfway constructed.
+    USDIMAGINGGL_API
     UsdImagingGLHdEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
-                       const SdfPath& sharedId = SdfPath::AbsoluteRootPath(),
-                       const UsdImagingGLHdEngineSharedPtr& sharedImaging =
-                           UsdImagingGLHdEngineSharedPtr());
+                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath());
 
+    USDIMAGINGGL_API
+    static bool IsDefaultPluginAvailable();
+
+    USDIMAGINGGL_API
     virtual ~UsdImagingGLHdEngine();
 
-    HdRenderIndexSharedPtr GetRenderIndex() const;
+    USDIMAGINGGL_API
+    HdRenderIndex *GetRenderIndex() const;
 
+    USDIMAGINGGL_API
     virtual void InvalidateBuffers();
 
+    USDIMAGINGGL_API
     static void PrepareBatch(
         const UsdImagingGLHdEngineSharedPtrVector& engines,
         const UsdPrimVector& rootPrims,
         const std::vector<UsdTimeCode>& times,
         RenderParams params);
 
+    USDIMAGINGGL_API
     virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
+    USDIMAGINGGL_API
     virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
 
+    USDIMAGINGGL_API
     virtual void Render(const UsdPrim& root, RenderParams params);
 
-    // A custom render override for hdEngine.
-    // note: external RenderIndex may not be needed anymore.
-    void Render(HdRenderIndex& index, RenderParams params);
+    // Core rendering function: just draw, don't update anything.
+    USDIMAGINGGL_API
+    void Render(RenderParams params);
 
+    USDIMAGINGGL_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
+    USDIMAGINGGL_API
     virtual void SetLightingStateFromOpenGL();
 
+    USDIMAGINGGL_API
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
+    USDIMAGINGGL_API
     virtual void SetLightingState(GlfSimpleLightVector const &lights,
                                   GlfSimpleMaterial const &material,
                                   GfVec4f const &sceneAmbient);
 
+    USDIMAGINGGL_API
     virtual void SetRootTransform(GfMatrix4d const& xf);
 
+    USDIMAGINGGL_API
     virtual void SetRootVisibility(bool isVisible);
 
+    USDIMAGINGGL_API
     virtual void SetSelected(SdfPathVector const& paths);
 
+    USDIMAGINGGL_API
     virtual void ClearSelected();
+    USDIMAGINGGL_API
     virtual void AddSelected(SdfPath const &path, int instanceIndex);
 
+    USDIMAGINGGL_API
     virtual void SetSelectionColor(GfVec4f const& color);
 
-    virtual SdfPath GetPrimPathFromPrimIdColor(GfVec4i const& primIdColor,
-                                               GfVec4i const& instanceIdColor,
-                                               int* instanceIndexOut = NULL);
+    USDIMAGINGGL_API
+    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
 
+    USDIMAGINGGL_API
     virtual SdfPath GetPrimPathFromInstanceIndex(
         SdfPath const& protoPrimPath,
         int instanceIndex,
@@ -119,12 +143,16 @@ public:
         SdfPath * rprimPath=NULL,
         SdfPathVector *instanceContext=NULL);
 
+    USDIMAGINGGL_API
     virtual bool IsConverged() const;
 
-    virtual std::vector<TfType> GetRenderGraphPlugins();
+    USDIMAGINGGL_API
+    virtual std::vector<TfType> GetRendererPlugins();
 
-    virtual bool SetRenderGraphPlugin(TfType const &type);
+    USDIMAGINGGL_API
+    virtual bool SetRendererPlugin(TfType const &type);
 
+    USDIMAGINGGL_API
     virtual bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -134,8 +162,10 @@ public:
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
         SdfPath *outHitInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL);
+        int *outHitInstanceIndex = NULL,
+        int *outHitElementIndex = NULL);
 
+    USDIMAGINGGL_API
     virtual bool TestIntersectionBatch(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
@@ -146,6 +176,7 @@ public:
         PathTranslatorCallback pathTranslator,
         HitBatch *outHit);
 
+    USDIMAGINGGL_API
     virtual VtDictionary GetResourceAllocation() const;
 
 private:
@@ -169,33 +200,48 @@ private:
     void _PreSetTime(const UsdPrim& root, const RenderParams& params);
     void _PostSetTime(const UsdPrim& root, const RenderParams& params);
 
-    // returns the active task delegate for \p param. param is used to fallback
-    // to the default task delegate when enableIdRender is true for picking.
-    UsdImagingGLTaskDelegateSharedPtr _GetTaskDelegate(
-        const RenderParams &params) const ;
+    // Create a hydra collection given root paths and render params
+    static void _UpdateHydraCollection(HdRprimCollection *collection,
+                          SdfPathVector const& roots,
+                          UsdImagingGLEngine::RenderParams const& params,
+                          TfTokenVector *renderTags);
+    static HdxRenderTaskParams _MakeHydraRenderParams(
+                          UsdImagingGLEngine::RenderParams const& params);
+
+    // This function disposes of: the render index, the render plugin,
+    // the task controller, and the usd imaging delegate.
+    void _DeleteHydraResources();
 
     HdEngine _engine;
-    HdRenderIndexSharedPtr _renderIndex;
+
+    HdRenderIndex *_renderIndex;
+
     HdxSelectionTrackerSharedPtr _selTracker;
-    HdxIntersectorSharedPtr _intersector;
-    UsdImagingDelegate _delegate;
+    HdRprimCollection _renderCollection;
+    HdRprimCollection _intersectCollection;
 
-    // built-in render graph delegate
-    UsdImagingGL_DefaultTaskDelegateSharedPtr _defaultTaskDelegate;
+    SdfPath const _delegateID;
+    UsdImagingDelegate *_delegate;
 
-    // plug-in render graphs delegate
-    bool _pluginDiscovered;
-    typedef std::map<TfType, UsdImagingGLTaskDelegateSharedPtr>
-        _PluginTaskDelegateMap;
-    _PluginTaskDelegateMap _pluginTaskDelegates;
-    UsdImagingGLTaskDelegateSharedPtr _currentPluginTaskDelegate;
+    HdxRendererPlugin *_renderPlugin;
+    HdxTaskController *_taskController;
 
     GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
+
+    // Last set view matrix, to track when camera changes for progressive
+    // rendering.
+    GfMatrix4d _lastViewMatrix;
+    GfVec4d _lastViewport;
+
+    // Data we want to live across render plugin switches:
+    GfVec4f _selectionColor;
 
     SdfPath _rootPath;
     SdfPathVector _excludedPrimPaths;
     SdfPathVector _invisedPrimPaths;
     bool _isPopulated;
+
+    TfTokenVector _renderTags;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

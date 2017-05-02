@@ -37,7 +37,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static
 std::string
@@ -286,6 +288,8 @@ wrapBatchNamespaceEdit()
 static SdfNamespaceEdit::Index _atEnd = SdfNamespaceEdit::AtEnd;
 static SdfNamespaceEdit::Index _same  = SdfNamespaceEdit::Same;
 
+} // anonymous namespace 
+
 void
 wrapNamespaceEdit()
 {
@@ -327,5 +331,3 @@ wrapNamespaceEdit()
     wrapNamespaceEditDetail();
     wrapBatchNamespaceEdit();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

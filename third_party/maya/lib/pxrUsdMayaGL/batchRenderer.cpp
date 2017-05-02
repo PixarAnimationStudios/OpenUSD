@@ -29,11 +29,12 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hdx/camera.h"
-#include "pxr/imaging/hdx/light.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
+
+#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -63,6 +64,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (selectionTask)
     (simpleLightTask)
     (camera)
+    (render)
 );
 
 TF_REGISTRY_FUNCTION(TfDebug)
@@ -128,7 +130,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::ShapeRenderer()
 
 void
 UsdMayaGLBatchRenderer::ShapeRenderer::Init(
-    HdRenderIndexSharedPtr const &renderIndex,
+    HdRenderIndex *renderIndex,
     const SdfPath& sharedId,
     const UsdPrim& rootPrim,
     const SdfPathVector& excludedPaths)
@@ -158,14 +160,15 @@ UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
 
     // XXX Not yet adding ability to turn off display of proxy geometry, but
     // we should at some point, as in usdview
-    if( showGuides )
-        _baseParams.geometryCol =
-            showRenderGuides ? UsdImagingCollectionTokens->geometryAllPurposes
-                             : UsdImagingCollectionTokens->geometryAndProxyAndGuides;
-    else
-        _baseParams.geometryCol =
-            showRenderGuides ? UsdImagingCollectionTokens->geometryAndProxyAndRender
-                             : UsdImagingCollectionTokens->geometryAndProxy;
+    _baseParams.renderTags.clear();
+    _baseParams.renderTags.push_back(HdTokens->geometry);
+    _baseParams.renderTags.push_back(HdTokens->proxy);
+    if (showGuides) {
+        _baseParams.renderTags.push_back(HdTokens->guide);
+    } 
+    if (showRenderGuides) {
+        _baseParams.renderTags.push_back(_tokens->render);
+    }
     
     if( tint )
         _baseParams.overrideColor = tintColor;
@@ -484,7 +487,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::TestIntersection(
 }
 
 UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
-    HdRenderIndexSharedPtr const& renderIndex, SdfPath const& delegateID)
+    HdRenderIndex *renderIndex, SdfPath const& delegateID)
     : HdSceneDelegate(renderIndex, delegateID)
 {
     _lightingContext = GlfSimpleLightingContext::New();
@@ -500,19 +503,14 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
 
     // camera
     {
-#if defined(HD_API_VERSION) && HD_API_VERSION > 28
-        renderIndex->InsertSprim<HdxCamera>(this, _cameraId);
+        // Since we're hardcoded to use HdStRenderDelegate, we expect to
+        // have camera Sprims.
+        TF_VERIFY(renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->camera));
+
+        renderIndex->InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
-        cache[HdxCameraTokens->matrices] = VtValue(HdxCameraMatrices()); 
-        cache[HdxCameraTokens->windowPolicy] = VtValue();  // no window policy.
-#else
-        renderIndex->InsertSprim<HdxCamera>(this, _cameraId);
-        _ValueCache &cache = _valueCacheMap[_cameraId];
-        cache[HdxCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1));
-        cache[HdxCameraTokens->projectionMatrix]  = VtValue(GfMatrix4d(1));
-        cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-        cache[HdxCameraTokens->windowPolicy] = VtValue();  // we don't use window policy.
-#endif
+        cache[HdStCameraTokens->matrices] = VtValue(HdStCameraMatrices());
+        cache[HdStCameraTokens->windowPolicy] = VtValue();  // no window policy.
     }
 
     // simple lighting task (for Hydra native)
@@ -566,24 +564,13 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache &cache = _valueCacheMap[_cameraId];
-#if defined(HD_API_VERSION) && HD_API_VERSION > 28
-    cache[HdxCameraTokens->matrices] = 
-        VtValue(HdxCameraMatrices(viewMatrix, projectionMatrix));
-    cache[HdxCameraTokens->windowPolicy] = VtValue(); // no window policy.
+    cache[HdStCameraTokens->matrices] =
+        VtValue(HdStCameraMatrices(viewMatrix, projectionMatrix));
+    cache[HdStCameraTokens->windowPolicy] = VtValue(); // no window policy.
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
-                                                       HdxCamera::AllDirty);
-#else
-    cache[HdxCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
-    cache[HdxCameraTokens->projectionMatrix]  = VtValue(projectionMatrix);
-    cache[HdxCameraTokens->cameraFrustum] = VtValue(); // we don't use GfFrustum.
-    cache[HdxCameraTokens->windowPolicy]  = VtValue(); // we don't use window policy.
-
-    // invalidate the camera to be synced
-    GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
-                                                       HdxCamera::AllDirty);
-#endif
+                                                       HdStCamera::AllDirty);
 
     if( _viewport != viewport )
     {
@@ -650,7 +637,11 @@ UsdMayaGLBatchRenderer::TaskDelegate::_SetLightingStateFromLightingContext()
                            (int)_lightIds.size()));
         _lightIds.push_back(lightId);
 
-        GetRenderIndex().InsertSprim<HdxLight>(this, lightId);
+        // Since we're hardcoded to use HdStRenderDelegate, we expect to have
+        // light Sprims.
+        TF_VERIFY(GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->light));
+
+        GetRenderIndex().InsertSprim(HdPrimTypeTokens->light, this, lightId);
         hasNumLightsChanged = true;
     }
 
@@ -665,17 +656,17 @@ UsdMayaGLBatchRenderer::TaskDelegate::_SetLightingStateFromLightingContext()
     for (size_t i = 0; i < lights.size(); ++i) {
         _ValueCache &cache = _valueCacheMap[_lightIds[i]];
         // store GlfSimpleLight directly.
-        cache[HdxLightTokens->params] = VtValue(lights[i]);
-        cache[HdxLightTokens->transform] = VtValue();
-        cache[HdxLightTokens->shadowParams] = VtValue(HdxShadowParams());
-        cache[HdxLightTokens->shadowCollection] = VtValue();
+        cache[HdStLightTokens->params] = VtValue(lights[i]);
+        cache[HdStLightTokens->transform] = VtValue();
+        cache[HdStLightTokens->shadowParams] = VtValue(HdxShadowParams());
+        cache[HdStLightTokens->shadowCollection] = VtValue();
 
         // Only mark as dirty the parameters to avoid unnecessary invalidation
         // specially marking as dirty lightShadowCollection will trigger
         // a collection dirty on geometry and we don't want that to happen
         // always
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            _lightIds[i], HdxLight::AllDirty);
+            _lightIds[i], HdStLight::AllDirty);
     }
 
     // sadly the material also comes from lighting context right now...
@@ -725,6 +716,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::GetRenderTask(
     TfToken colName = renderParams.geometryCol;
     HdRprimCollection rprims(colName, renderParams.drawRepr);
     rprims.SetRootPaths(roots);
+    rprims.SetRenderTags(renderParams.renderTags);
 
     // update value cache
     _SetValue(renderTaskId, HdTokens->collection, rprims);
@@ -814,10 +806,20 @@ _OnMayaSceneUpdateCallback(void* clientData)
 }
 
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
-    : _renderIndex(new HdRenderIndex())
-    , _taskDelegate(new TaskDelegate(_renderIndex, SdfPath("/mayaTask")))
-    , _intersector(new HdxIntersector(_renderIndex))
+    : _renderIndex(nullptr)
+    , _renderDelegate()
+    , _taskDelegate()
+    , _intersector()
 {
+    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    if (!TF_VERIFY(_renderIndex != nullptr)) {
+        return;
+    }
+    _taskDelegate = TaskDelegateSharedPtr(
+                          new TaskDelegate(_renderIndex, SdfPath("/mayaTask")));
+    _intersector = HdxIntersectorSharedPtr(new HdxIntersector(_renderIndex));
+
+
     static MCallbackId sceneUpdateCallbackId = 0;
     if (sceneUpdateCallbackId == 0) {
         sceneUpdateCallbackId =
@@ -825,6 +827,14 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
                                        _OnMayaSceneUpdateCallback);
     }
 }
+
+UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
+{
+    _intersector.reset();
+    _taskDelegate.reset();
+    delete _renderIndex;
+}
+
 
 /* static */
 void UsdMayaGLBatchRenderer::Reset()
@@ -1027,9 +1037,11 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
             TfToken colName = renderParams.geometryCol;
             HdRprimCollection rprims(colName, renderParams.drawRepr);
             rprims.SetRootPaths(roots);
+            rprims.SetRenderTags(renderParams.renderTags);
 
             qparams.cullStyle = renderParams.cullStyle;
-            
+            qparams.renderTags = renderParams.renderTags;
+
             HdxIntersector::Result result;
             HdxIntersector::HitVector hits;
 

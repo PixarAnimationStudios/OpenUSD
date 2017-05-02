@@ -25,6 +25,7 @@
 #define HD_BASIS_CURVES_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/rprim.h"
 
@@ -35,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdBasisCurves : public HdRprim {
 public:
+    HD_API
     virtual ~HdBasisCurves();
 
     ///
@@ -45,6 +47,7 @@ public:
 
 
 protected:
+    HD_API
     HdBasisCurves(SdfPath const& id,
                   SdfPath const& instancerId = SdfPath());
 
@@ -66,7 +69,6 @@ HdBasisCurves::GetRefineLevel(HdSceneDelegate* delegate) const
 {
     return delegate->GetRefineLevel(GetId());
 }
-
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

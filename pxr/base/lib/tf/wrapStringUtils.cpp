@@ -42,7 +42,9 @@ using std::string;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static int DictionaryStrcmp(string const &l, string const &r) {
     TfDictionaryLessThan lt;
@@ -107,6 +109,8 @@ _GetLongMin() {
     return std::numeric_limits<long>::min();
 }
 
+} // anonymous namespace 
+
 void wrapStringUtils() {
     def("StringSplit", TfStringSplit, return_value_policy<TfPySequenceToList>());
     def("DictionaryStrcmp", DictionaryStrcmp);
@@ -125,5 +129,3 @@ void wrapStringUtils() {
     
     Tf_StdStringFromPythonUnicode();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

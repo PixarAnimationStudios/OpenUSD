@@ -473,6 +473,23 @@ UsdUtilsStitchInfo(const SdfSpecHandle& strongObj,
                 strongRelHandle->GetTargetPathList().CopyItems( 
                         weakRelHandle->GetTargetPathList());
             }
+        // Connection lists need the same treatment as TargetPaths, but needs
+        // to maintain a connection instead of a relationship.  See comments
+        // about TargetPaths above as to why this is necessary.
+        } else if (key == SdfFieldKeys->ConnectionPaths) {
+            if (!strongObj->HasInfo(key)) {
+                SdfAttributeSpecHandle strongAttrHandle
+                    = TfDynamic_cast<SdfAttributeSpecHandle>(strongObj);
+                SdfAttributeSpecHandle weakAttrHandle
+                    = TfDynamic_cast<SdfAttributeSpecHandle>(weakObj);
+
+                if (!TF_VERIFY(strongAttrHandle && weakAttrHandle)) {
+                    continue;
+                }
+
+                strongAttrHandle->GetConnectionPathList().CopyItems(
+                        weakAttrHandle->GetConnectionPathList());
+            }
         } else {
             // if its not a dictionary type, insert as normal
             // so long as it isn't contained in the strong object 

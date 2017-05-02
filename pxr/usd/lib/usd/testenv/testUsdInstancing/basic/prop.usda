@@ -1,0 +1,19 @@
+#usda 1.0
+
+class "_class_Prop"
+{
+}
+
+def Scope "Prop" (
+    inherits = </_class_Prop>
+)
+{
+    def Scope "geom"
+    {
+        def Scope "Scope"
+        {
+            double x = 1.0
+            rel y = </Prop/geom/Scope>
+        }
+    }
+}

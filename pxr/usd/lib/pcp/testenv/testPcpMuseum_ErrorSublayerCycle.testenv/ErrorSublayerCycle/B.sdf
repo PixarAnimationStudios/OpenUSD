@@ -1,0 +1,10 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @./A.sdf@
+    ]
+)
+def DifferentPrimType "B" 
+{
+    custom double B_attr
+}

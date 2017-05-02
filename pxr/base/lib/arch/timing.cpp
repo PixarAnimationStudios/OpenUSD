@@ -34,6 +34,8 @@
 #include <cstring>
 #elif defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
+#include <chrono>
+#include <thread>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -140,9 +142,32 @@ ARCH_HIDDEN
 void
 Arch_InitTickTimer()
 {
-    LARGE_INTEGER freq;
-    QueryPerformanceFrequency(&freq);
-    Arch_NanosecondsPerTick = double(1e9) / double(freq.QuadPart);
+    // We want to use rdtsc so we need to find the frequency.  We run a
+    // small sleep here to compute it using QueryPerformanceCounter()
+    // which is independent of rdtsc.  So we wait for some duration using
+    // QueryPerformanceCounter() (whose frequency we know) then compute
+    // how many ticks elapsed during that time and from that the number
+    // of ticks per nanosecond.
+    LARGE_INTEGER qpcFreq, qpcStart, qpcEnd;
+    QueryPerformanceFrequency(&qpcFreq);
+    const auto delay = (qpcFreq.QuadPart >> 4); // 1/16th of a second.
+    QueryPerformanceCounter(&qpcStart);
+    const auto t1 = ArchGetTickTime();
+    do {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        QueryPerformanceCounter(&qpcEnd);
+    } while (qpcEnd.QuadPart - qpcStart.QuadPart < delay);
+    QueryPerformanceCounter(&qpcEnd);
+    const auto t2 = ArchGetTickTime();
+
+    // Total time take during the loop in seconds.
+    const auto durationInSeconds =
+        static_cast<double>(qpcEnd.QuadPart - qpcStart.QuadPart) /
+        qpcFreq.QuadPart;
+
+    // Nanoseconds per tick.
+    constexpr auto nanosPerSecond = 1.0e9;
+    Arch_NanosecondsPerTick = nanosPerSecond * durationInSeconds / (t2 - t1);
 }
 
 #else    

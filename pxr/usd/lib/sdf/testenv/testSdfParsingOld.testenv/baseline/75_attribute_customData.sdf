@@ -1,0 +1,16 @@
+#sdf 1.4.32
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+def MfScope "Root"
+{
+    custom double attr = 1 (
+        customData = {
+            bool attrBool = 1
+            string attrString = "test"
+        }
+    )
+}
+

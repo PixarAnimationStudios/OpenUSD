@@ -31,7 +31,7 @@
 
 using namespace boost;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapFunction() {
     TfPyFunctionFromPython<void ()>();
@@ -42,5 +42,3 @@ void wrapFunction() {
     TfPyFunctionFromPython<std::string ()>();
     TfPyFunctionFromPython<python::object ()>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,0 +1,51 @@
+Loading @ErrorRelocateToSelf/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model_1>
+
+Prim Stack:
+    root.sdf             /Model_1
+    model.sdf            /Model
+
+Child names:
+     ['LocalClass', 'Instance']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/LocalClass>
+
+Prim Stack:
+    root.sdf             /Model_1/LocalClass
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/LocalClass/Test>
+
+Prim Stack:
+    root.sdf             /Model_1/LocalClass/Test
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance>
+
+Prim Stack:
+    root.sdf             /Model_1/Instance
+    root.sdf             /Model_1/LocalClass
+    model.sdf            /Model/Instance
+    model.sdf            /Model/LocalClass
+
+Child names:
+     ['Test']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance/Test>
+
+Prim Stack:
+    root.sdf             /Model_1/Instance/Test
+    root.sdf             /Model_1/LocalClass/Test
+

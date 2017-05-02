@@ -1,0 +1,10 @@
+#sdf 1.4.32
+
+def Scope "SlugJ" (
+    add references = [
+        @./SlugJ_modelInterface.gen.sdf@</SlugJ>,
+        @./SlugJ_shaderDisplayDefs.sdf@</SlugJ>
+    ]
+)
+{
+}

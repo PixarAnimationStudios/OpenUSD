@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    subLayers = [
+        @testAPI_sub1.usda@,
+        @testAPI_sub2.usda@
+    ]
+)
+
+def "Sarah"
+{
+    custom color3d color = (1, 1, 1)
+}

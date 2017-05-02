@@ -25,6 +25,7 @@
 #define HD_PERSISTENT_BUFFER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resource.h"
 
@@ -42,7 +43,9 @@ typedef boost::shared_ptr<class HdPersistentBuffer> HdPersistentBufferSharedPtr;
 ///
 class HdPersistentBuffer : public HdResource {
 public:
+    HD_API
     HdPersistentBuffer(TfToken const &role, size_t dataSize, void* data);
+    HD_API
     ~HdPersistentBuffer();
 
     /// Returns the mapped address

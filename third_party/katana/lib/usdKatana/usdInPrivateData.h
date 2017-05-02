@@ -51,8 +51,7 @@ public:
     PxrUsdKatanaUsdInPrivateData(
             const UsdPrim& prim,
             PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
-            const PxrUsdKatanaUsdInPrivateData* parentData = NULL,
-            bool useDefaultMotion = false);
+            const PxrUsdKatanaUsdInPrivateData* parentData = NULL);
 
     virtual ~PxrUsdKatanaUsdInPrivateData()
     {
@@ -74,9 +73,24 @@ public:
         return _masterPath;
     }
 
-    const bool UseDefaultMotionSampleTimes() const {
-        return _useDefaultMotionSampleTimes;
+    const double GetCurrentTime() const {
+        return _currentTime;
     }
+
+    const double GetShutterOpen() const {
+        return _shutterOpen;
+    }
+
+    const double GetShutterClose() const {
+        return _shutterClose;
+    }
+
+    /// \brief Return true if motion blur is backward.
+    ///
+    /// PxrUsdIn supports both forward and backward motion blur. Motion
+    /// blur is considered backward if multiple samples are requested
+    /// and the first specified sample is later than the last sample.
+    const bool IsMotionBackward() const;
 
     const std::vector<double> GetMotionSampleTimes(
         const UsdAttribute& attr = UsdAttribute()) const;
@@ -84,13 +98,18 @@ public:
 private:
 
     UsdPrim _prim;
-    
+
     PxrUsdKatanaUsdInArgsRefPtr _usdInArgs;
 
     SdfPath _instancePath;
     SdfPath _masterPath;
-    
-    bool _useDefaultMotionSampleTimes;
+
+    double _currentTime;
+    double _shutterOpen;
+    double _shutterClose;
+
+    std::vector<double> _motionSampleTimesOverride;
+    std::vector<double> _motionSampleTimesFallback;
 
 };
 

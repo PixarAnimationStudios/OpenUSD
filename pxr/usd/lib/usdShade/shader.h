@@ -210,6 +210,17 @@ public:
     USDSHADE_API
     operator UsdShadeConnectableAPI () const;
 
+    /// Contructs and returns a UsdShadeConnectableAPI object with this shader.
+    ///
+    /// Note that most tasks can be accomplished without explicitly constructing 
+    /// a UsdShadeConnectable API, since connection-related API such as
+    /// UsdShadeConnectableAPI::ConnectToSource() are static methods, and 
+    /// UsdShadeShader will auto-convert to a UsdShadeConnectableAPI when 
+    /// passed to functions that want to act generically on a connectable
+    /// UsdShadeConnectableAPI object.
+    USDSHADE_API
+    UsdShadeConnectableAPI ConnectableAPI() const;
+
     /// \name Parameters API
     /// \deprecated
     /// Parameters have been replaced by the more general UsdShadeInputs, that

@@ -539,6 +539,16 @@ GlfGLSLFX::GetAttributes() const
     return GlfGLSLFXConfig::Attributes();
 }
 
+GlfGLSLFXConfig::MetadataDictionary
+GlfGLSLFX::GetMetadata() const
+{
+    if (_config) {
+        return _config->GetMetadata();
+    }
+
+    return GlfGLSLFXConfig::MetadataDictionary();
+}
+
 string
 GlfGLSLFX::_GetSource(const TfToken &shaderStageKey) const
 {

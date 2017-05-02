@@ -342,7 +342,7 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// \class UsdGeomXformable::XformQuery
+    /// \class XformQuery
     /// 
     /// Helper class that caches the ordered vector of UsGeomXformOps that 
     /// contribute to the local transformation of an xformable prim
@@ -595,6 +595,7 @@ public:
     /// When this returns true, all ops upto the last "!resetXformStack!" in
     /// xformOpOrder are ignored when computing the local transformation.
     /// 
+    USDGEOM_API
     bool GetResetXformStack() const;
 
     /// Reorder the already-existing transform ops on this prim.

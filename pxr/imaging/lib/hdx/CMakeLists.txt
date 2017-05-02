@@ -12,6 +12,7 @@ pxr_shared_library(hdx
         glf
         pxOsd
         hd
+        hdSt
         cameraUtil
         sdf
         ${GLEW_LIBRARY}
@@ -20,18 +21,13 @@ pxr_shared_library(hdx
         ${GLEW_INCLUDE_DIR}
 
     PUBLIC_CLASSES
-        camera
-        debugCodes
-        drawTarget
-        drawTargetAttachmentDesc
-        drawTargetAttachmentDescArray
         drawTargetRenderPass
-        drawTargetRenderPassState
         drawTargetTask
         drawTargetResolveTask
         intersector
-        light
         package
+        rendererPlugin
+        rendererPluginRegistry
         renderTask
         renderSetupTask
         selectionTask
@@ -40,15 +36,17 @@ pxr_shared_library(hdx
         simpleLightingShader
         simpleLightTask
         simpleLightBypassTask
+        taskController
         tokens
         types
 
     PUBLIC_HEADERS
         shadowMatrixComputation.h
         version.h
+        api.h
 
     PRIVATE_CLASSES
-        drawTargetTextureResource
+        debugCodes
         unitTestDelegate
 
     PRIVATE_HEADERS

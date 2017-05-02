@@ -33,10 +33,11 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 
+#include <tbb/queuing_rw_mutex.h>
+
 #include <boost/unordered_map.hpp>
 
 #include <algorithm>
-#include <mutex>
 #include <utility>
 
 using std::pair;
@@ -77,7 +78,7 @@ public:
     bool isUsd;
     Pcp_MutedLayers mutedLayers;
 
-    std::mutex mutex;
+    tbb::queuing_rw_mutex mutex;
 };
 
 Pcp_LayerStackRegistryRefPtr
@@ -126,7 +127,7 @@ Pcp_LayerStackRegistry::IsLayerMuted(const SdfLayerHandle& anchorLayer,
 const PcpLayerStackPtrVector&
 Pcp_LayerStackRegistry::FindAllUsingMutedLayer(const std::string& layerId) const
 {
-    std::lock_guard<std::mutex> lock(_data->mutex);
+    tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/false);
     const auto i = _data->mutedLayerIdentifierToLayerStacks.find(layerId);
     return i != _data->mutedLayerIdentifierToLayerStacks.end() ? 
         i->second : _data->empty;
@@ -143,27 +144,31 @@ Pcp_LayerStackRegistry::FindOrCreate(const PcpLayerStackIdentifier& identifier,
         return TfNullPtr;
     }
 
-    if (const PcpLayerStackPtr & layerStack = Find(identifier)) {
+    tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/false);
+
+    if (const PcpLayerStackPtr & layerStack = _Find(identifier)) {
         return layerStack;
     } else {
+        lock.release();
+
         PcpLayerStackRefPtr refLayerStack =
             TfCreateRefPtr(new PcpLayerStack(
                 identifier, _GetTargetSchema(), _GetMutedLayers(), _IsUsd()));
 
         // Take the lock and see if we get to install the layerstack.
-        std::lock_guard<std::mutex> lock(_data->mutex);
-        std::pair<Pcp_LayerStackRegistryData::IdentifierToLayerStack::iterator,
-                  bool> iresult = _data->identifierToLayerStack.insert(
-                      make_pair(identifier, refLayerStack));
+        lock.acquire(_data->mutex);
+        auto iresult =
+            _data->identifierToLayerStack.emplace(identifier, refLayerStack);
         if (iresult.second) {
             // If so give it a link back to us so it can remove itself upon
             // destruction, and install its layers into our structures.
             refLayerStack->_registry = TfCreateWeakPtr(this);
             _SetLayers(get_pointer(refLayerStack));
+            lock.release();
 
             // Return errors from newly computed layer stacks.
             PcpErrorVector errors = refLayerStack->GetLocalErrors();
-            allErrors->insert( allErrors->end(), errors.begin(), errors.end());
+            allErrors->insert(allErrors->end(), errors.begin(), errors.end());
         }
 
         return iresult.first->second;
@@ -173,26 +178,31 @@ Pcp_LayerStackRegistry::FindOrCreate(const PcpLayerStackIdentifier& identifier,
 PcpLayerStackPtr
 Pcp_LayerStackRegistry::Find(const PcpLayerStackIdentifier& identifier) const
 {
-    std::lock_guard<std::mutex> lock(_data->mutex);
-    Pcp_LayerStackRegistryData::IdentifierToLayerStack::const_iterator i =
-        _data->identifierToLayerStack.find(identifier);
-    return (i != _data->identifierToLayerStack.end())?
-        i->second : PcpLayerStackPtr();
+    tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/false);
+    return _Find(identifier);
 }
+
+PcpLayerStackPtr
+Pcp_LayerStackRegistry::_Find(const PcpLayerStackIdentifier& identifier) const
+{
+    auto iter = _data->identifierToLayerStack.find(identifier);
+    return (iter != _data->identifierToLayerStack.end()) ?
+        iter->second : PcpLayerStackPtr();
+}
+
 
 const PcpLayerStackPtrVector&
 Pcp_LayerStackRegistry::FindAllUsingLayer(const SdfLayerHandle& layer) const
 {
-    std::lock_guard<std::mutex> lock(_data->mutex);
-    Pcp_LayerStackRegistryData::LayerToLayerStacks::const_iterator i =
-        _data->layerToLayerStacks.find(layer);
+    tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/false);
+    auto i = _data->layerToLayerStacks.find(layer);
     return i != _data->layerToLayerStacks.end() ? i->second : _data->empty;
 }
 
 std::vector<PcpLayerStackPtr>
 Pcp_LayerStackRegistry::GetAllLayerStacks() const
 {
-    std::lock_guard<std::mutex> lock(_data->mutex);
+    tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/false);
     std::vector<PcpLayerStackPtr> result;
     result.reserve(_data->identifierToLayerStack.size());
     TF_FOR_ALL(i, _data->identifierToLayerStack) {

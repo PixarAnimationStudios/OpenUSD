@@ -25,6 +25,7 @@
 #define HD_PERF_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/debugCodes.h"
 
@@ -93,60 +94,75 @@ class SdfPath;
 ///
 class HdPerfLog : public boost::noncopyable {
 public:
-
+    HD_API
     static HdPerfLog& GetInstance() {
         return TfSingleton<HdPerfLog>::GetInstance();
     }
 
     /// Tracks a cache hit for the named cache, the id and tag are reported
     /// when debug logging is enabled.
+    HD_API
     void AddCacheHit(TfToken const& name,
                      SdfPath const& id,
                      TfToken const& tag=TfToken());
 
     /// Tracks a cache miss for the named cache, the id and tag are reported
     /// when debug logging is enabled.
+    HD_API
     void AddCacheMiss(TfToken const& name,
                       SdfPath const& id,
                       TfToken const& tag=TfToken());
 
+    HD_API
     void ResetCache(TfToken const& name);
 
     /// Gets the hit ratio (numHits / totalRequests) of a cache performance
     /// counter.
+    HD_API
     double GetCacheHitRatio(TfToken const& name);
 
     /// Gets the number of hit hits for a cache performance counter.
+    HD_API
     size_t GetCacheHits(TfToken const& name);
 
     /// Gets the number of hit misses for a cache performance counter.
+    HD_API
     size_t GetCacheMisses(TfToken const& name);
 
     /// Returns the names of all cache performance counters.
+    HD_API
     TfTokenVector GetCacheNames();
 
     /// Returns a vector of all performance counter names.
+    HD_API
     TfTokenVector GetCounterNames();
 
     /// Increments a named counter by 1.0.
+    HD_API
     void IncrementCounter(TfToken const& name);
 
     /// Decrements a named counter by 1.0.
+    HD_API
     void DecrementCounter(TfToken const& name);
 
     /// Sets the value of a named counter.
+    HD_API
     void SetCounter(TfToken const& name, double value);
 
     /// Adds value to a named counter.
+    HD_API
     void AddCounter(TfToken const& name, double value);
 
     /// Subtracts value to a named counter.
+    HD_API
     void SubtractCounter(TfToken const& name, double value);
 
     /// Returns the current value of a named counter.
+    HD_API
     double GetCounter(TfToken const& name);
 
     /// Reset all conter values to 0.0. Note that this doesn't reset cache counters.
+    HD_API
     void ResetCounters();
 
     /// Enable performance logging.
@@ -194,6 +210,7 @@ private:
     typedef std::lock_guard<std::mutex> _Lock;
 };
 
+HD_API_TEMPLATE_CLASS(TfSingleton<HdPerfLog>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

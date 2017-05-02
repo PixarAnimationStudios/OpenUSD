@@ -25,6 +25,8 @@
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 #include "pxr/imaging/hdx/package.h"
+#include "pxr/imaging/hdx/renderSetupTask.h"
+#include "pxr/imaging/hdx/tokens.h"
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -43,7 +45,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdxIntersector::HdxIntersector(HdRenderIndexSharedPtr index)
+HdxIntersector::HdxIntersector(HdRenderIndex *index)
     : _index(index)
 { 
 }
@@ -137,6 +139,55 @@ HdxIntersector::SetResolution(GfVec2i const& widthHeight)
         _drawTarget->Unbind();
     }
 }
+
+class HdxIntersector_DrawTask final : public HdTask
+{
+public:
+    HdxIntersector_DrawTask(HdRenderPassSharedPtr const &renderPass,
+                HdRenderPassStateSharedPtr const &renderPassState,
+                TfTokenVector const &renderTags)
+    : HdTask()
+    , _renderPass(renderPass)
+    , _renderPassState(renderPassState)
+    , _renderTags(renderTags)
+    {
+    }
+
+protected:
+    virtual void _Sync(HdTaskContext* ctx) override
+    {
+        _renderPass->Sync();
+        _renderPassState->Sync();
+    }
+
+    virtual void _Execute(HdTaskContext* ctx) override
+    {
+	// Try to extract render tags from the context in case
+        // there are render tags passed to the graph that 
+        // we should be using while rendering the id buffer
+        // XXX If this was a task (in the render graph) we could
+        // just connect it to the render pass setup which receives
+        // its rendertags from the viewer.
+        if(_renderTags.empty()) {
+            _GetTaskContextData(ctx, HdxTokens->renderTags, &_renderTags);
+        }
+
+        _renderPassState->Bind();
+        if(_renderTags.size()) {
+            TF_FOR_ALL(rt, _renderTags) {
+                _renderPass->Execute(_renderPassState, *rt);
+            }
+        } else {
+            _renderPass->Execute(_renderPassState);
+        }
+        _renderPassState->Unbind();
+    }
+
+private:
+    HdRenderPassSharedPtr _renderPass;
+    HdRenderPassStateSharedPtr _renderPassState;
+    TfTokenVector _renderTags;
+};
 
 bool
 HdxIntersector::Query(HdxIntersector::Params const& params,
@@ -258,7 +309,11 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         // Execute
         //
         // XXX: make intersector a Task
-        engine->Draw(*_index, _renderPass, _renderPassState);
+        HdTaskSharedPtrVector tasks;
+        tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(_renderPass,
+                                                               _renderPassState,
+                                                            params.renderTags));
+        engine->Execute(*_index, tasks);
 
         glDisable(GL_STENCIL_TEST);
 
@@ -327,7 +382,7 @@ HdxIntersector::Result::Result(std::unique_ptr<unsigned char[]> primIds,
                         std::unique_ptr<unsigned char[]> instanceIds,
                         std::unique_ptr<unsigned char[]> elementIds,
                         std::unique_ptr<float[]> depths,
-                        HdRenderIndexSharedPtr const& index,
+                        HdRenderIndex const *index,
                         HdxIntersector::Params params,
                         GfVec4i viewport)
     : _primIds(std::move(primIds))
@@ -343,7 +398,6 @@ HdxIntersector::Result::Result(std::unique_ptr<unsigned char[]> primIds,
 HdxIntersector::Result::~Result()
 {
     _params = Params();
-    _index.reset();
     _viewport = GfVec4i(0,0,0,0);
 }
 
@@ -371,34 +425,17 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
 
     int idIndex = index*4;
 
-    GfVec4i primIdColor(
-        primIds[idIndex+0],
-        primIds[idIndex+1],
-        primIds[idIndex+2],
-        primIds[idIndex+3]);
-
-    GfVec4i instanceIdColor(
-        instanceIds[idIndex+0],
-        instanceIds[idIndex+1],
-        instanceIds[idIndex+2],
-        instanceIds[idIndex+3]);
-
-    int instanceIndex = 0;
-    hit->objectId = _index->GetPrimPathFromPrimIdColor(primIdColor,
-                        instanceIdColor, &instanceIndex);
+    int primId = HdxRenderSetupTask::DecodeIDRenderColor(&primIds[idIndex]);
+    hit->objectId = _index->GetRprimPathFromPrimId(primId);
 
     if (!hit->IsValid()) {
         return false;
     }
 
-    // XXX: either this should be done in the render index or all render index
-    // logic should be moved here. If moved here, the shader logic should move
-    // into Hdx as well.
-    int elemIndex = ((elementIds[idIndex+0] & 0xff) <<  0) |
-                    ((elementIds[idIndex+1] & 0xff) <<  8) |
-                    ((elementIds[idIndex+2] & 0xff) << 16);
-
-
+    int instanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            &instanceIds[idIndex]);
+    int elementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            &elementIds[idIndex]);
 
     bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit->objectId,
                                                            &(hit->delegateId),
@@ -411,7 +448,7 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
     hit->worldSpaceHitPoint = GfVec3f(hitPoint);
     hit->ndcDepth = float(z);
     hit->instanceIndex = instanceIndex;
-    hit->elementIndex = elemIndex; 
+    hit->elementIndex = elementIndex; 
 
     if (TfDebug::IsEnabled(HDX_INTERSECT)) {
         std::cout << *hit << std::endl;
@@ -429,26 +466,17 @@ HdxIntersector::Result::_GetHash(int index) const
 
     int idIndex = index*4;
 
-    GfVec4i primIdColor(
-        primIds[idIndex+0],
-        primIds[idIndex+1],
-        primIds[idIndex+2],
-        primIds[idIndex+3]);
-
-    GfVec4i instanceIdColor(
-        instanceIds[idIndex+0],
-        instanceIds[idIndex+1],
-        instanceIds[idIndex+2],
-        instanceIds[idIndex+3]);
-
-    int elemIndex = ((elementIds[idIndex+0] & 0xff) <<  0) |
-                    ((elementIds[idIndex+1] & 0xff) <<  8) |
-                    ((elementIds[idIndex+2] & 0xff) << 16);
+    int primId = HdxRenderSetupTask::DecodeIDRenderColor(
+            &primIds[idIndex]);
+    int instanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            &instanceIds[idIndex]);
+    int elementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            &elementIds[idIndex]);
 
     size_t hash = 0;
-    boost::hash_combine(hash, primIdColor);
-    boost::hash_combine(hash, instanceIdColor);
-    boost::hash_combine(hash, elemIndex);
+    boost::hash_combine(hash, primId);
+    boost::hash_combine(hash, instanceIndex);
+    boost::hash_combine(hash, elementIndex);
 
     return hash;
 }

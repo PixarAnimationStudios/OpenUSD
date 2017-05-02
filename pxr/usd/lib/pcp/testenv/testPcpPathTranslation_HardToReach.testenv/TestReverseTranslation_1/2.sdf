@@ -1,0 +1,14 @@
+#sdf 1.4.32
+
+def __AnyType__ "M_2" (
+    add references = @./3.sdf@</M_3>
+)
+{
+    over "B"
+    {
+    }
+
+    over "C"
+    {
+    }
+}

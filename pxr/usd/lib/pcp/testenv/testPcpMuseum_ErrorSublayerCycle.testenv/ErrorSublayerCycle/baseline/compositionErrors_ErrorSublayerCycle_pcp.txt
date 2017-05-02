@@ -1,0 +1,6 @@
+------------------------------------------------------------------------
+Errors while computing Layer Stack
+
+Sublayer hierarchy with root layer @ErrorSublayerCycle/B.sdf@ has cycles. Detected when layer @ErrorSublayerCycle/A.sdf@ was seen in the layer stack for the second time.
+Sublayer hierarchy with root layer @ErrorSublayerCycle/A.sdf@ has cycles. Detected when layer @ErrorSublayerCycle/B.sdf@ was seen in the layer stack for the second time.
+

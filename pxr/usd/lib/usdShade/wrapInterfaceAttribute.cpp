@@ -35,10 +35,11 @@
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bool
 _Set(const UsdShadeInterfaceAttribute &self, object val, const UsdTimeCode &time) {
@@ -75,6 +76,8 @@ bool _SetRecipient1(
 {
     return self.SetRecipient(renderTarget, recipient);
 }
+
+} // anonymous namespace 
 
 void wrapUsdShadeInterfaceAttribute()
 {
@@ -133,7 +136,4 @@ void wrapUsdShadeInterfaceAttribute()
         std::vector<InterfaceAttribute>,
         TfPySequenceToPython<std::vector<InterfaceAttribute> > >();
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
 

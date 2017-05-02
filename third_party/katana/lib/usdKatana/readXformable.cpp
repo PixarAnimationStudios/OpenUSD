@@ -53,7 +53,7 @@ PxrUsdKatanaReadXformable(
     // Calculate and set the xform attribute.
     //
 
-    double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    double currentTime = data.GetCurrentTime();
 
     // Get the ordered xform ops for the prim.
     //
@@ -63,7 +63,7 @@ PxrUsdKatanaReadXformable(
 
     FnKat::GroupBuilder gb;
 
-    const bool isMotionBackward = data.GetUsdInArgs()->IsMotionBackward();
+    const bool isMotionBackward = data.IsMotionBackward();
 
     // For each xform op, construct a matrix containing the 
     // transformation data for each time sample it has.

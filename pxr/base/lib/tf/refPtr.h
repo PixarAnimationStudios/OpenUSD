@@ -508,10 +508,33 @@ struct Tf_RefPtr_UniqueChangedCounter {
         return false;
     }
 
+    // Increment ptr's count if it is not zero.  Return true if done so
+    // successfully, false if its count is zero.
+    static inline bool
+    AddRefIfNonzero(TfRefBase const *ptr,
+                    TfRefBase::UniqueChangedListener const &listener) {
+        if (!ptr)
+            return false;
+        if (ptr->_shouldInvokeUniqueChangedListener) {
+            return _AddRefIfNonzero(ptr, listener);
+        } else {
+            auto &counter = ptr->GetRefCount()._counter;
+            auto val = counter.load();
+            do {
+                if (val == 0)
+                    return false;
+            } while (!counter.compare_exchange_weak(val, val + 1));
+            return true;
+        }
+    }
+    
     TF_API static bool _RemoveRef(TfRefBase const *refBase,
                            TfRefBase::UniqueChangedListener const &listener);
 
     TF_API static int _AddRef(TfRefBase const *refBase,
+                       TfRefBase::UniqueChangedListener const &listener);
+
+    TF_API static bool _AddRefIfNonzero(TfRefBase const *refBase,
                        TfRefBase::UniqueChangedListener const &listener);
 };
 
@@ -527,9 +550,25 @@ struct Tf_RefPtr_Counter {
     }
 
     static inline bool
-    RemoveRef(const TfRefBase* ptr,
+    RemoveRef(TfRefBase const *ptr,
               TfRefBase::UniqueChangedListener const &) {
         return (ptr && (ptr->GetRefCount()._DecrementAndTestIfZero()));
+    }
+
+    // Increment ptr's count if it is not zero.  Return true if done so
+    // successfully, false if its count is zero.
+    static inline bool
+    AddRefIfNonzero(TfRefBase const *ptr,
+                    TfRefBase::UniqueChangedListener const &) {
+        if (!ptr)
+            return false;
+        auto &counter = ptr->GetRefCount()._counter;
+        auto val = counter.load();
+        do {
+            if (val == 0)
+                return false;
+        } while (!counter.compare_exchange_weak(val, val + 1));
+        return true;
     }
 };
 

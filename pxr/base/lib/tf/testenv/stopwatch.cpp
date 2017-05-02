@@ -23,13 +23,14 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/nap.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <iostream>
 #include <algorithm>
+#include <chrono>
+#include <iostream>
+#include <thread>
 
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -44,9 +45,23 @@ Pause(double seconds)
     static TfStopwatch pauseWatch("pwatch", true);
 
     pauseWatch.Start();
-    ArchNap(static_cast<size_t>(seconds * 100.0));
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(static_cast<size_t>(seconds*1000)));
     pauseWatch.Stop();
 }
+
+static bool
+IsClose(double a, double b, double epsilon=1e-3)
+{
+    auto diff = fabs(a-b);
+    return diff <= epsilon * abs(a)
+           && diff <= epsilon * abs(b);
+}
+
+// XXX: We use a rather large epsilon to account for
+// systems with very large sleep times. We still expect
+// variance to be within 10% (see IsClose above) for details.
+constexpr double EPSILON = 1e-1;
 
 static bool
 Test_TfStopwatch()
@@ -78,11 +93,11 @@ Test_TfStopwatch()
     // Delay .5 seconds (500 million nanoseconds)
     //
     watch1.Start();
-    ArchNap(50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     watch1.Stop();
 
-    // The value of watch1 should be "near" 0.5 seconds
-    if (fabs(watch1.GetSeconds() - 0.5) > 0.05) {
+    // The value of watch1 should be near 0.5 seconds
+    if (!IsClose(watch1.GetSeconds(), 0.5, EPSILON)) {
         cout << "Sleep for .5 seconds but measured time was "
              << watch1.GetSeconds()
              << " seconds."
@@ -93,11 +108,11 @@ Test_TfStopwatch()
     // Delay another .5 seconds and see if watch is near 1
     //
     watch1.Start();
-    ArchNap(50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     watch1.Stop();
 
-    // The value of watch1 should be "near" 1.0 seconds
-    if (fabs(watch1.GetSeconds() - 1.0) > 0.1) {
+    // The value of watch1 should be near 1.0 seconds
+    if (!IsClose(watch1.GetSeconds(), 1.0, EPSILON)) {
         cout << "Sleep for 1.0 seconds but measured time was "
              << watch1.GetSeconds()
              << " seconds."
@@ -118,7 +133,7 @@ Test_TfStopwatch()
     // Test AddFrom
     //
     watchCopy.AddFrom(watch1);
-    if (watchCopy.GetSeconds() != watch1.GetSeconds()) {
+    if (!IsClose(watchCopy.GetSeconds(), watch1.GetSeconds())) {
         cout << "AddFrom: watchCopy has time of "
              << watchCopy.GetSeconds()
              << " instead of "
@@ -131,7 +146,7 @@ Test_TfStopwatch()
     // Test AddFrom
     //
     watchCopy.AddFrom(watch1);
-    if (fabs(watchCopy.GetSeconds()/watch1.GetSeconds() - 2.0) > 0.00001) {
+    if (!IsClose(watchCopy.GetSeconds()/watch1.GetSeconds(), 2.0)) {
         cout << "AddFrom: watchCopy has time of "
              << watchCopy.GetSeconds()
              << " instead of "
@@ -187,11 +202,11 @@ Test_TfStopwatch()
     // Delay .5 seconds (500 million nanoseconds)
     //
     swatch1.Start();
-    ArchNap(50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     swatch1.Stop();
 
-    // The value of swatch1 should be "near" 0.5 seconds
-    if (fabs(swatch1.GetSeconds() - 0.5) > 0.05) {
+    // The value of swatch1 should be near 0.5 seconds
+    if (!IsClose(swatch1.GetSeconds(), 0.5, EPSILON)) {
         cout << "Sleep for .5 seconds but measured time was "
              << swatch1.GetSeconds()
              << " seconds."
@@ -200,13 +215,12 @@ Test_TfStopwatch()
     }
 
     // Delay another .5 seconds and see if swatch is near 1
-    //
     swatch1.Start();
-    ArchNap(50);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     swatch1.Stop();
 
-    // The value of swatch1 should be "near" 1.0 seconds
-    if (fabs(swatch1.GetSeconds() - 1.0) > 0.1) {
+    // The value of swatch1 should be near 1.0 seconds
+    if (!IsClose(swatch1.GetSeconds(), 1.0, EPSILON)) {
         cout << "Sleep for 1.0 seconds but measured time was "
              << swatch1.GetSeconds()
              << " seconds."
@@ -246,7 +260,7 @@ Test_TfStopwatch()
     // Test AddFrom
     //
     swatch2.AddFrom(swatch1);
-    if (swatch2.GetSeconds() != swatch1.GetSeconds()) {
+    if (!IsClose(swatch2.GetSeconds(), swatch1.GetSeconds())) {
         cout << "AddFrom: swatch2 has time of "
              << swatch2.GetSeconds()
              << " instead of "
@@ -259,7 +273,7 @@ Test_TfStopwatch()
     // Test AddFrom
     //
     swatch2.AddFrom(swatch1);
-    if (fabs(swatch2.GetSeconds()/swatch1.GetSeconds() - 2.0) > 0.00001) {
+    if (!IsClose(swatch2.GetSeconds()/swatch1.GetSeconds(), 2.0)) {
         cout << "AddFrom: swatch2 has time of "
              << swatch2.GetSeconds()
              << " instead of "
@@ -311,7 +325,7 @@ Test_TfStopwatch()
     
     TfStopwatch pauseWatch = TfStopwatch::GetNamedStopwatch("pwatch");
 
-    if (fabs(pauseWatch.GetSeconds() - 0.5) > 0.05) {
+    if (!IsClose(pauseWatch.GetSeconds(), 0.5, EPSILON)) {
         cout << "pause for .5 seconds but measured time was "
              << pauseWatch.GetSeconds()
              << " seconds."
@@ -324,7 +338,7 @@ Test_TfStopwatch()
     Pause(0.5);
 
     pauseWatch = TfStopwatch::GetNamedStopwatch("pwatch");
-    if (fabs(pauseWatch.GetSeconds() - 1.0) > 0.1) {
+    if (!IsClose(pauseWatch.GetSeconds(), 1.0, EPSILON)) {
         cout << "pause for 1.0 seconds but measured time was "
              << pauseWatch.GetSeconds()
              << " seconds."

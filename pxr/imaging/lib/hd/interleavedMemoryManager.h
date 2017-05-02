@@ -25,9 +25,7 @@
 #define HD_INTERLEAVED_VBO_MEMORY_MANAGER_H
 
 #include "pxr/pxr.h"
-#include <boost/shared_ptr.hpp>
-#include <list>
-
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/mallocTag.h"
@@ -39,6 +37,9 @@
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include <boost/shared_ptr.hpp>
+#include <list>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -61,6 +62,7 @@ protected:
         }
 
         /// Destructor.
+        HD_API
         virtual ~_StripedInterleavedBufferRange();
 
         /// Returns true if this range is valid
@@ -70,16 +72,20 @@ protected:
         }
 
         /// Returns true is the range has been assigned to a buffer
+        HD_API
         virtual bool IsAssigned() const;
 
         /// Resize memory area for this range. Returns true if it causes container
         /// buffer reallocation.
+        HD_API
         virtual bool Resize(int numElements);
 
         /// Copy source data into buffer
+        HD_API
         virtual void CopyData(HdBufferSourceSharedPtr const &bufferSource);
 
         /// Read back the buffer content
+        HD_API
         virtual VtValue ReadData(TfToken const &name) const;
 
         /// Returns the relative offset in aggregated buffer
@@ -110,22 +116,28 @@ protected:
         }
 
         /// Returns the max number of elements
+        HD_API
         virtual size_t GetMaxNumElements() const;
 
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
+        HD_API
         virtual HdBufferResourceSharedPtr GetResource() const;
 
         /// Returns the named GPU resource.
+        HD_API
         virtual HdBufferResourceSharedPtr GetResource(TfToken const& name);
 
         /// Returns the list of all named GPU resources for this bufferArrayRange.
+        HD_API
         virtual HdBufferResourceNamedList const& GetResources() const;
 
         /// Sets the buffer array assosiated with this buffer;
+        HD_API
         virtual void SetBufferArray(HdBufferArray *bufferArray);
 
         /// Debug dump
+        HD_API
         virtual void DebugDump(std::ostream &out) const;
 
         /// Set the relative offset for this range.
@@ -140,6 +152,7 @@ protected:
 
     protected:
         /// Returns the aggregation container
+        HD_API
         virtual const void *_GetAggregation() const;
 
     private:
@@ -158,6 +171,7 @@ protected:
     class _StripedInterleavedBuffer : public HdBufferArray {
     public:
         /// Constructor.
+        HD_API
         _StripedInterleavedBuffer(TfToken const &role,
                                   HdBufferSpecVector const &bufferSpecs,
                                   int bufferOffsetAlignment,
@@ -166,16 +180,20 @@ protected:
                                   TfToken const &garbageCollectionPerfToken);
 
         /// Destructor. It invalidates _rangeList
+        HD_API
         virtual ~_StripedInterleavedBuffer();
 
         /// perform compaction if necessary, returns true if it becomes empty.
+        HD_API
         virtual bool GarbageCollect();
 
         /// Debug output
+        HD_API
         virtual void DebugDump(std::ostream &out) const;
 
         /// Performs reallocation.
         /// GLX context has to be set when calling this function.
+        HD_API
         virtual void Reallocate(
                 std::vector<HdBufferArrayRangeSharedPtr> const &ranges,
                 HdBufferArraySharedPtr const &curRangeOwner);
@@ -196,6 +214,7 @@ protected:
         }
 
     protected:
+        HD_API
         void _DeallocateResources();
 
     private:
@@ -219,11 +238,13 @@ class HdInterleavedUBOMemoryManager : public HdInterleavedMemoryManager {
 public:
     /// Factory for creating HdBufferArray managed by
     /// HdVBOMemoryManager aggregation.
+    HD_API
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs);
 
     /// Returns id for given bufferSpecs to be used for aggregation
+    HD_API
     virtual AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs) const;
 
@@ -231,19 +252,24 @@ public:
     static HdInterleavedUBOMemoryManager& GetInstance() {
         return TfSingleton<HdInterleavedUBOMemoryManager>::GetInstance();
     }
+
 protected:
     friend class TfSingleton<HdInterleavedUBOMemoryManager>;
 };
+
+HD_API_TEMPLATE_CLASS(TfSingleton<HdInterleavedUBOMemoryManager>);
 
 class HdInterleavedSSBOMemoryManager : public HdInterleavedMemoryManager {
 public:
     /// Factory for creating HdBufferArray managed by
     /// HdVBOMemoryManager aggregation.
+    HD_API
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs);
 
     /// Returns id for given bufferSpecs to be used for aggregation
+    HD_API
     virtual AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs) const;
 
@@ -251,10 +277,12 @@ public:
     static HdInterleavedSSBOMemoryManager& GetInstance() {
         return TfSingleton<HdInterleavedSSBOMemoryManager>::GetInstance();
     }
+
 protected:
     friend class TfSingleton<HdInterleavedSSBOMemoryManager>;
 };
 
+HD_API_TEMPLATE_CLASS(TfSingleton<HdInterleavedSSBOMemoryManager>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

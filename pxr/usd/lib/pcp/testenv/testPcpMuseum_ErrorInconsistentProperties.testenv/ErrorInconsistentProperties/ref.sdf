@@ -1,0 +1,16 @@
+#sdf 1.4.32
+
+def "InconsistentPropType"
+{
+    rel x
+}
+
+def "InconsistentValType"
+{
+    string x = "str"
+}
+
+def "InconsistentVar"
+{
+    uniform double x = 0.0
+}

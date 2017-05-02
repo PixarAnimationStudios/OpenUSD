@@ -27,11 +27,16 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
+
 #include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/pcp/primIndex.h"
+
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/path.h"
+
 #include "pxr/usd/usd/debugCodes.h"
+#include "pxr/usd/usd/resolver.h"
 #include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
 
@@ -166,7 +171,7 @@ _ClipDerivationMsg(const TfToken& metadataName,
                    const V& v)
 {
     TF_DEBUG(USD_CLIPS).Msg(
-        "%s for prim <%s> derived: %s",
+        "%s for prim <%s> derived: %s\n",
         metadataName.GetText(),
         node.GetRootNode().GetPath().GetText(),
         TfStringify(v).c_str());
@@ -214,8 +219,7 @@ _DeriveClipInfo(const std::string& templateAssetPath,
                 boost::optional<VtVec2dArray>* clipActive,
                 boost::optional<VtArray<SdfAssetPath>>* clipAssetPaths,
                 const PcpNodeRef& node,
-                const SdfLayerHandle& layer,
-                const PcpLayerStackPtr& layerStack)
+                const SdfLayerHandle& layer)
 {
     if (stride == 0) {
         TF_WARN("Invalid clipTemplateStride %f on <%s> in LayerStack %s "
@@ -284,7 +288,7 @@ _DeriveClipInfo(const std::string& templateAssetPath,
     *clipAssetPaths = VtArray<SdfAssetPath>();
 
     const ArResolverContextBinder binder(
-        layerStack->GetIdentifier().pathResolverContext);
+        node.GetLayerStack()->GetIdentifier().pathResolverContext);
     ArResolverScopedCache resolverScopedCache;
     auto& resolver = ArGetResolver();
 
@@ -325,154 +329,187 @@ _DeriveClipInfo(const std::string& templateAssetPath,
     _ClipDerivationMsg(UsdTokens->clipActive, node, **clipActive);
 }
 
-void
+PcpNodeRef
 Usd_ResolveClipInfo(
-    const PcpNodeRef& node,
+    const PcpPrimIndex& primIndex,
     Usd_ResolvedClipInfo* clipInfo)
 {
-    const SdfPath& primPath = node.GetPath();
-    const PcpLayerStackPtr& layerStack = node.GetLayerStack();
-    const SdfLayerRefPtrVector& layers = layerStack->GetLayers();
+    PcpNodeRef sourceNode;
 
     bool nontemplateMetadataSeen = false;
     bool templateMetadataSeen    = false;
 
-    boost::optional<double> templateStartTime;
-    boost::optional<double> templateEndTime;
-    boost::optional<double> templateStride;
     boost::optional<std::string> templateAssetPath;
 
-    for (size_t i = 0, j = layers.size(); i != j; ++i) {
-        const SdfLayerRefPtr& layer = layers[i];
-        VtArray<SdfAssetPath> clipAssetPaths;
-        if (layer->HasField(primPath, UsdTokens->clipAssetPaths, 
-                            &clipAssetPaths)){
-            nontemplateMetadataSeen = true;
-            _ClipDebugMsg(node, layer, UsdTokens->clipAssetPaths);
-            clipInfo->indexOfLayerWhereAssetPathsFound = i;
-            clipInfo->clipAssetPaths = boost::in_place();
-            clipInfo->clipAssetPaths->swap(clipAssetPaths);
-            break;
-        }
+    // find our anchor(clipAssetPaths/clipTemplateAssetPath) if it exists.
+    for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextNode()) {
+        const PcpNodeRef& node = res.GetNode();
+        const SdfPath& primPath = node.GetPath();
+        const SdfLayerRefPtrVector& layers = node.GetLayerStack()->GetLayers();
 
-        std::string clipTemplateAssetPath;
-        if (layer->HasField(primPath, UsdTokens->clipTemplateAssetPath,
-                            &clipTemplateAssetPath)) {
-            templateMetadataSeen = true;
-            clipInfo->indexOfLayerWhereAssetPathsFound = i;
-            templateAssetPath = clipTemplateAssetPath;
-            break;
-        }
+        for (size_t i = 0, j = layers.size(); i != j; ++i) {
+            const SdfLayerRefPtr& layer = layers[i];
+            VtArray<SdfAssetPath> clipAssetPaths;
+            if (layer->HasField(primPath, UsdTokens->clipAssetPaths, 
+                                &clipAssetPaths)){
+                nontemplateMetadataSeen = true;
+                _ClipDebugMsg(node, layer, UsdTokens->clipAssetPaths);
+                clipInfo->indexOfLayerWhereAssetPathsFound = i;
+                clipInfo->clipAssetPaths = boost::in_place();
+                clipInfo->clipAssetPaths->swap(clipAssetPaths);
+                sourceNode = node;
+                break;
+            }
 
-        if (templateMetadataSeen && nontemplateMetadataSeen) {
-            TF_WARN("Both template and non-template clip metadata are "
-                    "authored for prim <%s> in layerStack %s "
-                    "at spec @%s@<%s>",
-                    primPath.GetText(),
-                    TfStringify(layerStack).c_str(),
-                    layer->GetIdentifier().c_str(),
-                    node.GetPath().GetString().c_str());
+            std::string clipTemplateAssetPath;
+            if (layer->HasField(primPath, UsdTokens->clipTemplateAssetPath,
+                                &clipTemplateAssetPath)) {
+                templateMetadataSeen = true;
+                clipInfo->indexOfLayerWhereAssetPathsFound = i;
+                templateAssetPath = clipTemplateAssetPath;
+                sourceNode = node;
+                break;
+            }
+
+            if (templateMetadataSeen && nontemplateMetadataSeen) {
+                TF_WARN("Both template and non-template clip metadata are "
+                        "authored for prim <%s> in layerStack %s "
+                        "at spec @%s@<%s>",
+                        primPath.GetText(),
+                        TfStringify(node.GetLayerStack()).c_str(),
+                        layer->GetIdentifier().c_str(),
+                        node.GetPath().GetString().c_str());
+            }
         }
+        
+        if (templateMetadataSeen || nontemplateMetadataSeen) {
+            break;
+        } 
     }
 
     // we need not complete resolution if there are no clip
     // asset paths available, as they are a necessary component for clips.
     if (!templateMetadataSeen && !nontemplateMetadataSeen) {
-        return;
+        return sourceNode;
     }
 
+    boost::optional<double> templateStartTime;
+    boost::optional<double> templateEndTime;
+    boost::optional<double> templateStride;
 
-    // Compose the various pieces of clip metadata; iterate the LayerStack
-    // from strong-to-weak and save the strongest opinion.
-    for (size_t i = 0, j = layers.size(); i != j; ++i) {
-        const SdfLayerRefPtr& layer = layers[i];
+    for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextNode()) {
+        const PcpNodeRef& node = res.GetNode();
+        const SdfPath& primPath = node.GetPath();
+        const SdfLayerRefPtrVector& layers = node.GetLayerStack()->GetLayers();
 
-        if (!clipInfo->clipManifestAssetPath) {
-            SdfAssetPath clipManifestAssetPath;
-            if (layer->HasField(primPath, UsdTokens->clipManifestAssetPath, 
-                                &clipManifestAssetPath)) {
-                _ClipDebugMsg(node, layer, UsdTokens->clipManifestAssetPath);
-                clipInfo->clipManifestAssetPath = clipManifestAssetPath;
-            }
-        }
+        // Compose the various pieces of clip metadata; iterate the LayerStack
+        // from strong-to-weak and save the strongest opinion.
+        for (size_t i = 0, j = layers.size(); i != j; ++i) {
+            const SdfLayerRefPtr& layer = layers[i];
 
-        if (!clipInfo->clipPrimPath) {
-            std::string clipPrimPath;
-            if (layer->HasField(primPath, UsdTokens->clipPrimPath, 
-                                &clipPrimPath)) {
-                _ClipDebugMsg(node, layer, UsdTokens->clipPrimPath);
-                clipInfo->clipPrimPath = boost::in_place();
-                clipInfo->clipPrimPath->swap(clipPrimPath);
-            }
-        }
-
-        if (nontemplateMetadataSeen) {
-            if (!clipInfo->clipActive) {
-                VtVec2dArray clipActive;
-                if (layer->HasField(primPath, UsdTokens->clipActive, 
-                                    &clipActive)) {
-                    _ClipDebugMsg(node, layer, UsdTokens->clipActive);
-                    _ApplyLayerOffsetToExternalTimes(
-                        _GetLayerOffsetToRoot(node, layer), &clipActive);
-                    clipInfo->clipActive = boost::in_place();
-                    clipInfo->clipActive->swap(clipActive);
+            if (!clipInfo->clipManifestAssetPath) {
+                SdfAssetPath clipManifestAssetPath;
+                if (layer->HasField(primPath, UsdTokens->clipManifestAssetPath, 
+                                    &clipManifestAssetPath)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipManifestAssetPath);
+                    clipInfo->clipManifestAssetPath = clipManifestAssetPath;
                 }
             }
 
-            if (!clipInfo->clipTimes) {
-                VtVec2dArray clipTimes;
-                if (layer->HasField(primPath, UsdTokens->clipTimes, 
-                                    &clipTimes)) {
-                    _ClipDebugMsg(node, layer, UsdTokens->clipTimes);
-                    _ApplyLayerOffsetToExternalTimes(
-                        _GetLayerOffsetToRoot(node, layer), &clipTimes);
-                    clipInfo->clipTimes = boost::in_place();
-                    clipInfo->clipTimes->swap(clipTimes);
-                }
-            }
-        } else {
-            if (!templateStride) {
-                double clipTemplateStride;
-                if (layer->HasField(primPath, UsdTokens->clipTemplateStride,
-                                    &clipTemplateStride)) {
-                    _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStride); 
-                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
-                    layerOffset.SetOffset(0);
-                    templateStride = layerOffset * clipTemplateStride;
+            if (!clipInfo->clipPrimPath) {
+                std::string clipPrimPath;
+                if (layer->HasField(primPath, UsdTokens->clipPrimPath, 
+                            &clipPrimPath)) {
+                    _ClipDebugMsg(node, layer, UsdTokens->clipPrimPath);
+                    clipInfo->clipPrimPath = boost::in_place();
+                    clipInfo->clipPrimPath->swap(clipPrimPath);
                 }
             }
 
-            if (!templateStartTime) {
-                double clipTemplateStartTime;
-                if (layer->HasField(primPath, UsdTokens->clipTemplateStartTime,
-                                    &clipTemplateStartTime)) {
-                    _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStartTime); 
-                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
-                    templateStartTime = layerOffset * clipTemplateStartTime;
+            if (nontemplateMetadataSeen) {
+                if (!clipInfo->clipActive) {
+                    VtVec2dArray clipActive;
+                    if (layer->HasField(primPath, UsdTokens->clipActive, 
+                                        &clipActive)) {
+                        _ClipDebugMsg(node, layer, UsdTokens->clipActive);
+                        _ApplyLayerOffsetToExternalTimes(
+                            _GetLayerOffsetToRoot(node, layer), &clipActive);
+                        clipInfo->clipActive = boost::in_place();
+                        clipInfo->clipActive->swap(clipActive);
+                    }
                 }
-            }
 
-            if (!templateEndTime) {
-                double clipTemplateEndTime;
-                if (layer->HasField(primPath, UsdTokens->clipTemplateEndTime,
-                                    &clipTemplateEndTime)) {
-                    _ClipDebugMsg(node, layer, UsdTokens->clipTemplateEndTime); 
-                    auto layerOffset = _GetLayerOffsetToRoot(node, layer);
-                    templateEndTime  = layerOffset * clipTemplateEndTime;
+                if (!clipInfo->clipTimes) {
+                    VtVec2dArray clipTimes;
+                    if (layer->HasField(primPath, UsdTokens->clipTimes, 
+                                        &clipTimes)) {
+                        _ClipDebugMsg(node, layer, UsdTokens->clipTimes);
+                        _ApplyLayerOffsetToExternalTimes(
+                            _GetLayerOffsetToRoot(node, layer), &clipTimes);
+                        clipInfo->clipTimes = boost::in_place();
+                        clipInfo->clipTimes->swap(clipTimes);
+                    }
                 }
-            }
+            } else {
+                if (!templateStride) {
+                    double clipTemplateStride;
+                    if (layer->HasField(primPath, UsdTokens->clipTemplateStride,
+                                        &clipTemplateStride)) {
+                        _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStride); 
+                        templateStride = clipTemplateStride;
+                    }
+                }
 
-            if (templateStride && templateStartTime && templateEndTime) {
-                _DeriveClipInfo(*templateAssetPath, *templateStride,
-                                *templateStartTime, *templateEndTime,
-                                &clipInfo->clipTimes, &clipInfo->clipActive,
-                                &clipInfo->clipAssetPaths, node, 
-                                layers[clipInfo->indexOfLayerWhereAssetPathsFound],
-                                layerStack);
-                break;
+                if (!templateStartTime) {
+                    double clipTemplateStartTime;
+                    if (layer->HasField(primPath, UsdTokens->clipTemplateStartTime,
+                                        &clipTemplateStartTime)) {
+                        _ClipDebugMsg(node, layer, UsdTokens->clipTemplateStartTime); 
+                        templateStartTime = clipTemplateStartTime;
+                    }
+                }
+
+                if (!templateEndTime) {
+                    double clipTemplateEndTime;
+                    if (layer->HasField(primPath, UsdTokens->clipTemplateEndTime,
+                                        &clipTemplateEndTime)) {
+                        _ClipDebugMsg(node, layer, UsdTokens->clipTemplateEndTime); 
+                        templateEndTime = clipTemplateEndTime;
+                    }
+                }
+
+                if (templateStride && templateStartTime && templateEndTime) {
+                    auto sourceLayer = sourceNode.GetLayerStack()->GetLayers()[
+                        clipInfo->indexOfLayerWhereAssetPathsFound];
+
+                    _DeriveClipInfo(*templateAssetPath, *templateStride,
+                                    *templateStartTime, *templateEndTime,
+                                    &clipInfo->clipTimes, &clipInfo->clipActive,
+                                    &clipInfo->clipAssetPaths, 
+                                    node, sourceLayer);
+
+                    // Apply layer offsets to clipActive and clipTimes afterwards
+                    // so that they don't affect the derived asset paths. Consumers
+                    // expect offsets to affect what clip is being used at a given
+                    // time, not the set of clips that are available.
+                    //
+                    // We use the layer offset for the layer where the template
+                    // asset path pattern was found. Although the start/end/stride
+                    // values may be authored on different layers with different
+                    // offsets, this is an uncommon situation -- consumers usually
+                    // author all clip metadata in the same layer -- and it's not
+                    // clear what the desired result in that case would be anyway.
+                    auto offset = _GetLayerOffsetToRoot(node, sourceLayer);
+                    _ApplyLayerOffsetToExternalTimes(offset, &*clipInfo->clipTimes);
+                    _ApplyLayerOffsetToExternalTimes(offset, &*clipInfo->clipActive);
+
+                    break;
+                }
             }
         }
     }
+
+    return sourceNode;
 }
 
 // ------------------------------------------------------------

@@ -119,6 +119,16 @@ public:
     /// given path.  The first path is the old path to the object and the
     /// second path is the new path.
     PathEditMap didChangePath;
+
+private:
+    friend class PcpCache;
+    friend class PcpChanges;
+
+    // Must rebuild the prim/property stacks at each path due to a change
+    // that only affects the internal representation of the stack and
+    // not its contents.  Because this causes no externally-observable
+    // changes in state, clients do not need to be aware of these changes.
+    SdfPathSet _didChangeSpecsInternal;
 };
 
 /// Structure used to temporarily retain layers and layerStacks within
@@ -206,12 +216,6 @@ public:
     /// The sublayer offsets changed.
     PCP_API
     void DidChangeLayerOffsets(PcpCache* cache);
-
-    /// The layer stack \p layerStack changed significantly, requiring
-    /// the layer stack to be recomputed.
-    PCP_API 
-    void DidChangeLayerStack(PcpCache* cache, 
-                             const PcpLayerStackPtr& layerStack);
 
     /// The object at \p path changed significantly enough to require
     /// recomputing the entire prim or property index.  A significant change
@@ -402,6 +406,17 @@ private:
     void _DidChangeLayerStackRelocations( const std::vector<PcpCache*>& caches,
                                           const PcpLayerStackPtr & layerStack,
                                           std::string* debugSummary );
+
+    // Register changes to any prim indexes in \p caches that are affected
+    // by a change to a layer's resolved path used by \p layerStack.
+    void _DidChangeLayerStackResolvedPath(const std::vector<PcpCache*>& caches,
+                                          const PcpLayerStackPtr& layerStack,
+                                          std::string* debugSummary);
+
+    // The spec stack for the prim or property index at \p path must be
+    // recomputed due to a change that affects only the internal representation
+    // of the stack and not its contents.
+    void _DidChangeSpecStackInternal(PcpCache* cache, const SdfPath& path);
 
 private:
     LayerStackChanges _layerStackChanges;

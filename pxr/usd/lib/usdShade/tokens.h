@@ -46,9 +46,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (displacement) \
     (displayColor) \
     (displayOpacity) \
+    (full) \
     ((infoId, "info:id")) \
     ((inputs, "inputs:")) \
     ((interface_, "interface:")) \
+    (interfaceOnly) \
     ((interfaceRecipientsOf, "interfaceRecipientsOf:")) \
     ((lookBinding, "look:binding")) \
     ((materialBinding, "material:binding")) \
@@ -84,9 +86,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>displacement</b> - Describes the displacement relationship terminal on a UsdShadeMaterial. Used to find the terminal UsdShadeShader describing the displacement of a UsdShadeMaterial. 
 /// \li <b>displayColor</b> - UsdShadePShader
 /// \li <b>displayOpacity</b> - UsdShadePShader
+/// \li <b>full</b> - Possible value for 'connectability' metadata on  a UsdShadeInput. When connectability of an input is set to  "full", it implies that it can be connected to any input or  output. 
 /// \li <b>infoId</b> - UsdShadeShader
 /// \li <b>inputs</b> - The prefix on shading attributes denoting an input. 
 /// \li <b>interface_</b> - The prefix on UsdShadeNodeGraph attributes  denoting an interface attribute. 
+/// \li <b>interfaceOnly</b> - Possible value for 'connectability' metadata on  a UsdShadeInput. It implies that the input can only connect to  a NodeGraph Input (which represents an interface override, not  a render-time dataflow connection), or another Input whose  connectability is also 'interfaceOnly'. 
 /// \li <b>interfaceRecipientsOf</b> - The prefix on UsdShadeNodeGraph relationships denoting the target of an interface attribute. 
 /// \li <b>lookBinding</b> - The relationship name on non shading prims to denote a binding to a UsdShadeLook. This is a deprecated relationship and is superceded by material:binding. 
 /// \li <b>materialBinding</b> -  The relationship name on non-shading prims to denote a binding to a UsdShadeMaterial. 

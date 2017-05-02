@@ -1,0 +1,143 @@
+Loading @TrickySpookyVariantSelectionInClass/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Char>
+
+Prim Stack:
+    root.sdf             /Char
+    CharRig.sdf          /CharRig
+
+Child names:
+     ['Anim', 'Rig', 'InheritTest']
+
+------------------------------------------------------------------------
+Results for composing </Char/Anim>
+
+Prim Stack:
+    CharRig.sdf          /CharRig/Anim
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig>
+
+Prim Stack:
+    root.sdf             /Char/Rig
+    CharRig.sdf          /CharRig/Rig
+
+Child names:
+     ['SymLegRig', 'LeftLegRig', 'RightLegRig']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig/SymLegRig>
+
+Prim Stack:
+    root.sdf             /Char/Rig/SymLegRig
+    CharRig.sdf          /CharRig/Rig/SymLegRig
+    LegRig.sdf           /LegRig
+    LegRig.sdf           /LegRig{LegRigStyle=1Leg}
+
+Variant Selections:
+    {LegRigStyle = 1Leg}
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig/SymLegRig/Anim>
+
+Prim Stack:
+    LegRig.sdf           /LegRig{LegRigStyle=1Leg}Anim
+
+Property names:
+     ['avarFor1LegStyle']
+
+Property stacks:
+/Char/Rig/SymLegRig/Anim.avarFor1LegStyle:
+    LegRig.sdf           /LegRig{LegRigStyle=1Leg}Anim.avarFor1LegStyle
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig/LeftLegRig>
+
+Prim Stack:
+    root.sdf             /Char/Rig/LeftLegRig
+    root.sdf             /Char/Rig/SymLegRig
+    CharRig.sdf          /CharRig/Rig/LeftLegRig
+    CharRig.sdf          /CharRig/Rig/SymLegRig
+    LegRig.sdf           /LegRig
+    LegRig.sdf           /LegRig{LegRigStyle=1Leg}
+
+Variant Selections:
+    {LegRigStyle = 1Leg}
+
+------------------------------------------------------------------------
+Results for composing </Char/Rig/RightLegRig>
+
+Prim Stack:
+    root.sdf             /Char/Rig/RightLegRig
+    root.sdf             /Char/Rig/SymLegRig
+    CharRig.sdf          /CharRig/Rig/RightLegRig
+    CharRig.sdf          /CharRig/Rig/SymLegRig
+    LegRig.sdf           /LegRig
+    LegRig.sdf           /LegRig{LegRigStyle=2Leg}
+
+Variant Selections:
+    {LegRigStyle = 2Leg}
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest>
+
+Prim Stack:
+    root.sdf             /Char/InheritTest
+    CharRig.sdf          /CharRig/InheritTest
+
+Child names:
+     ['_class_X', 'X', 'Y']
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest/_class_X>
+
+Prim Stack:
+    root.sdf             /Char/InheritTest/_class_X
+    CharRig.sdf          /CharRig/InheritTest/_class_X
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest/X>
+
+Prim Stack:
+    root.sdf             /Char/InheritTest/X
+    root.sdf             /Char/InheritTest/_class_X
+    CharRig.sdf          /CharRig/InheritTest/X
+    CharRig.sdf          /CharRig/InheritTest/_class_X
+    LegRig.sdf           /LegRig
+    LegRig.sdf           /LegRig{LegRigStyle=2Leg}
+
+Variant Selections:
+    {LegRigStyle = 2Leg}
+
+Child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest/X/Anim>
+
+Prim Stack:
+    CharRig.sdf          /CharRig/InheritTest/X/Anim
+    LegRig.sdf           /LegRig{LegRigStyle=2Leg}Anim
+
+Property names:
+     ['avarFor2LegStyle']
+
+Property stacks:
+/Char/InheritTest/X/Anim.avarFor2LegStyle:
+    LegRig.sdf           /LegRig{LegRigStyle=2Leg}Anim.avarFor2LegStyle
+
+------------------------------------------------------------------------
+Results for composing </Char/InheritTest/Y>
+
+Prim Stack:
+    CharRig.sdf          /CharRig/InheritTest/Y
+    CharRig.sdf          /CharRig/InheritTest/X/Anim
+

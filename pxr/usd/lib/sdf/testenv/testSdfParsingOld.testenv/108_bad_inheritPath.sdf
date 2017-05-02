@@ -1,0 +1,31 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+    """Tests that an invalid inherit path causes a parse error."""
+)
+
+
+
+over "Snowman"
+{
+    over "Head" (
+        inherits = [
+            <../../../../Bar>,
+            <../Foo>,
+        ]
+    )
+    {
+        over "Eyes"
+        {
+            over "Left"
+            {
+                double radius = 0.2
+            }
+
+            over "Right"
+            {
+                double radius = 0.2
+            }
+        }
+    }
+}

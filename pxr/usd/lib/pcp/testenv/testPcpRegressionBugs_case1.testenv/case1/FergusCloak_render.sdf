@@ -1,0 +1,13 @@
+#sdf 1.4.32
+
+def Model "FergusCloak"
+{
+    def Scope "rig"
+    {
+        def Scope "LEdgeRig" (
+            add references = @./CurveTrackRig.sdf@</CurveTrackRig>
+        )
+        {
+        }
+    }
+}

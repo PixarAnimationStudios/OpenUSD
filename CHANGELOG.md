@@ -1,5 +1,116 @@
 # Change Log
 
+## [0.7.5] - 2017-05-01
+
+C++ namespaces are now enabled by default. The `PXR_ENABLE_NAMESPACES` CMake
+option may be used to disable namespaces if needed.
+
+This release adds initial experimental support for building the USD core
+libraries on Windows.
+
+### Added
+- Added ability to build doxygen documentation. See
+  [BUILDING.md](BUILDING.md#documentation) for more details.
+- Added support for pre-compiled headers. By default, this is disabled
+  for Linux and Mac builds and enabled for Windows builds. This may be
+  configured with the `PXR_ENABLE_PRECOMPILED_HEADERS` CMake option.  
+- Added many unit tests for core libraries
+- Added UsdStage::Save and UsdStage::SaveSessionLayers
+- Added attribute connection feature that allows consumers to describe
+  connections between an attribute and other prims and properties.
+- Added instance proxy feature that allows consumers to interact with
+  objects on a UsdStage as if scenegraph instancing were not in use while
+  retaining the performance benefits of instancing.
+- Plugins providing Boundable schema types can now register functions for
+  computing extents. This allows code in the USD core to compute extents for
+  prims with types provided by external schemas.
+- Added support for specializes arcs to usdShade.
+- Added UsdUISceneGraphPrimAPI for representing prim display properties.
+- Added `HD_DISABLE_TINY_PRIM_CULLING` flag for `TF_DEBUG` to make it easier
+  to turn off tiny prim culling for debugging.
+- Added support for generic metadata to GLSLFX, allowing hardware shaders to
+  pass information to downstream rendering code.
+- Added ability to adjust basic material properties in usdview.
+- Plugins can now register MayaPrimWriter subclasses for exporting Maya 
+  nodes to USD prims.
+- Added ability to override default motion data (sample times, current time, 
+  shutter open/close) on a per-scope basis in Katana plugin. Users can author
+  these overrides by modifying the global graph state, then decide to use
+  the default motion values with or without these overrides applied.
+
+### Changed
+- Removed OpenEXR dependency from core libraries. Note that OpenEXR is still
+  required for imaging.
+- Made Ptex dependency optional. It is only required if Ptex support for
+  imaging is enabled. This is on by default, but can be disabled by specifying
+  `PXR_ENABLE_PTEX_SUPPORT=FALSE` to CMake.
+- Cleaned up and expanded doxygen documentation:
+  - Added documentation for value clips and scenegraph instancing USD features.
+  - Enabled XML generation for external tools
+  - Fixed invalid tags and formatting in several places
+- UsdTreeIterator has been replaced by UsdPrimRange, which provides 
+  container-like semantics in C++ (e.g., the ability to use them in range-based
+  for loops).
+- Removed UsdPrim::GetPayload API
+- UsdRelationship and UsdAttribute will no longer forward target/connection
+  paths that point to objects within instances to objects in master prims.
+  Users can use the new instance proxy functionality to work with these paths
+  instead.
+- Relationships belonging to prims in instances that point to the root of the
+  instance no longer cause errors.
+- Value clip metadata can now be sparsely overridden across composition arcs.
+- Deprecated shading property schemas UsdShadeParameter and 
+  UsdShadeInterfaceAttribute. These are replaced by UsdShadeInput, which can
+  represent both input parameters on shaders and interface inputs on node
+  graphs.
+- The `--compose` command line parameter for usddiff is now `--flatten`
+- Numerous cleanup changes for Hydra API. In particular:
+  - HdEngine::Draw has been retired in favor of HdEngine::Execute.
+  - HdSceneDelegate::IsInCollection has been deprecated in favor of render-tag
+    based API.
+- Meshes with subdivisionScheme = none will no longer be bilinearly subdivided.
+- usdview now displays prim hierarchies beneath instances inline in the 
+  browser. The "Jump to Master" command has been removed in favor of this
+  new functionality.
+- The default specular response in usdview has been reduced by a factor of 5.
+- The Maya plugin now excludes attributes during import if they are tagged
+  with customData specifying them as generated.
+- Numerous changes for ongoing Mac and Windows port efforts.
+- Changed scoping of built-out point instancer prototypes in Katana plugin
+  so that their hierarchy more closely matches the original USD hierarchy.
+
+### Fixed
+- Added workaround to avoid redefined "_XOPEN_SOURCE" and "_POSIX_C_SOURCE" 
+  macro warnings due to Python includes on Linux. (Issue #1)
+- Fixed issue where code would be generated directly into the install location 
+  when running cmake, interfering with the use of make's DESTDIR functionality.
+  (Issue #84)
+- Fixed memory leak when converting Python tuples to C++ GfVec objects.
+- Fixed thread-safety issue with `PCP_PRIM_INDEX` and `PCP_PRIM_INDEX_GRAPHS`
+  `TF_DEBUG` flags. (Issue #157)
+- Fixed invalid memory access bug in Pcp
+- Fixed memory leak when saving .usdc files.
+- Fixed bug with removing an attribute's last time sample in a .usdc file.
+- Fixed bug where instance prims with locally-defined variants would incorrectly
+  share the same master prim.
+- Reader-writer locks are now used for various registry to improve performance.
+- Improved speed of adding an empty sublayer to an opened stage. In one large
+  test case, time to add an empty sublayer went from ~30 seconds to ~5 seconds.
+- Fixed issues with opening .usda files and files larger than 4GB on Windows.
+  (Issue #189)
+- Fixed backwards compatibility issues with UsdShadeInput and 
+  UsdShadeConnectableAPI.
+- Memory footprint has been significantly reduced in Hydra's adjacency tables
+  for subdivs that contain vertices of high valence.
+- Fixed crash in imaging due to invalid textures.
+- Fixed shadow banding artifacts when using vertex color with basis curves.
+- Fixed buffer overrun when using GPU smooth normals.
+- Fixed issue in Maya plugin where multiple assemblies that reference the
+  same file might all be affected by the edits of one particular assembly 
+  when viewing them via a proxy.
+- Fixed issue in Maya plugin where path resolution was being done by the
+  plugin itself rather than deferring to Usd and Sdf.
+
 ## [0.7.4] - 2017-03-03
 
 USD now supports C++ namespaces. They are disabled by default in this release

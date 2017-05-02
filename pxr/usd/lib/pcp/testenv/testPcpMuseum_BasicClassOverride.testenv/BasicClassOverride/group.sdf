@@ -1,0 +1,28 @@
+#sdf 1.4.32
+
+def "Group"
+{
+    def "Model_1" (
+        add references = @./model.sdf@</Model>
+    )
+    {
+    }
+
+    def "Model_2" (
+        add references = @./model.sdf@</Model>
+    )
+    {
+    }
+
+    def "Model_Special" (
+        add references = @./model.sdf@</Model>
+    )
+    {
+        string value = "Model group's special value just for this instance."
+    }
+}
+
+class Prim "_class_Model"
+{
+    string value = "Model group's value for the class."
+}

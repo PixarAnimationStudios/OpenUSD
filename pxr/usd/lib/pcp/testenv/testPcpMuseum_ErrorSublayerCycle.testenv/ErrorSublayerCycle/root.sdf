@@ -1,0 +1,15 @@
+#sdf 1.4.32
+(
+    """
+    This example contains a sublayer cycle:
+    A.sdf and B.sdf sublayer each other.
+    """
+    subLayers = [
+        @./A.sdf@,
+        @./B.sdf@
+    ]
+)
+
+def "A" 
+{
+}

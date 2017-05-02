@@ -65,4 +65,4 @@ print refStage.GetRootLayer().ExportToString()
 refStage.GetRootLayer().Save()
 
 # Print the final composed results.
-print refStage.ExportToString(False)
+print refStage.ExportToString()

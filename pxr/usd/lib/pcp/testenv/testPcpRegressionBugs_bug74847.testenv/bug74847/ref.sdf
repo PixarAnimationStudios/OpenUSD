@@ -1,0 +1,18 @@
+#sdf 1.4.32
+
+def Scope "A" 
+{
+    def Scope "B" (
+        add variantSets = "deformable"
+        variants = {
+            string deformable = "off"
+        }
+    )
+    {
+        variantSet "deformable" = {
+            "off"
+            {
+            }
+        }
+    }
+}

@@ -25,9 +25,10 @@
 #define USDIMAGINGGL_REFENGINE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/garch/gl.h"
-
+#include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
+
+#include "pxr/imaging/garch/gl.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/notice.h"
@@ -46,29 +47,33 @@ class UsdImagingGLRefEngine : public UsdImagingGLEngine, public TfWeakBase {
     typedef UsdImagingGLRefEngine This;
 public:
 
+    USDIMAGINGGL_API
     UsdImagingGLRefEngine(const SdfPathVector& excludedPaths);
 
+    USDIMAGINGGL_API
     ~UsdImagingGLRefEngine();
 
     // Entry point for kicking off a render
+    USDIMAGINGGL_API
     virtual void Render(const UsdPrim& root, RenderParams params);
 
+    USDIMAGINGGL_API
     virtual void SetCameraState(const GfMatrix4d& viewMatrix,
                                 const GfMatrix4d& projectionMatrix,
                                 const GfVec4d& viewport);
 
     /// Set lighting state
+    USDIMAGINGGL_API
     virtual void SetLightingState(GlfSimpleLightVector const &lights,
                                   GlfSimpleMaterial const &material,
                                   GfVec4f const &sceneAmbient);
 
+    USDIMAGINGGL_API
     virtual void InvalidateBuffers();
 
-    virtual SdfPath GetPrimPathFromPrimIdColor(
-        GfVec4i const& primIdColor,
-        GfVec4i const& instanceIdColor,
-        int* instanceIndexOut = NULL);
-    
+    USDIMAGINGGL_API
+    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
+
 private:
     bool _SupportsPrimitiveRestartIndex();
 

@@ -35,7 +35,7 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 //
-// WORKAROUND: As these class are a pure interface class, they do not need a
+// WORKAROUND: As these classes are pure interface classes, they do not need a
 // vtable.  However, it is possible that some users will use rtti.
 // This will cause a problem for some of our compilers:
 //

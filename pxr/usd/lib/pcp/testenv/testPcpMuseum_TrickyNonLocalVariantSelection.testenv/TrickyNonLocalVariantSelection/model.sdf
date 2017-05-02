@@ -1,0 +1,21 @@
+#sdf 1.4.32
+
+def Model "Model" (
+    add variantSets = "costume"
+    variants = {
+        string costume = "basicCostume"
+    }
+)
+{
+    variantSet "costume" = {
+        "basicCostume" {
+            double b = 2
+
+        }
+        "fancyCostume" {
+            double a = 1
+
+        }
+    }
+}
+

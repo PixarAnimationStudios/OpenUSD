@@ -88,6 +88,21 @@ nb.setHintsForParameter('instanceMode', {
     """,
 })
 
+gb.set('prePopulate', FnAttribute.IntAttribute(0))
+nb.setHintsForParameter('prePopulate', {
+    'widget' : 'mapper',
+    'options' : {
+        'yes': 0,
+        'no': 1,
+    },
+    'help' : """
+      Controls USD pre-population.  Pre-population loads all payloads
+      and pre-populates the stage.  Assuming the entire stage will be
+      needed, this is more efficient since USD can use its internal
+      multithreading.
+    """,
+})
+
 gb.set('verbose', 0)
 nb.setHintsForParameter('verbose', {
     'widget' : 'checkBox',
@@ -125,6 +140,9 @@ def buildOpChain(self, interface):
     
     gb.set('instanceMode', interface.buildAttrFromParam(
         self.getParameter('instanceMode')))
+    
+    gb.set('prePopulate', interface.buildAttrFromParam(
+        self.getParameter('prePopulate')))
 
     sessionValues = (
             interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
@@ -319,8 +337,9 @@ def buildOpChain(self, interface):
         gb = FnAttribute.GroupBuilder()
 
         for loc in locations.getChildren():
-            gb.set("defaultMotionPaths." + FnAttribute.DelimiterEncode(
-                    loc.getValue(frameTime)), FnAttribute.IntAttribute(1))
+            gb.set("overrides." + FnAttribute.DelimiterEncode(
+                    loc.getValue(frameTime)) + ".motionSampleTimes",
+                    FnAttribute.IntAttribute(1))
 
         existingValue = (
                 interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
@@ -333,6 +352,89 @@ def buildOpChain(self, interface):
                 .build())
         
     interface.addInputRequest("in", graphState)
+
+nb.setBuildOpChainFnc(buildOpChain)
+
+nb.build()
+
+#-----------------------------------------------------------------------------
+
+nb = Nodes3DAPI.NodeTypeBuilder('PxrUsdInMotionOverrides')
+nb.setInputPortNames(('in',))
+
+nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
+    .set('locations', '')
+    .set('overrides.motionSampleTimes', '')
+    .set('overrides.currentTime', '')
+    .set('overrides.shutterOpen', '')
+    .set('overrides.shutterClose', '')
+    .build(),
+        forceArrayNames=('locations',))
+
+nb.setHintsForParameter('locations', {
+    'widget': 'scenegraphLocationArray',
+    'help': 'Hierarchy root location paths for which overrides will be applied.'
+})
+
+nb.setHintsForParameter('overrides', {
+    'help': 'Any non-empty overrides will be used for motion calculations.',
+    'open': True,
+})
+
+def buildOpChain(self, interface):
+    interface.setExplicitInputRequestsEnabled(True)
+
+    graphState = interface.getGraphState()
+    frameTime = interface.getFrameTime()
+
+    locations = self.getParameter('locations')
+    overrides = self.getParameter('overrides')
+
+    if locations.getNumChildren() > 0:
+
+        # Build overrides as a child group
+        gb1 = FnAttribute.GroupBuilder()
+
+        motionSampleTimes = overrides.getChild('motionSampleTimes').getValue(frameTime)
+        currentTime = overrides.getChild('currentTime').getValue(frameTime)
+        shutterOpen = overrides.getChild('shutterOpen').getValue(frameTime)
+        shutterClose = overrides.getChild('shutterClose').getValue(frameTime)
+
+        if motionSampleTimes:
+            floatTimes = [float(t) for t in motionSampleTimes.split(' ')]
+            gb1.set('motionSampleTimes', FnAttribute.FloatAttribute(floatTimes))
+
+        if currentTime:
+            gb1.set('currentTime', FnAttribute.FloatAttribute(float(currentTime)))
+
+        if shutterOpen:
+            gb1.set('shutterOpen', FnAttribute.FloatAttribute(float(shutterOpen)))
+
+        if shutterClose:
+            gb1.set('shutterClose', FnAttribute.FloatAttribute(float(shutterClose)))
+
+        overridesAttr = gb1.build()
+
+        if overridesAttr.getNumberOfChildren() > 0:
+
+            # Encode per-location overrides in the graph state
+            gb2 = FnAttribute.GroupBuilder()
+
+            for loc in locations.getChildren():
+                encodedLoc = FnAttribute.DelimiterEncode(loc.getValue(frameTime))
+                if encodedLoc:
+                    gb2.set('overrides.' + encodedLoc, overridesAttr)
+
+            existingValue = (
+                interface.getGraphState().getDynamicEntry('var:pxrUsdInSession'))
+            if isinstance(existingValue, FnAttribute.GroupAttribute):
+                gb2.deepUpdate(existingValue)
+
+            graphState = (graphState.edit()
+                    .setDynamicEntry('var:pxrUsdInSession', gb2.build())
+                    .build())
+
+    interface.addInputRequest('in', graphState)
 
 nb.setBuildOpChainFnc(buildOpChain)
 

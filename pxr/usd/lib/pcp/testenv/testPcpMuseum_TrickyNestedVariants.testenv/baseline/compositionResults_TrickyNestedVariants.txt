@@ -1,0 +1,55 @@
+Loading @TrickyNestedVariants/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.sdf             /A
+    root.sdf             /A{v1=x}
+    ref.sdf              /RAx
+
+Variant Selections:
+    {v1 = x}
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </A/B>
+
+Prim Stack:
+    root.sdf             /A/B
+    root.sdf             /A{v1=x}B
+    root.sdf             /A{v1=x}B{v2=y}
+    ref.sdf              /RBxy
+    ref.sdf              /RAx/B
+    ref.sdf              /RB
+
+Variant Selections:
+    {v2 = y}
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </A/B/C>
+
+Prim Stack:
+    root.sdf             /A/B/C
+    root.sdf             /A{v1=x}B/C
+    root.sdf             /A{v1=x}B{v2=y}C
+    root.sdf             /A{v1=x}B{v2=y}C{v3=z}
+    ref.sdf              /RCxyz
+    ref.sdf              /RBxy/C
+    ref.sdf              /RCx
+    ref.sdf              /RAx/B/C
+    ref.sdf              /RC
+    ref.sdf              /RB/C
+
+Variant Selections:
+    {v3 = z}
+

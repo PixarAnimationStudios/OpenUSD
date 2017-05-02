@@ -31,7 +31,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void
 wrapPseudoRootSpec()
@@ -44,5 +44,3 @@ wrapPseudoRootSpec()
         .def(SdfPySpec())
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

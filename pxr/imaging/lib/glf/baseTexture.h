@@ -27,6 +27,7 @@
 /// \file glf/uvTexture.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -49,6 +50,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTextureData);
 ///
 class GlfBaseTexture : public GlfTexture {
 public:
+    GLF_API
     virtual ~GlfBaseTexture();
 
     /// Returns the OpenGl texture name for the texture. 
@@ -69,15 +71,20 @@ public:
     }
 
     // GlfTexture overrides
+    GLF_API
     virtual BindingVector GetBindings(TfToken const & identifier,
                                       GLuint samplerName) const;
+    GLF_API
     virtual VtDictionary GetTextureInfo() const;
 
 protected:
     
+    GLF_API
     GlfBaseTexture();
 
+    GLF_API
     void _UpdateTexture(GlfBaseTextureDataConstPtr texData);
+    GLF_API
     void _CreateTexture(GlfBaseTextureDataConstPtr texData,
                         bool const useMipmaps,
                         int const unpackCropTop = 0,

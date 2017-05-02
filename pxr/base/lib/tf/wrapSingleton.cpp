@@ -32,12 +32,13 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 // Need an empty class to serve as the singleton base class wrapped out to
 // python.
 struct Tf_PySingleton {};
-
 
 static object
 _GetSingletonInstance(object const &classObj) {
@@ -67,6 +68,7 @@ _GetSingletonInstance(object const &classObj) {
 // Need an init method that accepts any arguments and does nothing.
 static object _DummyInit(tuple const &, dict const &) { return object(); }
 
+} // anonymous namespace 
 
 void wrapSingleton() {
     class_<Tf_PySingleton>("Singleton", no_init)
@@ -74,5 +76,3 @@ void wrapSingleton() {
         .def("__init__", raw_function(_DummyInit))
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,12 +24,11 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyModule.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
     TF_WRAP(UsdUINodeGraphNodeAPI); 
+    TF_WRAP(UsdUISceneGraphPrimAPI);
     TF_WRAP(UsdUITokens);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

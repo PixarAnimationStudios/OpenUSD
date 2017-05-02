@@ -78,6 +78,20 @@ if (PXR_ENABLE_NAMESPACES)
     else()
         set(PXR_INTERNAL_NAMESPACE "pxrInternal_v${PXR_MAJOR_VERSION}_${PXR_MINOR_VERSION}")
     endif()
+
+    message(STATUS "C++ namespace configured to (external) ${PXR_EXTERNAL_NAMESPACE}, (internal) ${PXR_INTERNAL_NAMESPACE}")
 else()
     set(PXR_USE_NAMESPACES "0")
+    message(STATUS "C++ namespaces disabled.")
 endif()
+
+# XXX: This is a workaround for an issue in which Python headers unequivocally
+# redefine macros defined in standard library headers. This behavior 
+# prevents users from running strict builds with PXR_STRICT_BUILD_MODE
+# as the redefinition warnings would cause build failures.
+#
+# The python official docs call this out here:
+# https://docs.python.org/2/c-api/intro.html#include-files
+#
+# The long term plan is to adhere to the required behavior.
+include_directories(SYSTEM ${PYTHON_INCLUDE_DIR})

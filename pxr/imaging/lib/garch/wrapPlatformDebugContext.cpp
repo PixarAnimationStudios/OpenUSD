@@ -28,10 +28,11 @@
 
 #include <boost/python/class.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static GarchGLPlatformDebugContextPtr
 _New(int majorVersion, int minorVersion,
@@ -41,6 +42,8 @@ _New(int majorVersion, int minorVersion,
         GarchGLPlatformDebugContext(majorVersion, minorVersion,
                                     coreProfile, directRendering));
 }
+
+} // anonymous namespace 
 
 void wrapPlatformDebugContext()
 {    
@@ -53,5 +56,4 @@ void wrapPlatformDebugContext()
     ;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
+TF_REFPTR_CONST_VOLATILE_GET(GarchGLPlatformDebugContext)

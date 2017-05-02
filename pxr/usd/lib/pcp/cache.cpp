@@ -640,36 +640,42 @@ PcpCache::FindSiteDependencies(
             ? depPrimSitePath : sitePath;
 
         auto visitNodeFn = [&](const SdfPath &depPrimIndexPath,
-                               const PcpNodeRef &node,
-                               PcpDependencyFlags flags)
+                               const PcpNodeRef &node)
         {
-            if ((flags & localMask) == flags) {
-                // Now that we have found a dependency on depPrimSitePath,
-                // use path translation to get the corresponding depIndexPath.
-                SdfPath depIndexPath;
-                bool valid = false;
-                if (node.GetArcType() == PcpArcTypeRelocate) {
-                    // Relocates require special handling.  Because
-                    // a relocate node's map function is always
-                    // identity, we must do our own prefix replacement
-                    // to step out of the relocate, then continue
-                    // with regular path translation.
-                    const PcpNodeRef parent = node.GetParentNode(); 
-                    depIndexPath = PcpTranslatePathFromNodeToRoot(
-                        parent,
-                        localSitePath.ReplacePrefix( node.GetPath(),
-                                                       parent.GetPath() ),
-                        &valid );
-                } else {
-                    depIndexPath = PcpTranslatePathFromNodeToRoot(
-                        node, localSitePath, &valid);
+            // Skip computing the node's dependency type if we aren't looking
+            // for a specific type -- that computation can be expensive.
+            if (localMask != PcpDependencyTypeAnyIncludingVirtual) {
+                PcpDependencyFlags flags = PcpClassifyNodeDependency(node);
+                if ((flags & localMask) != flags) { 
+                    return;
                 }
-                if (valid && TF_VERIFY(!depIndexPath.IsEmpty()) &&
-                    cacheFilterFn(depIndexPath)) {
-                    deps.push_back(PcpDependency{
-                        depIndexPath, localSitePath,
-                        node.GetMapToRoot().Evaluate() });
-                }
+            }
+
+            // Now that we have found a dependency on depPrimSitePath,
+            // use path translation to get the corresponding depIndexPath.
+            SdfPath depIndexPath;
+            bool valid = false;
+            if (node.GetArcType() == PcpArcTypeRelocate) {
+                // Relocates require special handling.  Because
+                // a relocate node's map function is always
+                // identity, we must do our own prefix replacement
+                // to step out of the relocate, then continue
+                // with regular path translation.
+                const PcpNodeRef parent = node.GetParentNode(); 
+                depIndexPath = PcpTranslatePathFromNodeToRoot(
+                    parent,
+                    localSitePath.ReplacePrefix( node.GetPath(),
+                                                 parent.GetPath() ),
+                    &valid );
+            } else {
+                depIndexPath = PcpTranslatePathFromNodeToRoot(
+                    node, localSitePath, &valid);
+            }
+            if (valid && TF_VERIFY(!depIndexPath.IsEmpty()) &&
+                cacheFilterFn(depIndexPath)) {
+                deps.push_back(PcpDependency{
+                    depIndexPath, localSitePath,
+                    node.GetMapToRoot().Evaluate() });
             }
         };
         Pcp_ForEachDependentNode(depPrimSitePath, siteLayerStack,
@@ -688,25 +694,37 @@ PcpCache::FindSiteDependencies(
         TRACE_SCOPE("PcpCache::FindSiteDependencies - recurseOnIndex");
         SdfPathSet seenDeps;
         PcpDependencyVector expandedDeps;
+
         for(const PcpDependency &dep: deps) {
             const SdfPath & indexPath = dep.indexPath;
-            if (seenDeps.find(indexPath) != seenDeps.end()) {
-                // Short circuit further expansion; expect we
-                // have already recursed below this path.
-                continue;
+
+            auto it = seenDeps.upper_bound(indexPath);
+            if (it != seenDeps.begin()) {
+                --it;
+                if (indexPath.HasPrefix(*it)) {
+                    // Short circuit further expansion; expect we
+                    // have already recursed below this path.
+                    continue;
+                }
             }
+
             seenDeps.insert(indexPath);
             expandedDeps.push_back(dep);
             // Recurse on child index entries.
             if (indexPath.IsAbsoluteRootOrPrimPath()) {
-                const auto primRange =
+                auto primRange =
                     _primIndexCache.FindSubtreeRange(indexPath);
+                if (primRange.first != primRange.second) {
+                    // Skip initial entry, since we've already added it 
+                    // to expandedDeps above.
+                    ++primRange.first;
+                }
+
                 for (auto entryIter = primRange.first;
                      entryIter != primRange.second; ++entryIter) {
                     const SdfPath& subPath = entryIter->first;
                     const PcpPrimIndex& subPrimIndex = entryIter->second;
-                    if (subPrimIndex.IsValid() &&
-                        seenDeps.find(subPath) == seenDeps.end()) {
+                    if (subPrimIndex.IsValid()) {
                         expandedDeps.push_back(PcpDependency{
                             subPath,
                             subPath.ReplacePrefix(indexPath, dep.sitePath),
@@ -721,8 +739,7 @@ PcpCache::FindSiteDependencies(
                  entryIter != propRange.second; ++entryIter) {
                 const SdfPath& subPath = entryIter->first;
                 const PcpPropertyIndex& subPropIndex = entryIter->second;
-                if (!subPropIndex.IsEmpty() &&
-                    seenDeps.find(subPath) == seenDeps.end()) {
+                if (!subPropIndex.IsEmpty()) {
                     expandedDeps.push_back(PcpDependency{
                         subPath,
                         subPath.ReplacePrefix(indexPath, dep.sitePath),
@@ -877,8 +894,7 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
         }
 
         // Blow property stacks and update spec dependencies on prims.
-        TF_FOR_ALL(i, changes.didChangeSpecs) {
-            const SdfPath& path = *i;
+        auto updateSpecStacks = [this, &lifeboat](const SdfPath& path) {
             if (path.IsAbsoluteRootOrPrimPath()) {
                 // We've possibly changed the prim spec stack.  Note that
                 // we may have blown the prim index so check that it exists.
@@ -909,6 +925,14 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
                 // relational attributes for this target.
                 _RemovePropertyCaches(path, lifeboat);
             }
+        };
+
+        TF_FOR_ALL(i, changes.didChangeSpecs) {
+            updateSpecStacks(*i);
+        }
+
+        TF_FOR_ALL(i, changes._didChangeSpecsInternal) {
+            updateSpecStacks(*i);
         }
 
         // Fix the keys for any prim or property under any of the renamed
@@ -961,56 +985,6 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
     _includedPayloads.insert(newIncludes.begin(), newIncludes.end());
 }
 
-// Scan given prim indexes and layer stacks and register significant
-// changes for anything that needs to be recomputed due to asset path
-// changes. This is potentially expensive, but the alternative
-// is to store extra information when computing prim indexes, which
-// would impact composition/load times and memory usage.
-template <class PrimIndexIter, class LayerStackIter>
-static void
-_RegisterChangesForAssetPathChanges(
-    PcpCache* cache, PcpChanges* changes,
-    PrimIndexIter beginPrimIndex, PrimIndexIter endPrimIndex,
-    LayerStackIter beginLayerStack, LayerStackIter endLayerStack)
-{
-    tbb::concurrent_vector<SdfPath> pathsToResync;
-    tbb::concurrent_vector<PcpLayerStackPtr> layerStacksToResync;
-
-    WorkDispatcher dispatcher;
-    dispatcher.Run(
-        [&pathsToResync, beginPrimIndex, endPrimIndex]() {
-            WorkParallelForEach(
-                beginPrimIndex, endPrimIndex,
-                [&pathsToResync](const std::pair<SdfPath, PcpPrimIndex>& e) {
-                    if (e.second.IsValid() && 
-                        Pcp_NeedToRecomputeDueToAssetPathChange(e.second)) {
-                        pathsToResync.push_back(e.first);
-                    }
-                });
-        });
-
-    dispatcher.Run(
-        [&layerStacksToResync, beginLayerStack, endLayerStack]() {
-            WorkParallelForEach(
-                beginLayerStack, endLayerStack,
-                [&layerStacksToResync](const PcpLayerStackPtr& layerStack) {
-                    if (Pcp_NeedToRecomputeDueToAssetPathChange(layerStack)) {
-                        layerStacksToResync.push_back(layerStack);
-                    }
-                });
-        });
-
-    dispatcher.Wait();
-
-    for (const SdfPath& path : pathsToResync) {
-        changes->DidChangeSignificantly(cache, path);
-    }
-
-    for (const PcpLayerStackPtr& layerStack : layerStacksToResync) {
-        changes->DidChangeLayerStack(cache, layerStack);
-    }  
-}
-
 void
 PcpCache::Reload(PcpChanges* changes)
 {
@@ -1054,10 +1028,7 @@ PcpCache::Reload(PcpChanges* changes)
     }
 
     // Reload every layer we've reached except the session layers (which we
-    // never want to reload from disk). Hold notifications until the end
-    // of this function so that clients don't alter the state of the PcpCache
-    // before the subsequent code is run.
-    SdfChangeBlock changeBlock;
+    // never want to reload from disk).
     SdfLayerHandleSet layersToReload = GetUsedLayers();
 
     for (const SdfLayerHandle &layer : _layerStack->GetSessionLayers()) {
@@ -1065,16 +1036,6 @@ PcpCache::Reload(PcpChanges* changes)
     }
 
     SdfLayer::ReloadLayers(layersToReload);
-
-    // Find prim indexes and layer stacks that need to be recomputed
-    // due to asset path changes resulting from the reload above,
-    // but that aren't due to scene description changes. This ensures 
-    // that we reload anything that may be affected by external state 
-    // changes that aren't visible to Pcp but affect asset path resolution.
-    _RegisterChangesForAssetPathChanges(
-        this, changes, 
-        _primIndexCache.begin(), _primIndexCache.end(),
-        allLayerStacks.begin(), allLayerStacks.end());
 }
 
 void
@@ -1122,10 +1083,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     }
 
     // Reload every layer used by prims at or under primPath, except for
-    // local layers. Hold notifications until the end of this function so
-    // that clients don't alter the state of the PcpCache before the 
-    // subsequent code is run.
-    SdfChangeBlock changeBlock;
+    // local layers.
     SdfLayerHandleSet layersToReload;
     for (const PcpLayerStackPtr& layerStack: layerStacksAtOrUnderPrim) {
         for (const SdfLayerHandle& layer: layerStack->GetLayers()) {
@@ -1136,12 +1094,6 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     }
 
     SdfLayer::ReloadLayers(layersToReload);
-
-    // See comments in Reload.
-    _RegisterChangesForAssetPathChanges(
-        this, changes, 
-        range.first, range.second,
-        layerStacksAtOrUnderPrim.begin(), layerStacksAtOrUnderPrim.end());
 }
 
 void

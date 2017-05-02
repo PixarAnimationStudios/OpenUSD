@@ -33,6 +33,8 @@
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprim.h"
 
+#include "pxr/imaging/hdSt/renderDelegate.h"
+
 #include <string>
 #include <boost/shared_ptr.hpp>
 
@@ -49,19 +51,20 @@ typedef boost::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
 /// that is is not available, all OpenGL calls become no-ops, but all other work
 /// is performed as usual.
 ///
-class UsdImaging_TestDriver {
-    void _Init(UsdStageRefPtr const& usdStage,
-               TfToken const &collectionName,
-               TfToken const &reprName);
+class UsdImaging_TestDriver final {
 public:
     UsdImaging_TestDriver(std::string const& usdFilePath);
     UsdImaging_TestDriver(std::string const& usdFilePath,
                           TfToken const &collectioName,
-                          TfToken const &reprName);
+                          TfToken const &reprName,
+                          TfTokenVector const &renderTags);
     UsdImaging_TestDriver(UsdStageRefPtr const& usdStage);
     UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,
                           TfToken const &collectioName,
-                          TfToken const &reprName);
+                          TfToken const &reprName,
+                          TfTokenVector const &renderTags);
+
+    ~UsdImaging_TestDriver();
 
     void Draw();
     void SetTime(double time);
@@ -87,14 +90,35 @@ public:
     UsdStageRefPtr const& GetStage();
 
 private:
-
     HdEngine _engine;
-    UsdImagingDelegate _delegate;
+    HdStRenderDelegate   _renderDelegate;
+    HdRenderIndex       *_renderIndex;
+    UsdImagingDelegate  *_delegate;
     HdRenderPassSharedPtr _geometryPass;
     HdRenderPassStateSharedPtr _renderPassState;
     UsdStageRefPtr _stage;
+
+    void _Init(UsdStageRefPtr const& usdStage,
+               TfToken const &collectionName,
+               TfToken const &reprName,
+               TfTokenVector const &renderTags);
 };
 
+/// A simple drawing task that just executes a render pass.
+class UsdImaging_DrawTask final : public HdTask
+{
+public:
+    UsdImaging_DrawTask(HdRenderPassSharedPtr const &renderPass,
+                        HdRenderPassStateSharedPtr const &renderPassState);
+
+protected:
+    virtual void _Sync(HdTaskContext* ctx) override;
+    virtual void _Execute(HdTaskContext* ctx) override;
+
+private:
+    HdRenderPassSharedPtr _renderPass;
+    HdRenderPassStateSharedPtr _renderPassState;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

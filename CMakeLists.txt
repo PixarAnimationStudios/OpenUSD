@@ -27,7 +27,7 @@ set(PXR_PYTHON_SHEBANG "${PYTHON_EXECUTABLE}"
 # build files readable.
 include(CXXDefaults)
 add_definitions(${_PXR_CXX_DEFINITIONS})
-set(CMAKE_CXX_FLAGS ${_PXR_CXX_FLAGS})
+set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 include(Public)
 
@@ -63,3 +63,49 @@ if (${PXR_BUILD_MAYA_PLUGIN})
         _enableThirdPartyPlugin("maya")
     endif()
 endif()
+
+if (${PXR_BUILD_DOCUMENTATION})                                                  
+
+    # Ensure we have doxygen+graphviz available
+    find_program(DOXYGEN_EXECUTABLE                                              
+        NAMES doxygen                                                            
+    )                                                                            
+    if (NOT EXISTS ${DOXYGEN_EXECUTABLE})                                        
+        message(WARNING "Cannot run doc generation, doxygen not found.")           
+        return()                                                                 
+    endif()                                                                      
+
+    find_program(DOT_EXECUTABLE
+        NAMES dot 
+    )                                                                            
+    if (NOT EXISTS ${DOT_EXECUTABLE})                                        
+        message(WARNING "Cannot run doc generation, dot not found.")           
+        return()                                                                 
+    endif()                          
+
+    _pxrDoxyConfig_subst() 
+    
+    set(DOCS_DIR "${CMAKE_BINARY_DIR}") 
+    set(GEN_SCRIPT "${PROJECT_SOURCE_DIR}/cmake/macros/generateDocs.py")         
+    set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/pxr")
+                                                                                 
+    add_custom_target(                                                           
+        documentation                                                            
+        ALL                                                                      
+        COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${SOURCE_DIR} ${CMAKE_BINARY_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOT_EXECUTABLE}
+        DEPENDS ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
+    ) 
+
+    set(BUILT_HTML_DOCS "${DOCS_DIR}/docs/doxy_html")
+    set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")
+    install(
+        DIRECTORY ${BUILT_HTML_DOCS}
+        DESTINATION ${INST_DOCS_ROOT}
+    )
+
+    set(BUILT_XML_DOCS "${DOCS_DIR}/docs/doxy_xml")
+    install(
+        DIRECTORY ${BUILT_XML_DOCS}
+        DESTINATION ${INST_DOCS_ROOT}
+    )
+endif()   

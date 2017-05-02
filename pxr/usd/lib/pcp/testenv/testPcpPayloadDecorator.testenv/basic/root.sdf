@@ -1,0 +1,10 @@
+#sdf 1.4.32
+
+def "Instance" (
+    documentation = "instance"
+    references = @./ref.sdf@</Ref>
+    payload = @./payload.sdf@</Payload>
+)
+{
+}
+

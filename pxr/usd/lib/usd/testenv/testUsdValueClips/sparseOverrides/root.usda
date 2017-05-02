@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    startTimeCode = 101
+    endTimeCode = 105
+)
+
+def "main" 
+(
+    clipAssetPaths = [@./a.usda@, @./b.usda@]
+    clipTimes = [(101, 101), (103, 103)]
+    clipActive = [(101, 0), (103, 1)]
+    clipPrimPath = "/clip"
+)
+{
+    double foo
+}

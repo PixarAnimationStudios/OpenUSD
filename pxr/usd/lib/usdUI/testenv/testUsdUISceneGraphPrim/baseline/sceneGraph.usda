@@ -1,0 +1,8 @@
+#usda 1.0
+
+def "ANode"
+{
+    uniform token ui:displayGroup = "bar"
+    uniform token ui:displayName = "foo"
+}
+

@@ -23,38 +23,88 @@
 #
 include(Private)
 
-function(pxr_python_bins)
+function(pxr_python_bin BIN_NAME)
+    set(oneValueArgs
+        PYTHON_FILE
+    )
+    set(multiValueArgs
+        DEPENDENCIES
+    )
+    cmake_parse_arguments(pb
+        ""
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+
     _get_install_dir(bin installDir)
-    foreach(file ${ARGN})
-        set(pyFile ${file}.py)
 
-        # /pxrpythonsubst will be replaced with the full path to the configured
-        # python executable. This doesn't use the CMake ${...} or @...@ syntax
-        # for backwards compatibility with other build systems.
-        file(READ ${pyFile} contents)
-        string(REGEX REPLACE "/pxrpythonsubst" ${PXR_PYTHON_SHEBANG} 
-            contents "${contents}")
-        file(WRITE ${CMAKE_BINARY_DIR}/${pyFile} "${contents}")
+    # Source file.
+    if( "${pb_PYTHON_FILE}" STREQUAL "")
+        set(infile ${CMAKE_CURRENT_SOURCE_DIR}/${BIN_NAME}.py)
+    else()
+        set(infile ${CMAKE_CURRENT_SOURCE_DIR}/${pb_PYTHON_FILE})
+    endif()
 
-        install(PROGRAMS
-            ${CMAKE_BINARY_DIR}/${pyFile}
-            DESTINATION ${installDir}
-            RENAME ${file}
+    # Destination file.
+    set(outfile ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME})
+
+    # /pxrpythonsubst will be replaced with the full path to the configured
+    # python executable. This doesn't use the CMake ${...} or @...@ syntax
+    # for backwards compatibility with other build systems.
+    add_custom_command(
+        OUTPUT ${outfile}
+        DEPENDS ${infile}
+        COMMENT "Substituting Python shebang"
+        COMMAND
+            ${PYTHON_EXECUTABLE}
+            ${PROJECT_SOURCE_DIR}/cmake/macros/shebang.py
+            ${PXR_PYTHON_SHEBANG}
+            ${infile}
+            ${outfile}
+    )
+    list(APPEND outputs ${outfile})
+
+    install(
+        PROGRAMS ${outfile}
+        DESTINATION ${installDir}
+        RENAME ${BIN_NAME}
+    )
+
+    # Windows by default cannot execute Python files so here
+    # we create a batch file wrapper that invokes the python
+    # files.
+    if(WIN32)
+        add_custom_command(
+            OUTPUT ${outfile}.cmd
+            COMMENT "Creating Python cmd wrapper"
+            COMMAND
+                ${PYTHON_EXECUTABLE}
+                ${PROJECT_SOURCE_DIR}/cmake/macros/shebang.py
+                ${BIN_NAME}
+                ${outfile}.cmd
         )
+        list(APPEND outputs ${outfile}.cmd)
 
-        # Windows by default cannot execute Python files so here
-        # we create a batch file wrapper that invokes the python
-        # files.
-        if(WIN32)
-            file(WRITE "${CMAKE_BINARY_DIR}/${pyFile}.cmd" "@python \"%~dp0${file}\" %*")
-            install(PROGRAMS
-                "${CMAKE_BINARY_DIR}/${pyFile}.cmd"
-                DESTINATION ${installDir}
-                RENAME "${file}.cmd"
-            )
-        endif()
-    endforeach()
-endfunction() # pxr_install_python_bins
+        install(
+            PROGRAMS ${outfile}.cmd
+            DESTINATION ${installDir}
+            RENAME ${BIN_NAME}.cmd
+        )
+    endif()
+
+    # Make sure the custom commands are executed by the default rule.
+    add_custom_target(
+        ${BIN_NAME}
+        ALL
+        DEPENDS ${outputs} ${pb_DEPENDENCIES}
+    )
+    set_target_properties(
+        ${BIN_NAME}
+        PROPERTIES
+            FOLDER "${PXR_PREFIX}"
+    )
+endfunction() # pxr_python_bin
 
 function(pxr_cpp_bin BIN_NAME)
     _get_install_dir(bin installDir)
@@ -108,8 +158,12 @@ function(pxr_cpp_bin BIN_NAME)
 endfunction()
 
 function(pxr_shared_library LIBRARY_NAME)
-    set(options PYTHON_LIBRARY)
+    set(options
+        DISABLE_PRECOMPILED_HEADERS
+        PYTHON_LIBRARY
+    )
     set(oneValueArgs
+        PRECOMPILED_HEADER_NAME
         PYTHON_WRAPPED_LIB_PREFIX
     )
     set(multiValueArgs
@@ -193,18 +247,20 @@ function(pxr_shared_library LIBRARY_NAME)
         set(rpath ${CMAKE_INSTALL_RPATH})
 
         # Python modules need to be able to access their corresponding
-        # wrapped library, so compute a relative path and append that to
-        # the module's rpath.
-	# 
-	# XXX: Only do this on Linux for now, since $ORIGIN only exists
-	# on that platform. We will need to figure out the correct thing
-	# to do here for other platforms.
-	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        # wrapped library so append to the rpath.
+        if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            # Use $ORIGIN on Linux to allow relocatable installs.
             file(RELATIVE_PATH
                 PYTHON_RPATH
                 "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_PREFIX}"
                 "${CMAKE_INSTALL_PREFIX}/${sl_PYTHON_WRAPPED_LIB_PREFIX}")
             _append_to_rpath(${rpath} "$ORIGIN/${PYTHON_RPATH}" rpath)
+        elseif(APPLE)
+            # SIP on OSX disallows relative rpaths.
+            _append_to_rpath(
+                ${rpath}
+                "${CMAKE_INSTALL_PREFIX}/${sl_PYTHON_WRAPPED_LIB_PREFIX}"
+                rpath)
         endif()
 
         # Python modules must be suffixed with .pyd on Windows and .so on
@@ -369,6 +425,7 @@ function(pxr_shared_library LIBRARY_NAME)
             PYTHON_WRAPPED_LIB_PREFIX ${LIB_INSTALL_PREFIX}
             CPPFILES ${sl_PYMODULE_CPPFILES}
             LIBRARIES ${LIBRARY_NAME}
+            INCLUDE_DIRS ${sl_INCLUDE_DIRS}
         )
     endif()
 
@@ -391,9 +448,29 @@ function(pxr_shared_library LIBRARY_NAME)
         _install_pyside_ui_files(${sl_PYSIDE_UI_FILES})
     endif()        
 
+    if(NOT "${PXR_PREFIX}" STREQUAL "")
+        if(NOT sl_DISABLE_PRECOMPILED_HEADERS)
+            if(NOT sl_PYTHON_LIBRARY)
+                _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                    SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+                )
+            else()
+                _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                    OUTPUT_NAME_PREFIX "py"
+                    SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+                )
+            endif()
+        endif()
+    endif()
 endfunction() # pxr_shared_library
 
 function(pxr_static_library LIBRARY_NAME)
+    set(options
+        DISABLE_PRECOMPILED_HEADERS
+    )
+    set(oneValueArgs
+        PRECOMPILED_HEADER_NAME
+    )
     set(multiValueArgs
         PUBLIC_CLASSES
         PUBLIC_HEADERS
@@ -406,7 +483,7 @@ function(pxr_static_library LIBRARY_NAME)
 
     cmake_parse_arguments(sl
         "${options}"
-        ""
+        "${oneValueArgs}"
         "${multiValueArgs}"
         ${ARGN}
     )
@@ -522,13 +599,23 @@ function(pxr_static_library LIBRARY_NAME)
             ${sl_INCLUDE_DIRS}
         )
     endif()
+
+    if(NOT "${PXR_PREFIX}" STREQUAL "")
+        if(NOT sl_DISABLE_PRECOMPILED_HEADERS)
+            _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+            )
+        endif()
+    endif()
 endfunction() # pxr_static_library
 
 function(pxr_plugin PLUGIN_NAME)
     set(options
+        DISABLE_PRECOMPILED_HEADERS
         KATANA_PLUGIN
     )
     set(oneValueArgs 
+        PRECOMPILED_HEADER_NAME
         PREFIX 
     )
     set(multiValueArgs
@@ -611,9 +698,9 @@ function(pxr_plugin PLUGIN_NAME)
 
         # If an install subdirectory is specified (e.g., for third party
         # packages), add an rpath pointing to lib/ within it.
-	#
-	# XXX: See comment about $ORIGIN in pxr_shared_library
-	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        #
+        # XXX: See comment about $ORIGIN in pxr_shared_library
+        if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
             if (PXR_INSTALL_SUBDIR)
                 file(RELATIVE_PATH
                     PLUGIN_RPATH
@@ -750,7 +837,23 @@ function(pxr_plugin PLUGIN_NAME)
             PYTHON_WRAPPED_LIB_PREFIX ${PLUGIN_INSTALL_PREFIX}
             CPPFILES ${sl_PYMODULE_CPPFILES}
             LIBRARIES ${PLUGIN_NAME}
+            INCLUDE_DIRS ${sl_INCLUDE_DIRS}
         )
+    endif()
+
+    if(NOT "${PXR_PREFIX}" STREQUAL "")
+        if(NOT sl_DISABLE_PRECOMPILED_HEADERS)
+            if(NOT sl_PYTHON_LIBRARY)
+                _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                    SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+                )
+            else()
+                _pxr_enable_precompiled_header(${LIBRARY_NAME}
+                    OUTPUT_NAME_PREFIX "py"
+                    SOURCE_NAME "${sl_PRECOMPILED_HEADER_NAME}"
+                )
+            endif()
+        endif()
     endif()
 endfunction() # pxr_plugin
 
@@ -768,9 +871,13 @@ function(pxr_setup_python)
 
     # Install a pxr __init__.py with an appropriate __all__
     _get_install_dir(lib/python/pxr installPrefix)
-    install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${installPrefix}/__init__.py\" \"__all__ = [${pyModulesStr}]\n\")"
-    )
+
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
+         "__all__ = [${pyModulesStr}]\n")
+
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
+            DESTINATION ${installPrefix}
+            RENAME "__init__.py")
 endfunction() # pxr_setup_python
 
 function (pxr_create_test_module MODULE_NAME)
@@ -937,9 +1044,9 @@ endfunction() # pxr_install_test_dir
 function(pxr_register_test TEST_NAME)
     if (PXR_BUILD_TESTS)
         cmake_parse_arguments(bt
-            "PYTHON" 
-            "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
-            "ENV"
+            "PYTHON;REQUIRES_DISPLAY" 
+            "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
+            "ENV;PRE_PATH;POST_PATH"
             ${ARGN}
         )
 
@@ -953,6 +1060,26 @@ function(pxr_register_test TEST_NAME)
 
         if (bt_STDERR_REDIRECT)
             set(testWrapperCmd ${testWrapperCmd} --stderr-redirect=${bt_STDERR_REDIRECT})
+        endif()
+
+        if (bt_REQUIRES_DISPLAY)
+            set(testWrapperCmd ${testWrapperCmd} --requires-display)
+        endif()
+
+        if (bt_PRE_COMMAND_STDOUT_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --pre-command-stdout-redirect=${bt_PRE_COMMAND_STDOUT_REDIRECT})
+        endif()
+
+        if (bt_PRE_COMMAND_STDERR_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --pre-command-stderr-redirect=${bt_PRE_COMMAND_STDERR_REDIRECT})
+        endif()
+
+        if (bt_POST_COMMAND_STDOUT_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --post-command-stdout-redirect=${bt_POST_COMMAND_STDOUT_REDIRECT})
+        endif()
+
+        if (bt_POST_COMMAND_STDERR_REDIRECT)
+            set(testWrapperCmd ${testWrapperCmd} --post-command-stderr-redirect=${bt_POST_COMMAND_STDERR_REDIRECT})
         endif()
 
         # Not all tests will have testenvs, but if they do let the wrapper know so
@@ -978,14 +1105,27 @@ function(pxr_register_test TEST_NAME)
         endif()
 
         if (bt_CLEAN_OUTPUT)
-            foreach (path ${bt_CLEAN_OUTPUT})
-                set(testWrapperCmd ${testWrapperCmd} --clean-output-paths=${path})
-            endforeach()
+            set(testWrapperCmd ${testWrapperCmd} --clean-output-paths=${bt_CLEAN_OUTPUT})
+        endif()
+
+        if (bt_FILES_EXIST)
+            set(testWrapperCmd ${testWrapperCmd} --files-exist=${bt_FILES_EXIST})
+        endif()
+
+        if (bt_FILES_DONT_EXIST)
+            set(testWrapperCmd ${testWrapperCmd} --files-dont-exist=${bt_FILES_DONT_EXIST})
+        endif()
+
+        if (bt_PRE_COMMAND)
+            set(testWrapperCmd ${testWrapperCmd} --pre-command=${bt_PRE_COMMAND})
+        endif()
+
+        if (bt_POST_COMMAND)
+            set(testWrapperCmd ${testWrapperCmd} --post-command=${bt_POST_COMMAND})
         endif()
 
         if (bt_EXPECTED_RETURN_CODE)
-            set(testWrapperCmd ${testWrapperCmd} 
-                --expected-return-code=${bt_EXPECTED_RETURN_CODE})
+            set(testWrapperCmd ${testWrapperCmd} --expected-return-code=${bt_EXPECTED_RETURN_CODE})
         endif()
 
         if (bt_ENV)
@@ -994,17 +1134,27 @@ function(pxr_register_test TEST_NAME)
             endforeach()
         endif()
 
+        if (bt_PRE_PATH)
+            foreach(path ${bt_PRE_PATH})
+                set(testWrapperCmd ${testWrapperCmd} --pre-path=${path})
+            endforeach()
+        endif()
+
+        if (bt_POST_PATH)
+            foreach(path ${bt_POST_PATH})
+                set(testWrapperCmd ${testWrapperCmd} --post-path=${path})
+            endforeach()
+        endif()
+
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.
-	set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PYTHONPATH}")
+        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;$ENV{PYTHONPATH}")
         if(WIN32)
             string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
         else()
             string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
         endif()
-        set(testWrapperCmd ${testWrapperCmd}
-            "--env-var=PYTHONPATH=${_testPythonPath}")
 
         # Ensure we run with the python executable known to the build
         if (bt_PYTHON)
@@ -1015,7 +1165,8 @@ function(pxr_register_test TEST_NAME)
 
         add_test(
             NAME ${TEST_NAME}
-            COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd} ${testCmd}
+            COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
+                    "--env-var=PYTHONPATH=${_testPythonPath}" ${testCmd}
         )
     endif()
 endfunction() # pxr_register_test
@@ -1026,13 +1177,19 @@ function(pxr_setup_plugins)
     # Install a top-level plugInfo.json in the shared area and into the 
     # top-level plugin area
     _get_resources_dir_name(resourcesDir)
-    set(plugInfoContents "{\\n    \\\"Includes\\\": [ \\\"*/${resourcesDir}/\\\" ]\\n}\\n")
-    install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${SHARE_INSTALL_PREFIX}/plugins/plugInfo.json\" ${plugInfoContents})"
-    )
-    install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/plugin/usd/plugInfo.json\" ${plugInfoContents})"
-    )
+    set(plugInfoContents "{\n    \"Includes\": [ \"*/${resourcesDir}/\" ]\n}\n")
+
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
+         "${plugInfoContents}")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
+            DESTINATION "${SHARE_INSTALL_PREFIX}/plugins"
+            RENAME "plugInfo.json")
+
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/usd_plugInfo.json"
+         "${plugInfoContents}")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/usd_plugInfo.json"
+            DESTINATION plugin/usd
+            RENAME "plugInfo.json")
 endfunction() # pxr_setup_plugins
 
 function(pxr_katana_nodetypes NODE_TYPES)
@@ -1052,8 +1209,9 @@ function(pxr_katana_nodetypes NODE_TYPES)
     )
 
     # Install a __init__.py that imports all the known node types
-    install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${installDir}/__init__.py\" \"${importLines}\")"
-    )
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_NodeTypes_init.py"
+         "${importLines}")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_NodeTypes_init.py"
+            DESTINATION "${installDir}"
+            RENAME "__init__.py")
 endfunction() # pxr_katana_nodetypes
-

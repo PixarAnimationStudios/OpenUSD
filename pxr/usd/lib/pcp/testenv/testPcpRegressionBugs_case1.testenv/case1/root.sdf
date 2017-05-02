@@ -1,0 +1,14 @@
+#sdf 1.4.32
+(
+   """
+   This captures a crash bug that was due to invalid dependencies being
+   registered, which was due to failed path translations when composing
+   variant selections.
+   """
+)
+
+def Model "FergusCloak" (
+    references = @./FergusCloak_standins.sdf@</FergusCloak>
+)
+{
+}

@@ -31,10 +31,9 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapPipeline()
 {
@@ -50,6 +49,3 @@ void wrapPipeline()
         (arg("stage"), arg("path")));
     def("GetPrimaryUVSetName", UsdUtilsGetPrimaryUVSetName);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

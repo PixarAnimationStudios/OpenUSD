@@ -1,0 +1,240 @@
+Loading @ErrorInvalidInstanceTargetPath/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </ConnectionToLocalClass>
+
+Prim Stack:
+    root.sdf             /ConnectionToLocalClass
+
+Child names:
+     ['LocalClass', 'Instance_1', 'Instance_2']
+
+------------------------------------------------------------------------
+Results for composing </ConnectionToLocalClass/LocalClass>
+
+Prim Stack:
+    root.sdf             /ConnectionToLocalClass/LocalClass
+
+Property names:
+     ['x', 'y']
+
+Property stacks:
+/ConnectionToLocalClass/LocalClass.x:
+    root.sdf             /ConnectionToLocalClass/LocalClass.x
+/ConnectionToLocalClass/LocalClass.y:
+    root.sdf             /ConnectionToLocalClass/LocalClass.y
+
+Attribute connections:
+/ConnectionToLocalClass/LocalClass.x:
+    /ConnectionToLocalClass/Instance_1.y
+    /ConnectionToLocalClass/Instance_2.y
+
+------------------------------------------------------------------------
+Results for composing </ConnectionToLocalClass/Instance_1>
+
+Prim Stack:
+    root.sdf             /ConnectionToLocalClass/Instance_1
+    root.sdf             /ConnectionToLocalClass/LocalClass
+
+Property names:
+     ['x', 'y']
+
+Property stacks:
+/ConnectionToLocalClass/Instance_1.x:
+    root.sdf             /ConnectionToLocalClass/LocalClass.x
+/ConnectionToLocalClass/Instance_1.y:
+    root.sdf             /ConnectionToLocalClass/LocalClass.y
+
+------------------------------------------------------------------------
+Results for composing </ConnectionToLocalClass/Instance_2>
+
+Prim Stack:
+    root.sdf             /ConnectionToLocalClass/Instance_2
+    root.sdf             /ConnectionToLocalClass/LocalClass
+
+Property names:
+     ['x', 'y']
+
+Property stacks:
+/ConnectionToLocalClass/Instance_2.x:
+    root.sdf             /ConnectionToLocalClass/LocalClass.x
+/ConnectionToLocalClass/Instance_2.y:
+    root.sdf             /ConnectionToLocalClass/LocalClass.y
+
+------------------------------------------------------------------------
+Results for composing </FaceRig>
+
+Prim Stack:
+    root.sdf             /FaceRig
+
+Child names:
+     ['BrowRig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig>
+
+Prim Stack:
+    root.sdf             /FaceRig/BrowRig
+    ref.sdf              /BrowRig
+
+Child names:
+     ['SymBrow', 'LBrow', 'RBrow', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/SymBrow>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow
+
+Child names:
+     ['BrowInnUDPosBrowInnUDNeg_sculpt', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt
+
+Property names:
+     ['amount']
+
+Property stacks:
+/FaceRig/BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
+    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
+
+Attribute connections:
+/FaceRig/BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
+    /FaceRig/Anim/Face/Eyes/RBrow.InnUD
+    /FaceRig/Anim/Face/Eyes/LBrow.InnUD
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/SymBrow/Anim>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow/Anim
+
+Child names:
+     ['Brow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/SymBrow/Anim/Brow>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow/Anim/Brow
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/LBrow>
+
+Prim Stack:
+    ref.sdf              /BrowRig/LBrow
+    ref.sdf              /BrowRig/SymBrow
+
+Child names:
+     ['BrowInnUDPosBrowInnUDNeg_sculpt', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/LBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt
+
+Property names:
+     ['amount']
+
+Property stacks:
+/FaceRig/BrowRig/LBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
+    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/LBrow/Anim>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow/Anim
+
+Prohibited child names:
+     ['Brow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/RBrow>
+
+Prim Stack:
+    ref.sdf              /BrowRig/RBrow
+    ref.sdf              /BrowRig/SymBrow
+
+Child names:
+     ['BrowInnUDPosBrowInnUDNeg_sculpt', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/RBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt
+
+Property names:
+     ['amount']
+
+Property stacks:
+/FaceRig/BrowRig/RBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
+    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/RBrow/Anim>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow/Anim
+
+Prohibited child names:
+     ['Brow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/BrowRig/Anim>
+
+Prim Stack:
+    ref.sdf              /BrowRig/Anim
+
+Prohibited child names:
+     ['LBrow', 'RBrow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim>
+
+Prim Stack:
+    root.sdf             /FaceRig/Anim
+
+Child names:
+     ['Face']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim/Face>
+
+Prim Stack:
+    root.sdf             /FaceRig/Anim/Face
+
+Child names:
+     ['Eyes']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim/Face/Eyes>
+
+Prim Stack:
+    root.sdf             /FaceRig/Anim/Face/Eyes
+
+Child names:
+     ['LBrow', 'RBrow']
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim/Face/Eyes/LBrow>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow/Anim/Brow
+
+------------------------------------------------------------------------
+Results for composing </FaceRig/Anim/Face/Eyes/RBrow>
+
+Prim Stack:
+    ref.sdf              /BrowRig/SymBrow/Anim/Brow
+

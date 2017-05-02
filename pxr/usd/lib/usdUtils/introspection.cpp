@@ -28,7 +28,7 @@
 
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
@@ -149,9 +149,7 @@ UsdUtilsComputeUsdStageStats(const UsdStageWeakPtr &stage,
     PrimTypeAndCountMap primCountsByType;
     
     std::set<string> seenAssetNames;
-    for (UsdTreeIterator iter = stage->TraverseAll(); iter; ++iter ) {
-        const UsdPrim &prim = *iter;
-
+    for (UsdPrim prim: stage->TraverseAll()) {
         _UpdateCountsHelper(prim, &seenAssetNames, 
             &totalPrimCount, &primaryPrimCount, 
             &modelCount, &instancedModelCount, 
@@ -171,9 +169,7 @@ UsdUtilsComputeUsdStageStats(const UsdStageWeakPtr &stage,
         PrimTypeAndCountMap mastersPrimCountsByType;
 
         for (const UsdPrim &masterPrim : masters) {
-            UsdTreeIterator iter(masterPrim);
-            for (; iter; ++iter ) {
-                const UsdPrim &prim = *iter;
+            for (UsdPrim prim: UsdPrimRange(masterPrim)) {
                 _UpdateCountsHelper(prim, &seenAssetNames, 
                     &totalPrimCount, &mastersPrimCount, 
                     &modelCount, &instancedModelCount, 

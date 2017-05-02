@@ -45,6 +45,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class GfVec2i;
+
 template <>
 struct GfIsGfVec<class GfVec2i> { static const bool value = true; };
 

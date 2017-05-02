@@ -1,0 +1,16 @@
+#sdf 1.4.32
+
+def Scope "CulledModelPayload"
+{
+    def Scope "sim"
+    {
+        def Scope "CollisionRig" (
+            permission = private
+        )
+        {
+            def Scope "FiztCollBody"
+            {
+            }
+        }
+    }
+}

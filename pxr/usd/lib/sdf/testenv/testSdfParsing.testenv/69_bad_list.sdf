@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+startFrame = 1;
+endFrame = 1
+)
+def Camera "overview_cam"  {
+    bool[] camx = [true, false, [true, false]];
+}

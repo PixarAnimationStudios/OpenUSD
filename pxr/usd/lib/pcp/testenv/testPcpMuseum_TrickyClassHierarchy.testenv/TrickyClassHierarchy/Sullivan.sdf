@@ -1,0 +1,23 @@
+#sdf 1.4.32
+
+def Model "Sullivan" (
+    add inherits = </_Class_Sullivan>
+)
+{
+}
+
+class Scope "_Class_Sullivan" (
+    add inherits = </_Class_Char>
+)
+{
+}
+
+class Scope "_Class_Char" (
+    add inherits = </_Class_Model>
+)
+{
+}
+
+class Scope "_Class_Model"
+{
+}

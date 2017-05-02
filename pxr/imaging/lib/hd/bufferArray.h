@@ -25,18 +25,19 @@
 #define HD_BUFFER_ARRAY_H
 
 #include "pxr/pxr.h"
-#include <atomic>
-#include <mutex>
-
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
+
+#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+
+#include <atomic>
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,9 +58,11 @@ typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 class HdBufferArray : public boost::enable_shared_from_this<HdBufferArray>,
     boost::noncopyable {
 public:
+    HD_API
     HdBufferArray(TfToken const &role,
                   TfToken const garbageCollectionPerfToken);
 
+    HD_API
     virtual ~HdBufferArray();
 
     /// Returns the role of the GPU data in this bufferArray.
@@ -72,6 +75,7 @@ public:
     }
 
     /// Increments the version of this buffer array.
+    HD_API
     void IncrementVersion();
 
     /// TODO: We need to distinguish between the primvar types here, we should
@@ -81,24 +85,28 @@ public:
 
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
+    HD_API
     HdBufferResourceSharedPtr GetResource() const;
 
     /// Returns the named GPU resource. This method returns the first found
     /// resource. In HD_SAFE_MODE it checkes all underlying GL buffers
     /// in _resourceMap and raises a coding error if there are more than
     /// one GL buffers exist.
+    HD_API
     HdBufferResourceSharedPtr GetResource(TfToken const& name);
 
     /// Returns the list of all named GPU resources for this bufferArray.
     HdBufferResourceNamedList const& GetResources() const {return _resourceList;}
 
     /// Reconstructs the bufferspecs and returns it (for buffer splitting)
+    HD_API
     HdBufferSpecVector GetBufferSpecs() const;
 
     /// Attempts to assign a range to this buffer array.
     /// Multiple threads could be trying to assign to this buffer at the same time.
     /// Returns true is the range is assigned to this buffer otherwise
     /// returns false if the buffer doesn't have space to assign the range.
+    HD_API
     bool TryAssignRange(HdBufferArrayRangeSharedPtr &range);
 
     /// Performs compaction if necessary and returns true if it becomes empty.
@@ -113,6 +121,7 @@ public:
         HdBufferArraySharedPtr const &curRangeOwner) = 0;
 
     /// Returns the maximum number of elements capacity.
+    HD_API
     virtual size_t GetMaxNumElements() const;
 
     /// Debug output
@@ -122,10 +131,12 @@ public:
     size_t GetRangeCount() const { return _rangeCount; }
 
     /// Get the attached range at the specified index.
+    HD_API
     HdBufferArrayRangePtr GetRange(size_t idx) const;
 
     /// Remove any ranges from the range list that have been deallocated
     /// Returns number of ranges after clean-up
+    HD_API
     void RemoveUnusedRanges();
 
     /// Returns true if Reallocate() needs to be called on this buffer array.
@@ -134,6 +145,7 @@ public:
     }
 
     /// Debug output
+    HD_API
     friend std::ostream &operator <<(std::ostream &out,
                                      const HdBufferArray &self);
 
@@ -143,6 +155,7 @@ protected:
     bool _needsReallocation;
 
     /// Adds a new, named GPU resource and returns it.
+    HD_API
     HdBufferResourceSharedPtr _AddResource(TfToken const& name,
                                            int glDataType,
                                            short numComponents,
@@ -155,6 +168,7 @@ protected:
     void _SetMaxNumRanges(size_t max) { _maxNumRanges = max; }
 
     /// Swap the rangelist with \p ranges
+    HD_API
     void _SetRangeList(std::vector<HdBufferArrayRangeSharedPtr> const &ranges);
 
 private:

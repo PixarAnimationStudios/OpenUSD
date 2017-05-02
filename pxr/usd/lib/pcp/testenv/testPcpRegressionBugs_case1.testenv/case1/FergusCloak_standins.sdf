@@ -1,0 +1,33 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Model "FergusCloak" (
+    add variantSets = "standin"
+)
+{
+    variantSet "standin" = {
+        "anim" (
+            references = @./FergusCloak_anim.sdf@</FergusCloak>
+        ) {
+
+        }
+        "layout" (
+            references = @./FergusCloak_layout.sdf@</FergusCloak>
+        ) {
+
+        }
+        "render" (
+            references = @./FergusCloak_render.sdf@</FergusCloak>
+        ) {
+
+        }
+        "sim" (
+            references = @./FergusCloak_sim.sdf@</FergusCloak>
+        ) {
+
+        }
+    }
+}

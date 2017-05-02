@@ -32,6 +32,7 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/node_Iterator.h"
+#include "pxr/usd/pcp/primIndex_StackFrame.h"
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -41,9 +42,11 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/assign/list_of.hpp>
+#include <tbb/concurrent_hash_map.h>
 #include <fstream>
+#include <mutex>
 #include <sstream>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -437,457 +440,467 @@ Pcp_FormatSite(const PcpLayerStackSite& site)
 
 ////////////////////////////////////////////////////////////
 
-// Helper class for managing the output of the various graph debugging
+// Helper class for managing the output of the various indexing debugging
 // annotations.
-class Pcp_GraphOutputManager : public boost::noncopyable
+class Pcp_IndexingOutputManager
 {
 public:
-    Pcp_GraphOutputManager();
+    Pcp_IndexingOutputManager();
+    Pcp_IndexingOutputManager(Pcp_IndexingOutputManager const &) = delete;
+    Pcp_IndexingOutputManager &
+    operator=(Pcp_IndexingOutputManager const &) = delete;
 
-    void BeginGraph(PcpPrimIndex* index, const PcpLayerStackSite& site);
-    void EndGraph();
+    void PushIndex(PcpPrimIndex const *originatingIndex,
+                   PcpPrimIndex const *index, PcpLayerStackSite const &site);
+    void PopIndex(PcpPrimIndex const *originatingIndex);
 
-    void BeginPhase(
-        const std::string& msg, const PcpNodeRef& nodeForPhase = PcpNodeRef());
-    void EndPhase();
+    void BeginPhase(PcpPrimIndex const *originatingIndex,
+                    std::string &&msg,
+                    const PcpNodeRef& nodeForPhase = PcpNodeRef());
+    void EndPhase(PcpPrimIndex const *originatingIndex);
 
-    void Update(const std::string& msg, const PcpNodeRef& updatedNode);
-    void Msg(const std::string& msg, const Pcp_NodeSet& nodes);
+    void Update(PcpPrimIndex const *originatingIndex,
+                const PcpNodeRef& updatedNode, std::string &&msg);
+
+    void Msg(PcpPrimIndex const *originatingIndex,
+             std::string &&msg, const Pcp_NodeSet& nodes);
 
 private:
     struct _Phase {
-        _Phase(const std::string& desc) 
-            : description(desc)
-            { }
-
+        explicit _Phase(std::string &&desc) : description(std::move(desc)) {}
         std::string description;
         Pcp_NodeSet nodesToHighlight;
         std::vector<std::string> messages;
     };
 
-    struct _Graph {
-        _Graph(PcpPrimIndex* index_, const SdfPath& path_)
-            : index(index_), path(path_), needsOutput(false) 
-            { }
+    struct _IndexInfo {
+        _IndexInfo(PcpPrimIndex const *index, const SdfPath& path)
+            : index(index)
+            , path(path)
+            , needsOutput(false) {}
 
-        PcpPrimIndex* index;
+        PcpPrimIndex const *index;
         SdfPath path;
-
-        bool needsOutput;
         std::string dotGraph;
         std::string dotGraphLabel;
-
         std::vector<_Phase> phases;
+        bool needsOutput;
     };
 
-private:
-    void _OutputToTerminal(const std::string& msg) const;
-    void _OutputGraph() const;
-
-    void _FlushGraphIfNeedsOutput();
-
-    void _UpdateCurrentDotGraph();
-    void _UpdateCurrentDotGraphLabel();
-
-    size_t _GetNumPhases() const;
-
-private:
-    std::vector<_Graph> _graphs;
-    mutable int _nextGraphFileIndex;
-};
-
-Pcp_GraphOutputManager::Pcp_GraphOutputManager()
-    : _nextGraphFileIndex(0)
-{
-}
-
-size_t 
-Pcp_GraphOutputManager::_GetNumPhases() const
-{
-    size_t phases = 0;
-    TF_FOR_ALL(graphIt, _graphs) {
-        phases += graphIt->phases.size();
-    }
-    return phases;
-}
-
-void 
-Pcp_GraphOutputManager::_OutputToTerminal(const std::string& msg) const
-{
-    const size_t indent = _GetNumPhases();
-    const size_t numSpacesPerIndent = 4;
-    const std::string indentation(indent * numSpacesPerIndent, ' ');
-    const std::string finalMsg = TfStringReplace(msg, "\n", "\n" + indentation);
-
-    // Dump to terminal.
-    TfDebug::Helper::Msg(indentation);
-    TfDebug::Helper::Msg(finalMsg);
-    TfDebug::Helper::Msg("\n");
-}
-
-void 
-Pcp_GraphOutputManager::_OutputGraph() const
-{
-    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
-        return;
-    }
-
-    if (!TF_VERIFY(!_graphs.empty())) {
-        return;
-    }
-
-    const _Graph& currentGraph = _graphs.back();
-
-    // Figure out the next filename and open it for writing.
-    const std::string filename =
-        TfStringPrintf(
-            "pcp.%s.%06d.dot",
-            TfStringReplace(_graphs.front().path.GetName(), "/", "_").c_str(),
-            _nextGraphFileIndex);
-
-    std::ofstream f(
-        filename.c_str(), std::ofstream::out | std::ofstream::trunc);
-    if (!f) {
-        TF_RUNTIME_ERROR("Unable to open %s to write graph", filename.c_str());
-        return;
-    }
-
-    _nextGraphFileIndex++;
-
-    // Write the graph and label out to the file.
-    _WriteGraphHeader(f);
-
-    f << "\tlabel = <" << currentGraph.dotGraphLabel << ">\n";
-    f << "\tlabelloc = b\n";
-    f << currentGraph.dotGraph;
-
-    _WriteGraphFooter(f);
-}
-
-void 
-Pcp_GraphOutputManager::_UpdateCurrentDotGraph()
-{
-    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
-        return;
-    }
-
-    if (!TF_VERIFY(!_graphs.empty()) ||
-        !TF_VERIFY(!_graphs.back().phases.empty())) {
-        return;
-    }
-
-    _Graph& currentGraph = _graphs.back();
-    const _Phase& currentPhase = currentGraph.phases.back();
-
-    std::stringstream ss;
-
-    _WriteGraph(
-        ss, 
-        currentGraph.index->GetRootNode(),
-        /* includeInheritOriginInfo = */ true,
-        /* includeMaps = */ false, 
-        currentPhase.nodesToHighlight);
-    
-    currentGraph.dotGraph = ss.str();
-    currentGraph.needsOutput = true;
-}
-
-void 
-Pcp_GraphOutputManager::_UpdateCurrentDotGraphLabel()
-{
-    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
-        return;
-    }
-
-    if (!TF_VERIFY(!_graphs.empty()) ||
-        !TF_VERIFY(!_graphs.back().phases.empty())) {
-        return;
-    }
-
-    _Graph& currentGraph = _graphs.back();
-    const _Phase& currentPhase = currentGraph.phases.back();
-
-    // Create a nicely formatted HTML label that contains the current and
-    // queued phases.
-    const std::string tableFormat = 
-        "\n<table cellborder=\"0\" border=\"0\">"
-        "\n<tr><td balign=\"left\" align=\"left\">"
-        "\n%s"
-        "\n</td></tr>"
-        "\n<tr><td bgcolor=\"black\" height=\"1\" cellpadding=\"0\">"
-        "\n</td></tr>"
-        "\n<tr><td balign=\"left\" align=\"left\">"
-        "\nTasks:<br/>"
-        "\n%s"
-        "\n</td></tr>"
-        "\n</table>";
-
-    int numPhases = _GetNumPhases();
-
-    // Generate the left side of the label, which shows the current phase and
-    // any associated messages.
-    std::string infoAboutCurrentPhase = TfStringPrintf(
-        "%d. %s\n", numPhases--, currentPhase.description.c_str());
-
-    TF_FOR_ALL(msgIt, currentPhase.messages) {
-        infoAboutCurrentPhase += "- " + *msgIt + "\n";
-    }
-
-    infoAboutCurrentPhase = 
-        TfStringReplace(
-            TfGetXmlEscapedString(infoAboutCurrentPhase), "\n", "<br/>\n");
-
-    // Generate the right side of the label, which shows the stack of active
-    // phases.
-    int numActivePhasesToShow = 5;
-
-    std::string infoAboutPendingPhases;
-    TF_REVERSE_FOR_ALL(graphIt, _graphs) {
-        if (numActivePhasesToShow == 0) {
-            break;
+    struct _DebugInfo {
+        void BeginPhase(std::string &&msg,
+                        const PcpNodeRef& nodeForPhase = PcpNodeRef()) {
+            if (!TF_VERIFY(!indexStack.empty())) {
+                return;
+            }
+            WriteDebugMessage(msg);
+            FlushGraphIfNeedsOutput();
+            indexStack.back().phases.emplace_back(std::move(msg));
+            if (nodeForPhase) {
+                _Phase& currentPhase = indexStack.back().phases.back();
+                currentPhase.nodesToHighlight.clear();
+                currentPhase.nodesToHighlight.insert(nodeForPhase);
+                UpdateCurrentDotGraph();
+            }
+            UpdateCurrentDotGraphLabel();
         }
-
-        TF_REVERSE_FOR_ALL(phaseIt, graphIt->phases) {
-            if (&*phaseIt != &currentPhase) {
-                infoAboutPendingPhases += 
-                    TfStringPrintf(
-                        "%d. %s\n", numPhases--, phaseIt->description.c_str());
-                
-                if (--numActivePhasesToShow == 0) {
-                    break;
-                }
+        
+        void EndPhase() {
+            if (!TF_VERIFY(!indexStack.empty()) ||
+                !TF_VERIFY(!indexStack.back().phases.empty())) {
+                return;
+            }
+            // We don't output anything to the terminal at the end of a phase.
+            // The indentation levels should be enough to delineate the phase's
+            // end.
+            FlushGraphIfNeedsOutput();
+            
+            indexStack.back().phases.pop_back();
+            if (!indexStack.back().phases.empty()) {
+                UpdateCurrentDotGraph();
+                UpdateCurrentDotGraphLabel();
+                indexStack.back().needsOutput = false;
             }
         }
-    }
+        
+        void Update(const PcpNodeRef& updatedNode, std::string &&msg) {
+            if (!TF_VERIFY(!indexStack.empty()) ||
+                !TF_VERIFY(!indexStack.back().phases.empty())) {
+                return;
+            }
+            
+            WriteDebugMessage(msg);
+            FlushGraphIfNeedsOutput();
+            
+            _Phase& currentPhase = indexStack.back().phases.back();
+            currentPhase.messages.push_back(std::move(msg));
+            currentPhase.nodesToHighlight = { updatedNode };
+            
+            UpdateCurrentDotGraph();
+            UpdateCurrentDotGraphLabel();
+            FlushGraphIfNeedsOutput();
+        }
+        
+        void Msg(std::string &&msg, const Pcp_NodeSet& nodes) {
+            if (!TF_VERIFY(!indexStack.empty()) ||
+                !TF_VERIFY(!indexStack.back().phases.empty())) {
+                return;
+            }
+            
+            WriteDebugMessage(msg);
+            
+            _Phase& currentPhase = indexStack.back().phases.back();
+            
+            if (currentPhase.nodesToHighlight != nodes) {
+                FlushGraphIfNeedsOutput();                
+                currentPhase.nodesToHighlight = nodes;
+                UpdateCurrentDotGraph();
+            }
+            
+            currentPhase.messages.push_back(std::move(msg));
+            UpdateCurrentDotGraphLabel();
+        }
+            
+        void WriteDebugMessage(const std::string& msg) const {
+            const size_t indent = GetNumPhases();
+            const size_t numSpacesPerIndent = 4;
+            const std::string indentation(indent * numSpacesPerIndent, ' ');
+            const std::string finalMsg =
+                TfStringReplace(msg, "\n", "\n" + indentation);
 
-    infoAboutPendingPhases = 
-        TfStringReplace(
-            TfGetXmlEscapedString(infoAboutPendingPhases), "\n", "<br/>\n");
+            // Append output.
+            outputBuffer.push_back(indentation + finalMsg + "\n");
+        }
+        
+        void OutputGraph() const {
+            if (!TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
+                return;
+            }
+            
+            if (!TF_VERIFY(!indexStack.empty())) {
+                return;
+            }
+            
+            // Figure out the next filename and open it for writing.
+            const std::string filename =
+                TfStringPrintf(
+                    "pcp.%s.%06d.dot",
+                    TfStringReplace(indexStack.front().path.GetName(),
+                                    "/", "_").c_str(),
+                    nextGraphFileIndex);
+            
+            std::ofstream f(
+                filename.c_str(), std::ofstream::out | std::ofstream::trunc);
+            if (!f) {
+                TF_RUNTIME_ERROR("Unable to open %s to write graph",
+                                 filename.c_str());
+                return;
+            }
+            
+            ++nextGraphFileIndex;
+            
+            // Write the graph and label out to the file.
+            _WriteGraphHeader(f);
+            
+            const _IndexInfo& currentIndex = indexStack.back();
+            f << "\tlabel = <" << currentIndex.dotGraphLabel << ">\n";
+            f << "\tlabelloc = b\n";
+            f << currentIndex.dotGraph;
+            
+            _WriteGraphFooter(f);
+        }
+            
+        void FlushGraphIfNeedsOutput() {
+            if (!indexStack.empty() && indexStack.back().needsOutput) {
+                OutputGraph();
+                
+                // Clear dirtied flags from our phase and graph structures.
+                indexStack.back().phases.back().messages.clear();
+                indexStack.back().needsOutput = false;
+            }
+        }
+        
+        void UpdateCurrentDotGraph() {
+            if (!TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
+                return;
+            }
 
-    currentGraph.dotGraphLabel = TfStringPrintf(
-        tableFormat.c_str(), 
-        infoAboutCurrentPhase.c_str(),
-        infoAboutPendingPhases.c_str());
-    currentGraph.needsOutput = true;
-}
+            if (!TF_VERIFY(!indexStack.empty()) ||
+                !TF_VERIFY(!indexStack.back().phases.empty())) {
+                return;
+            }
 
-void 
-Pcp_GraphOutputManager::_FlushGraphIfNeedsOutput()
-{
-    if (!_graphs.empty() && _graphs.back().needsOutput) {
-        _OutputGraph();
+            _IndexInfo& currentIndex = indexStack.back();
+            const _Phase& currentPhase = currentIndex.phases.back();
 
-        // Clear dirtied flags from our phase and graph structures.
-        _graphs.back().phases.back().messages.clear();
-        _graphs.back().needsOutput = false;
-    }
-}
+            std::stringstream ss;
 
-void 
-Pcp_GraphOutputManager::BeginGraph(PcpPrimIndex* index,
-                                   const PcpLayerStackSite& site)
-{
-    _FlushGraphIfNeedsOutput();
-    _graphs.push_back(_Graph(index, site.path));
-
-    const std::string msg = TfStringPrintf(
-        "Computing prim index for %s", Pcp_FormatSite(site).c_str());
-    BeginPhase(msg);
-}
-
-void 
-Pcp_GraphOutputManager::EndGraph()
-{
-    if (!TF_VERIFY(!_graphs.empty()) ||
-        !TF_VERIFY(!_graphs.back().phases.empty())) {
-        return;
-    }
-
-    _Phase& currentPhase = _graphs.back().phases.back();
-
-    const std::string msg = "DONE - " + currentPhase.description;
-    currentPhase.messages.push_back(msg);
-    _UpdateCurrentDotGraph();
-    _UpdateCurrentDotGraphLabel();
-
-    EndPhase();
-    _graphs.pop_back();
-
-    if (_graphs.empty()) {
-        _OutputToTerminal(msg);
-        _nextGraphFileIndex = 0;
-    }
-}
-
-void 
-Pcp_GraphOutputManager::BeginPhase(
-    const std::string& msg, const PcpNodeRef& nodeForPhase)
-{
-    if (!TF_VERIFY(!_graphs.empty())) {
-        return;
-    }
-
-    _OutputToTerminal(msg);
-    _FlushGraphIfNeedsOutput();
-
-    _graphs.back().phases.push_back(msg);
-
-    if (nodeForPhase) {
-        _Phase& currentPhase = _graphs.back().phases.back();
-        currentPhase.nodesToHighlight.clear();
-        currentPhase.nodesToHighlight.insert(nodeForPhase);
-        _UpdateCurrentDotGraph();
-    }
-
-    _UpdateCurrentDotGraphLabel();
-}
-
-void 
-Pcp_GraphOutputManager::EndPhase()
-{
-    if (!TF_VERIFY(!_graphs.empty()) ||
-        !TF_VERIFY(!_graphs.back().phases.empty())) {
-        return;
-    }
-
-    // We don't output anything to the terminal at the end of a phase.
-    // The indentation levels should be enough to delineate the phase's end.
-    _FlushGraphIfNeedsOutput();
-
-    _graphs.back().phases.pop_back();
-    if (!_graphs.back().phases.empty()) {
-        _UpdateCurrentDotGraph();
-        _UpdateCurrentDotGraphLabel();
-        _graphs.back().needsOutput = false;
-    }
-}
-
-void 
-Pcp_GraphOutputManager::Update(
-    const std::string& msg, const PcpNodeRef& updatedNode)
-{
-    if (!TF_VERIFY(!_graphs.empty()) ||
-        !TF_VERIFY(!_graphs.back().phases.empty())) {
-        return;
-    }
-
-    _OutputToTerminal(msg);
-    _FlushGraphIfNeedsOutput();
+            _WriteGraph(
+                ss, 
+                currentIndex.index->GetRootNode(),
+                /* includeInheritOriginInfo = */ true,
+                /* includeMaps = */ false, 
+                currentPhase.nodesToHighlight);
     
-    _Phase& currentPhase = _graphs.back().phases.back();
-    currentPhase.messages.push_back(msg);
-    currentPhase.nodesToHighlight = boost::assign::list_of<>(updatedNode)
-        .convert_to_container<Pcp_NodeSet>();
+            currentIndex.dotGraph = ss.str();
+            currentIndex.needsOutput = true;
+        }
+        
+        void UpdateCurrentDotGraphLabel() {
 
-    _UpdateCurrentDotGraph();
-    _UpdateCurrentDotGraphLabel();
-    _FlushGraphIfNeedsOutput();
+            if (!TfDebug::IsEnabled(PCP_PRIM_INDEX_GRAPHS)) {
+                return;
+            }
+
+            if (!TF_VERIFY(!indexStack.empty()) ||
+                !TF_VERIFY(!indexStack.back().phases.empty())) {
+                return;
+            }
+
+            _IndexInfo& currentIndex = indexStack.back();
+            const _Phase& currentPhase = currentIndex.phases.back();
+
+            // Create a nicely formatted HTML label that contains the current
+            // and queued phases.
+            const std::string tableFormat = 
+                "\n<table cellborder=\"0\" border=\"0\">"
+                "\n<tr><td balign=\"left\" align=\"left\">"
+                "\n%s"
+                "\n</td></tr>"
+                "\n<tr><td bgcolor=\"black\" height=\"1\" cellpadding=\"0\">"
+                "\n</td></tr>"
+                "\n<tr><td balign=\"left\" align=\"left\">"
+                "\nTasks:<br/>"
+                "\n%s"
+                "\n</td></tr>"
+                "\n</table>";
+
+            int numPhases = GetNumPhases();
+
+            // Generate the left side of the label, which shows the current
+            // phase and any associated messages.
+            std::string infoAboutCurrentPhase = TfStringPrintf(
+                "%d. %s\n", numPhases--, currentPhase.description.c_str());
+
+            TF_FOR_ALL(msgIt, currentPhase.messages) {
+                infoAboutCurrentPhase += "- " + *msgIt + "\n";
+            }
+
+            infoAboutCurrentPhase = 
+                TfStringReplace(TfGetXmlEscapedString(infoAboutCurrentPhase),
+                                "\n", "<br/>\n");
+
+            // Generate the right side of the label, which shows the stack of
+            // active phases.
+            int numActivePhasesToShow = 5;
+
+            std::string infoAboutPendingPhases;
+            TF_REVERSE_FOR_ALL(graphIt, indexStack) {
+                if (numActivePhasesToShow == 0) {
+                    break;
+                }
+
+                TF_REVERSE_FOR_ALL(phaseIt, graphIt->phases) {
+                    if (&*phaseIt != &currentPhase) {
+                        infoAboutPendingPhases += 
+                            TfStringPrintf("%d. %s\n", numPhases--,
+                                           phaseIt->description.c_str());
+                
+                        if (--numActivePhasesToShow == 0) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            infoAboutPendingPhases = 
+                TfStringReplace(TfGetXmlEscapedString(infoAboutPendingPhases),
+                                "\n", "<br/>\n");
+
+            currentIndex.dotGraphLabel = TfStringPrintf(
+                tableFormat.c_str(), 
+                infoAboutCurrentPhase.c_str(),
+                infoAboutPendingPhases.c_str());
+            currentIndex.needsOutput = true;
+        }
+        
+        size_t GetNumPhases() const {
+            size_t numPhases = 0;
+            for (auto const &indexInfo: indexStack) {
+                numPhases += indexInfo.phases.size();
+            }
+            return numPhases;
+        }
+
+        void FlushBufferedOutput() const {
+            static std::mutex mutex;
+            std::lock_guard<std::mutex> lock(mutex);
+            // Issue TfDebug messages.
+            for (auto const &msg: outputBuffer)
+                TfDebug::Helper::Msg(msg);
+        }
+
+        std::vector<_IndexInfo> indexStack;
+        mutable int nextGraphFileIndex = 0;
+        mutable std::vector<std::string> outputBuffer;
+    };
+    
+private:
+    using _DebugInfoMap =
+        tbb::concurrent_hash_map<PcpPrimIndex const *, _DebugInfo>;
+
+    void _Erase(PcpPrimIndex const *index) {
+        _debugInfo.erase(index);
+    }
+
+    _DebugInfo *_Get(PcpPrimIndex const *index) {
+        _DebugInfoMap::accessor acc;
+        _debugInfo.insert(acc, index);
+        return &acc->second;
+    }
+
+    _DebugInfo const *_Get(PcpPrimIndex const *index) const {
+        _DebugInfoMap::const_accessor acc;
+        return _debugInfo.find(acc, index) ? &acc->second : nullptr;
+    }
+
+    _DebugInfoMap _debugInfo;
+};
+
+Pcp_IndexingOutputManager::Pcp_IndexingOutputManager()
+{
 }
 
 void 
-Pcp_GraphOutputManager::Msg(
-    const std::string& msg, const Pcp_NodeSet& nodes)
+Pcp_IndexingOutputManager::PushIndex(PcpPrimIndex const *originatingIndex,
+                                     PcpPrimIndex const *index,
+                                     const PcpLayerStackSite& site)
 {
-    if (!TF_VERIFY(!_graphs.empty()) ||
-        !TF_VERIFY(!_graphs.back().phases.empty())) {
+    _DebugInfo *info = _Get(originatingIndex);
+    info->FlushGraphIfNeedsOutput();
+    info->indexStack.emplace_back(index, site.path);
+    info->BeginPhase(TfStringPrintf("Computing prim index for %s",
+                                    Pcp_FormatSite(site).c_str()));
+}
+
+void 
+Pcp_IndexingOutputManager::PopIndex(PcpPrimIndex const *originatingIndex)
+{
+    _DebugInfo *info = _Get(originatingIndex);
+    if (!TF_VERIFY(!info->indexStack.empty()) ||
+        !TF_VERIFY(!info->indexStack.back().phases.empty())) {
         return;
     }
 
-    _OutputToTerminal(msg);
+    _Phase& currentPhase = info->indexStack.back().phases.back();
 
-    _Phase& currentPhase = _graphs.back().phases.back();
+    currentPhase.messages.push_back("DONE - " + currentPhase.description);
+    info->UpdateCurrentDotGraph();
+    info->UpdateCurrentDotGraphLabel();
 
-    if (currentPhase.nodesToHighlight != nodes) {
-        _FlushGraphIfNeedsOutput();
+    info->EndPhase();
+    info->indexStack.pop_back();
 
-        currentPhase.nodesToHighlight = nodes;
-        _UpdateCurrentDotGraph();
+    if (info->indexStack.empty()) {
+        // Write all the buffered output.
+        info->FlushBufferedOutput();
+        _Erase(originatingIndex);
     }
-
-    currentPhase.messages.push_back(msg);
-    _UpdateCurrentDotGraphLabel();
 }
 
-static TfStaticData<Pcp_GraphOutputManager> _outputManager;
+void 
+Pcp_IndexingOutputManager::BeginPhase(
+    PcpPrimIndex const *originatingIndex,
+    std::string &&msg,
+    const PcpNodeRef& nodeForPhase)
+{
+    _Get(originatingIndex)->BeginPhase(std::move(msg), nodeForPhase);
+}
+
+void 
+Pcp_IndexingOutputManager::EndPhase(PcpPrimIndex const *originatingIndex)
+{
+    _Get(originatingIndex)->EndPhase();
+}
+
+void 
+Pcp_IndexingOutputManager::Update(
+    PcpPrimIndex const *originatingIndex,
+    const PcpNodeRef& updatedNode, std::string &&msg)
+{
+    _Get(originatingIndex)->Update(updatedNode, std::move(msg));
+}
+
+void 
+Pcp_IndexingOutputManager::Msg(
+    PcpPrimIndex const *originatingIndex,
+    std::string &&msg, const Pcp_NodeSet& nodes)
+{
+    _Get(originatingIndex)->Msg(std::move(msg), nodes);
+}
+
+static TfStaticData<Pcp_IndexingOutputManager> _outputManager;
 
 ////////////////////////////////////////////////////////////
 
-Pcp_GraphScope::Pcp_GraphScope(PcpPrimIndex* index,
-                               const PcpLayerStackSite& site)
-    : _on(TfDebug::IsEnabled(PCP_PRIM_INDEX))
+void
+Pcp_PrimIndexingDebug::_PushIndex(const PcpLayerStackSite& site) const
 {
-    if (_on) {
-        _outputManager->BeginGraph(index, site);
-    }
-}
-
-Pcp_GraphScope::~Pcp_GraphScope()
-{
-    if (_on) {
-        _outputManager->EndGraph();
-    }
-}
-
-Pcp_PhaseScope::Pcp_PhaseScope(
-    const PcpNodeRef& node, const char* msg)
-    : _on(TfDebug::IsEnabled(PCP_PRIM_INDEX))
-{
-    if (_on) {
-        _outputManager->BeginPhase(msg, node);
-    }
-}
-
-Pcp_PhaseScope::~Pcp_PhaseScope()
-{
-    if (_on) {
-        _outputManager->EndPhase();
-    }
-}
-
-std::string
-Pcp_PhaseScope::Helper(const char* f, ...)
-{
-    va_list ap;
-    va_start(ap, f);
-    const std::string result = TfVStringPrintf(f, ap);
-    va_end(ap);
-    return result;
+    _outputManager->PushIndex(_originatingIndex, _index, site);
 }
 
 void
-Pcp_GraphUpdate(
-    const PcpNodeRef& node, const char* format, ...)
+Pcp_PrimIndexingDebug::_PopIndex() const
 {
-    va_list ap;
-    va_start(ap, format);
-    const std::string msg = TfVStringPrintf(format, ap);
-    va_end(ap);
-
-    _outputManager->Update(msg, node);
+    _outputManager->PopIndex(_originatingIndex);
 }
 
-// Define overloads for the Pcp_GraphMsg functions that take different
-// numbers of nodes to highlight.
-#define _ADD_TO_NODES(z, n, a)                  \
-    nodes.insert(BOOST_PP_CAT(a, n));
+Pcp_IndexingPhaseScope::Pcp_IndexingPhaseScope(
+    PcpPrimIndex const *index, const PcpNodeRef& node, std::string &&msg)
+    : _index(index)
+{
+    _outputManager->BeginPhase(_index, std::move(msg), node);
+}
 
-#define BOOST_PP_LOCAL_LIMITS (0, 2)
-#define BOOST_PP_LOCAL_MACRO(n)                                         \
-void Pcp_GraphMsg(                                                      \
-    BOOST_PP_ENUM_PARAMS(n, const PcpNodeRef& node) BOOST_PP_COMMA_IF(n)\
-    const char* format, ...)                                            \
-{                                                                       \
-    va_list ap;                                                         \
-    va_start(ap, format);                                               \
-    const std::string msg = TfVStringPrintf(format, ap);                \
-    va_end(ap);                                                         \
-                                                                        \
-    Pcp_NodeSet nodes;                                                  \
-    BOOST_PP_REPEAT(n, _ADD_TO_NODES, node);                            \
-    _outputManager->Msg(msg, nodes);                                    \
-}                                                   
+void
+Pcp_IndexingPhaseScope::_EndScope() const
+{
+    _outputManager->EndPhase(_index);
+}
 
-#include BOOST_PP_LOCAL_ITERATE()
-#undef _ADD_TO_NODES
+void
+Pcp_IndexingUpdate(PcpPrimIndex const *index,
+                   const PcpNodeRef& node, std::string &&msg)
+{
+    _outputManager->Update(index, node, std::move(msg));
+}
+
+void
+Pcp_IndexingMsg(PcpPrimIndex const *index,
+                const PcpNodeRef& a1,
+                char const *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    std::string msg = TfVStringPrintf(fmt, ap);
+    va_end(ap);
+
+    Pcp_NodeSet nodes { a1 };
+    _outputManager->Msg(index, std::move(msg), nodes);
+}
+
+void
+Pcp_IndexingMsg(PcpPrimIndex const *index,
+                const PcpNodeRef& a1, const PcpNodeRef& a2,
+                char const *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    std::string msg = TfVStringPrintf(fmt, ap);
+    va_end(ap);
+
+    Pcp_NodeSet nodes { a1, a2 };
+    _outputManager->Msg(index, std::move(msg), nodes);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -40,7 +40,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static int
 normalizeIndex(int index) {
@@ -71,6 +73,8 @@ static string _Repr(GfSize3 const &self) {
     return TF_PY_REPR_PREFIX + "Size3(" + TfPyRepr(self[0]) + ", " +
         TfPyRepr(self[1]) + ", " + TfPyRepr(self[2]) + ")";
 }
+
+} // anonymous namespace 
 
 void wrapSize3()
 {    
@@ -120,5 +124,3 @@ void wrapSize3()
     implicitly_convertible<This, GfVec3i>();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

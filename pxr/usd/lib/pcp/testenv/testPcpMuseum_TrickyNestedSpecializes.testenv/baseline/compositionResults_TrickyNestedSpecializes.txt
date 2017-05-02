@@ -1,0 +1,57 @@
+Loading @TrickyNestedSpecializes/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </NestedSpecializes>
+
+Prim Stack:
+    root.sdf             /NestedSpecializes
+
+------------------------------------------------------------------------
+Results for composing </Specializes>
+
+Prim Stack:
+    root.sdf             /Specializes
+
+Child names:
+     ['Nested']
+
+------------------------------------------------------------------------
+Results for composing </Specializes/Nested>
+
+Prim Stack:
+    root.sdf             /Specializes/Nested
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    ref.sdf              /Ref
+    ref2.sdf             /Ref2
+    root.sdf             /Specializes
+    ref.sdf              /Specializes
+    ref2.sdf             /Specializes
+
+Child names:
+     ['Nested']
+
+------------------------------------------------------------------------
+Results for composing </Root/Nested>
+
+Prim Stack:
+    root.sdf             /Root/Nested
+    ref.sdf              /Ref/Nested
+    ref2.sdf             /Ref2/Nested
+    root.sdf             /Specializes/Nested
+    ref.sdf              /Specializes/Nested
+    ref2.sdf             /Specializes/Nested
+    ref3.sdf             /Ref3
+    root.sdf             /NestedSpecializes
+    ref.sdf              /NestedSpecializes
+    ref2.sdf             /NestedSpecializes
+    ref3.sdf             /NestedSpecializes
+

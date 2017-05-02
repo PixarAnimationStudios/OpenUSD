@@ -1027,7 +1027,7 @@ TfType::AddAlias(TfType base, const string & name) const
     }
     
     if (!errMsg.empty())
-        TF_CODING_ERROR(errMsg.c_str());
+        TF_CODING_ERROR(errMsg);
 }
 
 bool

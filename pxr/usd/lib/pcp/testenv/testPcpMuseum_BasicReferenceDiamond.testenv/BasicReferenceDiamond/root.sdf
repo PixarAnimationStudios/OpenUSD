@@ -1,0 +1,16 @@
+#sdf 1.4.32
+(
+    """
+    This example has a prim, Root, with references to
+    A.sdf and B.sdf. These references will both
+    reference C.sdf, forming a 'reference diamond'.
+    This is a legal setup, so we don't want to report
+    errors about cycles in this case.
+    """
+)
+
+def "Root" (
+    references = [ @./A.sdf@</A>, @./B.sdf@</B> ]
+)
+{
+}

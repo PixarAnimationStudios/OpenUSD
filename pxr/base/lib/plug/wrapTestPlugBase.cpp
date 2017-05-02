@@ -32,7 +32,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 template <class T>
 void wrap_TestPlugBase(const std::string & name)
@@ -51,6 +53,8 @@ void wrap_TestPlugBase(const std::string & name)
         ;
 }
 
+} // anonymous namespace 
+
 void wrap_TestPlugBase()
 {
     wrap_TestPlugBase<_TestPlugBase1>("_TestPlugBase1");
@@ -63,5 +67,3 @@ TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase1)
 TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase2)
 TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase3)
 TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase4)
-
-PXR_NAMESPACE_CLOSE_SCOPE

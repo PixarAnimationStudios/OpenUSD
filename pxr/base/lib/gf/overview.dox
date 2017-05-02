@@ -16,9 +16,6 @@
 //! \defgroup group_gf_BasicGeometry Basic Geometry
 //  Classes for basic geometry.
 
-//! \defgroup group_gf_Noise Noise and Randomness 
-//  Classes/functions having to do with random numbers and noise.
-
 //! \defgroup group_gf_DebuggingOutput Output For Debugging
 //  Functions/classes that generate output solely as a debugging aid
 

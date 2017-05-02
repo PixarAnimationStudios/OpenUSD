@@ -21,10 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GLF_OPENSUBDIV_EXAMPLES_PTEX_MIPMAP_TEXTURE_LOADER_H
-#define GLF_OPENSUBDIV_EXAMPLES_PTEX_MIPMAP_TEXTURE_LOADER_H
+#ifndef GLF_PTEX_MIPMAP_TEXTURE_LOADER_H
+#define GLF_PTEX_MIPMAP_TEXTURE_LOADER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include <Ptexture.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -35,12 +36,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class GlfPtexMipmapTextureLoader {
 public:
+    GLF_API
     GlfPtexMipmapTextureLoader(PtexTexture *ptex,
                                int maxNumPages,
                                int maxLevels = -1,
                                size_t targetMemory = 0,
                                bool seamlessMipmap = true);
 
+    GLF_API
     ~GlfPtexMipmapTextureLoader();
 
     const unsigned char * GetLayoutBuffer() const {
@@ -156,4 +159,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // GLF_OPENSUBDIV_EXAMPLES_PTEX_MIPMAP_TEXTURE_LOADER_H
+#endif // GLF_PTEX_MIPMAP_TEXTURE_LOADER_H

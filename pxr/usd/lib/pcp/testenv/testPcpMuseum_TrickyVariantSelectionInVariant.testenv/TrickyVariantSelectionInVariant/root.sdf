@@ -1,0 +1,22 @@
+#sdf 1.4.32
+(
+    """
+    This museum exhibit exercises the ability for variants to select other
+    variants. This is a stripped down version of the repro case for bug 
+    68105.
+
+    Within SlugJ_modelInterface.gen.sdf, the selection {shadingVariant=Axel}
+    is authored. In that variant, the selection {shaderBindingVariant=Wet} is
+    authored. This selection should be carried over when evaluating the
+    reference to /ShaderBindingVariants in SlugJ_shaderDisplayDefs.sdf.
+
+    This relies on new variant selection behavior introduced in Pcp.
+    This test case does not work as desired in Csd mode.
+    """
+)
+
+def Scope "SlugJ" (
+    payload = @./SlugJ_payload.sdf@</SlugJ>
+)
+{
+}

@@ -1,0 +1,46 @@
+#sdf 1.4.32
+(
+    """
+    This test exercises a relocation that renames a prim to a name
+    that's already in use across an arc.
+
+    A and B are relocated to A2 and B2, respectively.  However,
+    A2 and B2 are already in use across a reference and inherit
+    arc.
+
+    The current behavior is that the underlying weaker opinion
+    is ignored.  However, we think this policy may be worth
+    revisiting; it seems like perhaps the weaker opinion SHOULD
+    be respected, and the relocation arc should be treated as
+    invalid.
+    """
+)
+
+def "X" (
+    add references = @./rig.sdf@</Y>
+    add inherits = </_Class_X>
+    relocates = {
+        <A>: <A2>, 
+        <B>: <B2>, 
+    }
+)
+{
+    over "A2"
+    {
+    }
+
+    over "B2"
+    {
+    }
+}
+
+class "_Class_X"
+{
+    def Scope "B"
+    {
+    }
+
+    def Scope "B2"
+    {
+    }
+}

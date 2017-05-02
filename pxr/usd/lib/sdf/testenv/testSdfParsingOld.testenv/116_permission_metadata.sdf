@@ -1,0 +1,22 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "TestPrim"
+{
+    custom int publicAttribute (permission = public)
+    custom int privateAttribute (permission = private)
+    rel publicRel (permission = public)
+    rel privateRel (permission = private)
+
+    def MfScope "PublicChild" (permission = public)
+    {
+    }
+
+    def MfScope "PrivateChild" (permission = private)
+    {
+    }
+}
+

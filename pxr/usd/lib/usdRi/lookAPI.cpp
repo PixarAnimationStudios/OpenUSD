@@ -25,6 +25,8 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
@@ -276,6 +278,28 @@ UsdRiLookAPI::GetPatterns()
     }
 
     return patterns;
+}
+
+bool 
+UsdRiLookAPI::SetInterfaceInputConsumer(UsdShadeInput &interfaceInput, 
+                                        const UsdShadeInput &consumer)
+{
+    return UsdShadeConnectableAPI::_ConnectToSource(consumer, 
+        interfaceInput, _tokens->ri);
+}
+
+UsdShadeNodeGraph::InterfaceInputConsumersMap 
+UsdRiLookAPI::ComputeInterfaceInputConsumersMap(
+    bool computeTransitiveConsumers) const
+{
+    return UsdShadeNodeGraph(GetPrim())._ComputeInterfaceInputConsumersMap(
+        computeTransitiveConsumers, _tokens->ri);
+}
+
+std::vector<UsdShadeInput> 
+UsdRiLookAPI::GetInterfaceInputs() const
+{
+    return UsdShadeMaterial(GetPrim()).GetInterfaceInputs();
 }
 
 bool

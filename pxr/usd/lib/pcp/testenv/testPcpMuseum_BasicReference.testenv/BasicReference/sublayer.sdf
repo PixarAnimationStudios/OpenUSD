@@ -1,0 +1,28 @@
+#sdf 1.4.32
+
+def Scope "InternalSublayerReference"
+{
+    def Scope "InternalSublayerReference_Child"
+    {
+    }
+}
+
+def Scope "PrimInSublayerWithInternalReference" (
+    """Internal references target the root layer of the layer stack
+    containing the referencing layer, so this prim should pick up 
+    the InternalSublayerReference overs in root.sdf as well as in
+    this layer."""
+    references = </InternalSublayerReference>
+)
+{
+}
+
+def Scope "SublayerPrim"
+{
+}
+
+def Scope "PrimInSublayerWithInternalReference2" (
+    references = </SublayerPrim>
+)
+{
+}

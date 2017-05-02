@@ -1,0 +1,56 @@
+Loading @TypicalReferenceToRiggedModel/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    root.sdf             /Class
+    mcat.sdf             /Model
+    mcat.sdf             /Class
+    mcat.sdf             /Model{pin=latest}
+    model_latest.sdf     /Model
+    model_latest.sdf     /Model{standin=render}
+    model_latest_payload.sdf /Model
+
+Variant Selections:
+    {pin = latest}
+    {standin = render}
+
+Child names:
+     ['Rig']
+
+Property names:
+     ['standin_name', 'a']
+
+Property stacks:
+/Model.a:
+    root.sdf             /Model.a
+    root.sdf             /Class.a
+    model_latest.sdf     /Model.a
+/Model.standin_name:
+    model_latest.sdf     /Model{standin=render}.standin_name
+
+------------------------------------------------------------------------
+Results for composing </Model/Rig>
+
+Prim Stack:
+    model_latest_payload.sdf /Model/Rig
+
+------------------------------------------------------------------------
+Results for composing </Class>
+
+Prim Stack:
+    root.sdf             /Class
+
+Property names:
+     ['a']
+
+Property stacks:
+/Class.a:
+    root.sdf             /Class.a
+

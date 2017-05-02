@@ -22,7 +22,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 include(Version)
-include(CXXDefaults)
 
 function(_install_headers LIBRARY_NAME)
     set(options  "")
@@ -100,6 +99,13 @@ function(_pxrNamespace_subst)
     install(FILES ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
             DESTINATION include/pxr
     )
+endfunction()
+
+# Generate a doxygen config file
+function(_pxrDoxyConfig_subst)
+    configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/lib/usd/Doxyfile.in
+                   ${CMAKE_BINARY_DIR}/Doxyfile
+    )  
 endfunction()
 
 # Install compiled python files alongside the python object,
@@ -243,6 +249,11 @@ function(_install_pyside_ui_files)
     add_custom_target(${LIBRARY_NAME}_pysideuifiles ALL
         DEPENDS ${uiFiles}
     )
+    set_target_properties(
+        ${LIBRARY_NAME}_pysideuifiles
+        PROPERTIES
+            FOLDER "${PXR_PREFIX}/_pysideuifiles"
+    )
 
     set(libPythonPrefix lib/python)
     _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
@@ -339,6 +350,239 @@ function(_append_to_rpath orig_rpath new_rpath output)
     string(REGEX REPLACE "/+$" "" new_rpath ${new_rpath})
     string(FIND ${orig_rpath} ${new_rpath} rpath_exists)
     if (rpath_exists EQUAL -1)
-        set(${output} "${orig_rpath}:${new_rpath}" PARENT_SCOPE)
+        set(${output} "${orig_rpath};${new_rpath}" PARENT_SCOPE)
     endif()
 endfunction() # _add_to_rpath
+
+function(_get_directory_property property separator output)
+    get_property(value DIRECTORY PROPERTY ${property})
+    if(NOT value STREQUAL "value-NOTFOUND")
+        # XXX -- Need better list joining.
+        if(${output})
+            set(${output} "${${output}}${separator}${value}" PARENT_SCOPE)
+        else()
+            set(${output} "${value}" PARENT_SCOPE)
+        endif()
+    endif()
+endfunction()
+
+function(_get_target_property target property separator output)
+    get_property(value TARGET ${target} PROPERTY ${property})
+    if(NOT value STREQUAL "value-NOTFOUND")
+        # XXX -- Need better list joining.
+        if(${output})
+            set(${output} "${${output}}${separator}${value}" PARENT_SCOPE)
+        else()
+            set(${output} "${value}" PARENT_SCOPE)
+        endif()
+    endif()
+endfunction()
+
+function(_get_property target property output)
+    set(sep ";")
+    if("${property}" STREQUAL "COMPILE_FLAGS")
+        set(sep " ")
+        set(accum "${accum}${sep}${CMAKE_CXX_FLAGS}")
+        if(CMAKE_BUILD_TYPE)
+            string(TOUPPER ${CMAKE_BUILD_TYPE} buildType)
+            set(accum "${accum}${sep}${CMAKE_CXX_FLAGS_${buildType}}")
+        endif()
+    endif()
+    _get_directory_property(${property} "${sep}" accum)
+    _get_target_property(${target} ${property} "${sep}" accum)
+    set(${output} "${accum}" PARENT_SCOPE)
+endfunction()
+
+function(_pxr_enable_precompiled_header TARGET_NAME)
+    # Ignore if disabled.
+    if(NOT PXR_ENABLE_PRECOMPILED_HEADERS)
+        return()
+    endif()
+
+    set(options
+    )
+    set(oneValueArgs
+        SOURCE_NAME
+        OUTPUT_NAME_PREFIX
+    )
+    set(multiValueArgs
+        EXCLUDE
+    )
+    cmake_parse_arguments(pch
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+
+    # Header to precompile.  SOURCE_NAME falls back to
+    # ${PXR_PRECOMPILED_HEADER_NAME}.
+    if("${pch_SOURCE_NAME}" STREQUAL "")
+        set(pch_SOURCE_NAME "${PXR_PRECOMPILED_HEADER_NAME}")
+    endif()
+    if("${pch_SOURCE_NAME}" STREQUAL "")
+        # Emergency backup name is "pch.h".
+        set(pch_SOURCE_NAME "pch.h")
+    endif()
+    set(source_header_name ${pch_SOURCE_NAME})
+    get_filename_component(source_header_name_we ${source_header_name} NAME_WE)
+
+    # Name of file to precompile in the build directory.  The client can
+    # specify a prefix for this file, allowing multiple binaries/libraries
+    # in a single subdirectory to use unique precompiled headers, meaning
+    # each can have different compile options.
+    set(output_header_name_we "${pch_OUTPUT_NAME_PREFIX}${source_header_name_we}")
+    set(output_header_name ${output_header_name_we}.h)
+
+    # Precompiled header file name.  We choose the name that matches the
+    # convention for the compiler.  That isn't necessary since we give
+    # this name explicitly wherever it's needed.
+    if(MSVC)
+        set(precompiled_name ${output_header_name_we}.pch)
+    elseif(CMAKE_COMPILER_IS_GNUCXX)
+        set(precompiled_name ${output_header_name_we}.h.gch)
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(precompiled_name ${output_header_name_we}.h.pch)
+    else()
+        # Silently ignore unknown compiler.
+        return()
+    endif()
+
+    # Headers live in subdirectories.
+    set(rel_output_header_path "${PXR_PREFIX}/${TARGET_NAME}/${output_header_name}")
+    set(abs_output_header_path "${CMAKE_BINARY_DIR}/include/${rel_output_header_path}")
+    set(abs_precompiled_path ${CMAKE_BINARY_DIR}/include/${PXR_PREFIX}/${TARGET_NAME}/${precompiled_name})
+
+    # Additional compile flags to use precompiled header.  This will be
+    set(compile_flags "")
+    if(MSVC)
+        # Build with precompiled header (/Yu, /Fp) and automatically
+        # include the header (/FI).
+        set(compile_flags "/Yu\"${rel_output_header_path}\" /FI\"${rel_output_header_path}\" /Fp\"${abs_precompiled_path}\"")
+    else()
+        # Automatically include the header (-include) and warn if there's
+        # a problem with the precompiled header.
+        set(compile_flags "-Winvalid-pch -include \"${rel_output_header_path}\"")
+    endif()
+
+    # Use FALSE if we have an external precompiled header we can use.
+    if(TRUE)
+        if(MSVC)
+            # Copy the header to precompile.
+            add_custom_command(
+                OUTPUT "${abs_output_header_path}"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/${source_header_name}" "${abs_output_header_path}"
+                DEPENDS "${source_header_name}"
+                COMMENT "Copying ${source_header_name}"
+            )
+
+            # Make an empty trigger file.  We need a source file to do the
+            # precompilation.  This file only needs to include the header to
+            # precompile but we're implicitly including that header so this
+            # file can be empty.
+            set(abs_output_source_path ${CMAKE_CURRENT_BINARY_DIR}/${output_header_name_we}.cpp)
+            add_custom_command(
+                OUTPUT "${abs_output_source_path}"
+                COMMAND ${CMAKE_COMMAND} -E touch ${abs_output_source_path}
+            )
+
+            # The trigger file gets a special compile flag (/Yc).
+            set_source_files_properties(${abs_output_source_path} PROPERTIES
+                COMPILE_FLAGS "/Yc\"${rel_output_header_path}\" /FI\"${rel_output_header_path}\" /Fp\"${abs_precompiled_path}\""
+                OBJECT_OUTPUTS "${abs_precompiled_path}"
+                OBJECT_DEPENDS "${abs_output_header_path}"
+            )
+
+            # Add the header file to the target.
+            target_sources(${TARGET_NAME} PRIVATE "${abs_output_header_path}")
+
+            # Add the trigger file to the target.
+            target_sources(${TARGET_NAME} PRIVATE "${abs_output_source_path}")
+
+            # Exclude the trigger.
+            list(APPEND pch_EXCLUDE ${abs_output_source_path})
+        else()
+            # Copy the header to precompile.
+            add_custom_command(
+                OUTPUT "${abs_output_header_path}"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/${source_header_name}" "${abs_output_header_path}"
+                DEPENDS "${source_header_name}"
+                COMMENT "Copying ${source_header_name}"
+            )
+
+            # CMake has no simple way of invoking the compiler with additional
+            # arguments so we must make a custom command and pass the compiler
+            # arguments we collect here.
+            #
+            # $<JOIN:...> is available starting with 2.8.12.  In later
+            # cmake versions getting the target properties may not
+            # report all values (in particular, some include directories
+            # may not be reported).
+            if(CMAKE_VERSION VERSION_LESS "2.8.12")
+                _get_property(${TARGET_NAME} INCLUDE_DIRECTORIES incs)
+                _get_property(${TARGET_NAME} COMPILE_DEFINITIONS defs)
+                _get_property(${TARGET_NAME} COMPILE_FLAGS flags)
+                _get_property(${TARGET_NAME} COMPILE_OPTIONS opts)
+                if(NOT "${incs}" STREQUAL "")
+                    string(REPLACE ";" ";-I" incs "${incs}")
+                    set(incs "-I${incs}")
+                endif()
+                if(NOT "${defs}" STREQUAL "")
+                    string(REPLACE ";" ";-D" defs "${defs}")
+                    set(defs "-D${defs}")
+                endif()
+                separate_arguments(flags UNIX_COMMAND "${flags}")
+
+                # Command to generate the precompiled header.
+                add_custom_command(
+                    OUTPUT "${abs_precompiled_path}"
+                    COMMAND ${CMAKE_CXX_COMPILER} ${flags} ${opts} ${defs} ${incs} -c -x c++-header -o "${abs_precompiled_path}" "${abs_output_header_path}"
+                    DEPENDS "${abs_output_header_path}"
+                    COMMENT "Precompiling ${source_header_name} in ${TARGET_NAME}"
+                )
+            else()
+                set(incs "$<TARGET_PROPERTY:${TARGET_NAME},INCLUDE_DIRECTORIES>")
+                set(defs "$<TARGET_PROPERTY:${TARGET_NAME},COMPILE_DEFINITIONS>")
+                set(opts "$<TARGET_PROPERTY:${TARGET_NAME},COMPILE_OPTIONS>")
+                set(incs "$<$<BOOL:${incs}>:-I$<JOIN:${incs}, -I>>")
+                set(defs "$<$<BOOL:${defs}>:-D$<JOIN:${defs}, -D>>")
+                _get_property(${TARGET_NAME} COMPILE_FLAGS flags)
+
+                # Ideally we'd just put have generator expressions in the
+                # COMMAND in add_custom_command().  However that will
+                # write the result of the JOINs as single strings (escaping
+                # spaces) and we want them as individual options.
+                #
+                # So we use file(GENERATE) which doesn't suffer from that
+                # problem and execute the generated cmake script as the
+                # COMMAND.
+                file(GENERATE
+                    OUTPUT "$<TARGET_FILE:${TARGET_NAME}>.pchgen"
+                    CONTENT "execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${flags} ${opt} ${defs} ${incs} -c -x c++-header -o \"${abs_precompiled_path}\" \"${abs_output_header_path}\")"
+                )
+
+                # Command to generate the precompiled header.
+                add_custom_command(
+                    OUTPUT "${abs_precompiled_path}"
+                    COMMAND ${CMAKE_COMMAND} -P "$<TARGET_FILE:${TARGET_NAME}>.pchgen"
+                    DEPENDS "${abs_output_header_path}"
+                    COMMENT "Precompiling ${source_header_name} in ${TARGET_NAME}"
+                )
+            endif()
+        endif()
+    endif()
+
+    # Update every C++ source in the target to implicitly include and
+    # depend on the precompiled header.
+    get_property(target_sources TARGET ${TARGET_NAME} PROPERTY SOURCES)
+    foreach(source ${target_sources})
+        # All target C++ sources not in EXCLUDE list.
+        if(source MATCHES \\.cpp$)
+            if (NOT ";${pch_EXCLUDE};" MATCHES ";${source};")
+                set_source_files_properties(${source} PROPERTIES
+                    COMPILE_FLAGS "${compile_flags}"
+                    OBJECT_DEPENDS "${abs_precompiled_path}")
+            endif()
+        endif()
+    endforeach()
+endfunction()

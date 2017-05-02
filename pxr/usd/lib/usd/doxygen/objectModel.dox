@@ -195,16 +195,16 @@ in \ref Usd_Page_Datatypes.
 information about metadata is that all metadata must be registered with
 USD/Sdf.  The SdfSchema itself registers a set of metadata meaningful to the
 Sdf data model, but any module discoverable by USD's \ref plug_page_front "plugin system"
-can extend the known set of metadata, as described below in 
-\ref Usd_Extending_Metadata . Core Usd, and most of the higher-level schema 
-modules use this mechanism to good effect.
+can extend the known set of metadata, as described in the \ref sdf_plugin_metadata
+documentation.  Core Usd, and most of the higher-level schema modules use 
+this mechanism to good effect.
 
 \li *Metadata is unvarying.* Although metadata values can be overridden in any
 layer just as UsdAttribute values can be, \em within a given layer, a metadatum
 can have only a single value - i.e. it cannot be sampled over time.  Removing
 time as an axis of variation allows metadata to be evaluated and stored more
 efficiently than attribute values, and also means that metadata authored in
-\ref Usd_AdvancedFeatures_ClipsOverview "Value Clips" will be ignored by USD.
+\ref Usd_Page_ValueClips "Value Clips" will be ignored by USD.
 
 \li *Core metadata resolution rules vary.* 
 \ref Usd_ValueResolution "Attribute Value Resolution" is fixed for all
@@ -218,39 +218,6 @@ in which overs, defs, and classes combine.  *Value resolution behavior may
 not be changed for extension metadata,* however - all extension metadata will
 be resolved based on its datatype: strongest wins for primitive datatypes,
 element-wise strongest wins for dictionaries.
-
-
-\subsection Usd_Metadata_By_Object_Type Metadata Scoped by Object Type
-
-The SdfSchema allows each registered piece of metadata to specify the kinds
-of objects to which it can be applied.  When adding a new metadatum, one can
-specify a restricted scope of application by enumerating allowed object types
-in the "appliesTo" field, as demonstrated below; if left unspecified, the 
-metadatum can be authored on any object in a layer.  The possible object types
-are:
- - layers
- - prims
- - properties
- - attributes
- - relationships
-
-
-\subsection Usd_Extending_Metadata Registering New Metadata
-
-, like so:
-\code{.json}
-{
-    "SdfMetadata": {
-        "expandedPrimPaths": {
-            "type": "dictionary",
-            "displayGroup": "Core",
-            "appliesTo": ["prims"]
-        }
-    }
-}
-\endcode
-
-
 
 \section Usd_OM_OtherObjects Composition Operator Interfaces: UsdReferences, UsdInherits, UsdVariantSets
 

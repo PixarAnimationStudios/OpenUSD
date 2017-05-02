@@ -1,0 +1,17 @@
+#sdf 1.4.32
+
+class "Base"
+{
+}
+
+class "Specializes" (
+    specializes = </Base>
+)
+{
+}
+
+def "Ref" (
+    specializes = </Specializes>
+)
+{
+}

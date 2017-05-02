@@ -25,6 +25,7 @@
 #define HDST_SHADER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/imaging/hd/shader.h"
 
@@ -38,33 +39,41 @@ class HdStShader final: public HdShader {
 public:
     HF_MALLOC_TAG_NEW("new HdStShader");
 
+    HDST_API
     HdStShader(SdfPath const& id);
+    HDST_API
     virtual ~HdStShader();
 
     /// Synchronizes state from the delegate to this object.
+    HDST_API
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
 
     /// Accessor for tasks to get the parameter cached in this sprim object.
     /// Don't communicate back to scene delegate within this function.
+    HDST_API
     virtual VtValue Get(TfToken const &token) const override;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
+    HDST_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /// Causes the shader to be reloaded.
+    HDST_API
     virtual void Reload() override;
 
     /// Obtains the render delegate specific representation of the shader.
     /// XXX: Should not be virtual.
+    HDST_API
     virtual HdShaderCodeSharedPtr GetShaderCode() const override;
 
     /// Replaces the shader code object with an externally created one
     /// Used to set the fallback shader for prim.
     /// This class takes ownership of the passed in object.
+    HDST_API
     void SetSurfaceShader(HdSurfaceShaderSharedPtr &shaderCode);
 
 

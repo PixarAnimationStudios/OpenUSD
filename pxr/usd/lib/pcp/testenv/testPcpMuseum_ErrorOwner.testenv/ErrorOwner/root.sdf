@@ -1,0 +1,9 @@
+#sdf 1.4.32
+(
+    hasOwnedSubLayers = True
+    subLayers = [
+        @./stronger.sdf@,
+        @./owned.sdf@,
+        @./weaker.sdf@,
+    ]
+)

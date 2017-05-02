@@ -37,8 +37,6 @@
 #include "pxr/base/tracelite/trace.h"
 
 #include <cstdint>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -343,21 +341,25 @@ GlfTextureRegistry::_TextureMetadata::_TextureMetadata(
     for (std::uint32_t i=0; i<numTextures; ++i) {
         const TfToken &tex = textures[i];
 
-        struct stat st;
-        if (stat(tex.GetText(), &st) == -1)
+        double time;
+        if (!ArchGetModificationTime(tex.GetText(), &time)) {
             continue;
+        }
+        int64_t size = ArchGetFileLength(tex.GetText());
+        if (size == -1) {
+            continue;
+        }
 
         // The file size is not a particularly good indicator that the texture
         // has changed (i.e. uncompressed images with the same dimensions,
         // depth, etc are very likely to have the same size even if they are
-        // different.)  However, as we've already paid for the stat call, we
-        // might as well use as much of the information as we can.
+        // different.)
         //
         // We aggregate the size of every file in the texture array, but use
         // the most recent mtime of any file so that we reload the array if any
         // file is modified.
-        _fileSize += st.st_size;
-        _mtime = std::max(_mtime, ArchGetModificationTime(st));
+        _fileSize += size;
+        _mtime = std::max(_mtime, time);
     }
 }
 

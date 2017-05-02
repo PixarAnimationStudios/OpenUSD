@@ -1,0 +1,17 @@
+#sdf 1.4.32
+
+def __AnyType__ "Model" (
+    add references = @./mcat.sdf@</Model>
+)
+{
+    custom double a
+}
+
+class __AnyType__ "Class" (
+    variants = {
+        string pin = "latest"
+    }
+)
+{
+    custom double a
+}

@@ -1,0 +1,21 @@
+#sdf 1.4.32
+
+def Scope "FaceRig" (
+    relocates = {
+        <Rig/LipRig/Anim>: <Anim/Lip>
+    }
+)
+{
+    def Scope "Anim" {
+        over "Lip" {
+        }
+    }
+
+    def Scope "Rig" {
+        def Scope "LipRig" (
+            add references = @./LipRig.sdf@</LipRig>
+        )
+        {
+        }
+    }
+}

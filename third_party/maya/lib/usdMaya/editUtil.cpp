@@ -75,7 +75,7 @@ PxrUsdMayaEditUtil::GetEditFromString(
     outEdit->editString = editString;
     string simpleEditString = editString;
 
-    if( TfGetEnvSetting(PIXMAYA_USE_USD_ASSEM_NAMESPACE) )
+    if( UsdMayaUseUsdAssemblyNamespace() )
     {
         // The namespaces are used for Maya edit uniquification -- we
         // don't need them when processing the editStrings

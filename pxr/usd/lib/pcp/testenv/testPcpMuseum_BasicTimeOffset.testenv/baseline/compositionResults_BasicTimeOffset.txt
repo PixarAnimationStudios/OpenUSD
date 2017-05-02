@@ -1,0 +1,117 @@
+Loading @BasicTimeOffset/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    A.sdf                /Model
+    B.sdf                /Model
+
+Time Offsets:
+    A.sdf                /Model          reference  (offset=10.00, scale=1.00)
+        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+
+Child names:
+     ['Anim', 'Frame']
+
+------------------------------------------------------------------------
+Results for composing </Root/Anim>
+
+Prim Stack:
+    B.sdf                /Model/Anim
+
+Time Offsets:
+    A.sdf                /Model/Anim     reference  (offset=10.00, scale=1.00)
+        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </Root/Frame>
+
+Prim Stack:
+    B.sdf                /Model/Frame
+
+Time Offsets:
+    A.sdf                /Model/Frame    reference  (offset=10.00, scale=1.00)
+        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </RefPayload>
+
+Prim Stack:
+    root.sdf             /RefPayload
+    ref_sub.sdf          /Ref
+    B.sdf                /Model
+
+Time Offsets:
+    ref.sdf              /Ref            reference  (offset=10.00, scale=1.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model          payload    (offset=30.00, scale=1.00)
+
+Child names:
+     ['Anim', 'Frame']
+
+------------------------------------------------------------------------
+Results for composing </RefPayload/Anim>
+
+Prim Stack:
+    B.sdf                /Model/Anim
+
+Time Offsets:
+    ref.sdf              /Ref/Anim       reference  (offset=10.00, scale=1.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model/Anim     payload    (offset=30.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </RefPayload/Frame>
+
+Prim Stack:
+    B.sdf                /Model/Frame
+
+Time Offsets:
+    ref.sdf              /Ref/Frame      reference  (offset=10.00, scale=1.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model/Frame    payload    (offset=30.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </MultiRef>
+
+Prim Stack:
+    root.sdf             /MultiRef
+    ref_sub.sdf          /Ref2
+    B.sdf                /Model
+
+Time Offsets:
+    ref.sdf              /Ref2           reference  (offset=10.00, scale=1.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model          reference  (offset=30.00, scale=1.00)
+
+Child names:
+     ['Anim', 'Frame']
+
+------------------------------------------------------------------------
+Results for composing </MultiRef/Anim>
+
+Prim Stack:
+    B.sdf                /Model/Anim
+
+Time Offsets:
+    ref.sdf              /Ref2/Anim      reference  (offset=10.00, scale=1.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model/Anim     reference  (offset=30.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </MultiRef/Frame>
+
+Prim Stack:
+    B.sdf                /Model/Frame
+
+Time Offsets:
+    ref.sdf              /Ref2/Frame     reference  (offset=10.00, scale=1.00)
+        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
+    B.sdf                /Model/Frame    reference  (offset=30.00, scale=1.00)
+

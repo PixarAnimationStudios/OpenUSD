@@ -200,6 +200,16 @@ public:
     // --(BEGIN CUSTOM CODE)--
 
     // --------------------------------------------------------------------- //
+    /// \name Helpful Types
+    /// @{
+    // --------------------------------------------------------------------- //
+
+    /// A function type that takes a path and returns a bool.
+    typedef std::function<bool (const SdfPath &)> PathPredicate;
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
     /// \name Binding Geometry Prims to Materials
     /// @{
     // --------------------------------------------------------------------- //
@@ -365,12 +375,10 @@ public:
     // --------------------------------------------------------------------- //
     /// \anchor UsdShadeMaterial_BaseMaterial
     /// \name BaseMaterial
-    /// Relationship to describe child/parent inheritance.
-    /// A Material that derives from a BaseMaterial will curruntely only
-    /// present/compose the properties unique to the derived Material, and does
-    /// not retain a live composition relationship to its BaseMaterial
-    //
-    /// \todo We plan to add a "derives" Usd composition arc to replace this.
+    /// A specialize arc describes child/parent inheritance.
+    /// A Material that derives from a BaseMaterial will retain a live 
+    /// composition relationship to its BaseMaterial
+    ///
     /// @{
     // --------------------------------------------------------------------- //
 
@@ -383,6 +391,16 @@ public:
     /// If there is no base Material, an empty path is returned
     USDSHADE_API
     SdfPath GetBaseMaterialPath() const;
+
+    /// Given a PcpPrimIndex, searches it for an arc to a parent material.
+    ///
+    /// This is a public static function to support applications that use
+    /// Pcp but not Usd. Most clients should call \ref GetBaseMaterialPath,
+    /// which uses this function when appropriate.
+    USDSHADE_API
+    static SdfPath FindBaseMaterialPathInPrimIndex(
+        const PcpPrimIndex & primIndex,
+        const PathPredicate & pathIsMaterialPredicate);
 
     /// Set the base Material of this Material.
     /// An empty Material is equivalent to clearing the base Material.

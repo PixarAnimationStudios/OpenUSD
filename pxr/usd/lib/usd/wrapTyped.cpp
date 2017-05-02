@@ -30,10 +30,9 @@
 
 #include <boost/python/class.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdTyped()
 {
@@ -47,7 +46,3 @@ void wrapUsdTyped()
 
         ;
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

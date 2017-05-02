@@ -74,6 +74,8 @@ std::ostream& operator<<(std::ostream &os, const SdfChangeList &cl)
             os << "   didRename\n";
         if (entry.flags.didChangeIdentifier)
             os << "   didChangeIdentifier\n";
+        if (entry.flags.didChangeResolvedPath)
+            os << "   didChangeResolvedPath\n";
         if (entry.flags.didReplaceContent)
             os << "   didReplaceContent\n";
         if (entry.flags.didReloadContent)
@@ -154,6 +156,12 @@ SdfChangeList::DidChangeLayerIdentifier(const std::string &oldIdentifier)
         entry.flags.didChangeIdentifier = true;
         entry.oldIdentifier = oldIdentifier;
     }
+}
+
+void 
+SdfChangeList::DidChangeLayerResolvedPath()
+{
+    GetEntry(SdfPath::AbsoluteRootPath()).flags.didChangeResolvedPath = true;
 }
 
 void 

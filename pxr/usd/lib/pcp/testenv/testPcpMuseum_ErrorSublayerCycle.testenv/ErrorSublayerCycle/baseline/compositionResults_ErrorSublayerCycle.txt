@@ -1,0 +1,41 @@
+Loading @ErrorSublayerCycle/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+     A.sdf
+     B.sdf
+     B.sdf
+     A.sdf
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.sdf             /A
+    A.sdf                /A
+    A.sdf                /A
+
+Property names:
+     ['A_attr']
+
+Property stacks:
+/A.A_attr:
+    A.sdf                /A.A_attr
+    A.sdf                /A.A_attr
+
+------------------------------------------------------------------------
+Results for composing </B>
+
+Prim Stack:
+    B.sdf                /B
+    B.sdf                /B
+
+Property names:
+     ['B_attr']
+
+Property stacks:
+/B.B_attr:
+    B.sdf                /B.B_attr
+    B.sdf                /B.B_attr
+

@@ -27,6 +27,7 @@
 /// \file AttributeConverterRegistry.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,9 +41,11 @@ struct AttributeConverterRegistry {
     /// \brief Registers the given attribute converter.
     /// Ownership of the converter \p converter transfers to
     /// AttributeConverterRegistry.
+    PXRUSDMAYA_API
     static void Register(AttributeConverter* converter);
     
     /// \brief Gets a copy of the list of all registered converters.
+    PXRUSDMAYA_API
     static std::vector<const AttributeConverter*> GetAllConverters();
 };
 

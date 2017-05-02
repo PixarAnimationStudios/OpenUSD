@@ -1,0 +1,75 @@
+#usda 1.0
+
+class "_class_Sarah"
+{
+    custom color3d displayColor = (1, 1, 1)
+}
+
+def "Sarah" (
+    add references = @test.usda@</Sarah_Defaults>
+    add variantSets = ["displayColor", "standin"]
+    add inherits = </_class_Sarah>
+    variants = {
+        string displayColor = "red"
+        string lod = "full"
+    }
+)
+{
+    custom color3d displayColor = (0.1, 0.2, 0.3)
+
+    variantSet "displayColor" = {
+        "green" {
+            custom color3d displayColor = (0, 1, 0)
+        }
+        "red" {
+            custom color3d displayColor = (1, 0, 0)
+        }
+    }
+
+    variantSet "standin" = {
+        "anim" {
+        }
+        "render" (
+            add variantSets = ["lod"]
+        ) {
+            variantSet "lod" = {
+                "full" {
+                    def Scope "Geom" {
+                        def Cone "Cone" {
+                        }
+                    }
+                }
+                "lite" {
+                    def Scope "Geom" {
+                        def Sphere "Sphere" {
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+def "Sarah_Defaults" (
+    add references = @test.usda@</Sarah_Base>
+)
+{
+    custom color3d displayColor = (0, 0, 1)
+}
+
+def Scope "Sarah_Base" (
+    add variantSets = "displayColor"
+    variants = {
+        string displayColor = "red"
+    }
+)
+{
+    variantSet "displayColor" = {
+        "green" {
+            custom color3d displayColor = (0, 0.8, 0)
+        }
+        "red" {
+            custom color3d displayColor = (0.8, 0, 0)
+        }
+    }
+}

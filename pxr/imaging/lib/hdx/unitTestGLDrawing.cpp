@@ -238,13 +238,9 @@ void
 Hdx_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 {
     bool offscreen = false;
-    bool animate = false;
     for (int i=0; i<argc; ++i) {
         if (std::string(argv[i]) == "--offscreen") {
             offscreen = true;
-        } else
-        if (std::string(argv[i]) == "--animate") {
-            animate = true;
         }
     }
 

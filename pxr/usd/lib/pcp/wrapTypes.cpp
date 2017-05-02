@@ -26,12 +26,10 @@
 #include "pxr/usd/pcp/types.h"
 #include "pxr/base/tf/pyEnum.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void
 wrapTypes()
 {
     TfPyWrapEnum<PcpArcType>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

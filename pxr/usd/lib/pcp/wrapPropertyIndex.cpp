@@ -31,9 +31,12 @@
 
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
+
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static SdfPropertySpecHandleVector
 _WrapPropertyStack(const PcpPropertyIndex& propIndex)
@@ -50,6 +53,8 @@ _WrapLocalPropertyStack(const PcpPropertyIndex& propIndex)
     return SdfPropertySpecHandleVector(range.first, range.second);
 }
 
+} // anonymous namespace 
+
 void
 wrapPropertyIndex()
 {
@@ -64,5 +69,3 @@ wrapPropertyIndex()
                                     return_value_policy<TfPySequenceToList>()))
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

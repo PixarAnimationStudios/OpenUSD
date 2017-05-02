@@ -72,7 +72,7 @@ class Usd_InstanceChanges;
 class Usd_InterpolatorBase;
 class UsdResolveInfo;
 class Usd_Resolver;
-class UsdTreeIterator;
+class UsdPrimRange;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -415,17 +415,43 @@ public:
     /// @}
 
     // --------------------------------------------------------------------- //
+    /// \anchor Usd_layerSerialization
+    /// \name Layer Serialization
+    ///
+    /// Functions for saving changes to layers that contribute opinions to
+    /// this stage.  Layers may also be saved by calling SdfLayer::Save or
+    /// exported to a new file by calling SdfLayer::Export.
+    ///
+    /// @{
+
+    /// Calls SdfLayer::Save on all dirty layers contributing to this stage
+    /// except session layers and sublayers of session layers.
+    ///
+    /// This function will emit a warning and skip each dirty anonymous
+    /// layer it encounters, since anonymous layers cannot be saved with
+    /// SdfLayer::Save. These layers must be manually exported by calling
+    /// SdfLayer::Export.
+    USD_API
+    void Save();
+
+    /// Calls SdfLayer::Save on all dirty session layers and sublayers of 
+    /// session layers contributing to this stage.
+    ///
+    /// This function will emit a warning and skip each dirty anonymous
+    /// layer it encounters, since anonymous layers cannot be saved with
+    /// SdfLayer::Save. These layers must be manually exported by calling
+    /// SdfLayer::Export.
+    USD_API
+    void SaveSessionLayers();
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
     /// \anchor Usd_variantManagement
     /// \name Variant Management
     ///
     /// These methods provide control over the policy to use when composing
     /// prims that specify a variant set but do not specify a selection.
-    ///
-    /// For example, a model might provide a "shadingComplexity" variant
-    /// set, providing multiple levels of detail or fidelity in shading.
-    /// Some sites of use might specify a particular selection, but others
-    /// may want to use a standardized default.  There are two ways to
-    /// specify a default.
     ///
     /// The first is to declare a list of preferences in plugInfo.json
     /// metadata on a plugin using this structure:
@@ -439,18 +465,23 @@ public:
     ///     },
     /// \endcode
     ///
-    /// This example ensures that we will get the full shadingComplexity
-    /// for any prim with that variant set that doesn't otherwise specify
-    /// a selection.
+    /// This example ensures that we will get the "full" shadingComplexity
+    /// for any prim with a shadingComplexity VariantSet that doesn't
+    /// otherwise specify a selection, \em and has a "full" variant; if its
+    /// shadingComplexity does not have a "full" variant, but \em does have
+    /// a "light" variant, then the selection will be "light".  In other
+    /// words, the entries in the "shadingComplexity" list in the plugInfo.json
+    /// represent a priority-ordered list of fallback selections.
     ///
     /// The plugin metadata is discovered and applied before the first
     /// UsdStage is constructed in a given process.  It can be defined
     /// in any plugin.  However, if multiple plugins express contrary
     /// lists for the same named variant set, the result is undefined.
     /// 
-    /// The plugin metadata approach is useful for ensuring that default
-    /// sensible behavior applies across a pipeline without requiring
-    /// explicit proper configuration in every script, binary, etc.
+    /// The plugin metadata approach is useful for ensuring that sensible
+    /// default behavior applies across a pipeline without requiring
+    /// every script and binary to explicitly configure every VariantSet
+    /// that subscribes to fallback in the pipeline.
     /// There may be times when you want to override this behavior in a
     /// particular script -- for example, a pipeline script that knows
     /// it wants to entirely ignore shading in order to minimize
@@ -467,7 +498,7 @@ public:
     static PcpVariantFallbackMap GetGlobalVariantFallbacks();
 
     /// Set the global variant fallback preferences used in new
-    /// UsdStages. This overrides any defaults configured in plugin
+    /// UsdStages. This overrides any fallbacks configured in plugin
     /// metadata, and only affects stages created after this call.
     ///
     /// \note This does not affect existing UsdStages.
@@ -510,8 +541,7 @@ public:
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
     USD_API
-    UsdPrim
-    Load(const SdfPath& path=SdfPath::AbsoluteRootPath());
+    UsdPrim Load(const SdfPath& path=SdfPath::AbsoluteRootPath());
 
     /// Unload the prim and its descendants specified by \p path.
     ///
@@ -526,8 +556,7 @@ public:
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
     USD_API
-    void
-    Unload(const SdfPath& path=SdfPath::AbsoluteRootPath());
+    void Unload(const SdfPath& path=SdfPath::AbsoluteRootPath());
 
     /// Unloads and loads the given path sets; the effect is as if the
     /// unload set were processed first followed by the load set.
@@ -541,7 +570,6 @@ public:
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
     USD_API
-    
     void LoadAndUnload(const SdfPathSet &loadSet, const SdfPathSet &unloadSet);
 
     /// Returns a set of all loaded paths.
@@ -566,7 +594,7 @@ public:
     /// SdfPathSet loaded = stage->GetLoadSet(),
     ///            all = stage->FindLoadable(),
     ///            result;
-    /// std::set_difference(loadedz.begin(), loaded.end(),
+    /// std::set_difference(loaded.begin(), loaded.end(),
     ///                     all.begin(), all.end(),
     ///                     std::inserter(result, result.end()));
     /// \endcode
@@ -660,8 +688,11 @@ public:
     USD_API
     bool HasDefaultPrim() const;
 
-    /// Return the already extant UsdPrim at \p path, or an invalid UsdPrim if
-    /// none exists.
+    /// Return the UsdPrim at \p path, or an invalid UsdPrim if none exists.
+    /// 
+    /// If \p path indicates a prim beneath an instance, returns an instance
+    /// proxy prim if a prim exists at the corresponding path in that instance's 
+    /// master.
     ///
     /// Unlike OverridePrim() and DefinePrim(), this method will never author
     /// scene description, and therefore is safe to use as a "reader" in the Usd
@@ -674,6 +705,12 @@ private:
     Usd_PrimDataConstPtr _GetPrimDataAtPath(const SdfPath &path) const;
     Usd_PrimDataPtr _GetPrimDataAtPath(const SdfPath &path);
 
+    // Return the primData object at \p path.  If \p path indicates a prim
+    // beneath an instance, return the primData object for the corresponding 
+    // prim in the instance's master.
+    Usd_PrimDataConstPtr 
+    _GetPrimDataAtPathOrInMaster(const SdfPath &path) const;
+
     // A helper function for LoadAndUnload to aggregate notification data
     void _LoadAndUnload(const SdfPathSet&, const SdfPathSet&, 
                         SdfPathSet*, SdfPathSet*);
@@ -683,7 +720,7 @@ public:
     /// Traverse the active, loaded, defined, non-abstract prims on this stage
     /// depth-first.
     ///
-    /// Traverse() returns a UsdTreeIterator , which allows low-latency
+    /// Traverse() returns a UsdPrimRange , which allows low-latency
     /// traversal, with the ability to prune subtrees from traversal.  It
     /// is python iterable, so in its simplest form, one can do:
     ///
@@ -693,25 +730,25 @@ public:
     /// \endcode
     ///
     /// If either a pre-and-post-order traversal or a traversal rooted at a
-    /// particular prim is desired, construct a UsdTreeIterator directly.
+    /// particular prim is desired, construct a UsdPrimRange directly.
     ///
-    /// This is equivalent to UsdTreeIterator::Stage() . 
+    /// This is equivalent to UsdPrimRange::Stage() . 
     USD_API
-    UsdTreeIterator Traverse();
+    UsdPrimRange Traverse();
 
     /// \overload
     /// Traverse the prims on this stage subject to \p predicate.
     ///
-    /// This is equivalent to UsdTreeIterator::Stage() .
+    /// This is equivalent to UsdPrimRange::Stage() .
     USD_API
-    UsdTreeIterator Traverse(const Usd_PrimFlagsPredicate &predicate);
+    UsdPrimRange Traverse(const Usd_PrimFlagsPredicate &predicate);
 
     /// Traverse all the prims on this stage depth-first.
     ///
     /// \sa Traverse()
-    /// \sa UsdTreeIterator::Stage()
+    /// \sa UsdPrimRange::Stage()
     USD_API
-    UsdTreeIterator TraverseAll();
+    UsdPrimRange TraverseAll();
 
     /// Attempt to ensure a \a UsdPrim at \p path exists on this stage.
     ///
@@ -855,7 +892,7 @@ public:
     /// if it has one. If \a includeClipLayers is true, we will also include
     /// all of the layers that this stage has had to open so far to perform
     /// value resolution of attributes affected by 
-    /// \ref Usd_AdvancedFeatures_ClipsOverview "Value Clips"
+    /// \ref Usd_Page_ValueClips "Value Clips"
     USD_API
     SdfLayerHandleVector GetUsedLayers(bool includeClipLayers=true) const;
 
@@ -999,10 +1036,11 @@ public:
     /// object. Composition arcs authored on the class itself will be flattend
     /// into the class.
     ///
-    /// Flatten preserves \ref Usd_ExplicitInstancing "stage-level instancing"
-    /// by creating indepedent roots for each master currently composed on
-    /// this stage, and adding a single internal reference arc on each 
-    /// instance prim to its corresponding master.
+    /// Flatten preserves 
+    /// \ref Usd_Page_ScenegraphInstancing "scenegraph instancing" by creating 
+    /// indepedent roots for each master currently composed on this stage, and 
+    /// adding a single internal reference arc on each instance prim to its 
+    /// corresponding master.
     ///
     /// Time samples across sublayer offsets will will have the time offset and
     /// scale applied to each time index.
@@ -1287,7 +1325,7 @@ public:
     // --------------------------------------------------------------------- //
     /// \anchor Usd_instancing
     /// \name Instancing
-    /// See \ref Usd_ExplicitInstancing for more details.
+    /// See \ref Usd_Page_ScenegraphInstancing for more details.
     /// @{
     // --------------------------------------------------------------------- //
 
@@ -1535,6 +1573,8 @@ private:
     // recompose.
     void _Recompose(const PcpChanges &changes,
                     SdfPathSet *initialPathsToRecompose);
+    void _RecomposePrims(const PcpChanges &changes,
+                         SdfPathSet *pathsToRecompose);
 
     // Helper for _Recompose to find the subtrees that need to be
     // fully recomposed and to recompose the name children of the

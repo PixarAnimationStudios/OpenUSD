@@ -25,6 +25,7 @@
 #define HDX_SELECTION_TRACKER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/sdf/path.h"
@@ -48,15 +49,9 @@ typedef boost::weak_ptr<class HdxSelectionTracker> HdxSelectionTrackerWeakPtr;
 /// rprim, sub elements of rprim (such as faces, verts). HdxSelectionTracker
 /// takes HdxSelection and generates GPU buffer to be used for highlighting.
 ///
-class HdxSelection
-{
+class HdxSelection {
 public:
-    HdxSelection(HdRenderIndex * renderIndex)
-        : _renderIndex(renderIndex) { }
-
-    HdRenderIndex * GetRenderIndex() const {
-        return _renderIndex;
-    }
+    HdxSelection() = default;
 
     void AddRprim(SdfPath const &path) {
         selectedPrims.push_back(path);
@@ -91,9 +86,6 @@ public:
     // The selected elements (faces, points, edges) , if any, for the selected
     // objects. This maps from object path to a vector of element indices.
     ElementMap selectedFaces;
-
-private:
-    HdRenderIndex * _renderIndex;
 };
 
 /// \class HdxSelectionTracker
@@ -101,18 +93,20 @@ private:
 /// HdxSelectionTracker is a base class for observing selection state and
 /// providing selection highlighting details to interested clients.
 ///
-class HdxSelectionTracker
-{
+class HdxSelectionTracker {
 public:
+    HDX_API
     HdxSelectionTracker();
     virtual ~HdxSelectionTracker() = default;
 
     /// Update dirty bits in the ChangeTracker and compute required primvars for
     /// later consumption.
+    HDX_API
     virtual void Sync(HdRenderIndex* index);
 
     /// Populates an array of offsets required for selection highlighting.
     /// Returns true if offsets has anything selected.
+    HDX_API
     virtual bool GetBuffers(HdRenderIndex const* index,
                             VtIntArray* offsets) const;
 
@@ -120,6 +114,7 @@ public:
     /// whenever the result of GetBuffers has changed. Note that this number may
     /// overflow and become negative, thus clients should use a not-equal
     /// comparison.
+    HDX_API
     int GetVersion() const;
 
     void SetSelection(HdxSelectionSharedPtr const &selection) {
@@ -134,6 +129,7 @@ public:
 protected:
     /// Increments the internal selection state version, used for invalidation
     /// via GetVersion().
+    HDX_API
     void _IncrementVersion();
 
 private:

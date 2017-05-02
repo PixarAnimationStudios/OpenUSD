@@ -38,7 +38,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -53,6 +55,8 @@ _CreateIdAttr(UsdShadeShader &self,
     return self.CreateIdAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
+
+} // anonymous namespace
 
 void wrapUsdShadeShader()
 {
@@ -97,8 +101,6 @@ void wrapUsdShadeShader()
     _CustomWrapCode(cls);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
 // ===================================================================== //
 // Feel free to add custom code below this line, it will be preserved by 
 // the code generator.  The entry point for your custom code should look
@@ -113,17 +115,19 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // Of course any other ancillary or support code may be provided.
 // 
 // Just remember to wrap code in the appropriate delimiters:
-// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
+// 'namespace {', '}'.
 //
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace {
 
 WRAP_CUSTOM {
     _class
+        .def("ConnectableAPI", &UsdShadeShader::ConnectableAPI)
+
         .def("CreateParameter", &UsdShadeShader::CreateParameter,
              (arg("name"), arg("type")))
         .def("GetParameter", &UsdShadeShader::GetParameter, arg("name"))
@@ -147,4 +151,4 @@ WRAP_CUSTOM {
     implicitly_convertible<UsdShadeShader, UsdShadeConnectableAPI>();
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // anonymous namespace

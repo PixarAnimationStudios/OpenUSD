@@ -1,0 +1,194 @@
+Loading @ErrorArcCycle/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </GroupRoot>
+
+Prim Stack:
+    root.sdf             /GroupRoot
+    A.sdf                /GroupA
+    B.sdf                /GroupB
+
+Child names:
+     ['ChildA']
+
+Property names:
+     ['B_attr', 'A_attr']
+
+Property stacks:
+/GroupRoot.A_attr:
+    A.sdf                /GroupA.A_attr
+/GroupRoot.B_attr:
+    B.sdf                /GroupB.B_attr
+
+------------------------------------------------------------------------
+Results for composing </GroupRoot/ChildA>
+
+Prim Stack:
+    A.sdf                /GroupA/ChildA
+
+Property names:
+     ['A_attr']
+
+Property stacks:
+/GroupRoot/ChildA.A_attr:
+    A.sdf                /GroupA/ChildA.A_attr
+
+------------------------------------------------------------------------
+Results for composing </Parent>
+
+Prim Stack:
+    root.sdf             /Parent
+
+Child names:
+     ['Child1', 'Child2']
+
+------------------------------------------------------------------------
+Results for composing </Parent/Child1>
+
+Prim Stack:
+    root.sdf             /Parent/Child1
+    root.sdf             /Parent/Child2
+
+------------------------------------------------------------------------
+Results for composing </Parent/Child2>
+
+Prim Stack:
+    root.sdf             /Parent/Child2
+    root.sdf             /Parent/Child1
+
+------------------------------------------------------------------------
+Results for composing </AnotherParent>
+
+Prim Stack:
+    root.sdf             /AnotherParent
+
+Child names:
+     ['AnotherChild']
+
+------------------------------------------------------------------------
+Results for composing </AnotherParent/AnotherChild>
+
+Prim Stack:
+    root.sdf             /AnotherParent/AnotherChild
+    model.sdf            /Model
+
+------------------------------------------------------------------------
+Results for composing </YetAnotherParent>
+
+Prim Stack:
+    root.sdf             /YetAnotherParent
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </YetAnotherParent/Child>
+
+Prim Stack:
+    root.sdf             /YetAnotherParent/Child
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent1>
+
+Prim Stack:
+    root.sdf             /CoRecursiveParent1
+
+Child names:
+     ['Child1']
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent1/Child1>
+
+Prim Stack:
+    root.sdf             /CoRecursiveParent1/Child1
+    root.sdf             /CoRecursiveParent2
+
+Child names:
+     ['Child2']
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent1/Child1/Child2>
+
+Prim Stack:
+    root.sdf             /CoRecursiveParent2/Child2
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent2>
+
+Prim Stack:
+    root.sdf             /CoRecursiveParent2
+
+Child names:
+     ['Child2']
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent2/Child2>
+
+Prim Stack:
+    root.sdf             /CoRecursiveParent2/Child2
+    root.sdf             /CoRecursiveParent1
+
+Child names:
+     ['Child1']
+
+------------------------------------------------------------------------
+Results for composing </CoRecursiveParent2/Child2/Child1>
+
+Prim Stack:
+    root.sdf             /CoRecursiveParent1/Child1
+
+------------------------------------------------------------------------
+Results for composing </InheritOfChild>
+
+Prim Stack:
+    root.sdf             /InheritOfChild
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </InheritOfChild/Child>
+
+Prim Stack:
+    root.sdf             /InheritOfChild/Child
+
+------------------------------------------------------------------------
+Results for composing </RelocatedInheritOfChild>
+
+Prim Stack:
+    root.sdf             /RelocatedInheritOfChild
+
+Child names:
+     ['Object', 'Child']
+
+------------------------------------------------------------------------
+Results for composing </RelocatedInheritOfChild/Child>
+
+Prim Stack:
+    root.sdf             /RelocatedInheritOfChild/Child
+
+Child names:
+     ['Class']
+
+Prohibited child names:
+     ['Object']
+
+------------------------------------------------------------------------
+Results for composing </RelocatedInheritOfChild/Child/Class>
+
+Prim Stack:
+    root.sdf             /RelocatedInheritOfChild/Child/Class
+
+Child names:
+     ['Object']
+
+------------------------------------------------------------------------
+Results for composing </RelocatedInheritOfChild/Child/Class/Object>
+
+Prim Stack:
+    root.sdf             /RelocatedInheritOfChild/Child/Class/Object
+

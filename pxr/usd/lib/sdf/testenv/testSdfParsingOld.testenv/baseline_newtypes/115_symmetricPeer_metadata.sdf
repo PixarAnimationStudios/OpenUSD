@@ -1,0 +1,25 @@
+#sdf 1.4.32
+(
+    "Tests metadata for symmetric peers"
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+def MfScope "test" (
+    symmetricPeer = "otherTest"
+)
+{
+    custom rel LRel (
+        symmetricPeer = "RRel"
+    )
+    custom double LSide (
+        symmetricPeer = "RSide"
+    )
+    custom rel RRel (
+        symmetricPeer = "LRel"
+    )
+    custom double RSide (
+        symmetricPeer = "LSide"
+    )
+}
+

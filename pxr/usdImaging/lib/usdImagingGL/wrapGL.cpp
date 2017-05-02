@@ -36,12 +36,13 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace std;
 using namespace boost::python;
 using namespace boost;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static boost::python::tuple
 _TestIntersection(
@@ -56,6 +57,7 @@ _TestIntersection(
     SdfPath hitPrimPath;
     SdfPath hitInstancerPath;
     int hitInstanceIndex;
+    int hitElementIndex;
 
     self.TestIntersection(
         viewMatrix,
@@ -66,9 +68,10 @@ _TestIntersection(
         &hitPoint,
         &hitPrimPath,
         &hitInstancerPath,
-        &hitInstanceIndex);
+        &hitInstanceIndex,
+        &hitElementIndex);
 
-    return boost::python::make_tuple(hitPoint, hitPrimPath, hitInstancerPath, hitInstanceIndex);
+    return boost::python::make_tuple(hitPoint, hitPrimPath, hitInstancerPath, hitInstanceIndex, hitElementIndex);
 }
 
 static boost::python::tuple
@@ -91,6 +94,8 @@ _SetLightingState(UsdImagingGL &self, GlfSimpleLightVector const &lights,
     self.SetLightingState(lights, material, sceneAmbient);
 }
 
+} // anonymous namespace 
+
 void wrapGL()
 {
     { 
@@ -109,15 +114,15 @@ void wrapGL()
             .def("ClearSelected", &UsdImagingGL::ClearSelected)
             .def("AddSelected", &UsdImagingGL::AddSelected)
             .def("SetSelectionColor", &UsdImagingGL::SetSelectionColor)
-            .def("GetPrimPathFromPrimIdColor", &UsdImagingGL::GetPrimPathFromPrimIdColor)
+            .def("GetRprimPathFromPrimId", &UsdImagingGL::GetRprimPathFromPrimId)
             .def("GetPrimPathFromInstanceIndex", &_GetPrimPathFromInstanceIndex)
             .def("TestIntersection", &_TestIntersection)
             .def("IsEnabledHydra", &UsdImagingGL::IsEnabledHydra)
                 .staticmethod("IsEnabledHydra")
             .def("IsConverged", &UsdImagingGL::IsConverged)
-            .def("GetRenderGraphPlugins", &UsdImagingGL::GetRenderGraphPlugins,
+            .def("GetRendererPlugins", &UsdImagingGL::GetRendererPlugins,
                  return_value_policy< TfPySequenceToTuple >())
-            .def("SetRenderGraphPlugin", &UsdImagingGL::SetRenderGraphPlugin)
+            .def("SetRendererPlugin", &UsdImagingGL::SetRendererPlugin)
             .def("GetResourceAllocation", &UsdImagingGL::GetResourceAllocation)
         ;
 
@@ -173,6 +178,3 @@ void wrapGL()
                 TfPyContainerConversions::variable_capacity_policy>();
     }
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

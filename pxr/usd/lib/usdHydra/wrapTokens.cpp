@@ -25,12 +25,10 @@
 #include "pxr/usd/usdHydra/tokens.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdHydraTokens()
 {
     TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdHydraTokens,
                              USDHYDRA_TOKENS);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -17,9 +17,14 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_INCLUDE_DIRS}
         ${OPENGL_INCLUDE_DIRS}
 
+    PUBLIC_HEADERS
+        api.h
+
     PUBLIC_CLASSES
         glslProgram
         utils
         utils_legacy
+
+    DISABLE_PRECOMPILED_HEADERS
 )
 

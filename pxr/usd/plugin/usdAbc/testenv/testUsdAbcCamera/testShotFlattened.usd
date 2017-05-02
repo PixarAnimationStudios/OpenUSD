@@ -1,0 +1,537 @@
+#usda 1.0
+(
+    endTimeCode = 20
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Xform "World" (
+    kind = "group"
+)
+{
+    def Camera "main_cam" (
+        kind = "camera"
+    )
+    {
+        float circleOfConfusionSize = 2.6041667
+        float4[] clippingPlanes = []
+        float2 clippingRange = (10, 100000)
+        custom matrix4d constraintTargets:HeadXf (
+            constraintTargetIdentifier = "HeadXf"
+        )
+        matrix4d constraintTargets:HeadXf.timeSamples = {
+            1: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -2340, 0, 1) ),
+            2: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -2261.0939467969, 0, 1) ),
+            3: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -2182.1878935938, 0, 1) ),
+            4: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -2103.28184039071, 0, 1) ),
+            5: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -2024.37578718761, 0, 1) ),
+            6: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1945.46973398451, 0, 1) ),
+            7: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1866.56368078141, 0, 1) ),
+            8: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1787.65762757832, 0, 1) ),
+            9: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1708.75157437522, 0, 1) ),
+            10: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1629.84552117212, 0, 1) ),
+            11: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1550.93946796902, 0, 1) ),
+            12: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1472.03341476593, 0, 1) ),
+            13: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1393.12736156283, 0, 1) ),
+            14: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1314.22130835973, 0, 1) ),
+            15: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1235.31525515663, 0, 1) ),
+            16: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1156.40920195354, 0, 1) ),
+            17: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -1077.50314875044, 0, 1) ),
+            18: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -998.597095547342, 0, 1) ),
+            19: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -919.691042344244, 0, 1) ),
+            20: ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, -840.784989141147, 0, 1) ),
+        }
+        custom float3[] extentsHint
+        float3[] extentsHint.timeSamples = {
+            1: [(3.40282e+38, 3.40282e+38, 3.40282e+38), (-3.40282e+38, -3.40282e+38, -3.40282e+38)],
+        }
+        float focalLength.timeSamples = {
+            1: 11700.018,
+            2: 11337.844,
+            3: 10900.86,
+            4: 10456.116,
+            5: 10012.519,
+            6: 9573.279,
+            7: 9139.834,
+            8: 8712.876,
+            9: 8292.739,
+            10: 7879.5786,
+            11: 7473.462,
+            12: 7074.4336,
+            13: 6682.5586,
+            14: 6297.974,
+            15: 5920.9556,
+            16: 5552.038,
+            17: 5192.275,
+            18: 4843.937,
+            19: 4513.2095,
+            20: 4247.423,
+        }
+        float focusDistance = 2340
+        float fStop = 8
+        float horizontalAperture = 5000
+        float verticalApertureOffset = -30
+        float lensSqueezeRatio = 2
+        token projection = "perspective"
+        custom string ri:attributes:user:ModelInstance = "main_cam"
+        uniform bool stereoscopic = 0
+        float verticalAperture = 4000
+        custom matrix4d xformOp:transform
+        matrix4d xformOp:transform.timeSamples = {
+            1: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -2340, 0, 1) ),
+            2: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -2261.0939467969, 0, 1) ),
+            3: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -2182.1878935938, 0, 1) ),
+            4: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -2103.28184039071, 0, 1) ),
+            5: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -2024.37578718761, 0, 1) ),
+            6: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1945.46973398451, 0, 1) ),
+            7: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1866.56368078141, 0, 1) ),
+            8: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1787.65762757832, 0, 1) ),
+            9: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1708.75157437522, 0, 1) ),
+            10: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1629.84552117212, 0, 1) ),
+            11: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1550.93946796902, 0, 1) ),
+            12: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1472.03341476593, 0, 1) ),
+            13: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1393.12736156283, 0, 1) ),
+            14: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1314.22130835973, 0, 1) ),
+            15: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1235.31525515663, 0, 1) ),
+            16: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1156.40920195354, 0, 1) ),
+            17: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -1077.50314875044, 0, 1) ),
+            18: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -998.597095547342, 0, 1) ),
+            19: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -919.691042344244, 0, 1) ),
+            20: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -840.784989141147, 0, 1) ),
+        }
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Xform "geom" (
+        kind = "model"
+    )
+    {
+        reorder nameChildren = ["Distance__2_4f", "Distance__2_2f", "Distance__2_0f_in_focus", "Distance__1_8f", "Distance__1_6f", "Distance__1_4f", "Distance__1_2f", "Distance__1_0f", "UpperLeftCorner", "UpperRightCorner", "LowerLeftCorner", "LowerRightCorner", "CenterCross", "UpCross", "DownCross", "LeftCross", "RightCross", "Square"]
+        custom float3[] extentsHint
+        float3[] extentsHint.timeSamples = {
+            1: [(-1100.5, -1170, -500.5), (1100.5, 469, 500.5)],
+        }
+        custom string ri:attributes:user:ModelInstance = "geom"
+
+        def Xform "Distance__2_4f"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (800, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "InnerGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (35.5729, 0, 0, 0), (0, 1, 0, 0), (0, 0, 29.4791, 0), (-75, 0.5, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Object"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (50, 0, 0, 0), (0, 1, 0, 0), (0, 0, 50, 0), (220, 468.5, 240, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "OuterGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (47.7604, 0, 0, 0), (0, 1, 0, 0), (0, 0, 53.8541, 0), (-75, 0.6, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "Distance__2_2f"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (400, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "InnerGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (42.13, 0, 0, 0), (0, 1, 0, 0), (0, 0, 38.807, 0), (-75, 0.5, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Object"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (50, 0, 0, 0), (0, 1, 0, 0), (0, 0, 50, 0), (120, 234.5, 220, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "OuterGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (48.778, 0, 0, 0), (0, 1, 0, 0), (0, 0, 52.102, 0), (-75, 0.6, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "Distance__2_0f_in_focus"
+        {
+            def Cube "Guide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (50, 0, 0, 0), (0, 1, 0, 0), (0, 0, 50, 0), (-75, 0.5, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Object"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (50, 0, 0, 0), (0, 1, 0, 0), (0, 0, 50, 0), (75, 0.5, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "Distance__1_8f"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-400, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "InnerGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (51.49, 0, 0, 0), (0, 1, 0, 0), (0, 0, 47.43, 0), (-75, 0.5, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Object"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (50, 0, 0, 0), (0, 1, 0, 0), (0, 0, 50, 0), (110, -233.5, 180, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "OuterGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (59.618, 0, 0, 0), (0, 1, 0, 0), (0, 0, 63.68, 0), (-75, 0.6, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "Distance__1_6f"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-800, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "InnerGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (53.359, 0, 0, 0), (0, 1, 0, 0), (0, 0, 44.218, 0), (-75, 0.5, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Object"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (50, 0, 0, 0), (0, 1, 0, 0), (0, 0, 50, 0), (220, -467.5, 160, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "OuterGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (71.64, 0, 0, 0), (0, 1, 0, 0), (0, 0, 80.78, 0), (-74.9999999999999, 0.6, 200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "Distance__1_4f"
+        {
+            def Cube "InnerGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (55.75892857, 0, 0, 0), (0, 1, 0, 0), (0, 0, 40.0892857, 0), (-75, 0.5, -200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Object"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (50, 0, 0, 0), (0, 1, 0, 0), (0, 0, 50, 0), (50, -701.5, -140, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "OuterGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (87.09821428571, 0, 0, 0), (0, 1, 0, 0), (0, 0, 102.767857, 0), (-75, 0.6, -200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "Distance__1_2f"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-400, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "InnerGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (58.95833333, 0, 0, 0), (0, 1, 0, 0), (0, 0, 34.583333333, 0), (-74.9999999999997, 0.5, -200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Object"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (50, 0, 0, 0), (0, 1, 0, 0), (0, 0, 50, 0), (210, -935.5, -120, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "OuterGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (107.708333333333, 0, 0, 0), (0, 1, 0, 0), (0, 0, 132.083333333333, 0), (-74.9999999999999, 0.6, -200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "Distance__1_0f"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-800, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "InnerGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (63.4375, 0, 0, 0), (0, 1, 0, 0), (0, 0, 26.875, 0), (-74.9999999999998, 0.5, -200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Object"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (50, 0, 0, 0), (0, 1, 0, 0), (0, 0, 50, 0), (440, -1169.5, -100, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "OuterGuide"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (136.5625, 0, 0, 0), (0, 1, 0, 0), (0, 0, 173.125, 0), (-74.9999999999987, 0.6, -200, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "UpperLeftCorner"
+        {
+            def Cube "Green"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (100, 0, 0, 0), (0, 1, 0, 0), (0, 0, 100, 0), (-950, 0.5, 350, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Red"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (200, 0, 0, 0), (0, 1, 0, 0), (0, 0, 200, 0), (-1000.5, 0.8, 400.5, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "UpperRightCorner"
+        {
+            def Cube "Green"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (100, 0, 0, 0), (0, 1, 0, 0), (0, 0, 100, 0), (950, 0.5, 350, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Red"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (200, 0, 0, 0), (0, 1, 0, 0), (0, 0, 200, 0), (1000.5, 0.8, 400.5, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "LowerLeftCorner"
+        {
+            def Cube "Green"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (100, 0, 0, 0), (0, 1, 0, 0), (0, 0, 100, 0), (-950, 0.5, -350, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Red"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (200, 0, 0, 0), (0, 1, 0, 0), (0, 0, 200, 0), (-1000.5, 0.8, -400.5, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "LowerRightCorner"
+        {
+            def Cube "Green"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (100, 0, 0, 0), (0, 1, 0, 0), (0, 0, 100, 0), (950, 0.5, -350, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "Red"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (200, 0, 0, 0), (0, 1, 0, 0), (0, 0, 200, 0), (1000.5, 0.8, -400.5, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "CenterCross"
+        {
+            def Cube "UpLeft"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (75, 0, 75, 0), (0, 1, 0, 0), (-5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "UpRight"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (-75, 0, 75, 0), (0, 1, 0, 0), (5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "UpCross"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 400, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "UpLeft"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (75, 0, 75, 0), (0, 1, 0, 0), (-5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "UpRight"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (-75, 0, 75, 0), (0, 1, 0, 0), (5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "DownCross"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, -400, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "UpLeft"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (75, 0, 75, 0), (0, 1, 0, 0), (-5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "UpRight"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (-75, 0, 75, 0), (0, 1, 0, 0), (5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "LeftCross"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1000, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "UpLeft"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (75, 0, 75, 0), (0, 1, 0, 0), (-5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "UpRight"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (-75, 0, 75, 0), (0, 1, 0, 0), (5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "RightCross"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1000, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cube "UpLeft"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (75, 0, 75, 0), (0, 1, 0, 0), (-5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+
+            def Cube "UpRight"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (-75, 0, 75, 0), (0, 1, 0, 0), (5, 0, 5, 0), (0, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+
+        def Xform "Square"
+        {
+            def Cube "Square"
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                double size = 1
+                custom matrix4d xformOp:transform = ( (100, 0, 0, 0), (0, 1, 0, 0), (0, 0, 100, 0), (-200, 0.5, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+    }
+}
+

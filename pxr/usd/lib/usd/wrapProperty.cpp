@@ -31,12 +31,11 @@
 
 #include <boost/python/class.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdProperty()
 {
@@ -77,7 +76,3 @@ void wrapUsdProperty()
 
     TfPyRegisterStlSequencesFromPython<UsdProperty>();
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

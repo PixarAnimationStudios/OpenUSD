@@ -25,13 +25,7 @@
 #define HD_BUFFER_ARRAY_REGISTRY_H
 
 #include "pxr/pxr.h"
-#include <condition_variable>
-#include <mutex>
-
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <tbb/concurrent_unordered_map.h>
-
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -43,6 +37,13 @@
 
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
+
+#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
+#include <tbb/concurrent_unordered_map.h>
+
+#include <condition_variable>
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,28 +58,34 @@ class HdBufferArrayRegistry : public boost::noncopyable {
 public:
     HF_MALLOC_TAG_NEW("new HdBufferArrayRegistry");
 
+    HD_API
     HdBufferArrayRegistry();
     ~HdBufferArrayRegistry()   = default;
 
     /// Allocate new buffer array range using strategy
     /// Thread-Safe
+    HD_API
     HdBufferArrayRangeSharedPtr AllocateRange(
         HdAggregationStrategy *strategy,
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs);
 
     /// Triggers reallocation on all buffers managed by the registry.
+    HD_API
     void   ReallocateAll(HdAggregationStrategy *strategy);
 
     /// Frees up buffers that no longer contain any allocated ranges.
+    HD_API
     void   GarbageCollect();
 
     /// Generate a report on resources consumed by the managed
     /// buffer array.  The returned size is an esitmate of the 
     /// gpu memory consumed by the buffers
+    HD_API
     size_t GetResourceAllocation(VtDictionary &result) const;
     
     /// Debug dump
+    HD_API
     friend std::ostream &operator <<(std::ostream &out,
                                      const HdBufferArrayRegistry& self);
 

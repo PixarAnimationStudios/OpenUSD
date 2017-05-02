@@ -34,7 +34,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static
 SdfVariantSetSpecHandle
@@ -50,6 +52,8 @@ _NewUnderVariant(const SdfVariantSpecHandle& owner, const std::string& name)
 {
     return SdfVariantSetSpec::New(owner, name);
 }
+
+} // anonymous namespace 
 
 void wrapVariantSetSpec()
 {
@@ -82,5 +86,3 @@ void wrapVariantSetSpec()
 
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

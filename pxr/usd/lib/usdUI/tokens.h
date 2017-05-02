@@ -44,6 +44,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (closed) \
     (minimized) \
     (open) \
+    ((uiDisplayGroup, "ui:displayGroup")) \
+    ((uiDisplayName, "ui:displayName")) \
     ((uiNodegraphNodeDisplayColor, "ui:nodegraph:node:displayColor")) \
     ((uiNodegraphNodeExpansionState, "ui:nodegraph:node:expansionState")) \
     ((uiNodegraphNodeIcon, "ui:nodegraph:node:icon")) \
@@ -73,6 +75,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>closed</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
 /// \li <b>minimized</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
 /// \li <b>open</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+/// \li <b>uiDisplayGroup</b> - UsdUISceneGraphPrimAPI
+/// \li <b>uiDisplayName</b> - UsdUISceneGraphPrimAPI
 /// \li <b>uiNodegraphNodeDisplayColor</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodeExpansionState</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodeIcon</b> - UsdUINodeGraphNodeAPI

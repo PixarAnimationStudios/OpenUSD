@@ -50,6 +50,12 @@ UsdImagingNurbsPatchAdapter::~UsdImagingNurbsPatchAdapter()
 {
 }
 
+bool
+UsdImagingNurbsPatchAdapter::IsSupported(HdRenderIndex* renderIndex)
+{
+    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+}
+
 SdfPath
 UsdImagingNurbsPatchAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,

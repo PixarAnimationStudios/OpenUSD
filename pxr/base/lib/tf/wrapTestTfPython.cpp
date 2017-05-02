@@ -62,6 +62,8 @@ using namespace boost::python;
 using std::string;
 using std::vector;
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Base
@@ -435,6 +437,8 @@ _MakeClassWithVarArgInit(bool allowExtraArgs,
     return rval;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 void wrapTf_TestTfPython()
 {
 
@@ -542,5 +546,3 @@ TF_REFPTR_CONST_VOLATILE_GET(Tf_TestBase)
 TF_REFPTR_CONST_VOLATILE_GET(Tf_TestDerived)
 TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestBase<class Tf_TestBase>)
 TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestDerived<class Tf_TestDerived>)
-
-PXR_NAMESPACE_CLOSE_SCOPE

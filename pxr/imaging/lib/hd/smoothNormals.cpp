@@ -192,7 +192,6 @@ Hd_SmoothNormalsComputationGPU::Execute(
     if (!glDispatchCompute)
         return;
 
-    int numPoints = range->GetNumElements();
 
     TF_VERIFY(_adjacency);
     HdBufferArrayRangeSharedPtr const &adjacencyRange = _adjacency->GetAdjacencyRange();
@@ -217,7 +216,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
             shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToPacked;
         }
     }
-    if (not TF_VERIFY(!shaderToken.IsEmpty())) return;
+    if (!TF_VERIFY(!shaderToken.IsEmpty())) return;
 
     HdGLSLProgramSharedPtr computeProgram
         = HdGLSLProgram::GetComputeProgram(shaderToken);
@@ -233,9 +232,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
     // prepare uniform buffer for GPU computation
     struct Uniform {
         int vertexOffset;
-        int adjacencyStride;
         int adjacencyOffset;
-        int padding;
         int pointsOffset;
         int pointsStride;
         int normalsOffset;
@@ -245,9 +242,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
     // coherent vertex offset in aggregated buffer array
     uniform.vertexOffset = range->GetOffset();
     // adjacency offset/stride in aggregated adjacency table
-    uniform.adjacencyStride = _adjacency->GetStride();
     uniform.adjacencyOffset = adjacencyRange->GetOffset();
-    uniform.padding = 0;
     // interleaved offset/stride to points
     // note: this code (and the glsl smooth normal compute shader) assumes
     // components in interleaved vertex array are always same data type.
@@ -258,6 +253,18 @@ Hd_SmoothNormalsComputationGPU::Execute(
     // interleaved offset/stride to normals
     uniform.normalsOffset = normals->GetOffset() / normals->GetComponentSize();
     uniform.normalsStride = normals->GetStride() / normals->GetComponentSize();
+
+    // The number of points is based off the size of the output,
+    // However, the number of points in the adjacency table
+    // is computed based off the largest vertex indexed from
+    // to topology (aka topology->ComputeNumPoints).
+    //
+    // Therefore, we need to clamp the number of points
+    // to the number of entries in the adjancency table.
+    int numDestPoints = range->GetNumElements();
+    int numSrcPoints = _adjacency->GetNumPoints();
+
+    int numPoints = std::min(numSrcPoints, numDestPoints);
 
     // transfer uniform buffer
     GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();

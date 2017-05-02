@@ -35,6 +35,8 @@
 
 #include <boost/operators.hpp>
 
+/// \file pcp/types.h
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \enum PcpArcType
@@ -136,6 +138,7 @@ struct PcpSiteTrackerSegment {
     PcpArcType arcType;
 };
 
+/// \typedef std::vector<PcpSiteTrackerSegment> PcpSiteTracker
 /// Represents a single path through the composition tree. As the tree
 /// is being built, we add segments to the tracker. If we encounter a 
 /// site that we've already visited, we've found a cycle.
@@ -182,7 +185,14 @@ struct Pcp_CompressedSdSite {
 };
 typedef std::vector<Pcp_CompressedSdSite> Pcp_CompressedSdSiteVector;
 
-/// A list of fallbacks to attempt to use when evaluating
+// XXX Even with <map> included properly, doxygen refuses to acknowledge
+// the existence of std::map, so if we include the full typedef in the
+// \typedef directive, it will warn and fail to produce an entry for 
+// PcpVariantFallbackMap.  So we instead put the decl inline.
+/// \typedef PcpVariantFallbackMap
+/// typedef std::map<std::string, std::vector<std::string>> PcpVariantFallbackMap
+///
+/// A "map of lists" of fallbacks to attempt to use when evaluating
 /// variant sets that lack an authored selection.
 ///
 /// This maps a name of a variant set (ex: "shadingComplexity") to a
@@ -194,10 +204,15 @@ typedef std::map<std::string, std::vector<std::string>> PcpVariantFallbackMap;
 
 typedef TfDenseHashSet<TfToken, TfToken::HashFunctor> PcpTokenSet;
 
+/// \var size_t PCP_INVALID_INDEX
 /// A value which indicates an invalid index. This is simply used inplace of
 /// either -1 or numeric_limits::max() (which are equivalent for size_t). 
 /// for better clarity.
+#if defined(doxygen)
+constexpr size_t PCP_INVALID_INDEX = unspecified;
+#else
 constexpr size_t PCP_INVALID_INDEX = std::numeric_limits<size_t>::max();
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

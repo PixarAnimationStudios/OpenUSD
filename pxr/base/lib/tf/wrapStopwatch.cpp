@@ -35,7 +35,7 @@ using std::string;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapStopwatch() {
 
@@ -67,6 +67,3 @@ void wrapStopwatch() {
         .add_property("isShared", &This::IsShared)
         ;
 }
-                 
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,0 +1,8 @@
+#sdf 1.4.32
+
+def DifferentPrimType "GroupB" (
+    add references = @./A.sdf@</GroupA>
+)
+{
+    custom double B_attr
+}

@@ -1562,7 +1562,7 @@
     <addaction name="separator"/>
     <addaction name="menuNode_View_Depth"/>
     <addaction name="actionShow_Inactive_Nodes"/>
-    <addaction name="actionShow_Master_Prims"/>
+    <addaction name="actionShow_All_Master_Prims"/>
     <addaction name="actionShow_Undefined_Prims"/>
     <addaction name="actionShow_Abstract_Prims"/>
     <addaction name="separator"/>
@@ -1647,23 +1647,20 @@
       <string>Interpolation</string>
      </property>
     </widget>
-    <widget class="QMenu" name="menuRenderGraph">
-     <property name="tearOffEnabled">
-      <bool>true</bool>
-     </property>
+    <widget class="QMenu" name="menuRendererPlugin">
      <property name="title">
-      <string>Render Graph...</string>
+      <string>Viewer Renderer Plugin...</string>
      </property>
-     <addaction name="actionRenderGraphDefault"/>
     </widget>
     <addaction name="actionToggle_Viewer_Mode"/>
     <addaction name="separator"/>
-    <addaction name="menuRenderGraph"/>
+    <addaction name="menuRendererPlugin"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
     <addaction name="actionAdjust_FOV"/>
     <addaction name="actionRecompute_Clipping_Planes"/>
     <addaction name="actionAdjust_Clipping"/>
+    <addaction name="actionAdjust_Default_Material"/>
     <addaction name="actionComplexity"/>
     <addaction name="menuBBox"/>
     <addaction name="separator"/>
@@ -1704,7 +1701,6 @@
     <addaction name="actionJump_to_Stage_Root"/>
     <addaction name="actionJump_to_Model_Root"/>
     <addaction name="actionJump_to_Bound_Material"/>
-    <addaction name="actionJump_to_Master"/>
     <addaction name="separator"/>
     <addaction name="actionMake_Visible"/>
     <addaction name="actionVis_Only"/>
@@ -2580,7 +2576,7 @@
     <string>Geom Id</string>
    </property>
   </action>
-  <action name="actionShow_Master_Prims">
+  <action name="actionShow_All_Master_Prims">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -2634,17 +2630,6 @@
    </property>
    <property name="shortcut">
     <string>F11</string>
-   </property>
-  </action>
-  <action name="actionRenderGraphDefault">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Default(GL)</string>
    </property>
   </action>
   <action name="useExtentsHint">
@@ -2752,14 +2737,6 @@
     <string>Shift+L</string>
    </property>
   </action>
-  <action name="actionJump_to_Master">
-   <property name="text">
-    <string>Jump to Master</string>
-   </property>
-   <property name="shortcut">
-    <string>Shift+M</string>
-   </property>
-  </action>
   <action name="actionRollover_Prim_Info">
    <property name="checkable">
     <bool>true</bool>
@@ -2809,6 +2786,14 @@
    </property>
    <property name="text">
     <string>Proxy</string>
+   </property>
+  </action>
+  <action name="actionAdjust_Default_Material">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Adjust Default Material...</string>
    </property>
   </action>
  </widget>

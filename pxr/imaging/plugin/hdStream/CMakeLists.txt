@@ -21,7 +21,7 @@ pxr_shared_library(hdStream
         hdSt
         hdx
         ${OPENSUBDIV_LIBRARIES}
-        ${TBB_LIBRARIES}
+        ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
         ${GLEW_INCLUDE_DIR}
@@ -29,7 +29,8 @@ pxr_shared_library(hdStream
         ${OPENSUBDIV_INCLUDE_DIR}
 
     PUBLIC_CLASSES
-        renderDelegate
+        rendererPlugin
+        taskController
 
     RESOURCE_FILES
         plugInfo.json

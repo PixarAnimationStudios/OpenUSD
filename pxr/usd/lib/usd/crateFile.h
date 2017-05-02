@@ -155,7 +155,7 @@ struct TimeSamples {
     }
 
     // Original rep from file if read from file.  This will have GetData()
-    // == 0 if not from file or if the samples are been modified.
+    // == 0 if not from file or if the samples have been modified.
     ValueRep valueRep;
 
     // Sample times.
@@ -171,9 +171,9 @@ struct TimeSamples {
     // Note that equality does a very shallow equality check since otherwise
     // we'd have to pull all the values from the file.
     bool operator==(TimeSamples const &other) const {
-        return valueRep == other.valueRep   && 
-            times == other.times            &&
-            values == other.values          &&
+        return valueRep == other.valueRep && 
+            times == other.times &&
+            values == other.values &&
             valuesFileOffset == other.valuesFileOffset;
     }
 
@@ -343,7 +343,7 @@ public:
             : pathIndex(pi), fieldSetIndex(fsi), specType(type) {}
         Spec(Spec_0_0_1 const &);
         bool operator==(const Spec &other) const {
-            return pathIndex == other.pathIndex      &&
+            return pathIndex == other.pathIndex &&
                 fieldSetIndex == other.fieldSetIndex &&
                 specType == other.specType;
         }
@@ -380,7 +380,7 @@ public:
             : pathIndex(pi), fieldSetIndex(fsi), specType(type) {}
         Spec_0_0_1(Spec const &);
         bool operator==(const Spec_0_0_1 &other) const {
-            return pathIndex == other.pathIndex      &&
+            return pathIndex == other.pathIndex &&
                 fieldSetIndex == other.fieldSetIndex &&
                 specType == other.specType;
         }
@@ -619,6 +619,7 @@ private:
     template <class T> void _DoTypeRegistration();
     void _DoAllTypeRegistrations();
     void _DeleteValueHandlers();
+    void _ClearValueHandlerDedupTables();
 
     static bool _IsKnownSection(char const *name);
 

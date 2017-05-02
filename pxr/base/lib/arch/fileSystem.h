@@ -70,15 +70,21 @@ PXR_NAMESPACE_OPEN_SCOPE
     // See https://msdn.microsoft.com/en-us/library/1w06ktdy.aspx
     // XXX -- Should probably have Arch enum for these.
     #define F_OK    0       // Test for existence.
+    #define X_OK    1       // Test for execute permission.
     #define W_OK    2       // Test for write permission.
     #define R_OK    4       // Test for read permission.
 #endif
 
-#if !defined(ARCH_OS_WINDOWS)
-    #define ARCH_GLOB_DEFAULT   GLOB_NOCHECK|GLOB_MARK
+#if defined(ARCH_OS_WINDOWS)
+    #define ARCH_GLOB_NOCHECK   1
+    #define ARCH_GLOB_MARK      2
+    #define ARCH_GLOB_NOSORT    4
 #else
-    #define ARCH_GLOB_DEFAULT   0
+    #define ARCH_GLOB_NOCHECK   GLOB_NOCHECK
+    #define ARCH_GLOB_MARK      GLOB_MARK
+    #define ARCH_GLOB_NOSORT    GLOB_NOSORT
 #endif
+#define ARCH_GLOB_DEFAULT   (ARCH_GLOB_NOCHECK | ARCH_GLOB_MARK)
 
 #ifndef ARCH_PATH_MAX
     #ifdef PATH_MAX
@@ -104,6 +110,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     #define ARCH_PATH_SEP       "/"
     #define ARCH_PATH_LIST_SEP  ":"
     #define ARCH_REL_PATH_IDENT "./"
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
+typedef struct __stat64 ArchStatType;
+#else
+typedef struct stat ArchStatType;
 #endif
 
 /// \file fileSystem.h
@@ -173,13 +185,20 @@ ARCH_API int64_t ArchGetFileLength(FILE *file);
 /// This returns true if the struct pointer is valid, and the stat indicates
 /// the target is writable by the effective user, effective group, or all
 /// users.
-ARCH_API bool ArchStatIsWritable(const struct stat *st);
+ARCH_API bool ArchStatIsWritable(const ArchStatType *st);
+
+/// Returns the modification time (mtime) in seconds for a file.
+///
+/// This function stores the modification time with as much precision as is
+/// available in the stat structure for the current platform in \p time and
+/// returns \c true on success, otherwise just returns \c false.
+ARCH_API bool ArchGetModificationTime(const char* pathname, double* time);
 
 /// Returns the modification time (mtime) in seconds from the stat struct.
 ///
 /// This function returns the modification time with as much precision as is
 /// available in the stat structure for the current platform.
-ARCH_API double ArchGetModificationTime(const struct stat& st);
+ARCH_API double ArchGetModificationTime(const ArchStatType& st);
 
 /// Return the path to a temporary directory for this platform.
 ///

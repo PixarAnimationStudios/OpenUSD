@@ -1,0 +1,72 @@
+#usda 1.0
+
+class "_class_Prop"
+{
+    def Scope "From_class_in_root"
+    {
+    }
+
+    over "geom"
+    {
+        over "Scope"
+        {
+            double x = 3.5
+        }
+    }
+}
+
+def Scope "World"
+{
+    def Scope "sets"
+    {
+        def Scope "Set_1" (
+            references = @./set.usda@</Set>
+        )
+        {
+            over "Prop_1"
+            {
+                def Scope "From_root"
+                {
+                }
+
+                over "geom"
+                {
+                    over "Scope"
+                    {
+                        double x = 3.0
+                    }
+                }
+            }
+
+            over "Prop_2"
+            {
+                def Scope "From_root"
+                {
+                }
+
+                over "geom"
+                {
+                    over "Scope"
+                    {
+                        double x = 3.0
+                    }
+                }
+            }
+
+            over "Prop_3"
+            {
+                def Scope "From_root"
+                {
+                }
+
+                over "geom"
+                {
+                    over "Scope"
+                    {
+                        double x = 3.0
+                    }
+                }
+            }
+        }
+    }
+}

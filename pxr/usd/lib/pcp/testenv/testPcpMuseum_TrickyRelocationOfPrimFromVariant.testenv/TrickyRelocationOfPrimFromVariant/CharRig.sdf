@@ -1,0 +1,60 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Scope "CharRig" (
+    variantSets = ["TailRigVersion"]
+    relocates = {
+        <TailRig/Tail>: <Anim/Tail>
+    }
+    variants = {
+        string TailRigVersion = "None"    
+    }
+)
+{
+    def Scope "Anim"
+    {
+    }
+
+    variantSet "TailRigVersion" = {
+        "None" {
+
+        }
+        "Standard" {
+            def MfScope "TailRig" (
+                references = @./TailRig.sdf@</TailRig>
+            )
+            {
+            }
+        }
+    }   
+}
+
+def Scope "CharRig2" (
+    variantSets = ["TailRigVersion"]
+    variants = {
+        string TailRigVersion = "Standard"    
+    }
+    relocates = { <TailRig/Tail>: <Anim/Tail> }
+)
+{
+    def Scope "Anim"
+    {
+    }
+
+    variantSet "TailRigVersion" = {
+        "None" {
+
+        }
+        "Standard"
+        {
+            def MfScope "TailRig" (
+                references = @./TailRig.sdf@</TailRig>
+            )
+            {
+            }
+        }
+    }   
+}

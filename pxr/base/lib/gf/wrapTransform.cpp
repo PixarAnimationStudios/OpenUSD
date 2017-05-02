@@ -44,7 +44,9 @@ using std::string;
 using std::vector;
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static GfVec3d _NoTranslation() { return GfVec3d(0,0,0); }
 static GfVec3d _IdentityScale() { return GfVec3d(1,1,1); }
@@ -77,6 +79,7 @@ static string _Repr(GfTransform const &self)
     return prefix + TfStringJoin(kwargs, string(", \n" + indent).c_str()) + ")";
 }
 
+} // anonymous namespace 
 
 void wrapTransform()
 {    
@@ -194,5 +197,3 @@ void wrapTransform()
         ;
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

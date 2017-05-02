@@ -25,6 +25,7 @@
 #define HDST_MESH_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/changeTracker.h"
@@ -77,11 +78,14 @@ public:
 
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this mesh as a prototype.
+    HDST_API
     HdStMesh(SdfPath const& id,
              SdfPath const& instancerId = SdfPath());
 
+    HDST_API
     virtual ~HdStMesh();
 
+    HDST_API
     virtual void Sync(HdSceneDelegate *delegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits,
@@ -89,11 +93,13 @@ public:
                       bool             forcedRepr) override;
 
     /// Returns whether packed (10_10_10 bits) normals to be used
+    HDST_API
     static bool IsEnabledPackedNormals();
 
     /// Configure geometric style of drawItems for \p reprName
     /// HdMesh can have up to 2 descriptors for some complex styling
     /// (FeyRay, Outline)
+    HDST_API
     static void ConfigureRepr(TfToken const &reprName,
                               HdStMeshReprDesc desc1,
                               HdStMeshReprDesc desc2=HdStMeshReprDesc());

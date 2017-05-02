@@ -27,6 +27,7 @@
 /// \file glf/bindingMap.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -42,18 +43,26 @@ class GlfBindingMap : public TfRefBase, public TfWeakBase {
 public:
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> BindingMap;
 
+    GLF_API
     int GetSamplerUnit(std::string const &name);
+    GLF_API
     int GetSamplerUnit(TfToken const & name);
 
     // If GetAttributeIndex is called with an unknown
     // attribute token they return -1
+    GLF_API
     int GetAttributeIndex(std::string const & name);
+    GLF_API
     int GetAttributeIndex(TfToken const & name);
 
+    GLF_API
     int GetUniformBinding(std::string const & name);
+    GLF_API
     int GetUniformBinding(TfToken const & name);
 
+    GLF_API
     bool HasUniformBinding(std::string const & name) const;
+    GLF_API
     bool HasUniformBinding(TfToken const & name) const;
 
     int GetNumSamplerBindings() const {
@@ -72,12 +81,16 @@ public:
         return _attribBindings;
     }
 
+    GLF_API
     void AssignSamplerUnitsToProgram(GLuint program);
 
+    GLF_API
     void AssignUniformBindingsToProgram(GLuint program);
 
+    GLF_API
     void AddCustomBindings(GLuint program);
 
+    GLF_API
     void Debug() const;
 
 private:

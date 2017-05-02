@@ -49,7 +49,9 @@ using namespace boost::python;
 
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string __repr__(GfQuatd const &self) {
     return TF_PY_REPR_PREFIX + "Quatd(" +
@@ -59,6 +61,8 @@ static string __repr__(GfQuatd const &self) {
 
 // Zero-initialized default ctor for python.
 static GfQuatd *__init__() { return new GfQuatd(0); }
+
+} // anonymous namespace 
 
 void wrapQuatd()
 {    
@@ -140,5 +144,3 @@ void wrapQuatd()
         TfPySequenceToPython<std::vector<GfQuatd> > >();
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -28,12 +28,10 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapLimits()
 {
     scope().attr("MIN_VECTOR_LENGTH") = GF_MIN_VECTOR_LENGTH;
     scope().attr("MIN_ORTHO_TOLERANCE") = GF_MIN_ORTHO_TOLERANCE;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -32,7 +32,7 @@
 /// conjunction (via &&) or a disjunction (via ||).  The result is a
 /// predicate functor object that tests those flags on the passed prim.
 /// Currently UsdPrim::GetFilteredChildren(), UsdPrim::GetNextFilteredSibling(),
-/// UsdPrim::GetFilteredDescendants(), and UsdTreeIterator() accept these
+/// UsdPrim::GetFilteredDescendants(), and UsdPrimRange() accept these
 /// predicates to filter out unwanted prims.
 ///
 /// For example:
@@ -83,6 +83,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class SdfPath;
+
 // Enum for cached flags on prims.
 enum Usd_PrimFlags {
     // Flags for use with predicates.
@@ -100,6 +102,8 @@ enum Usd_PrimFlags {
     Usd_PrimClipsFlag,
     Usd_PrimDeadFlag,
     Usd_PrimMasterFlag,
+    Usd_PrimInstanceProxyFlag,
+
     Usd_PrimNumFlags
 };
 
@@ -162,12 +166,26 @@ public:
         return Usd_PrimFlagsPredicate()._Negate();
     }
 
-    // Invoke boolean predicate on \p prim.
-    template <class PrimPtr>
-    bool operator()(const PrimPtr &prim) const {
-        // Mask the prim's flags, compare to desired values, then optionally
-        // negate the result.
-        return ((prim->_GetFlags() & _mask) == _values) ^ _negate;
+    // Set flag to indicate whether prim traversal functions using this
+    // predicate should traverse beneath instances and return descendants
+    // that pass this predicate as instance proxy prims.
+    Usd_PrimFlagsPredicate &TraverseInstanceProxies(bool traverse) {
+        if (traverse) {
+            _mask[Usd_PrimInstanceProxyFlag] = 0;
+            _values[Usd_PrimInstanceProxyFlag] = 1;
+        }
+        else {
+            _mask[Usd_PrimInstanceProxyFlag] = 1;
+            _values[Usd_PrimInstanceProxyFlag] = 0;
+        }
+        return *this;
+    }
+
+    // Returns true if this predicate was explicitly set to include
+    // instance proxies, false otherwise.
+    bool IncludeInstanceProxiesInTraversal() const {
+        return !_mask[Usd_PrimInstanceProxyFlag] && 
+            _values[Usd_PrimInstanceProxyFlag];
     }
 
     // Invoke boolean predicate on UsdPrim \p prim.
@@ -205,12 +223,45 @@ protected:
     Usd_PrimFlagBits _values;
 
 private:
+    // Evaluate this predicate with prim data \p prim. \p isInstanceProxy
+    // should be true if this is being evaluated for an instance proxy prim.
+    template <class PrimPtr>
+    bool _Eval(const PrimPtr &prim, bool isInstanceProxy) const {
+        // Manually set the instance proxy bit, since instance proxy
+        // state is never stored in Usd_PrimData's flags.
+        const Usd_PrimFlagBits primFlags = Usd_PrimFlagBits(prim->_GetFlags())
+            .set(Usd_PrimInstanceProxyFlag, isInstanceProxy);
+
+        // Mask the prim's flags, compare to desired values, then optionally
+        // negate the result.
+        return ((primFlags & _mask) == (_values & _mask)) ^ _negate;
+    }
+
+    // Evaluate the predicate \p pred with prim data \p prim. \p isInstanceProxy
+    // should be true if this is being evaluated for an instance proxy prim.
+    template <class PrimPtr>
+    friend bool 
+    Usd_EvalPredicate(const Usd_PrimFlagsPredicate &pred, const PrimPtr &prim,
+                      bool isInstanceProxy) {
+        return pred._Eval(prim, isInstanceProxy);
+    }
+
+    // Convenience method for evaluating \p pred using \p prim and 
+    // \p proxyPrimPath to determine whether this is for an instance proxy 
+    // prim.
+    template <class PrimPtr>
+    friend bool 
+    Usd_EvalPredicate(const Usd_PrimFlagsPredicate &pred, const PrimPtr &prim,
+                      const SdfPath &proxyPrimPath) {
+        return pred._Eval(prim, Usd_IsInstanceProxy(prim, proxyPrimPath));
+    }
+
     // Equality comparison.
     friend bool
     operator==(const Usd_PrimFlagsPredicate &lhs,
                const Usd_PrimFlagsPredicate &rhs) {
-        return lhs._mask == rhs._mask   && 
-            lhs._values == rhs._values  &&
+        return lhs._mask == rhs._mask && 
+            lhs._values == rhs._values &&
             lhs._negate == rhs._negate;
     }
     // Inequality comparison.
@@ -456,7 +507,7 @@ extern unspecified UsdPrimIsInstance;
 extern unspecified UsdPrimHasDefiningSpecifier;
 
 /// The default predicate used for prim traversals in methods like
-/// UsdPrim::GetChildren, UsdStage::Traverse, and by UsdTreeIterator.
+/// UsdPrim::GetChildren, UsdStage::Traverse, and by UsdPrimRange.
 /// This is a conjunction that includes all active, loaded, defined, 
 /// non-abstract prims, equivalent to:
 /// \code
@@ -484,6 +535,50 @@ static const Usd_PrimFlags UsdPrimHasDefiningSpecifier
 USD_API extern const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate;
 
 #endif // doxygen
+
+/// This function is used to allow the prim traversal functions listed under
+/// \ref Usd_PrimFlags "Prim predicate flags" to traverse beneath instance
+/// prims and return descendants that pass the specified \p predicate
+/// as instance proxy prims.  For example:
+///
+/// \code
+/// // Return all children of the specified prim.  
+/// // If prim is an instance, return all children as instance proxy prims.
+/// prim.GetFilteredChildren(UsdTraverseInstanceProxies())
+///
+/// // Return children of the specified prim that pass the default predicate.
+/// // If prim is an instance, return the children that pass this predicate
+/// // as instance proxy prims.
+/// prim.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimDefaultPredicate));
+///
+/// // Return all model or group children of the specified prim.
+/// // If prim is an instance, return the children that pass this predicate 
+/// // as instance proxy prims.
+/// prim.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsModel || UsdPrimIsGroup));
+/// \endcode
+///
+/// Users may also call Usd_PrimFlagsPredicate::TraverseInstanceProxies to
+/// enable traversal beneath instance prims.  This function is equivalent to:
+/// \code
+/// predicate.TraverseInstanceProxies(true);
+/// \endcode
+///
+/// However, this function may be more convenient, especially when calling
+/// a prim traversal function with a default-constructed tautology predicate.
+inline Usd_PrimFlagsPredicate
+UsdTraverseInstanceProxies(Usd_PrimFlagsPredicate predicate)
+{
+    return predicate.TraverseInstanceProxies(true);
+}
+
+/// \overload
+/// Convenience method equivalent to calling UsdTraverseInstanceProxies with a
+/// default-constructed tautology predicate.
+inline Usd_PrimFlagsPredicate
+UsdTraverseInstanceProxies()
+{
+    return UsdTraverseInstanceProxies(Usd_PrimFlagsPredicate::Tautology());
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

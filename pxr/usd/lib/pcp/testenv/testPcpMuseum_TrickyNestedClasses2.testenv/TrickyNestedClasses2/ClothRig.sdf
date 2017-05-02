@@ -1,0 +1,11 @@
+#sdf 1.4.32
+
+def Model "ClothRig" (
+    inherits = </_class_StdAvarsRig>
+)
+{
+}
+
+class Model "_class_StdAvarsRig"
+{
+}

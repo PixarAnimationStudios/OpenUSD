@@ -41,7 +41,9 @@ using std::vector;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 // This class lets us expose TfScopeDescription to python for use as a "context
 // manager" object.  That is, for use with the 'with'-statement.  For example:
@@ -91,6 +93,7 @@ private:
     string _description;
 };
 
+} // anonymous namespace 
 
 void wrapScopeDescription()
 {
@@ -106,5 +109,3 @@ void wrapScopeDescription()
         .def("SetDescription", &This::SetDescription)
         ;
 }
-                 
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -25,6 +25,7 @@
 #define PXRUSDMAYA_PRIMREADERCONTEXT_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include <maya/MObject.h>
 
 #include "pxr/usd/usd/prim.h"
@@ -48,6 +49,7 @@ class PxrUsdMayaPrimReaderContext
 public:
     typedef std::map<std::string, MObject> ObjectRegistry;
 
+    PXRUSDMAYA_API
     PxrUsdMayaPrimReaderContext(ObjectRegistry* pathNodeMap);
 
     /// \brief Returns the prim was registered at \p path.  If \p findAncestors
@@ -55,6 +57,7 @@ public:
     /// that corresponding to its nearest ancestor.
     ///
     /// Returns an invalid MObject if no such object exists.
+    PXRUSDMAYA_API
     MObject GetMayaNode(
             const SdfPath& path,
             bool findAncestors) const;
@@ -67,14 +70,17 @@ public:
     /// - undo/redo purposes
     /// 
     /// Plugins should call this as needed.
+    PXRUSDMAYA_API
     void RegisterNewMayaNode(const std::string &path, const MObject &mayaNode) const;
 
     /// \brief returns true if prim traversal of the children of the current
     /// node can be pruned.
+    PXRUSDMAYA_API
     bool GetPruneChildren() const;
 
     /// \brief If this plugin takes care of reading all of its children, it
     /// should SetPruneChildren(true).  
+    PXRUSDMAYA_API
     void SetPruneChildren(bool prune);
 
     ~PxrUsdMayaPrimReaderContext() { }

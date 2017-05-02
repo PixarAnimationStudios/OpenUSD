@@ -35,7 +35,9 @@
 using namespace boost::python;
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string
 _Repr(const SdfReference &self)
@@ -70,6 +72,8 @@ _Repr(const SdfReference &self)
 
     return TF_PY_REPR_PREFIX + "Reference(" + args + ")";
 }
+
+} // anonymous namespace 
 
 void wrapReference()
 {    
@@ -126,5 +130,3 @@ void wrapReference()
         ;
 
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

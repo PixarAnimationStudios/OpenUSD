@@ -1,0 +1,13 @@
+#sdf 1.4.32
+
+def Prim "GroupA" (
+    add references = @./B.sdf@</GroupB>
+)
+{
+    custom double A_attr
+
+    def Prim "ChildA"
+    {
+        custom double A_attr
+    }
+}

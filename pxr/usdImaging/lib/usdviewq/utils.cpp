@@ -30,7 +30,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -64,10 +64,11 @@ UsdviewqUtils::_GetAllPrimsOfType(UsdStagePtr const &stage,
                                   TfType const& schemaType)
 {
     std::vector<UsdPrim> result;
-    for(UsdTreeIterator it = stage->Traverse(); it; ++it) {
-        if (_IsA(*it, schemaType))
-            result.push_back(*it);
-    }
+    UsdPrimRange range = stage->Traverse();
+    std::copy_if(range.begin(), range.end(), std::back_inserter(result),
+                 [schemaType](UsdPrim const &prim) {
+                     return _IsA(prim, schemaType);
+                 });
     return result;
 }
 
@@ -92,7 +93,13 @@ UsdviewqUtils::GetPrimInfo(UsdPrim prim, UsdTimeCode time)
     info.isImageable = img;
     info.isDefined = prim.IsDefined();
     info.isAbstract = prim.IsAbstract();
-    info.isInMaster = prim.IsInMaster();
+    // isInMaster is meant to guide UI to consider the prim's "source",
+    // so even if the prim is a proxy prim, then unlike the core 
+    // UsdPrim.IsInMaster(), we want to consider it as coming from a master
+    // to make it visually distinctive.  If in future we need to decouple
+    // the two concepts we can, but we're sensitive here to python marshalling
+    // costs.
+    info.isInMaster = prim.IsInMaster() || prim.IsInstanceProxy();
     info.isInstance = prim.IsInstance();
     info.isVisibilityInherited = false;
     if (img){

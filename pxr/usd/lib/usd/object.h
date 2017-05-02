@@ -168,7 +168,8 @@ public:
     /// same UsdObject, false otherwise.
     friend bool operator==(const UsdObject &lhs, const UsdObject &rhs) {
         return lhs._type == rhs._type &&
-            lhs._prim == rhs._prim    &&
+            lhs._prim == rhs._prim &&
+            lhs._proxyPrimPath == rhs._proxyPrimPath &&
             lhs._propName == rhs._propName;
     }
 
@@ -192,7 +193,11 @@ public:
     /// cached result
     SdfPath GetPath() const {
         // Allow getting expired object paths.
-        if (Usd_PrimDataConstPtr p = get_pointer(_prim)) {
+        if (!_proxyPrimPath.IsEmpty()) { 
+            return _type == UsdTypePrim ?
+                _proxyPrimPath : _proxyPrimPath.AppendProperty(_propName);
+        }
+        else if (Usd_PrimDataConstPtr p = get_pointer(_prim)) {
             return _type == UsdTypePrim ?
                 p->GetPath() : p->GetPath().AppendProperty(_propName);
         }
@@ -203,8 +208,12 @@ public:
     /// object's nearest owning prim's path.  Equivalent to GetPrim().GetPath().
     const SdfPath &GetPrimPath() const {
         // Allow getting expired object paths.
-        if (Usd_PrimDataConstPtr p = get_pointer(_prim))
+        if (!_proxyPrimPath.IsEmpty()) {
+            return _proxyPrimPath;
+        }
+        else if (Usd_PrimDataConstPtr p = get_pointer(_prim)) {
             return p->GetPath();
+        }
         return SdfPath::EmptyPath();
     }
 
@@ -218,8 +227,7 @@ public:
     /// This is equivalent to, but generally cheaper than,
     /// GetPath().GetNameToken()
     const TfToken &GetName() const {
-        return _type == UsdTypePrim ?
-            _prim->GetPath().GetNameToken() : _propName;
+        return _type == UsdTypePrim ? GetPrimPath().GetNameToken() : _propName;
     }
 
     /// Convert this UsdObject to another object type \p T if possible.  Return
@@ -228,7 +236,7 @@ public:
     template <class T>
     T As() const {
         // compile-time type assertion provided by invoking Is<T>().
-        return Is<T>() ? T(_type, _prim, _propName) : T();
+        return Is<T>() ? T(_type, _prim, _proxyPrimPath, _propName) : T();
     }
 
     /// Return true if this object is convertible to \p T.  This is equivalent
@@ -392,9 +400,6 @@ public:
     /// Resolve and return all metadata (including both authored and
     /// fallback values) on this object, sorted lexicographically.
     ///
-    /// The keys returned in this map exactly match the keys returned by
-    /// ListMetadata().
-    ///
     /// \note This method does not return field keys for composition arcs,
     /// such as references, inherits, payloads, sublayers, variants, or
     /// primChildren, nor does it return the default value or timeSamples.
@@ -403,8 +408,6 @@ public:
 
     /// Resolve and return all user-authored metadata on this object,
     /// sorted lexicographically.
-    ///
-    /// This method returns a subset of the keys returned by ListMetadata.
     ///
     /// \note This method does not return field keys for composition arcs,
     /// such as references, inherits, payloads, sublayers, variants, or
@@ -644,18 +647,27 @@ private:
 
 protected:
     // Private constructor for UsdPrim.
-    UsdObject(const Usd_PrimDataHandle &prim)
+    UsdObject(const Usd_PrimDataHandle &prim,
+              const SdfPath &proxyPrimPath)
         : _type(UsdTypePrim)
         , _prim(prim)
-        {}
+        , _proxyPrimPath(proxyPrimPath)
+    {
+        TF_VERIFY(!_prim || _prim->GetPath() != _proxyPrimPath);
+    }
 
     // Private constructor for UsdAttribute/UsdRelationship.
     UsdObject(UsdObjType objType,
               const Usd_PrimDataHandle &prim,
+              const SdfPath &proxyPrimPath,
               const TfToken &propName)
         : _type(objType)
         , _prim(prim)
-        , _propName(propName) {}
+        , _proxyPrimPath(proxyPrimPath)
+        , _propName(propName) 
+    {
+        TF_VERIFY(!_prim || _prim->GetPath() != _proxyPrimPath);
+    }
 
     // Return the stage this object belongs to.
     UsdStage *_GetStage() const { return _prim->GetStage(); }
@@ -667,8 +679,11 @@ protected:
     // Helper for subclasses: return held prim data.
     const Usd_PrimDataHandle &_Prim() const { return _prim; }
 
-    // Helper for subclasses: return held propety name.
+    // Helper for subclasses: return held property name.
     const TfToken &_PropName() const { return _propName; }
+
+    // Helper for subclasses: return held proxy prim path.
+    const SdfPath &_ProxyPrimPath() const { return _proxyPrimPath; }
 
 private:
     // Helper for the above helper, and also for GetDescription()
@@ -682,6 +697,7 @@ private:
 
     UsdObjType _type;
     Usd_PrimDataHandle _prim;
+    SdfPath _proxyPrimPath;
     TfToken _propName;
 
 };

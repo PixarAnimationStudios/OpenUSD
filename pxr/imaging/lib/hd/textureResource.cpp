@@ -182,7 +182,13 @@ bool HdSimpleTextureResource::IsPtex() const
 GLuint HdSimpleTextureResource::GetTexelsTextureId() 
 {
     if (_isPtex) {
+#ifdef PXR_PTEX_SUPPORT_ENABLED
         return TfDynamic_cast<GlfPtexTextureRefPtr>(_texture)->GetTexelsTextureName();
+#else
+        TF_CODING_ERROR("Ptex support is disabled.  "
+            "This code path should be unreachable");
+        return 0;
+#endif
     }
 
     return TfDynamic_cast<GlfBaseTextureRefPtr>(_texture)->GetGlTextureName();
@@ -212,7 +218,13 @@ GLuint64EXT HdSimpleTextureResource::GetTexelsTextureHandle()
 
 GLuint HdSimpleTextureResource::GetLayoutTextureId() 
 {
+#ifdef PXR_PTEX_SUPPORT_ENABLED
     return TfDynamic_cast<GlfPtexTextureRefPtr>(_texture)->GetLayoutTextureName();
+#else
+    TF_CODING_ERROR("Ptex support is disabled.  "
+        "This code path should be unreachable");
+    return 0;
+#endif
 }
 
 GLuint64EXT HdSimpleTextureResource::GetLayoutTextureHandle() 

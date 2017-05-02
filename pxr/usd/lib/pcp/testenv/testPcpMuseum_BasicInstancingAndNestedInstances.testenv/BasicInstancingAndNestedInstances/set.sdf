@@ -1,0 +1,33 @@
+#sdf 1.4.32
+
+def "Set"
+{
+    def "PropInstance_1" (
+        references = @./prop.sdf@</Prop>
+        instanceable = true
+    )
+    {
+        over "geom"
+        {
+        }
+    }
+
+    def "PropInstance2" (
+        references = @./prop.sdf@</Prop>
+        instanceable = true
+    )
+    {
+        over "geom"
+        {
+        }
+    }
+
+    def "PropNotAnInstance_1" (
+        references = @./prop.sdf@</Prop>
+    )
+    {
+        over "geom"
+        {
+        }
+    }
+}

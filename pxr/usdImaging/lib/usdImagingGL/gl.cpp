@@ -52,9 +52,17 @@ _IsEnabledHydra()
         TF_CODING_ERROR("OpenGL context required, using reference renderer");
         return false;
     }
+    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
+        return false;
+    }
+    if (TfGetenv("HD_ENABLED", "1") != "1") {
+        return false;
+    }
+    if (!UsdImagingGLHdEngine::IsDefaultPluginAvailable()) {
+        return false;
+    }
 
-    return HdRenderContextCaps::GetInstance().SupportsHydra()
-        && (TfGetenv("HD_ENABLED", "1") == "1");
+    return true;
 }
 
 }
@@ -73,15 +81,12 @@ static
 UsdImagingGLEngine* _InitEngine(const SdfPath& rootPath,
                               const SdfPathVector& excludedPaths,
                               const SdfPathVector& invisedPaths,
-                              const SdfPath& sharedId =
-                                        SdfPath::AbsoluteRootPath(),
-                              const UsdImagingGLEngineSharedPtr& sharedEngine =
-                                        UsdImagingGLEngineSharedPtr())
+                              const SdfPath& delegateID =
+                                        SdfPath::AbsoluteRootPath())
 {
     if (UsdImagingGL::IsEnabledHydra()) {
-        return new UsdImagingGLHdEngine(rootPath, excludedPaths, invisedPaths, 
-            sharedId, 
-            boost::dynamic_pointer_cast<UsdImagingGLHdEngine>(sharedEngine));
+        return new UsdImagingGLHdEngine(rootPath, excludedPaths,
+                                        invisedPaths, delegateID);
     } else {
         // In the refEngine, both excluded paths and invised paths are treated
         // the same way.
@@ -101,11 +106,10 @@ UsdImagingGL::UsdImagingGL()
 UsdImagingGL::UsdImagingGL(const SdfPath& rootPath,
                            const SdfPathVector& excludedPaths,
                            const SdfPathVector& invisedPaths,
-                           const SdfPath& sharedId,
-                           const UsdImagingGLSharedPtr& sharedImaging)
+                           const SdfPath& delegateID)
 {
-    _engine.reset(_InitEngine(rootPath, excludedPaths, invisedPaths, sharedId,
-        (sharedImaging ? sharedImaging->_engine : UsdImagingGLEngineSharedPtr())));
+    _engine.reset(_InitEngine(rootPath, excludedPaths,
+                              invisedPaths, delegateID));
 }
 
 UsdImagingGL::~UsdImagingGL()
@@ -193,15 +197,10 @@ UsdImagingGL::SetCameraState(const GfMatrix4d& viewMatrix,
 }
 
 /*virtual*/
-SdfPath 
-UsdImagingGL::GetPrimPathFromPrimIdColor(
-        GfVec4i const& primIdColor,
-        GfVec4i const& instanceIdColor,
-        int* instanceIndexOut)
+SdfPath
+UsdImagingGL::GetRprimPathFromPrimId(int primId) const
 {
-    return _engine->GetPrimPathFromPrimIdColor(primIdColor,
-                                               instanceIdColor,
-                                               instanceIndexOut);
+    return _engine->GetRprimPathFromPrimId(primId);
 }
 
 /* virtual */
@@ -287,16 +286,16 @@ UsdImagingGL::IsConverged() const
 
 /* virtual */
 std::vector<TfType>
-UsdImagingGL::GetRenderGraphPlugins()
+UsdImagingGL::GetRendererPlugins()
 {
-    return _engine->GetRenderGraphPlugins();
+    return _engine->GetRendererPlugins();
 }
 
 /* virtual */
 bool
-UsdImagingGL::SetRenderGraphPlugin(TfType const &type)
+UsdImagingGL::SetRendererPlugin(TfType const &type)
 {
-    return _engine->SetRenderGraphPlugin(type);
+    return _engine->SetRendererPlugin(type);
 }
 
 bool
@@ -309,11 +308,13 @@ UsdImagingGL::TestIntersection(
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
-    int *outHitInstanceIndex)
+    int *outHitInstanceIndex,
+    int *outHitElementIndex)
 {
     return _engine->TestIntersection(viewMatrix, projectionMatrix,
                 worldToLocalSpace, root, params, outHitPoint,
-                outHitPrimPath, outHitInstancerPath, outHitInstanceIndex);
+                outHitPrimPath, outHitInstancerPath, outHitInstanceIndex,
+                outHitElementIndex);
 }
 
 bool

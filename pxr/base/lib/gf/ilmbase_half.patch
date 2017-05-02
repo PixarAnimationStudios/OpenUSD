@@ -1,0 +1,208 @@
+--- openexr/IlmBase/Half/half.cpp	2017-03-14 16:58:25.704467232 -0700
++++ ilmbase_half.cpp	2017-03-14 17:17:17.359821757 -0700
+@@ -45,18 +45,24 @@
+ //---------------------------------------------------------------------------
+ 
+ #include <assert.h>
+-#include "half.h"
++
++#include "pxr/pxr.h"
++#include "pxr/base/gf/ilmbase_half.h"
+ 
+ using namespace std;
+ 
++PXR_NAMESPACE_OPEN_SCOPE
++
++namespace pxr_half {
++
+ //-------------------------------------------------------------
+ // Lookup tables for half-to-float and float-to-half conversion
+ //-------------------------------------------------------------
+ 
+-HALF_EXPORT const half::uif half::_toFloat[1 << 16] =
+-    #include "toFloat.h"
+-HALF_EXPORT const unsigned short half::_eLut[1 << 9] =
+-    #include "eLut.h"
++GF_API const half::uif half::_toFloat[1 << 16] =
++    #include "pxr/base/gf/ilmbase_toFloat.h"
++GF_API const unsigned short half::_eLut[1 << 9] =
++    #include "pxr/base/gf/ilmbase_eLut.h"
+ 
+ //-----------------------------------------------
+ // Overflow handler for float-to-half conversion;
+@@ -64,14 +70,14 @@
+ // which may be trapped by the operating system.
+ //-----------------------------------------------
+ 
+-HALF_EXPORT float
++GF_API float
+ half::overflow ()
+ {
+     volatile float f = 1e10;
+ 
+     for (int i = 0; i < 10; i++)	
+ 	f *= f;				// this will overflow before
+-					// the for­loop terminates
++					// the forÂ­loop terminates
+     return f;
+ }
+ 
+@@ -81,7 +87,7 @@
+ // zeroes, denormalized numbers and exponent overflows.
+ //-----------------------------------------------------
+ 
+-HALF_EXPORT short
++GF_API short
+ half::convert (int i)
+ {
+     //
+@@ -221,7 +227,7 @@
+ // Stream I/O operators
+ //---------------------
+ 
+-HALF_EXPORT ostream &
++GF_API ostream &
+ operator << (ostream &os, half h)
+ {
+     os << float (h);
+@@ -229,7 +235,7 @@
+ }
+ 
+ 
+-HALF_EXPORT istream &
++GF_API istream &
+ operator >> (istream &is, half &h)
+ {
+     float f;
+@@ -244,7 +250,7 @@
+ // floats and halfs, mostly for debugging
+ //---------------------------------------
+ 
+-HALF_EXPORT void
++GF_API void
+ printBits (ostream &os, half h)
+ {
+     unsigned short b = h.bits();
+@@ -259,7 +265,7 @@
+ }
+ 
+ 
+-HALF_EXPORT void
++GF_API void
+ printBits (ostream &os, float f)
+ {
+     half::uif x;
+@@ -275,7 +281,7 @@
+ }
+ 
+ 
+-HALF_EXPORT void
++GF_API void
+ printBits (char c[19], half h)
+ {
+     unsigned short b = h.bits();
+@@ -292,7 +298,7 @@
+ }
+ 
+ 
+-HALF_EXPORT void
++GF_API void
+ printBits (char c[35], float f)
+ {
+     half::uif x;
+@@ -308,3 +314,7 @@
+ 
+     c[34] = 0;
+ }
++
++} // namespace pxr_half
++
++PXR_NAMESPACE_CLOSE_SCOPE
+--- openexr/IlmBase/Half/half.h	2017-03-14 16:48:21.376739032 -0700
++++ ilmbase_half.h	2017-03-14 17:17:17.350150189 -0700
+@@ -82,12 +82,18 @@
+ //
+ //---------------------------------------------------------------------------
+ 
+-#ifndef _HALF_H_
+-#define _HALF_H_
++#ifndef PXR_HALF_H
++#define PXR_HALF_H
++
++#include "pxr/pxr.h"
++#include "pxr/base/gf/api.h"
+ 
+-#include "halfExport.h"    // for definition of HALF_EXPORT
+ #include <iostream>
+ 
++PXR_NAMESPACE_OPEN_SCOPE
++
++namespace pxr_half {
++
+ class half
+ {
+   public:
+@@ -197,8 +203,8 @@
+     // Access to the internal representation
+     //--------------------------------------
+ 
+-    HALF_EXPORT unsigned short	bits () const;
+-    HALF_EXPORT void		setBits (unsigned short bits);
++    GF_API unsigned short	bits () const;
++    GF_API void		setBits (unsigned short bits);
+ 
+ 
+   public:
+@@ -211,13 +217,13 @@
+ 
+   private:
+ 
+-    HALF_EXPORT static short                  convert (int i);
+-    HALF_EXPORT static float                  overflow ();
++    GF_API static short                  convert (int i);
++    GF_API static float                  overflow ();
+ 
+     unsigned short                            _h;
+ 
+-    HALF_EXPORT static const uif              _toFloat[1 << 16];
+-    HALF_EXPORT static const unsigned short   _eLut[1 << 9];
++    GF_API static const uif              _toFloat[1 << 16];
++    GF_API static const unsigned short   _eLut[1 << 9];
+ };
+ 
+ 
+@@ -226,18 +232,18 @@
+ // Stream I/O
+ //-----------
+ 
+-HALF_EXPORT std::ostream &      operator << (std::ostream &os, half  h);
+-HALF_EXPORT std::istream &      operator >> (std::istream &is, half &h);
++GF_API std::ostream &      operator << (std::ostream &os, half  h);
++GF_API std::istream &      operator >> (std::istream &is, half &h);
+ 
+ 
+ //----------
+ // Debugging
+ //----------
+ 
+-HALF_EXPORT void        printBits   (std::ostream &os, half  h);
+-HALF_EXPORT void        printBits   (std::ostream &os, float f);
+-HALF_EXPORT void        printBits   (char  c[19], half  h);
+-HALF_EXPORT void        printBits   (char  c[35], float f);
++GF_API void        printBits   (std::ostream &os, half  h);
++GF_API void        printBits   (std::ostream &os, float f);
++GF_API void        printBits   (char  c[19], half  h);
++GF_API void        printBits   (char  c[35], float f);
+ 
+ 
+ //-------------------------------------------------------------------------
+@@ -754,4 +760,9 @@
+     _h = bits;
+ }
+ 
++} // namespace pxr_half
++
++PXR_NAMESPACE_CLOSE_SCOPE
++
+ #endif
++

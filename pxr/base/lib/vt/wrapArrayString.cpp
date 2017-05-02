@@ -30,11 +30,9 @@
 #include <string>
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapArrayString() {
     VtWrapArray<VtArray<string> >();
     VtWrapComparisonFunctions<VtArray<string> >();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

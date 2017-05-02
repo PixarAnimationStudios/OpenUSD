@@ -1,0 +1,30 @@
+#sdf 1.4.32
+
+def Scope "SlugJ" (
+    add variantSets = ["shaderBindingVariant", "shadingVariant"]
+    variants = {
+        string shadingVariant = "Axel"
+    }
+)
+{
+    variantSet "shaderBindingVariant" = {
+        "Dry" {
+
+        }
+        "Hair" {
+
+        }
+        "Wet" {
+
+        }
+    }
+    variantSet "shadingVariant" = {
+        "Axel" (
+            variants = {
+                string shaderBindingVariant = "Wet"
+            }
+        ) {
+
+        }
+    }
+}

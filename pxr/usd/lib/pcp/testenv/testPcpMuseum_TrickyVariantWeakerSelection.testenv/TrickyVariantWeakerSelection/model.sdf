@@ -1,0 +1,16 @@
+#sdf 1.4.32
+
+def Scope "A" (
+    variants = { string v = "v2" }
+    variantSets = ["v"]
+) 
+{
+    variantSet "v" = {
+        "v1" {
+            string v1 = "v1_model"
+        }
+        "v2" {
+            string v2 = "v2_model"
+        }
+    }
+}

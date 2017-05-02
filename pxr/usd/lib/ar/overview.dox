@@ -24,6 +24,59 @@ Finally, if no custom implementation of ArResolver is found, we will fall back
 to a ArDefaultResolver, which performs simple searchpath-based
 resolution, based on an environment variable <tt>PXR_AR_DEFAULT_SEARCH_PATH</tt>
 that is expected to hold a list of filesystem paths to search separated by
-the platform's standard path separator.
+the platform's standard path delimiter (See ARCH_PATH_LIST_SEP).
+
+\section ar_implementing_resolver Implementing a Custom Resolver
+
+To implement a custom asset resolver, users must create a plugin containing a
+subclass of ArResolver.  This subclass must be registered with the plugin
+system so that it can be discovered and instantiated at runtime:
+
+- Implement an ArResolver subclass
+\code{.cpp}
+class CustomResolver : public ArResolver {
+    // ...
+}
+\endcode
+
+- In its implementation, register the ArResolver subclass with the TfType
+  system using #AR_DEFINE_RESOLVER
+\code{.cpp}
+# custom resolver's .cpp file
+AR_DEFINE_RESOLVER(CustomResolver, ArResolver);
+\endcode
+
+- Declare the ArResolver subclass in the plugin's plugInfo.json file. 
+See PlugRegistry for more details.
+\code{.json}
+# plugInfo.json
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types" : {
+                    "CustomResolver" : {
+                        "bases": [ "ArResolver" ]
+                    }
+                }
+            },
+            ... 
+        },
+        ...
+    ]
+
+}
+\endcode
+
+- Ensure that the resolver plugin is located where the plugin system can
+find it.
+
+\note Ar does not support custom resolvers implemented in Python to avoid
+performance issues, especially for multi-threaded consumers.
+
+Users may also declare that a particular object type may be used as a
+context object with this custom resolver implementation using 
+#AR_DECLARE_RESOLVER_CONTEXT.  This allows ArResolverContext objects to
+be constructed from objects of this type.
 
 */

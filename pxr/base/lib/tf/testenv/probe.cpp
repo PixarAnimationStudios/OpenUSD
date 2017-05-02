@@ -28,7 +28,6 @@
 #include "pxr/base/tf/noticeRegistry.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/diagnosticLite.h"
-#include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/systemInfo.h"
 #include <string>
 #include <vector>

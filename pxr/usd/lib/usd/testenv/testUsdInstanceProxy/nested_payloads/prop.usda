@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "Prop" 
+{
+    def "geom"
+    {
+        def "Scope"
+        {
+            double x = 1.0
+        }
+    }
+}

@@ -1,0 +1,8 @@
+3c3
+<     doc = """Generated from Composed Stage of root layer a.usd
+---
+>     doc = """Generated from Composed Stage of root layer b.usd
+11c11
+<     matrix4d transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+---
+>     matrix4d transform = ( (2, 0, 0, 0), (0, 2, 0, 0), (0, 0, 2, 0), (0, 0, 0, 2) )

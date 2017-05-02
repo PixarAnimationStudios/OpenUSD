@@ -1,0 +1,15 @@
+#sdf 1.4.32
+
+def Xform "bob_root_sphere"(
+){
+  def Sphere "bob_body"(
+  ){
+  }
+}
+
+def Xform "bob_root_cube"(
+){
+  def Cube "bob_body"(
+  ){
+  }
+}

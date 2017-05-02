@@ -1,0 +1,20 @@
+#sdf 1.4.32
+
+class "_class_Material"
+{
+}
+
+def "Looks"
+{
+    class "Material" (specializes = </_class_Material>)
+    {
+    }
+
+    class "Metal" (specializes = </Looks/Material>)
+    {
+    }
+
+    def "Brass" (specializes = </Looks/Metal>)
+    {
+    }
+}

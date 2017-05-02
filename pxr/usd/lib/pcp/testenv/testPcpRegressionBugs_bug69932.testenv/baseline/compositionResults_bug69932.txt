@@ -1,0 +1,200 @@
+Loading @bug69932/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Pigeon>
+
+Prim Stack:
+    root.sdf             /Pigeon
+    Pigeon_rig.sdf       /Pigeon
+    Pigeon_rig.sdf       /_class_CharRig
+    Pigeon_bodyrig.sdf   /CharRig
+
+Child names:
+     ['Rig', 'Anim']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig>
+
+Prim Stack:
+    Pigeon_rig.sdf       /Pigeon/Rig
+    Pigeon_bodyrig.sdf   /CharRig/Rig
+
+Child names:
+     ['LegsRig', 'ToesRig']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/LegsRig>
+
+Prim Stack:
+    Pigeon_bodyrig.sdf   /CharRig/Rig/LegsRig
+    LegsRig.sdf          /LegsRig
+
+Child names:
+     ['LLegRig', '_Class_LegRig']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/LegsRig/LLegRig>
+
+Prim Stack:
+    Pigeon_bodyrig.sdf   /CharRig/Rig/LegsRig/LLegRig
+    LegsRig.sdf          /LegsRig/LLegRig
+    LegsRig.sdf          /LegsRig/_Class_LegRig
+
+Prohibited child names:
+     ['Toes']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/LegsRig/_Class_LegRig>
+
+Prim Stack:
+    LegsRig.sdf          /LegsRig/_Class_LegRig
+
+Child names:
+     ['Toes']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/LegsRig/_Class_LegRig/Toes>
+
+Prim Stack:
+    LegsRig.sdf          /LegsRig/_Class_LegRig/Toes
+
+Child names:
+     ['Thumb']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/LegsRig/_Class_LegRig/Toes/Thumb>
+
+Prim Stack:
+    LegsRig.sdf          /LegsRig/_Class_LegRig/Toes/Thumb
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig>
+
+Prim Stack:
+    Pigeon_rig.sdf       /Pigeon/Rig/ToesRig
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig
+
+Child names:
+     ['_Class_ToesRig', 'LToesRig']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig/_Class_ToesRig>
+
+Prim Stack:
+    Pigeon_rig.sdf       /Pigeon/Rig/ToesRig/_Class_ToesRig
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe', 'ThumbToeLOCALRig']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig/_Class_ToesRig/_Class_Toe>
+
+Prim Stack:
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig/_Class_Toe
+
+Child names:
+     ['Toe']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig/_Class_ToesRig/_Class_Toe/Toe>
+
+Prim Stack:
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig/_Class_Toe/Toe
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig/_Class_ToesRig/ThumbToeLOCALRig>
+
+Prim Stack:
+    Pigeon_rig.sdf       /Pigeon/Rig/ToesRig/_Class_ToesRig/ThumbToeLOCALRig
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig/_Class_Toe
+
+Child names:
+     ['Toe']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig/_Class_ToesRig/ThumbToeLOCALRig/Toe>
+
+Prim Stack:
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig/_Class_Toe/Toe
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig/LToesRig>
+
+Prim Stack:
+    Pigeon_rig.sdf       /Pigeon/Rig/ToesRig/_Class_ToesRig
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/LToesRig
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig
+
+Child names:
+     ['_Class_Toe', 'ThumbToeLOCALRig']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig/LToesRig/_Class_Toe>
+
+Prim Stack:
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig/_Class_Toe
+
+Child names:
+     ['Toe']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig/LToesRig/_Class_Toe/Toe>
+
+Prim Stack:
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig/_Class_Toe/Toe
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Rig/ToesRig/LToesRig/ThumbToeLOCALRig>
+
+Prim Stack:
+    Pigeon_rig.sdf       /Pigeon/Rig/ToesRig/_Class_ToesRig/ThumbToeLOCALRig
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig/_Class_Toe
+
+Prohibited child names:
+     ['Toe']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Anim>
+
+Prim Stack:
+    Pigeon_rig.sdf       /Pigeon/Anim
+    Pigeon_rig.sdf       /_class_CharRig/Anim
+    Pigeon_bodyrig.sdf   /CharRig/Anim
+
+Child names:
+     ['Legs']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Anim/Legs>
+
+Prim Stack:
+    Pigeon_rig.sdf       /Pigeon/Anim/Legs
+    Pigeon_rig.sdf       /_class_CharRig/Anim/Legs
+    Pigeon_bodyrig.sdf   /CharRig/Anim/Legs
+
+Child names:
+     ['LToes']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Anim/Legs/LToes>
+
+Prim Stack:
+    Pigeon_rig.sdf       /Pigeon/Anim/Legs/LToes
+    Pigeon_rig.sdf       /_class_CharRig/Anim/Legs/LToes
+    LegsRig.sdf          /LegsRig/LLegRig/Toes
+    LegsRig.sdf          /LegsRig/_Class_LegRig/Toes
+
+Child names:
+     ['Thumb']
+
+------------------------------------------------------------------------
+Results for composing </Pigeon/Anim/Legs/LToes/Thumb>
+
+Prim Stack:
+    Pigeon_bodyrig.sdf   /CharRig/Rig/ToesRig/_Class_ToesRig/_Class_Toe/Toe
+

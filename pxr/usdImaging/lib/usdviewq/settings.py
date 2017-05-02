@@ -33,8 +33,17 @@ class Settings(dict):
     conventions, because it inherits from dict.
     """
 
-    def __init__(self, filename, seq=None, **kwargs):
+    def __init__(self, filename, seq=None, ephemeral=False, **kwargs):
         self._filename = filename
+
+        # Ephemeral settings objects are created in the presence of 
+        # file system failures, such as the inability to create a .usdview
+        # directory to store our settings. In these cases we won't perform
+        # and save or load operations.
+        self._ephemeral = ephemeral
+        if self._ephemeral:
+            return
+
         if seq:
             dict.__init__(self, seq)
         elif kwargs:
@@ -43,6 +52,8 @@ class Settings(dict):
     def save(self, ignoreErrors=False):
         """Write the settings out to the file at filename
         """
+        if self._ephemeral:
+            return 
         try:
             f = open(self._filename, "w")
             dump(self, f)
@@ -56,6 +67,8 @@ class Settings(dict):
     def load(self, ignoreErrors=False):
         """Load the settings from the file at filename
         """
+        if self._ephemeral:
+            return 
         try:
             f = open(self._filename, "r")
             self.update(load(f))
@@ -70,6 +83,9 @@ class Settings(dict):
     def setAndSave(self, **kwargs):
         """Sets keyword arguments as settings and quietly saves
         """
+        if self._ephemeral:
+            return 
+
         self.update(kwargs)
         self.save(ignoreErrors=True)
 

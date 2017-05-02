@@ -1,0 +1,31 @@
+#sdf 1.4.32
+
+def GprimSphere "Sphere"
+{
+    double empty.timeSamples = {
+    }
+    double radius.timeSamples = {
+        1.23: 5,
+        3.23: 10,
+        6: 5,
+        7: None,
+    }
+    string desc.timeSamples = {
+        1.23: "foo",
+        3.23: "bar",
+        6: "baz",
+        7: None,
+    }
+    point3d[] points.timeSamples = {
+        0: [(0, 158.785, 79.57), (-67.82, 75.581, 80.12)],
+        1: [(1, 158.785, 79.57), (-67.82, 75.581, 80.12)],
+        2: [(2, 158.785, 79.57), (-67.82, 75.581, 80.12)],
+        3: None,
+    }
+    varying rel constraint
+    varying rel constraint.timeSamples = {
+        1: </Sphere/scope1>,
+        10: </Sphere/scope2>,
+        20: None,
+    }
+}

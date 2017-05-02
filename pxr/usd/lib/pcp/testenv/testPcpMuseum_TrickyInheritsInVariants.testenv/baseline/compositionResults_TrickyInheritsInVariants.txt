@@ -1,0 +1,81 @@
+Loading @TrickyInheritsInVariants/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    model.sdf            /Model
+    model.sdf            /Model{complexity=high}
+
+Variant Selections:
+    {complexity = high}
+
+Child names:
+     ['Class', 'Scope']
+
+------------------------------------------------------------------------
+Results for composing </Model/Class>
+
+Prim Stack:
+    model.sdf            /Model/Class
+    model.sdf            /Model{complexity=high}Class
+    ref.sdf              /RefFromHighClass
+
+Child names:
+     ['RefFromHighClassStuff', 'HighClassStuff']
+
+------------------------------------------------------------------------
+Results for composing </Model/Class/RefFromHighClassStuff>
+
+Prim Stack:
+    ref.sdf              /RefFromHighClass/RefFromHighClassStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Class/HighClassStuff>
+
+Prim Stack:
+    model.sdf            /Model{complexity=high}Class/HighClassStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope>
+
+Prim Stack:
+    model.sdf            /Model/Scope
+    model.sdf            /Model/Class
+    model.sdf            /Model{complexity=high}Class
+    ref.sdf              /RefFromHighClass
+    model.sdf            /Model{complexity=high}Scope
+    ref.sdf              /RefFromHighScope
+
+Child names:
+     ['RefFromHighScopeStuff', 'HighScopeStuff', 'RefFromHighClassStuff', 'HighClassStuff']
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope/RefFromHighScopeStuff>
+
+Prim Stack:
+    ref.sdf              /RefFromHighScope/RefFromHighScopeStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope/HighScopeStuff>
+
+Prim Stack:
+    model.sdf            /Model{complexity=high}Scope/HighScopeStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope/RefFromHighClassStuff>
+
+Prim Stack:
+    ref.sdf              /RefFromHighClass/RefFromHighClassStuff
+
+------------------------------------------------------------------------
+Results for composing </Model/Scope/HighClassStuff>
+
+Prim Stack:
+    model.sdf            /Model{complexity=high}Class/HighClassStuff
+

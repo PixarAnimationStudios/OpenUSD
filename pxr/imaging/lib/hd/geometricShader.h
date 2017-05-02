@@ -25,6 +25,7 @@
 #define HD_GEOMETRIC_SHADER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"
@@ -45,6 +46,7 @@ typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 ///
 class Hd_GeometricShader : public HdShaderCode {
 public:
+    HD_API
     Hd_GeometricShader(std::string const &glslfxString,
                        int16_t primitiveMode, /*=GLenum*/
                        int16_t primitiveIndexSize,
@@ -53,13 +55,19 @@ public:
                        bool cullingPass,
                        SdfPath const &debugId=SdfPath());
 
+    HD_API
     virtual ~Hd_GeometricShader();
 
     // HdShader overrides
+    HD_API
     virtual ID ComputeHash() const;
+    HD_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
+    HD_API
     virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    HD_API
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    HD_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
     /// Returns true if this geometric shader is used for GPU frustum culling.

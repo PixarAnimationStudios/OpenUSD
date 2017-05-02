@@ -1,0 +1,93 @@
+#sdf 1.4.32
+
+def "Specializes_1" (
+    specializes = None
+)
+{
+}
+
+def "Specializes_2" (
+    specializes = </foo>
+)
+{
+}
+
+def "Specializes_3" (
+    specializes = [
+        </foo>,
+        </bar>,
+        </rel>
+    ]
+)
+{
+}
+
+def "Specializes_4" (
+    add specializes = </foo>
+)
+{
+}
+
+def "Specializes_5" (
+    add specializes = [
+        </foo>,
+        </bar>,
+        </rel>
+    ]
+)
+{
+}
+
+def "Specializes_6" (
+    delete specializes = </foo>
+)
+{
+}
+
+def "Specializes_7" (
+    delete specializes = [
+        </foo>,
+        </bar>,
+        </rel>
+    ]
+)
+{
+}
+
+def "Specializes_8" (
+    reorder specializes = </foo>
+)
+{
+}
+
+def "Specializes_9" (
+    reorder specializes = [
+        </foo>,
+        </bar>,
+        </rel>
+    ]
+)
+{
+}
+
+def "Specializes_10" (
+    delete specializes = [
+        </foo>,
+        </bar>,
+        </rel>
+    ]
+    add specializes = [
+        </baz>,
+        </boom>,
+        </rel>
+    ]
+    reorder specializes = [
+        </boom>,
+        </baz>,
+        </whatever>,
+        </rel>
+    ]
+)
+{
+}
+

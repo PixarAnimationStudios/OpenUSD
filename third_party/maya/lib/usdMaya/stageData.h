@@ -25,6 +25,7 @@
 #define PXRUSDMAYA_STAGEDATA_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/usd/usd/stage.h"
 
 #include <maya/MPxGeometryData.h>
@@ -63,6 +64,7 @@ class UsdMayaStageData : public MPxGeometryData {
         /**
          * creator method
          */
+        PXRUSDMAYA_API
         static void* creator(
                 const PluginStaticData& _psData);
 
@@ -71,16 +73,21 @@ class UsdMayaStageData : public MPxGeometryData {
          */
         //@{
 
+        PXRUSDMAYA_API
         void copy(
             const MPxData& aDatum);
 
+        PXRUSDMAYA_API
         MTypeId typeId() const;
 
+        PXRUSDMAYA_API
         MString name() const;
         //@}
 
+        PXRUSDMAYA_API
         void registerExitCallback();
 
+        PXRUSDMAYA_API
         void unregisterExitCallback();
 
         /**

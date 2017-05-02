@@ -1,0 +1,88 @@
+#sdf 1.4.32
+(
+    """
+    This museum exhibit demonstrates the interaction between permissions
+    and relationship targets/attribute connections. In general, connections
+    are invalid if the object they target are private relative to the
+    location where the connection is authored.
+    """
+)
+
+def Scope "PermissionsAcrossReferences" (
+    add references = @./ref.sdf@</Reference>
+)
+{
+    custom double privateAttrFromRoot (permission = private)
+    custom double publicAttrFromRoot
+
+    def Scope "PrivatePrimFromRoot" (
+        permission = private
+    )
+    {
+    }
+
+    def Scope "PublicPrimFromRoot"
+    {
+    }
+
+    def Scope "ChildFromRoot"
+    {
+        custom rel relInRoot = [
+            </PermissionsAcrossReferences/PrivatePrimFromRef>,
+            </PermissionsAcrossReferences/PublicPrimFromRef>,
+            </PermissionsAcrossReferences/PrivatePrimFromRoot>,
+            </PermissionsAcrossReferences/PublicPrimFromRoot>,
+
+            </PermissionsAcrossReferences.privateAttrFromRef>,
+            </PermissionsAcrossReferences.publicAttrFromRef>,
+            </PermissionsAcrossReferences.privateAttrFromRoot>,
+            </PermissionsAcrossReferences.publicAttrFromRoot>
+        ]
+    }
+}    
+
+def Scope "PermissionsAcrossInherits" (
+    add references = @./ref.sdf@</ReferenceWithLocalClass>
+)
+{
+    over "Instance"
+    {
+        custom rel relInRootInstance = [
+            </PermissionsAcrossInherits/Instance/PrivatePrimFromClass>,
+            </PermissionsAcrossInherits/Instance/PublicPrimFromClass>,
+            </PermissionsAcrossInherits/Instance.privateAttrFromClass>,
+            </PermissionsAcrossInherits/Instance.publicAttrFromClass>
+        ]
+    }
+}
+
+def Scope "CulledPermissions_1" (
+    references = @./culled.sdf@</CulledPermissions_1>
+)
+{
+}
+
+def Scope "CulledPermissions_2" (
+    references = [ 
+        @./culled.sdf@</CulledPermissions_2_1>,
+        @./culled.sdf@</CulledPermissions_2_2>
+    ]
+)
+{
+}
+
+def Scope "CulledPermissions_3" (
+    add variantSets = ["pin"]
+    variants = {
+        string pin = "stable"
+    }
+)
+{
+    variantSet "pin" = {
+        "stable" (
+            references = @./culled_stable.sdf@</CulledModel>
+        ) 
+        {
+        }
+    }
+}

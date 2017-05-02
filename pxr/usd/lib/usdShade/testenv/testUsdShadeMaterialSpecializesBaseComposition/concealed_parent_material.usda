@@ -1,0 +1,21 @@
+#usda 1.0
+
+def "Shot" {
+    def "SomethingInteresting" {
+        def "ThingOne" {
+        }
+        def "ThingTwo" {
+        }
+    }
+    def "Looks" {
+        def Material "Base" {
+        }
+        def Material "InterestingChild" (
+            specializes = [ </Shot/SomethingInteresting/ThingOne>,
+                            </Shot/Looks/Base>,
+                            </Shot/SomethingInteresting/ThingTwo> ]
+        )
+        {
+        }
+    }
+}

@@ -22,23 +22,19 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import argparse, sys, signal, os
+import argparse, sys, os
 
 def _Err(msg):
     sys.stderr.write(msg + '\n')
 
 def GetUsdData(filePath):
     from pxr import Sdf
-    layer = Sdf.Layer.FindOrOpen(filePath)
-    assert layer, 'Failed to open %s' % filePath
-    return layer
+    return Sdf.Layer.FindOrOpen(filePath)
 
 def GetFlattenedUsdData(filePath):
     from pxr import Ar, Usd
     Ar.GetResolver().ConfigureResolverForAsset(filePath)
-    stage = Usd.Stage.Open(filePath)
-    assert stage, 'Failed to open %s' % filePath
-    return stage
+    return Usd.Stage.Open(filePath)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -112,6 +108,8 @@ def main():
         try:
             usdData = (GetFlattenedUsdData(inputFile) if args.flatten
                        else GetUsdData(inputFile))
+            if not usdData:
+                raise Exception("Unknown error")
         except Exception as e:
             _Err("Failed to open '%s' - %s" % (inputFile, e))
             exitCode = 1
@@ -122,16 +120,23 @@ def main():
             try:
                 usdData.Export(args.out, args=formatArgsDict)
             except Exception as e:
-                # An error occurred -- if the output file exists, let's try to
-                # rename it with '.quarantine' appended, and either way let the
-                # user know what happened.
-                info = 'no output file produced'
+                # Let the user know an error occurred.
+                _Err("Error exporting '%s' to '%s' - %s" %
+                     (inputFile, args.out, e))
+
+                # If the output file exists, let's try to rename it with
+                # '.quarantine' appended and let the user know.  Do this
+                # after the above error report because os.rename() can
+                # fail and we don't want to lose the above error.
                 if os.path.isfile(args.out):
                     newName = args.out + '.quarantine'
-                    os.rename(args.out, newName)
-                    info = 'possibly corrupt output file renamed to ' + newName
-                _Err("Error exporting '%s' to '%s' - %s; %s" %
-                     (inputFile, args.out, info, e))
+                    try:
+                        os.rename(args.out, newName)
+                        _Err("Possibly corrupt output file renamed to %s" %
+                            (newName, ))
+                    except Exception as e:
+                        _Err("Failed to rename possibly corrupt output " +
+                             "file from %s to %s" % (args.out, newName))
                 exitCode = 1
         else:
             try:
@@ -144,5 +149,8 @@ def main():
 
 if __name__ == "__main__":
     # Restore signal handling defaults to allow output redirection and the like.
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    import platform
+    if platform.system() != 'Windows':
+        import signal
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     sys.exit(main())

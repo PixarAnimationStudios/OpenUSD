@@ -40,14 +40,15 @@
 
 #include <string>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace std;
 using namespace boost::python;
 using namespace boost;
 
 #define BOOST_PYTHON_NONE boost::python::object()
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static
 boost::python::object
@@ -222,6 +223,8 @@ _GetAvarEdits(
     return pathDict;
 }
 
+} // anonymous namespace 
+
 void wrapEditUtil()
 {
     {
@@ -267,6 +270,3 @@ void wrapEditUtil()
         ;
     }
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

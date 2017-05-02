@@ -25,6 +25,7 @@
 #define PXRUSDMAYA_TRANSLATOR_CURVES_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/usd/usdGeom/curves.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primReaderArgs.h"
@@ -37,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct PxrUsdMayaTranslatorCurves
 {
     /// \brief Creates a NurbsCurve under \p parentNode.
+    PXRUSDMAYA_API
     static bool Create(
             const UsdGeomCurves& curves,
             MObject parentNode,

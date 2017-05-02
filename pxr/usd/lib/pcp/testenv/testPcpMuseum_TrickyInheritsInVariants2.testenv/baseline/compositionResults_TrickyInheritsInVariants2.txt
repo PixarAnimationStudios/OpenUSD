@@ -1,0 +1,64 @@
+Loading @TrickyInheritsInVariants2/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </_class_Model>
+
+Prim Stack:
+    root.sdf             /_class_Model
+
+------------------------------------------------------------------------
+Results for composing </Sarah>
+
+Prim Stack:
+    root.sdf             /Sarah
+    root.sdf             /_class_Model
+    Sarah_modelComplexity.sdf /Sarah
+    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}
+    Sarah_rig.sdf        /Sarah
+
+Variant Selections:
+    {modelComplexity = full}
+
+Child names:
+     ['FaceRig']
+
+------------------------------------------------------------------------
+Results for composing </Sarah/FaceRig>
+
+Prim Stack:
+    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig
+    Sarah_rig.sdf        /Sarah/FaceRig
+
+Child names:
+     ['EyesRig']
+
+------------------------------------------------------------------------
+Results for composing </Sarah/FaceRig/EyesRig>
+
+Prim Stack:
+    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig/EyesRig
+    Sarah_rig.sdf        /Sarah/FaceRig/EyesRig
+
+Child names:
+     ['SymEyeRig', 'LEyeRig']
+
+------------------------------------------------------------------------
+Results for composing </Sarah/FaceRig/EyesRig/SymEyeRig>
+
+Prim Stack:
+    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig/EyesRig/SymEyeRig
+    Sarah_rig.sdf        /Sarah/FaceRig/EyesRig/SymEyeRig
+
+------------------------------------------------------------------------
+Results for composing </Sarah/FaceRig/EyesRig/LEyeRig>
+
+Prim Stack:
+    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig/EyesRig/LEyeRig
+    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig/EyesRig/SymEyeRig
+    Sarah_rig.sdf        /Sarah/FaceRig/EyesRig/LEyeRig
+    Sarah_rig.sdf        /Sarah/FaceRig/EyesRig/SymEyeRig
+

@@ -25,6 +25,7 @@
 #define HDST_BASIS_CURVES_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/drawingCoord.h"
@@ -62,10 +63,14 @@ typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
 class HdStBasisCurves final: public HdBasisCurves {
 public:
     HF_MALLOC_TAG_NEW("new HdStBasisCurves");
+
+    HDST_API
     HdStBasisCurves(SdfPath const& id,
                     SdfPath const& instancerId = SdfPath());
+    HDST_API
     virtual ~HdStBasisCurves();
 
+    HDST_API
     virtual void Sync(HdSceneDelegate* delegate,
                       HdRenderParam*   renderParam,
                       HdDirtyBits*     dirtyBits,
@@ -73,10 +78,12 @@ public:
                       bool             forcedRepr) override;
 
     /// Configure geometric style of drawItems for \p reprName
+    HDST_API
     static void ConfigureRepr(TfToken const &reprName,
                               HdStBasisCurvesReprDesc desc);
 
     /// Returns whether refinement is always on or not.
+    HDST_API
     static bool IsEnabledForceRefinedCurves();
     
 protected:

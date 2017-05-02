@@ -35,10 +35,11 @@
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bool
 _Set(const UsdGeomXformOp &self, TfPyObjWrapper pyVal, UsdTimeCode time)
@@ -74,6 +75,8 @@ _GetOpName(const UsdGeomXformOp &self)
 {
     return self.GetOpName();
 }
+
+} // anonymous namespace 
 
 void wrapUsdGeomXformOp()
 {
@@ -131,6 +134,4 @@ void wrapUsdGeomXformOp()
     TfPyContainerConversions::from_python_sequence<std::vector<XformOp >,
         TfPyContainerConversions::variable_capacity_policy >();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
 

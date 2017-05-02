@@ -1,0 +1,73 @@
+#sdf 1.4.32
+(
+    """
+    Comment
+    with newlines
+    """
+    doc = """Hello"""
+    framesPerSecond = 24
+    framePrecision = 3
+    subLayers = [
+        @foo1@,
+        @foo2@,
+        @foo3@,
+        @foo4@,
+        @foo5@,
+        @foo6@,
+        @foo7@,
+        @foo8@
+    ]
+    startFrame = 1
+    endFrame = 1
+)
+
+def CamCamera "Test1"
+{
+    custom double camx = 1.2
+    custom double camy = 3.4
+    custom double camz = 5.6 (
+        doc = """doc"""
+    )
+    custom double foo = 3
+
+    def MfScope "Head"
+    {
+        custom double aspect = 1.02517
+        custom double width = 1905.41
+    }
+
+    def MfScope "Body"
+    {
+        custom point3d[] points = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points2 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points3 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points4 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+    }
+
+    def MfScope "Whatever"
+    {
+        custom point3d[] points = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points2 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points3 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points4 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+    }
+
+    def MfScope "Leg"
+    {
+        custom double aspect = 1.02517
+        custom double width = 1905.41
+
+        def MfScope "Thigh"
+        {
+            custom double aspect = 1.02517
+            custom double width = 1905.41
+        }
+    }
+
+    def MfScope "Arm"
+    {
+        custom double aspect = 1.02517
+        custom double width = 1905.41
+    }
+}
+

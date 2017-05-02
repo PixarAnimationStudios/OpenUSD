@@ -1,0 +1,14 @@
+#sdf 1.4.32
+
+def Prim "Model"
+{
+    class Prim "LocalClass"
+    {
+    }
+
+    def Prim "Instance" (
+        add inherits = </Model/LocalClass>
+    )
+    {
+    }
+}

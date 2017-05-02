@@ -46,10 +46,10 @@
 // }
 //
 
-PXR_NAMESPACE_OPEN_SCOPE
-
 // Forward declare the function that will be provided that does the wrapping.
 static void WrapModule();
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_API
 void Tf_PyInitWrapModule(void (*wrapModule)(),
@@ -70,6 +70,8 @@ void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
         );
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // In presto, when we generate boost python bindings for a library
 // named Foo, we generate the library contents in libFoo.so, we
 // generate a python package in a directory named Foo that has
@@ -82,6 +84,7 @@ void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
 extern "C"
 ARCH_EXPORT
 void BOOST_PP_CAT(init_, MFB_PACKAGE_NAME)() {
+    PXR_NAMESPACE_USING_DIRECTIVE
     boost::python::detail::init_module
         (BOOST_PP_STRINGIZE(BOOST_PP_CAT(_,MFB_PACKAGE_NAME)),
          BOOST_PP_CAT(&init_module_, MFB_PACKAGE_NAME));
@@ -103,6 +106,7 @@ void BOOST_PP_CAT(init_, MFB_PACKAGE_NAME)() {
 extern "C"
 ARCH_EXPORT
 void BOOST_PP_CAT(initlib, MFB_PACKAGE_NAME)() {
+    PXR_NAMESPACE_USING_DIRECTIVE
     boost::python::detail::init_module
         (BOOST_PP_STRINGIZE(BOOST_PP_CAT(lib,MFB_PACKAGE_NAME)),
          BOOST_PP_CAT(&init_module_, MFB_PACKAGE_NAME));
@@ -112,5 +116,3 @@ void BOOST_PP_CAT(initlib, MFB_PACKAGE_NAME)() {
 
 // Declares and calls the class wrapper for x
 #define TF_WRAP(x) void wrap ## x (); wrap ## x ()
-
-PXR_NAMESPACE_CLOSE_SCOPE

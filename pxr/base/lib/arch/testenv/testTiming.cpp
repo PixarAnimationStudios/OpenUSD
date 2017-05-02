@@ -24,42 +24,35 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/timing.h"
-#include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/error.h"
+#include <chrono>
+#include <thread>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-#define MINNAPTIME 4
-#define NAPTIME 5
-#define MAXNAPTIME 6
-
 int main()
 {
-    uint64_t startTick, endTick, hSeconds;
+    // Verify conversions for many tick counts.
+    for (size_t ticks = 0ul; ticks != 1ul << 24u; ++ticks) {
+        ARCH_AXIOM( (uint64_t) ArchTicksToNanoseconds(ticks) == 
+            uint64_t(static_cast<double>(ticks)*ArchGetNanosecondsPerTick() + .5));
 
-    for(int i = 0; i < 20; i++) {
-        startTick = ArchGetTickTime();
-        ArchNap(NAPTIME);
-        endTick = ArchGetTickTime();
-        hSeconds = ArchTicksToNanoseconds(endTick - startTick) / 10000000;
-       if(hSeconds < MINNAPTIME || hSeconds > MAXNAPTIME) {
-            ARCH_ERROR("ArchTiming failed, possibly due to a "
-                                  "process being swapped out.  Try running "
-                                  "it again, and if does not fail "
-                                  "consistently it's ok to ignore this.");
-        }
+        double nanos = double(ArchTicksToNanoseconds(ticks)) / 1e9;
+        double secs = ArchTicksToSeconds(ticks);
+        double epsilon = 0.0001;
+        ARCH_AXIOM( (nanos - epsilon <= secs) && (nanos + epsilon >= secs) );
     }
-    
-    ArchNap(0);
 
-    uint64_t ticks = ArchGetTickTime();
-    ARCH_AXIOM( (uint64_t) ArchTicksToNanoseconds(ticks) == 
-        uint64_t(static_cast<double>(ticks)*ArchGetNanosecondsPerTick() + .5));
+    // Compute some time delta.
+    const auto t1 = ArchGetTickTime();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    const auto t2 = ArchGetTickTime();
+    const auto delta = t2 - t1;
 
-    double nanos = double(ArchTicksToNanoseconds(ticks)) / 1e9;
-    double secs = ArchTicksToSeconds(ticks);
-    double epsilon = 0.0001;
-    ARCH_AXIOM( (nanos - epsilon <= secs) && (nanos + epsilon >= secs) );
+    // Verify the delta is reasonable.  We allow a lot of leeway on the top
+    // end in case of heavy machine load.
+    ARCH_AXIOM(ArchTicksToSeconds(delta) > 1.4);
+    ARCH_AXIOM(ArchTicksToSeconds(delta) < 5.0);
 
     return 0;
 }

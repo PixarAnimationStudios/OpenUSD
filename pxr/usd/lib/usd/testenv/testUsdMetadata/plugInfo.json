@@ -1,0 +1,30 @@
+{
+    "Plugins": [
+        {
+            "Type": "resource",
+            "Name": "testUsdMetadata",
+            "Info": {
+                "SdfMetadata": {
+                    "intListOpTest": {
+                        "type": "intlistop"
+                    },
+                    "int64ListOpTest": {
+                        "type": "int64listop"
+                    },
+                    "uintListOpTest": {
+                        "type": "uintlistop"
+                    },
+                    "uint64ListOpTest": {
+                        "type": "uint64listop"
+                    },
+                    "stringListOpTest": {
+                        "type": "stringlistop"
+                    },
+                    "tokenListOpTest": {
+                        "type": "tokenlistop"
+                    }
+                }
+            }
+        }
+    ]
+}

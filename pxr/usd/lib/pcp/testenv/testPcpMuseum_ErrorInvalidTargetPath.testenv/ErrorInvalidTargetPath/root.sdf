@@ -1,0 +1,45 @@
+#sdf 1.4.32
+(
+    """
+    This example execises various forms of attribute connection
+    and relationship target paths that are prohibited due to
+    namespace path translation restrictions.
+    """
+)
+
+def "Root" (
+    add references = @./A.sdf@</A>
+    add inherits = </_Class1>
+)
+{
+    double x
+}
+
+def "RootWithReferenceUnderVariant" (
+    add variantSets = "standin"
+    variants = {
+        string standin = "anim"
+    }
+)
+{
+    variantSet "standin" = {
+        "anim" (
+            add references = @./A.sdf@</A>
+        ) {
+        }
+    }
+}
+
+class "_Class1" (
+    """
+    This class has an attribute that tries to connect to an attribute
+    in a single instance of that class. This connection is not valid
+    in the context of the instance, and will not translate. Note that
+    Csd does not prohibit this, which is one reason it cannot correctly
+    reverse-translate paths.
+    """
+)
+{
+    double prohibitedConnectionToInstance = 123
+    add double prohibitedConnectionToInstance.connect = </Root.x>
+}

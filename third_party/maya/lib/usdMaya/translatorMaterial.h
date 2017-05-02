@@ -25,6 +25,7 @@
 #define PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdShade/material.h"
@@ -49,6 +50,7 @@ struct PxrUsdMayaTranslatorMaterial
     /// \brief Reads \p material according to \p shadingMode .  Some shading modes
     /// may want to know the \p boundPrim.  This returns an MObject that is the
     /// maya shadingEngine that corresponds to \p material.
+    PXRUSDMAYA_API
     static MObject Read(
             const TfToken& shadingMode,
             const UsdShadeMaterial& material,
@@ -59,6 +61,7 @@ struct PxrUsdMayaTranslatorMaterial
     /// shadingMode.  This will see which UsdShadeMaterial is bound to \p prim.  If
     /// the material has not been read already, it will read it.  The
     /// created/retrieved shadingEngine will be assigned to \p shapeObj.
+    PXRUSDMAYA_API
     static bool AssignMaterial(
             const TfToken& shadingMode,
             const UsdGeomGprim& prim,
@@ -69,6 +72,7 @@ struct PxrUsdMayaTranslatorMaterial
     // will call the current export for the shadingMode.
     // Shaders that are bound to prims under \p bindableRoot paths will get
     // exported.  If \p bindableRoots is empty, it will export all.
+    PXRUSDMAYA_API
     static void 
     ExportShadingEngines(
             const UsdStageRefPtr& stage,

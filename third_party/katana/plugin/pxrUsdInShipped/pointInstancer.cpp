@@ -78,6 +78,15 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
         return;
     }
 
+    // Build out the attrs that were modified.
+    //
+    FnKat::GroupAttribute sourcesAttrs = sourcesAttrMap.build();
+    FnKat::GroupAttribute instancesAttrs = instancesAttrMap.build();
+    if (not sourcesAttrs.isValid() or not instancesAttrs.isValid())
+    {
+        return;
+    }
+
     // Tell UsdIn to skip all children; we'll create them ourselves.
     //
     interface.setAttr("__UsdIn.skipAllChildren", FnKat::IntAttribute(1));
@@ -86,20 +95,24 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
     // sourcesAttrMap.
     //
     PxrUsdKatanaUsdInArgsRefPtr usdInArgs = privateData.GetUsdInArgs();
-    interface.createChild(
-        "sources",
-        "PxrUsdIn.BuildIntermediate",
-        FnKat::GroupBuilder()
-            .update(interface.getOpArg())
-            .set("staticScene", sourcesAttrMap.build())
-            .build(),
-        FnKat::GeolibCookInterface::ResetRootFalse,
-        new PxrUsdKatanaUsdInPrivateData(
-                usdInArgs->GetRootPrim(), usdInArgs, &privateData),
-        PxrUsdKatanaUsdInPrivateData::Delete);
+    FnKat::GroupAttribute childAttrs = sourcesAttrs.getChildByName("c");
+    for (int64_t i = 0; i < childAttrs.getNumberOfChildren(); ++i)
+    {
+        interface.createChild(
+            childAttrs.getChildName(i),
+            "PxrUsdIn.BuildIntermediate",
+            FnKat::GroupBuilder()
+                .update(interface.getOpArg())
+                .set("staticScene", childAttrs.getChildByIndex(i))
+                .build(),
+            FnKat::GeolibCookInterface::ResetRootFalse,
+            new PxrUsdKatanaUsdInPrivateData(
+                    usdInArgs->GetRootPrim(), usdInArgs, &privateData),
+            PxrUsdKatanaUsdInPrivateData::Delete);
+    }
 
     // Create 'instances' child using StaticSceneCreate with the built-out
     // instancesAttrMap.
     //
-    interface.execOp("StaticSceneCreate", instancesAttrMap.build());
+    interface.execOp("StaticSceneCreate", instancesAttrs);
 }

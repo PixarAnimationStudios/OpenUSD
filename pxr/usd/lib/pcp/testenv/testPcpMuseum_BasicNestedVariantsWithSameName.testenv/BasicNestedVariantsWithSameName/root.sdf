@@ -1,0 +1,65 @@
+#sdf 1.4.32
+(
+    '''
+    This case exercises a parent prim with a variant set that selects a
+    variant set on a child prim, where the two variant sets have the
+    same name.  Even though they have the same name, there is no
+    implicit association between them; here one drives the other
+    only because it contains an explicit selection for the child.
+    '''
+)
+
+over "foo" (
+    variants = {
+        string commonName = "c"
+    }
+    add variantSets = "commonName"
+)
+{
+    over "bar" (
+        add variantSets = "commonName"
+    )
+    {
+        custom int value
+        variantSet "commonName" = {
+            "a" {
+                custom int value = 0
+            }
+            "b" {
+                custom int value = 1
+            }
+            "c" {
+                custom int value = 2
+            }
+        }
+    }
+    variantSet "commonName" = {
+        "a" {
+            over "bar" (
+                variants = {
+                    string commonName = "a"
+                }
+            )
+            {
+            }
+        }
+        "b" {
+            over "bar" (
+                variants = {
+                    string commonName = "b"
+                }
+            )
+            {
+            }
+        }
+        "c" {
+            over "bar" (
+                variants = {
+                    string commonName = "c"
+                }
+            )
+            {
+            }
+        }
+    }
+}

@@ -27,6 +27,7 @@
 /// \file glf/uvTextureStorage.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/baseTexture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -48,25 +49,27 @@ public:
     /// Creates a new texture instance based on input storageData
     /// \p width, and \p height specify the size
     ///
+    GLF_API
     static GlfUVTextureStorageRefPtr New(
         unsigned int width,
         unsigned int height, 
         const VtValue &storageData);
 
 protected:
+    GLF_API
     GlfUVTextureStorage(
         unsigned int width,
         unsigned int height, 
         const VtValue &storageData);
 
+    GLF_API
     virtual void _OnSetMemoryRequested(size_t targetMemory);
+    GLF_API
     virtual bool _GenerateMipmap() const;
     
 private:
-    unsigned int _width, _height; 
-    VtValue _storageData; 
-
-
+    unsigned int _width, _height;
+    VtValue _storageData;
 };
 
 

@@ -29,6 +29,7 @@
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResource.h"
+#include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -618,7 +619,7 @@ HdSt_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
 
     // hole faces shouldn't affect ptex id.
     // passing empty array to count num quads.
-    int numQuads = HdSt_MeshTopology::ComputeNumQuads(
+    int numQuads = HdMeshUtil::ComputeNumQuads(
         _topology->GetFaceVertexCounts(),
         /*holeFaces=*/VtIntArray());
     result->clear();
@@ -665,7 +666,7 @@ HdSt_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
         unsigned int field0 = patchParam.field0;
         unsigned int field1 = patchParam.field1;
         primitiveParam[i][0] =
-            HdSt_MeshTopology::EncodeCoarseFaceParam(faceIndex, 0);
+            HdMeshUtil::EncodeCoarseFaceParam(faceIndex, 0);
         primitiveParam[i][1] = *((int*)&field0);
         primitiveParam[i][2] = *((int*)&field1);
     }
@@ -709,7 +710,7 @@ HdSt_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
         unsigned int field0 = patchParam.field0;
         unsigned int field1 = patchParam.field1;
         primitiveParam[i][0] =
-            HdSt_MeshTopology::EncodeCoarseFaceParam(faceIndex, 0);
+            HdMeshUtil::EncodeCoarseFaceParam(faceIndex, 0);
         primitiveParam[i][1] = *((int*)&field0);
         primitiveParam[i][2] = *((int*)&field1);
 

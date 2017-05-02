@@ -25,7 +25,7 @@
 #define GARCH_GLPLATFORM_DEBUG_WINDOW_WINDOWS_H
 
 #include "pxr/pxr.h"
-#include <windows.h>
+#include <Windows.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,7 +47,6 @@ private:
     static Garch_GLPlatformDebugWindow *_GetWindowByHandle(HWND);
     static LRESULT WINAPI _MsgProc(HWND hWnd, UINT msg,
                                    WPARAM wParam, LPARAM lParam);
-    static std::map<HWND, Garch_GLPlatformDebugWindow*> _windows;
 
     bool _running;
     GarchGLDebugWindow *_callback;
@@ -55,7 +54,7 @@ private:
     HWND  _hWND;
     HDC   _hDC;
     HGLRC _hGLRC;
-    const char *_className;
+    static LPCTSTR _className;
 };
 
 

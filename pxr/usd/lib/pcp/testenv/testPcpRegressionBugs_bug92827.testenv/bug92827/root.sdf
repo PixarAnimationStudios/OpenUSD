@@ -1,0 +1,42 @@
+#sdf 1.4.32
+(
+    """
+    Regression test for bug 92827. This bug resulted in a hang when
+    computing relocations when an invalid relocation was present --
+    the target of this relocation was a direct ancestor of itself.
+    
+    """
+)
+
+def Scope "Rig" (
+    relocates = {
+        <Other/A/Instance/A> : <Other/A>,
+        <Other/A/B> : <B>
+    }
+)
+{
+    class Scope "Class"
+    {
+        def Scope "A"
+        {
+            custom string foo ="A from class"
+        }
+
+        def Scope "B"
+        {
+            custom string bar ="B from class"
+        }
+    }
+
+    def Scope "Other"
+    {
+        over "A"
+        {
+            def Scope "Instance" (
+                inherits = </Rig/Class>
+            )
+            {
+            }
+        }
+    }
+}

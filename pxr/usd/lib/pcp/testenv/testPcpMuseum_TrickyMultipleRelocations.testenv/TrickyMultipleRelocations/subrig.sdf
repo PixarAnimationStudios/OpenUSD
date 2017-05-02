@@ -1,0 +1,30 @@
+#sdf 1.4.32
+
+def Scope "SubRig"
+{
+    def Scope "Anim"
+    {
+        def Scope "AnimScope"
+        {
+            custom double x = 0
+        }
+    }
+
+    def Scope "Rig" (
+        doc = "test"
+    )
+    {
+        def Scope "RigScope"
+        {
+            custom double x = 0
+            add double x.connect = </SubRig/Anim/AnimScope.x>
+        }
+    }
+
+    def Scope "Rig2" (
+        doc = "This scope only exists to test what happens when Rig is relocated to Rig2 downstream in Char.  It should not show up in any composed prim there."
+    )
+    {
+    }
+}
+

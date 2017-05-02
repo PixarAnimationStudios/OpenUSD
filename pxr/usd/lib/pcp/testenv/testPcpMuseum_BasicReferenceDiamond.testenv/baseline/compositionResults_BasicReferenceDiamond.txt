@@ -1,0 +1,26 @@
+Loading @BasicReferenceDiamond/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    A.sdf                /A
+    C.sdf                /C
+    B.sdf                /B
+
+Property names:
+     ['B_attr', 'C_attr', 'A_attr']
+
+Property stacks:
+/Root.A_attr:
+    A.sdf                /A.A_attr
+/Root.B_attr:
+    B.sdf                /B.B_attr
+/Root.C_attr:
+    C.sdf                /C.C_attr
+

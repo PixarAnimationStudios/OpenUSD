@@ -48,6 +48,21 @@ over "GLOBAL" (
                 UsdShadeMaterial.
                 """
             }
+            dictionary full = {
+                string doc= """Possible value for 'connectability' metadata on 
+                a UsdShadeInput. When connectability of an input is set to 
+                "full", it implies that it can be connected to any input or 
+                output.
+                """
+            }
+            dictionary interfaceOnly = {
+                string doc= """Possible value for 'connectability' metadata on 
+                a UsdShadeInput. It implies that the input can only connect to 
+                a NodeGraph Input (which represents an interface override, not 
+                a render-time dataflow connection), or another Input whose 
+                connectability is also 'interfaceOnly'.
+                """
+            }
             dictionary connectedSourceFor = {
                 string value = "connectedSourceFor:"
                 string doc = """The prefix on UsdShadeShader relationships

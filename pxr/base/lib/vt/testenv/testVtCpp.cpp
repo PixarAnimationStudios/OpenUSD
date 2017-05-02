@@ -54,6 +54,7 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/fileUtils.h"
 
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
 
 #include <boost/scoped_ptr.hpp>
@@ -541,11 +542,13 @@ static void testDictionaryPyFormatting() {
     if (vt0 != vt2)
         die("VtDictionaryFromFile - written and read dictionaries differ!");
 
+#if !defined(ARCH_OS_WINDOWS)
     ArchUnlinkFile("link-to-dictionary");
     TfSymlink(fileName, "link-to-dictionary");
     VtDictionary vt3 = VtDictionaryFromFile("link-to-dictionary");
     if (vt3 != vt2)
         die("VtDictionaryFromFile - read from TfSymlink failed!");
+#endif
 
     {
         TfErrorMark m;

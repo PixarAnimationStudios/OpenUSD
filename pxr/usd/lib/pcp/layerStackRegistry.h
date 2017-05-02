@@ -105,6 +105,9 @@ private:
                            bool isUsd);
     ~Pcp_LayerStackRegistry();
 
+    // Find that doesn't lock.
+    PcpLayerStackPtr _Find(const PcpLayerStackIdentifier&) const;
+
     // Remove the layer stack with the given identifier from the registry.
     void _Remove(const PcpLayerStackIdentifier&,
                  const PcpLayerStack *);

@@ -36,7 +36,8 @@
 // 26 -> 27: move drawTarget to Hdx.
 // 27 -> 28: switch render index Sprim to take a typeId.
 // 28 -> 29: cameras only support matrices.
-#define HD_API_VERSION 29
+// 29 -> 30: added IDRenderColor decode and direct Rprim path fetching.
+#define HD_API_VERSION 30
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

@@ -1,0 +1,108 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "World"
+{
+    def MfScope "Chars"
+    {
+        def MfScope "Ref1" (
+            references = [
+                @./Ref.sdf@</Ref>
+            ]
+        )
+        {
+            custom rel localSelfAbs
+            rel localSelfAbs = </World/Chars/Ref1>
+            custom rel localParentAbs
+            rel localParentAbs = </World/Chars>
+            custom rel localChildAbs
+            rel localChildAbs = </World/Chars/Ref1/RefChild>
+            custom rel localSelfRel
+            rel localSelfRel = </World/Chars/Ref1>
+            custom rel localParentRel
+            rel localParentRel = </World/Chars>
+            custom rel localChildRel
+            rel localChildRel = </World/Chars/Ref1/RefChild>
+
+            over MfScope "RefChild"
+            {
+                custom rel localSelfAbs
+                rel localSelfAbs = </World/Chars/Ref1/RefChild>
+                custom rel localParentAbs
+                rel localParentAbs = </World/Chars/Ref1>
+                custom rel localSelfRel
+                rel localSelfRel = </World/Chars/Ref1/RefChild>
+                custom rel localParentRel
+                rel localParentRel = </World/Chars/Ref1>
+            }
+        }
+
+        def MfScope "Ref2" (
+            references = [
+                @./Ref.sdf@</Ref>
+            ]
+        )
+        {
+            custom rel localSelfAbs
+            rel localSelfAbs = </World/Chars/Ref2>
+            custom rel localParentAbs
+            rel localParentAbs = </World/Chars>
+            custom rel localChildAbs
+            rel localChildAbs = </World/Chars/Ref2/RefChild>
+            custom rel localSelfRel
+            rel localSelfRel = </World/Chars/Ref2>
+            custom rel localParentRel
+            rel localParentRel = </World/Chars>
+            custom rel localChildRel
+            rel localChildRel = </World/Chars/Ref2/RefChild>
+
+            over MfScope "RefChild"
+            {
+                custom rel localSelfAbs
+                rel localSelfAbs = </World/Chars/Ref2/RefChild>
+                custom rel localParentAbs
+                rel localParentAbs = </World/Chars/Ref2>
+                custom rel localSelfRel
+                rel localSelfRel = </World/Chars/Ref2/RefChild>
+                custom rel localParentRel
+                rel localParentRel = </World/Chars/Ref2>
+            }
+        }
+    }
+
+    def MfScope "Ref3" (
+        references = [
+            @./Ref.sdf@</Ref>
+        ]
+    )
+    {
+        custom rel localSelfAbs
+        rel localSelfAbs = </World/Ref3>
+        custom rel localParentAbs
+        rel localParentAbs = </World>
+        custom rel localChildAbs
+        rel localChildAbs = </World/Ref3/RefChild>
+        custom rel localSelfRel
+        rel localSelfRel = </World/Ref3>
+        custom rel localParentRel
+        rel localParentRel = </World>
+        custom rel localChildRel
+        rel localChildRel = </World/Ref3/RefChild>
+
+        over MfScope "RefChild"
+        {
+            custom rel localSelfAbs
+            rel localSelfAbs = </World/Ref3/RefChild>
+            custom rel localParentAbs
+            rel localParentAbs = </World/Ref3>
+            custom rel localSelfRel
+            rel localSelfRel = </World/Ref3/RefChild>
+            custom rel localParentRel
+            rel localParentRel = </World/Ref3>
+        }
+    }
+}
+

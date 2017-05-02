@@ -1,0 +1,8 @@
+#sdf 1.4.32
+
+def DifferentPrimType "B" (
+    add references = @./C.sdf@</C>
+)
+{
+    custom double B_attr
+}

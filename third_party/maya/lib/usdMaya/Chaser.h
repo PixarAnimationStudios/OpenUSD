@@ -27,6 +27,7 @@
 /// \file Chaser.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"

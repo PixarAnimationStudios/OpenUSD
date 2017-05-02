@@ -1,0 +1,16 @@
+#usda 1.0
+
+def "Model"
+{
+    float clipOnly = -100.0
+    float clipOnly.timeSamples = {
+        5: -5.0,
+        10: -10.0,
+        15: -15.0,
+        20: -20.0
+    }
+
+    def "ChildFromClip"
+    {
+    }
+}

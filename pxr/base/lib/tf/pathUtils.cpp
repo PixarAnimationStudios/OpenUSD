@@ -495,37 +495,102 @@ TfGlob(vector<string> const& paths, unsigned int flags)
 
 #else
 
+namespace {
+
+static
+void
+Tf_Glob(
+    vector<string>* result,
+    const std::string& prefix,
+    const std::string& pattern,
+    unsigned int flags)
+{
+    // Search for the first wildcard in pattern.
+    const string::size_type i = pattern.find_first_of("*?");
+
+    if (i == string::npos) {
+        // No more patterns so we simply need to see if the file exists.
+        // Conveniently GetFileAttributes() works on paths with a trailing
+        // backslash.
+        string path = prefix + pattern;
+        const DWORD attributes = GetFileAttributes(path.c_str());
+        if (attributes != INVALID_FILE_ATTRIBUTES) {
+            // File exists.
+
+            // Append directory mark if necessary.
+            if (attributes & FILE_ATTRIBUTE_DIRECTORY) {
+                if ((flags & ARCH_GLOB_MARK) && path.back() != '\\') {
+                    path.push_back('\\');
+                }
+            }
+
+            result->push_back(path);
+        }
+    }
+    else {
+        // There are additional patterns to glob.  Find the next directory
+        // after the wildcard.
+        string::size_type j = pattern.find_first_of('\\', i);
+        if (j == string::npos) {
+            // We've bottomed out on the pattern.
+            j = pattern.size();
+        }
+
+        // Construct the remaining pattern, if any.
+        const string remainingPattern = pattern.substr(j);
+
+        // Construct the leftmost pattern.
+        const string leftmostPattern = prefix + pattern.substr(0, j);
+
+        // Construct the leftmost pattern's directory. 
+        const string leftmostDir = TfGetPathName(leftmostPattern);
+
+        // Glob the leftmost pattern.
+        WIN32_FIND_DATA data;
+        HANDLE find = FindFirstFile(leftmostPattern.c_str(), &data);
+        if (find != INVALID_HANDLE_VALUE) {
+            do {
+                // Recurse with next pattern.
+                Tf_Glob(result, leftmostDir + data.cFileName,
+                        remainingPattern, flags);
+            } while (FindNextFile(find, &data));
+            FindClose(find);
+        }
+    }
+}
+
+}
+
 vector<string>
 TfGlob(vector<string> const& paths, unsigned int flags)
 {
-    if (paths.empty()) {
-        return vector<string>();
-    }
+    vector<string> result;
 
-    vector<string> results;
+    for (auto path: paths) {
+        const size_t n = result.size();
 
-    // XXX -- This doesn't really do proper globbing:  it doesn't handle
-    //        paths without '*', it doesn't handle '?', and it doesn't
-    //        handle multiple wildcards per path.  In short, this is
-    //        very broken.
-    for (auto path : paths) {
-        std::string::size_type wildcard = path.find("/*/");
-        if(wildcard != std::string::npos) {
-            string rootDir(path, 0, wildcard);
+        // Convert slashes to backslashes for Windows.
+        path = TfStringReplace(path, "/", "\\");
 
-            vector<string> dirNames;
-            TfReadDir(rootDir, &dirNames, nullptr, nullptr, nullptr);
+        // Do the real work.
+        Tf_Glob(&result, "", path, flags);
 
-            for (auto dirName : dirNames) {
-                string dir = path;
-                dir.replace(wildcard + 1, 1, dirName);
-
-                results.push_back(dir);
-            }
+        // If no match and NOCHECK then append the input.
+        if ((flags & ARCH_GLOB_NOCHECK) && n == result.size()) {
+            result.push_back(path);
         }
     }
 
-    return results;
+    if ((flags & ARCH_GLOB_NOSORT) == 0) {
+        std::sort(result.begin(), result.end());
+    }
+
+    // Convert to forward slashes.
+    for (auto& path: result) {
+        path = TfStringReplace(path, "\\", "/");
+    }
+
+    return result;
 }
 
 #endif

@@ -1,0 +1,50 @@
+Loading @TrickyInheritedVariantSelection/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Sullivan>
+
+Prim Stack:
+    root.sdf             /Sullivan
+    root.sdf             /_extraclass_Sullivan
+    root.sdf             /_pinclass_Sullivan
+    root.sdf             /_shadeclass_Sullivan
+    sequence.sdf         /Sullivan
+    sequence.sdf         /_pinclass_Sullivan
+    sequence.sdf         /_shadeclass_Sullivan
+    sequence.sdf         /Sullivan{pin=ShotPin}
+    sequence.sdf         /_extraclass_Sullivan
+    model-pin.sdf        /SullivanShotPin
+    model-pin.sdf        /SullivanShotPin{shade=PhongShade}
+    model-shade.sdf      /SullivanShotPinPhongShade
+    model-shade.sdf      /SullivanShotPinNoShade
+    model-pin.sdf        /SullivanNoPin
+    model-pin.sdf        /SullivanNoPin{shade=PhongShade}
+    model-shade.sdf      /SullivanNoPinPhongShade
+    model-shade.sdf      /SullivanNoPinNoShade
+
+Variant Selections:
+    {pin = ShotPin}
+    {shade = PhongShade}
+
+------------------------------------------------------------------------
+Results for composing </_pinclass_Sullivan>
+
+Prim Stack:
+    root.sdf             /_pinclass_Sullivan
+
+------------------------------------------------------------------------
+Results for composing </_shadeclass_Sullivan>
+
+Prim Stack:
+    root.sdf             /_shadeclass_Sullivan
+
+------------------------------------------------------------------------
+Results for composing </_extraclass_Sullivan>
+
+Prim Stack:
+    root.sdf             /_extraclass_Sullivan
+

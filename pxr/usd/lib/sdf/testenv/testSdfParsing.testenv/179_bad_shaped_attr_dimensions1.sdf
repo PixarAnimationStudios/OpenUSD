@@ -1,0 +1,7 @@
+#sdf 1.4.32
+
+def MfScope "bad_shaped_dim"
+{
+    custom double3[] bad1 = [[]]
+}
+

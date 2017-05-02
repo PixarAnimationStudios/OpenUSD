@@ -32,7 +32,7 @@
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usdGeom/imageable.h"
@@ -133,11 +133,12 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
     // In this case, we dispatch to the underlying PrimAdapter and disable
     // instancing.
     if (instancedPrimAdapter) {
-        UsdTreeIterator treeIt(prim);
+        UsdPrimRange range(prim);
+        auto iter = range.begin();
 
         bool isLeafInstancer;
         const SdfPath protoPath = 
-            _InsertProtoRprim(&treeIt, TfToken(),
+            _InsertProtoRprim(&iter, TfToken(),
                               instanceShaderBinding,
                               SdfPath(), instancedPrimAdapter, index,
                               &isLeafInstancer);
@@ -177,21 +178,21 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
         // The master is a typeless stub for instancing and should
         // never itself be a renderable gprim, so we can skip it initially
         // and just iterate over its children;
-        UsdTreeIterator treeIt(masterPrim);
-        ++treeIt;
+        UsdPrimRange range(masterPrim);
+        range.increment_begin();
 
         int primCount = 0;
-        for (; treeIt; ++treeIt) {
+        for (auto iter = range.begin(); iter != range.end(); ++iter) {
             // If we encounter an instance in this master, save it aside
             // for a subsequent population pass since we'll need to populate
             // its master once we're done with this one.
-            if (treeIt->IsInstance()) {
-                nestedInstances.push_back(*treeIt);
+            if (iter->IsInstance()) {
+                nestedInstances.push_back(*iter);
                 continue;
             }
 
-            UsdImagingPrimAdapterSharedPtr const& adapter = 
-                _GetPrimAdapter(*treeIt);
+            UsdImagingPrimAdapterSharedPtr const& adapter =
+                _GetPrimAdapter(*iter);
             if (!adapter) {
                 continue;
             }
@@ -200,12 +201,12 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
             // Rprim allocation. 
             //
             const TfToken protoName(TfStringPrintf(
-                "proto_%s_id%d", treeIt->GetName().GetText(), protoID++));
+                "proto_%s_id%d", iter->GetName().GetText(), protoID++));
 
             bool isLeafInstancer;
 
             const SdfPath protoPath = 
-                _InsertProtoRprim(&treeIt, protoName,
+                _InsertProtoRprim(&iter, protoName,
                                   instanceShaderBinding,
                                   instancerPath, instancerAdapter, index,
                                   &isLeafInstancer);
@@ -214,7 +215,7 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
             // Update instancer data.
             //
             _ProtoRprim& rproto = instancerData.primMap[protoPath];
-            rproto.path =  treeIt->GetPath();
+            rproto.path = iter->GetPath();
             rproto.adapter = adapter;
             rproto.protoGroup = grp;
             ++primCount;
@@ -225,7 +226,8 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
                 "[Add Instance NI] <%s>  %s (%s), adapter = %p\n",
-                instancerPath.GetText(), protoPath.GetText(), treeIt->GetName().GetText(),
+                instancerPath.GetText(), protoPath.GetText(),
+                iter->GetName().GetText(),
                 adapter.get());
         }
         if (primCount > 0) {
@@ -290,13 +292,14 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 }
 
 SdfPath
-UsdImagingInstanceAdapter::_InsertProtoRprim(UsdTreeIterator* it,
-                        TfToken const& protoName,
-                        SdfPath instanceShaderBinding,
-                        SdfPath instancerPath,
-                        UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
-                        UsdImagingIndexProxy* index,
-                        bool *isLeafInstancer)
+UsdImagingInstanceAdapter::_InsertProtoRprim(
+    UsdPrimRange::iterator *it,
+    TfToken const& protoName,
+    SdfPath instanceShaderBinding,
+    SdfPath instancerPath,
+    UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
+    UsdImagingIndexProxy* index,
+    bool *isLeafInstancer)
 {
     UsdPrim const& prim = **it;
     SdfPath protoPath;
@@ -1457,10 +1460,19 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
         SdfPath path = instanceContext.back().GetPath();
-        // we're only interested in the instanceContext which has instancePath
-        if (path != instancePath) {
-            return true;
+        // When we don't have instanceIndices we might be looking for a subtree
+        // in that case we can add everything under that path
+        // Otherwise, we're only interested in the instanceContext 
+        // which has instancePath
+        if (!instanceIndices.empty()) {
+            if (path != instancePath) {
+                return true;
             }
+        } else {
+            if (!path.HasPrefix(instancePath)) {
+                return true;
+            }
+        }
 
         const _InstancerData* instancerData = 
             TfMapLookupPtr(adapter->_instancerData, instancerPath);
@@ -1483,9 +1495,9 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
             SdfPath indexPath = adapter->_delegate->GetPathForIndex(it->first);
 
             // highlight all subtree with instanceIndices.
-            // XXX: this seems redundant, but needed for point instancer highlighting for now.
-            // ideally we should communicate back to point instancer adapter
-            // to not use renderIndex
+            // XXX: this seems redundant, but needed for point instancer 
+            // highlighting for now. Ideally we should communicate back to point 
+            // instancer adapter to not use renderIndex
             SdfPathVector const &ids
                 = adapter->_delegate->GetRenderIndex().GetRprimSubtree(indexPath);
             TF_FOR_ALL (protoIt, ids) {
@@ -1569,11 +1581,11 @@ VtIntArray
 UsdImagingInstanceAdapter::GetInstanceIndices(SdfPath const &instancerPath,
                                               SdfPath const &protoRprimPath)
 {
-    if (not instancerPath.IsEmpty()) {
+    if (!instancerPath.IsEmpty()) {
         UsdImagingInstancerContext ctx;
         _ProtoRprim const& rproto =
             _GetProtoRprim(instancerPath, protoRprimPath, &ctx);
-        if (not rproto.protoGroup) {
+        if (!rproto.protoGroup) {
             TF_CODING_ERROR("NI: No prototype found for parent <%s> of <%s>\n",
                     instancerPath.GetText(),
                     protoRprimPath.GetText());

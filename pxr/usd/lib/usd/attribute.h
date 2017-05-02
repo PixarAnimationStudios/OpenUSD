@@ -143,7 +143,8 @@ class UsdAttribute : public UsdProperty {
 public:
     /// Construct an invalid attribute.
     UsdAttribute()
-        : UsdProperty(UsdTypeAttribute, Usd_PrimDataHandle(), TfToken())
+        : UsdProperty(UsdTypeAttribute, Usd_PrimDataHandle(), SdfPath(), 
+                      TfToken())
     {
     }
 
@@ -208,19 +209,30 @@ public:
     /// time samples for this attribute, opening them if needed. This may be
     /// expensive, especially if many clips are involved.     
     /// 
+    /// \param times - on return, will contain the \em sorted, ascending
+    /// timeSample ordinates.  Any data in \p times will be lost, as this
+    /// method clears \p times. 
+    ///
     /// \sa UsdAttribute::GetTimeSamplesInInterval
     USD_API
     bool GetTimeSamples(std::vector<double>* times) const;
 
     /// Populates a vector with authored sample times in \p interval. 
-    /// The interval may have any combination of open/infinite and 
-    /// closed/finite endpoints; it may not have open/finite endpoints, however,
-    /// this restriction may be lifted in the future.
     /// Returns false only on an error.
     ///
     /// \note This function will only query the value clips that may 
     /// contribute time samples for this attribute in the given interval, 
     /// opening them if necessary.
+    /// 
+    /// \param interval -  may have any combination of open/infinite and 
+    /// closed/finite endpoints; it may not have open/finite endpoints, however,
+    /// this restriction may be lifted in the future.
+    ///
+    /// \param times - on return, will contain the \em sorted, ascending
+    /// timeSample ordinates.  Any data in \p times will be lost, as this
+    /// method clears \p times. 
+    ///
+    /// \sa UsdAttribute::GetTimeSamples
     USD_API
     bool GetTimeSamplesInInterval(const GfInterval& interval,
                                   std::vector<double>* times) const;
@@ -404,6 +416,70 @@ public:
 
     /// @}
 
+    /// \name Querying and Editing Connections
+    /// @{
+
+    /// Appends \p source to the list of connections.
+    ///
+    /// Issue an error if \p source identifies a master prim or an object
+    /// descendant to a master prim.  It is not valid to author connections to
+    /// these objects. 
+    ///
+    /// What data this actually authors depends on what data is currently
+    /// authored in the authoring layer, with respect to list-editing
+    /// semantics, which we will document soon 
+    USD_API
+    bool AppendConnection(const SdfPath& source) const;
+
+    /// Removes \p target from the list of targets.
+    ///
+    /// Issue an error if \p source identifies a master prim or an object
+    /// descendant to a master prim.  It is not valid to author connections to
+    /// these objects.
+    USD_API
+    bool RemoveConnection(const SdfPath& source) const;
+
+    /// Clears all connection edits from the current EditTarget, and makes
+    /// the opinion explicit, which means we are effectively resetting the
+    /// composed value of the targets list to empty.
+    USD_API
+    bool BlockConnections() const;
+
+    /// Make the authoring layer's opinion of the connection list explicit,
+    /// and set exactly to \p sources.
+    ///
+    /// Issue an error if \p source identifies a master prim or an object
+    /// descendant to a master prim.  It is not valid to author connections to
+    /// these objects.
+    ///
+    /// If any path in \p sources is invalid, issue an error and return false.
+    USD_API
+    bool SetConnections(const SdfPathVector& sources) const;
+
+    /// Remove all opinions about the connections list from the current edit
+    /// target.
+    USD_API
+    bool ClearConnections() const;
+
+    /// Compose this attribute's connections and fill \p sources with the
+    /// result.  All preexisting elements in \p sources are lost.
+    ///
+    /// See \ref Usd_ScenegraphInstancing_TargetsAndConnections for details on 
+    /// behavior when targets point to objects beneath instance prims.
+    ///
+    /// The result is not cached, and thus recomputed on each query.
+    USD_API
+    bool GetConnections(SdfPathVector* sources) const;
+
+    /// Return true if this attribute has any authored opinions regarding
+    /// connections.  Note that this includes opinions that remove connections,
+    /// so a true return does not necessarily indicate that this attribute has
+    /// connections.
+    USD_API
+    bool HasAuthoredConnections() const;
+
+    /// @}
+    
     // ---------------------------------------------------------------------- //
     // Private Methods and Members 
     // ---------------------------------------------------------------------- //
@@ -414,18 +490,26 @@ private:
     friend class UsdSchemaBase;
     friend class Usd_PrimData;
 
-    UsdAttribute(const Usd_PrimDataHandle& prim,
-                 const TfToken& attrName)
-        : UsdProperty(UsdTypeAttribute, prim, attrName) {}
+    UsdAttribute(const Usd_PrimDataHandle &prim,
+                 const SdfPath &proxyPrimPath,
+                 const TfToken &attrName)
+        : UsdProperty(UsdTypeAttribute, prim, proxyPrimPath, attrName) {}
 
     UsdAttribute(UsdObjType objType,
                  const Usd_PrimDataHandle &prim,
+                 const SdfPath &proxyPrimPath,
                  const TfToken &propName)
-        : UsdProperty(objType, prim, propName) {}
+        : UsdProperty(objType, prim, proxyPrimPath, propName) {}
 
     SdfAttributeSpecHandle
     _CreateSpec(const SdfValueTypeName &typeName, bool custom,
                 const SdfVariability &variability) const;
+
+    // Like _CreateSpec(), but fail if this attribute is not built-in and there
+    // isn't already existing scene description to go on rather than stamping
+    // new information.
+    SdfAttributeSpecHandle _CreateSpec() const;
+
     bool _Create(const SdfValueTypeName &typeName, bool custom,
                  const SdfVariability &variability) const;
 
@@ -435,8 +519,10 @@ private:
 
     template <typename T>
     bool _Get(T* value, UsdTimeCode time) const;
-};
 
+    SdfPath
+    _GetPathForAuthoring(const SdfPath &path, std::string* whyNot) const;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

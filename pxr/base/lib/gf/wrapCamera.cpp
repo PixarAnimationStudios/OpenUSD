@@ -35,7 +35,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static float
 _GetHorizontalFieldOfView(const GfCamera &camera) {
@@ -93,6 +95,8 @@ static std::string _Repr(GfCamera const &self)
 
     return prefix + TfStringJoin(kwargs, seperator.c_str()) + ")";
 }
+
+} // anonymous namespace 
 
 void
 wrapCamera()
@@ -198,5 +202,3 @@ wrapCamera()
         .def("__repr__", _Repr)
             ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

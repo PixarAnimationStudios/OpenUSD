@@ -40,8 +40,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdAbc_AlembicData);
 ///
 class UsdAbc_AlembicData : public SdfAbstractData {
 public:
-    /// Returns a new \c UsdAbc_AlembicData object.  The object cannot be
-    /// used except for \c Open() and \c Close().
+    /// Returns a new \c UsdAbc_AlembicData object.  Outside a successful
+    /// \c Open() and \c Close() pairing, the data acts as if it contains
+    /// a pseudo-root prim spec at the absolute root path.
     static UsdAbc_AlembicDataRefPtr New();
 
     /// Opens the Alembic file at \p filePath read-only (closing any open
@@ -51,8 +52,7 @@ public:
     bool Open(const std::string& filePath);
 
     /// Closes the Alembic file.  This does nothing if already closed.
-    /// After the call, this object cannot be used except for \c Open(),
-    /// and \c Close().
+    /// After the call it's as if the object was just created by New().
     void Close();
 
     /// Write the contents of \p data to a new or truncated Alembic file at

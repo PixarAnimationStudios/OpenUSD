@@ -50,3 +50,11 @@ pxr_shared_library(ar
         plugInfo.json
 )
 
+pxr_test_scripts(
+    testenv/testArDefaultResolver.py
+)
+
+pxr_register_test(testArDefaultResolver
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArDefaultResolver"
+)

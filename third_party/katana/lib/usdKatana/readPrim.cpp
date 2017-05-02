@@ -347,7 +347,10 @@ _BuildCollections(
         FnKat::StringBuilder collectionBuilder;
         UsdGeomCollectionAPI &collection = collections[iCollection];
         TfToken name = collection.GetCollectionName();
-        collection.GetTargets(&targets, false);
+
+        // XXX: This code probably needs some work to be made
+        // instancing-aware.
+        collection.GetTargets(&targets);
         for (size_t iTarget = 0; iTarget < targets.size(); ++iTarget)
         {
             std::string targetPath = targets[iTarget].GetString();
@@ -385,7 +388,7 @@ _AddExtraAttributesOrNamespaces(
 {
     const std::string& rootLocation = 
         data.GetUsdInArgs()->GetRootLocationPath();
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetCurrentTime();
 
     const PxrUsdKatanaUsdInArgs::StringListMap& extraAttributesOrNamespaces =
         data.GetUsdInArgs()->GetExtraAttributesOrNamespaces();
@@ -608,7 +611,7 @@ PxrUsdKatanaGeomGetPrimvarGroup(
         // Resolve the value
         VtValue vtValue;
         if (!primvar->ComputeFlattened(
-                &vtValue, data.GetUsdInArgs()->GetCurrentTime()))
+                &vtValue, data.GetCurrentTime()))
         {
             continue;
         }
@@ -649,7 +652,7 @@ PxrUsdKatanaReadPrim(
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs)
 {
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetCurrentTime();
 
     //
     // Set the 'kind' attribute to match the model kind.
@@ -672,7 +675,7 @@ PxrUsdKatanaReadPrim(
     //
 
     FnKat::GroupBuilder statementsBuilder;
-    PxrUsdKatanaReadPrimPrmanStatements(prim, data.GetUsdInArgs()->GetCurrentTime(), statementsBuilder);
+    PxrUsdKatanaReadPrimPrmanStatements(prim, data.GetCurrentTime(), statementsBuilder);
     FnKat::GroupAttribute statements = statementsBuilder.build();
     if (statements.getNumberOfChildren() > 0)
     {

@@ -1,0 +1,80 @@
+Loading @BasicListEditing/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+     sub1.sdf
+     sub2.sdf
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.sdf             /A
+    sub1.sdf             /A
+    sub2.sdf             /A
+
+Child names:
+     ['z', 'a', 'x', 'f', 'y', 'b', 'c']
+
+Property names:
+     ['z', 'a', 'x', 'f', 'y', 'b', 'c']
+
+Property stacks:
+/A.a:
+    sub1.sdf             /A.a
+/A.b:
+    sub1.sdf             /A.b
+/A.c:
+    sub1.sdf             /A.c
+/A.f:
+    root.sdf             /A.f
+/A.x:
+    sub2.sdf             /A.x
+/A.y:
+    sub2.sdf             /A.y
+/A.z:
+    sub2.sdf             /A.z
+
+------------------------------------------------------------------------
+Results for composing </A/z>
+
+Prim Stack:
+    sub2.sdf             /A/z
+
+------------------------------------------------------------------------
+Results for composing </A/a>
+
+Prim Stack:
+    sub1.sdf             /A/a
+
+------------------------------------------------------------------------
+Results for composing </A/x>
+
+Prim Stack:
+    sub2.sdf             /A/x
+
+------------------------------------------------------------------------
+Results for composing </A/f>
+
+Prim Stack:
+    root.sdf             /A/f
+
+------------------------------------------------------------------------
+Results for composing </A/y>
+
+Prim Stack:
+    sub2.sdf             /A/y
+
+------------------------------------------------------------------------
+Results for composing </A/b>
+
+Prim Stack:
+    sub1.sdf             /A/b
+
+------------------------------------------------------------------------
+Results for composing </A/c>
+
+Prim Stack:
+    sub1.sdf             /A/c
+

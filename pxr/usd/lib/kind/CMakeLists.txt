@@ -23,3 +23,18 @@ pxr_shared_library(kind
     PYTHON_FILES
         __init__.py
 )
+
+pxr_test_scripts(
+    testenv/testKindRegistry.py
+)
+
+pxr_install_test_dir(
+    SRC testenv/testKindRegistry
+    DEST testKindRegistry
+)
+
+pxr_register_test(testKindRegistry
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testKindRegistry"
+    EXPECTED_RETURN_CODE 0
+)

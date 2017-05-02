@@ -37,7 +37,9 @@ using std::string;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static void
 _Status(string const &msg, string const& moduleName, string const& functionName,
@@ -64,6 +66,8 @@ TfStatus__repr__(TfStatus const &self)
     return ret;
 }
 
+} // anonymous namespace 
+
 void wrapStatus() {
     def("_Status", &_Status);
 
@@ -77,5 +81,3 @@ void wrapStatus() {
         .def("__repr__", TfStatus__repr__)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

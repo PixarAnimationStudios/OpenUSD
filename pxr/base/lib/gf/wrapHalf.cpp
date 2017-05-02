@@ -32,7 +32,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -41,14 +41,14 @@ struct HalfPythonConversions
 {
     static void Register() {
         // to-python
-        to_python_converter<half, HalfPythonConversions>();
+        to_python_converter<GfHalf, HalfPythonConversions>();
         // from-python
         converter::registry::push_back(&_convertible, &_construct,
-                                       boost::python::type_id<half>());
+                                       boost::python::type_id<GfHalf>());
     }
 
     // to-python
-    static PyObject *convert(half h) { return PyFloat_FromDouble(h); }
+    static PyObject *convert(GfHalf h) { return PyFloat_FromDouble(h); }
 
 private:
     // from-python
@@ -56,10 +56,10 @@ private:
         // Must be number-like.
         if (!PyNumber_Check(obj_ptr))
             return NULL;
-        // Try to convert to python float: if we can, then we can make a half.
+        // Try to convert to python float: if we can, then we can make a GfHalf.
         if (PyObject *flt = PyNumber_Float(obj_ptr))
             return flt;
-        // Otherwise we cannot produce a half.  Clear any python exception
+        // Otherwise we cannot produce a GfHalf.  Clear any python exception
         // raised above when attempting to create the float.
         if (PyErr_Occurred())
             PyErr_Clear();
@@ -69,26 +69,24 @@ private:
                            rvalue_from_python_stage1_data *data) {
         // Pull out the python float we returned from _convertible().
         PyObject *flt = (PyObject *)data->convertible;
-        // Turn the python float into a C++ double, make a half from that
+        // Turn the python float into a C++ double, make a GfHalf from that
         // double, and store it where boost.python expects it.
         void *storage =
-            ((converter::rvalue_from_python_storage<half>*)data)->storage.bytes;
-        new (storage) half(static_cast<float>(PyFloat_AsDouble(flt)));
+            ((converter::rvalue_from_python_storage<GfHalf>*)data)->storage.bytes;
+        new (storage) GfHalf(static_cast<float>(PyFloat_AsDouble(flt)));
         data->convertible = storage;
         // Drop our reference to the python float we created.
         Py_DECREF(flt);
     }
 };
 
-} // anon
+// Simple test function that takes and returns a GfHalf.
+static GfHalf _HalfRoundTrip(GfHalf in) { return in; }
 
-// Simple test function that takes and returns a half.
-static half _HalfRoundTrip(half in) { return in; }
+} // anonymous namespace 
 
 void wrapHalf()
 {
     HalfPythonConversions::Register();
     boost::python::def("_HalfRoundTrip", _HalfRoundTrip);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

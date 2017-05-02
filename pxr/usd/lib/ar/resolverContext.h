@@ -24,6 +24,8 @@
 #ifndef AR_RESOLVER_CONTEXT_H
 #define AR_RESOLVER_CONTEXT_H
 
+/// \file ar/resolverContext.h
+
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/base/tf/safeTypeCompare.h"

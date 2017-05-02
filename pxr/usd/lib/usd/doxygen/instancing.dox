@@ -1,0 +1,726 @@
+/*!
+
+\page Usd_Page_ScenegraphInstancing Scenegraph Instancing
+
+\section Usd_ScenegraphInstancing_Overview Overview
+
+USD's instancing functionality allows prims that bring in common scene 
+description via <a href="http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-CompositionArcs">composition arcs</a> 
+to share those parts of the scenegraph, rather than having them duplicated for 
+each prim.  This can greatly improve performance in cases where many copies of 
+the same asset are brought in to a scene via composition.  For example, a 
+parking lot scene may use references to bring in the same car model (or set of 
+car models) hundreds or thousands of times to fully populate the lot.  In cases
+like these, instancing can provide significant performance benefits.
+
+\anchor image_overview_scenegraph
+\image html instancing/Uninstanced_vs_Instanced.png "Uninstanced vs. Instanced Scenegraph"
+
+With instancing, the hierarchy of prims from the referenced Car model is
+exposed beneath a single master prim, instead of having _n_ copies of that
+hierarchy beneath each of the Car prims in the scene.  This reduces the size
+of the scenegraph, which reduces the the time needed to load a UsdStage 
+as well as the memory it consumes.  
+
+Consumers can take advantage of the shared scenegraph to reduce the amount of 
+processing they need to do.  For example, a consumer that needs to compute the 
+bounding box for all of the Car prims in the scene could compute the bounding 
+box for the shared scenegraph just once and reuse that result instead of 
+redoing the same computation for each one.  To allow the scenegraph to be
+shared in this way, instancing restricts the ability to override prims and
+properties in the master prim on a per-instance basis.  In this example,
+consumers would not be able to add, remove, or override prims beneath any
+of the Car prims in the scene.  With this restriction, instancing is able to
+provide higher degrees of scalability; the benefits become more and more 
+significant as the number of Car prims increases, or as the number of prims 
+beneath the referenced Car model grows.
+
+\section Usd_ScenegraphInstancing_Instancing Explicit Instances, Implicit Masters
+
+Prims that share parts of the scenegraph through instancing are called 
+"instance" prims.  Each of these instance prims are associated with a "master" 
+prim that serves as the root of the shared scenegraph.  A single master prim 
+may have many associated instances, all of which share the same scenegraph.  
+
+Users do not explicitly set up the network of master and instance prims.
+Instead, users mark the prims they want to be instanced with metadata that 
+tags them as "instanceable."  UsdStage will analyze these prims to determine 
+which have scenegraph in common based on their composition structure, then 
+dynamically create master prims for each group of compatible instances. 
+This "explicit instance, implicit master" scheme provides a simple and 
+flexible way for adding instanced assets to scenes.  See \ref Usd_ScenegraphInstancing_Instanceable
+for information on how to tag prims for instancing.
+
+<center>
+<table border="0" style="table-layout: fixed;" width="75%">
+<caption>Uninstanced vs. Instanced Scene Description</caption>
+<tr>
+<td valign="top">
+\code
+### ParkingLot.usd
+
+#usda 1.0
+
+def "ParkingLot"
+{
+    def "Car_1" (references = @./Car.usd@</Car>)
+    {
+    }
+
+    def "Car_2" (references = @./Car.usd@</Car>)
+    {
+    }
+
+    # ...
+
+    def "Car_n" (references = @./Car.usd@</Van>)
+    {
+    }
+}
+\endcode
+</td>
+<td valign="top">
+\code
+### ParkingLot.usd
+
+#usda 1.0
+
+def "ParkingLot"
+{
+    def "Car_1" (
+        instanceable = true
+        references = @./Car.usd@</Car>
+    )
+    {
+    }
+
+    def "Car_2" (
+        instanceable = true
+        references = @./Car.usd@</Car>
+    )
+    {
+    }
+
+    # ...
+
+    def "Car_n" (
+        instanceable = true
+        references = @./Car.usd@</Car>
+    )
+    {
+    }
+}
+\endcode
+</td>
+</tr>
+</table>
+</center>
+
+This is a simple example of what the scene description in a .usd file might 
+look like for the scenegraph above.  In this case, UsdStage will recognize that 
+all of the instanceable Car prims reference the same Car model and will have 
+the same scenegraph hierarchy.  UsdStage will then generate a master prim
+/__Master_1 to contain this common hierarchy and associate the Car instances 
+with this master.
+
+Master prims do not exist in scene description -- they are generated and 
+managed internally by UsdStage.  This allows UsdStage to create and remove 
+masters as needed in response to scene description changes.  For example, 
+if some of the Car prims in ParkingLot.usd were changed to reference different 
+assets, UsdStage would generate new master prims as needed.  See \ref Usd_ScenegraphInstancing_Masters 
+for information on how to use master prims.
+
+\warning Because master prims are dynamically generated, the name of a master
+prim associated with an instance is not stable and may vary from run-to-run.
+Consumers should not save or hard-code the paths to prims in masters, but
+can use the API described below if they need to determine an instance's master 
+at runtime.
+
+\section Usd_ScenegraphInstancing_Querying Working with Instancing
+
+This section goes into more detail about instance and master prims and the API
+for working with them.  The following example will be used throughout:
+
+<center>
+<table border="0">
+<caption>Example Scene Description and Scenegraph</caption>
+<tr>
+<td valign="top">
+\code
+### ParkingLot.usd
+
+#usda 1.0
+
+def "ParkingLot"
+{
+    def "Car_1" (
+        instanceable = true
+        references = @./Car.usd@</Car>
+    )
+    {
+        color3f color = (1, 0, 0)
+    }
+
+    def "Car_2" (
+        instanceable = true
+        references = @./Car.usd@</Car>
+    )
+    {
+        color3f color = (0, 1, 0)
+    }
+
+    def "Car_3" (
+        references = @./Car.usd@</Car>
+    )
+    {
+        color3f color = (0, 0, 1)
+    }
+}
+\endcode
+
+\code
+### Car.usd
+
+#usda 1.0
+
+def "Car"
+{
+    color3f color = (0, 0, 0)
+
+    def Mesh "Body"
+    {
+        color3f color = (0, 0, 0)
+    }
+
+    def Mesh "Door"
+    {
+    }
+}
+\endcode
+</td>
+<td valign="middle">
+\image html instancing/Instancing_Example.png 
+</td>
+</tr>
+</table>
+</center>
+
+\subsection Usd_ScenegraphInstancing_Instanceable Making Prims Instanceable
+
+UsdStage can only create master prims for portions of the scenegraph
+that are brought into a scene via a composition arc.  Because of this,
+a prim must use at least one composition arc in order to be eligible 
+for instancing.
+
+Prims may be marked as instanceable by using UsdPrim::SetInstanceable or
+SdfPrimSpec::SetInstanceable.  If no value is explicitly authored, this value 
+defaults to \c false.
+
+The "instanceable" metadata is composed like all other metadata in USD, so it 
+can be authored on different layers and have its value overridden by stronger 
+layers.  For example, a user could author their "instanceable" metadata in a 
+session layer to see the effects of enabling (or disabling) instancing on prims 
+in a scene without editing that scene directly.
+
+\subsection Usd_ScenegraphInstancing_Instances Classifying Prims with Instancing
+
+Consumers can check if a UsdPrim is an instance with an associated master using
+the following API.
+
+| Function | Purpose | Example |
+| -------- | ------- | ------- |
+| UsdPrim::IsInstance | Check if prim is an instance. | Returns true for Car_1 and Car_2 since they are instances, but returns false for Car_3. |
+
+\subsection Usd_ScenegraphInstancing_Masters Finding and Traversing Masters
+
+A master prim is a special UsdPrim whose sole purpose is to serve as the parent 
+for the scenegraph shared by its associated instance prims.  The following API 
+can be used to retrieve master prims or determine whether a prim is part of a 
+shared master.
+
+| Function | Purpose | Example |
+| -------- | ------- | ------- |
+| UsdStage::GetMasters | Return a list of all master prims on the stage | Returns the prim /__Master_1 |
+| UsdPrim::GetMaster | If prim is an instance, get the corresponding master prim. | Returns prim /__Master_1 for Car_1 or Car_2, an invalid UsdPrim for all other prims, including Car_3. |
+| UsdPrim::IsMaster  | Check if this prim is a master prim. | Returns true for prim /__Master_1, false for all other prims. |
+| UsdPrim::IsInMaster | Check if this prim is in a subtree rooted at a master prim. | Returns true for prims /__Master_1, /__Master_1/Body, and /__Master_1/Door, false for all other prims. |
+
+Master prims do not have metadata or properties, only children prims.  Master 
+prims have root prim paths (e.g., /__Master_1) that can be used with 
+UsdStage::GetPrimAtPath.  However, they are considered siblings to the 
+pseudo-root in the scenegraph.  Because of this, they will not be returned when 
+using UsdStage::Traverse or when calling UsdPrim::GetChildren on the 
+pseudo-root.  Consumers can access master prims via UsdPrim::GetMaster or 
+UsdStage::GetMasters instead.
+
+\warning Because master prims are dynamically generated, the name of a master
+prim associated with an instance is not stable and may vary from run-to-run.
+Consumers should not save or hard-code the paths to prims in masters, but
+can use the API described below if they need to determine an instance's master 
+at runtime.
+
+\code{.py}
+>>> stage = Usd.Stage.Open('ParkingLot.usd')
+>>> stage.GetMasters()
+[Usd.Prim(</__Master_1>)]
+
+# Master prims are not included in stage traversals.  Note how the below
+# functions do not include the master prims above.
+>>> list(stage.Traverse())
+[Usd.Prim(</ParkingLot>), Usd.Prim(</ParkingLot/Car_1>), Usd.Prim(</ParkingLot/Car_2>), Usd.Prim(</ParkingLot/Car_3>), Usd.Prim(</ParkingLot/Car_3/Body>), Usd.Prim(</ParkingLot/Car_3/Door>)]
+
+>>> stage.GetPseudoRoot().GetChildren()
+[Usd.Prim(</ParkingLot>)]
+
+\endcode
+
+UsdStage arranges the scenegraph so that instance prims do not have any 
+descendant prims; these prims are instead encapsulated beneath master prims.
+Consumers can use UsdPrim::GetMaster to get an instance's master prim, then 
+traverse its children the same way as with other prims, using 
+UsdPrim::GetChildren, UsdPrimRange or similar facilities. 
+
+\code{.py}
+>>> stage = Usd.Stage.Open('ParkingLot.usd')
+
+# Car_1 doesn't make any child prims available since it's an instance prim;
+# its children in the scenegraph are parented beneath the master prim.
+>>> car_1 = stage.GetPrimAtPath('/ParkingLot/Car_1')
+>>> car_1.IsInstance()
+True
+>>> car_1.GetChildren()
+[]
+
+# Consumers can query the instance's master for its child prims.
+>>> car_1.GetMaster().GetChildren()
+[Usd.Prim(</__Master_1/Body>), Usd.Prim(</__Master_1/Door>)]
+>>> list(Usd.PrimRange(car_1.GetMaster()))
+[Usd.Prim(</__Master_1>), Usd.Prim(</__Master_1/Body>), Usd.Prim(</__Master_1/Door>)]
+
+# Car_3's child prims can be accessed directly since it's not an instance prim.
+>>> car_3 = stage.GetPrimAtPath('/ParkingLot/Car_3')
+>>> car_3.IsInstance()
+False
+>>> car_3.GetChildren()
+[Usd.Prim(</ParkingLot/Car_3/Body>), Usd.Prim(</ParkingLot/Car_3/Door>)]
+
+\endcode
+
+\subsection Usd_ScenegraphInstancing_InstanceProxies Traversing Into Instances with Instance Proxies
+
+An instance proxy is a UsdPrim that represents a descendant prim beneath an 
+instance, even though no such prim actually exists in the scenegraph.  Instance
+proxies allow consumers to work with the scenegraph as if instancing were not 
+being used, while retaining the load time and memory usage benefits of
+instancing.  
+
+An instance proxy prim behaves the same as the corresponding prim in the 
+master.  However, an instance proxy retains context about the instance being 
+traversed so they appear to be a prim beneath an instance: its path is a 
+descendant of the instance being traversed instead of a descendant of a master 
+prim.
+
+Calling UsdStage::GetPrimAtPath with a path to a descendant of an instance
+prim will return an instance proxy if a corresponding prim exists in that
+instance's master.  By default, the various prim traversal facilities like 
+UsdPrim::GetChildren and UsdPrimRange do not return instance proxies.  
+#UsdTraverseInstanceProxies can be used to enable this functionality.  This
+function can be combined with other \ref Usd_PrimFlags predicates;  for example,
+combining it with #UsdPrimDefaultPredicate would yield the same filtering 
+behavior as UsdPrim::GetChildren, but with instance proxies enabled.
+
+\code{.py}
+>>> stage = Usd.Stage.Open('ParkingLot.usd')
+
+# Car_1 doesn't make any child prims available by default since it's an
+# instance prim.
+>>> car_1 = stage.GetPrimAtPath('/ParkingLot/Car_1')
+>>> car_1.IsInstance()
+True
+>>> car_1.GetChildren()
+[]
+
+# Use Usd.TraverseInstanceProxies with Usd.PrimDefaultPredicate to enable
+# instance proxies with the same filtering that UsdPrim.GetChildren would do.
+>>> car_1.GetFilteredChildren(Usd.TraverseInstanceProxies(Usd.PrimDefaultPredicate))
+[Usd.Prim(</ParkingLot/Car_1/Body>), Usd.Prim(</ParkingLot/Car_1/Door>)]
+
+# Calling Usd.Stage.GetPrimAtPath with the path of a prim beneath an
+# instance will also return an instance proxy.
+>>> car_1_body = stage.GetPrimAtPath('/ParkingLot/Car_1/Body')
+>>> car_1_body
+Usd.Prim(</ParkingLot/Car_1/Body>)
+>>> car_1_body.IsInstanceProxy()
+True
+
+# From an instance proxy, you can retrieve the corresponding prim in the
+# instance's master.
+>>> car_1_body.GetPrimInMaster()
+Usd.Prim(</__Master_1/Body>)
+
+\endcode
+
+\subsection Usd_ScenegraphInstancing_Editing Editing Instances and Masters
+
+Properties and metadata (e.g., variant selections) on instance prims can be 
+edited and overridden like any other prim.  However, properties and metadata 
+on descendant prims beneath instance prims cannot be overridden.  Since master 
+prims are dynamically generated and do not exist in scene description, 
+overriding properties and metadata on masters or prims in masters is also not 
+allowed.  Attempting to make these restricted changes via the USD API will 
+result in coding errors.  Any existing overrides in scene description will be 
+silently ignored.
+
+\code{.py}
+>>> stage = Usd.Stage.Open('ParkingLot.usd')
+
+# Properties on an instance can be overridden as expected.
+>>> car1Color = stage.GetPrimAtPath('/ParkingLot/Car_1').GetAttribute('color')
+>>> car1Color.Get()
+Gf.Vec3f(1.0, 0.0, 0.0)
+>>> car1Color.Set((1.0, 1.0, 1.0))
+True
+>>> car1Color.Get()
+Gf.Vec3f(1.0, 1.0, 1.0)
+
+# Properties on prims in masters cannot be overridden. This is also the case
+# when accessing the property via an instance proxy.
+>>> master = stage.GetPrimAtPath('/ParkingLot/Car_1').GetMaster()
+>>> masterBodyColor = master.GetChild('Body').GetAttribute('color')
+>>> masterBodyColor.Get()
+Gf.Vec3f(0.0, 0.0, 0.0)
+>>> masterBodyColor.Set((1.0, 1.0, 1.0))
+pixar.Tf.ErrorException
+
+>>> instanceProxyBody = stage.GetPrimAtPath('/ParkingLot/Car_1/Body')
+>>> instanceProxyBodyColor = instanceProxyBody.GetAttribute('color')
+>>> instanceProxyBodyColor.Get()
+Gf.Vec3f(0.0, 0.0, 0.0)
+>>> instanceProxyBodyColor.Set((1.0, 1.0, 1.0))
+pixar.Tf.ErrorException
+
+\endcode
+
+These restrictions ensure that the scenegraph in a master prim can be shared
+by all instances.  If an instance-specific edit to a prim in a master is
+needed, that instance must be made un-instanceable (see \ref Usd_ScenegraphInstancing_Instanceable)
+so that it will no longer participate in instancing.
+
+Although "editing masters" is disallowed, USD's composition arcs can be used to 
+achieve many of the same effects.  For example, a consumer could add inherit or
+specializes arcs to instances, then make edits to the class targeted by those
+arcs.  Those edits would then affect all of the specified instances.
+
+\subsection Usd_ScenegraphInstancing_TargetsAndConnections Relationship Targets and Attribute Connections
+
+Relationships and attributes may have authored target and connection paths that
+point to objects beneath an instance prim.  In these cases, the API for 
+retrieving these paths, such as UsdRelationship::GetTargets or 
+UsdAttribute::GetConnections, will not translate them to the corresponding 
+object in the instance's master prim. Consumers can use 
+\ref Usd_ScenegraphInstancing_InstanceProxies "instance proxies" to interact 
+with these paths and retrieve the corresponding object in the master prim if 
+needed.  However, if these functions are called on a UsdRelationship or 
+UsdAttribute that belong to a prim in a master, paths that point to objects in 
+instances of that master will be returned as paths in that master.
+
+\note The following example demonstrates behavior with relationship targets,
+but the same behavior holds for attribute connections.
+
+<center>
+<table border="0">
+<caption>Example Scene Description and Scenegraph with Relationships</caption>
+<tr>
+<td valign="top">
+\code
+### ParkingLot.usd
+
+#usda 1.0
+
+def "ParkingLot"
+{
+    def "Car_1" (
+        instanceable = true
+        references = @./Car2.usda@</Car>
+    )
+    {
+    }
+
+    def "Car_2" (
+        instanceable = true
+        references = @./Car2.usda@</Car>
+    )
+    {
+    }
+
+    def "ShoppingCart"
+    {
+        custom rel bodyRel = [
+            </ParkingLot/Car_1/Body>,
+            </ParkingLot/Car_2/Body>,
+        ]
+    }
+}
+\endcode
+
+\code
+### Car.usd
+
+#usda 1.0
+
+def "Car"
+{
+    def Mesh "Body"
+    {
+        custom rel doorRel = </Car/Door>
+    }
+
+    def Mesh "Door"
+    {
+    }
+}
+\endcode
+</td>
+<td valign="middle">
+\image html instancing/Relationship_Example.png 
+</td>
+</tr>
+</table>
+</center>
+
+\code{.py}
+>>> stage = Usd.Stage.Open('ParkingLot.usd')
+
+>>> cart = stage.GetPrimAtPath('/ParkingLot/ShoppingCart')
+>>> cart_bodyRel = cart.GetRelationship('bodyRel')
+
+# 'bodyRel' is a relationship on a prim that is not being instanced. Its 
+# targets point to prims beneath Car_1 and Car_2, which are both instances 
+# in this scene.
+>>> cart_bodyRel.GetTargets()
+[Sdf.Path('/ParkingLot/Car_1/Body'), Sdf.Path('/ParkingLot/Car_2/Body')]
+
+# Calling Usd.Stage.GetPrimAtPath with these targets will return instance
+# proxies, so consumers can easily interact with these targets even though
+# they are prims beneath instances.
+>>> [stage.GetPrimAtPath(p) for p in cart_bodyRel.GetTargets()]
+[Usd.Prim(</ParkingLot/Car_1/Body>), Usd.Prim(</ParkingLot/Car_2/Body>)]
+
+# 'doorRel' is a relationship on a prim beneath an instance. If accessed
+# through the instance's master, the target paths returned will be returned
+# as paths in the instance's master.
+>>> master = stage.GetPrimAtPath('/ParkingLot/Car_1').GetMaster()
+>>> master_doorRel = master.GetChild('Body').GetRelationship('doorRel')
+
+>>> master_doorRel.GetPath()
+Sdf.Path('/__Master_1/Body.doorRel')
+
+>>> master_doorRel.GetTargets()
+[Sdf.Path('/__Master_1/Door')]
+
+# If the relationship is accessed through instance proxies, the relationship
+# target API behaves as though instancing is not present.
+>>> instanceProxy = stage.GetPrimAtPath('/ParkingLot/Car_1/Body')
+>>> instanceProxy_doorRel = instanceProxy.GetRelationship('doorRel')
+
+>>> instanceProxy_doorRel.GetPath()
+Sdf.Path('/ParkingLot/Car_1/Body.doorRel')
+
+>>> instanceProxy_doorRel.GetTargets()
+[Sdf.Path('/ParkingLot/Car_1/Door')]
+
+>>> instanceProxy_2 = stage.GetPrimAtPath('/ParkingLot/Car_2/Body')
+>>> instanceProxy_2_doorRel = instanceProxy_2.GetRelationship('doorRel')
+
+>>> instanceProxy_2_doorRel.GetPath()
+Sdf.Path('/ParkingLot/Car_2/Body.doorRel')
+
+>>> instanceProxy_2_doorRel.GetTargets()
+[Sdf.Path('/ParkingLot/Car_2/Door')]
+\endcode
+
+\section Usd_ScenegraphInstancing_Issues Common Issues
+
+\subsection Usd_ScenegraphInstancing_IssuesSinglePrim Instancing Single Prims
+
+Since instancing shares the scenegraph hierarchy beneath instance prims,
+instancing a single prim that has no descendants provides no benefits.  In the
+case that instancing a single prim is desired (e.g., instancing a mesh), that
+prim should be made a descendant of another prim that is referenced into the
+scene, as shown below:
+
+\code
+### Model.usd
+
+#usda 1.0
+
+over "InstancedMeshSource"
+{
+    def Mesh "Mesh"
+    {
+        # ...
+    }
+}
+
+def "Model"
+{
+    def "Mesh_1" (
+        instanceable = true
+        references = </InstancedMesh>
+    )
+    {
+    }
+
+    def "Mesh_2" (
+        instanceable = true
+        references = </InstancedMesh>
+    )
+    {
+    }
+
+    # ...
+}
+\endcode
+
+\section Usd_ScenegraphInstancing_Advanced Advanced Topics
+
+\subsection Usd_ScenegraphInstancing_MasterSelection How USD Generates Master Prims
+
+To determine the set of master prims needed, UsdStage analyzes each prim marked
+as instanceable and computes an "instancing key" that consists of:
+
+- The direct composition arcs on the prim that pull in scene description, in 
+order from strongest to weakest
+- The variant selections applied to the prim
+- The \ref Usd_Page_ValueClips "value clips" that affect the prim
+
+These elements, along with the \ref Usd_ScenegraphInstancing_Editing "restriction on per-instance overrides" 
+of descendant prims and their properties, guarantee that every prim with the 
+same key will have the same scenegraph hierarchy beneath them, and that 
+computing any values or metadata will return the same result.  
+
+UsdStage groups the instanceable prims by their key and generates a master prim
+for each group.  During this process, UsdStage will select one instanceable 
+prim per group to serve as the source for the corresponding master prim.  
+This selection is non-deterministic; this allows for multi-threaded discovery
+of instances with minimal locking, and since all of the prims in a group have
+the same scenegraph hierarchy and values, it doesn't matter which is selected.
+Enabling \c USD_INSTANCING #TF_DEBUG flag will given some diagnostic information
+about this process.
+
+UsdStage will update masters as instanceable prims are added or removed, or
+whenever an element that is part of the instancing key changes.  For example,
+if an instance prim's variant selection is changed, UsdStage will recompute
+its key and either assign that instance to an already-existing master if there
+are existing instances with the same key, or create a new master.
+
+\subsection Usd_ScenegraphInstancing_NestedInstancing Nested Instancing
+
+An instanceable prim may have children that are themselves instanceable.  This
+"nested instancing" allows consumers to build up large aggregate assets from
+smaller ones and use instancing to share as much of the scenegraph as possible,
+even between the smaller pieces.  For example, after constructing a parking lot
+asset with many instances of a car model, an asset representing a large 
+superstore could be created that brings in multiple instances of that parking 
+lot.
+
+<center>
+<table border="0">
+<caption>Example Scene Description and Scenegraph with Nested Instancing</caption>
+<tr>
+<td valign="top">
+\code
+### BuyNLarge.usd
+
+#usda 1.0
+
+def "BuyNLarge"
+{
+    def "ParkingLot_1" (
+        instanceable = true
+        references = @./ParkingLot.usd@</ParkingLot>
+    )
+    {
+    }
+
+    def "ParkingLot_2" (
+        instanceable = true
+        references = @./ParkingLot.usd@</ParkingLot>
+    )
+    {
+    }
+
+    # ...
+
+    def "ParkingLot_n" (
+        instanceable = true
+        references = @./ParkingLot.usd@</ParkingLot>
+    )
+    {
+    }
+}
+\endcode
+
+\code
+### ParkingLot.usd
+
+#usda 1.0
+
+def "ParkingLot"
+{
+    def "Car_1" (
+        instanceable = true
+        references = @./Car.usd@</Car>
+    )
+    {
+    }
+
+    def "Car_2" (
+        instanceable = true
+        references = @./Car.usd@</Car>
+    )
+    {
+    }
+
+    # ...
+
+    def "Car_n" (
+        instanceable = true
+        references = @./Car.usd@</Car>
+    )
+    {
+    }
+}
+\endcode
+</td>
+<td valign="middle">
+\image html instancing/Nested_Instancing_Example.png 
+</td>
+</tr>
+</table>
+</center>
+
+In the above example, USD will generate two master prims to accommodate the
+instanced ParkingLot and Car prims.  Even though the Car prims are spread out
+among the different ParkingLot prims, USD will recognize that they can all 
+share a single master prim, since they all have the same composition structure
+and can share the same scenegraph.
+
+When \ref Usd_ScenegraphInstancing_Masters "traversing the scenegraph using masters",
+it is important to note that, in the nested case, prims in masters may also be
+instances and requiring accessing the associated masters to continue traversal.
+In this example, the master prim for the ParkingLot prims, /__Master_2, contains 
+instance Car prims that are associated with their master prim, /__Master_1.  
+
+When \ref Usd_ScenegraphInstancing_InstanceProxies "working with instance proxies",
+nested instancing will be taken into account and resolved as if instancing were
+not being used on the stage.
+
+\subsection Usd_ScenegraphInstancing_Flattening Flattening
+
+When flattening a UsdStage into a single layer via its various \ref Usd_stageSerialization "serialization methods",
+each master prim in the scenegraph will be written out to specially-named root 
+prim.  These prims will be referenced by the flattened instance prims that were 
+associated with that master.
+
+*/

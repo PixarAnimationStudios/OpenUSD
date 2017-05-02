@@ -25,6 +25,7 @@
 #define HD_RPRIM_COLLECTION_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
@@ -45,10 +46,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdRprimCollection {
 public:
+    HD_API
     HdRprimCollection();
 
     /// Constructs an rprim collection with \p reprName. \p if forcedRepr is
     /// set to true, prims authored repr will be ignored.
+    HD_API
     HdRprimCollection(TfToken const& name,
                       TfToken const& reprName,
                       bool forcedRepr=false);
@@ -56,12 +59,14 @@ public:
     /// Constructs an rprim collection, excluding all Rprims not prefixed by \p
     /// rootPath. \p if forcedRepr is set to true, prims authored repr will be
     /// ignored.
+    HD_API
     HdRprimCollection(TfToken const& name,
                       TfToken const& reprName,
                       SdfPath const& rootPath,
                       bool forcedRepr=false);
 
     // Destructor.
+    HD_API
     virtual ~HdRprimCollection();
 
     /// Returns the semantic name of this collection.
@@ -104,27 +109,45 @@ public:
     /// SdfPath::AbsoluteRootPath().
     ///
     /// Note that this vector is always sorted.
+    HD_API
     SdfPathVector const& GetRootPaths() const;
 
     /// Sets all root paths for this collection, replacing any existing paths
     /// that were present previously. All paths must be absolute. Duplicate
     /// paths are allowed, but may result in peformance degradation.
+    HD_API
     void SetRootPaths(SdfPathVector const& rootPaths);
 
     /// Sets the path at which all Rprims must be rooted to be included in this
     /// collection, replacing any existing root paths that were previously
     /// specified.
+    HD_API
     void SetRootPath(SdfPath const& rootPath);
 
     /// Sets all exclude paths for this collection. All paths must be absolute. 
     /// Duplicate paths are allowed, but may result in peformance degradation.
+    HD_API
     void SetExcludePaths(SdfPathVector const& excludePaths);
 
     /// Returns the excluded paths
     ///
     /// Note that this vector is always sorted.
+    HD_API
     SdfPathVector const& GetExcludePaths() const;
 
+    /// Sets the render tags that this collection will render.
+    HD_API
+    void SetRenderTags(TfTokenVector const& renderTags);
+
+    /// Returns the render tags.
+    HD_API
+    TfTokenVector const& GetRenderTags() const;
+
+    /// Returns if a tag is used by this collection
+    HD_API
+    bool HasRenderTag(TfToken const & renderTag) const;
+
+    HD_API
     size_t ComputeHash() const;
 
     struct Hash {
@@ -133,10 +156,13 @@ public:
         }
     };
 
+    HD_API
     bool operator==(HdRprimCollection const & lhs) const;
+    HD_API
     bool operator!=(HdRprimCollection const & lhs) const;
 
 private:
+    HD_API
     friend std::ostream & operator <<(std::ostream &out, 
         HdRprimCollection const & v);
 
@@ -145,14 +171,17 @@ private:
     bool _forcedRepr;
     SdfPathVector _rootPaths;
     SdfPathVector _excludePaths;
+    TfTokenVector _renderTags;
 };
 
 typedef std::vector<HdRprimCollection> HdRprimCollectionVector;
 
 // VtValue requirements
+HD_API
 std::ostream& operator<<(std::ostream& out, HdRprimCollection const & v);
 
 // Overload hash_value for HdRprimCollection.  Used by things like boost::hash.
+HD_API
 size_t hash_value(HdRprimCollection const &col);
 
 

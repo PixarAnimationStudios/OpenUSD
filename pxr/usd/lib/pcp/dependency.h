@@ -126,6 +126,13 @@ struct PcpDependency {
 
 typedef std::vector<PcpDependency> PcpDependencyVector;
 
+/// Returns true if this node introduces a dependency in its
+/// PcpPrimIndex, false otherwise.  This is equivalent to
+/// PcpClassifyNodeDependency(n) != PcpDependencyTypeNone, but
+/// is faster.
+PCP_API
+bool PcpNodeIntroducesDependency(const PcpNodeRef &n);
+
 /// Classify the dependency represented by a node, by analyzing
 /// its structural role in its PcpPrimIndex.  Returns a
 /// bitmask of flags from PcpDependencyType.

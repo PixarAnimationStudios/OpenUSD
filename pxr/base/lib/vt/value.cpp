@@ -30,7 +30,6 @@
 #include "pxr/base/vt/dictionary.h"
 
 #include "pxr/base/gf/math.h"
-#include "pxr/base/tf/executeAtStartup.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
@@ -292,7 +291,9 @@ class Vt_CastRegistry {
 TF_INSTANTIATE_SINGLETON(Vt_CastRegistry);
 
 
-TF_EXECUTE_AT_STARTUP() {
+// Force instantiation for the registry instance.
+ARCH_CONSTRUCTOR(Vt_CastRegistryInit, 255)
+{
     Vt_CastRegistry::GetInstance();
 }
 

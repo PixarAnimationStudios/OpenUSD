@@ -40,7 +40,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static std::string _Repr(GfFrustum const &self)
 {
@@ -91,6 +93,8 @@ ComputeViewFrameHelper( const GfFrustum &self ) {
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( FitToSphere_overloads,
                                         FitToSphere, 2, 3 );
+
+} // anonymous namespace 
 
 void wrapFrustum()
 {    
@@ -257,5 +261,3 @@ void wrapFrustum()
 
     TfPyWrapEnum<This::ProjectionType>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

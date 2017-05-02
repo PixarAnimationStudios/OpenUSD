@@ -1,0 +1,13 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+over MfScope "VariantNameCheck" (
+    variants = {
+        string a = "bad:name"
+    }
+)
+{
+}

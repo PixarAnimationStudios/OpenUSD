@@ -28,12 +28,17 @@
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdx/camera.h"
-#include "pxr/imaging/hdx/light.h"
+
+#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/light.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
+
 #include "pxr/imaging/hdx/unitTestDelegate.h"
+
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
+#include <memory>
 
 #define VERIFY_PERF_COUNT(token, count) \
             TF_VERIFY(perfLog.GetCounter(token) == count, \
@@ -43,63 +48,101 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+class Hd_TestTask final : public HdTask
+{
+public:
+    Hd_TestTask(HdRenderPassSharedPtr const &renderPass,
+                HdRenderPassStateSharedPtr const &renderPassState)
+    : HdTask()
+    , _renderPass(renderPass)
+    , _renderPassState(renderPassState)
+    {
+    }
+
+protected:
+    virtual void _Sync( HdTaskContext* ctx) override
+    {
+        _renderPass->Sync();
+        _renderPassState->Sync();
+    }
+
+    virtual void _Execute(HdTaskContext* ctx) override
+    {
+        _renderPassState->Bind();
+        _renderPass->Execute(_renderPassState);
+        _renderPassState->Unbind();
+    }
+
+private:
+    HdRenderPassSharedPtr _renderPass;
+    HdRenderPassStateSharedPtr _renderPassState;
+};
+
 static void CameraAndLightTest()
 {
-    Hdx_UnitTestDelegate delegate;
-    HdRenderIndex& index = delegate.GetRenderIndex();
-    HdChangeTracker& tracker = index.GetChangeTracker();
+    HdStRenderDelegate renderDelegate;
+    std::unique_ptr<HdRenderIndex> index(HdRenderIndex::New(&renderDelegate));
+    TF_VERIFY(index);
+    std::unique_ptr<Hdx_UnitTestDelegate> delegate(
+                                         new Hdx_UnitTestDelegate(index.get()));
+
+    HdChangeTracker& tracker = index->GetChangeTracker();
     HdPerfLog& perfLog = HdPerfLog::GetInstance();
     perfLog.Enable();
     HdRprimCollection collection(HdTokens->geometry, HdTokens->hull);
     HdRenderPassStateSharedPtr renderPassState(new HdRenderPassState());
-    HdRenderPassSharedPtr renderPass(new HdRenderPass(&index, collection));
+    HdRenderPassSharedPtr renderPass(new HdRenderPass(index.get(), collection));
     HdEngine engine;
+
+    HdTaskSharedPtr drawTask = boost::make_shared<Hd_TestTask>(renderPass,
+                                                               renderPassState);
+    HdTaskSharedPtrVector tasks = { drawTask };
 
     GfMatrix4d tx(1.0f);
     tx.SetRow(3, GfVec4f(5, 0, 5, 1.0));
     SdfPath cube("geometry");
-    delegate.AddCube(cube, tx);
+    delegate->AddCube(cube, tx);
 
     SdfPath camera("camera");
     SdfPath light("light");
 
-    delegate.AddCamera(camera);
-    delegate.AddLight(light, GlfSimpleLight());
-    delegate.SetLight(light, HdxLightTokens->shadowCollection,
+    delegate->AddCamera(camera);
+    delegate->AddLight(light, GlfSimpleLight());
+    delegate->SetLight(light, HdStLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->hull)));
 
-    engine.Draw(index, renderPass, renderPassState);
+    engine.Execute(*index, tasks);
 
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
 
     // Update camera matrix
-    delegate.SetCamera(camera, GfMatrix4d(2), GfMatrix4d(2));
-    tracker.MarkSprimDirty(camera, HdxCamera::DirtyMatrices);
+    delegate->SetCamera(camera, GfMatrix4d(2), GfMatrix4d(2));
+    tracker.MarkSprimDirty(camera, HdStCamera::DirtyMatrices);
 
-    engine.Draw(index, renderPass, renderPassState);
+    engine.Execute(*index, tasks);
 
     // batch should not be rebuilt
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
 
     // Update shadow collection
-    delegate.SetLight(light, HdxLightTokens->shadowCollection,
+    delegate->SetLight(light, HdStLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->refined)));
-    tracker.MarkSprimDirty(light, HdxLight::DirtyCollection);
+    tracker.MarkSprimDirty(light, HdStLight::DirtyCollection);
 
-    engine.Draw(index, renderPass, renderPassState);
+    engine.Execute(*index, tasks);
 
     // batch rebuilt
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 2);
 
     // Update shadow collection again with the same data
-    delegate.SetLight(light, HdxLightTokens->shadowCollection,
+    delegate->SetLight(light, HdStLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->refined)));
-    tracker.MarkSprimDirty(light, HdxLight::DirtyCollection);
+    tracker.MarkSprimDirty(light, HdStLight::DirtyCollection);
 
-    engine.Draw(index, renderPass, renderPassState);
+    engine.Execute(*index, tasks);
 
     // batch should not be rebuilt
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 2);

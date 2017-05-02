@@ -31,7 +31,6 @@ pxr_shared_library(arch
         hash
         library
         mallocHook
-        nap
         regex
         stackTrace
         symbols

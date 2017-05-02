@@ -33,12 +33,11 @@
 
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::vector;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -69,7 +68,7 @@ private:
     boost::function<UsdStageCacheContext *()> _makeContext;
 };
 
-}
+} // anonymous namespace
 
 void wrapUsdStageCacheContext()
 {
@@ -102,6 +101,3 @@ void wrapUsdStageCacheContext()
         ;
 
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

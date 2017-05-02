@@ -24,7 +24,6 @@ pxr_shared_library(usdImaging
         ${Boost_PYTHON_LIBRARY}
         ${PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
-        ${TBB_tbbmalloc_LIBRARY}
 
     INCLUDE_DIRS
         ${PYTHON_INCLUDE_PATH}
@@ -56,6 +55,7 @@ pxr_shared_library(usdImaging
         unitTestHelper
 
     PUBLIC_HEADERS
+        api.h
         version.h
 
     RESOURCE_FILES

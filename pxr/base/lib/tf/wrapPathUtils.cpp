@@ -33,7 +33,9 @@ using std::string;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string
 _RealPath(string const &path, bool allowInaccessibleSuffix, bool raiseOnError)
@@ -62,6 +64,8 @@ _FindLongestAccessiblePrefix(string const &path)
     return result;
 }
 
+} // anonymous namespace 
+
 void wrapPathUtils()
 {
     def("RealPath", _RealPath,
@@ -71,5 +75,3 @@ void wrapPathUtils()
 
     def("FindLongestAccessiblePrefix", _FindLongestAccessiblePrefix);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

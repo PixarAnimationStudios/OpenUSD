@@ -25,6 +25,7 @@
 #include "usdMaya/translatorMesh.h"
 
 #include "usdMaya/meshUtil.h"
+#include "usdMaya/roundTripUtil.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
@@ -248,9 +249,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     // into a single color set.
     if (primvarName == PxrUsdMayaMeshColorSetTokens->DisplayOpacityColorSetName &&
             typeName == SdfValueTypeNames->FloatArray) {
-        if (!PxrUsdMayaUtil::GetBoolCustomData(primSchema.GetDisplayColorPrimvar(),
-                                                  PxrUsdMayaMeshColorSetTokens->Authored,
-                                                  false)) {
+        if (!PxrUsdMayaRoundTripUtil::IsAttributeUserAuthored(primSchema.GetDisplayColorPrimvar())) {
             colorSetName = PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText();
         }
     }
@@ -386,11 +385,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
     // have had their indices set to -1, so update the unauthored values index.
     unauthoredValuesIndex = -1;
 
-    // When the Clamped custom data is not present, we assume unclamped.
-    const bool clamped =
-        PxrUsdMayaUtil::GetBoolCustomData(primvar.GetAttr(),
-                                          PxrUsdMayaMeshColorSetTokens->Clamped,
-                                          false);
+    const bool clamped = PxrUsdMayaRoundTripUtil::IsPrimvarClamped(primvar);
 
     status = meshFn.createColorSet(colorSetName, NULL, clamped, colorRep);
     if (status != MS::kSuccess) {

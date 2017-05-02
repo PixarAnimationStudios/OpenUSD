@@ -137,6 +137,6 @@ value resolution that "strongest opinion wins".
 You can use the builtin customData for your truly ad-hoc user-data needs, 
 but you can also add new dictionary-valued metadata by defining it in a 
 module plugInfo.json file - 
-see \ref Usd_Extending_Metadata for details on how to do so.
+see \ref sdf_plugin_metadata for details on how to do so.
 
 */

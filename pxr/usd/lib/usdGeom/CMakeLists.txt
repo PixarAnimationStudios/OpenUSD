@@ -3,6 +3,7 @@ set(PXR_PACKAGE usdGeom)
 
 pxr_shared_library(usdGeom
     LIBRARIES
+        js
         tf
         plug
         vt
@@ -24,6 +25,7 @@ pxr_shared_library(usdGeom
         xformCache
         basisCurves
         boundable
+        boundableComputeExtent
         camera
         capsule
         cone
@@ -95,4 +97,190 @@ pxr_shared_library(usdGeom
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+)
+
+pxr_test_scripts(
+    testenv/testUsdGeomBasisCurves.py
+    testenv/testUsdGeomBBoxCache.py
+    testenv/testUsdGeomCamera.py
+    testenv/testUsdGeomCollectionAPI.py
+    testenv/testUsdGeomConstraintTarget.py
+    testenv/testUsdGeomConsts.py
+    testenv/test_UsdGeomCurves.py
+    testenv/testUsdGeomFaceSetAPI.py
+    testenv/testUsdGeomNoPlugLoad.py
+    testenv/testUsdGeomPointInstancer.py
+    testenv/testUsdGeomPrimvar.py
+    testenv/testUsdGeomPurposeVisibility.py
+    testenv/testUsdGeomSchemata.py
+    testenv/testUsdGeomXformable.py
+    testenv/testUsdGeomXformCommonAPI.py
+)
+
+pxr_build_test(testUsdGeomXformCache
+    LIBRARIES
+        usd
+        usdGeom
+    CPPFILES
+        testenv/testUsdGeomXformCache.cpp
+)
+
+
+pxr_build_test(testUsdGeomCreateAttribute
+    LIBRARIES
+        usd
+        usdGeom
+    CPPFILES
+        testenv/testUsdGeomCreateAttribute.cpp
+)
+
+pxr_build_test(testUsdGeomIsA
+    LIBRARIES
+        usd
+        usdGeom
+    CPPFILES
+        testenv/testUsdGeomIsA.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomBasisCurves
+    DEST testUsdGeomBasisCurves
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomBBoxCache
+    DEST testUsdGeomBBoxCache
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomCollectionAPI
+    DEST testUsdGeomCollectionAPI
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomConsts
+    DEST testUsdGeomConsts
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomFaceSetAPI
+    DEST testUsdGeomFaceSetAPI
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomPointInstancer
+    DEST testUsdGeomPointInstancer
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomBBoxCache
+    DEST testUsdGeomBBoxCache
+)
+
+pxr_register_test(testUsdGeomBasisCurves
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBasisCurves"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomBBoxCache
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBBoxCache"
+    EXPECTED_RETURN_CODE 0
+    ENV 
+        TF_DEBUG=USDGEOM_BBOX
+        USD_ASSIGN_MASTERS_DETERMINISTICALLY=1
+)
+
+pxr_register_test(testUsdGeomCamera
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCamera"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomCollectionAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCollectionAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomConstraintTarget
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomConstraintTarget"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomConsts
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomConsts"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomCreateAttribute
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCreateAttribute"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomCurves
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/test_UsdGeomCurves"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomFaceSetAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomFaceSetAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomIsA
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomIsA"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomNoPlugLoad
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomNoPlugLoad"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomPrimvar
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPrimvar"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomPointInstancer
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPointInstancer"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomPurposeVisibility
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPurposeVisibility"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomSchemata
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomSchemata"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomXformable
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformable"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomXformCache
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformCache"
+    EXPECTED_RETURN_CODE 0 
+)
+
+pxr_register_test(testUsdGeomXformCommonAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformCommonAPI"
+    EXPECTED_RETURN_CODE 0
 )

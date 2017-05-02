@@ -1,0 +1,18 @@
+#sdf 1.4.32
+(
+    """
+    In this example, CharRig contains a relationship that
+    targets an attribute on a prim that has been relocated.
+    A relational attribute exists on this target; after
+    composition, that relational attribute should be
+    visible in the composed model and pick up opinions
+    from CharRig. This scenario was reported in bug 42215.
+    """
+)
+
+def "Model" (
+    add references = @./CharRig.sdf@</CharRig>
+)
+{
+}
+

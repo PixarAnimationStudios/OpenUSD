@@ -39,6 +39,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (attributes)
     (techniques)
+    (metadata)
     (parameters)
     (parameterOrder)
     (textures)
@@ -69,6 +70,7 @@ GlfGLSLFXConfig::_Init(VtDictionary const & dict, string * errors)
     _params = _GetParameters(dict, errors);
     _textures = _GetTextures(dict, errors);
     _attributes = _GetAttributes(dict, errors);
+    _metadata = _GetMetadata(dict, errors);
     _sourceKeyMap = _GetSourceKeyMap(dict, errors);
 }
 
@@ -483,6 +485,35 @@ GlfGLSLFXConfig::_GetAttributes(VtDictionary const & dict,
     }
 
     return ret;
+}
+
+GlfGLSLFXConfig::MetadataDictionary
+GlfGLSLFXConfig::GetMetadata() const
+{
+    return _metadata;
+}
+
+GlfGLSLFXConfig::MetadataDictionary
+GlfGLSLFXConfig::_GetMetadata(VtDictionary const & dict,
+                              string *errorStr) const
+{
+    MetadataDictionary ret;
+
+    VtValue metadata;
+
+    // look for the metadata section
+    if (!TfMapLookup(dict, _tokens->metadata, &metadata)) {
+        return ret;
+    }
+
+    // verify that it holds a VtDictionary
+    if (!metadata.IsHolding<VtDictionary>()) {
+        *errorStr = TfStringPrintf("%s declaration expects a dictionary value",
+                                   _tokens->metadata.GetText());
+        return ret;
+    }
+
+    return metadata.UncheckedGet<VtDictionary>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

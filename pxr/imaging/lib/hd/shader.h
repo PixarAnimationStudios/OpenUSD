@@ -25,6 +25,7 @@
 #define HD_SHADER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
@@ -48,7 +49,7 @@ public:
                                  |DirtyParams)
     };
 
-
+    HD_API
     virtual ~HdShader();
 
     /// Obtain the source code for the Surface Shader for this prim from
@@ -85,6 +86,7 @@ public:
     virtual HdShaderCodeSharedPtr GetShaderCode() const = 0;
 
 protected:
+    HD_API
     HdShader(SdfPath const& id);
 
 private:

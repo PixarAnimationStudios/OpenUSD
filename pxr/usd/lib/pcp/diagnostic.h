@@ -29,12 +29,14 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
+#include "pxr/usd/pcp/debugCodes.h"
 #include "pxr/usd/pcp/errors.h"
 
-#include <boost/preprocessor/arithmetic/add.hpp>
-#include <boost/preprocessor/iteration/local.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/repetition/enum_params.hpp>
+#include "pxr/base/arch/hints.h"
+
+#include <boost/preprocessor/cat.hpp>
+
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,6 +44,7 @@ class PcpLayerStackSite;
 class PcpNodeRef;
 class PcpPrimIndex;
 class PcpSite;
+class PcpPrimIndex_StackFrame;
 
 PCP_API
 std::string PcpDump(const PcpPrimIndex& primIndex,
@@ -69,6 +72,14 @@ void PcpDumpDotGraph(const PcpNodeRef& node,
 // This is normally disabled because it is expensive.
 // #define PCP_DIAGNOSTIC_VALIDATION
 
+// Private helpers.
+inline PcpPrimIndex const *
+Pcp_ToIndex(PcpPrimIndex const *index) { return index; }
+
+template <class T>
+inline PcpPrimIndex const *
+Pcp_ToIndex(T const &obj) { return obj->GetOriginatingIndex(); }
+
 /// \name PcpPrimIndex Debugging Output
 ///
 /// The following macros are used to annotate the prim indexing process.
@@ -77,74 +88,109 @@ void PcpDumpDotGraph(const PcpNodeRef& node,
 ///
 /// @{
 
-/// Opens a scope indicating the construction of the prim index
-/// \p index for \p site.
-#define PCP_GRAPH(index, site)                                          \
-    Pcp_GraphScope _graph(index, site);
-
 /// Opens a scope indicating a particular phase during prim indexing.
-#define PCP_GRAPH_PHASE(node, ...)                                      \
-    Pcp_PhaseScope BOOST_PP_CAT(_pcpPhase, __LINE__)(node,              \
-        TfDebug::IsEnabled(PCP_PRIM_INDEX)                              \
-            ? Pcp_PhaseScope::Helper(__VA_ARGS__).c_str()               \
-            : NULL);
+#define PCP_INDEXING_PHASE(indexer, node, ...)                                 \
+    auto BOOST_PP_CAT(_pcpIndexingPhase, __LINE__) =                           \
+        ARCH_UNLIKELY(TfDebug::IsEnabled(PCP_PRIM_INDEX)) ?                    \
+        Pcp_IndexingPhaseScope(Pcp_ToIndex(indexer),                           \
+                               node, TfStringPrintf(__VA_ARGS__)) :            \
+        Pcp_IndexingPhaseScope()
 
 /// Indicates that the prim index currently being constructed has been
 /// updated.
-#define PCP_GRAPH_UPDATE(...)                                           \
-    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                        \
-    else {                                                              \
-        Pcp_GraphUpdate(__VA_ARGS__);                                   \
+#define PCP_INDEXING_UPDATE(indexer, node, ...)                         \
+    if (ARCH_UNLIKELY(TfDebug::IsEnabled(PCP_PRIM_INDEX))) {            \
+        Pcp_IndexingUpdate(Pcp_ToIndex(indexer), node,                  \
+                           TfStringPrintf(__VA_ARGS__));                \
     }
 
 /// Annotates the current phase of prim indexing with the given message.
-#define PCP_GRAPH_MSG(...)                                              \
-    if (!TfDebug::IsEnabled(PCP_PRIM_INDEX)) { }                        \
-    else {                                                              \
-        Pcp_GraphMsg(__VA_ARGS__);                                      \
+#define PCP_INDEXING_MSG(indexer, ...)                                  \
+    if (ARCH_UNLIKELY(TfDebug::IsEnabled(PCP_PRIM_INDEX))) {            \
+        Pcp_IndexingMsg(Pcp_ToIndex(indexer), __VA_ARGS__);             \
     }
 
 /// @}
 
+/// Opens a scope indicating the construction of the prim index
+/// \p index for \p site.
+class Pcp_PrimIndexingDebug {
+public:
+    Pcp_PrimIndexingDebug(PcpPrimIndex const *index,
+                          PcpPrimIndex const *originatingIndex,
+                          PcpLayerStackSite const &site)
+        : _index(nullptr)
+        , _originatingIndex(nullptr) {
+        if (ARCH_UNLIKELY(TfDebug::IsEnabled(PCP_PRIM_INDEX))) {
+            _index = index;
+            _originatingIndex = originatingIndex;
+            _PushIndex(site);
+        }
+    }          
+
+    Pcp_PrimIndexingDebug(Pcp_PrimIndexingDebug const &) = delete;
+    Pcp_PrimIndexingDebug &operator=(Pcp_PrimIndexingDebug const &) = delete;
+
+    inline ~Pcp_PrimIndexingDebug() {
+        if (ARCH_UNLIKELY(_index)) {
+            _PopIndex();
+        }
+    }
+private:
+    void _PushIndex(PcpLayerStackSite const &site) const;
+    void _PopIndex() const;
+
+    PcpPrimIndex const *_index;
+    PcpPrimIndex const *_originatingIndex;
+};
+
 // Implementation details; private helper objects and functions for debugging 
 // output. Use the macros above instead.
-class Pcp_GraphScope {
+
+class Pcp_IndexingPhaseScope {
 public:
-    Pcp_GraphScope(PcpPrimIndex* index, const PcpLayerStackSite& site);
-    ~Pcp_GraphScope();
+    Pcp_IndexingPhaseScope() : _index(nullptr) {}
+    Pcp_IndexingPhaseScope(PcpPrimIndex const *index,
+                           const PcpNodeRef& node, std::string &&msg);
+    Pcp_IndexingPhaseScope(Pcp_IndexingPhaseScope const &) = delete;
+    Pcp_IndexingPhaseScope(Pcp_IndexingPhaseScope &&other)
+        : _index(other._index) {
+        other._index = nullptr;
+    }
+    Pcp_IndexingPhaseScope &operator=(Pcp_IndexingPhaseScope const &) = delete;
+    inline Pcp_IndexingPhaseScope &operator=(Pcp_IndexingPhaseScope &&other) {
+        if (&other != this) {
+            _index = other._index;
+            other._index = nullptr;
+        }
+        return *this;
+    }
+    inline ~Pcp_IndexingPhaseScope() {
+        if (ARCH_UNLIKELY(_index)) {
+            _EndScope();
+        }
+    }    
 private:
-    bool _on;
+    void _EndScope() const;
+    PcpPrimIndex const *_index;
 };
 
-class Pcp_PhaseScope {
-public:
-    Pcp_PhaseScope(const PcpNodeRef& node, const char* msg);
-    ~Pcp_PhaseScope();
+void
+Pcp_IndexingMsg(PcpPrimIndex const *index,
+                const PcpNodeRef& a1,
+                char const *fmt, ...) ARCH_PRINTF_FUNCTION(3, 4);
+void
+Pcp_IndexingMsg(PcpPrimIndex const *index,
+                const PcpNodeRef& a1, const PcpNodeRef& a2,
+                char const *fmt, ...) ARCH_PRINTF_FUNCTION(4, 5);
+void
+Pcp_IndexingUpdate(PcpPrimIndex const *index,
+                   const PcpNodeRef& node, std::string &&msg);
 
-    static std::string Helper(const char* f, ...) ARCH_PRINTF_FUNCTION(1, 2);
-
-private:
-    bool _on;
-};
-
-#define BOOST_PP_LOCAL_LIMITS (0, 2)
-#define BOOST_PP_LOCAL_MACRO(n)                                        \
-void Pcp_GraphMsg(                                                     \
-    BOOST_PP_ENUM_PARAMS(n, const PcpNodeRef& a) BOOST_PP_COMMA_IF(n)  \
-    const char* format, ...)                                           \
-    ARCH_PRINTF_FUNCTION(BOOST_PP_ADD(n, 1), BOOST_PP_ADD(n, 2));
-
-#include BOOST_PP_LOCAL_ITERATE()
-
-void 
-Pcp_GraphUpdate(
-    const PcpNodeRef& node, const char* msg, ...) ARCH_PRINTF_FUNCTION(2, 3);
-
-std::string
-Pcp_FormatSite(const PcpSite& site);
-
-std::string
-Pcp_FormatSite(const PcpLayerStackSite& site);
+PCP_API
+std::string Pcp_FormatSite(const PcpSite& site);
+PCP_API
+std::string Pcp_FormatSite(const PcpLayerStackSite& site);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

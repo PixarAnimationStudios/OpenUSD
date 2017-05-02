@@ -29,6 +29,7 @@
 #define __PX_VP20_GLSL_PROGRAM_H__
 
 #include "pxr/pxr.h"
+#include "px_vp20/api.h"
 #include "pxr/imaging/garch/gl.h"
 
 #include <string>
@@ -45,16 +46,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PxrMayaGLSLProgram
 {
     public:
+        PX_VP20_API
         PxrMayaGLSLProgram();
+        PX_VP20_API
         virtual ~PxrMayaGLSLProgram();
 
         /// Compile a shader of type \p type with the given \p source.
+        PX_VP20_API
         bool CompileShader(const GLenum type, const std::string& source);
 
         /// Link the compiled shaders together.
+        PX_VP20_API
         bool Link();
 
         /// Validate whether this program is valid in the current context.
+        PX_VP20_API
         bool Validate() const;
 
         /// Get the ID of the OpenGL program object.

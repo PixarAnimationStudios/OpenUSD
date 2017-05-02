@@ -29,7 +29,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 // This class and its wrapping allow a client to do this:
 // 
@@ -71,6 +73,8 @@ private :
     boost::scoped_ptr<SdfCleanupEnabler> _state;
 };
 
+} // anonymous namespace 
+
 void wrapCleanupEnabler()
 {
     typedef Sdf_PyCleanupEnabler This;
@@ -84,5 +88,3 @@ void wrapCleanupEnabler()
 
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

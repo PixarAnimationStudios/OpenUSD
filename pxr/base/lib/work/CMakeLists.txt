@@ -6,7 +6,6 @@ pxr_shared_library(work
         tf
         tracelite
         ${TBB_tbb_LIBRARY}
-        ${TBB_tbbmalloc_LIBRARY}
 
     INCLUDE_DIRS
         ${TBB_INCLUDE_DIRS}

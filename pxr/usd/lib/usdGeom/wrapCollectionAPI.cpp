@@ -29,13 +29,15 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python.hpp>
-using namespace boost::python;
 
 #include <string>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
+using namespace boost::python;
 using std::string;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static TfPyObjWrapper 
 _GetTargetFaceCounts(const UsdGeomCollectionAPI &self, const UsdTimeCode &time)
@@ -54,11 +56,10 @@ _GetTargetFaceIndices(const UsdGeomCollectionAPI &self, const UsdTimeCode &time)
 }
 
 static SdfPathVector 
-_GetTargets(const UsdGeomCollectionAPI &self, 
-            bool forwardToObjectsInMasters=true)
+_GetTargets(const UsdGeomCollectionAPI &self)
 {
     SdfPathVector targets;
-    self.GetTargets(&targets, forwardToObjectsInMasters);
+    self.GetTargets(&targets);
     return targets;
 }
 
@@ -133,8 +134,9 @@ _AppendTarget(const UsdGeomCollectionAPI &self,
         SdfValueTypeNames->IntArray).Get<VtIntArray>(), time);
 }
 
-void 
-wrapUsdGeomCollectionAPI()
+} // anonymous namespace 
+
+void wrapUsdGeomCollectionAPI()
 {
     typedef UsdGeomCollectionAPI This;
 
@@ -165,8 +167,7 @@ wrapUsdGeomCollectionAPI()
             (arg("time")=UsdTimeCode::Default()))
 
         .def("SetTargets", &This::SetTargets)
-        .def("GetTargets", &_GetTargets, 
-             (arg("forwardToObjectsInMasters")=true))
+        .def("GetTargets", &_GetTargets)
 
         .def("AppendTarget", &_AppendTarget,
             (arg("target"),
@@ -208,6 +209,3 @@ wrapUsdGeomCollectionAPI()
         .staticmethod("GetCollections")
     ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

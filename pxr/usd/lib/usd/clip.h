@@ -47,6 +47,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class PcpPrimIndex;
 
 /// Returns true if the given scene description metadata \p fieldName is
 /// associated with value clip functionality.
@@ -115,10 +116,12 @@ struct Usd_ResolvedClipInfo
     size_t indexOfLayerWhereAssetPathsFound;
 };
 
-/// Resolves clip metadata values for the prim index node \p node.
-void
+/// Resolves clip metadata values for the prim index \p primIndex.
+/// Returns the source node where either clipAssetPaths or 
+/// clipTemplateAssetPath was found.
+PcpNodeRef
 Usd_ResolveClipInfo(
-    const PcpNodeRef& node,
+    const PcpPrimIndex& primIndex,
     Usd_ResolvedClipInfo* clipInfo);
 
 /// Sentinel values authored on the edges of a clipTimes range.

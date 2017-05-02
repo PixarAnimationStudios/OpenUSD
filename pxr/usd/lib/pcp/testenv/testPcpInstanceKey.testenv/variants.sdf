@@ -1,0 +1,78 @@
+#sdf 1.4.32
+
+def "Model_1" (
+    instanceable = True
+    references = @./ref.sdf@</Model>
+    variants = {
+        string y = "a"
+    }
+)
+{
+}
+
+def "Model_2" (
+    instanceable = True
+    references = @./ref.sdf@</Model>
+    variants = {
+        string y = "a"
+    }
+)
+{
+}
+
+def "Model_3" (
+    instanceable = True
+    references = @./ref.sdf@</Model>
+)
+{
+}
+
+def "Model_4" (
+    instanceable = True
+    references = @./ref.sdf@</Model>
+    variants = {
+        string y = "b"
+    }
+)
+{
+}
+
+def "Model_5" (
+    instanceable = True
+    references = @./ref.sdf@</Model>
+    add variantSets = ["x"]
+    variants = {
+        string x = "b"
+        string y = "b"
+    }
+)
+{
+    variantSet "x" = {
+        "a" {
+            double x = 3.0
+        }
+        "b" {
+            double x = 4.0
+        }
+    }
+}
+
+def "Model_6" (
+    instanceable = True
+    references = @./ref.sdf@</Model>
+    add variantSets = ["x"]
+    variants = {
+        string x = "b"
+        string y = "b"
+    }
+)
+{
+    variantSet "x" = {
+        "a" {
+            double x = 3.0
+        }
+        "b" {
+            double x = 4.0
+        }
+    }
+}

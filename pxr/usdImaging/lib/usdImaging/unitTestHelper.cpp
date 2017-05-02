@@ -31,60 +31,135 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// UsdImaging_DrawTask 
+UsdImaging_DrawTask::UsdImaging_DrawTask(
+        HdRenderPassSharedPtr const &renderPass,
+        HdRenderPassStateSharedPtr const &renderPassState)
+    : HdTask()
+    , _renderPass(renderPass)
+    , _renderPassState(renderPassState)
+{}
 
+/* virtual */
+void
+UsdImaging_DrawTask::_Sync(HdTaskContext* ctx)
+{
+    _renderPass->Sync();
+    _renderPassState->Sync();
+}
+
+/* virtual */
+void
+UsdImaging_DrawTask::_Execute(HdTaskContext* ctx)
+{
+    _renderPassState->Bind();
+    _renderPass->Execute(_renderPassState);
+    _renderPassState->Unbind();
+}
+
+// UsdImaging_TestDriver
 void
 UsdImaging_TestDriver::_Init(UsdStageRefPtr const& usdStage,
                              TfToken const &collectionName,
-                             TfToken const &reprName)
+                             TfToken const &reprName,
+                             TfTokenVector const &renderTags)
 {
+    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    TF_VERIFY(_renderIndex != nullptr);
+    _delegate = new UsdImagingDelegate(_renderIndex, SdfPath::AbsoluteRootPath());
+
     _stage = usdStage;
-    _delegate.Populate(_stage->GetPseudoRoot());
-    _geometryPass = HdRenderPassSharedPtr(
-        new HdRenderPass(&_delegate.GetRenderIndex(),
-                         HdRprimCollection(collectionName, reprName)));
+    _delegate->Populate(_stage->GetPseudoRoot());
+    HdRprimCollection col = HdRprimCollection(collectionName, reprName);
+    col.SetRenderTags(renderTags);
+    _geometryPass = HdRenderPassSharedPtr(new HdRenderPass(_renderIndex, col));
     _renderPassState = HdRenderPassStateSharedPtr(new HdRenderPassState());
 }
 
 UsdImaging_TestDriver::UsdImaging_TestDriver(std::string const& usdFilePath,
                                              TfToken const &collectionName,
-                                             TfToken const &reprName)
+                                             TfToken const &reprName,
+                                             TfTokenVector const &renderTags)
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _delegate(nullptr)
+ , _geometryPass()
+ , _renderPassState()
+ , _stage()
 {
-    _Init(UsdStage::Open(usdFilePath), collectionName, reprName);
+    _Init(UsdStage::Open(usdFilePath), collectionName, reprName, renderTags);
 }
 
 UsdImaging_TestDriver::UsdImaging_TestDriver(std::string const& usdFilePath)
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _delegate(nullptr)
+ , _geometryPass()
+ , _renderPassState()
+ , _stage()
 {
-    _Init(UsdStage::Open(usdFilePath), HdTokens->geometry, HdTokens->hull);
+    TfTokenVector renderTags;
+    renderTags.push_back(HdTokens->geometry);
+    _Init(UsdStage::Open(usdFilePath), HdTokens->geometry, HdTokens->hull, renderTags);
 }
 
 UsdImaging_TestDriver::UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,
                                              TfToken const &collectionName,
-                                             TfToken const &reprName)
+                                             TfToken const &reprName,
+                                             TfTokenVector const &renderTags)
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _delegate(nullptr)
+ , _geometryPass()
+ , _renderPassState()
+ , _stage()
 {
-    _Init(usdStage, collectionName, reprName);
+    _Init(usdStage, collectionName, reprName, renderTags);
 }
 
 UsdImaging_TestDriver::UsdImaging_TestDriver(UsdStageRefPtr const& usdStage)
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _delegate(nullptr)
+ , _geometryPass()
+ , _renderPassState()
+ , _stage()
 {
-    _Init(usdStage, HdTokens->geometry, HdTokens->hull);
+    TfTokenVector renderTags;
+    renderTags.push_back(HdTokens->geometry);
+    _Init(usdStage, HdTokens->geometry, HdTokens->hull, renderTags);
+}
+
+
+UsdImaging_TestDriver::~UsdImaging_TestDriver()
+{
+    delete _delegate;
+    delete _renderIndex;
 }
 
 void
 UsdImaging_TestDriver::Draw()
 {
-    _engine.Draw(_delegate.GetRenderIndex(), _geometryPass, _renderPassState);
+    HdTaskSharedPtrVector tasks = {
+        boost::make_shared<UsdImaging_DrawTask>(_geometryPass, _renderPassState)
+    };
+    _engine.Execute(_delegate->GetRenderIndex(), tasks);
 }
 
 void
 UsdImaging_TestDriver::SetTime(double time)
 {
-    _delegate.SetTime(time);
+    _delegate->SetTime(time);
 }
 
 void
 UsdImaging_TestDriver::MarkRprimDirty(SdfPath path, HdDirtyBits flag)
 {
-    _delegate.GetRenderIndex().GetChangeTracker().MarkRprimDirty(path, flag);
+    _delegate->GetRenderIndex().GetChangeTracker().MarkRprimDirty(path, flag);
 }
 
 void
@@ -98,7 +173,7 @@ UsdImaging_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
 void
 UsdImaging_TestDriver::SetRefineLevelFallback(int level)
 {
-    _delegate.SetRefineLevelFallback(level);
+    _delegate->SetRefineLevelFallback(level);
 }
 
 
@@ -111,7 +186,7 @@ UsdImaging_TestDriver::GetRenderPass()
 UsdImagingDelegate& 
 UsdImaging_TestDriver::GetDelegate()
 {
-    return _delegate;
+    return *_delegate;
 }
 
 /// Returns the populated UsdStage for this driver.

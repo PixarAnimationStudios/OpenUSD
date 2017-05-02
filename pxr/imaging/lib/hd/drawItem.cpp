@@ -100,6 +100,7 @@ HdDrawItem::IntersectsViewVolume(GfMatrix4d const &viewProjMatrix) const
     }
 }
 
+HD_API
 std::ostream &operator <<(std::ostream &out, 
                                  const HdDrawItem& self) {
     out << "Draw Item:\n";

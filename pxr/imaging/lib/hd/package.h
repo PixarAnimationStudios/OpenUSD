@@ -25,20 +25,26 @@
 #define HD_PACKAGE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+HD_API
 TfToken HdPackageComputeShader();
 
+HD_API
 TfToken HdPackageRenderPassShader();
 
+HD_API
 TfToken HdPackageFallbackLightingShader();
 
+HD_API
 TfToken HdPackageFallbackSurfaceShader();
 
+HD_API
 TfToken HdPackagePtexTextureShader();
 
 

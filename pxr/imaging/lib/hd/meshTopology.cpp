@@ -156,36 +156,6 @@ HdMeshTopology::ComputeNumPoints(VtIntArray const &verts)
     return numPoints + 1;
 }
 
-/*static*/ int
-HdMeshTopology::ComputeNumQuads(VtIntArray const &numVerts,
-                                VtIntArray const &holeFaces,
-                                bool *invalidFaceFound)
-{
-    HD_TRACE_FUNCTION();
-
-    int numFaces = numVerts.size();
-    int numHoleFaces = holeFaces.size();
-    int numQuads = 0;
-    int const *numVertsPtr = numVerts.cdata();
-    int const * holeFacesPtr = holeFaces.cdata();
-    int holeIndex = 0;
-
-    for (int i = 0; i < numFaces; ++i) {
-        int nv = numVertsPtr[i];
-        if (nv < 3) {
-            // skip degenerated face
-            if (invalidFaceFound) *invalidFaceFound = true;
-        } else if (holeIndex < numHoleFaces && holeFacesPtr[holeIndex] == i) {
-            // skip hole face
-            ++holeIndex;
-        } else {
-            // non-quad n-gons are quadrangulated into n-quads.
-            numQuads += (nv == 4 ? 1 : nv);
-        }
-    }
-    return numQuads;
-}
-
 HdTopology::ID
 HdMeshTopology::ComputeHash() const
 {

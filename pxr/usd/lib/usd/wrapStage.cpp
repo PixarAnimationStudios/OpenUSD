@@ -24,7 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/conversions.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/pcp/pyUtils.h"
@@ -40,12 +40,13 @@
 
 #include <boost/python/class.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bool
 _Export(const UsdStagePtr &self, const std::string& filename, 
@@ -152,6 +153,8 @@ _ExpandPopulationMask(UsdStage &self, boost::python::object pypred)
         pred = boost::python::extract<Predicate>(pypred);
     return self.ExpandPopulationMask(pred);
 }
+
+} // anonymous namespace 
 
 void wrapUsdStage()
 {
@@ -336,6 +339,9 @@ void wrapUsdStage()
         .def("Close", &UsdStage::Close)
         .def("Reload", &UsdStage::Reload)
 
+        .def("Save", &UsdStage::Save)
+        .def("SaveSessionLayers", &UsdStage::SaveSessionLayers)
+
         .def("GetGlobalVariantFallbacks",
              &UsdStage::GetGlobalVariantFallbacks,
              return_value_policy<TfPyMapToDictionary>())
@@ -372,10 +378,10 @@ void wrapUsdStage()
         .def("HasDefaultPrim", &UsdStage::HasDefaultPrim)
 
         .def("GetPrimAtPath", &UsdStage::GetPrimAtPath, arg("path"))
-        .def("Traverse", (UsdTreeIterator (UsdStage::*)())
+        .def("Traverse", (UsdPrimRange (UsdStage::*)())
              &UsdStage::Traverse)
         .def("Traverse",
-             (UsdTreeIterator (UsdStage::*)(const Usd_PrimFlagsPredicate &))
+             (UsdPrimRange (UsdStage::*)(const Usd_PrimFlagsPredicate &))
              &UsdStage::Traverse, arg("predicate"))
         .def("TraverseAll", &UsdStage::TraverseAll)
 
@@ -469,5 +475,3 @@ void wrapUsdStage()
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(UsdStage)
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,0 +1,11 @@
+#sdf 1.4.32
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+over "MatImage"
+{
+    asset file = @//edwong/Menv30.2011-Aug-31.10:18:26.tif@
+}
+

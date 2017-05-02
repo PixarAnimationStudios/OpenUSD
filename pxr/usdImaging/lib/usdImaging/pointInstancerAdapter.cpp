@@ -33,11 +33,12 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/gf/quath.h"
 
@@ -204,9 +205,9 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
 
     _PrototypeSharedPtr &prototype = instrData.prototypes[protoIndex];
 
-    std::vector<UsdTreeIterator> treeStack;
-    treeStack.push_back(UsdTreeIterator(protoRootPrim));
-    for (; !treeStack.empty();) {
+    std::vector<UsdPrimRange> treeStack;
+    treeStack.push_back(UsdPrimRange(protoRootPrim));
+    while (!treeStack.empty()) {
         if (!treeStack.back()) {
             treeStack.pop_back();
             if (!treeStack.empty() && treeStack.back()) {
@@ -214,37 +215,32 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 // last one un-incremented intentionally so we have the
                 // residual path. That also means that whenever we pop,
                 // must increment the last iterator.
-                ++treeStack.back();
+                treeStack.back().increment_begin();
             }
             if (treeStack.empty() || !treeStack.back()) {
                 continue;
             }
         }
-        UsdTreeIterator& treeIt = treeStack.back();
-        if (UsdImagingPrimAdapterSharedPtr adapter = 
-            _GetPrimAdapter(*treeIt)){
+        UsdPrimRange &range = treeStack.back();
+        UsdPrimRange::iterator iter = range.begin();
+        if (UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(*iter)) {
             primCount++;
 
             //
             // Rprim allocation.
             //
-            std::stringstream ss;
-            ss << "proto" << protoIndex << "_"
-               << treeIt->GetPath().GetName() 
-               << "_id" << protoID++;
-            TfToken protoName(ss.str());
-
+            
             SdfPath protoPath;
-            if (treeIt->IsInstance()) {
-                UsdPrim master = treeIt->GetMaster();
-                treeStack.push_back(UsdTreeIterator(master));
+            if (iter->IsInstance()) {
+                UsdPrim master = iter->GetMaster();
+                treeStack.push_back(UsdPrimRange(master));
                 continue;
-            } else if (treeIt->IsMaster()) {
+            } else if (iter->IsMaster()) {
                 // ignore master root (redirected from IsInstance condition)
                 // note that this is not IsInMaster.
-                ++treeIt;
+                range.set_begin(++iter);
                 continue;
-            } else if (adapter->ShouldCullChildren(*treeIt)) {
+            } else if (adapter->ShouldCullChildren(*iter)) {
                 // if the prim is handled by some kind of multiplexing adapter
                 // (e.g. another nested PointInstancer)
                 // we'll relocate its children to itself, then no longer need to
@@ -258,23 +254,28 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     instancerContext->childName,
                     instancerContext->instanceSurfaceShaderPath,
                     UsdImagingPrimAdapterSharedPtr() };
-                protoPath = adapter->Populate(*treeIt, index, &ctx);
-                treeIt.PruneChildren();
+                protoPath = adapter->Populate(*iter, index, &ctx);
+                iter.PruneChildren();
             } else {
-                SdfPath const& shader = GetShaderBinding(*treeIt);
+                TfToken protoName(
+                    TfStringPrintf(
+                        "proto%d_%s_id%d", protoIndex,
+                        iter->GetPath().GetName().c_str(), protoID++));
+
+                SdfPath const& shader = GetShaderBinding(*iter);
                 UsdImagingInstancerContext ctx = {
                     instancerPath,
                     /*childName=*/protoName,
                     shader,
                     instancerContext->instancerAdapter };
                 protoPath = instancerPath.AppendProperty(protoName);
-                adapter->Populate(*treeIt, index, &ctx);
+                adapter->Populate(*iter, index, &ctx);
             }
 
             if (protoPath.IsEmpty()) {
                 // Dont track this instancer if it wasn't actually
                 // added.
-                ++treeIt;
+                range.set_begin(++iter);
                 continue;
             }
 
@@ -285,8 +286,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
             //
             // Update instancer data.
             //
-            instrData.usdToCacheMap[
-                treeIt->GetPath()].push_back(protoPath);
+            instrData.usdToCacheMap[iter->GetPath()].push_back(protoPath);
             _ProtoRprim& rproto = instrData.protoRprimMap[protoPath];
             rproto.adapter = adapter;
             rproto.prototype = prototype;
@@ -311,7 +311,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
             //    /PointInstancer/ProtoA
             //
             for (int i = treeStack.size()-1; i >= 0; i--) {
-                rproto.paths.push_back(treeStack[i]->GetPath());
+                rproto.paths.push_back(treeStack[i].front().GetPath());
             }
 
             // make sure paths is not empty
@@ -320,7 +320,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
             // Book keeping, for debugging.
             instantiatedPrimCount++;
         }
-        ++treeIt;
+        range.set_begin(++iter);
     }
 
     TF_DEBUG(USDIMAGING_POINT_INSTANCER_PROTO_CREATED).Msg(
@@ -1296,7 +1296,7 @@ UsdImagingPointInstancerAdapter::_UpdateDirtyBits(
     }
 
     // If another thread already initialized the dirty bits, we can bail.
-    if (instrData.dirtyBits != HdChangeTracker::AllDirty)
+    if (instrData.dirtyBits != static_cast<HdDirtyBits>(HdChangeTracker::AllDirty))
         return instrData.dirtyBits;
 
     instrData.dirtyBits = HdChangeTracker::Clean;
@@ -1519,7 +1519,7 @@ UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
         _InstancerDataMap::iterator it = _instancerData.find(protoPath);
         if (it != _instancerData.end()) {
             SdfPath parentInstancerPath = it->second.parentInstancerPath;
-            if (not parentInstancerPath.IsEmpty()) {
+            if (!parentInstancerPath.IsEmpty()) {
 
                 UsdImagingPrimAdapterSharedPtr adapter =
                     _GetPrimAdapter(_GetPrim(parentInstancerPath));

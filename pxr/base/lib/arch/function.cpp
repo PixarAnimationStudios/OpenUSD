@@ -25,10 +25,40 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/function.h"
 #include "pxr/base/arch/defines.h"
+#include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace std;
+
+namespace {
+
+// Returns the start of the type name in s that ends at i.
+// For example, given:
+//   s = "int Foo<A>::Bar<B, C>::Blah () [with A = int, B = float, C = bool]"
+// and i = the position of "Blah" in s, then:
+//   _GetStartOfName(s, i) --> the position of "Foo" in s.
+static string::size_type
+_GetStartOfName(const string& s, string::size_type i)
+{
+    // Skip backwards until we find the start of the function name.  We
+    // do this by skipping over everything between matching '<' and '>'
+    // and then searching for a space.
+    i = s.find_last_of(" >", i);
+    while (i != string::npos && s[i] != ' ') {
+        int nestingDepth = 1;
+        while (nestingDepth && --i) {
+            if (s[i] == '>') {
+                ++nestingDepth;
+            }
+            else if (s[i] == '<') {
+                --nestingDepth;
+            }
+        }
+        i = s.find_last_of(" >", i);
+    }
+    return i == string::npos ? 0 : i + 1;
+}
 
 /*
  * Finds the real name of function in prettyFunction.  If function
@@ -44,7 +74,7 @@ using namespace std;
  * 
  */
 static string
-_GetFunctionName(string function, string prettyFunction)
+_GetFunctionName(const string& function, string prettyFunction)
 {
     // Prepend '::' to the function name so that we can search for it as a
     // member function in prettyFunction.
@@ -52,7 +82,7 @@ _GetFunctionName(string function, string prettyFunction)
     memberFunction += function;
 
     // First search to see if function is a member function.  If it's not,
-    // then we bail out early, returning 'function'.
+    // then we bail out early, returning function.
     std::string::size_type functionStart = prettyFunction.find(memberFunction);
     if (functionStart == string::npos || functionStart == 0)
         return function;
@@ -60,209 +90,171 @@ _GetFunctionName(string function, string prettyFunction)
     // The +2 is because of the '::' we prepended.
     std::string::size_type functionEnd = functionStart + function.length() + 2;
 
-    // Template arguments are separated by a ", ", so we search
-    // for ' ' backwards from the start of the function name until
-    // we get to one that isn't preceded by a comma
-    do {
-        functionStart = prettyFunction.rfind(' ', functionStart - 1);
-    } while(functionStart != string::npos && functionStart > 0
-            && prettyFunction[functionStart - 1] == ',');
+    // Find the start of the function name.
+    string::size_type i = _GetStartOfName(prettyFunction, functionStart);
 
     // Cut everything that's not part of the function name out
-    prettyFunction.erase(functionEnd);
-    if (functionStart != string::npos) {
-        prettyFunction.erase(0, ++functionStart);
-    }
-
-    return prettyFunction;
+    return prettyFunction.substr(i, functionEnd - i);
 }
 
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
-/*
- * Extracts the list of template values from prettyFunction. 
- *
- * For example: _GccGetTemplateString("int X<A, B>() [with A = int, B = char]")
- * returns " A = int, B = char"
- */
-static string
-_GccGetTemplateString(string prettyFunction)
+// Split prettyFunction into the function part and the template list part.
+// For example:
+//   "int Foo<A,B>::Bar(float) [with A = int, B = float]"
+// becomes:
+//   pair("int Foo<A,B>::Bar(float)", " A = int, B = float")
+// Note the leading space in the template list.
+static pair<string, string>
+_Split(const string& prettyFunction)
 {
-    size_t withPos;
+    auto i = prettyFunction.find(" [with ");
+    if (i != string::npos) {
+        const auto n = prettyFunction.size();
+        return std::make_pair(prettyFunction.substr(0, i),
+                              prettyFunction.substr(i + 6, n - i - 7));
+    }
+    else {
+        return std::make_pair(prettyFunction, std::string());
+    }
+}
 
-    // If there's a "[with" in the string, get everything from the
-    // end of that to the last "]"
-    if((withPos = prettyFunction.find("[with")) != string::npos) {
-        withPos += 5; // 5 is the length of "with"
-        
-        // We need to leave a space on the front to make looking for whole
-        // identifiers easier.
-        // Something like "A = int" becomes " A = int", so we can find " A ",
-        // and the fact that it's at the start of the string isn't a special
-        // case.
+// Split template list into a map.
+// For example:
+//   " A = int, B = float"
+// becomes:
+//   "A": "int", "B": "float"
+// Note the leading space in the template list.
+static std::map<string, string>
+_GetTemplateList(const std::string& templates)
+{
+    std::map<string, string> result;
 
-        string::size_type i = prettyFunction.rfind(']');
-        if (i != string::npos) {
-            return prettyFunction.substr(withPos, i - withPos);
+    string::size_type typeEnd = templates.size();
+    string::size_type i = templates.rfind('=', typeEnd);
+    while (i != string::npos) {
+        auto typeStart = templates.find_first_not_of(" =", i);
+        auto nameEnd   = templates.find_last_not_of(" =", i);
+        auto nameStart = _GetStartOfName(templates, nameEnd);
+        result[templates.substr(nameStart, nameEnd + 1 - nameStart)] =
+            templates.substr(typeStart, typeEnd - typeStart);
+        typeEnd = templates.find_last_not_of(" =,;", nameStart - 1) + 1;
+        i = templates.rfind('=', typeEnd);
+    }
+
+    return result;
+}
+
+static string
+_FormatTemplateList(const std::map<string, string>& templates)
+{
+    string result;
+    if (!templates.empty()) {
+        for (const auto& value: templates) {
+            if (result.empty()) {
+                result += " [with ";
+            }
+            else {
+                result += ", ";
+            }
+            result += value.first;
+            result += " = ";
+            result += value.second;
         }
+        result += "]";
     }
-    return "";
+    return result;
 }
 
 /*
- * Finds the next template identifier in prettyFunction, starting from pos,
- * until a '>' is reached.  If there are no more identifiers, returns
- * an empty string.
+ * Finds the next template identifier in prettyFunction, starting from pos.
+ * pos is updated for the next call to _GetNextIdentifier() and iteration
+ * should stop when pos is std::string::npos.
  *
- * For example: _GccGetNextIdentifier("Foo<A, B>::Bar", 0) returns "A".
+ * For example: _GetNextIdentifier("Foo<A, B>::Bar", 0) returns "A".
+ *
+ * Note that Windows does not have template lists and directly embeds the
+ * types.  This only works on Windows to the extent that it parses the
+ * types somehow and tries to filter an empty map, yielding an empty map,
+ * which is the result we expect.  (Ultimately this is only invoked on
+ * Windows for the testArchFunction test.)
  */
 static string
-_GccGetNextIdentifier(string prettyFunction, size_t &pos)
+_GetNextIdentifier(const string& prettyFunction, string::size_type &pos)
 {
-    // If we're in front of the '<', move to it
-    std::string::size_type i = prettyFunction.find("<");
-    if(i != std::string::npos && pos < i) {
-        pos = i;
-    }
-    
-    // There is no closing '>' or we've passed it
-    if(prettyFunction.find('>', pos) == string::npos) {
+    // Skip '<' or leading space.
+    const string::size_type first = prettyFunction.find_first_not_of("< ", pos);
+
+    // If we found nothing or '<' then this is probably operator< or <<.
+    if (first == string::npos || prettyFunction[first] == '<') {
         pos = string::npos;
-        return "";
+        return string();
     }
 
     // Find the next separator, which should be a ',', unless we are on
-    // the last identifier, and then it should be a '>'
-    size_t nextPos = prettyFunction.find(',', pos);
-    if(nextPos == string::npos)
-        nextPos = prettyFunction.find('>', pos);
-
-    pos ++;
-    string identifier = prettyFunction.substr(pos, nextPos - pos);
-
-    // Update our position to be the end of the identifier we just got
-    pos = nextPos;
-    if(pos != string::npos) pos ++;
-    return identifier;
-
-}
-
-/*
- * Finds the value of identifier in the list of templates.  templates
- * must be a string of any number of " IDEN = VALUE" separated by commas.
- *
- * For example: _GccGetIdentifierValue("A", " A = int") returns "int".
- */
-static string
-_GccGetIdentifierValue(string identifier, string templates)
-{
-    // Search for the identifier surrounded by spaces to make sure
-    // we get exactly the right one
-    size_t start = templates.find(' ' + identifier + ' ');
-    if(start == string::npos) return "";
-    start ++;
-
-    // The first '=' we find will be the identifier's
-    size_t end = templates.find('=', start);
-    if(end == string::npos) return "";
-
-    // This '=' is for the next identifier
-    end = templates.find('=', end + 1);
-
-    // If we found a second '=', search back to find our closing ',',
-    // otherwise, we were the last identifier, and we want to get the 
-    // rest of the string anyway, so npos is ok
-    if(end != string::npos)
-        end = templates.rfind(',', end);
-
-    return templates.substr(start, end - start) + ", ";
-}
-
-/*
- * Constructs a string with all the template values used by prettyFunction,
- * using the list in templates.
- *
- * For example:
- * _GccMakePrettyTemplateString("Foo<A>::Bar", " A = int, B = char")
- * returns "[with A = int]".
- */
-static string
-_GccMakePrettyTemplateString(string prettyFunction, string templates)
-{
-    size_t pos = 0;
-    string prettyTemplates;
-
-    do {
-        string identifier = _GccGetNextIdentifier(prettyFunction, pos);
-        prettyTemplates += _GccGetIdentifierValue(identifier, templates);
-    } while(pos != string::npos);
-
-    // remove the last ", " and put the brackets on
-    if(prettyTemplates.length() >= 2) {
-        prettyTemplates.erase(prettyTemplates.length() - 2, 2);
-        prettyTemplates = " [with " + prettyTemplates + "]";
+    // the last identifier, and then it should be a '>'.  Update pos to
+    // be just before the next identifier.
+    std::string::size_type last = prettyFunction.find_first_of(",>", first);
+    if(last == string::npos) {
+        pos = string::npos;
+        last = prettyFunction.find('>', first);
+        if(last == string::npos)
+            last = prettyFunction.size();
+    }
+    else if (prettyFunction[last] == ',') {
+        // Skip ','.
+        pos = last + 1;
+    }
+    else {
+        // Skip to next template.
+        pos = prettyFunction.find('<', first);
     }
 
-    return prettyTemplates;
+    return prettyFunction.substr(first, last - first);
 }
 
-/*
- * Given function as gcc's __FUNCTION__ and prettyFunction as
- * gcc's __PRETTY_FUNCTION__, attempts to construct an even
- * prettier function name.  Removes information about return
- * types and arguments and reconstructs a list of templates used.
- *
- * For example:
- * _GccMakePrettierFunctionName("Bar", "int Foo<A>::Bar(float) [with A = int]")
- * returns "Foo<A>::Bar [with A = int]".
- */
-static string
-_GccGetPrettierFunctionName(string function, string prettyFunction)
+// Returns the elements of templates that are found in templates in
+// prettyFunction.  For example, if "Foo<A, B>::Bar" is passed as
+// prettyFunction then only the 'A' and 'B' elements of templates
+// will be returned.
+static std::map<string, string>
+_FilterTemplateList(const string& prettyFunction,
+                    const std::map<string, string>& templates)
 {
-    string templates = _GccGetTemplateString(prettyFunction);
-    prettyFunction = _GetFunctionName(function, prettyFunction);
+    std::map<string, string> result;
 
-    if(templates.empty() || prettyFunction.find("<") == string::npos)
-        return prettyFunction;
+    string::size_type pos = prettyFunction.find("<");
+    while (pos != string::npos) {
+        const auto identifier = _GetNextIdentifier(prettyFunction, pos);
+        if (!identifier.empty()) {
+            auto i = templates.find(identifier);
+            if (i != templates.end()) {
+                result.insert(*i);
+            }
+        }
+    }
 
-    templates = _GccMakePrettyTemplateString(prettyFunction, templates);
-
-    return prettyFunction + templates;
+    return result;
 }
-#endif
 
-#if defined(ARCH_COMPILER_ICC)
-/*
- * Given function as icc's __FUNCTION__ and prettyFunction as
- * icc's __PRETTY_FUNCTION__, attempts to construct an even
- * prettier function name.  Removes information about return
- * types and arguments and gets rid of "std::"
- *
- * For example:
- * _IccMakePrettierFunctionName("Bar", "int Foo<std::string>::Bar(float)")
- * returns "Foo<string>::Bar".
- */
-static string
-_IccMakePrettierFunctionName(string function, string prettyFunction)
-{
-    prettyFunction = _GetFunctionName(function, prettyFunction);
-    size_t stdPos;
-    while((stdPos = prettyFunction.find("std::")) != string::npos)
-        prettyFunction.erase(stdPos, 5);
-    return prettyFunction;
-}
-#endif
+} // anonymous namespace
 
 string
 ArchGetPrettierFunctionName(const string &function,
                             const string &prettyFunction)
 {
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
-    return _GccGetPrettierFunctionName(function, prettyFunction);
-#elif defined(ARCH_COMPILER_ICC)
-    return _IccGetPrettierFunctionName(function, prettyFunction);
-#else
-    return function;
-#endif
+    // Get the function signature and template list, respectively.
+    const pair<string, string> parts = _Split(prettyFunction);
+
+    // Get just the function name.
+    const auto functionName = _GetFunctionName(function, parts.first);
+
+    // Get the types from the template list.
+    auto templateList = _GetTemplateList(parts.second);
+
+    // Discard types from the template list that aren't in functionName.
+    templateList = _FilterTemplateList(functionName, templateList);
+
+    // Construct the prettier function name.
+    return functionName + _FormatTemplateList(templateList);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

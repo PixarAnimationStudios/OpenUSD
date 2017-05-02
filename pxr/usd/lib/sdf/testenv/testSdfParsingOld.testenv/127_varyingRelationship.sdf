@@ -1,0 +1,20 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def GprimSphere "Sphere"
+{
+    delete varying rel constraintTarget = </Pivot3>
+    add varying rel constraintTarget = [
+        </Pivot3>,
+        </Pivot2>,
+    ]
+    reorder varying rel constraintTarget = [
+        </Pivot2>,
+        </Pivot>,
+    ]
+    varying rel constraintTarget.default = </Pivot>    
+}
+

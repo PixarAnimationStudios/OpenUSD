@@ -25,8 +25,9 @@
 
 #include "pxr/imaging/hdx/drawTargetResolveTask.h"
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
-#include "pxr/imaging/hdx/drawTarget.h"
 #include "pxr/imaging/hdx/tokens.h"
+
+#include "pxr/imaging/hdSt/drawTarget.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 

@@ -25,6 +25,7 @@
 #define HDX_SELECTION_TASK_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -59,13 +60,16 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 ///
 class HdxSelectionTask : public HdSceneTask {
 public:
+    HDX_API
     HdxSelectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 
 protected:
     /// Execute render pass task
+    HDX_API
     virtual void _Execute(HdTaskContext* ctx);
 
     /// Sync the render pass resources
+    HDX_API
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
@@ -80,10 +84,13 @@ private:
 };
 
 // VtValue requirements
+HDX_API
 std::ostream& operator<<(std::ostream& out,
                          const HdxSelectionTaskParams& pv);
+HDX_API
 bool operator==(const HdxSelectionTaskParams& lhs,
                 const HdxSelectionTaskParams& rhs);
+HDX_API
 bool operator!=(const HdxSelectionTaskParams& lhs,
                 const HdxSelectionTaskParams& rhs);
 

@@ -54,6 +54,11 @@ HdRprim::~HdRprim()
     /*NOTHING*/
 }
 
+void
+HdRprim::Finalize(HdRenderParam *renderParam)
+{
+}
+
 std::vector<HdDrawItem>* 
 HdRprim::GetDrawItems(HdSceneDelegate* delegate,
                       TfToken const &defaultReprName, bool forced)
@@ -149,9 +154,9 @@ HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
 
 
 TfToken
-HdRprim::GetRenderTag(HdSceneDelegate* delegate) const
+HdRprim::GetRenderTag(HdSceneDelegate* delegate, TfToken const& reprName) const
 {
-    return delegate->GetRenderTag(_id);
+    return delegate->GetRenderTag(_id, reprName);
 }
 
 void 

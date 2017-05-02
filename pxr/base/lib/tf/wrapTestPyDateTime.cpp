@@ -30,7 +30,7 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -67,7 +67,9 @@ namespace {
         }
 
     };
-}
+
+} // anonymous namespace 
+
 
 void wrapTf_TestPyDateTime()
 {
@@ -91,5 +93,3 @@ void wrapTf_TestPyDateTime()
 
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,0 +1,139 @@
+Loading @TrickyInheritsAndRelocates/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Group>
+
+Prim Stack:
+    root.sdf             /Group
+    group.sdf            /Group
+
+Child names:
+     ['Model_Renamed']
+
+Prohibited child names:
+     ['Model']
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_Renamed>
+
+Prim Stack:
+    root.sdf             /Group/Model_Renamed
+    group.sdf            /Group/Model
+    model.sdf            /Model
+
+Child names:
+     ['A', 'B', 'Scope']
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_Renamed/A>
+
+Prim Stack:
+    root.sdf             /Group/Model_Renamed/A
+    model.sdf            /Model/A
+
+Property names:
+     ['a_target']
+
+Property stacks:
+/Group/Model_Renamed/A.a_target:
+    root.sdf             /Group/Model_Renamed/A.a_target
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_Renamed/B>
+
+Prim Stack:
+    root.sdf             /Group/Model_Renamed/B
+    root.sdf             /Group/Model_Renamed/A
+    model.sdf            /Model/B
+    model.sdf            /Model/A
+
+Property names:
+     ['a_target', 'b_target']
+
+Property stacks:
+/Group/Model_Renamed/B.a_target:
+    root.sdf             /Group/Model_Renamed/A.a_target
+/Group/Model_Renamed/B.b_target:
+    root.sdf             /Group/Model_Renamed/B.b_target
+
+------------------------------------------------------------------------
+Results for composing </Group/Model_Renamed/Scope>
+
+Prim Stack:
+    root.sdf             /Group/Model_Renamed/B
+    root.sdf             /Group/Model_Renamed/A
+    model.sdf            /Model/Scope
+    model.sdf            /Model/B
+    model.sdf            /Model/A
+
+Property names:
+     ['a_target', 'b_target']
+
+Property stacks:
+/Group/Model_Renamed/Scope.a_target:
+    root.sdf             /Group/Model_Renamed/A.a_target
+/Group/Model_Renamed/Scope.b_target:
+    root.sdf             /Group/Model_Renamed/B.b_target
+
+------------------------------------------------------------------------
+Results for composing </Rig>
+
+Prim Stack:
+    root.sdf             /Rig
+    rig.sdf              /Rig
+
+Child names:
+     ['Anim']
+
+Prohibited child names:
+     ['RigClass']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Anim>
+
+Prim Stack:
+    root.sdf             /Rig/Anim
+
+Child names:
+     ['RigClass', 'RigInstance', 'BadRigInstance']
+
+------------------------------------------------------------------------
+Results for composing </Rig/Anim/RigClass>
+
+Prim Stack:
+    root.sdf             /Rig/Anim/RigClass
+    rig.sdf              /Rig/RigClass
+
+Property names:
+     ['r_target']
+
+Property stacks:
+/Rig/Anim/RigClass.r_target:
+    root.sdf             /Rig/Anim/RigClass.r_target
+
+------------------------------------------------------------------------
+Results for composing </Rig/Anim/RigInstance>
+
+Prim Stack:
+    root.sdf             /Rig/Anim/RigInstance
+    root.sdf             /Rig/Anim/RigClass
+    rig.sdf              /Rig/RigClass
+
+Property names:
+     ['r_target']
+
+Property stacks:
+/Rig/Anim/RigInstance.r_target:
+    root.sdf             /Rig/Anim/RigClass.r_target
+
+------------------------------------------------------------------------
+Results for composing </Rig/Anim/BadRigInstance>
+
+Prim Stack:
+    root.sdf             /Rig/Anim/BadRigInstance
+    rig.sdf              /Rig/RigClass
+

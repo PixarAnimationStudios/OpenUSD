@@ -234,13 +234,13 @@ UsdRelationship::ClearTargets(bool removeSpec) const
 }
 
 bool
-UsdRelationship::GetTargets(SdfPathVector* targets,
-                            bool forwardToObjectsInMasters) const
+UsdRelationship::GetTargets(SdfPathVector* targets) const
 {
     TRACE_FUNCTION();
 
     UsdStage *stage = _GetStage();
     PcpErrorVector pcpErrors;
+    std::vector<std::string> otherErrors;
     PcpTargetIndex targetIndex;
     {
         // Our intention is that the following code requires read-only
@@ -262,61 +262,39 @@ UsdRelationship::GetTargets(SdfPathVector* targets,
     }
 
     targets->swap(targetIndex.paths);
+    if (!targets->empty() && _Prim()->IsInMaster()) {
+        Usd_PrimDataConstPtr master = get_pointer(_Prim());
+        while (!master->IsMaster()) { 
+            master = master->GetParent();  
+        }
+        
+        // Paths that point to an object under the master's source prim index
+        // are internal to the master and need to be translated to either
+        // the master or instance we're currently looking at.
+        const SdfPath& masterSourcePrimIndexPath = 
+            master->GetSourcePrimIndex().GetPath();
 
-    // Translate any target paths that point to descendents of instance prims
-    // to the corresponding prim in the instance's master if desired.
-    std::vector<std::string> otherErrors;
-    if (forwardToObjectsInMasters) {
-        const bool relationshipInMaster = _Prim()->IsInMaster();
-        SdfPath masterPath;
-        if (relationshipInMaster) {
-            masterPath = _Prim()->GetPath();
-            while (!masterPath.IsRootPrimPath()) { 
-                masterPath = masterPath.GetParentPath();
+        if (GetPrim().IsInMaster()) {
+            // Translate any paths that point to an object at or under the
+            // source prim index to our master.
+            for (SdfPath& target : *targets) {
+                target = target.ReplacePrefix(
+                    masterSourcePrimIndexPath, master->GetPath());
             }
         }
-
-        const Usd_InstanceCache* instanceCache = stage->_instanceCache.get();
-        for (SdfPath& path : *targets) {
-            const SdfPath& primPath = path.GetPrimPath();
-            const SdfPath& primInMasterPath = 
-                instanceCache->GetPrimInMasterForPrimIndexAtPath(primPath);
-            const bool pathIsObjectInMaster = !primInMasterPath.IsEmpty();
-
-            if (pathIsObjectInMaster) {
-                path = path.ReplacePrefix(primPath, primInMasterPath);
+        else if (GetPrim().IsInstanceProxy()) {
+            // Translate any paths that point to an object at or under the
+            // source prim index to our instance.
+            UsdPrim instance = GetPrim();
+            while (!instance.IsInstance()) { 
+                instance = instance.GetParent(); 
             }
-            else if (relationshipInMaster) {
-                // Relationships authored within an instance cannot target
-                // the instance itself or any its properties, since doing so
-                // would break the encapsulation of the instanced scene
-                // description and the ability to share that data across 
-                // multiple instances.
-                // 
-                // We can detect this situation by checking whether this
-                // target has a corresponding master prim. If so, issue
-                // an error and elide this target.
-                if (stage->_instanceCache->GetMasterForPrimIndexAtPath(primPath) 
-                    == masterPath) {
-                    // XXX: 
-                    // The path in this error message is potentially
-                    // confusing because it is the composed target path and
-                    // not necessarily what's authored in a layer. In order
-                    // to be more useful, we'd need to return more info
-                    // from the relationship target composition.
-                    otherErrors.push_back(TfStringPrintf(
-                        "Target path <%s> is not allowed because it is "
-                        "authored in instanced scene description but targets "
-                        "its owning instance.",
-                        path.GetText()));
-                    path = SdfPath();
-                }
+
+            for (SdfPath& target : *targets) {
+                target = target.ReplacePrefix(
+                    masterSourcePrimIndexPath, instance.GetPath());
             }
         }
-
-        targets->erase(
-            std::remove(targets->begin(), targets->end(), SdfPath()),
-            targets->end());
     }
 
     // TODO: handle errors
@@ -335,13 +313,12 @@ bool
 UsdRelationship::_GetForwardedTargets(SdfPathSet* visited,
                                       SdfPathSet* uniqueTargets,
                                       SdfPathVector* targets,
-                                      bool includeForwardingRels,
-                                      bool forwardToObjectsInMasters) const
+                                      bool includeForwardingRels) const
 {
     // Track recursive composition errors, starting with the first batch of
     // targets.
     SdfPathVector curTargets;
-    bool success = GetTargets(&curTargets, forwardToObjectsInMasters);
+    bool success = GetTargets(&curTargets);
 
     // Process all targets at this relationship.
     for (SdfPath const &target: curTargets) {
@@ -354,8 +331,7 @@ UsdRelationship::_GetForwardedTargets(SdfPathSet* visited,
                         // Only do this rel if we've not yet seen it.
                         success &= rel._GetForwardedTargets(
                             visited, uniqueTargets, targets,
-                            includeForwardingRels,
-                            forwardToObjectsInMasters);
+                            includeForwardingRels);
                     }
                     if (!includeForwardingRels)
                         continue;
@@ -372,18 +348,15 @@ UsdRelationship::_GetForwardedTargets(SdfPathSet* visited,
 bool
 UsdRelationship::_GetForwardedTargets(
     SdfPathVector *targets,
-    bool includeForwardingRels,
-    bool forwardToObjectsInMasters) const
+    bool includeForwardingRels) const
 {
     SdfPathSet visited, uniqueTargets;
     return _GetForwardedTargets(&visited, &uniqueTargets, targets,
-                                includeForwardingRels,
-                                forwardToObjectsInMasters);
+                                includeForwardingRels);
 }
 
 bool
-UsdRelationship::GetForwardedTargets(SdfPathVector* targets,
-                                     bool forwardToObjectsInMasters) const
+UsdRelationship::GetForwardedTargets(SdfPathVector* targets) const
 {
     if (!targets) {
         TF_CODING_ERROR("Passed null pointer for targets on <%s>",
@@ -392,8 +365,7 @@ UsdRelationship::GetForwardedTargets(SdfPathVector* targets,
     }
     targets->clear();
     return _GetForwardedTargets(targets,
-                                /*includeForwardingRels=*/false,
-                                forwardToObjectsInMasters);
+                                /*includeForwardingRels=*/false);
 }
 
 bool

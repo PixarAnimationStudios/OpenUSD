@@ -1,0 +1,9 @@
+#sdf 1.4.32
+#tagged-as-never-update
+
+def MfScope "Test"
+{
+    # Can't change typeName from Point to Normal.
+    Point pointAttr
+    Normal pointAttr = (1.0, 0.0, 0.0)
+}

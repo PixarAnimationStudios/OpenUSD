@@ -303,7 +303,7 @@ def GetPrimLoadability(prim):
     # XXX Note that we are potentially traversing the entire stage here.
     # If this becomes a performance issue, we can cast this query into C++,
     # cache results, etc.
-    for p in Usd.TreeIterator(prim, Usd.PrimIsActive):
+    for p in Usd.PrimRange(prim, Usd.PrimIsActive):
         if not p.IsLoaded():
             return (True, False)
     return (True, True)
@@ -319,6 +319,23 @@ def GetPrimsLoadability(prims):
         isLoadable = isLoadable or loadable
         isLoaded = isLoaded and loaded
     return (isLoadable, isLoaded)
+
+def GetFileOwner(path):
+    try:
+        import platform
+        if platform.system() == 'Windows':
+            # This only works if pywin32 is installed.
+            # Try "pip install pypiwin32".
+            import win32security as w32s
+            fs = w32s.GetFileSecurity(path, w32s.OWNER_SECURITY_INFORMATION)
+            sdo = fs.GetSecurityDescriptorOwner()
+            name, domain, use = w32.LookupAccountSid(None, sdo)
+            return "%s\\%s" % (domain, name)
+        else:
+            import os, pwd
+            return pwd.getpwuid(os.stat(path).st_uid).pw_name
+    except:
+        return "<unknown>"
 
 # In future when we have better introspection abilities in Usd core API,
 # we will change this function to accept a prim rather than a primStack.
@@ -350,13 +367,11 @@ def GetAssetCreationTime(primStack, assetIdentifier):
         from pixar import UsdviewPlug
         return UsdviewPlug.GetAssetCreationTime(definingFile, assetIdentifier)
     except:
-        import os, pwd, time
+        import os, time
         stat_info = os.stat(definingFile)
-        uid = stat_info.st_uid
-        user = pwd.getpwuid(uid)[0]
         return (definingFile.split('/')[-1],
                 time.ctime(stat_info.st_ctime),
-                user)
+                GetFileOwner(definingFile))
     
 
 def DumpMallocTags(stage, contextStr):

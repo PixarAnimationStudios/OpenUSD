@@ -22,30 +22,47 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-
-# PLEASE NOTE: This utility may be open sourced, please hesitate to add new
-# dependencies.
-
 import os, sys
+
+import platform
+isWindows = (platform.system() == 'Windows')
+
+def _findExe(name):
+    from distutils.spawn import find_executable
+    cmd = find_executable(name)
+    if cmd:
+        return cmd
+    if isWindows:
+        # find_executable under Windows only returns *.EXE files
+        # so we need to traverse PATH.
+        for path in os.environ['PATH'].split(os.pathsep):
+            base = os.path.join(path, name)
+            # We need to test for name.cmd first because on Windows, the USD
+            # executables are wrapped due to lack of N*IX style shebang support
+            # on Windows.
+            for ext in ['.cmd', '']:
+                cmd = base + ext
+                if os.access(cmd, os.X_OK):
+                    return cmd
+    return None
 
 # lookup usdcat and a suitable text editor. if none are available, 
 # this will cause the program to abort with a suitable error message.
 def _findEditorTools(usdFileName, readOnly):
-    from distutils.spawn import find_executable
-
     # Ensure the usdcat executable has been installed
-    usdcatCmd = find_executable("usdcat")
+    usdcatCmd = _findExe("usdcat")
     if not usdcatCmd:
         sys.exit("Error: Couldn't find 'usdcat'. Expected it to be in PATH.")
 
     # Ensure we have a suitable editor available
     editorCmd = (os.getenv("EDITOR") or 
-                 find_executable("emacs") or 
-                 find_executable("vim")) 
+                 _findExe("emacs") or
+                 _findExe("vim") or
+                 _findExe("notepad"))
     
     if not editorCmd:
         sys.exit("Error: Couldn't find a suitable text editor to use. Expected " 
-                 "either $EDITOR to be set, or emacs/vim to be installed.")
+                 "either $EDITOR to be set, or emacs/vim/notepad to be installed.")
 
 
     # special handling for emacs users

@@ -1,0 +1,23 @@
+------------------------------------------------------------------------
+Errors while composing </Root>
+
+The layer at @ErrorPermissionDenied/root.sdf@ has an illegal opinion about an attribute </Root.attr> which is private across a reference, inherit, or variant.  Ignoring.
+The layer at @ErrorPermissionDenied/root.sdf@ has an illegal opinion about a relationship </Root.privateRel> which is private across a reference, inherit, or variant.  Ignoring.
+The layer at @ErrorPermissionDenied/root.sdf@ has an illegal opinion about an attribute </Root.publicRel[/Root.A_attr].a> which is private across a reference, inherit, or variant.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </Parent/Child>
+
+@ErrorPermissionDenied/root.sdf@</Parent/Child>
+will be ignored because:
+@ErrorPermissionDenied/A.sdf@</Parent/Child>
+is private and overrides its opinions.
+
+------------------------------------------------------------------------
+Errors while composing </Model>
+
+@ErrorPermissionDenied/root.sdf@</Model>
+CANNOT inherit from:
+@ErrorPermissionDenied/root.sdf@</_PrivateClass>
+which is private.
+

@@ -25,6 +25,7 @@
 #define _HD_DRAW_ITEM_INSTANCE_H_
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "boost/shared_ptr.hpp"
 
@@ -52,10 +53,13 @@ typedef boost::shared_ptr<HdDrawItem> HdDrawItemSharedPtr;
 class HdDrawItemInstance
 {
 public:
+    HD_API
     HdDrawItemInstance(HdDrawItem const *drawItem);
+    HD_API
     ~HdDrawItemInstance();
 
     /// Set visibility state
+    HD_API
     void SetVisible(bool visible);
 
     /// Query visibility state
@@ -63,6 +67,7 @@ public:
 
     /// Set index into batch list. Can be used by
     /// batch during DrawItemInstanceChanged callback
+    HD_API
     void SetBatchIndex(size_t batchIndex);
 
     /// Query batch index
@@ -71,6 +76,7 @@ public:
     /// Set the batch that will receive the DrawItemInstanceChanged
     /// callback when visibility is updated. Setting batch to NULL
     /// will disable this callback.
+    // HD_API
     void SetBatch(Hd_DrawBatch *batch);
 
     /// Return a const pointer to draw item

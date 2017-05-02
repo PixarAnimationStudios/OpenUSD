@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/attributeQuery.h"
+#include "pxr/usd/usd/instanceCache.h"
 
 #include "pxr/usd/usd/conversions.h"
 #include "pxr/usd/usd/stage.h"
@@ -31,6 +32,7 @@
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
+#include "pxr/usd/pcp/targetIndex.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -273,6 +275,12 @@ UsdAttribute::_CreateSpec(const SdfValueTypeName& typeName, bool custom,
     return TfNullPtr;
 }
 
+SdfAttributeSpecHandle
+UsdAttribute::_CreateSpec() const
+{
+    return _GetStage()->_CreateAttributeSpecForEditing(*this);
+}
+
 bool
 UsdAttribute::_Create(const SdfValueTypeName& typeName, bool custom,
                       const SdfVariability &variability) const
@@ -290,6 +298,264 @@ UsdAttribute::_Create(const SdfValueTypeName& typeName, bool custom,
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
+
+
+SdfPath
+UsdAttribute::_GetPathForAuthoring(const SdfPath &path,
+                                   std::string* whyNot) const
+{
+    SdfPath result;
+    if (!path.IsEmpty()) {
+        SdfPath absPath =
+            path.MakeAbsolutePath(GetPath().GetAbsoluteRootOrPrimPath());
+        if (Usd_InstanceCache::IsPathMasterOrInMaster(absPath)) {
+            if (whyNot) { 
+                *whyNot = "Cannot refer to a master or an object within a "
+                    "master.";
+            }
+            return result;
+        }
+    }
+
+    // If this is a relative target path, we have to map both the anchor
+    // and target path and then re-relativize them.
+    const UsdEditTarget &editTarget = _GetStage()->GetEditTarget();
+    if (path.IsAbsolutePath()) {
+        result = editTarget.MapToSpecPath(path).StripAllVariantSelections();
+    } else {
+        const SdfPath anchorPrim = GetPath().GetPrimPath();
+        const SdfPath translatedAnchorPrim =
+            editTarget.MapToSpecPath(anchorPrim)
+            .StripAllVariantSelections();
+        const SdfPath translatedPath =
+            editTarget.MapToSpecPath(path.MakeAbsolutePath(anchorPrim))
+            .StripAllVariantSelections();
+        result = translatedPath.MakeRelativePath(translatedAnchorPrim);
+    }
+    
+    if (result.IsEmpty()) {
+        if (whyNot) {
+            *whyNot = TfStringPrintf(
+                "Cannot map <%s> to layer @%s@ via stage's EditTarget",
+                path.GetText(), _GetStage()->GetEditTarget().
+                GetLayer()->GetIdentifier().c_str());
+        }
+    }
+
+    return result;
+}
+
+
+bool
+UsdAttribute::AppendConnection(const SdfPath& source) const
+{
+    std::string errMsg;
+    const SdfPath pathToAuthor = _GetPathForAuthoring(source, &errMsg);
+    if (pathToAuthor.IsEmpty()) {
+        TF_CODING_ERROR("Cannot append connection <%s> to attribute <%s>: %s",
+                        source.GetText(), GetPath().GetText(), errMsg.c_str());
+        return false;
+    }
+
+    // NOTE! Do not insert any code that modifies scene description between the
+    // changeblock and the call to _CreateSpec!  Explanation: _CreateSpec calls
+    // code that inspects the composition graph and then does some authoring.
+    // We want that authoring to be inside the change block, but if any scene
+    // description changes are made after the block is created but before we
+    // call _CreateSpec, the composition structure may be invalidated.
+    SdfChangeBlock block;
+    SdfAttributeSpecHandle attrSpec = _CreateSpec();
+
+    if (!attrSpec)
+        return false;
+
+    attrSpec->GetConnectionPathList().Add(pathToAuthor);
+    return true;
+}
+
+bool
+UsdAttribute::RemoveConnection(const SdfPath& source) const
+{
+    std::string errMsg;
+    const SdfPath pathToAuthor = _GetPathForAuthoring(source, &errMsg);
+    if (pathToAuthor.IsEmpty()) {
+        TF_CODING_ERROR("Cannot remove connection <%s> from attribute <%s>: %s",
+                        source.GetText(), GetPath().GetText(), errMsg.c_str());
+        return false;
+    }
+
+    // NOTE! Do not insert any code that modifies scene description between the
+    // changeblock and the call to _CreateSpec!  Explanation: _CreateSpec calls
+    // code that inspects the composition graph and then does some authoring.
+    // We want that authoring to be inside the change block, but if any scene
+    // description changes are made after the block is created but before we
+    // call _CreateSpec, the composition structure may be invalidated.
+    SdfChangeBlock block;
+    SdfAttributeSpecHandle attrSpec = _CreateSpec();
+
+    if (!attrSpec)
+        return false;
+
+    attrSpec->GetConnectionPathList().Remove(pathToAuthor);
+    return true;
+}
+
+bool
+UsdAttribute::BlockConnections() const
+{
+    // NOTE! Do not insert any code that modifies scene description between the
+    // changeblock and the call to _CreateSpec!  Explanation: _CreateSpec calls
+    // code that inspects the composition graph and then does some authoring.
+    // We want that authoring to be inside the change block, but if any scene
+    // description changes are made after the block is created but before we
+    // call _CreateSpec, the composition structure may be invalidated.
+    SdfChangeBlock block;
+    SdfAttributeSpecHandle attrSpec = _CreateSpec();
+
+    if (!attrSpec)
+        return false;
+
+    attrSpec->GetConnectionPathList().ClearEditsAndMakeExplicit();
+    return true;
+}
+
+bool
+UsdAttribute::SetConnections(const SdfPathVector& sources) const
+{
+    SdfPathVector mappedPaths;
+    mappedPaths.reserve(sources.size());
+    for (const SdfPath &path: sources) {
+        std::string errMsg;
+        mappedPaths.push_back(_GetPathForAuthoring(path, &errMsg));
+        if (mappedPaths.back().IsEmpty()) {
+            TF_CODING_ERROR("Cannot set connection <%s> on attribute <%s>: %s",
+                            path.GetText(), GetPath().GetText(), 
+                            errMsg.c_str());
+            return false;
+        }
+    }
+
+    // NOTE! Do not insert any code that modifies scene description between the
+    // changeblock and the call to _CreateSpec!  Explanation: _CreateSpec calls
+    // code that inspects the composition graph and then does some authoring.
+    // We want that authoring to be inside the change block, but if any scene
+    // description changes are made after the block is created but before we
+    // call _CreateSpec, the composition structure may be invalidated.
+    SdfChangeBlock block;
+    SdfAttributeSpecHandle attrSpec = _CreateSpec();
+
+    if (!attrSpec)
+        return false;
+
+    attrSpec->GetConnectionPathList().ClearEditsAndMakeExplicit();
+    auto connectionPathList = attrSpec->GetConnectionPathList();
+    for (const SdfPath &path: mappedPaths) {
+        connectionPathList.Add(path);
+    }
+
+    return true;
+}
+
+bool
+UsdAttribute::ClearConnections() const
+{
+    // NOTE! Do not insert any code that modifies scene description between the
+    // changeblock and the call to _CreateSpec!  Explanation: _CreateSpec calls
+    // code that inspects the composition graph and then does some authoring.
+    // We want that authoring to be inside the change block, but if any scene
+    // description changes are made after the block is created but before we
+    // call _CreateSpec, the composition structure may be invalidated.
+    SdfChangeBlock block;
+    SdfAttributeSpecHandle attrSpec = _CreateSpec();
+
+    if (!attrSpec)
+        return false;
+
+    attrSpec->GetConnectionPathList().ClearEdits();
+    return true;
+}
+
+bool
+UsdAttribute::GetConnections(SdfPathVector *sources) const
+{
+    TRACE_FUNCTION();
+
+    UsdStage *stage = _GetStage();
+    PcpErrorVector pcpErrors;
+    std::vector<std::string> otherErrors;
+    PcpTargetIndex targetIndex;
+    {
+        // Our intention is that the following code requires read-only
+        // access to the PcpCache, so use a const-ref.
+        const PcpCache& pcpCache(*stage->_GetPcpCache());
+        // In USD mode, Pcp does not cache property indexes, so we
+        // compute one here ourselves and use that.  First, we need
+        // to get the prim index of the owning prim.
+        const PcpPrimIndex &primIndex = _Prim()->GetPrimIndex();
+        // PERFORMANCE: Here we can't avoid constructing the full property path
+        // without changing the Pcp API.  We're about to do serious
+        // composition/indexing, though, so the added expense may be neglible.
+        const PcpSite propSite(pcpCache.GetLayerStackIdentifier(), GetPath());
+        PcpPropertyIndex propIndex;
+        PcpBuildPrimPropertyIndex(propSite.path, pcpCache, primIndex,
+                                  &propIndex, &pcpErrors);
+        PcpBuildTargetIndex(propSite, propIndex, SdfSpecTypeAttribute,
+                            &targetIndex, &pcpErrors);
+    }
+
+    sources->swap(targetIndex.paths);
+    if (!sources->empty() && _Prim()->IsInMaster()) {
+        Usd_PrimDataConstPtr master = get_pointer(_Prim());
+        while (!master->IsMaster()) { 
+            master = master->GetParent();
+        }
+
+        // Paths that point to an object under the master's source prim index
+        // are internal to the master and need to be translated to either
+        // the master or instance we're currently looking at.
+        const SdfPath& masterSourcePrimIndexPath = 
+            master->GetSourcePrimIndex().GetPath();
+
+        if (GetPrim().IsInMaster()) {
+            // Translate any paths that point to an object at or under the
+            // source prim index to our master.
+            for (SdfPath& path : *sources) {
+                path = path.ReplacePrefix(
+                    masterSourcePrimIndexPath, master->GetPath());
+            }
+        }
+        else if (GetPrim().IsInstanceProxy()) {
+            // Translate any paths that point to an object at or under the
+            // source prim index to our instance.
+            UsdPrim instance = GetPrim();
+            while (!instance.IsInstance()) { 
+                instance = instance.GetParent();
+            }
+
+            for (SdfPath &path : *sources) {
+                path = path.ReplacePrefix(
+                    masterSourcePrimIndexPath, instance.GetPath());
+            }
+        }
+    }
+
+    // TODO: handle errors
+    const bool isClean = pcpErrors.empty() && otherErrors.empty();
+    if (!isClean) {
+        stage->_ReportErrors(
+            pcpErrors, otherErrors,
+            TfStringPrintf("Getting connections for attribute <%s>",
+                           GetPath().GetText()));
+    }
+
+    return isClean;
+}
+
+bool
+UsdAttribute::HasAuthoredConnections() const
+{
+    return HasAuthoredMetadata(SdfFieldKeys->ConnectionPaths);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

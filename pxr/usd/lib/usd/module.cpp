@@ -24,8 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyModule.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
@@ -49,7 +48,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdReferences);
     TF_WRAP(UsdSchemaRegistry);
     TF_WRAP(UsdSpecializes);
-    TF_WRAP(UsdTreeIterator);
+    TF_WRAP(UsdPrimRange);
     TF_WRAP(UsdVariantSets);
 
     // SchemaBase and subclasses.
@@ -71,6 +70,3 @@ TF_WRAP_MODULE
     TF_WRAP(UsdCrateInfo);
     TF_WRAP(UsdResolveInfo);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

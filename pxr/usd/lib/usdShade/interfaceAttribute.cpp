@@ -37,9 +37,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 static std::string
 _GetRelPrefix(const TfToken& renderTarget)
 {
-    return TfStringPrintf("%s:%s", 
-            renderTarget.GetText(),
-            UsdShadeTokens->interfaceRecipientsOf.GetText());
+    return renderTarget.IsEmpty() ? UsdShadeTokens->interfaceRecipientsOf:
+            TfStringPrintf("%s:%s", renderTarget.GetText(),
+                UsdShadeTokens->interfaceRecipientsOf.GetText());
 }
 
 /* static */ std::string
@@ -254,13 +254,8 @@ UsdShadeInterfaceAttribute::ConnectToSource(
         TfToken const &sourceName,
         UsdShadeAttributeType const sourceType) const
 {
-    if (UsdRelationship rel = _GetConnectionRel(
-            GetAttr(), true)) {
-        return UsdShadeConnectableAPI::ConnectToSource(rel, 
+    return UsdShadeConnectableAPI::ConnectToSource(GetAttr(), 
             source, sourceName, sourceType, GetTypeName());
-    }
-
-    return false;
 }
 
 bool 

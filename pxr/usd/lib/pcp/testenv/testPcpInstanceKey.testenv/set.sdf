@@ -1,0 +1,30 @@
+#sdf 1.4.32
+
+class "_class_Prop"
+{
+    double a = 2.5
+
+    over "geom"
+    {
+        double x = 2.5
+    }
+}
+
+def "Set"
+{
+    def "Prop_1" (
+        references = @./prop.sdf@</Prop>
+        instanceable = True
+    )
+    {
+        double a = 2.0
+    }
+
+    def "Prop_2" (
+        references = @./prop.sdf@</Prop>
+        instanceable = True
+    )
+    {
+        double a = 2.0
+    }
+}

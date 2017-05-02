@@ -1,0 +1,9 @@
+#usda 1.0
+
+over "main" 
+(
+    references = [@./root.usda@</main>]
+    clipActive = [(101, 1), (103, 0)]
+)
+{
+}

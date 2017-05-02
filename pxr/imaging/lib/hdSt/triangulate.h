@@ -39,6 +39,21 @@ class HdSt_MeshTopology;
 ///
 /// Triangle indices computation CPU.
 ///
+
+// Index triangulation generates a mapping from triangle ID to authored
+// face index domain, called primitiveParams. The primitive params are stored
+// alongside topology index buffers, so that the same aggregation locators can
+// be used for such an additional buffer as well. This change transforms index
+// buffer from int array to int[3] array or int[4] array at first. Thanks to
+// the heterogenius non-interleaved buffer aggregation ability in hd,
+// we'll get this kind of buffer layout:
+//
+// ----+--------+--------+------
+// ... |i0 i1 i2|i3 i4 i5| ...   index buffer (for triangles)
+// ----+--------+--------+------
+// ... |   m0   |   m1   | ...   primitive param buffer (coarse face index)
+// ----+--------+--------+------
+
 class HdSt_TriangleIndexBuilderComputation : public HdComputedBufferSource {
 public:
     HdSt_TriangleIndexBuilderComputation(HdSt_MeshTopology *topology,
@@ -58,36 +73,6 @@ private:
     HdBufferSourceSharedPtr _primitiveParam;
 };
 
-// primitiveParam : triangles to coarse faces mapping buffer
-//
-// In order to access per-face signals (face color, face selection etc)
-// in glsl shader, we need a mapping from primitiveID (triangulated
-// or quadrangulated, or can be an adaptively refined patch) to authored
-// face index domain.
-//
-/*
-                 +--------+-------+
-                /| \      |\      |\
-               / |  \  1  | \  2  | \
-              /  |   \    |  \    |  \
-             /   |    \   |   \   | 2 +
-            / 0  |  1  \  | 2  \  |  /
-           /     |      \ |     \ | /
-          /      |       \|      \|/
-         +-------+--------+-------+
-*/
-// We store this mapping buffer alongside topology index buffers, so
-// that same aggregation locators can be used for such an additional
-// buffer as well. This change transforms index buffer from int array
-// to int[3] array or int[4] array at first. Thanks to the heterogenius
-// non-interleaved buffer aggregation ability in hd, we'll get this kind
-// of buffer layout:
-//
-// ----+--------+--------+------
-// ... |i0 i1 i2|i3 i4 i5| ...   index buffer (for triangles)
-// ----+--------+--------+------
-// ... |   m0   |   m1   | ...   primitive param buffer (coarse face index)
-// ----+--------+--------+------
 //
 
 /// \class HdSt_TriangulateFaceVaryingComputation

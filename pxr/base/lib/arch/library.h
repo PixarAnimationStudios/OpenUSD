@@ -29,7 +29,13 @@
 
 #include <string>
 
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+#if defined(ARCH_OS_WINDOWS)
+#   define ARCH_LIBRARY_LAZY    0
+#   define ARCH_LIBRARY_NOW     0
+#   define ARCH_LIBRARY_LOCAL   0
+#   define ARCH_LIBRARY_GLOBAL  0
+#   define ARCH_LIBRARY_SUFFIX  ".dll"
+#else
 #   include <dlfcn.h>
 #   define ARCH_LIBRARY_LAZY    RTLD_LAZY
 #   define ARCH_LIBRARY_NOW     RTLD_NOW
@@ -40,12 +46,6 @@
 #   else
 #       define ARCH_LIBRARY_SUFFIX  ".so"
 #   endif
-#else
-#   define ARCH_LIBRARY_LAZY    0
-#   define ARCH_LIBRARY_NOW     0
-#   define ARCH_LIBRARY_LOCAL   0
-#   define ARCH_LIBRARY_GLOBAL  0
-#   define ARCH_LIBRARY_SUFFIX  ".dll"
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -1,0 +1,12 @@
+#sdf 1.4.32
+
+def "Instance" (
+    payload = @./payload.sdf@</Payload>
+)
+{
+    def "Child" (
+        payload = @./child_payload.sdf@</ChildPayload>
+    )
+    {
+    }
+}

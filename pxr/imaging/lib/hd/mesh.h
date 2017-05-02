@@ -25,6 +25,7 @@
 #define HD_MESH_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/rprim.h"
@@ -38,6 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdMesh : public HdRprim {
 public:
+    HD_API
     virtual ~HdMesh();
 
     ///
@@ -63,6 +65,7 @@ public:
 protected:
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this mesh as a prototype.
+    HD_API
     HdMesh(SdfPath const& id,
            SdfPath const& instancerId = SdfPath());
 

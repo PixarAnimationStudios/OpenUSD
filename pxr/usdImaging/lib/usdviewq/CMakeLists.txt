@@ -24,6 +24,9 @@ pxr_shared_library(usdviewq
 
     CPPFILES
         moduleDeps.cpp
+        
+    PUBLIC_HEADERS
+        api.h
 
     PYMODULE_CPPFILES
         module.cpp
@@ -48,22 +51,20 @@ pxr_shared_library(usdviewq
         settings.py
         watchWindow.py
         adjustClipping.py
+        adjustDefaultMaterial.py
         nodeViewItem.py
         common.py
         attributeValueEditor.py
         pythonExpressionPrompt.py
         referenceEditor.py
         overridableLineEdit.py
-        icons/branch-closed.png
-        icons/branch-closed-selected.png
-        icons/branch-open.png
-        icons/branch-open-selected.png
         usdviewstyle.qss
 
     PYSIDE_UI_FILES
         mainWindowUI.ui
         watchWindowUI.ui
         adjustClippingUI.ui
+        adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui
         pythonExpressionPromptUI.ui
         referenceEditorUI.ui

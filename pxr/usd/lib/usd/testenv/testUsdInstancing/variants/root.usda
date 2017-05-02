@@ -1,0 +1,41 @@
+#usda 1.0
+
+def "Model_A_1" (
+    instanceable = true
+    references = @./model.usda@</Model>
+    variants = {
+        string type = "a"
+    }
+)
+{
+}
+
+def "Model_A_2" (
+    instanceable = true
+    references = @./model.usda@</Model>
+    variants = {
+        string type = "a"
+    }
+)
+{
+}
+
+def "Model_B_1" (
+    instanceable = true
+    references = @./model.usda@</Model>
+    variants = {
+        string type = "b"
+    }
+)
+{
+}
+
+def "Model_B_2" (
+    instanceable = true
+    references = @./model.usda@</Model>
+    variants = {
+        string type = "b"
+    }
+)
+{
+}

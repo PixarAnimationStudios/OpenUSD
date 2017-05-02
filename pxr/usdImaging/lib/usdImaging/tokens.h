@@ -25,6 +25,7 @@
 #define USDIMAGING_TOKENS_H
 
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,19 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (usdVaryingXform)       \
     (uvPrimvar)
 
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_TOKENS);
-
-#define USDIMAGING_COLLECTION_TOKENS                    \
-    (geometryAllPurposes)                               \
-    (geometryAndGuides)                                 \
-    (geometryAndProxy)                                  \
-    (geometryAndProxyAndGuides)                         \
-    (geometryAndProxyAndRender)                         \
-    (geometryAndRenderAndGuides)                        \
-    (geometryAndRender)
-
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingCollectionTokens, USDIMAGING_COLLECTION_TOKENS);
-
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_API, USDIMAGING_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

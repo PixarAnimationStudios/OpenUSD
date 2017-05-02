@@ -17,7 +17,6 @@ pxr_shared_library(tf
         ${Boost_IOSTREAMS_LIBRARY}
         ${Boost_DATE_TIME_LIBRARY}
         ${TBB_tbb_LIBRARY}
-        ${TBB_tbbmalloc_LIBRARY}
 
     INCLUDE_DIRS
         ${PYTHON_INCLUDE_DIR}
@@ -124,8 +123,6 @@ pxr_shared_library(tf
         cxxCast.h
         declarePtrs.h
         diagnosticLite.h
-        executeAtStartup.h
-        executeAtUnload.h
         hashmap.h
         hashset.h
         instantiateSingleton.h

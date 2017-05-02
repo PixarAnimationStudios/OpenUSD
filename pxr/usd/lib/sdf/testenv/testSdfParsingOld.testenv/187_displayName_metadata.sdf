@@ -1,0 +1,21 @@
+#sdf 1.4.32
+(
+    """Test displayName metadata"""
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+class MfScope "Rig"
+{
+    def MfScope "Leg"
+    {
+        custom double kneeFB (
+            displayName = "LkneeFB"
+        )
+        custom rel foo
+        rel foo = </Rig/Leg.kneeFB> (
+            displayName = "Lfoo"
+        )
+    }
+}
+

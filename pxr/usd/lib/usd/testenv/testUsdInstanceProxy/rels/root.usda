@@ -1,0 +1,101 @@
+#usda 1.0
+
+def "Instance"
+{
+    double attr = 1.0
+
+    def "A"
+    {
+        double attr = 1.0
+        rel rel = [ 
+            </Instance>,
+            </Instance.attr>,
+            </Instance/A>,
+            </Instance/A.attr>,
+            </Instance/NestedInstance_1>,
+            </Instance/NestedInstance_1.attr>,
+            </Instance/NestedInstance_1/B>,
+            </Instance/NestedInstance_1/B.attr>,
+            </Instance/NestedInstance_2>,
+            </Instance/NestedInstance_2.attr>,
+            </Instance/NestedInstance_2/B>,
+            </Instance/NestedInstance_2/B.attr>
+        ]
+    }
+
+    def "NestedInstance_1" (
+        instanceable = true
+        references = </NestedInstance>
+    )
+    {
+    }
+
+    def "NestedInstance_2" (
+        instanceable = true
+        references = </NestedInstance>
+    )
+    {
+    }
+}
+
+def "NestedInstance"
+{
+    double attr = 1.0
+    def "B"
+    {
+        double attr = 1.0
+        rel rel = [
+            </NestedInstance/B>,
+            </NestedInstance/B.attr>
+        ]
+    }
+}
+
+def "Root"
+{
+    rel fwdRel = [
+        </Root/Instance_1/A.rel>,
+        </Root/Instance_2/A.rel>
+    ]
+
+    rel rel = [ 
+        </Root/Instance_1>,
+        </Root/Instance_1.attr>,
+        </Root/Instance_1/A>,
+        </Root/Instance_1/A.attr>,
+        </Root/Instance_1/NestedInstance_1>,
+        </Root/Instance_1/NestedInstance_1.attr>,
+        </Root/Instance_1/NestedInstance_1/B>,
+        </Root/Instance_1/NestedInstance_1/B.attr>,
+        </Root/Instance_1/NestedInstance_2>,
+        </Root/Instance_1/NestedInstance_2.attr>,
+        </Root/Instance_1/NestedInstance_2/B>,
+        </Root/Instance_1/NestedInstance_2/B.attr>,
+        </Root/Instance_2>,
+        </Root/Instance_2.attr>,
+        </Root/Instance_2/A>,
+        </Root/Instance_2/A.attr>,
+        </Root/Instance_2/NestedInstance_1>,
+        </Root/Instance_2/NestedInstance_1.attr>,
+        </Root/Instance_2/NestedInstance_1/B>,
+        </Root/Instance_2/NestedInstance_1/B.attr>,
+        </Root/Instance_2/NestedInstance_2>,
+        </Root/Instance_2/NestedInstance_2.attr>,
+        </Root/Instance_2/NestedInstance_2/B>,
+        </Root/Instance_2/NestedInstance_2/B.attr>
+    ]
+
+    def "Instance_1" (
+        instanceable = true
+        references = </Instance>
+    )
+    {
+    }
+
+    def "Instance_2" (
+        instanceable = true
+        references = </Instance>
+    )
+    {
+    }
+}

@@ -1,0 +1,13 @@
+#sdf 1.4.32
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+def MfScope "Root"
+{
+    custom rel target_rel = </Root/Root> (
+        noLoadHint = true
+    )
+}
+

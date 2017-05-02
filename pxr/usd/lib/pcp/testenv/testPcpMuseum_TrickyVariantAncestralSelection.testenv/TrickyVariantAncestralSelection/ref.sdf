@@ -1,0 +1,22 @@
+#sdf 1.4.32
+
+class Scope "_class_A1"
+{
+}
+
+def Scope "A1" (
+    references = @./ref2.sdf@</A>
+    inherits = </_class_A1>
+)
+{
+    over "B" (
+        references = @./ref2.sdf@</B>
+    )
+    {
+        over "C" (
+            references = @./ref2.sdf@</C>
+        )
+        {
+        }
+    }
+}

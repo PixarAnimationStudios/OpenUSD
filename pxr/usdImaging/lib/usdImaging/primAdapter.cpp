@@ -142,16 +142,18 @@ UsdImagingPrimAdapter::GetPathForInstanceIndex(
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::PopulateSelection(SdfPath const &path,
+UsdImagingPrimAdapter::PopulateSelection(SdfPath const &usdPath,
                                          VtIntArray const &instanceIndices,
                                          HdxSelectionSharedPtr const &result)
 {
+    const SdfPath indexPath = _delegate->GetPathForIndex(usdPath);
+
     // insert itself into the selection map.
     // XXX: should check the existence of the path
-    result->AddInstance(path, instanceIndices);
+    result->AddInstance(indexPath, instanceIndices);
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg("PopulateSelection: (prim) %s\n",
-                                       path.GetText());
+                                       indexPath.GetText());
 
     return true;
 }

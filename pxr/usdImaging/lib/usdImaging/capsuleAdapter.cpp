@@ -53,6 +53,12 @@ UsdImagingCapsuleAdapter::~UsdImagingCapsuleAdapter()
 {
 }
 
+bool
+UsdImagingCapsuleAdapter::IsSupported(HdRenderIndex* renderIndex)
+{
+    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+}
+
 SdfPath
 UsdImagingCapsuleAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,

@@ -36,7 +36,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static
 VtValue
@@ -104,8 +106,9 @@ _GetAsText(const SdfSpecHandle &self)
     return stream.str();
 }
 
-void
-wrapSpec()
+} // anonymous namespace 
+
+void wrapSpec()
 {
     typedef SdfSpec This;
 
@@ -196,5 +199,3 @@ wrapSpec()
              "ignored.")
        ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

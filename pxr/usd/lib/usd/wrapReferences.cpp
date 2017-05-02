@@ -27,12 +27,11 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::string;
 
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdReferences()
 {
@@ -62,7 +61,3 @@ void wrapUsdReferences()
         .def(!self)
         ;
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

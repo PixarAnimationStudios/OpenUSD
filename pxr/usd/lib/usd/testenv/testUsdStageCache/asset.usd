@@ -1,0 +1,47 @@
+#usda 1.0
+
+def "Foo" (references = @ref.usd@</Bar>) {
+    float size.timeSamples = { 1: 1, 2: 2, 3: 3 }
+
+    float times = 1.0
+    float times.timeSamples = { 1: 9, 2: 8, 3: 7 }
+
+    uniform int uniformInt = 1
+
+    add rel relToOther = [</Qux>]
+    rel simple = [</Bar>]
+    rel fwdRel = [</Bar.toOther>]
+}
+
+over "Bar" (inherits = </Bright>) {
+    def "Other" {
+        
+    }
+}
+
+def "VariantGuy" (
+    variantSets = ["LOD", "Awesomeness"]
+    variants = { string "Awesomeness" = "YesVery" }
+) {
+    variantSet "LOD" = {
+        "High" {
+            float resolution = 99.1
+        }
+    }
+
+    variantSet "Awesomeness" = {
+        "YesVery" {
+            int awesomes = 1000
+        }
+    }
+}
+
+over "Inactive" (active=false) {
+ def "Other" {}
+}
+
+over "Qux" {}
+
+class Scope "Bright" { 
+    int x = 1
+}

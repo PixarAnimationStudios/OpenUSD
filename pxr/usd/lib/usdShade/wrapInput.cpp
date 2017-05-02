@@ -38,17 +38,20 @@
 
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using std::vector;
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static bool
 _Set(const UsdShadeInput &self, object val, const UsdTimeCode &time) 
 {
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
+
+} // anonymous namespace 
 
 void wrapUsdShadeInput()
 {
@@ -69,6 +72,15 @@ void wrapUsdShadeInput()
         .def("GetRenderType", &Input::GetRenderType)
         .def("HasRenderType", &Input::HasRenderType)
 
+        .def("SetDocumentation", &Input::SetDocumentation)
+        .def("GetDocumentation", &Input::GetDocumentation)
+        .def("SetDisplayGroup", &Input::SetDisplayGroup)
+        .def("GetDisplayGroup", &Input::GetDisplayGroup)
+
+        .def("SetConnectability", &Input::SetConnectability)
+        .def("GetConnectability", &Input::GetConnectability)
+        .def("ClearConnectability", &Input::ClearConnectability)
+
         .def("GetAttr", &Input::GetAttr,
              return_value_policy<return_by_value>())
         ;
@@ -80,7 +92,4 @@ void wrapUsdShadeInput()
         std::vector<Input>,
         TfPySequenceToPython<std::vector<Input> > >();
 }
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -31,13 +31,17 @@
  
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static size_t
 __hash__(const PcpInstanceKey& key)
 {
     return hash_value(key);
 }
+
+} // anonymous namespace 
 
 void
 wrapInstanceKey()
@@ -52,5 +56,3 @@ wrapInstanceKey()
         .def("__hash_", __hash__)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

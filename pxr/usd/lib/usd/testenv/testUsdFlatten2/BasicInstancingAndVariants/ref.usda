@@ -1,0 +1,26 @@
+#usda 1.0
+
+def "Model" (
+    variantSets = ["y"]
+    variants = {
+        string y = "a"
+    }
+)
+{
+    double x = 5.0
+
+    variantSet "y" = {
+        "a" {
+            def "geom"
+            {
+                double x = 10.0
+            }
+        }
+        "b" {
+            def "geom"
+            {
+                double x = 20.0
+            }
+        }
+    }
+}

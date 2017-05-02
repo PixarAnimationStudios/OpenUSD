@@ -1,0 +1,45 @@
+#sdf 1.4.32
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def "Sullivan" (
+    variantSets = ["pin", "shade"]
+    add inherits = [</_pinclass_Sullivan>, </_shadeclass_Sullivan>]
+    references = @./model-pin.sdf@</SullivanNoPin>
+)
+{
+    variantSet "pin" = {
+        "ModelPin" (
+            references = @./model-pin.sdf@</SullivanModelPin>
+        ) {
+        }
+        "ShotPin" (
+            references = @./model-pin.sdf@</SullivanShotPin>
+            add inherits = </_extraclass_Sullivan>
+            reorder inherits = [</_extraclass_Sullivan>, </_shadeclass_Sullivan>]
+        ) {
+        }
+    }
+}
+
+class "_pinclass_Sullivan" (
+    variants = {
+        string pin = "ModelPin"
+    }
+)
+{
+}
+
+class "_shadeclass_Sullivan" (
+    variants = {
+        string shade = "FlatShade"
+    }
+)
+{
+}
+
+class "_extraclass_Sullivan"
+{
+}

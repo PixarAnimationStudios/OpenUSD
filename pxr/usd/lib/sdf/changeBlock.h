@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 /// \class SdfChangeBlock
 ///
 /// <b>DANGER DANGER DANGER</b>
@@ -66,8 +68,6 @@
 /// inside a changeblock without talking to any downstream libraries.
 /// For example, this is how Csd performs namespace edits.
 ///
-
-PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfChangeBlock {
 public:

@@ -41,7 +41,7 @@
 #include "pxr/usd/usd/stageCache.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/tokens.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/usdFileFormat.h"
 
 #include "pxr/usd/pcp/changes.h"
@@ -1092,6 +1092,14 @@ UsdStage::_GetRelationshipDefinition(const UsdRelationship &rel) const
 SdfPrimSpecHandle
 UsdStage::_CreatePrimSpecForEditing(const SdfPath& path)
 {
+    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathMasterOrInMaster(path))) {
+        TF_CODING_ERROR("Cannot create prim spec at path <%s>; "
+                        "authoring to a prim in an instancing master "
+                        "is not allowed.",
+                        path.GetText());
+        return TfNullPtr;
+    }
+
     const UsdEditTarget &editTarget = GetEditTarget();
     const SdfPath &targetPath = editTarget.MapToSpecPath(path);
     return targetPath.IsEmpty() ? SdfPrimSpecHandle() :
@@ -1134,6 +1142,15 @@ template <class PropType>
 SdfHandle<PropType>
 UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
 {
+    UsdPrim prim = prop.GetPrim();
+    if (ARCH_UNLIKELY(prim.IsInMaster())) {
+        TF_CODING_ERROR("Cannot create property spec at path <%s>; "
+                        "authoring to a property in an instancing master "
+                        "is not allowed.",
+                        prop.GetPath().GetText());
+        return TfNullPtr;
+    }
+
     typedef SdfHandle<PropType> TypedSpecHandle;
 
     const UsdEditTarget &editTarget = GetEditTarget();
@@ -1167,7 +1184,6 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
     TypedSpecHandle specToCopy;
 
     // Get definition, if any.
-    UsdPrim prim = prop.GetPrim();
     specToCopy = _GetPropertyDefinition<PropType>(prop);
 
     if (!specToCopy) {
@@ -1264,14 +1280,6 @@ UsdStage::_SetMetadataImpl(const UsdObject &obj,
 {
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
 
-    if (ARCH_UNLIKELY(obj.GetPrim().IsInMaster())) {
-        TF_CODING_ERROR("Cannot set metadata at path <%s>; "
-                        "authoring to a prim in an instancing master is not "
-                        "allowed.",
-                        obj.GetPath().GetText());
-        return false;
-    }
-
     SdfSpecHandle spec;
 
     if (obj.Is<UsdProperty>()) {
@@ -1286,7 +1294,6 @@ UsdStage::_SetMetadataImpl(const UsdObject &obj,
         return false;
     }
 
-    // XXX: why is this not caught by SdfLayer? Is this a BdData bug?
     if (!spec) {
         TF_CODING_ERROR("Cannot set metadata. Failed to create spec <%s> in "
                         "layer @%s@",
@@ -1368,14 +1375,6 @@ bool
 UsdStage::_SetValueImpl(
     UsdTimeCode time, const UsdAttribute &attr, const T& newValue)
 {
-    if (ARCH_UNLIKELY(attr.GetPrim().IsInMaster())) {
-        TF_CODING_ERROR("Cannot set attribute value at path <%s>; "
-                        "authoring to a prim in an instancing master is not "
-                        "allowed.",
-                        attr.GetPath().GetText());
-        return false;
-    }
-
     // if we are setting a value block, we don't want type checking
     if (!_ValueContainsBlock(&newValue)) {
         // Do a type check.  Obtain typeName.
@@ -1460,8 +1459,8 @@ UsdStage::_ClearValue(UsdTimeCode time, const UsdAttribute &attr)
 {
     if (ARCH_UNLIKELY(attr.GetPrim().IsInMaster())) {
         TF_CODING_ERROR("Cannot clear attribute value at path <%s>; "
-                        "authoring to a prim in an instancing master is not "
-                        "allowed.",
+                        "authoring to an attribute in an instancing master "
+                        "is not allowed.",
                         attr.GetPath().GetText());
         return false;
     }
@@ -1506,8 +1505,8 @@ UsdStage::_ClearMetadata(const UsdObject &obj, const TfToken& fieldName,
 {
     if (ARCH_UNLIKELY(obj.GetPrim().IsInMaster())) {
         TF_CODING_ERROR("Cannot clear metadata at path <%s>; "
-                        "authoring to a prim in an instancing master is not "
-                        "allowed.",
+                        "authoring to a prim in an instancing master "
+                        "is not allowed.",
                         obj.GetPath().GetText());
         return false;
     }
@@ -1604,7 +1603,7 @@ _IsPrivateFieldKey(const TfToken& fieldKey)
 UsdPrim
 UsdStage::GetPseudoRoot() const
 {
-    return UsdPrim(_pseudoRoot);
+    return UsdPrim(_pseudoRoot, SdfPath());
 }
 
 UsdPrim
@@ -1637,7 +1636,19 @@ UsdStage::HasDefaultPrim() const
 UsdPrim
 UsdStage::GetPrimAtPath(const SdfPath &path) const
 {
-    return UsdPrim(_GetPrimDataAtPath(path));
+    // Silently return an invalid UsdPrim if the given path is not an
+    // absolute path to maintain existing behavior.
+    if (!path.IsAbsolutePath()) {
+        return UsdPrim();
+    }
+
+    // If this path points to a prim beneath an instance, return
+    // an instance proxy that uses the prim data from the corresponding
+    // prim in the master but appears to be a prim at the given path.
+    Usd_PrimDataConstPtr primData = _GetPrimDataAtPathOrInMaster(path);
+    const SdfPath& proxyPrimPath = 
+        primData && primData->GetPath() != path ? path : SdfPath::EmptyPath();
+    return UsdPrim(primData, proxyPrimPath);
 }
 
 Usd_PrimDataConstPtr
@@ -1658,6 +1669,26 @@ UsdStage::_GetPrimDataAtPath(const SdfPath &path)
         lock.acquire(*_primMapMutex, /*write=*/false);
     PathToNodeMap::const_iterator entry = _primMap.find(path);
     return entry != _primMap.end() ? entry->second.get() : NULL;
+}
+
+Usd_PrimDataConstPtr 
+UsdStage::_GetPrimDataAtPathOrInMaster(const SdfPath &path) const
+{
+    Usd_PrimDataConstPtr primData = _GetPrimDataAtPath(path);
+
+    // If no prim data exists at the given path, check if this
+    // path is pointing to a prim beneath an instance. If so, we
+    // need to return the prim data for the corresponding prim
+    // in the master.
+    if (!primData) {
+        const SdfPath primInMasterPath = 
+            _instanceCache->GetPrimInMasterForPath(path);
+        if (!primInMasterPath.IsEmpty()) {
+            primData = _GetPrimDataAtPath(primInMasterPath);
+        }
+    }
+
+    return primData;
 }
 
 bool
@@ -1735,9 +1766,9 @@ UsdStage::_WalkPrimsWithMastersImpl(
     tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash> *seenMasterPrimPaths
     ) const
 {
-    UsdTreeIterator childIt = UsdTreeIterator::AllPrims(prim);
+    UsdPrimRange children = UsdPrimRange::AllPrims(prim);
     WorkParallelForEach(
-        childIt, childIt.GetEnd(),
+        children.begin(), children.end(),
         [=](UsdPrim const &child) {
             cb(child);
             if (child.IsInstance()) {
@@ -2038,8 +2069,22 @@ UsdStage::GetLoadSet()
 SdfPathSet
 UsdStage::FindLoadable(const SdfPath& rootPath)
 {
+    SdfPath path = rootPath;
+
+    // If the given path points to a prim beneath an instance,
+    // convert it to the path of the prim in the corresponding master.
+    // This ensures _DiscoverPayloads will always return paths to 
+    // prims in masters for loadable prims in instances.
+    if (!Usd_InstanceCache::IsPathMasterOrInMaster(path)) {
+        const SdfPath pathInMaster = 
+            _instanceCache->GetPrimInMasterForPath(path);
+        if (!pathInMaster.IsEmpty()) {
+            path = pathInMaster;
+        }
+    }
+
     SdfPathSet loadable;
-    _DiscoverPayloads(rootPath, NULL, /* unloadedOnly = */ false, &loadable);
+    _DiscoverPayloads(path, NULL, /* unloadedOnly = */ false, &loadable);
     return loadable;
 }
 
@@ -2722,8 +2767,64 @@ UsdStage::IsSupportedFile(const std::string& filePath)
                                           UsdUsdFileFormatTokens->Target);
 }
 
+namespace {
+
+void _SaveLayers(const SdfLayerHandleVector& layers)
+{
+    for (const SdfLayerHandle& layer : layers) {
+        if (!layer->IsDirty()) {
+            continue;
+        }
+
+        if (layer->IsAnonymous()) {
+            TF_WARN("Not saving @%s@ because it is an anonymous layer",
+                    layer->GetIdentifier().c_str());
+            continue;
+        }
+
+        // Sdf will emit errors if there are any problems with
+        // saving the layer.
+        layer->Save();
+    }
+}
+
+}
+
+void
+UsdStage::Save()
+{
+    SdfLayerHandleVector layers = GetUsedLayers();
+
+    const PcpLayerStackPtr localLayerStack = _GetPcpCache()->GetLayerStack();
+    if (TF_VERIFY(localLayerStack)) {
+        const SdfLayerHandleVector sessionLayers = 
+            localLayerStack->GetSessionLayers();
+        const auto isSessionLayer = 
+            [&sessionLayers](const SdfLayerHandle& l) {
+                return std::find(
+                    sessionLayers.begin(), sessionLayers.end(), l) 
+                    != sessionLayers.end();
+            };
+
+        layers.erase(std::remove_if(layers.begin(), layers.end(), 
+                                    isSessionLayer),
+                     layers.end());
+    }
+
+    _SaveLayers(layers);
+}
+
+void
+UsdStage::SaveSessionLayers()
+{
+    const PcpLayerStackPtr localLayerStack = _GetPcpCache()->GetLayerStack();
+    if (TF_VERIFY(localLayerStack)) {
+        _SaveLayers(localLayerStack->GetSessionLayers());
+    }
+}
+
 static bool
-_CheckAbsolutePrimPath(const SdfPath &path)
+_IsValidPathForCreatingPrim(const SdfPath &path)
 {
     // Path must be absolute.
     if (ARCH_UNLIKELY(!path.IsAbsolutePath())) {
@@ -2744,6 +2845,12 @@ _CheckAbsolutePrimPath(const SdfPath &path)
         return false;
     }
 
+    // Path must not be in a master.
+    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathMasterOrInMaster(path))) {
+        TF_CODING_ERROR("Path must not be in a master: <%s>", path.GetText());
+        return false;
+    }
+
     return true;
 }
 
@@ -2756,7 +2863,7 @@ UsdStage::OverridePrim(const SdfPath &path)
         return GetPseudoRoot();
     
     // Validate path input.
-    if (!_CheckAbsolutePrimPath(path))
+    if (!_IsValidPathForCreatingPrim(path))
         return UsdPrim();
 
     // If there is already a UsdPrim at the given path, grab it.
@@ -2795,7 +2902,7 @@ UsdStage::DefinePrim(const SdfPath &path,
         return GetPseudoRoot();
 
     // Validate path input.
-    if (!_CheckAbsolutePrimPath(path))
+    if (!_IsValidPathForCreatingPrim(path))
         return UsdPrim();
 
     // Define all ancestors.
@@ -2839,6 +2946,10 @@ UsdStage::DefinePrim(const SdfPath &path,
 UsdPrim
 UsdStage::CreateClassPrim(const SdfPath &path)
 {
+    // Validate path input.
+    if (!_IsValidPathForCreatingPrim(path))
+        return UsdPrim();
+
     // Classes must be root prims.
     if (!path.IsRootPrimPath()) {
         TF_CODING_ERROR("Classes must be root prims.  <%s> is not a root prim "
@@ -3052,22 +3163,22 @@ UsdStage::IsLayerMuted(const std::string& layerIdentifier) const
     return _cache->IsLayerMuted(layerIdentifier);
 }
 
-UsdTreeIterator
+UsdPrimRange
 UsdStage::Traverse()
 {
-    return UsdTreeIterator::Stage(UsdStagePtr(this));
+    return UsdPrimRange::Stage(UsdStagePtr(this));
 }
 
-UsdTreeIterator
+UsdPrimRange
 UsdStage::Traverse(const Usd_PrimFlagsPredicate &predicate)
 {
-    return UsdTreeIterator::Stage(UsdStagePtr(this), predicate);
+    return UsdPrimRange::Stage(UsdStagePtr(this), predicate);
 }
 
-UsdTreeIterator
+UsdPrimRange
 UsdStage::TraverseAll()
 {
-    return UsdTreeIterator::Stage(UsdStagePtr(this),
+    return UsdPrimRange::Stage(UsdStagePtr(this),
                                   Usd_PrimFlagsPredicate::Tautology());
 }
 
@@ -3349,13 +3460,40 @@ UsdStage::_HandleLayersDidChange(
     UsdNotice::StageContentsChanged(self).Send(self);
 }
 
-void UsdStage::_Recompose(const PcpChanges &changes,
-                          SdfPathSet *initialPathsToRecompose)
+void 
+UsdStage::_Recompose(const PcpChanges &changes,
+                     SdfPathSet *initialPathsToRecompose)
 {
     SdfPathSet newPathsToRecompose;
     SdfPathSet *pathsToRecompose = initialPathsToRecompose ?
         initialPathsToRecompose : &newPathsToRecompose;
 
+    _RecomposePrims(changes, pathsToRecompose);
+
+    // Update layer change notice listeners if changes may affect
+    // the set of used layers.
+    bool changedUsedLayers = !pathsToRecompose->empty();
+    if (!changedUsedLayers) {
+        const PcpChanges::LayerStackChanges& layerStackChanges = 
+            changes.GetLayerStackChanges();
+        for (const auto& entry : layerStackChanges) {
+            if (entry.second.didChangeLayers ||
+                entry.second.didChangeSignificantly) {
+                changedUsedLayers = true;
+                break;
+            }
+        }
+    }
+
+    if (changedUsedLayers) {
+        _RegisterPerLayerNotices();
+    }
+}
+
+void 
+UsdStage::_RecomposePrims(const PcpChanges &changes,
+                          SdfPathSet *pathsToRecompose)
+{
     changes.Apply();
 
     const PcpChanges::CacheChanges &cacheChanges = changes.GetCacheChanges();
@@ -3513,9 +3651,6 @@ void UsdStage::_Recompose(const PcpChanges &changes,
         _ComposeSubtreesInParallel(
             subtreesToRecompose, &primIndexPathsForSubtrees);
     }
-
-    if (!pathVecToRecompose.empty())
-        _RegisterPerLayerNotices();
 }
 
 template <class PrimIndexPathMap>
@@ -3888,30 +4023,6 @@ namespace {
 using _MasterToFlattenedPathMap 
     = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
 
-SdfPath
-_GenerateTranslatedTargetPath(const SdfPath& inputPath,
-                              const _MasterToFlattenedPathMap& masterToFlattened)
-{
-    if (inputPath == SdfPath::AbsoluteRootPath()) {
-        return inputPath;
-    }
-
-    // Master prims will always be the root        
-    auto prefix = inputPath;
-    for ( ; prefix.GetParentPath() != SdfPath::AbsoluteRootPath(); 
-            prefix = prefix.GetParentPath()) { 
-
-        // Nothing to do here, just climbing to the parent path
-    }
-
-    auto replacement = masterToFlattened.find(prefix);
-    if (replacement == end(masterToFlattened)) {
-        return inputPath;
-    }
-
-    return inputPath.ReplacePrefix(prefix, replacement->second);
-}
-
 // We want to give generated masters in the flattened stage
 // reserved(using '__' as a prefix), unclashing paths, however,
 // we don't want to use the '__Master' paths which have special
@@ -3993,10 +4104,8 @@ UsdStage::Flatten(bool addSourceFileComment) const
         _CopyMasterPrim(master, flatLayer, masterToFlattened);
     }
 
-    for (auto childIt = UsdTreeIterator::AllPrims(GetPseudoRoot()); 
-         childIt; ++childIt) {
-        UsdPrim usdPrim = *childIt;
-        _FlattenPrim(usdPrim, flatLayer, usdPrim.GetPath(), masterToFlattened);
+    for (UsdPrim prim: UsdPrimRange::AllPrims(GetPseudoRoot())) {
+        _FlattenPrim(prim, flatLayer, prim.GetPath(), masterToFlattened);
     }
 
     if (addSourceFileComment) {
@@ -4048,8 +4157,21 @@ UsdStage::_FlattenPrim(const UsdPrim &usdPrim,
     }
     
     _CopyMetadata(usdPrim, newPrim);
-    for (auto const &prop : usdPrim.GetAuthoredProperties()) {
-        _CopyProperty(prop, newPrim, masterToFlattened);
+
+    // In the case of flattening clips, we may have builtin attributes which aren't
+    // declared in the static scene topology, but may have a value in some
+    // clips that we want to relay into the flattened result.
+    // XXX: This should be removed if we fix GetProperties()
+    // and GetAuthoredProperties to consider clips.
+    auto hasValue = [](const UsdProperty& prop){
+        return prop.Is<UsdAttribute>()
+               && prop.As<UsdAttribute>().HasAuthoredValueOpinion();
+    };
+    
+    for (auto const &prop : usdPrim.GetProperties()) {
+        if (prop.IsAuthored() || hasValue(prop)) {
+            _CopyProperty(prop, newPrim, masterToFlattened);
+        }
     }
 }
 
@@ -4061,10 +4183,8 @@ UsdStage::_CopyMasterPrim(const UsdPrim &masterPrim,
 {
     const auto& flattenedMasterPath 
         = masterToFlattened.at(masterPrim.GetPath());
-   
-    for (auto primIt = UsdTreeIterator::AllPrims(masterPrim); primIt; primIt++){
-        UsdPrim child = *primIt;
-        
+
+    for (UsdPrim child: UsdPrimRange::AllPrims(masterPrim)) {
         // We need to update the child path to use the Flatten name.
         const auto flattenedChildPath = child.GetPath().ReplacePrefix(
             masterPrim.GetPath(), flattenedMasterPath);
@@ -4130,12 +4250,29 @@ UsdStage::_CopyProperty(const UsdProperty &prop,
 
          SdfPathVector targets;
          rel.GetTargets(&targets);
+         if (targets.empty()) {
+             sdfRel->GetTargetPathList().ClearEditsAndMakeExplicit();
+         }
+         else {
+             // If this relationship is in a master, we need to translate
+             // any targets that point to a prim in this master to the
+             // corresponding flattened master.
+             if (prop.GetPrim().IsInMaster()) {
+                 UsdPrim master = prop.GetPrim();
+                 while (!master.IsMaster()) {
+                     master = master.GetParent();
+                 }
 
-         SdfTargetsProxy sdfTargets = sdfRel->GetTargetPathList();
-         sdfTargets.ClearEditsAndMakeExplicit();
-         for (auto const& path : targets) {
-             sdfTargets.Add(_GenerateTranslatedTargetPath(path, 
-                                                          masterToFlattened));
+                 const SdfPath* flattenedMasterPath = 
+                     TfMapLookupPtr(masterToFlattened, master.GetPath());
+                 if (TF_VERIFY(flattenedMasterPath)) {
+                     for (auto& path : targets) {
+                         path = path.ReplacePrefix(
+                             master.GetPath(), *flattenedMasterPath);
+                     }
+                 }
+             }
+             sdfRel->GetTargetPathList().GetExplicitItems() = targets;
          }
      }
 }
@@ -5868,6 +6005,9 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
         return false;
     }
 
+    // This is the lowest-level site for guaranteeing that all GetTimeSample
+    // queries clear out the return vector
+    times->clear();
     const auto copySamplesInInterval = [](const std::set<double>& samples, 
                                           vector<double>* target, 
                                           const GfInterval& interval) 

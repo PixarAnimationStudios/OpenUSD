@@ -95,6 +95,15 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
                                         shadingMode.GetText()).c_str());
                         jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
                     }
+                } else { 
+                    TfToken modeToken(theOption[1].asChar()); 
+                    if (PxrUsdMayaShadingModeRegistry::GetInstance().GetExporter(modeToken)) { 
+                        jobArgs.shadingMode = modeToken; 
+                    } else { 
+                        MGlobal::displayError( 
+                            TfStringPrintf("No shadingMode '%s' found. Setting shadingMode='none'", modeToken.GetText()).c_str()); 
+                        jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none; 
+                    }
                 }
             } else if (theOption[0] == MString("readAnimData")) {
                 jobArgs.readAnimData = theOption[1].asInt();

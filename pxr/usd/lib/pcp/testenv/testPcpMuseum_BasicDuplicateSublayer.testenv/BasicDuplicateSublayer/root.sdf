@@ -1,0 +1,16 @@
+#sdf 1.4.32
+(
+    """
+    This example has two sublayers, A.sdf and B.sdf.
+    A.sdf also sublayers B.sdf, which is fine.
+    Duplicates are allowed unless they form a cycle.
+    """
+    subLayers = [
+        @./A.sdf@,
+        @./B.sdf@
+    ]
+)
+
+def "A" 
+{
+}

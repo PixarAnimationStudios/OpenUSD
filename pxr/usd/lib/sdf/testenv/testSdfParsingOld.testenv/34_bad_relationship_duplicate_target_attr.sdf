@@ -1,0 +1,16 @@
+#sdf 1.4.32
+#tagged-as-never-update
+(
+    """Error due to duplicate attributes in relationship target"""
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "foo"
+{
+    custom rel bad
+    rel bad = </foo/Foo/Bar> {
+        double dupe = 1
+    }
+}
+

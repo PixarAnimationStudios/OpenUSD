@@ -1,0 +1,19 @@
+#sdf 1.4.32
+(
+    """
+    Regression test case for bug 69932. This bug manifested as cycle detection
+    errors when composing affected prims, which was caused by Pcp erroneously
+    trying to add an arc from a node to itself. This occurred when propagating
+    implied inherits through a prim where relocations were involved.
+
+    This test case was distilled from M2's Pigeon model, which is where the
+    bug was originally found.
+    """
+)
+
+def Scope "Pigeon" (
+    references = @./Pigeon_rig.sdf@</Pigeon>
+)
+{
+}
+

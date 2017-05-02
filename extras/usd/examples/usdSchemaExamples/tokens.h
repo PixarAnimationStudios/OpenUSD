@@ -34,6 +34,7 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/pxr.h"
+#include "./api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -73,7 +74,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>paramsVelocity</b> - UsdSchemaExamplesParamsAPI
 /// \li <b>paramsVolume</b> - UsdSchemaExamplesParamsAPI
 /// \li <b>target</b> - UsdSchemaExamplesSimple
-TF_DECLARE_PUBLIC_TOKENS(UsdSchemaExamplesTokens, USDSCHEMAEXAMPLES_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdSchemaExamplesTokens, USDSCHEMAEXAMPLES_API, USDSCHEMAEXAMPLES_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

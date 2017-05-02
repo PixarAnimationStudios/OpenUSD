@@ -1,0 +1,148 @@
+Loading @TrickyNestedClasses/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </CharRig>
+
+Prim Stack:
+    root.sdf             /CharRig
+
+Child names:
+     ['Rig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig
+
+Child names:
+     ['HandsRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig
+    HandsRig.sdf         /HandsRig
+
+Child names:
+     ['_Class_HandRig', 'SymHandRig', 'LHandRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/_Class_HandRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig
+    HandRig.sdf          /HandRig
+
+Child names:
+     ['IndexRig', '_Class_FingerRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/_Class_HandRig/IndexRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig/IndexRig
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig/IndexRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.sdf          /HandRig/IndexRig
+    HandRig.sdf          /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.sdf          /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/SymHandRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig/SymHandRig
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig
+    HandsRig.sdf         /HandsRig/SymHandRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig
+    HandRig.sdf          /HandRig
+
+Child names:
+     ['IndexRig', '_Class_FingerRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/SymHandRig/IndexRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig/SymHandRig/IndexRig
+    root.sdf             /CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig/IndexRig
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/SymHandRig/IndexRig
+    HandsRig.sdf         /HandsRig/SymHandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig/IndexRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.sdf          /HandRig/IndexRig
+    HandRig.sdf          /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/SymHandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.sdf          /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/LHandRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig/LHandRig
+    root.sdf             /CharRig/Rig/HandsRig/SymHandRig
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig
+    HandsRig.sdf         /HandsRig/LHandRig
+    HandsRig.sdf         /HandsRig/SymHandRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig
+    HandRig.sdf          /HandRig
+
+Child names:
+     ['IndexRig', '_Class_FingerRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/LHandRig/IndexRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig/LHandRig/IndexRig
+    root.sdf             /CharRig/Rig/HandsRig/LHandRig/_Class_FingerRig
+    root.sdf             /CharRig/Rig/HandsRig/SymHandRig/IndexRig
+    root.sdf             /CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig/IndexRig
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/LHandRig/IndexRig
+    HandsRig.sdf         /HandsRig/LHandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/SymHandRig/IndexRig
+    HandsRig.sdf         /HandsRig/SymHandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig/IndexRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.sdf          /HandRig/IndexRig
+    HandRig.sdf          /HandRig/_Class_FingerRig
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/HandsRig/LHandRig/_Class_FingerRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/HandsRig/LHandRig/_Class_FingerRig
+    root.sdf             /CharRig/Rig/HandsRig/SymHandRig/_Class_FingerRig
+    root.sdf             /CharRig/Rig/HandsRig/_Class_HandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/LHandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/SymHandRig/_Class_FingerRig
+    HandsRig.sdf         /HandsRig/_Class_HandRig/_Class_FingerRig
+    HandRig.sdf          /HandRig/_Class_FingerRig
+

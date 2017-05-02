@@ -27,6 +27,7 @@
 /// \file glf/info.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -36,10 +37,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Returns \c true if each extension name listed in \a extensions
 /// is supported by the current GL context.
+GLF_API
 bool GlfHasExtensions(std::string const & extensions);
 
 /// Tests whether the current GL context only has minimal graphics support.
 /// This is true for NX clients at least.
+GLF_API
 bool GlfHasLegacyGraphics();
 
 

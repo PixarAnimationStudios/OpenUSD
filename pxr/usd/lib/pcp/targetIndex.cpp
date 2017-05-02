@@ -307,6 +307,7 @@ _RemoveTargetPathErrorsForPath(
             dynamic_cast<const PcpErrorTargetPathBase*>(it->get())) {
             if (targetPathError->composedTargetPath == composedTargetPath) {
                 it = targetPathErrors->erase(it);
+                end = targetPathErrors->end();
                 continue;
             }
         }

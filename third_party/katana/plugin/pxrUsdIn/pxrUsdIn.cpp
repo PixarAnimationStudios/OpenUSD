@@ -125,21 +125,8 @@ public:
             return;
         }
 
-        // A flag to force the use of default motion samples. This is only set
-        // when at root and an isolate path is specified. In this case, we must
-        // check whether the isolated path starts with any of the 
-        // user-specified
-        // paths that should use the default motion sample times.
-        //
-        bool useDefaultMotion = false;
-
         if (interface.atRoot()) {
             interface.stopChildTraversal();
-
-            if (!usdInArgs->GetIsolatePath().empty())
-            {
-                useDefaultMotion = GetDefaultMotionAtRoot(usdInArgs);
-            }
 
             // XXX This info currently gets used to determine whether
             // to correctively rotate cameras. The camera's zUp needs to be
@@ -178,52 +165,6 @@ public:
             }
             
             interface.setAttr("info.usdOpArgs", opArgs);
-            
-            FnKat::GroupAttribute masterMapping =
-                    opArgs.getChildByName("masterMapping");
-            if (masterMapping.isValid() && masterMapping.getNumberOfChildren())
-            {
-                FnGeolibServices::StaticSceneCreateOpArgsBuilder sscb(false);
-                
-                
-                
-                for (size_t i = 0, e = masterMapping.getNumberOfChildren();
-                        i != e; ++i)
-                {
-                    std::string masterName = FnKat::DelimiterDecode(
-                            masterMapping.getChildName(i));
-                    
-                    std::string katanaPath =  FnKat::StringAttribute(
-                            masterMapping.getChildByIndex(i)
-                                    ).getValue("", false);
-                    
-                    if (katanaPath.empty())
-                    {
-                        continue;
-                    }
-                    
-                    sscb.createEmptyLocation(katanaPath, "instance source");
-                    sscb.setAttrAtLocation(katanaPath,
-                            "tabs.scenegraph.stopExpand", 
-                            FnKat::IntAttribute(1));
-                    sscb.setAttrAtLocation(katanaPath, "childPrimPath",
-                            FnKat::StringAttribute(masterName));
-                }
-                
-                interface.createChild(
-                        "Masters",
-                        "PxrUsdIn.MasterIntermediate",
-                        FnKat::GroupBuilder()
-                            .update(opArgs)
-                            .set("staticScene", sscb.build())
-                            .build(),
-                        FnKat::GeolibCookInterface::ResetRootFalse,
-                        new PxrUsdKatanaUsdInPrivateData(
-                                usdInArgs->GetRootPrim(),
-                                usdInArgs, privateData, useDefaultMotion
-                                ),
-                        PxrUsdKatanaUsdInPrivateData::Delete);
-            }
         }
 
         bool verbose = usdInArgs->IsVerbose();
@@ -238,6 +179,26 @@ public:
                 return;
             }
             readerLock.lock();
+        }
+
+        // When in "as sources and instances" mode, scan for instances
+        // and masters at each location that contains a payload.
+        if (prim.HasPayload() &&
+            FnAttribute::StringAttribute(
+                 interface.getOpArg("instanceMode")
+                 ).getValue("expanded", false) == 
+                "as sources and instances")
+        {
+            FnKat::GroupAttribute masterMapping =
+                PxrUsdKatanaUtils::BuildInstanceMasterMapping(
+                        prim.GetStage(), prim.GetPath());
+            if (masterMapping.isValid() &&
+                masterMapping.getNumberOfChildren()) {
+                opArgs = FnKat::GroupBuilder()
+                    .update(opArgs)
+                    .set("masterMapping", masterMapping)
+                    .build();
+            }
         }
 
         //
@@ -389,6 +350,55 @@ public:
                             variantSet.GetVariantSelection()));
             
         }
+            
+        // Emit "Masters".
+        // When prepopulating these must go under the root;
+        // otherwise they go under each payload scope.
+        if ((interface.atRoot() && usdInArgs->GetPrePopulate()) ||
+            (prim.HasPayload() && !usdInArgs->GetPrePopulate())) {
+            FnKat::GroupAttribute masterMapping =
+                    opArgs.getChildByName("masterMapping");
+            if (masterMapping.isValid() && masterMapping.getNumberOfChildren())
+            {
+                FnGeolibServices::StaticSceneCreateOpArgsBuilder sscb(false);
+                
+                for (size_t i = 0, e = masterMapping.getNumberOfChildren();
+                        i != e; ++i)
+                {
+                    std::string masterName = FnKat::DelimiterDecode(
+                            masterMapping.getChildName(i));
+                    
+                    std::string katanaPath =  FnKat::StringAttribute(
+                            masterMapping.getChildByIndex(i)
+                                    ).getValue("", false);
+                    
+                    if (katanaPath.empty())
+                    {
+                        continue;
+                    }
+                    
+                    sscb.createEmptyLocation(katanaPath, "instance source");
+                    sscb.setAttrAtLocation(katanaPath,
+                            "tabs.scenegraph.stopExpand", 
+                            FnKat::IntAttribute(1));
+                    sscb.setAttrAtLocation(katanaPath, "childPrimPath",
+                            FnKat::StringAttribute(masterName));
+                }
+                
+                interface.createChild(
+                        "Masters",
+                        "PxrUsdIn.MasterIntermediate",
+                        FnKat::GroupBuilder()
+                            .update(opArgs)
+                            .set("staticScene", sscb.build())
+                            .build(),
+                        FnKat::GeolibCookInterface::ResetRootFalse,
+                        new PxrUsdKatanaUsdInPrivateData(
+                                usdInArgs->GetRootPrim(),
+                                usdInArgs, privateData),
+                        PxrUsdKatanaUsdInPrivateData::Delete);
+            }
+        }
 
         if (!skipAllChildren) {
 
@@ -442,7 +452,7 @@ public:
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(
                                 child, usdInArgs,
-                                privateData, useDefaultMotion),
+                                privateData),
                         PxrUsdKatanaUsdInPrivateData::Delete);
             }
         }
@@ -527,6 +537,7 @@ public:
         }
         // XXX END
 
+        ab.sessionLocation = sessionLocation;
         ab.sessionAttr = sessionAttr;
 
         ab.ignoreLayerRegex = FnKat::StringAttribute(
@@ -575,28 +586,16 @@ public:
             }
         }
 
-        // Build the set of paths which should use default motion sample times.
-        //
-        FnAttribute::GroupAttribute defaultMotionPathsAttr =
-                sessionAttr.getChildByName("defaultMotionPaths");
-        if (defaultMotionPathsAttr.isValid())
-        {
-            for (size_t i = 0, e = 
-                    defaultMotionPathsAttr.getNumberOfChildren();
-                    i != e; ++i)
-            {
-                ab.defaultMotionPaths.insert(pystring::replace(
-                    FnAttribute::DelimiterDecode(
-                        defaultMotionPathsAttr.getChildName(i)),
-                        sessionLocation, "", 1));
-            }
-        }
+        // Determine whether to prepopulate the USD stage.
+        ab.prePopulate =
+            FnKat::IntAttribute(interface.getOpArg("prePopulate"))
+                        .getValue(1 /* default prePopulate=yes */ , false);
 
         ab.stage =  UsdKatanaCache::GetInstance().GetStage(
                 fileName, 
                 sessionAttr, sessionLocation,
                 ab.ignoreLayerRegex, 
-                true /* forcePopulate */);
+                ab.prePopulate);
 
         if (!ab.stage) {
             return ab.buildWithError("PxrUsdIn: USD Stage cannot be loaded.");
@@ -608,7 +607,8 @@ public:
                 "as sources and instances")
         {
             additionalOpArgs = FnKat::GroupAttribute("masterMapping",
-                PxrUsdKatanaUtils::BuildInstanceMasterMapping(ab.stage), true);
+                PxrUsdKatanaUtils::BuildInstanceMasterMapping(ab.stage,
+                                      SdfPath::AbsoluteRootPath()), true);
         }
         
         ab.isolatePath = FnKat::StringAttribute(
@@ -670,32 +670,6 @@ public:
         return ab.build();
     }
 
-    /*
-     * Return true if the root prim path starts with any of the
-     * user-specified paths that should be using default motion
-     * samples.
-     */
-    static bool GetDefaultMotionAtRoot(PxrUsdKatanaUsdInArgsRefPtr usdInArgs)
-    {
-        const std::string& rootPrimPath =
-                usdInArgs->GetRootPrim().GetPath().GetString();
-
-        const std::set<std::string>& defaultMotionPaths =
-                usdInArgs->GetDefaultMotionPaths();
-
-        for (std::set<std::string>::const_iterator I = 
-                defaultMotionPaths.begin(),
-                E = defaultMotionPaths.end(); I != E; ++I)
-        {
-            if (pystring::startswith(rootPrimPath, (*I) + "/"))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
 private:
 
     /*
@@ -728,13 +702,16 @@ private:
             return FnKat::DoubleAttribute();
         }
         std::vector<GfBBox3d> bounds = usdInArgs->ComputeBounds(prim);
+        // TODO: apply motion sample time overrides stored in the session
         const std::vector<double>& motionSampleTimes = 
             usdInArgs->GetMotionSampleTimes();
 
         bool hasInfiniteBounds = false;
+        bool isMotionBackward = motionSampleTimes.size() > 1 &&
+            motionSampleTimes.front() > motionSampleTimes.back();
         FnKat::DoubleAttribute boundsAttr = 
             PxrUsdKatanaUtils::ConvertBoundsToAttribute(
-                bounds, motionSampleTimes, usdInArgs->IsMotionBackward(), 
+                bounds, motionSampleTimes, isMotionBackward, 
                 &hasInfiniteBounds);
 
         // Report infinite bounds as a warning.
@@ -822,8 +799,7 @@ public:
                         new PxrUsdKatanaUsdInPrivateData(
                                 usdInArgs->GetRootPrim(),
                                 usdInArgs,
-                                NULL /* parentData */,
-                                PxrUsdInOp::GetDefaultMotionAtRoot(usdInArgs)),
+                                NULL /* parentData */),
                         PxrUsdKatanaUsdInPrivateData::Delete);
     }
 

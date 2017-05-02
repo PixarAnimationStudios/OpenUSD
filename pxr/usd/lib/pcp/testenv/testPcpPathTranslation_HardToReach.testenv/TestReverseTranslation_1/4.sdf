@@ -1,0 +1,12 @@
+#sdf 1.4.32
+
+def Scope "M_4"
+{
+    def Scope "A"
+    {
+    }
+
+    over "C"
+    {
+    }
+}

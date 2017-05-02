@@ -40,7 +40,9 @@ using std::string;
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string __repr__(TfTemplateString const &self)
 {
@@ -67,6 +69,8 @@ static string _SafeSubstitute(TfTemplateString const &self, dict const &d)
     return self.SafeSubstitute(m);
 }
 
+} // anonymous namespace 
+
 void wrapTemplateString()
 {
     typedef TfTemplateString This;
@@ -86,5 +90,3 @@ void wrapTemplateString()
         .add_property("valid", &This::IsValid)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

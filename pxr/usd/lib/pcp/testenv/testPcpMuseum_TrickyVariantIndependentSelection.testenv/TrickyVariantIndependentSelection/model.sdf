@@ -1,0 +1,11 @@
+#sdf 1.4.32
+
+def Scope "Model" (
+    references = [
+        @./ref.sdf@</Model_1>,
+        @./ref.sdf@</Model_2>,
+        @./ref.sdf@</Model_3>
+    ]
+)
+{
+}

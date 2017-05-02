@@ -1,0 +1,15 @@
+#sdf 1.4.32
+
+def MfScope "HandRig"
+{
+    def MfScope "IndexRig" (
+        inherits = </HandRig/_Class_FingerRig>
+    )
+    {
+    }
+
+    over "_Class_FingerRig"
+    {
+    }
+}
+

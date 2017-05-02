@@ -1,0 +1,23 @@
+#sdf 1.4.32
+(
+    """
+    This test case demonstrates the behavior when mixing specializes
+    arcs and relocates.
+    """
+)
+
+def "Model" (
+    references = @./ref.sdf@</Ref>
+    relocates = {
+        <Brass> : <Brass_2>
+    }
+)
+{
+    over "Brass_2"
+    {
+    }
+
+    over "Metal"
+    {
+    }
+}

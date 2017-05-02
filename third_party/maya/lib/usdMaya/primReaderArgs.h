@@ -27,6 +27,7 @@
 /// \file primReaderArgs.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/usd/usd/prim.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PxrUsdMayaPrimReaderArgs
 {
 public:
+    PXRUSDMAYA_API
     PxrUsdMayaPrimReaderArgs(
             const UsdPrim& prim,
             const TfToken& shadingMode,
@@ -50,16 +52,23 @@ public:
             const double endTime);
 
     /// \brief return the usd prim that should be read.
+    PXRUSDMAYA_API
     const UsdPrim& GetUsdPrim() const;
 
+    PXRUSDMAYA_API
     const TfToken& GetShadingMode() const;
 
+    PXRUSDMAYA_API
     const TfToken& GetDefaultMeshScheme() const;
 
+    PXRUSDMAYA_API
     const bool& GetReadAnimData() const;
 
+    PXRUSDMAYA_API
     bool HasCustomFrameRange() const;
+    PXRUSDMAYA_API
     double GetStartTime() const;
+    PXRUSDMAYA_API
     double GetEndTime() const;
     
     bool ShouldImportUnboundShaders() const {

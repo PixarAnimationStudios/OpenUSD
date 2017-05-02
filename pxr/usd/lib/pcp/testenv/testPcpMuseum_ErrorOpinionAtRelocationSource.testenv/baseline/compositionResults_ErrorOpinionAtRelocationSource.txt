@@ -1,0 +1,49 @@
+Loading @ErrorOpinionAtRelocationSource/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </CharRig>
+
+Prim Stack:
+    root.sdf             /CharRig
+
+Child names:
+     ['Anim', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Anim>
+
+Prim Stack:
+    root.sdf             /CharRig/Anim
+
+Child names:
+     ['Path']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Anim/Path>
+
+Prim Stack:
+    pathRig.sdf          /PathRig/Path
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig
+
+Child names:
+     ['PathRig']
+
+------------------------------------------------------------------------
+Results for composing </CharRig/Rig/PathRig>
+
+Prim Stack:
+    root.sdf             /CharRig/Rig/PathRig
+    pathRig.sdf          /PathRig
+
+Prohibited child names:
+     ['Path']
+

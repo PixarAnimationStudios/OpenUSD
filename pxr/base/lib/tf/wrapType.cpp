@@ -50,7 +50,9 @@
 using namespace boost::python;
 using namespace std;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 ////////////////////////////////////////////////////////////////////////
 // Python -> C++ TfType conversion
@@ -165,7 +167,7 @@ _Repr( const TfType & t )
 }
 
 static size_t
-_Hash( const TfType & t )
+_TypeHash( const TfType & t )
 {
     return TfHash()(t);
 }
@@ -248,6 +250,8 @@ _DumpTypeHierarchy( TfType t )
     _DumpTypeHierarchyRecursive(t);
 }
 
+} // anonymous namespace
+
 void wrapType()
 {
     typedef TfType This;
@@ -263,7 +267,7 @@ void wrapType()
         .def( self <= self )
         .def( self >= self )
         .def( "__repr__", &_Repr)
-        .def( "__hash__", &_Hash)
+        .def( "__hash__", &_TypeHash)
 
         .def( "GetRoot", &_GetRoot)
         .staticmethod("GetRoot")
@@ -336,5 +340,3 @@ void wrapType()
     wrapTestCppBase();
 #endif
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

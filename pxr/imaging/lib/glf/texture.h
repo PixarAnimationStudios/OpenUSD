@@ -27,6 +27,7 @@
 /// \file glf/texture.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -47,7 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (texels)                                    \
     (layout)
 
-TF_DECLARE_PUBLIC_TOKENS(GlfTextureTokens, GLF_TEXTURE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(GlfTextureTokens, GLF_API, GLF_TEXTURE_TOKENS);
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfTexture);
 
@@ -85,6 +86,7 @@ public:
     };
     typedef std::vector<Binding> BindingVector;
 
+    GLF_API
     virtual ~GlfTexture() = 0;
 
     /// Returns the bindings to use this texture for the shader resource
@@ -94,21 +96,27 @@ public:
                                       GLuint samplerId = 0) const = 0;
 
     /// Amount of memory used to store the texture
+    GLF_API
     size_t GetMemoryUsed() const;
     
     /// Amount of memory the user wishes to allocate to the texture
+    GLF_API
     size_t GetMemoryRequested() const;
 
     /// Specify the amount of memory the user wishes to allocate to the texture
+    GLF_API
     void SetMemoryRequested(size_t targetMemory);
 
     virtual VtDictionary GetTextureInfo() const = 0;
 
+    GLF_API
     virtual bool IsMinFilterSupported(GLenum filter);
 
+    GLF_API
     virtual bool IsMagFilterSupported(GLenum filter);
 
     /// static reporting function
+    GLF_API
     static size_t GetTextureMemoryAllocated();
 
     /// Returns an identifier that can be used to determine when the
@@ -117,14 +125,19 @@ public:
     /// The contents of most textures will be immutable for the lifetime
     /// of the texture. However, the contents of the texture attachments
     /// of a draw target change when the draw target is updated.
+    GLF_API
     size_t GetContentsID() const;
 
 protected:
+    GLF_API
     GlfTexture();
 
+    GLF_API
     void _SetMemoryUsed(size_t size);
+    GLF_API
     virtual void _OnSetMemoryRequested(size_t targetMemory);
 
+    GLF_API
     void _UpdateContentsID();
     
 private:

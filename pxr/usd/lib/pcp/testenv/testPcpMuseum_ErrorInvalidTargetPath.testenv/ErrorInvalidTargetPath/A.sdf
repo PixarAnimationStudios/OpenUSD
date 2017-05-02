@@ -1,0 +1,13 @@
+#sdf 1.4.32
+
+def Prim "A" 
+{
+    double A
+    add double A.connect = </PrimOutsideReferenceRoot.A>
+    custom rel B = </PrimOutsideReferenceRoot>
+}
+
+def "PrimOutsideReferenceRoot" 
+{
+    double A
+}

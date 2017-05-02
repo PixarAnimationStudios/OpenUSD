@@ -193,7 +193,7 @@ UsdImagingGprimAdapter::_DiscoverPrimvars(
         UsdTimeCode time,
         UsdImagingValueCache* valueCache)
 {
-    // Check if each parameter is bound to a texture or primvar, if so,
+    // Check if each parameter/input is bound to a texture or primvar, if so,
     // collect that primvar from this gprim.
     // XXX: Should move this into ShaderAdapter
     if (UsdPrim const& shaderPrim =
@@ -205,6 +205,16 @@ UsdImagingGprimAdapter::_DiscoverPrimvars(
                                         shaderPrim, time, valueCache);
         }
     }
+}
+
+static bool
+_IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
+{
+    UsdAttribute attr = shaderInput.GetAttr();
+
+    TfToken baseName = attr.GetBaseName();
+    return  attr.SplitName().size() >= 2 && 
+            (baseName =="texture" || baseName=="primvar");
 }
 
 void
@@ -220,18 +230,23 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& g
     TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Looking for <%s> primvars at <%s>\n",
                             gprim.GetPrim().GetPath().GetText(),
                             shader.GetPrim().GetPath().GetText());
-    for (UsdShadeParameter const& param : shader.GetParameters()) {
+    for (UsdShadeInput const& input : shader.GetInputs()) {
+
+        if (_IsTextureOrPrimvarInput(input))
+            continue;
+
         UsdShadeConnectableAPI source;
         TfToken outputName;
         UsdShadeAttributeType sourceType;
-        if (param.GetConnectedSource(&source, &outputName, &sourceType)) {
+        if (UsdShadeConnectableAPI::GetConnectedSource(input, &source, 
+                &outputName, &sourceType)) {
             UsdAttribute attr = UsdShadeShader(source).GetIdAttr();
             TfToken id;
             if (!attr || !attr.Get(&id)) {
                 continue;
             }
-            TF_DEBUG(USDIMAGING_SHADERS).Msg("\t\t Param <%s> connected <%s>(%s)\n",
-                            param.GetAttr().GetName().GetText(),
+            TF_DEBUG(USDIMAGING_SHADERS).Msg("\t\t Shader input <%s> connected <%s>(%s)\n",
+                            input.GetAttr().GetName().GetText(),
                             source.GetPath().GetText(),
                             id.GetText());
             if (id == UsdHydraTokens->HwPrimvar_1) {
@@ -274,16 +289,18 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
                                           UsdImagingValueCache* valueCache)
 {
     UsdImagingValueCache::PrimvarInfo primvar;
-    std::vector<UsdProperty> const& props 
-                                    = shaderPrim.GetProperties();
-    TF_FOR_ALL(propIt, props) {
-        UsdAttribute attr = propIt->As<UsdAttribute>();
+
+    UsdShadeShader shader(shaderPrim);
+    std::vector<UsdShadeInput> const &inputs = shader.GetInputs();
+    for (const UsdShadeInput &shaderInput: inputs) {
+        if (_IsTextureOrPrimvarInput(shaderInput))
+            continue;
+
+        UsdAttribute attr = shaderInput.GetAttr();
         if (!attr) {
             continue;
         }
-        if (attr.GetPath().IsNamespacedPropertyPath()) {
-            continue;
-        }
+
         // Ok this is a parameter, check source input.
         if (UsdAttribute texAttr = shaderPrim.GetAttribute(
                                 TfToken(attr.GetPath().GetName() 
@@ -293,7 +310,8 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
             VtValue v;
             UsdGeomPrimvar primvarAttr;
             texAttr.Get(&ap, UsdTimeCode::Default());
-            bool isPtex = GlfPtexTexture::IsPtexTexture(TfToken(ap.GetAssetPath()));
+
+            bool isPtex = GlfIsSupportedPtexTexture(TfToken(ap.GetAssetPath()));
             if (isPtex) {
                 t = UsdImagingTokens->ptexFaceIndex;
                 // Allow the client to override this name

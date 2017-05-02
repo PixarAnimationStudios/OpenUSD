@@ -1,0 +1,49 @@
+Loading @ErrorInconsistentProperties/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </InconsistentPropertyType>
+
+Prim Stack:
+    root.sdf             /InconsistentPropertyType
+    ref.sdf              /InconsistentPropType
+
+Property names:
+     ['x']
+
+Property stacks:
+/InconsistentPropertyType.x:
+    ref.sdf              /InconsistentPropType.x
+
+------------------------------------------------------------------------
+Results for composing </InconsistentValueType>
+
+Prim Stack:
+    root.sdf             /InconsistentValueType
+    ref.sdf              /InconsistentValType
+
+Property names:
+     ['x']
+
+Property stacks:
+/InconsistentValueType.x:
+    ref.sdf              /InconsistentValType.x
+
+------------------------------------------------------------------------
+Results for composing </InconsistentVariability>
+
+Prim Stack:
+    root.sdf             /InconsistentVariability
+    ref.sdf              /InconsistentVar
+
+Property names:
+     ['x']
+
+Property stacks:
+/InconsistentVariability.x:
+    root.sdf             /InconsistentVariability.x
+    ref.sdf              /InconsistentVar.x
+

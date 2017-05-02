@@ -25,6 +25,7 @@
 #define HD_UNIT_TEST_DRAWING_GL
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -42,28 +43,40 @@ class Hd_UnitTestWindow;
 ///
 class Hd_UnitTestGLDrawing {
 public:
+    HD_API
     Hd_UnitTestGLDrawing();
+    HD_API
     virtual ~Hd_UnitTestGLDrawing();
 
+    HD_API
     int GetWidth() const;
+    HD_API
     int GetHeight() const;
+    HD_API
     void RunTest(int argc, char *argv[]);
 
     virtual void InitTest() = 0;
     virtual void DrawTest() = 0;        // interactive mode
     virtual void OffscreenTest() = 0;   // offscreen mode (automated test)
 
+    HD_API
     virtual void MousePress(int button, int x, int y);
+    HD_API
     virtual void MouseRelease(int button, int x, int y);
+    HD_API
     virtual void MouseMove(int x, int y);
+    HD_API
     virtual void KeyRelease(int key);
 
+    HD_API
     virtual void Idle();
 
+    HD_API
     bool WriteToFile(std::string const & attachment,
                      std::string const & filename) const;
 
 protected:
+    HD_API
     virtual void ParseArgs(int argc, char *argv[]);
 
     void SetCameraRotate(float rx, float ry) {
@@ -75,8 +88,11 @@ protected:
     GfVec3f GetCameraTranslate() const {
         return _translate;
     }
+    HD_API
     GfMatrix4d GetViewMatrix() const;
+    HD_API
     GfMatrix4d GetProjectionMatrix() const;
+    HD_API
     GfFrustum GetFrustum() const;
 
 private:

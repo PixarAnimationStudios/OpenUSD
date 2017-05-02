@@ -1,0 +1,21 @@
+#sdf 1.4.32
+
+def "Sarah"
+{
+    def Scope "FaceRig"
+    {
+        def Scope "EyesRig"
+        {
+            class Scope "SymEyeRig"
+            {
+            }
+    
+            def Scope "LEyeRig" (
+                inherits = <../SymEyeRig>
+                   
+            )
+            {
+            }   
+        }
+    }
+}

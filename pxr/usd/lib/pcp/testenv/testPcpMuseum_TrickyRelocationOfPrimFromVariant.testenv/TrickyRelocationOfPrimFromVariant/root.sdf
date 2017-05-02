@@ -1,0 +1,36 @@
+#sdf 1.4.32
+(
+    '''
+    This museum exhibit demonstrates that relocations can be applied to
+    prims that originate from references within variants. In this case,
+    the root layer selects a particular variant on a referenced rig.
+    That rig specifies a relocation on a prim that comes in via that
+    variant. 
+
+    The tricky part here is ensuring that the variant selection specified
+    in the root layer is carried down when evaluating the subtree at the
+    relocation source.
+
+    This test case originated from bug 33553.
+    '''
+)
+
+def Scope "Char" (
+    references = @./CharRig.sdf@</CharRig>
+    variantSets = "TailRigVersion"
+    variants = {
+        string TailRigVersion = "Standard"
+    }
+)
+{
+}
+
+def Scope "Char2" (
+    references = @./CharRig.sdf@</CharRig2>
+    variants = {
+        string TailRigVersion = "None"
+    }
+)
+{
+}
+

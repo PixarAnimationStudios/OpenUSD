@@ -1,0 +1,57 @@
+#sdf 1.4.32
+(
+    """
+    This example exercises a case with two variant sets, where the
+    stronger one has a fallback, but the weaker variant set expresses
+    a selection for that variant set that must override the fallback.
+    """
+)
+
+def Scope "A" (
+    add variantSets = ["vset1"]
+    references = [ </B> ]
+)
+{
+    variantSet "vset1" = {
+        "fallback" (
+            # This selection will not apply, because we
+            # will not apply the fallback without first
+            # evaluating the authored vset2 selection in /B.
+            variants = {
+                string vset2 = "ignored_selection"
+            }
+        ) {
+        }
+        "selection" (
+            # This selection will not apply, because we
+            # will have already evaluated vset2=selection
+            # to get here.
+            variants = {
+                string vset2 = "ignored_selection"
+            }
+        ) {
+            string result = "used_selection";
+        }
+    }
+}
+
+def scope "B" (
+    add variantSets = ["vset2"]
+    variants = {
+        string vset2 = "selection"
+    }
+)
+{
+    variantSet "vset2" = {
+        "fallback" {
+        }
+        "selection" (
+            variants = {
+                string vset1 = "selection"
+            }
+        ) {
+        }
+        "ignored_selection" {
+        }
+    }
+}

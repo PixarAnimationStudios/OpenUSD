@@ -25,6 +25,8 @@
 #define HD_PATCH_INDEX_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
+
 #include <cstddef>
 #include <iostream>
 
@@ -59,6 +61,7 @@ private:
 };
 typedef Hd_PatchIndex<16> Hd_BSplinePatchIndex;
 
+HD_API
 std::ostream& operator<<(std::ostream&, const Hd_BSplinePatchIndex&);
 
 

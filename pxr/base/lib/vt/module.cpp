@@ -30,6 +30,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Defined in arrayPyBuffer.cpp
 void Vt_AddBufferProtocolSupportToVtArrays();
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 TF_WRAP_MODULE
 {
     TF_WRAP(Array);
@@ -48,5 +52,3 @@ TF_WRAP_MODULE
     TF_WRAP(Dictionary);
     TF_WRAP(Value);
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

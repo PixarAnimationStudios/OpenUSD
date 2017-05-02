@@ -41,7 +41,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stageCacheContext.h"
-#include "pxr/usd/usd/treeIterator.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdUtils/pipeline.h"
@@ -308,7 +308,7 @@ usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
 }
 
 bool
-usdReadJob::_DoImportWithProxies(UsdTreeIterator& primIt)
+usdReadJob::_DoImportWithProxies(UsdPrimRange& range)
 {
     MStatus status;
 
@@ -324,7 +324,7 @@ usdReadJob::_DoImportWithProxies(UsdTreeIterator& primIt)
     UsdPrim pxrGeomRoot;
     std::vector<std::string> collapsePointPathStrings;
 
-    for(; primIt; ++primIt) {
+    for(auto primIt = range.begin(); primIt != range.end(); ++primIt) {
         const UsdPrim& prim = *primIt;
 
         if (prim.IsA<UsdGeomCamera>()) {

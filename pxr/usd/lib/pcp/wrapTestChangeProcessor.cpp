@@ -36,7 +36,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 class Pcp_PyTestChangeProcessor
     : public TfWeakBase
@@ -110,6 +112,8 @@ private:
     PcpChanges _changes;
 };
 
+} // anonymous namespace 
+
 void
 wrapTestChangeProcessor()
 {
@@ -132,5 +136,3 @@ wrapTestChangeProcessor()
             return_value_policy<TfPySequenceToList>())
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

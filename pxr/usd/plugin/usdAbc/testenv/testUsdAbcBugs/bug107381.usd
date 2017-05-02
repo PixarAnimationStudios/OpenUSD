@@ -1,0 +1,9 @@
+#usda 1.0                                                                       
+(
+    doc = """Test for fix of bug 107381"""
+)
+
+def UnknownPrimType "OuterGuide"
+{
+    ColorFloat[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+}

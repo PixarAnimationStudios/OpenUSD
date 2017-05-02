@@ -35,10 +35,10 @@ typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
 
-/// \class HdStBasisCurvesTopology
-///
-/// Hydra Stream implementation for basisCurves topology.
-///
+// HdSt_BasisCurvesTopology
+//
+// Hydra Stream implementation for basisCurves topology.
+//
 class HdSt_BasisCurvesTopology final : public HdBasisCurvesTopology {
 public:
     static HdSt_BasisCurvesTopologySharedPtr New(const HdBasisCurvesTopology &src);

@@ -35,7 +35,9 @@
 using namespace boost::python;
 using std::string;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static string
 _Repr(const PcpMapFunction &f)
@@ -89,6 +91,8 @@ _Create(const boost::python::dict & sourceToTargetMap,
     return new PcpMapFunction(mapFunction);
 }
 
+} // anonymous namespace 
+
 void wrapMapFunction()
 {    
     typedef PcpMapFunction This;
@@ -136,5 +140,3 @@ void wrapMapFunction()
         .def(self != self)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

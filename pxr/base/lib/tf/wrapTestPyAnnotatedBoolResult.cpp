@@ -30,7 +30,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 struct Tf_TestAnnotatedBoolResult : TfPyAnnotatedBoolResult<std::string> {
     Tf_TestAnnotatedBoolResult(bool value, const std::string& annotation)
@@ -45,6 +47,8 @@ _TestAnnotatedBoolResult(
     return Tf_TestAnnotatedBoolResult(value, annotation);
 }
 
+} // anonymous namespace 
+
 void wrapTf_TestPyAnnotatedBoolResult()
 {
     def("_TestAnnotatedBoolResult", &_TestAnnotatedBoolResult);
@@ -52,5 +56,3 @@ void wrapTf_TestPyAnnotatedBoolResult()
     Tf_TestAnnotatedBoolResult::Wrap<Tf_TestAnnotatedBoolResult>(
         "Tf_TestAnnotatedBoolResult", "annotation");
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

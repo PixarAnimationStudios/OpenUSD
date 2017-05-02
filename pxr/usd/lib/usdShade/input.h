@@ -162,6 +162,28 @@ public:
         return _attr && IsInput(_attr);
     }
 
+    /// Set documentation string for this Input.
+    /// \sa UsdObject::SetDocumentation()
+    USDSHADE_API
+    bool SetDocumentation(const std::string& docs) const;
+
+    /// Get documentation string for this Input.
+    /// \sa UsdObject::GetDocumentation()
+    USDSHADE_API
+    std::string GetDocumentation() const;
+
+    /// Set the displayGroup metadata for this Input,  i.e. hinting for the
+    /// location and nesting of the attribute.
+    /// \sa UsdProperty::SetDisplayGroup(), UsdProperty::SetNestedDisplayGroup()
+    USDSHADE_API
+    bool SetDisplayGroup(const std::string& displayGroup) const;
+
+    /// Get the displayGroup metadata for this Input, i.e. hint for the location 
+    /// and nesting of the attribute.
+    /// \sa UsdProperty::GetDisplayGroup(), UsdProperty::GetNestedDisplayGroup()
+    USDSHADE_API
+    std::string GetDisplayGroup() const;
+
     /// @}
 
     /// Return true if this Input is valid for querying and authoring
@@ -175,6 +197,51 @@ public:
     friend bool operator==(const UsdShadeInput &lhs, const UsdShadeInput &rhs) {
         return lhs.GetAttr() == rhs.GetAttr();
     }
+
+    // -------------------------------------------------------------------------
+    /// \name Connectability API
+    // -------------------------------------------------------------------------
+    /// @{
+        
+    /// \brief Set the connectability of the Input. 
+    /// 
+    /// In certain shading data models, there is a need to distinguish which 
+    /// inputs <b>can</b> vary over a surface from those that must be 
+    /// <b>uniform</b>. This is accomplished in UsdShade by limiting the 
+    /// connectability of the input. This is done by setting the 
+    /// "connectability" metadata on the associated attribute.
+    /// 
+    /// 
+    /// Connectability of an Input can be set to UsdShadeTokens->full or 
+    /// UsdShadeTokens->interfaceOnly. 
+    /// 
+    /// \li <b>full</b> implies that  the Input can be connected to any other 
+    /// Input or Output.  
+    /// \li <b>interfaceOnly</b> implies that the Input can only be connected to 
+    /// a NodeGraph Input (which represents an interface override, not a 
+    /// render-time dataflow connection), or another Input whose connectability 
+    /// is also "interfaceOnly".
+    /// 
+    /// The default connectability of a node-graph interface input is 
+    /// UsdShadeTokens->interfaceOnly. 
+    /// The default connectability of a shader input is UsdShadeTokens->full. 
+    /// 
+    /// \sa SetConnectability()
+    USDSHADE_API
+    bool SetConnectability(const TfToken &connectability) const;
+
+    /// \brief Returns the connectability of the Input.
+    /// 
+    /// \sa SetConnectability()
+    USDSHADE_API
+    TfToken GetConnectability() const;
+
+    /// \brief Clears any authored connectability on the Input.
+    /// 
+    USDSHADE_API
+    bool ClearConnectability() const;
+
+    /// @}
 
 private:
     friend class UsdShadeConnectableAPI;

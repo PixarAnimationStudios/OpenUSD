@@ -34,7 +34,9 @@ using namespace boost::python;
 using std::pair;
 using std::vector;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 class Tf_TestPyContainerConversions {
 public:
@@ -60,6 +62,8 @@ public:
 
 };
 
+} // anonymous namespace 
+
 void wrapTf_TestPyContainerConversions()
 {
     typedef Tf_TestPyContainerConversions This;
@@ -75,5 +79,3 @@ void wrapTf_TestPyContainerConversions()
         .staticmethod("GetTokens")
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

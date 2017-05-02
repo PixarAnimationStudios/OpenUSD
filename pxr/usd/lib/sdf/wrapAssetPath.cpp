@@ -37,7 +37,14 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+
+static std::string _Str(SdfAssetPath const &self)
+{
+    return boost::lexical_cast<std::string>(self);
+}
 
 static std::string
 _Repr(SdfAssetPath const &self)
@@ -67,6 +74,8 @@ static size_t _Hash(SdfAssetPath const &self)
     return hash;
 }
 
+} // anonymous namespace 
+
 void wrapAssetPath()
 {
     typedef SdfAssetPath This;
@@ -81,7 +90,8 @@ void wrapAssetPath()
 
         .def( self == self )
         .def( self != self )
-        .def( str(self) )
+//        .def( str(self) )
+        .def("__str__", _Str)
 
         .add_property("path", 
                       make_function(&This::GetAssetPath,
@@ -97,5 +107,3 @@ void wrapAssetPath()
     // Let python know about us, to enable assignment from python back to C++
     VtValueFromPython<SdfAssetPath>();
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

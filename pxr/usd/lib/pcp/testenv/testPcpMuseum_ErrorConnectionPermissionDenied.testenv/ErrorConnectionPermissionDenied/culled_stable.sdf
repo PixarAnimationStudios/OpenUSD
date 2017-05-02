@@ -1,0 +1,11 @@
+#sdf 1.4.32
+
+def Scope "CulledModel" (
+    payload = @./culled_payload.sdf@</CulledModelPayload>
+)
+{
+    custom rel colliders (permission = public)
+    add rel colliders = [
+        </CulledModel/sim/CollisionRig/FiztCollBody>
+    ]
+}

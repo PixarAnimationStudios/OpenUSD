@@ -30,12 +30,9 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
 
-#define BOOST_PYTHON_NONE boost::python::object()
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapRegisteredVariantSet()
 {
@@ -56,6 +53,3 @@ void wrapRegisteredVariantSet()
     ;
     
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

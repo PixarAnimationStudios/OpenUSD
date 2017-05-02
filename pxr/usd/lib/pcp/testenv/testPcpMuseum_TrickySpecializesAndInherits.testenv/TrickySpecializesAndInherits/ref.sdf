@@ -1,0 +1,26 @@
+#sdf 1.4.32
+
+def "Ref"
+{
+    def "A" (
+        specializes = </Ref/B>
+    )
+    {
+    }
+
+    class "B" (
+        inherits = </Ref/C>
+    )
+    {
+    }
+
+    class "C" (
+        specializes = </Ref/D>
+    )
+    {
+    }
+
+    class "D"
+    {
+    }
+}

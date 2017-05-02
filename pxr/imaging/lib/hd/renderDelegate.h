@@ -25,10 +25,10 @@
 #define HD_RENDER_DELEGATE_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/token.h"
-
-#include "pxr/imaging/hf/pluginDelegateBase.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hf/pluginBase.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,6 +47,7 @@ class HdSceneDelegate;
 class HdRenderParam {
 public:
     HdRenderParam() {}
+    HD_API
     virtual ~HdRenderParam();
 
 private:
@@ -57,15 +58,17 @@ private:
 
 /// \class HdRenderDelegate
 ///
-class HdRenderDelegate : public HfPluginDelegateBase
+class HdRenderDelegate : public HfPluginBase
 {
 public:
+    HD_API
+    virtual ~HdRenderDelegate();
+
     ///
-    /// Allows the delegate an opinion on the default Gal to use.
-    /// Return an empty token for no opinion.
-    /// Return HdDelegateTokens->None for no Gal.
+    /// Returns a list of typeId's of all supported Rprims by this render
+    /// delegate.
     ///
-    virtual TfToken GetDefaultGalId() const = 0;
+    virtual const TfTokenVector &GetSupportedRprimTypes() const = 0;
 
     ///
     /// Returns a list of typeId's of all supported Sprims by this render
@@ -83,7 +86,8 @@ public:
     ///
     /// Returns an opaque handle to a render param, that in turn is
     /// passed to each prim created by the render delegate during sync
-    /// processing.
+    /// processing.  This avoids the need to store a global state pointer
+    /// in each prim.
     ///
     /// The typical lifetime of the renderParam would match that of the
     /// RenderDelegate, however the minimal lifetime is that of the Sync
@@ -169,11 +173,29 @@ public:
     ///
     virtual void DestroyBprim(HdBprim *bprim) = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Sync, Execute & Dispatch Hooks
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Notification point from the Engine to the delegate.
+    /// This notification occurs after all Sync's have completed and
+    /// before task execution.
+    ///
+    /// This notification gives the Render Delegate a chance to
+    /// update and move memory that the render may need.
+    ///
+    /// For example, the render delegate might fill primvar buffers or texture
+    /// memory.
+    ///
+    virtual void CommitResources(HdChangeTracker *tracker) = 0;
+
 
 protected:
     /// This class must be derived from
     HdRenderDelegate()          = default;
-    virtual ~HdRenderDelegate();
 
     ///
     /// This class is not intended to be copied.

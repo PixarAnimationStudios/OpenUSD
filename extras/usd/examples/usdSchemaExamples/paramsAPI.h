@@ -27,6 +27,7 @@
 /// \file usdSchemaExamples/paramsAPI.h
 
 #include "pxr/pxr.h"
+#include "./api.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -79,11 +80,13 @@ public:
     }
 
     /// Destructor.
+    USDSCHEMAEXAMPLES_API
     virtual ~UsdSchemaExamplesParamsAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+    USDSCHEMAEXAMPLES_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -96,6 +99,7 @@ public:
     /// UsdSchemaExamplesParamsAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
+    USDSCHEMAEXAMPLES_API
     static UsdSchemaExamplesParamsAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -103,11 +107,13 @@ public:
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USDSCHEMAEXAMPLES_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
+    USDSCHEMAEXAMPLES_API
     virtual const TfType &_GetTfType() const;
 
 public:
@@ -120,6 +126,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Double
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDSCHEMAEXAMPLES_API
     UsdAttribute GetMassAttr() const;
 
     /// See GetMassAttr(), and also 
@@ -127,6 +134,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDSCHEMAEXAMPLES_API
     UsdAttribute CreateMassAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -139,6 +147,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Double
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDSCHEMAEXAMPLES_API
     UsdAttribute GetVelocityAttr() const;
 
     /// See GetVelocityAttr(), and also 
@@ -146,6 +155,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDSCHEMAEXAMPLES_API
     UsdAttribute CreateVelocityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -158,6 +168,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Double
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    USDSCHEMAEXAMPLES_API
     UsdAttribute GetVolumeAttr() const;
 
     /// See GetVolumeAttr(), and also 
@@ -165,6 +176,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
+    USDSCHEMAEXAMPLES_API
     UsdAttribute CreateVolumeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

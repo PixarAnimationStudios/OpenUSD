@@ -1,0 +1,13 @@
+#sdf 1.4.32
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+def MfScope "foo"
+{
+    custom bool f = 0
+    custom Matrix3d m = ( (1, 2, 3), (4, 5, 6), (7, 8, 9) )
+    custom bool t = 1
+}
+

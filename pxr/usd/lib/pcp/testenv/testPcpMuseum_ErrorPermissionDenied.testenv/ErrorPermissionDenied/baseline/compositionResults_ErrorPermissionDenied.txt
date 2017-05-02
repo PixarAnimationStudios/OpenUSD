@@ -1,0 +1,81 @@
+Loading @ErrorPermissionDenied/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    A.sdf                /A
+
+Property names:
+     ['A_attr', 'attr', 'privateRel', 'publicRel', 'localAttr']
+
+Property stacks:
+/Root.A_attr:
+    A.sdf                /A.A_attr
+/Root.attr:
+    A.sdf                /A.attr
+/Root.localAttr:
+    root.sdf             /Root.localAttr
+/Root.privateRel:
+    A.sdf                /A.privateRel
+/Root.privateRel[/Root.A_attr].a:
+    A.sdf                /A.privateRel[/A.A_attr].a
+/Root.publicRel:
+    root.sdf             /Root.publicRel
+    A.sdf                /A.publicRel
+/Root.publicRel[/Root.A_attr].a:
+    A.sdf                /A.publicRel[/A.A_attr].a
+
+Relationship targets:
+/Root.privateRel:
+    /Root.A_attr
+/Root.publicRel:
+    /Root.A_attr
+
+------------------------------------------------------------------------
+Results for composing </Parent>
+
+Prim Stack:
+    root.sdf             /Parent
+    A.sdf                /Parent
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </Parent/Child>
+
+Prim Stack:
+    A.sdf                /Parent/Child
+
+------------------------------------------------------------------------
+Results for composing </_PrivateClass>
+
+Prim Stack:
+    root.sdf             /_PrivateClass
+
+Property names:
+     ['attr']
+
+Property stacks:
+/_PrivateClass.attr:
+    root.sdf             /_PrivateClass.attr
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+
+Property names:
+     ['attr']
+
+Property stacks:
+/Model.attr:
+    root.sdf             /Model.attr
+

@@ -31,10 +31,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace
-{
+namespace {
 
 class _PyResolverContextBinder
     : public boost::noncopyable
@@ -65,7 +64,7 @@ private:
     std::unique_ptr<ArResolverContextBinder> _binder;
 };
 
-};
+} // anonymous namespace 
 
 void
 wrapResolverContextBinder()
@@ -78,5 +77,3 @@ wrapResolverContextBinder()
         .def("__exit__", &This::Exit)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

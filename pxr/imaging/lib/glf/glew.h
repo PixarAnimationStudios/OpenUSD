@@ -27,12 +27,15 @@
 /// \file glf/glew.h
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/glf/api.h"
+
 #include <GL/glew.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// A thread safe wrapper around glewInit().
+/// A thread safe wrapper around glewInit()
+GLF_API
 void GlfGlewInit();
 
 

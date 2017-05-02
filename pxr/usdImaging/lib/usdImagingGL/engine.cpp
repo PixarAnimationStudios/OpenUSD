@@ -29,6 +29,8 @@
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/info.h"
 
+#include "pxr/imaging/hdx/renderSetupTask.h"
+
 #include "pxr/base/tf/stl.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -160,7 +162,8 @@ UsdImagingGLEngine::TestIntersection(
     GfVec3d *outHitPoint,
     SdfPath *outHitPrimPath,
     SdfPath *outHitInstancerPath,
-    int *outHitInstanceIndex)
+    int *outHitInstanceIndex,
+    int *outHitElementIndex)
 {
     // Choose a framebuffer that's large enough to catch thin slice polys.  No
     // need to go too large though, since the depth writes will accumulate to
@@ -205,6 +208,8 @@ UsdImagingGLEngine::TestIntersection(
                 "primId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
             drawTarget->AddAttachment(
                 "instanceId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
+            drawTarget->AddAttachment(
+                "elementId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
             drawTarget->AddAttachment(
                 "depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
             drawTarget->Unbind();
@@ -290,6 +295,11 @@ UsdImagingGLEngine::TestIntersection(
         drawTarget->GetAttachments().at("instanceId")->GetGlTextureName());
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId);
 
+    GLubyte elementId[width*height*4];
+    glBindTexture(GL_TEXTURE_2D,
+        drawTarget->GetAttachments().at("elementId")->GetGlTextureName());
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, elementId);
+
     GLfloat depths[width*height];
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("depth")->GetGlTextureName());
@@ -332,21 +342,17 @@ UsdImagingGLEngine::TestIntersection(
         if (outHitPrimPath) {
             int idIndex = zMinIndex*4;
 
-            GfVec4i primIdColor(
-                primId[idIndex+0],
-                primId[idIndex+1],
-                primId[idIndex+2],
-                primId[idIndex+3]);
+            *outHitPrimPath = GetRprimPathFromPrimId(
+                    HdxRenderSetupTask::DecodeIDRenderColor(&primId[idIndex]));
+            if (outHitInstanceIndex) {
+                *outHitInstanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+                        &instanceId[idIndex]);
+            }
+            if (outHitElementIndex) {
+                *outHitElementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+                        &elementId[idIndex]);
+            }
 
-            GfVec4i instanceIdColor(
-                instanceId[idIndex+0],
-                instanceId[idIndex+1],
-                instanceId[idIndex+2],
-                instanceId[idIndex+3]);
-
-            *outHitPrimPath = GetPrimPathFromPrimIdColor(primIdColor,
-                                                         instanceIdColor,
-                                                         outHitInstanceIndex);
         }
     }
 
@@ -356,6 +362,7 @@ UsdImagingGLEngine::TestIntersection(
     return didHit;
 }
 
+static
 uint32_t
 _pow2roundup (uint32_t x)
 {
@@ -500,20 +507,20 @@ UsdImagingGLEngine::TestIntersectionBatch(
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
 
-    GLubyte primId[width*height*4];
+    std::vector<GLubyte> primId(width*height*4);
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("primId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, primId);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, primId.data());
 
-    GLubyte instanceId[width*height*4];
+    std::vector<GLubyte> instanceId(width*height*4);
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("instanceId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId.data());
 
-    GLfloat depths[width*height];
+    std::vector<GLfloat> depths(width*height);
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("depth")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, depths);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, depths.data());
 
     glPopAttrib(); /* GL_VIEWPORT_BIT |
                       GL_ENABLE_BIT |
@@ -622,11 +629,39 @@ UsdImagingGLEngine::TestIntersectionBatch(
 
 /* virtual */
 SdfPath
-UsdImagingGLEngine::GetPrimPathFromPrimIdColor(GfVec4i const &/*primIdColor*/,
-                                             GfVec4i const &/*instanceIdColor*/,
-                                             int * /*instanceIndexOut*/)
+UsdImagingGLEngine::GetRprimPathFromPrimId(int primId) const
 {
     return SdfPath();
+}
+
+/* virtual */
+SdfPath
+UsdImagingGLEngine::GetPrimPathFromPrimIdColor(GfVec4i const &primIdColor,
+                                             GfVec4i const &instanceIdColor,
+                                             int * instanceIndexOut)
+{
+    unsigned char primIdColorBytes[] =  {
+        uint8_t(primIdColor[0]),
+        uint8_t(primIdColor[1]),
+        uint8_t(primIdColor[2]),
+        uint8_t(primIdColor[3])
+    };
+
+    int primId = HdxRenderSetupTask::DecodeIDRenderColor(primIdColorBytes);
+    SdfPath result = GetRprimPathFromPrimId(primId);
+    if (!result.IsEmpty()) {
+        if (instanceIndexOut) {
+            unsigned char instanceIdColorBytes[] =  {
+                uint8_t(instanceIdColor[0]),
+                uint8_t(instanceIdColor[1]),
+                uint8_t(instanceIdColor[2]),
+                uint8_t(instanceIdColor[3])
+            };
+            *instanceIndexOut = HdxRenderSetupTask::DecodeIDRenderColor(
+                    instanceIdColorBytes);
+        }
+    }
+    return result;
 }
 
 /* virtual */
@@ -651,14 +686,14 @@ UsdImagingGLEngine::IsConverged() const
 
 /* virtual */
 std::vector<TfType>
-UsdImagingGLEngine::GetRenderGraphPlugins()
+UsdImagingGLEngine::GetRendererPlugins()
 {
     return std::vector<TfType>();
 }
 
 /* virtual */
 bool
-UsdImagingGLEngine::SetRenderGraphPlugin(TfType const &type)
+UsdImagingGLEngine::SetRendererPlugin(TfType const &type)
 {
     return false;
 }

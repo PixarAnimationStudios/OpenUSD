@@ -148,7 +148,7 @@ namespace
         VtIntArray& outputIndices,
         std::vector<GfRange3d>& outputBounds)
     {
-        const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+        const double currentTime = data.GetCurrentTime();
 
         std::vector<std::string> prototypePaths =
                 _ConvertRelationshipTargets(instancer.GetPrototypesRel());
@@ -222,7 +222,8 @@ namespace
             for (size_t i = 0; i < protoIndices.size(); ++i)
             {
                 int index = protoIndices[i];
-                if (index < 0 || index >= prototypePaths.size())
+                if (index < 0 
+                    || static_cast<size_t>(index) >= prototypePaths.size())
                 {
                     outputIndices.push_back(-1);
                 }
@@ -295,7 +296,7 @@ namespace
         // NOTE We assume that the instancer's positions and velocities have
         // already been validated.
 
-        const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+        const double currentTime = data.GetCurrentTime();
         const std::vector<double> motionSampleTimes = data.GetMotionSampleTimes();
 
         VtIntArray protoIndices;
@@ -379,29 +380,6 @@ namespace
         return true;
     }
 
-    // Generate a name for an instance source using its full path.
-    //
-    std::string
-    _GenerateInstanceSourceNameFromPath(
-            const std::string& srcPath,
-            int combineCount)
-    {
-        std::vector<std::string> tokens = TfStringTokenize(srcPath, "/");
-        int size = tokens.size();
-        std::string result;
-        if(combineCount > 0 && combineCount < size) {
-            std::vector<std::string> nameParts;
-            for(int i = size - 1 - combineCount; i < size; ++i) {
-                nameParts.push_back(tokens[i]);
-            }
-            result = TfStringJoin(nameParts, "_");
-        }
-        else {
-            result = tokens[size - 1];
-        }
-        return result;
-    }
-
     // XXX Copy of PxrUsdKatanaReadModel::_GetViewerProxyAttr.
     //
     FnKat::GroupAttribute
@@ -416,7 +394,7 @@ namespace
             FnKat::StringAttribute("usd"));
 
         proxiesBuilder.set("viewer.load.opArgs.a.currentTime", 
-            FnKat::DoubleAttribute(data.GetUsdInArgs()->GetCurrentTime()));
+            FnKat::DoubleAttribute(data.GetCurrentTime()));
 
         proxiesBuilder.set("viewer.load.opArgs.a.fileName", 
             FnKat::StringAttribute(data.GetUsdInArgs()->GetFileName()));
@@ -452,7 +430,7 @@ PxrUsdKatanaReadPointInstancer(
         PxrUsdKatanaAttrMap& instancesAttrMap,
         PxrUsdKatanaAttrMap& instancerOpArgsAttrMap)
 {
-    const double currentTime = data.GetUsdInArgs()->GetCurrentTime();
+    const double currentTime = data.GetCurrentTime();
 
     PxrUsdKatanaReadXformable(instancer, data, attrs);
 
@@ -475,6 +453,8 @@ PxrUsdKatanaReadPointInstancer(
     // Validate instance data.
     //
     // XXX Multi-sampled data is only validated for the current time.
+
+    const std::string instancerPath = instancer.GetPath().GetString();
 
     // Prototypes (required)
     //
@@ -592,10 +572,6 @@ PxrUsdKatanaReadPointInstancer(
 
     FnGeolibServices::StaticSceneCreateOpArgsBuilder sourcesBldr(false);
 
-    int instancePathNameCombine = (int)FnKat::FloatAttribute(
-            instancerOpArgs.getChildByName("instancePathNameCombine")
-            ).getValue(1, false);
-
     // If sourceParentScope is a valid scope in the source's USD path
     // the source will be imported from under this scope. This is useful
     // when a source has Look bindings which point to Looks above the source
@@ -643,7 +619,8 @@ PxrUsdKatanaReadPointInstancer(
     {
         int index = protoIndices[i];
 
-        if (index < 0 || index >= prototypePaths.size())
+        if (index < 0 
+            || static_cast<size_t>(index) >= prototypePaths.size())
         {
             _LogAndSetError(attrs, TfStringPrintf(
                     "ERROR: prototype index %i out of range", index));
@@ -718,16 +695,26 @@ PxrUsdKatanaReadPointInstancer(
 
         // Determine both the relative and full path to this source.
         //
-        // NOTE We exlude 'sources' from the relative path because the sources
-        // builder will be used with interface.createChild("sources", ...)
-        // rather than with interface.addSubOpAtLocation(...).
+        // See if the source prim is a child of the point instancer, If so,
+        // we'll match its hierarchy. If not, put the source under a
+        // 'prototypes' group and author a 'sourceUsdPath' attribute for
+        // tracking.
         //
-        const std::string relativeSourcePath =
-                _GenerateInstanceSourceNameFromPath(
-                        prototypePath, instancePathNameCombine);
-        std::ostringstream pathBuffer;
-        pathBuffer << katOutputPath << "/sources/" << relativeSourcePath;
-        std::string fullSourcePath = pathBuffer.str();
+        std::string relativeSourcePath;
+        if (pystring::startswith(prototypePath, instancerPath + "/"))
+        {
+            relativeSourcePath = pystring::replace(
+                    prototypePath, instancerPath + "/", "");
+        }
+        else
+        {
+            relativeSourcePath = "prototypes/" +
+                    pystring::os::path::basename(prototypePath);
+            sourcesBldr.setAttrAtLocation(relativeSourcePath,
+                    "info.usd.sourceUsdPath",
+                    FnKat::StringAttribute(prototypePath));
+        }
+        std::string fullSourcePath = katOutputPath + "/" + relativeSourcePath;
 
         if (!sourceBuilt)
         {
@@ -771,7 +758,8 @@ PxrUsdKatanaReadPointInstancer(
         {
             int boundIndex = prototypeBoundIndices[i];
 
-            if (boundIndex >= 0 && boundIndex < prototypeBounds.size())
+            if (boundIndex >= 0 
+                && static_cast<size_t>(boundIndex) < prototypeBounds.size())
             {
                 // Get this instance's bounds in parent-local coords
                 //
@@ -780,7 +768,7 @@ PxrUsdKatanaReadPointInstancer(
                 // Transform bounds into parent-local coords (at all time
                 // samples).
                 //
-                for (int timeSample = 0; timeSample < xformSampleTimes.size();
+                for (size_t timeSample = 0; timeSample < xformSampleTimes.size();
                         ++timeSample)
                 {
                     GfMatrix4d matrix =

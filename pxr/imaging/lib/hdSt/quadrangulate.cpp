@@ -29,6 +29,7 @@
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/glslProgram.h"
+#include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -51,72 +52,12 @@ HdSt_QuadInfoBuilderComputation::Resolve()
 {
     if (!_TryLock()) return false;
 
-    HD_TRACE_FUNCTION();
+    HdQuadInfo *quadInfo = new HdQuadInfo();
+    HdMeshUtil meshUtil(_topology, _id);
+    meshUtil.ComputeQuadInfo(quadInfo);
 
-    int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
-    int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
-    int const * holeFacesPtr = _topology->GetHoleIndices().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
-    int numVertIndices = _topology->GetFaceVertexIndices().size();
-    int numHoleFaces = _topology->GetHoleIndices().size();
-    // compute numPoints from topology indices
-    int numPoints = HdSt_MeshTopology::ComputeNumPoints(
-        _topology->GetFaceVertexIndices());
-
-    HdSt_QuadInfo *quadInfo = new HdSt_QuadInfo();
-
-    quadInfo->numVerts.clear();
-    quadInfo->verts.clear();
-    quadInfo->pointsOffset = numPoints;
-
-    int vertIndex = 0;
-    int numAdditionalPoints = 0;
-    int maxNumVert = 0;
-    int holeIndex = 0;
-    bool invalidTopology = false;
-    for (int i = 0; i < numFaces; ++i) {
-        int nv = numVertsPtr[i];
-
-        if (holeIndex < numHoleFaces &&
-            holeFacesPtr[holeIndex] == i) {
-            // skip hole faces.
-            vertIndex += nv;
-            ++holeIndex;
-            continue;
-        }
-
-        if (nv == 4) {
-            vertIndex += nv;
-            continue;
-        }
-
-        // if it isn't a quad,
-        quadInfo->numVerts.push_back(nv);
-        for (int j = 0; j < nv; ++j) {
-            // store vertex indices into quadinfo
-            int index = 0;
-            if (vertIndex >= numVertIndices) {
-                invalidTopology = true;
-            } else {
-                index = vertsPtr[vertIndex++];
-            }
-            quadInfo->verts.push_back(index);
-        }
-        // nv + 1 (edge + center) additional vertices needed.
-        numAdditionalPoints += (nv + 1);
-
-        // remember max numvert for making gpu-friendly table
-        maxNumVert = std::max(maxNumVert, nv);
-    }
-    quadInfo->numAdditionalPoints = numAdditionalPoints;
-    quadInfo->maxNumVert = maxNumVert;
-
-    if (invalidTopology) {
-        TF_WARN("numVerts and verts are incosistent [%s]", _id.GetText());
-    }
-
-    // set quadinfo to topology
-    // topology takes the ownership of quadinfo so no need to free.
+    // Set quadinfo to topology
+    // topology takes ownership of quadinfo so no need to free.
     _topology->SetQuadInfo(quadInfo);
 
     _SetResolved();
@@ -156,122 +97,15 @@ HdSt_QuadIndexBuilderComputation::Resolve()
 
     if (!_TryLock()) return false;
 
-    // generate quad index buffer
-
     HD_TRACE_FUNCTION();
 
-    // TODO: create ptex id remapping buffer here.
-
-    int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
-    int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
-    int const * holeFacesPtr = _topology->GetHoleIndices().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
-    int numVertIndices = _topology->GetFaceVertexIndices().size();
-    int numHoleFaces = _topology->GetHoleIndices().size();
-
-    // count num quads
-    bool invalidTopology = false;
-    int numQuads = HdSt_MeshTopology::ComputeNumQuads(
-        _topology->GetFaceVertexCounts(),
-        _topology->GetHoleIndices(),
-        &invalidTopology);
-    if (invalidTopology) {
-        TF_WARN("degenerated face found [%s]", _id.GetText());
-        invalidTopology = false;
-    }
-
-    int holeIndex = 0;
-    VtVec4iArray quadsFaceVertexIndices(numQuads);
-    VtVec2iArray primitiveParam(numQuads);
-
-    // quadrangulated verts is added to the end.
-    bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
-    int vertIndex = HdSt_MeshTopology::ComputeNumPoints(
-        _topology->GetFaceVertexIndices());
-
-    // TODO: We need to support ptex index in addition to coarse indices.
-    //int ptexIndex = 0;
-    for (int i = 0, qv = 0, v = 0; i<numFaces; ++i) {
-        int nv = numVertsPtr[i];
-        if (nv < 3) {
-            continue; // skip degenerated face
-        }
-        if (holeIndex < numHoleFaces &&
-            holeFacesPtr[holeIndex] == i) {
-            // skip hole faces.
-            ++holeIndex;
-            continue;
-        }
-
-        if (v+nv > numVertIndices) {
-            invalidTopology = true;
-            if (nv == 4) {
-                quadsFaceVertexIndices[qv++] = GfVec4i(0);
-            } else {
-                for (int j = 0; j < nv; ++j) {
-                    quadsFaceVertexIndices[qv++] = GfVec4i(0);
-                }
-            }
-            v += nv;
-            continue;
-        }
-
-        if (nv == 4) {
-            if (flip) {
-                quadsFaceVertexIndices[qv][0] = (vertsPtr[v+0]);
-                quadsFaceVertexIndices[qv][1] = (vertsPtr[v+3]);
-                quadsFaceVertexIndices[qv][2] = (vertsPtr[v+2]);
-                quadsFaceVertexIndices[qv][3] = (vertsPtr[v+1]);
-            } else {
-                quadsFaceVertexIndices[qv][0] = (vertsPtr[v+0]);
-                quadsFaceVertexIndices[qv][1] = (vertsPtr[v+1]);
-                quadsFaceVertexIndices[qv][2] = (vertsPtr[v+2]);
-                quadsFaceVertexIndices[qv][3] = (vertsPtr[v+3]);
-            }
-            primitiveParam[qv] = GfVec2i(
-                HdSt_MeshTopology::EncodeCoarseFaceParam(i, 0), qv);
-            ++qv;
-        } else {
-            // quadrangulate non-quad faces
-            // the additional points (edge and center) are stored at the end of
-            // original points, as
-            //   last point, e0, e1, ..., en, center, e0, e1, ...
-            // so each sub-quads become
-            // *first non-quad
-            //   v0, e0, center, e(-1),
-            //   v1, e1, center, e0,
-            //...
-            // *second non-quad
-            //   ...
-            for (int j = 0; j < nv; ++j) {
-                // vertex
-                quadsFaceVertexIndices[qv][0] = vertsPtr[v+j];
-                if (flip) {
-                    // edge prev
-                    quadsFaceVertexIndices[qv][1] = vertIndex + (j+nv-1)%nv;
-                    // center
-                    quadsFaceVertexIndices[qv][2] = vertIndex + nv;
-                    // edge next
-                    quadsFaceVertexIndices[qv][3] = vertIndex + j;
-                } else {
-                    // edge next
-                    quadsFaceVertexIndices[qv][1] = vertIndex + j;
-                    // center
-                    quadsFaceVertexIndices[qv][2] = vertIndex + nv;
-                    // edge prev
-                    quadsFaceVertexIndices[qv][3] = vertIndex + (j+nv-1)%nv;
-                }
-                primitiveParam[qv] = GfVec2i(
-                    HdSt_MeshTopology::EncodeCoarseFaceParam(i, 0), qv);
-                ++qv;
-            }
-            vertIndex += nv + 1;
-        }
-        v += nv;
-    }
-    if (invalidTopology) {
-        TF_WARN("numVerts and verts are incosistent [%s]", _id.GetText());
-    }
+    // generate quad index buffer
+    VtVec4iArray quadsFaceVertexIndices;
+    VtVec2iArray primitiveParam;
+    HdMeshUtil meshUtil(_topology, _id);
+    meshUtil.ComputeQuadIndices(
+            &quadsFaceVertexIndices,
+            &primitiveParam);
 
     _SetResult(HdBufferSourceSharedPtr(new HdVtBufferSource(
                                            HdTokens->indices,
@@ -320,9 +154,9 @@ HdSt_QuadrangulateTableComputation::Resolve()
 
     HD_TRACE_FUNCTION();
 
-    HdSt_QuadInfo const *quadInfo = _topology->GetQuadInfo();
+    HdQuadInfo const *quadInfo = _topology->GetQuadInfo();
     if (!quadInfo) {
-        TF_CODING_ERROR("HdSt_QuadInfo is null.");
+        TF_CODING_ERROR("QuadInfo is null.");
         return true;
     }
 
@@ -392,54 +226,6 @@ HdSt_QuadrangulateTableComputation::_CheckValid() const
 
 // ---------------------------------------------------------------------------
 
-template <typename T>
-HdBufferSourceSharedPtr
-_Quadrangulate(HdBufferSourceSharedPtr const &source,
-               HdSt_QuadInfo const *qi)
-{
-    // CPU quadrangulation
-
-    // original points + quadrangulated points
-    VtArray<T> results(qi->pointsOffset + qi->numAdditionalPoints);
-
-    // copy original primVars
-    T const *srcPtr = reinterpret_cast<T const*>(source->GetData());
-    memcpy(results.data(), srcPtr, sizeof(T)*qi->pointsOffset);
-
-    // compute quadrangulate primVars
-    int index = 0;
-    // store quadrangulated points at end
-    int dstIndex = qi->pointsOffset;
-
-    HD_PERF_COUNTER_ADD(HdPerfTokens->quadrangulatedVerts,
-                        qi->numAdditionalPoints);
-
-    TF_FOR_ALL (numVertsIt, qi->numVerts) {
-        int nv = *numVertsIt;
-        T center(0);
-        for (int i = 0; i < nv; ++i) {
-            int i0 = qi->verts[index+i];
-            int i1 = qi->verts[index+(i+1)%nv];
-
-            // midpoint
-            T edge = (srcPtr[i0] + srcPtr[i1]) * 0.5;
-            results[dstIndex++] = edge;
-
-            // accumulate center
-            center += srcPtr[i0];
-        }
-        // average center value
-        center /= nv;
-        results[dstIndex++] = center;
-
-        index += nv;
-    }
-
-    return HdBufferSourceSharedPtr(new HdVtBufferSource(
-                                       source->GetName(), VtValue(results)));
-}
-
-
 HdSt_QuadrangulateComputation::HdSt_QuadrangulateComputation(
     HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &source,
@@ -463,7 +249,7 @@ HdSt_QuadrangulateComputation::Resolve()
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->quadrangulateCPU);
 
-    HdSt_QuadInfo const *quadInfo = _topology->GetQuadInfo();
+    HdQuadInfo const *quadInfo = _topology->GetQuadInfo();
     if (!TF_VERIFY(quadInfo)) return true;
 
     // If the topology is all quads, just return source.
@@ -479,41 +265,24 @@ HdSt_QuadrangulateComputation::Resolve()
         return true;
     }
 
-    HdBufferSourceSharedPtr result;
+    VtValue result;
+    HdMeshUtil meshUtil(_topology, _id);
+    if (meshUtil.ComputeQuadrangulatedPrimvar(quadInfo,
+                _source->GetData(),
+                _source->GetNumElements(),
+                _source->GetGLElementDataType(),
+                &result)) {
+        HD_PERF_COUNTER_ADD(HdPerfTokens->quadrangulatedVerts,
+                quadInfo->numAdditionalPoints);
 
-    switch (_source->GetGLElementDataType()) {
-    case GL_FLOAT:
-        result = _Quadrangulate<float>(_source, quadInfo);
-        break;
-    case GL_FLOAT_VEC2:
-        result = _Quadrangulate<GfVec2f>(_source, quadInfo);
-        break;
-    case GL_FLOAT_VEC3:
-        result = _Quadrangulate<GfVec3f>(_source, quadInfo);
-        break;
-    case GL_FLOAT_VEC4:
-        result = _Quadrangulate<GfVec4f>(_source, quadInfo);
-        break;
-    case GL_DOUBLE:
-        result = _Quadrangulate<double>(_source, quadInfo);
-        break;
-    case GL_DOUBLE_VEC2:
-        result = _Quadrangulate<GfVec2d>(_source, quadInfo);
-        break;
-    case GL_DOUBLE_VEC3:
-        result = _Quadrangulate<GfVec3d>(_source, quadInfo);
-        break;
-    case GL_DOUBLE_VEC4:
-        result = _Quadrangulate<GfVec4d>(_source, quadInfo);
-        break;
-    default:
-        TF_CODING_ERROR("Unsupported points type for quadrangulation [%s]",
-                        _id.GetText());
-        result = _source;
-        break;
+        _SetResult(HdBufferSourceSharedPtr(
+                    new HdVtBufferSource(
+                        _source->GetName(),
+                        result)));
+    } else {
+        _SetResult(_source);
     }
 
-    _SetResult(result);
     _SetResolved();
     return true;
 }
@@ -539,108 +308,6 @@ HdSt_QuadrangulateComputation::_CheckValid() const
 
 // ---------------------------------------------------------------------------
 
-template <typename T>
-HdBufferSourceSharedPtr
-_QuadrangulateFaceVarying(HdBufferSourceSharedPtr const &source,
-                          VtIntArray const &faceVertexCounts,
-                          VtIntArray const &holeFaces,
-                          bool flip,
-                          SdfPath const &id)
-{
-    T const *srcPtr = reinterpret_cast<T const *>(source->GetData());
-    int numElements = source->GetNumElements();
-
-    // CPU face-varying quadrangulation
-    bool invalidTopology = false;
-    int numFVarValues = 0;
-    int holeIndex = 0;
-    int numHoleFaces = holeFaces.size();
-    for (int i = 0; i < faceVertexCounts.size(); ++i) {
-        int nVerts = faceVertexCounts[i];
-        if (nVerts < 3) {
-            // skip degenerated face
-            invalidTopology = true;
-        } else if (holeIndex < numHoleFaces && holeFaces[holeIndex] == i) {
-            // skip hole face
-            ++holeIndex;
-        } else if (nVerts == 4) {
-            numFVarValues += 4;
-        } else {
-            numFVarValues += 4 * nVerts;
-        }
-    }
-    if (invalidTopology) {
-        TF_WARN("degenerated face found [%s]", id.GetText());
-        invalidTopology = false;
-    }
-
-    VtArray<T> results(numFVarValues);
-    // reset holeIndex
-    holeIndex = 0;
-
-    int dstIndex = 0;
-    for (int i = 0, v = 0; i < faceVertexCounts.size(); ++i) {
-        int nVerts = faceVertexCounts[i];
-        if (nVerts < 3) {
-            // skip degenerated faces.
-        } else if (holeIndex < numHoleFaces && holeFaces[holeIndex] == i) {
-            // skip hole faces.
-            ++holeIndex;
-        } else if (nVerts == 4) {
-            // copy
-            for (int j = 0; j < 4; ++j) {
-                if (v+j >= numElements) {
-                    invalidTopology = true;
-                    results[dstIndex++] = T(0);
-                } else {
-                    results[dstIndex++] = srcPtr[v+j];
-                }
-            }
-        } else {
-            // quadrangulate
-            // compute the center first
-
-            // early out if overrunning
-            if (v+nVerts > numElements) {
-                invalidTopology = true;
-                for (int j = 0; j < nVerts; ++j) {
-                    results[dstIndex++] = T(0);
-                    results[dstIndex++] = T(0);
-                    results[dstIndex++] = T(0);
-                    results[dstIndex++] = T(0);
-                }
-                continue;
-            } 
-
-            T center(0);
-            for (int j = 0; j < nVerts; ++j) {
-                center += srcPtr[v+j];
-            }
-            center /= nVerts;
-
-            // for each quadrant
-            for (int j = 0; j < nVerts; ++j) {
-                results[dstIndex++] = srcPtr[v+j];
-                // mid edge
-                results[dstIndex++]
-                    = (srcPtr[v+j] + srcPtr[v+(j+1)%nVerts]) * 0.5;
-                // center
-                results[dstIndex++] = center;
-                // mid edge
-                results[dstIndex++]
-                    = (srcPtr[v+j] + srcPtr[v+(j+nVerts-1)%nVerts]) * 0.5;
-            }
-        }
-        v += nVerts;
-    }
-    if (invalidTopology) {
-        TF_WARN("numVerts and verts are incosistent [%s]", id.GetText());
-    }
-
-    return HdBufferSourceSharedPtr(new HdVtBufferSource(
-                                       source->GetName(), VtValue(results)));
-}
-
 HdSt_QuadrangulateFaceVaryingComputation::HdSt_QuadrangulateFaceVaryingComputation(
     HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
@@ -659,52 +326,24 @@ HdSt_QuadrangulateFaceVaryingComputation::Resolve()
     HD_TRACE_FUNCTION();
     HD_PERF_COUNTER_INCR(HdPerfTokens->quadrangulateFaceVarying);
 
-    VtIntArray const &faceVertexCounts = _topology->GetFaceVertexCounts();
-    VtIntArray const &holeFaces = _topology->GetHoleIndices();
-    bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
-    HdBufferSourceSharedPtr result;
+    // XXX: we could skip this if the mesh is all quads, like above in
+    // HdSt_QuadrangulateComputation::Resolve()...
 
-    switch (_source->GetGLElementDataType()) {
-    case GL_FLOAT:
-        result = _QuadrangulateFaceVarying<float>(
-            _source, faceVertexCounts, holeFaces, flip, _id);
-        break;
-    case GL_FLOAT_VEC2:
-        result = _QuadrangulateFaceVarying<GfVec2f>(
-            _source, faceVertexCounts, holeFaces, flip, _id);
-        break;
-    case GL_FLOAT_VEC3:
-        result = _QuadrangulateFaceVarying<GfVec3f>(
-            _source, faceVertexCounts, holeFaces, flip, _id);
-        break;
-    case GL_FLOAT_VEC4:
-        result = _QuadrangulateFaceVarying<GfVec4f>(
-            _source, faceVertexCounts, holeFaces, flip, _id);
-        break;
-    case GL_DOUBLE:
-        result = _QuadrangulateFaceVarying<double>(
-            _source, faceVertexCounts, holeFaces, flip, _id);
-        break;
-    case GL_DOUBLE_VEC2:
-        result = _QuadrangulateFaceVarying<GfVec2d>(
-            _source, faceVertexCounts, holeFaces, flip, _id);
-        break;
-    case GL_DOUBLE_VEC3:
-        result = _QuadrangulateFaceVarying<GfVec3d>(
-            _source, faceVertexCounts, holeFaces, flip, _id);
-        break;
-    case GL_DOUBLE_VEC4:
-        result = _QuadrangulateFaceVarying<GfVec4d>(
-            _source, faceVertexCounts, holeFaces, flip, _id);
-        break;
-    default:
-        TF_CODING_ERROR("Unsupported primvar type for quadrangulation [%s]",
-                        _id.GetText());
-        result = _source;
-        break;
+    VtValue result;
+    HdMeshUtil meshUtil(_topology, _id);
+    if (meshUtil.ComputeQuadrangulatedFaceVaryingPrimvar(
+                _source->GetData(),
+                _source->GetNumElements(),
+                _source->GetGLElementDataType(),
+                &result)) {
+        _SetResult(HdBufferSourceSharedPtr(
+                    new HdVtBufferSource(
+                        _source->GetName(),
+                        result)));
+    } else {
+        _SetResult(_source);
     }
 
-    _SetResult(result);
     _SetResolved();
     return true;
 }
@@ -754,9 +393,9 @@ HdSt_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &ran
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSt_QuadInfo const *quadInfo = _topology->GetQuadInfo();
+    HdQuadInfo const *quadInfo = _topology->GetQuadInfo();
     if (!quadInfo) {
-        TF_CODING_ERROR("HdSt_QuadInfo is null.");
+        TF_CODING_ERROR("QuadInfo is null.");
         return;
     }
 
@@ -854,10 +493,10 @@ HdSt_QuadrangulateComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) cons
 int
 HdSt_QuadrangulateComputationGPU::GetNumOutputElements() const
 {
-    HdSt_QuadInfo const *quadInfo = _topology->GetQuadInfo();
+    HdQuadInfo const *quadInfo = _topology->GetQuadInfo();
 
     if (!quadInfo) {
-        TF_CODING_ERROR("HdSt_QuadInfo is null [%s]", _id.GetText());
+        TF_CODING_ERROR("QuadInfo is null [%s]", _id.GetText());
         return 0;
     }
 

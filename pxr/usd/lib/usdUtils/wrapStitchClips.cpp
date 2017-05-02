@@ -32,10 +32,11 @@
 
 #include <limits>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
 using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 template <typename T>
 T
@@ -89,8 +90,9 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
 
 }
 
-void 
-wrapStitchClips()
+} // anonymous namespace 
+
+void wrapStitchClips()
 {
     def("StitchClips",
         _ConvertStitchClips, 
@@ -119,6 +121,3 @@ wrapStitchClips()
         _ConvertGenerateClipTopologyName,
         (arg("rootLayerName")));
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-

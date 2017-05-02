@@ -1,0 +1,36 @@
+Loading @TrickyVariantOverrideOfFallback/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.sdf             /A
+    root.sdf             /A{vset1=selection}
+    root.sdf             /B
+    root.sdf             /B{vset2=selection}
+
+Variant Selections:
+    {vset1 = selection}
+    {vset2 = selection}
+
+Property names:
+     ['result']
+
+Property stacks:
+/A.result:
+    root.sdf             /A{vset1=selection}.result
+
+------------------------------------------------------------------------
+Results for composing </B>
+
+Prim Stack:
+    root.sdf             /B
+    root.sdf             /B{vset2=selection}
+
+Variant Selections:
+    {vset2 = selection}
+

@@ -1,0 +1,76 @@
+Loading @TrickyRelationalAttributeOnRelocatedTarget/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    CharRig.sdf          /CharRig
+
+Child names:
+     ['EyeLidRig', 'Eye', 'EyeRig']
+
+------------------------------------------------------------------------
+Results for composing </Model/EyeLidRig>
+
+Prim Stack:
+    CharRig.sdf          /CharRig/EyeLidRig
+    EyeLidRig.sdf        /EyeLidRig
+
+Prohibited child names:
+     ['Lids']
+
+------------------------------------------------------------------------
+Results for composing </Model/Eye>
+
+Prim Stack:
+    CharRig.sdf          /CharRig/Eye
+
+Child names:
+     ['Lids']
+
+------------------------------------------------------------------------
+Results for composing </Model/Eye/Lids>
+
+Prim Stack:
+    EyeLidRig.sdf        /EyeLidRig/Lids
+
+Property names:
+     ['attr']
+
+Property stacks:
+/Model/Eye/Lids.attr:
+    EyeLidRig.sdf        /EyeLidRig/Lids.attr
+
+------------------------------------------------------------------------
+Results for composing </Model/EyeRig>
+
+Prim Stack:
+    CharRig.sdf          /CharRig/EyeRig
+
+Child names:
+     ['Widget']
+
+------------------------------------------------------------------------
+Results for composing </Model/EyeRig/Widget>
+
+Prim Stack:
+    CharRig.sdf          /CharRig/EyeRig/Widget
+
+Property names:
+     ['rel']
+
+Property stacks:
+/Model/EyeRig/Widget.rel:
+    CharRig.sdf          /CharRig/EyeRig/Widget.rel
+/Model/EyeRig/Widget.rel[/Model/Eye/Lids.attr].rel_attr:
+    CharRig.sdf          /CharRig/EyeRig/Widget.rel[/CharRig/Eye/Lids.attr].rel_attr
+
+Relationship targets:
+/Model/EyeRig/Widget.rel:
+    /Model/Eye/Lids.attr
+

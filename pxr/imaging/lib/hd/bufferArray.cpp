@@ -226,6 +226,7 @@ HdBufferArray::GetMaxNumElements() const
     return _maxNumRanges;
 }
 
+HD_API
 std::ostream &operator <<(std::ostream &out,
                           const HdBufferArray &self)
 {

@@ -1062,11 +1062,13 @@ SdfSchemaBase::IsValidAttributeConnectionPath(const SdfPath& path)
         return SdfAllowed("Attribute connection paths cannot contain "
                           "variant selections");
     }
-    if (path.IsAbsolutePath() && path.IsPropertyPath()) {
+    if (path.IsAbsolutePath() && (path.IsPropertyPath() || path.IsPrimPath())) {
         return true;
     }
     else {
-        return SdfAllowed("Connection paths must be absolute property paths");
+        return SdfAllowed(
+            TfStringPrintf("Connection paths must be absolute prim or "
+                           "property paths: <%s>", path.GetText()));
     }
 }
 
@@ -1452,7 +1454,11 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                     .MetadataField(fieldName, displayGroup);
             }
 
-            if (appliesTo.empty() || appliesTo.count("variants")) {
+            // All metadata on prims should also apply to variants.
+            // This matches how the variant spec definition is copied
+            // from the prim spec definition in _RegisterStandardFields.
+            if (appliesTo.empty() || appliesTo.count("variants") || 
+                appliesTo.count("prims")) {
                 _ExtendSpecDefinition(SdfSpecTypeVariant)
                     .MetadataField(fieldName, displayGroup);
             }

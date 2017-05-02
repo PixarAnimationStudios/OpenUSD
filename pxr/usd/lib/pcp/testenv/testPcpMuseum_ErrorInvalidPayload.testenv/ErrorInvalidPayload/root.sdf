@@ -1,0 +1,18 @@
+#sdf 1.4.32
+(
+    """
+    This example exercises error output for invalid payload arcs.
+    """
+)
+
+def "BadPayload_NonExistentFile" (
+    payload = @./payload_non_existent_file.sdf@</Prim>
+)
+{
+}
+
+def "BadPayload_NonExistentPrim" (
+    payload = @./payload.sdf@</NonExistentPrim>
+)
+{
+}

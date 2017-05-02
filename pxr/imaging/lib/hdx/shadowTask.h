@@ -25,6 +25,7 @@
 #define HDX_SHADOW_TASK_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -58,13 +59,16 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleShadowArray);
 ///
 class HdxShadowTask : public HdSceneTask {
 public:
+    HDX_API
     HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);
 
 protected:
     /// Execute render pass task
+    HDX_API
     virtual void _Execute(HdTaskContext* ctx);
 
     /// Sync the render pass resources
+    HDX_API
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
@@ -80,8 +84,7 @@ private:
     HdCompareFunction _depthFunc;
 };
 
-struct HdxShadowTaskParams : public HdTaskParams
-{
+struct HdxShadowTaskParams : public HdTaskParams {
     HdxShadowTaskParams()
         : overrideColor(0.0)
         , wireframeColor(0.0)
@@ -127,8 +130,11 @@ struct HdxShadowTaskParams : public HdTaskParams
 };
 
 // VtValue requirements
+HDX_API
 std::ostream& operator<<(std::ostream& out, const HdxShadowTaskParams& pv);
+HDX_API
 bool operator==(const HdxShadowTaskParams& lhs, const HdxShadowTaskParams& rhs);
+HDX_API
 bool operator!=(const HdxShadowTaskParams& lhs, const HdxShadowTaskParams& rhs);
 
 

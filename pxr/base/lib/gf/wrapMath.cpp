@@ -41,7 +41,7 @@
 using namespace boost::python;
 using std::vector;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapMath()
 {    
@@ -173,5 +173,3 @@ void wrapMath()
     TfPyContainerConversions::from_python_sequence< std::vector< std::vector<double> >, TfPyContainerConversions::variable_capacity_policy>();
  
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

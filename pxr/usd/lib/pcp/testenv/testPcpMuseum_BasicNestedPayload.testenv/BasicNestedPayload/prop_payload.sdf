@@ -1,0 +1,9 @@
+#sdf 1.4.32
+
+def Scope "Prop"
+{
+    def Scope "PropScope"
+    {
+        string x = "from prop_payload"
+    }
+}

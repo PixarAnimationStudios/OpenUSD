@@ -331,7 +331,7 @@ string
 TfGetPathName(const string& fileName)
 {
 #if defined(ARCH_OS_WINDOWS)
-    size_t i = fileName.find_last_of("\\/");
+    size_t i = fileName.find_last_of("\\/:");
 #else
     size_t i = fileName.rfind("/");
 #endif

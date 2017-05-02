@@ -25,6 +25,7 @@
 #define PXRUSDMAYAGL_PROXYSHAPEUI_H
 
 #include "pxr/pxr.h"
+#include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "usdMaya/proxyShape.h"
 
@@ -48,11 +49,13 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
     /**
      * method to construct node
      */
+    PXRUSDMAYAGL_API
     static void* creator();
 
     /**
      * method to handle draw requests
      */
+    PXRUSDMAYAGL_API
     void getDrawRequests(
         const MDrawInfo& drawInfo,
         bool isObjectAndActiveOnly,
@@ -61,6 +64,7 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
     /**
      * draw method
      */
+    PXRUSDMAYAGL_API
     void draw(
         const MDrawRequest& request,
         M3dView& view) const;
@@ -68,6 +72,7 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
     /**
      * select method
      */
+    PXRUSDMAYAGL_API
     bool select(
         MSelectInfo& selectInfo,
         MSelectionList& selectionList,

@@ -28,6 +28,7 @@
 #define PXRUSDMAYA_MESH_UTIL_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
@@ -39,8 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdGeomMesh;
 
 #define PXRUSDMAYA_MESH_COLOR_SET_TOKENS \
-    (Authored) \
-    (Clamped) \
     ((DisplayColorColorSetName, "displayColor")) \
     ((DisplayOpacityColorSetName, "displayOpacity"))
 
@@ -51,16 +50,24 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaMeshColorSetTokens,
 namespace PxrUsdMayaMeshUtil
 {
 
+    PXRUSDMAYA_API
     bool getEmitNormals(const MFnMesh &mesh, const TfToken& subdivScheme);
+    PXRUSDMAYA_API
     TfToken setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
     
+    PXRUSDMAYA_API
     TfToken getSubdivScheme(const MFnMesh &mesh, TfToken defaultValue);
+    PXRUSDMAYA_API
     TfToken setSubdivScheme(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
 
+    PXRUSDMAYA_API
     TfToken getSubdivInterpBoundary(const MFnMesh &mesh,  TfToken defaultValue);
+    PXRUSDMAYA_API
     TfToken setSubdivInterpBoundary(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
 
+    PXRUSDMAYA_API
     TfToken getSubdivFVLinearInterpolation(const MFnMesh& mesh);
+    PXRUSDMAYA_API
     TfToken setSubdivFVLinearInterpolation(const UsdGeomMesh& primSchema, MFnMesh& meshFn);
 
 } // namespace PxrUsdMayaMeshUtil

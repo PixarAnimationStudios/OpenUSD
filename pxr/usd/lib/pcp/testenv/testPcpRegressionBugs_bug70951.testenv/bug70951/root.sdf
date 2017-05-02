@@ -1,0 +1,16 @@
+#sdf 1.4.32
+
+def Scope "World"
+{
+    def Scope "anim"
+    {
+        def Scope "chars"
+        {
+            def Scope "JoyGroup" (
+                add references = @./JoyGroup.sdf@</JoyGroup>
+            )
+            {
+            }
+        }
+    }
+}

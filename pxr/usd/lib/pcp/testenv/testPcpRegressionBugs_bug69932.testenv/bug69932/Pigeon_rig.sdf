@@ -1,0 +1,53 @@
+#sdf 1.4.32
+
+def Scope "Pigeon" (
+    inherits = </_class_CharRig>
+    relocates = {
+        <Rig/ToesRig/LToesRig/ThumbToeLOCALRig/Toe>: <Anim/Legs/LToes/Thumb>
+    }
+)
+{
+    def Scope "Anim"
+    {
+        def Scope "Legs"
+        {
+            def Scope "LToes"
+            {
+            }
+        }
+    }
+
+    over "Rig"
+    {
+        over "ToesRig"
+        {
+            over "_Class_ToesRig"
+            {
+                def Scope "ThumbToeLOCALRig" (
+                    inherits = </Pigeon/Rig/ToesRig/_Class_ToesRig/_Class_Toe>
+                )
+                {
+                }
+            }
+        }
+    }
+}
+
+class Scope "_class_CharRig" (
+    add references = @./Pigeon_bodyrig.sdf@</CharRig>
+)
+{
+    over "Anim"
+    {
+        over "Legs"
+        {
+            over "LToes"
+            {
+                over "Thumb"
+                {
+                }
+            }
+        }
+    }
+}
+

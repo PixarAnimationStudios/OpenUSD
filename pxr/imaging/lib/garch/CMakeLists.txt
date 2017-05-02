@@ -32,6 +32,7 @@ pxr_shared_library(garch
         glPlatformDebugContext
 
     PUBLIC_HEADERS
+        api.h
         gl.h
         glPlatformContext.h
         ${GARCH_GLPLATFORMCONTEXT}.h

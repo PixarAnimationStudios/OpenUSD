@@ -185,6 +185,11 @@ public:
     /// prim index that has been assigned to a master prim.
     bool IsPrimInMasterForPrimIndexAtPath(const SdfPath& primIndexPath) const;
 
+    /// If the given \p primPath specifies a prim beneath an instance, 
+    /// returns the path of the corresponding prim in that instance's 
+    /// master.
+    SdfPath GetPrimInMasterForPath(const SdfPath& primPath) const;
+
 private:
     typedef std::vector<SdfPath> _PrimIndexPaths;
 

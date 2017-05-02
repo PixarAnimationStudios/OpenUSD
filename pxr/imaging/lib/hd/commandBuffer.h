@@ -25,6 +25,7 @@
 #define HD_COMMAND_BUFFER_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/drawBatch.h"
 #include "pxr/imaging/hd/drawItemInstance.h"
@@ -49,27 +50,35 @@ class HdDrawItemInstance;
 ///
 class HdCommandBuffer {
 public:
+    HD_API
     HdCommandBuffer();
+    HD_API
     ~HdCommandBuffer();
 
     /// Prepare the command buffer for draw
+    HD_API
     void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState);
 
     /// Execute the command buffer
+    HD_API
     void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState);
 
     /// Cull drawItemInstances based on passed in combined view and projection matrix
+    HD_API
     void FrustumCull(GfMatrix4d const &cullMatrix);
 
     /// Sync visibility state from RprimSharedState to DrawItemInstances.
+    HD_API
     void SyncDrawItemVisibility(unsigned visChangeCount);
 
     /// Destructively swaps the contents of \p items with the internal list of
     /// all draw items. Culling state is reset, with no items visible.
+    HD_API
     void SwapDrawItems(std::vector<HdDrawItem const*>* items,
                        unsigned currentShaderBindingsVersion);
 
     /// Rebuild all draw batches if any underlying buffer array is invalidated.
+    HD_API
     void RebuildDrawBatchesIfNeeded(unsigned currentShaderBindingsVersion);
 
     /// Returns the total number of draw items, including culled items.

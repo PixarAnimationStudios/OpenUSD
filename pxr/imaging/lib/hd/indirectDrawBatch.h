@@ -25,6 +25,7 @@
 #define HD_INDIRECT_DRAW_BATCH_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/dispatchBuffer.h"
 #include "pxr/imaging/hd/drawBatch.h"
@@ -47,35 +48,46 @@ typedef std::vector<HdBindingRequest> HdBindingRequestVector;
 ///
 class Hd_IndirectDrawBatch : public Hd_DrawBatch {
 public:
+    HD_API
     Hd_IndirectDrawBatch(HdDrawItemInstance * drawItemInstance);
+    HD_API
     ~Hd_IndirectDrawBatch();
 
     // Hd_DrawBatch overrides
+    HD_API
     virtual bool Validate(bool deepValidation);
 
     /// Prepare draw commands and apply view frustum culling for this batch.
+    HD_API
     virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState);
 
     /// Executes the drawing commands for this batch.
+    HD_API
     virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState);
 
+    HD_API
     virtual void DrawItemInstanceChanged(HdDrawItemInstance const* instance);
 
     /// Returns whether to do frustum culling on the GPU
+    HD_API
     static bool IsEnabledGPUFrustumCulling();
 
     /// Returns whether to read back the count of visible items from the GPU
     /// Disabled by default, since there is some performance penalty.
+    HD_API
     static bool IsEnabledGPUCountVisibleInstances();
 
     /// Returns whether to cull tiny prims (in screen space) during GPU culling 
     /// Enabled by default.
+    HD_API
     static bool IsEnabledGPUTinyPrimCulling();
 
     /// Returns whether to do per-instance culling on the GPU
+    HD_API
     static bool IsEnabledGPUInstanceFrustumCulling();
 
 protected:
+    HD_API
     virtual void _Init(HdDrawItemInstance * drawItemInstance);
 
 private:
@@ -138,6 +150,7 @@ private:
     size_t _numTotalElements;
 
     _CullingProgram _cullingProgram;
+    bool _lastTinyPrimCulling;
 
     bool _useDrawArrays;
     bool _useInstancing;

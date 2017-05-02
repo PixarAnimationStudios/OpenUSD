@@ -33,7 +33,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 TF_INSTANTIATE_NOTICE_WRAPPER(
     SdfNotice::Base, TfNotice);
@@ -53,6 +55,8 @@ TF_INSTANTIATE_NOTICE_WRAPPER(
     SdfNotice::LayerDirtinessChanged, SdfNotice::Base);
 TF_INSTANTIATE_NOTICE_WRAPPER(
     SdfNotice::LayerMutenessChanged, SdfNotice::Base);
+
+} // anonymous namespace 
 
 void
 wrapNotice()
@@ -120,5 +124,3 @@ wrapNotice()
         .add_property("wasMuted", &SdfNotice::LayerMutenessChanged::WasMuted)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -25,6 +25,7 @@
 #define USD_MAYA_QUERY_H
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -38,8 +39,9 @@ struct PxrUsdMayaQuery
 {
     /*! \brief converts a dagPath of a usdStageShapeNode into a usdprim
      */
+    PXRUSDMAYA_API
     static UsdPrim GetPrim(const std::string& shapeName);
-    static std::string ResolvePath(const std::string &filePath);
+    PXRUSDMAYA_API
     static void ReloadStage(const std::string& shapeName);
 };
 

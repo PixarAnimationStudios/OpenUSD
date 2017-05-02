@@ -37,7 +37,9 @@
 
 using namespace boost::python;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 static
 void
@@ -71,6 +73,8 @@ _SetAssetInfo(SdfPropertySpec const &self,
 {
     self.GetAssetInfo() = dictionary;
 }
+
+} // anonymous namespace 
 
 void wrapPropertySpec()
 {
@@ -241,5 +245,3 @@ void wrapPropertySpec()
         .setattr("SymmetryFunctionKey", SdfFieldKeys->SymmetryFunction)
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

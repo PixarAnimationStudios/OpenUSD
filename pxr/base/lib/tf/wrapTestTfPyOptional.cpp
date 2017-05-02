@@ -38,7 +38,9 @@ using namespace boost::python;
 using std::string;
 using std::vector;
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
 
 // ////////////////////////////////
 // // optional
@@ -69,6 +71,8 @@ _TestOptional(
 }
 
 struct Tf_TestPyOptional { };
+
+} // anonymous namespace 
 
 void wrapTf_TestTfPyOptional()
 {
@@ -104,5 +108,3 @@ void wrapTf_TestTfPyOptional()
         .staticmethod("TestOptionalUChar")
         ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,6 +27,7 @@
 /// \file util.h
 
 #include "pxr/pxr.h"
+#include "usdMaya/api.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -128,12 +129,15 @@ ConvertInchesToMM(double inches) {
 }
 
 // seconds per frame
+PXRUSDMAYA_API
 double spf();
 
 /// Gets the Maya MObject for the node named \p nodeName.
+PXRUSDMAYA_API
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
 
 /// Gets the Maya MDagPath for the node named \p nodeName.
+PXRUSDMAYA_API
 MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
 
 /// Get the MPlug for the output time attribute of Maya's global time object
@@ -148,40 +152,51 @@ MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
 /// all MFn::kTime function set objects in the scene and returning the one whose
 /// outTime attribute matches the current time. If no such object can be found,
 /// an invalid plug is returned.
+PXRUSDMAYA_API
 MPlug
 GetMayaTimePlug();
 
+PXRUSDMAYA_API
 bool isAncestorDescendentRelationship(const MDagPath & path1,
     const MDagPath & path2);
 
 // returns 0 if static, 1 if sampled, and 2 if a curve
+PXRUSDMAYA_API
 int getSampledType(const MPlug& iPlug, bool includeConnectedChildren);
 
 // 0 dont write, 1 write static 0, 2 write anim 0, 3 write anim 1
+PXRUSDMAYA_API
 int getVisibilityType(const MPlug & iPlug);
 
 // determines what order we do the rotation in, returns false if iOrder is
 // kInvalid or kLast
+PXRUSDMAYA_API
 bool getRotOrder(MTransformationMatrix::RotationOrder iOrder,
     unsigned int & oXAxis, unsigned int & oYAxis, unsigned int & oZAxis);
 
 // determine if a Maya Object is animated or not
 // copy from mayapit code (MayaPit.h .cpp)
+PXRUSDMAYA_API
 bool isAnimated(MObject & object, bool checkParent = false);
 
 // determine if a Maya Object is intermediate
+PXRUSDMAYA_API
 bool isIntermediate(const MObject & object);
 
 // returns true for visible and lod invisible and not templated objects
+PXRUSDMAYA_API
 bool isRenderable(const MObject & object);
 
 // strip iDepth namespaces from the node name, go from taco:foo:bar to bar
 // for iDepth > 1
+PXRUSDMAYA_API
 MString stripNamespaces(const MString & iNodeName, unsigned int iDepth);
 
+PXRUSDMAYA_API
 std::string SanitizeName(const std::string& name);
 
 // This to allow various pipeline to sanitize the colorset name for output
+PXRUSDMAYA_API
 std::string SanitizeColorSetName(const std::string& name);
 
 /// Get the base colors and opacities from the shader(s) bound to \p node.
@@ -190,6 +205,7 @@ std::string SanitizeColorSetName(const std::string& name);
 /// A single value for each of color and alpha will be returned,
 /// interpolation will be constant, and assignmentIndices will be empty.
 ///
+PXRUSDMAYA_API
 bool GetLinearShaderColor(
         const MFnDagNode& node,
         PXR_NS::VtArray<PXR_NS::GfVec3f> *RGBData,
@@ -210,6 +226,7 @@ bool GetLinearShaderColor(
 /// representing per-face assignments. Faces with no assigned shader will have
 /// a value of -1 in \p assignmentIndices. \p interpolation will be uniform.
 ///
+PXRUSDMAYA_API
 bool GetLinearShaderColor(
         const MFnMesh& mesh,
         PXR_NS::VtArray<PXR_NS::GfVec3f> *RGBData,
@@ -219,24 +236,28 @@ bool GetLinearShaderColor(
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
+PXRUSDMAYA_API
 void MergeEquivalentIndexedValues(
         PXR_NS::VtArray<float>* valueData,
         PXR_NS::VtArray<int>* assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
+PXRUSDMAYA_API
 void MergeEquivalentIndexedValues(
         PXR_NS::VtArray<PXR_NS::GfVec2f>* valueData,
         PXR_NS::VtArray<int>* assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
+PXRUSDMAYA_API
 void MergeEquivalentIndexedValues(
         PXR_NS::VtArray<PXR_NS::GfVec3f>* valueData,
         PXR_NS::VtArray<int>* assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
+PXRUSDMAYA_API
 void MergeEquivalentIndexedValues(
         PXR_NS::VtArray<PXR_NS::GfVec4f>* valueData,
         PXR_NS::VtArray<int>* assignmentIndices);
@@ -245,6 +266,7 @@ void MergeEquivalentIndexedValues(
 /// constant interpolation if possible. This will potentially shrink the
 /// indices array and will update the interpolation if any compression was
 /// possible.
+PXRUSDMAYA_API
 void CompressFaceVaryingPrimvarIndices(
         const MFnMesh& mesh,
         PXR_NS::TfToken *interpolation,
@@ -255,6 +277,7 @@ void CompressFaceVaryingPrimvarIndices(
 /// assigned that index, which is returned in \p unassignedValueIndex.
 /// Returns true if unassigned values were added and indices were updated, or
 /// false otherwise.
+PXRUSDMAYA_API
 bool AddUnassignedUVIfNeeded(
         PXR_NS::VtArray<PXR_NS::GfVec2f>* uvData,
         PXR_NS::VtArray<int>* assignmentIndices,
@@ -267,6 +290,7 @@ bool AddUnassignedUVIfNeeded(
 /// \p unassignedValueIndex.
 /// Returns true if unassigned values were added and indices were updated, or
 /// false otherwise.
+PXRUSDMAYA_API
 bool AddUnassignedColorAndAlphaIfNeeded(
         PXR_NS::VtArray<PXR_NS::GfVec3f>* RGBData,
         PXR_NS::VtArray<float>* AlphaData,
@@ -275,8 +299,10 @@ bool AddUnassignedColorAndAlphaIfNeeded(
         const PXR_NS::GfVec3f& defaultRGB,
         const float defaultAlpha);
 
+PXRUSDMAYA_API
 MPlug GetConnected(const MPlug& plug);
 
+PXRUSDMAYA_API
 void Connect(
         const MPlug& srcPlug,
         const MPlug& dstPlug,
@@ -289,9 +315,11 @@ void Connect(
 ///
 /// Elements of the path will be sanitized such that it is a valid SdfPath.
 /// This means it will replace ':' with '_'.
+PXRUSDMAYA_API
 PXR_NS::SdfPath MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape);
 
 /// Conveniency function to retreive custom data
+PXRUSDMAYA_API
 bool GetBoolCustomData(PXR_NS::UsdAttribute obj, PXR_NS::TfToken key, bool defaultValue);
 
 // Compute the value of \p attr, returning true upon success.
@@ -320,6 +348,7 @@ bool getPlugValue(MFnDependencyNode const &depNode,
 /// This will make sure that color values (which are linear in usd) get
 /// gamma corrected (display in maya).
 /// Returns true if the value was set on the plug successfully, false otherwise.
+PXRUSDMAYA_API
 bool setPlugValue(
         const PXR_NS::UsdAttribute& attr,
         MPlug& attrPlug);
@@ -329,6 +358,7 @@ bool setPlugValue(
 /// This will make sure that color values (which are linear in usd) get
 /// gamma corrected (display in maya).
 /// Returns true if the value was set on the plug successfully, false otherwise.
+PXRUSDMAYA_API
 bool setPlugValue(
         const PXR_NS::UsdAttribute& attr,
         PXR_NS::UsdTimeCode time,
@@ -349,10 +379,12 @@ bool setPlugValue(MFnDependencyNode const &depNode,
     return false;
 }
 
+PXRUSDMAYA_API
 bool createStringAttribute(
         MFnDependencyNode& depNode,
         const MString& attr);
 
+PXRUSDMAYA_API
 bool createNumericAttribute(
         MFnDependencyNode& depNode,
         const MString& attr,

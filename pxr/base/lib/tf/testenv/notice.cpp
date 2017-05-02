@@ -28,11 +28,11 @@
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtr.h"
-#include "pxr/base/arch/nap.h"
 #include "pxr/base/arch/systemInfo.h"
 
 #include <boost/function.hpp>
 
+#include <chrono>
 #include <cstdio>
 #include <iostream>
 #include <mutex>
@@ -206,7 +206,7 @@ void WorkTask() {
     workerThreadLog << "// WorkListener should respond once\n";
     WorkerNotice("WorkerNotice 1").Send();
 
-    ArchNap(10);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     _DumpLog(&workerThreadLog, &workerThreadList, &workerThreadLock);
 

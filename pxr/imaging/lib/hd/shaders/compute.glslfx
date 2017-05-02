@@ -122,9 +122,7 @@ void writeNormal(int nIndex, vec3 normal)
 
 layout(std140, binding=0) uniform Uniform {
    int vertexOffset;       // offset in aggregated buffer
-   int adjacencyStride;
    int adjacencyOffset;
-   int padding;
    int pointsOffset;       // interleave offset
    int pointsStride;       // interleave stride
    int normalsOffset;      // interleave offset
@@ -132,28 +130,38 @@ layout(std140, binding=0) uniform Uniform {
 };
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
 
+vec3 getPoint(int index)
+{
+    int offsetIdx = (index+vertexOffset);
+    int pointsIdx = offsetIdx * pointsStride + pointsOffset;
+    
+    return vec3(points[pointsIdx],
+                points[pointsIdx + 1],
+                points[pointsIdx + 2]);
+}
+
 void main()
 {
     int index = int(gl_GlobalInvocationID.x);
-    int adjIndex = index * adjacencyStride + adjacencyOffset;
-    int valence = entry[adjIndex];
+    
+    int offIndex = index * 2 + adjacencyOffset;
+    
+    int offset = entry[offIndex] + adjacencyOffset;
+    int valence = entry[offIndex + 1];
+
     vec3 normal = vec3(0);
-    int vCurrent = (index+vertexOffset)*pointsStride + pointsOffset;
-    vec3 current = vec3(points[vCurrent+0],
-                        points[vCurrent+1],
-                        points[vCurrent+2]);
+
+    vec3 current = getPoint(index);
     for (int i = 0; i < valence; ++i) {
-        int vNext = (entry[adjIndex+i*2+2] + vertexOffset)*pointsStride
-            + pointsOffset;
-        int vPrev = (entry[adjIndex+i*2+1] + vertexOffset)*pointsStride
-            + pointsOffset;
-        vec3 next = vec3(points[vNext+0],
-                         points[vNext+1],
-                         points[vNext+2]);
-        vec3 prev = vec3(points[vPrev+0],
-                         points[vPrev+1],
-                         points[vPrev+2]);
+        int entryIdx = i * 2 + offset;
+    
+        int prevIdx = entry[entryIdx];
+        int nextIdx = entry[entryIdx + 1];
+    
+        vec3 next = getPoint(nextIdx);
+        vec3 prev = getPoint(prevIdx); 
         normal += cross(next - current, prev - current);
+        
     }
     float n = 1.0/max(length(normal), 0.000001);
     normal *= n;

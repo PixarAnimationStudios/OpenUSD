@@ -1,3 +1,7 @@
-pxr_python_bins(
-    usdMakeFileVariantModelAsset
+pxr_python_bin(usdMakeFileVariantModelAsset
+    DEPENDENCIES
+        tf
+        kind
+        sdf
+        usd
 )
