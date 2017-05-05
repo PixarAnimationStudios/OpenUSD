@@ -139,14 +139,14 @@ private:
                 continue;
             }
 
-            UsdShadeParameter param = risObj.CreateParameter(attrName, attrTypeName);
-            if (!param) {
+            UsdShadeInput input= risObj.CreateInput(attrName, attrTypeName);
+            if (!input) {
                 continue;
             }
 
             PxrUsdMayaWriteUtil::SetUsdAttr(
                 attrPlug,
-                param.GetAttr(),
+                input.GetAttr(),
                 UsdTimeCode::Default());
 
             if (attrPlug.isConnected() && attrPlug.isDestination()) {
@@ -158,7 +158,7 @@ private:
                                                            context,
                                                            processedPaths,
                                                            false)) {
-                        param.ConnectToSource(
+                        UsdShadeConnectableAPI::ConnectToSource(input,
                             UsdShadeShader(cPrim),
                             TfToken(context.GetStandardAttrName(connected)));
                     }
@@ -284,8 +284,8 @@ _CreateShaderObject(
     }
 
     // The rest of this is not really RIS specific at all.
-    for (const UsdShadeParameter &param : risShader.GetParameters()) {
-        MPlug mayaAttr = _ImportAttr(param.GetAttr(), fnDep);
+    for (const UsdShadeInput &input : risShader.GetInputs()) {
+        MPlug mayaAttr = _ImportAttr(input.GetAttr(), fnDep);
         if (mayaAttr.isNull()) {
             continue;
         }
@@ -294,7 +294,8 @@ _CreateShaderObject(
         TfToken sourceOutputName;
         UsdShadeAttributeType sourceType;
         // follow shader connections and recurse.
-        if (param.GetConnectedSource(&source, &sourceOutputName, &sourceType)) {
+        if (UsdShadeConnectableAPI::GetConnectedSource(input, &source, 
+                &sourceOutputName, &sourceType)) {
             if (UsdRiRisObject sourceRisObj = UsdRiRisObject(source.GetPrim())) {
                 MObject sourceObj = _GetOrCreateShaderObject(sourceRisObj, context);
                 MFnDependencyNode sourceDep(sourceObj, &status);
