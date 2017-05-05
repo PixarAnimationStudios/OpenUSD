@@ -51,6 +51,13 @@ _Set(const UsdShadeInput &self, object val, const UsdTimeCode &time)
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
 
+static TfPyObjWrapper
+_Get(const UsdShadeInput &self, UsdTimeCode time) {
+    VtValue val;
+    self.Get(&val, time);
+    return UsdVtValueToPython(val);
+}
+
 } // anonymous namespace 
 
 void wrapUsdShadeInput()
@@ -66,6 +73,7 @@ void wrapUsdShadeInput()
         .def("GetBaseName", &Input::GetBaseName)
         .def("GetPrim", &Input::GetPrim)
         .def("GetTypeName", &Input::GetTypeName)
+        .def("Get", _Get, (arg("time")=UsdTimeCode::Default()))
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
         .def("SetRenderType", &Input::SetRenderType,
              (arg("renderType")))

@@ -47,6 +47,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((infoFilePath, "info:filePath")) \
     ((infoOslPath, "info:oslPath")) \
     ((infoSloPath, "info:sloPath")) \
+    ((outputsRiBxdf, "outputs:ri:bxdf")) \
+    ((outputsRiDisplacement, "outputs:ri:displacement")) \
+    ((outputsRiSurface, "outputs:ri:surface")) \
+    ((outputsRiVolume, "outputs:ri:volume")) \
     ((riFocusRegion, "ri:focusRegion")) \
     ((riLookBxdf, "riLook:bxdf")) \
     ((riLookCoshaders, "riLook:coshaders")) \
@@ -81,6 +85,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>infoFilePath</b> - UsdRiRisOslPattern, UsdRiRisObject
 /// \li <b>infoOslPath</b> - UsdRiRisOslPattern
 /// \li <b>infoSloPath</b> - UsdRiRslShader
+/// \li <b>outputsRiBxdf</b> - UsdRiMaterialAPI
+/// \li <b>outputsRiDisplacement</b> - UsdRiMaterialAPI
+/// \li <b>outputsRiSurface</b> - UsdRiMaterialAPI
+/// \li <b>outputsRiVolume</b> - UsdRiMaterialAPI
 /// \li <b>riFocusRegion</b> - UsdRiStatements
 /// \li <b>riLookBxdf</b> - UsdRiLookAPI
 /// \li <b>riLookCoshaders</b> - UsdRiLookAPI

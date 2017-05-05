@@ -75,6 +75,16 @@ public:
         return _attr.GetPrim();
     }
 
+    /// Convenience wrapper for the templated UsdAttribute::Get().
+    template <typename T>
+    bool Get(T* value, UsdTimeCode time = UsdTimeCode::Default()) const {
+        return GetAttr().Get(value, time);
+    }
+
+    /// Convenience wrapper for VtValue version of UsdAttribute::Get().
+    USDSHADE_API
+    bool Get(VtValue* value, UsdTimeCode time = UsdTimeCode::Default()) const;
+
     /// Set a value for the Input at \p time.
     /// 
     USDSHADE_API

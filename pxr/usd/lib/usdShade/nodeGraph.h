@@ -389,19 +389,36 @@ public:
         bool computeTransitiveConsumers=false) const;
 
 protected:
+    
+    // Befriend UsdRiLookAPI and UsdRiMaterialAPI temporarily to assist in the
+    // transition to the new shading encoding.
     friend class UsdRiLookAPI;
+    friend class UsdRiMaterialAPI;
 
-    /// \overload
     /// \deprecated
-    /// This overload takes an additonal "renderTarget" argument which needs to 
-    /// be considered when collecting old-style interface-input connections. 
+    /// This is similar to ComputeInterfaceInputConsumersMap(), but takes an 
+    /// additonal "renderTarget" argument which needs to be considered when 
+    /// collecting old-style interface-input connections. 
     /// 
-    /// Provided for use by UsdRiLookAPI. 
+    /// Provided for use by UsdRiLookAPI and UsdRiMaterialAPI. 
     /// 
     USDSHADE_API
     InterfaceInputConsumersMap _ComputeInterfaceInputConsumersMap(
         bool computeTransitiveConsumers, 
         const TfToken &renderTarget) const;
+    
+
+    
+    /// \deprecated
+    /// This is similar to GetInterfaceInputs(), but takes an additonal 
+    /// "renderTarget" argument which needs to be considered when collecting 
+    /// old-style interface-input connections. 
+    /// 
+    /// Provided for use by UsdRiLookAPI and UsdRiMaterialAPI. 
+    /// 
+    USDSHADE_API
+    std::vector<UsdShadeInput> _GetInterfaceInputs(const TfToken &renderTarget) 
+        const;
 
     /// @}
 

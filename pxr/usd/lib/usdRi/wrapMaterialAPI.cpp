@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRi/lookAPI.h"
+#include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -48,15 +48,43 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateSurfaceAttr(UsdRiMaterialAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateSurfaceAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateDisplacementAttr(UsdRiMaterialAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateDisplacementAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateVolumeAttr(UsdRiMaterialAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateVolumeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateBxdfAttr(UsdRiMaterialAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateBxdfAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
 
 } // anonymous namespace
 
-void wrapUsdRiLookAPI()
+void wrapUsdRiMaterialAPI()
 {
-    typedef UsdRiLookAPI This;
+    typedef UsdRiMaterialAPI This;
 
     class_<This, bases<UsdSchemaBase> >
-        cls("LookAPI");
+        cls("MaterialAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -79,37 +107,35 @@ void wrapUsdRiLookAPI()
 
         .def(!self)
 
+        
+        .def("GetSurfaceAttr",
+             &This::GetSurfaceAttr)
+        .def("CreateSurfaceAttr",
+             &_CreateSurfaceAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetDisplacementAttr",
+             &This::GetDisplacementAttr)
+        .def("CreateDisplacementAttr",
+             &_CreateDisplacementAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetVolumeAttr",
+             &This::GetVolumeAttr)
+        .def("CreateVolumeAttr",
+             &_CreateVolumeAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetBxdfAttr",
+             &This::GetBxdfAttr)
+        .def("CreateBxdfAttr",
+             &_CreateBxdfAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
-        
-        .def("GetSurfaceRel",
-             &This::GetSurfaceRel)
-        .def("CreateSurfaceRel",
-             &This::CreateSurfaceRel)
-        
-        .def("GetDisplacementRel",
-             &This::GetDisplacementRel)
-        .def("CreateDisplacementRel",
-             &This::CreateDisplacementRel)
-        
-        .def("GetVolumeRel",
-             &This::GetVolumeRel)
-        .def("CreateVolumeRel",
-             &This::CreateVolumeRel)
-        
-        .def("GetCoshadersRel",
-             &This::GetCoshadersRel)
-        .def("CreateCoshadersRel",
-             &This::CreateCoshadersRel)
-        
-        .def("GetBxdfRel",
-             &This::GetBxdfRel)
-        .def("CreateBxdfRel",
-             &This::CreateBxdfRel)
-        
-        .def("GetPatternsRel",
-             &This::GetPatternsRel)
-        .def("CreatePatternsRel",
-             &This::CreatePatternsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -136,39 +162,27 @@ void wrapUsdRiLookAPI()
 
 namespace {
 
-bool
-_SetInterfaceRecipient0(
-        UsdRiLookAPI& self,
-        UsdShadeInterfaceAttribute& interfaceAttr,
-        const SdfPath& receiverPath)
-{
-    return self.SetInterfaceRecipient(interfaceAttr, receiverPath);
-}
-
-bool
-_SetInterfaceRecipient1(
-        UsdRiLookAPI& self,
-        UsdShadeInterfaceAttribute& interfaceAttr,
-        const UsdShadeParameter& receiver)
-{
-    return self.SetInterfaceRecipient(interfaceAttr, receiver);
-}
-
 WRAP_CUSTOM {
-    typedef UsdRiLookAPI This;
+    typedef UsdRiMaterialAPI This;
     _class
         .def(init<UsdShadeMaterial>(arg("material")))
 
-        .def("GetSurface", &This::GetSurface)
-        .def("GetDisplacement", &This::GetDisplacement)
-        .def("GetVolume", &This::GetVolume)
-        .def("GetCoshaders", &This::GetCoshaders,
-             return_value_policy<TfPySequenceToList>())
-
-        .def("GetBxdf", &This::GetBxdf)
-        .def("GetPatterns", &This::GetPatterns,
-             return_value_policy<TfPySequenceToList>())
-
+        .def("GetSurface", &This::GetSurface, (arg("ignoreBaseMaterial")=false))
+        .def("GetDisplacement", &This::GetDisplacement, 
+             (arg("ignoreBaseMaterial")=false))
+        .def("GetVolume", &This::GetVolume, (arg("ignoreBaseMaterial")=false))
+        .def("GetBxdf", &This::GetBxdf, (arg("ignoreBaseMaterial")=false))
+ 
+        .def("GetSurfaceOutput", &This::GetSurfaceOutput)
+        .def("GetDisplacementOutput", &This::GetDisplacementOutput)
+        .def("GetVolumeOutput", &This::GetVolumeOutput)
+        .def("GetBxdfOutput", &This::GetBxdfOutput)
+ 
+        .def("SetSurfaceSource", &This::SetSurfaceSource)
+        .def("SetDisplacementSource", &This::SetDisplacementSource)
+        .def("SetVolumeSource", &This::SetVolumeSource)
+        .def("SetBxdfSource", &This::SetBxdfSource)
+ 
         .def("SetInterfaceInputConsumer", &This::SetInterfaceInputConsumer)
         .def("ComputeInterfaceInputConsumersMap", 
             &This::ComputeInterfaceInputConsumersMap, 
@@ -176,12 +190,6 @@ WRAP_CUSTOM {
             return_value_policy<TfPyMapToDictionary>())
         .def("GetInterfaceInputs", &This::GetInterfaceInputs,
              return_value_policy<TfPySequenceToList>())
-
-        // These are deprecated.
-        .def("SetInterfaceRecipient", &_SetInterfaceRecipient0)
-        .def("SetInterfaceRecipient", &_SetInterfaceRecipient1)
-        .def("GetInterfaceRecipientParameters", &This::GetInterfaceRecipientParameters)
-
     ;
 }
 

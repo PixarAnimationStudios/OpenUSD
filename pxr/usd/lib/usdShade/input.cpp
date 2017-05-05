@@ -126,6 +126,16 @@ UsdShadeInput::UsdShadeInput(
 }
 
 bool
+UsdShadeInput::Get(VtValue* value, UsdTimeCode time) const
+{
+    if (!_attr) {
+        return false;
+    }
+
+    return _attr.Get(value, time);
+}
+
+bool
 UsdShadeInput::Set(const VtValue& value, UsdTimeCode time) const
 {
     return _attr.Set(value, time);

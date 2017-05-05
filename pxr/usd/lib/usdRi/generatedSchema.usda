@@ -105,6 +105,17 @@ class RisIntegrator "RisIntegrator" (
     asset filePath
 }
 
+class "RiMaterialAPI" (
+    doc = """This API provides outputs that connect a material prim to prman 
+    shaders and RIS objects."""
+)
+{
+    uniform token outputs:ri:bxdf
+    uniform token outputs:ri:displacement
+    uniform token outputs:ri:surface
+    uniform token outputs:ri:volume
+}
+
 class "RiLookAPI" (
     doc = "This API provides the relationships to prman shaders and RIS objects."
 )

@@ -102,6 +102,46 @@ class RisIntegrator "RisIntegrator" (
     asset argsPath
 }
 
+### Material API common to both RSL and RIS ###
+
+class "RiMaterialAPI" (
+    doc = """This API provides outputs that connect a material prim to prman 
+    shaders and RIS objects."""
+    customData = {
+        # We want the class name to be UsdRiMaterialAPI
+        string className = "MaterialAPI"    
+        string extraIncludes = """
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdRi/rslShader.h"
+#include "pxr/usd/usdRi/risBxdf.h"
+"""
+    }
+) {
+    uniform token outputs:ri:surface (
+        customData = {
+            string apiName = "surface"
+        }
+    )
+    uniform token outputs:ri:displacement (
+        customData = {
+            string apiName = "displacement"
+        }
+    )
+    uniform token outputs:ri:volume (
+        customData = {
+            string apiName = "volume"
+        }
+    )
+    uniform token outputs:ri:bxdf (
+        customData = {
+            string apiName = "bxdf"
+        }
+    )
+}
+
+
 ### Look API common to both RSL and RIS ###
 
 class "RiLookAPI" (

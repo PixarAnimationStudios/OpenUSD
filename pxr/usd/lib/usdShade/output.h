@@ -210,6 +210,13 @@ public:
 private:
     friend class UsdShadeConnectableAPI;
 
+    // Befriend UsdRiMaterialAPI which will provide a backwards compatible 
+    // interface for managing terminal relationships, which turn into outputs
+    // in the new encoding of shading networks.
+    // This is temporary to assist in the transition to the new shading 
+    // encoding.
+    friend class UsdRiMaterialAPI;
+
     // Constructor that creates a UsdShadeOutput with the given name on the 
     // given prim.
     // \p name here is the unnamespaced name of the output.
@@ -228,6 +235,7 @@ private:
     // This exists only to allow higher level API to be backwards compatible
     // and treat terminals and outputs uniformly.
     // 
+    USDSHADE_API
     explicit UsdShadeOutput(const UsdRelationship &rel);
 
     // Constructor that wraps the given shading property in a UsdShadeOutput

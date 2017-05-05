@@ -372,8 +372,9 @@ public:
 
 private:
     /// \deprecated 
-    /// Provided for use by UsdRiLookAPI to author old-style interface 
-    /// attribute connections, which require the \p renderTarget argument. 
+    /// Provided for use by UsdRiLookAPI and UsdRiMaterialAPI to author 
+    /// old-style interface attribute connections, which require the 
+    /// \p renderTarget argument. 
     /// 
     static bool _ConnectToSource(
         UsdProperty const &shadingProp,
@@ -384,13 +385,17 @@ private:
         SdfValueTypeName typeName=SdfValueTypeName());
 
 protected:
+    // Befriend UsdRiLookAPI and UsdRiMaterialAPI temporarily to assist in the
+    // transition to the new shading encoding.
     friend class UsdRiLookAPI;
+    friend class UsdRiMaterialAPI;
     
     /// \deprecated
     /// Connect the given shading property to the given source input. 
     /// 
-    /// Provided for use by UsdRiLookAPI to author old-style interface 
-    /// attribute connections, which require the \p renderTarget argument. 
+    /// Provided for use by UsdRiLookAPI and UsdRiMaterialAPI to author 
+    /// old-style interface attribute connections, which require the 
+    /// \p renderTarget argument. 
     /// 
     USDSHADE_API
     static bool _ConnectToSource(UsdProperty const &shadingProp, 

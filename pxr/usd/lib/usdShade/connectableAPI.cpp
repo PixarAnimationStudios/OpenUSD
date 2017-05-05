@@ -512,14 +512,17 @@ UsdShadeConnectableAPI::GetConnectedSource(
         return false;
     }
     
+    bool shadingPropIsTerminal = shadingProp.Is<UsdRelationship>();
+
     UsdRelationship connection = _GetConnectionRel(shadingProp, false);
 
     *source = UsdShadeConnectableAPI();
     SdfPathVector targets;
-    // There should be no possibility of forwarding, here, since the API
-    // only allows targetting prims
+    // There should be no possibility of forwarding here, unless the given 
+    // shading property is a terminal output (or relationship).
     if (connection) {
-        connection.GetTargets(&targets);
+        shadingPropIsTerminal ? connection.GetForwardedTargets(&targets)
+            : connection.GetTargets(&targets);
     }
 
     // XXX(validation)  targets.size() <= 1, also sourceName
@@ -533,6 +536,12 @@ UsdShadeConnectableAPI::GetConnectedSource(
             std::tie(*sourceName, *sourceType) = 
                 UsdShadeUtils::GetBaseNameAndType(attrName);
         } else {
+            // If this is a terminal-style output, then allow connection 
+            // to a prim.
+            if (shadingProp.Is<UsdRelationship>()) {
+                return *source;
+            }
+
             // XXX validation error
             if ( TfGetEnvSetting(USD_SHADE_BACK_COMPAT) ) {
                 return connection.GetMetadata(_tokens->outputName, sourceName)
@@ -549,8 +558,7 @@ UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
     UsdProperty const &shadingProp, 
     SdfPathVector *sourcePaths)
 {
-    TfToken relName = _GetConnectionRelName(shadingProp.GetName());
-    UsdRelationship rel = shadingProp.GetPrim().GetRelationship(relName);
+    const UsdRelationship rel = _GetConnectionRel(shadingProp, /* create */ false);
     if (!rel) {
         return false;
     }
