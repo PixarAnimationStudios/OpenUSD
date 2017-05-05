@@ -421,6 +421,7 @@ TfDebug::Helper::Msg(const string& msg)
         outputFile = _GetOutputFile();
     }
     fprintf(outputFile, "%s", msg.c_str());
+    fflush(outputFile);
 }
 
 void
