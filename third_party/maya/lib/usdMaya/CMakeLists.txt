@@ -142,6 +142,7 @@ pxr_shared_library(${PXR_PACKAGE}
         testenv/testUsdImportNestedAssemblyAnimation.py
         testenv/testUsdImportSessionLayer.py
         testenv/testUsdImportUVSets.py
+        testenv/testUsdImportXforms.py
         testenv/testUsdMayaGetVariantSetSelections.py
         testenv/testUsdMayaModelKindWriter.py
         testenv/testUsdMayaProxyShape.py
@@ -178,6 +179,7 @@ pxr_test_scripts(
         testenv/testUsdImportNestedAssemblyAnimation.py
         testenv/testUsdImportSessionLayer.py
         testenv/testUsdImportUVSets.py
+        testenv/testUsdImportXforms.py
         testenv/testUsdMayaGetVariantSetSelections.py
         testenv/testUsdMayaModelKindWriter.py
         testenv/testUsdMayaProxyShape.py
@@ -374,6 +376,18 @@ pxr_install_test_dir(
 pxr_register_test(testUsdImportUVSets
     COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportUVSets"
     TESTENV testUsdImportUVSets
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdImportXformsTest
+    DEST testUsdImportXforms
+)
+pxr_register_test(testUsdImportXforms
+    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportXforms"
+    TESTENV testUsdImportXforms
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources

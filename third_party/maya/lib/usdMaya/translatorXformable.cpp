@@ -75,55 +75,82 @@ static const std::vector<std::string> _COMMON_OPS = boost::assign::list_of
 static const std::vector<std::pair<int, int> > _COMMON_OPS_PIVOTPAIRS = boost::assign::list_of
     ( std::make_pair(1, 4) );
 
-// This function retrieve a value for a given xformop and given time sample. It
+// This function retrieves a value for a given xformOp and given time sample. It
 // knows how to deal with different type of ops and angle conversion
 static bool _getXformOpAsVec3d(
-        const UsdGeomXformOp &xformop, 
-        GfVec3d &value, 
+        const UsdGeomXformOp &xformOp,
+        GfVec3d &value,
         const UsdTimeCode &usdTime)
 {
-    bool retValue=false; int rotAxis=-1; double angleMult=1;
-    UsdGeomXformOp::Type opType = xformop.GetOpType();
-    value=GfVec3d(0); if (opType == UsdGeomXformOp::TypeScale) value=GfVec3d(1);
+    bool retValue = false;
+
+    const UsdGeomXformOp::Type opType = xformOp.GetOpType();
+
+    if (opType == UsdGeomXformOp::TypeScale) {
+        value = GfVec3d(1.0);
+    } else {
+        value = GfVec3d(0.0);
+    }
+
+    // Check whether the XformOp is a type of rotation.
+    int rotAxis = -1;
+    double angleMult = GfDegreesToRadians(1.0);
 
     switch(opType) {
-        case UsdGeomXformOp::TypeRotateX: rotAxis=0; angleMult = GfDegreesToRadians(1.0); break;
-        case UsdGeomXformOp::TypeRotateY: rotAxis=1; angleMult = GfDegreesToRadians(1.0); break;
-        case UsdGeomXformOp::TypeRotateZ: rotAxis=2; angleMult = GfDegreesToRadians(1.0); break;
+        case UsdGeomXformOp::TypeRotateX:
+            rotAxis = 0;
+            break;
+        case UsdGeomXformOp::TypeRotateY:
+            rotAxis = 1;
+            break;
+        case UsdGeomXformOp::TypeRotateZ:
+            rotAxis = 2;
+            break;
         case UsdGeomXformOp::TypeRotateXYZ:
         case UsdGeomXformOp::TypeRotateXZY:
         case UsdGeomXformOp::TypeRotateYXZ:
         case UsdGeomXformOp::TypeRotateYZX:
         case UsdGeomXformOp::TypeRotateZXY:
         case UsdGeomXformOp::TypeRotateZYX:
-        angleMult = GfDegreesToRadians(1.0);
-        break;
-        default: break;
+            break;
+        default:
+            // This XformOp is not a rotation, so we're not converting an
+            // angular value from degrees to radians.
+            angleMult = 1.0;
+            break;
     }
-    
-    // If we encounter a transform op we tread it as a shear operation
+
+    // If we encounter a transform op, we treat it as a shear operation.
     if (opType == UsdGeomXformOp::TypeTransform) {
-        GfMatrix4d xform(1.0);
-        retValue=xformop.Get(&xform, usdTime);
-        if (retValue) {
-            value[0]=xform[1][0]; //xyVal
-            value[1]=xform[2][0]; //xzVal
-            value[2]=xform[2][1]; //yzVal
-        }
-    } else if (rotAxis!=-1) {
+        // GetOpTransform() handles the inverse op case for us.
+        GfMatrix4d xform = xformOp.GetOpTransform(usdTime);
+        value[0] = xform[1][0]; //xyVal
+        value[1] = xform[2][0]; //xzVal
+        value[2] = xform[2][1]; //yzVal
+        retValue = true;
+    } else if (rotAxis != -1) {
         // Single Axis rotation
-        double valued=0;
-        retValue=xformop.GetAs<double>(&valued, usdTime);
-        if (retValue) value[rotAxis]=valued*angleMult;
+        double valued = 0;
+        retValue = xformOp.GetAs<double>(&valued, usdTime);
+        if (retValue) {
+            if (xformOp.IsInverseOp()) {
+                valued = -valued;
+            }
+            value[rotAxis] = valued * angleMult;
+        }
     } else {
         GfVec3d valued;
-        retValue=xformop.GetAs<GfVec3d>(&valued, usdTime);
+        retValue = xformOp.GetAs<GfVec3d>(&valued, usdTime);
         if (retValue) {
-            value[0]=valued[0]*angleMult;
-            value[1]=valued[1]*angleMult;
-            value[2]=valued[2]*angleMult;
+            if (xformOp.IsInverseOp()) {
+                valued = -valued;
+            }
+            value[0] = valued[0] * angleMult;
+            value[1] = valued[1] * angleMult;
+            value[2] = valued[2] * angleMult;
         }
     }
+
     return retValue;
 }
 
