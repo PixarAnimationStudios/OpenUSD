@@ -430,10 +430,20 @@ UsdShadeMaterial::GetBaseMaterialPath() const
         }
     }
 
-    return FindBaseMaterialPathInPrimIndex(
-            GetPrim().GetPrimIndex(),
-            [=](const SdfPath &p)
-                {return bool(_GetMaterialAtPath(GetPrim(), p));});
+    SdfPath parentMaterialPath = FindBaseMaterialPathInPrimIndex(
+        GetPrim().GetPrimIndex(), [=](const SdfPath &p) {
+            return bool(_GetMaterialAtPath(GetPrim(), p));
+        });
+
+    if (parentMaterialPath != SdfPath::EmptyPath()) {
+        UsdPrim p = GetPrim().GetStage()->GetPrimAtPath(parentMaterialPath);
+        if (p.IsInstanceProxy()) {
+            // this looks like an instance but it's acting as the master path.
+            // Return the master path
+            parentMaterialPath = p.GetPrimInMaster().GetPath();
+        }
+    }
+    return parentMaterialPath;
 }
 
 /* static */
@@ -443,8 +453,7 @@ UsdShadeMaterial::FindBaseMaterialPathInPrimIndex(
         const PathPredicate & pathIsMaterialPredicate)
 {
     for(const PcpNodeRef &node: primIndex.GetNodeRange()) {
-        if (PcpIsSpecializesArc(node.GetArcType()))
-        {
+        if (PcpIsSpecializesArc(node.GetArcType())) {
             // We only consider children of the prim's root node because any
             // specializes arc we care about that is authored inside referenced
             // scene description will "imply" up into the root layer stack.
