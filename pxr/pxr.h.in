@@ -42,10 +42,7 @@
 
 namespace PXR_INTERNAL_NS { }
 
-/// \namespace @PXR_EXTERNAL_NAMESPACE@ 
-///
-/// The root level namespace for all source in the USD distribution.
-///
+// The root level namespace for all source in the USD distribution.
 namespace PXR_NS {
     using namespace PXR_INTERNAL_NS;
 }
