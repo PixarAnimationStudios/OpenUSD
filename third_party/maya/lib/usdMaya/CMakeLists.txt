@@ -386,7 +386,7 @@ pxr_install_test_dir(
     DEST testUsdImportXforms
 )
 pxr_register_test(testUsdImportXforms
-    COMMAND "${MAYA_LOCATION}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportXforms"
+    COMMAND "${MAYA_BASE_DIR}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdImportXforms"
     TESTENV testUsdImportXforms
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
