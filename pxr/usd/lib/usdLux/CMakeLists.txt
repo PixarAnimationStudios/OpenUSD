@@ -21,7 +21,6 @@ pxr_shared_library(usdLux
         shadowAPI
         lightFilter
         lightPortal
-        pointLight
         rectLight
         sphereLight
         tokens
@@ -45,7 +44,6 @@ pxr_shared_library(usdLux
         wrapShapingAPI.cpp
         wrapShadowAPI.cpp
         wrapLightFilter.cpp
-        wrapPointLight.cpp
         wrapRectLight.cpp
         wrapSphereLight.cpp
         wrapTokens.cpp

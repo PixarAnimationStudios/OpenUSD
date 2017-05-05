@@ -38,7 +38,6 @@ TF_WRAP_MODULE
         TF_WRAP(UsdLuxRectLight);
         TF_WRAP(UsdLuxSphereLight);
         TF_WRAP(UsdLuxDomeLight);
-        TF_WRAP(UsdLuxPointLight);
         TF_WRAP(UsdLuxGeometryLight);
     }
     TF_WRAP(UsdLuxListAPI);

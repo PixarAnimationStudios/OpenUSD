@@ -208,14 +208,6 @@ class SphereLight "SphereLight" (
 ) {
 }
 
-class PointLight "PointLight" (
-    inherits = </Light>
-    doc = """Light emitted outward from an idealized point.
-    A point light with default parameters emits the same total energy
-    as a sphere light with default parameters."""
-) {
-}
-
 class GeometryLight "GeometryLight" (
     inherits = </Light>
     doc = """Light emitted outward from a geometric prim (UsdGeomGprim),

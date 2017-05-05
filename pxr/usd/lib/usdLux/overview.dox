@@ -63,7 +63,7 @@ transform for such lights using UsdLuxLight::ComputeEffectiveTransform().
 \b TODO: document effective transform API once added
 
 By convention, lights with a primary axis emit along -Z.
-Area lights sit in the XY plane and are 1 unit in diameter.
+Area lights are centered in the XY plane and are 1 unit in diameter.
 
 To clarify geometric semantics and aid pipeline integration,
 UsdLux includes code to compute guide geometry for interactive
@@ -79,19 +79,13 @@ not the rigging itself.
 Colors specified in attributes are in energy-linear terms,
 and obey the USD convention for indicating their color space via \c
 colorConfiguration and \c colorSpace metadata.
+\ref Usd_ColorConfigurationAPI
 
 UsdLux presumes a physically-based lighting model where falloff with
 distance is a consequence of reduced visible solid angle. Environments
 that do not measure the visible solid angle are expected to provide an
 approximation, such as inverse-square falloff. Further artistic control
 over attenuation can be modelled as light filters.
-
-Point light sources are modelled as a dedicated UsdLuxPointLight type
-rather than a zero-size UsdLuxSphereLight to recognize the fact that
-point sources require accommodation when computing radiance. A point
-light with default intensity should emit the same energy as a sphere
-light with default radius and intensity. Point lights should provide
-inverse-square radiance falloff.
 
 More complex behaviors are provided via a set of API classes.
 These behaviors are common and well-defined but may not be supported
