@@ -55,7 +55,7 @@ class SdfAssetPath;
 /// This schema is analagous to NURBS Curves in packages like Maya
 /// and Houdini, often used for interchange of rigging and modeling curves.  
 /// Unlike Maya, this curve spec supports batching of multiple curves into a 
-/// single prim and widths in the schema.  Additionally, we require 
+/// single prim, widths, and normals in the schema.  Additionally, we require 
 /// 'numSegments + 2 * degree + 1' knots (2 more than maya does).  This is to
 /// be more consistent with RenderMan's NURBS patch specification.  
 /// 
@@ -69,6 +69,10 @@ class SdfAssetPath;
 /// 
 /// In spite of these slight differences in the spec, curves generated in Maya
 /// should be preserved when roundtripping.
+/// 
+/// 'order' and 'range', when representing a batched NurbsCurve should be
+/// authored one value per curve.  'knots' should be the concatentation of
+/// all batched curves.
 ///
 class UsdGeomNurbsCurves : public UsdGeomCurves
 {
@@ -162,8 +166,10 @@ public:
     // --------------------------------------------------------------------- //
     // ORDER 
     // --------------------------------------------------------------------- //
-    /// Order is degree + 1.  It must be less than or equal to the 
-    /// number of cvsPerCurve
+    /// Order of the curve.  Order must be positive and is
+    /// equal to the degree of the polynomial basis to be evaluated, plus 1.
+    /// Its value for the 'i'th curve must be less than or equal to the 
+    /// number of cvs in the curveVertexCount[i]
     ///
     /// \n  C++ Type: VtArray<int>
     /// \n  Usd Type: SdfValueTypeNames->IntArray
@@ -184,7 +190,10 @@ public:
     // --------------------------------------------------------------------- //
     // KNOTS 
     // --------------------------------------------------------------------- //
-    /// Knot vectors are batched together and define how to interpolate curve segments.
+    /// Knot vector providing curve parameterization.
+    /// The length of the slice of the array for the ith curve 
+    /// must be ( curveVertexCount[i] + order[i] ), and its
+    /// entries must take on monotonically increasing values.
     ///
     /// \n  C++ Type: VtArray<double>
     /// \n  Usd Type: SdfValueTypeNames->DoubleArray
@@ -205,7 +214,12 @@ public:
     // --------------------------------------------------------------------- //
     // RANGES 
     // --------------------------------------------------------------------- //
-    /// Specifies the parametric range used to evaluate the curve.
+    /// Provides the minimum and maximum parametric values (as defined
+    /// by knots) over which the curve is actually defined.  The minimum must 
+    /// be less than the maximum, and greater than or equal to the value of the 
+    /// knots['i'th curve slice][order[i]-1]. The maxium must be less 
+    /// than or equal to the last element's value in knots['i'th curve slice].
+    /// Range maps to (vmin, vmax) in the RenderMan spec.
     ///
     /// \n  C++ Type: VtArray<GfVec2d>
     /// \n  Usd Type: SdfValueTypeNames->Double2Array
