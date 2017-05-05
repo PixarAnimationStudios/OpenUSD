@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/arch/defines.h"
 
 #include <stdarg.h>
 #include <string>
@@ -239,12 +240,24 @@ TestStrings()
     TF_AXIOM(TfGetBaseName("/foo/bar/") == "bar");
     TF_AXIOM(TfGetBaseName("../some-dir/bar") == "bar");
     TF_AXIOM(TfGetBaseName("bar") == "bar");
+#if defined(ARCH_OS_WINDOWS)
+    // Same on Windows but with backslashes.
+    TF_AXIOM(TfGetBaseName("\\foo\\bar") == "bar");
+    TF_AXIOM(TfGetBaseName("\\foo\\bar\\") == "bar");
+    TF_AXIOM(TfGetBaseName("..\\some-dir\\bar") == "bar");
+#endif
 
     TF_AXIOM(TfGetPathName("") == "");
     TF_AXIOM(TfGetPathName("/") == "/");
     TF_AXIOM(TfGetPathName("/foo/bar") == "/foo/");
     TF_AXIOM(TfGetPathName("../some-dir/bar") == "../some-dir/");
     TF_AXIOM(TfGetPathName("bar") == "");
+#if defined(ARCH_OS_WINDOWS)
+    // Same on Windows but with backslashes.
+    TF_AXIOM(TfGetPathName("\\") == "\\");
+    TF_AXIOM(TfGetPathName("\\foo\\bar") == "\\foo\\");
+    TF_AXIOM(TfGetPathName("..\\some-dir\\bar") == "..\\some-dir\\");
+#endif
 
     TF_AXIOM(TfStringTrimRight("", " ") == "");
     TF_AXIOM(TfStringTrimRight("to be trimmed") == "to be trimmed");
@@ -340,6 +353,14 @@ TestStrings()
     TF_AXIOM(TfStringCatPaths("foo", "../bar") == "bar");
     TF_AXIOM(TfStringCatPaths("/foo", "../bar") == "/bar");
     TF_AXIOM(TfStringCatPaths("foo/crud/crap", "../bar") == "foo/crud/bar");
+#if defined(ARCH_OS_WINDOWS)
+    // Same on Windows but with backslashes.
+    TF_AXIOM(TfStringCatPaths("foo", "bar") == "foo/bar");
+    TF_AXIOM(TfStringCatPaths("foo\\crud", "../bar") == "foo/bar");
+    TF_AXIOM(TfStringCatPaths("foo", "..\\bar") == "bar");
+    TF_AXIOM(TfStringCatPaths("\\foo", "..\\bar") == "/bar");
+    TF_AXIOM(TfStringCatPaths("foo\\crud\\crap", "..\\bar") == "foo/crud/bar");
+#endif
 
     return true;
 }
