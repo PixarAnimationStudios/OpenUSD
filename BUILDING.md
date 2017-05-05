@@ -64,8 +64,15 @@ This plugin is compatible with Alembic 1.5.2. The additional dependencies that m
 | Dependency Name    | Description                                                             | Version |
 | ------------------ |-----------------------------------------------------------------------  | ------- |
 | ALEMBIC_LOCATION   | The location of [Alembic](https://https://github.com/alembic/alembic)   | 1.5.2   |
-| HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/)                  | 1.8.11  |
 | OPENEXR_LOCATION   | The location of [OpenEXR](http://www.openexr.com)                       | 2.2.0   |
+
+Support for Alembic files using the HDF5 backend is enabled by default but can be
+disabled by specifying the cmake flag ```PXR_ENABLE_HDF5_SUPPORT=FALSE```. HDF5
+support requires the following dependencies:
+
+| Dependency Name    | Description                                                             | Version |
+| ------------------ |-----------------------------------------------------------------------  | ------- |
+| HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/)                  | 1.8.11  |
 
 For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
 

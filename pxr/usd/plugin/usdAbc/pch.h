@@ -106,7 +106,6 @@
 #include <Alembic/Abc/OArchive.h>
 #include <Alembic/Abc/OObject.h>
 #include <Alembic/AbcCoreAbstract/Foundation.h>
-#include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/GeometryScope.h>
 #include <Alembic/AbcGeom/ICamera.h>
