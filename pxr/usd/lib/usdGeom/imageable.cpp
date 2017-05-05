@@ -265,15 +265,17 @@ static
 TfToken
 _ComputeVisibility(UsdPrim const &prim, UsdTimeCode const &time)
 {
-    if (UsdPrim parent = prim.GetParent()){
-        TfToken myVis = _ComputeVisibility(parent, time);
-        if (myVis == UsdGeomTokens->invisible)
-            return myVis;
-        if (UsdGeomImageable ip = UsdGeomImageable(prim)){
-            ip.GetVisibilityAttr().Get(&myVis, time);
-        }
+    TfToken localVis;
+    if (UsdGeomImageable ip = UsdGeomImageable(prim)) {
+        ip.GetVisibilityAttr().Get(&localVis, time);
 
-        return myVis;
+        if (localVis == UsdGeomTokens->invisible) {
+            return UsdGeomTokens->invisible;
+        }
+    }
+
+    if (UsdPrim parent = prim.GetParent()) {
+        return _ComputeVisibility(parent, time);
     }
 
     return UsdGeomTokens->inherited;
@@ -284,7 +286,6 @@ UsdGeomImageable::ComputeVisibility(UsdTimeCode const &time) const
 {
     return _ComputeVisibility(GetPrim(), time);
 }
-
 
 static
 TfToken
