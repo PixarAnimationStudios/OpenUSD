@@ -28,7 +28,11 @@
 #include <memory>
 #include <regex>
 
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#else
 #include <stdlib.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,9 +40,8 @@ bool
 ArchHasEnv(const std::string &name)
 {
 #if defined(ARCH_OS_WINDOWS)
-    size_t requiredSize;
-    getenv_s(&requiredSize, nullptr, 0, name.c_str());
-    return requiredSize != 0;
+    const DWORD size = GetEnvironmentVariable(name.c_str(), nullptr, 0);
+    return size != 0 && size != ERROR_ENVVAR_NOT_FOUND;
 #else
     return static_cast<bool>(getenv(name.c_str()));
 #endif
@@ -48,12 +51,10 @@ std::string
 ArchGetEnv(const std::string &name)
 {
 #if defined(ARCH_OS_WINDOWS)
-    size_t requiredSize;
-
-    getenv_s(&requiredSize, nullptr, 0, name.c_str());
-    if (requiredSize) {
-        std::unique_ptr<char[]> buffer(new char[requiredSize]);
-        getenv_s(&requiredSize, buffer.get(), requiredSize, name.c_str());
+    const DWORD size = GetEnvironmentVariable(name.c_str(), nullptr, 0);
+    if (size != 0 && size != ERROR_ENVVAR_NOT_FOUND) {
+        std::unique_ptr<char[]> buffer(new char[size]);
+        GetEnvironmentVariable(name.c_str(), buffer.get(), size);
         return std::string(buffer.get());
     }
 
@@ -74,27 +75,22 @@ ArchSetEnv(const std::string &name, const std::string &value, bool overwrite)
 
 #if defined(ARCH_OS_WINDOWS)
     if (!overwrite) {
-        size_t requiredSize;
-        getenv_s(&requiredSize, nullptr, 0, name.c_str());
-        if (requiredSize) {
-            // Already exists.
+        const DWORD size = GetEnvironmentVariable(name.c_str(), nullptr, 0);
+        if (size == 0 || size != ERROR_ENVVAR_NOT_FOUND) {
+            // Already exists or error.
             return true;
         }
     }
-    if (_putenv_s(name.c_str(), value.c_str()) == 0) {
+    return SetEnvironmentVariable(name.c_str(), value.c_str()) != 0;
 #else
-    if (setenv(name.c_str(), value.c_str(), overwrite ? 1 : 0) == 0) {
+    return setenv(name.c_str(), value.c_str(), overwrite ? 1 : 0) == 0;
 #endif
-        return true;
-    }
-
-    return false;
 }
 
 bool ArchRemoveEnv(const std::string &name)
 {
 #if defined(ARCH_OS_WINDOWS)
-    return _putenv_s(name.c_str(), "") == 0;
+    return SetEnvironmentVariable(name.c_str(), nullptr) != 0;
 #else
     return unsetenv(name.c_str()) == 0;
 #endif
