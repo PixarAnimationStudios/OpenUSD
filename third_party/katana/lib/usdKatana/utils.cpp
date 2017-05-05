@@ -970,11 +970,10 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
     std::string isolatePathString = usdInArgs->GetIsolatePath();
     std::string result = usdInArgs->GetRootLocationPath();
     result += "/";
-    std::string resolvedPathString = path.GetString();
+    std::string pathString = path.GetString();
     if (!isolatePathString.empty()) {
-        if (resolvedPathString.find(isolatePathString) == 0) {
-            resolvedPathString = resolvedPathString.substr(
-                isolatePathString.size());
+        if (pathString.find(isolatePathString) == 0) {
+            pathString = pathString.substr(isolatePathString.size());
         } else {
             // no good guess about the katana target location: 
             //   isolatePath is not a prefix of the prim being cooked
@@ -984,7 +983,7 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
             return std::string();
         }
     }
-    result += resolvedPathString;
+    result += pathString;
 
     // clean up result
     return TfNormPath(result);
@@ -1002,14 +1001,14 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
     // If the current prim is in a master for the sake of processing
     // an instance, replace the master path by the instance path before
     // converting to a katana location.
-    SdfPath resolvedPath = path;
+    SdfPath nonMasterPath = path;
     if (data.GetUsdPrim().IsInMaster() && !data.GetInstancePath().IsEmpty())
     {
-        resolvedPath = resolvedPath.ReplacePrefix(
+        nonMasterPath = nonMasterPath.ReplacePrefix(
             data.GetMasterPath(), data.GetInstancePath());
     }
 
-    return ConvertUsdPathToKatLocation(path, data.GetUsdInArgs());
+    return ConvertUsdPathToKatLocation(nonMasterPath, data.GetUsdInArgs());
 }
 
 std::string
