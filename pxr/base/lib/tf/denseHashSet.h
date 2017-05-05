@@ -237,7 +237,7 @@ public:
         _vec().push_back(v);
         _CreateTableIfNeeded();
 
-        return insert_result(boost::prior(end()), true);
+        return insert_result(std::prev(end()), true);
     }
 
     /// Insert a range into the hash set.  Note that \p i0 and \p i1 can't 
@@ -293,7 +293,7 @@ public:
             _h->erase(*iter);
     
         // If we are not removing that last element...
-        if (iter != boost::prior(end())) {
+        if (iter != std::prev(end())) {
     
             // ... move the last element into the erased placed.
             // Note that we can cast constness away because we explicitly update

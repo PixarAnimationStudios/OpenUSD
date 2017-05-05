@@ -378,7 +378,7 @@ public:
         _vec().push_back(_InternalValueType(v.first, v.second));
         _CreateTableIfNeeded();
 
-        return insert_result(boost::prior(end()), true);
+        return insert_result(std::prev(end()), true);
     }
 
     /// Insert a range into the hash map.  Note that \p i0 and \p i1 can't 
@@ -443,7 +443,7 @@ public:
             _h->erase(iter->first);
     
         // If we are not removing that last element...
-        if (iter != boost::prior(end())) {
+        if (iter != std::prev(end())) {
     
             // Need to get the underlying vector iterator directly, because
             // we want to operate on the vector.

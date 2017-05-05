@@ -141,7 +141,7 @@ TfDiagnosticMgr::AppendError(TfError const &e) {
         e._data->_serial = _nextSerial.fetch_and_increment();
         ErrorList &errorList = _errorList.local();
         errorList.push_back(e);
-        _AppendErrorsToLogText(boost::prior(errorList.end())); 
+        _AppendErrorsToLogText(std::prev(errorList.end())); 
     }
 }
 
