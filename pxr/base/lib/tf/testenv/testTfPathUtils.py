@@ -27,6 +27,7 @@ import logging
 import os
 from pxr import Tf
 import unittest
+import platform
 
 class TestPathUtils(unittest.TestCase):
 
@@ -36,34 +37,36 @@ class TestPathUtils(unittest.TestCase):
     def test_TfRealPath(self):
         if not os.path.isdir('subdir/e'):
             os.makedirs('subdir/e')
-        if not os.path.islink('b'):
-            os.symlink('subdir', 'b')
-        if not os.path.islink('c'):
-            os.symlink('b', 'c')
-        if not os.path.islink('d'):
-            os.symlink('c', 'd')
-        if not os.path.islink('e'):
-            os.symlink('missing', 'e')
-        if not os.path.islink('f'):
-            os.symlink('e', 'f')
-        if not os.path.islink('g'):
-            os.symlink('f', 'g')
-
         self.log.info('no symlinks')
         self.assertEqual(os.path.abspath('subdir'), Tf.RealPath('subdir', True))
-        self.log.info('leaf dir is symlink')
-        self.assertEqual(os.path.abspath('subdir'), Tf.RealPath('d', True))
-        self.log.info('symlinks through to dir')
-        self.assertEqual(os.path.abspath('subdir/e'), Tf.RealPath('d/e', True))
-        self.log.info('symlinks through to nonexistent dirs')
-        self.assertEqual(os.path.abspath('subdir/e/f/g/h'),
-            Tf.RealPath('d/e/f/g/h', True))
-        self.log.info('symlinks through to broken link')
-        self.assertEqual('', Tf.RealPath('g', True))
 
-        self.log.info('symlinks through to broken link, raiseOnError=True')
-        with self.assertRaises(RuntimeError):
-            Tf.RealPath('g', True, raiseOnError=True)
+        if hasattr(os, 'symlink'):
+            if not os.path.islink('b'):
+                os.symlink('subdir', 'b')
+            if not os.path.islink('c'):
+                os.symlink('b', 'c')
+            if not os.path.islink('d'):
+                os.symlink('c', 'd')
+            if not os.path.islink('e'):
+                os.symlink('missing', 'e')
+            if not os.path.islink('f'):
+                os.symlink('e', 'f')
+            if not os.path.islink('g'):
+                os.symlink('f', 'g')
+
+            self.log.info('leaf dir is symlink')
+            self.assertEqual(os.path.abspath('subdir'), Tf.RealPath('d', True))
+            self.log.info('symlinks through to dir')
+            self.assertEqual(os.path.abspath('subdir/e'), Tf.RealPath('d/e', True))
+            self.log.info('symlinks through to nonexistent dirs')
+            self.assertEqual(os.path.abspath('subdir/e/f/g/h'),
+                Tf.RealPath('d/e/f/g/h', True))
+            self.log.info('symlinks through to broken link')
+            self.assertEqual('', Tf.RealPath('g', True))
+
+            self.log.info('symlinks through to broken link, raiseOnError=True')
+            with self.assertRaises(RuntimeError):
+                Tf.RealPath('g', True, raiseOnError=True)
 
 
 if __name__ == '__main__':

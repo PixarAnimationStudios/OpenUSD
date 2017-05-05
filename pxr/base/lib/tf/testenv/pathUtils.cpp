@@ -25,6 +25,7 @@
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/systemInfo.h"
@@ -35,45 +36,87 @@
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+#if defined(ARCH_OS_WINDOWS)
+const char* knownDirPath = "c:\\Windows";
+const char* knownFilePath = "c:\\Windows\\System32\\notepad.exe";
+const char* knownFilePath2 = "c:\\.\\Windows\\.\\..\\Windows\\System32\\notepad.exe";
+const char* knownNoSuchPath = "c:\\nosuch";
+#else
+const char* knownDirPath = "/etc";
+const char* knownFilePath = "/etc/passwd";
+const char* knownFilePath2 = "/./etc/./../etc/passwd";
+const char* knownNoSuchPath = "/nosuch";
+#endif
+const char* knownNoSuchRelPath = "nosuch";
+
+bool testSymlinks = true;
+
+// Wrap TfSymlink in code to check if we should do symlink tests.
+bool
+_Symlink(const std::string& src, const std::string& dst)
+{
+    if (testSymlinks) {
+        if (!TfSymlink(src, dst)) {
+            if (errno == EPERM) {
+                testSymlinks = false;
+                TF_WARN("Not testing symlinks");
+                return true;
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+} // anonymous namespace
+
 static bool
 TestTfRealPath()
 {
     TF_AXIOM(TfRealPath("") == "");
     TF_AXIOM(TfRealPath("binary") == "");
-    TF_AXIOM(TfRealPath("/./etc/./../etc/passwd") == "/etc/passwd");
-
-    // Create a nest of links for testing.
-    TF_AXIOM(TfIsDir("subdir/e") || TfMakeDirs("subdir/e"));
-    TF_AXIOM(TfIsLink("b") || TfSymlink("subdir", "b"));
-    TF_AXIOM(TfIsLink("c") || TfSymlink("b", "c"));
-    TF_AXIOM(TfIsLink("d") || TfSymlink("c", "d"));
-    TF_AXIOM(TfIsLink("e") || TfSymlink("missing", "e"));
-    TF_AXIOM(TfIsLink("f") || TfSymlink("e", "f"));
-    TF_AXIOM(TfIsLink("g") || TfSymlink("f", "g"));
+    TF_AXIOM(TfRealPath(knownFilePath2) == knownFilePath);
 
     // No symlinks
+    TF_AXIOM(TfIsDir("subdir/e") || TfMakeDirs("subdir/e"));
     TF_AXIOM(TfRealPath("subdir", true) == TfAbsPath("subdir"));
-    // Leaf dir is symlink
-    TF_AXIOM(TfRealPath("d", true) == TfAbsPath("subdir"));
-    // Symlinks through to dir
-    TF_AXIOM(TfRealPath("d/e", true) == TfAbsPath("subdir/e"));
-    // Symlinks through to nonexistent dirs
-    TF_AXIOM(TfRealPath("d/e/f/g/h", true) == TfAbsPath("subdir/e/f/g/h"));
-    // Symlinks through to broken link
-    TF_AXIOM(TfRealPath("g", true) == "");
+
+    // Create a nest of links for testing.
+    if (testSymlinks) {
+        TF_AXIOM(TfIsLink("b") || _Symlink("subdir", "b"));
+        TF_AXIOM(TfIsLink("c") || _Symlink("b", "c"));
+        TF_AXIOM(TfIsLink("d") || _Symlink("c", "d"));
+        TF_AXIOM(TfIsLink("e") || _Symlink("missing", "e"));
+        TF_AXIOM(TfIsLink("f") || _Symlink("e", "f"));
+        TF_AXIOM(TfIsLink("g") || _Symlink("f", "g"));
+    }
+
+    if (testSymlinks) {
+        // Leaf dir is symlink
+        TF_AXIOM(TfRealPath("d", true) == TfAbsPath("subdir"));
+        // Symlinks through to dir
+        TF_AXIOM(TfRealPath("d/e", true) == TfAbsPath("subdir/e"));
+        // Symlinks through to nonexistent dirs
+        TF_AXIOM(TfRealPath("d/e/f/g/h", true) == TfAbsPath("subdir/e/f/g/h"));
+        // Symlinks through to broken link
+        TF_AXIOM(TfRealPath("g", true) == "");
+    }
+
     // Empty
     TF_AXIOM(TfRealPath("", true) == "");
     // Nonexistent absolute
-    TF_AXIOM(TfRealPath("/nosuch", true) == "/nosuch");
+    TF_AXIOM(TfRealPath(knownNoSuchPath, true) == knownNoSuchPath);
     // Nonexistent relative
-    TF_AXIOM(TfRealPath("nosuch", true) == TfAbsPath("nosuch"));
+    TF_AXIOM(TfRealPath(knownNoSuchRelPath, true) ==
+             TfAbsPath(knownNoSuchRelPath));
 
-#if !defined(ARCH_OS_WINDOWS)
-    string error;
-    string::size_type split = TfFindLongestAccessiblePrefix("g", &error);
-    TF_AXIOM(split == 0);
-    TF_AXIOM(error == "encountered dangling symbolic link");
-#endif
+    if (testSymlinks) {
+        string error;
+        string::size_type split = TfFindLongestAccessiblePrefix("g", &error);
+        TF_AXIOM(split == 0);
+        TF_AXIOM(error == "encountered dangling symbolic link");
+    }
 
     return true;
 }
@@ -96,13 +139,27 @@ TestTfNormPath()
     return true;
 }
 
+namespace {
+std::string
+_AbsPathFilter(const std::string& path)
+{
+#if defined(ARCH_OS_WINDOWS)
+    // Strip driver specifier and convert backslashes to forward slashes.
+    return TfStringReplace(path.substr(2), "\\", "/");
+#else
+    // Return path as-is.
+    return path;
+#endif
+}
+}
+
 static bool
 TestTfAbsPath()
 {
     TF_AXIOM(TfAbsPath("") == "");
     TF_AXIOM(TfAbsPath("foo") != "foo");
-    TF_AXIOM(TfAbsPath("/foo/bar") == "/foo/bar");
-    TF_AXIOM(TfAbsPath("/foo/bar/../baz") == "/foo/baz");
+    TF_AXIOM(_AbsPathFilter(TfAbsPath("/foo/bar")) == "/foo/bar");
+    TF_AXIOM(_AbsPathFilter(TfAbsPath("/foo/bar/../baz")) == "/foo/baz");
 
     return true;
 }
@@ -110,26 +167,36 @@ TestTfAbsPath()
 static bool
 TestTfReadLink()
 {
-#if defined(ARCH_OS_WINDOWS)
-    const char* knownFileOrDir = "C:\\Windows";
-#else
-    const char* knownFileOrDir = "/etc/passwd";
-#endif
-
     TF_AXIOM(TfReadLink("") == "");
 
-    ArchUnlinkFile("test-link");
-    if (!TfSymlink(knownFileOrDir, "test-link")) {
-        TF_RUNTIME_ERROR("failed to create test link: %s",
-                            ArchStrerror(errno).c_str());
-        return false;
+    if (testSymlinks) {
+        ArchUnlinkFile("test-link");
+        if (!_Symlink(knownDirPath, "test-link")) {
+            TF_RUNTIME_ERROR("failed to create test link: %s",
+                                ArchStrerror(errno).c_str());
+            return false;
+        }
+
+        TF_AXIOM(TfReadLink("test-link") == knownDirPath);
+        TF_AXIOM(TfReadLink(knownDirPath) == "");
+        ArchUnlinkFile("test-link");
     }
 
-    TF_AXIOM(TfReadLink("test-link") == knownFileOrDir);
-    TF_AXIOM(TfReadLink(knownFileOrDir) == "");
-    ArchUnlinkFile("test-link");
-
     return true;
+}
+
+namespace {
+std::string
+_GlobFilter(const std::string& lhs, const std::string& rhs)
+{
+#if defined(ARCH_OS_WINDOWS)
+    // Join and convert backslashes to forward slashes.
+    return TfStringReplace(lhs + rhs, "\\", "/");
+#else
+    // Simply join the paths.
+    return lhs + rhs;
+#endif
+}
 }
 
 static bool
@@ -140,34 +207,33 @@ TestTfGlob()
 
     TF_AXIOM(TfGlob("").empty());
 
-    vector<string> dir_a = TfGlob("/etc/pam.d");
+    vector<string> dir_a = TfGlob(knownDirPath);
     TF_AXIOM(dir_a.size() == 1);
-    TF_AXIOM(dir_a.at(0) == "/etc/pam.d/");
+    TF_AXIOM(dir_a.at(0) == _GlobFilter(knownDirPath, "/"));
 
-    vector<string> dir_b = TfGlob("/etc/pam.d/");
+    vector<string> dir_b = TfGlob(_GlobFilter(knownDirPath, "/"));
     TF_AXIOM(dir_b.size() == 1);
-    TF_AXIOM(dir_b.at(0) == "/etc/pam.d/");
+    TF_AXIOM(dir_b.at(0) == _GlobFilter(knownDirPath, "/"));
 
-    vector<string> dir_c = TfGlob("/etc/pam.d/*");
+    vector<string> dir_c = TfGlob(_GlobFilter(knownDirPath, "/*"));
     TF_AXIOM(dir_c.size() > 1);
 
-    vector<string> dir_d = TfGlob("/etc/pam.d/_no_such_config");
+    vector<string> dir_d = TfGlob(_GlobFilter(knownDirPath, "/_no_such_file"));
     TF_AXIOM(dir_d.size() == 1);
-    TF_AXIOM(dir_d.at(0) == "/etc/pam.d/_no_such_config");
+    TF_AXIOM(dir_d.at(0) == _GlobFilter(knownDirPath, "/_no_such_file"));
 
-    vector<string> dir_e = TfGlob("/ZAXXON*");
+    vector<string> dir_e = TfGlob(_GlobFilter(knownNoSuchPath, "*"));
     TF_AXIOM(dir_e.size() == 1);
-    TF_AXIOM(dir_e.at(0) == "/ZAXXON*");
+    TF_AXIOM(dir_e.at(0) == _GlobFilter(knownNoSuchPath, "*"));
 
     vector<string> dir_f = TfGlob("//depot/...");
     TF_AXIOM(dir_f.size() == 1);
     TF_AXIOM(dir_f.at(0) == "//depot/...");
 
     vector<string> paths;
-    paths.push_back("/etc/pam.d");
-    paths.push_back("/etc/init.d");
+    paths.push_back(knownDirPath);
     vector<string> result = TfGlob(paths);
-    TF_AXIOM(result.size() > 1);
+    TF_AXIOM(result.size() == 1);
 
     return true;
 }
