@@ -354,13 +354,13 @@ UsdPrim::_GetAttributes(bool onlyAuthored, bool applyOrder) const
 UsdAttributeVector
 UsdPrim::GetAttributes() const
 {
-    return _GetAttributes(/*onlyAuthored=*/false);
+    return _GetAttributes(/*onlyAuthored=*/false, /*applyOrder=*/true);
 }
 
 UsdAttributeVector
 UsdPrim::GetAuthoredAttributes() const
 {
-    return _GetAttributes(/*onlyAuthored=*/true);
+    return _GetAttributes(/*onlyAuthored=*/true, /*applyOrder=*/true);
 }
 
 UsdAttribute
@@ -415,13 +415,13 @@ UsdPrim::_GetRelationships(bool onlyAuthored, bool applyOrder) const
 UsdRelationshipVector
 UsdPrim::GetRelationships() const
 {
-    return _GetRelationships(/*onlyAuthored=*/false);
+    return _GetRelationships(/*onlyAuthored=*/false, /*applyOrder=*/true);
 }
 
 UsdRelationshipVector
 UsdPrim::GetAuthoredRelationships() const
 {
-    return _GetRelationships(/*onlyAuthored=*/true);
+    return _GetRelationships(/*onlyAuthored=*/true, /*applyOrder=*/true);
 }
 
 UsdRelationship
