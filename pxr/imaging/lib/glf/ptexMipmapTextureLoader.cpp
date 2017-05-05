@@ -500,7 +500,7 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
                                            int dstLength, int bpp,
                                            float srcStart, float srcEnd)
 {
-    TF_VERIFY(face < _blocks.size());
+    TF_VERIFY(static_cast<size_t>(face) < _blocks.size());
     Ptex::Res res(_blocks[face].ulog2, _blocks[face].vlog2);
 
     int edgeLength = (edgeId == 0 || edgeId == 2) ? res.u() : res.v();
