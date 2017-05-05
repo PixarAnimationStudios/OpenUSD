@@ -110,6 +110,7 @@ class "RiLookAPI" (
         # We want the class name to be UsdRiLookAPI
         string className = "LookAPI"    
         string extraIncludes = """
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/look.h"
 #include "pxr/usd/usdRi/rslShader.h"

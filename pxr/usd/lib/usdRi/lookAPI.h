@@ -33,6 +33,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdRi/tokens.h"
 
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/look.h"
 #include "pxr/usd/usdRi/rslShader.h"
