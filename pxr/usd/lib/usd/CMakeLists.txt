@@ -151,6 +151,7 @@ pxr_test_scripts(
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
     testenv/testUsdPayloads.py
+    testenv/testUsdPrimFlagsPredicate.py
     testenv/testUsdPrimRange.py
     testenv/testUsdPrims.py
     testenv/testUsdReferences.py

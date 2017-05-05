@@ -189,6 +189,7 @@ public:
     }
 
     // Invoke boolean predicate on UsdPrim \p prim.
+    USD_API
     bool operator()(const class UsdPrim &prim) const;
 
 protected:

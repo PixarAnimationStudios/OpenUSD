@@ -34,6 +34,10 @@ const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate =
 bool
 Usd_PrimFlagsPredicate::operator()(const UsdPrim &prim) const
 {
+    if (!prim) {
+        TF_CODING_ERROR("Applying predicate to invalid prim.");
+        return false;
+    }
     return _Eval(prim._Prim(), prim.IsInstanceProxy());
 }
 
