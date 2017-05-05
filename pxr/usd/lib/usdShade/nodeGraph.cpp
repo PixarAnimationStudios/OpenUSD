@@ -259,9 +259,9 @@ UsdShadeNodeGraph::_GetInterfaceInputs(const TfToken &renderTarget) const
         std::string relName = rel.GetName().GetString();
         if (TfStringStartsWith(relName, relPrefix)) {
             TfToken interfaceAttrName(relName.substr(relPrefix.size()));
-            if (UsdAttribute interfaceAttr = GetPrim().GetAttribute(
-                    interfaceAttrName)) {
-                result.push_back(UsdShadeInput(interfaceAttr));
+            UsdShadeInput interfaceInput = GetInput(interfaceAttrName);
+            if (interfaceInput.GetAttr()) {
+                result.push_back(interfaceInput);
             }
         }
     }
