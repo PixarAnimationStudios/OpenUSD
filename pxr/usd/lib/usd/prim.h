@@ -1006,7 +1006,7 @@ private:
     friend class Usd_PrimData;
     friend class Usd_PrimFlagsPredicate;
     friend class UsdPrim_RelTargetFinder;
-    friend class UsdPrim_AttrConnectionFinder;
+    friend struct UsdPrim_AttrConnectionFinder;
 
     // Prim constructor.
     UsdPrim(const Usd_PrimDataHandle &primData,
