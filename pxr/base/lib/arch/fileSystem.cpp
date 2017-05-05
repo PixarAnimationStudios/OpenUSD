@@ -388,7 +388,7 @@ Arch_InitTmpDir()
     _TmpDir = _strdup(tmpPath);
 #else
     const std::string tmpdir = ArchGetEnv("TMPDIR");
-    if (not tmpdir.empty()) {
+    if (!tmpdir.empty()) {
         // This function is not exposed in the header; it is only used during
         // Arch_InitConfig. If this is called more than once when TMPDIR is
         // set, the following call will leak a string.
