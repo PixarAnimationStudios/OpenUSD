@@ -86,6 +86,23 @@ public:
         if (i != _typeInfoCache.end())
             return &i->second->value;
         else if (VALUE* v = Find(key.name())) {
+            return v;
+        }
+        return NULL;
+    }
+
+    /// Return a pointer to the value stored under \p key, and NULL if \p key
+    /// is not a key in the map.  For efficiency of future lookups this will
+    /// cache the result if it falls back to a string based lookup.  In that
+    /// case before updating the cache it will call the functor \p upgrader
+    /// to allow the client to upgrade any lock to exclusive access.
+    template <class Upgrader>
+    VALUE* Find(const std::type_info& key, Upgrader& upgrader) {
+        typename _TypeInfoCache::const_iterator i = _typeInfoCache.find(&key);
+        if (i != _typeInfoCache.end())
+            return &i->second->value;
+        else if (VALUE* v = Find(key.name())) {
+            upgrader();
             _CreateAlias(key, key.name());
             return v;
         }
@@ -143,7 +160,7 @@ public:
     ///
     /// If \p key is not presently a member of the map, this function does
     /// nothing and returns \c false.
-    bool CreateAlias(const std::string& alias, const std::string& key) const {
+    bool CreateAlias(const std::string& alias, const std::string& key) {
         typename _StringCache::iterator i = _stringCache.find(key);
         if (i != _stringCache.end())
             return (_CreateAlias(alias, i->second), true);
@@ -152,7 +169,7 @@ public:
     }
 
     /// \overload
-    bool CreateAlias(const std::string& alias, const std::type_info& key) const {
+    bool CreateAlias(const std::string& alias, const std::type_info& key) {
         typename _TypeInfoCache::iterator i = _typeInfoCache.find(&key);
         if (i != _typeInfoCache.end())
             return (_CreateAlias(alias, i->second), true);
@@ -194,20 +211,20 @@ private:
          VALUE value;
      };
 
-    void _CreateAlias(const std::type_info& alias, const std::string& key) const {
+    void _CreateAlias(const std::type_info& alias, const std::string& key) {
         typename _StringCache::iterator i = _stringCache.find(key);
         if (i != _stringCache.end())
             _CreateAlias(alias, i->second);
     }
 
-    void _CreateAlias(const std::type_info& alias, _Entry* e) const {
+    void _CreateAlias(const std::type_info& alias, _Entry* e) {
         if (_typeInfoCache.find(&alias) == _typeInfoCache.end()) {
             _typeInfoCache[&alias] = e;
             e->typeInfoAliases.push_back(&alias);
         }
     }
 
-    void _CreateAlias(const std::string& alias, _Entry* e) const {
+    void _CreateAlias(const std::string& alias, _Entry* e) {
         if (_stringCache.find(alias) == _stringCache.end()) {
             _stringCache[alias] = e;
             e->stringAliases.push_back(alias);
@@ -221,8 +238,8 @@ private:
 
     _NameMap _nameMap;
 
-    mutable _TypeInfoCache _typeInfoCache;
-    mutable _StringCache _stringCache;
+    _TypeInfoCache _typeInfoCache;
+    _StringCache _stringCache;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
