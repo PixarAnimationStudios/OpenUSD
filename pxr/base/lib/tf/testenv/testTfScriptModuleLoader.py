@@ -29,8 +29,10 @@ from pxr import Tf
 # output from Python stdout and C++ stdout will not interleave as
 # expected unless we flush both after each write.  We force flushing
 # in Python here.
-import os, sys
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', 0)
+import platform
+if platform.system() == 'Windows':
+    import os, sys
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', 0)
 
 sml = Tf.ScriptModuleLoader()
 
