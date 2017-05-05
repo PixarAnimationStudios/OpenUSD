@@ -24,4 +24,7 @@ shading model.
 
 \li \ref usdRi/rmanUtilities.h prvides usd/ri conversion utilities
 
+\li The UsdRiPxr...LightFilter classes, representing extensions to the
+    core UsdLight schemas specific to Renderman
+
 */

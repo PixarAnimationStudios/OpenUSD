@@ -9,22 +9,32 @@ pxr_shared_library(usdRi
         usd
         usdShade
         usdGeom
+        usdLux
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        tokens
-        statements
+        lightAPI
         lookAPI
-        rmanUtilities
-        rslShader
-        risIntegrator
+        materialAPI
+        pxrAovLight
+        pxrBarnLightFilter
+        pxrCookieLightFilter
+        pxrEnvDayLight
+        pxrIntMultLightFilter
+        pxrRampLightFilter
+        pxrRodLightFilter
         risBxdf
+        risIntegrator
         risObject
         risOslPattern
         risPattern
+        rmanUtilities
+        rslShader
+        statements
+        tokens
 
     PUBLIC_HEADERS
         api.h
@@ -35,13 +45,22 @@ pxr_shared_library(usdRi
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapLightAPI.cpp
         wrapLookAPI.cpp
-        wrapRmanUtilities.cpp
+        wrapMaterialAPI.cpp
+        wrapPxrAovLight.cpp
+        wrapPxrBarnLightFilter.cpp
+        wrapPxrCookieLightFilter.cpp
+        wrapPxrEnvDayLight.cpp
+        wrapPxrIntMultLightFilter.cpp
+        wrapPxrRampLightFilter.cpp
+        wrapPxrRodLightFilter.cpp
         wrapRisBxdf.cpp
         wrapRisIntegrator.cpp
         wrapRisObject.cpp
         wrapRisOslPattern.cpp
         wrapRisPattern.cpp
+        wrapRmanUtilities.cpp
         wrapRslShader.cpp
         wrapStatements.cpp
         wrapTokens.cpp
