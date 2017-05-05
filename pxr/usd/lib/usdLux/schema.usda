@@ -1,0 +1,266 @@
+#usda 1.0
+(
+    "This file describes the USD Lux light schemata for code generation."
+    subLayers = [
+        @../usdGeom/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdLux"
+        string libraryPath      = "pxr/usd/usdLux"
+    }
+)
+{
+}
+
+class "Light" (
+    inherits = </Xformable>
+    doc = """Base class for all lights."""
+) {
+    float intensity = 1 (
+        doc = """Scales the power of the light linearly."""
+    )
+    float exposure = 0 (
+        doc = """Scales the power of the light exponentially as a power
+        of 2 (similar to an F-stop control over exposure).  The result
+        is multiplied against the intensity."""
+    )
+    float diffuse = 1.0 (
+        displayName = "Diffuse Multiplier"
+        doc = """A multiplier for the effect of this light on the diffuse
+        response of materials.  This is a non-physical control."""
+    )
+    float specular = 1.0 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
+    )
+    bool normalize = false (
+        displayName = "Normalize Power"
+        doc = """Normalizes power by the surface area of the light.
+        This makes it easier to independently adjust the power and shape
+        of the light, by causing the power to not vary with the area or
+        angular size of the light."""
+    )
+    color3f color = (1, 1, 1) (
+       doc = """The color of emitted light, in energy-linear terms."""
+    )
+    bool enableColorTemperature = false (
+        displayName = "Enable Color Temperature"
+        doc = """Enables using colorTemperature."""
+    )
+    float colorTemperature = 6500 (
+        displayName = "Color Temperature"
+        doc = """Color temperature, in degrees Kelvin, representing the
+        white point.  The default is a common white point, D65.  Lower
+        values are warmer and higher values are cooler.  Only takes effect
+        when enableColorTemperature is set to true.  When active, the
+        computed result multiplies against the color attribute."""
+    )
+    rel filters (
+        doc = """Relationship to the light filters that apply to this light."""
+    )
+}
+
+class "ListAPI" (
+    doc = """API schema for prims to publish a list of lights in the
+    scene.  Can be used to avoid a full scene traversal to discover
+    lights, given suitable pipeline integration to pre-compute and
+    publish a list at a root scope."""
+) {
+    rel lightList (
+        doc = """Relationship to lights in the scene."""
+    )
+}
+
+class "LinkingAPI" (
+    doc = """API schema for linking a light to subsets of geometry for
+    purposes of contributing illumination."""
+) {
+}
+
+class "ShapingAPI" (
+    doc = """Controls for shaping a light's emission."""
+) {
+    float shaping:focus = 0 (
+        displayGroup = "Shaping"
+        doc = """A control to shape the spread of light.  Higher focus
+        values pull light towards the center and narrow the spread.
+        Implemented as an off-axis cosine power exponent.
+        TODO: clarify semantics"""
+    )
+    color3f shaping:focusTint = (0, 0, 0) (
+        displayGroup = "Shaping"
+        doc = """Off-axis color tint.  This tints the emission in the
+        falloff region.  The default tint is black.
+        TODO: clarify semantics"""
+    )
+    float shaping:cone:angle = 90 (
+        displayGroup = "Shaping"
+        doc = """Angular limit off the primary axis to restrict the
+        light spread."""
+    )
+    float shaping:cone:softness = 0 (
+        displayGroup = "Shaping"
+        doc = """Controls the cutoff softness for cone angle.
+        TODO: clarify semantics"""
+    )
+    asset shaping:ies:file (
+        displayGroup = "Shaping"
+        doc = """An IES (Illumination Engineering Society) light
+        profile describing the angular distribution of light."""
+    )
+    float shaping:ies:angleScale (
+        displayGroup = "Shaping"
+        doc = """Rescales the angular distribution of the IES profile.
+        TODO: clarify semantics"""
+    )
+}
+
+class "ShadowAPI" (
+    doc = """Controls to refine a light's shadow behavior.  These are
+    non-physical controls that are valuable for visual lighting work."""
+) {
+    bool shadow:enable = true (
+        displayGroup = "Shadows"
+        doc = """Enables shadows to be cast by this light."""
+    )
+    rel shadow:include (
+        displayGroup = "Shadows"
+        displayName = "Shadow Include Subset"
+        doc = "Set of geometry to consider for shadowing. If this is not specified, all geometry is used for shadowing."
+    )
+    rel shadow:exclude (
+        displayGroup = "Shadows"
+        displayName = "Shadow Exclude Subset"
+        doc = "Set of geometry to ignore for shadowing. If this is not specified, all geometry is used for shadowing."
+    )
+    color3f shadow:color = (0, 0, 0) (
+        displayGroup = "Shadows"
+        doc = """The color of shadows cast by the light.  This is a
+        non-physical control.  The default is to cast black shadows."""
+    )
+    float shadow:distance (
+        displayGroup = "Shadows"
+        doc = """The maximum distance shadows are cast.
+        There is no limit unless this attribute value is overriden."""
+    )
+    float shadow:falloff (
+        displayGroup = "Shadows"
+        doc = """The near distance at which shadow falloff beings.
+        There is no falloff unless this attribute value is overriden."""
+    )
+    float shadow:falloffGamma = 1.0 (
+        displayGroup = "Shadows"
+        doc = """A gamma (i.e., exponential) control over shadow strength
+        with linear distance within the falloff zone.
+        This requires the use of shadowDistance and shadowFalloff."""
+    )
+}
+
+class "LightFilter" (
+    inherits = </Xformable>
+    doc = """A light filter modifies the effect of a light.
+    Lights refer to filters via relationships so that filters may be
+    shared."""
+) {
+}
+
+class DistantLight "DistantLight" (
+    inherits = </Light>
+    doc = """Light emitted from a distant source along the -Z axis.
+    Also known as a directional light."""
+) {
+    float angle = 0.53 (
+        doc = """Angular size of the light in degrees.
+        As an example, the Sun is approximately 0.53 degrees as seen from Earth.
+        Higher values broaden the light and therefore soften shadow edges.
+        """
+    )
+    float intensity = 5000 (
+        doc = """Scales the emission of the light linearly.
+        The DistantLight has a high default intensity to approximate the Sun."""
+    )
+}
+
+class DiskLight "DiskLight" (
+    inherits = </Light>
+    doc = """Light emitted from one side of a circular disk.
+    The disk is centered in the XY plane and emits light along the -Z axis.
+    The disk has a diameter of 1 unit in local space."""
+) {
+}
+
+class RectLight "RectLight" (
+    inherits = </Light>
+    doc = """Light emitted from one side of a rectangle.
+    The rectangle is centered in the XY plane and emits light along the -Z axis.
+    The rectangle is 1 unit long in local space."""
+) {
+}
+
+class SphereLight "SphereLight" (
+    inherits = </Light>
+    doc = """Light emitted outward from a sphere.
+    The sphere has a diameter of 1 unit in local space."""
+) {
+}
+
+class PointLight "PointLight" (
+    inherits = </Light>
+    doc = """Light emitted outward from an idealized point.
+    A point light with default parameters emits the same total energy
+    as a sphere light with default parameters."""
+) {
+}
+
+class GeometryLight "GeometryLight" (
+    inherits = </Light>
+    doc = """Light emitted outward from a geometric prim (UsdGeomGprim),
+    which is typically a mesh."""
+) {
+    rel geometry (
+        doc = """Relationship to the geometry to use as the light source."""
+    )
+}
+
+class DomeLight "DomeLight" (
+    inherits = </Light>
+    doc = """Light emitted inward from a distant external dome or hemisphere,
+    such as a sky."""
+) {
+    asset texture:file (
+        doc = """A color texture to use on the dome, such as an HDR (high
+        dyanmic range) texture intended for IBL (image based lighting)."""
+    )
+    token texture:format = "automatic" (
+        allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
+        doc = """Specifies the parameterization of the color map file.
+        Valid values are:
+        - automatic: Tries to determine the layout from the file itself.
+          For example, Renderman texture files embed an explicit
+          parameterization.
+        - latlong: Latitude as X, longitude as Y.
+        - mirroredBall: An image of the environment reflected in a
+          sphere, using an implicitly orthogonal projection.
+        - angular: Similar to mirroredBall but the radial dimension
+          is mapped linearly to the angle, providing better sampling
+          at the edges.
+        - cubeMapVerticalCross: A cube map with faces laid out as a
+          vertical cross.
+        """
+    )
+    rel portals (
+        doc = """Optional portals to guide light sampling."""
+    )
+}
+
+class LightPortal "LightPortal" (
+    inherits = </Xformable>
+    doc = """A rectangular portal in the local XY plane that guides sampling
+    of a dome light.  Transmits light in the -Z direction.
+    The rectangle is 1 unit in length."""
+) {
+}

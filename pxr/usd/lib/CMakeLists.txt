@@ -5,6 +5,7 @@ set(DIRS
     pcp
     usd
     usdGeom
+    usdLux
     usdShade
     usdHydra
     usdRi

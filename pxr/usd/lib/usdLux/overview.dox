@@ -1,0 +1,148 @@
+/*!
+\page usdLux_page_front UsdLux : USD Lighting Schema
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdLux : USD Lighting Schema
+\publicLib
+\endif
+
+\section usdLux_overview Overview
+
+UsdLux provides a representation for lights and related components that
+are common to many graphics environments and therefore suitable for
+interchange.
+
+The goal of UsdLux is to serve as a basis for:
+
+- passing lighting setups from a creation environment to a renderer
+- best-effort portability of setups across environments, to the degree
+  that they share capabilities
+
+The UsdLux core includes:
+
+- common light types
+    - Dome
+    - Distant (Directional)
+    - Point
+    - Sphere
+    - Rectangle and Disk
+    - User-specified Geometry (Mesh)
+- common light attributes
+    - \a power: intensity and exposure
+    - \a color: as RGB components and/or color temperature
+- API classes emboding more complex behaviors
+    - \a listing: light enumeration and discovery
+    - \a linking: light-object linking
+    - \a shadowing: shadow-linking and falloff
+    - \a shaping: focus, cone angle, and IES profiles
+    - \a splines: artistic ramp controls
+- associated components for adjusting behavior
+    - a light filter concept to modulate the effect of lights
+    - a portal for guiding sampling of a dome light
+
+This core can be extended to add more types of lights, filters, or other features.
+
+For a comprehensive list of the types see the full <a href="hierarchy.html">class hierarchy</a>.
+
+\section usdLux_Notes Design Notes and Usage Guide
+
+\subsection usdLux_Geometry Geometry
+
+UsdLux objects are UsdGeomXformable, so they use its set of
+transform operators and inherit transforms hierarchically.
+
+UsdLux includes both a light that can use arbitrary user-supplied
+geometry, as well as lights representing specific shapes: spheres,
+rectangles, and disks.  The latter types exist because they can
+offer superior sampling behavior compared to arbitrary shapes. To
+support efficient sampling, these specialized types place restrictions
+on their local-to-world transform.  For example, a sphere may only be
+scaled uniformly.  Because arbitrary transforms may be inherited from
+parent prims, it is necessary to explicitly compute the "effective"
+transform for such lights using UsdLuxLight::ComputeEffectiveTransform().
+
+\b TODO: document effective transform API once added
+
+By convention, lights with a primary axis emit along -Z.
+Area lights sit in the XY plane and are 1 unit in diameter.
+
+To clarify geometric semantics and aid pipeline integration,
+UsdLux includes code to compute guide geometry for interactive
+viewport visualization.  This code is used in usdview.
+
+UsdLux does not provide support for expressing live transform
+constraints, such as to attach lights to moving geometry.  This is
+consistent with USD's policy of storing the computed result of rigging,
+not the rigging itself.
+
+\subsection usdLux_Behavior Light Controls & Behavior
+
+Colors specified in attributes are in energy-linear terms,
+and obey the USD convention for indicating their color space via \c
+colorConfiguration and \c colorSpace metadata.
+
+UsdLux presumes a physically-based lighting model where falloff with
+distance is a consequence of reduced visible solid angle. Environments
+that do not measure the visible solid angle are expected to provide an
+approximation, such as inverse-square falloff. Further artistic control
+over attenuation can be modelled as light filters.
+
+Point light sources are modelled as a dedicated UsdLuxPointLight type
+rather than a zero-size UsdLuxSphereLight to recognize the fact that
+point sources require accommodation when computing radiance. A point
+light with default intensity should emit the same energy as a sphere
+light with default radius and intensity. Point lights should provide
+inverse-square radiance falloff.
+
+More complex behaviors are provided via a set of API classes.
+These behaviors are common and well-defined but may not be supported
+in all rendering envrionments.  These API classes provide
+functions to specify the relevant semantic behavior:
+
+- UsdLuxSplineAPI provides a representation of an OSL-compatible
+spline backed by USD attributes.  It can be used by lights and filters
+that provide artistic controls in the form of ramps.
+
+- UsdLuxListAPI provides a "light list" relationship to enumerate
+locations of known lights in the scene. It can be useful to enumerate
+lights without requiring full scene traversal. For example, some
+systems require lights to be declared before the rest of the scene.
+UsdLuxListAPI provides a way to compute this result ahead of time and
+store the result in a well-defined place. Pipeline integration of UsdLux
+can use this API to discover and publish lights at an appropriate time
+-- such as export from any system where lights may be created.
+
+- UsdLuxLinkingAPI provides relationships to represent subsets of geometry
+to consider for illumination. These provide hierarchical inclusion and
+exclusion -- for example, to illuminate a building but not a window
+within. UsdLux supports a concept of fractional illumination, allowing
+partial contribution from a light to a particular object, for rendering
+systems that support this.
+
+- UsdLuxShadowAPI provides controls to refine shadow behavior in
+non-physical ways, including shadow linking, tinting, and falloff.
+
+- UsdLuxShapingAPI provides controls to shape light emission, including focus, cone-angle falloff, and IES profiles.
+
+\subsection Extensibility
+
+Like other USD schemas, UsdLux core may be extended to address features
+specific to certain environments.  Possible renderer- or
+pipeline-specific capabilities that could be addded as extensions include:
+
+- specialized light types
+    - point cloud lights
+    - volumetric/voxel lights
+    - procedural sky models
+    - light probes, lightfields
+- renderer-specific configuration
+    - arbitrary output variable images (AOV's) such as depth or normals
+    - light path expressions (LPE's)
+    - image post-processing effects
+    - refraction and opacity approximations, such as thin shadows
+- sampling and optimization tweaks
+    - light sample counts
+    - importance multipliers
+    - integrator path-depth limits
+- constraint rigging to attach a light to an object
+
+*/
