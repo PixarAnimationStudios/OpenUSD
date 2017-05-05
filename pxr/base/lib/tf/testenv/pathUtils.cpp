@@ -42,6 +42,11 @@ const char* knownDirPath = "c:\\Windows";
 const char* knownFilePath = "c:\\Windows\\System32\\notepad.exe";
 const char* knownFilePath2 = "c:\\.\\Windows\\.\\..\\Windows\\System32\\notepad.exe";
 const char* knownNoSuchPath = "c:\\nosuch";
+#elif defined(ARCH_OS_DARWIN)
+const char* knownDirPath = "/private/etc";
+const char* knownFilePath = "/private/etc/passwd";
+const char* knownFilePath2 = "/./private/./etc/./../etc/passwd";
+const char* knownNoSuchPath = "/nosuch";
 #else
 const char* knownDirPath = "/etc";
 const char* knownFilePath = "/etc/passwd";

@@ -71,6 +71,10 @@ namespace {
 const char* knownDirPath = "c:\\Windows";
 const char* knownFilePath = "c:\\Windows\\System32\\notepad.exe";
 const char* knownNoSuchPath = "c:\\no\\such\\file";
+#elif defined(ARCH_OS_DARWIN)
+const char* knownDirPath = "/private/etc";
+const char* knownFilePath = "/private/etc/passwd";
+const char* knownNoSuchPath = "/no/such/file";
 #else
 const char* knownDirPath = "/etc";
 const char* knownFilePath = "/etc/passwd";
