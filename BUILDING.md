@@ -65,6 +65,7 @@ This plugin is compatible with Alembic 1.5.2. The additional dependencies that m
 | ------------------ |-----------------------------------------------------------------------  | ------- |
 | ALEMBIC_LOCATION   | The location of [Alembic](https://https://github.com/alembic/alembic)   | 1.5.2   |
 | HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/)                  | 1.8.11  |
+| OPENEXR_LOCATION   | The location of [OpenEXR](http://www.openexr.com)                       | 2.2.0   |
 
 For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
 
