@@ -55,8 +55,17 @@ class TestArDefaultResolver(unittest.TestCase):
         with open(testFilePath, 'w') as ofp:
             print >>ofp, 'Garbage'
         
-        r = Ar.GetResolver()
-        self.assertEqual(testFilePath, r.Resolve(testFileName))
+        resolvedPath = Ar.GetResolver().Resolve(testFileName)
+
+        # The resolved path should be absolute.
+        self.assertTrue(os.path.isabs(resolvedPath))
+
+        # The resolved path should match the path we constructed.  The
+        # os.path.abspath() would appear to be unnecessary because we
+        # just checked that it's absolute but it also canonicalizes
+        # the path which, on Windows, means the forward slashes
+        # returned by the resolver become backslashes.
+        self.assertEqual(testFilePath, os.path.abspath(resolvedPath))
 
 if __name__ == '__main__':
     unittest.main()
