@@ -292,7 +292,7 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertTrue(radius.HasFallbackValue())
 
         radiusQuery = Usd.AttributeQuery(radius)
-        self.assertTrue(radius.HasFallbackValue())
+        self.assertTrue(radiusQuery.HasFallbackValue())
 
     def test_DefineSchema(self):
         s = Usd.Stage.CreateInMemory()
