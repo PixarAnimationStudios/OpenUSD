@@ -34,9 +34,10 @@
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/material.h"
 
-#include "pxr/usd/usdRi/lookAPI.h"
+#include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usdRi/risBxdf.h"
 #include "pxr/usd/usdRi/risObject.h"
+#include "pxr/usd/usdRi/risPattern.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
 
@@ -191,10 +192,7 @@ private:
                                                     ssDepNode,
                                                     context,
                                                     &processedShaders, true)) {
-            UsdRiLookAPI riLook = UsdRiLookAPI(materialPrim);
-            std::vector<SdfPath> bxdfTargets;
-            bxdfTargets.push_back(shaderPrim.GetPath());
-            riLook.CreateBxdfRel().SetTargets(bxdfTargets);
+            UsdRiMaterialAPI(materialPrim).SetBxdfSource(shaderPrim.GetPath());
         }
     }
 };
@@ -321,8 +319,7 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
     const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();
 
     MStatus status;
-    UsdRiLookAPI riLookAPI(shadeMaterial);
-    if (UsdRiRisBxdf bxdf = riLookAPI.GetBxdf()) {
+    if (UsdRiRisBxdf bxdf = UsdRiMaterialAPI(shadeMaterial).GetBxdf()) {
         MObject bxdfObj = _importer::_GetOrCreateShaderObject(bxdf, context);
         MFnDependencyNode bxdfDep(bxdfObj, &status);
         MPlug ret = bxdfDep.findPlug("outColor", &status);

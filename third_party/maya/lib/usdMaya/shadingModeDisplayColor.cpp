@@ -29,7 +29,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/primvar.h"
-#include "pxr/usd/usdRi/lookAPI.h"
+#include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usdRi/risBxdf.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
@@ -150,7 +150,6 @@ private:
                     _tokens->displayColor, SdfValueTypeNames->Color3f);
                     dispColorIA.Set(VtValue(color));
 
-
                 UsdPrim materialPrim = material.GetPrim();
                 std::string shaderName = TfStringPrintf("%s_lambert",
                                                         materialPrim.GetName().GetText());
@@ -161,7 +160,7 @@ private:
                 UsdShadeInput diffuse = bxdfSchema.CreateInput(
                     _tokens->diffuseColor, SdfValueTypeNames->Color3f);
 
-                UsdRiLookAPI(material).SetInterfaceInputConsumer(
+                UsdRiMaterialAPI(material).SetInterfaceInputConsumer(
                     dispColorIA, diffuse);
 
                 // Make an interface input for transparency, which we will hook up
@@ -181,8 +180,8 @@ private:
                 UsdShadeInput transmission =
                     bxdfSchema.CreateInput(_tokens->transmissionColor, 
                                            SdfValueTypeNames->Color3f);
-                UsdRiLookAPI(material).SetInterfaceInputConsumer(transparencyIA,
-                                                                 transmission);
+                UsdRiMaterialAPI(material).SetInterfaceInputConsumer(
+                    transparencyIA, transmission);
 
                 if (transparencyAvg > 0){
                     transparencyIA.Set(VtValue(transparency));
