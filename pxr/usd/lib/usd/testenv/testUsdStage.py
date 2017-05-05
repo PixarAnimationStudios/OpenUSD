@@ -223,6 +223,60 @@ class TestUsdStage(unittest.TestCase):
         assert all([Usd.Stage.IsSupportedFile(fl) for fl in validFileNames]) 
         assert not all([Usd.Stage.IsSupportedFile(fl) for fl in invalidFileNames])
 
+    def test_testUsdStageColorConfiguration(self):
+        for fmt in allFormats:
+            f = lambda base: base + '.' + fmt
+            rootLayer = Sdf.Layer.CreateNew(f("colorConf"), f("colorConf"))
+            stage = Usd.Stage.Open(rootLayer)
+            
+            colorConfigFallbacks = Usd.Stage.GetColorConfigFallbacks()
+            assert len(colorConfigFallbacks) == 2
+            fallbackColorConfiguration = colorConfigFallbacks[0]
+            fallbackColorManagementSystem = colorConfigFallbacks[1]
+
+            self.assertEqual(stage.GetColorConfiguration(), 
+                             fallbackColorConfiguration)
+            self.assertEqual(stage.GetColorManagementSystem(), 
+                             fallbackColorManagementSystem)
+
+            colorConfig = Sdf.AssetPath("https://github.com/imageworks/OpenColorIO-Configs/blob/master/aces_1.0.3/config.ocio")
+            stage.SetColorConfiguration(colorConfig)
+            self.assertEqual(stage.GetColorConfiguration(), colorConfig)
+            
+            # Need to drop down to sdf API to clear color configuration values.
+            stage.GetRootLayer().ClearColorConfiguration()
+            self.assertEqual(stage.GetColorConfiguration(), 
+                             fallbackColorConfiguration)
+
+            stage.GetRootLayer().ClearColorManagementSystem()
+            self.assertEqual(stage.GetColorManagementSystem(), 
+                             fallbackColorManagementSystem)
+
+            # Change the fallback values via API.
+            newColorConfig = Sdf.AssetPath("https://github.com/imageworks/OpenColorIO- Configs/blob/master/aces_1.0.5/config.ocio")
+            Usd.Stage.SetColorConfigFallbacks(colorConfiguration=newColorConfig,
+                colorManagementSystem="")
+            self.assertEqual(stage.GetColorConfiguration(), newColorConfig)
+            # Ensure that cms is unchanged although an empty string was passed 
+            # in for it.
+            self.assertEqual(stage.GetColorManagementSystem(), 
+                             fallbackColorManagementSystem)
+            
+            # Test colorSpace metadata.
+            # Note: this is here an not in a testUsdAttribute* because this 
+            # API on UsdAttribute pertains to encoding of color spaces, which 
+            # is closely related to the color configuration metadata on the 
+            # stage.
+            prim = stage.DefinePrim("/Prim")
+            colorAttr = prim.CreateAttribute('displayColor', 
+                                             Sdf.ValueTypeNames.Color3f)
+            self.assertFalse(colorAttr.HasColorSpace())
+            colorAttr.SetColorSpace('lin_srgb')
+            self.assertTrue(colorAttr.HasColorSpace())
+            self.assertEqual(colorAttr.GetColorSpace(), 'lin_srgb')
+            self.assertTrue(colorAttr.ClearColorSpace())
+            self.assertFalse(colorAttr.HasColorSpace())
+            
     def test_UsdStageTimeMetadata(self):
         for fmt in allFormats:
             f = lambda base: base + '.' + fmt

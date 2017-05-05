@@ -204,6 +204,24 @@ public:
     SDF_API
     void ClearDisplayUnit();
 
+    /// Returns the color-space in which a color or texture valued attribute 
+    /// is authored.
+    SDF_API
+    TfToken GetColorSpace() const;
+
+    /// Sets the color-space in which a color or texture valued attribute is 
+    /// authored.
+    SDF_API
+    void SetColorSpace(const TfToken &colorSpace);
+
+    /// Returns true if this attribute has a colorSpace value authored.
+    SDF_API
+    bool HasColorSpace() const;
+
+    /// Clears the colorSpace metadata value set on this attribute.
+    SDF_API
+    void ClearColorSpace();
+    
     /// @}
     /// \name Spec properties
     /// @{

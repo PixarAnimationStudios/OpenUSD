@@ -120,6 +120,64 @@ static TfToken _ComposeTypeName(const PcpPrimIndex &primIndex);
 // UsdStage Helpers
 // ------------------------------------------------------------------------- //
 
+using _ColorConfigurationFallbacks = pair<SdfAssetPath, TfToken>;
+
+// Fetch the color configuration fallback values from the plugins.
+TF_MAKE_STATIC_DATA(_ColorConfigurationFallbacks, _colorConfigurationFallbacks)
+{
+    PlugPluginPtrVector plugs = PlugRegistry::GetInstance().GetAllPlugins();
+    for (const auto& plug : plugs) {
+        JsObject metadata = plug->GetMetadata();
+        JsValue dictVal;
+        if (TfMapLookup(metadata, "UsdColorConfigFallbacks", &dictVal)) {
+            if (!dictVal.Is<JsObject>()) {
+                TF_CODING_ERROR(
+                        "%s[UsdColorConfigFallbacks] was not a dictionary.",
+                        plug->GetName().c_str());
+                continue;
+            }
+
+            JsObject dict = dictVal.Get<JsObject>();
+            for (const auto& d : dict) {
+                const std::string &key = d.first; 
+                if (key == SdfFieldKeys->ColorConfiguration) {
+                    if (!d.second.IsString()) {
+                        TF_CODING_ERROR("'colorConfiguration' value in "  
+                            "%s[UsdColorConfigFallbacks] must be a string.",
+                            plug->GetName().c_str());
+                        continue;
+                    }
+                    std::string colorConfig = d.second.GetString();
+                    if (!colorConfig.empty()) {
+                        _colorConfigurationFallbacks->first = 
+                            SdfAssetPath(colorConfig);
+                    }
+                } else if (key == SdfFieldKeys->ColorManagementSystem) {
+                    if (!d.second.IsString()) {
+                        TF_CODING_ERROR("'colorManagementSystem' value in "  
+                            "%s[UsdColorConfigFallbacks] must be a string.",
+                            plug->GetName().c_str());
+                        continue;
+                    }
+                    std::string cms = d.second.GetString();
+                    if (!cms.empty()) {
+                        _colorConfigurationFallbacks->second = TfToken(cms);
+                    }
+                } else {
+                    TF_CODING_ERROR("Unknown key '%s' found in "
+                        "%s[UsdColorConfigFallbacks].", key.c_str(),
+                        plug->GetName().c_str());
+                }
+            }
+            // Once we file a plugInfo file with UsdColorConfigFallbacks and 
+            // there were no errors in retrieving the fallbacks, skip the 
+            // remaining plugins. There should only be one plugin site-wide
+            // that defines this.
+            continue;
+        }
+    }
+}
+
 //
 // Usd lets you configure the fallback variants to use in plugInfo.json.
 // This static data goes to discover that on first access.
@@ -6843,6 +6901,63 @@ void
 UsdStage::SetFramesPerSecond(double framesPerSecond) const
 {
     SetMetadata(SdfFieldKeys->FramesPerSecond, framesPerSecond);
+}
+
+void 
+UsdStage::SetColorConfiguration(const SdfAssetPath &colorConfig) const
+{
+    SetMetadata(SdfFieldKeys->ColorConfiguration, colorConfig);
+}
+
+SdfAssetPath 
+UsdStage::GetColorConfiguration() const
+{
+    SdfAssetPath colorConfig;
+    GetMetadata(SdfFieldKeys->ColorConfiguration, &colorConfig);
+
+    return colorConfig.GetAssetPath().empty() ? 
+        _colorConfigurationFallbacks->first : colorConfig;
+}
+
+void 
+UsdStage::SetColorManagementSystem(const TfToken &cms) const
+{
+    SetMetadata(SdfFieldKeys->ColorManagementSystem, cms);
+}
+
+TfToken
+UsdStage::GetColorManagementSystem() const
+{
+    TfToken cms;
+    GetMetadata(SdfFieldKeys->ColorManagementSystem, &cms);
+
+    return cms.IsEmpty() ? _colorConfigurationFallbacks->second : cms;
+}
+
+/* static */
+void 
+UsdStage::GetColorConfigFallbacks(
+    SdfAssetPath *colorConfiguration,
+    TfToken *colorManagementSystem)
+{
+    if (colorConfiguration) {
+        *colorConfiguration = _colorConfigurationFallbacks->first;
+    }
+    if (colorManagementSystem) {
+        *colorManagementSystem = _colorConfigurationFallbacks->second;
+    }
+}
+
+/* static */
+void
+UsdStage::SetColorConfigFallbacks(
+    const SdfAssetPath &colorConfiguration, 
+    const TfToken &colorManagementSystem)
+{
+    if (!colorConfiguration.GetAssetPath().empty())
+        _colorConfigurationFallbacks->first = colorConfiguration;
+    if (!colorManagementSystem.IsEmpty())
+        _colorConfigurationFallbacks->second = colorManagementSystem;
 }
 
 std::string

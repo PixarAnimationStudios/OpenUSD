@@ -53,6 +53,10 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        199_bad_colorSpace_metadata.sdf
+        198_colorSpace_metadata.sdf
+        197_bad_colorConfiguration_metadata.sdf
+        196_colorConfiguration_metadata.sdf
         195_specializes.sdf
         194_bad_customLayerData_metadata.sdf
         193_customLayerData_metadata.sdf

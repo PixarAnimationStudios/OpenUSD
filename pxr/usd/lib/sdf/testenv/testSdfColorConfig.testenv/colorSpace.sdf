@@ -1,0 +1,14 @@
+#sdf 1.4.32
+
+def Shader "Pattern"
+{
+    color3f baseColor = (0, .1, .9) (
+        colorSpace = "lin_srgb"
+    )
+
+    color3f[] extraColors = [(.8, .8, .8), (0, .2, .5), (0, 0, 1)] (
+        colorSpace = ""
+    )
+
+    color4f unknownColor
+}

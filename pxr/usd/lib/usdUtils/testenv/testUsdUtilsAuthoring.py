@@ -21,7 +21,7 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
-from pxr import UsdUtils, Sdf
+from pxr import UsdUtils, Sdf, Usd
 import unittest
 
 class TestUsdUtilsAuthoring(unittest.TestCase):
@@ -45,12 +45,21 @@ class TestUsdUtilsAuthoring(unittest.TestCase):
 
         cpyNoSublayers = Sdf.Layer.CreateNew("cpyNoSublayers.usda")
         self.assertTrue(cpyNoSublayers)
-        UsdUtils.CopyLayerMetadata(source, cpyNoSublayers, skipSublayers=True)
+        UsdUtils.CopyLayerMetadata(source, cpyNoSublayers, skipSublayers=True, 
+            bakeUnauthoredFallbacks=True)
         self.assertFalse(cpyNoSublayers.pseudoRoot.HasInfo('subLayers'))
         self.assertFalse(cpyNoSublayers.pseudoRoot.HasInfo('subLayerOffsets'))
         for key in keysToCompare:
             self.assertEqual(source.pseudoRoot.GetInfo(key),
                              cpyNoSublayers.pseudoRoot.GetInfo(key))
+        
+        # Ensure that the color config fallbacks get stamped out when
+        # bakeUnauthoredFallbacks is set to true.
+        fallbackKeysToCompare = ['colorConfiguration', 'colorManagementSystem']
+        colorConfigFallbacks = Usd.Stage.GetColorConfigFallbacks()
+        self.assertEqual(colorConfigFallbacks,
+            (cpyNoSublayers.pseudoRoot.GetInfo(Sdf.Layer.ColorConfigurationKey), 
+             cpyNoSublayers.pseudoRoot.GetInfo(Sdf.Layer.ColorManagementSystemKey)))
 
 if __name__=="__main__":
     unittest.main()

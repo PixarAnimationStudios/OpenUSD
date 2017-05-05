@@ -460,6 +460,9 @@ SdfSchemaBase::_RegisterStandardFields()
         .MapKeyValidator(&_ValidateIdentifier)
         .MapValueValidator(&_ValidateIsSceneDescriptionValue);
     _DoRegisterField(SdfFieldKeys->TimeSamples, SdfTimeSampleMap());
+    _DoRegisterField(SdfFieldKeys->ColorConfiguration, SdfAssetPath());
+    _DoRegisterField(SdfFieldKeys->ColorManagementSystem, TfToken());
+    _DoRegisterField(SdfFieldKeys->ColorSpace, TfToken());
     _DoRegisterField(SdfFieldKeys->Comment, "");
     
     // Connection paths are marked read-only because adding/removing 
@@ -586,6 +589,8 @@ SdfSchemaBase::_RegisterStandardFields()
     //
 
     _Define(SdfSpecTypePseudoRoot)
+        .MetadataField(SdfFieldKeys->ColorConfiguration)
+        .MetadataField(SdfFieldKeys->ColorManagementSystem)
         .Field(SdfFieldKeys->Comment)
         .MetadataField(SdfFieldKeys->CustomLayerData)
         .MetadataField(SdfFieldKeys->DefaultPrim)
@@ -704,6 +709,8 @@ SdfSchemaBase::_RegisterStandardFields()
         .Field(SdfFieldKeys->ConnectionPaths)
         .Field(SdfFieldKeys->DisplayUnit)
         .MetadataField(SdfFieldKeys->AllowedTokens,
+                       SdfMetadataDisplayGroupTokens->core)
+        .MetadataField(SdfFieldKeys->ColorSpace, 
                        SdfMetadataDisplayGroupTokens->core)
         ;
 

@@ -1300,6 +1300,117 @@ public:
     /// @}
 
     // --------------------------------------------------------------------- //
+    /// \anchor Usd_ColorConfigurationAPI
+    /// \name Color Configuration API
+    ///
+    /// Methods for authoring and querying the color configuration to 
+    /// be used to interpret the per-attribute color-spaces. An external 
+    /// system (like OpenColorIO) is typically used for interpreting the
+    /// configuration.
+    /// 
+    /// Site-wide fallback values for the colorConfiguration and
+    /// colorManagementSystem metadata can be set in the plugInfo.json file of 
+    /// a plugin using this structure:
+    /// 
+    /// \code{.json}
+    ///         "UsdColorConfigFallbacks": {
+    ///             "colorConfiguration" = "https://github.com/imageworks/OpenColorIO-Configs/blob/master/aces_1.0.1/config.ocio",
+    ///             "colorManagementSystem" : "OpenColorIO"
+    ///         }
+    /// \endcode
+    /// 
+    /// The color space in which a given color or texture attribute is authored 
+    /// is set as token-valued metadata 'colorSpace' on the attribute. For 
+    /// color or texture attributes that don't have an authored 'colorSpace'
+    /// value, the fallback color-space is gleaned from the color configuration 
+    /// orcale. This is usually the config's <b>scene_linear</b> role 
+    /// color-space.
+    /// 
+    /// Here's the pseudo-code for determining an attribute's color-space.
+    /// 
+    /// \code{.cpp}
+    /// UsdStageRefPtr stage = UsdStage::Open(filePath);
+    /// UsdPrim prim = stage->GetPrimAtPath("/path/to/prim")
+    /// UsdAttribute attr = prim.GetAttribute("someColorAttr");
+    /// TfToken colorSpace = attr.GetColorSpace();
+    /// if (colorSpace.IsEmpty()) {
+    ///     // If colorSpace is empty, get the default from the stage's 
+    ///     // colorConfiguration, using external API (not provided by USD).
+    ///     colorSpace = ExternalAPI::GetDefaultColorSpace(
+    ///                         stage->GetColorConfiguration());
+    /// }
+    /// \endcode
+    ///
+    /// \sa \ref Usd_AttributeColorSpaceAPI
+    /// 
+    /// 
+    /// @{
+    // --------------------------------------------------------------------- //
+
+    /// Sets the default color configuration to be used to interpret the 
+    /// per-attribute color-spaces in the composed USD stage. This is specified
+    /// as asset path which can be resolved to the color spec file.
+    /// 
+    /// \ref Usd_ColorConfigurationAPI
+    USD_API
+    void SetColorConfiguration(const SdfAssetPath &colorConfig) const;
+
+    /// Returns the default color configuration used to interpret the per-
+    /// attribute color-spaces in the composed USD stage.
+    /// 
+    /// \ref Usd_ColorConfigurationAPI
+    USD_API
+    SdfAssetPath GetColorConfiguration() const;
+
+    /// Sets the name of the color management system used to interpret the 
+    /// color configuration file pointed at by the colorConfiguration metadata.
+    /// 
+    /// \ref Usd_ColorConfigurationAPI
+    USD_API
+    void SetColorManagementSystem(const TfToken &cms) const;
+
+    /// Sets the name of the color management system to be used for loading 
+    /// and interpreting the color configuration file.
+    /// 
+    /// \ref Usd_ColorConfigurationAPI
+    USD_API
+    TfToken GetColorManagementSystem() const;
+
+    /// Returns the global fallback values of 'colorConfiguration' and 
+    /// 'colorManagementSystem'. These are set in the plugInfo.json file 
+    /// of a plugin, but can be overridden by calling the static method 
+    /// SetColorConfigFallbacks().
+    /// 
+    /// The python wrapping of this method returns a tuple containing 
+    /// (colorConfiguration, colorManagementSystem).
+    /// 
+    /// \ref Usd_ColorConfigurationAPI
+    /// \sa SetColorConfigFallbacks.
+    USD_API
+    static void GetColorConfigFallbacks(SdfAssetPath *colorConfiguration,
+                                        TfToken *colorManagementSystem);
+
+    /// Sets the global fallback values of color configuration metadata which 
+    /// includes the 'colorConfiguration' asset path and the name of the 
+    /// color management system. This overrides any fallback values authored 
+    /// in plugInfo files.
+    /// 
+    /// If the specified value of \p colorConfiguration or 
+    /// \p colorManagementSystem is empty, then the corresponding fallback 
+    /// value isn't set. In other words, for this call to have an effect, 
+    /// at least one value must be non-empty. Additionally, these can't be
+    /// reset to empty values.
+    ///
+    /// \ref Usd_ColorConfigurationAPI
+    /// \sa GetColorConfigFallbacks()
+    USD_API
+    static void
+    SetColorConfigFallbacks(const SdfAssetPath &colorConfiguration, 
+                            const TfToken &colorManagementSystem);
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
     /// \anchor Usd_interpolation
     /// \name Attribute Value Interpolation
     /// Controls the interpolation behavior when retrieving attribute

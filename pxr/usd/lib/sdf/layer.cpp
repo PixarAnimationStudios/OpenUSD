@@ -1309,6 +1309,57 @@ SdfLayer::_GetValue(const TfToken& key) const
     return value.Get<T>();
 }
 
+SdfAssetPath 
+SdfLayer::GetColorConfiguration() const
+{
+    return _GetValue<SdfAssetPath>(SdfFieldKeys->ColorConfiguration);
+}
+
+void 
+SdfLayer::SetColorConfiguration(const SdfAssetPath &colorConfiguration)
+{
+    _SetValue(SdfFieldKeys->ColorConfiguration, colorConfiguration);
+}
+
+bool 
+SdfLayer::HasColorConfiguration() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), 
+                    SdfFieldKeys->ColorConfiguration);
+}
+    
+void 
+SdfLayer::ClearColorConfiguration()
+{
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ColorConfiguration);
+}
+
+TfToken
+SdfLayer::GetColorManagementSystem() const
+{
+    return _GetValue<TfToken>(SdfFieldKeys->ColorManagementSystem);
+}
+
+void 
+SdfLayer::SetColorManagementSystem(const TfToken &cms)
+{
+    _SetValue(SdfFieldKeys->ColorManagementSystem, cms);
+}
+
+bool 
+SdfLayer::HasColorManagementSystem() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), 
+                    SdfFieldKeys->ColorManagementSystem);    
+}
+
+void 
+SdfLayer::ClearColorManagementSystem() 
+{
+    EraseField(SdfPath::AbsoluteRootPath(), 
+               SdfFieldKeys->ColorManagementSystem);
+}
+
 void
 SdfLayer::SetComment(const string &newVal)
 {

@@ -241,6 +241,32 @@ UsdAttribute::ClearDefault() const
     return ClearAtTime(UsdTimeCode::Default());
 }
 
+TfToken 
+UsdAttribute::GetColorSpace() const
+{
+    TfToken colorSpace;
+    GetMetadata(SdfFieldKeys->ColorSpace, &colorSpace);
+    return colorSpace;
+}
+
+void 
+UsdAttribute::SetColorSpace(const TfToken &colorSpace) const
+{
+    SetMetadata(SdfFieldKeys->ColorSpace, colorSpace);
+}
+
+bool 
+UsdAttribute::HasColorSpace() const
+{
+    return HasMetadata(SdfFieldKeys->ColorSpace);
+}
+
+bool 
+UsdAttribute::ClearColorSpace() const
+{
+    return ClearMetadata(SdfFieldKeys->ColorSpace);
+}
+
 SdfAttributeSpecHandle
 UsdAttribute::_CreateSpec(const SdfValueTypeName& typeName, bool custom,
                           const SdfVariability &variability) const

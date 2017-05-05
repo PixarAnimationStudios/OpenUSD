@@ -706,6 +706,51 @@ public:
     /// \name Metadata
     /// @{
 
+    /// Returns the color configuration asset-path for this layer.
+    ///
+    /// The default value is an empty asset-path.
+    SDF_API
+    SdfAssetPath GetColorConfiguration() const;
+
+    /// Sets the color configuration asset-path for this layer.
+    SDF_API
+    void SetColorConfiguration(const SdfAssetPath &colorConfiguration);
+
+    /// Returns true if color configuration metadata is set in this layer.
+    /// \sa GetColorConfiguration(), SetColorConfiguration()
+    SDF_API 
+    bool HasColorConfiguration() const;
+    
+    /// Clears the color configuration metadata authored in this layer. 
+    /// \sa HasColorConfiguration(), SetColorConfiguration()
+    SDF_API
+    void ClearColorConfiguration();
+
+    /// Returns the color management system used to interpret the color 
+    /// configuration asset-path authored in this layer.
+    ///
+    /// The default value is an empty token, which implies that the clients 
+    /// will have to determine the color management system from the color 
+    /// configuration asset path (i.e. from its file extension), if it's 
+    /// specified. 
+    SDF_API
+    TfToken GetColorManagementSystem() const;
+
+    /// Sets the color management system used to interpret the color 
+    /// configuration asset-path authored this layer.
+    SDF_API
+    void SetColorManagementSystem(const TfToken &cms);
+
+    /// Returns true if colorManagementSystem metadata is set in this layer.
+    /// \sa GetColorManagementSystem(), SetColorManagementSystem()
+    SDF_API 
+    bool HasColorManagementSystem() const;
+    
+    /// Clears the 'colorManagementSystem' metadata authored in this layer. 
+    /// \sa HascolorManagementSystem(), SetColorManagementSystem()
+    SDF_API
+    void ClearColorManagementSystem();
+
     /// Returns the comment string for this layer.
     ///
     /// The default value for comment is "".

@@ -547,6 +547,9 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((Active, "active"))                                     \
     ((AllowedTokens, "allowedTokens"))                       \
     ((AssetInfo, "assetInfo"))                               \
+    ((ColorConfiguration, "colorConfiguration"))             \
+    ((ColorManagementSystem, "colorManagementSystem"))       \
+    ((ColorSpace, "colorSpace"))                             \
     ((Comment, "comment"))                                   \
     ((ConnectionPaths, "connectionPaths"))                   \
     ((Custom, "custom"))                                     \

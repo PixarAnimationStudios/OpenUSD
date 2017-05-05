@@ -117,6 +117,11 @@ void wrapUsdAttribute()
 
         .def("GetRoleName", &UsdAttribute::GetRoleName)
 
+        .def("GetColorSpace", &UsdAttribute::GetColorSpace)
+        .def("SetColorSpace", &UsdAttribute::SetColorSpace)
+        .def("HasColorSpace", &UsdAttribute::HasColorSpace)
+        .def("ClearColorSpace", &UsdAttribute::ClearColorSpace)
+
         .def("GetTimeSamples", _GetTimeSamples,
              return_value_policy<TfPySequenceToList>())
 

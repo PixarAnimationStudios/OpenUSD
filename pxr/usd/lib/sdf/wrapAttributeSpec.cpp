@@ -247,6 +247,14 @@ void wrapAttributeSpec()
 	    &_WrapSetAllowedTokens,
 	    "The allowed value tokens for this property")
 
+        .add_property("colorSpace",
+            &This::GetColorSpace,
+            &This::SetColorSpace,
+            "The color-space in which the attribute value is authored.")
+
+        .def("HasColorSpace", &This::HasColorSpace)
+        .def("ClearColorSpace", &This::ClearColorSpace)
+
         .def("GetConnectionMarker", &This::GetConnectionMarker)
         .def("SetConnectionMarker", &This::SetConnectionMarker)
         .def("ClearConnectionMarker", &This::ClearConnectionMarker)
