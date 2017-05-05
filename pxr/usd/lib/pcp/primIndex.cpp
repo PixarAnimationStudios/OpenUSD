@@ -1822,9 +1822,16 @@ _EvalNodeRelocations(
         "Evaluating relocations under %s", 
         Pcp_FormatSite(node.GetSite()).c_str());
 
-    // Determine if this node was relocated, and from what source path.    
+    // Determine if this node was relocated, and from what source path.
+    //
+    // We need to use the incremental relocates map instead of the 
+    // fully-combined map to ensure we examine all sources of opinions
+    // in the case where there are multiple relocations nested in different
+    // levels of namespace that affect the same prim. The fully-combined 
+    // map collapses these relocations into a single entry, which would
+    // cause us to skip looking at any intermediate sites.
     const SdfRelocatesMap & relocatesTargetToSource = 
-        node.GetLayerStack()->GetRelocatesTargetToSource();
+        node.GetLayerStack()->GetIncrementalRelocatesTargetToSource();
     SdfRelocatesMap::const_iterator i =
         relocatesTargetToSource.find(node.GetPath());
     if (i == relocatesTargetToSource.end()) {
@@ -4445,8 +4452,9 @@ _ComposePrimChildNamesAtNode(
         std::map<TfToken, TfToken> namesToReplace;
 
         // Check for relocations with a child as source.
+        // See _EvalNodeRelocations for why we use the incremental relocates.
         const SdfRelocatesMap & relocatesSourceToTarget =
-            node.GetLayerStack()->GetRelocatesSourceToTarget();
+            node.GetLayerStack()->GetIncrementalRelocatesSourceToTarget();
         for (SdfRelocatesMap::const_iterator i =
                  relocatesSourceToTarget.lower_bound(node.GetPath());
              i != relocatesSourceToTarget.end() &&
@@ -4469,8 +4477,9 @@ _ComposePrimChildNamesAtNode(
         }
 
         // Check for relocations with a child as target.
+        // See _EvalNodeRelocations for why we use the incremental relocates.
         const SdfRelocatesMap & relocatesTargetToSource =
-            node.GetLayerStack()->GetRelocatesTargetToSource();
+            node.GetLayerStack()->GetIncrementalRelocatesTargetToSource();
         for (SdfRelocatesMap::const_iterator i =
                  relocatesTargetToSource.lower_bound(node.GetPath());
              i != relocatesTargetToSource.end() &&

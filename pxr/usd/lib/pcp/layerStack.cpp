@@ -157,10 +157,13 @@ _ApplyOwnedSublayerOrder(
 }
 
 void
-Pcp_ComputeRelocationsForLayerStack( const SdfLayerRefPtrVector & layers,
-                                     SdfRelocatesMap *relocatesSourceToTarget,
-                                     SdfRelocatesMap *relocatesTargetToSource,
-                                     SdfPathVector *relocatesPrimPaths)
+Pcp_ComputeRelocationsForLayerStack(
+    const SdfLayerRefPtrVector & layers,
+    SdfRelocatesMap *relocatesSourceToTarget,
+    SdfRelocatesMap *relocatesTargetToSource,
+    SdfRelocatesMap *incrementalRelocatesSourceToTarget,
+    SdfRelocatesMap *incrementalRelocatesTargetToSource,
+    SdfPathVector *relocatesPrimPaths)
 {
     TRACE_FUNCTION();
 
@@ -232,6 +235,9 @@ Pcp_ComputeRelocationsForLayerStack( const SdfLayerRefPtrVector & layers,
             SdfPath source = reloc->first;
             const SdfPath & target = reloc->second;
 
+            (*incrementalRelocatesTargetToSource)[target] = source;
+            (*incrementalRelocatesSourceToTarget)[source] = target;
+
             // Check for ancestral relocations.  The source path may have
             // ancestors that were themselves the target of an ancestral
             // relocate.
@@ -259,16 +265,28 @@ Pcp_ComputeRelocationsForLayerStack( const SdfLayerRefPtrVector & layers,
 }
 
 static PcpMapFunction
-_FilterRelocationsForPath(const SdfRelocatesMap & relocates,
-                           const SdfPath & path)
+_FilterRelocationsForPath(const PcpLayerStack& layerStack,
+                          const SdfPath& path)
 {
     // Gather the relocations that affect this path.
     PcpMapFunction::PathMap siteRelocates;
+
+    const SdfRelocatesMap& relocates = layerStack.GetRelocatesSourceToTarget();
     for (SdfRelocatesMap::const_iterator
          i = relocates.lower_bound(path), n = relocates.end();
          (i != n) && (i->first.HasPrefix(path)); ++i) {
         siteRelocates.insert(*i);
     }
+
+    const SdfRelocatesMap& incrementalRelocates = 
+        layerStack.GetIncrementalRelocatesSourceToTarget();
+    for (SdfRelocatesMap::const_iterator
+         i = incrementalRelocates.lower_bound(path), 
+         n = incrementalRelocates.end();
+         (i != n) && (i->first.HasPrefix(path)); ++i) {
+        siteRelocates.insert(*i);
+    }
+
     siteRelocates[SdfPath::AbsoluteRootPath()] = SdfPath::AbsoluteRootPath();
 
     // Return a map function representing the relocates.
@@ -321,6 +339,8 @@ PcpLayerStack::PcpLayerStack(
         Pcp_ComputeRelocationsForLayerStack(_layers, 
                                             &_relocatesSourceToTarget,
                                             &_relocatesTargetToSource,
+                                            &_incrementalRelocatesSourceToTarget,
+                                            &_incrementalRelocatesTargetToSource,
                                             &_relocatesPrimPaths);
     }
 }
@@ -372,20 +392,22 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
             Pcp_ComputeRelocationsForLayerStack(_layers, 
                                                 &_relocatesSourceToTarget,
                                                 &_relocatesTargetToSource,
+                                                &_incrementalRelocatesSourceToTarget,
+                                                &_incrementalRelocatesTargetToSource,
                                                 &_relocatesPrimPaths);
         } else {
             // Change processing has provided a specific new set of
             // relocations to use.
             _relocatesSourceToTarget = changes.newRelocatesSourceToTarget;
             _relocatesTargetToSource = changes.newRelocatesTargetToSource;
+            _incrementalRelocatesSourceToTarget = changes.newIncrementalRelocatesSourceToTarget;
+            _incrementalRelocatesTargetToSource = changes.newIncrementalRelocatesTargetToSource;
             _relocatesPrimPaths = changes.newRelocatesPrimPaths;
         }
         
         // Recompute the derived relocation variables.
         TF_FOR_ALL(i, _relocatesVariables) {
-            i->second->SetValue(
-                _FilterRelocationsForPath(GetRelocatesSourceToTarget(),
-                                          i->first));
+            i->second->SetValue(_FilterRelocationsForPath(*this, i->first));
         }
     }
 }
@@ -491,6 +513,18 @@ PcpLayerStack::GetRelocatesTargetToSource() const
     return _relocatesTargetToSource;
 }
 
+const SdfRelocatesMap& 
+PcpLayerStack::GetIncrementalRelocatesSourceToTarget() const
+{
+    return _incrementalRelocatesSourceToTarget;
+}
+
+const SdfRelocatesMap& 
+PcpLayerStack::GetIncrementalRelocatesTargetToSource() const
+{
+    return _incrementalRelocatesTargetToSource;
+}
+
 const SdfPathVector& 
 PcpLayerStack::GetPathsToPrimsWithRelocates() const
 {
@@ -511,8 +545,7 @@ PcpLayerStack::GetExpressionForRelocatesAtPath(const SdfPath &path)
 
     // Create a Variable representing the relocations that affect this path.
     PcpMapExpression::VariableRefPtr var =
-        PcpMapExpression::NewVariable(
-            _FilterRelocationsForPath( GetRelocatesSourceToTarget(), path ) );
+        PcpMapExpression::NewVariable(_FilterRelocationsForPath(*this, path));
 
     // Retain the variable so that we can update it if relocations change.
     _relocatesVariables[path] = var;
@@ -539,6 +572,8 @@ PcpLayerStack::_BlowRelocations()
 {
     _relocatesSourceToTarget.clear();
     _relocatesTargetToSource.clear();
+    _incrementalRelocatesSourceToTarget.clear();
+    _incrementalRelocatesTargetToSource.clear();
     _relocatesPrimPaths.clear();
 }
 

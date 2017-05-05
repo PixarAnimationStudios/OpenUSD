@@ -1755,6 +1755,8 @@ PcpChanges::_DidChangeLayerStackRelocations(
         layerStack->GetLayers(),
         &changes.newRelocatesSourceToTarget,
         &changes.newRelocatesTargetToSource,
+        &changes.newIncrementalRelocatesSourceToTarget,
+        &changes.newIncrementalRelocatesTargetToSource,
         &changes.newRelocatesPrimPaths);
 
     // Compare the old and new relocations to determine which

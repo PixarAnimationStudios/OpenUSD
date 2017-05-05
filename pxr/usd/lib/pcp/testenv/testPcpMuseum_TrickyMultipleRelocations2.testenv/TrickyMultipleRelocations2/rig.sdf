@@ -1,0 +1,11 @@
+#sdf 1.4.32
+
+def Scope "Rig"
+{
+    def Scope "Collider"
+    {
+        rel colliderRel = </Rig/Collider>
+    }
+
+    rel rigRel = </Rig/Collider>
+}

@@ -1,0 +1,98 @@
+Loading @TrickyMultipleRelocations2/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </ModelGroup>
+
+Prim Stack:
+    root.sdf             /ModelGroup
+    group.sdf            /Group
+
+Child names:
+     ['Model_2']
+
+Prohibited child names:
+     ['Model']
+
+Property names:
+     ['groupRel']
+
+Property stacks:
+/ModelGroup.groupRel:
+    root.sdf             /ModelGroup.groupRel
+
+Relationship targets:
+/ModelGroup.groupRel:
+    /ModelGroup/Model_2/Anim/Collider
+
+------------------------------------------------------------------------
+Results for composing </ModelGroup/Model_2>
+
+Prim Stack:
+    root.sdf             /ModelGroup/Model_2
+    group.sdf            /Group/Model
+
+Child names:
+     ['Anim', 'Rig']
+
+Property names:
+     ['modelRel']
+
+Property stacks:
+/ModelGroup/Model_2.modelRel:
+    root.sdf             /ModelGroup/Model_2.modelRel
+
+Relationship targets:
+/ModelGroup/Model_2.modelRel:
+    /ModelGroup/Model_2/Anim/Collider
+
+------------------------------------------------------------------------
+Results for composing </ModelGroup/Model_2/Anim>
+
+Prim Stack:
+    group.sdf            /Group/Model/Anim
+
+Child names:
+     ['Collider']
+
+------------------------------------------------------------------------
+Results for composing </ModelGroup/Model_2/Anim/Collider>
+
+Prim Stack:
+    rig.sdf              /Rig/Collider
+
+Property names:
+     ['colliderRel']
+
+Property stacks:
+/ModelGroup/Model_2/Anim/Collider.colliderRel:
+    rig.sdf              /Rig/Collider.colliderRel
+
+Relationship targets:
+/ModelGroup/Model_2/Anim/Collider.colliderRel:
+    /ModelGroup/Model_2/Anim/Collider
+
+------------------------------------------------------------------------
+Results for composing </ModelGroup/Model_2/Rig>
+
+Prim Stack:
+    root.sdf             /ModelGroup/Model_2/Rig
+    rig.sdf              /Rig
+
+Prohibited child names:
+     ['Collider']
+
+Property names:
+     ['rigRel']
+
+Property stacks:
+/ModelGroup/Model_2/Rig.rigRel:
+    rig.sdf              /Rig.rigRel
+
+Relationship targets:
+/ModelGroup/Model_2/Rig.rigRel:
+    /ModelGroup/Model_2/Anim/Collider
+
