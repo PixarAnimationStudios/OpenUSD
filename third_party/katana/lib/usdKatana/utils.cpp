@@ -42,6 +42,7 @@
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdRi/statements.h"
+#include "pxr/usd/usdLux/listAPI.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdUtils/pipeline.h"
@@ -211,7 +212,7 @@ _ConvertArrayToVector(const VtVec4dArray &a, std::vector<double> *r)
 FnKat::Attribute
 PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         const VtValue & val, 
-        bool asShaderParam, bool pathAsModel)
+        bool asShaderParam, bool pathsAsModel, bool resolvePaths)
 {
     if (val.IsHolding<bool>()) {
         return FnKat::IntAttribute(int(val.Get<bool>()));
@@ -234,9 +235,10 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         }
     }
     if (val.IsHolding<SdfAssetPath>()) {
+        std::string assetPath = val.Get<SdfAssetPath>().GetAssetPath();
         return FnKat::StringAttribute(
-            _ResolveAssetPath(val.Get<SdfAssetPath>().GetAssetPath(),
-                                    pathAsModel));
+            resolvePaths ?  _ResolveAssetPath(assetPath, pathsAsModel)
+            : assetPath );
     }
 
     // Compound types require special handling.  Because they do not
@@ -476,7 +478,9 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         const VtArray<SdfAssetPath> &assetArray = val.Get<VtArray<SdfAssetPath> >();
         TF_FOR_ALL(strItr, assetArray) {
             stringBuilder.push_back(
-                _ResolveAssetPath(strItr->GetAssetPath(), pathAsModel));
+                resolvePaths ?
+                _ResolveAssetPath(strItr->GetAssetPath(), pathsAsModel)
+                : strItr->GetAssetPath());
         }
         FnKat::GroupBuilder attrBuilder;
         attrBuilder.set("type",
@@ -937,6 +941,55 @@ PxrUsdKatanaUtils::FindCameraPaths(const UsdStageRefPtr& stage)
     return result;
 }
 
+SdfPathVector
+PxrUsdKatanaUtils::FindLightPaths(const UsdStageRefPtr& stage)
+{
+    std::set<SdfPath> result;
+    TF_FOR_ALL(rootPrim, stage->GetPseudoRoot().GetChildren()) {
+        if (UsdLuxListAPI list = UsdLuxListAPI(*rootPrim)) {
+            SdfPathVector lights;
+            if (list.GetLightListRel().GetForwardedTargets(&lights)) {
+                result.insert(lights.begin(), lights.end());
+            }
+        }
+    }
+    return SdfPathVector(result.begin(), result.end());
+}
+
+std::string
+PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
+        const SdfPath& path,
+        const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs)
+{
+    if (!TF_VERIFY(path.IsAbsolutePath())) {
+        return std::string();
+    }
+
+    // Convert to the corresponding katana location by stripping
+    // off the leading rootPath and prepending rootLocation.
+    std::string isolatePathString = usdInArgs->GetIsolatePath();
+    std::string result = usdInArgs->GetRootLocationPath();
+    result += "/";
+    std::string resolvedPathString = path.GetString();
+    if (!isolatePathString.empty()) {
+        if (resolvedPathString.find(isolatePathString) == 0) {
+            resolvedPathString = resolvedPathString.substr(
+                isolatePathString.size());
+        } else {
+            // no good guess about the katana target location: 
+            //   isolatePath is not a prefix of the prim being cooked
+            std::cerr << "UsdIn: Failed to compute katana path for"
+                " usd path: " << path << " with given isolatePath: " <<
+                isolatePathString << std::endl;
+            return std::string();
+        }
+    }
+    result += resolvedPathString;
+
+    // clean up result
+    return TfNormPath(result);
+}
+
 std::string
 PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
         const SdfPath& path,
@@ -956,31 +1009,7 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
             data.GetMasterPath(), data.GetInstancePath());
     }
 
-    // Convert to the corresponding katana location by stripping
-    // off the leading rootPath and prepending rootLocation.
-    std::string isolatePathString = data.GetUsdInArgs()->GetIsolatePath();
-
-    std::string result = data.GetUsdInArgs()->GetRootLocationPath();
-    result += "/";
-    std::string resolvedPathString = resolvedPath.GetString();
-
-    if (!isolatePathString.empty()) {
-        if (resolvedPathString.find(isolatePathString) == 0) {
-            resolvedPathString = resolvedPathString.substr(
-                isolatePathString.size());
-        } else {
-            // no good guess about the katana target location: 
-            //   isolatePath is not a prefix of the prim being cooked
-            std::cerr << "UsdIn: Failed to compute katana path for"
-                " usd path: " << path << " with given isolatePath: " <<
-                isolatePathString << std::endl;
-            return std::string();
-        }
-    }
-    result += resolvedPathString;
-
-    // clean up result
-    return TfNormPath(result);
+    return ConvertUsdPathToKatLocation(path, data.GetUsdInArgs());
 }
 
 std::string

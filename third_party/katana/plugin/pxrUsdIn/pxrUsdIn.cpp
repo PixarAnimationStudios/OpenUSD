@@ -163,6 +163,30 @@ public:
             {
                 interface.setAttr("cameraList", cameraListAttr);
             }
+
+            // lightList
+            FnKat::GroupBuilder lightListBuilder;
+            SdfPathVector lightPaths =
+                PxrUsdKatanaUtils::FindLightPaths(prim.GetStage());
+            TF_FOR_ALL(lightPathIt, lightPaths) {
+                const std::string light_loc =
+                    PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
+                    *lightPathIt, usdInArgs);
+                if (!light_loc.empty()) {
+                    // The convention for lightList is for /path/to/light
+                    // to be represented as path_to_light.
+                    const std::string light_key =
+                        TfStringReplace(light_loc.substr(1), "/", "_");
+                    lightListBuilder.set(light_key+".path",
+                                         FnKat::StringAttribute(light_loc));
+                    lightListBuilder.set(light_key+".enable",
+                                         FnKat::IntAttribute(1));
+                }
+            }
+            FnKat::GroupAttribute lightListAttr = lightListBuilder.build();
+            if (lightListAttr.getNumberOfChildren() > 0) {
+                interface.setAttr("lightList", lightListAttr);
+            }
             
             interface.setAttr("info.usdOpArgs", opArgs);
         }

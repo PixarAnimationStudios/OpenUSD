@@ -61,7 +61,8 @@ struct PxrUsdKatanaUtils {
     /// The pathsAsModel argument is used when trying to resolve asset paths.
     static FnKat::Attribute ConvertVtValueToKatAttr( const VtValue & val,
                                                      bool asShaderParam,
-                                                     bool pathsAsModel = false );
+                                                     bool pathsAsModel = false,
+                                                     bool resolvePaths = true);
 
     /// Extract the targets of a relationship to a Katana attribute.
     /// If asShaderParam is true, it will use the special encoding
@@ -96,11 +97,18 @@ struct PxrUsdKatanaUtils {
     // Scan the model hierarchy for models with kind=camera.
     static SdfPathVector FindCameraPaths( const UsdStageRefPtr& stage );
 
+    /// Use UsdLuxListAPI to discover published lights (without a
+    /// full scene traversal).
+    static SdfPathVector FindLightPaths( const UsdStageRefPtr& stage );
+
     /// Convert the given SdfPath in the UsdStage to the corresponding
     /// katana location, given a scenegraph generator configuration.
     static std::string ConvertUsdPathToKatLocation(
             const SdfPath &path,
             const PxrUsdKatanaUsdInPrivateData& data);
+    static std::string ConvertUsdPathToKatLocation(
+            const SdfPath &path,
+            const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs);
 
     /// USD Looks can have Katana child-parent relationships, which means that
     /// we'll have to do some extra processing to find the correct path that
