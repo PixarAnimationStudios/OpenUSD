@@ -80,46 +80,46 @@ class TestUsdAttributeConnections(unittest.TestCase):
 
         # Recursive finding
         recursive = stage.GetPrimAtPath("/Recursive")
-        # self.assertEqual(
-        #     set(recursive.FindAllAttributeConnectionPaths()),
-        #     set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
-        #          Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
-        #          Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/B'),
-        #          Sdf.Path('/Recursive/D/C'), Sdf.Path('/Recursive/D/D')]))
+        self.assertEqual(
+            set(recursive.FindAllAttributeConnectionPaths()),
+            set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
+                 Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
+                 Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/B'),
+                 Sdf.Path('/Recursive/D/C'), Sdf.Path('/Recursive/D/D')]))
 
-        # self.assertEqual(
-        #     set(recursive.FindAllAttributeConnectionPaths(
-        #         predicate =
-        #         lambda attr: attr.GetPrim().GetName() in ('B', 'D'))),
-        #     set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/C'),
-        #          Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/C')]))
+        self.assertEqual(
+            set(recursive.FindAllAttributeConnectionPaths(
+                predicate =
+                lambda attr: attr.GetPrim().GetName() in ('B', 'D'))),
+            set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/C'),
+                 Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/C')]))
 
-        # self.assertEqual(
-        #     set(recursive.FindAllAttributeConnectionPaths(
-        #         predicate =
-        #         lambda attr: attr.GetPrim().GetName() in ('A', 'C'))),
-        #     set([Sdf.Path('/Recursive/B'), Sdf.Path('/Recursive/D'),
-        #          Sdf.Path('/Recursive/D/B'), Sdf.Path('/Recursive/D/D')]))
+        self.assertEqual(
+            set(recursive.FindAllAttributeConnectionPaths(
+                predicate =
+                lambda attr: attr.GetPrim().GetName() in ('A', 'C'))),
+            set([Sdf.Path('/Recursive/B'), Sdf.Path('/Recursive/D'),
+                 Sdf.Path('/Recursive/D/B'), Sdf.Path('/Recursive/D/D')]))
                 
-        # recursiveA = stage.GetPrimAtPath("/Recursive/A")
-        # self.assertEqual(set(recursiveA.FindAllAttributeConnectionPaths()),
-        #             set([Sdf.Path('/Recursive/B')]))
+        recursiveA = stage.GetPrimAtPath("/Recursive/A")
+        self.assertEqual(set(recursiveA.FindAllAttributeConnectionPaths()),
+                    set([Sdf.Path('/Recursive/B')]))
             
-        # self.assertEqual(set(
-        #     recursiveA.FindAllAttributeConnectionPaths(recurseOnSources=True)),
-        #     set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
-        #          Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
-        #          Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/B'),
-        #          Sdf.Path('/Recursive/D/C'), Sdf.Path('/Recursive/D/D')]))
+        self.assertEqual(set(
+            recursiveA.FindAllAttributeConnectionPaths(recurseOnSources=True)),
+            set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
+                 Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
+                 Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/B'),
+                 Sdf.Path('/Recursive/D/C'), Sdf.Path('/Recursive/D/D')]))
 
-        # self.assertEqual(set(
-        #     recursiveA.FindAllAttributeConnectionPaths(
-        #         recurseOnSources=True,
-        #         predicate=lambda attr: attr.GetPrim().GetParent().GetName() ==
-        #         'Recursive' or attr.GetPrim().GetName() in ('A', 'C'))),
-        #     set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
-        #          Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
-        #          Sdf.Path('/Recursive/D/B'), Sdf.Path('/Recursive/D/D')]))
+        self.assertEqual(set(
+            recursiveA.FindAllAttributeConnectionPaths(
+                recurseOnSources=True,
+                predicate=lambda attr: attr.GetPrim().GetParent().GetName() ==
+                'Recursive' or attr.GetPrim().GetName() in ('A', 'C'))),
+            set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
+                 Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
+                 Sdf.Path('/Recursive/D/B'), Sdf.Path('/Recursive/D/D')]))
 
     def test_ConnectionsInInstances(self):
         for fmt in allFormats:

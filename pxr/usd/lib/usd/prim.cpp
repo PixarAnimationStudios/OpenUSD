@@ -333,9 +333,9 @@ UsdPrim::CreateAttribute(const std::vector<std::string> &nameElts,
 }
 
 UsdAttributeVector
-UsdPrim::_GetAttributes(bool onlyAuthored) const
+UsdPrim::_GetAttributes(bool onlyAuthored, bool applyOrder) const
 {
-    const TfTokenVector names = _GetPropertyNames(onlyAuthored);
+    const TfTokenVector names = _GetPropertyNames(onlyAuthored, applyOrder);
     UsdAttributeVector attrs;
 
     // PERFORMANCE: This is sloppy, since property names are a superset of
@@ -434,45 +434,53 @@ bool
 UsdPrim::HasRelationship(const TfToken& relName) const
 {
     return GetRelationship(relName);
-}
+} 
 
+template <class PropertyType, class Derived>
 struct UsdPrim_TargetFinder
 {
+    using Predicate = std::function<bool (PropertyType const &)>;
+    
     static SdfPathVector
-    Find(UsdPrim const &prim,
-         std::function<bool (UsdRelationship const &)> const &pred,
-         bool recurseOnTargets) {
-        UsdPrim_TargetFinder tf(prim, pred, recurseOnTargets);
+    Find(UsdPrim const &prim, Predicate const &pred, bool recurse) {
+        UsdPrim_TargetFinder tf(prim, pred, recurse);
         tf._Find();
         return std::move(tf._result);
     }
 
 private:
     explicit UsdPrim_TargetFinder(
-        UsdPrim const &prim,
-        std::function<bool (UsdRelationship const &)> const &pred,
-        bool recurseOnTargets)
+        UsdPrim const &prim, Predicate const &pred, bool recurse)
         : _prim(prim)
         , _consumerTask(_dispatcher,
                         std::bind(&UsdPrim_TargetFinder::_ConsumerTask, this))
         , _predicate(pred)
-        , _recurseOnTargets(recurseOnTargets) {}
+        , _recurse(recurse) {}
 
-    void _VisitRel(UsdRelationship const &rel) {
+    void _Visit(UsdRelationship const &rel) {
         SdfPathVector targets;
         rel._GetForwardedTargets(&targets,
                                  /*includeForwardingRels=*/true);
-        
-        if (!targets.empty()) {
-            for (SdfPath const &p: targets) {
+        _VisitImpl(targets);
+    }
+    
+    void _Visit(UsdAttribute const &attr) {
+        SdfPathVector sources;
+        attr.GetConnections(&sources);
+        _VisitImpl(sources);
+    }
+    
+    void _VisitImpl(SdfPathVector const &paths) {
+        if (!paths.empty()) {
+            for (SdfPath const &p: paths) {
                 _workQueue.push(p);
             }
             _consumerTask.Wake();
         }
         
-        if (_recurseOnTargets) {
+        if (_recurse) {
             WorkParallelForEach(
-                targets.begin(), targets.end(),
+                paths.begin(), paths.end(),
                 [this](SdfPath const &path) {
                     if (!path.HasPrefix(_prim.GetPath())) {
                         if (UsdPrim owningPrim = _prim.GetStage()->
@@ -486,11 +494,10 @@ private:
 
     void _VisitPrim(UsdPrim const &prim) {
         if (_seenPrims.insert(prim).second) {
-            auto rels = prim._GetRelationships(/*onlyAuthored=*/true,
-                                               /*applyOrder=*/false);
-            for (auto const &rel: rels) {
-                if (!_predicate || _predicate(rel)) {
-                    _dispatcher.Run([this, rel]() { _VisitRel(rel); });
+            auto props = static_cast<Derived *>(this)->_GetProperties(prim);
+            for (auto const &prop: props) {
+                if (!_predicate || _predicate(prop)) {
+                    _dispatcher.Run([this, prop]() { _Visit(prop); });
                 }
             }
         }
@@ -528,26 +535,49 @@ private:
     }
 
     UsdPrim _prim;
-
     WorkArenaDispatcher _dispatcher;
     WorkSingularTask _consumerTask;
-
-    std::function<bool (UsdRelationship const &)> const &_predicate;
-
+    Predicate const &_predicate;
     tbb::concurrent_queue<SdfPath> _workQueue;
     tbb::concurrent_unordered_set<UsdPrim, boost::hash<UsdPrim> > _seenPrims;
-
     SdfPathVector _result;
-
-    bool _recurseOnTargets;
+    bool _recurse;
+};
+          
+struct UsdPrim_RelTargetFinder
+    : public UsdPrim_TargetFinder<UsdRelationship, UsdPrim_RelTargetFinder>
+{
+    std::vector<UsdRelationship> _GetProperties(UsdPrim const &prim) const {
+        return prim._GetRelationships(/*onlyAuthored=*/true,
+                                      /*applyOrder=*/false);
+    }
 };
 
+struct UsdPrim_AttrConnectionFinder
+    : public UsdPrim_TargetFinder<UsdAttribute, UsdPrim_AttrConnectionFinder>
+{
+    std::vector<UsdAttribute> _GetProperties(UsdPrim const &prim) const {
+        return prim._GetAttributes(/*onlyAuthored=*/true,
+                                   /*applyOrder=*/false);
+    }
+};
+
+USD_API
+SdfPathVector
+UsdPrim::FindAllAttributeConnectionPaths(
+    std::function<bool (UsdAttribute const &)> const &predicate,
+    bool recurseOnSources) const
+{
+    return UsdPrim_AttrConnectionFinder
+        ::Find(*this, predicate, recurseOnSources);
+}
+    
 SdfPathVector
 UsdPrim::FindAllRelationshipTargetPaths(
     std::function<bool (UsdRelationship const &)> const &predicate,
     bool recurseOnTargets) const
 {
-    return UsdPrim_TargetFinder::Find(*this, predicate, recurseOnTargets);
+    return UsdPrim_RelTargetFinder::Find(*this, predicate, recurseOnTargets);
 }
 
 bool

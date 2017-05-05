@@ -71,6 +71,19 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 static SdfPathVector
+_FindAllAttributeConnectionPaths(
+    UsdPrim const &self,
+    boost::python::object pypred,
+    bool recurseOnSources)
+{
+    using Predicate = std::function<bool (UsdAttribute const &)>;
+    Predicate pred;
+    if (pypred != boost::python::object())
+        pred = boost::python::extract<Predicate>(pypred);
+    return self.FindAllAttributeConnectionPaths(pred, recurseOnSources);
+}
+
+static SdfPathVector
 _FindAllRelationshipTargetPaths(
     UsdPrim const &self,
     boost::python::object pypred,
@@ -100,6 +113,9 @@ void wrapUsdPrim()
 {
     // Predicate signature for FindAllRelationshipTargetPaths().
     TfPyFunctionFromPython<bool (UsdRelationship const &)>();
+
+    // Predicate signature for FindAllAttributeConnectionPaths().
+    TfPyFunctionFromPython<bool (UsdAttribute const &)>();
 
     class_<UsdPrim, bases<UsdObject> >("Prim")
         .def(Usd_ObjectSubclass())
@@ -221,6 +237,10 @@ void wrapUsdPrim()
         .def("GetAttribute", &UsdPrim::GetAttribute, arg("attrName"))
         .def("HasAttribute", &UsdPrim::HasAttribute, arg("attrName"))
 
+        .def("FindAllAttributeConnectionPaths",
+             &_FindAllAttributeConnectionPaths,
+             (arg("predicate")=object(), arg("recurseOnSources")=false))
+        
         .def("CreateRelationship",
              (UsdRelationship (UsdPrim::*)(const TfToken &, bool) const)
              &UsdPrim::CreateRelationship, (arg("name"), arg("custom")=true))

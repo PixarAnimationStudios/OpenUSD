@@ -489,7 +489,8 @@ private:
     friend class UsdPrim;
     friend class UsdSchemaBase;
     friend class Usd_PrimData;
-
+    friend struct UsdPrim_AttrConnectionFinder;
+    
     UsdAttribute(const Usd_PrimDataHandle &prim,
                  const SdfPath &proxyPrimPath,
                  const TfToken &attrName)
