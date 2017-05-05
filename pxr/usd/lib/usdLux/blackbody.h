@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Pixar
+// Copyright 2016 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,34 +21,22 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/usd/usdLux/blackbody.h"
-#include "pxr/base/tf/pyModule.h"
-#include <boost/python/def.hpp>
+#ifndef USDLUX_BLACKBODY_H
+#define USDLUX_BLACKBODY_H
 
-PXR_NAMESPACE_USING_DIRECTIVE
+/// \file usdLux/blackbody.h
 
-TF_WRAP_MODULE
-{
-    TF_WRAP(UsdLuxTokens);
+#include "pxr/usd/usdLux/api.h"
+#include "pxr/base/gf/vec3f.h"
 
-    boost::python::def("BlackbodyTemperatureAsRgb",
-                       UsdLuxBlackbodyTemperatureAsRgb);
+PXR_NAMESPACE_OPEN_SCOPE
 
-    // Generated schema.  Base classes must precede derived classes.
-    // Indentation shows class hierarchy.
-    TF_WRAP(UsdLuxLight);
-    {
-        TF_WRAP(UsdLuxDiskLight);
-        TF_WRAP(UsdLuxRectLight);
-        TF_WRAP(UsdLuxSphereLight);
-        TF_WRAP(UsdLuxDomeLight);
-        TF_WRAP(UsdLuxGeometryLight);
-    }
-    TF_WRAP(UsdLuxListAPI);
-    TF_WRAP(UsdLuxShapingAPI);
-    TF_WRAP(UsdLuxLinkingAPI);
-    TF_WRAP(UsdLuxShadowAPI);
-    TF_WRAP(UsdLuxLightFilter);
-    TF_WRAP(UsdLuxLightPortal);
-}
+/// Compute the RGB equivalent of the spectrum emitted by a blackbody
+/// with the given temperature in degrees Kelvin, with normalized
+/// luminance.
+USDLUX_API
+GfVec3f UsdLuxBlackbodyTemperatureAsRgb(float colorTemp);
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

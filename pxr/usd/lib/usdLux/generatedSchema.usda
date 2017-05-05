@@ -16,7 +16,8 @@ class "Light" (
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  Only takes effect
         when enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute."""
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -340,7 +341,8 @@ class DistantLight "DistantLight" (
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  Only takes effect
         when enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute."""
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -472,7 +474,8 @@ class DiskLight "DiskLight" (
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  Only takes effect
         when enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute."""
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -603,7 +606,8 @@ class RectLight "RectLight" (
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  Only takes effect
         when enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute."""
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -733,7 +737,8 @@ class SphereLight "SphereLight" (
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  Only takes effect
         when enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute."""
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -863,7 +868,8 @@ class GeometryLight "GeometryLight" (
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  Only takes effect
         when enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute."""
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -996,7 +1002,8 @@ class DomeLight "DomeLight" (
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  Only takes effect
         when enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute."""
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"

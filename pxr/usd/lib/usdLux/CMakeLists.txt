@@ -10,6 +10,7 @@ pxr_shared_library(usdLux
         usdGeom
 
     PUBLIC_CLASSES
+        blackbody
         diskLight
         distantLight
         domeLight

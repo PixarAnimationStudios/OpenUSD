@@ -224,6 +224,9 @@ void wrapUsdLuxLight()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("ComputeBaseEmission", &UsdLuxLight::ComputeBaseEmission)
+        ;
 }
 
 }

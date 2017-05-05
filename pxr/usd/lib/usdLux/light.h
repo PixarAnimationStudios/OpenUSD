@@ -280,6 +280,7 @@ public:
     /// values are warmer and higher values are cooler.  Only takes effect
     /// when enableColorTemperature is set to true.  When active, the
     /// computed result multiplies against the color attribute.
+    /// See UsdLuxBlackbodyColorTemperatureAsRgb().
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -321,6 +322,25 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Computes the base emission (aka radiant flux density, aka energy
+    /// per unit area), incorporating the parameters for intensity,
+    /// exposure, color, and colorTemperature attributes.
+    ///
+    /// This "base" emission method exists solely as a reference example
+    /// implementation of how to interpret these parameters.  It is
+    /// expected that most rendering backends will consume the parameter
+    /// values directly rather than call this method.
+    ///
+    /// The base emission is only one step in the process of sampling
+    /// light radiance. It does not incorporate effects from:
+    ///
+    /// - textural/procedural modifications
+    /// - normalization by area
+    /// - specular/diffuse multipliers
+    ///
+    USDLUX_API
+    GfVec3f ComputeBaseEmission() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

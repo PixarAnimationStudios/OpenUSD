@@ -274,3 +274,38 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdLux/blackbody.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+GfVec3f
+UsdLuxLight::ComputeBaseEmission() const
+{
+    GfVec3f e(1.0);
+
+    float intensity = 1.0;
+    GetIntensityAttr().Get(&intensity);
+    e *= intensity;
+
+    float exposure = 0.0;
+    GetExposureAttr().Get(&exposure);
+    e *= exp2(exposure);
+
+    GfVec3f color(1.0);
+    GetColorAttr().Get(&color);
+    e = GfCompMult(e, color);
+
+    bool enableColorTemp = false;
+    GetEnableColorTemperatureAttr().Get(&enableColorTemp);
+    if (enableColorTemp) {
+        float colorTemp = 6500;
+        if (GetColorTemperatureAttr().Get(&colorTemp)) {
+            e = GfCompMult(e, UsdLuxBlackbodyTemperatureAsRgb(colorTemp));
+        }
+    }
+
+    return e;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
