@@ -390,7 +390,7 @@ _ThrowCppException()
     // Release the lock.
     lock.BeginAllowThreads();
     // Generate an exception.
-    std::string bad(0);
+    throw std::logic_error("error");
     // Not necessary, but shows usage.
     lock.EndAllowThreads();
     return std::string();

@@ -393,15 +393,10 @@ class TestPython(unittest.TestCase):
         Tf.Debug.SetOutputFile(sys.__stderr__)
 
         # other files not allowed.
-        import os, tempfile
-        fname = tempfile.mkstemp()[1]
-        f = open(fname, 'w')
-        
-        with self.assertRaises(Tf.ErrorException):
-            Tf.Debug.SetOutputFile(f)
-
-        f.close()
-        os.remove(fname)
+        import tempfile
+        with tempfile.NamedTemporaryFile() as f:
+            with self.assertRaises(Tf.ErrorException):
+                Tf.Debug.SetOutputFile(f.file)
 
         # argument checking.
         with self.assertRaises(TypeError):
