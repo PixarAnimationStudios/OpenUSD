@@ -68,19 +68,19 @@ UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
             std::find(infoKeys.begin(), infoKeys.end(), 
                     SdfFieldKeys->ColorManagementSystem) == infoKeys.end();
         
-        if (bakeColorConfiguration or bakeColorManagementSystem) {
+        if (bakeColorConfiguration || bakeColorManagementSystem) {
             SdfAssetPath fallbackColorConfig;
             TfToken fallbackCms;
             
             UsdStage::GetColorConfigFallbacks(&fallbackColorConfig, 
                                               &fallbackCms);
 
-            if (bakeColorConfiguration and 
+            if (bakeColorConfiguration &&
                 !fallbackColorConfig.GetAssetPath().empty()) {
                 destPseudo->SetInfo(SdfFieldKeys->ColorConfiguration,
                                     VtValue(fallbackColorConfig));
             }
-            if (bakeColorManagementSystem and !fallbackCms.IsEmpty()) {
+            if (bakeColorManagementSystem && !fallbackCms.IsEmpty()) {
                 destPseudo->SetInfo(SdfFieldKeys->ColorManagementSystem, 
                                     VtValue(fallbackCms));
             }
