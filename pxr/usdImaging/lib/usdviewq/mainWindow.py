@@ -300,7 +300,12 @@ class MainWindow(QtGui.QMainWindow):
         self._timeSamples = None
         self._stageView = None
         self._startingPrimCamera = None
-        self._startingPrimCameraName = parserData.camera
+        if isinstance(parserData.camera, Sdf.Path):
+            self._startingPrimCameraName = None
+            self._startingPrimCameraPath = parserData.camera
+        else:
+            self._startingPrimCameraName = parserData.camera
+            self._startingPrimCameraPath = None
 
         self.setWindowTitle(parserData.usdFile)
         self._statusBar = QtGui.QStatusBar(self)
@@ -2689,12 +2694,35 @@ class MainWindow(QtGui.QMainWindow):
                 preserveCurrCamera = False
 
         if not preserveCurrCamera:
-            for camera in self._allSceneCameras:
-                if camera.GetName() == self._startingPrimCameraName:
-                    self._startingPrimCamera = currCamera = camera
-                    if self._stageView:
-                        self._stageView.setCameraPrim(camera)
-                    break
+            cameraWasSet = False
+            def setCamera(camera):
+                self._startingPrimCamera = currCamera = camera
+                if self._stageView:
+                    self._stageView.setCameraPrim(camera)
+                cameraWasSet = True
+
+            if self._startingPrimCameraPath:
+                prim = self._stage.GetPrimAtPath(self._startingPrimCameraPath)
+                if not prim.IsValid():
+                    msg = sys.stderr
+                    print >> msg, "WARNING: Camera path %r did not exist in " \
+                                  "stage" % (str(self._startingPrimCameraPath),)
+                    self._startingPrimCameraPath = None
+                elif not prim.IsA(UsdGeom.Camera):
+                    msg = sys.stderr
+                    print >> msg, "WARNING: Camera path %r was not a " \
+                                  "UsdGeom.Camera" % \
+                                  (str(self._startingPrimCameraPath),)
+                    self._startingPrimCameraPath = None
+                else:
+                    setCamera(prim)
+
+            if not cameraWasSet and self._startingPrimCameraName:
+                for camera in self._allSceneCameras:
+                    if camera.GetName() == self._startingPrimCameraName:
+                        setCamera(camera)
+                        break
+
         # Now that we have the current camera and all cameras, build the menu
         self._ui.menuCamera.clear()
         for camera in self._allSceneCameras:
