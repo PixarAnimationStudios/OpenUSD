@@ -1525,7 +1525,7 @@ private:
     _GetRelationshipDefinition(const UsdRelationship &rel) const;
 
     SdfPrimSpecHandle
-    _CreatePrimSpecForEditing(const SdfPath& path);
+    _CreatePrimSpecForEditing(const UsdPrim& prim);
 
     template <class PropType>
     SdfHandle<PropType>
@@ -1539,6 +1539,14 @@ private:
 
     SdfRelationshipSpecHandle
     _CreateRelationshipSpecForEditing(const UsdRelationship &rel);
+
+    // Check if the given path is valid to use with the prim creation API,
+    // like DefinePrim. If it is valid, returns (true, GetPrimAtPath(path)).
+    // Otherwise, returns (false, UsdPrim()).
+    std::pair<bool, UsdPrim> 
+    _IsValidPathForCreatingPrim(const SdfPath &path) const;
+
+    UsdPrim _DefinePrim(const SdfPath &path, const TfToken &typeName);
 
     bool _RemoveProperty(const SdfPath& path);
 

@@ -1147,21 +1147,31 @@ UsdStage::_GetRelationshipDefinition(const UsdRelationship &rel) const
     return _GetPropertyDefinition<SdfRelationshipSpec>(rel);
 }
 
-SdfPrimSpecHandle
-UsdStage::_CreatePrimSpecForEditing(const SdfPath& path)
-{
-    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathMasterOrInMaster(path))) {
-        TF_CODING_ERROR("Cannot create prim spec at path <%s>; "
-                        "authoring to a prim in an instancing master "
-                        "is not allowed.",
-                        path.GetText());
-        return TfNullPtr;
-    }
+namespace {
 
-    const UsdEditTarget &editTarget = GetEditTarget();
+SdfPrimSpecHandle
+_CreatePrimSpecAtEditTarget(const UsdEditTarget &editTarget, 
+                            const SdfPath &path)
+{
     const SdfPath &targetPath = editTarget.MapToSpecPath(path);
     return targetPath.IsEmpty() ? SdfPrimSpecHandle() :
         SdfCreatePrimInLayer(editTarget.GetLayer(), targetPath);
+}
+
+}
+
+SdfPrimSpecHandle
+UsdStage::_CreatePrimSpecForEditing(const UsdPrim& prim)
+{
+    if (ARCH_UNLIKELY(prim.IsInMaster())) {
+        TF_CODING_ERROR("Cannot create prim spec at path <%s>; "
+                        "authoring to a prim in an instancing master "
+                        "is not allowed.",
+                        prim.GetPath().GetText());
+        return TfNullPtr;
+    }
+
+    return _CreatePrimSpecAtEditTarget(GetEditTarget(), prim.GetPath());
 }
 
 static SdfAttributeSpecHandle
@@ -1274,7 +1284,7 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
     // target.
     if (specToCopy) {
         SdfChangeBlock block;
-        SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim.GetPath());
+        SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim);
         if (TF_VERIFY(primSpec))
             return _StampNewPropertySpec(primSpec, specToCopy);
     }
@@ -1343,7 +1353,7 @@ UsdStage::_SetMetadataImpl(const UsdObject &obj,
     if (obj.Is<UsdProperty>()) {
         spec = _CreatePropertySpecForEditing(obj.As<UsdProperty>());
     } else if (obj.Is<UsdPrim>()) {
-        spec = _CreatePrimSpecForEditing(obj.GetPath());
+        spec = _CreatePrimSpecForEditing(obj.As<UsdPrim>());
     } else {
         TF_CODING_ERROR("Cannot set metadata at path <%s> in layer @%s@; "
                         "a prim or property is required",
@@ -1587,7 +1597,7 @@ UsdStage::_ClearMetadata(const UsdObject &obj, const TfToken& fieldName,
     if (obj.Is<UsdProperty>())
         spec = _CreatePropertySpecForEditing(obj.As<UsdProperty>());
     else
-        spec = _CreatePrimSpecForEditing(obj.GetPrimPath());
+        spec = _CreatePrimSpecForEditing(obj.As<UsdPrim>());
 
     if (!TF_VERIFY(spec, 
                       "No spec at <%s> in layer @%s@",
@@ -2881,35 +2891,44 @@ UsdStage::SaveSessionLayers()
     }
 }
 
-static bool
-_IsValidPathForCreatingPrim(const SdfPath &path)
+// Return true if the given path is valid for the prim creation API below.
+// The prim argument should be the UsdPrim at that given path if one exists,
+// or an invalid UsdPrim.
+std::pair<bool, UsdPrim>
+UsdStage::_IsValidPathForCreatingPrim(const SdfPath &path) const
 {
+    std::pair<bool, UsdPrim> status = { false, UsdPrim() };
+
     // Path must be absolute.
     if (ARCH_UNLIKELY(!path.IsAbsolutePath())) {
         TF_CODING_ERROR("Path must be an absolute path: <%s>", path.GetText());
-        return false;
+        return status;
     }
 
     // Path must be a prim path (or the absolute root path).
     if (ARCH_UNLIKELY(!path.IsAbsoluteRootOrPrimPath())) {
         TF_CODING_ERROR("Path must be a prim path: <%s>", path.GetText());
-        return false;
+        return status;
     }
 
     // Path must not contain variant selections.
     if (ARCH_UNLIKELY(path.ContainsPrimVariantSelection())) {
         TF_CODING_ERROR("Path must not contain variant selections: <%s>",
                         path.GetText());
-        return false;
+        return status;
     }
+
+    const UsdPrim prim = GetPrimAtPath(path);
 
     // Path must not be in a master.
-    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathMasterOrInMaster(path))) {
+    if (ARCH_UNLIKELY(prim ? prim.IsInMaster() : 
+                      Usd_InstanceCache::IsPathMasterOrInMaster(path))) {
         TF_CODING_ERROR("Path must not be in a master: <%s>", path.GetText());
-        return false;
+        return status;
     }
 
-    return true;
+    status = { true, prim };
+    return status;
 }
 
 UsdPrim
@@ -2921,18 +2940,18 @@ UsdStage::OverridePrim(const SdfPath &path)
         return GetPseudoRoot();
     
     // Validate path input.
-    if (!_IsValidPathForCreatingPrim(path))
+    std::pair<bool, UsdPrim> status = _IsValidPathForCreatingPrim(path);
+    if (!status.first) {
         return UsdPrim();
-
-    // If there is already a UsdPrim at the given path, grab it.
-    UsdPrim prim = GetPrimAtPath(path);
+    }
 
     // Do the authoring, if any to do.
-    if (!prim) {
+    if (!status.second) {
         {
             SdfChangeBlock block;
             TfErrorMark m;
-            SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(path);
+            SdfPrimSpecHandle primSpec = 
+                _CreatePrimSpecAtEditTarget(GetEditTarget(), path);
             // If spec creation failed, return.  Issue an error if a more
             // specific error wasn't already issued.
             if (!primSpec) {
@@ -2944,27 +2963,33 @@ UsdStage::OverridePrim(const SdfPath &path)
         }
 
         // Attempt to fetch the prim we tried to create.
-        prim = GetPrimAtPath(path);
+        status.second = GetPrimAtPath(path);
     }
 
-    return prim;
+    return status.second;
 }
 
 UsdPrim
 UsdStage::DefinePrim(const SdfPath &path,
                      const TfToken &typeName)
 {
+    // Validate path input.
+    if (!_IsValidPathForCreatingPrim(path).first)
+        return UsdPrim();
+
+    return _DefinePrim(path, typeName);
+}
+
+UsdPrim 
+UsdStage::_DefinePrim(const SdfPath &path, const TfToken &typeName)
+{
     // Special-case requests for the root.  It always succeeds and never does
     // authoring since the root cannot have PrimSpecs.
     if (path == SdfPath::AbsoluteRootPath())
         return GetPseudoRoot();
 
-    // Validate path input.
-    if (!_IsValidPathForCreatingPrim(path))
-        return UsdPrim();
-
     // Define all ancestors.
-    if (!DefinePrim(path.GetParentPath()))
+    if (!_DefinePrim(path.GetParentPath(), TfToken()))
         return UsdPrim();
     
     // Now author scene description for this prim.
@@ -2974,7 +2999,8 @@ UsdStage::DefinePrim(const SdfPath &path,
         (!typeName.IsEmpty() && prim.GetTypeName() != typeName)) {
         {
             SdfChangeBlock block;
-            SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(path);
+            SdfPrimSpecHandle primSpec = 
+                _CreatePrimSpecAtEditTarget(GetEditTarget(), path);
             // If spec creation failed, return.  Issue an error if a more
             // specific error wasn't already issued.
             if (!primSpec) {
@@ -3004,10 +3030,6 @@ UsdStage::DefinePrim(const SdfPath &path,
 UsdPrim
 UsdStage::CreateClassPrim(const SdfPath &path)
 {
-    // Validate path input.
-    if (!_IsValidPathForCreatingPrim(path))
-        return UsdPrim();
-
     // Classes must be root prims.
     if (!path.IsRootPrimPath()) {
         TF_CODING_ERROR("Classes must be root prims.  <%s> is not a root prim "
@@ -3022,8 +3044,15 @@ UsdStage::CreateClassPrim(const SdfPath &path)
         return UsdPrim();
     }
 
+    // Validate path input.
+    const std::pair<bool, UsdPrim> status = _IsValidPathForCreatingPrim(path);
+    if (!status.first) {
+        return UsdPrim();
+    }
+
+    UsdPrim prim = status.second;
+
     // It's an error to try to transform a defined non-class into a class.
-    UsdPrim prim = GetPrimAtPath(path);
     if (prim && prim.IsDefined() &&
         prim.GetSpecifier() != SdfSpecifierClass) {
         TF_RUNTIME_ERROR("Non-class prim already exists at <%s>",
@@ -3033,7 +3062,7 @@ UsdStage::CreateClassPrim(const SdfPath &path)
 
     // Stamp a class PrimSpec if need-be.
     if (!prim || !prim.IsAbstract()) {
-        prim = DefinePrim(path);
+        prim = _DefinePrim(path, TfToken());
         if (prim)
             prim.SetMetadata(SdfFieldKeys->Specifier, SdfSpecifierClass);
     }

@@ -393,7 +393,7 @@ UsdRelationship::_CreateSpec(bool fallbackCustom) const
     if (m.IsClean()) {
         SdfChangeBlock block;
         return SdfRelationshipSpec::New(
-            stage->_CreatePrimSpecForEditing(GetPrimPath()),
+            stage->_CreatePrimSpecForEditing(GetPrim()),
             _PropName().GetString(),
             /* custom = */ fallbackCustom, SdfVariabilityUniform);
     }

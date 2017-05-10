@@ -295,7 +295,7 @@ UsdAttribute::_CreateSpec(const SdfValueTypeName& typeName, bool custom,
     if (m.IsClean()) {
         SdfChangeBlock block;
         return SdfAttributeSpec::New(
-            stage->_CreatePrimSpecForEditing(GetPrimPath()),
+            stage->_CreatePrimSpecForEditing(GetPrim()),
             _PropName(), typeName, variability, custom);
     }
     return TfNullPtr;

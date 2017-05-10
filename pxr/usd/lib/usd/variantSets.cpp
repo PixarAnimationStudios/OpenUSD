@@ -41,7 +41,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 using std::string;
 using std::vector;
 
@@ -128,7 +127,7 @@ UsdVariantSet::HasAuthoredVariantSelection(std::string *value) const
 bool
 UsdVariantSet::SetVariantSelection(const std::string& variantName)
 {
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing(_prim.GetPrimPath())) {
+    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         spec->SetVariantSelection(_variantSetName, variantName);
         return true;
     }
@@ -183,17 +182,16 @@ UsdVariantSet::GetVariantEditContext(const SdfLayerHandle &layer) const
 }
 
 SdfPrimSpecHandle
-UsdVariantSet::_CreatePrimSpecForEditing(const SdfPath &path)
+UsdVariantSet::_CreatePrimSpecForEditing()
 {
-    return _prim.GetStage()->_CreatePrimSpecForEditing(path);
+    return _prim.GetStage()->_CreatePrimSpecForEditing(_prim);
 }
 
 SdfVariantSetSpecHandle
 UsdVariantSet::_AppendVariantSet()
 {
     SdfVariantSetSpecHandle result;
-    SdfPath const &primPath = _prim.GetPrimPath();
-    SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(primPath); 
+    SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(); 
     if (primSpec){
         // One can only create a VariantSet on a primPath.  If our current
         // EditTarget has us sitting right on a VariantSet, 
@@ -282,7 +280,6 @@ UsdVariantSets::SetSelection(const std::string& variantSetName,
 
     return vset.SetVariantSelection(variantName);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
