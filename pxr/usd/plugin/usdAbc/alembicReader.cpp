@@ -29,6 +29,7 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticData.h"
@@ -80,10 +81,21 @@ TF_DEFINE_ENV_SETTING(
     USD_ABC_WARN_ALL_UNSUPPORTED_VALUES, false,
     "Issue warnings for all unsupported values encountered.");
 
+TF_DEFINE_ENV_SETTING(
+    USD_ABC_NUM_OGAWA_STREAMS, 4,
+    "The number of threads available for reading ogawa-backed files via UsdAbc.");
+
 namespace {
 
 using namespace ::Alembic::AbcGeom;
 using namespace UsdAbc_AlembicUtil;
+
+static size_t
+_GetNumOgawaStreams()
+{
+    return std::min(TfGetEnvSetting(USD_ABC_NUM_OGAWA_STREAMS),
+                    static_cast<int>(WorkGetConcurrencyLimit()));
+}
 
 #ifdef USDABC_HDF5_SUPPORT
 // A global mutex until our HDF5 library is thread safe.  It has to be
@@ -1332,7 +1344,7 @@ _ReaderContext::_OpenOgawa(
     std::recursive_mutex** mutex) const
 {
     *format = "Ogawa";
-    *result = IArchive(Alembic::AbcCoreOgawa::ReadArchive(),
+    *result = IArchive(Alembic::AbcCoreOgawa::ReadArchive(_GetNumOgawaStreams()),
                        filePath, ErrorHandler::kQuietNoopPolicy);
     return *result;
 }

@@ -22,6 +22,7 @@ endif()
 pxr_plugin(usdAbc
     LIBRARIES
         tf
+        work
         sdf
         usd
         usdGeom
@@ -112,6 +113,8 @@ pxr_register_test(testUsdAbcAlembicData
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcAlembicData"
     EXPECTED_RETURN_CODE 0
+    ENV 
+        USD_ABC_NUM_OGAWA_STREAMS=2
 )
 
 pxr_register_test(testUsdAbcBugs
