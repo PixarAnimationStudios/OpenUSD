@@ -613,6 +613,19 @@ private:
         bool (*invoke)(const void *, const SdfPath &);
     };
 
+    // Internal helper for recursive indexing.
+    const PcpPrimIndex &
+    _ComputePrimIndexWithCompatibleInputs(
+        const SdfPath & path, const PcpPrimIndexInputs &inputs,
+        PcpErrorVector *allErrors);
+
+    // Friend to allow low-level indexing code access to the above.
+    friend const PcpPrimIndex &
+    Pcp_ComputePrimIndexWithCompatibleInputs(
+        PcpCache &cache,
+        const SdfPath & path, const PcpPrimIndexInputs &inputs,
+        PcpErrorVector *allErrors);
+
     // Parallel indexing implementation.
     PCP_API
     void _ComputePrimIndexesInParallel(

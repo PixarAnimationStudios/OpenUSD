@@ -362,7 +362,7 @@ Pcp_BuildPrimIndex(
     const PcpPrimIndexInputs& inputs,
     PcpPrimIndexOutputs* outputs);
 
-static bool
+static inline bool
 _NodeCanBeCulled(const PcpNodeRef& node, 
                  const PcpLayerStackSite& rootLayerStack);
 
@@ -4101,6 +4101,14 @@ struct Pcp_DisableNonInstanceableNodesVisitor
     }
 };
 
+const PcpPrimIndex &
+Pcp_ComputePrimIndexWithCompatibleInputs(
+    PcpCache &cache,
+    const SdfPath & path, const PcpPrimIndexInputs &inputs,
+    PcpErrorVector *allErrors) {
+    return cache._ComputePrimIndexWithCompatibleInputs(path, inputs, allErrors);
+}    
+
 static void
 _BuildInitialPrimIndexFromAncestor(
     const PcpLayerStackSite &site,
@@ -4126,8 +4134,9 @@ _BuildInitialPrimIndexFromAncestor(
         // of layer stacks brought in by ancestors.
         const PcpPrimIndex& parentIndex =
             inputs.parentIndex ? *inputs.parentIndex :
-            inputs.cache->ComputePrimIndex(
-                site.path.GetParentPath(), &outputs->allErrors);
+            Pcp_ComputePrimIndexWithCompatibleInputs(
+                *inputs.cache, site.path.GetParentPath(), inputs,
+                &outputs->allErrors);
 
         // Clone the parent's graph..
         outputs->primIndex.SetGraph(
