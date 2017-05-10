@@ -11,6 +11,7 @@ pxr_plugin(${PXR_PACKAGE}
         usdGeom
         usdKatana
         usdShade
+        usdLux
 
     PRIVATE_CLASSES
         attrfnc_materialReference
