@@ -93,11 +93,11 @@ cd build
 
 ```bash
 cmake                                       \
--DTBB_tbb_LIBRARY=/path/to/libtbb.so        \    
+-DTBB_ROOT_DIR=/path/to/tbb                 \    
 -DOPENEXR_LOCATION=/path/to/openexr         \
 -DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
--DPTEX_INCLUDE_DIR=/path/to/ptex            \
--DOIIO_BASE_DIR=/path/to/openimageio        \
+-DPTEX_LOCATION=/path/to/ptex               \
+-DOIIO_LOCATION=/path/to/openimageio        \
 -DBOOST_ROOT=/path/to/boost                 \
 ..
 
@@ -113,12 +113,12 @@ for more information.
 ```bash
 cmake                                       \
 -G "Xcode"                                  \
--DTBB_tbb_LIBRARY=/path/to/libtbb.dylib     \    
+-DTBB_ROOT_DIR=/path/to/tbb                 \    
 -DOPENEXR_LOCATION=/path/to/openexr         \
 -DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
--DPTEX_INCLUDE_DIR=/path/to/ptex            \
--DOIIO_BASE_DIR=/path/to/openimageio        \
--DBOOST_ROOT=/path/to/boost/include         \
+-DPTEX_LOCATION=/path/to/ptex               \
+-DOIIO_LOCATION=/path/to/openimageio        \
+-DBOOST_ROOT=/path/to/boost                 \
 ..
 
 make -j <NUM_CORES> install
@@ -133,11 +133,11 @@ sln file which can be used to build USD. See notes in the
 ```powershell
 C:\Program Files\CMake\bin\cmake.exe             ^
     -G "Visual Studio 14 Win64"                  ^
-    -DTBB_tbb_LIBRARY=C:\path\to\tbb.lib         ^     
+    -DTBB_ROOT_DIR=C:\path\to\tbb                ^     
     -DOPENEXR_LOCATION=C:\path\to\openexr        ^ 
     -DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv  ^ 
-    -DPTEX_INCLUDE_DIR=C:\path\to\ptex           ^ 
-    -DOIIO_BASE_DIR=C:\path\to\openimageio       ^ 
+    -DPTEX_LOCATION=C:\path\to\ptex              ^ 
+    -DOIIO_LOCATION=C:\path\to\openimageio       ^ 
     -DBOOST_ROOT=C:\path\to\boost                ^ 
     --build .. --config Release --target install
 
