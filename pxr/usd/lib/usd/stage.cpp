@@ -2891,9 +2891,6 @@ UsdStage::SaveSessionLayers()
     }
 }
 
-// Return true if the given path is valid for the prim creation API below.
-// The prim argument should be the UsdPrim at that given path if one exists,
-// or an invalid UsdPrim.
 std::pair<bool, UsdPrim>
 UsdStage::_IsValidPathForCreatingPrim(const SdfPath &path) const
 {
