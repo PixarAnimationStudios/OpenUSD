@@ -32,6 +32,8 @@
 #include <maya/MFnNurbsCurve.h>
 #include <maya/MPointArray.h>
 
+#include <numeric>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -56,7 +58,6 @@ UsdPrim MayaNurbsCurveWriter::write(const UsdTimeCode &usdTime)
     return prim;
 }
 
-
 // virtual
 bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsCurves &primSchema)
 {
@@ -80,6 +81,14 @@ bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdG
             "MayaNurbsCurveWriter: MFnNurbsCurve() failed for curve at dagPath: " +
             getDagPath().fullPathName());
         return false;
+    }
+    
+    // How to repeat the end knots.
+    bool wrap = false;
+    MFnNurbsCurve::Form form(curveFn.form());
+    if (form == MFnNurbsCurve::kClosed or
+        form == MFnNurbsCurve::kPeriodic){
+        wrap = true;
     }
 
     // Get curve attrs ======
@@ -112,9 +121,18 @@ bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdG
     MDoubleArray mayaCurveKnots;
     status = curveFn.getKnots(mayaCurveKnots);
     TF_AXIOM(status == MS::kSuccess);
-    VtArray<double> curveKnots(mayaCurveKnots.length()); // all knots batched together
-    for (unsigned int i=0; i < mayaCurveKnots.length(); i++) {
-        curveKnots[i] = mayaCurveKnots[i];
+    VtArray<double> curveKnots(mayaCurveKnots.length() + 2); // all knots batched together
+    for (unsigned int i = 0; i < mayaCurveKnots.length(); i++) {
+        curveKnots[i + 1] = mayaCurveKnots[i];
+    }
+    if (wrap) {
+        curveKnots[0] = curveKnots[1] - (curveKnots[curveKnots.size() - 2] -
+                                         curveKnots[curveKnots.size() - 3]);
+        curveKnots[curveKnots.size() - 1] =
+            curveKnots[curveKnots.size() - 2] + (curveKnots[2] - curveKnots[1]);
+    } else {
+        curveKnots[0] = curveKnots[1];
+        curveKnots[curveKnots.size() - 1] = curveKnots[curveKnots.size() - 2];
     }
 
     // Gprim
@@ -125,8 +143,34 @@ bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdG
     // Curve
     primSchema.GetOrderAttr().Set(curveOrder);   // not animatable
     primSchema.GetCurveVertexCountsAttr().Set(curveVertexCounts); // not animatable
-    primSchema.GetWidthsAttr().Set(curveWidths); // not animatable
-    primSchema.GetKnotsAttr().Set(curveKnots);   // not animatable
+    primSchema.GetWidthsAttr().Set(curveWidths);  // not animatable
+
+    // find the number of segments: (vertexCount - order + 1) per curve
+    // varying interpolation is number of segments + number of curves
+    size_t accumulatedVertexCount =
+        std::accumulate(curveVertexCounts.begin(), curveVertexCounts.end(), 0);
+    size_t accumulatedOrder =
+        std::accumulate(curveOrder.begin(), curveOrder.end(), 0);
+    size_t expectedSegmentCount =
+        accumulatedVertexCount - accumulatedOrder + curveVertexCounts.size();
+    size_t expectedVaryingSize =
+        expectedSegmentCount + curveVertexCounts.size();
+
+    if (curveWidths.size() == 1)
+        primSchema.SetWidthsInterpolation(UsdGeomTokens->constant);
+    else if (curveWidths.size() == points.size())
+        primSchema.SetWidthsInterpolation(UsdGeomTokens->vertex);
+    else if (curveWidths.size() == curveVertexCounts.size())
+        primSchema.SetWidthsInterpolation(UsdGeomTokens->uniform);
+    else if (curveWidths.size() == expectedVaryingSize)
+        primSchema.SetWidthsInterpolation(UsdGeomTokens->varying);
+    else {
+        MGlobal::displayWarning(
+            "MayaNurbsCurveWriter: MFnNurbsCurve() has unsupported width size "
+            "for standard interpolation metadata: " +
+            getDagPath().fullPathName());
+    }
+    primSchema.GetKnotsAttr().Set(curveKnots);
     primSchema.GetRangesAttr().Set(ranges); // not animatable
     primSchema.GetPointsAttr().Set(points, usdTime); // CVs
 

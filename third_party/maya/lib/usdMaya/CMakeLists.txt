@@ -169,6 +169,7 @@ pxr_test_scripts(
         testenv/testUsdExportDisplayColor.py
         testenv/testUsdExportFrameOffset.py
         testenv/testUsdExportMesh.py
+        testenv/testUsdExportNurbsCurve.py
         testenv/testUsdExportRenderLayerMode.py
         testenv/testUsdExportSelection.py
         testenv/testUsdExportUVSets.py
@@ -256,6 +257,18 @@ pxr_install_test_dir(
 pxr_register_test(testUsdExportMesh
     COMMAND "${MAYA_BASE_DIR}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportMesh"
     TESTENV testUsdExportMesh
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportNurbsCurveTest
+    DEST testUsdExportNurbsCurve
+)
+pxr_register_test(testUsdExportNurbsCurve
+    COMMAND "${MAYA_BASE_DIR}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdExportNurbsCurve"
+    TESTENV testUsdExportNurbsCurve
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
