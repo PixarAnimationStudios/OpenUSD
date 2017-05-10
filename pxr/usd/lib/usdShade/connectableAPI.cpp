@@ -134,6 +134,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outputs)
 );
 
+/* static */
+bool 
+UsdShadeConnectableAPI::AreBidirectionalInterfaceConnectionsEnabled()
+{
+    return TfGetEnvSetting(USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS);
+}
 
 bool 
 UsdShadeConnectableAPI::IsShader() const
@@ -343,8 +349,7 @@ UsdShadeConnectableAPI::_ConnectToSource(
             success = UsdShadeInterfaceAttribute(sourceAttr).SetRecipient(
                 renderTarget, shadingProp.GetPath());
 
-            if (!TfGetEnvSetting(
-                USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS)) {
+            if (!AreBidirectionalInterfaceConnectionsEnabled()) {
                 return success;
             }
         }

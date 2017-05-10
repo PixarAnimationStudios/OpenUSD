@@ -566,6 +566,17 @@ public:
         return ClearSource(output.GetProperty());
     }
 
+    /// \deprecated
+    /// 
+    /// Returns whether authoring of bidirectional connections for the old-style 
+    /// interface attributes is enabled. When this returns true, interface 
+    /// attribute connections are authored both ways (using both 
+    /// interfaceRecipientOf: and connectedSourceFor: relationships)
+    /// 
+    /// \note This method exists only for testing equality of the old and new
+    /// encoding of shading networks in USD. 
+    static bool AreBidirectionalInterfaceConnectionsEnabled();
+
     /// @}
 
 

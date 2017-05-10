@@ -316,8 +316,14 @@ _ComputeNonTransitiveInputConsumersMap(
     // If we find old-style interface inputs on the material, then it's likely 
     // that the material and all its descendants have old-style encoding of 
     // shading networks. Hence, skip the downward traversal.
-    if (foundOldStyleInterfaceInputs)
+    // 
+    // If authoring of bidirectional connections on old-style interface 
+    // attributes (which is a feature we only use for testing) is enabled, 
+    // then we can't skip the downward traversal.
+    if (foundOldStyleInterfaceInputs && 
+        !UsdShadeConnectableAPI::AreBidirectionalInterfaceConnectionsEnabled()) {
         return result;
+    }
 
     // XXX: This traversal isn't instancing aware. We must update this 
     // once we have instancing aware USD objects. See http://bug/126053
