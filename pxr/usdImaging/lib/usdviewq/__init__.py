@@ -79,10 +79,14 @@ class Launcher(object):
                             dest='primPath', type=str,
                             help='A prim path to initially select and frame')
 
-        parser.add_argument('--mask', action='store', nargs='+',
-                            dest='populationMask', metavar='PRIMPATH',
+        parser.add_argument('--mask', action='store',
+                            dest='populationMask',
+                            metavar='PRIMPATH[,PRIMPATH...]',
                             help='Limit stage population to these prims, '
-                            'their descendants and ancestors')
+                            'their descendants and ancestors.  To specify '
+                            'multiple paths, either use commas with no spaces '
+                            'or quote the argument and separate paths by '
+                            'commas and/or spaces.')
         
         parser.add_argument('--clearsettings', action='store_true', 
                             dest='clearSettings', 
@@ -138,9 +142,16 @@ class Launcher(object):
         '''
         if arg_parse_result.complexity < 1.0 or arg_parse_result.complexity > 2.0:
             newComplexity = max(min(2.0, arg_parse_result.complexity), 1.0)
-            print >> sys.stderr, "WARNING: complexity %.1f is out of range [1.0, 2.0], using %.1f instead" %  \
-                                 (arg_parse_result.complexity, newComplexity)
+            print >> sys.stderr, "WARNING: complexity %.1f is out of range " \
+                "[1.0, 2.0], using %.1f instead" %  \
+                (arg_parse_result.complexity, newComplexity)
             arg_parse_result.complexity = newComplexity
+
+        # split arg_parse_result.populationMask into paths.
+        if arg_parse_result.populationMask:
+            arg_parse_result.populationMask = (
+                arg_parse_result.populationMask.replace(',', ' ').split())
+
         return True
             
     def __LaunchProcess(self, arg_parse_result):
