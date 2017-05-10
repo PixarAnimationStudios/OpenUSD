@@ -507,17 +507,16 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
     int srcOffset = (int)(srcStart*edgeLength);
     int srcLength = (int)((srcEnd-srcStart)*edgeLength);
 
-    PtexFaceData * data = _ptex->getData(face, res);
-    if (!data) {
-        // XXX:validation
-        // We should add a validation step to ensure we don't have missing
-        // face data and that the format is right (quad vs tri).
-        TF_WARN("Ptex missing texture face data for face %d at res (%d x %d)",
-                face, res.u(), res.v());
-        return srcLength;
-    }
-
     if (dstLength >= srcLength) {
+        PtexFaceData * data = _ptex->getData(face, res);
+        if (!data) {
+            // XXX:validation
+            // We should add a validation step to ensure we don't have missing
+            // face data and that the format is right (quad vs tri).
+            TF_WARN("Ptex missing texture face for face %d at res (%d x %d)",
+                face, res.u(), res.v());
+            return srcLength;
+        }
         // copy or up sampling (nearest)
         unsigned char *border = new unsigned char[bpp*srcLength];
 
@@ -547,12 +546,23 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
             }
         }
         delete[] border;
+        data->release();
     } else {
         // down sampling
         while (srcLength > dstLength && res.ulog2 && res.vlog2) {
             --res.ulog2;
             --res.vlog2;
             srcLength /= 2;
+        }
+        
+        PtexFaceData * data = _ptex->getData(face, res);
+        if (!data) {
+            // XXX:validation
+            // We should add a validation step to ensure we don't have missing
+            // face data and that the format is right (quad vs tri).
+            TF_WARN("Ptex missing texture face for face %d at res (%d x %d)",
+                face, res.u(), res.v());
+            return srcLength;
         }
 
         unsigned char *border = new unsigned char[bpp*srcLength];
@@ -582,8 +592,8 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
         }
 
         delete[] border;
+        data->release();
     }
-    data->release();
 
     return srcLength;
 }
