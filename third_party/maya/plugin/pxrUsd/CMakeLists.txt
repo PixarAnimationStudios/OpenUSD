@@ -18,6 +18,9 @@ pxr_plugin(${PXR_PACKAGE}
         plugin.cpp
         usdTranslator.cpp
 
+    PRIVATE_HEADERS
+        api.h
+
     PYTHON_FILES
         plugInfo.json
         testenv/testPxrUsdAlembicChaser.py
