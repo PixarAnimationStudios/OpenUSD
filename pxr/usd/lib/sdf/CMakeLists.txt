@@ -163,11 +163,11 @@ pxr_shared_library(sdf
 # Validate that the checked in generated code matches the sources. This requires
 # a specific version of bison/flex to get the same results
 if (NOT ${PXR_VALIDATE_GENERATED_CODE})
-    message(WARNING "Skipping validation of sdf generated code because PXR_VALIDATE_GENERATED_CODE=OFF")
+    message(STATUS "Skipping validation of sdf generated code because PXR_VALIDATE_GENERATED_CODE=OFF")
 elseif(NOT BISON_FOUND)
-    message(WARNING "Skipping validation of sdf generated code because of missing dependency: bison")
+    message(STATUS "Skipping validation of sdf generated code because of missing dependency: bison")
 elseif(NOT FLEX_FOUND)
-    message(WARNING "Skipping validation of sdf generated code because of missing dependency: flex")
+    message(STATUS "Skipping validation of sdf generated code because of missing dependency: flex")
 else()
     add_custom_command(
         TARGET sdf
