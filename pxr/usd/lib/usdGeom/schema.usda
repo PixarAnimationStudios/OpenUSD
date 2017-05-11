@@ -1486,7 +1486,7 @@ class PointInstancer "PointInstancer" (
       See \\ref UsdGeomPointInstancer_invisibleIds ."""
   )
   
-  uniform token prototypeDrawMode = "fullGeom" (
+  uniform token prototypeDrawMode (
       allowedTokens = ["point", "card", "fullGeom"]
       doc = """Draw modes that host applications can use as a hint for how each
       instance of each prototype should be represented.  This hint should only

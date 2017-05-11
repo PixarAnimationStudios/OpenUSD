@@ -3305,7 +3305,7 @@ class PointInstancer "PointInstancer" (
       drawn for each instance.  <b>Topology attribute</b> - can be animated, 
       but at a potential performance impact for streaming."""
     )
-    uniform token prototypeDrawMode = "fullGeom" (
+    uniform token prototypeDrawMode (
         allowedTokens = ["point", "card", "fullGeom"]
         doc = """Draw modes that host applications can use as a hint for how each
       instance of each prototype should be represented.  This hint should only

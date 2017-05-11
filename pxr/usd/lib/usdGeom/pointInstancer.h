@@ -560,7 +560,7 @@ public:
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
     /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: fullGeom
+    /// \n  Fallback Value: No Fallback
     /// \n  \ref UsdGeomTokens "Allowed Values": [point, card, fullGeom]
     USDGEOM_API
     UsdAttribute GetPrototypeDrawModeAttr() const;

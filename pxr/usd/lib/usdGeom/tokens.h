@@ -235,7 +235,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>focalLength</b> - UsdGeomCamera
 /// \li <b>focusDistance</b> - UsdGeomCamera
 /// \li <b>fStop</b> - UsdGeomCamera
-/// \li <b>fullGeom</b> - Possible value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr(), Default value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr()
+/// \li <b>fullGeom</b> - Possible value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr()
 /// \li <b>guide</b> - Possible value for UsdGeomImageable::GetPurposeAttr()
 /// \li <b>height</b> - UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder
 /// \li <b>hermite</b> - Possible value for UsdGeomBasisCurves::GetBasisAttr()
