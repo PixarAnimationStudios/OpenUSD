@@ -40,6 +40,12 @@ using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// This function returns a heap allocated string with the demangled RTTI
+// name of the std::string type.  On some platforms this is complicated,
+// similar to basic_string<char, char_traits<chars>, allocator<char>>.
+// We use this to simplify demangled output.
+static string* _NewDemangledStringTypeName();
+
 /*
  * The define below allows you to run both the old and new mangling schemes, 
  * and compare their results.  When you're satisfied that they always agree, 
@@ -63,7 +69,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 static void
 _FixupStringNames(string* name)
 {
-    static string* from = new string(typeid(string).name());
+    static string* from = _NewDemangledStringTypeName();
     static string* to = new string("string");
 
     /* Replace occurrences of stringRttiName with "string" */
@@ -146,7 +152,7 @@ _DemangleOld(string* mangledTypeName)
  * using a version of gcc >= 3.1.
  */
 static bool
-_DemangleNew(string* mangledTypeName)
+_DemangleNewRaw(string* mangledTypeName)
 {
     /*
      * The new gcc3.4 demangle, just like libiberty before it, doesn't like
@@ -165,7 +171,6 @@ _DemangleNew(string* mangledTypeName)
         size_t len = strlen(realName);
         if (len > 1 && realName[len-1] == '*') {
             *mangledTypeName = string(&realName[0], len-1);
-            _FixupStringNames(mangledTypeName);
             ok = true;
         }
 
@@ -173,6 +178,24 @@ _DemangleNew(string* mangledTypeName)
     }
 
     return ok;
+}
+
+static bool
+_DemangleNew(string* mangledTypeName)
+{
+    if (_DemangleNewRaw(mangledTypeName)) {
+        _FixupStringNames(mangledTypeName);
+        return true;
+    }
+    return false;
+}
+
+static string*
+_NewDemangledStringTypeName()
+{
+    string* result = new string(typeid(string).name());
+    _DemangleNewRaw(result);
+    return result;
 }
 
 bool
@@ -217,6 +240,12 @@ Arch_DemangleFunctionName(string* mangledFunctionName)
 }
 
 #elif defined(ARCH_OS_WINDOWS)
+
+static string*
+_NewDemangledStringTypeName()
+{
+    return new string(typeid(string).name());
+}
 
 bool
 ArchDemangle(string* mangledTypeName)

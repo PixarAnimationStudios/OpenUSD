@@ -43,6 +43,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 struct Mangled {};
 
+struct FooSsSsSsBar {};
+
 template <class T>
 class MangledAlso {};
 
@@ -73,6 +75,10 @@ int main()
     TestDemangle<Mangled>("Mangled");
     TestDemangle<Remangled>("Mangled");
     TestDemangle<MangleEnum>("MangleEnum");
+    // We have special case code for std::string.
+    TestDemangle<std::string>("string");
+    // This one is a regression test for a demangle bug on Linux.
+    TestDemangle<FooSsSsSsBar>("FooSsSsSsBar");
 
     TestDemangle<DummyClassInNamespace>("DummyClassInNamespace"); 
     TestDemangle<OtherDummyClassInNamespace::SubClass>("OtherDummyClassInNamespace::SubClass");
