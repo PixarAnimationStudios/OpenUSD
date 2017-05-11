@@ -748,6 +748,7 @@ EXCLUDE_SYMBOLS        = Usd_* \
                          UsdHydra_* \
                          UsdUI_* \
                          UsdUtils_* \
+                         UsdAbc_* \
                          Sdf_* \
                          Pcp_* \
                          PcpNodeRef_* \

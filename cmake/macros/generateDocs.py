@@ -33,9 +33,17 @@ def _getModules(pxrSourceRoot):
         # Ignore any hidden directories
         if os.path.basename(p).startswith('.'):
             continue
+
+        # add all lib/ subdirs, such as usdGeom
         path = os.path.join(os.path.join(pxrSourceRoot, p), 'lib/')
         if os.path.isdir(path):
             topLevel.append(path)
+
+        # add all plugin subdirs, such as usdAbc
+        path = os.path.join(os.path.join(pxrSourceRoot, p), 'plugin/')
+        if os.path.isdir(path):
+            topLevel.append(path)
+
     for t in topLevel:
         for p in os.listdir(t):
             if os.path.basename(p).startswith('.'):
