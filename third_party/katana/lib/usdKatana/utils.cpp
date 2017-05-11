@@ -42,6 +42,7 @@
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdRi/statements.h"
+#include "pxr/usd/usdUI/sceneGraphPrimAPI.h"
 #include "pxr/usd/usdLux/listAPI.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/material.h"
@@ -49,6 +50,7 @@
 
 #include "usdKatana/utils.h"
 #include "usdKatana/lookAPI.h"
+#include "usdKatana/baseMaterialHelpers.h"
 
 #include <FnLogging/FnLogging.h>
 
@@ -968,8 +970,11 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
     // Convert to the corresponding katana location by stripping
     // off the leading rootPath and prepending rootLocation.
     std::string isolatePathString = usdInArgs->GetIsolatePath();
+    
+    // this expected to be an absolute path
     std::string result = usdInArgs->GetRootLocationPath();
     result += "/";
+
     std::string pathString = path.GetString();
     if (!isolatePathString.empty()) {
         if (pathString.find(isolatePathString) == 0) {
@@ -983,10 +988,12 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
             return std::string();
         }
     }
+    if (pathString[0] == '/') {
+        pathString = pathString.substr(1);
+    }
     result += pathString;
 
-    // clean up result
-    return TfNormPath(result);
+    return result;
 }
 
 std::string
@@ -1016,7 +1023,14 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         const SdfPath& path,
         const PxrUsdKatanaUsdInPrivateData& data)
 {
-    const std::string basePath = ConvertUsdPathToKatLocation(path, data);
+    // precondition: the parent of this material is a material group
+    std::string materialGroupPath = 
+        ConvertUsdPathToKatLocation(path.GetParentPath(), data);
+    std::string basePath = materialGroupPath;
+    if (!basePath.empty()) {
+        basePath += "/";
+    }
+    basePath += path.GetName();
 
     UsdPrim prim = 
         UsdUtilsGetPrimAtPathWithForwarding(
@@ -1026,66 +1040,101 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         return basePath;
     }
 
-    SdfPath parentPath;
-
-    UsdShadeMaterial materialSchema = UsdShadeMaterial(prim);
-    if (materialSchema.HasBaseMaterial()) {
-        // This base material is defined as a derivesFrom relationship
-        parentPath = materialSchema.GetBaseMaterialPath();
+    // if displayGroup is found, use it
+    UsdUISceneGraphPrimAPI sgp(prim);
+    std::string displayGroup = "";
+    UsdAttribute displayGroupAttr = sgp.GetDisplayGroupAttr();
+    if (displayGroupAttr.IsValid() && 
+            !PxrUsdKatana_IsAttrValFromBaseMaterial(displayGroupAttr)) {
+        displayGroupAttr.Get(&displayGroup);
+        displayGroup = TfStringReplace(displayGroup, ":", "/");
     }
 
-    UsdPrim parentPrim = 
-        data.GetUsdInArgs()->GetStage()->GetPrimAtPath(parentPath);
+    else {
+        // calculate from basematerial
+        SdfPath parentPath;
 
+        UsdShadeMaterial materialSchema = UsdShadeMaterial(prim);
+        if (materialSchema.HasBaseMaterial()) {
+            // This base material is defined as a derivesFrom relationship
+            parentPath = materialSchema.GetBaseMaterialPath();
+        }
 
-    // Asset sanity check. It is possible the derivesFrom relationship
-    // for a Look exists but references a non-existent location. If so,
-    // simply return the base path.
-    if (!parentPrim)
-    {
-        return basePath;
-    }
+        UsdPrim parentPrim = 
+            data.GetUsdInArgs()->GetStage()->GetPrimAtPath(parentPath);
 
-    if (parentPrim.IsInMaster())
-    {
-        // If the prim is inside a master, then attempt to translate the
-        // parentPath to the corresponding uninstanced path, assuming that 
-        // the given forwarded path and parentPath belong to the same master.
-        const SdfPath primPath = prim.GetPath();
-        std::pair<SdfPath, SdfPath> prefixPair = 
-            primPath.RemoveCommonSuffix(path);
-        const SdfPath& masterPath = prefixPair.first;
-        const SdfPath& instancePath = prefixPair.second;
-        
-        // XXX: Assuming that the base look (parent) path belongs to the same
-        // master! If it belongs to a different master, we don't have the 
-        // context needed to resolve it.
-        if (parentPath.HasPrefix(masterPath)) {
-            parentPath = instancePath.AppendPath(parentPath.ReplacePrefix(
-                masterPath, SdfPath::ReflexiveRelativePath()));
-        } else {
-            FnLogWarn("Error converting UsdMaterial path <" << path.GetString() <<
-                "> to katana location: could not map parent path <" <<
-                parentPath.GetString() << "> to uninstanced location.");
+        // Asset sanity check. It is possible the derivesFrom relationship
+        // for a Look exists but references a non-existent location. If so,
+        // simply return the base path.
+        if (!parentPrim)
+        {
             return basePath;
         }
+
+        if (parentPrim.IsInMaster())
+        {
+            // If the prim is inside a master, then attempt to translate the
+            // parentPath to the corresponding uninstanced path, assuming that 
+            // the given forwarded path and parentPath belong to the same master.
+            const SdfPath primPath = prim.GetPath();
+            std::pair<SdfPath, SdfPath> prefixPair = 
+                primPath.RemoveCommonSuffix(path);
+            const SdfPath& masterPath = prefixPair.first;
+            const SdfPath& instancePath = prefixPair.second;
+            
+            // XXX: Assuming that the base look (parent) path belongs to the same
+            // master! If it belongs to a different master, we don't have the 
+            // context needed to resolve it.
+            if (parentPath.HasPrefix(masterPath)) {
+                parentPath = instancePath.AppendPath(parentPath.ReplacePrefix(
+                    masterPath, SdfPath::ReflexiveRelativePath()));
+            } else {
+                FnLogWarn("Error converting UsdMaterial path <" << 
+                    path.GetString() <<
+                    "> to katana location: could not map parent path <" <<
+                    parentPath.GetString() << "> to uninstanced location.");
+                return basePath;
+            }
+        }
+        // displaygroup coming from the parent includes the materialGroup
+        displayGroup = 
+            ConvertUsdMaterialPathToKatLocation(parentPath, data);
+        if (!displayGroup.empty()) {
+            displayGroup = displayGroup.substr(materialGroupPath.length()+1);
+        }
     }
 
-    std::string parentKatLoc = 
-        ConvertUsdMaterialPathToKatLocation(parentPath, data);
-    if (not parentKatLoc.empty()) {
+    if (!displayGroup.empty()) {
         // only use primName if available and a parent path was found
         std::string primName = prim.GetName();
-        UsdAttribute primNameAttr = UsdKatanaLookAPI(prim).GetPrimNameAttr();
-        if (primNameAttr.IsValid()) {
-            primNameAttr.Get(&primName);
+
+        UsdAttribute displayNameAttr = sgp.GetDisplayNameAttr();
+        if (displayNameAttr.IsValid() && 
+                !PxrUsdKatana_IsAttrValFromBaseMaterial(displayNameAttr)) {
+            // override prim name
+            displayNameAttr.Get(&primName);
         }
-        return parentKatLoc + "/" + primName;
-        
+        else {
+            UsdAttribute primNameAttr = UsdKatanaLookAPI(prim).GetPrimNameAttr();
+            if (primNameAttr.IsValid() && 
+                    !PxrUsdKatana_IsAttrValFromBaseMaterial(primNameAttr)) {
+                primNameAttr.Get(&primName);
+            }
+        }
+
+        std::string returnValue = materialGroupPath;
+        if (!returnValue.empty()) {
+            returnValue += '/';
+        }
+        returnValue += displayGroup;
+        returnValue += '/';
+        returnValue += primName;
+        return returnValue;
     }
-    else
+    else {
         // parent path could not be computed correctly
         return basePath;
+    }
 }
 
 bool 
