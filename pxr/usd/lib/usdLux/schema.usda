@@ -18,6 +18,10 @@ over "GLOBAL" (
 class "Light" (
     inherits = </Xformable>
     doc = """Base class for all lights."""
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdLux/linkingAPI.h" """
+    }
 ) {
     float intensity = 1 (
         doc = """Scales the power of the light linearly."""
@@ -74,12 +78,6 @@ class "ListAPI" (
     rel lightList (
         doc = """Relationship to lights in the scene."""
     )
-}
-
-class "LinkingAPI" (
-    doc = """API schema for linking a light to subsets of geometry for
-    purposes of contributing illumination."""
-) {
 }
 
 class "ShapingAPI" (

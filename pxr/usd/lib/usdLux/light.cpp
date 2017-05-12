@@ -279,6 +279,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (lightLink)
+    (shadowLink)
+);
+
 GfVec3f
 UsdLuxLight::ComputeBaseEmission() const
 {
@@ -306,6 +312,20 @@ UsdLuxLight::ComputeBaseEmission() const
     }
 
     return e;
+}
+
+USDLUX_API
+UsdLuxLinkingAPI
+UsdLuxLight::GetLightLinkingAPI() const
+{
+    return UsdLuxLinkingAPI(*this, _tokens->lightLink);
+}
+
+USDLUX_API
+UsdLuxLinkingAPI
+UsdLuxLight::GetShadowLinkingAPI() const
+{
+    return UsdLuxLinkingAPI(*this, _tokens->shadowLink);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

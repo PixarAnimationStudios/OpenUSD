@@ -145,13 +145,6 @@ class "ListAPI" (
     )
 }
 
-class "LinkingAPI" (
-    doc = """API schema for linking a light to subsets of geometry for
-    purposes of contributing illumination."""
-)
-{
-}
-
 class "ShapingAPI" (
     doc = "Controls for shaping a light's emission."
 )

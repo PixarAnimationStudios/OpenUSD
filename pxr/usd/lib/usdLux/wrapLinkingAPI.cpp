@@ -104,9 +104,48 @@ void wrapUsdLuxLinkingAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/pyContainerConversions.h"
+
 namespace {
 
+static boost::python::dict
+_ComputeLinkMap(const UsdLuxLinkingAPI &schema)
+{
+    return TfPyCopyMapToDictionary(schema.ComputeLinkMap());
+}
+
+static UsdLuxLinkingAPI::LinkMap
+_DictToLinkMap(const boost::python::dict &d)
+{
+    UsdLuxLinkingAPI::LinkMap linkMap;
+    boost::python::list paths = d.keys();
+    for (int i=0; i < boost::python::len(paths); ++i) {
+        SdfPath path = boost::python::extract<SdfPath>(paths[i]);
+        bool enable = boost::python::extract<bool>(d[paths[i]]);
+        linkMap[path] = enable;
+    }
+    return linkMap;
+}
+
+static void
+_SetLinkMap(const UsdLuxLinkingAPI &schema, const boost::python::dict &d)
+{
+    schema.SetLinkMap(_DictToLinkMap(d));
+}
+
+static bool
+_DoesLinkPath(const boost::python::dict &d, const SdfPath &p)
+{
+    return UsdLuxLinkingAPI::DoesLinkPath(_DictToLinkMap(d), p);
+}
+
 WRAP_CUSTOM {
+    _class
+        .def("ComputeLinkMap", &_ComputeLinkMap)
+        .def("SetLinkMap", &_SetLinkMap)
+        .def("DoesLinkPath", &_DoesLinkPath)
+        .staticmethod("DoesLinkPath")
+        ;
 }
 
 }

@@ -38,6 +38,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (collection)
+    (includes)
+    (excludes)
+    (includeByDefault)
+);
+
 /* virtual */
 UsdLuxLinkingAPI::~UsdLuxLinkingAPI()
 {
@@ -92,13 +100,113 @@ UsdLuxLinkingAPI::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+USDLUX_API
+bool
+UsdLuxLinkingAPI::DoesLinkPath(const LinkMap &linkMap, const SdfPath &path)
+{
+    if (!path.IsAbsolutePath()) {
+        TF_CODING_ERROR("Path %s must be absolute\n",
+                        path.GetText());
+        return false;
+    }
+    // Scan for closest containing opinion
+    for (SdfPath p = path; p != SdfPath::EmptyPath(); p = p.GetParentPath()) {
+        const LinkMap::const_iterator i = linkMap.find(p);
+        if (i != linkMap.end()) {
+            return i->second;
+        }
+    }
+    // Any path not explicitly mentioned, and that does not inherit
+    // its setting from a prefix path, is included.
+    return true;
+}
 
-// ===================================================================== //
-// Feel free to add custom code below this line. It will be preserved by
-// the code generator.
-//
-// Just remember to wrap code in the appropriate delimiters:
-// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
-// ===================================================================== //
-// --(BEGIN CUSTOM CODE)--
+UsdLuxLinkingAPI::LinkMap
+UsdLuxLinkingAPI::ComputeLinkMap() const
+{
+    SdfPathVector includes, excludes;
+    _GetIncludesRel().GetTargets(&includes);
+    _GetExcludesRel().GetTargets(&excludes);
+    bool includeByDefault = true;
+    _GetIncludeByDefaultAttr().Get(&includeByDefault);
+
+    // Note: An include of path P is stronger than an exclude of P.
+    LinkMap result;
+    for (const SdfPath &p: excludes) {
+        result[p] = false;
+    }
+    for (const SdfPath &p: includes) {
+        result[p] = true;
+    }
+    if (!includeByDefault) {
+        result[SdfPath::AbsoluteRootPath()] = includeByDefault;
+    }
+    return result;
+}
+
+void UsdLuxLinkingAPI::SetLinkMap(const LinkMap &linkMap) const
+{
+    SdfPathVector includes, excludes;
+    bool includeByDefault = true;
+    for (const auto &entry: linkMap) {
+        if (!entry.first.IsAbsolutePath()) {
+            TF_CODING_ERROR("Path %s must be absolute\n",
+                            entry.first.GetText());
+            return;
+        } else if (entry.first == SdfPath::AbsoluteRootPath()) {
+            includeByDefault = entry.second;
+        } else {
+            (entry.second ? includes : excludes).push_back(entry.first);
+        }
+    }
+    _GetIncludesRel().SetTargets(includes);
+    _GetExcludesRel().SetTargets(excludes);
+    _GetIncludeByDefaultAttr(true).Set(includeByDefault);
+}
+
+UsdAttribute
+UsdLuxLinkingAPI::_GetIncludeByDefaultAttr(bool create /* = false */) const
+{
+    const TfToken &attrName =
+        _GetCollectionPropertyName(_tokens->includeByDefault);
+    if (create) {
+        return UsdSchemaBase::_CreateAttr(attrName,
+                                          SdfValueTypeNames->Bool,
+                                          /* custom = */ false,
+                                          SdfVariabilityUniform,
+                                          /* default = */ VtValue(),
+                                          /* writeSparsely */ false);
+    } else {
+        return GetPrim().GetAttribute(attrName);
+    }
+}
+
+UsdRelationship 
+UsdLuxLinkingAPI::_GetIncludesRel(bool create /* =false */) const
+{
+    const TfToken &relName = _GetCollectionPropertyName(_tokens->includes);
+    return create ? GetPrim().CreateRelationship(relName, /* custom */ false) :
+                    GetPrim().GetRelationship(relName);
+}
+
+UsdRelationship 
+UsdLuxLinkingAPI::_GetExcludesRel(bool create /* =false */) const
+{
+    const TfToken &relName = _GetCollectionPropertyName(_tokens->excludes);
+    return create ? GetPrim().CreateRelationship(relName, /* custom */ false) :
+                    GetPrim().GetRelationship(relName);
+}
+
+// Note that we deliberately use a similar backing storage representation
+// as UsdGeomCollectionAPI here, with intention to eventually converge.
+TfToken 
+UsdLuxLinkingAPI::_GetCollectionPropertyName(
+    const TfToken &baseName /* =TfToken() */) const
+{
+    return TfToken(_tokens->collection.GetString() + ":" + 
+                   _name.GetString() + 
+                   (baseName.IsEmpty() ? "" : (":" + baseName.GetString())));
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

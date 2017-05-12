@@ -51,8 +51,11 @@ class SdfAssetPath;
 
 /// \class UsdLuxLinkingAPI
 ///
-/// API schema for linking a light to subsets of geometry for
-/// purposes of contributing illumination.
+/// API schema for linking a light or light filter to subsets
+/// of geometry for purposes of contributing illumination.
+///
+/// You probably don't want to construct these directly; see, for example,
+/// UsdLuxLight::GetLinkingAPI().
 ///
 class UsdLuxLinkingAPI : public UsdSchemaBase
 {
@@ -67,16 +70,20 @@ public:
     /// Equivalent to UsdLuxLinkingAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLuxLinkingAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdLuxLinkingAPI(const UsdPrim& prim=UsdPrim(),
+                               const TfToken &name=TfToken())
         : UsdSchemaBase(prim)
+        , _name(name)
     {
     }
 
     /// Construct a UsdLuxLinkingAPI on the prim held by \p schemaObj .
     /// Should be preferred over UsdLuxLinkingAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLuxLinkingAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdLuxLinkingAPI(const UsdSchemaBase& schemaObj,
+                              const TfToken &name=TfToken())
         : UsdSchemaBase(schemaObj)
+        , _name(name)
     {
     }
 
@@ -104,7 +111,6 @@ public:
     static UsdLuxLinkingAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -118,16 +124,37 @@ private:
     virtual const TfType &_GetTfType() const;
 
 public:
-    // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
-    //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
-    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
-    //  - Close the include guard with #endif
-    // ===================================================================== //
-    // --(BEGIN CUSTOM CODE)--
+    /// An unordered map describing linkage of paths.
+    /// This is a standalone value representing the linkage.
+    /// Any path not present in this table is assumed to inherit its
+    /// setting from the longest prefix path that is present. If there
+    /// is no containing path, the path is assumed to be linked.
+    typedef std::map<SdfPath, bool, SdfPath::FastLessThan> LinkMap;
+
+    /// Return true if the given path (or ancestor) is linked by the linkMap.
+    /// It is a coding error to pass a non-absolute path.
+    USDLUX_API
+    static bool DoesLinkPath(const LinkMap &linkMap, const SdfPath &path);
+
+    /// Compute and return the link map, which can answer queries about
+    /// linkage to particular paths.  Computing the link map once
+    /// up front allows for more efficient repeated queries.
+    /// See LinkMap for semantics.
+    USDLUX_API
+    LinkMap ComputeLinkMap() const;
+
+    /// Set the underlying attributes to establish the given linkmap.
+    USDLUX_API
+    void SetLinkMap(const LinkMap &l) const;
+
+private:
+    UsdRelationship _GetIncludesRel(bool create=false) const;
+    UsdRelationship _GetExcludesRel(bool create=false) const;
+    UsdAttribute _GetIncludeByDefaultAttr(bool create = false) const;
+    TfToken _GetCollectionPropertyName(const TfToken &baseName=TfToken()) const;
+
+    // Name of the linkage.
+    TfToken _name;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -33,6 +33,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/tokens.h"
 
+#include "pxr/usd/usdLux/linkingAPI.h" 
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -341,6 +343,18 @@ public:
     ///
     USDLUX_API
     GfVec3f ComputeBaseEmission() const;
+
+    /// Return the UsdLuxLinkingAPI interface used for examining and
+    /// modifying the light-linking of this light.  Light-linking
+    /// controls to which geometry this light contributes illumination.
+    USDLUX_API
+    UsdLuxLinkingAPI GetLightLinkingAPI() const;
+
+    /// Return the UsdLuxLinkingAPI interface used for examining and
+    /// modifying the shadow-linking of this light.  Shadow-linking
+    /// controls which geometry casts shadows from this light.
+    USDLUX_API
+    UsdLuxLinkingAPI GetShadowLinkingAPI() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

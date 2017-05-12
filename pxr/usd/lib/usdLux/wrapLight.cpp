@@ -226,6 +226,8 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("ComputeBaseEmission", &UsdLuxLight::ComputeBaseEmission)
+        .def("GetLightLinkingAPI", &UsdLuxLight::GetLightLinkingAPI)
+        .def("GetShadowLinkingAPI", &UsdLuxLight::GetShadowLinkingAPI)
         ;
 }
 
