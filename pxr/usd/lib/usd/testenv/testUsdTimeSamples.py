@@ -34,6 +34,7 @@ class TestUsdTimeSamples(unittest.TestCase):
         earliestTime1 = Usd.TimeCode.EarliestTime()
         earliestTime2 = Usd.TimeCode.EarliestTime()
         self.assertEqual(earliestTime1, earliestTime2)
+        self.assertEqual(default1, Usd.TimeCode(default1))
 
         nonSpecial = Usd.TimeCode(24.0)
         self.assertNotEqual(default1, nonSpecial)
