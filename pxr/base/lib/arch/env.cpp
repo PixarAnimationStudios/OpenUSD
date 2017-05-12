@@ -34,6 +34,12 @@
 #include <stdlib.h>
 #endif
 
+#if defined(ARCH_OS_DARWIN)
+#include <crt_externs.h>
+#else
+extern "C" char** environ;
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
@@ -118,6 +124,14 @@ ArchExpandEnvironmentVariables(const std::string& value)
     }
 
     return result;
+}
+
+char** ArchEnviron() {
+#if defined(ARCH_OS_DARWIN)
+    return *_NSGetEnviron();
+#else
+    return environ;
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
