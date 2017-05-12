@@ -113,8 +113,10 @@ HdStreamTaskController::_CreateCamera()
 
     _delegate.SetParameter(_cameraId, HdStCameraTokens->windowPolicy,
         VtValue());
-    _delegate.SetParameter(_cameraId, HdStCameraTokens->matrices,
-        HdStCameraMatrices());
+    _delegate.SetParameter(_cameraId, HdStCameraTokens->worldToViewMatrix,
+        VtValue(GfMatrix4d(1.0)));
+    _delegate.SetParameter(_cameraId, HdStCameraTokens->projectionMatrix,
+        VtValue(GfMatrix4d(1.0)));
     _delegate.SetParameter(_cameraId, HdStCameraTokens->clipPlanes,
         VtValue(std::vector<GfVec4d>()));
 }
@@ -477,18 +479,28 @@ void
 HdStreamTaskController::SetCameraMatrices(GfMatrix4d const& viewMatrix,
                                           GfMatrix4d const& projMatrix)
 {
-    HdStCameraMatrices oldMatrices =
-        _delegate.GetParameter<HdStCameraMatrices>(
-            _cameraId, HdStCameraTokens->matrices);
+    GfMatrix4d oldView = _delegate.GetParameter<GfMatrix4d>(_cameraId,
+        HdStCameraTokens->worldToViewMatrix);
 
-    HdStCameraMatrices newMatrices = HdStCameraMatrices(viewMatrix, projMatrix);
-    if (oldMatrices != newMatrices) {
-        // Cache the camera matrices
-        _delegate.SetParameter(_cameraId, HdStCameraTokens->matrices,
-            newMatrices);
-        // Invalidate the camera.
+    if (viewMatrix != oldView) {
+        // Cache the new view matrix
+        _delegate.SetParameter(_cameraId, HdStCameraTokens->worldToViewMatrix,
+            viewMatrix);
+        // Invalidate the camera
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdStCamera::DirtyMatrices);
+            HdStCamera::DirtyViewMatrix);
+    }
+
+    GfMatrix4d oldProj = _delegate.GetParameter<GfMatrix4d>(_cameraId,
+        HdStCameraTokens->projectionMatrix);
+
+    if (projMatrix != oldProj) {
+        // Cache the new proj matrix
+        _delegate.SetParameter(_cameraId, HdStCameraTokens->projectionMatrix,
+            projMatrix);
+        // Invalidate the camera
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
+            HdStCamera::DirtyProjMatrix);
     }
 }
 

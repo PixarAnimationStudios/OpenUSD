@@ -63,27 +63,32 @@ HdStCamera::Sync(HdSceneDelegate *sceneDelegate,
     // efficient.
     HdDirtyBits bits = *dirtyBits;
     
-    if (bits & DirtyMatrices) {
+    if (bits & DirtyViewMatrix) {
         GfMatrix4d worldToViewMatrix(1.0);
         GfMatrix4d worldToViewInverseMatrix(1.0);
-        GfMatrix4d projectionMatrix(1.0);
 
-        // extract view/projection matrices
-        VtValue vMatrices = sceneDelegate->Get(id, HdStCameraTokens->matrices);
-        if (!vMatrices.IsEmpty()) {
-            const HdStCameraMatrices matrices =
-                vMatrices.Get<HdStCameraMatrices>();
-            worldToViewMatrix                = matrices.viewMatrix;
-            worldToViewInverseMatrix         = worldToViewMatrix.GetInverse();
-            projectionMatrix                 = matrices.projMatrix;
-        } else {
-            TF_CODING_ERROR("No camera matrices passed to HdStCamera.");
-        }
+        // extract view matrix
+        VtValue vMatrix = sceneDelegate->Get(id,
+            HdStCameraTokens->worldToViewMatrix);
+        worldToViewMatrix = vMatrix.Get<GfMatrix4d>();
+        worldToViewInverseMatrix = worldToViewMatrix.GetInverse();
 
+        // store view matrix
         _cameraValues[HdStCameraTokens->worldToViewMatrix] =
             VtValue(worldToViewMatrix);
         _cameraValues[HdStCameraTokens->worldToViewInverseMatrix] =
             VtValue(worldToViewInverseMatrix);
+    }
+
+    if (bits & DirtyProjMatrix) {
+        GfMatrix4d projectionMatrix(1.0);
+
+        // extract projection matrix
+        VtValue vMatrix = sceneDelegate->Get(id,
+            HdStCameraTokens->projectionMatrix);
+        projectionMatrix = vMatrix.Get<GfMatrix4d>();
+
+        // store projection matrix
         _cameraValues[HdStCameraTokens->projectionMatrix] =
             VtValue(projectionMatrix);
     }
@@ -119,30 +124,6 @@ HdDirtyBits
 HdStCamera::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
-}
-
-// -------------------------------------------------------------------------- //
-// VtValue Requirements
-// -------------------------------------------------------------------------- //
-
-std::ostream& operator<<(std::ostream& out, const HdStCameraMatrices& pv)
-{
-    out << "HdStCameraMatrices Params: (...) "
-        << pv.viewMatrix << " " 
-        << pv.projMatrix
-        ;
-    return out;
-}
-
-bool operator==(const HdStCameraMatrices& lhs, const HdStCameraMatrices& rhs)
-{
-    return lhs.viewMatrix           == rhs.viewMatrix &&
-           lhs.projMatrix           == rhs.projMatrix;
-}
-
-bool operator!=(const HdStCameraMatrices& lhs, const HdStCameraMatrices& rhs)
-{
-    return !(lhs == rhs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -118,7 +118,8 @@ static void CameraAndLightTest()
 
     // Update camera matrix
     delegate->SetCamera(camera, GfMatrix4d(2), GfMatrix4d(2));
-    tracker.MarkSprimDirty(camera, HdStCamera::DirtyMatrices);
+    tracker.MarkSprimDirty(camera, HdStCamera::DirtyViewMatrix);
+    tracker.MarkSprimDirty(camera, HdStCamera::DirtyProjMatrix);
 
     engine.Execute(*index, tasks);
 

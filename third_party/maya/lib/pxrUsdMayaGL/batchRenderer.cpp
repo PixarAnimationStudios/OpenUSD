@@ -509,7 +509,8 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
 
         renderIndex->InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
         _ValueCache &cache = _valueCacheMap[_cameraId];
-        cache[HdStCameraTokens->matrices] = VtValue(HdStCameraMatrices());
+        cache[HdStCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
+        cache[HdStCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
         cache[HdStCameraTokens->windowPolicy] = VtValue();  // no window policy.
     }
 
@@ -564,8 +565,8 @@ UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache &cache = _valueCacheMap[_cameraId];
-    cache[HdStCameraTokens->matrices] =
-        VtValue(HdStCameraMatrices(viewMatrix, projectionMatrix));
+    cache[HdStCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
+    cache[HdStCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
     cache[HdStCameraTokens->windowPolicy] = VtValue(); // no window policy.
 
     // invalidate the camera to be synced

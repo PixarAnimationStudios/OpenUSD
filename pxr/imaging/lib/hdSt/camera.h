@@ -40,9 +40,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HDST_CAMERA_TOKENS                       \
+#define HDST_CAMERA_TOKENS                      \
     (clipPlanes)                                \
-    (matrices)                                  \
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)                  \
     (projectionMatrix)                          \
@@ -68,10 +67,12 @@ public:
     // change tracking for HdStCamera
     enum DirtyBits {
         Clean                 = 0,
-        DirtyMatrices         = 1 << 0,
-        DirtyWindowPolicy     = 1 << 1,
-        DirtyClipPlanes       = 1 << 2,
-        AllDirty              = (DirtyMatrices
+        DirtyViewMatrix       = 1 << 0,
+        DirtyProjMatrix       = 1 << 1,
+        DirtyWindowPolicy     = 1 << 2,
+        DirtyClipPlanes       = 1 << 3,
+        AllDirty              = (DirtyViewMatrix
+                                |DirtyProjMatrix
                                 |DirtyWindowPolicy
                                 |DirtyClipPlanes)
     };
@@ -95,32 +96,6 @@ public:
 private:
     TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _cameraValues;
 };
-
-struct HdStCameraMatrices
-{
-    HdStCameraMatrices() :
-          viewMatrix(1.0),
-          projMatrix(1.0)
-        {}
-
-    HdStCameraMatrices(GfMatrix4d const & view, GfMatrix4d const & proj) :
-          viewMatrix(view),
-          projMatrix(proj)
-        {}
-
-    // Matrices to create a camera
-    GfMatrix4d viewMatrix;
-    GfMatrix4d projMatrix;
-};
-
-// VtValue requirements
-HDST_API
-std::ostream& operator<<(std::ostream& out,   const HdStCameraMatrices& pv);
-HDST_API
-bool operator==(const HdStCameraMatrices& lhs, const HdStCameraMatrices& rhs);
-HDST_API
-bool operator!=(const HdStCameraMatrices& lhs, const HdStCameraMatrices& rhs);
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
