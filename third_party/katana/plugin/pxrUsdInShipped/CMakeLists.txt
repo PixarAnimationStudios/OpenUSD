@@ -25,6 +25,7 @@ pxr_plugin(${PXR_PACKAGE}
         basisCurves.cpp
         camera.cpp
         constraints.cpp
+        light.cpp
         material.cpp
         materialsGroup.cpp
         mesh.cpp
