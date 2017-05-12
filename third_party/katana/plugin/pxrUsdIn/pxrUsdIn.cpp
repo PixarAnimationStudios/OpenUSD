@@ -64,6 +64,41 @@ namespace FnKat = Foundry::Katana;
     interface.setAttr("errorMessage", Foundry::Katana::StringAttribute(\
         TfStringPrintf(__VA_ARGS__)));
 
+// Set attributes under lightList to establish linking.
+static void
+_SetLinks( const std::string &lightKey,
+           const UsdLuxLinkingAPI &linkAPI,
+           const std::string &linkName,
+           const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs,
+           FnKat::GroupBuilder *lightListBuilder)
+{
+    UsdLuxLinkingAPI::LinkMap linkMap = linkAPI.ComputeLinkMap();
+    FnKat::GroupBuilder onBuilder, offBuilder;
+    for (const auto &entry: linkMap) {
+        // By convention, entries are "link.TYPE.{on,off}.HASH" where
+        // HASH is getHash() of the CEL and TYPE is the type of linking
+        // (light, shadow, etc). In this case we can just hash the
+        // string attribute form of the location.
+        const std::string link_loc =
+            PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(entry.first,
+                                                           usdInArgs);
+        const FnKat::StringAttribute link_loc_attr(link_loc);
+        const std::string link_hash = link_loc_attr.getHash().str();
+        (entry.second ? onBuilder : offBuilder).set(link_hash, link_loc_attr);
+    }
+    // Set off and then on attributes, in order, to ensure
+    // stable override semantics when katana applies these.
+    // (This matches what the Gaffer node does.)
+    FnKat::GroupAttribute offAttr = offBuilder.build();
+    if (offAttr.getNumberOfChildren()) {
+        lightListBuilder->set(lightKey+".link."+linkName+".off", offAttr);
+    }
+    FnKat::GroupAttribute onAttr = onBuilder.build();
+    if (onAttr.getNumberOfChildren()) {
+        lightListBuilder->set(lightKey+".link."+linkName+".on", onAttr);
+    }
+}
+
 // see overview.dox for more documentation.
 class PxrUsdInOp : public FnKat::GeolibOp
 {
@@ -143,8 +178,7 @@ public:
             //
             FnKat::StringBuilder cameraListBuilder;
 
-            SdfPathVector cameraPaths =
-                PxrUsdKatanaUtils::FindCameraPaths(stage);
+            SdfPathVector cameraPaths = PxrUsdKatanaUtils::FindCameraPaths(stage);
 
             TF_FOR_ALL(cameraPathIt, cameraPaths)
             {
@@ -169,11 +203,9 @@ public:
 
             // lightList
             FnKat::GroupBuilder lightListBuilder;
-            SdfPathVector lightPaths =
-                PxrUsdKatanaUtils::FindLightPaths(stage);
-            TF_FOR_ALL(lightPathIt, lightPaths) {
+            for (const SdfPath &p: PxrUsdKatanaUtils::FindLightPaths(stage)) {
                 // Get the light prim
-                UsdLuxLight light(stage->GetPrimAtPath(*lightPathIt));
+                UsdLuxLight light(stage->GetPrimAtPath(p));
                 if (!light) {
                     continue;
                 }
@@ -181,50 +213,19 @@ public:
                 // The convention for lightList is for /path/to/light
                 // to be represented as path_to_light.
                 const std::string light_loc =
-                    PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
-                    *lightPathIt, usdInArgs);
+                    PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(p, usdInArgs);
                 const std::string light_key =
                     TfStringReplace(light_loc.substr(1), "/", "_");
 
+                // Establish light entry
                 lightListBuilder.set(light_key+".path",
                                      FnKat::StringAttribute(light_loc));
                 lightListBuilder.set(light_key+".enable",
                                      FnKat::IntAttribute(1));
-
-                // Light linking
-                UsdLuxLinkingAPI linkAPI = light.GetLightLinkingAPI();
-                UsdLuxLinkingAPI::LinkMap linkMap = linkAPI.ComputeLinkMap();
-                FnKat::GroupBuilder onBuilder, offBuilder;
-                for (const auto &entry: linkMap) {
-                    // By convention, entries are "link.TYPE.{on,off}.HASH"
-                    // where HASH is getHash() of the CEL and TYPE is the
-                    // type of linking (light, shadow, etc).  In this
-                    // case we can just hash the string attribute form
-                    // of the location.
-                    const std::string link_loc =
-                        PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
-                        entry.first, usdInArgs);
-                    FnKat::StringAttribute link_loc_attr(link_loc);
-                    const std::string link_hash = link_loc_attr.getHash().str();
-                    if (entry.second) {
-                        onBuilder.set(link_hash, link_loc_attr);
-                    } else {
-                        offBuilder.set(link_hash, link_loc_attr);
-                    }
-                }
-                // Set off and then on attributes, in order, to ensure
-                // stable override semantics when katana applies these.
-                // (This matches what the Gaffer node does.)
-                FnKat::GroupAttribute onAttr = onBuilder.build();
-                FnKat::GroupAttribute offAttr = offBuilder.build();
-                if (offAttr.getNumberOfChildren()) {
-                    lightListBuilder.set(light_key+".link.light.off",
-                                         offAttr);
-                }
-                if (onAttr.getNumberOfChildren()) {
-                    lightListBuilder.set(light_key+".link.light.on",
-                                         onAttr);
-                }
+                _SetLinks(light_key, light.GetLightLinkingAPI(), "light",
+                          usdInArgs, &lightListBuilder);
+                _SetLinks(light_key, light.GetShadowLinkingAPI(), "shadow",
+                          usdInArgs, &lightListBuilder);
             }
             FnKat::GroupAttribute lightListAttr = lightListBuilder.build();
             if (lightListAttr.getNumberOfChildren() > 0) {
