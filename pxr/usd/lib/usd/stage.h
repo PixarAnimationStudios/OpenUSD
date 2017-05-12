@@ -1546,6 +1546,13 @@ private:
     std::pair<bool, UsdPrim> 
     _IsValidPathForCreatingPrim(const SdfPath &path) const;
 
+    // Validates that editing a specified prim is allowed. If editing is not
+    // allowed, issues a coding error like "Cannot <operation> ..." and 
+    // returns false. Otherwise, returns true.
+    bool _ValidateEditPrim(const UsdPrim &prim, const char* operation) const;
+    bool _ValidateEditPrimAtPath(const SdfPath &primPath, 
+                                 const char* operation) const;
+
     UsdPrim _DefinePrim(const SdfPath &path, const TfToken &typeName);
 
     bool _RemoveProperty(const SdfPath& path);
@@ -1659,9 +1666,10 @@ private:
     // Invoke _DestroyPrim() on all of \p prim's direct children.
     void _DestroyDescendents(Usd_PrimDataPtr prim);
 
-    // Returns true if the object at the given path is elided from the
-    // stage due to it being a child of an instance prim.
-    bool _IsObjectElidedFromStage(const SdfPath& path) const;
+    // Returns true if the object at the given path is a descendant of
+    // an instance prim, i.e. a prim beneath an instance prim, or a property
+    // of a prim beneath an instance prim.
+    bool _IsObjectDescendantOfInstance(const SdfPath& path) const;
 
     // If the given prim is an instance, returns the corresponding 
     // master prim.  Otherwise, returns an invalid prim.

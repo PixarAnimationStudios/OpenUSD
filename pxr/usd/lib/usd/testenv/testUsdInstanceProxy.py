@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Sdf, Usd
+from pxr import Sdf, Tf, Usd
 import unittest
 
 class TestUsdInstanceProxy(unittest.TestCase):
@@ -529,6 +529,62 @@ class TestUsdInstanceProxy(unittest.TestCase):
             expectedSrcs = [
                 '/Root/Instance_2/NestedInstance_2/B',
                 '/Root/Instance_2/NestedInstance_2/B.attr'])
-        
+
+    def test_Editing(self):
+        """Test that edits cannot be made on instance proxies"""
+
+        # Verify that edits cannot be made via instance proxies
+        # in the local layer stack, since they represent prims 
+        # beneath instances and those opinions would be ignored.
+        s = Usd.Stage.Open('nested/root.usda')
+
+        proxy = s.GetPrimAtPath('/World/sets/Set_1/Prop_1')
+        assert proxy
+        assert proxy.IsInstanceProxy()
+
+        with self.assertRaises(Tf.ErrorException):
+            s.DefinePrim(proxy.GetPath())
+        with self.assertRaises(Tf.ErrorException):
+            s.OverridePrim(proxy.GetPath())
+        with self.assertRaises(Tf.ErrorException):
+            s.CreateClassPrim(proxy.GetPath())
+
+        with self.assertRaises(Tf.ErrorException):
+            proxy.SetDocumentation('test')
+        with self.assertRaises(Tf.ErrorException):
+            proxy.ClearDocumentation()
+        with self.assertRaises(Tf.ErrorException):
+            proxy.CreateRelationship('testRel')
+        with self.assertRaises(Tf.ErrorException):
+            proxy.CreateAttribute('testAttr', Sdf.ValueTypeNames.Int)
+
+        attrInProxy = proxy.GetChild('geom').GetAttribute('x')
+        assert attrInProxy
+
+        with self.assertRaises(Tf.ErrorException):
+            attrInProxy.SetDocumentation('test')
+        with self.assertRaises(Tf.ErrorException):
+            attrInProxy.ClearDocumentation()
+        with self.assertRaises(Tf.ErrorException):
+            attrInProxy.Set(2.0, time=1.0)
+        with self.assertRaises(Tf.ErrorException):
+            attrInProxy.Set(2.0, time=Usd.TimeCode.Default())
+        with self.assertRaises(Tf.ErrorException):
+            attrInProxy.Clear()
+        with self.assertRaises(Tf.ErrorException):
+            attrInProxy.ClearAtTime(time=1.0)
+        with self.assertRaises(Tf.ErrorException):
+            attrInProxy.SetConnections(['/Some/Connection'])
+            
+        relInProxy = proxy.GetChild('geom').GetRelationship('y')
+        assert relInProxy
+
+        with self.assertRaises(Tf.ErrorException):
+            relInProxy.SetDocumentation('test')
+        with self.assertRaises(Tf.ErrorException):
+            relInProxy.ClearDocumentation()
+        with self.assertRaises(Tf.ErrorException):
+            relInProxy.SetTargets(['/Some/Target'])
+
 if __name__ == '__main__':
     unittest.main()
