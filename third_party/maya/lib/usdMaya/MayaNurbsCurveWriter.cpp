@@ -86,7 +86,7 @@ bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdG
     // How to repeat the end knots.
     bool wrap = false;
     MFnNurbsCurve::Form form(curveFn.form());
-    if (form == MFnNurbsCurve::kClosed or
+    if (form == MFnNurbsCurve::kClosed ||
         form == MFnNurbsCurve::kPeriodic){
         wrap = true;
     }
