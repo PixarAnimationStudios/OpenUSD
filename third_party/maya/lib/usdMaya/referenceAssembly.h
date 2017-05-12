@@ -44,6 +44,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/envSetting.h"
 
 #include "pxr/usd/sdf/layer.h"
@@ -51,6 +52,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+#define PXRUSDMAYA_VARIANT_SET_TOKENS                  \
+    ((PlugNamePrefix, "usdVariantSet_"))
+
+TF_DECLARE_PUBLIC_TOKENS(
+    PxrUsdMayaVariantSetTokens, PXRUSDMAYA_API, PXRUSDMAYA_VARIANT_SET_TOKENS);
 
 /// Returns the PIXMAYA_USE_USD_ASSEM_NAMESPACE env setting.
 PXRUSDMAYA_API
