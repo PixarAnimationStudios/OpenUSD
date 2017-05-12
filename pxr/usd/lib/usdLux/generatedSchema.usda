@@ -226,7 +226,7 @@ class "ShadowAPI" (
     )
 }
 
-class "LightFilter" (
+class LightFilter "LightFilter" (
     doc = """A light filter modifies the effect of a light.
     Lights refer to filters via relationships so that filters may be
     shared."""

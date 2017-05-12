@@ -66,6 +66,8 @@ void wrapUsdLuxLightFilter()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
+        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -107,6 +109,9 @@ void wrapUsdLuxLightFilter()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("GetFilterLinkingAPI", &UsdLuxLightFilter::GetFilterLinkingAPI)
+        ;
 }
 
 }

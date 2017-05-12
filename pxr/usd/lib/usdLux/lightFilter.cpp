@@ -36,6 +36,12 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdLuxLightFilter,
         TfType::Bases< UsdGeomXformable > >();
     
+    // Register the usd prim typename as an alias under UsdSchemaBase. This
+    // enables one to call
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("LightFilter")
+    // to find TfType<UsdLuxLightFilter>, which is how IsA queries are
+    // answered.
+    TfType::AddAlias<UsdSchemaBase, UsdLuxLightFilter>("LightFilter");
 }
 
 /* virtual */
@@ -54,6 +60,19 @@ UsdLuxLightFilter::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdLuxLightFilter(stage->GetPrimAtPath(path));
 }
 
+/* static */
+UsdLuxLightFilter
+UsdLuxLightFilter::Define(
+    const UsdStagePtr &stage, const SdfPath &path)
+{
+    static TfToken usdPrimTypeName("LightFilter");
+    if (!stage) {
+        TF_CODING_ERROR("Invalid stage");
+        return UsdLuxLightFilter();
+    }
+    return UsdLuxLightFilter(
+        stage->DefinePrim(path, usdPrimTypeName));
+}
 
 /* static */
 const TfType &
@@ -102,3 +121,19 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (filterLink)
+);
+
+USDLUX_API
+UsdLuxLinkingAPI
+UsdLuxLightFilter::GetFilterLinkingAPI() const
+{
+    return UsdLuxLinkingAPI(*this, _tokens->filterLink);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -54,8 +54,9 @@ class SdfAssetPath;
 /// API schema for linking a light or light filter to subsets
 /// of geometry for purposes of contributing illumination.
 ///
-/// You probably don't want to construct these directly; see, for example,
-/// UsdLuxLight::GetLinkingAPI().
+/// You probably don't want to construct these directly.  Instead,
+/// the typical pattern is to request a linking API for a particular
+/// purpose from a UsdLux object; ex: UsdLuxLight::GetLightLinkingAPI().
 ///
 class UsdLuxLinkingAPI : public UsdSchemaBase
 {

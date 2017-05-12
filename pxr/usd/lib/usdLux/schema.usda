@@ -159,11 +159,15 @@ class "ShadowAPI" (
     )
 }
 
-class "LightFilter" (
+class LightFilter "LightFilter" (
     inherits = </Xformable>
     doc = """A light filter modifies the effect of a light.
     Lights refer to filters via relationships so that filters may be
     shared."""
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdLux/linkingAPI.h" """
+    }
 ) {
 }
 
