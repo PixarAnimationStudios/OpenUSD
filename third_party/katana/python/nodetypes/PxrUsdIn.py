@@ -90,11 +90,7 @@ nb.setHintsForParameter('instanceMode', {
 
 gb.set('prePopulate', FnAttribute.IntAttribute(0))
 nb.setHintsForParameter('prePopulate', {
-    'widget' : 'mapper',
-    'options' : {
-        'yes': 0,
-        'no': 1,
-    },
+    'widget' : 'boolean',
     'help' : """
       Controls USD pre-population.  Pre-population loads all payloads
       and pre-populates the stage.  Assuming the entire stage will be
@@ -142,7 +138,8 @@ def buildOpChain(self, interface):
         self.getParameter('instanceMode')))
     
     gb.set('prePopulate', interface.buildAttrFromParam(
-        self.getParameter('prePopulate')))
+        self.getParameter('prePopulate'),
+        numberType=FnAttribute.IntAttribute))
 
     sessionValues = (
             interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
