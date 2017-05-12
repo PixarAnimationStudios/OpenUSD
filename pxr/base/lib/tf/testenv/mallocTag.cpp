@@ -71,17 +71,15 @@ FreeAll() {
 }
 
 
-static void*
-FreeTaskNoTag(void*) {
+static void
+FreeTaskNoTag() {
     MyMalloc(100000);
-    return 0;
 }
     
-static void*
-FreeTaskWithTag(void*) {
+static void
+FreeTaskWithTag() {
     TfAutoMallocTag noname("freeTaskWithTag");
     MyMalloc(100000);
-    return 0;
 }
 
 static void
@@ -140,28 +138,10 @@ MemCheck()
 static void
 TestFreeThread()
 {
-    pthread_attr_t  _detatchedAttr, _joinableAttr;    
-
-    if (pthread_attr_init(&_detatchedAttr) != 0 ||
-        pthread_attr_init(&_joinableAttr) != 0) {
-        TF_RUNTIME_ERROR("error initializing attributes");
-    }
-        
-    if (pthread_attr_setdetachstate(&_detatchedAttr, PTHREAD_CREATE_DETACHED) != 0 ||
-        pthread_attr_setdetachstate(&_joinableAttr,PTHREAD_CREATE_JOINABLE) != 0) {
-        TF_RUNTIME_ERROR("error setting detatch state");
-    }
-
-    pthread_t id;
     TfAutoMallocTag noname("site3");
 
-    if (pthread_create(&id, &_joinableAttr, FreeTaskNoTag, 0) < 0) {
-        TF_RUNTIME_ERROR("pthread create failed");
-    }
-
-    void* ignored;
-    if (pthread_join(id, &ignored) < 0)
-        TF_RUNTIME_ERROR("join failed");
+    std::thread t(FreeTaskNoTag);
+    t.join();
 
     printf("bytesForSite[site3] = %d\n", GetBytesForCallSite("site3"));
     TF_AXIOM(CloseEnough(GetBytesForCallSite("site3"), 0));
@@ -171,28 +151,10 @@ TestFreeThread()
 static void
 TestFreeThreadWithTag()
 {
-    pthread_attr_t  _detatchedAttr, _joinableAttr;    
-
-    if (pthread_attr_init(&_detatchedAttr) != 0 ||
-        pthread_attr_init(&_joinableAttr) != 0) {
-        TF_RUNTIME_ERROR("error initializing attributes");
-    }
-        
-    if (pthread_attr_setdetachstate(&_detatchedAttr, PTHREAD_CREATE_DETACHED) != 0 ||
-        pthread_attr_setdetachstate(&_joinableAttr,PTHREAD_CREATE_JOINABLE) != 0) {
-        TF_RUNTIME_ERROR("error setting detatch state");
-    }
-
-    pthread_t id;
     TfAutoMallocTag noname("site4");
 
-    if (pthread_create(&id, &_joinableAttr, FreeTaskWithTag, 0) < 0) {
-        TF_RUNTIME_ERROR("pthread create failed");
-    }
-
-    void* ignored;
-    if (pthread_join(id, &ignored) < 0)
-        TF_RUNTIME_ERROR("join failed");
+    std::thread t(FreeTaskWithTag);
+    t.join();
 
     printf("bytesForSite[freeTaskWithTag] = %d\n",
            GetBytesForCallSite("freeTaskWithTag"));

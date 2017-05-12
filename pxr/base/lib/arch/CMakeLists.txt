@@ -11,7 +11,6 @@ endif()
 
 pxr_shared_library(arch
     LIBRARIES
-        ${CMAKE_THREAD_LIBS_INIT}
         ${CMAKE_DL_LIBS}
         ${PLATFORM_LIBS}
 

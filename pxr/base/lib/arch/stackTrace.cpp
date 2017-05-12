@@ -47,7 +47,6 @@
 #include <alloca.h>
 #include <dlfcn.h>
 #include <netdb.h>
-#include <pthread.h>
 #include <unistd.h>
 #include <sys/param.h>
 #include <sys/resource.h>
