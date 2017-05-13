@@ -44,6 +44,11 @@
 #include <Python.h>
 #include <signal.h>
 
+#ifdef PXR_PYTHON_EXECUTABLE_STR
+// for python's MAXPATHLEN
+#include <osdefs.h>
+#endif // PXR_PYTHON_EXECUTABLE_STR
+
 using std::string;
 
 using namespace boost::python;
@@ -75,15 +80,53 @@ TfPyInitialize()
                     "the 'main thread'.  Python doc says not to do this.");
         }
 
-        static std::string programName(ArchGetExecutablePath());
-
         // Initialize Python threading.  This grabs the GIL.  We'll release it
         // at the end of this function.
         PyEval_InitThreads();
 
-        // Setting the program name is necessary in order for python to 
-        // find the correct built-in modules. 
+        // Unfortunately, python uses Py_SetProgramName in two distinct ways:
+        //
+        // 1) As a "hint" for finding the standard python libraries - ie,
+        //    setting the "prefix" and "exec_prefix".  Going by the docs for the
+        //    function:
+        //        https://docs.python.org/3/c-api/init.html#c.Py_SetProgramName
+        //    ...this is the "primary" purpose of the call.
+        // 2) As a means to set "sys.executable" (and Py_GetProgramFullPath).
+        //    According to:
+        //        https://docs.python.org/3/c-api/init.html#c.Py_GetProgramFullPath
+        //    ...this is a "side effect", but it seems an important one
+        //
+        // Our problem is that the two uses conflict - the current executable
+        // likely has no obvious relation to the location of the python libs.
+        //
+        // As a means around this, if PXR_PYTHON_EXECUTABLE_STR is set (which
+        // it should be, by cmake, to ${PYTHON_EXECUTABLE}), then we first set
+        // Py_SetProgramName to that, then call Py_GetPrefix as a means to bake/
+        // cache values of the prefix / exec_prefix... and also, unforuntately,
+        // sys.executable. We then call Py_GetProgramFullPath, and copy directly
+        // into the buffer it returns, to set sys.executable to the "correct"
+        // value.  Modifying this char buffer is technically not something you're
+        // supposed to do, but should be safe to do here, before we've even
+        // initialized python
+        static std::string programName;
+
+#ifdef PXR_PYTHON_EXECUTABLE_STR
+        programName = PXR_PYTHON_EXECUTABLE_STR;
         Py_SetProgramName(const_cast<char*>(programName.c_str()));
+        Py_GetPrefix(); // this will cache / bake the prefix/exec_prefix/progpath
+#endif // PXR_PYTHON_EXECUTABLE_STR
+
+        programName = ArchGetExecutablePath();
+        Py_SetProgramName(const_cast<char*>(programName.c_str()));
+
+#ifdef PXR_PYTHON_EXECUTABLE_STR
+        // Way to set sys.executable, even after calling Py_GetPrefix() -
+        // technically a no-no, but should be safe before initializing python
+        if (programName.length() <= MAXPATHLEN) {
+            char* programBuffer = Py_GetProgramFullPath();
+            strcpy(programBuffer, programName.c_str());
+        }
+#endif // PXR_PYTHON_EXECUTABLE_STR
 
         // We're here when this is a C++ program initializing python (i.e. this
         // is a case of "embedding" a python interpreter, as opposed to

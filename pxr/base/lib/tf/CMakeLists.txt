@@ -8,6 +8,8 @@ if(WIN32)
     set(WINLIBS Shlwapi.lib)
 endif()
 
+add_definitions(-DPXR_PYTHON_EXECUTABLE_STR=\"${PYTHON_EXECUTABLE}\")
+
 pxr_shared_library(tf
     LIBRARIES
         arch
