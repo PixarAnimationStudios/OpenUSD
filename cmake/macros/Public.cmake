@@ -488,8 +488,8 @@ function(pxr_static_library LIBRARY_NAME)
         ${ARGN}
     )
 
-    _classes(${LIBRARY_NAME} ${sl_PRIVATE_CLASSES} PRIVATE)
     _classes(${LIBRARY_NAME} ${sl_PUBLIC_CLASSES} PUBLIC)
+    _classes(${LIBRARY_NAME} ${sl_PRIVATE_CLASSES} PRIVATE)
 
     set(PXR_ALL_LIBS
         "${PXR_ALL_LIBS} ${LIBRARY_NAME}"
