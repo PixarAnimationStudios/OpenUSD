@@ -57,10 +57,8 @@ struct cmpDag
 {
     bool operator()( const MDagPath& lhs, const MDagPath& rhs ) const
     {
-            std::string name1(lhs.fullPathName().asChar());
-            std::string name2(rhs.fullPathName().asChar());
-            return (name1.compare(name2) < 0);
-     }
+        return strcmp(lhs.fullPathName().asChar(), rhs.fullPathName().asChar()) < 0;
+    }
 };
 typedef std::set< MDagPath, cmpDag > ShapeSet;
 

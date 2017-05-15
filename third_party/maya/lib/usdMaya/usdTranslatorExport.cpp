@@ -131,6 +131,9 @@ usdTranslatorExport::writer(const MFileObject &file,
             if (theOption[0] == MString("mergeXForm")) {
                 jobArgs.mergeTransformAndShape = theOption[1].asInt();
             }
+            if (theOption[0] == MString("exportInstances")) {
+                jobArgs.exportInstances = theOption[1].asInt();
+            }
             if (theOption[0] == MString("defaultMeshScheme")) {            
                 if (theOption[1]=="Polygonal Mesh") {
                     jobArgs.defaultMeshScheme = UsdGeomTokens->none;

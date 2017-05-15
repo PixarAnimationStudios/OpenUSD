@@ -50,6 +50,7 @@ const char* const usdTranslatorExportDefaults =
         "allCameras=0;"
         "renderLayerMode=Use Default Layer;"
         "mergeXForm=1;"
+        "exportInstances=1;"
         "defaultMeshScheme=CatmullClark SDiv;"
         "exportVisibility=1;"
         "animation=0;"

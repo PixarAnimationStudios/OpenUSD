@@ -37,25 +37,28 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-MayaNurbsCurveWriter::MayaNurbsCurveWriter(MDagPath & iDag, UsdStageRefPtr stage, const JobExportArgs & iArgs) :
-    MayaTransformWriter(iDag, stage, iArgs)
+MayaNurbsCurveWriter::MayaNurbsCurveWriter(const MDagPath & iDag,
+                                           const SdfPath& uPath,
+                                           bool instanceSource,
+                                           usdWriteJobCtx& jobCtx) :
+    MayaTransformWriter(iDag, uPath, instanceSource, jobCtx)
 {
+    UsdGeomNurbsCurves primSchema =
+        UsdGeomNurbsCurves::Define(getUsdStage(), getUsdPath());
+    TF_AXIOM(primSchema);
+    mUsdPrim = primSchema.GetPrim();
+    TF_AXIOM(mUsdPrim);
 }
 
 
 //virtual 
-UsdPrim MayaNurbsCurveWriter::write(const UsdTimeCode &usdTime)
+void MayaNurbsCurveWriter::write(const UsdTimeCode &usdTime)
 {
     // == Write
-    UsdGeomNurbsCurves primSchema =
-        UsdGeomNurbsCurves::Define(getUsdStage(), getUsdPath());
-    TF_AXIOM(primSchema);
-    UsdPrim prim = primSchema.GetPrim();
-    TF_AXIOM(prim);
+    UsdGeomNurbsCurves primSchema(mUsdPrim);
 
     // Write the attrs
     writeNurbsCurveAttrs(usdTime, primSchema);
-    return prim;
 }
 
 // virtual
