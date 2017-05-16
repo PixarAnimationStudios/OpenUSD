@@ -88,7 +88,7 @@ nb.setHintsForParameter('instanceMode', {
     """,
 })
 
-gb.set('prePopulate', FnAttribute.IntAttribute(0))
+gb.set('prePopulate', FnAttribute.IntAttribute(1))
 nb.setHintsForParameter('prePopulate', {
     'widget' : 'boolean',
     'help' : """
