@@ -128,8 +128,8 @@ UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
 /// result layer, as well as adding the topologyLayer to the list of subLayers
 /// on the \p resultLayer. It will clear the \p resultLayer and create 
 /// a prim at \p clipPath. Specifically, this will author clipPrimPath,
-/// clipTemplateAssetPath, clipTemplateStride, clipTemplateStartTime and 
-/// clipTemplateEndTime.
+/// clipTemplateAssetPath, clipTemplateStride, clipTemplateStartTime,  
+/// clipTemplateEndTime, and clipManifestAssetPath.
 ///
 /// \p resultLayer            The layer in which we will author the metadata.
 ///

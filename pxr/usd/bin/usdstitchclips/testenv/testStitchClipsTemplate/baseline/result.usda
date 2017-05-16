@@ -14,6 +14,7 @@ over "World"
         over "Particles_Splash"
         {
             over "points" (
+                clipManifestAssetPath = @./result.topology.usda@
                 clipPrimPath = "/World/fx/Particles_Splash/points"
                 clipTemplateAssetPath = "p.#.usd"
                 clipTemplateEndTime = 104

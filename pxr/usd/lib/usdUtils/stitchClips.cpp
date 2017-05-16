@@ -873,6 +873,7 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
 
     // set root layer metadata
     _StitchClipsTopologySubLayerPath(resultLayer, topologyId);
+    prim->SetInfo(UsdTokens->clipManifestAssetPath, VtValue(topologyId));
     resultLayer->SetStartTimeCode(startTime);
     resultLayer->SetEndTimeCode(endTime);
     resultLayer->Save();
