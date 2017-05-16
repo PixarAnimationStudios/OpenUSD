@@ -311,7 +311,8 @@ void wrapPath() {
         TfPyContainerConversions::
             variable_capacity_all_items_convertible_policy >();
 
-    // Register conversion for python list -> set<SdfPath>
+    // Register conversion for python list <-> set<SdfPath>
+    to_python_converter<SdfPathSet, TfPySequenceToPython<SdfPathSet> >();
     TfPyContainerConversions::from_python_sequence<
         std::set<SdfPath>,
         TfPyContainerConversions::set_policy >();
