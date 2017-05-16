@@ -658,10 +658,12 @@ function(pxr_plugin PLUGIN_NAME)
     # Plugins do not have a lib* prefix like usual shared libraries
     set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
 
-    # MAYA plugins require .mll extension on Windows
-    if(WIN32)
-        if(${PLUGIN_NAME} STREQUAL "pxrUsd")
+    if(${PLUGIN_NAME} STREQUAL "pxrUsd")
+        # Maya plugins require .mll extension on Windows and .bundle on OSX
+        if(WIN32)
             set_target_properties(${PLUGIN_NAME} PROPERTIES SUFFIX ".mll")
+        elseif(APPLE)
+            set_target_properties(${PLUGIN_NAME} PROPERTIES SUFFIX ".bundle")
         endif()
     endif()
 
@@ -715,6 +717,14 @@ function(pxr_plugin PLUGIN_NAME)
                 "${CMAKE_INSTALL_PREFIX}/${PLUGIN_INSTALL_PREFIX}"
                 "${CMAKE_INSTALL_PREFIX}/lib")
             _append_to_rpath(${rpath} "$ORIGIN/${PLUGIN_RPATH}" rpath)
+	elseif (APPLE)
+            if (PXR_INSTALL_SUBDIR)
+                _append_to_rpath(${rpath} 
+                    "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib" rpath)
+            endif()
+
+            # Add an rpath pointing to the top-level lib/ directory.
+            _append_to_rpath(${rpath} "${CMAKE_INSTALL_PREFIX}/lib" rpath)
         endif()
 
         set_target_properties(${PLUGIN_NAME}
