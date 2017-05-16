@@ -35,7 +35,7 @@
 #include "pxr/base/tf/api.h"
 
 #include <boost/operators.hpp>
-#include <boost/preprocessor/punctuation/comma.hpp>
+#include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/utility/enable_if.hpp>
