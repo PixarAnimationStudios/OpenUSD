@@ -47,6 +47,8 @@ pxr_shared_library(ar
 
     PYTHON_FILES
         __init__.py
+
+    RESOURCE_FILES
         plugInfo.json
 )
 

@@ -1,6 +1,8 @@
 set(PXR_PACKAGE pxrUsd)
 
 pxr_plugin(${PXR_PACKAGE}
+    MAYA_PLUGIN
+
     LIBRARIES
         pxrUsdMayaGL
         sdf
@@ -21,15 +23,14 @@ pxr_plugin(${PXR_PACKAGE}
     PRIVATE_HEADERS
         api.h
 
-    PYTHON_FILES
+    RESOURCE_FILES
         plugInfo.json
-        testenv/testPxrUsdAlembicChaser.py
 
     DISABLE_PRECOMPILED_HEADERS
 )
 
 pxr_test_scripts(
-        testenv/testPxrUsdAlembicChaser.py
+    testenv/testPxrUsdAlembicChaser.py
 )
 
 pxr_install_test_dir(
