@@ -1042,11 +1042,17 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
 
     // if displayGroup is found, use it
     UsdUISceneGraphPrimAPI sgp(prim);
-    std::string displayGroup = "";
+    std::string displayGroup;
     UsdAttribute displayGroupAttr = sgp.GetDisplayGroupAttr();
     if (displayGroupAttr.IsValid() && 
             !PxrUsdKatana_IsAttrValFromBaseMaterial(displayGroupAttr)) {
-        displayGroupAttr.Get(&displayGroup);
+        TfToken displayGroupToken;
+        if (displayGroupAttr.Get(&displayGroupToken)) {
+            displayGroup = displayGroupToken.GetString();
+        }
+        else {
+            displayGroupAttr.Get(&displayGroup);
+        }
         displayGroup = TfStringReplace(displayGroup, ":", "/");
     }
 
@@ -1096,7 +1102,7 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
                 return basePath;
             }
         }
-        // displaygroup coming from the parent includes the materialGroup
+        // displayGroup coming from the parent includes the materialGroup
         displayGroup = 
             ConvertUsdMaterialPathToKatLocation(parentPath, data);
         if (!displayGroup.empty()) {
@@ -1112,7 +1118,13 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         if (displayNameAttr.IsValid() && 
                 !PxrUsdKatana_IsAttrValFromBaseMaterial(displayNameAttr)) {
             // override prim name
-            displayNameAttr.Get(&primName);
+            TfToken displayNameToken;
+            if (displayNameAttr.Get(&displayNameToken)) {
+                primName = displayNameToken.GetString();
+            }
+            else {
+                displayNameAttr.Get(&primName);
+            }
         }
         else {
             UsdAttribute primNameAttr = UsdKatanaLookAPI(prim).GetPrimNameAttr();
