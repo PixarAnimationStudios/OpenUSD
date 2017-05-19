@@ -52,10 +52,98 @@ class SdfAssetPath;
 
 /// \class UsdLuxListAPI
 ///
-/// API schema for prims to publish a list of lights in the
-/// scene.  Can be used to avoid a full scene traversal to discover
-/// lights, given suitable pipeline integration to pre-compute and
-/// publish a list at a root scope.
+/// API schema to support discovery and publishing of lights in a scene.
+/// 
+/// \section UsdLuxListAPI_Discovery Discovering Lights via Traversal
+/// 
+/// To motivate this, first consider what is required to discover all
+/// lights in a scene.  We must load all payloads and traverse all prims:
+/// 
+/// \code
+/// 01  SdfPathVector result;
+/// 02  
+/// 03  // Load everything on the stage so we can find all lights,
+/// 04  // including those inside payloads
+/// 05  stage->Load();
+/// 06  
+/// 07  // Traverse all prims, checking if they are of type UsdLuxLight
+/// 08  // (Note: ignoring instancing and a few other things for simplicity)
+/// 09  UsdPrimRange range = stage->Traverse();
+/// 10  for (auto i = range.begin(); i != range.end(); ++i) {
+/// 11     if (i->IsA<UsdLuxLight>()) {
+/// 12         result.push_back(i->GetPath());
+/// 13     }
+/// 14  }
+/// \endcode
+/// 
+/// This traversal -- expanded to handle instancing, prim
+/// activation, and similar concerns -- is the first and
+/// simplest thing that UsdLuxListAPI provides. By invoking
+/// UsdLuxListAPI::ComputeLightList() on a schema bound to a prim, with
+/// StoredListIgnore as the argument, all lights within that prim and
+/// its active, non-abstract descendents will be returned.
+/// 
+/// \section UsdLuxListAPI_LightList Publishing a Cached Light List
+/// 
+/// Next consider a USD consumer that wants to defer loading payloads
+/// where possible, but needs a full list of lights, and is willing to do
+/// up-front computation and caching to achieve that.
+/// As one approach, we might pre-discover lights within payloads and
+/// publish that list on the outside of the payload arc, where it is
+/// discoverable without loading the payload.  In scene description:
+/// 
+/// \code
+/// 01  def Model "BigSetWithLights" (
+/// 02      payload = @BigSetWithLights.usd@   // Lots of stuff inside here
+/// 03  ) {
+/// 04      // Pre-computed list of lights inside payload
+/// 05      rel lightList = [
+/// 06          <./Lights/light_1>,
+/// 07          <./Lights/light_2>,
+/// 08          ...
+/// 09      ]
+/// 10      bool lightList:isValid = true
+/// 11  }
+/// \endcode
+/// 
+/// This list can be established with UsdLuxListAPI::StoreLightList().
+/// With this cache in place, UsdLuxListAPI::ComputeLightList() --
+/// given the StoredListConsult argument this time -- can terminate its
+/// recursion early whenever it discovers the lightList relationship,
+/// using the stored list of targets instead.
+/// 
+/// To make use of this to find and load all lights in a large scene
+/// where the lightLists have been published, loading only the
+/// payloads required:
+/// 
+/// \code
+/// 01  // Find and load all light paths, including lights published
+/// 02  // in a lightList.
+/// 03  for (const auto &child: stage->GetPseudoRoot().GetChildren()) {
+/// 04      stage.LoadAndUnload(
+/// 05          /* load */ UsdLuxListAPI(child).ComputeLightList(true),
+/// 06          /* unload */ SdfPathSet());
+/// 07  }
+/// \endcode
+/// 
+/// \section UsdLuxListAPI_Invalidation Invalidating a Light List
+/// 
+/// While ComputeLightList() allows code to choose to disregard
+/// any stored lightlist, it can be useful to do the same in
+/// scene description, invalidating the stored list for a prim.
+/// That can be achieved by calling InvalidateLightList(), which
+/// sets the \c lightList:isValid attribute to false.  A separate
+/// attribute is used because it is valid for a relationship to
+/// have an empty list of targets.
+/// 
+/// \section UsdLuxListAPI_Instancing Instancing
+/// 
+/// If instances are present, UsdLuxListAPI::ComputeLightList() will
+/// return the instance-unqiue paths to any lights discovered within
+/// those instances.  Lights within a UsdGeomPointInstancer will
+/// not be returned, however, since they cannot be referred to
+/// solely via paths.
+/// 
 ///
 class UsdLuxListAPI : public UsdSchemaBase
 {
@@ -122,6 +210,28 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
+    // LIGHTLISTISVALID 
+    // --------------------------------------------------------------------- //
+    /// Bool indicating if the lightList targets should be
+    /// considered valid.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDLUX_API
+    UsdAttribute GetLightListIsValidAttr() const;
+
+    /// See GetLightListIsValidAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDLUX_API
+    UsdAttribute CreateLightListIsValidAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // LIGHTLIST 
     // --------------------------------------------------------------------- //
     /// Relationship to lights in the scene.
@@ -145,6 +255,42 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    enum StoredListBehavior {
+        StoredListConsult,
+        StoredListIgnore,
+    };
+
+    /// Computes and returns the list of lights in the stage, considering
+    /// this prim and any active, non-abstract descendents.
+    ///
+    /// If listBehavior is StoredListConsult, this will first check the
+    /// light list relationship on each prim, as well as the associated
+    /// isValid attribute.  If there is a valid opinion, the stored
+    /// list will be used in place of further recursion below that prim.
+    /// 
+    /// If instances are present, ComputeLightList() will return the
+    /// instance-unqiue paths to any lights discovered within those
+    /// instances. Lights within a UsdGeomPointInstancer will not be
+    /// returned, however, since they cannot be referred to solely via
+    /// paths.
+    USDLUX_API
+    SdfPathSet ComputeLightList(StoredListBehavior listBehavior) const;
+
+    /// Store the given paths as the lightlist for this prim.
+    /// Paths that do not have this prim's path as a prefix
+    /// will be silently ignored.
+    USDLUX_API
+    void StoreLightList(const SdfPathSet &) const;
+
+    /// Mark any stored lightlist as invalid, by setting the
+    /// lightList:isValid attribute to false.
+    USDLUX_API
+    void InvalidateLightList() const;
+
+    /// Return true if the prim has a valid lightList.
+    USDLUX_API
+    bool IsLightListValid() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

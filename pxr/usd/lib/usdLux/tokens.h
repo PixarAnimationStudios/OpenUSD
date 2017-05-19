@@ -55,6 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (intensity) \
     (latlong) \
     (lightList) \
+    ((lightListIsValid, "lightList:isValid")) \
     (mirroredBall) \
     (normalize) \
     (portals) \
@@ -109,6 +110,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>intensity</b> - UsdLuxDistantLight, UsdLuxLight
 /// \li <b>latlong</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
 /// \li <b>lightList</b> - UsdLuxListAPI
+/// \li <b>lightListIsValid</b> - UsdLuxListAPI
 /// \li <b>mirroredBall</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
 /// \li <b>normalize</b> - UsdLuxLight
 /// \li <b>portals</b> - UsdLuxDomeLight

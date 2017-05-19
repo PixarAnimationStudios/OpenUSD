@@ -44,6 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfAssetPath;
+class UsdGeomFaceSetAPI;
 
 // -------------------------------------------------------------------------- //
 // LINKINGAPI                                                                 //
@@ -136,6 +137,13 @@ public:
     /// It is a coding error to pass a non-absolute path.
     USDLUX_API
     static bool DoesLinkPath(const LinkMap &linkMap, const SdfPath &path);
+
+    /// Return true if the given UsdGeomFaceSetAPI (or ancestor) is linked
+    /// by the linkMap.  Linking to faceSets is expressed as a target
+    /// path to the faceSet's faceIndices property.
+    USDLUX_API
+    static bool DoesLinkFaceSet(const LinkMap &linkMap,
+                                const UsdGeomFaceSetAPI &faceSet );
 
     /// Compute and return the link map, which can answer queries about
     /// linkage to particular paths.  Computing the link map once

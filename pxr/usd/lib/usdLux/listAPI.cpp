@@ -78,6 +78,23 @@ UsdLuxListAPI::_GetTfType() const
     return _GetStaticTfType();
 }
 
+UsdAttribute
+UsdLuxListAPI::GetLightListIsValidAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->lightListIsValid);
+}
+
+UsdAttribute
+UsdLuxListAPI::CreateLightListIsValidAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->lightListIsValid,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 UsdRelationship
 UsdLuxListAPI::GetLightListRel() const
 {
@@ -91,13 +108,29 @@ UsdLuxListAPI::CreateLightListRel() const
                        /* custom = */ false);
 }
 
+namespace {
+static inline TfTokenVector
+_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+{
+    TfTokenVector result;
+    result.reserve(left.size() + right.size());
+    result.insert(result.end(), left.begin(), left.end());
+    result.insert(result.end(), right.begin(), right.end());
+    return result;
+}
+}
+
 /*static*/
 const TfTokenVector&
 UsdLuxListAPI::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames;
+    static TfTokenVector localNames = {
+        UsdLuxTokens->lightListIsValid,
+    };
     static TfTokenVector allNames =
-        UsdSchemaBase::GetSchemaAttributeNames(true);
+        _ConcatenateAttributeNames(
+            UsdSchemaBase::GetSchemaAttributeNames(true),
+            localNames);
 
     if (includeInherited)
         return allNames;
@@ -115,3 +148,84 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdLux/light.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdLuxListAPI::StoredListConsult,
+                     "Consult stored lightList");
+    TF_ADD_ENUM_NAME(UsdLuxListAPI::StoredListIgnore,
+                     "Ignore stored lightList");
+}
+
+static void
+_Traverse(const UsdPrim &prim,
+          UsdLuxListAPI::StoredListBehavior listBehavior,
+          SdfPathSet *lights)
+{
+    if (listBehavior == UsdLuxListAPI::StoredListConsult &&
+        prim.GetPath().IsPrimPath()) {
+        UsdLuxListAPI list_api(prim);
+        if (list_api.IsLightListValid()) {
+            UsdRelationship rel = list_api.GetLightListRel();
+            SdfPathVector targets;
+            rel.GetForwardedTargets(&targets);
+            lights->insert(targets.begin(), targets.end());
+        }
+    }
+    if (prim.IsA<UsdLuxLight>()) {
+        lights->insert(prim.GetPath());
+    }
+    // Allow unloaded and not-yet-defined prims
+    UsdPrim::SiblingRange range =
+        prim.GetFilteredChildren(UsdTraverseInstanceProxies(
+                                UsdPrimIsActive && !UsdPrimIsAbstract));
+    for (auto i = range.begin(); i != range.end(); ++i) {
+        _Traverse(*i, listBehavior, lights);
+    }
+}
+
+SdfPathSet
+UsdLuxListAPI::ComputeLightList(UsdLuxListAPI::StoredListBehavior b) const
+{
+    SdfPathSet result;
+    _Traverse(GetPrim(), b, &result);
+    return result;
+}
+
+void
+UsdLuxListAPI::StoreLightList(const SdfPathSet &lights) const
+{
+    SdfPathVector targets;
+    for (const SdfPath &p: lights) {
+        if (p.IsAbsolutePath() && !p.HasPrefix(GetPath())) {
+            // Light path does not have this prim as a prefix; ignore.
+            continue;
+        }
+        targets.push_back(p);
+    }
+    CreateLightListRel().SetTargets(targets);
+    CreateLightListIsValidAttr().Set(true);
+}
+
+void
+UsdLuxListAPI::InvalidateLightList() const
+{
+    CreateLightListIsValidAttr().Set(false);
+}
+
+bool
+UsdLuxListAPI::IsLightListValid() const
+{
+    bool valid = false;
+    if (GetPrim()) {
+        GetLightListIsValidAttr().Get(&valid);
+    }
+    return valid;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

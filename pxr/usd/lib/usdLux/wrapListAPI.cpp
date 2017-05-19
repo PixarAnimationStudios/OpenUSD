@@ -48,6 +48,13 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateLightListIsValidAttr(UsdLuxListAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateLightListIsValidAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -79,6 +86,13 @@ void wrapUsdLuxListAPI()
 
         .def(!self)
 
+        
+        .def("GetLightListIsValidAttr",
+             &This::GetLightListIsValidAttr)
+        .def("CreateLightListIsValidAttr",
+             &_CreateLightListIsValidAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
         
         .def("GetLightListRel",
@@ -109,9 +123,21 @@ void wrapUsdLuxListAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/base/tf/pyEnum.h"
+
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("ComputeLightList", &UsdLuxListAPI::ComputeLightList)
+        .def("StoreLightList", &UsdLuxListAPI::StoreLightList)
+        .def("InvalidateLightList", &UsdLuxListAPI::InvalidateLightList)
+        .def("IsLightListValid", &UsdLuxListAPI::IsLightListValid)
+        ;
+
+    scope s = _class;
+    TfPyWrapEnum<UsdLuxListAPI::StoredListBehavior>();
 }
 
 }
