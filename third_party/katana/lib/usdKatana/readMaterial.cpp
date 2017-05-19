@@ -501,6 +501,67 @@ _GetMaterialAttr(
                              FnKat::StringAttribute(handle));
     }
 
+    // XXX BEGIN This code is in support of Subgraph workflows
+    //           and is currently necessary to match equivalent SGG behavior
+     
+    // Look for labeled patterns - TODO: replace with UsdShade::ShadingSubgraph
+    vector<UsdProperty> properties = 
+        materialPrim.GetPropertiesInNamespace("patternTerminal");
+    if (properties.size()) {
+        TF_FOR_ALL(propIter, properties) {
+            // if (propIter->Is<UsdRelationship>()) {
+            UsdRelationship rel = propIter->As<UsdRelationship>();
+            if (not rel) {
+                continue;
+            }
+
+            SdfPathVector targetPaths;
+            rel.GetForwardedTargets(&targetPaths);
+            if (targetPaths.size() == 0) {
+                continue;
+            }
+            if (targetPaths.size() > 1) {
+                FnLogWarn(
+                    "Multiple targets for one output port detected on look:" << 
+                    materialPrim.GetPath());
+            }
+
+            const SdfPath targetPath = targetPaths[0];
+            if (not targetPath.IsPropertyPath()) {
+                FnLogWarn("Pattern wants a usd property path, not a prim: "
+                    << targetPath.GetString());
+                continue;
+            }
+            
+            SdfPath nodePath = targetPath.GetPrimPath();
+    
+            if (UsdPrim patternPrim =
+                    stage->GetPrimAtPath(nodePath)) {
+
+                string propertyName = targetPath.GetName();
+                string patternPort = propertyName.substr(
+                    propertyName.find(':')+1);
+
+                string terminalName = rel.GetName();
+                terminalName = terminalName.substr(terminalName.find(':')+1);
+    
+                string handle = _CreateShadingNode(
+                    patternPrim, currentTime, nodesBuilder,
+                            interfaceBuilder, "prman", flatten);
+                terminalsBuilder.set("prmanCustom_"+terminalName,
+                    FnKat::StringAttribute(handle));
+                terminalsBuilder.set("prmanCustom_"+terminalName+"Port",
+                    FnKat::StringAttribute(patternPort));
+            } 
+            else {
+                FnLogWarn("Pattern does not exist at "
+                            << targetPath.GetString());
+            }
+        }
+    }
+    // XXX END
+    
+
     // XXX, Because of relationship forwarding, there are possible name
     //      clashes with the standard prman shading.
     if (UsdRelationship bxdfRel =
