@@ -1,0 +1,18 @@
+------------------------------------------------------------------------
+Errors while composing </RearLegRig/Knee_bone>
+
+Cycle detected:
+@TrickyMultipleRelocations4/root.sdf@</RearLegRig/Knee_bone>
+CANNOT inherit from:
+@TrickyMultipleRelocations4/root.sdf@</RearLegRig/Knee_bone>
+
+
+------------------------------------------------------------------------
+Errors while composing </RearLegRig/Knee_bone/Ankle_bone_phrbv>
+
+Cycle detected:
+@TrickyMultipleRelocations4/root.sdf@</RearLegRig/Knee_bone/Ankle_bone_phrbv>
+CANNOT inherit from:
+@TrickyMultipleRelocations4/root.sdf@</RearLegRig/Knee_bone/Ankle_bone_phrbv>
+
+

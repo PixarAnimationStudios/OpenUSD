@@ -1,0 +1,50 @@
+Loading @TrickyMultipleRelocations3/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Group>
+
+Prim Stack:
+    root.sdf             /Group
+    group.sdf            /Group
+
+Child names:
+     ['Subgroup']
+
+------------------------------------------------------------------------
+Results for composing </Group/Subgroup>
+
+Prim Stack:
+    root.sdf             /Group/Subgroup
+    group.sdf            /Group/Subgroup
+
+Child names:
+     ['Char_Renamed']
+
+Prohibited child names:
+     ['Char']
+
+------------------------------------------------------------------------
+Results for composing </Group/Subgroup/Char_Renamed>
+
+Prim Stack:
+    root.sdf             /Group/Subgroup/Char_Renamed
+    group.sdf            /Group/Subgroup/Char
+
+Child names:
+     ['Rig_Renamed']
+
+Prohibited child names:
+     ['Rig']
+
+------------------------------------------------------------------------
+Results for composing </Group/Subgroup/Char_Renamed/Rig_Renamed>
+
+Prim Stack:
+    group.sdf            /Group/Subgroup/Char/Rig
+    group.sdf            /ClassA
+    group.sdf            /ClassB
+

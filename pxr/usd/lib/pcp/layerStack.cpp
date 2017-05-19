@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <iterator>
 #include <map>
+#include <unordered_set>
 
 using std::string;
 using std::vector;
@@ -271,11 +272,19 @@ _FilterRelocationsForPath(const PcpLayerStack& layerStack,
     // Gather the relocations that affect this path.
     PcpMapFunction::PathMap siteRelocates;
 
+    // If this layer stack has relocates nested in namespace, the combined
+    // and incremental relocates map will both have an entry with the same
+    // target. We cannot include both in the map function, since that would
+    // make it non-invertible. In this case, we use the entry from the 
+    // combined map since that's what consumers are expecting.
+    std::unordered_set<SdfPath, SdfPath::Hash> seenTargets;
+
     const SdfRelocatesMap& relocates = layerStack.GetRelocatesSourceToTarget();
     for (SdfRelocatesMap::const_iterator
          i = relocates.lower_bound(path), n = relocates.end();
          (i != n) && (i->first.HasPrefix(path)); ++i) {
         siteRelocates.insert(*i);
+        seenTargets.insert(i->second);
     }
 
     const SdfRelocatesMap& incrementalRelocates = 
@@ -284,7 +293,11 @@ _FilterRelocationsForPath(const PcpLayerStack& layerStack,
          i = incrementalRelocates.lower_bound(path), 
          n = incrementalRelocates.end();
          (i != n) && (i->first.HasPrefix(path)); ++i) {
-        siteRelocates.insert(*i);
+
+        if (seenTargets.find(i->second) == seenTargets.end()) {
+            siteRelocates.insert(*i);
+            seenTargets.insert(i->second);
+        }
     }
 
     siteRelocates[SdfPath::AbsoluteRootPath()] = SdfPath::AbsoluteRootPath();
@@ -389,19 +402,22 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
         _BlowRelocations();
         if (changes.didChangeSignificantly) {
             // Recompute relocations from scratch.
-            Pcp_ComputeRelocationsForLayerStack(_layers, 
-                                                &_relocatesSourceToTarget,
-                                                &_relocatesTargetToSource,
-                                                &_incrementalRelocatesSourceToTarget,
-                                                &_incrementalRelocatesTargetToSource,
-                                                &_relocatesPrimPaths);
+            Pcp_ComputeRelocationsForLayerStack(
+                _layers, 
+                &_relocatesSourceToTarget,
+                &_relocatesTargetToSource,
+                &_incrementalRelocatesSourceToTarget,
+                &_incrementalRelocatesTargetToSource,
+                &_relocatesPrimPaths);
         } else {
             // Change processing has provided a specific new set of
             // relocations to use.
             _relocatesSourceToTarget = changes.newRelocatesSourceToTarget;
             _relocatesTargetToSource = changes.newRelocatesTargetToSource;
-            _incrementalRelocatesSourceToTarget = changes.newIncrementalRelocatesSourceToTarget;
-            _incrementalRelocatesTargetToSource = changes.newIncrementalRelocatesTargetToSource;
+            _incrementalRelocatesSourceToTarget = 
+                changes.newIncrementalRelocatesSourceToTarget;
+            _incrementalRelocatesTargetToSource = 
+                changes.newIncrementalRelocatesTargetToSource;
             _relocatesPrimPaths = changes.newRelocatesPrimPaths;
         }
         

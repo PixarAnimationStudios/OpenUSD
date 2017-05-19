@@ -1822,6 +1822,15 @@ _EvalNodeRelocations(
         "Evaluating relocations under %s", 
         Pcp_FormatSite(node.GetSite()).c_str());
 
+    // Unlike other tasks, we skip processing if this node can't contribute 
+    // specs, but only if this node was introduced at this level at namespace.
+    // This additional check is needed because a descendant node might not
+    // have any specs and thus be marked as culled, but still have relocates
+    // that affect that node.
+    if (!node.CanContributeSpecs() && node.GetDepthBelowIntroduction() == 0) {
+        return;
+    }
+
     // Determine if this node was relocated, and from what source path.
     //
     // We need to use the incremental relocates map instead of the 

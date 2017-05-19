@@ -1,0 +1,21 @@
+#sdf 1.4.32
+
+def Scope "Group" (
+    references = @./group.sdf@</Group>
+)
+{
+    over "Subgroup" (
+        relocates = {
+            <Char>: <Char_Renamed>
+        }
+    )
+    {
+        over "Char_Renamed" (
+            relocates = {
+                <Rig>: <Rig_Renamed>
+            }
+        )
+        {
+        }
+    }
+}

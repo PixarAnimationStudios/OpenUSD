@@ -1,0 +1,129 @@
+Loading @TrickyMultipleRelocations4/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </SymRig>
+
+Prim Stack:
+    root.sdf             /SymRig
+
+Child names:
+     ['Leg_bone']
+
+------------------------------------------------------------------------
+Results for composing </SymRig/Leg_bone>
+
+Prim Stack:
+    root.sdf             /SymRig/Leg_bone
+
+Child names:
+     ['Knee_bone']
+
+------------------------------------------------------------------------
+Results for composing </SymRig/Leg_bone/Knee_bone>
+
+Prim Stack:
+    root.sdf             /SymRig/Leg_bone/Knee_bone
+
+Child names:
+     ['Ankle_bone']
+
+------------------------------------------------------------------------
+Results for composing </SymRig/Leg_bone/Knee_bone/Ankle_bone>
+
+Prim Stack:
+    root.sdf             /SymRig/Leg_bone/Knee_bone/Ankle_bone
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig>
+
+Prim Stack:
+    root.sdf             /RearLegRig
+
+Child names:
+     ['Knee_bone', 'Legs']
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig/Knee_bone>
+
+Prim Stack:
+    root.sdf             /RearLegRig/Knee_bone
+    root.sdf             /SymRig/Leg_bone/Knee_bone
+
+Child names:
+     ['Ankle_bone_phrbv']
+
+Prohibited child names:
+     ['Ankle_bone']
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig/Knee_bone/Ankle_bone_phrbv>
+
+Prim Stack:
+    root.sdf             /SymRig/Leg_bone/Knee_bone/Ankle_bone
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig/Legs>
+
+Prim Stack:
+    root.sdf             /RearLegRig/Legs
+
+Child names:
+     ['RightRig', 'LeftRig']
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig/Legs/RightRig>
+
+Prim Stack:
+    root.sdf             /RearLegRig/Legs/RightRig
+    root.sdf             /SymRig
+
+Prohibited child names:
+     ['Leg_bone']
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig/Legs/LeftRig>
+
+Prim Stack:
+    root.sdf             /RearLegRig/Legs/LeftRig
+    root.sdf             /SymRig
+
+Child names:
+     ['Leg_bone']
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig/Legs/LeftRig/Leg_bone>
+
+Prim Stack:
+    root.sdf             /SymRig/Leg_bone
+
+Child names:
+     ['Knee_bone', 'Leg_bone']
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig/Legs/LeftRig/Leg_bone/Knee_bone>
+
+Prim Stack:
+    root.sdf             /SymRig/Leg_bone/Knee_bone
+
+Child names:
+     ['Ankle_bone']
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig/Legs/LeftRig/Leg_bone/Knee_bone/Ankle_bone>
+
+Prim Stack:
+    root.sdf             /SymRig/Leg_bone/Knee_bone/Ankle_bone
+
+------------------------------------------------------------------------
+Results for composing </RearLegRig/Legs/LeftRig/Leg_bone/Leg_bone>
+
+Prim Stack:
+    root.sdf             /SymRig/Leg_bone
+
+Prohibited child names:
+     ['Knee_bone']
+
