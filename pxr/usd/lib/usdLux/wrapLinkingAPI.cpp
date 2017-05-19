@@ -104,7 +104,7 @@ void wrapUsdLuxLinkingAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/usd/usdGeom/faceSetAPI.h"
 
 namespace {
 
@@ -139,12 +139,22 @@ _DoesLinkPath(const boost::python::dict &d, const SdfPath &p)
     return UsdLuxLinkingAPI::DoesLinkPath(_DictToLinkMap(d), p);
 }
 
+static bool
+_DoesLinkFaceSet(const boost::python::dict &d, const UsdGeomFaceSetAPI &faceSet)
+{
+    return UsdLuxLinkingAPI::DoesLinkFaceSet(_DictToLinkMap(d), faceSet);
+}
+
 WRAP_CUSTOM {
     _class
         .def("ComputeLinkMap", &_ComputeLinkMap)
         .def("SetLinkMap", &_SetLinkMap)
         .def("DoesLinkPath", &_DoesLinkPath)
         .staticmethod("DoesLinkPath")
+        .def("DoesLinkFaceSet", &_DoesLinkFaceSet)
+        .staticmethod("DoesLinkFaceSet")
+        .def("GetLinkPathForFaceSet", &UsdLuxLinkingAPI::GetLinkPathForFaceSet)
+        .staticmethod("GetLinkPathForFaceSet")
         ;
 }
 

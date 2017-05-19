@@ -24,6 +24,7 @@
 #include "pxr/usd/usdLux/linkingAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usdGeom/faceSetAPI.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -119,6 +120,21 @@ UsdLuxLinkingAPI::DoesLinkPath(const LinkMap &linkMap, const SdfPath &path)
     // Any path not explicitly mentioned, and that does not inherit
     // its setting from a prefix path, is included.
     return true;
+}
+
+USDLUX_API
+SdfPath
+UsdLuxLinkingAPI::GetLinkPathForFaceSet(const UsdGeomFaceSetAPI &faceSet)
+{
+    return faceSet.GetFaceIndicesAttr().GetPath();
+}
+
+USDLUX_API
+bool
+UsdLuxLinkingAPI::DoesLinkFaceSet(const LinkMap &linkMap,
+                                  const UsdGeomFaceSetAPI &faceSet )
+{
+    return DoesLinkPath(linkMap, GetLinkPathForFaceSet(faceSet));
 }
 
 UsdLuxLinkingAPI::LinkMap
