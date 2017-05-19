@@ -65,7 +65,7 @@ namespace FnKat = Foundry::Katana;
         TfStringPrintf(__VA_ARGS__)));
 
 // Set attributes under lightList to establish linking.
-static void
+static bool
 _SetLinks( const std::string &lightKey,
            const UsdLuxLinkingAPI &linkAPI,
            const std::string &linkName,
@@ -97,6 +97,7 @@ _SetLinks( const std::string &lightKey,
     if (onAttr.getNumberOfChildren()) {
         lightListBuilder->set(lightKey+".link."+linkName+".on", onAttr);
     }
+    return UsdLuxLinkingAPI::DoesLinkPath(linkMap, linkAPI.GetPath());
 }
 
 // see overview.dox for more documentation.
@@ -215,17 +216,22 @@ public:
                 // The convention for lightList is for /path/to/light
                 // to be represented as path_to_light.
                 const std::string light_loc =
-                    PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(p, usdInArgs);
+                    PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(p,
+                                                                   usdInArgs);
                 const std::string light_key =
                     TfStringReplace(light_loc.substr(1), "/", "_");
 
-                // Establish light entry
+                // Establish light entry, links, and initial enabled status.
+                // (The linking resolver does not run at the top-level
+                // location, so we need to establish the initial enabled
+                // status correctly here.)
                 lightListBuilder.set(light_key+".path",
                                      FnKat::StringAttribute(light_loc));
+                bool lightEnabled =
+                    _SetLinks(light_key, light.GetLightLinkingAPI(), "light",
+                              usdInArgs, &lightListBuilder);
                 lightListBuilder.set(light_key+".enable",
-                                     FnKat::IntAttribute(1));
-                _SetLinks(light_key, light.GetLightLinkingAPI(), "light",
-                          usdInArgs, &lightListBuilder);
+                                     FnKat::IntAttribute(lightEnabled));
                 _SetLinks(light_key, light.GetShadowLinkingAPI(), "shadow",
                           usdInArgs, &lightListBuilder);
             }
