@@ -104,14 +104,18 @@ UsdShadeUtils::GetFullName(const TfToken &baseName,
 bool 
 UsdShadeUtils::ReadOldEncoding()
 {
-    return TfGetEnvSetting(USD_SHADE_READ_OLD_ENCODING);
+    static const bool readOldEncoding = 
+        TfGetEnvSetting(USD_SHADE_READ_OLD_ENCODING);
+    return readOldEncoding;
 }
 
 /* static */
 bool 
 UsdShadeUtils::WriteNewEncoding()
-{
-    return TfGetEnvSetting(USD_SHADE_WRITE_NEW_ENCODING);
+{       
+    static const bool writeNewEncoding = 
+        TfGetEnvSetting(USD_SHADE_WRITE_NEW_ENCODING);
+    return writeNewEncoding;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
