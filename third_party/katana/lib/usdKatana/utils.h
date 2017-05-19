@@ -99,7 +99,7 @@ struct PxrUsdKatanaUtils {
 
     /// Use UsdLuxListAPI to discover published lights (without a
     /// full scene traversal).
-    static SdfPathVector FindLightPaths( const UsdStageRefPtr& stage );
+    static SdfPathSet FindLightPaths( const UsdStageRefPtr& stage );
 
     /// Convert the given SdfPath in the UsdStage to the corresponding
     /// katana location, given a scenegraph generator configuration.

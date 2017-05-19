@@ -943,19 +943,17 @@ PxrUsdKatanaUtils::FindCameraPaths(const UsdStageRefPtr& stage)
     return result;
 }
 
-SdfPathVector
+SdfPathSet
 PxrUsdKatanaUtils::FindLightPaths(const UsdStageRefPtr& stage)
 {
-    std::set<SdfPath> result;
-    TF_FOR_ALL(rootPrim, stage->GetPseudoRoot().GetChildren()) {
-        if (UsdLuxListAPI list = UsdLuxListAPI(*rootPrim)) {
-            SdfPathVector lights;
-            if (list.GetLightListRel().GetForwardedTargets(&lights)) {
-                result.insert(lights.begin(), lights.end());
-            }
-        }
+    std::set<SdfPath> allLights;
+    for (const auto &child: stage->GetPseudoRoot().GetChildren()) {
+        SdfPathSet lights =
+            UsdLuxListAPI(child)
+            .ComputeLightList(UsdLuxListAPI::StoredListConsult);
+        allLights.insert(lights.begin(), lights.end());
     }
-    return SdfPathVector(result.begin(), result.end());
+    return allLights;
 }
 
 std::string

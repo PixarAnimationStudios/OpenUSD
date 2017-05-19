@@ -203,7 +203,9 @@ public:
 
             // lightList
             FnKat::GroupBuilder lightListBuilder;
-            for (const SdfPath &p: PxrUsdKatanaUtils::FindLightPaths(stage)) {
+            SdfPathSet lightPaths = PxrUsdKatanaUtils::FindLightPaths(stage);
+            stage->LoadAndUnload(lightPaths, SdfPathSet());
+            for (const SdfPath &p: lightPaths) {
                 // Get the light prim
                 UsdLuxLight light(stage->GetPrimAtPath(p));
                 if (!light) {
