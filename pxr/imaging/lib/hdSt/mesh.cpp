@@ -1046,23 +1046,26 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
 
     int refineLevel = _GetRefineLevelForDesc(desc);
 
-    // geometry type
-    GLenum primType = GL_TRIANGLES;
+    Hd_GeometricShader::PrimitiveType primType = 
+        Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES;
+
     if (desc.geomStyle == HdMeshGeomStylePoints) {
-        primType = GL_POINTS;
+        primType = Hd_GeometricShader::PrimitiveType::PRIM_POINTS;
     } else if (refineLevel > 0) {
         if (_topology->RefinesToTriangles()) {
             // e.g. loop subdivision.
-            primType = GL_TRIANGLES;
+            primType = 
+                Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES;
         } else if (_topology->RefinesToBSplinePatches()) {
-            primType = GL_PATCHES;
+            primType = Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES;
         } else {
             // uniform catmark/bilinear subdivision generates quads.
-            primType = GL_LINES_ADJACENCY;
+            primType = 
+                Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS;
         }
     } else if (_UsePtexIndices(renderIndex)) {
         // quadrangulate coarse mesh (for ptex)
-        primType = GL_LINES_ADJACENCY;
+        primType = Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS;
     }
 
     // resolve geom style, cull style

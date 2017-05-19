@@ -43,20 +43,37 @@ class HdBasisCurvesTopology;
 class HdSt_BasisCurvesIndexBuilderComputation : public HdComputedBufferSource {
 public:
     HdSt_BasisCurvesIndexBuilderComputation(HdBasisCurvesTopology *topology,
-                                          bool supportSmoothCurves);
+                                            bool supportSmoothCurves);
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
+
+    virtual bool HasChainedBuffer() const override;
+    virtual HdBufferSourceSharedPtr GetChainedBuffer() const override;
 
 protected:
     virtual bool _CheckValid() const;
 
+public:
+    // For building index and primitive index arrays
+    struct IndexAndPrimIndex {
+        // default constructor results in empty VtValue's
+        IndexAndPrimIndex() {}
+
+        IndexAndPrimIndex(VtValue indices, VtValue primIndices) :
+            _indices(indices), _primIndices(primIndices) {}
+
+        VtValue _indices;
+        VtValue _primIndices;
+    };
 private:
-    VtValue _BuildLinesIndexArray();
-    VtValue _BuildLineSegmentIndexArray();
-    VtValue _BuildSmoothCurveIndexArray();
+    IndexAndPrimIndex _BuildLinesIndexArray();
+    IndexAndPrimIndex _BuildLineSegmentIndexArray();
+    IndexAndPrimIndex _BuildSmoothCurveIndexArray();
                                     
     HdBasisCurvesTopology *_topology;
     bool _supportSmoothCurves;
+
+    HdBufferSourceSharedPtr _primitiveParam;    
 };
 
 /// Compute vertex widths based on \p authoredWidths, doing interpolation as

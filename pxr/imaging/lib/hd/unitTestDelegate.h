@@ -248,6 +248,9 @@ public:
     void UpdateInstancerPrimVars(float time);
     HD_API
     void UpdateInstancerPrototypes(float time);
+    HD_API
+    void UpdateCurvePrimVarsInterpMode(float time);
+
 
     void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId)
     {

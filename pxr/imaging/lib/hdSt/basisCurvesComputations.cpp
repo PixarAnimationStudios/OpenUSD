@@ -121,26 +121,36 @@ void
 HdSt_BasisCurvesIndexBuilderComputation::AddBufferSpecs(
     HdBufferSpecVector *specs) const
 {
+    // index buffer
     if(_supportSmoothCurves) {
         specs->push_back(HdBufferSpec(HdTokens->indices, GL_INT, 4));
     }
     else {
         specs->push_back(HdBufferSpec(HdTokens->indices, GL_INT, 2));
     }
+
+    // primitive index buffer (curve id per curve segment) is used only
+    // when the basis curve has uniform primvars.
+    // XXX: we currently create it even when the curve has no uniform primvars
+    specs->push_back(HdBufferSpec(HdTokens->primitiveParam, GL_INT, 1));    
 }
 
-VtValue
+HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
 HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
 {
     std::vector<GfVec2i> indices;
+    std::vector<int> primIndices;
     VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
 
     int vertexIndex = 0;
+    int curveIndex = 0;
     TF_FOR_ALL(itCounts, vertexCounts) {
         for(int i = 0; i < *itCounts; i+= 2) {
             indices.push_back(GfVec2i(vertexIndex, vertexIndex + 1));
             vertexIndex += 2;
+            primIndices.push_back(curveIndex);
         }
+        curveIndex++;
     }
 
     VtVec2iArray finalIndices(indices.size());
@@ -171,17 +181,23 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
         }
     }
 
+    VtIntArray finalPrimIndices(primIndices.size());
+    std::copy(  primIndices.begin(), 
+                primIndices.end(), 
+                finalPrimIndices.begin());
 
-    return VtValue(finalIndices);
+    return IndexAndPrimIndex(VtValue(finalIndices), VtValue(finalPrimIndices));
 }
 
-VtValue
+HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
 HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 {
     std::vector<GfVec2i> indices;
+    std::vector<int> primIndices;
     VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
     bool wrap = _topology->GetCurveWrap() == HdTokens->periodic;
     int vertexIndex = 0;
+    int curveIndex = 0;
     TF_FOR_ALL(itCounts, vertexCounts) {
         int v0 = vertexIndex;
         int v1;
@@ -193,10 +209,13 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
             ++ vertexIndex;
             indices.push_back(GfVec2i(v0, v1));
             v0 = v1;
+            primIndices.push_back(curveIndex);        
         }
         if(wrap) {
             indices.push_back(GfVec2i(v0, firstVert));
+            primIndices.push_back(curveIndex);            
         }
+        ++curveIndex;
     }
 
     VtVec2iArray finalIndices(indices.size());
@@ -227,11 +246,15 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
         }
     }
 
+    VtIntArray finalPrimIndices(primIndices.size());
+    std::copy(  primIndices.begin(),
+                primIndices.end(),
+                finalPrimIndices.begin());
 
-    return VtValue(finalIndices);
+    return IndexAndPrimIndex(VtValue(finalIndices), VtValue(finalPrimIndices));
 }
 
-VtValue
+HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
 HdSt_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
 {
 
@@ -273,6 +296,8 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
     */
 
     std::vector<GfVec4i> indices;
+    std::vector<int> primIndices;
+
     VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
     bool wrap = _topology->GetCurveWrap() == HdTokens->periodic;
     int vStep;
@@ -285,6 +310,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
     }
 
     int vertexIndex = 0;
+    int curveIndex = 0;
     TF_FOR_ALL(itCounts, vertexCounts) {
         int count = *itCounts;
         // The first segment always eats up 4 verts, not just vstep, so to
@@ -312,8 +338,10 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
                     : vertexIndex + std::min(offset + v, (count -1));
             }
             indices.push_back(seg);
+            primIndices.push_back(curveIndex);            
         }
         vertexIndex += count;
+        curveIndex++;
     }
 
     VtVec4iArray finalIndices(indices.size());
@@ -348,7 +376,10 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
         }
     }
 
-    return VtValue(finalIndices);
+    VtIntArray finalPrimIndices(primIndices.size());
+    std::copy(primIndices.begin(), primIndices.end(), finalPrimIndices.begin());    
+
+    return IndexAndPrimIndex(VtValue(finalIndices), VtValue(finalPrimIndices));
 }
 
 bool
@@ -358,21 +389,30 @@ HdSt_BasisCurvesIndexBuilderComputation::Resolve()
 
     HD_TRACE_FUNCTION();
 
-    VtValue indices;
+    IndexAndPrimIndex result;
+
     if(_supportSmoothCurves) {
-        indices = _BuildSmoothCurveIndexArray();
+        result = _BuildSmoothCurveIndexArray();
     } else {
         if (_topology->GetCurveWrap() == HdTokens->segmented) {
-            indices = _BuildLinesIndexArray();
+            result = _BuildLinesIndexArray();
         } else {
-            indices = _BuildLineSegmentIndexArray();
+            result = _BuildLineSegmentIndexArray();
         }
     }
 
     _SetResult(HdBufferSourceSharedPtr(
                    new HdVtBufferSource(
                        HdTokens->indices,
-                       indices)));
+                       VtValue(result._indices))));
+
+    // the primitive param buffer is used only when the basis curve
+    // has uniform primvars.
+    // XXX: we currently create it even when the curve has no uniform primvars
+    _primitiveParam.reset(new HdVtBufferSource(
+                                HdTokens->primitiveParam,
+                                VtValue(result._primIndices)));
+
     _SetResolved();
     return true;
 }
@@ -383,6 +423,17 @@ HdSt_BasisCurvesIndexBuilderComputation::_CheckValid() const
     return true;
 }
 
+bool
+HdSt_BasisCurvesIndexBuilderComputation::HasChainedBuffer() const
+{
+    return true;
+}
+
+HdBufferSourceSharedPtr
+HdSt_BasisCurvesIndexBuilderComputation::GetChainedBuffer() const
+{
+    return _primitiveParam;
+}
 
 // -------------------------------------------------------------------------- //
 // BasisCurves Widths Interpolater

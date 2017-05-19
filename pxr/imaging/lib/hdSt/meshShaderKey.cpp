@@ -59,7 +59,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
-    GLenum primType,
+    Hd_GeometricShader::PrimitiveType primitiveType,
     bool lit,
     bool smoothNormals,
     bool doubleSided,
@@ -67,24 +67,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool blendWireframeColor,
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle)
-    : primitiveMode(primType)
+    : primType(primitiveType)
     , cullStyle(cullStyle)
     , polygonMode(HdPolygonModeFill)
     , glslfx(_tokens->baseGLSLFX)
 {
-    if (primType == GL_POINTS) {
-        primitiveIndexSize = 1;
-    } else if (primType == GL_TRIANGLES) {
-        primitiveIndexSize = 3;
-    } else if (primType == GL_LINES_ADJACENCY) {
-        primitiveIndexSize = 4;
-    } else if (primType == GL_PATCHES) {
-        primitiveIndexSize = 16;
-    } else {
-        TF_CODING_ERROR("Unknown primitiveType %d\n", primType);
-        primitiveIndexSize = 1;
-    }
-
     if (geomStyle == HdMeshGeomStyleEdgeOnly ||
         geomStyle == HdMeshGeomStyleHullEdgeOnly) {
         polygonMode = HdPolygonModeLine;
@@ -98,38 +85,41 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     VS[3] = TfToken();
 
     // tessellation control shader
-    TCS[0] = (primType == GL_PATCHES ? _tokens->instancing : TfToken());
-    TCS[1] = (primType == GL_PATCHES ? _tokens->mainBSplineTCS : TfToken());
+    const bool isPrimTypePatches = 
+        Hd_GeometricShader::IsPrimTypePatches(primType);
+
+    TCS[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
+    TCS[1] = isPrimTypePatches ? _tokens->mainBSplineTCS : TfToken();
     TCS[2] = TfToken();
 
     // tessellation evaluation shader
-    TES[0] = (primType == GL_PATCHES ? _tokens->instancing : TfToken());
-    TES[1] = (primType == GL_PATCHES ? _tokens->mainBezierTES : TfToken());
+    TES[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
+    TES[1] = isPrimTypePatches ? _tokens->mainBezierTES : TfToken();
     TES[2] = TfToken();
 
-    // geometry shader (note that GL_PATCHES uses triangles)
+    // geometry shader (note that PRIM_MESH_PATCHES uses triangles)
     GS[0] = _tokens->instancing;
-    GS[1] = (primType == GL_PATCHES ? _tokens->limit
-                                    : (smoothNormals ? _tokens->smooth
-                                                     : _tokens->flat));
+    GS[1] = isPrimTypePatches ? _tokens->limit : 
+                (smoothNormals ? _tokens->smooth : _tokens->flat);
     GS[2] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
               geomStyle == HdMeshGeomStyleHullEdgeOnly)   ? _tokens->edgeOnlyGS
            : (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
               geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->edgeOnSurfGS
                                                           : _tokens->edgeNoneGS);
-    GS[3] = (primType == GL_LINES_ADJACENCY ? _tokens->mainQuadGS
-                                            : _tokens->mainTriangleGS);
+
+    GS[3] = Hd_GeometricShader::IsPrimTypeQuads(primType)? 
+                _tokens->mainQuadGS : _tokens->mainTriangleGS;
     GS[4] = TfToken();
 
     // mesh special optimization:
     //    there are some cases that we can skip the geometry shader.
     if (smoothNormals
         && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
-        && primType == GL_TRIANGLES
+        && Hd_GeometricShader::IsPrimTypeTriangles(primType)
         && (!faceVarying)) {
         GS[0] = TfToken();
     }
-    if (primType == GL_POINTS) {
+    if (Hd_GeometricShader::IsPrimTypePoints(primType)) {
         GS[0] = TfToken();
     }
 
@@ -139,7 +129,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                            : _tokens->flat);
     FS[2] = (doubleSided   ? _tokens->doubleSidedFS
                            : _tokens->singleSidedFS);
-    if (primType == GL_PATCHES) {
+    if (isPrimTypePatches) {
         FS[3] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
                   geomStyle == HdMeshGeomStyleHullEdgeOnly)   ? _tokens->patchEdgeOnlyFS
               : ((geomStyle == HdMeshGeomStyleEdgeOnSurf ||

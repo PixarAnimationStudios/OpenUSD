@@ -50,6 +50,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     (translate)
 );
 
+template <typename T>
+static VtArray<T>
+_BuildArray(T values[], int numValues)
+{
+    VtArray<T> result(numValues);
+    std::copy(values, values+numValues, result.begin());
+    return result;
+}
+
 Hd_UnitTestDelegate::Hd_UnitTestDelegate(HdRenderIndex *parentIndex,
                                          SdfPath const& delegateID)
   : HdSceneDelegate(parentIndex, delegateID)
@@ -316,7 +325,6 @@ void
 Hd_UnitTestDelegate::UpdateRprims(float time)
 {
     // update prims
-    int meshIndex = 0;
     float delta = 0.01f;
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
     TF_FOR_ALL (it, _meshes) {
@@ -327,7 +335,24 @@ Hd_UnitTestDelegate::UpdateRprims(float time)
             color[1] = fmod(color[1] + delta*2, 1.0f);
             it->second.color = VtValue(color);
         }
-        ++meshIndex;
+    }
+}
+
+void
+Hd_UnitTestDelegate::UpdateCurvePrimVarsInterpMode(float time)
+{
+    // update curve prims to use uniform color
+    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+    TF_FOR_ALL (it, _curves) {        
+        if (it->second.colorInterpolation != UNIFORM) {
+            tracker.MarkRprimDirty(it->first, HdChangeTracker::DirtyPrimVar);            
+            // AddCurves adds two basis curve elements
+            GfVec4f colors[] = { GfVec4f(1, 0, 0, 1), GfVec4f(0, 0, 1, 1) };
+            VtValue color = VtValue(_BuildArray(&colors[0], 
+                                         sizeof(colors)/sizeof(colors[0])));
+            it->second.color = VtValue(color);
+            it->second.colorInterpolation = UNIFORM;
+        }
     }
 }
 
@@ -896,15 +921,6 @@ Hd_UnitTestDelegate::GetPrimVarComponents(SdfPath const& id, TfToken const& key)
 {
     HD_TRACE_FUNCTION();
     return 1;
-}
-
-template <typename T>
-static VtArray<T>
-_BuildArray(T values[], int numValues)
-{
-    VtArray<T> result(numValues);
-    std::copy(values, values+numValues, result.begin());
-    return result;
 }
 
 void

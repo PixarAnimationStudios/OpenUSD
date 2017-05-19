@@ -56,8 +56,7 @@ struct HdShaderKey {
                            key.GetTES(),
                            key.GetGS(),
                            key.GetFS(),
-                           key.GetPrimitiveMode(),
-                           key.GetPrimitiveIndexSize(),
+                           static_cast<int16_t> (key.GetPrimitiveType()), // class enum type
                            key.GetCullStyle(),
                            key.GetPolygonMode(),
                            key.IsCullingPass());
@@ -70,8 +69,7 @@ struct HdShaderKey {
                           TfToken const *TES,
                           TfToken const *GS,
                           TfToken const *FS,
-                          int16_t primitiveMode,
-                          int16_t primitiveIndexSize,
+                          int16_t primType,
                           HdCullStyle cullStyle,
                           HdPolygonMode polygonMode,
                           bool isCullingPass);

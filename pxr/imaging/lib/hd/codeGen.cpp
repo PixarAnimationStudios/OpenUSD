@@ -399,32 +399,14 @@ Hd_CodeGen::Compile()
     _genCommon << declarations.str()
                << accessors.str();
 
-    // XXX: this is a too mesh specific inference. need a better way
-    //
-    // find out the primitive parameterization type
-    int primType = PRIM_OTHER;
-    if (_metaData.primitiveParamBinding.dataType == _tokens->_int) {
-        primType = PRIM_TRI;
-    } else if (_metaData.primitiveParamBinding.dataType == _tokens->ivec2) {
-        primType = PRIM_COARSE_QUAD;
-    } else if (_metaData.primitiveParamBinding.dataType == _tokens->ivec3) {
-        primType = PRIM_REFINED_QUAD;
-    } else if (_metaData.primitiveParamBinding.dataType == _tokens->ivec4) {
-        primType = PRIM_PATCH;
-    }
-
     // HD_NUM_PATCH_VERTS, HD_NUM_PRIMTIIVE_VERTS
-    GLenum glPrimitiveMode = _geometricShader->GetPrimitiveMode();
-
-    if (glPrimitiveMode == GL_LINES_ADJACENCY) {
-        _genCommon << "#define HD_NUM_PRIMITIVE_VERTS 4\n";  // quad
-    } else if (glPrimitiveMode == GL_PATCHES) {
-        _genCommon << "#define HD_NUM_PATCH_VERTS "  // line=4, patch=16
+    if (_geometricShader->IsPrimTypePatches()) {
+        _genCommon << "#define HD_NUM_PATCH_VERTS "
                    << _geometricShader->GetPrimitiveIndexSize() << "\n";
-        _genCommon << "#define HD_NUM_PRIMITIVE_VERTS 3\n";  // triangle
-    } else {
-        _genCommon << "#define HD_NUM_PRIMITIVE_VERTS 3\n";  // triangle
     }
+    _genCommon << "#define HD_NUM_PRIMITIVE_VERTS "
+               << _geometricShader->GetNumPrimitiveVertsForGeometryShader()
+               << "\n";
 
     // include Glf ptex utility (if needed)
     TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
@@ -481,20 +463,39 @@ Hd_CodeGen::Compile()
     _procVS  << "void ProcessPrimVars() {\n";
     _procTCS << "void ProcessPrimVars() {\n";
     _procTES << "void ProcessPrimVars(float u, float v, int i0, int i1, int i2, int i3) {\n";
-    if (primType == PRIM_REFINED_QUAD ||
-        primType == PRIM_PATCH) {
-        // patch interpolation
-        _procGS  << "vec4 GetPatchCoord(int index);\n"
-                 << "void ProcessPrimVars(int index) {\n"
-                 << "   vec2 localST = GetPatchCoord(index).xy;\n";
-    } else if (primType == PRIM_COARSE_QUAD) {
-        // quad interpolation
-        _procGS  << "void ProcessPrimVars(int index) {\n"
-                 << "   vec2 localST = vec2[](vec2(0,0), vec2(1,0), vec2(1,1), vec2(0,1))[index];\n";
-    } else { // PRIM_TRI
-        // barycentric interpolation
-        _procGS  << "void ProcessPrimVars(int index) {\n"
-                 << "   vec2 localST = vec2[](vec2(1,0), vec2(0,1), vec2(0,0))[index];\n";
+    // geometry shader plumbing
+    switch(_geometricShader->GetPrimitiveType())
+    {
+        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
+        {
+            // patch interpolation
+            _procGS << "vec4 GetPatchCoord(int index);\n"
+                    << "void ProcessPrimVars(int index) {\n"
+                    << "   vec2 localST = GetPatchCoord(index).xy;\n";
+            break;            
+        }
+
+        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        {
+            // quad interpolation
+            _procGS  << "void ProcessPrimVars(int index) {\n"
+                     << "   vec2 localST = vec2[](vec2(0,0), vec2(1,0), vec2(1,1), vec2(0,1))[index];\n";
+            break;            
+        }
+
+        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        {
+            // barycentric interpolation
+             _procGS  << "void ProcessPrimVars(int index) {\n"
+                      << "   vec2 localST = vec2[](vec2(1,0), vec2(0,1), vec2(0,0))[index];\n";
+            break;            
+        }
+
+        default: // points, basis curves
+            // do nothing. no additional code needs to be generated.
+            ;
     }
 
     // generate drawing coord and accessors
@@ -503,8 +504,8 @@ Hd_CodeGen::Compile()
     // generate primvars
     _GenerateConstantPrimVar();
     _GenerateInstancePrimVar();
-    _GenerateElementPrimVar(primType);
-    _GenerateVertexPrimVar(primType);
+    _GenerateElementPrimVar();
+    _GenerateVertexPrimVar();
 
     //generate shader parameters
     _GenerateShaderParameters();
@@ -1231,7 +1232,7 @@ Hd_CodeGen::_GenerateInstancePrimVar()
 }
 
 void
-Hd_CodeGen::_GenerateElementPrimVar(int primType)
+Hd_CodeGen::_GenerateElementPrimVar()
 {
     // XXX: We'd like to return here, but can't because stub functions
     //      must be generated (see XXX comment below).
@@ -1266,26 +1267,28 @@ Hd_CodeGen::_GenerateElementPrimVar(int primType)
 
 
     // primitive param buffer can be one of followings:
-
-    // 1. tris
+    // 1. basis curves
+    //     1 int  : curve index
+    //
+    // 2. mesh specific
+    // a. tris
     //     1 int  : coarse face index + edge flag
     //
-    // 2. quads coarse
+    // b. quads coarse
     //     2 ints : coarse face index + edge flag
     //              ptex index
     //
-    // 3. quads uniformly refined
+    // c. tris & quads uniformly refined
     //     3 ints : coarse face index + edge flag
     //              Far::PatchParam::field0 (includes ptex index)
     //              Far::PatchParam::field1
     //
-    // 3. patch adaptively refined
+    // d. patch adaptively refined
     //     4 ints : coarse face index + edge flag
     //              Far::PatchParam::field0 (includes ptex index)
     //              Far::PatchParam::field1
     //              sharpness (float)
-
-    //
+    // -----------------------------------------------------------------------
     // note: decoding logic of primitiveParam has to match with
     // HdMeshTopology::DecodeFaceIndexFromPrimitiveParam()
     //
@@ -1312,90 +1315,143 @@ Hd_CodeGen::_GenerateElementPrimVar(int primType)
     // ptex shading.
 
     if (_metaData.primitiveParamBinding.binding.IsValid()) {
-        HdBinding binding = _metaData.primitiveParamBinding.binding;
 
+        HdBinding binding = _metaData.primitiveParamBinding.binding;
         _EmitDeclaration(declarations, _metaData.primitiveParamBinding);
         _EmitAccessor(accessors, _metaData.primitiveParamBinding.name,
-                      _metaData.primitiveParamBinding.dataType, binding,
-                      "GetDrawingCoord().primitiveCoord");
+                        _metaData.primitiveParamBinding.dataType, binding,
+                        "GetDrawingCoord().primitiveCoord");
 
-        if (primType == PRIM_COARSE_QUAD) {
-            // coarse quads (for ptex)
-            // put ptexIndex into the first element of PatchParam.
-            // (transition flags in MSB can be left as 0)
+        if (_geometricShader->IsPrimTypePoints()) {
+            // do nothing. 
+            // e.g. if a prim's geomstyle is points and it has a valid
+            // primitiveParamBinding, we don't generate any of the 
+            // accessor methods.
+            ;            
+        }
+        else if (_geometricShader->IsPrimTypeBasisCurves()) {
+            // straight-forward indexing to get the segment's curve id
             accessors
-                << "ivec3 GetPatchParam() {\n"
-                << "  return ivec3(HdGet_primitiveParam().y, 0, 0);\n"
-                << "}\n";
-            accessors
-                << "int GetEdgeFlag(int localIndex) {\n"
-                << "  return localIndex; \n"
-                << "}\n";
-        } else if (primType == PRIM_REFINED_QUAD) {
-            // refined quads
-            accessors
-                << "ivec3 GetPatchParam() {\n"
-                << "  return ivec3(HdGet_primitiveParam().y, \n"
-                << "               HdGet_primitiveParam().z, 0);\n"
-                << "}\n";
-            accessors
-                << "int GetEdgeFlag(int localIndex) {\n"
-                << "  return (HdGet_primitiveParam().x & 3);\n"
-                << "}\n";
-        } else if (primType == PRIM_PATCH) {
-            // refined patches (tessellated triangles)
-            accessors
-                << "ivec3 GetPatchParam() {\n"
-                << "  return ivec3(HdGet_primitiveParam().y, \n"
-                << "               HdGet_primitiveParam().z, \n"
-                << "               HdGet_primitiveParam().w);\n"
-                << "}\n";
-            accessors
-                << "int GetEdgeFlag(int localIndex) {\n"
-                << "  return localIndex;\n"
-                << "}\n";
-        } else {
-            // coarse triangles, all other primitives
-            //
-            // note that triangulated meshes don't have ptexIndex.
-            // Here we're passing primitiveID as ptexIndex PatchParam
-            // since Hd_TriangulateFaceVaryingComputation unrolls facevaring
-            // primvars for each triangles.
-            accessors
-                << "ivec3 GetPatchParam() {\n"
-                << "  return ivec3(gl_PrimitiveID, 0, 0);\n"
-                << "}\n";
-            accessors
-                << "int GetEdgeFlag(int localIndex) {\n"
-                << "  return HdGet_primitiveParam() & 3;\n"
+                << "int GetElementID() {\n"
+                << "  return (hd_int_get(HdGet_primitiveParam()))\n"
+                << "  + GetDrawingCoord().elementCoord;\n"
                 << "}\n";
         }
+        else if (_geometricShader->IsPrimTypeMesh()) {
+            // GetPatchParam, GetEdgeFlag
+            switch (_geometricShader->GetPrimitiveType()) {
+                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+                {
+                    // refined quads or tris (loop subdiv)
+                    accessors
+                        << "ivec3 GetPatchParam() {\n"
+                        << "  return ivec3(HdGet_primitiveParam().y, \n"
+                        << "               HdGet_primitiveParam().z, 0);\n"
+                        << "}\n";
+                    accessors
+                        << "int GetEdgeFlag(int localIndex) {\n"
+                        << "  return (HdGet_primitiveParam().x & 3);\n"
+                        << "}\n";
+                    break;
+                }
 
-        accessors
-            << "int GetElementID() {\n"
-            << "  return (hd_int_get(HdGet_primitiveParam()) >> 2)\n"
-            << "  + GetDrawingCoord().elementCoord;\n"
-            << "}\n";
+                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
+                {
+                    // refined patches (tessellated triangles)
+                    accessors
+                        << "ivec3 GetPatchParam() {\n"
+                        << "  return ivec3(HdGet_primitiveParam().y, \n"
+                        << "               HdGet_primitiveParam().z, \n"
+                        << "               HdGet_primitiveParam().w);\n"
+                        << "}\n";
+                    accessors
+                        << "int GetEdgeFlag(int localIndex) {\n"
+                        << "  return localIndex;\n"
+                        << "}\n";
+                    break;
+                }
 
-        // note: fvar primvars are always quadrangulated or triangulated
-        //       (= ptex-ified)
-        if (primType == PRIM_TRI) {
+                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+                {
+                    // coarse quads (for ptex)
+                    // put ptexIndex into the first element of PatchParam.
+                    // (transition flags in MSB can be left as 0)
+                    accessors
+                        << "ivec3 GetPatchParam() {\n"
+                        << "  return ivec3(HdGet_primitiveParam().y, 0, 0);\n"
+                        << "}\n";
+                    accessors
+                        << "int GetEdgeFlag(int localIndex) {\n"
+                        << "  return localIndex; \n"
+                        << "}\n";
+                    break;
+                }
+
+                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+                {
+                    // coarse triangles                
+                    // note that triangulated meshes don't have ptexIndex.
+                    // Here we're passing primitiveID as ptexIndex PatchParam
+                    // since Hd_TriangulateFaceVaryingComputation unrolls facevaring
+                    // primvars for each triangles.
+                    accessors
+                        << "ivec3 GetPatchParam() {\n"
+                        << "  return ivec3(gl_PrimitiveID, 0, 0);\n"
+                        << "}\n";
+                    accessors
+                        << "int GetEdgeFlag(int localIndex) {\n"
+                        << "  return HdGet_primitiveParam() & 3;\n"
+                        << "}\n";
+                    break;
+                }
+
+                default:
+                {
+                    TF_CODING_ERROR("Hd_GeometricShader::PrimitiveType %d is "
+                      "unexpected in _GenerateElementPrimVar().",
+                      _geometricShader->GetPrimitiveType());
+                }
+            }
+
+            // GetFVarIndex
+            if (_geometricShader->IsPrimTypeTriangles()) {
+                // note that triangulated meshes don't have ptexIndex.
+                // Here we're passing primitiveID as ptexIndex PatchParam
+                // since Hd_TriangulateFaceVaryingComputation unrolls facevaring
+                // primvars for each triangles.
+                accessors
+                    << "int GetFVarIndex(int localIndex) {\n"
+                    << "  int fvarCoord = GetDrawingCoord().fvarCoord;\n"
+                    << "  int ptexIndex = GetPatchParam().x & 0xfffffff;\n"
+                    << "  return fvarCoord + ptexIndex * 3 + localIndex;\n"
+                    << "}\n";    
+            }
+            else {
+                accessors
+                    << "int GetFVarIndex(int localIndex) {\n"
+                    << "  int fvarCoord = GetDrawingCoord().fvarCoord;\n"
+                    << "  int ptexIndex = GetPatchParam().x & 0xfffffff;\n"
+                    << "  return fvarCoord + ptexIndex * 4 + localIndex;\n"
+                    << "}\n";
+            }
+
+            // GetElementID
             accessors
-                << "int GetFVarIndex(int localIndex) {\n"
-                << "  int fvarCoord = GetDrawingCoord().fvarCoord;\n"
-                << "  int ptexIndex = GetPatchParam().x & 0xfffffff;\n"
-                << "  return fvarCoord + ptexIndex * 3 + localIndex;\n"
+                << "int GetElementID() {\n"
+                << "  return (hd_int_get(HdGet_primitiveParam()) >> 2)\n"
+                << "  + GetDrawingCoord().elementCoord;\n"
                 << "}\n";
-        } else {
-            accessors
-                << "int GetFVarIndex(int localIndex) {\n"
-                << "  int fvarCoord = GetDrawingCoord().fvarCoord;\n"
-                << "  int ptexIndex = GetPatchParam().x & 0xfffffff;\n"
-                << "  return fvarCoord + ptexIndex * 4 + localIndex;\n"
-                << "}\n";
+
         }
-
+        else {
+            TF_CODING_ERROR("Hd_GeometricShader::PrimitiveType %d is "
+                  "unexpected in _GenerateElementPrimVar().",
+                  _geometricShader->GetPrimitiveType());
+        }
     } else {
+        // no primitiveParamBinding
+
         // XXX: this is here only to keep the compiler happy, we don't expect
         // users to call them -- we really should restructure whatever is
         // necessary to avoid having to do this and thus guarantee that users
@@ -1441,7 +1497,7 @@ Hd_CodeGen::_GenerateElementPrimVar(int primType)
 }
 
 void
-Hd_CodeGen::_GenerateVertexPrimVar(int primType)
+Hd_CodeGen::_GenerateVertexPrimVar()
 {
     /*
       // --------- vertex data declaration (VS) ----------
@@ -1593,22 +1649,47 @@ Hd_CodeGen::_GenerateVertexPrimVar(int primType)
                  << "       mix(inPrimVars[i1]." << name
                  << "         , inPrimVars[i0]." << name << ", u), v);\n";
 
-        if (primType == PRIM_COARSE_QUAD ||
-            primType == PRIM_REFINED_QUAD ||
-            primType == PRIM_PATCH) {
-            // linear interpolation within a quad.
-            _procGS << "   outPrimVars." << name
+
+        switch(_geometricShader->GetPrimitiveType())
+        {
+            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:            
+            {
+                // linear interpolation within a quad.
+                _procGS << "   outPrimVars." << name
                     << "  = mix("
                     << "mix(" << "HdGet_" << name << "(0),"
                     <<           "HdGet_" << name << "(1), localST.x),"
                     << "mix(" << "HdGet_" << name << "(3),"
                     <<           "HdGet_" << name << "(2), localST.x), localST.y);\n";
-        } else if (primType == PRIM_TRI) {
-            // barycentric interpolation within a triangle.
-            _procGS << "   outPrimVars." << name
+                break;
+            }
+
+            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+            {
+                // barycentric interpolation within a triangle.
+                _procGS << "   outPrimVars." << name
                     << "  = HdGet_" << name << "(0) * localST.x "
                     << "  + HdGet_" << name << "(1) * localST.y "
-                    << "  + HdGet_" << name << "(2) * (1-localST.x-localST.y);\n";
+                    << "  + HdGet_" << name << "(2) * (1-localST.x-localST.y);\n";                
+                break;  
+            }
+
+            case Hd_GeometricShader::PrimitiveType::PRIM_POINTS:
+            {
+                // do nothing. 
+                // e.g. if a prim's geomstyle is points and it has valid
+                // fvarData, we don't generate any of the 
+                // accessor methods.
+                break;
+            }
+
+            default:
+                TF_CODING_ERROR("Face varing bindings for unexpected for" 
+                                " Hd_GeometricShader::PrimitiveType %d", 
+                                _geometricShader->GetPrimitiveType());
         }
     }
 
