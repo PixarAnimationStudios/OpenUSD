@@ -61,6 +61,15 @@ public:
                (~HdChangeTracker::Varying);
     }
 
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override
+    {
+        return bits;
+    }
+    virtual void _InitRepr(TfToken const &reprName,
+                           HdDirtyBits *dirtyBits) override
+    {
+    }
+
 protected:
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,

@@ -120,6 +120,16 @@ public:
     HD_API
     HdDirtyBits GetInitialDirtyBitsMask() const;
 
+    HD_API
+    HdDirtyBits PropagateRprimDirtyBits(HdDirtyBits bits);
+
+    HD_API
+    void InitRepr(HdSceneDelegate* delegate,
+                  TfToken const &defaultReprName,
+                  bool forced,
+                  HdDirtyBits *dirtyBits);
+
+
 
     /// Returns the bounds of the rprim in local, untransformed space.
     inline GfRange3d GetExtent(HdSceneDelegate* delegate) const;
@@ -142,7 +152,6 @@ protected:
               HdDirtyBits *dirtyBits);
 
 
-    HD_API
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
                  TfToken const &reprName,
@@ -175,10 +184,9 @@ protected:
                          HdDirtyBits *dirtyBits);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
 
-    HD_API
-    static HdDirtyBits _PropagateRprimDirtyBits(HdDirtyBits bits);
-
+    virtual void _InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits) = 0;
 
 private:
     SdfPath _id;

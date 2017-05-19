@@ -45,6 +45,7 @@ class HdSceneDelegate;
 
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
+typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
 /// \class HdStMeshReprDesc
 ///
@@ -110,15 +111,11 @@ protected:
                  TfToken const &reprName,
                  HdDirtyBits *dirtyBitsState) override;
 
-    HdDirtyBits _PropagateDirtyBits(
-        HdDirtyBits dirtyBits);
-
     bool _UsePtexIndices(const HdRenderIndex &renderIndex) const;
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
-                         bool isNew,
                          HdStMeshReprDesc desc,
                          bool requireSmoothNormals);
 
@@ -140,8 +137,6 @@ protected:
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                  HdDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
-                                 bool isNew,
-                                 HdStMeshReprDesc desc,
                                  bool requireSmoothNormals);
 
     void _PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
@@ -157,6 +152,10 @@ protected:
     int _GetRefineLevelForDesc(HdStMeshReprDesc desc);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const override;
+    HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+
+    virtual void _InitRepr(TfToken const &reprName,
+                           HdDirtyBits *dirtyBits) override;
 
 private:
     enum DrawingCoord {
@@ -169,7 +168,8 @@ private:
         DirtySmoothNormals  = HdChangeTracker::CustomBitsBegin,
         DirtyIndices        = (DirtySmoothNormals << 1),
         DirtyHullIndices    = (DirtyIndices       << 1),
-        DirtyPointsIndices  = (DirtyHullIndices   << 1)
+        DirtyPointsIndices  = (DirtyHullIndices   << 1),
+        DirtyNewRepr        = (DirtyPointsIndices << 1),
     };
 
     HdSt_MeshTopologySharedPtr _topology;
@@ -180,6 +180,9 @@ private:
     bool _doubleSided;
     bool _packedNormals;
     HdCullStyle _cullStyle;
+
+    bool  _pointsValid;
+    GLenum _pointsDataType;
 
     typedef _ReprDescConfigs<HdStMeshReprDesc, /*max drawitems=*/2> _MeshReprConfig;
     static _MeshReprConfig _reprDescConfig;
