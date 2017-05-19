@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE vt)
 
-pxr_shared_library(vt
+pxr_library(vt
     LIBRARIES
         arch
         tf

@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE pcp)
 
-pxr_shared_library(pcp
+pxr_library(pcp
     LIBRARIES
         tf
         tracelite

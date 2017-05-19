@@ -104,3 +104,8 @@ set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zi")
 # Enable multiprocessor builds.
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /MP")
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Gm-")
+
+# Ignore LNK4221.  This happens when making an archive with a object file
+# with no symbols in it.  We do this a lot because of a pattern of having
+# a C++ source file for many header-only facilities, e.g. tf/bitUtils.cpp.
+set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")

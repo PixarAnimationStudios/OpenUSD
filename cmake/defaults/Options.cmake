@@ -59,6 +59,12 @@ set(PXR_ALL_LIBS ""
     INTERNAL
     "Aggregation of all built libraries."
 )
+set(PXR_STATIC_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all built explicitly static libraries."
+)
+
 set(PXR_LIB_PREFIX "lib"
     CACHE
     STRING
@@ -70,3 +76,4 @@ if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
     )
 endif()
 
+option(BUILD_SHARED_LIBS "Build shared libraries." ON)

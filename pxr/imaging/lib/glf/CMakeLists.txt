@@ -14,7 +14,7 @@ if (PXR_ENABLE_PTEX_SUPPORT)
     list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
 endif()
 
-pxr_shared_library(glf
+pxr_library(glf
     LIBRARIES
         arch
         garch

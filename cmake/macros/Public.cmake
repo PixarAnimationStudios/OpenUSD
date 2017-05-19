@@ -37,6 +37,12 @@ function(pxr_python_bin BIN_NAME)
         ${ARGN}
     )
 
+    # If we can't build Python modules then do nothing.
+    if(NOT BUILD_SHARED_LIBS AND NOT TARGET shared_monolithic)
+        message(STATUS "Skipping Python program ${BIN_NAME}, Python modules required")
+        return()
+    endif()
+
     _get_install_dir(bin installDir)
 
     # Source file.
@@ -94,15 +100,14 @@ function(pxr_python_bin BIN_NAME)
     endif()
 
     # Make sure the custom commands are executed by the default rule.
-    add_custom_target(
-        ${BIN_NAME}
-        ALL
+    add_custom_target(${BIN_NAME} ALL
         DEPENDS ${outputs} ${pb_DEPENDENCIES}
     )
-    set_target_properties(
-        ${BIN_NAME}
+
+    _get_folder("" folder)
+    set_target_properties(${BIN_NAME}
         PROPERTIES
-            FOLDER "${PXR_PREFIX}"
+            FOLDER "${folder}"
     )
 endfunction() # pxr_python_bin
 
@@ -123,10 +128,13 @@ function(pxr_cpp_bin BIN_NAME)
 
     add_executable(${BIN_NAME} ${BIN_NAME}.cpp)
 
+    # Turn PIC ON otherwise ArchGetAddressInfo() on Linux may yield
+    # unexpected results.
     _get_folder("" folder)
     set_target_properties(${BIN_NAME}
         PROPERTIES
             FOLDER "${folder}"
+            POSITION_INDEPENDENT_CODE ON
     )
 
     # Install and include headers from the build directory.
@@ -145,7 +153,7 @@ function(pxr_cpp_bin BIN_NAME)
     _pxr_init_rpath(rpath "${installDir}")
     _pxr_install_rpath(rpath ${BIN_NAME})
 
-    target_link_libraries(${BIN_NAME}
+    _pxr_target_link_libraries(${BIN_NAME}
         ${cb_LIBRARIES}
         ${PXR_MALLOC_LIBRARY}
     )
@@ -187,15 +195,31 @@ function(pxr_library NAME)
         ${ARGN}
     )
 
+    # Collect libraries.
+    get_property(help CACHE PXR_ALL_LIBS PROPERTY HELPSTRING)
+    list(APPEND PXR_ALL_LIBS ${NAME})
+    set(PXR_ALL_LIBS "${PXR_ALL_LIBS}" CACHE INTERNAL "${help}")
+    if(args_TYPE STREQUAL "STATIC")
+        # Note if this library is explicitly STATIC.
+        get_property(help CACHE PXR_STATIC_LIBS PROPERTY HELPSTRING)
+        list(APPEND PXR_STATIC_LIBS ${NAME})
+        set(PXR_STATIC_LIBS "${PXR_STATIC_LIBS}" CACHE INTERNAL "${help}")
+    endif()
+
     # Expand classes into filenames.
     _classes(${NAME} ${args_PRIVATE_CLASSES} PRIVATE)
     _classes(${NAME} ${args_PUBLIC_CLASSES} PUBLIC)
 
     # Custom tweaks.
-    set(prefix ${CMAKE_SHARED_LIBRARY_PREFIX})
-    set(suffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
-    if(${args_TYPE} STREQUAL "PLUGIN")
+    if(args_TYPE STREQUAL "PLUGIN")
+        # We can't build plugins if we're not building shared libraries.
+        if(NOT BUILD_SHARED_LIBS AND NOT TARGET shared_monolithic)
+            message(STATUS "Skipping plugin ${NAME}, shared libraries required")
+            return()
+        endif()
+
         set(prefix "")
+        set(suffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
 
         # Katana plugins install into a specific sub directory structure.
         # In particular, shared objects install into plugin/Libs
@@ -212,14 +236,25 @@ function(pxr_library NAME)
             endif()
         endif()
     else()
-        set(prefix "${PXR_LIB_PREFIX}")
+        # If the caller didn't specify the library type then choose the
+        # type now.
+        if("x${args_TYPE}" STREQUAL "x")
+            if(PXR_BUILD_MONOLITHIC OR NOT BUILD_SHARED_LIBS)
+                # We build static libraries when building monolithic since
+                # the last step is to link all of the static libraries into
+                # the monolithic library.
+                set(args_TYPE "STATIC")
+            else()
+                set(args_TYPE "SHARED")
+            endif()
+        endif()
 
-        set(PXR_ALL_LIBS
-            "${PXR_ALL_LIBS} ${NAME}"
-            CACHE
-            INTERNAL
-            "Aggregation of all internal libraries."
-        )
+        set(prefix "${PXR_LIB_PREFIX}")
+        if(args_TYPE STREQUAL "STATIC")
+            set(suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
+        else()
+            set(suffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
+        endif()
     endif()
 
     set(pch "ON")
@@ -250,7 +285,6 @@ function(pxr_library NAME)
             PYTHON_FILES ${args_PYTHON_FILES}
             PYSIDE_UI_FILES ${args_PYSIDE_UI_FILES}
             CPPFILES ${args_PYMODULE_CPPFILES}
-            LIBRARIES ${NAME}
             INCLUDE_DIRS ${args_INCLUDE_DIRS}
             PRECOMPILED_HEADERS ${pch}
             PRECOMPILED_HEADER_NAME ${args_PRECOMPILED_HEADER_NAME}
@@ -294,6 +328,11 @@ function(pxr_setup_python)
 endfunction() # pxr_setup_python
 
 function (pxr_create_test_module MODULE_NAME)
+    # If we can't build Python modules then do nothing.
+    if(NOT BUILD_SHARED_LIBS AND NOT TARGET shared_monolithic)
+        return()
+    endif()
+
     if (PXR_BUILD_TESTS) 
         cmake_parse_arguments(tm "" "INSTALL_PREFIX;SOURCE_DIR" "" ${ARGN})
 
@@ -333,7 +372,8 @@ endfunction() # pxr_create_test_module
 function(pxr_build_test_shared_lib LIBRARY_NAME)
     if (PXR_BUILD_TESTS)
         cmake_parse_arguments(bt
-            "" "INSTALL_PREFIX;SOURCE_DIR"
+            ""
+            "INSTALL_PREFIX;SOURCE_DIR"
             "LIBRARIES;CPPFILES"
             ${ARGN}
         )
@@ -341,13 +381,14 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         add_library(${LIBRARY_NAME}
             SHARED
             ${bt_CPPFILES}
-            )
-        target_link_libraries(${LIBRARY_NAME}
+        )
+        _pxr_target_link_libraries(${LIBRARY_NAME}
             ${bt_LIBRARIES}
         )
+        _get_folder("tests/lib" folder)
         set_target_properties(${LIBRARY_NAME}
             PROPERTIES 
-                FOLDER "${PXR_PREFIX}/tests/lib"
+                FOLDER "${folder}"
         )
 
         # Find libraries under the install prefix, which has the core USD
@@ -411,16 +452,19 @@ function(pxr_build_test TEST_NAME)
         add_executable(${TEST_NAME}
             ${bt_CPPFILES}
         )
-        target_link_libraries(${TEST_NAME}
-            ${bt_LIBRARIES}
+        # Turn PIC ON otherwise ArchGetAddressInfo() on Linux may yield
+        # unexpected results.
+        _get_folder("tests/bin" folder)
+        set_target_properties(${TEST_NAME}
+            PROPERTIES 
+                FOLDER "${folder}"
+            	POSITION_INDEPENDENT_CODE ON
         )
         target_include_directories(${TEST_NAME}
             PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
         )
-        set_target_properties(${TEST_NAME}
-            PROPERTIES 
-                FOLDER "${PXR_PREFIX}/tests/bin"
-                POSITION_INDEPENDENT_CODE ON
+        _pxr_target_link_libraries(${TEST_NAME}
+            ${bt_LIBRARIES}
         )
 
         # Find libraries under the install prefix, which has the core USD
@@ -436,6 +480,11 @@ function(pxr_build_test TEST_NAME)
 endfunction() # pxr_build_test
 
 function(pxr_test_scripts)
+    # If we can't build Python modules then do nothing.
+    if(NOT BUILD_SHARED_LIBS AND NOT TARGET shared_monolithic)
+        return()
+    endif()
+
     if (PXR_BUILD_TESTS)
         foreach(file ${ARGN})
             get_filename_component(destFile ${file} NAME_WE)
@@ -467,11 +516,33 @@ endfunction() # pxr_install_test_dir
 function(pxr_register_test TEST_NAME)
     if (PXR_BUILD_TESTS)
         cmake_parse_arguments(bt
-            "PYTHON;REQUIRES_DISPLAY" 
-            "COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
+            "PYTHON;REQUIRES_DISPLAY;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
+            "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
             "ENV;PRE_PATH;POST_PATH"
             ${ARGN}
         )
+
+        # Discard tests that required shared libraries.
+        if(NOT BUILD_SHARED_LIBS AND NOT TARGET shared_monolithic)
+            # Explicit requirement.  This is for C++ tests that dynamically
+            # load libraries linked against USD code.  These tests will have
+            # multiple copies of symbols and will likely re-execute
+            # ARCH_CONSTRUCTOR and registration functions, which will almost
+            # certainly cause problems.
+            if(bt_REQUIRES_SHARED_LIBS)
+                message(STATUS "Skipping test ${TEST_NAME}, shared libraries required")
+                return()
+            endif()
+
+            # Implicit requirement.  Python modules require shared USD
+            # libraries.  If the test runs python it's certainly going
+            # to load USD modules.  If the test uses C++ to load USD
+            # modules it tells us via REQUIRES_PYTHON_MODULES.
+            if(bt_PYTHON OR bt_CUSTOM_PYTHON OR bt_REQUIRES_PYTHON_MODULES)
+                message(STATUS "Skipping test ${TEST_NAME}, Python modules required")
+                return()
+            endif()
+        endif()
 
         # This harness is a filter which allows us to manipulate the test run, 
         # e.g. by changing the environment, changing the expected return code, etc.
@@ -579,8 +650,10 @@ function(pxr_register_test TEST_NAME)
             string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
         endif()
 
-        # Ensure we run with the python executable known to the build
-        if (bt_PYTHON)
+        # Ensure we run with the appropriate python executable.
+        if (bt_CUSTOM_PYTHON)
+            set(testCmd "${bt_CUSTOM_PYTHON} ${bt_COMMAND}")
+        elseif (bt_PYTHON)
             set(testCmd "${PYTHON_EXECUTABLE} ${bt_COMMAND}")
         else()
             set(testCmd "${bt_COMMAND}")

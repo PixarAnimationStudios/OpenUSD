@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE kind)
 
-pxr_shared_library(kind
+pxr_library(kind
     LIBRARIES
         tf
         plug

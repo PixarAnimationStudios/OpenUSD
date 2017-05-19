@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdUtils)
 
-pxr_shared_library(usdUtils
+pxr_library(usdUtils
     LIBRARIES
         arch
         tf

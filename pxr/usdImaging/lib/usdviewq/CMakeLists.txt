@@ -9,7 +9,7 @@ elseif(NOT PYOPENGL_FOUND)
     return()
 endif()
 
-pxr_shared_library(usdviewq
+pxr_library(usdviewq
     LIBRARIES
         tf
         usd

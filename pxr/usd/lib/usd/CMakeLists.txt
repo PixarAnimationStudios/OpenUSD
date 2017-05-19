@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usd)
 
-pxr_shared_library(usd
+pxr_library(usd
     LIBRARIES
         arch
         kind

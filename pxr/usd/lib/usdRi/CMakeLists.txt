@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdRi)
 
-pxr_shared_library(usdRi
+pxr_library(usdRi
     LIBRARIES
         tf
         vt

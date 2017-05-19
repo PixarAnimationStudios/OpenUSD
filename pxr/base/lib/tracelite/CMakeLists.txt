@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE tracelite)
 
-pxr_shared_library(tracelite
+pxr_library(tracelite
     LIBRARIES
         arch
 

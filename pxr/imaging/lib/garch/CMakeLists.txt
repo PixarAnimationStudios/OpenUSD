@@ -16,7 +16,7 @@ elseif(WIN32)
     set(GARCH_SOURCE_EXTENSION        cpp)
 endif()
 
-pxr_shared_library(garch
+pxr_library(garch
     LIBRARIES
         arch
         tf

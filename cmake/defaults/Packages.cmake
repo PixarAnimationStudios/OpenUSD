@@ -23,6 +23,14 @@
 #
 # Core USD Package Requirements 
 # ----------------------------------------------
+
+# Threads.  Save the libraries needed in PXR_THREAD_LIBS;  we may modify
+# them later.  We need the threads package because some platforms require
+# it when using C++ functions from #include <thread>.
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+find_package(Threads REQUIRED)
+set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
+
 # --Python.  We are generally but not completely 2.6 compliant.
 find_package(PythonInterp 2.7 REQUIRED)
 find_package(PythonLibs 2.7 REQUIRED)

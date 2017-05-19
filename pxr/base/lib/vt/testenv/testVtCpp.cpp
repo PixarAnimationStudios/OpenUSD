@@ -518,6 +518,7 @@ static void testDictionaryOverRecursive() {
 }
 
 static void testDictionaryPyFormatting() {
+#if defined(PXR_PYTHON_MODULES_ENABLED)
     VtDictionary vt0;
     vt0["key"] = "value";
     vt0["list"] = VtValue(vector<VtValue>(1, VtValue("single item")));
@@ -568,6 +569,7 @@ static void testDictionaryPyFormatting() {
             die("VtDictionaryFromPythonString - invalid dict");
     }
 
+#endif
 }
 
 static void

@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdGeom)
 
-pxr_shared_library(usdGeom
+pxr_library(usdGeom
     LIBRARIES
         js
         tf

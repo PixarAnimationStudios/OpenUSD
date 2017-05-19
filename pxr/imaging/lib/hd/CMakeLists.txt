@@ -10,7 +10,7 @@ if (OPENSUBDIV_HAS_GLSL_COMPUTE)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
-pxr_shared_library(hd
+pxr_library(hd
     LIBRARIES
         plug
         tf

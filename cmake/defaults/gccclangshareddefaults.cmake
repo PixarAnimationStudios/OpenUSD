@@ -54,3 +54,11 @@ endif()
 if (${PXR_MAYA_TBB_BUG_WORKAROUND})
     set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Wl,-Bsymbolic")
 endif()
+
+# If using pthreads then tell the compiler.  This should automatically cause
+# the linker to pull in the pthread library if necessary so we also clear
+# PXR_THREAD_LIBS.
+if(CMAKE_USE_PTHREADS_INIT)
+    set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -pthread")
+    set(PXR_THREAD_LIBS "")
+endif()

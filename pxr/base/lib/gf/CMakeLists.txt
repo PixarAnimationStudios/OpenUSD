@@ -4,7 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE gf)
 
-pxr_shared_library(gf
+pxr_library(gf
     LIBRARIES
         arch
         tf
