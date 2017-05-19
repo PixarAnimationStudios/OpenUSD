@@ -49,6 +49,7 @@
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>
 #include <maya/MEdit.h>
+#include <maya/MFileIO.h>
 #include <maya/MFnAssembly.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnDependencyNode.h>
@@ -61,6 +62,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MItEdits.h>
 #include <maya/MItSelectionList.h>
+#include <maya/MNamespace.h>
 #include <maya/MPlugArray.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
@@ -214,6 +216,24 @@ MStatus UsdMayaReferenceAssembly::initialize(
     status = addAttribute(psData->inStageData);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    // Having to store the representation namespace in an attribute on the
+    // assembly is not ideal, but it is necessary to ensure that namespace
+    // changes are handled correctly and that assembly edits do not fall off
+    // because of renaming/duplicating/etc. MPxAssembly does not do this for us.
+    // This pattern is adapted from Autodesk's sample assembly reference node:
+    //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    psData->repNamespace = typedAttrFn.create(
+        "repNamespace",
+        "rns",
+        MFnData::kString,
+        MObject::kNullObj,
+        &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    typedAttrFn.setInternal(true);
+    status = addAttribute(psData->repNamespace);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
     // inStageData or filepath-> inStageDataCached -> outStageData
     psData->inStageDataCached = typedAttrFn.create(
         "inStageDataCached",
@@ -271,6 +291,7 @@ MStatus UsdMayaReferenceAssembly::initialize(
 UsdMayaReferenceAssembly::UsdMayaReferenceAssembly(
         const PluginStaticData& psData) :
     _psData(psData),
+    _updatingRepNamespace(false),
     _activateRepOnFileLoad(false),
     _inSetInternalValue(false),
     _hasEdits(false)
@@ -413,13 +434,20 @@ bool UsdMayaReferenceAssembly::activateRep(const MString& repMStr)
 
 void UsdMayaReferenceAssembly::postLoad()
 {
-    // Handle postLoad functions:
-    //        * set the initial representation
-    //        * ...
+    MFnAssembly assemblyFn(thisMObject());
+
+    // If this is not a top-level assembly, lock the repNamespace attribute.
+    // Users should not be able to change this attribute on nested assemblies.
+    // This was adapted from Autodesk's sample assembly reference node:
     //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    if (!assemblyFn.isTopLevel()) {
+        MPlug repNamespacePlug(thisMObject(), _psData.repNamespace);
+        repNamespacePlug.setLocked(true);
+    }
+
     // Activate Representation
     if (_activateRepOnFileLoad) {
-        MFnAssembly assemblyFn( thisMObject() );
         //logging.debug("In postLoad activate: isTopLevel=%r canActivate=%r"%(assemblyFn.isTopLevel(), assemblyFn.canActivate()))
         if (assemblyFn.canActivate()) {  // Consider adding assemblyFn.isTopLevel() to the conditional
             MPlug initialRepPlg(thisMObject(), _psData.initialRep);
@@ -448,16 +476,58 @@ bool UsdMayaReferenceAssembly::inactivateRep()
 }
 
 MString
+UsdMayaReferenceAssembly::getDefaultRepNamespace() const
+{
+    const std::string defaultNs(MPxAssembly::getRepNamespace().asChar());
+    const std::string ns(TfStringPrintf("NS_%s", TfStringGetBeforeSuffix(defaultNs, '_').c_str()));
+
+    return MString(ns.c_str());
+}
+
+/* virtual */
+MString
 UsdMayaReferenceAssembly::getRepNamespace() const
 {
-    if (TfGetEnvSetting(PIXMAYA_USE_USD_ASSEM_NAMESPACE))
-    {
-        std::string defaultNs( MPxAssembly::getRepNamespace().asChar() );
-        std::string ns( TfStringPrintf("NS_%s", TfStringGetBeforeSuffix( defaultNs, '_' ).c_str() ) ) ;
-        return ns.c_str();
+    MString repNamespaceStr;
+    if (!TfGetEnvSetting(PIXMAYA_USE_USD_ASSEM_NAMESPACE)) {
+        return repNamespaceStr;
     }
-    MString emptyNS;
-    return emptyNS;
+
+    // This was adapted from Autodesk's sample assembly reference node:
+    //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    MPlug repNamespacePlug(thisMObject(), _psData.repNamespace);
+    repNamespacePlug.getValue(repNamespaceStr);
+
+    if (repNamespaceStr.numChars() == 0) {
+        repNamespaceStr = getDefaultRepNamespace();
+
+        // Update the attribute with the default representation namespace since
+        // the attribute was previously empty.
+        repNamespacePlug.setValue(repNamespaceStr);
+    }
+
+    return repNamespaceStr;
+}
+
+/* virtual */
+void
+UsdMayaReferenceAssembly::updateRepNamespace(const MString& repNamespace)
+{
+    // This was adapted from Autodesk's sample assembly reference node:
+    //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    MPlug repNamespacePlug(thisMObject(), _psData.repNamespace);
+    MString repCurrentNamespaceStr;
+    repNamespacePlug.getValue(repCurrentNamespaceStr);
+
+    bool prevVal = _updatingRepNamespace;
+    _updatingRepNamespace = true;
+
+    // Update the assembly attribute.
+    repNamespacePlug.setValue(repNamespace);
+
+    _updatingRepNamespace = prevVal;
 }
 
 // virtual
@@ -791,6 +861,76 @@ bool UsdMayaReferenceAssembly::setInternalValueInContext( const MPlug& plug,
     MStatus status;
     if (_inSetInternalValue) {
         return false;
+    }
+
+    // This was adapted from Autodesk's sample assembly reference node:
+    //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    if (plug == _psData.repNamespace && !_updatingRepNamespace) {
+        // Rename the namespace associated with the assembly with the new
+        // repNamespace. Correct the repNamespace if needed.
+        // To rename the namespace, there are 2 cases to get the oldNS to
+        // rename:
+        //     1 - If the assembly namespace attribute is changed directly
+        //         (i.e. someone did a setAttr directly, or modified it via the
+        //         attribute editor), we get the oldNS (the namespace to be
+        //         renamed) using the plug value, which has not been set yet.
+        //         So query the oldNS name from current state of the datablock,
+        //         and the new one from the the data handle that is passed into
+        //         this method.
+        //
+        //     2 - If we are in IO, the plug value has already been set, but
+        //         the namespace still has the default value given by
+        //         getDefaultRepNamespace().
+        MString oldNS;
+        plug.getValue(oldNS);
+
+        // Early-out if the plug value is empty: the namespace has not been created yet.
+        if (oldNS.numChars() == 0) {
+            return false;
+        }
+
+        // Get the default namespace to rename.
+        if (MFileIO::isOpeningFile() || MFileIO::isReadingFile()) {
+            oldNS = getDefaultRepNamespace();
+        }
+
+        MString newNS = dataHandle.asString();
+
+        // Validate the name and only use it if it is valid (not empty).
+        // If the name is not valid, or if the user entered "" as repNamespace,
+        // use the default namespace.
+        MString validNewNS = MNamespace::validateName(newNS, &status);
+        if (status != MStatus::kSuccess) {
+            return false;
+        }
+
+        if (validNewNS.numChars() == 0) {
+            validNewNS = getDefaultRepNamespace();
+        }
+
+        if (validNewNS != newNS) {
+            // Update the value of newNS and of the data-handle.
+            newNS = validNewNS;
+            MDataHandle* nonConstHandle = (MDataHandle*) &dataHandle;
+            nonConstHandle->set(newNS);
+        }
+
+        // Finally, tell Maya to rename namespaces.
+        if (oldNS.numChars() > 0 && newNS.numChars() > 0 && oldNS != newNS) {
+            status = MNamespace::renameNamespace(oldNS, newNS);
+            if (status != MStatus::kSuccess) {
+                // The rename failed. Set back the old value.
+                // Note: if the rename failed, it is probably because the
+                // namespace newNS already existed, but it is the
+                // responsibility of the user to provide a name that does not
+                // exist.
+                MDataHandle* nonConstHandle = (MDataHandle*) &dataHandle;
+                nonConstHandle->set(oldNS);
+            }
+        }
+
+        return true;
     }
 
     bool setAttrSuccess = MPxAssembly::setInternalValueInContext(plug, dataHandle, ctx);

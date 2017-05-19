@@ -146,6 +146,7 @@ pxr_shared_library(${PXR_PACKAGE}
         testenv/testUsdMayaGetVariantSetSelections.py
         testenv/testUsdMayaModelKindWriter.py
         testenv/testUsdMayaProxyShape.py
+        testenv/testUsdMayaReferenceAssemblyEdits.py
         testenv/testUsdMayaUserExportedAttributes.py
         testenv/testUsdMetadataAttributeConverters.py
         testenv/testUsdReferenceAssemblyChangeRepresentations.py
@@ -184,6 +185,7 @@ pxr_test_scripts(
         testenv/testUsdMayaGetVariantSetSelections.py
         testenv/testUsdMayaModelKindWriter.py
         testenv/testUsdMayaProxyShape.py
+        testenv/testUsdMayaReferenceAssemblyEdits.py
         testenv/testUsdMayaUserExportedAttributes.py
         testenv/testUsdMetadataAttributeConverters.py
         testenv/testUsdReferenceAssemblyChangeRepresentations.py
@@ -457,6 +459,19 @@ pxr_install_test_dir(
 pxr_register_test(testUsdMayaProxyShape
     COMMAND "${MAYA_BASE_DIR}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaProxyShape"
     TESTENV testUsdMayaProxyShape
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdMayaReferenceAssemblyEdits
+    DEST testUsdMayaReferenceAssemblyEdits
+)
+pxr_register_test(testUsdMayaReferenceAssemblyEdits
+    COMMAND "${MAYA_BASE_DIR}/bin/mayapy ${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaReferenceAssemblyEdits"
+    TESTENV testUsdMayaReferenceAssemblyEdits
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources

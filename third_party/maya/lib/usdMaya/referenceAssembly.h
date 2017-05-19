@@ -92,6 +92,7 @@ public:
         MObject tintColor;
         MObject kind;
         MObject initialRep;
+        MObject repNamespace;
         MObject inStageData;
         MObject inStageDataCached;
         MObject outStageData;
@@ -182,10 +183,12 @@ public:
     PXRUSDMAYA_API
     virtual bool         inactivateRep();
     PXRUSDMAYA_API
-    virtual MString      getRepNamespace() const;
+    virtual MString      getRepNamespace() const override;
+    PXRUSDMAYA_API
+    virtual void         updateRepNamespace(const MString& repNamespace) override;
+
     //virtual bool         activate(const MString& representation);
     //virtual bool         isActive(const MString& representation) const;
-    //virtual void         updateRepNamespace(const MString& repNamespace);
     //virtual bool         handlesApplyEdits() const;
     //virtual MStatus      applyEdits(MObject& target, MItEdits& edits);
     //virtual bool         handlesAddEdits() const;
@@ -248,13 +251,38 @@ public:
     MStatus computeInStageDataCached(MDataBlock& dataBlock);
     MStatus computeOutStageData(MDataBlock& dataBlock);
 
-    // Class member variables
+    // After discussion with Autodesk, we've decided to adopt the namespace
+    // handling functionality from their sample assembly reference
+    // implementation here:
+    //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8h_example_html
+    //
+    // This should really be implemented internally as built-in functionality
+    // of Maya assemblies rather than having to deal with it in plugin code,
+    // but there are currently no plans to make that happen, so we're forced to
+    // do it ourselves. This helps ensure that assembly edits do not fall off
+    // when assembly nodes are renamed/duplicated/etc.
+
+    /// UsdMayaReferenceAssembly objects use a slightly different scheme for
+    /// the representation namespace than the default behavior of
+    /// MPxAssembly::getRepNamespace(), but they use that as a starting point.
+    /// This function returns the "default" namespace for this assembly. This
+    /// may be different from the assembly's actual namespace if the
+    /// repNamespace attribute has been set to a different value.
+    MString getDefaultRepNamespace() const;
+
+    // This variable is used to tell if we're in the process of updating the
+    // repNamespace. It helps distinguish between cases when the namespace
+    // change was initiated by Maya or via the namespace editor (in which case
+    // _updatingRepNamespace == true) versus when the repNamespace attribute
+    // was edited directly (in which case _updatingRepNamespace == false).
+    bool _updatingRepNamespace;
+
     std::map<std::string, boost::shared_ptr<MPxRepresentation> > _representations;
     bool _activateRepOnFileLoad; 
     boost::shared_ptr<MPxRepresentation> _activeRep;
     bool _inSetInternalValue;
     bool _hasEdits;
-
 };
 
 
