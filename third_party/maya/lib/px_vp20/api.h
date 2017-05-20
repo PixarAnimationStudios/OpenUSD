@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(PX_VP20_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define PX_VP20_API
 #   define PX_VP20_API_TEMPLATE_CLASS(...)
 #   define PX_VP20_API_TEMPLATE_STRUCT(...)

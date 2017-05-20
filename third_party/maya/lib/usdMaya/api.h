@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(USDMAYA_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define PXRUSDMAYA_API
 #   define PXRUSDMAYA_API_TEMPLATE_CLASS(...)
 #   define PXRUSDMAYA_API_TEMPLATE_STRUCT(...)

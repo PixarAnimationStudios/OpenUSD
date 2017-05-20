@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(VT_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define VT_API
 #   define VT_API_TEMPLATE_CLASS(...)
 #   define VT_API_TEMPLATE_STRUCT(...)

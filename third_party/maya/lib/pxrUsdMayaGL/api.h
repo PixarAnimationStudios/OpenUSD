@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(PXRUSDMAYAGL_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define PXRUSDMAYAGL_API
 #   define PXRUSDMAYAGL_API_TEMPLATE_CLASS(...)
 #   define PXRUSDMAYAGL_API_TEMPLATE_STRUCT(...)

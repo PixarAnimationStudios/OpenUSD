@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(PXOSD_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define PXOSD_API
 #   define PXOSD_API_TEMPLATE_CLASS(...)
 #   define PXOSD_API_TEMPLATE_STRUCT(...)

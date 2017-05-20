@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(USDHYDRA_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define USDHYDRA_API
 #   define USDHYDRA_API_TEMPLATE_CLASS(...)
 #   define USDHYDRA_API_TEMPLATE_STRUCT(...)

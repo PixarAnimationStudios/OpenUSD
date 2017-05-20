@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(USDUI_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define USDUI_API
 #   define USDUI_API_TEMPLATE_CLASS(...)
 #   define USDUI_API_TEMPLATE_STRUCT(...)

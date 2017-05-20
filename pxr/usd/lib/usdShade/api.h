@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(USDSHADE_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define USDSHADE_API
 #   define USDSHADE_API_TEMPLATE_CLASS(...)
 #   define USDSHADE_API_TEMPLATE_STRUCT(...)

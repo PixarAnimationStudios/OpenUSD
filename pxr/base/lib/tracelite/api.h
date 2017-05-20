@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(TRACELITE_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define TRACELITE_API
 #   define TRACELITE_API_TEMPLATE_CLASS(...)
 #   define TRACELITE_API_TEMPLATE_STRUCT(...)

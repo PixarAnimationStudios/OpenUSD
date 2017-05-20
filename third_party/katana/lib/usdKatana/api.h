@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(USDKATANA_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define USDKATANA_API
 #   define USDKATANA_API_TEMPLATE_CLASS(...)
 #   define USDKATANA_API_TEMPLATE_STRUCT(...)

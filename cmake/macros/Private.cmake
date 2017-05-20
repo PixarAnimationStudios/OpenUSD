@@ -1028,8 +1028,7 @@ function(_pxr_library NAME)
     set(apiPublic "")
     set(apiPrivate ${uppercaseName}_EXPORTS=1)
     if(args_TYPE STREQUAL "STATIC")
-        set(apiPublic ${uppercaseName}_STATIC=1)
-        set(apiPrivate "")
+        set(apiPublic PXR_USD_STATIC=1)
     endif()
 
     # Final name.

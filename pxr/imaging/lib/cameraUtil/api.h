@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(CAMERAUTIL_STATIC)
+#if defined(PXR_USD_STATIC)
 #   define CAMERAUTIL_API
 #   define CAMERAUTIL_API_TEMPLATE_CLASS(...)
 #   define CAMERAUTIL_API_TEMPLATE_STRUCT(...)
