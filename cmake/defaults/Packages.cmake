@@ -21,6 +21,12 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+# Save the current value of BUILD_SHARED_LIBS and restore it at
+# the end of this file, since some of the Find* modules invoked
+# below may wind up stomping over this value.
+set(build_shared_libs "${BUILD_SHARED_LIBS}")
+
 # Core USD Package Requirements 
 # ----------------------------------------------
 
@@ -133,3 +139,7 @@ if (PXR_BUILD_ALEMBIC_PLUGIN)
         )
     endif()
 endif()
+
+# ----------------------------------------------
+
+set(BUILD_SHARED_LIBS "${build_shared_libs}")
