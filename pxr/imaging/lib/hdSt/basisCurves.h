@@ -105,11 +105,9 @@ protected:
                                   HdDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
 
+    HdDirtyBits _PropagateDirtyBits(HdDirtyBits dirtyBits);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const override;
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
-    virtual void _InitRepr(TfToken const &reprName,
-                           HdDirtyBits *dirtyBits) override;
 
 private:
     enum DrawingCoord {
@@ -120,7 +118,6 @@ private:
     enum DirtyBits {
         DirtyIndices        = HdChangeTracker::CustomBitsBegin,
         DirtyHullIndices    = (DirtyIndices       << 1),
-        DirtyNewRepr        = (DirtyHullIndices   << 1),
     };
 
     /// We only support drawing smooth curves for a small subset of all the

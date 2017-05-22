@@ -497,10 +497,8 @@ _AppendDrawItem(HdSceneDelegate* delegate,
     std::vector<HdDrawItem> *drawItems =
             rprim->GetDrawItems(delegate, reprName, forcedRepr);
 
-    if (drawItems != nullptr) {
-        TF_FOR_ALL(drawItemIt, *drawItems) {
-            (*result)[rprimTag].push_back(&(*drawItemIt));
-        }
+    TF_FOR_ALL(drawItemIt, *drawItems) {
+        (*result)[rprimTag].push_back(&(*drawItemIt));
     }
 }
 
@@ -815,44 +813,6 @@ namespace {
             }
         }
     };
-
-    static void
-    _PreSyncRPrims(_RprimSyncRequestVector *syncReq,
-                             _ReprList reprs,
-                             size_t begin,
-                             size_t end)
-    {
-        for (size_t i = begin; i < end; ++i)
-        {
-            HdSceneDelegate *sceneDelegate = syncReq->sceneDelegates[i];
-            HdRprim         *rprim         = syncReq->rprims[i];
-            HdDirtyBits     &dirtyBits     = syncReq->request.dirtyBits[i];
-            size_t          reprsMask      = syncReq->reprsMasks[i];
-
-            TF_FOR_ALL(it, reprs) {
-                if (reprsMask & 1) {
-                    rprim->InitRepr(sceneDelegate,
-                                    it->reprName,
-                                    it->forcedRepr,
-                                    &dirtyBits);
-                }
-                reprsMask >>= 1;
-            }
-
-            dirtyBits = rprim->PropagateRprimDirtyBits(dirtyBits);
-        }
-    }
-
-    static void
-    _PreSyncRequestVector(_RprimSyncRequestVector *syncReq,
-                                    _ReprList reprs)
-    {
-        WorkParallelForN(syncReq->rprims.size(),
-                     boost::bind(&_PreSyncRPrims,
-                                 syncReq, reprs, _1, _2));
-
-    }
-
 };
 
 void
@@ -990,23 +950,6 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
     // Drop the GIL before we spawn parallel tasks.
     TF_PY_ALLOW_THREADS_IN_SCOPE();
-
-    {
-        TRACE_SCOPE("Pre-Sync Rprims");
-
-        // Dispatch synchronization work to each delegate.
-        WorkArenaDispatcher dirtyBitDispatcher;
-
-        TF_FOR_ALL(dlgIt, syncMap) {
-            _RprimSyncRequestVector *r = &dlgIt->second;
-            dirtyBitDispatcher.Run(
-                                   boost::bind(&_PreSyncRequestVector,
-                                               r, reprs));
-
-        }
-        dirtyBitDispatcher.Wait();
-    }
-
 
     {
         TRACE_SCOPE("Delegate Sync");

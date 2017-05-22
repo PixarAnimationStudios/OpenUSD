@@ -91,20 +91,11 @@ protected:
                                  HdDirtyBits *dirtyBitsState);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const override;
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
-    virtual void _InitRepr(TfToken const &reprName,
-                           HdDirtyBits *dirtyBits) override;
-
 
 private:
     enum DrawingCoord {
         InstancePrimVar = HdDrawingCoord::CustomSlotsBegin
     };
-
-    enum DirtyBits {
-        DirtyNewRepr        = HdChangeTracker::CustomBitsBegin
-    };
-
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdDrawItem *drawItem,
