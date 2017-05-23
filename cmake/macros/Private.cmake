@@ -50,8 +50,11 @@ function(_install_headers LIBRARY_NAME)
             list(APPEND files_copied ${outfile})
             add_custom_command(
                 OUTPUT ${outfile}
-                COMMAND "${CMAKE_COMMAND}"
-                ARGS -E copy "${infile}" "${outfile}"
+                COMMAND
+                    "${PYTHON_EXECUTABLE}"
+                    "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.py"
+                    "${infile}"
+                    "${outfile}"
                 MAIN_DEPENDENCY "${infile}"
                 COMMENT "Copying ${f} ..."
                 VERBATIM
