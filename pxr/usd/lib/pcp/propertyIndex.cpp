@@ -43,8 +43,6 @@
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/optional.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////
@@ -231,8 +229,8 @@ private:
         // This function is performance sensitive, so as an optimization, get
         // the underlying spec pointer to avoid excessive dormancy checks (one
         // per dereference).
-        if (SdfSpec *specPtr = boost::get_pointer(attr)) {
-            SdfLayer *layer = boost::get_pointer(specPtr->GetLayer());
+        if (SdfSpec *specPtr = get_pointer(attr)) {
+            SdfLayer *layer = get_pointer(specPtr->GetLayer());
             SdfPath const &path = specPtr->GetPath();
             valueType = layer->GetFieldAs<TfToken>(path,
                                                    SdfFieldKeys->TypeName);
