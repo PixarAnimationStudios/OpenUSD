@@ -348,25 +348,13 @@ HdRenderIndex::GetSprimSubtree(TfToken const& typeId,
                                SdfPath const& rootPath) const
 {
     SdfPathVector result;
-
-    if (_renderDelegate == nullptr) {
-        TF_CODING_ERROR("Render delegate not initalized on render index");
-        return SdfPathVector();
-    }
-
     _sprimIndex.GetPrimSubtree(typeId, rootPath, &result);
-
     return result;
 }
 
 HdSprim *
 HdRenderIndex::GetFallbackSprim(TfToken const& typeId) const
 {
-    if (_renderDelegate == nullptr) {
-        TF_CODING_ERROR("Render delegate not initalized on render index");
-        return nullptr;
-    }
-
     return _sprimIndex.GetFallbackPrim(typeId);
 }
 
@@ -404,25 +392,13 @@ HdRenderIndex::GetBprimSubtree(TfToken const& typeId,
                                SdfPath const& rootPath) const
 {
     SdfPathVector result;
-
-    if (_renderDelegate == nullptr) {
-        TF_CODING_ERROR("Render delegate not initalized on render index");
-        return SdfPathVector();
-    }
-
     _bprimIndex.GetPrimSubtree(typeId, rootPath, &result);
-
     return result;
 }
 
 HdBprim *
 HdRenderIndex::GetFallbackBprim(TfToken const& typeId) const
 {
-    if (_renderDelegate == nullptr) {
-        TF_CODING_ERROR("Render delegate not initalized on render index");
-        return nullptr;
-    }
-
     return _bprimIndex.GetFallbackPrim(typeId);
 }
 
@@ -434,12 +410,7 @@ HdRenderDelegate *HdRenderIndex::GetRenderDelegate() const
 TfToken
 HdRenderIndex::GetRenderDelegateType() const
 {
-    if (_renderDelegate == nullptr) {
-        return TfToken();
-    }
-
     TfType const &type = TfType::Find(_renderDelegate);
-
     const std::string &typeName  = type.GetTypeName();
     return TfToken(typeName);
 }
@@ -448,11 +419,6 @@ bool
 HdRenderIndex::_CreateFallbackPrims()
 {
     bool success = true;
-
-    if (_renderDelegate == nullptr) {
-        TF_CODING_ERROR("Render Delegate Uninitalized");
-        return false;
-    }
 
     success &= _sprimIndex.CreateFallbackPrims(_renderDelegate);
     success &= _bprimIndex.CreateFallbackPrims(_renderDelegate);
@@ -463,12 +429,6 @@ HdRenderIndex::_CreateFallbackPrims()
 void
 HdRenderIndex::_DestroyFallbackPrims()
 {
-    // If the render delegate never got assigned, or already removed we can't
-    // free the fallback prims.
-    if (_renderDelegate == nullptr) {
-        return;
-    }
-
     _sprimIndex.DestroyFallbackPrims(_renderDelegate);
     _bprimIndex.DestroyFallbackPrims(_renderDelegate);
 }
@@ -1157,11 +1117,6 @@ HdRenderIndex::GetSceneDelegateAndInstancerIds(SdfPath const &id,
 void
 HdRenderIndex::_InitPrimTypes()
 {
-    if (_renderDelegate == nullptr) {
-        TF_CODING_ERROR("Render Delegate Uninitalized");
-        return;
-    }
-
     _sprimIndex.InitPrimTypes(_renderDelegate->GetSupportedSprimTypes());
     _bprimIndex.InitPrimTypes(_renderDelegate->GetSupportedBprimTypes());
 }
