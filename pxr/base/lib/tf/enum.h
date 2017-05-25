@@ -108,7 +108,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// // source file
 /// #include "pxr/base/tf/registryManager.h"
-/// TF_REGISTRY_FUNCTION(TfEnum, Season) {
+/// TF_REGISTRY_FUNCTION(TfEnum) {
 ///     // Register the names for the values:
 ///     TF_ADD_ENUM_NAME(SPRING);
 ///     TF_ADD_ENUM_NAME(SUMMER);
