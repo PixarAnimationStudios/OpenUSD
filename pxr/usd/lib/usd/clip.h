@@ -199,6 +199,16 @@ public:
 
     size_t GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
 
+    // Internal function used during value resolution. When determining
+    // resolve info sources, value resolution needs to determine when clipTimes
+    // are mapping into an empty clip with no samples, so it can continue
+    // searching for value sources. 
+    size_t _GetNumTimeSamplesForPathInLayerForClip(
+            const SdfAbstractDataSpecId& id) const {
+        return _GetLayerForClip()->GetNumTimeSamplesForPath(
+                                        _TranslateIdToClip(id).id);
+    }
+
     std::set<ExternalTime>
     ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
 
@@ -269,6 +279,15 @@ private:
     private:
         SdfPath _path;
     };
+
+    std::set<InternalTime>
+    _GetMergedTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
+
+    bool 
+    _GetBracketingTimeSamplesForPathInternal(const SdfAbstractDataSpecId& id, 
+                                             ExternalTime time, 
+                                             ExternalTime* tLower, 
+                                             ExternalTime* tUpper) const;
 
     _TranslatedSpecId _TranslateIdToClip(const SdfAbstractDataSpecId& id) const;
 

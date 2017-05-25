@@ -25,11 +25,13 @@
 import unittest
 from pxr import Sdf, Tf, Usd, Vt, Gf
 
-def ValidateAttributeTimeSamples(attr):
+def ValidateAttributeTimeSamples(assertEqFn, attr):
     """Verifies attribute time samples are as expected via
     the time sample API"""
     allTimeSamples = attr.GetTimeSamples()
-    assert attr.GetNumTimeSamples() == len(allTimeSamples)
+    assertEqFn(attr.GetNumTimeSamples(), len(allTimeSamples))
+
+    import sys
 
     for i in range(0, len(allTimeSamples) - 1):
         (lowerSample, upperSample) = \
@@ -37,27 +39,28 @@ def ValidateAttributeTimeSamples(attr):
         
         # The attribute's bracketing time samples at each time returned
         # by GetTimeSamples() should be equal to the time.
-        assert attr.GetBracketingTimeSamples(lowerSample) == \
-                    (lowerSample, lowerSample)
-        assert attr.GetBracketingTimeSamples(upperSample) == \
-                    (upperSample, upperSample)
+        assertEqFn(attr.GetBracketingTimeSamples(lowerSample), 
+                   (lowerSample, lowerSample))
+        assertEqFn(attr.GetBracketingTimeSamples(upperSample), 
+                   (upperSample, upperSample))
 
         # The attribute's bracketing time samples should be the same
         # at every time in the interval (lowerSample, upperSample)
         for t in range(lowerSample + 1, upperSample - 1):
-            assert attr.GetBracketingTimeSamples(t) == (lowerSample, upperSample)
+            assertEqFn(attr.GetBracketingTimeSamples(t), 
+                       (lowerSample, upperSample))
 
         # The attribute should return the same value at every time in the
         # interval [lowerSample, upperSample)
         for t in range(lowerSample, upperSample - 1):
-            assert attr.Get(t) == attr.Get(lowerSample)
+            assertEqFn(attr.Get(t), attr.Get(lowerSample))
 
     # Verify that getting the complete time sample map for this
     # attribute is equivalent to asking for the value at each time
     # returned by GetTimeSamples()
     timeSampleMap = dict([(t, attr.Get(t)) for t in allTimeSamples])
 
-    assert timeSampleMap == attr.GetMetadata('timeSamples')
+    assertEqFn(timeSampleMap, attr.GetMetadata('timeSamples'))
 
     # Verify that getting ranges of time samples works
     if len(allTimeSamples) > 2:
@@ -65,8 +68,9 @@ def ValidateAttributeTimeSamples(attr):
         endClip = startClip
 
         while endClip < max(allTimeSamples):
-            assert attr.GetTimeSamplesInInterval(Gf.Interval(startClip, endClip)) == \
-                        [t for t in allTimeSamples if t <= endClip]
+            assertEqFn(attr.GetTimeSamplesInInterval(Gf.Interval(startClip,
+                                                                 endClip)), 
+                        [t for t in allTimeSamples if t <= endClip])
             endClip += 1
 
 def _Check(assertFn, attr, expected, time=None, query=True):
@@ -170,12 +174,12 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, childAttr, time=5, expected=-5.0)
         _Check(self.assertEqual, childAttr, time=10, expected=-10.0)
 
-        ValidateAttributeTimeSamples(localAttr)
-        ValidateAttributeTimeSamples(refAttr)
-        ValidateAttributeTimeSamples(clsAttr)
-        ValidateAttributeTimeSamples(payloadAttr)
-        ValidateAttributeTimeSamples(varAttr)
-        ValidateAttributeTimeSamples(childAttr)
+        ValidateAttributeTimeSamples(self.assertEqual, localAttr)
+        ValidateAttributeTimeSamples(self.assertEqual, refAttr)
+        ValidateAttributeTimeSamples(self.assertEqual, clsAttr)
+        ValidateAttributeTimeSamples(self.assertEqual, payloadAttr)
+        ValidateAttributeTimeSamples(self.assertEqual, varAttr)
+        ValidateAttributeTimeSamples(self.assertEqual, childAttr)
 
         # Before reload, stage should still be getting the old value
         clipAttr = stage.GetPrimAtPath('/Model_1/Child').GetAttribute('attr')
@@ -234,14 +238,16 @@ class TestUsdValueClips(unittest.TestCase):
         model2 = stage.GetPrimAtPath('/Model2')
         attr2 = model2.GetAttribute('size')
 
-        _Check(self.assertEqual, attr2, time=0, expected=15.0)
         _Check(self.assertEqual, attr2, time=20, expected=15.0)
         _Check(self.assertEqual, attr2, time=30, expected=25.0)
-        self.assertEqual(attr2.GetTimeSamples(), [10, 25])
-        self.assertEqual(attr2.GetTimeSamplesInInterval(Gf.Interval(0, 25)), [10, 25])
 
-        ValidateAttributeTimeSamples(attr)
-        ValidateAttributeTimeSamples(attr2)
+        self.assertEqual(attr2.GetTimeSamples(),
+            [0.0, 10.0, 20.0, 25.0, 30.0])
+        self.assertEqual(attr2.GetTimeSamplesInInterval(Gf.Interval(0, 25)), 
+            [0.0, 10.0, 20.0, 25.0])
+
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
+        ValidateAttributeTimeSamples(self.assertEqual, attr2)
 
     def test_ClipTimingOutsideRange(self):
         """Tests clip retiming behavior when the mapped clip times are outside
@@ -252,14 +258,6 @@ class TestUsdValueClips(unittest.TestCase):
         model = stage.GetPrimAtPath('/Model')
         attr = model.GetAttribute('size')
 
-        # This test case maps frames [0, 10] on the stage to [30, 40] on
-        # the clip. However, the clip only has time samples on frames [5, 25].
-        # The expected behavior is to clamp to the nearest clip time sample,
-        # which is on frame 25 in the clip.
-        for t in xrange(11):
-            _Check(self.assertEqual, attr, time=t, expected=25.0)
-            self.assertEqual(attr.GetBracketingTimeSamples(t), (0.0, 0.0))
-            
         # Asking for frames outside the mapped times should also clamp to
         # the nearest time sample.
         for t in xrange(-10, 0):
@@ -268,12 +266,15 @@ class TestUsdValueClips(unittest.TestCase):
 
         for t in xrange(11, 20):
             _Check(self.assertEqual, attr, time=t, expected=25.0)
-            self.assertEqual(attr.GetBracketingTimeSamples(t), (0.0, 0.0))
+            self.assertEqual(attr.GetBracketingTimeSamples(t), (10.0, 10.0))
 
-        self.assertEqual(attr.GetTimeSamples(), [0.0])
-        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(-1.0, 1.0)), [0.0])
-        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0.0, 0.0)), [0.0])
-        ValidateAttributeTimeSamples(attr)
+        self.assertEqual(attr.GetTimeSamples(), 
+            [0.0, 10.0])
+        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(-1.0, 1.0)), 
+            [0.0])
+        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0.0, 0.0)), 
+            [0.0])
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
 
     def test_ClipsWithLayerOffsets(self):
         """Tests behavior of clips when layer offsets are involved"""
@@ -295,9 +296,11 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, attr1, time=0, expected=-10.0)
         _Check(self.assertEqual, attr1, time=-5, expected=-5.0)
         _Check(self.assertEqual, attr1, time=-10, expected=-5.0)
-        self.assertEqual(attr1.GetTimeSamples(), [-5, 0, 5, 10])
-        self.assertEqual(attr1.GetTimeSamplesInInterval(Gf.Interval(-10, 10)), [-5, 0, 5, 10])
-
+        self.assertEqual(attr1.GetTimeSamples(), 
+           [-10.0, -5.0, 0.0, 5.0, 10.0])
+        self.assertEqual(attr1.GetTimeSamplesInInterval(Gf.Interval(-10, 10)), 
+           [-10.0, -5.0, 0.0, 5.0, 10.0])
+ 
         # Test that layer offsets on layers where clipTimes/clipActive are
         # authored are taken into account. The test case is similar to above,
         # except clipTimes/clipActive have been authored in a sublayer that
@@ -310,8 +313,10 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, attr2, time=0, expected=-20.0)
         _Check(self.assertEqual, attr2, time=-5, expected=-15.0)
         _Check(self.assertEqual, attr2, time=-10, expected=-10.0)
-        self.assertEqual(attr2.GetTimeSamples(), [-15, -10, -5, 0])
-        self.assertEqual(attr2.GetTimeSamplesInInterval(Gf.Interval(-3, 1)), [0])
+        self.assertEqual(attr2.GetTimeSamples(), 
+            [-20.0, -15.0, -10.0, -5.0, 0.0])
+        self.assertEqual(attr2.GetTimeSamplesInInterval(Gf.Interval(-3, 1)), 
+            [0.0])
 
         # Test that reference offsets are taken into account. An offset
         # of 10 frames is authored on the reference; this should be combined
@@ -324,12 +329,14 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, attr3, time=0, expected=-20.0)
         _Check(self.assertEqual, attr3, time=-5, expected=-15.0)
         _Check(self.assertEqual, attr3, time=-10, expected=-10.0)
-        self.assertEqual(attr3.GetTimeSamples(), [-15, -10, -5, 0])
-        self.assertEqual(attr3.GetTimeSamplesInInterval(Gf.Interval(-5, 5)), [-5, 0])
+        self.assertEqual(attr3.GetTimeSamples(), 
+            [-20, -15, -10, -5, 0])
+        self.assertEqual(attr3.GetTimeSamplesInInterval(Gf.Interval(-5, 5)), 
+            [-5, 0])
 
-        ValidateAttributeTimeSamples(attr1)
-        ValidateAttributeTimeSamples(attr2)
-        ValidateAttributeTimeSamples(attr3)
+        ValidateAttributeTimeSamples(self.assertEqual, attr1)
+        ValidateAttributeTimeSamples(self.assertEqual, attr2)
+        ValidateAttributeTimeSamples(self.assertEqual, attr3)
 
     def test_ClipStrengthOrdering(self):
         '''Tests strength of clips during resolution'''
@@ -405,7 +412,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr_1.GetTimeSamplesInInterval(
             Gf.Interval.GetFullInterval()), [0.0])
 
-        ValidateAttributeTimeSamples(attr_1)
+        ValidateAttributeTimeSamples(self.assertEqual, attr_1)
 
         # This attribute has no time samples in the clip or elsewhere. Value 
         # resolution will fall back to the default value, which will be used over 
@@ -418,7 +425,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr_2.GetTimeSamplesInInterval( 
             Gf.Interval.GetFullInterval()), [])
 
-        ValidateAttributeTimeSamples(attr_2)
+        ValidateAttributeTimeSamples(self.assertEqual, attr_2)
 
     def test_MultipleClips(self):
         """Verifies behavior with multiple clips being applied to a single prim"""
@@ -455,11 +462,11 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr.GetBracketingTimeSamples(16), (16, 16))
 
         # Verify that GetTimeSamples() returns time samples from both clips.
-        self.assertEqual(attr.GetTimeSamples(), [5, 10, 15, 16, 19, 22, 25])
+        self.assertEqual(attr.GetTimeSamples(), 
+            [0.0, 5.0, 10.0, 15.0, 16.0, 19.0, 22.0, 25.0, 31.0])
         self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)), 
-                [5, 10, 15, 16, 19, 22, 25])
-
-        ValidateAttributeTimeSamples(attr)
+            [0.0, 5.0, 10.0, 15.0, 16.0, 19.0, 22.0, 25.0])
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
 
     def test_MultipleClipsWithNoTimeSamples(self):
         """Tests behavior when multiple clips are specified on a prim and none
@@ -497,7 +504,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr.GetTimeSamplesInInterval(
             Gf.Interval.GetFullInterval()), [])
 
-        ValidateAttributeTimeSamples(attr)
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
 
     def test_MultipleClipsWithSomeTimeSamples(self):
         """Tests behavior when multiple clips are specified on a prim and
@@ -528,11 +535,12 @@ class TestUsdValueClips(unittest.TestCase):
         for t in xrange(25, 31):
             _Check(self.assertEqual, attr, time=t, expected=-29.0)
 
-        self.assertEqual(attr.GetTimeSamples(), [16.0, 19.0, 22.0, 25.0])
+        self.assertEqual(attr.GetTimeSamples(), 
+            [0.0, 15.0, 16.0, 19.0, 22.0, 25.0, 31.0])
         self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(-5, 50)), 
-            [16.0, 19.0, 22.0, 25.0])
+            [0.0, 15.0, 16.0, 19.0, 22.0, 25.0, 31.0])
 
-        ValidateAttributeTimeSamples(attr)
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
 
     def test_MultipleClipsWithSomeTimeSamples2(self):
         """Another test case similar to TestMultipleClipsWithSomeTimeSamples2."""
@@ -573,11 +581,11 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, attr, time=11, expected=-29.0)
         _Check(self.assertEqual, attr, time=12, expected=-29.0)
 
-        self.assertEqual(attr.GetTimeSamples(), [0.0, 3.0, 4.0, 8.0, 11.0])
+        self.assertEqual(attr.GetTimeSamples(), [0.0, 3.0, 4.0, 7.0, 8.0, 11.0])
         self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0, 10)), 
-                [0.0, 3.0, 4.0, 8.0])
+                [0.0, 3.0, 4.0, 7.0, 8.0])
 
-        ValidateAttributeTimeSamples(attr)
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
 
     def test_OverrideOfAncestralClips(self):
         """Tests that clips specified on a descendant model will override
@@ -605,8 +613,8 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, descendantAttr, time=2, expected=-2)
         _Check(self.assertEqual, descendantAttr, time=3, expected=-3)
 
-        ValidateAttributeTimeSamples(ancestorAttr)
-        ValidateAttributeTimeSamples(descendantAttr)
+        ValidateAttributeTimeSamples(self.assertEqual, ancestorAttr)
+        ValidateAttributeTimeSamples(self.assertEqual, descendantAttr)
 
     def test_ClipFlatten(self):
         """Ensure that UsdStages with clips are flattened as expected.
@@ -772,7 +780,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(notInManifestAndInClip.GetTimeSamples(), [])
         self.assertEqual(notInManifestAndInClip.GetTimeSamplesInInterval(
             Gf.Interval.GetFullInterval()), [])
-        ValidateAttributeTimeSamples(notInManifestAndInClip)
+        ValidateAttributeTimeSamples(self.assertEqual, notInManifestAndInClip)
 
         # This attribute also doesn't exist in the manifest and also
         # does not have any samples in the clips. It should behave exactly
@@ -784,7 +792,7 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, notInManifestNotInClip, time=0, expected=4.0)
         self.assertEqual(notInManifestNotInClip.GetTimeSamplesInInterval(
             Gf.Interval.GetFullInterval()), [])
-        ValidateAttributeTimeSamples(notInManifestNotInClip)
+        ValidateAttributeTimeSamples(self.assertEqual, notInManifestNotInClip)
         
         # This attribute is in the manifest but is declared uniform,
         # so we should also not look in any clips for samples.
@@ -796,7 +804,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(uniformInManifestAndInClip.GetTimeSamples(), [])
         self.assertEqual(uniformInManifestAndInClip.GetTimeSamplesInInterval(
             Gf.Interval.GetFullInterval()), [])
-        ValidateAttributeTimeSamples(uniformInManifestAndInClip)
+        ValidateAttributeTimeSamples(self.assertEqual, uniformInManifestAndInClip)
 
         # This attribute is in the manifest and has samples in the
         # first clip, but not the other. We should get the clip's samples
@@ -811,10 +819,11 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, inManifestAndInClip, time=0, expected=0.0)
         _Check(self.assertEqual, inManifestAndInClip, time=1, expected=-1.0)
         _Check(self.assertEqual, inManifestAndInClip, time=2, expected=1.0)
-        self.assertEqual(inManifestAndInClip.GetTimeSamples(), [0.0, 1.0, 2.0])
+        self.assertEqual(inManifestAndInClip.GetTimeSamples(), 
+                         [0.0, 1.0, 2.0, 3.0])
         self.assertEqual(inManifestAndInClip.GetTimeSamplesInInterval(
             Gf.Interval(0, 2.1)), [0.0, 1.0, 2.0])
-        ValidateAttributeTimeSamples(inManifestAndInClip)
+        ValidateAttributeTimeSamples(self.assertEqual, inManifestAndInClip)
 
         # Close and reopen the stage to ensure the clip layers are closed
         # before we do the test below.
@@ -839,7 +848,7 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(inManifestNotInClip.GetTimeSamples(), [])
         self.assertEqual(inManifestNotInClip.GetTimeSamplesInInterval(
             Gf.Interval.GetFullInterval()), [])
-        ValidateAttributeTimeSamples(inManifestNotInClip)
+        ValidateAttributeTimeSamples(self.assertEqual, inManifestNotInClip)
 
     def test_ClipTemplateBehavior(self):
         primPath = Sdf.Path('/World/fx/Particles_Splash/points')

@@ -5589,9 +5589,8 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
 
 namespace 
 {
-template <class ClipOrLayer>
 bool
-_HasTimeSamples(const ClipOrLayer& source, 
+_HasTimeSamples(const SdfLayerRefPtr& source, 
                 const SdfAbstractDataSpecId& specId, 
                 const double* time = nullptr, 
                 double* lower = nullptr, double* upper = nullptr)
@@ -5602,6 +5601,21 @@ _HasTimeSamples(const ClipOrLayer& source,
         // return false.
         return source->GetBracketingTimeSamplesForPath(
             specId, *time, lower, upper);
+    }
+
+    return source->HasField(specId, SdfFieldKeys->TimeSamples);
+}
+
+bool
+_HasTimeSamples(const Usd_ClipRefPtr& source, 
+                const SdfAbstractDataSpecId& specId, 
+                const double* time = nullptr, 
+                double* lower = nullptr, double* upper = nullptr)
+{
+    if (time) {
+        return source->GetBracketingTimeSamplesForPath(
+                    specId, *time, lower, upper) && 
+               source->_GetNumTimeSamplesForPathInLayerForClip(specId) != 0;
     }
 
     return source->HasField(specId, SdfFieldKeys->TimeSamples);
@@ -5775,6 +5789,7 @@ struct UsdStage::_ResolveInfoResolver
         if (_HasTimeSamples(clip, specId, time,
                             &_extraInfo->lowerSample, 
                             &_extraInfo->upperSample)){
+    
             _extraInfo->clip = clip;
             // If we're querying at a particular time, we know the value comes
             // from this clip at this time.  If we're not given a time, then we
@@ -6059,16 +6074,18 @@ bool
 UsdStage::_GetTimeSampleMap(const UsdAttribute &attr,
                             SdfTimeSampleMap *out) const
 {
+    // Note that we must invoke interpolation here. This is because
+    // value clips may have authored clipTimes which don't 
+    // have a matching sample in the corresponding clip, so we have
+    // to interpolate a value(if we can) for it.
     std::vector<double> timeSamples;
     if (_GetTimeSamplesInInterval(attr, GfInterval::GetFullInterval(), 
                                   &timeSamples)) {
-        // Interpolation should not be triggered below, since we are asking
-        // for values on times where we know there are authored time samples.
-        Usd_NullInterpolator nullInterpolator;
-
         for (const auto& timeSample : timeSamples) {
             VtValue value;
-            if (_GetValueImpl(timeSample, attr, &nullInterpolator, &value)) {
+            Usd_UntypedInterpolator interp(&value);
+
+            if (_GetValueImpl(timeSample, attr, &interp, &value)) {
                 (*out)[timeSample] = value;
             } else {
                 (*out)[timeSample] = VtValue(SdfValueBlock());
@@ -6118,11 +6135,11 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                                           vector<double>* target, 
                                           const GfInterval& interval) 
     {
-            const auto sampleRangeBegin = std::lower_bound(samples.begin(),
-                samples.end(), interval.GetMin());
-            const auto sampleRangeEnd = std::upper_bound(sampleRangeBegin,
-                samples.end(), interval.GetMax());
-            target->insert(target->end(), sampleRangeBegin, sampleRangeEnd);
+        const auto sampleRangeBegin = std::lower_bound(samples.begin(),
+            samples.end(), interval.GetMin());
+        const auto sampleRangeEnd = std::upper_bound(sampleRangeBegin,
+            samples.end(), interval.GetMax());
+        target->insert(target->end(), sampleRangeBegin, sampleRangeEnd);
     };
 
     if (info._source == UsdResolveInfoSourceTimeSamples) {
@@ -6386,8 +6403,7 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                     foundLower = foundUpper = true;
                 }
                 else if (clip->GetBracketingTimeSamplesForPath(
-                        specId, desiredTime, lower, upper)) {
-
+                         specId, desiredTime, lower, upper)) {
                     foundLower = foundUpper = true;
                     if (*lower == *upper) {
                         if (desiredTime < *lower) {
@@ -6418,7 +6434,7 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                     *lower = *upper;
                 }
                 
-                // 'or' is correct here. Consider the case where we only
+                // '||' is correct here. Consider the case where we only
                 // have a single clip and desiredTime is earlier than the
                 // first time sample -- foundLower will be false, but we
                 // want to return the bracketing samples from the sole

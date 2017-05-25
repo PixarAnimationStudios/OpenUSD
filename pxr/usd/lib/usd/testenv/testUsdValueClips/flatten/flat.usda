@@ -6,6 +6,7 @@ def "Model_1" (
 {
     float size = 1
     float size.timeSamples = {
+        0: -5,
         5: -5,
         10: -10,
         15: -15,
@@ -13,6 +14,7 @@ def "Model_1" (
         19: -23,
         22: -26,
         25: -29,
+        31: -29,
     }
 }
 

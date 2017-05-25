@@ -588,10 +588,9 @@ _GetBracketingTimeSegment(
         *m2 = times.size() - 1;
     }
     else {
-        typedef Usd_Clip::TimeMappings::const_iterator _Iterator;
-        _Iterator lowerBound = std::lower_bound(times.begin(), times.end(),
-            time, Usd_SortByExternalTime());
-        *m2 = std::distance(times.begin(), lowerBound);
+        *m2 = std::distance(times.begin(), 
+                            std::lower_bound(times.begin(), times.end(),
+                                             time, Usd_SortByExternalTime()));
         *m1 = *m2 - 1;
     }
 
@@ -618,18 +617,89 @@ _GetBracketingTimeSegment(
     return true;
 }
 
+static 
+double
+_GetTime(const double& d)
+{
+    return d;
+}
+
+static 
+double
+_GetTime(const Usd_Clip::TimeMapping& t) 
+{
+    return t.externalTime;    
+}
+
+static
+Usd_Clip::TimeMappings::const_iterator
+_GetLowerBound(const Usd_Clip::TimeMappings& authoredClipTimes,
+               double time)
+{
+    return std::lower_bound( 
+            authoredClipTimes.begin(), authoredClipTimes.end(),
+            time, [](const Usd_Clip::TimeMapping& t, 
+                     const Usd_Clip::ExternalTime e) {
+                return t.externalTime < e;     
+            }        
+    ); 
+}
+
+
+static
+std::vector<Usd_Clip::ExternalTime>::const_iterator
+_GetLowerBound(const std::vector<Usd_Clip::ExternalTime>& authoredClipTimes, 
+               double time)
+{
+    return std::lower_bound(authoredClipTimes.begin(), 
+                            authoredClipTimes.end(),
+                            time);        
+}
+
+// XXX: This is taken from sdf/data.cpp with slight modification.
+// We should provide a free function in sdf to expose this behavior.
+// This function is different in that it works on time mappings instead
+// of raw doubles.
+template <typename Container>
+static
+void
+_GetBracketingTimeSamples(const Container& authoredClipTimes,
+                          const double time, 
+                          double* tLower, 
+                          double* tUpper) 
+{
+   if (time <= _GetTime(*authoredClipTimes.begin())) {
+        // Time is at-or-before the first sample.
+        *tLower = *tUpper = _GetTime(*authoredClipTimes.begin());
+    } else if (time >= _GetTime(*authoredClipTimes.rbegin())) {
+        // Time is at-or-after the last sample.
+        *tLower = *tUpper = _GetTime(*authoredClipTimes.rbegin());
+    } else {
+        auto iter = _GetLowerBound(authoredClipTimes, time);
+        if (_GetTime(*iter) == time) {
+            // Time is exactly on a sample.
+            *tLower = *tUpper = _GetTime(*iter);
+        } else {
+            // Time is in-between authoredClipTimes; return the bracketing times.
+            *tUpper = _GetTime(*iter);
+            --iter;
+            *tLower = _GetTime(*iter);
+        }
+    }
+}
+
 bool 
-Usd_Clip::GetBracketingTimeSamplesForPath(
+Usd_Clip::_GetBracketingTimeSamplesForPathInternal(
     const SdfAbstractDataSpecId& id, ExternalTime time, 
     ExternalTime* tLower, ExternalTime* tUpper) const
 {
     const SdfLayerRefPtr& clip = _GetLayerForClip();
     const _TranslatedSpecId idInClip = _TranslateIdToClip(id);
     const InternalTime timeInClip = _TranslateTimeToInternal(time);
-
     InternalTime lowerInClip, upperInClip;
+
     if (!clip->GetBracketingTimeSamplesForPath(
-            idInClip.id, timeInClip, &lowerInClip, &upperInClip)) { 
+            idInClip.id, timeInClip, &lowerInClip, &upperInClip)) {
         return false;
     }
 
@@ -756,18 +826,66 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     return true;
 }
 
+bool 
+Usd_Clip::GetBracketingTimeSamplesForPath(
+    const SdfAbstractDataSpecId& id, ExternalTime time, 
+    ExternalTime* tLower, ExternalTime* tUpper) const
+{
+    double lowerInClipLayer, upperInClipLayer;
+    bool fetchFromClip = _GetBracketingTimeSamplesForPathInternal(
+        id, time, &lowerInClipLayer, &upperInClipLayer);
+
+    bool fetchFromAuthoredClipTimes = false;
+    double lowerInClipTimes, upperInClipTimes;
+    if (!times.empty()) {
+        fetchFromAuthoredClipTimes = true;
+        _GetBracketingTimeSamples(times, time, 
+                                  &lowerInClipTimes, &upperInClipTimes);
+    }
+
+    if (fetchFromClip && fetchFromAuthoredClipTimes) {
+        std::vector<Usd_Clip::ExternalTime> authoredClipTimes = {
+             lowerInClipLayer, upperInClipLayer, 
+             lowerInClipTimes, upperInClipTimes
+        };
+        std::sort(authoredClipTimes.begin(), authoredClipTimes.end());
+        authoredClipTimes.erase(
+           std::unique(authoredClipTimes.begin(), authoredClipTimes.end()),
+           authoredClipTimes.end());
+        _GetBracketingTimeSamples(authoredClipTimes, time, tLower, tUpper);
+    } else if (fetchFromAuthoredClipTimes) {
+        *tLower = lowerInClipTimes;
+        *tUpper = upperInClipTimes;
+    } else {
+        *tLower = lowerInClipLayer;
+        *tUpper = upperInClipLayer;
+    }
+
+    return fetchFromClip || fetchFromAuthoredClipTimes;
+}
+
+std::set<Usd_Clip::InternalTime>
+Usd_Clip::_GetMergedTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+{
+    std::set<Usd_Clip::InternalTime> timeSamplesInClip = 
+        _GetLayerForClip()->ListTimeSamplesForPath(_TranslateIdToClip(id).id);
+    for (const TimeMapping& t : times) {
+        timeSamplesInClip.insert(t.internalTime);
+    }
+
+    return timeSamplesInClip;
+}
+
 size_t
 Usd_Clip::GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
 {
-    return _GetLayerForClip()->GetNumTimeSamplesForPath(
-        _TranslateIdToClip(id).id);
+    return _GetMergedTimeSamplesForPath(id).size();
 }
 
 std::set<Usd_Clip::ExternalTime>
 Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
 {
-    const std::set<InternalTime> timeSamplesInClip = 
-        _GetLayerForClip()->ListTimeSamplesForPath(_TranslateIdToClip(id).id);
+    std::set<InternalTime> timeSamplesInClip = _GetMergedTimeSamplesForPath(id);
     if (times.empty()) {
         return timeSamplesInClip;
     }
