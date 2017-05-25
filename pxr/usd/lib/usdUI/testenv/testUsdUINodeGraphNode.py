@@ -67,6 +67,15 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
            "Type of position attribute should be 'color3f', not %s" % \
            displayColorAttr.GetTypeName()
        displayColorAttr.Set(Gf.Vec3f(1, 0, 0))
+
+       # Test Size
+       sizeAttr = nodeGraphNode.GetSizeAttr()
+       assert not sizeAttr
+       sizeAttr = nodeGraphNode.CreateSizeAttr()
+       assert sizeAttr, "Failed creating size attribute"
+       assert sizeAttr.GetTypeName() == 'float2', \
+           "Type of size attribute should be 'float2', not %s" % sizeAttr.GetTypeName()
+       sizeAttr.Set(Gf.Vec2f(300, 400))
        
        stage.GetRootLayer().Save()
 

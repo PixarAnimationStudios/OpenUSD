@@ -29,8 +29,12 @@ class "NodeGraphNodeAPI"(
         (coordinates are Qt style, not cartesian).
 
         These positions are not explicitly meant in pixel space, but rather
-        assume that the size of a node is approximately 100x100. Depending on 
+        assume that the size of a node is approximately 1.0x1.0. Where size-x is
+        the node width and size-y height of the node. Depending on 
         graph UI implementation, the size of a node may vary in each direction.
+
+        Example: If a node's width is 300 and it is position is at 1000, we
+        store for x-position: 1000 * (1.0/300)
         """
         customData = {
             string apiName = "pos"
@@ -84,6 +88,20 @@ class "NodeGraphNodeAPI"(
             string apiName = "expansionState"
         }
     )
+
+    uniform float2 ui:nodegraph:node:size (
+        doc = """
+        Optional size hint for a node in a node graph.
+        X is the width.
+        Y is the height.
+
+        This value is optional, because node size is often determined 
+        based on the number of in- and outputs of a node.
+        """
+        customData = {
+            string apiName = "size"
+        }
+    )
 }
 
 
@@ -111,3 +129,38 @@ class "SceneGraphPrimAPI"(
         }
     )
 }
+
+class Backdrop "Backdrop" (
+    inherits = </Typed>
+    doc = """Provides a 'group-box' for the purpose of node graph organization.
+
+    Unlike containers, backdrops do not store the Shader nodes inside of them.
+    Backdrops are an organizational tool that allows Shader nodes to be visually 
+    grouped together in a node-graph UI, but there is no direct relationship 
+    between a Shader node and a Backdrop. 
+
+    The guideline for a node-graph UI is that a Shader node is considered part 
+    of a Backdrop when the Backdrop is the smallest Backdrop a Shader node's 
+    bounding-box fits inside.
+
+    Backdrop objects are contained inside a NodeGraph, similar to how Shader 
+    objects are contained inside a NodeGraph.
+
+    Backdrops have no shading inputs or outputs that influence the rendered
+    results of a NodeGraph. Therefore they can be safely ignored during import.
+
+    Like Shaders and NodeGraphs, Backdrops subscribe to the NodeGraphNodeAPI to 
+    specify position and size.
+    """ 
+)
+{
+    uniform token ui:description (
+        doc = """The text label that is displayed on the backdrop in the node
+        graph. This help-description explains what the nodes in a backdrop do.
+        """
+        customData = {
+            string apiName = "description"
+        }
+    )
+}
+

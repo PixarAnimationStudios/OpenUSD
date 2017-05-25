@@ -163,6 +163,23 @@ UsdUINodeGraphNodeAPI::CreateExpansionStateAttr(VtValue const &defaultValue, boo
                        writeSparsely);
 }
 
+UsdAttribute
+UsdUINodeGraphNodeAPI::GetSizeAttr() const
+{
+    return GetPrim().GetAttribute(UsdUITokens->uiNodegraphNodeSize);
+}
+
+UsdAttribute
+UsdUINodeGraphNodeAPI::CreateSizeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdUITokens->uiNodegraphNodeSize,
+                       SdfValueTypeNames->Float2,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -185,6 +202,7 @@ UsdUINodeGraphNodeAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdUITokens->uiNodegraphNodeDisplayColor,
         UsdUITokens->uiNodegraphNodeIcon,
         UsdUITokens->uiNodegraphNodeExpansionState,
+        UsdUITokens->uiNodegraphNodeSize,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

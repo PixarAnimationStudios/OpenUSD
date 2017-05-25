@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdUI/nodeGraphNodeAPI.h"
+#include "pxr/usd/usdUI/backdrop.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -50,55 +50,20 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreatePosAttr(UsdUINodeGraphNodeAPI &self,
+_CreateDescriptionAttr(UsdUIBackdrop &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreatePosAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateStackingOrderAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateStackingOrderAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateDisplayColorAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateDisplayColorAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateIconAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateIconAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateExpansionStateAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateExpansionStateAttr(
+    return self.CreateDescriptionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateSizeAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateSizeAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
 
 } // anonymous namespace
 
-void wrapUsdUINodeGraphNodeAPI()
+void wrapUsdUIBackdrop()
 {
-    typedef UsdUINodeGraphNodeAPI This;
+    typedef UsdUIBackdrop This;
 
-    class_<This, bases<UsdSchemaBase> >
-        cls("NodeGraphNodeAPI");
+    class_<This, bases<UsdTyped> >
+        cls("Backdrop");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -108,6 +73,8 @@ void wrapUsdUINodeGraphNodeAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
+        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -122,45 +89,10 @@ void wrapUsdUINodeGraphNodeAPI()
         .def(!self)
 
         
-        .def("GetPosAttr",
-             &This::GetPosAttr)
-        .def("CreatePosAttr",
-             &_CreatePosAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetStackingOrderAttr",
-             &This::GetStackingOrderAttr)
-        .def("CreateStackingOrderAttr",
-             &_CreateStackingOrderAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetDisplayColorAttr",
-             &This::GetDisplayColorAttr)
-        .def("CreateDisplayColorAttr",
-             &_CreateDisplayColorAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetIconAttr",
-             &This::GetIconAttr)
-        .def("CreateIconAttr",
-             &_CreateIconAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetExpansionStateAttr",
-             &This::GetExpansionStateAttr)
-        .def("CreateExpansionStateAttr",
-             &_CreateExpansionStateAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetSizeAttr",
-             &This::GetSizeAttr)
-        .def("CreateSizeAttr",
-             &_CreateSizeAttr,
+        .def("GetDescriptionAttr",
+             &This::GetDescriptionAttr)
+        .def("CreateDescriptionAttr",
+             &_CreateDescriptionAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
@@ -193,4 +125,4 @@ namespace {
 WRAP_CUSTOM {
 }
 
-} // anonymous namespace
+}

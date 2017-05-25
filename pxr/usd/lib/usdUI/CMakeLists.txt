@@ -9,6 +9,7 @@ pxr_library(usdUI
         usd
 
     PUBLIC_CLASSES
+        backdrop
         nodeGraphNodeAPI
         sceneGraphPrimAPI
         tokens
@@ -21,6 +22,7 @@ pxr_library(usdUI
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapBackdrop.cpp
         wrapNodeGraphNodeAPI.cpp
         wrapSceneGraphPrimAPI.cpp
         wrapTokens.cpp

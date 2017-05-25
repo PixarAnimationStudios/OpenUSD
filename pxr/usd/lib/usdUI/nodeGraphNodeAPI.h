@@ -135,8 +135,12 @@ public:
     /// (coordinates are Qt style, not cartesian).
     /// 
     /// These positions are not explicitly meant in pixel space, but rather
-    /// assume that the size of a node is approximately 100x100. Depending on 
+    /// assume that the size of a node is approximately 1.0x1.0. Where size-x is
+    /// the node width and size-y height of the node. Depending on 
     /// graph UI implementation, the size of a node may vary in each direction.
+    /// 
+    /// Example: If a node's width is 300 and it is position is at 1000, we
+    /// store for x-position: 1000 * (1.0/300)
     /// 
     ///
     /// \n  C++ Type: GfVec2f
@@ -257,6 +261,34 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDUI_API
     UsdAttribute CreateExpansionStateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // SIZE 
+    // --------------------------------------------------------------------- //
+    /// 
+    /// Optional size hint for a node in a node graph.
+    /// X is the width.
+    /// Y is the height.
+    /// 
+    /// This value is optional, because node size is often determined 
+    /// based on the number of in- and outputs of a node.
+    /// 
+    ///
+    /// \n  C++ Type: GfVec2f
+    /// \n  Usd Type: SdfValueTypeNames->Float2
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDUI_API
+    UsdAttribute GetSizeAttr() const;
+
+    /// See GetSizeAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDUI_API
+    UsdAttribute CreateSizeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
