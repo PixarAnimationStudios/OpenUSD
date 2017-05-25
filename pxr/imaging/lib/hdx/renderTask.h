@@ -52,6 +52,13 @@ public:
     HDX_API
     HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id);
 
+    /// Hooks for progressive rendering (delegated to renderpasses).
+
+    // XXX: If the render task collection param will change in the next Sync(),
+    // IsConverged() should be ignored since the renderpasses will be rebuilt.
+    void ResetImage();
+    bool IsConverged() const;
+
 protected:
     /// Execute render pass task
     HDX_API

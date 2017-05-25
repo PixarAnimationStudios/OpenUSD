@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/points.h"
+#include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/shader.h"
 
 #include "pxr/imaging/hd/glslfxShader.h"
@@ -90,6 +91,19 @@ HdRenderParam *
 HdStRenderDelegate::GetRenderParam() const
 {
     return nullptr;
+}
+
+HdRenderPassSharedPtr
+HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index)
+{
+    return HdRenderPassSharedPtr(new HdSt_RenderPass(index));
+}
+
+HdRenderPassSharedPtr
+HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index,
+                        HdRprimCollection const& collection)
+{
+    return HdRenderPassSharedPtr(new HdSt_RenderPass(index, collection));
 }
 
 HdRprim *

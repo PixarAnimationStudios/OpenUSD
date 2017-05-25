@@ -29,6 +29,7 @@ pxr_library(hdSt
         mesh
         points
         renderDelegate
+        renderPass
         shader
 
     PUBLIC_HEADERS

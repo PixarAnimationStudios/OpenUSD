@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hd/renderPass.h"
+#include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
@@ -83,7 +83,7 @@ public:
 
 private:
     /// RenderPass
-    HdRenderPass _renderPass;
+    HdSt_RenderPass _renderPass;
 
     /// drawtarget renderPass state
     const HdStDrawTargetRenderPassState *_drawTargetRenderPassState;

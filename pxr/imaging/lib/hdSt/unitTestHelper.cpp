@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/unitTestHelper.h"
+#include "pxr/imaging/hdSt/renderPass.h"
+
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -198,7 +200,7 @@ HdSt_TestDriver::GetRenderPass(bool withGuides)
                                      _reprName);
             col.SetRenderTags(renderTags);
             _geomAndGuidePass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_sceneDelegate->GetRenderIndex(), col));
+                new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(), col));
         }
         return _geomAndGuidePass;
     } else {
@@ -211,7 +213,7 @@ HdSt_TestDriver::GetRenderPass(bool withGuides)
                                         _reprName);
             col.SetRenderTags(renderTags);
             _geomPass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_sceneDelegate->GetRenderIndex(), col));
+                new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(), col));
         }
         return _geomPass;
     }

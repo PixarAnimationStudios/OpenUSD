@@ -122,6 +122,7 @@ pxr_library(hd
         cullingShaderKey
         unitTestHelper
         unitTestNullRenderDelegate
+        unitTestNullRenderPass
         ${optionalPrivateClasses}
 
     RESOURCE_FILES

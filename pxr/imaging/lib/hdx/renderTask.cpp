@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdx/debugCodes.h"
 
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassShader.h"
@@ -43,6 +44,25 @@ HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id)
     , _passes()
 {
+}
+
+void
+HdxRenderTask::ResetImage()
+{
+    TF_FOR_ALL(pass, _passes) {
+        (*pass)->ResetImage();
+    }
+}
+
+bool
+HdxRenderTask::IsConverged() const
+{
+    TF_FOR_ALL(pass, _passes) {
+        if (!(*pass)->IsConverged()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void
@@ -114,9 +134,7 @@ HdxRenderTask::_Execute(HdTaskContext* ctx)
     } else {
         // execute all render passes with only a subset of render tags
         TF_FOR_ALL(it, _passes) {
-            TF_FOR_ALL(rt, renderTags) {
-                (*it)->Execute(renderPassState, *rt);
-            }
+            (*it)->Execute(renderPassState, renderTags);
         }
     }
     renderPassState->Unbind();
@@ -151,10 +169,11 @@ HdxRenderTask::_Sync(HdTaskContext* ctx)
         } else {
             // reconstruct render passes.
             _passes.clear();
+            HdRenderIndex &index = GetDelegate()->GetRenderIndex();
             TF_FOR_ALL(it, collections) {
                 _passes.push_back(
                     HdRenderPassSharedPtr(
-                        new HdRenderPass(&GetDelegate()->GetRenderIndex(), *it)));
+                        index.GetRenderDelegate()->CreateRenderPass(&index, *it)));
             }
             bits |= HdChangeTracker::DirtyParams;
         }

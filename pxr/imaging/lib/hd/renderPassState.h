@@ -76,6 +76,12 @@ public:
                    GfMatrix4d const &projectionMatrix,
                    GfVec4d const &viewport);
 
+    /// temp.
+    /// Get camera parameters.
+    GfMatrix4d const & GetWorldToViewMatrix() const { return _worldToViewMatrix; }
+    GfMatrix4d const & GetProjectionMatrix() const { return _projectionMatrix; }
+    GfVec4f const & GetViewport() const { return _viewport; }
+
     /// Set additional clipping planes (defined in camera/view space).
     typedef std::vector<GfVec4d> ClipPlanesVector;
     HD_API

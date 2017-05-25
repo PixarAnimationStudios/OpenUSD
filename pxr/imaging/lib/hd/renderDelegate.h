@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/base/tf/token.h"
 
+#include <boost/shared_ptr.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -38,6 +40,9 @@ class HdRprim;
 class HdSprim;
 class HdBprim;
 class HdSceneDelegate;
+class HdRenderPass;
+
+typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 
 ///
 /// The HdRenderParam is an opaque (to core Hydra) handle, to an object
@@ -97,6 +102,27 @@ public:
     ///
     virtual HdRenderParam *GetRenderParam() const = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Renderpass Factory
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Request to create a new renderpass.
+    /// \param index the render index to bind to the new renderpass.
+    /// \return A shared pointer to the new renderpass or empty on error.
+    ///
+    virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index) = 0;
+
+    ///
+    /// Request to create a new renderpass.
+    /// \param index the render index to bind to the new renderpass.
+    /// \param collection the rprim collection to bind to the new renderpass.
+    /// \return A shared pointer to the new renderpass or empty on error.
+    ///
+    virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
+                                      HdRprimCollection const& collection) = 0;
 
     ////////////////////////////////////////////////////////////////////////////
     ///

@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/unitTestHelper.h"
 
+#include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -72,7 +73,7 @@ UsdImaging_TestDriver::_Init(UsdStageRefPtr const& usdStage,
     _delegate->Populate(_stage->GetPseudoRoot());
     HdRprimCollection col = HdRprimCollection(collectionName, reprName);
     col.SetRenderTags(renderTags);
-    _geometryPass = HdRenderPassSharedPtr(new HdRenderPass(_renderIndex, col));
+    _geometryPass = HdRenderPassSharedPtr(new HdSt_RenderPass(_renderIndex, col));
     _renderPassState = HdRenderPassStateSharedPtr(new HdRenderPassState());
 }
 
