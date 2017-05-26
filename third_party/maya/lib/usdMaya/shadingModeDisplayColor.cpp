@@ -218,8 +218,13 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
 
     // Get Display Color from USD (linear) and convert to Display
     GfVec3f linearDisplayColor(.5,.5,.5), linearTransparency(0, 0, 0);
-    if (!shadeMaterial || 
-        !shadeMaterial.GetInput(_tokens->displayColor).GetAttr().Get(&linearDisplayColor)) {
+
+    UsdShadeInput shadeInput = shadeMaterial ? 
+        shadeMaterial.GetInput(_tokens->displayColor) :
+        UsdShadeInput();
+
+    if (!shadeInput || !shadeInput.Get(&linearDisplayColor)) {
+
         VtArray<GfVec3f> gprimDisplayColor(1);
         if (primSchema && 
             primSchema.GetDisplayColorPrimvar().ComputeFlattened(&gprimDisplayColor)) 
