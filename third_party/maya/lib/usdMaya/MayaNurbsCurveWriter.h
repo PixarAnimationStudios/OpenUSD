@@ -36,10 +36,10 @@ class UsdGeomNurbsCurves;
 class MayaNurbsCurveWriter : public MayaTransformWriter
 {
   public:
-    MayaNurbsCurveWriter(MDagPath & iDag, UsdStageRefPtr stage, const JobExportArgs & iArgs);
+    MayaNurbsCurveWriter(const MDagPath & iDag, const SdfPath& uPath, bool instanceSource, usdWriteJobCtx& jobCtx);
     virtual ~MayaNurbsCurveWriter() {};
 
-    virtual UsdPrim write(const UsdTimeCode &usdTime);
+    virtual void write(const UsdTimeCode &usdTime);
     
     /// \override
     virtual bool exportsGprims() const;
@@ -48,7 +48,7 @@ class MayaNurbsCurveWriter : public MayaTransformWriter
     bool writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdGeomNurbsCurves &primSchema);
 };
 
-typedef shared_ptr < MayaNurbsCurveWriter > MayaNurbsCurveWriterPtr;
+typedef std::shared_ptr<MayaNurbsCurveWriter> MayaNurbsCurveWriterPtr;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

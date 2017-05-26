@@ -42,12 +42,13 @@ class UsdGeomGprim;
 class MayaMeshWriter : public MayaTransformWriter
 {
   public:
-    MayaMeshWriter(MDagPath & iDag, 
-            UsdStageRefPtr stage, 
-            const JobExportArgs & iArgs);
+    MayaMeshWriter(const MDagPath & iDag,
+                   const SdfPath& uPath,
+                   bool instanceSource,
+                   usdWriteJobCtx& jobCtx);
     virtual ~MayaMeshWriter() {};
 
-    virtual UsdPrim write(const UsdTimeCode &usdTime);
+    virtual void write(const UsdTimeCode &usdTime);
     
     /// \override
     virtual bool exportsGprims() const;
@@ -141,7 +142,7 @@ class MayaMeshWriter : public MayaTransformWriter
     static const float _ColorSetDefaultAlpha;
 };
 
-typedef shared_ptr < MayaMeshWriter > MayaMeshWriterPtr;
+typedef std::shared_ptr<MayaMeshWriter> MayaMeshWriterPtr;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

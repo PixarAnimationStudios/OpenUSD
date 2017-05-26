@@ -46,6 +46,7 @@ JobExportArgs::JobExportArgs()
         exportDisplayColor(true),
         shadingMode(PxrUsdMayaShadingModeTokens->displayColor),
         mergeTransformAndShape(true),
+        exportInstances(true),
         exportAnimation(false),
         excludeInvisible(false),
         exportDefaultCameras(false),

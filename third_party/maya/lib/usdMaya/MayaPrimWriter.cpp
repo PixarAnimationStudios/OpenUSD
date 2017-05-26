@@ -53,22 +53,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-MayaPrimWriter::MayaPrimWriter(MDagPath & iDag, 
-                               UsdStageRefPtr stage, 
-                               const JobExportArgs & iArgs) :
+MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
+                               const SdfPath& uPath,
+                               usdWriteJobCtx& jobCtx) :
+    mWriteJobCtx(jobCtx),
     mDagPath(iDag),
-    mStage(stage),
-    mIsValid(true),
-    mArgs(iArgs)
+    mUsdPath(uPath),
+    mIsValid(true)
 {
-    // XXX: see MayaTransformWriter where it will eventually muck with
-    // this path to get the right behavior.  Ideally, we should have all the
-    // mergeTransformAndShape logic in one spot.
-    mUsdPath = PxrUsdMayaUtil::MDagPathToUsdPath(iDag, false);
-
-    if (!mArgs.usdModelRootOverridePath.IsEmpty() ) {
-        mUsdPath = mUsdPath.ReplacePrefix(mUsdPath.GetPrefixes()[0], mArgs.usdModelRootOverridePath);
-    }
 }
 
 bool
@@ -78,7 +70,7 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
     MFnDependencyNode depFn(getDagPath().node());
     MFnDependencyNode depFnT(dagT.node()); // optionally also scan a shape's transform if merging transforms
 
-    if (getArgs().exportVisibility) {
+    if (mWriteJobCtx.getArgs().exportVisibility) {
         bool isVisible  = true;   // if BOTH shape or xform is animated, then visible
         bool isAnimated = false;  // if either shape or xform is animated, then animated
 

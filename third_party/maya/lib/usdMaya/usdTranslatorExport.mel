@@ -106,7 +106,7 @@ global proc int usdTranslatorExport (string $parent,
             menuItem -l $each;
         }
 
-        checkBox -l "Make Instances" exportReferencesAsInstanceableCheckBox;
+        checkBox -l "Make References Instanceable" exportReferencesAsInstanceableCheckBox;
 
         checkBox -l "Export UVs" exportUVsCheckBox;
 
@@ -126,6 +126,7 @@ global proc int usdTranslatorExport (string $parent,
             menuItem -l "Modeling Variant Per Layer";
 
         checkBox -l "Merge Transform and Shape Nodes" mergeXFormCheckBox;
+        checkBox -l "Export Instances" exportInstancesCheckBox;
 
 	    optionMenuGrp -l "Default Mesh Scheme:" defaultMeshSchemePopup;
 	        menuItem -l "Polygonal Mesh";
@@ -167,6 +168,8 @@ global proc int usdTranslatorExport (string $parent,
                     optionMenuGrp -e -value $optionBreakDown[1] renderLayerModePopup;
                 } else if ($optionBreakDown[0] == "mergeXForm") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeXFormCheckBox");
+                } else if ($optionBreakDown[0] == "exportInstances") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportInstancesCheckBox");
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
                     optionMenuGrp -e -value $optionBreakDown[1] defaultMeshSchemePopup;
                 } else if ($optionBreakDown[0] == "exportVisibility") {
@@ -208,6 +211,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "allCameras", "allCamerasCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "renderLayerMode", "renderLayerModePopup");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeXForm", "mergeXFormCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportInstances", "exportInstancesCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
