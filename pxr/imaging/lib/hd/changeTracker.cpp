@@ -716,6 +716,12 @@ HdChangeTracker::GetShaderBindingsVersion() const
     return _shaderBindingsVersion;
 }
 
+unsigned
+HdChangeTracker::GetRenderIndexVersion() const
+{
+    return _indexVersion;
+}
+
 void
 HdChangeTracker::AddState(TfToken const& name)
 {

@@ -127,8 +127,10 @@ HdDirtyList::HdDirtyList(HdRprimCollection const& collection,
             _renderIndex.GetChangeTracker().GetVaryingStateVersion() - 1)
         , _changeCount(
             _renderIndex.GetChangeTracker().GetChangeCount() - 1)
+        , _indexVersion(
+                    _renderIndex.GetChangeTracker().GetRenderIndexVersion() - 1)
         , _isEmpty(false)
-        , _reprDirty(true)
+        , _currentRepr()
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyLists);
 }
@@ -411,6 +413,8 @@ HdDirtyList::GetDirtyRprims()
         = changeTracker.GetVaryingStateVersion();
     unsigned int currentChangeCount
         = changeTracker.GetChangeCount();
+    unsigned int currentRenderIndexVersion
+        = changeTracker.GetRenderIndexVersion();
 
     // if nothing changed, and if it's clean, returns empty.
     if (_isEmpty && _changeCount == currentChangeCount) {
@@ -430,13 +434,15 @@ HdDirtyList::GetDirtyRprims()
                 _collection.GetName().GetText(),
                 _collectionVersion, currentCollectionVersion);
         // populate dirty rprims in the collection
-        if (_reprDirty) {
+        if (_currentRepr != _collection.GetReprName() || _indexVersion != currentRenderIndexVersion) {
             // Mark all Repr dirty, when the default repr changes...
             _UpdateIDs(&_dirtyIds, 0);
             TF_FOR_ALL(it, _dirtyIds) {
                 changeTracker.MarkRprimDirty(*it, HdChangeTracker::ForceSync);
             }
-            _reprDirty = false;
+            _currentRepr = _collection.GetReprName();
+            _indexVersion = currentRenderIndexVersion;
+
         } else {
             _UpdateIDs(&_dirtyIds, HdChangeTracker::AllDirty|HdChangeTracker::Varying);
         }
