@@ -986,6 +986,11 @@ class StageView(QtOpenGL.QGLWidget):
         self._allSceneCameras = value
 
     @property
+    def gfCamera(self):
+        """Return the last computed Gf Camera"""
+        return self._lastComputedGfCamera
+
+    @property
     def cameraFrustum(self):
         """Unlike the StageView.freeCamera property, which is invalid/None
         whenever we are viewing from a scene/stage camera, the 'cameraFrustum'
