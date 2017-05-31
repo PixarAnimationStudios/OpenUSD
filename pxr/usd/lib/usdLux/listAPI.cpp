@@ -151,6 +151,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightFilter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -177,7 +178,7 @@ _Traverse(const UsdPrim &prim,
             lights->insert(targets.begin(), targets.end());
         }
     }
-    if (prim.IsA<UsdLuxLight>()) {
+    if (prim.IsA<UsdLuxLight>() || prim.IsA<UsdLuxLightFilter>()) {
         lights->insert(prim.GetPath());
     }
     // Allow unloaded and not-yet-defined prims
