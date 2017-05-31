@@ -68,7 +68,13 @@ HdRprim::GetDrawItems(HdSceneDelegate* delegate,
     HdDirtyBits dirtyBits(HdChangeTracker::Clean);
     TfToken reprName = _GetReprName(delegate, defaultReprName,
                                     forced, &dirtyBits);
-    return _GetRepr(delegate, reprName, &dirtyBits)->GetDrawItems();
+    HdReprSharedPtr repr = _GetRepr(delegate, reprName, &dirtyBits);
+
+    if (repr) {
+        return repr->GetDrawItems();
+    } else {
+        return nullptr;
+    }
 }
 
 
@@ -120,9 +126,8 @@ HdRprim::_GetReprName(HdSceneDelegate* delegate,
     return defaultReprName;
 }
 
-// Static
 HdDirtyBits
-HdRprim::_PropagateRprimDirtyBits(HdDirtyBits bits)
+HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
 {
     // propagate point dirtiness to normal
     bits |= (bits & HdChangeTracker::DirtyPoints) ?
@@ -140,7 +145,22 @@ HdRprim::_PropagateRprimDirtyBits(HdDirtyBits bits)
                  HdChangeTracker::DirtyNormals |
                  HdChangeTracker::DirtyPrimVar);
     }
-    return bits;
+
+    // Let subclasses propagate bits
+    return _PropagateDirtyBits(bits);
+}
+
+void
+HdRprim::InitRepr(HdSceneDelegate* delegate,
+                  TfToken const &defaultReprName,
+                  bool forced,
+                  HdDirtyBits *dirtyBits)
+{
+    TfToken reprName = _GetReprName(delegate, defaultReprName,
+                                    forced, dirtyBits);
+
+    _InitRepr(reprName, dirtyBits);
+
 }
 
 void

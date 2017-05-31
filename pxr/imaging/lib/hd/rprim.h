@@ -117,8 +117,39 @@ public:
     /// Return the unique instance id
     int32_t GetPrimId() const { return _primId; };
 
+    /// Returns the set of dirty bits that should be
+    /// added to the change tracker for this prim, when this prim is inserted.
     HD_API
     HdDirtyBits GetInitialDirtyBitsMask() const;
+
+    /// This function gives an Rprim the chance to set additional dirty bits
+    /// based on those set in the change tracker, before passing the dirty bits
+    /// to the scene delegate.  This gives the Rprim an opportunity to specify
+    /// it needs more data to process the requested changes.
+    ///
+    /// The return value is the new set of dirty bits.
+    HD_API
+    HdDirtyBits PropagateRprimDirtyBits(HdDirtyBits bits);
+
+    /// Initialize the given representation of this Rprim.
+    /// This is called prior to syncing the prim, the first time the repr
+    /// is used.
+    ///
+    /// defaultReprName is the name of the repr to initalize.  However, this
+    /// can be overridden by the prim itself with an authored repr, which
+    /// is obtained from the scene delegate.  If the forced flag is set
+    /// the defaultReprName should be used, even if there is an authored repr.
+    ///
+    /// dirtyBits is an in/out value.  It is initialized to the dirty bits
+    /// from the change tracker.  InitRepr can then set additional dirty bits
+    /// if additional data is required from the scene delegate when this
+    /// repr is synced.  InitRepr occurs before dirty bit propagation.
+    HD_API
+    void InitRepr(HdSceneDelegate* delegate,
+                  TfToken const &defaultReprName,
+                  bool forced,
+                  HdDirtyBits *dirtyBits);
+
 
 
     /// Returns the bounds of the rprim in local, untransformed space.
@@ -142,7 +173,6 @@ protected:
               HdDirtyBits *dirtyBits);
 
 
-    HD_API
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
                  TfToken const &reprName,
@@ -175,10 +205,9 @@ protected:
                          HdDirtyBits *dirtyBits);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
 
-    HD_API
-    static HdDirtyBits _PropagateRprimDirtyBits(HdDirtyBits bits);
-
+    virtual void _InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits) = 0;
 
 private:
     SdfPath _id;
