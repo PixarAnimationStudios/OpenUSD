@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDRI_GENERATED_RILIGHTPORTALAPI_H
-#define USDRI_GENERATED_RILIGHTPORTALAPI_H
+#ifndef USDRI_GENERATED_LIGHTPORTALAPI_H
+#define USDRI_GENERATED_LIGHTPORTALAPI_H
 
-/// \file usdRi/riLightPortalAPI.h
+/// \file usdRi/lightPortalAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdRi/api.h"
@@ -50,10 +50,11 @@ class SdfAssetPath;
 // RILIGHTPORTALAPI                                                           //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdRiRiLightPortalAPI
+/// \class UsdRiLightPortalAPI
 ///
+/// Renderman-specific attributes for light portals.
 ///
-class UsdRiRiLightPortalAPI : public UsdSchemaBase
+class UsdRiLightPortalAPI : public UsdSchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -62,26 +63,26 @@ public:
     /// a non-empty typeName.
     static const bool IsConcrete = false;
 
-    /// Construct a UsdRiRiLightPortalAPI on UsdPrim \p prim .
-    /// Equivalent to UsdRiRiLightPortalAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdRiLightPortalAPI on UsdPrim \p prim .
+    /// Equivalent to UsdRiLightPortalAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdRiRiLightPortalAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdRiLightPortalAPI(const UsdPrim& prim=UsdPrim())
         : UsdSchemaBase(prim)
     {
     }
 
-    /// Construct a UsdRiRiLightPortalAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdRiRiLightPortalAPI(schemaObj.GetPrim()),
+    /// Construct a UsdRiLightPortalAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdRiLightPortalAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdRiRiLightPortalAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdRiLightPortalAPI(const UsdSchemaBase& schemaObj)
         : UsdSchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDRI_API
-    virtual ~UsdRiRiLightPortalAPI();
+    virtual ~UsdRiLightPortalAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -90,17 +91,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdRiRiLightPortalAPI holding the prim adhering to this
+    /// Return a UsdRiLightPortalAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdRiRiLightPortalAPI(stage->GetPrimAtPath(path));
+    /// UsdRiLightPortalAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDRI_API
-    static UsdRiRiLightPortalAPI
+    static UsdRiLightPortalAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 

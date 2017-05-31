@@ -17,6 +17,8 @@ pxr_library(usdRi
 
     PUBLIC_CLASSES
         lightAPI
+        lightFilterAPI
+        lightPortalAPI
         lookAPI
         materialAPI
         pxrAovLight
@@ -46,6 +48,8 @@ pxr_library(usdRi
     PYMODULE_CPPFILES
         module.cpp
         wrapLightAPI.cpp
+        wrapLightFilterAPI.cpp
+        wrapLightPortalAPI.cpp
         wrapLookAPI.cpp
         wrapMaterialAPI.cpp
         wrapPxrAovLight.cpp

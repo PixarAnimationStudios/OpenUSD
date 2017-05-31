@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRi/riLightFilterAPI.h"
+#include "pxr/usd/usdRi/lightPortalAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -50,62 +50,27 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateRiCombineModeAttr(UsdRiRiLightFilterAPI &self,
+_CreateRiPortalIntensityAttr(UsdRiLightPortalAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateRiCombineModeAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateRiDensityAttr(UsdRiRiLightFilterAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateRiDensityAttr(
+    return self.CreateRiPortalIntensityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRiInvertAttr(UsdRiRiLightFilterAPI &self,
+_CreateRiPortalTintAttr(UsdRiLightPortalAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateRiInvertAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateRiIntensityAttr(UsdRiRiLightFilterAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateRiIntensityAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateRiExposureAttr(UsdRiRiLightFilterAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateRiExposureAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateRiDiffuseAttr(UsdRiRiLightFilterAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateRiDiffuseAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateRiSpecularAttr(UsdRiRiLightFilterAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateRiSpecularAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+    return self.CreateRiPortalTintAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
 
 } // anonymous namespace
 
-void wrapUsdRiRiLightFilterAPI()
+void wrapUsdRiLightPortalAPI()
 {
-    typedef UsdRiRiLightFilterAPI This;
+    typedef UsdRiLightPortalAPI This;
 
     class_<This, bases<UsdSchemaBase> >
-        cls("RiLightFilterAPI");
+        cls("LightPortalAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -129,52 +94,17 @@ void wrapUsdRiRiLightFilterAPI()
         .def(!self)
 
         
-        .def("GetRiCombineModeAttr",
-             &This::GetRiCombineModeAttr)
-        .def("CreateRiCombineModeAttr",
-             &_CreateRiCombineModeAttr,
+        .def("GetRiPortalIntensityAttr",
+             &This::GetRiPortalIntensityAttr)
+        .def("CreateRiPortalIntensityAttr",
+             &_CreateRiPortalIntensityAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetRiDensityAttr",
-             &This::GetRiDensityAttr)
-        .def("CreateRiDensityAttr",
-             &_CreateRiDensityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetRiInvertAttr",
-             &This::GetRiInvertAttr)
-        .def("CreateRiInvertAttr",
-             &_CreateRiInvertAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetRiIntensityAttr",
-             &This::GetRiIntensityAttr)
-        .def("CreateRiIntensityAttr",
-             &_CreateRiIntensityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetRiExposureAttr",
-             &This::GetRiExposureAttr)
-        .def("CreateRiExposureAttr",
-             &_CreateRiExposureAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetRiDiffuseAttr",
-             &This::GetRiDiffuseAttr)
-        .def("CreateRiDiffuseAttr",
-             &_CreateRiDiffuseAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetRiSpecularAttr",
-             &This::GetRiSpecularAttr)
-        .def("CreateRiSpecularAttr",
-             &_CreateRiSpecularAttr,
+        .def("GetRiPortalTintAttr",
+             &This::GetRiPortalTintAttr)
+        .def("CreateRiPortalTintAttr",
+             &_CreateRiPortalTintAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

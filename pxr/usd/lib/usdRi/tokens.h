@@ -85,7 +85,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((edgeRight, "edge:right")) \
     (edgeThickness) \
     ((edgeTop, "edge:top")) \
-    (exposure) \
     ((falloffRampBeginDistance, "falloffRamp:beginDistance")) \
     ((falloffRampEndDistance, "falloffRamp:endDistance")) \
     (filePath) \
@@ -99,7 +98,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (inPrimaryHit) \
     (inReflection) \
     (inRefraction) \
-    (intensity) \
     (invert) \
     (latitude) \
     (linear) \
@@ -108,8 +106,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (min) \
     (month) \
     (multiply) \
-    ((multiplyDiffuse, "multiply:diffuse")) \
-    ((multiplySpecular, "multiply:specular")) \
     (noEffect) \
     (noLight) \
     (off) \
@@ -133,6 +129,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((riCombineMode, "ri:combineMode")) \
     ((riDensity, "ri:density")) \
     ((riDiffuse, "ri:diffuse")) \
+    ((riExposure, "ri:exposure")) \
     ((riFocusRegion, "ri:focusRegion")) \
     ((riIntensity, "ri:intensity")) \
     ((riIntensityNearDist, "ri:intensityNearDist")) \
@@ -150,6 +147,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((riSamplingImportanceMultiplier, "ri:sampling:importanceMultiplier")) \
     ((riShadowThinShadow, "ri:shadow:thinShadow")) \
     ((riSpecular, "ri:specular")) \
+    ((riTextureGamma, "ri:texture:gamma")) \
+    ((riTextureSaturation, "ri:texture:saturation")) \
     ((riTraceLightPaths, "ri:trace:lightPaths")) \
     ((scaleDepth, "scale:depth")) \
     ((scaleHeight, "scale:height")) \
@@ -238,7 +237,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>edgeRight</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>edgeThickness</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>edgeTop</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>exposure</b> - UsdRiPxrIntMultLightFilter
 /// \li <b>falloffRampBeginDistance</b> - UsdRiPxrRampLightFilter
 /// \li <b>falloffRampEndDistance</b> - UsdRiPxrRampLightFilter
 /// \li <b>filePath</b> - UsdRiRisIntegrator
@@ -252,17 +250,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>inPrimaryHit</b> - UsdRiPxrAovLight
 /// \li <b>inReflection</b> - UsdRiPxrAovLight
 /// \li <b>inRefraction</b> - UsdRiPxrAovLight
-/// \li <b>intensity</b> - UsdRiPxrIntMultLightFilter
-/// \li <b>invert</b> - UsdRiPxrIntMultLightFilter, UsdRiPxrAovLight
+/// \li <b>invert</b> - UsdRiPxrAovLight
 /// \li <b>latitude</b> - UsdRiPxrEnvDayLight
 /// \li <b>linear</b> - Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
 /// \li <b>longitude</b> - UsdRiPxrEnvDayLight
-/// \li <b>max</b> - Possible value for UsdRiRiLightFilterAPI::GetRiCombineModeAttr()
-/// \li <b>min</b> - Possible value for UsdRiRiLightFilterAPI::GetRiCombineModeAttr()
+/// \li <b>max</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
+/// \li <b>min</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
 /// \li <b>month</b> - UsdRiPxrEnvDayLight
-/// \li <b>multiply</b> - Possible value for UsdRiRiLightFilterAPI::GetRiCombineModeAttr()
-/// \li <b>multiplyDiffuse</b> - UsdRiPxrIntMultLightFilter
-/// \li <b>multiplySpecular</b> - UsdRiPxrIntMultLightFilter
+/// \li <b>multiply</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
 /// \li <b>noEffect</b> - Possible value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr(), Default value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr()
 /// \li <b>noLight</b> - Possible value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr()
 /// \li <b>off</b> - Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr(), Default value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()
@@ -283,13 +278,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>refineRight</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>refineTop</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>repeat</b> - Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()
-/// \li <b>riCombineMode</b> - UsdRiRiLightFilterAPI
-/// \li <b>riDensity</b> - UsdRiRiLightFilterAPI
-/// \li <b>riDiffuse</b> - UsdRiRiLightFilterAPI
+/// \li <b>riCombineMode</b> - UsdRiLightFilterAPI
+/// \li <b>riDensity</b> - UsdRiLightFilterAPI
+/// \li <b>riDiffuse</b> - UsdRiLightFilterAPI
+/// \li <b>riExposure</b> - UsdRiLightFilterAPI
 /// \li <b>riFocusRegion</b> - UsdRiStatements
-/// \li <b>riIntensity</b> - UsdRiRiLightFilterAPI
+/// \li <b>riIntensity</b> - UsdRiLightFilterAPI
 /// \li <b>riIntensityNearDist</b> - UsdRiLightAPI
-/// \li <b>riInvert</b> - UsdRiRiLightFilterAPI
+/// \li <b>riInvert</b> - UsdRiLightFilterAPI
 /// \li <b>riLightGroup</b> - UsdRiLightAPI
 /// \li <b>riLookBxdf</b> - UsdRiLookAPI
 /// \li <b>riLookCoshaders</b> - UsdRiLookAPI
@@ -297,17 +293,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>riLookPatterns</b> - UsdRiLookAPI
 /// \li <b>riLookSurface</b> - UsdRiLookAPI
 /// \li <b>riLookVolume</b> - UsdRiLookAPI
-/// \li <b>riPortalIntensity</b> - UsdRiRiLightPortalAPI
-/// \li <b>riPortalTint</b> - UsdRiRiLightPortalAPI
+/// \li <b>riPortalIntensity</b> - UsdRiLightPortalAPI
+/// \li <b>riPortalTint</b> - UsdRiLightPortalAPI
 /// \li <b>riSamplingFixedSampleCount</b> - UsdRiLightAPI
 /// \li <b>riSamplingImportanceMultiplier</b> - UsdRiLightAPI
 /// \li <b>riShadowThinShadow</b> - UsdRiLightAPI
-/// \li <b>riSpecular</b> - UsdRiRiLightFilterAPI
+/// \li <b>riSpecular</b> - UsdRiLightFilterAPI
+/// \li <b>riTextureGamma</b> - UsdRiDomeLightAPI, UsdRiRectLightAPI
+/// \li <b>riTextureSaturation</b> - UsdRiDomeLightAPI, UsdRiRectLightAPI
 /// \li <b>riTraceLightPaths</b> - UsdRiLightAPI
 /// \li <b>scaleDepth</b> - UsdRiPxrRodLightFilter
 /// \li <b>scaleHeight</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>scaleWidth</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>screen</b> - Possible value for UsdRiRiLightFilterAPI::GetRiCombineModeAttr()
+/// \li <b>screen</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
 /// \li <b>skyTint</b> - UsdRiPxrEnvDayLight
 /// \li <b>spherical</b> - Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
 /// \li <b>sunDirection</b> - UsdRiPxrEnvDayLight

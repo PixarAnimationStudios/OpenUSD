@@ -31,7 +31,6 @@
 #include "pxr/usd/usdLux/lightFilter.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdRi/tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -141,111 +140,6 @@ private:
     // override SchemaBase virtuals.
     USDRI_API
     virtual const TfType &_GetTfType() const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // INTENSITY 
-    // --------------------------------------------------------------------- //
-    /// Multiplier for the light intensity.
-    ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
-    USDRI_API
-    UsdAttribute GetIntensityAttr() const;
-
-    /// See GetIntensityAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRI_API
-    UsdAttribute CreateIntensityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // EXPOSURE 
-    // --------------------------------------------------------------------- //
-    /// Exposure control for the multiplier.
-    ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
-    USDRI_API
-    UsdAttribute GetExposureAttr() const;
-
-    /// See GetExposureAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRI_API
-    UsdAttribute CreateExposureAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // INVERT 
-    // --------------------------------------------------------------------- //
-    /// Invert the multiplier.
-    ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
-    USDRI_API
-    UsdAttribute GetInvertAttr() const;
-
-    /// See GetInvertAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRI_API
-    UsdAttribute CreateInvertAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // MULTIPLYDIFFUSE 
-    // --------------------------------------------------------------------- //
-    /// Controls the amount of diffuse contribution.
-    ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
-    USDRI_API
-    UsdAttribute GetMultiplyDiffuseAttr() const;
-
-    /// See GetMultiplyDiffuseAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRI_API
-    UsdAttribute CreateMultiplyDiffuseAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // MULTIPLYSPECULAR 
-    // --------------------------------------------------------------------- //
-    /// Controls the amount of specular contribution.
-    ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
-    USDRI_API
-    UsdAttribute GetMultiplySpecularAttr() const;
-
-    /// See GetMultiplySpecularAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRI_API
-    UsdAttribute CreateMultiplySpecularAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

@@ -216,6 +216,9 @@ class "RiLightFilterAPI" (
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
+    float ri:exposure = 0 (
+        doc = "Exposure control for the multiplier."
+    )
     float ri:intensity (
         doc = "Multipier for the diffuse and specular result."
     )
@@ -228,7 +231,9 @@ class "RiLightFilterAPI" (
     )
 }
 
-class "RiLightPortalAPI"
+class "RiLightPortalAPI" (
+    doc = "Renderman-specific attributes for light portals."
+)
 {
     float ri:portal:intensity (
         displayGroup = "Basic"
@@ -239,6 +244,32 @@ class "RiLightPortalAPI"
         displayGroup = "Basic"
         displayName = "Color Tint"
         doc = "tint: This parameter tints the color from the dome texture."
+    )
+}
+
+class "RiRectLightAPI" (
+    doc = """RiRectLightAPI is an API schema that provides an interface
+    to add Renderman-specific attributes to rect lights."""
+)
+{
+    float ri:texture:gamma (
+        doc = "Gamma-correct the texture"
+    )
+    float ri:texture:saturation (
+        doc = "Adjust the textures saturation"
+    )
+}
+
+class "RiDomeLightAPI" (
+    doc = """RiDomeLightAPI is an API schema that provides an interface
+    to add Renderman-specific attributes to dome lights."""
+)
+{
+    float ri:texture:gamma (
+        doc = "Gamma-correct the texture"
+    )
+    float ri:texture:saturation (
+        doc = "Adjust the textures saturation"
     )
 }
 
@@ -638,21 +669,6 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     doc = "Multiplies the intensity of a given light."
 )
 {
-    float exposure = 0 (
-        doc = "Exposure control for the multiplier."
-    )
-    float intensity = 1 (
-        doc = "Multiplier for the light intensity."
-    )
-    bool invert = 0 (
-        doc = "Invert the multiplier."
-    )
-    float multiply:diffuse = 1 (
-        doc = "Controls the amount of diffuse contribution."
-    )
-    float multiply:specular = 1 (
-        doc = "Controls the amount of specular contribution."
-    )
     rel proxyPrim = None (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)

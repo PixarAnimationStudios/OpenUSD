@@ -257,6 +257,9 @@ class "RiLightAPI" (
 
 class "RiLightFilterAPI" (
     doc = """Renderman-specific attributes for light filters."""
+    customData = {
+        string className = "LightFilterAPI"
+    }
 )
 {
     token ri:combineMode (
@@ -290,6 +293,9 @@ class "RiLightFilterAPI" (
     float ri:intensity (
         doc = """Multipier for the diffuse and specular result."""
     )
+    float ri:exposure = 0 (
+        doc = """Exposure control for the multiplier."""
+    )
     float ri:diffuse (
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
@@ -300,7 +306,12 @@ class "RiLightFilterAPI" (
     )
 }
 
-class "RiLightPortalAPI"
+class "RiLightPortalAPI" (
+    doc = """Renderman-specific attributes for light portals."""
+    customData = {
+        string className = "LightPortalAPI"
+    }
+)
 {
     float ri:portal:intensity (
         displayGroup = "Basic"
@@ -311,6 +322,36 @@ class "RiLightPortalAPI"
         displayGroup = "Basic"
         displayName = "Color Tint"
         doc = "tint: This parameter tints the color from the dome texture."
+    )
+}
+
+class "RiRectLightAPI" (
+    doc = """RiRectLightAPI is an API schema that provides an interface
+    to add Renderman-specific attributes to rect lights."""
+    customData = {
+        string className = "RectLightAPI"
+    }
+) {
+    float ri:texture:gamma (
+        doc = """Gamma-correct the texture"""
+    )
+    float ri:texture:saturation (
+        doc = """Adjust the textures saturation"""
+    )
+}
+
+class "RiDomeLightAPI" (
+    doc = """RiDomeLightAPI is an API schema that provides an interface
+    to add Renderman-specific attributes to dome lights."""
+    customData = {
+        string className = "DomeLightAPI"
+    }
+) {
+    float ri:texture:gamma (
+        doc = """Gamma-correct the texture"""
+    )
+    float ri:texture:saturation (
+        doc = """Adjust the textures saturation"""
     )
 }
 
@@ -472,23 +513,6 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     inherits = </LightFilter>
     doc = """Multiplies the intensity of a given light."""
 ) {
-    float intensity = 1 (
-        doc = """Multiplier for the light intensity."""
-    )
-    float exposure = 0 (
-        doc ="""Exposure control for the multiplier."""
-    )
-    bool invert = false (
-        doc = """Invert the multiplier."""
-    )
-    float multiply:diffuse = 1.0 (
-        doc = """Controls the amount of diffuse contribution."""
-    )
-    float multiply:specular = 1.0 (
-        doc = """Controls the amount of specular contribution."""
-    )
-
-    # TODO: Linking API
 }
 
 class PxrBarnLightFilter "PxrBarnLightFilter" (

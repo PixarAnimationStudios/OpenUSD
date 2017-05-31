@@ -48,41 +48,6 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateIntensityAttr(UsdRiPxrIntMultLightFilter &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateIntensityAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateExposureAttr(UsdRiPxrIntMultLightFilter &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateExposureAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateInvertAttr(UsdRiPxrIntMultLightFilter &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateInvertAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateMultiplyDiffuseAttr(UsdRiPxrIntMultLightFilter &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateMultiplyDiffuseAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateMultiplySpecularAttr(UsdRiPxrIntMultLightFilter &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateMultiplySpecularAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
 
 } // anonymous namespace
 
@@ -116,41 +81,6 @@ void wrapUsdRiPxrIntMultLightFilter()
 
         .def(!self)
 
-        
-        .def("GetIntensityAttr",
-             &This::GetIntensityAttr)
-        .def("CreateIntensityAttr",
-             &_CreateIntensityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetExposureAttr",
-             &This::GetExposureAttr)
-        .def("CreateExposureAttr",
-             &_CreateExposureAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetInvertAttr",
-             &This::GetInvertAttr)
-        .def("CreateInvertAttr",
-             &_CreateInvertAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetMultiplyDiffuseAttr",
-             &This::GetMultiplyDiffuseAttr)
-        .def("CreateMultiplyDiffuseAttr",
-             &_CreateMultiplyDiffuseAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetMultiplySpecularAttr",
-             &This::GetMultiplySpecularAttr)
-        .def("CreateMultiplySpecularAttr",
-             &_CreateMultiplySpecularAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
     ;
 

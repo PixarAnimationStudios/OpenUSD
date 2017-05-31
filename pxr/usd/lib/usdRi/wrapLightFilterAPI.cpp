@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRi/riLightFilterAPI.h"
+#include "pxr/usd/usdRi/lightFilterAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -50,49 +50,49 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateRiCombineModeAttr(UsdRiRiLightFilterAPI &self,
+_CreateRiCombineModeAttr(UsdRiLightFilterAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRiCombineModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRiDensityAttr(UsdRiRiLightFilterAPI &self,
+_CreateRiDensityAttr(UsdRiLightFilterAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRiDensityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRiInvertAttr(UsdRiRiLightFilterAPI &self,
+_CreateRiInvertAttr(UsdRiLightFilterAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRiInvertAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRiIntensityAttr(UsdRiRiLightFilterAPI &self,
+_CreateRiIntensityAttr(UsdRiLightFilterAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRiIntensityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRiExposureAttr(UsdRiRiLightFilterAPI &self,
+_CreateRiExposureAttr(UsdRiLightFilterAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRiExposureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRiDiffuseAttr(UsdRiRiLightFilterAPI &self,
+_CreateRiDiffuseAttr(UsdRiLightFilterAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRiDiffuseAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRiSpecularAttr(UsdRiRiLightFilterAPI &self,
+_CreateRiSpecularAttr(UsdRiLightFilterAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRiSpecularAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
@@ -100,12 +100,12 @@ _CreateRiSpecularAttr(UsdRiRiLightFilterAPI &self,
 
 } // anonymous namespace
 
-void wrapUsdRiRiLightFilterAPI()
+void wrapUsdRiLightFilterAPI()
 {
-    typedef UsdRiRiLightFilterAPI This;
+    typedef UsdRiLightFilterAPI This;
 
     class_<This, bases<UsdSchemaBase> >
-        cls("RiLightFilterAPI");
+        cls("LightFilterAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))

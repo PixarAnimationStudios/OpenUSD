@@ -37,6 +37,9 @@ TF_WRAP_MODULE
         TF_WRAP(UsdRiRisOslPattern);
 
     TF_WRAP(UsdRiLookAPI);
+    TF_WRAP(UsdRiLightAPI);
+    TF_WRAP(UsdRiLightFilterAPI);
+    TF_WRAP(UsdRiLightPortalAPI);
     TF_WRAP(UsdRiMaterialAPI);
 
     TF_WRAP(UsdRiRisIntegrator);

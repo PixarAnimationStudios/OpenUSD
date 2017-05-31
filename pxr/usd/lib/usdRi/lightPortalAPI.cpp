@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRi/riLightPortalAPI.h"
+#include "pxr/usd/usdRi/lightPortalAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -33,39 +33,39 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdRiRiLightPortalAPI,
+    TfType::Define<UsdRiLightPortalAPI,
         TfType::Bases< UsdSchemaBase > >();
     
 }
 
 /* virtual */
-UsdRiRiLightPortalAPI::~UsdRiRiLightPortalAPI()
+UsdRiLightPortalAPI::~UsdRiLightPortalAPI()
 {
 }
 
 /* static */
-UsdRiRiLightPortalAPI
-UsdRiRiLightPortalAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdRiLightPortalAPI
+UsdRiLightPortalAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdRiRiLightPortalAPI();
+        return UsdRiLightPortalAPI();
     }
-    return UsdRiRiLightPortalAPI(stage->GetPrimAtPath(path));
+    return UsdRiLightPortalAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* static */
 const TfType &
-UsdRiRiLightPortalAPI::_GetStaticTfType()
+UsdRiLightPortalAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdRiRiLightPortalAPI>();
+    static TfType tfType = TfType::Find<UsdRiLightPortalAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdRiRiLightPortalAPI::_IsTypedSchema()
+UsdRiLightPortalAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -73,19 +73,19 @@ UsdRiRiLightPortalAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdRiRiLightPortalAPI::_GetTfType() const
+UsdRiLightPortalAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-UsdRiRiLightPortalAPI::GetRiPortalIntensityAttr() const
+UsdRiLightPortalAPI::GetRiPortalIntensityAttr() const
 {
     return GetPrim().GetAttribute(UsdRiTokens->riPortalIntensity);
 }
 
 UsdAttribute
-UsdRiRiLightPortalAPI::CreateRiPortalIntensityAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiLightPortalAPI::CreateRiPortalIntensityAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRiTokens->riPortalIntensity,
                        SdfValueTypeNames->Float,
@@ -96,13 +96,13 @@ UsdRiRiLightPortalAPI::CreateRiPortalIntensityAttr(VtValue const &defaultValue, 
 }
 
 UsdAttribute
-UsdRiRiLightPortalAPI::GetRiPortalTintAttr() const
+UsdRiLightPortalAPI::GetRiPortalTintAttr() const
 {
     return GetPrim().GetAttribute(UsdRiTokens->riPortalTint);
 }
 
 UsdAttribute
-UsdRiRiLightPortalAPI::CreateRiPortalTintAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiLightPortalAPI::CreateRiPortalTintAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRiTokens->riPortalTint,
                        SdfValueTypeNames->Color3f,
@@ -126,7 +126,7 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-UsdRiRiLightPortalAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdRiLightPortalAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdRiTokens->riPortalIntensity,

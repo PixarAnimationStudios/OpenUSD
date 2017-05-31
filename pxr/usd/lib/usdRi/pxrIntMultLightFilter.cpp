@@ -97,118 +97,13 @@ UsdRiPxrIntMultLightFilter::_GetTfType() const
     return _GetStaticTfType();
 }
 
-UsdAttribute
-UsdRiPxrIntMultLightFilter::GetIntensityAttr() const
-{
-    return GetPrim().GetAttribute(UsdRiTokens->intensity);
-}
-
-UsdAttribute
-UsdRiPxrIntMultLightFilter::CreateIntensityAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->intensity,
-                       SdfValueTypeNames->Float,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdRiPxrIntMultLightFilter::GetExposureAttr() const
-{
-    return GetPrim().GetAttribute(UsdRiTokens->exposure);
-}
-
-UsdAttribute
-UsdRiPxrIntMultLightFilter::CreateExposureAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->exposure,
-                       SdfValueTypeNames->Float,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdRiPxrIntMultLightFilter::GetInvertAttr() const
-{
-    return GetPrim().GetAttribute(UsdRiTokens->invert);
-}
-
-UsdAttribute
-UsdRiPxrIntMultLightFilter::CreateInvertAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->invert,
-                       SdfValueTypeNames->Bool,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdRiPxrIntMultLightFilter::GetMultiplyDiffuseAttr() const
-{
-    return GetPrim().GetAttribute(UsdRiTokens->multiplyDiffuse);
-}
-
-UsdAttribute
-UsdRiPxrIntMultLightFilter::CreateMultiplyDiffuseAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->multiplyDiffuse,
-                       SdfValueTypeNames->Float,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdRiPxrIntMultLightFilter::GetMultiplySpecularAttr() const
-{
-    return GetPrim().GetAttribute(UsdRiTokens->multiplySpecular);
-}
-
-UsdAttribute
-UsdRiPxrIntMultLightFilter::CreateMultiplySpecularAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->multiplySpecular,
-                       SdfValueTypeNames->Float,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-namespace {
-static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
-{
-    TfTokenVector result;
-    result.reserve(left.size() + right.size());
-    result.insert(result.end(), left.begin(), left.end());
-    result.insert(result.end(), right.begin(), right.end());
-    return result;
-}
-}
-
 /*static*/
 const TfTokenVector&
 UsdRiPxrIntMultLightFilter::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames = {
-        UsdRiTokens->intensity,
-        UsdRiTokens->exposure,
-        UsdRiTokens->invert,
-        UsdRiTokens->multiplyDiffuse,
-        UsdRiTokens->multiplySpecular,
-    };
+    static TfTokenVector localNames;
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdLuxLightFilter::GetSchemaAttributeNames(true),
-            localNames);
+        UsdLuxLightFilter::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;
