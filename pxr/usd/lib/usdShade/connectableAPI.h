@@ -189,9 +189,10 @@ public:
     /// source attribute, which can be an input or an output.
     /// 
     /// The result depends on the "connectability" of the input and the source 
-    /// attributes and the types of prims they belong to.
+    /// attributes. 
     /// 
     /// \sa UsdShadeInput::SetConnectability
+    /// \sa UsdShadeInput::GetConnectability
     USDSHADE_API
     static bool CanConnect(const UsdShadeInput &input, 
                            const UsdAttribute &source);

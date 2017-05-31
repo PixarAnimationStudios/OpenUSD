@@ -221,7 +221,6 @@ public:
     /// connectability of the input. This is done by setting the 
     /// "connectability" metadata on the associated attribute.
     /// 
-    /// 
     /// Connectability of an Input can be set to UsdShadeTokens->full or 
     /// UsdShadeTokens->interfaceOnly. 
     /// 
@@ -232,9 +231,7 @@ public:
     /// render-time dataflow connection), or another Input whose connectability 
     /// is also "interfaceOnly".
     /// 
-    /// The default connectability of a node-graph interface input is 
-    /// UsdShadeTokens->interfaceOnly. 
-    /// The default connectability of a shader input is UsdShadeTokens->full. 
+    /// The default connectability of an input is UsdShadeTokens->full.
     /// 
     /// \sa SetConnectability()
     USDSHADE_API

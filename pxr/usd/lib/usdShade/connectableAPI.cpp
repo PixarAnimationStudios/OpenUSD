@@ -242,11 +242,8 @@ _CanConnectInputToSource(const UsdShadeInput &input,
         return true;
     } else if (inputConnectability == UsdShadeTokens->interfaceOnly) {
         if (UsdShadeInput::IsInput(source)) {
-            if (source.GetPrim().IsA<UsdShadeNodeGraph>()) {
-                return true;
-            }
-
-            TfToken sourceConnectability = UsdShadeInput(source).GetConnectability();
+            TfToken sourceConnectability = 
+                UsdShadeInput(source).GetConnectability();
             if (sourceConnectability == UsdShadeTokens->interfaceOnly) {
                 return true;
             }
