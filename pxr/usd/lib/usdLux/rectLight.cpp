@@ -97,13 +97,46 @@ UsdLuxRectLight::_GetTfType() const
     return _GetStaticTfType();
 }
 
+UsdAttribute
+UsdLuxRectLight::GetTextureFileAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->textureFile);
+}
+
+UsdAttribute
+UsdLuxRectLight::CreateTextureFileAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->textureFile,
+                       SdfValueTypeNames->Asset,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+namespace {
+static inline TfTokenVector
+_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+{
+    TfTokenVector result;
+    result.reserve(left.size() + right.size());
+    result.insert(result.end(), left.begin(), left.end());
+    result.insert(result.end(), right.begin(), right.end());
+    return result;
+}
+}
+
 /*static*/
 const TfTokenVector&
 UsdLuxRectLight::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames;
+    static TfTokenVector localNames = {
+        UsdLuxTokens->textureFile,
+    };
     static TfTokenVector allNames =
-        UsdLuxLight::GetSchemaAttributeNames(true);
+        _ConcatenateAttributeNames(
+            UsdLuxLight::GetSchemaAttributeNames(true),
+            localNames);
 
     if (includeInherited)
         return allNames;

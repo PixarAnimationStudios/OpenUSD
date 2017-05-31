@@ -48,6 +48,13 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateTextureFileAttr(UsdLuxRectLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTextureFileAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -81,6 +88,13 @@ void wrapUsdLuxRectLight()
 
         .def(!self)
 
+        
+        .def("GetTextureFileAttr",
+             &This::GetTextureFileAttr)
+        .def("CreateTextureFileAttr",
+             &_CreateTextureFileAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
     ;
 

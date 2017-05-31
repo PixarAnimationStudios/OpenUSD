@@ -294,6 +294,9 @@ class RectLight "RectLight" (
     The rectangle is centered in the XY plane and emits light along the -Z axis.
     The rectangle is 1 unit long in local space."""
 ) {
+    asset texture:file (
+        doc = """A color texture to use on the rectangle."""
+    )
 }
 
 class SphereLight "SphereLight" (

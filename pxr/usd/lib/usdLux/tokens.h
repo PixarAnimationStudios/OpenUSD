@@ -128,7 +128,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>shapingIesAngleScale</b> - UsdLuxShapingAPI
 /// \li <b>shapingIesFile</b> - UsdLuxShapingAPI
 /// \li <b>specular</b> - UsdLuxLight
-/// \li <b>textureFile</b> - UsdLuxDomeLight
+/// \li <b>textureFile</b> - UsdLuxDomeLight, UsdLuxRectLight
 /// \li <b>textureFormat</b> - UsdLuxDomeLight
 TF_DECLARE_PUBLIC_TOKENS(UsdLuxTokens, USDLUX_API, USDLUX_TOKENS);
 

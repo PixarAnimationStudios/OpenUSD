@@ -786,6 +786,9 @@ class RectLight "RectLight" (
         doc = """A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control."""
     )
+    asset texture:file (
+        doc = "A color texture to use on the rectangle."
+    )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         doc = '''Visibility is meant to be the simplest form of "pruning" 
