@@ -1,0 +1,106 @@
+#type: include
+
+= USD Packed Prims =
+
+USD Packed Prims are lightweight, file backed primitives. Each USD Packed Prim represents a primitive in USD file. A USD primitive may be a single [gprim|http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Gprim] like a mesh or a curve or it might be a group containing many [gprims|http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Gprim].
+
+The only data that USD Packed Prims hold are their intrinsic attributes. 
+
+
+==== Intrinsic Attributes ====
+
+usdFileName:
+    The referenced USD file
+
+usdPrimPath:
+    The referenced USD prim
+
+usdFrame:
+    The frame to read the prim from. 
+    Typically this is set to the current frame but if the geometry is not 
+    moving, it is more efficient to set this to a constant frame.
+
+usdType:
+    This is a read only attribute useful for debugging and for writing 
+    wrangler snippets.
+
+usdLocalToWorldTransform:
+    This is a read only attribute that can be read in vex.
+
+usdAltFileName:
+    When writing a USD Packed Prim to a USD file, it may be useful to use
+    a different file path than the path we used to read from (For example,
+    we might want to use a relative path). If this attribute is set, use
+    this path.
+
+usdSrcPrimPath:
+    If a USD Packed Prim is created by unpacking a point instancer, this
+    attribute contains the name of the point instancer. This is used for
+    writing overlays.
+    
+usdIndex:
+    If a USD Packed Prim is created by unpacking a point instancer, this
+    attribute contains the index into the point instancer's array. This is
+    used from writing overlays.
+
+usdViewportPurpose:
+    A list of strings indicating which "purpose" types to draw.
+
+=== Hierarchy and Traversal ===
+
+USD arranges geometry into a hierarchy. In Houdini SOPs, we can represent hierarchy using packed primitives. 
+
+How we import USD depends on how we want to use it. If we want to transform a model rigidly, we can import that model as a single packed prim. If we need to deform the model, then we need to load each [gprim|http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Gprim] in the model as a packed prim and then unpack them to Houdini geometry.
+
+The process of walking the USD hierarchy collecting primitives to load is called "Traversal". Both the USD import node and the USD unpack node have options for traversal. The traversal starts and the prims you have explicitly selected and then traverses the hierarchy belows these prims to select 
+descendant prims bases on a criteria. For example you can traverse to find all the [gprims|http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Gprim] contained in a asset.
+
+Both the USD Import and the USD Unpack SOPs have a custom traversal mode that lets you select prims based on many different USD concepts.
+
+=== Transforms === 
+
+USD Packed Prims, like all packed prims in Houdini, have attributes for rigid transforms.
+
+=== Viewport Drawing ===
+
+Like most packed prims in Houdini, USD packed prims can be drawn in the viewport as points, bounding boxes or full geometry.
+
+=== Purpose ===
+
+Sections of a USD hierarchy can be marked to have a specific purpose. For example, an asset might have a lightweight proxy representation that is used to view the asset in interactive applications and a more detailed representation used for rendering. Often these two representations are siblings in the hierarchy. When walking down the hierarchy to draw a USD prim, if a section is found that is marked as a purpose we don't want to draw, it is ignored.
+
+=== Variants ===
+
+Variants are another way to have version of a asset that are used for different purposes. Variants can be specified with the prim path by including the variant name in curly braces. "/BicycleHero{modelingVariant=Layout}" for example. The tree view panel on the USD import SOP can be used to select variants from a list.
+
+=== Unpacking ===
+
+USD Packed Prims can be unpacked using Houdini's Unpack SOP or the more specialized USD Unpack SOP. USD arranges geometry in a hierarchy. When we unpack a prim that prim is replaced with prims that represent the children of that prim. Once we have unpacked the hierarchy down to [gprims|http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Gprim], unpacking again will convert to Houdini geometry.
+
+When a USD prim is unpacked to Houdini geometry, a "usdpath" and "usdprimpath" attribute will be created so that the deformed geometry can be written back to a USD file.
+
+If you turn off iterations on the unpack SOP, the Houdini unpack SOP can be used to convert to Houdini geometry in one step. However, for deep hierarchies, the USD Unpack SOP will be faster.
+
+=== Primvars ===
+
+In USD, prims may have attributes that describe shading signals. These attributes are called primvars. When a USD prim is unpacked to Houdini geometry, houdini attributes are created to contain the primvars.
+
+There is not a perfect match between USD primvars and Houdini attributes. In USD each prim can contain a different set of primvars. In Houdini, all prims in a SOP chain share attributes. If you unpack one USD [gprim|http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Gprim] all the primvars will be unpacked to attribute correctly. If you unpack many [gprims|http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Gprim] at once, things get tricky. 
+
+If you unpack USD to Houdini geometry using the Houdini Unpack SOP it will unpack all primvars. If you use the USD Unpack SOP you can set patterns to select which primvars to unpack. 
+
+=== Point Instancers ===
+
+
+=== Related Nodes ===
+
+[USD Import|nodes/sop/pixar--usdimport]
+
+[USD Output|nodes/out/pixar--usdoutput]
+
+
+
+
+
+
+

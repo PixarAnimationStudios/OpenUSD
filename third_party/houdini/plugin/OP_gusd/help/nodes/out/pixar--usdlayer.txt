@@ -1,0 +1,71 @@
+#type: node
+#context: out
+#internal: USDLayer
+#tags: usd layer
+
+= USD Layer =
+
+"""inserts, appends, or removes USD primitives to/from a USD scene as sublayers"""
+
+== Overview ==
+
+This ROP will insert,append, or remove the contents of source USD files into/from destination USD Files as [USD sublayers.|http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-SubLayers]. 
+
+
+@parameters
+
+
+Render to Disk:
+    Saves the usd reference to disk.
+
+Controls...:
+    #id: renderdialog
+
+    Opens the control dialog to allow adjustments of the render parameters
+    before rendering.
+
+
+[Include:standard#valid_frame_range]
+
+Start/End/Inc:
+    Specifies the range of frames to render (start frame, end frame, and increment). All values may be floating point values. The range is inclusive. 
+
+    These parameters determine the values of the local variables for the output driver.
+
+	`$NRENDER`:
+	    The number of frames to be rendered by the output driver.
+	`$N`:
+	    The current frame being rendered (starting at 1 and going to `$NRENDER`).
+
+Render with Take:
+    #id: take
+
+    Uses the settings in a particular take while rendering. Choose
+    __Current__ to use the current take when rendering.
+
+    
+== Settings ==
+Loop Range:
+    This allows you to loop the operation over multiple files by using the token %d as the loop iteration string. For example, say you wanted to insert the following files: source1.usd, source2.usd, source3.usda  into a
+    the file destination.usd. You would set your Source  parameter to file%d.usda, the Destination to detination.usd and the loop range to 1 ,3 ,1. 
+  
+Source:
+    File paths to USD files that will be inserted into or removed from the corresponding Destinatation USD file.
+Destination:
+    File Paths in/from which to insert/remove the corresponding Source USD file.
+Operation:
+    insert into:
+        Inserting places the sublayer at the top of the layer stack making it the strongest opinon, this is most desirable for overlays. 
+    append into:
+        Appending places the sublayer at the bottom of the stack giving it the weakest opinion which is useful for installing new geometry into a USD scene.
+    remove from:
+        Removes Source sublayer if it exist in the Destination USD file.  
+        
+@related
+* [Node:sop/pixar--usdimport]
+* [Node:sop/pixar--usdunpack]
+* [Node:out/pixar--usdoutput]
+* [Node:out/pixar--usdlayer]
+
+
+

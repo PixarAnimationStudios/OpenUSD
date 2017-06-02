@@ -51,7 +51,7 @@ component.
 ## Third Party Plugins
 
 USD provides several plugins for integration with third-party software packages,
-including Maya, Katana, and Alembic. There is additional documentation on each plugin 
+including Maya, Katana, Houdini, and Alembic. There is additional documentation on each plugin 
 [here](http://openusd.org/docs/USD-3rd-Party-Plugins.html).
 These plugins are not built by default and must be enabled via the instructions below.
 
@@ -98,6 +98,17 @@ when invoking cmake. This plugin is compatible with Katana 2.0v5. The additional
 | KATANA_API_LOCATION   | The root path to a Katana SDK install.| 2.0v5     |
 
 For further information see our additional documentation on the Katana plugins [here](http://openusd.org/docs/Katana-USD-Plugins.html).
+
+##### Houdini Plugin
+
+Enable the Houdini plugin in the build by specifying the cmake flag ```PXR_BUILD_HOUDINI_PLUGIN=TRUE``` 
+when invoking cmake. This plugin is compatible with Houdini 16.0. The additional dependencies that must be supplied when invoking cmake are:
+
+| Dependency Name       | Description                            | Version   |
+| --------------        | -----------------------------------    | -------   |
+| HOUDINI_ROOT          | The root path to a Houdini SDK install.| 16.0      |
+
+For further information see our additional documentation on the Houdini plugins [here](http://openusd.org/docs/Houdini-USD-Plugins.html).
 
 ## Tests
 

@@ -1,0 +1,129 @@
+= USDImport =
+
+#type: node
+#context: sop
+#internal: USDImport
+#tags: usd import
+
+= USD Import =
+
+This node will import the USD primitives specified by the file name and prim path parameters. The imported primitives are represented as ["USD Packed Prims"|/USDPackedPrims]. 
+
+The primitives to be imported are specified by first selecting the paths of one or more USD Primitives and then specify how to traverse the USD hierarchy below those prims. You can choose to import only the prims listed in "Prim Path" (No Traversal), or import all the gprims or components contained in the USD hierarchies below the prims list in "Prim Path". 
+
+If you select "Custom Traversal" from the "Traversals" menu. The "Advanced" parameter pane is shown. The parameters on this pane allow you to search for prims using a bunch of different USD attributes and concepts. Note that doing custom traversals can be much slower than the other traversal types.
+
+
+
+
+@parameters
+    Group:
+        Group of points to process from input
+    Class:
+        If set to primitive, the OP will create USD Packed USD prims. If set to points, the SOP will create points with attributes that describe the USD packed prims. The points method is not currently fully supported.
+    Delete Old Points/Prims:
+        How to treat points or prims from connected input.
+    USD File:
+        USD file to import from. You can use the "View" button to launch [usdview|http://graphics.pixar.com/usd/docs/USD-Toolset.html#USDToolset-usdview]
+    Tree View:
+        Open a tree view panel to select prims to import
+    Prim Path:
+        One or more prims to import. The easiest way to add things to this list is using the Tree View but you can also type directly into this field.
+        Note that USD prim paths must begin with a "/".
+    Reload:
+        Reload the current USD file.
+    Time:
+        The time to load the USD prims. When importing animated geometry this could be set to $FF. For static geometry, it is much more efficient to set this to $RFSTART. Any time value will work though.
+    Traversal:
+        For each name listed in the Prim Path parameter, we can create a USD Packed Prim for just that prim or we can traverse the USD hierarchy contained in that prim and create USD Packed Prims the USD prims that match a criteria.
+        
+        No Traversal:
+            Create one USD Packed Prim for each entry in the Prim Path parameter
+        Components:
+            Create one USD Packed Prim for each prim with kind "component".
+
+        Gprims:
+            Create one USD Packed Prim for each gprim
+
+        Groups:
+            Create one USD Packed Prim for each prim of type "group"
+
+        Custom Traversal :
+            Add a new "Advanced" parameter pane that allows you to choose prims based on many criteria   
+    Display As:
+        How to display the pack prims created by this node.
+        
+        Full Geometry:
+             The full geometry will be displayed in the viewport.
+        Point Cloud:
+            Only the points of the geometry will be displayed. This will take less memory and be faster to render.
+        Bounding Box:
+            Only display the bounding box of the geometry in the viewport.
+        Centroid:
+            Display a single point at the center of the bounding box.
+        Hidden:
+            Don't display the geometry in the viewport.
+        Proxy: 
+            Unsupported 
+    Purpose:
+        Sections of a USD hierarchy can be marked to be used for a a specific purpose. Only sections mark as default purpose or one of the purposes listed here will be loaded.
+
+    Missing Frame:
+        What to do when a file is missing.
+
+    Prim Types:
+        USD prim types to select when doing a custom traversal of the USD hierarchy. The pulldown menu list all the valid types. Multiple types and wildcards are supported.
+
+    Purposes:
+        USD prim purposes to select when doing a custom traversal of the USD hierarchy. The pulldown menu lists all the valid purposes. Multiple purposes and wildcards are supported.
+
+    Kinds:
+       USD prim kinds to select when doing a custom traversal of the USD hierarchy. The pulldown menu lists all the valid kinds. Multiple kinds and wildcards are supported.
+
+    Name Mask:
+       Pattern used match against prim names when doing a custom traversal of the USD hierarchy. Wildcards are supported.
+
+    Path Mask:
+       Pattern used match against prim paths when doing a custom traversal of the USD hierarchy. Wildcards are supported.
+
+    Traverse Matched:
+        If this is on, when a matching prim is found, that prim is returned and the traverse will continue looking for matches among the prims descendants. Is "Traverse Matched" is off, 
+        the traverse will not match any of the prims descendants.
+
+    Is Active:
+        Return only prims that are active.
+
+    Is Visible:
+        Return only prims that are visible.
+
+    Is Imageable:
+        Return only prims that are imageable.
+
+    Is Defined:
+        Return only prims that are defined.
+
+    Is Abstract:
+        Return only prims that are abstract.
+
+    Is Group:
+        Return only prims that are groups.
+
+    Is Model:
+        Return only prims that are models.
+
+    Is Instance:
+        Return only prims that are instances.
+
+    Is Instance Master:
+        Return only prims that are instance masters.
+
+    Has Clips:
+        Return only prims that have clips.
+
+
+
+:load_example:
+    #path: /examples/nodes/sop/pixar--usdimport/UsdImportStage
+    #include: yes
+  
+

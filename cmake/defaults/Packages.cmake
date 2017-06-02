@@ -128,6 +128,10 @@ if (PXR_BUILD_MAYA_PLUGIN)
     find_package(Maya REQUIRED)
 endif()
 
+if (PXR_BUILD_HOUDINI_PLUGIN)
+    find_package(Houdini REQUIRED)
+endif()
+
 if (PXR_BUILD_ALEMBIC_PLUGIN)
     find_package(Alembic REQUIRED)
     find_package(OpenEXR REQUIRED)

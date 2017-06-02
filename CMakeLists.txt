@@ -64,6 +64,11 @@ if (${PXR_BUILD_MAYA_PLUGIN})
     endif()
 endif()
 
+if (${PXR_BUILD_HOUDINI_PLUGIN})
+    message(STATUS "Enable houdini plugin")
+    _enableThirdPartyPlugin("houdini")
+endif()
+
 if (${PXR_BUILD_DOCUMENTATION})                                                  
 
     # Ensure we have doxygen+graphviz available
