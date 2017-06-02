@@ -113,6 +113,11 @@ struct PxrUsdKatanaUtils {
     /// USD Looks can have Katana child-parent relationships, which means that
     /// we'll have to do some extra processing to find the correct path that
     /// these resolve to
+    static std::string _GetDisplayGroup(
+            const UsdPrim &prim, 
+            bool isLibrary,
+            const SdfPath& path);
+    static std::string _GetDisplayName(const UsdPrim &prim);
     static std::string ConvertUsdMaterialPathToKatLocation(
             const SdfPath &path,
             const PxrUsdKatanaUsdInPrivateData& data);
