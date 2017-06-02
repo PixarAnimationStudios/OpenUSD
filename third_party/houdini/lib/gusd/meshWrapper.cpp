@@ -282,6 +282,9 @@ GusdMeshWrapper::refine(
 
     VtIntArray usdCounts;
     countsAttr.Get(&usdCounts, m_time);
+    if( usdCounts.size() < 1 ) {
+        return false;
+    }
     GT_DataArrayHandle gtVertexCounts = new GusdGT_VtArray<int32>( usdCounts );
     int numVerticiesExpected = std::accumulate( usdCounts.begin(), usdCounts.end(), 0 );
 
