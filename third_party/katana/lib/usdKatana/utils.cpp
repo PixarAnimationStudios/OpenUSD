@@ -1153,7 +1153,10 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         UsdUtilsGetPrimAtPathWithForwarding(
             data.GetUsdInArgs()->GetStage(), path);
 
-    bool isLibrary = (materialGroupKatanaPath == "/");
+    // LooksDerivedStructure is legacy
+    bool isLibrary = (materialGroupKatanaPath == "/" || 
+        materialGroupKatanaPath == "/LooksDerivedStructure");
+
     if (isLibrary) {
         // materials are at the root: we are in a library
         if (!prim.IsValid()) {
@@ -1177,6 +1180,10 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         }
     }
 
+    returnValue = materialGroupKatanaPath;
+    if (returnValue != "/") {
+        returnValue += '/';
+    }
     std::string displayGroup = _GetDisplayGroup(prim, isLibrary, path);
     
     if (!displayGroup.empty()) {
@@ -1186,14 +1193,10 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
             primName = _GetDisplayName(prim);
         }
 
-        returnValue = materialGroupKatanaPath;
-        if (returnValue != "/") {
-            returnValue += '/';
-        }
         returnValue += displayGroup;
         returnValue += '/';
-        returnValue += primName;
     }
+    returnValue += primName;
     return returnValue;
 }
 
