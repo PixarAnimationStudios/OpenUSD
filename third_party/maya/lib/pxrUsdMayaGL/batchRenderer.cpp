@@ -833,6 +833,10 @@ UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 {
     _intersector.reset();
     _taskDelegate.reset();
+
+    // the _shapeRendererMap has UsdImagingDelegate objects which need to be
+    // deleted before _renderIndex is deleted.
+    _shapeRendererMap.clear();
     delete _renderIndex;
 }
 
