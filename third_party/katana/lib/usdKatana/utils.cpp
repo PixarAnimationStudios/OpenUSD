@@ -979,7 +979,7 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
     // remove initial part of pathString so it's a relative path
     if (!isolatePathString.empty()) {
         if (pathString.find(isolatePathString) == 0) {
-            pathString = pathString.substr(isolatePathString.size());
+            pathString = pathString.substr(isolatePathString.size()+1);
         } else {
             // no good guess about the katana target location: 
             //   isolatePath is not a prefix of the prim being cooked
