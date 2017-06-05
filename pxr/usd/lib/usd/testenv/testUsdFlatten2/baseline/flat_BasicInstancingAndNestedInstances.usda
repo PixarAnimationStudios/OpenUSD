@@ -14,6 +14,12 @@ over "Flattened_Master_1"
         add references = </Flattened_Master_2>
     )
     {
+        int foo = 1
+        int propInstanceAttr.connect = [
+            </Flattened_Master_1/PropInstance_1/geom.foo>,
+            </Flattened_Master_1/PropInstance_2/geom.foo>,
+            </Flattened_Master_1/PropNotAnInstance_1/geom.foo>,
+        ]
         rel propInstanceRel = [
             </Flattened_Master_1/PropInstance_1/geom>,
             </Flattened_Master_1/PropInstance_2/geom>,
@@ -27,6 +33,12 @@ over "Flattened_Master_1"
         add references = </Flattened_Master_2>
     )
     {
+        int foo = 1
+        int propInstanceAttr.connect = [
+            </Flattened_Master_1/PropInstance_1/geom.foo>,
+            </Flattened_Master_1/PropInstance_2/geom.foo>,
+            </Flattened_Master_1/PropNotAnInstance_1/geom.foo>,
+        ]
         rel propInstanceRel = [
             </Flattened_Master_1/PropInstance_1/geom>,
             </Flattened_Master_1/PropInstance_2/geom>,
@@ -37,10 +49,12 @@ over "Flattened_Master_1"
 
     def "PropNotAnInstance_1"
     {
+        int foo = 1
         rel propRel = </Flattened_Master_1/PropNotAnInstance_1/geom>
 
         def "geom"
         {
+            int foo.connect = </Flattened_Master_1/PropNotAnInstance_1.foo>
         }
     }
 }
@@ -49,6 +63,7 @@ over "Flattened_Master_2"
 {
     def "geom"
     {
+        int foo.connect = </Flattened_Master_2.foo>
     }
 }
 
@@ -57,6 +72,22 @@ def "Set_1" (
     add references = </Flattened_Master_1>
 )
 {
+    int setAttr.connect = [
+        </Set_1/PropInstance_1.foo>,
+        </Set_1/PropInstance_1/geom.foo>,
+        </Set_1/PropInstance_2.foo>,
+        </Set_1/PropInstance_2/geom.foo>,
+        </Set_1/PropNotAnInstance_1.foo>,
+        </Set_1/PropNotAnInstance_1/geom.foo>,
+    ]
+    int setInstanceAttr.connect = [
+        </Set_1/PropInstance_1.foo>,
+        </Set_1/PropInstance_1/geom.foo>,
+        </Set_1/PropInstance_2.foo>,
+        </Set_1/PropInstance_2/geom.foo>,
+        </Set_1/PropNotAnInstance_1.foo>,
+        </Set_1/PropNotAnInstance_1/geom.foo>,
+    ]
     rel setInstanceRel = [
         </Set_1/PropInstance_1>,
         </Set_1/PropInstance_1/geom>,

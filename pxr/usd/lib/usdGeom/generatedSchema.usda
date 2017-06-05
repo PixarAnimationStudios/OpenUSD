@@ -15,7 +15,7 @@ class "Imageable" (
     primitive and can override shader inputs.'''
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -271,7 +271,7 @@ class "Xformable" (
 """
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -360,7 +360,7 @@ class Scope "Scope" (
     transformability perspective."""
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -435,7 +435,7 @@ class Xform "Xform" (
     doc = "Concrete prim schema for a transform, which implements Xformable "
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -559,7 +559,7 @@ class "Boundable" (
         the extent of all children, as they will be pruned from BBox computation
         during traversal."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -698,7 +698,7 @@ class "Gprim" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -827,7 +827,7 @@ class Cube "Cube" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -962,7 +962,7 @@ class Sphere "Sphere" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1108,7 +1108,7 @@ class Cylinder "Cylinder" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1253,7 +1253,7 @@ class Capsule "Capsule" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1400,7 +1400,7 @@ class Cone "Cone" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1555,7 +1555,7 @@ class "PointBased" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1794,7 +1794,7 @@ class Mesh "Mesh" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -2018,7 +2018,7 @@ class NurbsPatch "NurbsPatch" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -2269,7 +2269,7 @@ class "Curves" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -2551,7 +2551,7 @@ class BasisCurves "BasisCurves" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -2765,7 +2765,7 @@ class NurbsCurves "NurbsCurves" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -2951,7 +2951,7 @@ class Points "Points" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -3311,7 +3311,7 @@ class PointInstancer "PointInstancer" (
       instance of each prototype should be represented.  This hint should only
       affect interactive/preview representations and is optional."""
     )
-    rel prototypes = None (
+    rel prototypes (
         doc = """<b>Required property</b>. Orders and targets the prototype root 
       prims, which can be located anywhere in the scenegraph that is convenient,
       although we promote organizing prototypes as children of the 
@@ -3320,7 +3320,7 @@ class PointInstancer "PointInstancer" (
       instance that prototype. Since relationships are uniform, this property
       cannot be animated."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -3480,7 +3480,7 @@ class Camera "Camera" (
     token projection = "perspective" (
         allowedTokens = ["perspective", "orthographic"]
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be

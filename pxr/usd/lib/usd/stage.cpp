@@ -4300,6 +4300,32 @@ UsdStage::_CopyMasterPrim(const UsdPrim &masterPrim,
     }
 }
 
+static 
+void 
+_TranslatePathsToFlattenedMaster(
+    const UsdProperty &prop,
+    SdfPathVector *paths, 
+    const _MasterToFlattenedPathMap &masterToFlattened)
+{
+    if (!prop.GetPrim().IsInMaster()) {
+        return;
+    }
+
+    UsdPrim master = prop.GetPrim();
+    while (!master.IsMaster()) {
+        master = master.GetParent();
+    }
+
+    const SdfPath* flattenedMasterPath = 
+        TfMapLookupPtr(masterToFlattened, master.GetPath());
+    if (TF_VERIFY(flattenedMasterPath)) {
+        for (auto& path : *paths) {
+            path = path.ReplacePrefix(
+                master.GetPath(), *flattenedMasterPath);
+        }
+    }
+}
+
 void 
 UsdStage::_CopyProperty(const UsdProperty &prop,
                         const SdfPrimSpecHandle &dest,
@@ -4342,6 +4368,15 @@ UsdStage::_CopyProperty(const UsdProperty &prop,
                 sdfAttr->SetInfo(SdfFieldKeys->Default, defaultValue);
             }
         }
+        SdfPathVector sources;
+        attr.GetConnections(&sources);
+        if (!sources.empty()) {
+            // If this attribute is in a master, we need to translate
+            // any sources that point to a prim in this master to the
+            // corresponding flattened master.
+            _TranslatePathsToFlattenedMaster(prop, &sources, masterToFlattened);
+            sdfAttr->GetConnectionPathList().GetExplicitItems() = sources;
+        }
      }
      else if (prop.Is<UsdRelationship>()) {
          UsdRelationship rel = prop.As<UsdRelationship>();
@@ -4356,28 +4391,11 @@ UsdStage::_CopyProperty(const UsdProperty &prop,
 
          SdfPathVector targets;
          rel.GetTargets(&targets);
-         if (targets.empty()) {
-             sdfRel->GetTargetPathList().ClearEditsAndMakeExplicit();
-         }
-         else {
+         if (!targets.empty()) {
              // If this relationship is in a master, we need to translate
              // any targets that point to a prim in this master to the
              // corresponding flattened master.
-             if (prop.GetPrim().IsInMaster()) {
-                 UsdPrim master = prop.GetPrim();
-                 while (!master.IsMaster()) {
-                     master = master.GetParent();
-                 }
-
-                 const SdfPath* flattenedMasterPath = 
-                     TfMapLookupPtr(masterToFlattened, master.GetPath());
-                 if (TF_VERIFY(flattenedMasterPath)) {
-                     for (auto& path : targets) {
-                         path = path.ReplacePrefix(
-                             master.GetPath(), *flattenedMasterPath);
-                     }
-                 }
-             }
+             _TranslatePathsToFlattenedMaster(prop, &targets, masterToFlattened);
              sdfRel->GetTargetPathList().GetExplicitItems() = targets;
          }
      }

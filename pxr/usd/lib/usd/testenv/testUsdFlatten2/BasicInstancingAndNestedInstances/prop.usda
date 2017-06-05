@@ -4,7 +4,10 @@ def "Prop"
 {
     rel propRel = </Prop/geom>
 
+    int foo = 1
+
     def "geom"
     {
+        int foo.connect = </Prop.foo>
     }
 }

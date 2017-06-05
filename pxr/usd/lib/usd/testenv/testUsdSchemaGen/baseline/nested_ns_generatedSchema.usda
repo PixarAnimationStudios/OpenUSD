@@ -29,7 +29,7 @@ class Derived "Derived" (
     doc = "Emphasized! Test Section"
 )
 {
-    rel binding = None (
+    rel binding (
         doc = "This is my awesome relationship."
     )
     int[] cornerIndices = [] (
@@ -88,7 +88,7 @@ class Derived "Derived" (
 
 class TestPxHairman "TestPxHairman"
 {
-    rel relCanShareApiNameWithAttr = None (
+    rel relCanShareApiNameWithAttr (
         doc = "This exercises custom API naming."
     )
     float riStatements:attributes:user:Gofur_GeomOnHairdensity (

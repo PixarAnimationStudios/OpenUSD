@@ -217,5 +217,42 @@ class TestUsdFlatten(unittest.TestCase):
         assert rel
         self.assertEqual(rel.GetTargets(), [Sdf.Path('/bar/baz')])
 
+    def test_FlattenConnections(self):
+        basePath = 'connections/'
+        stageFile = basePath+'source.usda'
+
+        stage = Usd.Stage.Open(stageFile)
+        assert stage
+        barPrim = stage.GetPrimAtPath('/bar')
+        assert barPrim
+        
+        fooAttr  = barPrim.GetAttribute('foo')
+        assert fooAttr
+        self.assertEqual(fooAttr.GetConnections(), [Sdf.Path('/bar/baz.foo')])
+
+        bazPrim = stage.GetPrimAtPath("/bar/baz")
+        assert bazPrim
+        basAttr  = bazPrim.GetAttribute('bas')
+        assert basAttr
+        self.assertEqual(basAttr.GetConnections(), [Sdf.Path('/bar.bas')])
+
+        resultFile = basePath+'result.usda'
+        stage.Export(resultFile)
+
+        resultStage = Usd.Stage.Open(resultFile)
+        assert resultStage
+
+        barPrim = resultStage.GetPrimAtPath('/bar')
+        assert barPrim
+        fooAttr = barPrim.GetAttribute('foo')
+        assert fooAttr
+        self.assertEqual(fooAttr.GetConnections(), [Sdf.Path('/bar/baz.foo')])
+
+        bazPrim = resultStage.GetPrimAtPath("/bar/baz")
+        assert bazPrim
+        basAttr  = bazPrim.GetAttribute('bas')
+        assert basAttr
+        self.assertEqual(basAttr.GetConnections(), [Sdf.Path('/bar.bas')])
+
 if __name__ == "__main__":
     unittest.main()

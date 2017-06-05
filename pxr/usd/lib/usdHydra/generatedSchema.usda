@@ -8,7 +8,7 @@ class "HydraLookAPI" (
           """
 )
 {
-    rel displayLook:bxdf = None
+    rel displayLook:bxdf
 }
 
 class Shader "HydraShader"

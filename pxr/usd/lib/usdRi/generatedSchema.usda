@@ -120,12 +120,12 @@ class "RiLookAPI" (
     doc = "This API provides the relationships to prman shaders and RIS objects."
 )
 {
-    rel riLook:bxdf = None
-    rel riLook:coshaders = None
-    rel riLook:displacement = None
-    rel riLook:patterns = None
-    rel riLook:surface = None
-    rel riLook:volume = None
+    rel riLook:bxdf
+    rel riLook:coshaders
+    rel riLook:displacement
+    rel riLook:patterns
+    rel riLook:surface
+    rel riLook:volume
 }
 
 class "RiLightAPI" (
@@ -294,7 +294,7 @@ class PxrEnvDayLight "PxrEnvDayLight"
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters = None (
+    rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
     float haziness = 2 (
@@ -343,7 +343,7 @@ class PxrEnvDayLight "PxrEnvDayLight"
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -505,7 +505,7 @@ class PxrAovLight "PxrAovLight"
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters = None (
+    rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
     bool inPrimaryHit = 1 (
@@ -551,7 +551,7 @@ class PxrAovLight "PxrAovLight"
         appear in the mask. Since this is not always desirable, this can
         be turned off."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -656,7 +656,7 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     doc = "Multiplies the intensity of a given light."
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -808,7 +808,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         doc = """The effect on light before it reaches the barn
         geometry."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1028,7 +1028,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
     float height = 1 (
         doc = "Height of the rect the light is shining through."
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1156,7 +1156,7 @@ class PxrRampLightFilter "PxrRampLightFilter" (
 {
     float falloffRamp:beginDistance = 0
     float falloffRamp:endDistance = 10
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1278,7 +1278,7 @@ class PxrRodLightFilter "PxrRodLightFilter" (
     float height = 1 (
         doc = "Height of the inner region of the rod (Y axis)."
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be

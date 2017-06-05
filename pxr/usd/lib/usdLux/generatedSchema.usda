@@ -33,7 +33,7 @@ class "Light" (
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters = None (
+    rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
     float intensity = 1 (
@@ -46,7 +46,7 @@ class "Light" (
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -228,7 +228,7 @@ class "ListAPI" (
 '''
 )
 {
-    rel lightList = None (
+    rel lightList (
         doc = "Relationship to lights in the scene."
     )
     bool lightList:isValid (
@@ -295,7 +295,7 @@ class "ShadowAPI" (
         displayGroup = "Shadows"
         doc = "Enables shadows to be cast by this light."
     )
-    rel shadow:exclude = None (
+    rel shadow:exclude (
         displayGroup = "Shadows"
         displayName = "Shadow Exclude Subset"
         doc = "Set of geometry to ignore for shadowing. If this is not specified, all geometry is used for shadowing."
@@ -311,7 +311,7 @@ class "ShadowAPI" (
         with linear distance within the falloff zone.
         This requires the use of shadowDistance and shadowFalloff."""
     )
-    rel shadow:include = None (
+    rel shadow:include (
         displayGroup = "Shadows"
         displayName = "Shadow Include Subset"
         doc = "Set of geometry to consider for shadowing. If this is not specified, all geometry is used for shadowing."
@@ -324,7 +324,7 @@ class LightFilter "LightFilter" (
     shared."""
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -443,7 +443,7 @@ class DistantLight "DistantLight" (
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters = None (
+    rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
     float intensity = 5000 (
@@ -457,7 +457,7 @@ class DistantLight "DistantLight" (
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -576,7 +576,7 @@ class DiskLight "DiskLight" (
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters = None (
+    rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
     float intensity = 1 (
@@ -589,7 +589,7 @@ class DiskLight "DiskLight" (
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -708,7 +708,7 @@ class RectLight "RectLight" (
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters = None (
+    rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
     float intensity = 1 (
@@ -721,7 +721,7 @@ class RectLight "RectLight" (
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -842,7 +842,7 @@ class SphereLight "SphereLight" (
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters = None (
+    rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
     float intensity = 1 (
@@ -855,7 +855,7 @@ class SphereLight "SphereLight" (
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -973,10 +973,10 @@ class GeometryLight "GeometryLight" (
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters = None (
+    rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
-    rel geometry = None (
+    rel geometry (
         doc = "Relationship to the geometry to use as the light source."
     )
     float intensity = 1 (
@@ -989,7 +989,7 @@ class GeometryLight "GeometryLight" (
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1107,7 +1107,7 @@ class DomeLight "DomeLight" (
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
-    rel filters = None (
+    rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
     float intensity = 1 (
@@ -1120,10 +1120,10 @@ class DomeLight "DomeLight" (
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
     )
-    rel portals = None (
+    rel portals (
         doc = "Optional portals to guide light sampling."
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1237,7 +1237,7 @@ class LightPortal "LightPortal" (
     The rectangle is 1 unit in length."""
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be

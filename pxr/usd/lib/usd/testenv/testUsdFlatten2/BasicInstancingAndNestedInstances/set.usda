@@ -11,6 +11,15 @@ def "Set"
         </Set/PropNotAnInstance_1/geom>
     ]
 
+    int setAttr.connect = [
+        </Set/PropInstance_1.foo>,
+        </Set/PropInstance_1/geom.foo>,
+        </Set/PropInstance_2.foo>,
+        </Set/PropInstance_2/geom.foo>,
+        </Set/PropNotAnInstance_1.foo>,
+        </Set/PropNotAnInstance_1/geom.foo>
+    ]
+
     def "PropInstance_1" (
         references = @./prop.usda@</Prop>
         instanceable = true
@@ -20,6 +29,12 @@ def "Set"
             </Set/PropInstance_1/geom>,
             </Set/PropInstance_2/geom>,
             </Set/PropNotAnInstance_1/geom>
+        ]
+
+        int propInstanceAttr.connect = [
+            </Set/PropInstance_1/geom.foo>,
+            </Set/PropInstance_2/geom.foo>,
+            </Set/PropNotAnInstance_1/geom.foo>
         ]
 
         over "geom"
@@ -36,6 +51,12 @@ def "Set"
             </Set/PropInstance_1/geom>,
             </Set/PropInstance_2/geom>,
             </Set/PropNotAnInstance_1/geom>
+        ]
+
+        int propInstanceAttr.connect = [
+            </Set/PropInstance_1/geom.foo>,
+            </Set/PropInstance_2/geom.foo>,
+            </Set/PropNotAnInstance_1/geom.foo>
         ]
 
         over "geom"
