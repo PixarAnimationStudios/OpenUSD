@@ -91,6 +91,11 @@ void wrapUsdShadeInput()
 
         .def("GetAttr", &Input::GetAttr,
              return_value_policy<return_by_value>())
+
+        .def("IsInput", &Input::IsInput)
+        .staticmethod("IsInput")
+        .def("IsInterfaceInputName", &Input::IsInterfaceInputName)
+        .staticmethod("IsInterfaceInputName")
         ;
 
     implicitly_convertible<Input, UsdAttribute>();

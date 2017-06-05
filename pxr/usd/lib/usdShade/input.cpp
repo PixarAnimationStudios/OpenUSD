@@ -177,6 +177,22 @@ UsdShadeInput::IsInput(const UsdAttribute &attr)
                                 UsdShadeTokens->inputs));
 }
 
+/* static */
+bool
+UsdShadeInput::IsInterfaceInputName(const std::string & name)
+{
+    if (TfStringStartsWith(name, UsdShadeTokens->inputs)) {
+        return true;
+    }
+
+    if (UsdShadeUtils::ReadOldEncoding() &&
+        TfStringStartsWith(name, UsdShadeTokens->interface_)) {
+        return true;
+    }
+
+    return false;
+}
+
 bool 
 UsdShadeInput::SetDocumentation(const std::string& docs) const
 {

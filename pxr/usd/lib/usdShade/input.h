@@ -158,6 +158,11 @@ public:
     USDSHADE_API
     static bool IsInput(const UsdAttribute &attr);
 
+    /// Test if this name has a namespace that indicates it could be an
+    /// input.
+    USDSHADE_API
+    static bool IsInterfaceInputName(const std::string & name);
+
     /// Explicit UsdAttribute extractor.
     const UsdAttribute &GetAttr() const { return _attr; }
 

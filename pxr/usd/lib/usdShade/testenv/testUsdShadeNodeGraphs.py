@@ -226,5 +226,29 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
         stage = self._SetupStage(createInputs=True)
         self._TestInputs(stage)
 
+    def test_StaticMethods(self):
+        self.assertTrue(UsdShade.Input.IsInterfaceInputName('interface:bla'))
+        self.assertTrue(UsdShade.Input.IsInterfaceInputName('inputs:bla'))
+        self.assertTrue(UsdShade.Input.IsInterfaceInputName('inputs:other:bla'))
+        self.assertFalse(UsdShade.Input.IsInterfaceInputName('notinput:bla'))
+        self.assertFalse(UsdShade.Input.IsInterfaceInputName('paramName'))
+        self.assertFalse(UsdShade.Input.IsInterfaceInputName(''))
+
+        stage = self._SetupStage(createInputs=False)
+        self.assertTrue(UsdShade.Input.IsInput(
+            stage.GetPrimAtPath(NODEGRAPH_PATH).GetAttribute(
+                'interface:InputOne')))
+        self.assertFalse(UsdShade.Input.IsInput(
+            stage.GetPrimAtPath(NODEGRAPH_PATH).GetAttribute(
+                'outputs:OutputOne')))
+
+        stage = self._SetupStage(createInputs=True)
+        self.assertTrue(UsdShade.Input.IsInput(
+            stage.GetPrimAtPath(NODEGRAPH_PATH).GetAttribute(
+                'inputs:InputOne')))
+        self.assertFalse(UsdShade.Input.IsInput(
+            stage.GetPrimAtPath(NODEGRAPH_PATH).GetAttribute(
+                'outputs:OutputOne')))
+
 if __name__ == '__main__':
     unittest.main()
