@@ -68,6 +68,7 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
     , _delegate(nullptr)
     , _renderPlugin(nullptr)
     , _taskController(nullptr)
+    , _lastRefineLevel(0)
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
     , _rootPath(rootPath)
     , _excludedPrimPaths(excludedPrimPaths)
@@ -161,8 +162,13 @@ UsdImagingGLHdEngine::_PreSetTime(const UsdPrim& root, const RenderParams& param
     HD_TRACE_FUNCTION();
 
     // Set the fallback refine level, if this changes from the existing value,
-    // all prim refine levels will be dirtied. 
-    _delegate->SetRefineLevelFallback(_GetRefineLevel(params.complexity));
+    // all prim refine levels will be dirtied.
+    int refineLevel = _GetRefineLevel(params.complexity);
+    _delegate->SetRefineLevelFallback(refineLevel);
+    if (refineLevel != _lastRefineLevel) {
+        _taskController->ResetImage();
+        _lastRefineLevel = refineLevel;
+    }
 }
 
 void
@@ -324,7 +330,7 @@ UsdImagingGLHdEngine::_Populate(const UsdImagingGLHdEngineSharedPtrVector& engin
 }
 
 /* static */
-void
+bool
 UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
                           SdfPathVector const& roots,
                           UsdImagingGLEngine::RenderParams const& params,
@@ -332,7 +338,7 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
 {
     if (collection == nullptr) {
         TF_CODING_ERROR("Null passed to _UpdateHydraCollection");
-        return;
+        return false;
     }
 
     // choose repr
@@ -402,13 +408,15 @@ UsdImagingGLHdEngine::_UpdateHydraCollection(HdRprimCollection *collection,
         }
 
         // if everything matches, do nothing.
-        if (match) return;
+        if (match) return false;
     }
 
     // Recreate the collection.
     *collection = HdRprimCollection(colName, reprName);
     collection->SetRootPaths(roots);
     collection->SetRenderTags(*renderTags);
+
+    return true;
 }
 
 /* static */
@@ -481,7 +489,10 @@ void
 UsdImagingGLHdEngine::RenderBatch(const SdfPathVector& paths, RenderParams params)
 {
     _taskController->SetCameraClipPlanes(params.clipPlanes);
-    _UpdateHydraCollection(&_renderCollection, paths, params, &_renderTags);
+    if (_UpdateHydraCollection(&_renderCollection, paths, params, &_renderTags)) {
+        // If the collection was updated, reset progressive rendering.
+        _taskController->ResetImage();
+    }
     _taskController->SetCollection(_renderCollection);
 
     HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params);
@@ -501,7 +512,10 @@ UsdImagingGLHdEngine::Render(const UsdPrim& root, RenderParams params)
     SdfPathVector roots(1, rootPath);
 
     _taskController->SetCameraClipPlanes(params.clipPlanes);
-    _UpdateHydraCollection(&_renderCollection, roots, params, &_renderTags);
+    if (_UpdateHydraCollection(&_renderCollection, roots, params, &_renderTags)) {
+        // If the collection was updated, reset progressive rendering.
+        _taskController->ResetImage();
+    }
     _taskController->SetCollection(_renderCollection);
 
     HdxRenderTaskParams hdParams = _MakeHydraRenderParams(params);

@@ -200,8 +200,9 @@ private:
     void _PreSetTime(const UsdPrim& root, const RenderParams& params);
     void _PostSetTime(const UsdPrim& root, const RenderParams& params);
 
-    // Create a hydra collection given root paths and render params
-    static void _UpdateHydraCollection(HdRprimCollection *collection,
+    // Create a hydra collection given root paths and render params.
+    // Returns true if the collection was updated.
+    static bool _UpdateHydraCollection(HdRprimCollection *collection,
                           SdfPathVector const& roots,
                           UsdImagingGLEngine::RenderParams const& params,
                           TfTokenVector *renderTags);
@@ -232,6 +233,8 @@ private:
     // rendering.
     GfMatrix4d _lastViewMatrix;
     GfVec4d _lastViewport;
+    // Last set refine level, tracked to invalidate progressive rendering.
+    int _lastRefineLevel;
 
     // Data we want to live across render plugin switches:
     GfVec4f _selectionColor;
