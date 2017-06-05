@@ -386,6 +386,11 @@ private:
     /// Release the fallback prims.
     void _DestroyFallbackPrims();
 
+    /// Register core hydra reprs. Only ever called once, the first time
+    /// a render index is created.
+    /// XXX: This code should move to the application layer.
+    static void _ConfigureReprs();
+
     // Remove default constructor
     HdRenderIndex() = delete;
 };

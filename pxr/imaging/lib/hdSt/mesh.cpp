@@ -61,9 +61,6 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_FORCE_QUADRANGULATE, 0,
 TF_DEFINE_ENV_SETTING(HD_ENABLE_PACKED_NORMALS, 1,
                       "Use packed normals");
 
-// static repr configuration
-HdStMesh::_MeshReprConfig HdStMesh::_reprDescConfig;
-
 HdStMesh::HdStMesh(SdfPath const& id,
                    SdfPath const& instancerId)
     : HdMesh(id, instancerId)
@@ -120,7 +117,7 @@ HdStMesh::IsEnabledPackedNormals()
 }
 
 int
-HdStMesh::_GetRefineLevelForDesc(HdStMeshReprDesc desc)
+HdStMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc)
 {
     if (desc.geomStyle == HdMeshGeomStyleHull         ||
         desc.geomStyle == HdMeshGeomStyleHullEdgeOnly || 
@@ -135,7 +132,7 @@ void
 HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                             HdDrawItem *drawItem,
                             HdDirtyBits *dirtyBits,
-                            HdStMeshReprDesc desc)
+                            HdMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -812,7 +809,7 @@ void
 HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
                                        HdDrawItem *drawItem,
                                        HdDirtyBits *dirtyBits,
-                                       HdStMeshReprDesc desc)
+                                       HdMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -983,7 +980,7 @@ void
 HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                           HdDrawItem *drawItem,
                           HdDirtyBits *dirtyBits,
-                          HdStMeshReprDesc desc,
+                          HdMeshReprDesc desc,
                           bool requireSmoothNormals)
 {
     HD_TRACE_FUNCTION();
@@ -1065,21 +1062,10 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     // Element primvar, Facevarying primvar and Instance primvar are optional
 }
 
-/* static */
-void
-HdStMesh::ConfigureRepr(TfToken const &reprName,
-                        HdStMeshReprDesc desc1,
-                        HdStMeshReprDesc desc2)
-{
-    HD_TRACE_FUNCTION();
-
-    _reprDescConfig.Append(reprName, _MeshReprConfig::DescArray{desc1, desc2});
-}
-
 void
 HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
                                          HdDrawItem *drawItem,
-                                         HdStMeshReprDesc desc)
+                                         HdMeshReprDesc desc)
 {
     if (drawItem->GetGeometricShader()) return;
 
@@ -1191,11 +1177,11 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
         // ranges may change)
         *dirtyBits |= DirtyNewRepr;
 
-        _MeshReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
+        _MeshReprConfig::DescArray descs = _GetReprDesc(reprName);
 
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-            const HdStMeshReprDesc &desc = descs[descIdx];
+            const HdMeshReprDesc &desc = descs[descIdx];
 
             if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
 
@@ -1247,7 +1233,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _MeshReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
+    _MeshReprConfig::DescArray descs = _GetReprDesc(reprName);
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprName));
 
@@ -1286,7 +1272,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     // and one requires smooth normals but the other doesn't.
     bool requireSmoothNormals = false;
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-        const HdStMeshReprDesc &desc = descs[descIdx];
+        const HdMeshReprDesc &desc = descs[descIdx];
         if (desc.smoothNormals) {
             requireSmoothNormals = true;
             break;
@@ -1296,7 +1282,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     // iterate and update all draw items
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-        const HdStMeshReprDesc &desc = descs[descIdx];
+        const HdMeshReprDesc &desc = descs[descIdx];
 
         if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
 
@@ -1336,10 +1322,10 @@ void
 HdStMesh::_SetGeometricShaders(HdRenderIndex &renderIndex)
 {
     TF_FOR_ALL (it, _reprs) {
-        _MeshReprConfig::DescArray descs = _reprDescConfig.Find(it->first);
+        _MeshReprConfig::DescArray descs = _GetReprDesc(it->first);
         int drawItemIndex = 0;
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-            const HdStMeshReprDesc &desc = descs[descIdx];
+            const HdMeshReprDesc &desc = descs[descIdx];
             if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
 
             HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);

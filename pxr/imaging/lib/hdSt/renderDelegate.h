@@ -90,7 +90,6 @@ private:
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;
 
-    static void _ConfigureReprs();
     HdSprim *_CreateFallbackShaderPrim();
 
     HdStRenderDelegate(const HdStRenderDelegate &)             = delete;

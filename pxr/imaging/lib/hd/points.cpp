@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/points.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -36,6 +37,26 @@ HdPoints::HdPoints(SdfPath const& id,
 HdPoints::~HdPoints()
 {
     /*NOTHING*/
+}
+
+// static repr configuration
+HdPoints::_PointsReprConfig HdPoints::_reprDescConfig;
+
+/* static */
+void
+HdPoints::ConfigureRepr(TfToken const &reprName,
+                        const HdPointsReprDesc &desc)
+{
+    HD_TRACE_FUNCTION();
+
+    _reprDescConfig.Append(reprName, _PointsReprConfig::DescArray{desc});
+}
+
+/* static */
+HdPoints::_PointsReprConfig::DescArray
+HdPoints::_GetReprDesc(TfToken const &reprName)
+{
+    return _reprDescConfig.Find(reprName);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

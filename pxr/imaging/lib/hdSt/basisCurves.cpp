@@ -32,7 +32,6 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2i.h"
-#include "pxr/base/tf/envSetting.h"
 
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/geometricShader.h"
@@ -47,13 +46,6 @@
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINED_CURVES, 0, 
-                      "Force curves to always be refined.");
-
-// static repr configuration
-HdStBasisCurves::_BasisCurvesReprConfig HdStBasisCurves::_reprDescConfig;
 
 HdStBasisCurves::HdStBasisCurves(SdfPath const& id,
                  SdfPath const& instancerId)
@@ -93,18 +85,11 @@ HdStBasisCurves::Sync(HdSceneDelegate* delegate,
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
-/* static */
-bool
-HdStBasisCurves::IsEnabledForceRefinedCurves()
-{
-    return TfGetEnvSetting(HD_ENABLE_REFINED_CURVES) == 1;
-}
-
 void
 HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                                  HdDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
-                                 const HdStBasisCurvesReprDesc &desc)
+                                 const HdBasisCurvesReprDesc &desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -149,7 +134,7 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
 void
 HdStBasisCurves::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                                                const HdStBasisCurvesReprDesc &desc)
+                                                const HdBasisCurvesReprDesc &desc)
 {
     if (drawItem->GetGeometricShader()) return;
 
@@ -184,21 +169,6 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
     drawItem->SetGeometricShader(Hd_GeometricShader::Create(shaderKey));
 }
 
-
-/* static */
-void
-HdStBasisCurves::ConfigureRepr(TfToken const &reprName,
-                               HdStBasisCurvesReprDesc desc)
-{
-    HD_TRACE_FUNCTION();
-
-    if (IsEnabledForceRefinedCurves()) {
-        desc.geomStyle = HdBasisCurvesGeomStyleRefined;
-    }
-
-    _reprDescConfig.Append(reprName, _BasisCurvesReprConfig::DescArray{desc});
-}
-
 HdDirtyBits
 HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
 {
@@ -219,7 +189,7 @@ HdStBasisCurves::_InitRepr(TfToken const &reprName,
                                             _ReprComparator(reprName));
     bool isNew = it == _reprs.end();
     if (isNew) {
-        _BasisCurvesReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
+        _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprName);
 
         // add new repr
         _reprs.emplace_back(reprName, boost::make_shared<HdRepr>());
@@ -229,7 +199,7 @@ HdStBasisCurves::_InitRepr(TfToken const &reprName,
 
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-            const HdStBasisCurvesReprDesc &desc = descs[descIdx];
+            const HdBasisCurvesReprDesc &desc = descs[descIdx];
 
             if (desc.geomStyle == HdBasisCurvesGeomStyleInvalid) {
                 continue;
@@ -262,8 +232,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _BasisCurvesReprConfig::DescArray const &descs =
-                                                 _reprDescConfig.Find(reprName);
+    _BasisCurvesReprConfig::DescArray const &descs = _GetReprDesc(reprName);
 
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprName));
@@ -327,7 +296,7 @@ void
 HdStBasisCurves::_SetGeometricShaders()
 {
     TF_FOR_ALL (it, _reprs) {
-        _BasisCurvesReprConfig::DescArray descs = _reprDescConfig.Find(it->first);
+        _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(it->first);
         int drawItemIndex = 0;
         for (auto desc : descs) {
             if (desc.geomStyle == HdBasisCurvesGeomStyleInvalid) continue;
@@ -343,7 +312,7 @@ void
 HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                                    HdDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits,
-                                   const HdStBasisCurvesReprDesc &desc)
+                                   const HdBasisCurvesReprDesc &desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -586,7 +555,7 @@ HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 
 
 bool
-HdStBasisCurves::_SupportsSmoothCurves(const HdStBasisCurvesReprDesc &desc,
+HdStBasisCurves::_SupportsSmoothCurves(const HdBasisCurvesReprDesc &desc,
                                        int refineLevel)
 {
     if(!_topology) {

@@ -79,6 +79,10 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
 {
     // Note: HdRenderIndex::New(...) guarantees renderDelegate is non-null.
 
+    // Register well-known reprs (to be deprecated).
+    static std::once_flag reprsOnce;
+    std::call_once(reprsOnce, _ConfigureReprs);
+
     // Register well-known collection types (to be deprecated)
     // XXX: for compatibility and smooth transition,
     //      leave geometry collection for a while.
@@ -431,6 +435,86 @@ HdRenderIndex::_DestroyFallbackPrims()
 {
     _sprimIndex.DestroyFallbackPrims(_renderDelegate);
     _bprimIndex.DestroyFallbackPrims(_renderDelegate);
+}
+
+/* static */
+void
+HdRenderIndex::_ConfigureReprs()
+{
+    // pre-defined reprs (to be deprecated or minimalized)
+    HdMesh::ConfigureRepr(HdTokens->hull,
+                          HdMeshReprDesc(HdMeshGeomStyleHull,
+                                         HdCullStyleDontCare,
+                                         /*lit=*/true,
+                                         /*smoothNormals=*/false,
+                                         /*blendWireframeColor=*/false));
+    HdMesh::ConfigureRepr(HdTokens->smoothHull,
+                          HdMeshReprDesc(HdMeshGeomStyleHull,
+                                         HdCullStyleDontCare,
+                                         /*lit=*/true,
+                                         /*smoothNormals=*/true,
+                                         /*blendWireframeColor=*/false));
+    HdMesh::ConfigureRepr(HdTokens->wire,
+                          HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
+                                         HdCullStyleDontCare,
+                                         /*lit=*/true,
+                                         /*smoothNormals=*/true,
+                                         /*blendWireframeColor=*/true));
+    HdMesh::ConfigureRepr(HdTokens->wireOnSurf,
+                          HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
+                                         HdCullStyleDontCare,
+                                         /*lit=*/true,
+                                         /*smoothNormals=*/true,
+                                         /*blendWireframeColor=*/true));
+    HdMesh::ConfigureRepr(HdTokens->refined,
+                          HdMeshReprDesc(HdMeshGeomStyleSurf,
+                                         HdCullStyleDontCare,
+                                         /*lit=*/true,
+                                         /*smoothNormals=*/true,
+                                         /*blendWireframeColor=*/false));
+    HdMesh::ConfigureRepr(HdTokens->refinedWire,
+                          HdMeshReprDesc(HdMeshGeomStyleEdgeOnly,
+                                         HdCullStyleDontCare,
+                                         /*lit=*/true,
+                                         /*smoothNormals=*/true,
+                                         /*blendWireframeColor=*/true));
+    HdMesh::ConfigureRepr(HdTokens->refinedWireOnSurf,
+                          HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
+                                         HdCullStyleDontCare,
+                                         /*lit=*/true,
+                                         /*smoothNormals=*/true,
+                                         /*blendWireframeColor=*/true));
+
+    HdBasisCurves::ConfigureRepr(HdTokens->hull,
+                                 HdBasisCurvesGeomStyleLine);
+    HdBasisCurves::ConfigureRepr(HdTokens->smoothHull,
+                                 HdBasisCurvesGeomStyleLine);
+    HdBasisCurves::ConfigureRepr(HdTokens->wire,
+                                 HdBasisCurvesGeomStyleLine);
+    HdBasisCurves::ConfigureRepr(HdTokens->wireOnSurf,
+                                 HdBasisCurvesGeomStyleLine);
+    HdBasisCurves::ConfigureRepr(HdTokens->refined,
+                                 HdBasisCurvesGeomStyleRefined);
+    // XXX: draw coarse line for refinedWire (filed as bug 129550)
+    HdBasisCurves::ConfigureRepr(HdTokens->refinedWire,
+                                  HdBasisCurvesGeomStyleLine);
+    HdBasisCurves::ConfigureRepr(HdTokens->refinedWireOnSurf,
+                                 HdBasisCurvesGeomStyleRefined);
+
+    HdPoints::ConfigureRepr(HdTokens->hull,
+                            HdPointsGeomStylePoints);
+    HdPoints::ConfigureRepr(HdTokens->smoothHull,
+                            HdPointsGeomStylePoints);
+    HdPoints::ConfigureRepr(HdTokens->wire,
+                            HdPointsGeomStylePoints);
+    HdPoints::ConfigureRepr(HdTokens->wireOnSurf,
+                            HdPointsGeomStylePoints);
+    HdPoints::ConfigureRepr(HdTokens->refined,
+                            HdPointsGeomStylePoints);
+    HdPoints::ConfigureRepr(HdTokens->refinedWire,
+                            HdPointsGeomStylePoints);
+    HdPoints::ConfigureRepr(HdTokens->refinedWireOnSurf,
+                            HdPointsGeomStylePoints);
 }
 // -------------------------------------------------------------------------- //
 /// \name Draw Item Handling 
