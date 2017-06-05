@@ -969,17 +969,11 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
     // off the leading rootPath and prepending rootLocation.
     std::string isolatePathString = usdInArgs->GetIsolatePath();
     
-    // this expected to be an absolute path or empty string
-    std::string result = usdInArgs->GetRootLocationPath();
-    // empty or not, we want an absolute path
-    result += "/";
-
-    std::string pathString = path.GetString(); // starts with '/'
-
-    // remove initial part of pathString so it's a relative path
+    // absolute path: starts with '/'
+    std::string pathString = path.GetString(); 
     if (!isolatePathString.empty()) {
         if (pathString.find(isolatePathString) == 0) {
-            pathString = pathString.substr(isolatePathString.size()+1);
+            pathString = pathString.substr(isolatePathString.size());
         } else {
             // no good guess about the katana target location: 
             //   isolatePath is not a prefix of the prim being cooked
@@ -988,13 +982,19 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
                 isolatePathString << std::endl;
             return std::string();
         }
-    } else {
-        pathString = pathString.substr(1);
+    } 
+
+    // this expected to be an absolute path or empty string
+    std::string rootKatanaLocation = usdInArgs->GetRootLocationPath();
+    // minimum expected path is "/"
+    if (rootKatanaLocation.empty() && pathString.empty()) { 
+        return "/";
     }
 
-    result += pathString;
-
-    return result;
+    std::string resultKatanaLocation = rootKatanaLocation;
+    resultKatanaLocation += pathString;
+   
+    return resultKatanaLocation;
 }
 
 std::string
@@ -1142,7 +1142,6 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         const PxrUsdKatanaUsdInPrivateData& data)
 {    
     std::string returnValue = "/" + path.GetName();
-    std::string primName = path.GetName();
 
     // calculate the material group. It can be either "/" or an absolute
     // path (no trailing '/')
@@ -1163,8 +1162,6 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
             // failed
             return returnValue;
         }
-        // use displayName anyway
-        primName = _GetDisplayName(prim);
     }
     else {
         // the parent of this material is a material group
@@ -1184,18 +1181,14 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
     if (returnValue != "/") {
         returnValue += '/';
     }
-    std::string displayGroup = _GetDisplayGroup(prim, isLibrary, path);
-    
-    if (!displayGroup.empty()) {
-        if (!isLibrary) {
-            // discard old default name. (in library mode that was computed 
-            // already)
-            primName = _GetDisplayName(prim);
-        }
 
+    std::string displayGroup = _GetDisplayGroup(prim, isLibrary, path);
+    if (!displayGroup.empty()) {
         returnValue += displayGroup;
         returnValue += '/';
     }
+
+    std::string primName = _GetDisplayName(prim);
     returnValue += primName;
     return returnValue;
 }
