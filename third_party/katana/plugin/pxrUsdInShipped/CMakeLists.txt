@@ -12,6 +12,7 @@ pxr_plugin(${PXR_PACKAGE}
         usdKatana
         usdShade
         usdLux
+        usdRi
 
     PRIVATE_CLASSES
         attrfnc_materialReference
@@ -26,6 +27,7 @@ pxr_plugin(${PXR_PACKAGE}
         camera.cpp
         constraints.cpp
         light.cpp
+        lightFilter.cpp
         material.cpp
         materialsGroup.cpp
         mesh.cpp

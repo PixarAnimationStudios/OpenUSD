@@ -25,18 +25,72 @@
 #include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readLight.h"
+#include "usdKatana/utils.h"
 #include "pxr/usd/usdLux/light.h"
+#include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LightOp, privateData, interface)
 {
+    PxrUsdKatanaUsdInArgsRefPtr usdInArgs = privateData.GetUsdInArgs();
     PxrUsdKatanaAttrMap attrs;
     
+    UsdLuxLight light(privateData.GetUsdPrim());
+
     PxrUsdKatanaReadLight(
-        UsdLuxLight(privateData.GetUsdPrim()),
+        light,
         privateData,
         attrs);
 
     attrs.toInterface(interface);
+
+
+    // Tell UsdIn to skip all children; we'll create them ourselves.
+    interface.setAttr("__UsdIn.skipAllChildren", FnKat::IntAttribute(1));
+
+    // Light filters.
+    SdfPathVector filterPaths;
+    light.GetFiltersRel().GetForwardedTargets(&filterPaths);
+    if (!filterPaths.empty()) {
+        // XXX For now the importAsReferences codepath is disabled.
+        // To support light filter references we need to specify
+        // info.gaffer.packageClass (and possibly more), otherwise
+        // the gaffer infrastructure will mark these references
+        // as orphaned.
+        bool importAsReferences = false;
+        if (importAsReferences) {
+            // Create "light filter reference" child locations
+            // TODO: We also need to handle the case of regular
+            // light filters sitting as children below this light.
+            FnGeolibServices::StaticSceneCreateOpArgsBuilder sscb(false);
+            for (const SdfPath &filterPath: filterPaths) {
+                const std::string ref_location = filterPath.GetName();
+                const std::string filter_location =
+                    PxrUsdKatanaUtils::
+                    ConvertUsdPathToKatLocation(filterPath, usdInArgs);
+                sscb.createEmptyLocation(ref_location,
+                    "light filter reference");
+                sscb.setAttrAtLocation(ref_location,
+                    "info.gaffer.referencePath",
+                    FnAttribute::StringAttribute(filter_location));
+            }
+            interface.execOp("StaticSceneCreate", sscb.build());
+        } else {
+            // Expand light filters directly beneath this light.
+            for (const SdfPath &filterPath: filterPaths) {
+                if (UsdPrim filterPrim =
+                    usdInArgs->GetStage()->GetPrimAtPath(filterPath)) {
+                    interface.createChild(
+                            filterPath.GetName(),
+                            "PxrUsdIn",
+                            interface.getOpArg(),
+                            FnKat::GeolibCookInterface::ResetRootFalse,
+                            new PxrUsdKatanaUsdInPrivateData(
+                                filterPrim, usdInArgs, &privateData),
+                            PxrUsdKatanaUsdInPrivateData::Delete);
+                }
+            }
+        }
+    }
 }

@@ -40,6 +40,10 @@
 #include "pxr/usd/usdLux/shapingAPI.h"
 #include "pxr/usd/usdLux/shadowAPI.h"
 #include "pxr/usd/usdLux/linkingAPI.h"
+#include "pxr/usd/usdRi/lightAPI.h"
+#include "pxr/usd/usdRi/textureAPI.h"
+#include "pxr/usd/usdRi/pxrEnvDayLight.h"
+#include "pxr/usd/usdRi/pxrAovLight.h"
 
 #include <FnGeolibServices/FnAttributeFunctionUtil.h>
 #include <FnLogging/FnLogging.h>
@@ -120,7 +124,16 @@ PxrUsdKatanaReadLight(
             .Set("shadowFalloff", l.GetShadowFalloffAttr())
             .Set("shadowFalloffGamma", l.GetShadowFalloffGammaAttr())
             ;
-        // TODO include/exclude
+    }
+    if (UsdRiLightAPI l = UsdRiLightAPI(lightPrim)) {
+        usdBuilder.Set("intensityNearDist", l.GetRiIntensityNearDistAttr());
+        usdBuilder.Set("traceLightPaths", l.GetRiTraceLightPathsAttr());
+        usdBuilder.Set("thinShadow", l.GetRiShadowThinShadowAttr());
+        usdBuilder.Set("fixedSampleCount",
+                       l.GetRiSamplingFixedSampleCountAttr());
+        usdBuilder.Set("importanceMultiplier",
+                       l.GetRiSamplingImportanceMultiplierAttr());
+        usdBuilder.Set("lightGroup", l.GetRiLightGroupAttr());
     }
 
     if (UsdLuxSphereLight l = UsdLuxSphereLight(lightPrim)) {
@@ -136,6 +149,12 @@ PxrUsdKatanaReadLight(
     if (UsdLuxRectLight l = UsdLuxRectLight(lightPrim)) {
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrRectLight"));
+        usdBuilder.Set("lightColorMap", l.GetTextureFileAttr());
+        if (UsdRiTextureAPI t = UsdRiTextureAPI(lightPrim)) {
+            usdBuilder.Set("colorMapGamma", t.GetRiTextureGammaAttr());
+            usdBuilder.Set("colorMapSaturation",
+                           t.GetRiTextureSaturationAttr());
+        }
         // TODO: extract scale, set as geometry.light.size, width, height
     }
     if (UsdLuxDistantLight l = UsdLuxDistantLight(lightPrim)) {
@@ -165,7 +184,44 @@ PxrUsdKatanaReadLight(
         usdBuilder.Set("lightColorMap", l.GetTextureFileAttr());
         // Note: The prman backend ignores texture:format since that is
         // specified inside the renderman texture file format.
+        if (UsdRiTextureAPI t = UsdRiTextureAPI(lightPrim)) {
+            usdBuilder.Set("colorMapGamma", t.GetRiTextureGammaAttr());
+            usdBuilder.Set("colorMapSaturation",
+                           t.GetRiTextureSaturationAttr());
+        }
     }
+    if (UsdRiPxrEnvDayLight l = UsdRiPxrEnvDayLight(lightPrim)) {
+        materialBuilder.set("prmanLightShader",
+                            FnKat::StringAttribute("PxrEnvDayLight"));
+        usdBuilder.Set("day", l.GetDayAttr());
+        usdBuilder.Set("haziness", l.GetHazinessAttr());
+        usdBuilder.Set("hour", l.GetHourAttr());
+        usdBuilder.Set("latitude", l.GetLatitudeAttr());
+        usdBuilder.Set("longitude", l.GetLongitudeAttr());
+        usdBuilder.Set("month", l.GetMonthAttr());
+        usdBuilder.Set("skyTint", l.GetSkyTintAttr());
+        usdBuilder.Set("sunDirection", l.GetSunDirectionAttr());
+        usdBuilder.Set("sunSize", l.GetSunSizeAttr());
+        usdBuilder.Set("sunTint", l.GetSunTintAttr());
+        usdBuilder.Set("year", l.GetYearAttr());
+        usdBuilder.Set("zone", l.GetZoneAttr());
+    }
+    if (UsdRiPxrAovLight l = UsdRiPxrAovLight(lightPrim)) {
+        materialBuilder.set("prmanLightShader",
+                            FnKat::StringAttribute("PxrAovLight"));
+        usdBuilder.Set("aovName", l.GetAovNameAttr());
+        usdBuilder.Set("inPrimaryHit", l.GetInPrimaryHitAttr());
+        usdBuilder.Set("inReflection", l.GetInReflectionAttr());
+        usdBuilder.Set("inRefraction", l.GetInRefractionAttr());
+        usdBuilder.Set("invert", l.GetInvertAttr());
+        usdBuilder.Set("onVolumeBoundaries", l.GetOnVolumeBoundariesAttr());
+        usdBuilder.Set("useColor", l.GetUseColorAttr());
+        usdBuilder.Set("useThroughput", l.GetUseThroughputAttr());
+        // XXX aovSuffix, writeToDisk
+    }
+
+    // TODO: Pxr visibleInRefractionPath, cheapCaustics, maxDistance
+    // surfSat, MsApprox
 
     // TODO portals
     // TODO UsdRi extensions

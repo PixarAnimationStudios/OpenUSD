@@ -35,6 +35,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightFilter.h"
 #include "pxr/usd/usdLux/linkingAPI.h"
 
 #include <FnGeolib/op/FnGeolibOp.h>
@@ -207,33 +208,42 @@ public:
             SdfPathSet lightPaths = PxrUsdKatanaUtils::FindLightPaths(stage);
             stage->LoadAndUnload(lightPaths, SdfPathSet());
             for (const SdfPath &p: lightPaths) {
-                // Get the light prim
-                UsdLuxLight light(stage->GetPrimAtPath(p));
-                if (!light) {
-                    continue;
-                }
+                // Establish entry, links, and initial enabled status.
+                // (The linking resolver does not necessarily run at
+                // this location, so we need to establish the initial
+                // enabled status correctly.)
 
                 // The convention for lightList is for /path/to/light
                 // to be represented as path_to_light.
-                const std::string light_loc =
-                    PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(p,
-                                                                   usdInArgs);
-                const std::string light_key =
-                    TfStringReplace(light_loc.substr(1), "/", "_");
+                std::string loc = PxrUsdKatanaUtils::
+                    ConvertUsdPathToKatLocation(p, usdInArgs);
+                std::string key = TfStringReplace(loc.substr(1), "/", "_");
 
-                // Establish light entry, links, and initial enabled status.
-                // (The linking resolver does not run at the top-level
-                // location, so we need to establish the initial enabled
-                // status correctly here.)
-                lightListBuilder.set(light_key+".path",
-                                     FnKat::StringAttribute(light_loc));
-                bool lightEnabled =
-                    _SetLinks(light_key, light.GetLightLinkingAPI(), "light",
+                UsdPrim prim = stage->GetPrimAtPath(p);
+
+                if (prim.IsA<UsdLuxLight>()) {
+                    UsdLuxLight light(prim);
+                    lightListBuilder.set(key+".path",
+                                         FnKat::StringAttribute(loc));
+                    bool enabled =
+                        _SetLinks(key, light.GetLightLinkingAPI(),
+                                  "light", usdInArgs, &lightListBuilder);
+                    lightListBuilder.set(key+".enable",
+                                         FnKat::IntAttribute(enabled));
+                    _SetLinks(key, light.GetShadowLinkingAPI(), "shadow",
                               usdInArgs, &lightListBuilder);
-                lightListBuilder.set(light_key+".enable",
-                                     FnKat::IntAttribute(lightEnabled));
-                _SetLinks(light_key, light.GetShadowLinkingAPI(), "shadow",
-                          usdInArgs, &lightListBuilder);
+                } else if (prim.IsA<UsdLuxLightFilter>()) {
+                    UsdLuxLightFilter filter(prim);
+                    lightListBuilder.set(key+".path",
+                                         FnKat::StringAttribute(loc));
+                    lightListBuilder.set(key+".type",
+                                     FnKat::StringAttribute("light filter"));
+                    bool enabled =
+                        _SetLinks(key, filter.GetFilterLinkingAPI(),
+                                  "lightfilter", usdInArgs, &lightListBuilder);
+                    lightListBuilder.set(key+".enable",
+                                         FnKat::IntAttribute(enabled));
+                }
             }
             FnKat::GroupAttribute lightListAttr = lightListBuilder.build();
             if (lightListAttr.getNumberOfChildren() > 0) {
