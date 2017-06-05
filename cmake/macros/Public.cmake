@@ -224,7 +224,7 @@ function(pxr_library NAME)
         # Katana plugins install into a specific sub directory structure.
         # In particular, shared objects install into plugin/Libs
         if(args_KATANA_PLUGIN)
-            set(subdir "Lib")
+            set(subdir "Libs")
         endif()
 
         # Maya plugins require the .mll suffix on Windows and .bundle on OSX.
