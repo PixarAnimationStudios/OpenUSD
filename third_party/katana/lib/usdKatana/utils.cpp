@@ -1219,6 +1219,43 @@ PxrUsdKatanaUtils::ModelGroupIsAssembly(const UsdPrim &prim)
         || PxrUsdKatanaUtils::ModelGroupNeedsProxy(prim);
 }
 
+FnKat::GroupAttribute
+PxrUsdKatanaUtils::GetViewerProxyAttr(const PxrUsdKatanaUsdInPrivateData& data)
+{
+    FnKat::GroupBuilder proxiesBuilder;
+
+    proxiesBuilder.set("viewer.load.opType",
+        FnKat::StringAttribute("StaticSceneCreate"));
+
+    proxiesBuilder.set("viewer.load.opArgs.a.type",
+        FnKat::StringAttribute("usd"));
+
+    proxiesBuilder.set("viewer.load.opArgs.a.currentTime", 
+        FnKat::DoubleAttribute(data.GetCurrentTime()));
+
+    proxiesBuilder.set("viewer.load.opArgs.a.fileName", 
+        FnKat::StringAttribute(data.GetUsdInArgs()->GetFileName()));
+
+    proxiesBuilder.set("viewer.load.opArgs.a.forcePopulateUsdStage", 
+        FnKat::FloatAttribute(1));
+
+    // XXX: Once everyone has switched to the op, change referencePath
+    // to isolatePath here and in the USD VMP (2/25/2016).
+    proxiesBuilder.set("viewer.load.opArgs.a.referencePath", 
+        FnKat::StringAttribute(data.GetUsdPrim().GetPath().GetString()));
+
+    proxiesBuilder.set("viewer.load.opArgs.a.rootLocation", 
+        FnKat::StringAttribute(data.GetUsdInArgs()->GetRootLocationPath()));
+
+    proxiesBuilder.set("viewer.load.opArgs.a.session",
+            data.GetUsdInArgs()->GetSessionAttr());
+
+    proxiesBuilder.set("viewer.load.opArgs.a.ignoreLayerRegex",
+       FnKat::StringAttribute(data.GetUsdInArgs()->GetIgnoreLayerRegex()));
+
+    return proxiesBuilder.build();
+}
+
 bool 
 PxrUsdKatanaUtils::PrimIsSubcomponent(const UsdPrim &prim)
 {

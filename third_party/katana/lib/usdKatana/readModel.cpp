@@ -42,47 +42,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 FnLogSetup("PxrUsdKatanaReadModel");
 
 /*
- * Create the 'proxies' group attribute. The proxy hierarchy
- * is created using a StaticSceneCreate op.
- */
-static FnKat::GroupAttribute
-_GetViewerProxyAttr(const PxrUsdKatanaUsdInPrivateData& data)
-{
-    FnKat::GroupBuilder proxiesBuilder;
-
-    proxiesBuilder.set("viewer.load.opType",
-        FnKat::StringAttribute("StaticSceneCreate"));
-
-    proxiesBuilder.set("viewer.load.opArgs.a.type",
-        FnKat::StringAttribute("usd"));
-
-    proxiesBuilder.set("viewer.load.opArgs.a.currentTime", 
-        FnKat::DoubleAttribute(data.GetCurrentTime()));
-
-    proxiesBuilder.set("viewer.load.opArgs.a.fileName", 
-        FnKat::StringAttribute(data.GetUsdInArgs()->GetFileName()));
-
-    proxiesBuilder.set("viewer.load.opArgs.a.forcePopulateUsdStage", 
-        FnKat::FloatAttribute(1));
-
-    // XXX: Once everyone has switched to the op, change referencePath
-    // to isolatePath here and in the USD VMP (2/25/2016).
-    proxiesBuilder.set("viewer.load.opArgs.a.referencePath", 
-        FnKat::StringAttribute(data.GetUsdPrim().GetPath().GetString()));
-
-    proxiesBuilder.set("viewer.load.opArgs.a.rootLocation", 
-        FnKat::StringAttribute(data.GetUsdInArgs()->GetRootLocationPath()));
-
-    proxiesBuilder.set("viewer.load.opArgs.a.session",
-            data.GetUsdInArgs()->GetSessionAttr());
-
-    proxiesBuilder.set("viewer.load.opArgs.a.ignoreLayerRegex",
-       FnKat::StringAttribute(data.GetUsdInArgs()->GetIgnoreLayerRegex()));
-
-    return proxiesBuilder.build();
-}
-
-/*
  * Traverse the model hierarchy to build up a list of all named
  * coordinate systems and their scenegraph locations.
  *
@@ -160,7 +119,7 @@ PxrUsdKatanaReadModel(
 
     if (!isGroup || PxrUsdKatanaUtils::ModelGroupNeedsProxy(prim))
     {
-        attrs.set("proxies", _GetViewerProxyAttr(data));
+        attrs.set("proxies", PxrUsdKatanaUtils::GetViewerProxyAttr(data));
     }
 
     // Everything beyond this point does not apply to groups, so 

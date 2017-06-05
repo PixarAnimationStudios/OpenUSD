@@ -141,6 +141,10 @@ struct PxrUsdKatanaUtils {
     /// models).
     static bool ModelGroupNeedsProxy(const UsdPrim &prim);
 
+    /// Creates the 'proxies' group attribute for consumption by the viewer.
+    static FnKat::GroupAttribute GetViewerProxyAttr(
+            const PxrUsdKatanaUsdInPrivateData& data);
+
     /// Returns the asset name for the given prim.  It should be a model.  This
     /// will fallback to the name of the prim.
     static std::string GetAssetName(const UsdPrim& prim);
