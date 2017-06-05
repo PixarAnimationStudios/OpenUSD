@@ -325,7 +325,7 @@ public:
     // --------------------------------------------------------------------- //
     /// When this is on, If this is on, the projection direction
     /// is determined by the position of the center of the light source.
-    /// Otherwise, it only follows the orientation of the cookie. WARNING:
+    /// Otherwise, it only follows the orientation of the barn. WARNING:
     /// This does not work with dome and mesh lights.
     ///
     /// \n  C++ Type: bool
@@ -342,6 +342,113 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDRI_API
     UsdAttribute CreateAnalyticUseLightDirectionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICDENSITYNEARDISTANCE 
+    // --------------------------------------------------------------------- //
+    /// Distance from the barn where the density
+    /// interpolation starts.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    USDRI_API
+    UsdAttribute GetAnalyticDensityNearDistanceAttr() const;
+
+    /// See GetAnalyticDensityNearDistanceAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticDensityNearDistanceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICDENSITYFARDISTANCE 
+    // --------------------------------------------------------------------- //
+    /// Distance from the barn where the density interpolation
+    /// ends.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    USDRI_API
+    UsdAttribute GetAnalyticDensityFarDistanceAttr() const;
+
+    /// See GetAnalyticDensityFarDistanceAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticDensityFarDistanceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICDENSITYNEARVALUE 
+    // --------------------------------------------------------------------- //
+    /// Density multiplier where the density interpolation starts.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    USDRI_API
+    UsdAttribute GetAnalyticDensityNearValueAttr() const;
+
+    /// See GetAnalyticDensityNearValueAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticDensityNearValueAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICDENSITYFARVALUE 
+    // --------------------------------------------------------------------- //
+    /// Density multiplier at the end of interpolation.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    USDRI_API
+    UsdAttribute GetAnalyticDensityFarValueAttr() const;
+
+    /// See GetAnalyticDensityFarValueAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticDensityFarValueAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICDENSITYEXPONENT 
+    // --------------------------------------------------------------------- //
+    /// Power exponent of the density interpolation.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    USDRI_API
+    UsdAttribute GetAnalyticDensityExponentAttr() const;
+
+    /// See GetAnalyticDensityExponentAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticDensityExponentAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

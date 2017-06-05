@@ -325,33 +325,18 @@ class "RiLightPortalAPI" (
     )
 }
 
-class "RiRectLightAPI" (
-    doc = """RiRectLightAPI is an API schema that provides an interface
-    to add Renderman-specific attributes to rect lights."""
+class "RiTextureAPI" (
+    doc = """RiTextureAPI is an API schema that provides an interface
+    to add Renderman-specific attributes to adjust textures."""
     customData = {
-        string className = "RectLightAPI"
+        string className = "TextureAPI"
     }
 ) {
     float ri:texture:gamma (
         doc = """Gamma-correct the texture"""
     )
     float ri:texture:saturation (
-        doc = """Adjust the textures saturation"""
-    )
-}
-
-class "RiDomeLightAPI" (
-    doc = """RiDomeLightAPI is an API schema that provides an interface
-    to add Renderman-specific attributes to dome lights."""
-    customData = {
-        string className = "DomeLightAPI"
-    }
-) {
-    float ri:texture:gamma (
-        doc = """Gamma-correct the texture"""
-    )
-    float ri:texture:saturation (
-        doc = """Adjust the textures saturation"""
+        doc = """Adjust the texture's saturation"""
     )
 }
 
@@ -550,8 +535,25 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
     bool analytic:useLightDirection = false (
         doc = """When this is on, If this is on, the projection direction
         is determined by the position of the center of the light source.
-        Otherwise, it only follows the orientation of the cookie. WARNING:
+        Otherwise, it only follows the orientation of the barn. WARNING:
         This does not work with dome and mesh lights."""
+    )
+    float analytic:density:nearDistance = 0 (
+        doc = """Distance from the barn where the density
+        interpolation starts."""
+    )
+    float analytic:density:farDistance = 0 (
+        doc = """Distance from the barn where the density interpolation
+        ends."""
+    )
+    float analytic:density:nearValue = 0 (
+        doc = """Density multiplier where the density interpolation starts."""
+    )
+    float analytic:density:farValue = 0 (
+        doc = """Density multiplier at the end of interpolation."""
+    )
+    float analytic:density:exponent = 0 (
+        doc = """Power exponent of the density interpolation."""
     )
     float edgeThickness = 0 (
         doc = """Thickness of the edge region.  Larger values will
@@ -610,6 +612,12 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
           and falloff controls.
         """
     )
+    float width = 1 (
+        doc = """Width of the rect the light is shining through."""
+    )
+    float height = 1 (
+        doc = """Height of the rect the light is shining through."""
+    )
     asset texture:map (
         doc = """A color texture to use on the cookie.  May use alpha."""
     )
@@ -620,6 +628,10 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         - repeat: repeats in X and Y
         - clamp: uses the value from the nearest edge
         """
+    )
+    color3f texture:fillColor (
+        doc = """If the texture is not repeating, this specifies the
+        color for the region outside of and behind the projected rectangle."""
     )
     bool texture:invertU = false (
         doc = """Flips the texture from left to right. By default, the
@@ -644,6 +656,26 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         doc = """Offsets the texture in the V direction."""
     )
 
+    bool analytic:directional = false (
+        doc = """When this is on, the texture projects along a direction
+        using the orthographic projection. When it is off, the texture
+        projects using a focal point specified by the analytic:apex."""
+    )
+    float analytic:shearX = 0 (
+        doc = """Shear the projection along the X axis."""
+    )
+    float analytic:shearY = 0 (
+        doc = """Shear the projection along the Y axis."""
+    )
+    float analytic:apex = 0 (
+        doc = """Shear the projection along the Y axis."""
+    )
+    bool analytic:useLightDirection = false (
+        doc = """When this is on, If this is on, the projection direction
+        is determined by the position of the center of the light source.
+        Otherwise, it only follows the orientation of the filter. WARNING:
+        This does not work with dome and mesh lights."""
+    )
     float analytic:blur:amount = 0 (
         doc = """Specify the blur of projected texture from 0-1. This
         gets multiplied by the blurNear/blurFar interpolation. This

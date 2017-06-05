@@ -113,6 +113,41 @@ _CreateAnalyticUseLightDirectionAttr(UsdRiPxrBarnLightFilter &self,
 }
         
 static UsdAttribute
+_CreateAnalyticDensityNearDistanceAttr(UsdRiPxrBarnLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticDensityNearDistanceAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateAnalyticDensityFarDistanceAttr(UsdRiPxrBarnLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticDensityFarDistanceAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateAnalyticDensityNearValueAttr(UsdRiPxrBarnLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticDensityNearValueAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateAnalyticDensityFarValueAttr(UsdRiPxrBarnLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticDensityFarValueAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateAnalyticDensityExponentAttr(UsdRiPxrBarnLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticDensityExponentAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateEdgeThicknessAttr(UsdRiPxrBarnLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateEdgeThicknessAttr(
@@ -289,6 +324,41 @@ void wrapUsdRiPxrBarnLightFilter()
              &This::GetAnalyticUseLightDirectionAttr)
         .def("CreateAnalyticUseLightDirectionAttr",
              &_CreateAnalyticUseLightDirectionAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticDensityNearDistanceAttr",
+             &This::GetAnalyticDensityNearDistanceAttr)
+        .def("CreateAnalyticDensityNearDistanceAttr",
+             &_CreateAnalyticDensityNearDistanceAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticDensityFarDistanceAttr",
+             &This::GetAnalyticDensityFarDistanceAttr)
+        .def("CreateAnalyticDensityFarDistanceAttr",
+             &_CreateAnalyticDensityFarDistanceAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticDensityNearValueAttr",
+             &This::GetAnalyticDensityNearValueAttr)
+        .def("CreateAnalyticDensityNearValueAttr",
+             &_CreateAnalyticDensityNearValueAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticDensityFarValueAttr",
+             &This::GetAnalyticDensityFarValueAttr)
+        .def("CreateAnalyticDensityFarValueAttr",
+             &_CreateAnalyticDensityFarValueAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticDensityExponentAttr",
+             &This::GetAnalyticDensityExponentAttr)
+        .def("CreateAnalyticDensityExponentAttr",
+             &_CreateAnalyticDensityExponentAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

@@ -57,6 +57,20 @@ _CreateCookieModeAttr(UsdRiPxrCookieLightFilter &self,
 }
         
 static UsdAttribute
+_CreateWidthAttr(UsdRiPxrCookieLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateWidthAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateHeightAttr(UsdRiPxrCookieLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateHeightAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateTextureMapAttr(UsdRiPxrCookieLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateTextureMapAttr(
@@ -68,6 +82,13 @@ _CreateTextureWrapModeAttr(UsdRiPxrCookieLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateTextureWrapModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateTextureFillColorAttr(UsdRiPxrCookieLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTextureFillColorAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
         
 static UsdAttribute
@@ -110,6 +131,41 @@ _CreateTextureOffsetVAttr(UsdRiPxrCookieLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateTextureOffsetVAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateAnalyticDirectionalAttr(UsdRiPxrCookieLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticDirectionalAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateAnalyticShearXAttr(UsdRiPxrCookieLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticShearXAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateAnalyticShearYAttr(UsdRiPxrCookieLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticShearYAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateAnalyticApexAttr(UsdRiPxrCookieLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticApexAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateAnalyticUseLightDirectionAttr(UsdRiPxrCookieLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAnalyticUseLightDirectionAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
@@ -306,6 +362,20 @@ void wrapUsdRiPxrCookieLightFilter()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
+        .def("GetWidthAttr",
+             &This::GetWidthAttr)
+        .def("CreateWidthAttr",
+             &_CreateWidthAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetHeightAttr",
+             &This::GetHeightAttr)
+        .def("CreateHeightAttr",
+             &_CreateHeightAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetTextureMapAttr",
              &This::GetTextureMapAttr)
         .def("CreateTextureMapAttr",
@@ -317,6 +387,13 @@ void wrapUsdRiPxrCookieLightFilter()
              &This::GetTextureWrapModeAttr)
         .def("CreateTextureWrapModeAttr",
              &_CreateTextureWrapModeAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetTextureFillColorAttr",
+             &This::GetTextureFillColorAttr)
+        .def("CreateTextureFillColorAttr",
+             &_CreateTextureFillColorAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
@@ -359,6 +436,41 @@ void wrapUsdRiPxrCookieLightFilter()
              &This::GetTextureOffsetVAttr)
         .def("CreateTextureOffsetVAttr",
              &_CreateTextureOffsetVAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticDirectionalAttr",
+             &This::GetAnalyticDirectionalAttr)
+        .def("CreateAnalyticDirectionalAttr",
+             &_CreateAnalyticDirectionalAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticShearXAttr",
+             &This::GetAnalyticShearXAttr)
+        .def("CreateAnalyticShearXAttr",
+             &_CreateAnalyticShearXAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticShearYAttr",
+             &This::GetAnalyticShearYAttr)
+        .def("CreateAnalyticShearYAttr",
+             &_CreateAnalyticShearYAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticApexAttr",
+             &This::GetAnalyticApexAttr)
+        .def("CreateAnalyticApexAttr",
+             &_CreateAnalyticApexAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAnalyticUseLightDirectionAttr",
+             &This::GetAnalyticUseLightDirectionAttr)
+        .def("CreateAnalyticUseLightDirectionAttr",
+             &_CreateAnalyticUseLightDirectionAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

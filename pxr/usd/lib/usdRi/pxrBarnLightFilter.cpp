@@ -251,6 +251,91 @@ UsdRiPxrBarnLightFilter::CreateAnalyticUseLightDirectionAttr(VtValue const &defa
 }
 
 UsdAttribute
+UsdRiPxrBarnLightFilter::GetAnalyticDensityNearDistanceAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticDensityNearDistance);
+}
+
+UsdAttribute
+UsdRiPxrBarnLightFilter::CreateAnalyticDensityNearDistanceAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticDensityNearDistance,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrBarnLightFilter::GetAnalyticDensityFarDistanceAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticDensityFarDistance);
+}
+
+UsdAttribute
+UsdRiPxrBarnLightFilter::CreateAnalyticDensityFarDistanceAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticDensityFarDistance,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrBarnLightFilter::GetAnalyticDensityNearValueAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticDensityNearValue);
+}
+
+UsdAttribute
+UsdRiPxrBarnLightFilter::CreateAnalyticDensityNearValueAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticDensityNearValue,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrBarnLightFilter::GetAnalyticDensityFarValueAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticDensityFarValue);
+}
+
+UsdAttribute
+UsdRiPxrBarnLightFilter::CreateAnalyticDensityFarValueAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticDensityFarValue,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrBarnLightFilter::GetAnalyticDensityExponentAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticDensityExponent);
+}
+
+UsdAttribute
+UsdRiPxrBarnLightFilter::CreateAnalyticDensityExponentAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticDensityExponent,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdRiPxrBarnLightFilter::GetEdgeThicknessAttr() const
 {
     return GetPrim().GetAttribute(UsdRiTokens->edgeThickness);
@@ -480,6 +565,11 @@ UsdRiPxrBarnLightFilter::GetSchemaAttributeNames(bool includeInherited)
         UsdRiTokens->analyticShearY,
         UsdRiTokens->analyticApex,
         UsdRiTokens->analyticUseLightDirection,
+        UsdRiTokens->analyticDensityNearDistance,
+        UsdRiTokens->analyticDensityFarDistance,
+        UsdRiTokens->analyticDensityNearValue,
+        UsdRiTokens->analyticDensityFarValue,
+        UsdRiTokens->analyticDensityExponent,
         UsdRiTokens->edgeThickness,
         UsdRiTokens->preBarnEffect,
         UsdRiTokens->scaleWidth,

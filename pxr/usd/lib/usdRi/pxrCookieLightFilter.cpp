@@ -115,6 +115,40 @@ UsdRiPxrCookieLightFilter::CreateCookieModeAttr(VtValue const &defaultValue, boo
 }
 
 UsdAttribute
+UsdRiPxrCookieLightFilter::GetWidthAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->width);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::CreateWidthAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->width,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::GetHeightAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->height);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::CreateHeightAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->height,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdRiPxrCookieLightFilter::GetTextureMapAttr() const
 {
     return GetPrim().GetAttribute(UsdRiTokens->textureMap);
@@ -142,6 +176,23 @@ UsdRiPxrCookieLightFilter::CreateTextureWrapModeAttr(VtValue const &defaultValue
 {
     return UsdSchemaBase::_CreateAttr(UsdRiTokens->textureWrapMode,
                        SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::GetTextureFillColorAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->textureFillColor);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::CreateTextureFillColorAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->textureFillColor,
+                       SdfValueTypeNames->Color3f,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,
@@ -244,6 +295,91 @@ UsdRiPxrCookieLightFilter::CreateTextureOffsetVAttr(VtValue const &defaultValue,
 {
     return UsdSchemaBase::_CreateAttr(UsdRiTokens->textureOffsetV,
                        SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::GetAnalyticDirectionalAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticDirectional);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::CreateAnalyticDirectionalAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticDirectional,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::GetAnalyticShearXAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticShearX);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::CreateAnalyticShearXAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticShearX,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::GetAnalyticShearYAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticShearY);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::CreateAnalyticShearYAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticShearY,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::GetAnalyticApexAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticApex);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::CreateAnalyticApexAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticApex,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::GetAnalyticUseLightDirectionAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->analyticUseLightDirection);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::CreateAnalyticUseLightDirectionAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->analyticUseLightDirection,
+                       SdfValueTypeNames->Bool,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,
@@ -642,14 +778,22 @@ UsdRiPxrCookieLightFilter::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdRiTokens->cookieMode,
+        UsdRiTokens->width,
+        UsdRiTokens->height,
         UsdRiTokens->textureMap,
         UsdRiTokens->textureWrapMode,
+        UsdRiTokens->textureFillColor,
         UsdRiTokens->textureInvertU,
         UsdRiTokens->textureInvertV,
         UsdRiTokens->textureScaleU,
         UsdRiTokens->textureScaleV,
         UsdRiTokens->textureOffsetU,
         UsdRiTokens->textureOffsetV,
+        UsdRiTokens->analyticDirectional,
+        UsdRiTokens->analyticShearX,
+        UsdRiTokens->analyticShearY,
+        UsdRiTokens->analyticApex,
+        UsdRiTokens->analyticUseLightDirection,
         UsdRiTokens->analyticBlurAmount,
         UsdRiTokens->analyticBlurSMult,
         UsdRiTokens->analyticBlurTMult,

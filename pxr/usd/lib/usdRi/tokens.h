@@ -159,6 +159,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (sunDirection) \
     (sunSize) \
     (sunTint) \
+    ((textureFillColor, "texture:fillColor")) \
     ((textureInvertU, "texture:invertU")) \
     ((textureInvertV, "texture:invertV")) \
     ((textureMap, "texture:map")) \
@@ -194,7 +195,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// The tokens are:
 /// \li <b>analytic</b> - Possible value for UsdRiPxrCookieLightFilter::GetCookieModeAttr(), Possible value for UsdRiPxrBarnLightFilter::GetBarnModeAttr()
-/// \li <b>analyticApex</b> - UsdRiPxrBarnLightFilter
+/// \li <b>analyticApex</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>analyticBlurAmount</b> - UsdRiPxrCookieLightFilter
 /// \li <b>analyticBlurExponent</b> - UsdRiPxrCookieLightFilter
 /// \li <b>analyticBlurFarDistance</b> - UsdRiPxrCookieLightFilter
@@ -205,17 +206,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>analyticBlurNearValue</b> - UsdRiPxrCookieLightFilter
 /// \li <b>analyticBlurSMult</b> - UsdRiPxrCookieLightFilter
 /// \li <b>analyticBlurTMult</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticDensityExponent</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticDensityFarDistance</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticDensityFarValue</b> - UsdRiPxrCookieLightFilter
+/// \li <b>analyticDensityExponent</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+/// \li <b>analyticDensityFarDistance</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+/// \li <b>analyticDensityFarValue</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>analyticDensityMidpoint</b> - UsdRiPxrCookieLightFilter
 /// \li <b>analyticDensityMidValue</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticDensityNearDistance</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticDensityNearValue</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticDirectional</b> - UsdRiPxrBarnLightFilter
-/// \li <b>analyticShearX</b> - UsdRiPxrBarnLightFilter
-/// \li <b>analyticShearY</b> - UsdRiPxrBarnLightFilter
-/// \li <b>analyticUseLightDirection</b> - UsdRiPxrBarnLightFilter
+/// \li <b>analyticDensityNearDistance</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+/// \li <b>analyticDensityNearValue</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+/// \li <b>analyticDirectional</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+/// \li <b>analyticShearX</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+/// \li <b>analyticShearY</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+/// \li <b>analyticUseLightDirection</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>aovName</b> - UsdRiPxrAovLight
 /// \li <b>argsPath</b> - UsdRiRisIntegrator
 /// \li <b>barnMode</b> - UsdRiPxrBarnLightFilter
@@ -241,7 +242,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>falloffRampEndDistance</b> - UsdRiPxrRampLightFilter
 /// \li <b>filePath</b> - UsdRiRisIntegrator
 /// \li <b>haziness</b> - UsdRiPxrEnvDayLight
-/// \li <b>height</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+/// \li <b>height</b> - UsdRiPxrRodLightFilter, UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>hour</b> - UsdRiPxrEnvDayLight
 /// \li <b>infoArgsPath</b> - UsdRiRisObject
 /// \li <b>infoFilePath</b> - UsdRiRisOslPattern, UsdRiRisObject
@@ -299,8 +300,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>riSamplingImportanceMultiplier</b> - UsdRiLightAPI
 /// \li <b>riShadowThinShadow</b> - UsdRiLightAPI
 /// \li <b>riSpecular</b> - UsdRiLightFilterAPI
-/// \li <b>riTextureGamma</b> - UsdRiDomeLightAPI, UsdRiRectLightAPI
-/// \li <b>riTextureSaturation</b> - UsdRiDomeLightAPI, UsdRiRectLightAPI
+/// \li <b>riTextureGamma</b> - UsdRiTextureAPI
+/// \li <b>riTextureSaturation</b> - UsdRiTextureAPI
 /// \li <b>riTraceLightPaths</b> - UsdRiLightAPI
 /// \li <b>scaleDepth</b> - UsdRiPxrRodLightFilter
 /// \li <b>scaleHeight</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
@@ -311,6 +312,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>sunDirection</b> - UsdRiPxrEnvDayLight
 /// \li <b>sunSize</b> - UsdRiPxrEnvDayLight
 /// \li <b>sunTint</b> - UsdRiPxrEnvDayLight
+/// \li <b>textureFillColor</b> - UsdRiPxrCookieLightFilter
 /// \li <b>textureInvertU</b> - UsdRiPxrCookieLightFilter
 /// \li <b>textureInvertV</b> - UsdRiPxrCookieLightFilter
 /// \li <b>textureMap</b> - UsdRiPxrCookieLightFilter
@@ -321,7 +323,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>textureWrapMode</b> - UsdRiPxrCookieLightFilter
 /// \li <b>useColor</b> - UsdRiPxrAovLight
 /// \li <b>useThroughput</b> - UsdRiPxrAovLight
-/// \li <b>width</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+/// \li <b>width</b> - UsdRiPxrRodLightFilter, UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>year</b> - UsdRiPxrEnvDayLight
 /// \li <b>zone</b> - UsdRiPxrEnvDayLight
 TF_DECLARE_PUBLIC_TOKENS(UsdRiTokens, USDRI_API, USDRI_TOKENS);

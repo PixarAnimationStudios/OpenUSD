@@ -36,6 +36,7 @@ pxr_library(usdRi
         rmanUtilities
         rslShader
         statements
+        textureAPI
         tokens
 
     PUBLIC_HEADERS
@@ -67,6 +68,7 @@ pxr_library(usdRi
         wrapRmanUtilities.cpp
         wrapRslShader.cpp
         wrapStatements.cpp
+        wrapTextureAPI.cpp
         wrapTokens.cpp
 
     PYTHON_FILES

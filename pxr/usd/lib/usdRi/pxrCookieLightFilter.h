@@ -179,6 +179,48 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // WIDTH 
+    // --------------------------------------------------------------------- //
+    /// Width of the rect the light is shining through.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 1.0
+    USDRI_API
+    UsdAttribute GetWidthAttr() const;
+
+    /// See GetWidthAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateWidthAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // HEIGHT 
+    // --------------------------------------------------------------------- //
+    /// Height of the rect the light is shining through.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 1.0
+    USDRI_API
+    UsdAttribute GetHeightAttr() const;
+
+    /// See GetHeightAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateHeightAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // TEXTUREMAP 
     // --------------------------------------------------------------------- //
     /// A color texture to use on the cookie.  May use alpha.
@@ -223,6 +265,28 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDRI_API
     UsdAttribute CreateTextureWrapModeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // TEXTUREFILLCOLOR 
+    // --------------------------------------------------------------------- //
+    /// If the texture is not repeating, this specifies the
+    /// color for the region outside of and behind the projected rectangle.
+    ///
+    /// \n  C++ Type: GfVec3f
+    /// \n  Usd Type: SdfValueTypeNames->Color3f
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDRI_API
+    UsdAttribute GetTextureFillColorAttr() const;
+
+    /// See GetTextureFillColorAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateTextureFillColorAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
@@ -353,6 +417,116 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDRI_API
     UsdAttribute CreateTextureOffsetVAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICDIRECTIONAL 
+    // --------------------------------------------------------------------- //
+    /// When this is on, the texture projects along a direction
+    /// using the orthographic projection. When it is off, the texture
+    /// projects using a focal point specified by the analytic:apex.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: False
+    USDRI_API
+    UsdAttribute GetAnalyticDirectionalAttr() const;
+
+    /// See GetAnalyticDirectionalAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticDirectionalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICSHEARX 
+    // --------------------------------------------------------------------- //
+    /// Shear the projection along the X axis.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    USDRI_API
+    UsdAttribute GetAnalyticShearXAttr() const;
+
+    /// See GetAnalyticShearXAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticShearXAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICSHEARY 
+    // --------------------------------------------------------------------- //
+    /// Shear the projection along the Y axis.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    USDRI_API
+    UsdAttribute GetAnalyticShearYAttr() const;
+
+    /// See GetAnalyticShearYAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticShearYAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICAPEX 
+    // --------------------------------------------------------------------- //
+    /// Shear the projection along the Y axis.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 0.0
+    USDRI_API
+    UsdAttribute GetAnalyticApexAttr() const;
+
+    /// See GetAnalyticApexAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticApexAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // ANALYTICUSELIGHTDIRECTION 
+    // --------------------------------------------------------------------- //
+    /// When this is on, If this is on, the projection direction
+    /// is determined by the position of the center of the light source.
+    /// Otherwise, it only follows the orientation of the filter. WARNING:
+    /// This does not work with dome and mesh lights.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: False
+    USDRI_API
+    UsdAttribute GetAnalyticUseLightDirectionAttr() const;
+
+    /// See GetAnalyticUseLightDirectionAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateAnalyticUseLightDirectionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
