@@ -1,5 +1,5 @@
 #
-# Copyright 2016 Pixar
+# Copyright 2016-2017 Pixar
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -39,6 +39,8 @@ gb = FnAttribute.GroupBuilder()
 
 gb.set('fileName', '')
 nb.setHintsForParameter('fileName', {
+    'widget' : 'assetIdInput',
+    'fileTypes' : 'usd|usda|usdc|abc',
     'help' : 'The USD file to read.',
 })
 
