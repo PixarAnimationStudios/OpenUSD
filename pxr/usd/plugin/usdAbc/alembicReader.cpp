@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -26,6 +26,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdAbc/alembicReader.h"
 #include "pxr/usd/usdAbc/alembicUtil.h"
+#include "pxr/usd/usdGeom/faceSetAPI.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/sdf/schema.h"
@@ -2734,6 +2735,79 @@ struct _CopyFaceVaryingInterpolateBoundary : _CopyGeneric<IInt32Property> {
     }
 };
 
+
+/// Base class to copy attributes of an almebic faceset to a USD faceset
+struct _CopyFaceSetBase {
+    IFaceSet object;
+
+    _CopyFaceSetBase(const IFaceSet& object_) : object(object_) { }
+
+    bool operator()(_IsValidTag) const
+    {
+        return object.valid();
+    }
+
+    const MetaData& operator()(_MetaDataTag) const
+    {
+        return object.getMetaData();
+    }
+
+    _AlembicTimeSamples operator()(_SampleTimesTag) const
+    {
+        return _GetSampleTimes(object);
+    }
+};
+
+/// Class to copy faceset isPartition.
+struct _CopyFaceSetIsPartition : _CopyFaceSetBase {
+    using _CopyFaceSetBase::operator();
+
+    _CopyFaceSetIsPartition(const IFaceSet& object_) 
+        : _CopyFaceSetBase(object_) {};
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const
+    {
+        // Because the the absence of the ".facesExclusive" will trigger an
+        // exception in IFaceSetSchema, we need to manually deal with the
+        // default state (and discard the exception thrown erroneously by
+        // getFaceExclusivity()).
+        //
+        // This is bug in Alembic, but until the behavior changes, this will
+        // prevent failures when reading valid caches.
+        //
+        // The Alembic issue can be tracked here:
+        // https://github.com/alembic/alembic/issues/129
+        bool isPartition = false;
+        try {
+            isPartition = object.getSchema().getFaceExclusivity() == kFaceSetExclusive;
+        }
+        catch(const Alembic::Util::Exception&) {}
+        return dst.Set(isPartition);
+    }
+};
+
+/// Class to copy faceset face counts.
+struct _CopyFaceSetFaceCounts : _CopyFaceSetBase {
+    using _CopyFaceSetBase::operator();
+
+    _CopyFaceSetFaceCounts(const IFaceSet& object_) 
+        : _CopyFaceSetBase(object_) {};
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const
+    {
+        const IFaceSetSchema::Sample sample = object.getSchema().getValue(iss);
+
+        // In Alembic, a faceset is just one group of faces, rather than the
+        // multi-face group approach present in Usd, so we only need a single
+        // entry for faceCounts.
+        VtArray<int> faceCounts(1);
+        faceCounts[0] = static_cast<int>(sample.getFaces()->size());
+        return dst.Set(faceCounts);
+    }
+};
+
 static
 TfToken
 _ConvertCurveBasis(BasisType value)
@@ -3130,6 +3204,49 @@ _ReadSubD(_PrimReaderContext* context)
 
 static
 void
+_ReadFaceSet(_PrimReaderContext* context)
+{
+    typedef IFaceSet Type;
+
+    // Wrap the object.
+    if (!Type::matches(context->GetObject().getHeader())) {
+        // Not of type Type.
+        return;
+    }
+
+    Type object(context->GetObject(), kWrapExisting);
+
+    // Add child properties under schema.
+    context->SetSchema(Type::schema_type::info_type::defaultName());
+
+    const std::string baseFaceSetName =
+        SdfPath::JoinIdentifier(
+            UsdGeomTokens->faceSet.GetString(),
+            context->GetObject().getName());
+    const TfToken faceIndicesName(context->GetUsdName(
+        SdfPath::JoinIdentifier(baseFaceSetName, "faceIndices")));
+    const TfToken faceCountsName(context->GetUsdName(
+        SdfPath::JoinIdentifier(baseFaceSetName, "faceCounts")));
+    const TfToken isPartitionName(context->GetUsdName(
+        SdfPath::JoinIdentifier(baseFaceSetName, "isPartition")));
+
+    context->AddProperty(
+        faceIndicesName,
+        SdfValueTypeNames->IntArray,
+        _CopyGeneric<IInt32ArrayProperty, int>(
+            context->ExtractSchema(".faces")));
+    context->AddProperty(
+        faceCountsName,
+        SdfValueTypeNames->IntArray,
+        _CopyFaceSetFaceCounts(object));
+    context->AddProperty(
+        isPartitionName,
+        SdfValueTypeNames->Bool,
+        _CopyFaceSetIsPartition(object));
+}
+
+static
+void
 _ReadCurves(_PrimReaderContext* context)
 {
     typedef ICurves Type;
@@ -3464,6 +3581,45 @@ _ReadPrim(
             // Don't add this object to the parent's children.
             name.clear();
         } while (false);
+
+        // Combine facesets with parent if parent is a subd or poly, similar
+        // to above.
+        do {
+            // Parent has to be a PolyMesh or SubD.
+            IObject parent = object.getParent();
+            if (!(IPolyMesh::matches(parent.getHeader()) ||
+                  ISubD::matches(parent.getHeader()))) {
+                break;
+            }
+            ICompoundProperty polymeshParentProperties =
+                _GetSchemaProperty<IPolyMesh>(parent);
+            ICompoundProperty subdParentProperties =
+                _GetSchemaProperty<ISubD>(parent);
+            if (!(polymeshParentProperties.valid() ||
+                  subdParentProperties.valid())) {
+                break;
+            }
+
+            // The parent must not be the root of an instance.
+            if (context.IsInstance(parent)) {
+                break;
+            }
+
+            // This object must be an IFaceSet
+            ICompoundProperty objectProperties;
+            if (IFaceSet::matches(object.getMetaData())) {
+                objectProperties = _GetSchemaProperty<IFaceSet>(object);
+            }
+            if (!objectProperties.valid()) {
+                break;
+            }
+
+            // We can combine!  Cache into our parent's entry.
+            path = parentPath;
+
+            // Don't add this object to the parent's children.
+            name.clear();
+        } while (false);
     }
 
     // If this is an instance then we create a prim at the path and
@@ -3662,6 +3818,9 @@ _ReaderSchemaBuilder::_ReaderSchemaBuilder()
         .AppendReader(_ReadArbGeomParams)
         .AppendReader(_ReadUserProperties)
         .AppendReader(_ReadOther)
+        ;
+    schema.AddType(FaceSetSchemaInfo::title())
+        .AppendReader(_ReadFaceSet)
         ;
     schema.AddType(CurvesSchemaInfo::title())
         .AppendReader(_ReadOrientation)

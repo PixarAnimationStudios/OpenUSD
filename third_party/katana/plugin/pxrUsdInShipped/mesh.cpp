@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -36,7 +36,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 static void 
 _CreateFaceSets(
-        const UsdPrim& prim,
+        const UsdGeomFaceSetAPI& faceSet,
         const PxrUsdKatanaUsdInPrivateData& data,
         FnKat::GeolibCookInterface& interface);
 
@@ -51,9 +51,11 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, interface)
 
     attrs.toInterface(interface);
 
-    if (UsdShadeMaterial::HasMaterialFaceSet(prim))
+    // Process all FaceSets for the given prim.
+    std::vector<UsdGeomFaceSetAPI> faceSets = UsdGeomFaceSetAPI::GetFaceSets(prim);
+    for (const auto& faceSet : faceSets)
     {
-        _CreateFaceSets(prim, privateData, interface);
+        _CreateFaceSets(faceSet, privateData, interface);
     }
 }
 
@@ -61,15 +63,21 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, interface)
 // accessed elsewhere, it should move down into usdKatana.
 static void 
 _CreateFaceSets(
-        const UsdPrim& prim,
+        const UsdGeomFaceSetAPI& faceSet,
         const PxrUsdKatanaUsdInPrivateData& data,
         FnKat::GeolibCookInterface& interface)
 {
-    UsdGeomFaceSetAPI faceSet = UsdShadeMaterial::GetMaterialFaceSet(prim);
-    bool isPartition = faceSet.GetIsPartition();;
+    // If the passed FaceSet is a material FaceSet, handle special material
+    // bindings below.
+    UsdGeomFaceSetAPI materialFaceSet =
+        UsdShadeMaterial::GetMaterialFaceSet(faceSet.GetPrim());
+    const bool isMaterialFaceSet =
+        materialFaceSet.GetFaceSetName() == faceSet.GetFaceSetName();
+
+    const bool isPartition = faceSet.GetIsPartition();
     if (!isPartition) {
-        TF_WARN("Found face set on prim <%s> that is not a partition.", 
-                prim.GetPath().GetText());
+        TF_WARN("Found face set <%s> that is not a partition.", 
+                faceSet.GetPath().GetText());
         // continue here?
     }
 
@@ -89,9 +97,13 @@ _CreateFaceSets(
         FnKat::GroupBuilder faceSetAttrs;
 
         faceSetAttrs.set("type", FnKat::StringAttribute("faceset"));
-        faceSetAttrs.set("materialAssign", FnKat::StringAttribute(
-            PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
-                bindingTargets[faceSetIdx], data)));
+
+        if (isMaterialFaceSet)
+        {
+            faceSetAttrs.set("materialAssign", FnKat::StringAttribute(
+                PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
+                    bindingTargets[faceSetIdx], data)));
+        }
 
         FnKat::IntBuilder facesBuilder;
         {
@@ -106,7 +118,11 @@ _CreateFaceSets(
         }
         faceSetAttrs.set("geometry.faces", facesBuilder.build());
 
-        std::string faceSetName = TfStringPrintf("faceset_%zu", faceSetIdx);
+        std::string faceSetName = faceSet.GetFaceSetName().GetString();
+        if (faceCounts.size() > 1)
+        {
+            faceSetName = TfStringPrintf("%s_%zu", faceSetName.c_str(), faceSetIdx);
+        }
 
         FnKat::GroupBuilder staticSceneCreateAttrs;
         staticSceneCreateAttrs.set("a", faceSetAttrs.build());
