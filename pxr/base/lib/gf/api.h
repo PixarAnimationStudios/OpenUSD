@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(PXR_USD_STATIC)
+#if defined(PXR_STATIC)
 #   define GF_API
 #   define GF_API_TEMPLATE_CLASS(...)
 #   define GF_API_TEMPLATE_STRUCT(...)

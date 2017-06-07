@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(PXR_USD_STATIC)
+#if defined(PXR_STATIC)
 #   define PCP_API
 #   define PCP_API_TEMPLATE_CLASS(...)
 #   define PCP_API_TEMPLATE_STRUCT(...)

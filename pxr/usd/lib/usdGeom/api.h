@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(PXR_USD_STATIC)
+#if defined(PXR_STATIC)
 #   define USDGEOM_API
 #   define USDGEOM_API_TEMPLATE_CLASS(...)
 #   define USDGEOM_API_TEMPLATE_STRUCT(...)
