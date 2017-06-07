@@ -25,11 +25,11 @@ Getting Help
 ------------
 
 Need help understanding certain concepts in USD? See
-[Getting Help with USD](http://openusd.org/docs/Getting-Help-with-USD.html).
+[Getting Help with USD](http://openusd.org/docs/Getting-Help-with-USD.html) or
+visit our [forum](https://groups.google.com/forum/#!forum/usd-interest).
 
-If you are experiencing undocumented problems with the software, 
-please read our [issue guidelines](ISSUES.md) and file a bug via the
-Issues page on the GitHub repository.
+If you are experiencing undocumented problems with the software, please 
+[file a bug](https://github.com/PixarAnimationStudios/USD/issues/new).
 
 Supported Platforms
 -------------------
