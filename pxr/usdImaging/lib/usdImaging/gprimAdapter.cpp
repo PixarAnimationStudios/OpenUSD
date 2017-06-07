@@ -597,38 +597,45 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                     gprimSchema.GetDisplayColorPrimvar();
             if (primvar.ComputeFlattened(&colorArray, time)) {
                 colorInterp = primvar.GetInterpolation();
-                    colorPrimvarName = primvar.GetName();
-                    numColors = colorArray.size();
-                    result.resize(numColors);
+                colorPrimvarName = primvar.GetName();
+                numColors = colorArray.size();
+                result.resize(numColors);
 
-                    if (colorInterp == UsdGeomTokens->constant) {
-                        result[0][0] = colorArray[0][0];
-                        result[0][1] = colorArray[0][1];
-                        result[0][2] = colorArray[0][2];
+                if (colorInterp == UsdGeomTokens->constant) {
+                    result[0][0] = colorArray[0][0];
+                    result[0][1] = colorArray[0][1];
+                    result[0][2] = colorArray[0][2];
 
-                        if (numColors > 1) {
-                            // warn and copy default color for remaining elements
-                             TF_WARN("Prim %s has %lu elements for %s even "
-                                     "though it is marked constant.",
-                                     prim.GetPath().GetText(), numColors,
-                                     colorPrimvarName.GetText());
-                            
-                            for (size_t ii = 1; ii < numColors; ii++) {
-                                result[ii][0] = defaultColor[0];
-                                result[ii][1] = defaultColor[1];
-                                result[ii][2] = defaultColor[2];
-                            }
+                    if (numColors > 1) {
+                        // warn and copy default color for remaining elements
+                         TF_WARN("Prim %s has %lu elements for %s even "
+                                 "though it is marked constant.",
+                                 prim.GetPath().GetText(), numColors,
+                                 colorPrimvarName.GetText());
+                        
+                        for (size_t ii = 1; ii < numColors; ii++) {
+                            result[ii][0] = defaultColor[0];
+                            result[ii][1] = defaultColor[1];
+                            result[ii][2] = defaultColor[2];
                         }
-                    } else {
-                        for (size_t ii = 0; ii < numColors; ii++) {
-                            result[ii][0] = colorArray[ii][0];
-                            result[ii][1] = colorArray[ii][1];
-                            result[ii][2] = colorArray[ii][2];
-                        }
+                    }
+                } else {
+                    for (size_t ii = 0; ii < numColors; ii++) {
+                        result[ii][0] = colorArray[ii][0];
+                        result[ii][1] = colorArray[ii][1];
+                        result[ii][2] = colorArray[ii][2];
+                    }
                 }
             } else {
-                    // mark interp as constant
-                colorInterp = UsdGeomTokens->constant;
+                // displayColor is treated as a special primvar -- if it isn't
+                // authored by the user, the schema defaults it to constant 
+                // interp. 
+                // if authored with no data (allowed for non-constant interp),
+                // we should return an empty result.
+                colorInterp = primvar.GetInterpolation();
+                if (colorInterp != UsdGeomTokens->constant) {
+                    numColors = 0;
+                }
             }
         }
 
@@ -670,8 +677,15 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                     }
                 }
             } else {
-                // set default opacity, constant interp
-                opacityInterp = UsdGeomTokens->constant;
+                // displayOpacity is treated as a special primvar -- if it isn't
+                // authored by the user, the schema defaults it to constant 
+                // interp. 
+                // if authored with no data (allowed for non-constant interp),
+                // we should return an empty result.
+                opacityInterp = primvar.GetInterpolation();
+                if (opacityInterp != UsdGeomTokens->constant) {
+                    numOpacities = 0;
+                }
             }
         }
         // Guaranteed to have set either material/shader/primvar/default opacity
@@ -679,7 +693,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
     }
 
     {
-        // -- consolidate color and opacity --        
+        // --  Cases where we can surely issue warnings --
         if (colorInterp == opacityInterp && numColors != numOpacities) {
             // interp modes same but lengths different for primvars is surely
             // an input error
@@ -701,36 +715,50 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                     "supported by UsdImaging", prim.GetPath().GetText(),
                     colorInterp.GetText(), colorPrimvarName.GetText(),
                     opacityInterp.GetText(), opacityPrimvarName.GetText());
-                        }
+        }
+    }
 
-        const size_t resultSize = result.size();
-        if (numColors < numOpacities) {
-            GfVec3f splatColor = defaultColor;
-            if (colorInterp == UsdGeomTokens->constant) {
-                // override color interp mode and splat first color
-                        colorInterp = opacityInterp;
-                splatColor = GfVec3f(result[0][0], result[0][1], result[0][2]);
+    {
+        // -- Consolidate missing color or opacity values in result --
+        if (numColors == 0 || numOpacities == 0) {
+            // remove default value that was filled in
+            result.resize(0);
+            // override the (default) color interp mode if opacity was authored
+            // and empty
+            if (numOpacities == 0) {
+                colorInterp = opacityInterp;
             }
-
-            for(size_t ii = numColors; ii < resultSize; ii++) {
-                result[ii][0] = splatColor[0];
-                result[ii][1] = splatColor[1];
-                result[ii][2] = splatColor[2];
-                        }
-                    }
-        else {
-            float splatOpacity = defaultOpacity;
-            if (opacityInterp == UsdGeomTokens->constant) {
-                // splat first opacity
-                splatOpacity = result[0][3];
+        } else {
+            const size_t resultSize = result.size();
+            if (numColors < numOpacities) {
+                GfVec3f splatColor = defaultColor;
+                if (colorInterp == UsdGeomTokens->constant) {
+                    // override color interp mode and splat first color
+                    colorInterp = opacityInterp;
+                    splatColor = GfVec3f(
+                        result[0][0], result[0][1], result[0][2]);
                 }
-
-            for(size_t ii = numOpacities; ii < resultSize; ii++) {
-                result[ii][3] = splatOpacity;
+                for(size_t ii = numColors; ii < resultSize; ii++) {
+                    result[ii][0] = splatColor[0];
+                    result[ii][1] = splatColor[1];
+                    result[ii][2] = splatColor[2];
+                }
+            }
+            else {
+                float splatOpacity = defaultOpacity;
+                // resultSize may be 0 (if empty color primvar array), so don't 
+                // splat 
+                if (opacityInterp == UsdGeomTokens->constant) {
+                    // splat first opacity
+                    splatOpacity = result[0][3];
+                }
+                for(size_t ii = numOpacities; ii < resultSize; ii++) {
+                    result[ii][3] = splatOpacity;
+                }
             }
         }
     }
-    
+
     if (primvarInfo) {
         primvarInfo->name = HdTokens->color;
         primvarInfo->interpolation = colorInterp;
