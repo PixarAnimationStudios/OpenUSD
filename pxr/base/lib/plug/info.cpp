@@ -396,7 +396,7 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
 
     // Find longest non-wildcarded prefix directory.
     std::string::size_type j = normalized.rfind('/', i);
-    std::string dirname = normalized.substr(0, j);
+    std::string dirname = TfNormPath(normalized.substr(0, j));
     std::string pattern = normalized.substr(j + 1);
 
     // Convert to regex.
