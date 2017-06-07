@@ -767,6 +767,14 @@ class Mesh "Mesh" (
 
         See http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules""")
 
+    token triangleSubdivisionRule = "catmullClark" (
+        allowedTokens = ["catmullClark", "smooth"]
+        doc = """Specifies what weights are used during triangle subdivision for
+        the Catmull-Clark scheme. Valid values are "catmullClark" (the default) 
+        and "smooth".
+
+        See http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#triangle-subdivision-rule""")
+    
     int[] holeIndices = [] (
         doc = """The face indices (indexing into the 'faceVertexCounts'
         attribute) of all faces that should be made invisible.""")

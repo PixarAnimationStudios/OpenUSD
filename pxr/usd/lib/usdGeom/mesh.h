@@ -299,6 +299,32 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // TRIANGLESUBDIVISIONRULE 
+    // --------------------------------------------------------------------- //
+    /// Specifies what weights are used during triangle subdivision for
+    /// the Catmull-Clark scheme. Valid values are "catmullClark" (the default) 
+    /// and "smooth".
+    /// 
+    /// See http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#triangle-subdivision-rule
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: catmullClark
+    /// \n  \ref UsdGeomTokens "Allowed Values": [catmullClark, smooth]
+    USDGEOM_API
+    UsdAttribute GetTriangleSubdivisionRuleAttr() const;
+
+    /// See GetTriangleSubdivisionRuleAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateTriangleSubdivisionRuleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // HOLEINDICES 
     // --------------------------------------------------------------------- //
     /// The face indices (indexing into the 'faceVertexCounts'

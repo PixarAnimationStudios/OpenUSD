@@ -1866,6 +1866,14 @@ class Mesh "Mesh" (
         lighterweight and faster to render, depending on renderer and render
         mode.)'''
     )
+    token triangleSubdivisionRule = "catmullClark" (
+        allowedTokens = ["catmullClark", "smooth"]
+        doc = '''Specifies what weights are used during triangle subdivision for
+        the Catmull-Clark scheme. Valid values are "catmullClark" (the default) 
+        and "smooth".
+
+        See http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#triangle-subdivision-rule'''
+    )
     vector3f[] velocities (
         doc = """If provided, 'velocities' should be used by renderers to 
         compute motion blur for a given 'points' sample, rather than 

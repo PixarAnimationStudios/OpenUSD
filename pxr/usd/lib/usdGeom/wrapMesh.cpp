@@ -85,6 +85,13 @@ _CreateFaceVaryingLinearInterpolationAttr(UsdGeomMesh &self,
 }
         
 static UsdAttribute
+_CreateTriangleSubdivisionRuleAttr(UsdGeomMesh &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTriangleSubdivisionRuleAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateHoleIndicesAttr(UsdGeomMesh &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateHoleIndicesAttr(
@@ -191,6 +198,13 @@ void wrapUsdGeomMesh()
              &This::GetFaceVaryingLinearInterpolationAttr)
         .def("CreateFaceVaryingLinearInterpolationAttr",
              &_CreateFaceVaryingLinearInterpolationAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetTriangleSubdivisionRuleAttr",
+             &This::GetTriangleSubdivisionRuleAttr)
+        .def("CreateTriangleSubdivisionRuleAttr",
+             &_CreateTriangleSubdivisionRuleAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
