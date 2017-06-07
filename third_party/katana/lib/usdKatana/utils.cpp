@@ -1025,8 +1025,9 @@ PxrUsdKatanaUtils::_GetDisplayName(const UsdPrim &prim)
     std::string primName = prim.GetName();
     UsdUISceneGraphPrimAPI sgp(prim);
     UsdAttribute displayNameAttr = sgp.GetDisplayNameAttr();
-    if (displayNameAttr.IsValid() && 
-            !PxrUsdKatana_IsAttrValFromBaseMaterial(displayNameAttr)) {
+    if (displayNameAttr.IsValid() &&
+            !PxrUsdKatana_IsAttrValFromBaseMaterial(displayNameAttr) &&
+            !PxrUsdKatana_IsAttrValFromReference(displayNameAttr)) {
         // override prim name
         TfToken displayNameToken;
         if (displayNameAttr.Get(&displayNameToken)) {
@@ -1040,7 +1041,8 @@ PxrUsdKatanaUtils::_GetDisplayName(const UsdPrim &prim)
     {
         UsdAttribute primNameAttr = UsdKatanaLookAPI(prim).GetPrimNameAttr();
         if (primNameAttr.IsValid() && 
-                !PxrUsdKatana_IsAttrValFromBaseMaterial(primNameAttr)) {
+                !PxrUsdKatana_IsAttrValFromBaseMaterial(primNameAttr) &&
+                !PxrUsdKatana_IsAttrValFromReference(primNameAttr)) {
             primNameAttr.Get(&primName);
         }
     }
@@ -1059,7 +1061,8 @@ PxrUsdKatanaUtils::_GetDisplayGroup(
     if (isLibrary) {
         UsdAttribute displayGroupAttr = sgp.GetDisplayGroupAttr();
         if (displayGroupAttr.IsValid() && 
-                !PxrUsdKatana_IsAttrValFromBaseMaterial(displayGroupAttr)) {
+                !PxrUsdKatana_IsAttrValFromBaseMaterial(displayGroupAttr) && 
+                !PxrUsdKatana_IsAttrValFromReference(displayGroupAttr)) {
             TfToken displayGroupToken;
             if (displayGroupAttr.Get(&displayGroupToken)) {
                 displayGroup = displayGroupToken.GetString();
