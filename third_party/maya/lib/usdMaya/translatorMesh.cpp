@@ -284,21 +284,23 @@ PxrUsdMayaTranslatorMesh::Create(
         }
     }
 
-    // Set displayColors attribute to true if the colorset is of type RGB or RGBA
-    // This will allow to visualize the colorset
-    // Also if there are multiple color sets, makes the first RGB or RGBA the current one
+    // We only vizualize the colorset by default if it is "displayColor".  
     MStringArray colorSetNames;
     if (meshFn.getColorSetNames(colorSetNames)==MS::kSuccess) {
         for (unsigned int i=0; i < colorSetNames.length(); i++) {
-            MFnMesh::MColorRepresentation csRep=
-                meshFn.getColorRepresentation(colorSetNames[i]);
-            if (csRep==MFnMesh::kRGB || csRep==MFnMesh::kRGBA) {
-                MPlug plg=meshFn.findPlug("displayColors");
-                if ( !plg.isNull() ) {
-                    plg.setBool(true);
-                }
-                if (colorSetNames.length()>1) {
-                    meshFn.setCurrentColorSetName(colorSetNames[i]);
+            const MString colorSetName = colorSetNames[i];
+            if (std::string(colorSetName.asChar()) 
+                    == PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetString()) {
+                MFnMesh::MColorRepresentation csRep=
+                    meshFn.getColorRepresentation(colorSetName);
+                if (csRep==MFnMesh::kRGB || csRep==MFnMesh::kRGBA) {
+
+                    // both of these are needed to show the colorset.
+                    MPlug plg=meshFn.findPlug("displayColors");
+                    if ( !plg.isNull() ) {
+                        plg.setBool(true);
+                    }
+                    meshFn.setCurrentColorSetName(colorSetName);
                 }
                 break;
             }
