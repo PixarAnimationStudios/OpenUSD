@@ -153,6 +153,96 @@ Hd_VertexAdjacency::ComputeSmoothNormalsPacked(int numPoints,
                              numPoints, pointsPtr, _adjacencyTable, _numPoints);
 }
 
+bool
+Hd_VertexAdjacency::BuildAdjacencyTable(HdMeshTopology const *topology)
+{
+    // compute adjacency
+
+    int const * numVertsPtr = topology->GetFaceVertexCounts().cdata();
+    int const * vertsPtr = topology->GetFaceVertexIndices().cdata();
+    int numFaces = topology->GetFaceVertexCounts().size();
+    bool flip = (topology->GetOrientation() != HdTokens->rightHanded);
+
+    // compute numPoints from topology indices
+    _numPoints = HdMeshTopology::ComputeNumPoints(
+        topology->GetFaceVertexIndices());
+
+
+    // Track the number of entries needed the adjacency table.
+    // We start by needing 2 per point (offset and valence).
+    size_t numEntries = _numPoints * 2;
+
+
+    // Compute the size of each entry, so we can work out the offsets.
+    std::vector<int> vertexValence(_numPoints);
+
+
+    int vertIndex = 0;
+    for (int i=0; i<numFaces; ++i) {
+        int nv = numVertsPtr[i];
+        for (int j=0; j<nv; ++j) {
+            int index = vertsPtr[vertIndex++];
+            if (index < 0 || index >= _numPoints) {
+                TF_CODING_ERROR("vertex index out of range "
+                                "index: %d numPoints: %d", index, _numPoints);
+                _numPoints = 0;
+                _adjacencyTable.clear();
+                return false;
+            }
+            ++vertexValence[index];
+        }
+
+        // Increase the number of entries needed by 2 (prev & next index).
+        // for every vertex in the face.
+        numEntries += 2 * nv;
+    }
+
+
+    // Each entry is a count followed by pairs of adjacent vertex indices.
+    // We use a uniform entry size for all vertices, this allows faster
+    // lookups at the cost of some additional memory.
+    HD_PERF_COUNTER_SUBTRACT(HdPerfTokens->adjacencyBufSize,
+                                          _adjacencyTable.size() * sizeof(int));
+
+
+    _adjacencyTable.clear();
+    _adjacencyTable.resize(numEntries, 0);
+    HD_PERF_COUNTER_ADD(HdPerfTokens->adjacencyBufSize,
+                                                      numEntries * sizeof(int));
+
+    // Fill out first part of buffer with offsets.  Even though we
+    // know counts, don't fill them out now, so we know how many indices
+    // we've written so far.
+    int currentOffset = _numPoints * 2;
+    for (int pointNum = 0; pointNum < _numPoints; ++pointNum) {
+        _adjacencyTable[pointNum * 2] = currentOffset;
+        currentOffset += 2*vertexValence[pointNum];
+    }
+
+    vertIndex = 0;
+    for (int i=0; i<numFaces; ++i) {
+        int nv = numVertsPtr[i];
+        for (int j=0; j<nv; ++j) {
+            int prev = vertsPtr[vertIndex+(j+nv-1)%nv];
+            int curr = vertsPtr[vertIndex+j];
+            int next = vertsPtr[vertIndex+(j+1)%nv];
+            if (flip) std::swap(prev, next);
+
+            int entryOffset = _adjacencyTable[curr * 2 + 0];
+            int &entryCount = _adjacencyTable[curr * 2 + 1];
+
+            int pairOffset = entryOffset + entryCount * 2;
+            ++entryCount;
+
+            _adjacencyTable[pairOffset + 0] = prev;
+            _adjacencyTable[pairOffset + 1] = next;
+        }
+        vertIndex += nv;
+    }
+
+    return true;
+}
+
 HdBufferSourceSharedPtr
 Hd_VertexAdjacency::GetSmoothNormalsComputation(
     HdBufferSourceSharedPtr const &points,
@@ -234,89 +324,8 @@ Hd_AdjacencyBuilderComputation::Resolve()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // compute adjacency
-
-    int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
-    int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
-    // compute numPoints from topology indices
-    int numPoints = HdMeshTopology::ComputeNumPoints(
-        _topology->GetFaceVertexIndices());
-    bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
-
-    // Store the number of points
-    _adjacency->_numPoints = numPoints;
-
-
-    // Track the number of entries needed the adjacency table.
-    // We start by needing 2 per point (offset and valence).
-    size_t numEntries = numPoints * 2;
-
-
-    // Compute the size of each entry, so we can work out the offsets.
-    std::vector<int> vertexValence(numPoints);
-
-
-    int vertIndex = 0;
-    for (int i=0; i<numFaces; ++i) {
-        int nv = numVertsPtr[i];
-        for (int j=0; j<nv; ++j) {
-            int index = vertsPtr[vertIndex++];
-            if (index < 0 || index >= numPoints) {
-                TF_CODING_ERROR("vertex index out of range "
-                                "index: %d numPoints: %d", index, numPoints);
-                return false;
-            }
-            ++vertexValence[index];
-        }
-
-        // Increase the number of entries needed by 2 (prev & next index).
-        // for every vertex in the face.
-        numEntries += 2 * nv;
-    }
-
-
-    // Each entry is a count followed by pairs of adjacent vertex indices.
-    // We use a uniform entry size for all vertices, this allows faster
-    // lookups at the cost of some additional memory.
-    std::vector<int> &adjTable = _adjacency->_adjacencyTable;
-    HD_PERF_COUNTER_SUBTRACT(HdPerfTokens->adjacencyBufSize,
-                                                 adjTable.size() * sizeof(int));
-
-
-    adjTable.clear();
-    adjTable.resize(numEntries, 0);
-    HD_PERF_COUNTER_ADD(HdPerfTokens->adjacencyBufSize,
-                                                      numEntries * sizeof(int));
-
-    // Fill out first part of buffer with offsets.  Even though we
-    // know counts, don't fill them out now, so we know how many indices
-    // we've written so far.
-    int currentOffset = numPoints * 2;
-    for (int pointNum = 0; pointNum < numPoints; ++pointNum) {
-        adjTable[pointNum * 2] = currentOffset;
-        currentOffset += 2*vertexValence[pointNum];
-    }
-
-    vertIndex = 0;
-    for (int i=0; i<numFaces; ++i) {
-        int nv = numVertsPtr[i];
-        for (int j=0; j<nv; ++j) {
-            int prev = vertsPtr[vertIndex+(j+nv-1)%nv];
-            int curr = vertsPtr[vertIndex+j];
-            int next = vertsPtr[vertIndex+(j+1)%nv];
-            if (flip) std::swap(prev, next);
-
-            int entryOffset = adjTable[curr * 2 + 0];
-            int &entryCount = adjTable[curr * 2 + 1];
-
-            int pairOffset = entryOffset + entryCount * 2;
-            ++entryCount;
-
-            adjTable[pairOffset + 0] = prev;
-            adjTable[pairOffset + 1] = next;
-        }
-        vertIndex += nv;
+    if (!_adjacency->BuildAdjacencyTable(_topology)) {
+        return false;
     }
 
     // call base class to mark as resolved.
