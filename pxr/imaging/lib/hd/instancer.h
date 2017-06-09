@@ -60,7 +60,7 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 ///
 /// HdInstancer can be nested. If parentInstancerId is given as an non-empty
 /// path, instance primvars and instance indices will be computed recursively
-/// by ascending the hierarchy (XXX: not implemented yet)
+/// by ascending the hierarchy.
 ///
 class HdInstancer {
 public:
