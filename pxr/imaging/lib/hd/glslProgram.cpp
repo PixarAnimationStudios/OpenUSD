@@ -228,7 +228,7 @@ HdGLSLProgram::Validate() const
         if (size == 0) {
             return false;
         }
-        if (size != _program.GetSize()) {
+        if (static_cast<size_t>(size) != _program.GetSize()) {
             return false;
         }
     }
