@@ -65,6 +65,16 @@ set(PXR_STATIC_LIBS ""
     INTERNAL
     "Aggregation of all built explicitly static libraries."
 )
+set(PXR_CORE_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all built core libraries."
+)
+set(PXR_OBJECT_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all core libraries built as OBJECT libraries."
+)
 
 set(PXR_LIB_PREFIX "lib"
     CACHE
@@ -78,3 +88,9 @@ if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
 endif()
 
 option(BUILD_SHARED_LIBS "Build shared libraries." ON)
+option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
+set(PXR_MONOLITHIC_IMPORT ""
+    CACHE
+    STRING
+    "Path to cmake file that imports a usd_ms target"
+)

@@ -11,6 +11,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/defaults
                       ${CMAKE_SOURCE_DIR}/cmake/macros)
 
 include(Options)
+
+# Versions prior to 3.1.0 on Unix platforms built archive libraries
+# incorrectly.  Require at least that version if necessary.
+if((NOT BUILD_SHARED_LIBS OR PXR_BUILD_MONOLITHIC) AND NOT WIN32)
+    cmake_minimum_required(VERSION 3.1.0)
+endif()
+
 include(ProjectDefaults)
 include(Packages)
 
@@ -30,6 +37,8 @@ add_definitions(${_PXR_CXX_DEFINITIONS})
 set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 include(Public)
+
+pxr_toplevel_prologue()
 
 add_subdirectory(pxr)
 add_subdirectory(extras)
@@ -114,3 +123,5 @@ if (${PXR_BUILD_DOCUMENTATION})
         DESTINATION ${INST_DOCS_ROOT}
     )
 endif()   
+
+pxr_toplevel_epilogue()

@@ -23,28 +23,27 @@
 #
 include(Version)
 
-function(_install_headers LIBRARY_NAME)
+# Copy headers to the build tree.  In the source tree we find headers in
+# paths like pxr/base/lib/tf but we #include using paths like pxr/base/tf,
+# i.e. without 'lib/'.  So we copy the headers (public and private) into
+# the build tree under paths of the latter scheme.
+function(_copy_headers LIBRARY_NAME)
     set(options  "")
     set(oneValueArgs PREFIX)
     set(multiValueArgs FILES)
-    cmake_parse_arguments(_install_headers
+    cmake_parse_arguments(_args
         "${options}"
         "${oneValueArgs}"
         "${multiValueArgs}"
         ${ARGN}
     )
-    
-    if (PXR_INSTALL_SUBDIR)
-        set(installPrefix "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}") 
-    else()
-        set(installPrefix "${CMAKE_BINARY_DIR}")
-    endif()
 
-    set(hpath "${_install_headers_PREFIX}/${LIBRARY_NAME}")
-    set(header_dest_dir "${installPrefix}/include/${hpath}")
-    if( NOT "${_install_headers_FILES}" STREQUAL "")
+    set(files_copied "")
+    set(hpath "${_args_PREFIX}/${LIBRARY_NAME}")
+    set(header_dest_dir "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include/${hpath}")
+    if( NOT "${_args_FILES}" STREQUAL "")
         set(files_copied "")
-        foreach (f ${_install_headers_FILES})
+        foreach (f ${_args_FILES})
             set(infile "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
             set(outfile "${header_dest_dir}/${f}")
             list(APPEND files_copied ${outfile})
@@ -61,7 +60,15 @@ function(_install_headers LIBRARY_NAME)
         )
         endforeach()
     endif()
-endfunction() # _install_headers
+
+    # Add a headers target.
+    add_custom_target(${LIBRARY_NAME}_headerfiles
+        DEPENDS ${files_copied}
+    )
+
+    # Make sure headers are installed before building the library.
+    add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_headerfiles)
+endfunction() # _copy_headers
 
 # Converts a library name, such as _tf.so to the internal module name given
 # our naming conventions, e.g. Tf
@@ -91,18 +98,6 @@ function(_plugInfo_subst libTarget pluginToLibraryPath plugInfoPath)
     )
 endfunction() # _plugInfo_subst
 
-# Generate a namespace declaration header, pxr.h at the top level of pxr.
-function(_pxrNamespace_subst)
-    # Generate the pxr.h file at configuration time
-    configure_file(${CMAKE_SOURCE_DIR}/pxr/pxr.h.in
-        ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
-    )  
-
-    install(FILES ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
-            DESTINATION include/pxr
-    )
-endfunction()
-
 # Generate a doxygen config file
 function(_pxrDoxyConfig_subst)
     configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/lib/usd/Doxyfile.in
@@ -126,6 +121,7 @@ function(_install_python LIBRARY_NAME)
     set(libPythonPrefix lib/python)
     _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
 
+    set(files_copied "")
     foreach(file ${ip_FILES})
         set(filesToInstall "")
         set(installDest 
@@ -169,7 +165,7 @@ function(_install_python LIBRARY_NAME)
         # the third_party project. This means the import will always look like
         # 'from pxr import X'. We need to do this per-loop iteration because
         # the installDest may be different due to the presence of subdirs.
-        INSTALL(
+        install(
             FILES
                 ${filesToInstall}
             DESTINATION
@@ -177,9 +173,11 @@ function(_install_python LIBRARY_NAME)
         )
     endforeach()
 
-    add_custom_target(${LIBRARY_NAME}_pythonfiles ALL
+    # Add the target.
+    add_custom_target(${LIBRARY_NAME}_pythonfiles
         DEPENDS ${files_copied}
     )
+    add_dependencies(python ${LIBRARY_NAME}_pythonfiles)
 
     _get_folder("_python" folder)
     set_target_properties(${LIBRARY_NAME}_pythonfiles
@@ -248,9 +246,11 @@ function(_install_pyside_ui_files LIBRARY_NAME)
         list(APPEND uiFiles ${outFilePath})
     endforeach()
 
-    add_custom_target(${LIBRARY_NAME}_pysideuifiles ALL
+    # Add the target.
+    add_custom_target(${LIBRARY_NAME}_pysideuifiles
         DEPENDS ${uiFiles}
     )
+    add_dependencies(python ${LIBRARY_NAME}_pythonfiles)
 
     _get_folder("_pysideuifiles" folder)
     set_target_properties(
@@ -645,13 +645,13 @@ function(_pxr_install_rpath rpathRef NAME)
     )
 endfunction()
 
-# Split the library (target) names in libs into internal (in-build) and
-# external library lists.
+# Split the library (target) names in libs into internal-to-the-monolithic-
+# library and external-of-it lists.
 function(_pxr_split_libraries libs internal_result external_result)
     set(internal "")
     set(external "")
     foreach(lib ${libs})
-        if(";${PXR_ALL_LIBS};" MATCHES ";${lib};")
+        if(";${PXR_CORE_LIBS};" MATCHES ";${lib};")
             list(APPEND internal "${lib}")
         else()
             list(APPEND external "${lib}")
@@ -701,78 +701,172 @@ function(_pxr_transitive_internal_libraries libs transitive_libs)
     set(${transitive_libs} "${result}" PARENT_SCOPE)
 endfunction()
 
+# This function is equivalent to target_link_libraries except it does
+# a few extra things:
+#
+#   1) We can't call target_link_libraries() on a target that's an OBJECT
+#      library but we do need the transitive definitions and include
+#      directories so we manually add them.  We also manually set the
+#      INTERFACE_LINK_LIBRARIES so we can use it for targets that want to
+#      "link" the OBJECT library.  And we manually add a dependency.
+#      This would all be a lot easier if cmake treated OBJECT libraries
+#      like a STATIC or SHARED library in target_link_libraries().
+#
+#   2) If the target is not an OBJECT library and this is a monolithic
+#      build and we're linking to core libraries then link against the
+#      monolithic library instead.
+#
+#   3) If the target is not an OBJECT library and this is not a monolithic
+#      build and we're not building shared libraries and we're linking
+#      with core libraries then we must link the static libraries using
+#      whole-archive functionality.  Without this any object file in a
+#      static library that doesn't have any symbols used from it will not
+#      be linked at all.  If the object file has global constructors with
+#      side effects then those constructors and side effects will not
+#      run.  We depend on these constructs (e.g. TF_REGISTRY_FUNCTION).
+#
+#   4) We link against PXR_MALLOC_LIBRARY and PXR_THREAD_LIBS because we
+#      always want those.
+#
 function(_pxr_target_link_libraries NAME)
-    # Split internal (in-build) libraries from external libraries.
+    # Split core libraries from non-core libraries.
     _pxr_split_libraries("${ARGN}" internal external)
 
-    # Adjust link line.
-    if(PXR_BUILD_MONOLITHIC)
-        # If we use any internal libraries then just link against the
-        # monolithic library.
-        if(internal)
-            set(internal shared_monolithic)
-        endif()
-    elseif(NOT BUILD_SHARED_LIBS)
-        # Indicate that all symbols should be pulled in from internal
-        # static libraries.  This ensures we don't drop unused symbols
-        # with dynamic initialization side effects.  The exceptions are
-        # any libraries explicitly static;  not only does that explicitly
-        # say we don't have to worry about the dynamic initialization, but
-        # also would maybe cause multiple symbol definitions if we tried
-        # to get all symbols.
-        #
-        # On gcc use: --whole_archive LIB --no-whole-archive.
-        # On clang use: -force_load LIB
-        # On Windows use: /WHOLEARCHIVE:LIB
-        #
-        # A final complication is that we must also process transitive
-        # link libraries since any transitively linked internal libraries
-        # need the same treatment.
+    get_property(type TARGET ${NAME} PROPERTY TYPE)
+    if("${type}" STREQUAL "OBJECT_LIBRARY")
+        # Collect the definitions and include directories.
+        set(finalDefs "")
+        set(finalIncs "")
         _pxr_transitive_internal_libraries("${internal}" internal)
-        set(final "")
         foreach(lib ${internal})
-            if(";${PXR_STATIC_LIBS};" MATCHES ";${lib};")
-                # The library is explicitly static.
-                list(APPEND final ${lib})
-            elseif(MSVC)
-                # The syntax here is -WHOLEARCHIVE[:lib] but CMake will
-                # treat that as a link flag and not "see" the library.
-                # As a result it won't replace a target with the path
-                # to the built target and it won't add a dependency.
-                #
-                # We can't simply link against the full path to the
-                # library because we CMake will not add a dependency
-                # and won't use interface link libraries and flags
-                # from the targets.  Rather than trying to add those
-                # things manually we instead link against the target
-                # and link against the full path to the built target
-                # with WHOLEARCHIVE.
-                #
-                # This ends up with the library on the link line twice.
-                # That's okay, though, because the linker will read
-                # the WHOLEARCHIVE one first and will use none of the
-                # (duplicate) symbols from the second since they're
-                # all provided by the first.  The order doesn't really
-                # matter; we pull in the whole archive first.
-                #
-                list(APPEND final -WHOLEARCHIVE:$<TARGET_FILE:${lib}>)
-                list(APPEND final ${lib})
-            elseif(CMAKE_COMPILER_IS_GNUCXX)
-                list(APPEND final -Wl,--whole-archive ${lib} -Wl,--no-whole-archive)
-            elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-                list(APPEND final -Wl,-force_load ${lib})
-            else()
-                # Unknown platform.
-                list(APPEND final ${lib})
+            get_property(defs TARGET ${lib} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
+            foreach(def ${defs})
+                if(NOT ";${finalDefs};" MATCHES ";${def};")
+                    list(APPEND finalDefs "${def}")
+                endif()
+            endforeach()
+            get_property(incs TARGET ${lib} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+            foreach(inc ${incs})
+                if(NOT ";${finalIncs};" MATCHES ";${inc};")
+                    list(APPEND finalIncs "${inc}")
+                endif()
+            endforeach()
+        endforeach()
+
+        # Collect libraries.  We must convert debug/optimized/general
+        # link-type keywords to generator expressions in order to add
+        # them to the INTERFACE_LINK_LIBRARIES.
+        set(finalLibs "")
+        set(keyword "")
+        foreach(lib ${external})
+            if("${lib}" STREQUAL "debug" OR "${lib}" STREQUAL "optimized")
+                set(keyword ${lib})
+            elseif("${lib}" STREQUAL "general")
+                set(keyword "")
+            elseif(lib)
+                if("${keyword}" STREQUAL "debug")
+                    set(keyword "")
+                    set(entry "$<$<CONFIG:DEBUG>:${lib}>")
+                elseif("${keyword}" STREQUAL "optimized")
+                    set(keyword "")
+                    set(entry "$<$<NOT:$<CONFIG:DEBUG>>:${lib}>")
+                else()
+                    set(entry "${lib}")
+                endif()
+                if(entry AND NOT ";${finalLibs};" MATCHES ";${entry};")
+                    list(APPEND finalLibs "${entry}")
+                endif()
             endif()
         endforeach()
-        set(internal ${final})
+
+        # Record the definitions, include directories and "linked" libraries.
+        target_compile_definitions(${NAME} PUBLIC ${finalDefs})
+        target_include_directories(${NAME} PUBLIC ${finalIncs})
+        set_property(TARGET ${NAME} PROPERTY
+            INTERFACE_LINK_LIBRARIES
+                ${finalLibs}
+                ${PXR_MALLOC_LIBRARY}
+                ${PXR_THREAD_LIBS}
+        )
+
+        # Depend on core libraries we use.
+        if(internal)
+            add_dependencies(${NAME} ${internal})
+        endif()
+    else()
+        # If we use any internal libraries then just link against the
+        # monolithic library.
+        if(PXR_BUILD_MONOLITHIC)
+            if(internal)
+                if(TARGET usd_ms)
+                    set(internal usd_ms)
+                else()
+                    set(internal usd_m)
+                endif()
+            endif()
+        elseif(NOT BUILD_SHARED_LIBS)
+            # Indicate that all symbols should be pulled in from internal
+            # static libraries.  This ensures we don't drop unused symbols
+            # with dynamic initialization side effects.  The exceptions are
+            # any libraries explicitly static;  not only does that explicitly
+            # say we don't have to worry about the dynamic initialization, but
+            # also would maybe cause multiple symbol definitions if we tried
+            # to get all symbols.
+            #
+            # On gcc use: --whole_archive LIB --no-whole-archive.
+            # On clang use: -force_load LIB
+            # On Windows use: /WHOLEARCHIVE:LIB
+            #
+            # A final complication is that we must also process transitive
+            # link libraries since any transitively linked internal libraries
+            # need the same treatment.
+            _pxr_transitive_internal_libraries("${internal}" internal)
+            set(final "")
+            foreach(lib ${internal})
+                if(";${PXR_STATIC_LIBS};" MATCHES ";${lib};")
+                    # The library is explicitly static.
+                    list(APPEND final ${lib})
+                elseif(MSVC)
+                    # The syntax here is -WHOLEARCHIVE[:lib] but CMake will
+                    # treat that as a link flag and not "see" the library.
+                    # As a result it won't replace a target with the path
+                    # to the built target and it won't add a dependency.
+                    #
+                    # We can't simply link against the full path to the
+                    # library because we CMake will not add a dependency
+                    # and won't use interface link libraries and flags
+                    # from the targets.  Rather than trying to add those
+                    # things manually we instead link against the target
+                    # and link against the full path to the built target
+                    # with WHOLEARCHIVE.
+                    #
+                    # This ends up with the library on the link line twice.
+                    # That's okay, though, because the linker will read
+                    # the WHOLEARCHIVE one first and will use none of the
+                    # (duplicate) symbols from the second since they're
+                    # all provided by the first.  The order doesn't really
+                    # matter; we pull in the whole archive first.
+                    #
+                    list(APPEND final -WHOLEARCHIVE:$<TARGET_FILE:${lib}>)
+                    list(APPEND final ${lib})
+                elseif(CMAKE_COMPILER_IS_GNUCXX)
+                    list(APPEND final -Wl,--whole-archive ${lib} -Wl,--no-whole-archive)
+                elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+                    list(APPEND final -Wl,-force_load ${lib})
+                else()
+                    # Unknown platform.
+                    list(APPEND final ${lib})
+                endif()
+            endforeach()
+            set(internal ${final})
+        endif()
+        target_link_libraries(${NAME}
+            ${internal}
+            ${external}
+            ${PXR_MALLOC_LIBRARY}
+            ${PXR_THREAD_LIBS}
+        )
     endif()
-    target_link_libraries(${NAME}
-        ${internal}
-        ${external}
-        ${PXR_THREAD_LIBS}
-    )
 endfunction()
 
 # Add a python module for the target named NAME.  It implicitly links
@@ -798,7 +892,7 @@ function(_pxr_python_module NAME)
     )
 
     # If we can't build Python modules then do nothing.
-    if(NOT BUILD_SHARED_LIBS AND NOT TARGET shared_monolithic)
+    if(NOT TARGET shared_libs)
         message(STATUS "Skipping Python module ${NAME}, shared libraries required")
         return()
     endif()
@@ -822,10 +916,18 @@ function(_pxr_python_module NAME)
         return()
     endif()
 
+    # Add the module target.
     add_library(${LIBRARY_NAME}
         SHARED
         ${args_CPPFILES}
     )
+    add_dependencies(python ${LIBRARY_NAME})
+    if(args_PYTHON_FILES)
+        add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_pythonfiles)
+    endif()
+    if (args_PYSIDE_UI_FILES)
+        add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_pysideuifiles)
+    endif()
 
     # Convert the name of the library into the python module name
     # , e.g. _tf.so -> Tf. This is later used to determine the eventual
@@ -843,11 +945,11 @@ function(_pxr_python_module NAME)
     # 'from pxr import X'. Additionally, python libraries always install
     # into the default lib install, not into the third_party subdirectory
     # or similar.
-    set(LIB_INSTALL_PREFIX "lib/python/pxr/${pyModuleName}")
+    set(libInstallPrefix "lib/python/pxr/${pyModuleName}")
 
     # Python modules need to be able to access their corresponding
     # wrapped library and the install lib directory.
-    _pxr_init_rpath(rpath "${LIB_INSTALL_PREFIX}")
+    _pxr_init_rpath(rpath "${libInstallPrefix}")
     _pxr_add_rpath(rpath
         "${CMAKE_INSTALL_PREFIX}/${args_WRAPPED_LIB_INSTALL_PREFIX}")
     _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
@@ -885,6 +987,11 @@ function(_pxr_python_module NAME)
         ${PXR_MALLOC_LIBRARY}
     )
 
+    # All Python modules require support code from tf.  Linking with the
+    # monolithic library will (deliberately) not pick up the dependency
+    # on tf.
+    add_dependencies(${LIBRARY_NAME} tf)
+
     # Include headers from the build directory.
     get_filename_component(
         PRIVATE_INC_DIR
@@ -914,16 +1021,10 @@ function(_pxr_python_module NAME)
         )
     endif()
 
-    install(TARGETS ${LIBRARY_NAME}
-        EXPORT pxrTargets
-        LIBRARY DESTINATION ${LIB_INSTALL_PREFIX}
-        ARCHIVE DESTINATION ${LIB_INSTALL_PREFIX}
-        RUNTIME DESTINATION ${LIB_INSTALL_PREFIX}
-    )
-
-    export(TARGETS ${LIBRARY_NAME}
-        APPEND
-        FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
+    install(
+        TARGETS ${LIBRARY_NAME}
+        LIBRARY DESTINATION ${libInstallPrefix}
+        RUNTIME DESTINATION ${libInstallPrefix}
     )
     
     if(NOT "${PXR_PREFIX}" STREQUAL "")
@@ -965,23 +1066,53 @@ function(_pxr_library NAME)
         ${ARGN}
     )
 
-    # Generate namespace header for pxr.
-    _pxrNamespace_subst()
-
     #
     # Set up the target.
     #
 
+    if(_building_core)
+        # We need to distinguish core libraries.  We keep track of them here.
+        if(NOT args_TYPE STREQUAL "PLUGIN")
+            get_property(help CACHE PXR_CORE_LIBS PROPERTY HELPSTRING)
+            list(APPEND PXR_CORE_LIBS ${NAME})
+            set(PXR_CORE_LIBS "${PXR_CORE_LIBS}" CACHE INTERNAL "${help}")
+        endif()
+        if(args_TYPE STREQUAL "OBJECT")
+            get_property(help CACHE PXR_OBJECT_LIBS PROPERTY HELPSTRING)
+            list(APPEND PXR_OBJECT_LIBS ${NAME})
+            set(PXR_OBJECT_LIBS "${PXR_OBJECT_LIBS}" CACHE INTERNAL "${help}")
+        endif()
+    endif()
+
     # Add the target.  We also add the headers because that's the easiest
     # way to get them to appear in IDE projects.
-    if(args_TYPE STREQUAL "STATIC")
+    if(args_TYPE STREQUAL "OBJECT")
+        # When building a monolithic library we don't build individual
+        # static or shared libraries.  Instead we build OBJECT libraries
+        # which simply compile the sources.
+        #
+        # These can't be linked like other libraries and as a result we
+        # don't automatically get transitive compiler definitions,
+        # include directories or link libraries.  We have to do that
+        # manually.  See pxr_monolithic_epilogue().
+        add_library(${NAME}
+            OBJECT
+            ${args_CPPFILES}
+            ${args_PUBLIC_HEADERS}
+            ${args_PRIVATE_HEADERS}
+        )
+
+    elseif(args_TYPE STREQUAL "STATIC")
+        # Building an explicitly static library.
         add_library(${NAME}
             STATIC
             ${args_CPPFILES}
             ${args_PUBLIC_HEADERS}
             ${args_PRIVATE_HEADERS}
         )
+
     else()
+        # Building an explicitly shared library.
         add_library(${NAME}
             SHARED
             ${args_CPPFILES}
@@ -1030,21 +1161,52 @@ function(_pxr_library NAME)
     # API macros.
     set(apiPublic "")
     set(apiPrivate ${uppercaseName}_EXPORTS=1)
-    if(args_TYPE STREQUAL "STATIC")
+    if(NOT _building_monolithic AND args_TYPE STREQUAL "STATIC")
         set(apiPublic PXR_STATIC=1)
     endif()
 
     # Final name.
     set(libraryFilename "${args_PREFIX}${NAME}${args_SUFFIX}")
+    set(pluginToLibraryPath "")
 
     # Figure out the relative path from this library's plugin location
     # (in the libplug sense, which applies even to non-plugins, and is
     # where we can find external resources for the library) to the
     # library's location.  This can be embedded into resource files.
-    file(RELATIVE_PATH 
-        pluginToLibraryPath 
-        ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
-        ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
+    #
+    # If we're building a monolithic shared library or one was supplied
+    # to us then we need to use that if we're building a library that
+    # will be/is in the monolithic library.
+    if(";${PXR_CORE_LIBS};" MATCHES ";${NAME};")
+        if (PXR_MONOLITHIC_IMPORT)
+            if(TARGET usd_ms)
+                # The monolithic shared library was supplied.
+                get_property(location TARGET usd_ms PROPERTY IMPORTED_LOCATION)
+                if (IS_ABSOLUTE "${location}")
+                    set(pluginToLibraryPath ${location})
+                else()
+                    set(libraryFilename "${location}")
+                endif()
+            endif()
+        elseif(TARGET usd_ms)
+            # We're building usd_ms ourself.
+            get_property(prefix TARGET usd_ms PROPERTY PREFIX)
+            if(NOT prefix)
+                set(prefix ${CMAKE_SHARED_LIBRARY_PREFIX})
+            endif()
+            get_property(suffix TARGET usd_ms PROPERTY SUFFIX)
+            if(NOT suffix)
+                set(suffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
+            endif()
+            set(libraryFilename "${prefix}usd_ms${suffix}")
+        endif()
+    endif()
+    if(NOT pluginToLibraryPath)
+        file(RELATIVE_PATH
+            pluginToLibraryPath
+            ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
+            ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
+    endif()
 
     #
     # Set up the compile/link.
@@ -1052,6 +1214,10 @@ function(_pxr_library NAME)
 
     # PIC is required by shared libraries. It's on for static libraries
     # because we'll likely link them into a shared library.
+    #
+    # We set PUBLIC_HEADER so we install directly from the source tree.
+    # We don't want to install the headers copied to the build tree
+    # because they have #line directives embedded to aid in debugging.
     _get_folder("" folder)
     set_target_properties(${NAME}
         PROPERTIES
@@ -1063,7 +1229,7 @@ function(_pxr_library NAME)
     )
 
     set(pythonEnabled "PXR_PYTHON_ENABLED=1")
-    if(BUILD_SHARED_LIBS OR TARGET shared_monolithic)
+    if(TARGET shared_libs)
         set(pythonModulesEnabled "PXR_PYTHON_MODULES_ENABLED=1")
     endif()
     target_compile_definitions(${NAME}
@@ -1081,8 +1247,15 @@ function(_pxr_library NAME)
             ${apiPrivate}
     )
 
-    # Include headers from the build directory, the subdir (3rd party)
-    # build directory, then external packages.
+    # Copy headers to the build directory and include from there and from
+    # external packages.
+    _copy_headers(${NAME}
+        FILES
+            ${args_PUBLIC_HEADERS}
+            ${args_PRIVATE_HEADERS}
+        PREFIX
+            ${PXR_PREFIX}
+    )
     target_include_directories(${NAME}
         PRIVATE
             "${CMAKE_BINARY_DIR}/include"
@@ -1092,22 +1265,7 @@ function(_pxr_library NAME)
     )
 
     # XXX -- May want some plugins to be baked into monolithic.
-    if(args_TYPE STREQUAL "PLUGIN")
-        _pxr_target_link_libraries(${NAME}
-            ${args_LIBRARIES}
-            ${PXR_MALLOC_LIBRARY}
-        )
-    else()
-        # Just the standard target_link_libraries() because either we're
-        # building a shared library and it doesn't matter or we're building
-        # a static library and that doesn't actually link anything (it just
-        # builds an archive).
-        target_link_libraries(${NAME}
-            ${args_LIBRARIES}
-            ${PXR_MALLOC_LIBRARY}
-            ${PXR_THREAD_LIBS}
-        )
-    endif()
+    _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})
 
     # Rpath has libraries under the third party prefix and the install prefix.
     # The former is for helper libraries for a third party application and
@@ -1121,44 +1279,20 @@ function(_pxr_library NAME)
     # Set up the install.
     #
 
-    install(TARGETS ${NAME}
-        EXPORT pxrTargets
-        LIBRARY DESTINATION ${libInstallPrefix}
-        ARCHIVE DESTINATION ${libInstallPrefix}
-        RUNTIME DESTINATION ${libInstallPrefix}
-        PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
-    )
-    _install_headers(${NAME}
-        FILES
-            ${args_PUBLIC_HEADERS}
-            ${args_PRIVATE_HEADERS}
-        PREFIX
-            ${PXR_PREFIX}
-    )
-    if (args_RESOURCE_FILES)
-        _install_resource_files(
-            ${NAME}
-            "${pluginInstallPrefix}"
-            "${pluginToLibraryPath}"
-            ${args_RESOURCE_FILES})
-    endif()
-    export(TARGETS ${NAME}
-        APPEND
-        FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
-    )
-
-    # If building monolithic and that target doesn't have the public
-    # header directory then add it.
-    if(PXR_BUILD_MONOLITHIC)
-        get_property(incs TARGET monolithic PROPERTY
-            INTERFACE_INCLUDE_DIRECTORIES
+    if(NOT args_TYPE STREQUAL "OBJECT")
+        install(
+            TARGETS ${NAME}
+            LIBRARY DESTINATION ${libInstallPrefix}
+            ARCHIVE DESTINATION ${libInstallPrefix}
+            RUNTIME DESTINATION ${libInstallPrefix}
+            PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
         )
-        if(NOT ";${incs};" MATCHES ";${headerInstallPrefix};")
-            set_property(TARGET monolithic APPEND PROPERTY
-                INTERFACE_INCLUDE_DIRECTORIES ${headerInstallPrefix}
-            )
-        endif()
     endif()
+    _install_resource_files(
+        ${NAME}
+        "${pluginInstallPrefix}"
+        "${pluginToLibraryPath}"
+        ${args_RESOURCE_FILES})
 
     #
     # Set up precompiled headers.

@@ -238,11 +238,15 @@ pxr_register_test(testUsdGeomIsA
     EXPECTED_RETURN_CODE 0
 )
 
+# This tests functionality when usdGeom has not been loaded.  That isn't
+# possible with a monolithic library.
+if(NOT PXR_BUILD_MONOLITHIC)
 pxr_register_test(testUsdGeomNoPlugLoad
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomNoPlugLoad"
     EXPECTED_RETURN_CODE 0
 )
+endif()
 
 pxr_register_test(testUsdGeomPrimvar
     PYTHON
