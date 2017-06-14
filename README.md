@@ -39,7 +39,8 @@ on CentOS 7 and RHEL 7.
 
 We are actively working on porting USD to both Windows and Mac platforms. 
 Support for both platforms should be considered experimental at this time.
-Currently, the tree will build on Mac, but will not build on Windows.
+Currently, the tree will build on Mac and Windows, but only limited testing
+has been done on these platforms.
 
 Dependencies
 ------------
@@ -70,7 +71,6 @@ be disabled at build-time, for further details see [Advanced Build Configuration
 | [Pyside](http://wiki.qt.io/PySide)                                | 1.2.2                                  |  |
 | [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0                                  | |
 
-
 Getting and Building the Code
 -----------------------------
 
@@ -87,7 +87,7 @@ mkdir build
 cd build
 ```
 
-### 3. Run a Basic build
+### 3. Build:
 
 #### On Linux 
 
@@ -101,7 +101,7 @@ cmake                                       \
 -DBOOST_ROOT=/path/to/boost                 \
 ..
 
-make -j <NUM_CORES> install
+cmake --build . --target install -- -j <NUM_CORES>
 ```
 
 #### On OS X (experimental)
@@ -121,7 +121,7 @@ cmake                                       \
 -DBOOST_ROOT=/path/to/boost                 \
 ..
 
-make -j <NUM_CORES> install
+cmake --build . --target install -- -j <NUM_CORES>
 ```
 
 #### On Windows (experimental)
@@ -130,30 +130,35 @@ The following will generate a Visual Studio 2015 (the minimum required version)
 sln file which can be used to build USD. See notes in the 
 [Supported Platforms](#supported-platforms) section for more information.
 
-```powershell
-C:\Program Files\CMake\bin\cmake.exe             ^
-    -G "Visual Studio 14 Win64"                  ^
-    -DTBB_ROOT_DIR=C:\path\to\tbb                ^     
-    -DOPENEXR_LOCATION=C:\path\to\openexr        ^ 
-    -DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv  ^ 
-    -DPTEX_LOCATION=C:\path\to\ptex              ^ 
-    -DOIIO_LOCATION=C:\path\to\openimageio       ^ 
-    -DBOOST_ROOT=C:\path\to\boost                ^ 
-    --build .. --config Release --target install
+```cmd.exe
+"C:\Program Files\CMake\bin\cmake.exe"      ^
+-G "Visual Studio 14 Win64"                 ^
+-DTBB_ROOT_DIR=C:\path\to\tbb               ^
+-DOPENEXR_LOCATION=C:\path\to\openexr       ^
+-DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv ^
+-DPTEX_LOCATION=C:\path\to\ptex             ^
+-DOIIO_LOCATION=C:\path\to\openimageio      ^
+-DBOOST_ROOT=C:\path\to\boost               ^
+..
 
+cmake --build . --config Release --target install -- /m:%NUMBER_OF_PROCESSORS%
 ```  
 
+Scripts for building USD and its dependencies on the supported platforms
+are located in the build_scripts/ subdirectory. You can find documentation
+for these scripts in [Build Scripts](BUILDING.md#build-scripts).
 
 There are many options you can specify throughout the build, such as
 building third-party software plugins, disabling specific components, 
-and enabling developer options. You can find information on these in [Build Configuration](BUILDING.md).
+and enabling developer options. You can find information on these in 
+[Advanced Build Configuration](BUILDING.md).
 
 > Note 1: You will need to update the sample paths with your own.
 
-> Note 2: You may have to supply additional defines to cmake if you have many versions of packages installed. 
+> Note 2: You may have to supply additional defines to cmake if you have many 
+> versions of packages installed. 
 
-
-### 4. Try It Out
+### 4. Try it out:
 
 Launch usdview with a sample asset.
 
