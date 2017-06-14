@@ -35,6 +35,7 @@ pxr_library(usdRi
         risPattern
         rmanUtilities
         rslShader
+        splineAPI
         statements
         textureAPI
         tokens
@@ -67,6 +68,7 @@ pxr_library(usdRi
         wrapRisPattern.cpp
         wrapRmanUtilities.cpp
         wrapRslShader.cpp
+        wrapSplineAPI.cpp
         wrapStatements.cpp
         wrapTextureAPI.cpp
         wrapTokens.cpp
@@ -81,12 +83,19 @@ pxr_library(usdRi
 
 pxr_test_scripts(
     testenv/testUsdRiSchemata.py
+    testenv/testUsdRiSplineAPI.py
     testenv/testUsdRiUtilities.py
 )
 
 pxr_register_test(testUsdRiSchemata
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSchemata"  
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdRiSplineAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSplineAPI"  
     EXPECTED_RETURN_CODE 0
 )
 

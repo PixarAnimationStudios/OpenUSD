@@ -33,6 +33,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdRi/tokens.h"
 
+#include "pxr/usd/usdRi/splineAPI.h"
+
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -222,6 +225,16 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Return the UsdRiSplineAPI interface used for examining and modifying
+    /// the falloff ramp.
+    USDRI_API
+    UsdRiSplineAPI GetFalloffRampAPI() const;
+
+    /// Return the UsdRiSplineAPI interface used for examining and modifying
+    /// the color ramp.
+    USDRI_API
+    UsdRiSplineAPI GetColorRampAPI() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

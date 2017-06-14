@@ -514,3 +514,29 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (falloffRamp)
+    (colorRamp)
+    );
+
+UsdRiSplineAPI
+UsdRiPxrRodLightFilter::GetFalloffRampAPI() const
+{
+    return UsdRiSplineAPI(*this, _tokens->falloffRamp,
+                          SdfValueTypeNames->FloatArray,
+                          /* duplicate */ true);
+}
+
+UsdRiSplineAPI 
+UsdRiPxrRodLightFilter::GetColorRampAPI() const
+{
+    return UsdRiSplineAPI(*this, _tokens->colorRamp,
+                          SdfValueTypeNames->Color3fArray,
+                          /* duplicate */ true);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

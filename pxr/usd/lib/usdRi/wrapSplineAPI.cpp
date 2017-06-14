@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRi/pxrRampLightFilter.h"
+#include "pxr/usd/usdRi/splineAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/conversions.h"
 
@@ -48,36 +48,15 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateRampModeAttr(UsdRiPxrRampLightFilter &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateRampModeAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateFalloffRampBeginDistanceAttr(UsdRiPxrRampLightFilter &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateFalloffRampBeginDistanceAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateFalloffRampEndDistanceAttr(UsdRiPxrRampLightFilter &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateFalloffRampEndDistanceAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
 
 } // anonymous namespace
 
-void wrapUsdRiPxrRampLightFilter()
+void wrapUsdRiSplineAPI()
 {
-    typedef UsdRiPxrRampLightFilter This;
+    typedef UsdRiSplineAPI This;
 
-    class_<This, bases<UsdLuxLightFilter> >
-        cls("PxrRampLightFilter");
+    class_<This, bases<UsdSchemaBase> >
+        cls("SplineAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -87,8 +66,6 @@ void wrapUsdRiPxrRampLightFilter()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -102,27 +79,6 @@ void wrapUsdRiPxrRampLightFilter()
 
         .def(!self)
 
-        
-        .def("GetRampModeAttr",
-             &This::GetRampModeAttr)
-        .def("CreateRampModeAttr",
-             &_CreateRampModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetFalloffRampBeginDistanceAttr",
-             &This::GetFalloffRampBeginDistanceAttr)
-        .def("CreateFalloffRampBeginDistanceAttr",
-             &_CreateFalloffRampBeginDistanceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetFalloffRampEndDistanceAttr",
-             &This::GetFalloffRampEndDistanceAttr)
-        .def("CreateFalloffRampEndDistanceAttr",
-             &_CreateFalloffRampEndDistanceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
     ;
 
@@ -150,10 +106,65 @@ void wrapUsdRiPxrRampLightFilter()
 
 namespace {
 
+static UsdAttribute
+_CreateInterpolationAttr(UsdRiSplineAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateInterpolationAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+
+static UsdAttribute
+_CreatePositionsAttr(UsdRiSplineAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreatePositionsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateValuesAttr(UsdRiSplineAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateValuesAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
+
+static boost::python::tuple 
+_Validate(const UsdRiSplineAPI &self) {
+    std::string reason;
+    bool result = self.Validate(&reason);
+    return boost::python::make_tuple(result, reason);
+}
+
+
 WRAP_CUSTOM {
+    typedef UsdRiSplineAPI This;
     _class
-        .def("GetFalloffRampAPI", &UsdRiPxrRampLightFilter::GetFalloffRampAPI)
-        .def("GetColorRampAPI", &UsdRiPxrRampLightFilter::GetColorRampAPI)
+        .def(init<const UsdPrim &, const TfToken &,
+             const SdfValueTypeName &, bool>())
+        .def(init<const UsdSchemaBase &, const TfToken &,
+             const SdfValueTypeName &, bool>())
+
+        .def("GetValuesTypeName", &This::GetValuesTypeName)
+
+        .def("GetInterpolationAttr",
+             &This::GetInterpolationAttr)
+        .def("CreateInterpolationAttr",
+             &_CreateInterpolationAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        .def("GetPositionsAttr",
+             &This::GetPositionsAttr)
+        .def("CreatePositionsAttr",
+             &_CreatePositionsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        .def("GetValuesAttr",
+             &This::GetValuesAttr)
+        .def("CreateValuesAttr",
+             &_CreateValuesAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+
+        .def("Validate", &_Validate)
         ;
 }
 

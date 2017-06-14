@@ -403,6 +403,10 @@ void wrapUsdRiPxrRodLightFilter()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("GetFalloffRampAPI", &UsdRiPxrRodLightFilter::GetFalloffRampAPI)
+        .def("GetColorRampAPI", &UsdRiPxrRodLightFilter::GetColorRampAPI)
+        ;
 }
 
 }

@@ -42,6 +42,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdRiLightPortalAPI);
     TF_WRAP(UsdRiMaterialAPI);
     TF_WRAP(UsdRiTextureAPI);
+    TF_WRAP(UsdRiSplineAPI);
 
     TF_WRAP(UsdRiRisIntegrator);
     TF_WRAP(UsdRiRslShader);

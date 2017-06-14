@@ -15,6 +15,32 @@ def "GLOBAL" (
         # string libraryPrefix  = "UsdRi"
         # string tokensPrefix   = "UsdRi"
         # dictionary libraryTokens = {}
+        dictionary libraryTokens = {
+            dictionary spline = {
+                string doc = "UsdSplineAPI - Namespace for spline attributes"
+            }
+            dictionary interpolation = {
+                string doc = "UsdSplineAPI - Interpolation attribute name"
+            }
+            dictionary positions = {
+                string doc = "UsdSplineAPI - Positions attribute name"
+            }
+            dictionary values = {
+                string doc = "UsdSplineAPI - values attribute name"
+            }
+            dictionary linear = {
+                string doc = "UsdSplineAPI - Linear spline interpolation"
+            }
+            dictionary bspline = {
+                string doc = "UsdSplineAPI - BSpline spline interpolation"
+            }
+            dictionary catmullRom = {
+                string doc = "UsdSplineAPI - Catmull-Rom spline interpolation"
+            }
+            dictionary constant = {
+                string doc = "UsdSplineAPI - Constant-value spline interpolation"
+            }
+        }
     }
 )
 {
@@ -323,6 +349,29 @@ class "RiLightPortalAPI" (
         displayName = "Color Tint"
         doc = "tint: This parameter tints the color from the dome texture."
     )
+}
+
+class "RiSplineAPI" (
+    doc = """RiSplineAPI is a general purpose API schema used to describe
+    a named spline stored as a set of attributes on a prim.
+    
+    It is an add-on schema that can be applied many times to a prim with
+    different spline names. All the attributes authored by the schema
+    are namespaced under "$NAME:spline:", with the name of the
+    spline providing a namespace for the attributes.
+
+    The spline describes a 2D piecewise cubic curve with a position and
+    value for each knot. This is chosen to give straightforward artistic
+    control over the shape. The supported basis types are:
+
+    - linear (UsdRiTokens->linear)
+    - bspline (UsdRiTokens->bspline)
+    - Catmull-Rom (UsdRiTokens->catmullRom)
+    """
+    customData = {
+        string className = "SplineAPI"
+    }
+) {
 }
 
 class "RiTextureAPI" (
@@ -759,6 +808,11 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
 class PxrRampLightFilter "PxrRampLightFilter" (
     inherits = </LightFilter>
     doc = """A ramp to modulate how a light falls off with distance."""
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdRi/splineAPI.h"
+"""
+    }
 ) {
     token rampMode = "distanceToLight" (
         allowedTokens = ["distanceToLight", "linear", "spherical", "radial"]
@@ -766,35 +820,16 @@ class PxrRampLightFilter "PxrRampLightFilter" (
     )
     float falloffRamp:beginDistance = 0
     float falloffRamp:endDistance = 10
-
-# TODO: Spline API
-#    float[] falloffRamp:knotPositions (
-#        doc = """A list of positions for the value knots."""
-#    )
-#    float[] falloffRamp:knotValues (
-#        doc = """A list of values for the value knots."""
-#    )
-#    token falloffRamp:interpolation = "linear" (
-#        allowedTokens = ["linear", "catmullRom", "bspline", "constant"]
-#        doc = """Specifies the interpolation of knots."""
-#    )
-
-# TODO: Spline API
-#    float[] colorRamp:knotPositions (
-#        doc = """A list of positions for the color knots."""
-#    )
-#    color3f[] colorRamp:knotValues (
-#        doc = """A list of values for the color knots."""
-#    )
-#    token colorRamp:interpolation = "linear" (
-#        allowedTokens = ["linear", "catmullRom", "bspline", "constant"]
-#        doc = """Specifies the interpolation of knots."""
-#    )
 }
 
 class PxrRodLightFilter "PxrRodLightFilter" (
     inherits = </LightFilter>
     doc = """Simulates a rod or capsule-shaped region to modulate light."""
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdRi/splineAPI.h"
+"""
+    }
 ) {
     float width = 1 (
         doc = """Width of the inner region of the rod (X axis)."""
@@ -864,28 +899,4 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         doc = """Saturation of the result (0=greyscale, 1=normal,
         >1=boosted colors)."""
     )
-
-# TODO: Spline API
-#    float[] falloffRamp:knotPositions (
-#        doc = """A list of positions for the value knots."""
-#    )
-#    float[] falloffRamp:knotValues (
-#        doc = """A list of values for the value knots."""
-#    )
-#    token falloffRamp:interpolation = "linear" (
-#        allowedTokens = ["linear", "catmullRom", "bspline", "constant"]
-#        doc = """Specifies the interpolation of knots."""
-#    )
-
-# TODO: Spline API
-#    float[] colorRamp:knotPositions (
-#        doc = """A list of positions for the color knots."""
-#    )
-#    color3f[] colorRamp:knotValues (
-#        doc = """A list of colors for the color knots."""
-#    )
-#    token colorRamp:interpolation = "linear" (
-#        allowedTokens = ["linear", "catmullRom", "bspline", "constant"]
-#        doc = """Specifies the interpolation of knots."""
-#    )
 }

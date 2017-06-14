@@ -67,6 +67,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (aovName) \
     (argsPath) \
     (barnMode) \
+    (bspline) \
+    (catmullRom) \
     (clamp) \
     ((colorContrast, "color:contrast")) \
     ((colorMidpoint, "color:midpoint")) \
@@ -74,6 +76,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((colorTint, "color:tint")) \
     ((colorWhitepoint, "color:whitepoint")) \
     (cone) \
+    (constant) \
     (cookieMode) \
     (day) \
     (depth) \
@@ -98,6 +101,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (inPrimaryHit) \
     (inReflection) \
     (inRefraction) \
+    (interpolation) \
     (invert) \
     (latitude) \
     (linear) \
@@ -115,6 +119,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((outputsRiSurface, "outputs:ri:surface")) \
     ((outputsRiVolume, "outputs:ri:volume")) \
     (physical) \
+    (positions) \
     (preBarnEffect) \
     (radial) \
     (radius) \
@@ -156,6 +161,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (screen) \
     (skyTint) \
     (spherical) \
+    (spline) \
     (sunDirection) \
     (sunSize) \
     (sunTint) \
@@ -170,6 +176,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((textureWrapMode, "texture:wrapMode")) \
     (useColor) \
     (useThroughput) \
+    (values) \
     (width) \
     (year) \
     (zone)
@@ -220,6 +227,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>aovName</b> - UsdRiPxrAovLight
 /// \li <b>argsPath</b> - UsdRiRisIntegrator
 /// \li <b>barnMode</b> - UsdRiPxrBarnLightFilter
+/// \li <b>bspline</b> - UsdSplineAPI - BSpline spline interpolation
+/// \li <b>catmullRom</b> - UsdSplineAPI - Catmull-Rom spline interpolation
 /// \li <b>clamp</b> - Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()
 /// \li <b>colorContrast</b> - UsdRiPxrCookieLightFilter
 /// \li <b>colorMidpoint</b> - UsdRiPxrCookieLightFilter
@@ -227,6 +236,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>colorTint</b> - UsdRiPxrCookieLightFilter
 /// \li <b>colorWhitepoint</b> - UsdRiPxrCookieLightFilter
 /// \li <b>cone</b> - Possible value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr()
+/// \li <b>constant</b> - UsdSplineAPI - Constant-value spline interpolation
 /// \li <b>cookieMode</b> - UsdRiPxrCookieLightFilter
 /// \li <b>day</b> - UsdRiPxrEnvDayLight
 /// \li <b>depth</b> - UsdRiPxrRodLightFilter
@@ -251,9 +261,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>inPrimaryHit</b> - UsdRiPxrAovLight
 /// \li <b>inReflection</b> - UsdRiPxrAovLight
 /// \li <b>inRefraction</b> - UsdRiPxrAovLight
+/// \li <b>interpolation</b> - UsdSplineAPI - Interpolation attribute name
 /// \li <b>invert</b> - UsdRiPxrAovLight
 /// \li <b>latitude</b> - UsdRiPxrEnvDayLight
-/// \li <b>linear</b> - Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
+/// \li <b>linear</b> - UsdSplineAPI - Linear spline interpolation, Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
 /// \li <b>longitude</b> - UsdRiPxrEnvDayLight
 /// \li <b>max</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
 /// \li <b>min</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
@@ -268,6 +279,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>outputsRiSurface</b> - UsdRiMaterialAPI
 /// \li <b>outputsRiVolume</b> - UsdRiMaterialAPI
 /// \li <b>physical</b> - Possible value for UsdRiPxrCookieLightFilter::GetCookieModeAttr(), Default value for UsdRiPxrCookieLightFilter::GetCookieModeAttr(), Possible value for UsdRiPxrBarnLightFilter::GetBarnModeAttr(), Default value for UsdRiPxrBarnLightFilter::GetBarnModeAttr()
+/// \li <b>positions</b> - UsdSplineAPI - Positions attribute name
 /// \li <b>preBarnEffect</b> - UsdRiPxrBarnLightFilter
 /// \li <b>radial</b> - Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
 /// \li <b>radius</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
@@ -309,6 +321,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>screen</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
 /// \li <b>skyTint</b> - UsdRiPxrEnvDayLight
 /// \li <b>spherical</b> - Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
+/// \li <b>spline</b> - UsdSplineAPI - Namespace for spline attributes
 /// \li <b>sunDirection</b> - UsdRiPxrEnvDayLight
 /// \li <b>sunSize</b> - UsdRiPxrEnvDayLight
 /// \li <b>sunTint</b> - UsdRiPxrEnvDayLight
@@ -323,6 +336,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>textureWrapMode</b> - UsdRiPxrCookieLightFilter
 /// \li <b>useColor</b> - UsdRiPxrAovLight
 /// \li <b>useThroughput</b> - UsdRiPxrAovLight
+/// \li <b>values</b> - UsdSplineAPI - values attribute name
 /// \li <b>width</b> - UsdRiPxrRodLightFilter, UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
 /// \li <b>year</b> - UsdRiPxrEnvDayLight
 /// \li <b>zone</b> - UsdRiPxrEnvDayLight
