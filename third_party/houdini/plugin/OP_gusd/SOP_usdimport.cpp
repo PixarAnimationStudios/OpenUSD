@@ -127,8 +127,6 @@ _onReload(void *data, int index, fpreal t, const PRM_Template *tplate)
 
 PRM_Template*   _CreateTemplates()
 {
-    const auto& table = GusdUSD_TraverseTable::GetInstance();
-
     /* XXX: All names should be prefixed to ensure they don't
             collide with the templates of the traversal plugins.*/
 
@@ -152,7 +150,7 @@ PRM_Template*   _CreateTemplates()
     static PRM_Default timeDef(0, "$RFSTART");
 
     static PRM_Name traversalName("import_traversal", "Traversal");
-    static PRM_Default traversalDef(0, table.GetDefault());
+    static PRM_Default traversalDef(0, "none" );
 
     static PRM_Name deloldName("import_delold", "Delete Old Points/Prims");
 
