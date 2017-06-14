@@ -591,10 +591,18 @@ HdResourceRegistry::GetResourceAllocation() const
 
     // buffer array allocation
 
-    size_t nonUniformSize   = _nonUniformBufferArrayRegistry.GetResourceAllocation(result);
-    size_t uboSize          = _uniformUboBufferArrayRegistry.GetResourceAllocation(result);
-    size_t ssboSize         = _uniformSsboBufferArrayRegistry.GetResourceAllocation(result);
-    size_t singleBufferSize = _singleBufferArrayRegistry.GetResourceAllocation(result);
+    size_t nonUniformSize   = 
+        _nonUniformBufferArrayRegistry.GetResourceAllocation(
+            _nonUniformAggregationStrategy, result);
+    size_t uboSize          = 
+        _uniformUboBufferArrayRegistry.GetResourceAllocation(
+            _uniformUboAggregationStrategy, result);
+    size_t ssboSize         = 
+        _uniformSsboBufferArrayRegistry.GetResourceAllocation(
+            _uniformSsboAggregationStrategy, result);
+    size_t singleBufferSize = 
+        _singleBufferArrayRegistry.GetResourceAllocation(
+            _singleAggregationStrategy, result);
 
     result[HdPerfTokens->nonUniformSize]   = VtValue(nonUniformSize);
     result[HdPerfTokens->uboSize]          = VtValue(uboSize);

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_BUFFER_RESOURCE_H
-#define HD_BUFFER_RESOURCE_H
+#ifndef HD_BUFFER_RESOURCE_GL_H
+#define HD_BUFFER_RESOURCE_GL_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/resource.h"
+#include "pxr/imaging/hd/bufferResource.h"
 
 #include "pxr/base/tf/token.h"
 
@@ -39,64 +39,51 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdBufferResource;
+class HdBufferResourceGL;
 
-typedef boost::shared_ptr<HdBufferResource> HdBufferResourceSharedPtr;
+typedef boost::shared_ptr<HdBufferResourceGL> HdBufferResourceGLSharedPtr;
 
 typedef std::vector<
-    std::pair<TfToken, HdBufferResourceSharedPtr> > HdBufferResourceNamedList;
+    std::pair<TfToken, HdBufferResourceGLSharedPtr> > HdBufferResourceGLNamedList;
 
-/// \class HdBufferResource
+/// \class HdBufferResourceGL
 ///
-/// A specific type of HdResource (GPU resource) representing a buffer object.
+/// A specific type of HdBufferResource (GPU resource) representing an 
+/// OpenGL buffer object.
 ///
-class HdBufferResource : public HdResource {
+class HdBufferResourceGL : public HdBufferResource {
 public:
     HD_API
-    HdBufferResource(TfToken const &role,
+    HdBufferResourceGL(TfToken const &role,
                      int glDataType,
                      short numComponents,
                      int arraySize,
                      int offset,
                      int stride);
     HD_API
-    ~HdBufferResource();
+    ~HdBufferResourceGL();
 
-    /// OpenGL data type; GL_UNSIGNED_INT, etc
-    int GetGLDataType() const {return _glDataType;}
+    /// Sets the OpenGL name/identifier for this resource and its size.
+    /// also caches the gpu address of the buffer.
+    void SetAllocation(GLuint id, size_t size);
 
-    /// Returns the number of components in a single element.
-    /// This value is always in the range [1,4].
-    short GetNumComponents() const {return _numComponents;}
+    /// Returns the OpenGL id for this GPU resource
+    GLuint GetId() const { return _id; }
 
-    /// Returns the size of a single component.
-    HD_API 
-    size_t GetComponentSize() const;
+    /// Returns the gpu address (if available. otherwise returns 0).
+    uint64_t GetGPUAddress() const { return _gpuAddr; }
 
-    /// Returns the interleaved offset (in bytes) of this data.
-    int GetOffset() const {return _offset;}
-
-    /// Returns the stride (in bytes) of underlying buffer.
-    int GetStride() const {return _stride;}
-
-    /// Returns the size of array if this resource is a static-sized array.
-    /// returns 1 for non-array resource.
-    int GetArraySize() const {return _arraySize;}
-
-    /// Returns the type name string of this resource
-    /// to be used in codegen.
+    /// Returns the texture buffer view
     HD_API
-    TfToken GetGLTypeName() const;
+    GLuint GetTextureBuffer();
 
-protected:
-    int _glDataType;
-    short _numComponents;
-    int _arraySize;
-    int _offset;
-    int _stride;
+private:
+    uint64_t _gpuAddr;
+    GLuint _texId;
+    GLuint _id;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_BUFFER_RESOURCE_H
+#endif //HD_BUFFER_RESOURCE_GL_H

@@ -32,7 +32,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class Hd_DispatchBufferArrayRange : public HdBufferArrayRange {
+class Hd_DispatchBufferArrayRange : public HdBufferArrayRangeGL {
 public:
     /// Constructor.
     Hd_DispatchBufferArrayRange(HdDispatchBuffer *buffer) :
@@ -110,17 +110,17 @@ public:
 
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
-    virtual HdBufferResourceSharedPtr GetResource() const {
+    virtual HdBufferResourceGLSharedPtr GetResource() const {
         return _buffer->GetResource();
     }
 
     /// Returns the named GPU resource.
-    virtual HdBufferResourceSharedPtr GetResource(TfToken const& name) {
+    virtual HdBufferResourceGLSharedPtr GetResource(TfToken const& name) {
         return _buffer->GetResource(name);
     }
 
     /// Returns the list of all named GPU resources for this bufferArrayRange.
-    virtual HdBufferResourceNamedList const& GetResources() const {
+    virtual HdBufferResourceGLNamedList const& GetResources() const {
         return _buffer->GetResources();
     }
 
@@ -172,15 +172,15 @@ HdDispatchBuffer::HdDispatchBuffer(TfToken const &role, int count,
     }
 
     // monolithic resource
-    _entireResource = HdBufferResourceSharedPtr(
-        new HdBufferResource(
+    _entireResource = HdBufferResourceGLSharedPtr(
+        new HdBufferResourceGL(
             role, GL_INT, /*numComponent=*/1, /*arraySize=*/1,
             /*offset=*/0, stride));
     _entireResource->SetAllocation(newId, dataSize);
 
     // create a buffer array range, which aggregates all views
     // (will be added by AddBufferResourceView)
-    _bar = HdBufferArrayRangeSharedPtr(new Hd_DispatchBufferArrayRange(this));
+    _bar = HdBufferArrayRangeGLSharedPtr(new Hd_DispatchBufferArrayRange(this));
 }
 
 HdDispatchBuffer::~HdDispatchBuffer()
@@ -219,7 +219,7 @@ HdDispatchBuffer::AddBufferResourceView(
     size_t stride = _commandNumUints * sizeof(GLuint);
 
     // add a binding view (resource binder iterates and automatically binds)
-    HdBufferResourceSharedPtr view =
+    HdBufferResourceGLSharedPtr view =
         _AddResource(name, glDataType, numComponents, /*arraySize=*/1,
                      offset, stride);
 
@@ -247,6 +247,69 @@ HdDispatchBuffer::DebugDump(std::ostream &out) const
 {
     /*nothing*/
 }
+
+HdBufferResourceGLSharedPtr
+HdDispatchBuffer::GetResource() const
+{
+    HD_TRACE_FUNCTION();
+
+    if (_resourceList.empty()) return HdBufferResourceGLSharedPtr();
+
+    if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
+        // make sure this buffer array has only one resource.
+        GLuint id = _resourceList.begin()->second->GetId();
+        TF_FOR_ALL (it, _resourceList) {
+            if (it->second->GetId() != id) {
+                TF_CODING_ERROR("GetResource(void) called on"
+                                "HdBufferArray having multiple GL resources");
+            }
+        }
+    }
+
+    // returns the first item
+    return _resourceList.begin()->second;
+}
+
+HdBufferResourceGLSharedPtr
+HdDispatchBuffer::GetResource(TfToken const& name)
+{
+    HD_TRACE_FUNCTION();
+
+    // linear search.
+    // The number of buffer resources should be small (<10 or so).
+    for (HdBufferResourceGLNamedList::iterator it = _resourceList.begin();
+         it != _resourceList.end(); ++it) {
+        if (it->first == name) return it->second;
+    }
+    return HdBufferResourceGLSharedPtr();
+}
+
+HdBufferResourceGLSharedPtr
+HdDispatchBuffer::_AddResource(TfToken const& name,
+                            int glDataType,
+                            short numComponents,
+                            int arraySize,
+                            int offset,
+                            int stride)
+{
+    HD_TRACE_FUNCTION();
+
+    if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
+        // duplication check
+        HdBufferResourceGLSharedPtr bufferRes = GetResource(name);
+        if (!TF_VERIFY(!bufferRes)) {
+            return bufferRes;
+        }
+    }
+
+    HdBufferResourceGLSharedPtr bufferRes = HdBufferResourceGLSharedPtr(
+        new HdBufferResourceGL(GetRole(), glDataType,
+                             numComponents, arraySize, offset, stride));
+
+    _resourceList.push_back(std::make_pair(name, bufferRes));
+    return bufferRes;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

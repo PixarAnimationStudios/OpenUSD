@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/bufferResource.h"
+#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -206,8 +206,10 @@ public:
     //
     class VertexBuffer {
     public:
-        VertexBuffer(HdBufferResourceSharedPtr const &resource) :
-            _resource(resource) { }
+        VertexBuffer(HdBufferResourceSharedPtr const &resource) { 
+            _resource =
+                boost::static_pointer_cast<HdBufferResourceGL> (resource);
+        }
 
         // bit confusing, osd expects 'GetNumElements()' returns the num components,
         // in hydra sense
@@ -217,7 +219,7 @@ public:
         GLuint BindVBO() {
             return _resource->GetId();
         }
-        HdBufferResourceSharedPtr _resource;
+        HdBufferResourceGLSharedPtr _resource;
     };
 
 private:

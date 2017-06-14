@@ -23,7 +23,8 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/copyComputation.h"
-#include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/bufferArrayRangeGL.h"
+#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -40,7 +41,7 @@ HdCopyComputationGPU::HdCopyComputationGPU(
 }
 
 void
-HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
+HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -49,8 +50,13 @@ HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
         return;
     }
 
-    HdBufferResourceSharedPtr src = _src->GetResource(_name);
-    HdBufferResourceSharedPtr dst = range->GetResource(_name);
+    HdBufferArrayRangeGLSharedPtr srcRange =
+        boost::static_pointer_cast<HdBufferArrayRangeGL> (_src);
+    HdBufferArrayRangeGLSharedPtr range =
+        boost::static_pointer_cast<HdBufferArrayRangeGL> (range_);
+
+    HdBufferResourceGLSharedPtr src = srcRange->GetResource(_name);
+    HdBufferResourceGLSharedPtr dst = range->GetResource(_name);
 
     if (!TF_VERIFY(src)) {
         return;
@@ -121,7 +127,10 @@ HdCopyComputationGPU::GetNumOutputElements() const
 void
 HdCopyComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    HdBufferResourceSharedPtr const &resource = _src->GetResource(_name);
+    HdBufferArrayRangeGLSharedPtr srcRange =
+        boost::static_pointer_cast<HdBufferArrayRangeGL> (_src);
+
+    HdBufferResourceGLSharedPtr const &resource = srcRange->GetResource(_name);
     specs->push_back(HdBufferSpec(_name,
                                   resource->GetGLDataType(),
                                   resource->GetNumComponents()));

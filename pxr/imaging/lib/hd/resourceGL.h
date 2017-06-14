@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,29 +21,48 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef HD_RESOURCE_GL_H
+#define HD_RESOURCE_GL_H
+
+#include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/hd/resource.h"
+#include "pxr/base/tf/token.h"
+
+#include <boost/shared_ptr.hpp>
+
+#include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdResource::HdResource(TfToken const & role) 
-    : _role(role)
-    , _size(0)
-{
-    /*NOTHING*/
-}
+typedef boost::shared_ptr<class HdResourceGL> HdResourceGLSharedPtr;
 
-HdResource::~HdResource()
-{
-    /*NOTHING*/
-}
+/// \class HdResourceGL
+///
+/// Base class for simple OpenGL resource objects.
+///
+class HdResourceGL : public HdResource {
+public:
+    HD_API
+    HdResourceGL(TfToken const & role);
+    HD_API
+    virtual ~HdResourceGL();
 
-void
-HdResource::SetSize(size_t size)
-{
-    _size = size;
-}
+    /// The OpenGL name/identifier for this resource and its size
+    HD_API
+    virtual void SetAllocation(GLuint id, size_t size);
+
+    /// Returns the id of the GPU resource
+    GLuint GetId() const { return _id; }
+
+private:
+    GLuint _id;
+};
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif //HD_RESOURCE_GL_H

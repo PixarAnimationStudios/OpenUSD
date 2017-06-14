@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/resourceBinder.h"
 #include "pxr/imaging/hd/shaderCode.h"

@@ -39,8 +39,10 @@ pxr_library(hd
         bprim
         bufferArray
         bufferArrayRange
+        bufferArrayRangeGL
         bufferArrayRegistry
         bufferResource
+        bufferResourceGL
         bufferSource
         bufferSpec
         changeTracker
@@ -86,6 +88,7 @@ pxr_library(hd
         renderPassState
         repr
         resource
+        resourceGL
         resourceBinder
         resourceRegistry
         rprim

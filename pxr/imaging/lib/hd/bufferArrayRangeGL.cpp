@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,7 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/hd/bufferArrayRangeGL.h"
+#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -29,11 +31,26 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdBufferArrayRange::~HdBufferArrayRange() {
+HdBufferArrayRangeGL::~HdBufferArrayRangeGL() 
+{
+}
+
+void
+HdBufferArrayRangeGL::AddBufferSpecs(HdBufferSpecVector *specs) const
+{
+    HD_TRACE_FUNCTION();
+
+    HdBufferResourceGLNamedList const &resources = GetResources();
+
+    TF_FOR_ALL(it, resources) {
+        specs->push_back(HdBufferSpec(it->first,
+                                      it->second->GetGLDataType(),
+                                      it->second->GetNumComponents()));
+    }
 }
 
 std::ostream &operator <<(std::ostream &out,
-                          const HdBufferArrayRange &self)
+                          const HdBufferArrayRangeGL &self)
 {
     // call virtual
     self.DebugDump(out);
@@ -41,13 +58,13 @@ std::ostream &operator <<(std::ostream &out,
 }
 
 void
-HdBufferArrayRangeContainer::Set(int index,
-                                 HdBufferArrayRangeSharedPtr const &range)
+HdBufferArrayRangeGLContainer::Set(int index,
+                                 HdBufferArrayRangeGLSharedPtr const &range)
 {
     HD_TRACE_FUNCTION();
 
     if (index < 0) {
-        TF_CODING_ERROR("Index negative in HdBufferArrayRangeContainer::Set()");
+        TF_CODING_ERROR("Index negative in HdBufferArrayRangeGLContainer::Set()");
         return;
     }
 
@@ -58,17 +75,17 @@ HdBufferArrayRangeContainer::Set(int index,
     _ranges[index] = range;
 }
 
-HdBufferArrayRangeSharedPtr const &
-HdBufferArrayRangeContainer::Get(int index) const
+HdBufferArrayRangeGLSharedPtr const &
+HdBufferArrayRangeGLContainer::Get(int index) const
 {
     if (index < 0 || static_cast<size_t>(index) >= _ranges.size()) {
         // out of range access is not an errorneous path.
         // (i.e. element/instance bars can be null if not exists)
-        static HdBufferArrayRangeSharedPtr empty;
+        static HdBufferArrayRangeGLSharedPtr empty;
         return empty;
     }
     return _ranges[index];
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -31,7 +31,7 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/bufferArray.h"
-#include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/resource.h"
@@ -54,7 +54,7 @@ protected:
     class _StripedInterleavedBuffer;
 
     /// specialized buffer array range
-    class _StripedInterleavedBufferRange : public HdBufferArrayRange {
+    class _StripedInterleavedBufferRange : public HdBufferArrayRangeGL {
     public:
         /// Constructor.
         _StripedInterleavedBufferRange() :
@@ -122,15 +122,15 @@ protected:
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
         HD_API
-        virtual HdBufferResourceSharedPtr GetResource() const;
+        virtual HdBufferResourceGLSharedPtr GetResource() const;
 
         /// Returns the named GPU resource.
         HD_API
-        virtual HdBufferResourceSharedPtr GetResource(TfToken const& name);
+        virtual HdBufferResourceGLSharedPtr GetResource(TfToken const& name);
 
         /// Returns the list of all named GPU resources for this bufferArrayRange.
         HD_API
-        virtual HdBufferResourceNamedList const& GetResources() const;
+        virtual HdBufferResourceGLNamedList const& GetResources() const;
 
         /// Sets the buffer array assosiated with this buffer;
         HD_API
@@ -162,6 +162,8 @@ protected:
         int _numElements;
     };
 
+    typedef boost::shared_ptr<_StripedInterleavedBuffer>
+        _StripedInterleavedBufferSharedPtr;
     typedef boost::shared_ptr<_StripedInterleavedBufferRange>
         _StripedInterleavedBufferRangeSharedPtr;
     typedef boost::weak_ptr<_StripedInterleavedBufferRange>
@@ -213,16 +215,50 @@ protected:
             return _stride;
         }
 
+        /// TODO: We need to distinguish between the primvar types here, we should
+        /// tag each HdBufferSource and HdBufferResource with Constant, Uniform,
+        /// Varying, Vertex, or FaceVarying and provide accessors for the specific
+        /// buffer types.
+
+        /// Returns the GPU resource. If the buffer array contains more than one
+        /// resource, this method raises a coding error.
+        HD_API
+        HdBufferResourceGLSharedPtr GetResource() const;
+
+        /// Returns the named GPU resource. This method returns the first found
+        /// resource. In HD_SAFE_MODE it checkes all underlying GL buffers
+        /// in _resourceMap and raises a coding error if there are more than
+        /// one GL buffers exist.
+        HD_API
+        HdBufferResourceGLSharedPtr GetResource(TfToken const& name);
+
+        /// Returns the list of all named GPU resources for this bufferArray.
+        HdBufferResourceGLNamedList const& GetResources() const {return _resourceList;}
+
+        /// Reconstructs the bufferspecs and returns it (for buffer splitting)
+        HD_API
+        HdBufferSpecVector GetBufferSpecs() const;
+
     protected:
         HD_API
         void _DeallocateResources();
 
-    private:
+        /// Adds a new, named GPU resource and returns it.
+        HD_API
+        HdBufferResourceGLSharedPtr _AddResource(TfToken const& name,
+                                            int glDataType,
+                                            short numComponents,
+                                            int arraySize,
+                                            int offset,
+                                            int stride);
 
+    private:
         bool _needsCompaction;
         int _stride;
         int _bufferOffsetAlignment;  // ranged binding offset alignment
         size_t _maxSize;             // maximum size of single buffer
+
+        HdBufferResourceGLNamedList _resourceList;
 
         _StripedInterleavedBufferRangeSharedPtr _GetRangeSharedPtr(size_t idx) const {
             return boost::static_pointer_cast<_StripedInterleavedBufferRange>(GetRange(idx).lock());
@@ -232,6 +268,15 @@ protected:
 
     /// Factory for creating HdBufferArrayRange
     virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange();
+
+    /// Returns the buffer specs from a given buffer array
+    virtual HdBufferSpecVector GetBufferSpecs(
+        HdBufferArraySharedPtr const &bufferArray) const;
+
+    /// Returns the size of the GPU memory used by the passed buffer array
+    virtual size_t GetResourceAllocation(
+        HdBufferArraySharedPtr const &bufferArray, 
+        VtDictionary &result) const;
 };
 
 class HdInterleavedUBOMemoryManager : public HdInterleavedMemoryManager {

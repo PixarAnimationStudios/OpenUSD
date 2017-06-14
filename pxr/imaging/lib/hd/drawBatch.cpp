@@ -307,7 +307,7 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
         _glslProgram = programInstance.GetValue();
 
         if (_glslProgram) {
-            _resourceBinder.IntrospectBindings(_glslProgram->GetProgram().GetId());
+            _resourceBinder.IntrospectBindings(_glslProgram->GetProgram());
         } else {
             // Failed to compile and link a valid glsl program.
             return false;

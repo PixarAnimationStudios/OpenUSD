@@ -24,8 +24,8 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/smoothNormals.h"
-
-#include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/bufferArrayRangeGL.h"
+#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
@@ -184,7 +184,7 @@ Hd_SmoothNormalsComputationGPU::Hd_SmoothNormalsComputationGPU(
 
 void
 Hd_SmoothNormalsComputationGPU::Execute(
-    HdBufferArrayRangeSharedPtr const &range)
+    HdBufferArrayRangeSharedPtr const &range_)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -192,10 +192,12 @@ Hd_SmoothNormalsComputationGPU::Execute(
     if (!glDispatchCompute)
         return;
 
-
     TF_VERIFY(_adjacency);
-    HdBufferArrayRangeSharedPtr const &adjacencyRange = _adjacency->GetAdjacencyRange();
-    TF_VERIFY(adjacencyRange);
+    HdBufferArrayRangeSharedPtr const &adjacencyRange_ = _adjacency->GetAdjacencyRange();
+    TF_VERIFY(adjacencyRange_);
+
+    HdBufferArrayRangeGLSharedPtr adjacencyRange =
+        boost::static_pointer_cast<HdBufferArrayRangeGL> (adjacencyRange_);
 
     // select shader by datatype
     TfToken shaderToken;
@@ -224,10 +226,13 @@ Hd_SmoothNormalsComputationGPU::Execute(
 
     GLuint program = computeProgram->GetProgram().GetId();
 
+    HdBufferArrayRangeGLSharedPtr range =
+        boost::static_pointer_cast<HdBufferArrayRangeGL> (range_);
+
     // buffer resources for GPU computation
-    HdBufferResourceSharedPtr points = range->GetResource(_srcName);
-    HdBufferResourceSharedPtr normals = range->GetResource(_dstName);
-    HdBufferResourceSharedPtr adjacency = adjacencyRange->GetResource();
+    HdBufferResourceGLSharedPtr points = range->GetResource(_srcName);
+    HdBufferResourceGLSharedPtr normals = range->GetResource(_dstName);
+    HdBufferResourceGLSharedPtr adjacency = adjacencyRange->GetResource();
 
     // prepare uniform buffer for GPU computation
     struct Uniform {

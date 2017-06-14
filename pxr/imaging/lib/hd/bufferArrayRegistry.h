@@ -82,7 +82,8 @@ public:
     /// buffer array.  The returned size is an esitmate of the 
     /// gpu memory consumed by the buffers
     HD_API
-    size_t GetResourceAllocation(VtDictionary &result) const;
+    size_t GetResourceAllocation(HdAggregationStrategy *strategy, 
+                                 VtDictionary &result) const;
     
     /// Debug dump
     HD_API

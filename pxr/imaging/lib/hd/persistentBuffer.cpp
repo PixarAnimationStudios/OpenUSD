@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdPersistentBuffer::HdPersistentBuffer(
     TfToken const &role, size_t dataSize, void* data)
-    : HdResource(role)
+    : HdResourceGL(role)
     , _mappedAddress(0)
 {
     HD_TRACE_FUNCTION();

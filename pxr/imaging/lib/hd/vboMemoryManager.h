@@ -28,7 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferArray.h"
-#include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/strategyBase.h"
@@ -71,12 +71,21 @@ public:
         return TfSingleton<HdVBOMemoryManager>::GetInstance();
     }
 
+    /// Returns the buffer specs from a given buffer array
+    virtual HdBufferSpecVector GetBufferSpecs(
+        HdBufferArraySharedPtr const &bufferArray) const;
+
+    /// Returns the size of the GPU memory used by the passed buffer array
+    virtual size_t GetResourceAllocation(
+        HdBufferArraySharedPtr const &bufferArray, 
+        VtDictionary &result) const;
+
 protected:
     friend class TfSingleton<HdVBOMemoryManager>;
     class _StripedBufferArray;
 
     /// specialized buffer array range
-    class _StripedBufferArrayRange : public HdBufferArrayRange {
+    class _StripedBufferArrayRange : public HdBufferArrayRangeGL {
     public:
         /// Constructor.
         _StripedBufferArrayRange()
@@ -150,15 +159,15 @@ protected:
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
         HD_API
-        virtual HdBufferResourceSharedPtr GetResource() const;
+        virtual HdBufferResourceGLSharedPtr GetResource() const;
 
         /// Returns the named GPU resource.
         HD_API
-        virtual HdBufferResourceSharedPtr GetResource(TfToken const& name);
+        virtual HdBufferResourceGLSharedPtr GetResource(TfToken const& name);
 
         /// Returns the list of all named GPU resources for this bufferArrayRange.
         HD_API
-        virtual HdBufferResourceNamedList const& GetResources() const;
+        virtual HdBufferResourceGLNamedList const& GetResources() const;
 
         /// Sets the buffer array assosiated with this buffer;
         HD_API
@@ -208,6 +217,8 @@ protected:
         int _capacity;
     };
 
+    typedef boost::shared_ptr<_StripedBufferArray>
+        _StripedBufferArraySharedPtr;
     typedef boost::shared_ptr<_StripedBufferArrayRange>
         _StripedBufferArrayRangeSharedPtr;
     typedef boost::weak_ptr<_StripedBufferArrayRange>
@@ -254,15 +265,51 @@ protected:
             _needsCompaction = true;
         }
 
+        /// TODO: We need to distinguish between the primvar types here, we should
+        /// tag each HdBufferSource and HdBufferResource with Constant, Uniform,
+        /// Varying, Vertex, or FaceVarying and provide accessors for the specific
+        /// buffer types.
+
+        /// Returns the GPU resource. If the buffer array contains more than one
+        /// resource, this method raises a coding error.
+        HD_API
+        HdBufferResourceGLSharedPtr GetResource() const;
+
+        /// Returns the named GPU resource. This method returns the first found
+        /// resource. In HD_SAFE_MODE it checkes all underlying GL buffers
+        /// in _resourceMap and raises a coding error if there are more than
+        /// one GL buffers exist.
+        HD_API
+        HdBufferResourceGLSharedPtr GetResource(TfToken const& name);
+
+        /// Returns the list of all named GPU resources for this bufferArray.
+        HdBufferResourceGLNamedList const& GetResources() const 
+            {return _resourceList;}
+
+        /// Reconstructs the bufferspecs and returns it (for buffer splitting)
+        HD_API
+        HdBufferSpecVector GetBufferSpecs() const;
+
     protected:
         HD_API
         void _DeallocateResources();
+
+        /// Adds a new, named GPU resource and returns it.
+        HD_API
+        HdBufferResourceGLSharedPtr _AddResource(TfToken const& name,
+                                            int glDataType,
+                                            short numComponents,
+                                            int arraySize,
+                                            int offset,
+                                            int stride);
 
     private:
 
         bool _needsCompaction;
         int _totalCapacity;
         size_t _maxBytesPerElement;
+
+        HdBufferResourceGLNamedList _resourceList;
 
         // Helpper routine to cast the range shared pointer.
         _StripedBufferArrayRangeSharedPtr _GetRangeSharedPtr(size_t idx) const {
