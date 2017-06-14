@@ -520,6 +520,7 @@ class TreeView(QFrame):
         else:
             model = TreeModel(COL_HEADERS, node)
             self.SyncViewWithModel(model)
+            self.view.expandToDepth( 2 )
 
             hou.session.UsdImportDict[key] = model
 
