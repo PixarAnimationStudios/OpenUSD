@@ -68,7 +68,13 @@ HdRprim::GetDrawItems(HdSceneDelegate* delegate,
     HdDirtyBits dirtyBits(HdChangeTracker::Clean);
     TfToken reprName = _GetReprName(delegate, defaultReprName,
                                     forced, &dirtyBits);
-    return _GetRepr(delegate, reprName, &dirtyBits)->GetDrawItems();
+    HdReprSharedPtr repr = _GetRepr(delegate, reprName, &dirtyBits);
+
+    if (repr) {
+        return repr->GetDrawItems();
+    } else {
+        return nullptr;
+    }
 }
 
 

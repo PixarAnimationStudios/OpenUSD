@@ -541,8 +541,10 @@ _AppendDrawItem(HdSceneDelegate* delegate,
     std::vector<HdDrawItem> *drawItems =
             rprim->GetDrawItems(delegate, reprName, forcedRepr);
 
-    TF_FOR_ALL(drawItemIt, *drawItems) {
-        (*result)[rprimTag].push_back(&(*drawItemIt));
+    if (drawItems != nullptr) {
+        TF_FOR_ALL(drawItemIt, *drawItems) {
+            (*result)[rprimTag].push_back(&(*drawItemIt));
+        }
     }
 }
 
