@@ -29,7 +29,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/vt/operators.h"
+#include "pxr/base/vt/pyOperators.h"
 #include "pxr/base/vt/functions.h"
 
 #include "pxr/base/arch/math.h"

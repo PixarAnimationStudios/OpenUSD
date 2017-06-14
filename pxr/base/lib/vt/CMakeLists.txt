@@ -31,6 +31,7 @@ pxr_library(vt
         api.h
         traits.h
         operators.h
+        pyOperators.h
         PRIVATE_CLASSES
         PRIVATE_HEADERS
         typeHeaders.h
