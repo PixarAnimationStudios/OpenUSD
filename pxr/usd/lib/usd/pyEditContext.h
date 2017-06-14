@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,45 +21,39 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef USD_PY_EDITCONTEXT_H
+#define USD_PY_EDITCONTEXT_H
+
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/editContext.h"
-#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/editTarget.h"
+
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DECLARE_WEAK_PTRS(UsdStage);
 
-UsdEditContext::UsdEditContext(const UsdStagePtr &stage)
-    : _stage(stage)
-    , _originalEditTarget(stage->GetEditTarget())
+// Utility class for returning UsdEditContexts to python.  For use in wrapping
+// code.
+struct UsdPyEditContext
 {
-}
+    USD_API
+    explicit UsdPyEditContext(
+        const std::pair<UsdStagePtr, UsdEditTarget> &stageTarget);
+    USD_API
+    explicit UsdPyEditContext(const UsdStagePtr &stage,
+                              const UsdEditTarget &editTarget=UsdEditTarget());
+private:
+    friend struct Usd_PyEditContextAccess;
 
-UsdEditContext::UsdEditContext(const UsdStagePtr &stage,
-                               const UsdEditTarget &editTarget)
-    : _stage(stage)
-    , _originalEditTarget(stage->GetEditTarget())
-{
-    // Do not check validity of EditTarget: stage will do that and
-    // issue an error if invalid.  We DO NOT want people authoring
-    // into places they did not expect to be authoring.
-    _stage->SetEditTarget(editTarget);
-}
+    UsdStagePtr _stage;
+    UsdEditTarget _editTarget;
+    boost::shared_ptr<UsdEditContext> _editContext;
+};
 
-UsdEditContext::UsdEditContext(
-    const std::pair<UsdStagePtr, UsdEditTarget> &stageTarget)
-    : _stage(stageTarget.first)
-    , _originalEditTarget(stageTarget.first->GetEditTarget())
-{
-    // See comment above
-    _stage->SetEditTarget(stageTarget.second);
-}
-
-UsdEditContext::~UsdEditContext()
-{
-    // Stage should never allow an invalid EditTarget to be set...
-    if (_stage && TF_VERIFY(_originalEditTarget.IsValid()))
-        _stage->SetEditTarget(_originalEditTarget);
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif // USD_PY_EDITCONTEXT_H

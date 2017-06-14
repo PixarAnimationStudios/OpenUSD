@@ -104,25 +104,6 @@ private:
     UsdEditTarget _originalEditTarget;
 };
 
-// Utility class for returning UsdEditContexts to python.  For use in wrapping
-// code.
-struct UsdPyEditContext
-{
-    USD_API
-    explicit UsdPyEditContext(
-        const std::pair<UsdStagePtr, UsdEditTarget> &stageTarget);
-    USD_API
-    explicit UsdPyEditContext(const UsdStagePtr &stage,
-                              const UsdEditTarget &editTarget=UsdEditTarget());
-private:
-    friend struct Usd_PyEditContextAccess;
-
-    UsdStagePtr _stage;
-    UsdEditTarget _editTarget;
-    boost::shared_ptr<UsdEditContext> _editContext;
-};
-
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_EDITCONTEXT_H

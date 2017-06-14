@@ -107,6 +107,7 @@ void wrapUsdShadeMaterial()
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/usd/usd/editContext.h"
+#include "pxr/usd/usd/pyEditContext.h"
 
 namespace {
 

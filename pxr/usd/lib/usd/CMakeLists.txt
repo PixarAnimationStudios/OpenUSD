@@ -41,6 +41,7 @@ pxr_library(usd
         primFlags
         primRange
         property
+        pyEditContext
         references
         relationship
         resolveInfo
