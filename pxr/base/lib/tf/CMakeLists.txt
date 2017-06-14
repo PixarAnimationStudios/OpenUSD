@@ -27,7 +27,6 @@ pxr_library(tf
         anyWeakPtr
         atomicOfstreamWrapper
         bitUtils
-        callContext
         copyOnWritePtr
         debug
         debugNotice
@@ -63,6 +62,7 @@ pxr_library(tf
         pyAnnotatedBoolResult
         pyArg
         pyCall
+        pyCallContext
         pyClassMethod
         pyContainerConversions
         pyEnum
@@ -120,6 +120,7 @@ pxr_library(tf
 
     PUBLIC_HEADERS
         api.h
+        callContext.h
         cxxCast.h
         declarePtrs.h
         diagnosticLite.h

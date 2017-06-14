@@ -100,12 +100,6 @@ public:
     mutable bool _hidden;
 };
 
-TF_API TfCallContext
-Tf_PythonCallContext(char const *fileName,
-                     char const *moduleName,
-                     char const *functionName,
-                     size_t line);
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // TF_CALL_CONTEXT_H

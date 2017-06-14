@@ -27,6 +27,7 @@
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/pyCallContext.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyError.h"
