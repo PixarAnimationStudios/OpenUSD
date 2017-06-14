@@ -28,7 +28,6 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/token.h"
-//#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 
 #include <boost/shared_ptr.hpp>
