@@ -1,3 +1,11 @@
+if (APPLE)   
+    message(WARNING "Skipping third_party/houdini because the Houdini plugin is not supported on MacOS")
+    return()
+elif (WIN32)
+    message(WARNING "Skipping third_party/houdini because the Houdini plugin is not supported on Windows")
+    return()
+endif()
+
 set(PXR_INSTALL_SUBDIR "third_party/houdini")
 
 pxr_setup_plugins()
