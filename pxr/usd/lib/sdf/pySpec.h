@@ -67,24 +67,37 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
-#include "pxr/usd/sdf/declareHandles.h"
-#include "pxr/base/tf/tf.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/pyError.h"
-#include "pxr/base/tf/pyUtils.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/arch/demangle.h"
 
-#include <boost/bind.hpp>
-#include <boost/preprocessor.hpp>
 #include <boost/python/def_visitor.hpp>
 #include <boost/python/dict.hpp>
 #include <boost/python/errors.hpp>
 #include <boost/python/raw_function.hpp>
+#include <boost/python/pointee.hpp>
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/tuple.hpp>
 
+#include "pxr/base/tf/pyError.h"
+#include "pxr/base/tf/pyUtils.h"
+
+#include "pxr/usd/sdf/declareHandles.h"
+#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/arch/demangle.h"
+
+#include <boost/preprocessor.hpp>
+
 #include <string>
+
+namespace boost{
+namespace python {
+
+template <typename T>
+struct pointee<PXR_NS::SdfHandle<T> > {
+    typedef T type;
+};
+}
+}
 
 PXR_NAMESPACE_OPEN_SCOPE
 
