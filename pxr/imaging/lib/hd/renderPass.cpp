@@ -125,6 +125,9 @@ HdRenderPass::Sync()
 
     // Sync the dirty list of prims
     _renderIndex->Sync(_dirtyList);
+
+    // Give derived classes a chance to sync.
+    _Sync();
 }
 
 TfTokenVector const &

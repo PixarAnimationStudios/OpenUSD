@@ -104,6 +104,9 @@ protected:
     /// Optional API: let derived classes mark their collection tracking as dirty.
     virtual void _MarkCollectionDirty() {}
 
+    /// Optional API: let derived classes sync data.
+    virtual void _Sync() {}
+
 private:
     // ---------------------------------------------------------------------- //
     // Change Tracking State
