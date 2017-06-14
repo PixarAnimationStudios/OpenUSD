@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/usd/conversions.h"
+#include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"

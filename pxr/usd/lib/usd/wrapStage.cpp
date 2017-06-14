@@ -23,10 +23,11 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/conversions.h"
 #include "pxr/usd/usd/primRange.h"
 
 #include "pxr/usd/ar/resolverContext.h"
+
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/pcp/pyUtils.h"
 #include "pxr/usd/sdf/pyUtils.h"
 

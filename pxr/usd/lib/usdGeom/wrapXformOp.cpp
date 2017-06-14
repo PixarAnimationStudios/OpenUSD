@@ -24,8 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformOp.h"
 
-#include "pxr/usd/usd/conversions.h"
-
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
