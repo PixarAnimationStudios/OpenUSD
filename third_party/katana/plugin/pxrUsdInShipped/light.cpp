@@ -83,7 +83,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LightOp, privateData, interface)
                     usdInArgs->GetStage()->GetPrimAtPath(filterPath)) {
                     interface.createChild(
                             filterPath.GetName(),
-                            "PxrUsdIn",
+                            "", // Empty string => run parent op
                             interface.getOpArg(),
                             FnKat::GeolibCookInterface::ResetRootFalse,
                             new PxrUsdKatanaUsdInPrivateData(
