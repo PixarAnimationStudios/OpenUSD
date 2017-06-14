@@ -415,9 +415,12 @@ HdStDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
 
     const HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-    SdfPathVector sprimPaths =
-            renderIndex.GetSprimSubtree(HdPrimTypeTokens->drawTarget,
-                                        SdfPath::AbsoluteRootPath());
+    SdfPathVector sprimPaths;
+
+    if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
+        sprimPaths = renderIndex.GetSprimSubtree(HdPrimTypeTokens->drawTarget,
+            SdfPath::AbsoluteRootPath());
+    }
 
     TF_FOR_ALL (it, sprimPaths) {
         HdSprim const *drawTarget =

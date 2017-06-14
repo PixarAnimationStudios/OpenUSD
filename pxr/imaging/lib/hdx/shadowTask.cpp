@@ -151,14 +151,14 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         // collection for shadows mapping
         
         // XXX: This is inefficient, need to be optimized
-        SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
-                                                   HdPrimTypeTokens->light,
-                                                   SdfPath::AbsoluteRootPath());
-        SdfPathVector lightPaths =
-            HdxSimpleLightTask::ComputeIncludedLights(
-                sprimPaths,
-                params.lightIncludePaths,
-                params.lightExcludePaths);
+        SdfPathVector lightPaths;
+        if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->light)) {
+            SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
+                HdPrimTypeTokens->light, SdfPath::AbsoluteRootPath());
+
+            lightPaths = HdxSimpleLightTask::ComputeIncludedLights(
+                sprimPaths, params.lightIncludePaths, params.lightExcludePaths);
+        }
         
         HdStLightPtrConstVector lights;
         TF_FOR_ALL (it, lightPaths) {
@@ -173,7 +173,10 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         
         GlfSimpleLightVector const glfLights = lightingContext->GetLights();
         
-        TF_VERIFY(lights.size() == glfLights.size());
+        if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->light) ||
+            !TF_VERIFY(lights.size() == glfLights.size())) {
+            return;
+        }
         
         // Iterate through all lights and for those that have
         // shadows enabled we will extract the colection from 
