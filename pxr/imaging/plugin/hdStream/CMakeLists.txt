@@ -30,7 +30,6 @@ pxr_library(hdStream
 
     PUBLIC_CLASSES
         rendererPlugin
-        taskController
 
     RESOURCE_FILES
         plugInfo.json

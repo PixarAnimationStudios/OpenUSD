@@ -33,8 +33,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfPath;
 class HdRenderDelegate;
 class HdRenderIndex;
-class HdxTaskController;
-
 
 ///
 /// This class defines a renderer plugin interface for Hydra.
@@ -60,36 +58,6 @@ public:
     /// Release the object factoried by CreateRenderDelegate().
     ///
     virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) = 0;
-
-    ///
-    /// Create a Task controller object, which represents a task controller and
-    /// a collection of tasks that can be used to generate output from
-    /// Hydra.  This object allows a plugin to do basic operations without
-    /// an application requiring prior-knowledge of the plugin.  However,
-    /// it doesn't replace the need for that knowledge for doing more complex
-    /// operations.
-    ///
-    /// In order to achieve these basic operations the Task Controller may
-    /// add one of more tasks to the render index.  Multiple Task Controllers
-    /// may be used on the same render index, as a result the tasks that are
-    /// being added need a unique id.  The controllerId param is prepended onto
-    /// a controller defined id in order to unquify these task names.
-    ///
-    /// \param renderIndex  The render index to use in conjunction with the
-    ///                     tasks being managed by the controller.
-    /// \param controllerId An path that is prefixed onto the ids the controller
-    ///                     uses to create tasks(prims) in the render index in
-    ///                     order to form a unique id.
-    ///
-    virtual HdxTaskController *CreateTaskController(
-                                               HdRenderIndex *renderIndex,
-                                               const SdfPath &controllerId) = 0;
-
-
-    ///
-    /// Release the object factoried by CreateTaskController().
-    ///
-    virtual void DeleteTaskController(HdxTaskController *taskController) = 0;
 
 protected:
     HdxRendererPlugin() = default;

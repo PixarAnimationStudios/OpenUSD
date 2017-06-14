@@ -26,7 +26,6 @@
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdx/rendererPluginRegistry.h"
-#include "pxr/imaging/hdStream/taskController.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,20 +45,6 @@ void
 HdStreamRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
 {
     delete renderDelegate;
-}
-
-
-HdxTaskController *
-HdStreamRendererPlugin::CreateTaskController(HdRenderIndex *renderIndex,
-                                             const SdfPath &controllerId)
-{
-    return new HdStreamTaskController(renderIndex, controllerId);
-}
-
-void HdStreamRendererPlugin::DeleteTaskController(
-                                              HdxTaskController *taskController)
-{
-	delete taskController;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
