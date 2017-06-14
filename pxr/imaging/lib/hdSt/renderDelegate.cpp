@@ -92,12 +92,6 @@ HdStRenderDelegate::GetRenderParam() const
 }
 
 HdRenderPassSharedPtr
-HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index)
-{
-    return HdRenderPassSharedPtr(new HdSt_RenderPass(index));
-}
-
-HdRenderPassSharedPtr
 HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                         HdRprimCollection const& collection)
 {

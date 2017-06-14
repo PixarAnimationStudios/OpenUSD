@@ -39,9 +39,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Hd_UnitTestNullRenderPass : public HdRenderPass
 {
 public:
-    Hd_UnitTestNullRenderPass(HdRenderIndex *index)
-        : HdRenderPass(index)
-        {}
     Hd_UnitTestNullRenderPass(HdRenderIndex *index,
                               HdRprimCollection const &collection)
         : HdRenderPass(index, collection)

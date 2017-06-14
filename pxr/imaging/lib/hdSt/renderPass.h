@@ -43,8 +43,6 @@ typedef boost::shared_ptr<class HdSt_RenderPass> HdSt_RenderPassSharedPtr;
 class HdSt_RenderPass : public HdRenderPass {
 public:
     HDST_API
-    HdSt_RenderPass(HdRenderIndex *index);
-    HDST_API
     HdSt_RenderPass(HdRenderIndex *index, HdRprimCollection const &collection);
     HDST_API
     virtual ~HdSt_RenderPass();

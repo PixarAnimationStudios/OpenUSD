@@ -161,13 +161,6 @@ Hd_UnitTestNullRenderDelegate::GetRenderParam() const
 }
 
 HdRenderPassSharedPtr
-Hd_UnitTestNullRenderDelegate::CreateRenderPass(HdRenderIndex *index)
-{
-    return HdRenderPassSharedPtr(
-        new Hd_UnitTestNullRenderPass(index));
-}
-
-HdRenderPassSharedPtr
 Hd_UnitTestNullRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                                 HdRprimCollection const& collection)
 {

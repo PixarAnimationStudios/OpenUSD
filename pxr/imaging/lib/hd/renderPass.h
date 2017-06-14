@@ -49,8 +49,6 @@ typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 class HdRenderPass : boost::noncopyable {
 public:
     HD_API
-    HdRenderPass(HdRenderIndex *index);
-    HD_API
     HdRenderPass(HdRenderIndex *index, HdRprimCollection const& collection);
     HD_API
     virtual ~HdRenderPass();

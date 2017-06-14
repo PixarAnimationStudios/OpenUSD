@@ -46,8 +46,6 @@ public:
     ///
     ////////////////////////////////////////////////////////////////////////////
 
-    virtual HdRenderPassSharedPtr CreateRenderPass(
-                HdRenderIndex *index) override;
     virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
                 HdRprimCollection const& collection) override;
 

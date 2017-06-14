@@ -37,11 +37,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdRenderPass::HdRenderPass(HdRenderIndex *index)
-    : _renderIndex(index)
-{
-}
-
 HdRenderPass::HdRenderPass(HdRenderIndex *index,
                            HdRprimCollection const& collection)
     : _renderIndex(index)

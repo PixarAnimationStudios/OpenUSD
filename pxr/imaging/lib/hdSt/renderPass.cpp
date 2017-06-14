@@ -39,14 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index)
-    : HdRenderPass(index)
-    , _lastCullingDisabledState(false)
-    , _collectionVersion(0)
-    , _collectionChanged(false)
-{
-}
-
 HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
                                  HdRprimCollection const &collection)
     : HdRenderPass(index, collection)

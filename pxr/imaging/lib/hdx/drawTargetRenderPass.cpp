@@ -58,8 +58,9 @@ _ClearBuffer(GLenum buffer, GLint drawBuffer, const VtValue &value)
     }
 }
 
+// _renderPass's collection is populated after build time, during Sync().
 HdxDrawTargetRenderPass::HdxDrawTargetRenderPass(HdRenderIndex *index)
- : _renderPass(index)
+ : _renderPass(index, HdRprimCollection())
  , _drawTargetRenderPassState(nullptr)
  , _drawTarget()
  , _drawTargetContext()

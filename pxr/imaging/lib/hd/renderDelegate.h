@@ -111,13 +111,6 @@ public:
     ///
     /// Request to create a new renderpass.
     /// \param index the render index to bind to the new renderpass.
-    /// \return A shared pointer to the new renderpass or empty on error.
-    ///
-    virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index) = 0;
-
-    ///
-    /// Request to create a new renderpass.
-    /// \param index the render index to bind to the new renderpass.
     /// \param collection the rprim collection to bind to the new renderpass.
     /// \return A shared pointer to the new renderpass or empty on error.
     ///
