@@ -209,8 +209,13 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
 
     // Build a vector of split point indexes.
     vector<size_type> splitPoints;
+#if defined(ARCH_OS_WINDOWS)
+    for (size_type p = path.find_first_of("/\\", path.find_first_not_of("/\\"));
+         p != npos; p = path.find_first_of("/\\", p+1))
+#else
     for (size_type p = path.find('/', path.find_first_not_of('/'));
          p != npos; p = path.find('/', p+1))
+#endif
         splitPoints.push_back(p);
     splitPoints.push_back(path.size());
 
