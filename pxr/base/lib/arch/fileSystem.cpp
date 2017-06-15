@@ -70,13 +70,7 @@ static inline HANDLE _FileToWinHANDLE(FILE *file)
 
 FILE* ArchOpenFile(char const* fileName, char const* mode)
 {
-    FILE* stream = nullptr;
-#if defined(ARCH_OS_WINDOWS)
-    fopen_s(&stream, fileName, mode);
-#else
-    stream = fopen(fileName, mode);
-#endif
-    return stream;
+    return fopen(fileName, mode);
 }
 
 #if defined(ARCH_OS_WINDOWS)
