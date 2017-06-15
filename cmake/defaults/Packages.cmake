@@ -38,6 +38,7 @@ find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
 # --Python.  We are generally but not completely 2.6 compliant.
+add_definitions(-DPXR_PYTHON_SUPPORT_ENABLED)
 find_package(PythonInterp 2.7 REQUIRED)
 find_package(PythonLibs 2.7 REQUIRED)
 
