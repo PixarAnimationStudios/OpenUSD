@@ -341,13 +341,13 @@ bool
 UsdRiMaterialAPI::SetVolumeSource(const SdfPath &volumePath) const
 {
     if (UsdShadeUtils::WriteNewEncoding()) {
-        UsdShadeOutput volumeOutput(CreateDisplacementAttr());
+        UsdShadeOutput volumeOutput(CreateVolumeAttr());
         return UsdShadeConnectableAPI::ConnectToSource(
             volumeOutput, volumePath.IsPropertyPath() ? 
                 volumePath :
                 volumePath.AppendProperty(_tokens->defaultOutputName));
     } else if (UsdRelationship volumeRel = GetPrim().CreateRelationship(
-                    _tokens->riLookDisplacement, /*custom*/ false)) {
+                    _tokens->riLookVolume, /*custom*/ false)) {
         return volumeRel.SetTargets(std::vector<SdfPath>{volumePath});
     }
     return false;
