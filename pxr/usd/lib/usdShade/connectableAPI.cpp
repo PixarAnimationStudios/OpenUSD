@@ -305,6 +305,24 @@ _GetConnectionRel(
     return UsdRelationship();
 }
 
+// Creates an old-style interfaceRecipientsOf relationship for an interface 
+// attribute. Exists temporarily for backwards compatibility.
+static UsdRelationship
+_GetInterfaceAttributeRel(const UsdAttribute &interfaceAttr,
+                          const TfToken &renderTarget)
+{
+    std::string relPrefix = renderTarget.IsEmpty() ? 
+            UsdShadeTokens->interfaceRecipientsOf :
+            TfStringPrintf("%s:%s", renderTarget.GetText(),
+                UsdShadeTokens->interfaceRecipientsOf.GetText());
+    std::string baseName = UsdShadeUtils::GetBaseNameAndType(
+            interfaceAttr.GetName()).first.GetString();
+
+    TfToken relName(relPrefix + baseName);
+    return interfaceAttr.GetPrim().CreateRelationship(relName, 
+        /*custom */ false);
+}
+
 /* static */
 bool  
 UsdShadeConnectableAPI::_ConnectToSource(
@@ -346,8 +364,11 @@ UsdShadeConnectableAPI::_ConnectToSource(
         {
             // Author "interfaceRecipientsOf" pointing in the reverse direction
             // if we're authoring the old-style encoding.
-            success = UsdShadeInterfaceAttribute(sourceAttr).SetRecipient(
-                renderTarget, shadingProp.GetPath());
+            if (UsdRelationship rel = _GetInterfaceAttributeRel(sourceAttr,
+                                                                renderTarget)) {
+                SdfPathVector targets{shadingProp.GetPath()};
+                success = rel.SetTargets(targets);
+            }
 
             if (!AreBidirectionalInterfaceConnectionsEnabled()) {
                 return success;

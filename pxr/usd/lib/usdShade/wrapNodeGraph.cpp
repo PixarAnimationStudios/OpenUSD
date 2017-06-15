@@ -114,16 +114,6 @@ WRAP_CUSTOM {
     _class
         .def("ConnectableAPI", &UsdShadeNodeGraph::ConnectableAPI)
 
-        .def("CreateInterfaceAttribute", 
-             &UsdShadeNodeGraph::CreateInterfaceAttribute,
-             (arg("interfaceAttrName"), arg("typeName")))
-        .def("GetInterfaceAttribute", 
-             &UsdShadeNodeGraph::GetInterfaceAttribute,
-             (arg("interfaceAttrName")))
-        .def("GetInterfaceAttributes",
-             &UsdShadeNodeGraph::GetInterfaceAttributes,
-             (arg("renderTarget")))
-
         .def("CreateOutput", 
              &UsdShadeNodeGraph::CreateOutput,
              (arg("name"), arg("typeName")))

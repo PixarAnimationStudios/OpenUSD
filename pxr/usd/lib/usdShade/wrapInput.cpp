@@ -23,7 +23,6 @@
 //
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 
 #include "pxr/usd/usd/pyConversions.h"

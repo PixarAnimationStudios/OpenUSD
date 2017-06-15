@@ -21,9 +21,9 @@ class NodeGraph "NodeGraph" (
     
     One of the most important functions of a node-graph is to host the "interface"
     with which clients of already-built shading networks will interact.  Please
-    see "Interface Attributes" for a detailed
+    see "Interface Inputs" for a detailed
     explanation of what the interface provides, and how to construct and
-    use it to effectively share/instance shader networks.
+    use it, to effectively share/instance shader networks.
 
     <b>Node Graph Outputs</b>
 
@@ -141,13 +141,14 @@ class Shader "Shader" (
     correspondence with shader objects of some kind in the target renderer.
     The purpose of representing them in Usd is two-fold:
     - To represent, via "connections" the topology of the shading network
-    that must be reconstructed in the renderer.
-    - To present a (partial or full) interface of typed parameters whose
-    values can be set and overridden in Usd, to be provided later at 
-    render-time as parameter values to the actual render shader objects.
-    
-    Facilities for both of these missions are largely encapsulated in the
-    UsdShadeParameter schema.'''
+    that must be reconstructed in the renderer. Facilities for authoring and 
+    manipulating connections are encapsulated in the Has-A schema 
+    \ref UsdShadeConnectableAPI.
+    - To present a (partial or full) interface of typed input parameters 
+    whose values can be set and overridden in Usd, to be provided later at 
+    render-time as parameter values to the actual render shader objects. Shader 
+    input parameters are encapsulated in the property schema UsdShadeInput.
+    '''
 )
 {
     uniform token info:id (

@@ -8,10 +8,9 @@
 \section usdShade_overview Overview
 
 UsdShade provides schemas and behaviors for creating and connecting shading
-networks (UsdShadeShader, UsdShadeParameter), organizing shading networks into
-coherent packaged units for binding to geometry and reuse (UsdShadeMaterial), and
-creating instanceable user interfaces for Materials that drive shader parameters
-(UsdShadeInterfaceAttribute). 
-
+networks (UsdShadeShader, UsdShadeInput, UsdShadeConnectableAPI), organizing 
+shading networks into coherent packaged units for binding to geometry and 
+reuse (UsdShadeMaterial), and creating instanceable user interfaces for 
+Materials that drive shader parameters (UsdShadeNodeGraph_Inputs). 
 
 */

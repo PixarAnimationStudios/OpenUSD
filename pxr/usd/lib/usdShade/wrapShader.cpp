@@ -128,12 +128,6 @@ WRAP_CUSTOM {
     _class
         .def("ConnectableAPI", &UsdShadeShader::ConnectableAPI)
 
-        .def("CreateParameter", &UsdShadeShader::CreateParameter,
-             (arg("name"), arg("type")))
-        .def("GetParameter", &UsdShadeShader::GetParameter, arg("name"))
-        .def("GetParameters", &UsdShadeShader::GetParameters,
-             return_value_policy<TfPySequenceToList>())
-
         .def("CreateOutput", &UsdShadeShader::CreateOutput,
              (arg("name"), arg("type")))
         .def("GetOutput", &UsdShadeShader::GetOutput, arg("name"))

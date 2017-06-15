@@ -29,7 +29,6 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/shader.h"
 
 #include <maya/MDagPath.h>

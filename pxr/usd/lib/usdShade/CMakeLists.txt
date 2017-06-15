@@ -13,11 +13,9 @@ pxr_library(usdShade
         connectableAPI
         debugCodes
         input
-        interfaceAttribute
         look
         material
         output
-        parameter
         pShader
         pShaderUtils
         shader
@@ -35,11 +33,9 @@ pxr_library(usdShade
         module.cpp
         wrapConnectableAPI.cpp
         wrapInput.cpp
-        wrapInterfaceAttribute.cpp
         wrapLook.cpp
         wrapMaterial.cpp
         wrapOutput.cpp
-        wrapParameter.cpp
         wrapPShader.cpp
         wrapShader.cpp
         wrapNodeGraph.cpp

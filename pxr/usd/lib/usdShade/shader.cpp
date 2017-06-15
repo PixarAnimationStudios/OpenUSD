@@ -175,37 +175,6 @@ UsdShadeShader::ConnectableAPI() const
     return UsdShadeConnectableAPI(GetPrim());
 }
 
-UsdShadeParameter
-UsdShadeShader::CreateParameter(const TfToken& name,
-    const SdfValueTypeName& typeName)
-{
-    return UsdShadeParameter(
-            GetPrim(), 
-            name, 
-            typeName);
-}
-
-UsdShadeParameter
-UsdShadeShader::GetParameter(const TfToken &name) const
-{
-    return UsdShadeParameter(GetPrim().GetAttribute(name));
-}
-
-std::vector<UsdShadeParameter>
-UsdShadeShader::GetParameters() const
-{
-    std::vector<UsdShadeParameter> ret;
-
-    std::vector<UsdAttribute> attrs = GetPrim().GetAttributes();
-    TF_FOR_ALL(attrIter, attrs) { 
-        const UsdAttribute& attr = *attrIter;
-        if (attr.GetNamespace().IsEmpty()) {
-            ret.push_back(UsdShadeParameter(attr));
-        }
-    }
-    return ret;
-}
-
 UsdShadeOutput
 UsdShadeShader::CreateOutput(const TfToken& name,
                              const SdfValueTypeName& typeName)

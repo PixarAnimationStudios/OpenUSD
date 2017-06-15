@@ -35,7 +35,6 @@
 
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/parameter.h"
     
 
 #include "pxr/base/vt/value.h"
@@ -65,13 +64,14 @@ class SdfAssetPath;
 /// correspondence with shader objects of some kind in the target renderer.
 /// The purpose of representing them in Usd is two-fold:
 /// \li To represent, via "connections" the topology of the shading network
-/// that must be reconstructed in the renderer.
-/// \li To present a (partial or full) interface of typed parameters whose
-/// values can be set and overridden in Usd, to be provided later at 
-/// render-time as parameter values to the actual render shader objects.
+/// that must be reconstructed in the renderer. Facilities for authoring and 
+/// manipulating connections are encapsulated in the Has-A schema 
+/// ef UsdShadeConnectableAPI.
+/// \li To present a (partial or full) interface of typed input parameters 
+/// whose values can be set and overridden in Usd, to be provided later at 
+/// render-time as parameter values to the actual render shader objects. Shader 
+/// input parameters are encapsulated in the property schema UsdShadeInput.
 /// 
-/// Facilities for both of these missions are largely encapsulated in the
-/// UsdShadeParameter schema.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdShadeTokens.
@@ -220,36 +220,6 @@ public:
     /// UsdShadeConnectableAPI object.
     USDSHADE_API
     UsdShadeConnectableAPI ConnectableAPI() const;
-
-    /// \name Parameters API
-    /// \deprecated
-    /// Parameters have been replaced by the more general UsdShadeInputs, that
-    /// can exist on shaders and node-graphs.
-    /// 
-    /// @{
-        
-    /// Create a parameter which can either have a value or can be
-    /// connected.
-    ///
-    /// \note parameter names should not be namespaced, as, to keep things
-    /// simple, the criterion we use to enumerate parameters on a Shader is
-    /// all non-namespaced atttributes - see GetParameters()
-    USDSHADE_API
-    UsdShadeParameter CreateParameter(
-            const TfToken& name, 
-            const SdfValueTypeName& typeName);
-
-    /// Return parameter if it exists.
-    USDSHADE_API
-    UsdShadeParameter GetParameter(const TfToken &name) const;
-
-    /// All attributes are considered parameters if they are not scoped with 
-    /// a namespace
-    USDSHADE_API
-    std::vector<UsdShadeParameter> GetParameters() const;
-
-    /// @}
-
 
     /// \name Outputs API
     ///
