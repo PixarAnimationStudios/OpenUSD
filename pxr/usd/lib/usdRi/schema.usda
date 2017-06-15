@@ -169,58 +169,6 @@ class "RiMaterialAPI" (
 }
 
 
-### Look API common to both RSL and RIS ###
-
-class "RiLookAPI" (
-    doc = """This API provides the relationships to prman shaders and RIS objects."""
-    customData = {
-        # We want the class name to be UsdRiLookAPI
-        string className = "LookAPI"    
-        string extraIncludes = """
-#include "pxr/usd/usdShade/connectableAPI.h"
-#include "pxr/usd/usdShade/interfaceAttribute.h"
-#include "pxr/usd/usdShade/look.h"
-#include "pxr/usd/usdRi/rslShader.h"
-#include "pxr/usd/usdRi/risBxdf.h"
-#include "pxr/usd/usdRi/risPattern.h"
-
-// Version 1 changes UsdRiRslShaderObject to UsdRiRslShader
-#define USDRI_LOOK_API_VERSION 1
-"""
-    }
-) {
-    rel riLook:surface (
-        customData = {
-            string apiName = "surface"
-        }
-    )
-    rel riLook:displacement (
-        customData = {
-            string apiName = "displacement"
-        }
-    )
-    rel riLook:volume (
-        customData = {
-            string apiName = "volume"
-        }
-    )
-    rel riLook:coshaders (
-        customData = {
-            string apiName = "coshaders"
-        }
-    )
-    rel riLook:bxdf (
-        customData = {
-            string apiName = "bxdf"
-        }
-    )
-    rel riLook:patterns (
-        customData = {
-            string apiName = "patterns"
-        }
-    )
-}
-
 ########################################################################
 # Lighting API
 

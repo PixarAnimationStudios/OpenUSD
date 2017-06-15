@@ -36,7 +36,6 @@
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/utils.h"
 
-#include "pxr/usd/usdRi/lookAPI.h"
 #include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usdRi/risObject.h"
 #include "pxr/usd/usdRi/risOslPattern.h"

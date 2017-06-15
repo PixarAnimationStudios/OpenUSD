@@ -116,18 +116,6 @@ class "RiMaterialAPI" (
     uniform token outputs:ri:volume
 }
 
-class "RiLookAPI" (
-    doc = "This API provides the relationships to prman shaders and RIS objects."
-)
-{
-    rel riLook:bxdf
-    rel riLook:coshaders
-    rel riLook:displacement
-    rel riLook:patterns
-    rel riLook:surface
-    rel riLook:volume
-}
-
 class "RiLightAPI" (
     doc = """RiLightAPI is an API schema that provides an interface
     to add Renderman-specific attributes to lights."""

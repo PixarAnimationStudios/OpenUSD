@@ -140,12 +140,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((riIntensityNearDist, "ri:intensityNearDist")) \
     ((riInvert, "ri:invert")) \
     ((riLightGroup, "ri:lightGroup")) \
-    ((riLookBxdf, "riLook:bxdf")) \
-    ((riLookCoshaders, "riLook:coshaders")) \
-    ((riLookDisplacement, "riLook:displacement")) \
-    ((riLookPatterns, "riLook:patterns")) \
-    ((riLookSurface, "riLook:surface")) \
-    ((riLookVolume, "riLook:volume")) \
     ((riPortalIntensity, "ri:portal:intensity")) \
     ((riPortalTint, "ri:portal:tint")) \
     ((riSamplingFixedSampleCount, "ri:sampling:fixedSampleCount")) \
@@ -300,12 +294,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>riIntensityNearDist</b> - UsdRiLightAPI
 /// \li <b>riInvert</b> - UsdRiLightFilterAPI
 /// \li <b>riLightGroup</b> - UsdRiLightAPI
-/// \li <b>riLookBxdf</b> - UsdRiLookAPI
-/// \li <b>riLookCoshaders</b> - UsdRiLookAPI
-/// \li <b>riLookDisplacement</b> - UsdRiLookAPI
-/// \li <b>riLookPatterns</b> - UsdRiLookAPI
-/// \li <b>riLookSurface</b> - UsdRiLookAPI
-/// \li <b>riLookVolume</b> - UsdRiLookAPI
 /// \li <b>riPortalIntensity</b> - UsdRiLightPortalAPI
 /// \li <b>riPortalTint</b> - UsdRiLightPortalAPI
 /// \li <b>riSamplingFixedSampleCount</b> - UsdRiLightAPI

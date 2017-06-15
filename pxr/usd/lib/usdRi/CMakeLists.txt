@@ -19,7 +19,6 @@ pxr_library(usdRi
         lightAPI
         lightFilterAPI
         lightPortalAPI
-        lookAPI
         materialAPI
         pxrAovLight
         pxrBarnLightFilter
@@ -52,7 +51,6 @@ pxr_library(usdRi
         wrapLightAPI.cpp
         wrapLightFilterAPI.cpp
         wrapLightPortalAPI.cpp
-        wrapLookAPI.cpp
         wrapMaterialAPI.cpp
         wrapPxrAovLight.cpp
         wrapPxrBarnLightFilter.cpp
