@@ -844,6 +844,13 @@ class TestUsdMetadata(unittest.TestCase):
             assert binLayer
             binLayer.Export(roundTripFile.name)
 
+            # NOTE: binFile will want to delete the underlying file
+            #       on __exit__ from the context manager.  But binLayer
+            #       may have the file open.  If so the deletion will
+            #       fail on Windows.  Explicitly release our reference
+            #       to the layer to close the file.
+            del binLayer
+
             # Now textFile and roundTripFile should match.
             a = open(textFile.name).read()
             b = open(roundTripFile.name).read()
