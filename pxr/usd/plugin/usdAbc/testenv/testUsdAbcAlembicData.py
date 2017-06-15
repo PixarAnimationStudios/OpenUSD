@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 from pxr import Sdf, Usd, Vt, Gf, Tf, UsdAbc
-import sys, os, unittest
+import sys, os, tempfile, unittest
 
 class TestUsdAbcAlembicData(unittest.TestCase):
     def test_Basic(self):
@@ -38,8 +38,10 @@ class TestUsdAbcAlembicData(unittest.TestCase):
         # Create a usda and abc temporary files.
         # NOTE: This files will automatically be deleted when the test quits,
         # if you want to keep them around for debugging, pass in delete=False
-        with Tf.NamedTemporaryFile(suffix='.abc') as tempAbcFile, \
-             Tf.NamedTemporaryFile(suffix='.usda') as tempUsdFile:
+        with tempfile.NamedTemporaryFile(suffix='.abc') as tempAbcFile, \
+             tempfile.NamedTemporaryFile(suffix='.usda') as tempUsdFile:
+            tempAbcFile.close()
+            tempUsdFile.close()
 
             # Create a USD file that we'll save out as .abc
             stage = Usd.Stage.CreateNew(tempUsdFile.name)
@@ -64,12 +66,22 @@ class TestUsdAbcAlembicData(unittest.TestCase):
             self.assertEqual(roundTrippedStage.GetFramesPerSecond(), 
                              stage.GetTimeCodesPerSecond())
 
+            # NOTE: tempAbcFile and tempUsdFile will want to delete the
+            #       underlying filse on __exit__ from the context manager.
+            #       But roundTrippedStage and stage may have the file open.
+            #       If so the deletion will  fail on Windows.  Explicitly
+            #       release our references to the stages to close the file.
+            del stage
+            del roundTrippedStage
+
     def test_Types(self):
         # Create a usda and abc temporary files.
         # NOTE: This files will automatically be deleted when the test quits,
         # if you want to keep them around for debugging, pass in delete=False
-        with Tf.NamedTemporaryFile(suffix='.abc') as tempAbcFile, \
-             Tf.NamedTemporaryFile(suffix='.usda') as tempUsdFile:
+        with tempfile.NamedTemporaryFile(suffix='.abc') as tempAbcFile, \
+             tempfile.NamedTemporaryFile(suffix='.usda') as tempUsdFile:
+            tempAbcFile.close()
+            tempUsdFile.close()
 
             stage = Usd.Stage.CreateNew(tempUsdFile.name)
             prim = stage.OverridePrim('/Prim')
@@ -127,6 +139,13 @@ class TestUsdAbcAlembicData(unittest.TestCase):
                 self.assertTrue(attr)
                 self.assertEqual(attr.GetTypeName(), typeName)
                 self.assertEqual(attr.Get(), value)
+
+            # NOTE: tempAbcFile will want to delete the underlying file
+            #       on __exit__ from the context manager.  But stage
+            #       may have the file open.  If so the deletion will
+            #       fail on Windows.  Explicitly release our reference
+            #       to the stage to close the file.
+            del stage
 
 if __name__ == "__main__":
     unittest.main()
