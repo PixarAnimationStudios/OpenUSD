@@ -177,6 +177,9 @@ WRAP_CUSTOM {
         .def("GetInterfaceInputs", &This::GetInterfaceInputs,
              return_value_policy<TfPySequenceToList>())
 
+        .def("GetInterfaceAttributes", &This::GetInterfaceAttributes,
+             return_value_policy<TfPySequenceToList>())
+
         // These are deprecated.
         .def("SetInterfaceRecipient", &_SetInterfaceRecipient0)
         .def("SetInterfaceRecipient", &_SetInterfaceRecipient1)
