@@ -53,7 +53,7 @@ def _AddShadingToBall(stage):
     mesh = stage.OverridePrim('/Ball/mesh')
 
     ballTextureNode = UsdRi.RisObject(stage.OverridePrim(
-        model.GetPath().AppendPath('Looks/BallLook/BallTexture')))
+        model.GetPath().AppendPath('Looks/BallMaterial/BallTexture')))
 
     # now we'll show adding some shading variants to the ball as well.
     shadingVariantsInfo = [
@@ -115,7 +115,7 @@ def _SetParameters(shadingNode, params):
     '''
 
     for paramName, paramType, value in params:
-        shadingNode.CreateParameter(paramName, paramType).Set(value)
+        shadingNode.CreateInput(paramName, paramType).Set(value)
 
 def _Color(r, g, b):
     # for this tutorial, the colors i got are not in linear space.
