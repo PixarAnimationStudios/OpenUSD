@@ -307,16 +307,16 @@ UsdAbc_AlembicDataConversion::_AddConverter(
 UsdAbc_AlembicConversions::UsdAbc_AlembicConversions()
 {
     // Preferred conversions.
-    data.AddConverter<bool,          bool_t>();
-    data.AddConverter<unsigned char, uint8_t>();
-    data.AddConverter<int,           int32_t>();
-    data.AddConverter<unsigned int,  uint32_t>();
-    data.AddConverter<long,          int64_t>();
-    data.AddConverter<unsigned long, uint64_t>();
-    data.AddConverter<GfHalf,        ::half>();
-    data.AddConverter<float,         float32_t>();
-    data.AddConverter<double,        float64_t>();
-    data.AddConverter<std::string,   std::string>();
+    data.AddConverter<bool,        bool_t>();
+    data.AddConverter<uint8_t,     uint8_t>();
+    data.AddConverter<int32_t,     int32_t>();
+    data.AddConverter<uint32_t,    uint32_t>();
+    data.AddConverter<int64_t,     int64_t>();
+    data.AddConverter<uint64_t,    uint64_t>();
+    data.AddConverter<GfHalf,      ::half>();
+    data.AddConverter<float,       float32_t>();
+    data.AddConverter<double,      float64_t>();
+    data.AddConverter<std::string, std::string>();
     data.AddConverter<GfVec2i,   int32_t, 2>();
     data.AddConverter<GfVec2h,    GfHalf, 2>();
     data.AddConverter<GfVec2f, float32_t, 2>();
