@@ -1,8 +1,0 @@
-#usda 1.0							#usda 1.0
-
-def Scope "Foo" (					      |	def "refSphere" (
-    payload = @p1.usda@</Foo>				      |	    payload = @helloworld.usda@</hello>
-)								)
-{								{
-}								}
-
