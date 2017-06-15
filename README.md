@@ -57,118 +57,99 @@ have the following dependencies.
 | [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (OS X/Windows)    |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.3.1                                  |
 
-The Imaging and UsdImaging components (located in pxr/imaging and pxr/usdImaging
+The Imaging and USD Imaging components (located in pxr/imaging and pxr/usdImaging
 respectively) have the following additional dependencies. These components can
 be disabled at build-time, for further details see [Advanced Build Configuration](BUILDING.md).
 
 | Name | Version | Optional |
 | ---- | --------- | ---------- |
-| [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5 (Linux/OS X), 3.2.0 (Windows)                                  |  |
+| [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5 (Linux/OS X), 3.2.0 (Windows)    |  |
 | [GLEW](http://glew.sourceforge.net/)                              | 1.10.0                                 |  |
 | [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                  |  |
 | [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11                                 |  |
 | [Ptex](http://ptex.us/)                                           | 2.0.30                                 | Y |
-| [Pyside](http://wiki.qt.io/PySide)                                | 1.2.2                                  |  |
-| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0                                  | |
+| [PySide](http://wiki.qt.io/PySide)                                | 1.2.2                                  |  |
+| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0                                  |  |
 
 Getting and Building the Code
 -----------------------------
 
-### 1. Clone the repo:
+The simplest way to build USD is to run the supplied ```build_usd.py``` 
+script. This script will download required dependencies and build 
+and install them along with USD in a given directory. 
 
-```bash 
-git clone https://github.com/PixarAnimationStudios/USD
+Follow the instructions below to run the script with its default behavior, 
+which will build the USD core libraries, Imaging, and USD Imaging components.
+For more options and documentation, run the script with the ```--help```
+parameter.
+
+See [Advanced Build Configuration](BUILDING.md) for examples and
+additional documentation for running cmake directly.
+
+#### 1. Install prerequisites (see [Dependencies](#dependencies) for required versions)
+
+- C++ compiler:
+   - gcc
+   - Xcode
+   - Microsoft Visual Studio
+- CMake
+- Python
+- PySide (required for USD Imaging)
+
+#### 2. Download the USD source code
+
+You can download source code archives from [GitHub](https://www.github.com/PixarAnimationStudios/USD) or use ```git``` to clone the repository.
+
+```
+> git clone https://github.com/PixarAnimationStudios/USD
+Cloning into 'USD'...
 ```
 
-### 2. Create a build location:
-```bash
-cd USD
-mkdir build
-cd build
+#### 3. Run the script
+
+##### Linux:
+
+For example, the following will download, build, and install USD's dependencies,
+then build and install USD into ```/usr/local/USD```.
+
+```
+> python USD/build_scripts/build_usd.py /usr/local/USD
 ```
 
-### 3. Build:
+##### MacOS:
 
-#### On Linux 
+In a terminal, run ```xcode-select``` to ensure command line developer tools are 
+installed. Then run the script.
 
-```bash
-cmake                                       \
--DTBB_ROOT_DIR=/path/to/tbb                 \    
--DOPENEXR_LOCATION=/path/to/openexr         \
--DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
--DPTEX_LOCATION=/path/to/ptex               \
--DOIIO_LOCATION=/path/to/openimageio        \
--DBOOST_ROOT=/path/to/boost                 \
-..
+For example, the following will download, build, and install USD's dependencies,
+then build and install USD into ```/opt/local/USD```.
 
-cmake --build . --target install -- -j <NUM_CORES>
+```
+> python USD/build_scripts/build_usd.py /opt/local/USD
 ```
 
-#### On OS X (experimental)
+##### Windows:
 
-The following will generate an Xcode project that can be used to build USD.
-See notes in the [Supported Platforms](#supported-platforms) section
-for more information.
+Launch the "Developer Command Prompt" for your version of Visual Studio and 
+run the script in the opened shell. 
 
-```bash
-cmake                                       \
--G "Xcode"                                  \
--DTBB_ROOT_DIR=/path/to/tbb                 \    
--DOPENEXR_LOCATION=/path/to/openexr         \
--DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
--DPTEX_LOCATION=/path/to/ptex               \
--DOIIO_LOCATION=/path/to/openimageio        \
--DBOOST_ROOT=/path/to/boost                 \
-..
+See https://docs.microsoft.com/en-us/dotnet/framework/tools/developer-command-prompt-for-vs for more details.
 
-cmake --build . --target install -- -j <NUM_CORES>
+For example, the following will download, build, and install USD's dependencies,
+then build and install USD into ```C:\Program Files\USD```.
+
+```
+C:\> python USD\build_scripts\build_usd.py "C:\Program Files\USD"
 ```
 
-#### On Windows (experimental)
+#### 4. Try it out
 
-The following will generate a Visual Studio 2015 (the minimum required version)
-sln file which can be used to build USD. See notes in the 
-[Supported Platforms](#supported-platforms) section for more information.
+Set the environment variables specified by the script when it finishes and 
+launch ```usdview``` with a sample asset.
 
-```cmd.exe
-"C:\Program Files\CMake\bin\cmake.exe"      ^
--G "Visual Studio 14 Win64"                 ^
--DTBB_ROOT_DIR=C:\path\to\tbb               ^
--DOPENEXR_LOCATION=C:\path\to\openexr       ^
--DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv ^
--DPTEX_LOCATION=C:\path\to\ptex             ^
--DOIIO_LOCATION=C:\path\to\openimageio      ^
--DBOOST_ROOT=C:\path\to\boost               ^
-..
-
-cmake --build . --config Release --target install -- /m:%NUMBER_OF_PROCESSORS%
-```  
-
-Scripts for building USD and its dependencies on the supported platforms
-are located in the build_scripts/ subdirectory. You can find documentation
-for these scripts in [Build Scripts](BUILDING.md#build-scripts).
-
-There are many options you can specify throughout the build, such as
-building third-party software plugins, disabling specific components, 
-and enabling developer options. You can find information on these in 
-[Advanced Build Configuration](BUILDING.md).
-
-> Note 1: You will need to update the sample paths with your own.
-
-> Note 2: You may have to supply additional defines to cmake if you have many 
-> versions of packages installed. 
-
-### 4. Try it out:
-
-Launch usdview with a sample asset.
-
-```bash
-$ export PYTHONPATH=$PYTHONPATH:USD_INSTALL_ROOT/lib/python
-$ usdview extras/usd/tutorials/convertingLayerFormats/Sphere.usda
 ```
-
-> Note: Replace ```USD_INSTALL_ROOT``` with the location set in your build,
-> usually via ```CMAKE_INSTALL_PREFIX```.
+> usdview extras/usd/tutorials/convertingLayerFormats/Sphere.usda
+```
 
 Contributing
 ------------

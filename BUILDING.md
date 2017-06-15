@@ -2,6 +2,7 @@ Advanced Build Configuration
 ============================
 
 ## Table of Contents
+- [Building With CMake](#building-with-cmake)
 - [Optional Components](#optional-components)
 - [Third Party Plugins](#third-party-plugins)
 - [Tests](#tests)
@@ -9,6 +10,66 @@ Advanced Build Configuration
 - [USD Developer Options](#usd-developer-options)
 - [Optimization Options](#optimization-options)
 - [Linker Options](#linker-options)
+
+## Building With CMake
+
+Users may specify libraries to build USD against and other build options by 
+passing arguments when running cmake. Documentation for these arguments
+are below.
+
+Some examples:
+
+#### On Linux 
+
+```bash
+cmake                                       \
+-DTBB_ROOT_DIR=/path/to/tbb                 \    
+-DOPENEXR_LOCATION=/path/to/openexr         \
+-DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
+-DPTEX_LOCATION=/path/to/ptex               \
+-DOIIO_LOCATION=/path/to/openimageio        \
+-DBOOST_ROOT=/path/to/boost                 \
+/path/to/USD/source
+
+cmake --build . --target install -- -j <NUM_CORES>
+```
+
+#### On OS X
+
+The following will generate an Xcode project that can be used to build USD.
+
+```bash
+cmake                                       \
+-G "Xcode"                                  \
+-DTBB_ROOT_DIR=/path/to/tbb                 \    
+-DOPENEXR_LOCATION=/path/to/openexr         \
+-DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
+-DPTEX_LOCATION=/path/to/ptex               \
+-DOIIO_LOCATION=/path/to/openimageio        \
+-DBOOST_ROOT=/path/to/boost                 \
+/path/to/USD/source
+
+cmake --build . --target install -- -j <NUM_CORES>
+```
+
+#### On Windows
+
+The following will generate a Visual Studio 2015 solution that can be used to 
+build USD.
+
+```cmd.exe
+"C:\Program Files\CMake\bin\cmake.exe"      ^
+-G "Visual Studio 14 Win64"                 ^
+-DTBB_ROOT_DIR=C:\path\to\tbb               ^
+-DOPENEXR_LOCATION=C:\path\to\openexr       ^
+-DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv ^
+-DPTEX_LOCATION=C:\path\to\ptex             ^
+-DOIIO_LOCATION=C:\path\to\openimageio      ^
+-DBOOST_ROOT=C:\path\to\boost               ^
+\path\to\USD\source
+
+cmake --build . --target install -- /m:%NUMBER_OF_PROCESSORS%
+```  
 
 ## Optional Components
 
