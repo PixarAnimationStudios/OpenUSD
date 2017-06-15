@@ -117,12 +117,14 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
         self.assertEqual(rootLayer.endTimeCode, 24.000000)
 
     def test_FilePermissions(self):
-        import os
+        import os, stat
         from pxr import Tf
         rootLayerFile = 'permissions.usd'
         clipPath = Sdf.Path('/World/fx/points')
         rootLayer = Sdf.Layer.CreateNew(rootLayerFile)
-        os.system('chmod -w ' + rootLayerFile)
+        mode = stat.S_IMODE(os.stat(rootLayerFile).st_mode)
+        os.chmod(rootLayerFile,
+                 mode & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH))
         try:
             UsdUtils.StitchClips(rootLayer, self.layerFileNames, clipPath)
         except Tf.ErrorException as tfError:
@@ -130,7 +132,7 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
         else:
             self.assertTrue(False, "Failed to raise runtime error on unwritable file." )
         finally:
-            os.system('chmod +w ' + rootLayerFile)
+            os.chmod(rootLayerFile, mode)
 
     def test_StitchTopologyOnly(self):
         # Generate a fresh topology
