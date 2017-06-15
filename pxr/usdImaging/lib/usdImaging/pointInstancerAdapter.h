@@ -36,7 +36,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// Delegate support for UsdGeomMesh.
+/// Delegate support for UsdGeomPointInstancer
 ///
 class UsdImagingPointInstancerAdapter : public UsdImagingPrimAdapter {
 public:
