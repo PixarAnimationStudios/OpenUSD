@@ -125,52 +125,6 @@ _IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
             (baseName =="texture" || baseName=="primvar");
 }
 
-TfTokenVector
-UsdImagingShaderAdapter::GetSurfaceShaderParamNames(SdfPath const &usdPath) const
-{
-    TfTokenVector names;
-    if (!TF_VERIFY(usdPath != SdfPath()))
-        return names;
-
-    UsdPrim prim = _delegate->_GetPrim(usdPath);
-    if (!prim)
-        return names;
-
-    UsdShadeShader shader(prim);
-    if (shader) {
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Shader inputs found:\n");
-        std::vector<UsdShadeInput> inputs = shader.GetInputs();
-        names.reserve(inputs.size());
-        for (UsdShadeInput const& input : inputs) {
-            if (_IsTextureOrPrimvarInput(input))
-                continue;
-
-            TF_DEBUG(USDIMAGING_SHADERS).Msg("\t - %s\n",
-                    input.GetFullName().GetText());
-            names.push_back(input.GetFullName());
-        }
-    } else {
-        // ------------------------------------------------------------------ //
-        // Deprecated 
-        // ------------------------------------------------------------------ //
-        
-        std::vector<UsdProperty> const& props = prim.GetProperties();
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Parameters found:\n");
-        TF_FOR_ALL(propIt, props) {
-            if (UsdAttribute attr = propIt->As<UsdAttribute>()) {
-                if (!attr.GetPath().IsNamespacedPropertyPath()) {
-                    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t - %s\n",
-                        attr.GetName().GetText());
-                    names.push_back(attr.GetName());
-                }
-            }
-        }
-        // ------------------------------------------------------------------ //
-    }
-
-    return names;
-}
-
 VtValue
 UsdImagingShaderAdapter::GetSurfaceShaderParamValue(SdfPath const &usdPath, 
                                                TfToken const &paramName) const

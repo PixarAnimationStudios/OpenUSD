@@ -318,8 +318,6 @@ public:
     HD_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
     HD_API
-    virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &shaderId);
-    HD_API
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &shaderId);
     HD_API
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId, 

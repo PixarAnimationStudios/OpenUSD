@@ -223,11 +223,6 @@ public:
     HD_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
 
-    /// Returns a vector of shader parameter names. These names can be used to
-    /// fetch parameter values.
-    HD_API
-    virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &shaderId);
-
     /// Returns a single value for the given shader and named parameter.
     HD_API
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId, 

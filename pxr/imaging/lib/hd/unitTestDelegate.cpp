@@ -609,19 +609,6 @@ Hd_UnitTestDelegate::GetSurfaceShaderSource(SdfPath const &shaderId)
 }
 
 /*virtual*/
-TfTokenVector
-Hd_UnitTestDelegate::GetSurfaceShaderParamNames(SdfPath const &shaderId)
-{
-    TfTokenVector names;
-    if (_SurfaceShader *shader = TfMapLookupPtr(_surfaceShaders, shaderId)) {
-        TF_FOR_ALL(paramIt, shader->params) {
-            names.push_back(TfToken(paramIt->GetName()));
-        }
-    }
-    return names;
-}
-
-/*virtual*/
 HdShaderParamVector
 Hd_UnitTestDelegate::GetSurfaceShaderParams(SdfPath const &shaderId)
 {

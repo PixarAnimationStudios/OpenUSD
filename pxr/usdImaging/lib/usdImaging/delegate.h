@@ -326,8 +326,6 @@ public:
     USDIMAGING_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &id);
     USDIMAGING_API
-    virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &id);
-    USDIMAGING_API
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &id, 
                                   TfToken const &paramName);
     USDIMAGING_API

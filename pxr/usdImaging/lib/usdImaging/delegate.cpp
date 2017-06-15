@@ -2677,22 +2677,6 @@ UsdImagingDelegate::GetSurfaceShaderSource(SdfPath const &shaderId)
 }
 
 /*virtual*/
-TfTokenVector
-UsdImagingDelegate::GetSurfaceShaderParamNames(SdfPath const &shaderId)
-{
-    // PERFORMANCE: We should schedule this to be updated during Sync, rather
-    // than pulling values on demand.
-
-    if (_ShaderAdapterSharedPtr adapter = _ShaderAdapterLookup(shaderId)) {
-        return adapter->GetSurfaceShaderParamNames(GetPathForUsd(shaderId));
-    }
-
-    TF_CODING_ERROR("Unable to find a shader adapter.");
-    TfTokenVector names;
-    return names;
-}
-
-/*virtual*/
 VtValue
 UsdImagingDelegate::GetSurfaceShaderParamValue(SdfPath const &shaderId, 
                                                TfToken const &paramName)
