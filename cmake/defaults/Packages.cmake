@@ -46,7 +46,6 @@ find_package(PythonLibs 2.7 REQUIRED)
 find_package(Boost
     COMPONENTS
         date_time
-        iostreams
         program_options
         python
         regex

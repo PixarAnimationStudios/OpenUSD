@@ -14,7 +14,6 @@ pxr_library(tf
         ${WINLIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_PYTHON_LIBRARY}
-        ${Boost_IOSTREAMS_LIBRARY}
         ${Boost_DATE_TIME_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
