@@ -675,7 +675,7 @@ UsdImagingGLHdEngine::Render(RenderParams params)
     glBindVertexArray(vao);
     glBindVertexArray(0);
 
-    glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT);
+    glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
 
     // hydra orients all geometry during topological processing so that
     // front faces have ccw winding. We disable culling because culling
@@ -733,7 +733,7 @@ UsdImagingGLHdEngine::Render(RenderParams params)
 
     glBindVertexArray(0);
 
-    glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT
+    glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
 
     // XXX: We should not delete the VAO on every draw call, but we currently
     // must because it is GL Context state and we do not control the context.
