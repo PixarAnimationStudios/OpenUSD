@@ -1070,14 +1070,24 @@ function(_pxr_library NAME)
     # Set up the target.
     #
 
+    # Note OBJECT and PLUGIN types.
+    set(isObject FALSE)
+    set(isPlugin FALSE)
+    if(args_TYPE STREQUAL "OBJECT" OR args_TYPE STREQUAL "OBJECT_PLUGIN")
+        set(isObject TRUE)
+    endif()
+    if(args_TYPE STREQUAL "PLUGIN" OR args_TYPE STREQUAL "OBJECT_PLUGIN")
+        set(isPlugin TRUE)
+    endif()
+
     if(_building_core)
         # We need to distinguish core libraries.  We keep track of them here.
-        if(NOT args_TYPE STREQUAL "PLUGIN")
-            get_property(help CACHE PXR_CORE_LIBS PROPERTY HELPSTRING)
-            list(APPEND PXR_CORE_LIBS ${NAME})
-            set(PXR_CORE_LIBS "${PXR_CORE_LIBS}" CACHE INTERNAL "${help}")
-        endif()
-        if(args_TYPE STREQUAL "OBJECT")
+        get_property(help CACHE PXR_CORE_LIBS PROPERTY HELPSTRING)
+        list(APPEND PXR_CORE_LIBS ${NAME})
+        set(PXR_CORE_LIBS "${PXR_CORE_LIBS}" CACHE INTERNAL "${help}")
+
+        # Keep track of core OBJECT libraries.
+        if(isObject)
             get_property(help CACHE PXR_OBJECT_LIBS PROPERTY HELPSTRING)
             list(APPEND PXR_OBJECT_LIBS ${NAME})
             set(PXR_OBJECT_LIBS "${PXR_OBJECT_LIBS}" CACHE INTERNAL "${help}")
@@ -1086,7 +1096,7 @@ function(_pxr_library NAME)
 
     # Add the target.  We also add the headers because that's the easiest
     # way to get them to appear in IDE projects.
-    if(args_TYPE STREQUAL "OBJECT")
+    if(isObject)
         # When building a monolithic library we don't build individual
         # static or shared libraries.  Instead we build OBJECT libraries
         # which simply compile the sources.
@@ -1112,7 +1122,7 @@ function(_pxr_library NAME)
         )
 
     else()
-        # Building an explicitly shared library.
+        # Building an explicitly shared library or plugin.
         add_library(${NAME}
             SHARED
             ${args_CPPFILES}
@@ -1127,15 +1137,20 @@ function(_pxr_library NAME)
 
     # Where do we install to?
     _get_install_dir("include/${PXR_PREFIX}/${NAME}" headerInstallPrefix)
-    if(args_TYPE STREQUAL "PLUGIN")
-        _get_install_dir("plugin" libInstallPrefix)
+    _get_install_dir("lib" libInstallPrefix)
+    if(isPlugin)
+        _get_install_dir("plugin" pluginInstallPrefix)
         if(NOT PXR_INSTALL_SUBDIR)
             # XXX -- Why this difference?
-            _get_install_dir("plugin/usd" libInstallPrefix)
+            _get_install_dir("plugin/usd" pluginInstallPrefix)
         endif()
-        set(pluginInstallPrefix "${libInstallPrefix}")
+        if(NOT isObject)
+            # A plugin embedded in the monolithic library is found in
+            # the usual library location, otherwise plugin libraries
+            # are in the plugin install location.
+            set(libInstallPrefix "${pluginInstallPrefix}")
+        endif()
     else()
-        _get_install_dir("lib" libInstallPrefix)
         _get_install_dir("share/usd/plugins" pluginInstallPrefix)
     endif()
     if(args_SUBDIR)
@@ -1279,7 +1294,7 @@ function(_pxr_library NAME)
     # Set up the install.
     #
 
-    if(NOT args_TYPE STREQUAL "OBJECT")
+    if(NOT isObject)
         install(
             TARGETS ${NAME}
             LIBRARY DESTINATION ${libInstallPrefix}
