@@ -217,12 +217,46 @@ _IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
             (baseName =="texture" || baseName=="primvar");
 }
 
+void 
+UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
+    UsdGeomGprim const& gprim,
+    SdfPath const& cachePath,
+    TfToken const& primvarName,
+    UsdTimeCode time,
+    UsdImagingValueCache* valueCache)
+{
+    UsdGeomPrimvar primvarAttr = gprim.GetPrimvar(primvarName);
+
+    if (!primvarAttr) {
+        return;
+    }
+
+    VtValue v;
+    if (primvarAttr.ComputeFlattened(&v, time)) {
+
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("Found primvar %s\n",
+            primvarName.GetText());
+
+        UsdImagingValueCache::PrimvarInfo primvar;
+        primvar.name = primvarName;
+        primvar.interpolation = primvarAttr.GetInterpolation();
+        valueCache->GetPrimvar(cachePath, primvar.name) = v;
+        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+
+    } else {
+
+        TF_DEBUG(USDIMAGING_SHADERS).Msg( "\t\t No primvar on <%s> named %s\n",
+            gprim.GetPath().GetText(), primvarName.GetText());
+    }
+}
+
 void
-UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& gprim,
-                                          SdfPath const& cachePath, 
-                                          UsdShadeShader const& shader,
-                                          UsdTimeCode time,
-                                          UsdImagingValueCache* valueCache)
+UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(
+    UsdGeomGprim const& gprim,
+    SdfPath const& cachePath, 
+    UsdShadeShader const& shader,
+    UsdTimeCode time,
+    UsdImagingValueCache* valueCache)
 {
     // TODO: It might be convenient to implicitly wire up PtexFaceOffset and
     // PtexFaceIndex primvars.
@@ -252,27 +286,10 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& g
             if (id == UsdHydraTokens->HwPrimvar_1) {
                 UsdShadeShader sourceShader(source);
                 TfToken t;
-                VtValue v;
-                UsdGeomPrimvar primvarAttr;
                 if (UsdHydraPrimvar(sourceShader).GetVarnameAttr().Get(&t, 
                                             UsdTimeCode::Default())) {
-                    primvarAttr = gprim.GetPrimvar(t);
-                    if (primvarAttr.ComputeFlattened(&v, time)) {
-                        TF_DEBUG(USDIMAGING_SHADERS).Msg("Found primvar %s\n",
-                            t.GetText());
-
-                        UsdImagingValueCache::PrimvarInfo primvar;
-                        primvar.name = t;
-                        primvar.interpolation = primvarAttr.GetInterpolation();
-                        valueCache->GetPrimvar(cachePath, t) = v;
-                        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                    } else {
-                        TF_DEBUG(USDIMAGING_SHADERS).Msg(
-                            "\t\t No primvar on <%s> named %s\n",
-                            gprim.GetPath().GetText(),
-                            t.GetText());
-
-                    }
+                    _ComputeAndMergePrimvar(
+                        gprim, cachePath, t, time, valueCache);
                 }
             } else {
                 // Recursively look for more primvars
@@ -307,40 +324,26 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
                                 + ":texture"))) {
             TfToken t;
             SdfAssetPath ap;
-            VtValue v;
-            UsdGeomPrimvar primvarAttr;
             texAttr.Get(&ap, UsdTimeCode::Default());
 
             bool isPtex = GlfIsSupportedPtexTexture(TfToken(ap.GetAssetPath()));
             if (isPtex) {
+
                 t = UsdImagingTokens->ptexFaceIndex;
                 // Allow the client to override this name
                 texAttr.GetMetadata(UsdImagingTokens->faceIndexPrimvar, &t);
-                primvarAttr = gprim.GetPrimvar(t);
-                if (primvarAttr) {
-                    if (primvarAttr.ComputeFlattened(&v, time)) {
-                        primvar.name = t;
-                        primvar.interpolation = primvarAttr.GetInterpolation();
-                        valueCache->GetPrimvar(cachePath, t) = v;
-                        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                    }
-                }
+                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
+
                 t = UsdImagingTokens->ptexFaceOffset;
                 // Allow the client to override this name
                 texAttr.GetMetadata(UsdImagingTokens->faceOffsetPrimvar, &t);
-                primvarAttr = gprim.GetPrimvar(t);
-                if (primvarAttr) {
-                    primvar.name = t;
-                    primvar.interpolation = primvarAttr.GetInterpolation();
-                    if (primvarAttr.ComputeFlattened(&v, time)) {
-                        valueCache->GetPrimvar(cachePath, t) = v;
-                        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                    }
-                }
+                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
+
             } else {
                 texAttr.GetMetadata(UsdImagingTokens->uvPrimvar, &t);
-                primvarAttr = gprim.GetPrimvar(t);
+                UsdGeomPrimvar primvarAttr = gprim.GetPrimvar(t);
                 if (TF_VERIFY(primvarAttr, "%s\n", t.GetText())) {
+                    VtValue v;
                     if (TF_VERIFY(primvarAttr.ComputeFlattened(&v, time))) {
                         primvar.name = t; // does not include primvars:
                         primvar.interpolation = primvarAttr.GetInterpolation();
@@ -357,16 +360,8 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
                                         TfToken(attr.GetPath().GetName() 
                                                 + ":primvar"))) {
             TfToken t;
-            VtValue v;
-            UsdGeomPrimvar primvarAttr;
             if (TF_VERIFY(pvAttr.Get(&t, UsdTimeCode::Default()))) {
-                primvarAttr = gprim.GetPrimvar(t);
-                if (TF_VERIFY(primvarAttr.ComputeFlattened(&v, time))) {
-                    primvar.name = t; // does not include primvars:
-                    primvar.interpolation = primvarAttr.GetInterpolation();
-                    valueCache->GetPrimvar(cachePath, t) = v;
-                   _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                }
+                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
             }
         }
     }

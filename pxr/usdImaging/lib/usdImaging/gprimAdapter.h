@@ -137,6 +137,13 @@ private:
                            UsdTimeCode time,
                            UsdImagingValueCache* valueCache);
 
+    // Helper method for the _DiscoverPrimvars methods above.
+    void _ComputeAndMergePrimvar(UsdGeomGprim const& gprim,
+                           SdfPath const& cachePath,
+                           TfToken const &primvarName,
+                           UsdTimeCode time,
+                           UsdImagingValueCache* valueCache);
+
     /// Reads the extent from the given prim. If the extent is not authored,
     /// an empty GfRange3d is returned, the extent will not be computed.
     GfRange3d _GetExtent(UsdPrim const& prim, UsdTimeCode time);
