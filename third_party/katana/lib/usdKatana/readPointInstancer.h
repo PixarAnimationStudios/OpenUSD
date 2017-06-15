@@ -37,10 +37,10 @@ void
 PxrUsdKatanaReadPointInstancer(
         const UsdGeomPointInstancer& instancer,
         const PxrUsdKatanaUsdInPrivateData& data,
-        PxrUsdKatanaAttrMap& attrs,
+        PxrUsdKatanaAttrMap& outputAttrMap,
         PxrUsdKatanaAttrMap& sourcesAttrMap,
         PxrUsdKatanaAttrMap& instancesAttrMap,
-        PxrUsdKatanaAttrMap& instancerOpArgsAttrMap);
+        PxrUsdKatanaAttrMap& inputAttrMap);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
