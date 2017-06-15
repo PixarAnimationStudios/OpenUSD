@@ -1418,7 +1418,7 @@ struct Pcp_ParallelIndexer
     PcpErrorVector *_allErrors;
     ChildrenPredicate _childrenPredicate;
     vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
-    const PcpLayerStackPtr &_layerStack;
+    PcpLayerStackPtr _layerStack;
     PcpPrimIndexInputs _baseInputs;
     tbb::concurrent_vector<PcpPrimIndexOutputs> _results;
     tbb::spin_rw_mutex _primIndexCacheMutex;
