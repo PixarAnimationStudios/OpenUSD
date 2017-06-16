@@ -95,18 +95,21 @@ public:
     /// HdxTaskSet->idRender
     ///
     /// A vector of zero length indicates the specified taskSet is unsupported.
+    HDX_API
     HdTaskSharedPtrVector const &GetTasks(TfToken const& taskSet);
 
     /// -------------------------------------------------------
     /// Rendering API
 
     /// Set the collection to be rendered.
+    HDX_API
     void SetCollection(HdRprimCollection const& collection);
 
     /// Set the render params. Note: params.camera and params.viewport will
     /// be overwritten, since they come from SetCameraState.
     /// XXX: For GL renders, HdxTaskController relies on the caller to
     /// correctly set GL_SAMPLE_ALPHA_TO_COVERAGE.
+    HDX_API
     void SetRenderParams(HdxRenderTaskParams const& params);
 
     /// -------------------------------------------------------
@@ -118,6 +121,7 @@ public:
     ///               or HdxSimpleLightBypassTask.  The former stores lighting
     ///               state in Sprims.
     /// XXX: remove "bypass"
+    HDX_API
     void SetLightingState(GlfSimpleLightingContextPtr const& src,
                                   bool bypass);
 
@@ -125,13 +129,16 @@ public:
     /// Camera API
     
     /// Set the parameters for the viewer default camera.
+    HDX_API
     void SetCameraMatrices(GfMatrix4d const& viewMatrix,
                            GfMatrix4d const& projectionMatrix);
 
     /// Set the camera viewport.
+    HDX_API
     void SetCameraViewport(GfVec4d const& viewport);
 
     /// Set the camera clip planes.
+    HDX_API
     void SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes);
 
     /// -------------------------------------------------------
@@ -139,10 +146,12 @@ public:
 
     /// Set pick target resolution (if applicable).
     /// XXX: Is there a better place for this to live?
+    HDX_API
     void SetPickResolution(unsigned int size);
 
     /// Test for intersection.
     /// XXX: This should be changed to not take an HdEngine*.
+    HDX_API
     bool TestIntersection(
             HdEngine* engine,
             HdRprimCollection const& collection,
@@ -154,18 +163,22 @@ public:
     /// Selection API
 
     /// Turns the selection task on or off.
+    HDX_API
     void SetEnableSelection(bool enable);
 
     /// Set the selection color.
+    HDX_API
     void SetSelectionColor(GfVec4f const& color);
 
     /// -------------------------------------------------------
     /// Progressive Image Generation
     
     /// Reset the image render to reflect a changed scene.
+    HDX_API
     void ResetImage();
 
     /// Return whether the image has converged.
+    HDX_API
     bool IsConverged() const;
 
 private:
