@@ -269,6 +269,7 @@ public:
         // When in "as sources and instances" mode, scan for instances
         // and masters at each location that contains a payload.
         if (prim.HasPayload() &&
+            !usdInArgs->GetPrePopulate() &&
             FnAttribute::StringAttribute(
                  interface.getOpArg("instanceMode")
                  ).getValue("expanded", false) == 
@@ -277,11 +278,13 @@ public:
             FnKat::GroupAttribute masterMapping =
                 PxrUsdKatanaUtils::BuildInstanceMasterMapping(
                         prim.GetStage(), prim.GetPath());
+            FnKat::StringAttribute masterParentPath(prim.GetPath().GetString());
             if (masterMapping.isValid() &&
                 masterMapping.getNumberOfChildren()) {
                 opArgs = FnKat::GroupBuilder()
                     .update(opArgs)
                     .set("masterMapping", masterMapping)
+                    .set("masterParentPath", masterParentPath)
                     .build();
             }
         }
@@ -386,7 +389,6 @@ public:
                     FnAttribute::StringAttribute(
                         master.GetPrimPath().GetString()));
             
-            
             FnAttribute::StringAttribute masterPathAttr = 
                     opArgs.getChildByName("masterMapping." +
                             FnKat::DelimiterEncode(
@@ -394,7 +396,14 @@ public:
             if (masterPathAttr.isValid())
             {
                 std::string masterPath = masterPathAttr.getValue("", false);
-                
+
+                std::string masterParentPath = FnAttribute::StringAttribute(
+                    opArgs.getChildByName("masterParentPath"))
+                    .getValue("", false);
+                if (masterParentPath == "/") {
+                    masterParentPath = std::string();
+                }
+
                 if (!masterPath.empty())
                 {
                     interface.setAttr(
@@ -402,6 +411,7 @@ public:
                     interface.setAttr("geometry.instanceSource",
                             FnAttribute::StringAttribute(
                                 usdInArgs->GetRootLocationPath() + 
+                                masterParentPath +
                                 "/Masters/" + masterPath));
                     
                     // XXX, ConstraintGroups are still made for models 
@@ -411,10 +421,7 @@ public:
                     skipAllChildren = true;
                 }
             }
-            
-            
         }
-        
         
         // advertise available variants for UIs to choose amongst
         UsdVariantSets variantSets = prim.GetVariantSets();
@@ -437,9 +444,11 @@ public:
         }
             
         // Emit "Masters".
-        // When prepopulating these must go under the root;
-        // otherwise they go under each payload scope.
-        if ((interface.atRoot() && usdInArgs->GetPrePopulate()) ||
+        // When prepopulating, these will be discovered and emitted under
+        // the root.  Otherwise, they will be discovered incrementally
+        // as each payload is loaded, and we emit them under the payload's
+        // location.
+        if (interface.atRoot() ||
             (prim.HasPayload() && !usdInArgs->GetPrePopulate())) {
             FnKat::GroupAttribute masterMapping =
                     opArgs.getChildByName("masterMapping");
