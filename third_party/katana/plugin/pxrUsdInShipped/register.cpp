@@ -46,6 +46,10 @@
 #include "pxr/usd/usdLux/rectLight.h"
 #include "pxr/usd/usdLux/lightFilter.h"
 #include "pxr/usd/usdRi/pxrIntMultLightFilter.h"
+#include "pxr/usd/usdRi/pxrBarnLightFilter.h"
+#include "pxr/usd/usdRi/pxrCookieLightFilter.h"
+#include "pxr/usd/usdRi/pxrRodLightFilter.h"
+#include "pxr/usd/usdRi/pxrRampLightFilter.h"
 
 #include "pxrUsdInShipped/attrfnc_materialReference.h"
 
@@ -110,6 +114,10 @@ void registerPlugins()
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdLuxRectLight>("PxrUsdInCore_LightOp");
 
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdRiPxrIntMultLightFilter>("PxrUsdInCore_LightFilterOp");
+    PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdRiPxrBarnLightFilter>("PxrUsdInCore_LightFilterOp");
+    PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdRiPxrCookieLightFilter>("PxrUsdInCore_LightFilterOp");
+    PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdRiPxrRampLightFilter>("PxrUsdInCore_LightFilterOp");
+    PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdRiPxrRodLightFilter>("PxrUsdInCore_LightFilterOp");
 
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomCamera>("PxrUsdInCore_CameraOp");
 

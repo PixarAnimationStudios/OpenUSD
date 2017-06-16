@@ -67,7 +67,7 @@ struct _UsdBuilder {
     GroupBuilder &_builder;
     double _time;
 
-    _UsdBuilder& Set(const char *kat_name, UsdAttribute attr) {
+    _UsdBuilder& Set(std::string kat_name, UsdAttribute attr) {
         VtValue val;
         if (attr.IsValid() && attr.HasAuthoredValueOpinion()
             && attr.Get(&val, _time)) {
@@ -76,7 +76,44 @@ struct _UsdBuilder {
                                         /* asShaderParam */ true,
                                         /* pathAsModel */ false,
                                         /* resolvePath */ false);
-            _builder.set(kat_name, kat_attr);
+            _builder.set(kat_name.c_str(), kat_attr);
+        }
+        return *this;
+    }
+
+    _UsdBuilder& SetSpline(std::string kat_prefix, std::string valueSuffix,
+                           UsdRiSplineAPI spline) {
+        // Knot count
+        {
+            UsdAttribute posAttr = spline.GetPositionsAttr();
+            VtFloatArray posVec;
+            posAttr.Get(&posVec);
+            _builder.set(kat_prefix, FnKat::IntAttribute(posVec.size()));
+        }
+        // Knot positions
+        Set( kat_prefix + "_Knots", spline.GetPositionsAttr() );
+        // Knot values
+        Set( kat_prefix + valueSuffix, spline.GetValuesAttr() );
+        // Interpolation
+        {
+            VtValue val;
+            UsdAttribute attr = spline.GetInterpolationAttr();
+            if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+                && attr.Get(&val, _time) && val.IsHolding<TfToken>()) {
+                TfToken t = val.Get<TfToken>();
+                std::string interp = "unknown";
+                if (t == UsdRiTokens->linear) {
+                    interp = "linear";
+                } else if (t == UsdRiTokens->catmullRom) {
+                    interp = "catmull-rom";
+                } else if (t == UsdRiTokens->bspline) {
+                    interp = "bspline";
+                } else if (t == UsdRiTokens->constant) {
+                    interp = "constant";
+                }
+                _builder.set(kat_prefix + "_Interpolation",
+                             FnKat::StringAttribute(interp));
+            }
         }
         return *this;
     }
@@ -95,7 +132,7 @@ PxrUsdKatanaReadLightFilter(
     GroupBuilder materialBuilder;
     GroupBuilder filterBuilder;
     _UsdBuilder usdBuilder = {filterBuilder, currentTime};
-
+    
     if (UsdRiLightFilterAPI f = UsdRiLightFilterAPI(filterPrim)) {
         usdBuilder
             .Set("density", f.GetRiDensityAttr())
@@ -273,6 +310,8 @@ PxrUsdKatanaReadLightFilter(
         usdBuilder
             .Set("beginDist", f.GetFalloffRampBeginDistanceAttr())
             .Set("endDist", f.GetFalloffRampEndDistanceAttr())
+            .SetSpline("colorRamp", "_Colors", f.GetColorRampAPI())
+            .SetSpline("ramp", "_Floats", f.GetFalloffRampAPI())
             ;
         // rampMode
         {
@@ -292,7 +331,6 @@ PxrUsdKatanaReadLightFilter(
                 }
             }
         }
-        // TODO spline
     }
     if (UsdRiPxrRodLightFilter f = UsdRiPxrRodLightFilter(filterPrim)) {
         materialBuilder.set("prmanLightfilterShader",
@@ -319,8 +357,9 @@ PxrUsdKatanaReadLightFilter(
             .Set("frontEdge", f.GetEdgeFrontAttr())
             .Set("backEdge", f.GetEdgeBackAttr())
             .Set("saturation", f.GetColorSaturationAttr())
+            .SetSpline("colorRamp", "_Colors", f.GetColorRampAPI())
+            .SetSpline("falloff", "_Floats", f.GetFalloffRampAPI())
             ;
-        // TODO spline
     }
 
     // Gather prman statements
