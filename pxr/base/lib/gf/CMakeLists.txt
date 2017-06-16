@@ -191,7 +191,7 @@ pxr_register_test(testGfDecomposeRotation
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDecomposeRotation"
 )
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (NOT APPLE)
     pxr_register_test(testGfFrustum
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfFrustum"
