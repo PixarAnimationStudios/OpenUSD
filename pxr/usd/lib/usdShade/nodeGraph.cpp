@@ -243,8 +243,29 @@ _GetInterfaceAttributeRecipientInputs(
     std::vector<UsdShadeInput> ret;
     std::string baseName = UsdShadeUtils::GetBaseNameAndType(
             interfaceAttr.GetName()).first.GetString();
-    TfToken relName(_GetInterfaceAttributeRelPrefix(renderTarget) + baseName);
-    if (UsdRelationship rel = prim.GetRelationship(relName)) {
+
+    std::vector<UsdRelationship> interfaceRecipientsOfRels;
+    if (!renderTarget.IsEmpty()) {
+        TfToken relName(_GetInterfaceAttributeRelPrefix(renderTarget) 
+                        + baseName);
+        if (UsdRelationship rel = prim.GetRelationship(relName)) {
+            interfaceRecipientsOfRels.push_back(rel);
+        }
+    } else {
+        // Find "interfaceRecipientsOf:" relationships for all renderTargets.
+        for (const UsdRelationship &rel : prim.GetRelationships()) {
+            // If the relationship name contains "interfaceRecipientsOf:"
+            // and if its basename matches the basename of the interface 
+            // attribute, it must be relevant to this relationship.
+            if (TfStringContains(rel.GetName(), 
+                UsdShadeTokens->interfaceRecipientsOf) &&
+                rel.GetBaseName() == interfaceAttr.GetBaseName()) {
+                interfaceRecipientsOfRels.push_back(rel);
+            }
+        }
+    }
+
+    for (const UsdRelationship &rel : interfaceRecipientsOfRels) {
         std::vector<SdfPath> targets;
         rel.GetTargets(&targets);
         TF_FOR_ALL(targetIter, targets) {
