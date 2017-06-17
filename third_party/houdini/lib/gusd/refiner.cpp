@@ -355,55 +355,57 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
             // If we find a packed prim that has a name, this become a group (xform) in 
             // USD. If it doesn't have a name, we just accumulate the transform and recurse.
 
-            // TODO: What to do with a bunch of instances
             auto packedGeo = UTverify_cast<const GT_GEOPrimPacked*>(geometry.get());
-            UT_Matrix4D m;
-            inst->transforms()->get(0)->getMatrix(m);
+            for( GT_Size i = 0; i < inst->transforms()->entries(); ++i ) {
 
-            UT_Matrix4D newCtm = m_localToWorldXform;
+                UT_Matrix4D m;
+                inst->transforms()->get(i)->getMatrix(m);
 
-            // Don't include the transform of prototypes when it's already
-            // factored into the instance
-            if (!m_buildPrototypes || m_writePrototypeTransforms)
+                UT_Matrix4D newCtm = m_localToWorldXform;
+
+                // Don't include the transform of prototypes when it's already
+                // factored into the instance
+                if (!m_buildPrototypes || m_writePrototypeTransforms)
                     newCtm = m* m_localToWorldXform;
-            SdfPath newPath = m_pathPrefix;
-            bool recurse = true;
+                SdfPath newPath = m_pathPrefix;
+                bool recurse = true;
 
-            if( primHasNameAttr || 
-                ( m_forceGroupTopPackedPrim && m_isTopLevel )) {
+                if( primHasNameAttr || 
+                    ( m_forceGroupTopPackedPrim && m_isTopLevel )) {
 
-                // m_forceGroupTopPackedPrim is used when we are writing instance 
-                // prototypes. We need to add instance id attributes to the top 
-                // level group. Here we make sure that we create that group, even 
-                // if the user hasn't named it.
+                    // m_forceGroupTopPackedPrim is used when we are writing instance 
+                    // prototypes. We need to add instance id attributes to the top 
+                    // level group. Here we make sure that we create that group, even 
+                    // if the user hasn't named it.
 
-                newPath = m_collector.add(  SdfPath(primPath), 
-                                            addNumericSuffix,
-                                            gtPrim,
-                                            newCtm,
-                                            purpose );
-        
-                // If we are just writing transforms and encounter a packed prim, we 
-                // just want to write it's transform and not refine it further.
-                recurse = m_refinePackedPrims;
-            }
+                    newPath = m_collector.add(  SdfPath(primPath), 
+                                                addNumericSuffix,
+                                                gtPrim,
+                                                newCtm,
+                                                purpose );
+            
+                    // If we are just writing transforms and encounter a packed prim, we 
+                    // just want to write it's transform and not refine it further.
+                    recurse = m_refinePackedPrims;
+                }
 
-            if( recurse ) {
-                GusdRefiner childRefiner(
-                                m_collector,
-                                newPath,
-                                m_pathAttrName,
-                                newCtm );
-                
+                if( recurse ) {
+                    GusdRefiner childRefiner(
+                                    m_collector,
+                                    newPath,
+                                    m_pathAttrName,
+                                    newCtm );
+                    
                 childRefiner.m_refinePackedPrims = m_refinePackedPrims;
-                childRefiner.m_forceGroupTopPackedPrim = m_forceGroupTopPackedPrim;
-                childRefiner.m_isTopLevel = false;
+                    childRefiner.m_forceGroupTopPackedPrim = m_forceGroupTopPackedPrim;
+                    childRefiner.m_isTopLevel = false;
 
-    #if UT_MAJOR_VERSION_INT >= 16
-                childRefiner.refineDetail( packedGeo->getPackedDetail(), m_refineParms );
-    #else
-                childRefiner.refineDetail( packedGeo->getPrim()->getPackedDetail(), m_refineParms );
-    #endif
+#if UT_MAJOR_VERSION_INT >= 16
+                    childRefiner.refineDetail( packedGeo->getPackedDetail(), m_refineParms );
+#else
+                    childRefiner.refineDetail( packedGeo->getPrim()->getPackedDetail(), m_refineParms );
+#endif
+                }
             }
             return;
         }
@@ -412,7 +414,7 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
     if( primType != GT_GEO_PACKED && GusdPrimWrapper::isGTPrimSupported(gtPrim) ) {
 
         UT_Matrix4D m;
-        gtPrim->getPrimitiveTransform()->getMatrix(m);
+            gtPrim->getPrimitiveTransform()->getMatrix(m);
 
         UT_Matrix4D newCtm = m_localToWorldXform;
 
