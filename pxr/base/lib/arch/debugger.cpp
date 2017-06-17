@@ -574,9 +574,7 @@ Arch_InitDebuggerAttach()
     }
 #elif defined(ARCH_OS_WINDOWS)
     // If ARCH_DEBUGGER is in the environment then enable attaching.
-    size_t requiredSize;
-    getenv_s(&requiredSize, nullptr, 0, "ARCH_DEBUGGER");
-    if (requiredSize) {
+    if (getenv("ARCH_DEBUGGER")) {
         _archDebuggerAttachArgs = (char**)&_archDebuggerAttachArgs;
     }
 #endif
@@ -610,13 +608,7 @@ namespace {
 bool
 _ArchAvoidJIT()
 {
-#if defined(ARCH_OS_WINDOWS)
-    size_t requiredSize;
-    getenv_s(&requiredSize, nullptr, 0, "ARCH_AVOID_JIT");
-    return (requiredSize != 0);
-#else
     return (getenv("ARCH_AVOID_JIT") != nullptr);
-#endif
 }
 }
 

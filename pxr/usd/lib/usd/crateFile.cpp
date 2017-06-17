@@ -78,13 +78,6 @@
 #include <tuple>
 #include <type_traits>
 
-#if defined(ARCH_OS_WINDOWS)
-// Avoid deprecation warning on Windows.  We only scan unsigned ints so
-// the behavior is identical for valid arguments.
-#define sscanf sscanf_s
-#define strcpy strcpy_s
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {

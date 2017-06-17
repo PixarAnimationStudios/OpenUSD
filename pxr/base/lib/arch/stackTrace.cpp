@@ -45,7 +45,6 @@
 #define MAXHOSTNAMELEN 64
 #endif
 #else
-#include <alloca.h>
 #include <dlfcn.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -386,11 +385,10 @@ int _GetStackTraceName(char* buf, size_t len)
     // the empty file.
     int suffix = 0;
 #if defined(ARCH_OS_WINDOWS)
-    int fd;
-    _sopen_s(&fd, buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 
-                _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    int fd = _open(buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 
+                   _S_IREAD | _S_IWRITE);
 #else
-    int fd = open(buf, O_CREAT|O_WRONLY|O_TRUNC|O_EXCL, 0640);
+    int fd =  open(buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0640);
 #endif
 
     while (fd == -1 && errno == EEXIST) {
@@ -404,10 +402,10 @@ int _GetStackTraceName(char* buf, size_t len)
         asstrcpy(end, ".");
         asitoa(end + 1, suffix);
 #if defined(ARCH_OS_WINDOWS)
-        _sopen_s(&fd, buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 
-                            _SH_DENYNO, _S_IREAD | _S_IWRITE);
+        fd = _open(buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 
+                   _S_IREAD | _S_IWRITE);
 #else
-        fd = open(buf, O_CREAT|O_WRONLY|O_TRUNC|O_EXCL, 0640);
+        fd =  open(buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0640);
 #endif
     }
     if (fd != -1) {
