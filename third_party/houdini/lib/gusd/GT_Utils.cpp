@@ -1018,6 +1018,7 @@ isDataConst( const T* p, GT_Size entries, GT_Size tupleSize ) {
                 *(p+2) != first_2 ) {
                 return false;
             }
+            p += 3;
         }
         return true;
     }
