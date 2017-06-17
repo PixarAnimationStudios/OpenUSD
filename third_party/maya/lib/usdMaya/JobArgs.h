@@ -32,15 +32,23 @@
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/usd/usdFileFormat.h"
+#include "pxr/usd/usd/usdaFileFormat.h"
+#include "pxr/usd/usd/usdcFileFormat.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 #define PXRUSDMAYA_TRANSLATOR_TOKENS \
-    ((UsdFileExtensionDefault, "usd")) \
-    ((UsdFileExtensionASCII, "usda")) \
-    ((UsdFileExtensionCrate, "usdc")) \
-    ((UsdFileFilter, "*.usd *.usda *.usdc"))
+    ((UsdFileExtensionDefault, \
+        SdfFileFormat::FindById(UsdUsdFileFormatTokens->Id)->GetPrimaryFileExtension())) \
+    ((UsdFileFilter, \
+        std::string("*.") \
+            + SdfFileFormat::FindById(UsdUsdFileFormatTokens->Id)->GetPrimaryFileExtension() \
+            + " *." \
+            + SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->GetPrimaryFileExtension() \
+            + " *." \
+            + SdfFileFormat::FindById(UsdUsdcFileFormatTokens->Id)->GetPrimaryFileExtension()))
 
 TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
         PXRUSDMAYA_TRANSLATOR_TOKENS);
