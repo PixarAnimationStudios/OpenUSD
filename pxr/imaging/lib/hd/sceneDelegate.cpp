@@ -309,19 +309,5 @@ HdSceneDelegate::GetPrimVarInstanceNames(SdfPath const& id)
     return TfTokenVector();
 }
 
-/*virtual*/
-int
-HdSceneDelegate::GetPrimVarDataType(SdfPath const& id, TfToken const& key)
-{
-    return 0;
-}
-
-/*virtual*/
-int
-HdSceneDelegate::GetPrimVarComponents(SdfPath const& id, TfToken const& key)
-{
-    return 0;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 

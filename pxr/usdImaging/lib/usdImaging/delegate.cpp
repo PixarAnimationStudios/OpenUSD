@@ -2559,24 +2559,6 @@ UsdImagingDelegate::GetPrimVarInstanceNames(SdfPath const& id)
 }
 
 /*virtual*/
-int
-UsdImagingDelegate::GetPrimVarDataType(SdfPath const& id, TfToken const& key)
-{
-    HD_TRACE_FUNCTION();
-    //SdfPath usdPath = GetPathForUsd(id);
-    return 1;
-}
-
-/*virtual*/
-int
-UsdImagingDelegate::GetPrimVarComponents(SdfPath const& id, TfToken const& key)
-{
-    HD_TRACE_FUNCTION();
-    //SdfPath usdPath = GetPathForUsd(id);
-    return 1;
-}
-
-/*virtual*/
 VtIntArray
 UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerId,
                                        SdfPath const &prototypeId)

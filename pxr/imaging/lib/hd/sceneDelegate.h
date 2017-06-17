@@ -284,14 +284,6 @@ public:
     HD_API
     virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
 
-    /// Returns the primVar data type.
-    HD_API
-    virtual int GetPrimVarDataType(SdfPath const& id, TfToken const& key);
-
-    /// Returns the number of components in the primVar, for example a
-    /// vec4-valued primVar would return 4.
-    HD_API
-    virtual int GetPrimVarComponents(SdfPath const& id, TfToken const& key);
 
 private:
     HdRenderIndex *_index;

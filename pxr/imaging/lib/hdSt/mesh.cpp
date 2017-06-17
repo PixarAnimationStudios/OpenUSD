@@ -647,10 +647,6 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             // source. Otherwise (if we're updating just normals) ask delegate.
             // This is very unfortunate. Can we force normals to be always
             // float? (e.g. when switing flat -> smooth first time).
-            //
-            // or, we should use HdSceneDelegate::GetPrimVarDataType() and
-            // HdSceneDelegate::GetPrimVarComponents() once they are implemented
-            // in UsdImagindDelegate.
 
             if (!points) {
                 VtValue value = GetPoints(sceneDelegate);

@@ -894,22 +894,6 @@ Hd_UnitTestDelegate::GetPrimVarInstanceNames(SdfPath const &id)
     return names;
 }
 
-/*virtual*/
-int
-Hd_UnitTestDelegate::GetPrimVarDataType(SdfPath const& id, TfToken const& key)
-{
-    HD_TRACE_FUNCTION();
-    return 1;
-}
-
-/*virtual*/
-int
-Hd_UnitTestDelegate::GetPrimVarComponents(SdfPath const& id, TfToken const& key)
-{
-    HD_TRACE_FUNCTION();
-    return 1;
-}
-
 void
 Hd_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4f const &transform, bool guide,
                              SdfPath const &instancerId, TfToken const &scheme)

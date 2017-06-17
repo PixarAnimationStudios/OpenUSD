@@ -302,10 +302,6 @@ public:
     virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
     HD_API
     virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
-    HD_API
-    virtual int GetPrimVarDataType(SdfPath const& id, TfToken const& key);
-    HD_API
-    virtual int GetPrimVarComponents(SdfPath const& id, TfToken const& key);
 
     HD_API
     virtual VtIntArray GetInstanceIndices(SdfPath const& instancerId,
