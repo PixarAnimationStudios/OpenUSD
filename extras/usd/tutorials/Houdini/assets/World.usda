@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Xform "World" (
+    kind = "group"
+ 
+    kind = "group"
+)
+{
+    def Xform "fx"
+    {
+    }
+
+    def Xform "sets"
+    {
+    }
+}
+
