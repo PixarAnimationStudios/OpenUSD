@@ -376,7 +376,7 @@ def InstallBoost(context, force):
                     PatchFile('project-config.jam',
                               [('using msvc', 
                                 'using msvc : 14.0 : "{compiler}"'
-                                .format(compiler=msvcCompiler))])
+                                .format(compiler=compiler))])
 
         if MacOS():
             # Must specify toolset=clang to ensure install_name for boost
