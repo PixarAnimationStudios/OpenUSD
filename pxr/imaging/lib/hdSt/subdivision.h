@@ -173,6 +173,8 @@ public:
     virtual short GetNumComponents() const;
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
+    virtual bool HasPreChainedBuffer() const;
+    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const;
 
 protected:
     virtual bool _CheckValid() const;
@@ -339,6 +341,20 @@ HdSt_OsdRefineComputation<VERTEX_BUFFER>::AddBufferSpecs(HdBufferSpecVector *spe
 {
     // produces same spec buffer as source
     _source->AddBufferSpecs(specs);
+}
+
+template <typename VERTEX_BUFFER>
+bool
+HdSt_OsdRefineComputation<VERTEX_BUFFER>::HasPreChainedBuffer() const
+{
+    return true;
+}
+
+template <typename VERTEX_BUFFER>
+HdBufferSourceSharedPtr
+HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetPreChainedBuffer() const
+{
+    return _source;
 }
 
 

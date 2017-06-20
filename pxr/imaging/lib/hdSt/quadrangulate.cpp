@@ -308,6 +308,18 @@ HdSt_QuadrangulateComputation::_CheckValid() const
     return (_source->IsValid());
 }
 
+bool
+HdSt_QuadrangulateComputation::HasPreChainedBuffer() const
+{
+    return true;
+}
+
+HdBufferSourceSharedPtr
+HdSt_QuadrangulateComputation::GetPreChainedBuffer() const
+{
+    return _source;
+}
+
 // ---------------------------------------------------------------------------
 
 HdSt_QuadrangulateFaceVaryingComputation::HdSt_QuadrangulateFaceVaryingComputation(

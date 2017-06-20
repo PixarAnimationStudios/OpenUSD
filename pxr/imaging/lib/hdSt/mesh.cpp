@@ -378,17 +378,13 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
 
     if (!HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
         // CPU quadrangulation
-        HdResourceRegistry *resourceRegistry =
-            &HdResourceRegistry::GetInstance();
-
         // set quadrangulation as source instead of original source.
         HdBufferSourceSharedPtr quadsource =
             topology->GetQuadrangulateComputation(source, id);
 
         if (quadsource) {
             // don't transfer source to gpu, it needs to be quadrangulated.
-            // but it still has to be resolved. add to registry.
-            resourceRegistry->AddSource(source);
+            // It will be resolved as a pre-chained source.
             return quadsource;
         } else {
             return source;

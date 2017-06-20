@@ -204,6 +204,9 @@ public:
     // which happens before calling _SetResult().
     virtual int GetGLComponentDataType() const;
 
+    virtual bool HasPreChainedBuffer() const;
+    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const;
+
 protected:
     virtual bool _CheckValid() const;
 

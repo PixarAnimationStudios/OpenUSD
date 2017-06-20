@@ -263,9 +263,6 @@ HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source
         return source;
     }
 
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-    resourceRegistry->AddSource(source);
-
     HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
 
     return _subdivision->CreateRefineComputation(this, source, varying,

@@ -255,6 +255,9 @@ HdResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
     size_t srcNum = 0;
     while (srcNum < sources.size()) {
         if (ARCH_LIKELY(sources[srcNum]->IsValid())) {
+            if (ARCH_UNLIKELY(sources[srcNum]->HasPreChainedBuffer())) {
+                AddSource(sources[srcNum]->GetPreChainedBuffer());
+            }
             ++srcNum;
         } else {
             TF_RUNTIME_ERROR("Source Buffer for %s is invalid", sources[srcNum]->GetName().GetText());
@@ -286,6 +289,9 @@ void
 HdResourceRegistry::AddSource(HdBufferArrayRangeSharedPtr const &range,
                               HdBufferSourceSharedPtr const &source)
 {
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
     if (ARCH_UNLIKELY((!source) || (!range)))
     {
         TF_RUNTIME_ERROR("An input pointer is null");
@@ -306,6 +312,10 @@ HdResourceRegistry::AddSource(HdBufferArrayRangeSharedPtr const &range,
         return;
     }
 
+    if (ARCH_UNLIKELY(source->HasPreChainedBuffer())) {
+        AddSource(source->GetPreChainedBuffer());
+    }
+
     _pendingSources.emplace_back(range, source);
     ++_numBufferSourcesToResolve;  // Atomic
 }
@@ -315,12 +325,12 @@ HdResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
     if (ARCH_UNLIKELY(!source))
     {
         TF_RUNTIME_ERROR("source pointer is null");
         return;
     }
-
 
     // Buffer has to be valid
     if (ARCH_UNLIKELY(!source->IsValid()))
@@ -329,9 +339,11 @@ HdResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
         return;
     }
 
+    if (ARCH_UNLIKELY(source->HasPreChainedBuffer())) {
+        AddSource(source->GetPreChainedBuffer());
+    }
+
     _pendingSources.emplace_back(HdBufferArrayRangeSharedPtr(), source);
-
-
     ++_numBufferSourcesToResolve; // Atomic
 }
 

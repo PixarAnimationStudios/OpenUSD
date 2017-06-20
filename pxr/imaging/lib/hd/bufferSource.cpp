@@ -50,6 +50,18 @@ HdBufferSource::GetSize() const
 }
 
 bool
+HdBufferSource::HasPreChainedBuffer() const
+{
+    return false;
+}
+
+HdBufferSourceSharedPtr
+HdBufferSource::GetPreChainedBuffer() const
+{
+    return HdBufferSourceSharedPtr();
+}
+
+bool
 HdBufferSource::HasChainedBuffer() const
 {
     return false;
