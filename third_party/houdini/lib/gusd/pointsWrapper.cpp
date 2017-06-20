@@ -293,7 +293,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     }
 
     GfMatrix4d xform = computeTransform( 
-                            m_usdPointsForWrite.GetPrim(),
+                            m_usdPointsForWrite.GetPrim().GetParent(),
                             ctxt.time,
                             houXform,
                             xformCache );

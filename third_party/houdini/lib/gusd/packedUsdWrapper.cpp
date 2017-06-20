@@ -290,7 +290,7 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         ctxt.overlayPoints || ctxt.overlayTransforms ) {
 
         GfMatrix4d xform = computeTransform( 
-                                m_primRefForWrite.GetPrim(),
+                                m_primRefForWrite.GetPrim().GetParent(),
                                 ctxt.time,
                                 houXform,
                                 xformCache );

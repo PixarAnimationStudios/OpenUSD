@@ -214,7 +214,7 @@ GusdGroupBaseWrapper::updateGroupFromGTPrim(
     if( !ctxt.overlayGeo || ctxt.overlayAll || ctxt.overlayTransforms )
     {
         GfMatrix4d xform = computeTransform( 
-                        destPrim.GetPrim(),
+                        destPrim.GetPrim().GetParent(),
                         ctxt.time,
                         houXform,
                         xformCache );

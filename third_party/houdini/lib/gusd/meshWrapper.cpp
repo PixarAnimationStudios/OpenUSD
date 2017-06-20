@@ -757,7 +757,19 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         }
     }
 
+    // houXform is a transform from world space to the space this prim's 
+    // points are defined in. Compute this space relative to this prims's 
+    // USD parent.
+
+    // Compute transform not including this prims transform.
     GfMatrix4d xform = computeTransform( 
+                            m_usdMeshForWrite.GetPrim().GetParent(),
+                            ctxt.time,
+                            houXform,
+                            xformCache );
+
+    // Compute transform including this prims transform.
+    GfMatrix4d loc_xform = computeTransform( 
                             m_usdMeshForWrite.GetPrim(),
                             ctxt.time,
                             houXform,
@@ -768,7 +780,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     bool transformPoints = 
         ctxt.overlayGeo && ctxt.overlayPoints && 
         !(ctxt.overlayAll || ctxt.overlayTransforms) &&
-        !GusdUT_Gf::Cast(xform).isIdentity();
+        !GusdUT_Gf::Cast(loc_xform).isIdentity();
 
     if( !ctxt.overlayGeo && ctxt.purpose != UsdGeomTokens->default_ ) {
         m_usdMeshForWrite.GetPurposeAttr().Set( ctxt.purpose );
@@ -787,7 +799,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
         usdAttr = m_usdMeshForWrite.GetExtentAttr();
         if(houAttr && usdAttr && transformPoints ) {
-            houAttr = GusdGT_Utils::transformPoints( houAttr, xform );
+            houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
         }       
         updateAttributeFromGTPrim( GT_OWNER_INVALID, "extents", houAttr, usdAttr, ctxt.time );
     }
@@ -813,7 +825,8 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         houAttr = sourcePrim->findAttribute("P", attrOwner, 0);
         usdAttr = m_usdMeshForWrite.GetPointsAttr();
         if( houAttr && usdAttr && transformPoints ) {
-            houAttr = GusdGT_Utils::transformPoints( houAttr, xform );
+
+            houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
         }
         updateAttributeFromGTPrim( attrOwner, "P",
                                    houAttr, usdAttr, ctxt.time );

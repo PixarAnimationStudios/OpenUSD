@@ -673,6 +673,12 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     }
 
     GfMatrix4d xform = computeTransform( 
+                            m_usdCurvesForWrite.GetPrim().GetParent(),
+                            ctxt.time,
+                            houXform,
+                            xformCache );
+
+    GfMatrix4d loc_xform = computeTransform( 
                             m_usdCurvesForWrite.GetPrim(),
                             ctxt.time,
                             houXform,
@@ -683,7 +689,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     bool transformPoints = 
         ctxt.overlayGeo && ctxt.overlayPoints && 
         !(ctxt.overlayAll || ctxt.overlayTransforms) &&
-        !GusdUT_Gf::Cast(xform).isIdentity();
+        !GusdUT_Gf::Cast(loc_xform).isIdentity();
 
     GT_Owner attrOwner = GT_OWNER_INVALID;
     GT_DataArrayHandle houAttr;
@@ -702,7 +708,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
         houAttr = GusdGT_Utils::getExtentsArray(sourcePrim);
         usdAttr = m_usdCurvesForWrite.GetExtentAttr();
         if(houAttr && usdAttr && transformPoints ) {
-             houAttr = GusdGT_Utils::transformPoints( houAttr, xform );
+             houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
         }
         updateAttributeFromGTPrim( GT_OWNER_INVALID, "extents", houAttr, usdAttr, ctxt.time );
     }
@@ -726,7 +732,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
         houAttr = sourcePrim->findAttribute("P", attrOwner, 0);
         usdAttr = m_usdCurvesForWrite.GetPointsAttr();
         if(houAttr && usdAttr && transformPoints ) {
-            houAttr = GusdGT_Utils::transformPoints( houAttr, xform );
+            houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
         }
         updateAttributeFromGTPrim( attrOwner, "P", houAttr, usdAttr, ctxt.time );
     }
