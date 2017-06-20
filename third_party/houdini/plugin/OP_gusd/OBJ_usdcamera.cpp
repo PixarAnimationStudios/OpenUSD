@@ -456,7 +456,7 @@ GusdOBJ_usdcamera::_EvalCamVariable(fpreal& val, int idx, int thread)
         {
         case VAR_SCREENASPECT:
             {
-                val = cam.GetCamera(frame, _isZUp).GetAspectRatio();
+                val = cam.GetCamera(frame).GetAspectRatio();
                 return true;
             }
         case VAR_YRES:
@@ -466,7 +466,7 @@ GusdOBJ_usdcamera::_EvalCamVariable(fpreal& val, int idx, int thread)
                 //     however it's needed to get around a Houdini bug
                 //     (see bug 94389)
                 const float screenAspect =
-                    cam.GetCamera(frame, _isZUp).GetAspectRatio();
+                    cam.GetCamera(frame).GetAspectRatio();
                 float xRes = evalFloatT("res", 0, t, thread);
                 val = xRes / screenAspect;
                 return true;
@@ -643,10 +643,6 @@ GusdOBJ_usdcamera::applyInputIndependentTransform(OP_Context& ctx, UT_DMatrix4& 
         }
 
         mx = GusdUT_Gf::Cast(ctm);
-
-        // Houdini is Y-up cameras, so we may need to correct
-        if(_isZUp)
-            mx.prerotate(UT_Axis3::XAXIS, M_PI/2);
     }
     return OBJ_Camera::applyInputIndependentTransform(ctx, mx);
 }
@@ -745,15 +741,11 @@ GusdOBJ_usdcamera::_LoadCamera(_CamHolder::ScopedLock& lock,
                 _cam = accessor.GetPrimSchemaHolderAtPath<UsdGeomCamera>(
                     *primIdentifier, &err);
                 if(_cam) {
-                    _isZUp = UsdUtilsGetCamerasAreZup(accessor.GetStage());
-
                     /* Acquire a read-lock on the lock passed in as input.
                        This ensures the caller maintains a lock beyond  
                        the scope of the load.*/
                     lock.Acquire(_cam, /*write*/ false);
                     return *lock;
-                } else {
-                    _isZUp = false;
                 }
             }
         }

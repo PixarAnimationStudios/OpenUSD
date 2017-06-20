@@ -127,7 +127,6 @@ private:
 private:
     UT_ErrorManager _errors;
     _CamHolder      _cam;
-    bool            _isZUp;
 
     int             _frameIdx;  /*! Cached index of the frame parm.*/
 
