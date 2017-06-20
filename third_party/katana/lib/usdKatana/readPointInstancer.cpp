@@ -87,16 +87,17 @@ namespace
     {
         constexpr double epsilonTest = 1e-5;
         const auto sampleCount = sampleTimes.size();
-        if (sampleCount == 0 || xforms.size() < sampleCount) {
+        if (sampleCount == 0 || xforms.size() < sampleCount ||
+            baseTime.IsDefault()) {
             return 0;
         }
 
-        bool hasSamples = false;
+        bool positionsHasSamples = false;
         double positionsLowerTimeSample = 0.0;
         double upperTimeSample = 0.0;
         if (!positionsAttr.GetBracketingTimeSamples(
                 baseTime.GetValue(), &positionsLowerTimeSample,
-                &upperTimeSample, &hasSamples)) {
+                &upperTimeSample, &positionsHasSamples)) {
             return 0;
         }
 
@@ -112,11 +113,13 @@ namespace
         // Use velocity if it has almost the same lower time sample as positions
         // and the array lengths are equal to the number of instances.
         bool velocityExists = false;
+        bool velocitiesHasSamples = false;
         double velocitiesLowerTimeSample = 0.0;
-        if (velocitiesAttr.HasValue() and
+        if (positionsHasSamples and velocitiesAttr.HasValue() and
             velocitiesAttr.GetBracketingTimeSamples(
                 baseTime.GetValue(), &velocitiesLowerTimeSample,
-                &upperTimeSample, &hasSamples) and
+                &upperTimeSample, &velocitiesHasSamples) and
+            velocitiesHasSamples and
             GfIsClose(velocitiesLowerTimeSample, positionsLowerTimeSample,
                       epsilonTest)) {
             // Get positions, velocities, scales, and orientations at the lower
