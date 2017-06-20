@@ -40,6 +40,8 @@ gb = FnAttribute.GroupBuilder()
 gb.set('fileName', '')
 nb.setHintsForParameter('fileName', {
     'help' : 'The USD file to read.',
+    'widget':'assetIdInput',
+    'fileTypes':'usd|usda|usdb|usdc',
 })
 
 gb.set('location', '/root/world/geo')
