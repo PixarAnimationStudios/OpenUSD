@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "primWrapper.h"
-#include "Context.h"
+#include "context.h"
 
 #include "UT_Gf.h"
 #include "GT_VtArray.h"

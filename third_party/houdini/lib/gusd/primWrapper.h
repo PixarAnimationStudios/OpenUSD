@@ -301,7 +301,7 @@ protected:
                 const UsdTimeCode&          time,
                 const UT_Matrix4D&          houXform,
                 const GusdSimpleXformCache& xformCache );
-
+    
 protected:
 
     UsdTimeCode     m_time;

@@ -23,7 +23,7 @@
 //
 #include "NURBSCurvesWrapper.h"
 
-#include "Context.h"
+#include "context.h"
 #include "UT_Gf.h"
 #include "USD_Proxy.h"
 #include "GT_VtArray.h"
@@ -126,7 +126,7 @@ defineForWrite(
                     sourcePrim,
                     stage, 
                     path, 
-                    ctxt.overlayGeo );
+                    ctxt.getOverGeo( sourcePrim ));
 }
 
 GT_PrimitiveHandle GusdNURBSCurvesWrapper::
@@ -149,7 +149,7 @@ redefine( const UsdStagePtr& stage,
           const GusdContext& ctxt,
           const GT_PrimitiveHandle& sourcePrim )
 {
-    initUsdPrim( stage, path, ctxt.overlayGeo );
+    initUsdPrim( stage, path, ctxt.getOverGeo( sourcePrim ));
     clearCaches();
     return true;
 }
@@ -578,6 +578,18 @@ GusdNURBSCurvesWrapper::updateFromGTPrim(
         return false;
     }
 
+    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
+    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
+    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
+    bool overlayAll =        ctxt.getOverAll( sourcePrim );
+
+    // While I suppose we could write both points and transforms, it gets confusing,
+    // and I don't this its necessary so lets not.
+    if( overlayPoints || overlayAll ) {
+        overlayTransforms = false;
+    }
+    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
+
     GfMatrix4d xform = computeTransform( 
                             m_usdCurvesForWrite.GetPrim().GetParent(),
                             ctxt.time,
@@ -593,22 +605,20 @@ GusdNURBSCurvesWrapper::updateFromGTPrim(
     // If we are writing points for an overlay but not writing transforms, 
     // then we have to transform the points into the proper space.
     bool transformPoints = 
-        ctxt.overlayGeo && ctxt.overlayPoints && 
-        !(ctxt.overlayAll || ctxt.overlayTransforms) &&
+        (overlayPoints || overlayAll) && 
         !GusdUT_Gf::Cast(loc_xform).isIdentity();
 
     GT_Owner attrOwner = GT_OWNER_INVALID;
     GT_DataArrayHandle houAttr;
     UsdAttribute usdAttr;
     
-    if( !ctxt.overlayGeo && ctxt.purpose != UsdGeomTokens->default_ ) {
+    if( writeNewGeo && ctxt.purpose != UsdGeomTokens->default_ ) {
         m_usdCurvesForWrite.GetPurposeAttr().Set( ctxt.purpose );
     }
 
     // intrinsic attributes ----------------------------------------------------
 
-    if( !ctxt.overlayGeo || ctxt.overlayAll || 
-            ctxt.overlayTransforms || ctxt.overlayPoints) {
+    if( writeNewGeo || overlayAll || overlayTransforms || overlayPoints) {
 
         // extent ------------------------------------------------------------------
         houAttr = GusdGT_Utils::getExtentsArray(sourcePrim);
@@ -620,19 +630,19 @@ GusdNURBSCurvesWrapper::updateFromGTPrim(
     }
 
     // transform ---------------------------------------------------------------
-    if( !ctxt.overlayGeo || ctxt.overlayAll || ctxt.overlayTransforms) {
+    if( writeNewGeo || overlayAll || overlayTransforms) {
         updateTransformFromGTPrim( xform, ctxt.time, 
                                    ctxt.granularity == GusdContext::PER_FRAME );
     }
 
     // visibility ---------------------------------------------------------------
-    if( !ctxt.overlayGeo || ctxt.overlayAll ) {
+    if( writeNewGeo || overlayAll ) {
         if( ctxt.granularity == GusdContext::PER_FRAME ) { 
             updateVisibilityFromGTPrim(sourcePrim, ctxt.time);
         }
     }
 
-    if( !ctxt.overlayGeo || ctxt.overlayAll || ctxt.overlayPoints ) {
+    if( writeNewGeo || overlayAll || overlayPoints ) {
         
         // P
         houAttr = sourcePrim->findAttribute("P", attrOwner, 0);
@@ -643,7 +653,7 @@ GusdNURBSCurvesWrapper::updateFromGTPrim(
         updateAttributeFromGTPrim( attrOwner, "P", houAttr, usdAttr, ctxt.time );
     }
 
-    if( !ctxt.overlayGeo || ctxt.overlayAll ) {
+    if( writeNewGeo || overlayAll ) {
         // Vertex counts
 
         usdAttr = m_usdCurvesForWrite.GetCurveVertexCountsAttr();
@@ -685,7 +695,7 @@ GusdNURBSCurvesWrapper::updateFromGTPrim(
     }
 
 
-    if( !ctxt.overlayGeo || ctxt.overlayAll || ctxt.overlayPoints ) {
+    if( writeNewGeo || overlayAll || overlayPoints ) {
         // N
         houAttr = sourcePrim->findAttribute("N", attrOwner, 0);
         usdAttr = m_usdCurvesForWrite.GetNormalsAttr();
@@ -712,7 +722,7 @@ GusdNURBSCurvesWrapper::updateFromGTPrim(
     
     // primvars ----------------------------------------------------------------
     
-    if( !ctxt.overlayGeo || ctxt.overlayAll || ctxt.overlayPrimvars ) {
+    if( writeNewGeo || overlayAll || overlayPrimvars ) {
 
         GusdGT_AttrFilter filter = ctxt.attributeFilter;
 

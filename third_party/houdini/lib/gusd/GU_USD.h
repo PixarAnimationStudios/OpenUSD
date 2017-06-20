@@ -44,11 +44,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /** The default names of the USD ref attributes.
     @{ */
-#define GUSD_PATH_ATTR          "usdpath"
-#define GUSD_PRIMPATH_ATTR      "usdprimpath"
-#define GUSD_FRAME_ATTR         "frame"
-#define GUSD_VARIANTS_ATTR      "usdvariants"
-#define GUSD_CONSTRAINT_ATTR    "usdconstraint"
+#define GUSD_PATH_ATTR              "usdpath"
+#define GUSD_PRIMPATH_ATTR          "usdprimpath"
+#define GUSD_FRAME_ATTR             "frame"
+#define GUSD_VARIANTS_ATTR          "usdvariants"
+#define GUSD_CONSTRAINT_ATTR        "usdconstraint"
+#define GUSD_PURPOSE_ATTR           "usdpurpose"
+#define GUSD_OVERTRANSFORMS_ATTR    "usdovertransforms"
+#define GUSD_OVERPOINTS_ATTR        "usdoverpoints"
+#define GUSD_OVERPRIMVARS_ATTR      "usdoverprimvars"
+#define GUSD_OVERALL_ATTR           "usdoverall"
 /** @} */
 
 

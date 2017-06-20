@@ -36,6 +36,8 @@
 #include <GT/GT_DAIndexedString.h>
 #include <GT/GT_PrimPointMesh.h>
 #include <GT/GT_GEODetail.h>
+#include <GT/GT_PrimFragments.h>
+#include <GT/GT_PrimPackedDetail.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -124,10 +126,45 @@ GusdRefiner::refineDetail(
     for(vector<GA_Range>::const_iterator rangeIt=partitions.begin();
             rangeIt != partitions.end(); ++rangeIt) {
 
+        const GA_Range& range = *rangeIt;
+
+        // Before we refine we need to decide if we want to coalesce packed
+        // fragments. We will coalesce unless we are writing transform
+        // overlays and the fragment has a name.
+
+        GU_DetailHandleAutoReadLock detailLock( detail );
+
+        bool overlayTransforms = false;
+        GA_AttributeOwner order[] = { GA_ATTRIB_PRIMITIVE, GA_ATTRIB_DETAIL };
+        const GA_Attribute *overTransformsAttr = 
+            detailLock->findAttribute( GUSD_OVERTRANSFORMS_ATTR, order, 2 );
+        if( overTransformsAttr ) {
+            GA_ROHandleI h( overTransformsAttr );
+            if( overTransformsAttr->getOwner() == GA_ATTRIB_DETAIL ) {
+                overlayTransforms = h.get( 0 );
+            }
+            else {
+                // assume all prims in the range have the same usdovertransforms
+                // attribute value
+                overlayTransforms = h.get( range.begin().getOffset() );
+            }
+        }
+        if( overlayTransforms ) {
+            // prims must be named to overlay transforms
+            const GA_Attribute *primPathAttr = 
+                detailLock->findPrimitiveAttribute( GUSD_PRIMPATH_ATTR );
+            if( !primPathAttr ) {
+                overlayTransforms = false;
+            }
+        }
+        
+        GT_RefineParms newRefineParms( refineParms );
+        newRefineParms.setCoalesceFragments( m_refinePackedPrims && !overlayTransforms );
+
         GT_PrimitiveHandle detailPrim
-                = GT_GEODetail::makeDetail( detail, &*rangeIt);
+                = GT_GEODetail::makeDetail( detail, &range);
         if(detailPrim) {
-            detailPrim->refine(*this, &refineParms);
+            detailPrim->refine(*this, &newRefineParms );
         }
     }
 }
@@ -258,11 +295,26 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
         primName = n;
     }
 
+    bool refinePackedPrims = m_refinePackedPrims;
     bool primHasNameAttr = false;
     if( primName.empty() ) {
 
-        GT_Owner owner;
-        GT_DataArrayHandle dah = gtPrim->findAttribute( m_pathAttrName.c_str(), owner, 0 );
+        GT_AttributeListHandle primAttrs;
+        if( primType == GT_GEO_PACKED ) {
+            primAttrs = UTverify_cast<const GT_GEOPrimPacked*>(gtPrim.get())->getInstanceAttributes();
+        } 
+        if( !primAttrs ) {
+            primAttrs = gtPrim->getUniformAttributes();
+        }
+        if( !primAttrs ) {
+            primAttrs = gtPrim->getDetailAttributes();
+        }
+
+        GT_DataArrayHandle dah;
+        if( primAttrs ) {
+            dah = primAttrs->get( m_pathAttrName.c_str() );
+        }
+
         if( dah && dah->isValid() ) {
             const char *s = dah->getS(0);
             if( s != NULL ) {
@@ -270,6 +322,19 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
                 primHasNameAttr = true;
             }
         }
+        if( primAttrs ) {
+            GT_DataArrayHandle overXformsAttr = primAttrs->get( GUSD_OVERTRANSFORMS_ATTR );
+            if( overXformsAttr ) {
+                if( overXformsAttr->getI32(0) != 0 ) {
+                    refinePackedPrims = false;
+                }
+            }
+        }
+    }
+
+    // We must refine packed prims that don't have a name
+    if( !primHasNameAttr && !refinePackedPrims ) {
+        refinePackedPrims = true;
     }
 
     if( primName.empty() && 
@@ -340,14 +405,15 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
     TfToken purpose = UsdGeomTokens->default_;
     {
         GT_Owner own = GT_OWNER_PRIMITIVE;
-        GT_DataArrayHandle dah = gtPrim->findAttribute( "usdpurpose", own, 0 );
+        GT_DataArrayHandle dah = gtPrim->findAttribute( GUSD_PURPOSE_ATTR, own, 0 );
         if( dah && dah->isValid() ) {
             purpose = TfToken(dah->getS(0));
         }
     }
 
     if( primType == GT_PRIM_INSTANCE ) {
-        auto inst = UTverify_cast<const GT_PrimInstance*>(gtPrim.get());
+ 
+       auto inst = UTverify_cast<const GT_PrimInstance*>(gtPrim.get());
         const GT_PrimitiveHandle geometry = inst->geometry();
 
         if ( geometry->getPrimitiveType() == GT_GEO_PACKED ) {
@@ -386,7 +452,7 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
             
                     // If we are just writing transforms and encounter a packed prim, we 
                     // just want to write it's transform and not refine it further.
-                    recurse = m_refinePackedPrims;
+                    recurse = refinePackedPrims;
                 }
 
                 if( recurse ) {
@@ -396,7 +462,7 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
                                     m_pathAttrName,
                                     newCtm );
                     
-                childRefiner.m_refinePackedPrims = m_refinePackedPrims;
+                    childRefiner.m_refinePackedPrims = refinePackedPrims;
                     childRefiner.m_forceGroupTopPackedPrim = m_forceGroupTopPackedPrim;
                     childRefiner.m_isTopLevel = false;
 
@@ -411,10 +477,17 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
         }
     }
 
-    if( primType != GT_GEO_PACKED && GusdPrimWrapper::isGTPrimSupported(gtPrim) ) {
+    if( (primType != GT_GEO_PACKED || !refinePackedPrims) && 
+                            GusdPrimWrapper::isGTPrimSupported(gtPrim) ) {
 
         UT_Matrix4D m;
+        if( primType == GT_GEO_PACKED ) {
+            // packed fragment
+            UTverify_cast<const GT_GEOPrimPacked*>(gtPrim.get())->getFullTransform()->getMatrix(m);
+        }
+        else {
             gtPrim->getPrimitiveTransform()->getMatrix(m);
+        }
 
         UT_Matrix4D newCtm = m_localToWorldXform;
 
@@ -542,7 +615,7 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
 
                 const char *n = instUniAttrs->getName(j);
                 if( !n || strlen( n ) < 1 || n[0] == '_' || 
-                    string( n ) == "usdprimpath" ) {
+                    string( n ) == GUSD_PRIMPATH_ATTR ) {
                     continue;
                 }
                 if( !pAttrs->hasName( n ) ) {
@@ -600,7 +673,7 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                 for( size_t attrIndex = 0; attrIndex < instUniAttrs->entries(); ++attrIndex ) {
 
                     const char *n = instUniAttrs->getName(attrIndex);
-                    if( !n || strlen( n ) < 1 || n[0] == '_' || string(n) == "usdprimpath" ) {
+                    if( !n || strlen( n ) < 1 || n[0] == '_' || string(n) == GUSD_PRIMPATH_ATTR ) {
                         continue;
                     }
                     

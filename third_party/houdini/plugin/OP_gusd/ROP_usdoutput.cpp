@@ -72,7 +72,7 @@
 #include "gusd/shaderWrapper.h"
 #include "gusd/UT_Gf.h"
 #include "gusd/UT_Version.h"
-#include "gusd/Context.h"
+#include "gusd/context.h"
 #include "gusd/UT_Usd.h"
 #include "gusd/USD_StageCache.h"
 

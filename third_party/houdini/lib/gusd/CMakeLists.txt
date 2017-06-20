@@ -22,6 +22,7 @@ pxr_shared_library(${PXR_PACKAGE}
         GU_PackedUSD
         GU_USD
         OP_ParmChangeMicroNode
+        context
         primWrapper
         PRM_Shared
         refiner
@@ -49,7 +50,6 @@ pxr_shared_library(${PXR_PACKAGE}
     PUBLIC_HEADERS
         gusd.h
         purpose.h
-        Context.h
         USD_Holder.h
         USD_PropertyMap.h
         USD_TraverseSimple.h

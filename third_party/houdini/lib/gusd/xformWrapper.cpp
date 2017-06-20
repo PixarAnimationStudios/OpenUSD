@@ -23,7 +23,7 @@
 //
 #include "xformWrapper.h"
 
-#include "Context.h"
+#include "context.h"
 #include "UT_Gf.h"
 #include "USD_Proxy.h"
 

@@ -23,7 +23,7 @@
 //
 #include "groupBaseWrapper.h"
 
-#include "Context.h"
+#include "context.h"
 #include "UT_Gf.h"
 #include "USD_Proxy.h"
 #include "GU_PackedUSD.h"
@@ -207,17 +207,25 @@ GusdGroupBaseWrapper::updateGroupFromGTPrim(
     if( !destPrim )
         return false;
 
-    if( !ctxt.overlayGeo && ctxt.purpose != UsdGeomTokens->default_ ) {
+    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
+    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
+    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
+    bool overlayAll =        ctxt.getOverAll( sourcePrim );
+
+    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
+
+    if( writeNewGeo && ctxt.purpose != UsdGeomTokens->default_ ) {
         destPrim.GetPurposeAttr().Set( ctxt.purpose );
     }
 
-    if( !ctxt.overlayGeo || ctxt.overlayAll || ctxt.overlayTransforms )
+    if( writeNewGeo || overlayTransforms || overlayAll )
     {
         GfMatrix4d xform = computeTransform( 
                         destPrim.GetPrim().GetParent(),
                         ctxt.time,
                         houXform,
                         xformCache );
+
 
         updateTransformFromGTPrim( xform, ctxt.time, 
                                    ctxt.granularity == GusdContext::PER_FRAME );
@@ -227,7 +235,7 @@ GusdGroupBaseWrapper::updateGroupFromGTPrim(
         xformCache[destPrim.GetPrim().GetPath()] = houXform;
     }
 
-    if( !ctxt.overlayGeo || ctxt.overlayAll || ctxt.overlayPrimvars )
+    if( writeNewGeo || overlayPrimvars )
     {
         GusdGT_AttrFilter filter = ctxt.attributeFilter;
         filter.appendPattern(GT_OWNER_UNIFORM, "^P");

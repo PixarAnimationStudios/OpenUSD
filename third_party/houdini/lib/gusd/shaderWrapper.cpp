@@ -23,7 +23,7 @@
 //
 #include "shaderWrapper.h"
 
-#include "Context.h"
+#include "context.h"
 
 #include <pxr/usd/usdShade/connectableAPI.h>
 

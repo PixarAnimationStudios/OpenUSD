@@ -25,7 +25,7 @@
 
 #include "pxr/usd/usd/variantSets.h"
 
-#include "gusd/Context.h"
+#include "gusd/context.h"
 
 #include "GT_PackedUSD.h"
 #include "GU_PackedUSD.h"
@@ -87,7 +87,7 @@ defineForWrite(
         const SdfPath& path,
         const GusdContext& ctxt)
 {
-    return new GusdPackedUsdWrapper( stage, path, ctxt.overlayGeo );
+    return new GusdPackedUsdWrapper( stage, path, ctxt.getOverGeo( sourcePrim ));
 }
 
 bool GusdPackedUsdWrapper::
@@ -200,7 +200,14 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         return false;
     }
 
-    if( !ctxt.overlayGeo ) {
+    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
+    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
+    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
+    bool overlayAll =        ctxt.getOverAll( sourcePrim );
+
+    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
+
+    if( writeNewGeo ) {
 
         string fileName = gtPackedUSD->getAuxFileName().toStdString();
         if( fileName.empty() )
@@ -286,8 +293,7 @@ GusdPackedUsdWrapper::updateFromGTPrim(
 
     // transform ---------------------------------------------------------------
 
-    if( !ctxt.overlayGeo || ctxt.overlayAll || 
-        ctxt.overlayPoints || ctxt.overlayTransforms ) {
+    if( writeNewGeo || overlayAll || overlayPoints || overlayTransforms ) {
 
         GfMatrix4d xform = computeTransform( 
                                 m_primRefForWrite.GetPrim().GetParent(),

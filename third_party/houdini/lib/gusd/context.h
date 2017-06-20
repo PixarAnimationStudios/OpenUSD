@@ -30,6 +30,8 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
+#include <GT/GT_Primitive.h>
+
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,8 +42,8 @@ class UsdGeomXformCache;
 /// A GusdContext structure is created by the ROPs that write USD files and
 /// passed to the GusdPrimWrappers to control how they are written to the USD file.
 
-struct GusdContext {
-
+class GusdContext {
+public:
     typedef boost::function<UsdStageRefPtr ()> GetStageFunc;
     enum Granularity { ONE_FILE, PER_FRAME };
 
@@ -111,6 +113,25 @@ struct GusdContext {
 
     // Whether to make references to a USD prims instanceable.
     bool makeRefsInstanceable;
+
+    // Return value of prim or detail attribute "usdovertransforms" if it
+    // exists. Otherwise return the valid of overlayTransforms in this context.
+    bool getOverTransforms( const GT_PrimitiveHandle &sourcePrim ) const;
+    
+    // Return value of prim or detail attribute "usdoverpoints" if it
+    // exists. Otherwise return the valid of overlayPoints in this context.
+     bool getOverPoints(     const GT_PrimitiveHandle &sourcePrim ) const;
+
+    // Return value of prim or detail attribute "usdoverprimvars" if it
+    // exists. Otherwise return the valid of overlayPrimvars in this context.
+    bool getOverPrimvars(   const GT_PrimitiveHandle &sourcePrim ) const;
+
+    // Return value of prim or detail attribute "usdoverall" if it
+    // exists. Otherwise return the valid of overlayAll in this context.
+    bool getOverAll(        const GT_PrimitiveHandle &sourcePrim ) const;
+
+    // Return the logical or of other getOver* functions.
+    bool getOverGeo(        const GT_PrimitiveHandle &sourcePrim ) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
