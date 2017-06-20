@@ -26,6 +26,7 @@
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/vt/wrapArray.h"
 
 #include <boost/functional/hash.hpp>
 #include <boost/python/class.hpp>
@@ -38,6 +39,11 @@
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+TF_REGISTRY_FUNCTION(VtValue)
+{
+    VtRegisterValueCastsFromPythonSequencesToArray<SdfAssetPath>();
+}
 
 namespace {
 
