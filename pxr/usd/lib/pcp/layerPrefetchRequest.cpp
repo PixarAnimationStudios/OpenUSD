@@ -26,7 +26,7 @@
 #include "pxr/usd/pcp/layerPrefetchRequest.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/sdf/layerUtils.h"
-#include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/threadLimits.h"
 
 #include <tbb/spin_mutex.h>
@@ -78,7 +78,7 @@ private:
         }
     }
 
-    WorkDispatcher _dispatcher;
+    WorkArenaDispatcher _dispatcher;
     const Pcp_MutedLayers& _mutedLayers;
     std::set<SdfLayerRefPtr> *_retainedLayers;
     mutable tbb::spin_mutex _retainedLayersMutex;
