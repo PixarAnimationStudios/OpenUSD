@@ -32,7 +32,6 @@
 #include "pxr/base/gf/camera.h"
 #include "pxr/imaging/cameraUtil/screenWindowParameters.h"
 #include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdUtils/pipeline.h"
 
 #include <FnAttribute/FnDataBuilder.h>
 #include <FnLogging/FnLogging.h>
@@ -65,9 +64,7 @@ PxrUsdKatanaReadCamera(
     // computation from returning an empty bound, which is treated as a fail
     attrs.set("bound", FnKat::Attribute());
 
-    const bool camerasAreZup = UsdUtilsGetCamerasAreZup(data.GetUsdInArgs()->GetStage());
-
-    const GfCamera cam = camera.GetCamera(currentTime, camerasAreZup);
+    const GfCamera cam = camera.GetCamera(currentTime);
 
     //
     // Set the 'prmanGlobalStatements.camera.depthOfField' attribute.
@@ -142,8 +139,8 @@ PxrUsdKatanaReadCamera(
             double relSampleTime = *iter;
             double time = currentTime + relSampleTime;
 
-            double fov = camera.GetCamera(time, camerasAreZup
-                ).GetFieldOfView(GfCamera::FOVHorizontal);
+            double fov = camera.GetCamera(time).GetFieldOfView(
+                GfCamera::FOVHorizontal);
 
             fovBuilder.push_back(fov, isMotionBackward ?
                 PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
@@ -201,10 +198,10 @@ PxrUsdKatanaReadCamera(
                 &clippingPlanes[0][0], clippingPlanes.size() * 4, 4));
     }
 
-    // XXX The camera's zUp needs to be recorded until we have no
-    // more USD z-Up assets and the katana assets have no more prerotate
-    // camera nodes.
-    geoBuilder.set("isZUp", FnKat::IntAttribute(camerasAreZup ? 1 : 0));
+    // XXX
+    // Record isZUp until all code site/nodes that prerotate the camera
+    // node to accomodate potential z-Up cameras has been removed.
+    geoBuilder.set("isZUp", FnKat::IntAttribute(0));
     
     attrs.set("geometry", geoBuilder.build());
 }
