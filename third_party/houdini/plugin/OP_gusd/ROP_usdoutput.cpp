@@ -162,7 +162,6 @@ getTemplates()
     static PRM_Name pxhPreRenderName("pxhprerenderscript", "Pxh Pre-Render Script");
 
     static PRM_Name geometryHeadingName("geometryheading", "Geometry");
-    static PRM_Name coalesceFragmentsName("coalescefragments", "Coalesce Fragments" );
     static PRM_Name instanceRefsName("usdinstancing","Enable USD Instancing");
     static PRM_Name authorVariantSelName("authorvariantselection", "Author Variant Selections");
 
@@ -299,20 +298,6 @@ getTemplates()
             0, // paramgroup (leave default)
             0, // help string
             0), // disable rules
-
-        PRM_Template(
-            PRM_TOGGLE,
-            1,
-            &coalesceFragmentsName,
-            PRMoneDefaults, // default
-            0, // menu choices
-            0, // range
-            0, // callback
-            0, // thespareptr (leave default)
-            0, // paramgroup (leave default)
-            "Coalesce packed fragments into a single mesh.",
-            0), // disable rules
-
 
         PRM_Template(
             PRM_TOGGLE,
@@ -633,6 +618,7 @@ static PRM_Default protoFileNameDefault(0, "");
 static PRM_Name instanceHeadingName("instancingheading", "Instancing");
 static PRM_Name instancePackedUsdName("instancepackedusd", "Instance Packed USD Prims");
 static PRM_Name writeProtoIdsName("writeprotoids", "Write Instance Prototype Ids");
+static PRM_Name coalesceFragmentsName("coalescefragments", "Coalesce Fragments" );
 
 static PRM_Name objPathName("objpath", "OBJ Path");
 
@@ -707,6 +693,19 @@ PRM_Template obsoleteParameters[] =
         &PRM_SpareData::objPath,
         0, // paramgroup (leave default)
         "OBJ network to export", // help string
+        0), // disable rules
+
+    PRM_Template(
+        PRM_TOGGLE,
+        1,
+        &coalesceFragmentsName,
+        PRMoneDefaults, // default
+        0, // menu choices
+        0, // range
+        0, // callback
+        0, // thespareptr (leave default)
+        0, // paramgroup (leave default)
+        "Coalesce packed fragments into a single mesh.",
         0), // disable rules
 
     PRM_Template(),
@@ -1196,7 +1195,6 @@ renderFrame(fpreal time,
     }
 
     GT_RefineParms refineParms;
-    refineParms.setCoalesceFragments( evalInt( "coalescefragments", 0, 0 ));
 
     // Tell the collectors (in particular the f3d stuff) that we are 
     // writing a USD file rather than doing interactive visualization.
