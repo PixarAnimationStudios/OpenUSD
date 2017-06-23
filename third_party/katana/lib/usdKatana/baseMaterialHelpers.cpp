@@ -35,31 +35,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 static bool
-_NodeRepresentsReference(const PcpNodeRef &node)
+_NodeRepresentsDirectReference(const PcpNodeRef &node)
 {
-    bool isReference = false;
     for (PcpNodeRef n = node; 
             n; // 0, or false, means we are at the root node
             n = n.GetParentNode()) {
-        switch(n.GetArcType()) {
-            case PcpArcTypeReference:
-                if (n.GetSite().layerStack == 
-                    n.GetParentNode().GetSite().layerStack) {
-                    // internal reference. This is ok.
-                }
-                else {
-                    isReference = true;
-                }
-                break;
-            default:
-                break;
-        }
-
-        if (isReference) {
-            break;
+        if (n.GetArcType() == PcpArcTypeReference) {
+            if (! n.IsDueToAncestor()) {
+                // direct reference!
+                return true;
+            }
         }
     }
-    return isReference;
+    return false;
 }
 
 
@@ -100,9 +88,9 @@ _NodeRepresentsLiveBaseMaterial(const PcpNodeRef &node)
 
 
 bool
-PxrUsdKatana_IsAttrValFromReference(const UsdAttribute &attr)
+PxrUsdKatana_IsAttrValFromDirectReference(const UsdAttribute &attr)
 {
-    return _NodeRepresentsReference( attr.GetResolveInfo().GetNode() );
+    return _NodeRepresentsDirectReference( attr.GetResolveInfo().GetNode() );
 }
 
 

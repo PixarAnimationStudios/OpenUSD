@@ -48,8 +48,8 @@ class UsdRelationship;
 //     of a solution, leaving open the question of ideal API
 //     for this sort of thing.
 
-// Check if this attribute resolves from across a reference arc.
-bool PxrUsdKatana_IsAttrValFromReference(const UsdAttribute &attr);
+// Check if this attribute resolves from across a direct reference arc.
+bool PxrUsdKatana_IsAttrValFromDirectReference(const UsdAttribute &attr);
 
 // Check if this attribute resolves from across a specializes arc.
 bool PxrUsdKatana_IsAttrValFromBaseMaterial(const UsdAttribute &attr);

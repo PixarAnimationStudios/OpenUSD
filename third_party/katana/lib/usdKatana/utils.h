@@ -114,8 +114,7 @@ struct PxrUsdKatanaUtils {
     /// we'll have to do some extra processing to find the correct path that
     /// these resolve to
     static std::string _GetDisplayGroup(
-            const UsdPrim &prim, 
-            bool isLibrary,
+            const UsdPrim &prim,
             const SdfPath& path);
     static std::string _GetDisplayName(const UsdPrim &prim);
     static std::string ConvertUsdMaterialPathToKatLocation(

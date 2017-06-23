@@ -120,8 +120,9 @@ PxrUsdKatanaUtils::ReverseTimeSample(double sample)
 }
 
 void
-PxrUsdKatanaUtils::ConvertNumVertsToStartVerts( const std::vector<int> &numVertsVec,
-                              std::vector<int> *startVertsVec )
+PxrUsdKatanaUtils::ConvertNumVertsToStartVerts(
+    const std::vector<int> &numVertsVec,
+    std::vector<int> *startVertsVec )
 {
     startVertsVec->resize( numVertsVec.size()+1 );
     int index = 0;
@@ -158,7 +159,8 @@ _ConvertArrayToVector(const VtVec2dArray &a, std::vector<double> *r)
 }
 
 void
-PxrUsdKatanaUtils::ConvertArrayToVector(const VtVec3fArray &a, std::vector<float> *r)
+PxrUsdKatanaUtils::ConvertArrayToVector(
+    const VtVec3fArray &a, std::vector<float> *r)
 {
     r->resize(a.size()*3);
     size_t i=0;
@@ -255,7 +257,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         FnKat::StringBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
         //return builder.build();
-        typeAttr = FnKat::StringAttribute(TfStringPrintf("string [%zu]", rawVal.size()));
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("string [%zu]", rawVal.size()));
         valueAttr = builder.build();
     }
 
@@ -477,7 +480,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     // VtArray<SdfAssetPath>
     else if (val.IsHolding<VtArray<SdfAssetPath> >()) {
         FnKat::StringBuilder stringBuilder;
-        const VtArray<SdfAssetPath> &assetArray = val.Get<VtArray<SdfAssetPath> >();
+        const VtArray<SdfAssetPath> &assetArray = 
+            val.Get<VtArray<SdfAssetPath> >();
         TF_FOR_ALL(strItr, assetArray) {
             stringBuilder.push_back(
                 resolvePaths ?
@@ -524,7 +528,8 @@ PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(
             rel.GetPrim().GetStage()->GetPrimAtPath(*targetItr);
         if (targetPrim) {
             if (targetPrim.IsA<UsdShadeShader>()){
-                vec.push_back(PxrUsdKatanaUtils::GenerateShadingNodeHandle(targetPrim));
+                vec.push_back(
+                    PxrUsdKatanaUtils::GenerateShadingNodeHandle(targetPrim));
             }
             else {
                 vec.push_back(targetItr->GetString());
@@ -532,7 +537,8 @@ PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(
         } 
         else if (targetItr->IsPropertyPath()) {
             if (UsdPrim owningPrim = 
-                rel.GetPrim().GetStage()->GetPrimAtPath(targetItr->GetPrimPath())) {
+                rel.GetPrim().GetStage()->GetPrimAtPath(
+                    targetItr->GetPrimPath())) {
                 const TfTokenVector &propNames = owningPrim.GetPropertyNames();
                 if (std::count(propNames.begin(),
                                propNames.end(),
@@ -1027,7 +1033,7 @@ PxrUsdKatanaUtils::_GetDisplayName(const UsdPrim &prim)
     UsdAttribute displayNameAttr = sgp.GetDisplayNameAttr();
     if (displayNameAttr.IsValid() &&
             !PxrUsdKatana_IsAttrValFromBaseMaterial(displayNameAttr) &&
-            !PxrUsdKatana_IsAttrValFromReference(displayNameAttr)) {
+            !PxrUsdKatana_IsAttrValFromDirectReference(displayNameAttr)) {
         // override prim name
         TfToken displayNameToken;
         if (displayNameAttr.Get(&displayNameToken)) {
@@ -1042,7 +1048,7 @@ PxrUsdKatanaUtils::_GetDisplayName(const UsdPrim &prim)
         UsdAttribute primNameAttr = UsdKatanaLookAPI(prim).GetPrimNameAttr();
         if (primNameAttr.IsValid() && 
                 !PxrUsdKatana_IsAttrValFromBaseMaterial(primNameAttr) &&
-                !PxrUsdKatana_IsAttrValFromReference(primNameAttr)) {
+                !PxrUsdKatana_IsAttrValFromDirectReference(primNameAttr)) {
             primNameAttr.Get(&primName);
         }
     }
@@ -1052,26 +1058,23 @@ PxrUsdKatanaUtils::_GetDisplayName(const UsdPrim &prim)
 std::string 
 PxrUsdKatanaUtils::_GetDisplayGroup(
         const UsdPrim &prim, 
-        bool isLibrary, 
         const SdfPath& path) 
 {
     std::string displayGroup;
     UsdUISceneGraphPrimAPI sgp(prim);
 
-    if (isLibrary) {
-        UsdAttribute displayGroupAttr = sgp.GetDisplayGroupAttr();
-        if (displayGroupAttr.IsValid() && 
-                !PxrUsdKatana_IsAttrValFromBaseMaterial(displayGroupAttr) && 
-                !PxrUsdKatana_IsAttrValFromReference(displayGroupAttr)) {
-            TfToken displayGroupToken;
-            if (displayGroupAttr.Get(&displayGroupToken)) {
-                displayGroup = displayGroupToken.GetString();
-            }
-            else {
-                displayGroupAttr.Get(&displayGroup);
-            }
-            displayGroup = TfStringReplace(displayGroup, ":", "/");
+    UsdAttribute displayGroupAttr = sgp.GetDisplayGroupAttr();
+    if (displayGroupAttr.IsValid() && 
+            !PxrUsdKatana_IsAttrValFromBaseMaterial(displayGroupAttr) && 
+            !PxrUsdKatana_IsAttrValFromDirectReference(displayGroupAttr)) {
+        TfToken displayGroupToken;
+        if (displayGroupAttr.Get(&displayGroupToken)) {
+            displayGroup = displayGroupToken.GetString();
         }
+        else {
+            displayGroupAttr.Get(&displayGroup);
+        }
+        displayGroup = TfStringReplace(displayGroup, ":", "/");
     }
 
     if (displayGroup.empty())
@@ -1091,8 +1094,7 @@ PxrUsdKatanaUtils::_GetDisplayGroup(
         // Asset sanity check. It is possible the derivesFrom relationship
         // for a Look exists but references a non-existent location. If so,
         // simply return the base path.
-        if (!parentPrim)
-        {
+        if (!parentPrim) {
             return "";
         }
 
@@ -1100,16 +1102,16 @@ PxrUsdKatanaUtils::_GetDisplayGroup(
         {
             // If the prim is inside a master, then attempt to translate the
             // parentPath to the corresponding uninstanced path, assuming that 
-            // the given forwarded path and parentPath belong to the same master.
+            // the given forwarded path and parentPath belong to the same master
             const SdfPath primPath = prim.GetPath();
             std::pair<SdfPath, SdfPath> prefixPair = 
                 primPath.RemoveCommonSuffix(path);
             const SdfPath& masterPath = prefixPair.first;
             const SdfPath& instancePath = prefixPair.second;
             
-            // XXX: Assuming that the base look (parent) path belongs to the same
-            // master! If it belongs to a different master, we don't have the 
-            // context needed to resolve it.
+            // XXX: Assuming that the base look (parent) path belongs to the 
+            // same master! If it belongs to a different master, we don't have
+            //  the context needed to resolve it.
             if (parentPath.HasPrefix(masterPath)) {
                 parentPath = instancePath.AppendPath(parentPath.ReplacePrefix(
                     masterPath, SdfPath::ReflexiveRelativePath()));
@@ -1124,7 +1126,8 @@ PxrUsdKatanaUtils::_GetDisplayGroup(
         // displayGroup coming from the parent includes the materialGroup
         std::string parentDisplayName = _GetDisplayName(parentPrim);
         std::string parentDisplayGroup = _GetDisplayGroup(
-            parentPrim, isLibrary, parentPath);
+            parentPrim, 
+            parentPath);
         
         if (parentDisplayGroup.empty()) {
             displayGroup = parentDisplayName;
@@ -1185,7 +1188,7 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         returnValue += '/';
     }
 
-    std::string displayGroup = _GetDisplayGroup(prim, isLibrary, path);
+    std::string displayGroup = _GetDisplayGroup(prim, path);
     if (!displayGroup.empty()) {
         returnValue += displayGroup;
         returnValue += '/';
@@ -1328,7 +1331,9 @@ PxrUsdKatanaUtils::IsModelAssemblyOrComponent(const UsdPrim& prim)
 }
 
 bool
-PxrUsdKatanaUtils::IsAttributeVarying(const  UsdAttribute& attr, double currentTime) {
+PxrUsdKatanaUtils::IsAttributeVarying(
+    const UsdAttribute& attr, double currentTime) 
+{
     // XXX: Copied from UsdImagingDelegate::_TrackVariability.
     // XXX: This logic is highly sensitive to the underlying quantization of
     //      time. Also, the epsilon value (.000001) may become zero for large
@@ -1472,7 +1477,8 @@ PxrUsdKatanaUtils::ConvertBoundsToAttribute(
         // Don't return empty bboxes, Katana/PRMan will not behave well.
         if (range.IsEmpty()) {
             // FnLogWarn(TfStringPrintf(
-            //     "Failed to compute bound for <%s>", prim.GetPath().GetText()));
+            //     "Failed to compute bound for <%s>", 
+            //      prim.GetPath().GetText()));
             return FnKat::DoubleAttribute();
         }
 
@@ -1482,7 +1488,8 @@ PxrUsdKatanaUtils::ConvertBoundsToAttribute(
         }
 
         std::vector<double> &boundData = boundBuilder.get(
-            isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
+            isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(
+                relSampleTime) : relSampleTime);
 
         boundData.push_back( min[0] );
         boundData.push_back( max[0] );
