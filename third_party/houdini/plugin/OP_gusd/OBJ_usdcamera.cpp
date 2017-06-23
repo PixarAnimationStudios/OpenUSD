@@ -114,9 +114,6 @@ GusdOBJ_usdcamera::GetTemplates()
     /* Our common camera params come from the same initialization script
        as the standard camera.*/
 
-    static PRM_Default fileDef( 
-            0, "pxh_mwhich(\"${SHOT}_sconvert/${SHOT}_sconvert_presto.usd\")",
-            CH_OLD_EXPRESSION);
     static PRM_Default primPathDef(0, "/World/main_cam");
     static PRM_Name frameName("frame", "Frame");
     static PRM_Default frameDef(0, "$FF");
@@ -134,7 +131,7 @@ GusdOBJ_usdcamera::GetTemplates()
     GusdPRM_Shared prmShared;
 
     static PRM_Template camTemplates[] = {
-        PRM_Template(PRM_FILE, 1, &prmShared->filePathName, &fileDef,
+        PRM_Template(PRM_FILE, 1, &prmShared->filePathName, 0,
                      /*choicelist*/ 0, /*range*/ 0,
                      /*callback*/ 0, &prmShared->usdFileROData),
         PRM_Template(PRM_STRING, 1, &prmShared->primPathName,
@@ -365,6 +362,7 @@ GusdOBJ_usdcamera::runCreateScript()
             }
         }
         
+#if 0
         // Replace the choices for the resolution menu with ones that 
         // we read from our configuration script.
         if(PRM_Parm *parm = parms->getParmPtr("resMenu"))
@@ -381,6 +379,7 @@ GusdOBJ_usdcamera::runCreateScript()
             }
 
         }
+#endif
         return true;
     }
     return false;
