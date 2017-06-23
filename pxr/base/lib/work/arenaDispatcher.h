@@ -57,7 +57,7 @@ class WorkArenaDispatcher
 public:
     /// Constructs a new dispatcher. The internal arena will mirror the
     /// global concurrency limit setting.
-    WorkArenaDispatcher() : _arena(WorkGetConcurrencyLimit()) {}
+    WorkArenaDispatcher() : _arena(_GetArena()) {}
 
     /// Wait() for any pending tasks to complete, then destroy the dispatcher.
     WORK_API ~WorkArenaDispatcher();
@@ -83,7 +83,7 @@ public:
 
     template <class Callable, class ... Args>
     inline void Run(Callable &&c, Args&&... args) {
-        _arena.execute(
+        _arena->execute(
             _MakeRunner(&_dispatcher,
                         std::bind(std::forward<Callable>(c),
                                   std::forward<Args>(args)...)));
@@ -101,6 +101,8 @@ public:
     WORK_API void Cancel();
 
 private:
+    WORK_API tbb::task_arena *_GetArena() const;
+    
     template <class Fn>
     struct _Runner {
         _Runner(WorkDispatcher *wd, Fn &&fn) : _wd(wd), _fn(std::move(fn)) {}
@@ -120,7 +122,7 @@ private:
     }
 
     // The task arena.
-    tbb::task_arena _arena;
+    tbb::task_arena *_arena;
 
     // The dispatcher.
     WorkDispatcher _dispatcher;
