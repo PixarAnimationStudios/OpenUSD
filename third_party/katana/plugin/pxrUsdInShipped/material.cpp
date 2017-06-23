@@ -26,6 +26,8 @@
 #include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readMaterial.h"
+#include "usdKatana/blindDataObject.h"
+#include "usdKatana/readBlindData.h"
 
 #include "pxr/usd/usdShade/material.h"
 
@@ -35,11 +37,18 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LookOp, privateData, interface)
 {
     PxrUsdKatanaAttrMap attrs;
     
+    // always flatten individual materials
+    bool flatten = true;
+    UsdShadeMaterial materialSchema(privateData.GetUsdPrim());
     PxrUsdKatanaReadMaterial(
-        UsdShadeMaterial(privateData.GetUsdPrim()),
-        /* flatten */ true,
+        materialSchema,
+        flatten,
         privateData,
         attrs);
+
+    // Read blind data.
+    PxrUsdKatanaReadBlindData(
+        UsdKatanaBlindDataObject(materialSchema), attrs);
 
     attrs.toInterface(interface);
 
