@@ -36,6 +36,8 @@ bool getBoolAttr(
         bool defaultValue );
 }
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 bool
 GusdContext::getOverTransforms( const GT_PrimitiveHandle &sourcePrim ) const
 {
@@ -70,6 +72,8 @@ GusdContext::getOverGeo( const GT_PrimitiveHandle &sourcePrim ) const
     return getOverTransforms( sourcePrim ) || getOverPoints( sourcePrim ) ||
            getOverPrimvars( sourcePrim ) || getOverAll( sourcePrim );
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 namespace {
 
