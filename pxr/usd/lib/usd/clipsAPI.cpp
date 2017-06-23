@@ -107,217 +107,149 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define USD_CLIPS_API_SETTER(FnName, InArg, MetadataKey)        \
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {             \
+        /* Special-case to pre-empt coding errors. */           \
+        return false;                                           \
+    }                                                           \
+    return GetPrim().SetMetadata(MetadataKey, InArg);           \
+
+#define USD_CLIPS_API_GETTER(FnName, OutArg, MetadataKey)       \
+    if (GetPath() == SdfPath::AbsoluteRootPath()) {             \
+        /* Special-case to pre-empt coding errors.  */          \
+        return false;                                           \
+    }                                                           \
+    return GetPrim().GetMetadata(MetadataKey, OutArg);          \
+
 bool 
 UsdClipsAPI::SetClipAssetPaths(const VtArray<SdfAssetPath>& assetPaths)
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().SetMetadata(UsdTokens->clipAssetPaths, assetPaths);
+    USD_CLIPS_API_SETTER(SetClipAssetPaths, 
+        assetPaths, UsdTokens->clipAssetPaths);
 }
 
 bool 
 UsdClipsAPI::GetClipAssetPaths(VtArray<SdfAssetPath>* assetPaths) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(UsdTokens->clipAssetPaths, assetPaths);
+    USD_CLIPS_API_GETTER(GetClipAssetPaths,
+        assetPaths, UsdTokens->clipAssetPaths);
 }
 
 bool 
 UsdClipsAPI::SetClipManifestAssetPath(const SdfAssetPath& assetPath)
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().SetMetadata(
-        UsdTokens->clipManifestAssetPath, assetPath);
+    USD_CLIPS_API_SETTER(SetClipManifestAssetPath,
+        assetPath, UsdTokens->clipManifestAssetPath);
 }
 
 bool 
 UsdClipsAPI::GetClipManifestAssetPath(SdfAssetPath* assetPath) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(
-        UsdTokens->clipManifestAssetPath, assetPath);
+    USD_CLIPS_API_GETTER(GetClipManifestAssetPath,
+        assetPath, UsdTokens->clipManifestAssetPath);
 }
 
 bool 
 UsdClipsAPI::SetClipPrimPath(const std::string& primPath)
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().SetMetadata(UsdTokens->clipPrimPath, primPath);
+    USD_CLIPS_API_SETTER(SetClipPrimPath,
+        primPath, UsdTokens->clipPrimPath);
 }
 
 bool 
 UsdClipsAPI::GetClipPrimPath(std::string* primPath) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(UsdTokens->clipPrimPath, primPath);
+    USD_CLIPS_API_GETTER(GetClipPrimPath,
+        primPath, UsdTokens->clipPrimPath);
 }
 
 bool 
 UsdClipsAPI::SetClipActive(const VtVec2dArray& activeClips)
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().SetMetadata(UsdTokens->clipActive, activeClips);
+    USD_CLIPS_API_SETTER(SetClipActive,
+        activeClips, UsdTokens->clipActive);
 }
 
 bool 
 UsdClipsAPI::GetClipActive(VtVec2dArray* activeClips) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(UsdTokens->clipActive, activeClips);
+    USD_CLIPS_API_GETTER(GetClipActive,
+        activeClips, UsdTokens->clipActive);
 }
 
 bool 
 UsdClipsAPI::SetClipTimes(const VtVec2dArray& clipTimes)
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().SetMetadata(UsdTokens->clipTimes, clipTimes);
+    USD_CLIPS_API_SETTER(SetClipTimes,
+        clipTimes, UsdTokens->clipTimes);
 }
 
 bool 
 UsdClipsAPI::GetClipTimes(VtVec2dArray* clipTimes) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(UsdTokens->clipTimes, clipTimes);
+    USD_CLIPS_API_GETTER(GetClipTimes,
+        clipTimes, UsdTokens->clipTimes);
 }
 
 bool 
 UsdClipsAPI::GetClipTemplateAssetPath(std::string* clipTemplateAssetPath) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(UsdTokens->clipTemplateAssetPath, 
-                                 clipTemplateAssetPath); 
+    USD_CLIPS_API_GETTER(GetClipTemplateAssetPath,
+        clipTemplateAssetPath, UsdTokens->clipTemplateAssetPath);
 }
 
 bool 
 UsdClipsAPI::SetClipTemplateAssetPath(const std::string& clipTemplateAssetPath)
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().SetMetadata(UsdTokens->clipTemplateAssetPath, 
-                                 clipTemplateAssetPath); 
+    USD_CLIPS_API_SETTER(SetClipTemplateAssetPath,
+        clipTemplateAssetPath, UsdTokens->clipTemplateAssetPath);
 }
 
 bool 
 UsdClipsAPI::GetClipTemplateStride(double* clipTemplateStride) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(UsdTokens->clipTemplateStride, 
-                                 clipTemplateStride);
+    USD_CLIPS_API_GETTER(GetClipTemplateStride,
+        clipTemplateStride, UsdTokens->clipTemplateStride);
 }
 
 bool 
 UsdClipsAPI::SetClipTemplateStride(const double clipTemplateStride)
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
     if (clipTemplateStride == 0) {
         TF_CODING_ERROR("clipTemplateStride can not be set to 0.");
         return false;
     }
 
-    return GetPrim().SetMetadata(UsdTokens->clipTemplateStride, 
-                                 clipTemplateStride);
+    USD_CLIPS_API_SETTER(SetClipTemplateStride,
+        clipTemplateStride, UsdTokens->clipTemplateStride);
 }
 
 bool 
 UsdClipsAPI::GetClipTemplateStartTime(double* clipTemplateStartTime) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(UsdTokens->clipTemplateStartTime, 
-                                 clipTemplateStartTime);
+    USD_CLIPS_API_GETTER(GetClipTemplateStartTime,
+        clipTemplateStartTime, UsdTokens->clipTemplateStartTime);
 }
 
 bool 
 UsdClipsAPI::SetClipTemplateStartTime(const double clipTemplateStartTime)
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().SetMetadata(UsdTokens->clipTemplateStartTime, 
-                                 clipTemplateStartTime);
+    USD_CLIPS_API_SETTER(SetClipTemplateStartTime,
+        clipTemplateStartTime, UsdTokens->clipTemplateStartTime);
 }
 
 bool 
 UsdClipsAPI::GetClipTemplateEndTime(double* clipTemplateEndTime) const
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().GetMetadata(UsdTokens->clipTemplateEndTime, 
-                                 clipTemplateEndTime);
+    USD_CLIPS_API_GETTER(GetClipTemplateEndTime,
+        clipTemplateEndTime, UsdTokens->clipTemplateEndTime);
 }
 
 bool 
 UsdClipsAPI::SetClipTemplateEndTime(const double clipTemplateEndTime)
 {
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    return GetPrim().SetMetadata(UsdTokens->clipTemplateEndTime, 
-                                 clipTemplateEndTime);
+    USD_CLIPS_API_SETTER(SetClipTemplateEndTime,
+        clipTemplateEndTime, UsdTokens->clipTemplateEndTime);
 }
 
 bool

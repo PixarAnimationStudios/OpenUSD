@@ -55,44 +55,39 @@ class SdfAssetPath;
 /// a prim's clip metadata. Clips are a "value resolution" feature that 
 /// allows one to specify a sequence of usd files (clips) to be consulted, 
 /// over time, as a source of varying overrides for the prims at and 
-/// beneath this model prim in namespace.
+/// beneath this prim in namespace.
 /// 
-/// Clips are a "value resolution" feature that allows one to specify           
-/// a sequence of usd files (clips) to be consulted, over time, as a source         
-/// of varying overrides for the prims at and beneath this model prim in            
-/// namespace.          
-/// 
-/// SetClipAssetPaths() establishes the set of clips that can be consulted.         
-/// SetClipActive() specifies the ordering of clip application over time            
-/// (clips can be repeated), while SetClipTimes() specifies time-mapping            
-/// from stage-time to clip-time for the clip active at a given stage-time,         
+/// SetClipAssetPaths() establishes the set of clips that can be consulted.
+/// SetClipActive() specifies the ordering of clip application over time 
+/// (clips can be repeated), while SetClipTimes() specifies time-mapping
+/// from stage-time to clip-time for the clip active at a given stage-time,
 /// which allows for time-dilation and repetition of clips. 
-/// Finally, SetClipPrimPath() determines the path within each clip that will map            
-/// to this prim, i.e. the location within the clip at which we will look           
+/// Finally, SetClipPrimPath() determines the path within each clip that will 
+/// map to this prim, i.e. the location within the clip at which we will look
 /// for opinions for this prim. 
 /// 
 /// The clipAssetPaths, clipTimes and clipActive metadata can also be specified 
 /// through template clip metadata. This can be desirable when your set of 
 /// assets is very large, as the template metadata is much more concise. 
-/// SetClipTemplateAssetPath() establishes the asset identifier pattern of the set of
-/// clips to be consulted. SetClipTemplateStride(), SetClipTemplateEndTime(), 
-/// and SetClipTemplateStartTime() specify the range in which USD will search, based
-/// on the template. From the set of resolved asset paths, clipTimes, and clipActive
-/// will be derived internally.
+/// SetClipTemplateAssetPath() establishes the asset identifier pattern of the 
+/// set of clips to be consulted. SetClipTemplateStride(), 
+/// SetClipTemplateEndTime(), and SetClipTemplateStartTime() specify the range 
+/// in which USD will search, based on the template. From the set of resolved 
+/// asset paths, clipTimes, and clipActive will be derived internally.
 /// 
 /// Important facts about clips:            
 /// \li Within the layerstack in which clips are established, the           
-/// opinions within the clips will be em weaker than any direct opinions           
-/// in the layerstack, but em stronger than varying opinions coming across             
+/// opinions within the clips will be em weaker than any direct opinions
+/// in the layerstack, but em stronger than varying opinions coming across
 /// references and variants.            
 /// \li We will never look for metadata or default opinions in clips            
 /// when performing value resolution on the owning stage, since these           
 /// quantities must be time-invariant.          
 /// 
-/// This leads to the common structure in which we reference a model asset          
-/// on a prim, and then author clips at the same site: the asset reference          
-/// will provide the topology and unvarying data for the model, while           
-/// the clips will provide the time-sampled animation.
+/// This leads to the common structure in which we reference a model asset
+/// on a prim, and then author clips at the same site: the asset reference
+/// will provide the topology and unvarying data for the model, while the 
+/// clips will provide the time-sampled animation.
 /// 
 /// For further information, see \ref Usd_Page_ValueClips
 /// 
