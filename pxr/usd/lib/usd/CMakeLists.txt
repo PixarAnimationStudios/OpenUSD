@@ -268,12 +268,10 @@ pxr_install_test_dir(
     DEST testUsdFlatten
 )
 
-
 pxr_install_test_dir(
     SRC testenv/testUsdFlatten2
     DEST testUsdFlatten2
 )
-
 
 pxr_install_test_dir(
     SRC testenv/testUsdFlatten2
@@ -361,6 +359,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdValueClips
+    DEST testUsdValueClips
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdVariants
     DEST testUsdVariants
 )
@@ -379,6 +382,12 @@ pxr_register_test(testUsdAttributeBlockingCpp
 pxr_register_test(testUsdAttributeConnections
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeConnections"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValueClips
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
     EXPECTED_RETURN_CODE 0
 )
 

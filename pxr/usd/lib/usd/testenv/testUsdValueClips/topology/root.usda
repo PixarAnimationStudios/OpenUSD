@@ -3,7 +3,7 @@
 def "Model" (
     kind = "model"
 
-    clipAssetPaths = [@clip.usda@]
+    clipAssetPaths = [@./clip.usda@]
     clipPrimPath = "/Model"
     clipActive = [(1.0, 0)]
 )

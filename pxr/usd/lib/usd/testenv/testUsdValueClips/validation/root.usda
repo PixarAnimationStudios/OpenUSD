@@ -10,7 +10,7 @@ def "Error1" (
     """Error if clipActive contains an invalid index into clipAssetPaths"""
     kind = "model"
  
-    clipAssetPaths = [@test.usda@]
+    clipAssetPaths = [@./test.usda@]
     clipPrimPath = "/Test"
     clipActive = [(0.0, 1.0)]
 )
@@ -21,7 +21,7 @@ def "Error2" (
     """Error if clipActive sets two clips active at the same time"""
     kind = "model"
  
-    clipAssetPaths = [@test.usda@, @test2.usda@]
+    clipAssetPaths = [@./test.usda@, @./test2.usda@]
     clipPrimPath = "/Test"
     clipActive = [(0.0, 0.0), (0.0, 1.0)]
 )
@@ -75,7 +75,7 @@ def "NoError6" (
     """clipTimes is an optional metadata field, so no error if it's not set"""
     kind = "model"
 
-    clipAssetPaths = [@test.usda@]
+    clipAssetPaths = [@./test.usda@]
     clipPrimPath = "/Test"
     clipActive = [(0.0, 0.0)]
 )

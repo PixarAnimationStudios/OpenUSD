@@ -12,12 +12,12 @@ over "_class_Model"
 }
 
 def "Model_1" (
-    clipAssetPaths = [@clip.usda@]
+    clipAssetPaths = [@./clip.usda@]
     clipPrimPath = "/Model"
     clipActive = [(10.0, 0)]
 
-    references = @ref.usda@</Model>
-    payload = @payload.usda@</Model>
+    references = @./ref.usda@</Model>
+    payload = @./payload.usda@</Model>
     variantSets = ["vset"]
     variants = {
         string vset = "a"

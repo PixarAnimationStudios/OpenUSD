@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+import shutil
 import unittest
 from pxr import Sdf, Tf, Usd, Vt, Gf
 
@@ -30,8 +31,6 @@ def ValidateAttributeTimeSamples(assertEqFn, attr):
     the time sample API"""
     allTimeSamples = attr.GetTimeSamples()
     assertEqFn(attr.GetNumTimeSamples(), len(allTimeSamples))
-
-    import sys
 
     for i in range(0, len(allTimeSamples) - 1):
         (lowerSample, upperSample) = \
@@ -186,15 +185,22 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, clipAttr, expected=-5, time=5)
 
         # Ensure that UsdStage::Reload reloads clip layers
-        # by editing one of the clip layers values
-        clip = Sdf.Layer.FindOrOpen('basic/clip.usda')
-        clip.SetTimeSample(Sdf.Path('/Model/Child.attr'), 5, 1005)
-        clip.Save()
+        # by editing one of the clip layers values.
+        try:
+            # Make a copy of the original layer and restore it
+            # afterwards so we don't leave unwanted state behind
+            # and cause subsequent test runs to fail.
+            shutil.copy2('basic/clip.usda', 'basic/clip.usda.old')
 
-        # After, it should get the newly set value in our clip layer
-        stage.Reload()
-        _Check(self.assertEqual, clipAttr, expected=1005, time=5)
+            clip = Sdf.Layer.FindOrOpen('basic/clip.usda')
+            clip.SetTimeSample(Sdf.Path('/Model/Child.attr'), 5, 1005)
+            clip.Save()
 
+            # After, it should get the newly set value in our clip layer
+            stage.Reload()
+            _Check(self.assertEqual, clipAttr, expected=1005, time=5)
+        finally:
+            shutil.move('basic/clip.usda.old', 'basic/clip.usda')
 
     def test_ClipTiming(self):
         """Exercises clip retiming via clipTimes metadata"""

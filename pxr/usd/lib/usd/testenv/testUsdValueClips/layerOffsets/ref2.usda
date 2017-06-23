@@ -1,9 +1,9 @@
 #usda 1.0
 
 def "Model" (
-    references = @ref.usda@</Model>    
+    references = @./ref.usda@</Model>    
 
-    clipAssetPaths = [@clip.usda@]
+    clipAssetPaths = [@./clip.usda@]
     clipPrimPath = "/Model"
     clipActive = [(0.0, 0)]
     clipTimes = [(0.0, 0.0), (20.0, 20.0)]    

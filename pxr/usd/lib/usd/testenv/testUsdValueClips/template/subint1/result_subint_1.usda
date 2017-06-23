@@ -5,7 +5,7 @@
 )
 
 def "World" (
-    add references = @result.topology.usda@</World>
+    add references = @./result.topology.usda@</World>
 )
 {
     over "fx"
@@ -17,7 +17,7 @@ def "World" (
                 clipTemplateStartTime = 101
                 clipTemplateEndTime   = 104
                 clipTemplateStride    = 1
-                clipManifestAssetPath = @result.topology.usda@
+                clipManifestAssetPath = @./result.topology.usda@
                 clipPrimPath = "/World/fx/Particles_Splash/points"
             )
             {
