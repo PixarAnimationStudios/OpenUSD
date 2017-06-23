@@ -822,7 +822,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     }
 
     // transform ---------------------------------------------------------------
-    if( writeNewGeo || overlayAll || overlayTransforms ) {
+    if( writeNewGeo || overlayTransforms ) {
 
         updateTransformFromGTPrim( xform, ctxt.time, 
                                    ctxt.granularity == GusdContext::PER_FRAME );
