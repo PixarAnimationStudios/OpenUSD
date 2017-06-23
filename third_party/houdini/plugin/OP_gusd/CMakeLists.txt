@@ -64,3 +64,10 @@ install(
         ${PXR_INSTALL_SUBDIR}/python_panels
 )
 
+install(
+    FILES
+        obj/pixar-usdcamera.py
+    DESTINATION
+        ${PXR_INSTALL_SUBDIR}/scripts/obj
+)
+
