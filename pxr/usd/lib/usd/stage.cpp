@@ -5348,8 +5348,8 @@ _ClipAppliesToLayerStackSite(
     const Usd_ClipRefPtr& clip,
     const PcpLayerStackPtr& layerStack, const SdfPath& primPathInLayerStack)
 {
-    return (layerStack == clip->sourceNode.GetLayerStack()
-        && primPathInLayerStack.HasPrefix(clip->sourceNode.GetPath()));
+    return (layerStack == clip->sourceLayerStack
+        && primPathInLayerStack.HasPrefix(clip->sourcePrimPath));
 }
 
 static bool
@@ -5357,8 +5357,8 @@ _ClipsApplyToNode(
     const Usd_ClipCache::Clips& clips, 
     const PcpNodeRef& node)
 {
-    return (node.GetLayerStack() == clips.sourceNode.GetLayerStack()
-            && node.GetPath().HasPrefix(clips.sourceNode.GetPath()));
+    return (node.GetLayerStack() == clips.sourceLayerStack
+            && node.GetPath().HasPrefix(clips.sourcePrimPath));
 }
 
 static

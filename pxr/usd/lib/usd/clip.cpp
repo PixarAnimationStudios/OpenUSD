@@ -329,13 +329,11 @@ _DeriveClipInfo(const std::string& templateAssetPath,
     _ClipDerivationMsg(UsdTokens->clipActive, node, **clipActive);
 }
 
-PcpNodeRef
+bool
 Usd_ResolveClipInfo(
     const PcpPrimIndex& primIndex,
     Usd_ResolvedClipInfo* clipInfo)
 {
-    PcpNodeRef sourceNode;
-
     bool nontemplateMetadataSeen = false;
     bool templateMetadataSeen    = false;
 
@@ -345,7 +343,8 @@ Usd_ResolveClipInfo(
     for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextNode()) {
         const PcpNodeRef& node = res.GetNode();
         const SdfPath& primPath = node.GetPath();
-        const SdfLayerRefPtrVector& layers = node.GetLayerStack()->GetLayers();
+        const PcpLayerStackPtr& layerStack = node.GetLayerStack();
+        const SdfLayerRefPtrVector& layers = layerStack->GetLayers();
 
         for (size_t i = 0, j = layers.size(); i != j; ++i) {
             const SdfLayerRefPtr& layer = layers[i];
@@ -354,10 +353,11 @@ Usd_ResolveClipInfo(
                                 &clipAssetPaths)){
                 nontemplateMetadataSeen = true;
                 _ClipDebugMsg(node, layer, UsdTokens->clipAssetPaths);
+                clipInfo->sourceLayerStack = layerStack;
+                clipInfo->sourcePrimPath = primPath;
                 clipInfo->indexOfLayerWhereAssetPathsFound = i;
                 clipInfo->clipAssetPaths = boost::in_place();
                 clipInfo->clipAssetPaths->swap(clipAssetPaths);
-                sourceNode = node;
                 break;
             }
 
@@ -365,9 +365,10 @@ Usd_ResolveClipInfo(
             if (layer->HasField(primPath, UsdTokens->clipTemplateAssetPath,
                                 &clipTemplateAssetPath)) {
                 templateMetadataSeen = true;
+                clipInfo->sourceLayerStack = layerStack;
+                clipInfo->sourcePrimPath = primPath;
                 clipInfo->indexOfLayerWhereAssetPathsFound = i;
                 templateAssetPath = clipTemplateAssetPath;
-                sourceNode = node;
                 break;
             }
 
@@ -390,7 +391,7 @@ Usd_ResolveClipInfo(
     // we need not complete resolution if there are no clip
     // asset paths available, as they are a necessary component for clips.
     if (!templateMetadataSeen && !nontemplateMetadataSeen) {
-        return sourceNode;
+        return false;
     }
 
     boost::optional<double> templateStartTime;
@@ -479,7 +480,7 @@ Usd_ResolveClipInfo(
                 }
 
                 if (templateStride && templateStartTime && templateEndTime) {
-                    auto sourceLayer = sourceNode.GetLayerStack()->GetLayers()[
+                    auto sourceLayer = clipInfo->sourceLayerStack->GetLayers()[
                         clipInfo->indexOfLayerWhereAssetPathsFound];
 
                     _DeriveClipInfo(*templateAssetPath, *templateStride,
@@ -509,7 +510,7 @@ Usd_ResolveClipInfo(
         }
     }
 
-    return sourceNode;
+    return true;
 }
 
 // ------------------------------------------------------------
@@ -522,14 +523,16 @@ Usd_Clip::Usd_Clip()
 }
 
 Usd_Clip::Usd_Clip(
-    const PcpNodeRef& clipSourceNode,
+    const PcpLayerStackPtr& clipSourceLayerStack,
+    const SdfPath& clipSourcePrimPath,
     size_t clipSourceLayerIndex,
     const SdfAssetPath& clipAssetPath,
     const SdfPath& clipPrimPath,
     ExternalTime clipStartTime,
     ExternalTime clipEndTime,
     const TimeMappings& timeMapping)
-    : sourceNode(clipSourceNode)
+    : sourceLayerStack(clipSourceLayerStack)
+    , sourcePrimPath(clipSourcePrimPath)
     , sourceLayerIndex(clipSourceLayerIndex)
     , assetPath(clipAssetPath)
     , primPath(clipPrimPath)
@@ -552,12 +555,11 @@ Usd_Clip::Usd_Clip(
     // This is important for change processing. Clip layers will be kept
     // alive during change processing, so any clips that are reconstructed
     // will have the opportunity to reuse the already-opened layer.
-    const PcpLayerStackPtr& layerStack = sourceNode.GetLayerStack();
-    if (TF_VERIFY(sourceLayerIndex < layerStack->GetLayers().size())) {
+    if (TF_VERIFY(sourceLayerIndex < sourceLayerStack->GetLayers().size())) {
         const ArResolverContextBinder binder(
-            layerStack->GetIdentifier().pathResolverContext);
+            sourceLayerStack->GetIdentifier().pathResolverContext);
         _layer = SdfLayer::FindRelativeToLayer(
-            layerStack->GetLayers()[sourceLayerIndex],
+            sourceLayerStack->GetLayers()[sourceLayerIndex],
             assetPath.GetAssetPath());
     }
 
@@ -944,8 +946,7 @@ Usd_Clip::_TranslatedSpecId
 Usd_Clip::_TranslateIdToClip(const SdfAbstractDataSpecId& id) const
 {
     return _TranslatedSpecId(
-        id.GetPropertyOwningSpecPath()
-            .ReplacePrefix(sourceNode.GetPath(), primPath),
+        id.GetPropertyOwningSpecPath().ReplacePrefix(sourcePrimPath, primPath),
         id.GetPropertyName());
 }
 
@@ -1021,13 +1022,12 @@ Usd_Clip::_GetLayerForClip() const
 
     SdfLayerRefPtr layer;
 
-    const PcpLayerStackPtr& layerStack = sourceNode.GetLayerStack();
-    if (TF_VERIFY(sourceLayerIndex < layerStack->GetLayers().size())) {
+    if (TF_VERIFY(sourceLayerIndex < sourceLayerStack->GetLayers().size())) {
         std::string resolvedPath = assetPath.GetAssetPath();
         const ArResolverContextBinder binder(
-            layerStack->GetIdentifier().pathResolverContext);
+            sourceLayerStack->GetIdentifier().pathResolverContext);
         layer = SdfFindOrOpenRelativeToLayer(
-            layerStack->GetLayers()[sourceLayerIndex],
+            sourceLayerStack->GetLayers()[sourceLayerIndex],
             &resolvedPath);
     }
 

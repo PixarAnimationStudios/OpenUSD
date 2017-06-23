@@ -142,7 +142,9 @@ static void
 _AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
 {
     Usd_ResolvedClipInfo clipInfo;
-    auto node = Usd_ResolveClipInfo(primIndex, &clipInfo);
+    if (!Usd_ResolveClipInfo(primIndex, &clipInfo)) {
+        return;
+    }
 
     // If we haven't found all of the required clip metadata we can just 
     // bail out. Note that clipTimes and clipManifestAssetPath are *not* 
@@ -172,8 +174,8 @@ _AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
 
         TF_WARN(
             "Invalid clips specified for prim <%s> in LayerStack %s: %s",
-            node.GetPath().GetString().c_str(),
-            TfStringify(node.GetLayerStack()).c_str(),
+            clipInfo.sourcePrimPath.GetString().c_str(),
+            TfStringify(clipInfo.sourceLayerStack).c_str(),
             error.c_str());
         return;
     }
@@ -181,7 +183,8 @@ _AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
     // If a clip manifest has been specified, create a clip for it.
     if (clipInfo.clipManifestAssetPath) {
         const Usd_ClipRefPtr clip(new Usd_Clip(
-            /* clipSourceNode       = */ node,
+            /* clipSourceLayerStack = */ clipInfo.sourceLayerStack,
+            /* clipSourcePrimPath   = */ clipInfo.sourcePrimPath,
             /* clipSourceLayerIndex = */ 
                 clipInfo.indexOfLayerWhereAssetPathsFound,
             /* clipAssetPath        = */ *clipInfo.clipManifestAssetPath,
@@ -242,7 +245,8 @@ _AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
         }
 
         const Usd_ClipRefPtr clip(new Usd_Clip(
-            /* clipSourceNode = */ node,
+            /* clipSourceLayerStack = */ clipInfo.sourceLayerStack,
+            /* clipSourcePrimPath   = */ clipInfo.sourcePrimPath,
             /* clipSourceLayerIndex = */ 
                 clipInfo.indexOfLayerWhereAssetPathsFound,
             /* clipAssetPath = */ clipEntry.clipAssetPath,
@@ -254,7 +258,8 @@ _AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
         clips->valueClips.push_back(clip);
     }
 
-    clips->sourceNode = node;
+    clips->sourceLayerStack = clipInfo.sourceLayerStack;
+    clips->sourcePrimPath = clipInfo.sourcePrimPath;
     clips->sourceLayerIndex = clipInfo.indexOfLayerWhereAssetPathsFound;    
 }
 
