@@ -25,6 +25,7 @@ pxr_library(hdSt
         drawTargetAttachmentDesc
         drawTargetAttachmentDescArray
         drawTargetRenderPassState
+        instancer
         light      
         mesh
         points

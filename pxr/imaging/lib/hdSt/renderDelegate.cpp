@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/basisCurves.h"
 #include "pxr/imaging/hdSt/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/points.h"
@@ -96,6 +97,20 @@ HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                         HdRprimCollection const& collection)
 {
     return HdRenderPassSharedPtr(new HdSt_RenderPass(index, collection));
+}
+
+HdInstancer *
+HdStRenderDelegate::CreateInstancer(HdSceneDelegate *delegate,
+                                    SdfPath const& id,
+                                    SdfPath const& instancerId)
+{
+    return new HdStInstancer(delegate, id, instancerId);
+}
+
+void
+HdStRenderDelegate::DestroyInstancer(HdInstancer *instancer)
+{
+    delete instancer;
 }
 
 HdRprim *

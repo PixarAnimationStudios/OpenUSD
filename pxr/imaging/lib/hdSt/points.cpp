@@ -26,6 +26,7 @@
 
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/pointsShaderKey.h"
+#include "pxr/imaging/hdSt/instancer.h"
 
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/getenv.h"
@@ -92,8 +93,14 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
 
     /* INSTANCE PRIMVARS */
-    _PopulateInstancePrimVars(sceneDelegate, drawItem, dirtyBits,
-                              InstancePrimVar);
+    if (!GetInstancerId().IsEmpty()) {
+        HdStInstancer *instancer = static_cast<HdStInstancer*>(
+            sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
+        if (TF_VERIFY(instancer)) {
+            instancer->PopulateDrawItem(drawItem, &_sharedData,
+                dirtyBits, InstancePrimVar);
+        }
+    }
 
     HdSt_PointsShaderKey shaderKey;
     drawItem->SetGeometricShader(Hd_GeometricShader::Create(shaderKey));

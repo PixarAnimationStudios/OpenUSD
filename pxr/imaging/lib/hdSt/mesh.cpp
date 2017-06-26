@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
+#include "pxr/imaging/hdSt/instancer.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -946,8 +947,14 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
 
     /* INSTANCE PRIMVARS */
-    _PopulateInstancePrimVars(sceneDelegate, drawItem, dirtyBits,
-                              InstancePrimVar);
+    if (!GetInstancerId().IsEmpty()) {
+        HdStInstancer *instancer = static_cast<HdStInstancer*>(
+            sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
+        if (TF_VERIFY(instancer)) {
+            instancer->PopulateDrawItem(drawItem, &_sharedData,
+                dirtyBits, InstancePrimVar);
+        }
+    }
 
     /* TOPOLOGY */
     // XXX: _PopulateTopology should be split into two phase

@@ -161,12 +161,6 @@ protected:
                                    HdDirtyBits *dirtyBits);
 
     HD_API
-    void _PopulateInstancePrimVars(HdSceneDelegate *sceneDelegate,
-                                   HdDrawItem *drawItem,
-                                   HdDirtyBits *dirtyBits,
-                                   int instancePrimVarSlot);
-
-    HD_API
     VtMatrix4dArray _GetInstancerTransforms(HdSceneDelegate* delegate);
 
     HD_API

@@ -1116,8 +1116,8 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
     }
 #endif
 
-    HdInstancerSharedPtr instancer =
-        HdInstancerSharedPtr(new HdInstancer(delegate, id, parentId));
+    HdInstancer *instancer =
+        _renderDelegate->CreateInstancer(delegate, id, parentId);
 
     _instancerMap[id] = instancer;
     _tracker.InstancerInserted(id);
@@ -1133,17 +1133,19 @@ HdRenderIndex::RemoveInstancer(SdfPath const& id)
     if (it == _instancerMap.end())
         return;
 
+    _renderDelegate->DestroyInstancer(it->second);
+
     _tracker.InstancerRemoved(id);
     _instancerMap.erase(it);
 }
 
-HdInstancerSharedPtr
+HdInstancer *
 HdRenderIndex::GetInstancer(SdfPath const &id) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdInstancerSharedPtr instancer;
+    HdInstancer *instancer = nullptr;
     TfMapLookup(_instancerMap, id, &instancer);
 
     return instancer;

@@ -364,61 +364,6 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
         drawItem->GetConstantPrimVarRange(), sources);
 }
 
-void
-HdRprim::_PopulateInstancePrimVars(HdSceneDelegate* delegate,
-                                   HdDrawItem *drawItem,
-                                   HdDirtyBits *dirtyBits,
-                                   int instancePrimVarSlot)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    SdfPath const& id = GetId();
-
-    if (_instancerID.IsEmpty()) {
-        return;
-    }
-
-    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
-
-    HdInstancerSharedPtr instancer = renderIndex.GetInstancer(_instancerID);
-    if (!TF_VERIFY(instancer)) return;
-
-    HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
-
-    // populate INSTANCE PRIVARS first so that we can detect inconsistency
-    // between the number of instances and instance primvars.
-
-    /* INSTANCE PRIMVARS */
-    // we always call GetInstancePrimVars so that HdInstancer updates
-    // instance primvars if needed.
-    // populate all instance primvars by backtracing hierarachy
-    int level = 0;
-    HdInstancerSharedPtr currentInstancer = instancer;
-    while (currentInstancer) {
-        // allocate instance primvar slot in the drawing coordinate.
-        drawingCoord->SetInstancePrimVarIndex(level,
-                                              instancePrimVarSlot + level);
-        _sharedData.barContainer.Set(
-            drawingCoord->GetInstancePrimVarIndex(level),
-            currentInstancer->GetInstancePrimVars(level));
-
-        // next
-        currentInstancer
-            = renderIndex.GetInstancer(currentInstancer->GetParentId());
-        ++level;
-    }
-
-    /* INSTANCE INDICES */
-    if (HdChangeTracker::IsInstanceIndexDirty(*dirtyBits, id)) {
-        _sharedData.barContainer.Set(
-            drawingCoord->GetInstanceIndexIndex(),
-            instancer->GetInstanceIndices(id));
-    }
-
-    TF_VERIFY(drawItem->GetInstanceIndexRange());
-}
-
 VtMatrix4dArray
 HdRprim::_GetInstancerTransforms(HdSceneDelegate* delegate)
 {
@@ -430,7 +375,7 @@ HdRprim::_GetInstancerTransforms(HdSceneDelegate* delegate)
 
     while (!instancerID.IsEmpty()) {
         transforms.push_back(delegate->GetInstancerTransform(instancerID, id));
-        HdInstancerSharedPtr instancer = renderIndex.GetInstancer(instancerID);
+        HdInstancer *instancer = renderIndex.GetInstancer(instancerID);
         if (instancer) {
             instancerID = instancer->GetParentId();
         } else {

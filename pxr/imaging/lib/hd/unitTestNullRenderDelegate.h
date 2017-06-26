@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/instancer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,6 +49,22 @@ public:
 
     virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
                 HdRprimCollection const& collection) override;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Instancer Factory
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
+                                         SdfPath const& id,
+                                         SdfPath const& instancerId) override {
+        return nullptr;
+    }
+
+    virtual void DestroyInstancer(HdInstancer *instancer) override {
+        delete instancer;
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     ///
