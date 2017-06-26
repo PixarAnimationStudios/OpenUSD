@@ -30,7 +30,6 @@
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hd/bufferResourceGL.h"
@@ -43,10 +42,6 @@
 #include "pxr/imaging/hf/perfLog.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-TF_INSTANTIATE_SINGLETON(HdInterleavedUBOMemoryManager);
-TF_INSTANTIATE_SINGLETON(HdInterleavedSSBOMemoryManager);
 
 // ---------------------------------------------------------------------------
 //  HdInterleavedMemoryManager

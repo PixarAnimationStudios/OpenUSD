@@ -25,7 +25,6 @@
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -48,8 +47,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_INSTANTIATE_SINGLETON(HdVBOSimpleMemoryManager);
 
 extern TfEnvSetting<int> HD_MAX_VBO_SIZE;
 

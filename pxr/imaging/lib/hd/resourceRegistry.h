@@ -50,6 +50,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <map>
+#include <memory>
 #include <atomic>
 #include <tbb/concurrent_vector.h>
 
@@ -173,18 +174,21 @@ public:
 
     /// Set the aggregation strategy for non uniform parameters
     /// (vertex, varying, facevarying)
+    /// Takes ownership of the passed in strategy object.
     void SetNonUniformAggregationStrategy(HdAggregationStrategy *strategy) {
-        _nonUniformAggregationStrategy = strategy;
+        _nonUniformAggregationStrategy.reset(strategy);
     }
 
     /// Set the aggregation strategy for uniform (shader globals)
+    /// Takes ownership of the passed in strategy object.
     void SetUniformAggregationStrategy(HdAggregationStrategy *strategy) {
-        _uniformUboAggregationStrategy = strategy;
+        _uniformUboAggregationStrategy.reset(strategy);
     }
 
     /// Set the aggregation strategy for SSBO (uniform primvars)
+    /// Takes ownership of the passed in strategy object.
     void SetShaderStorageAggregationStrategy(HdAggregationStrategy *strategy) {
-        _uniformSsboAggregationStrategy = strategy;
+        _uniformSsboAggregationStrategy.reset(strategy);
     }
 
     /// Returns a report of resource allocation by role in bytes and
@@ -293,10 +297,10 @@ private:
     HdBufferArrayRegistry _singleBufferArrayRegistry;
 
     // current aggregation strategies
-    HdAggregationStrategy *_nonUniformAggregationStrategy;
-    HdAggregationStrategy *_uniformUboAggregationStrategy;
-    HdAggregationStrategy *_uniformSsboAggregationStrategy;
-    HdAggregationStrategy *_singleAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy> _nonUniformAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy> _uniformUboAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy> _uniformSsboAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy> _singleAggregationStrategy;
 
     // TODO: this is a transient structure. we'll revisit the BufferSource
     // interface later.

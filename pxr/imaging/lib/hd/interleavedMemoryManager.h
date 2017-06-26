@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/bufferArray.h"
@@ -50,7 +49,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdInterleavedMemoryManager : public HdAggregationStrategy {
 protected:
-    friend class TfSingleton<HdInterleavedMemoryManager>;
     class _StripedInterleavedBuffer;
 
     /// specialized buffer array range
@@ -292,17 +290,7 @@ public:
     HD_API
     virtual AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs) const;
-
-    /// Returns an instance of memory manager
-    static HdInterleavedUBOMemoryManager& GetInstance() {
-        return TfSingleton<HdInterleavedUBOMemoryManager>::GetInstance();
-    }
-
-protected:
-    friend class TfSingleton<HdInterleavedUBOMemoryManager>;
 };
-
-HD_API_TEMPLATE_CLASS(TfSingleton<HdInterleavedUBOMemoryManager>);
 
 class HdInterleavedSSBOMemoryManager : public HdInterleavedMemoryManager {
 public:
@@ -317,17 +305,7 @@ public:
     HD_API
     virtual AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs) const;
-
-    /// Returns an instance of memory manager
-    static HdInterleavedSSBOMemoryManager& GetInstance() {
-        return TfSingleton<HdInterleavedSSBOMemoryManager>::GetInstance();
-    }
-
-protected:
-    friend class TfSingleton<HdInterleavedSSBOMemoryManager>;
 };
-
-HD_API_TEMPLATE_CLASS(TfSingleton<HdInterleavedSSBOMemoryManager>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

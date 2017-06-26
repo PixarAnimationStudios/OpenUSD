@@ -33,7 +33,6 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/strategyBase.h"
 
-#include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/token.h"
 
@@ -66,11 +65,6 @@ public:
     virtual AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs) const;
 
-    /// Returns an instance of memory manager
-    static HdVBOMemoryManager& GetInstance() {
-        return TfSingleton<HdVBOMemoryManager>::GetInstance();
-    }
-
     /// Returns the buffer specs from a given buffer array
     virtual HdBufferSpecVector GetBufferSpecs(
         HdBufferArraySharedPtr const &bufferArray) const;
@@ -81,7 +75,6 @@ public:
         VtDictionary &result) const;
 
 protected:
-    friend class TfSingleton<HdVBOMemoryManager>;
     class _StripedBufferArray;
 
     /// specialized buffer array range
@@ -317,9 +310,6 @@ protected:
         }
     };
 };
-
-HD_API_TEMPLATE_CLASS(TfSingleton<HdVBOMemoryManager>);
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

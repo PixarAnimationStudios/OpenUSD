@@ -56,23 +56,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_INSTANTIATE_SINGLETON(HdResourceRegistry);
 
 HdResourceRegistry::HdResourceRegistry() :
-    _nonUniformAggregationStrategy(NULL),
-    _uniformUboAggregationStrategy(NULL),
-    _uniformSsboAggregationStrategy(NULL),
-    _singleAggregationStrategy(NULL),
+    _nonUniformAggregationStrategy(),
+    _uniformUboAggregationStrategy(),
+    _uniformSsboAggregationStrategy(),
+    _singleAggregationStrategy(),
     _numBufferSourcesToResolve(0)
 {
     // default aggregation strategy for varying (vertex, varying) primvars
-    _nonUniformAggregationStrategy = &HdVBOMemoryManager::GetInstance();
+    _nonUniformAggregationStrategy.reset(
+        new HdVBOMemoryManager());
 
     // default aggregation strategy for uniform on SSBO (for primvars)
-    _uniformSsboAggregationStrategy = &HdInterleavedSSBOMemoryManager::GetInstance();
+    _uniformSsboAggregationStrategy.reset(
+        new HdInterleavedSSBOMemoryManager());
 
     // default aggregation strategy for uniform on UBO (for globals)
-    _uniformUboAggregationStrategy = &HdInterleavedUBOMemoryManager::GetInstance();
+    _uniformUboAggregationStrategy.reset(
+        new HdInterleavedUBOMemoryManager());
 
     // default aggregation strategy for single buffers (for nested instancer)
-    _singleAggregationStrategy = &HdVBOSimpleMemoryManager::GetInstance();
+    _singleAggregationStrategy.reset(
+        new HdVBOSimpleMemoryManager());
 }
 
 HdResourceRegistry::~HdResourceRegistry()
@@ -89,7 +93,7 @@ HdResourceRegistry::AllocateNonUniformBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs)
 {
     return _nonUniformBufferArrayRegistry.AllocateRange(
-                                    _nonUniformAggregationStrategy,
+                                    _nonUniformAggregationStrategy.get(),
                                     role,
                                     bufferSpecs);
 }
@@ -100,7 +104,7 @@ HdResourceRegistry::AllocateUniformBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs)
 {
     return _uniformUboBufferArrayRegistry.AllocateRange(
-                                    _uniformUboAggregationStrategy,
+                                    _uniformUboAggregationStrategy.get(),
                                     role,
                                     bufferSpecs);
 }
@@ -111,7 +115,7 @@ HdResourceRegistry::AllocateShaderStorageBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs)
 {
     return _uniformSsboBufferArrayRegistry.AllocateRange(
-                                    _uniformSsboAggregationStrategy,
+                                    _uniformSsboAggregationStrategy.get(),
                                     role,
                                     bufferSpecs);
 }
@@ -122,7 +126,7 @@ HdResourceRegistry::AllocateSingleBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs)
 {
     return _singleBufferArrayRegistry.AllocateRange(
-                                    _singleAggregationStrategy,
+                                    _singleAggregationStrategy.get(),
                                     role,
                                     bufferSpecs);
 }
@@ -201,7 +205,7 @@ HdResourceRegistry::MergeNonUniformBufferArrayRange(
     HdBufferSpecVector const &newBufferSpecs,
     HdBufferArrayRangeSharedPtr const &range)
 {
-    return MergeBufferArrayRange(_nonUniformAggregationStrategy,
+    return MergeBufferArrayRange(_nonUniformAggregationStrategy.get(),
                                  _nonUniformBufferArrayRegistry,
                                  role, newBufferSpecs, range);
 }
@@ -212,7 +216,7 @@ HdResourceRegistry::MergeUniformBufferArrayRange(
     HdBufferSpecVector const &newBufferSpecs,
     HdBufferArrayRangeSharedPtr const &range)
 {
-    return MergeBufferArrayRange(_uniformUboAggregationStrategy,
+    return MergeBufferArrayRange(_uniformUboAggregationStrategy.get(),
                                  _uniformUboBufferArrayRegistry,
                                  role, newBufferSpecs, range);
 }
@@ -223,7 +227,7 @@ HdResourceRegistry::MergeShaderStorageBufferArrayRange(
     HdBufferSpecVector const &newBufferSpecs,
     HdBufferArrayRangeSharedPtr const &range)
 {
-    return MergeBufferArrayRange(_uniformSsboAggregationStrategy,
+    return MergeBufferArrayRange(_uniformSsboAggregationStrategy.get(),
                                  _uniformSsboBufferArrayRegistry,
                                  role, newBufferSpecs, range);
 }
@@ -455,13 +459,13 @@ HdResourceRegistry::Commit()
         // 3. reallocation phase:
         //
         _nonUniformBufferArrayRegistry.ReallocateAll(
-            _nonUniformAggregationStrategy);
+            _nonUniformAggregationStrategy.get());
         _uniformUboBufferArrayRegistry.ReallocateAll(
-            _uniformUboAggregationStrategy);
+            _uniformUboAggregationStrategy.get());
         _uniformSsboBufferArrayRegistry.ReallocateAll(
-            _uniformSsboAggregationStrategy);
+            _uniformSsboAggregationStrategy.get());
         _singleBufferArrayRegistry.ReallocateAll(
-            _singleAggregationStrategy);
+            _singleAggregationStrategy.get());
     }
 
     {
@@ -605,16 +609,16 @@ HdResourceRegistry::GetResourceAllocation() const
 
     size_t nonUniformSize   = 
         _nonUniformBufferArrayRegistry.GetResourceAllocation(
-            _nonUniformAggregationStrategy, result);
+            _nonUniformAggregationStrategy.get(), result);
     size_t uboSize          = 
         _uniformUboBufferArrayRegistry.GetResourceAllocation(
-            _uniformUboAggregationStrategy, result);
+            _uniformUboAggregationStrategy.get(), result);
     size_t ssboSize         = 
         _uniformSsboBufferArrayRegistry.GetResourceAllocation(
-            _uniformSsboAggregationStrategy, result);
+            _uniformSsboAggregationStrategy.get(), result);
     size_t singleBufferSize = 
         _singleBufferArrayRegistry.GetResourceAllocation(
-            _singleAggregationStrategy, result);
+            _singleAggregationStrategy.get(), result);
 
     result[HdPerfTokens->nonUniformSize]   = VtValue(nonUniformSize);
     result[HdPerfTokens->uboSize]          = VtValue(uboSize);

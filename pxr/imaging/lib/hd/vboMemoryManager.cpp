@@ -29,7 +29,6 @@
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hd/bufferResourceGL.h"
@@ -44,8 +43,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_INSTANTIATE_SINGLETON(HdVBOMemoryManager);
 
 TF_DEFINE_ENV_SETTING(HD_MAX_VBO_SIZE, (1*1024*1024*1024),
                       "Maximum aggregated VBO size");
