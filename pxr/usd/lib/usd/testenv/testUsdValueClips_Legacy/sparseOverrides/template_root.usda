@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    startTimeCode = 101
+    endTimeCode = 105
+)
+
+def "main" 
+(
+    clipPrimPath = "/clip"
+    clipTemplateAssetPath = "./#.usda"
+    clipTemplateEndTime = 103 
+    clipTemplateStartTime = 101
+    clipTemplateStride = 1
+)
+{
+    double foo
+}

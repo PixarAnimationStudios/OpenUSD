@@ -106,13 +106,33 @@ void wrapUsdClipsAPI()
 
 namespace {
 
-static VtArray<SdfAssetPath> _GetClipAssetPaths(const UsdClipsAPI &self) {
-    VtArray<SdfAssetPath> result;
-    self.GetClipAssetPaths(&result);
+static VtDictionary _GetClips(const UsdClipsAPI &self)
+{
+    VtDictionary result;
+    self.GetClips(&result);
     return result;
 }
 
-static void _SetClipAssetPaths(UsdClipsAPI &self, TfPyObjWrapper pyVal) {
+static SdfStringListOp _GetClipSets(const UsdClipsAPI &self)
+{
+    SdfStringListOp result;
+    self.GetClipSets(&result);
+    return result;
+}
+
+template <class... Args>
+static VtArray<SdfAssetPath> _GetClipAssetPaths(const UsdClipsAPI &self,
+                                                const Args&... args)
+{
+    VtArray<SdfAssetPath> result;
+    self.GetClipAssetPaths(&result, args...);
+    return result;
+}
+
+template <class... Args>
+static void _SetClipAssetPaths(UsdClipsAPI &self, TfPyObjWrapper pyVal, 
+                               const Args&... args) 
+{
     VtValue v = UsdPythonToSdfType(pyVal, SdfValueTypeNames->AssetArray);
     if (!v.IsHolding<VtArray<SdfAssetPath> >()) {
         TF_CODING_ERROR("Invalid value for 'clipAssetPaths' on %s",
@@ -120,22 +140,31 @@ static void _SetClipAssetPaths(UsdClipsAPI &self, TfPyObjWrapper pyVal) {
         return;
     }
 
-    self.SetClipAssetPaths(v.UncheckedGet<VtArray<SdfAssetPath> >());
+    self.SetClipAssetPaths(v.UncheckedGet<VtArray<SdfAssetPath> >(), args...);
 }
 
-static std::string _GetClipPrimPath(const UsdClipsAPI &self) {
+template <class... Args>
+static std::string _GetClipPrimPath(const UsdClipsAPI &self, 
+                                    const Args&... args) 
+{
     std::string result;
-    self.GetClipPrimPath(&result);
+    self.GetClipPrimPath(&result, args...);
     return result;
 }
 
-static TfPyObjWrapper _GetClipActive(const UsdClipsAPI &self) {
+template <class... Args>
+static TfPyObjWrapper _GetClipActive(const UsdClipsAPI &self, 
+                                     const Args&... args) 
+{
     VtVec2dArray result;
-    self.GetClipActive(&result);
+    self.GetClipActive(&result, args...);
     return UsdVtValueToPython(VtValue(result));
 }
 
-static void _SetClipActive(UsdClipsAPI &self, TfPyObjWrapper pyVal) {
+template <class... Args>
+static void _SetClipActive(UsdClipsAPI &self, TfPyObjWrapper pyVal, 
+                           const Args&... args) 
+{
     VtValue v = UsdPythonToSdfType(pyVal, SdfValueTypeNames->Double2Array);
     if (!v.IsHolding<VtVec2dArray>()) {
         TF_CODING_ERROR("Invalid value for 'clipActive' on %s",
@@ -143,16 +172,22 @@ static void _SetClipActive(UsdClipsAPI &self, TfPyObjWrapper pyVal) {
         return;
     }
 
-    self.SetClipActive(v.UncheckedGet<VtVec2dArray>());
+    self.SetClipActive(v.UncheckedGet<VtVec2dArray>(), args...);
 }
 
-static TfPyObjWrapper _GetClipTimes(const UsdClipsAPI &self) {
+template <class... Args>
+static TfPyObjWrapper _GetClipTimes(const UsdClipsAPI &self, 
+                                    const Args&... args) 
+{
     VtVec2dArray result;
-    self.GetClipTimes(&result);
+    self.GetClipTimes(&result, args...);
     return UsdVtValueToPython(VtValue(result));
 }
 
-static void _SetClipTimes(UsdClipsAPI &self, TfPyObjWrapper pyVal) {
+template <class... Args>
+static void _SetClipTimes(UsdClipsAPI &self, TfPyObjWrapper pyVal, 
+                          const Args&... args) 
+{
     VtValue v = UsdPythonToSdfType(pyVal, SdfValueTypeNames->Double2Array);
     if (!v.IsHolding<VtVec2dArray>()) {
         TF_CODING_ERROR("Invalid value for 'clipTimes' on %s",
@@ -160,16 +195,22 @@ static void _SetClipTimes(UsdClipsAPI &self, TfPyObjWrapper pyVal) {
         return;
     }
 
-    self.SetClipTimes(v.UncheckedGet<VtVec2dArray>());
+    self.SetClipTimes(v.UncheckedGet<VtVec2dArray>(), args...);
 }
 
-static SdfAssetPath _GetClipManifestAssetPath(UsdClipsAPI &self) {
+template <class... Args>
+static SdfAssetPath _GetClipManifestAssetPath(const UsdClipsAPI &self, 
+                                              const Args&... args) 
+{
     SdfAssetPath manifestAssetPath;
-    self.GetClipManifestAssetPath(&manifestAssetPath);
+    self.GetClipManifestAssetPath(&manifestAssetPath, args...);
     return manifestAssetPath;
 }
 
-static void _SetClipTemplateAssetPath(UsdClipsAPI& self, TfPyObjWrapper pyVal) {
+template <class... Args>
+static void _SetClipTemplateAssetPath(UsdClipsAPI& self, TfPyObjWrapper pyVal,
+                                      const Args&... args) 
+{
     VtValue v = UsdPythonToSdfType(pyVal, SdfValueTypeNames->String);
     if (!v.IsHolding<std::string>()) {
         TF_CODING_ERROR("Invalid value for 'clipTemplateAssetPath' on %s",
@@ -177,62 +218,202 @@ static void _SetClipTemplateAssetPath(UsdClipsAPI& self, TfPyObjWrapper pyVal) {
         return;
     }
 
-    self.SetClipTemplateAssetPath(v.UncheckedGet<std::string>());
+    self.SetClipTemplateAssetPath(v.UncheckedGet<std::string>(), args...);
 }
 
-static std::string _GetClipTemplateAssetPath(UsdClipsAPI &self) {
+template <class... Args>
+static std::string _GetClipTemplateAssetPath(const UsdClipsAPI &self,
+                                             const Args&... args) 
+{
     std::string clipTemplateAssetPath;
-    self.GetClipTemplateAssetPath(&clipTemplateAssetPath);
+    self.GetClipTemplateAssetPath(&clipTemplateAssetPath, args...);
     return clipTemplateAssetPath;
 }
 
-static double _GetClipTemplateStride(UsdClipsAPI &self) {
+template <class... Args>
+static double _GetClipTemplateStride(const UsdClipsAPI &self, 
+                                     const Args&... args) 
+{
     double clipTemplateStride;
-    self.GetClipTemplateStride(&clipTemplateStride);
+    self.GetClipTemplateStride(&clipTemplateStride, args...);
     return clipTemplateStride;
 }
 
-static double _GetClipTemplateStartTime(UsdClipsAPI &self) {
+template <class... Args>
+static double _GetClipTemplateStartTime(const UsdClipsAPI &self, 
+                                        const Args&... args) 
+{
     double clipTemplateStartTime;
-    self.GetClipTemplateStartTime(&clipTemplateStartTime);
+    self.GetClipTemplateStartTime(&clipTemplateStartTime, args...);
     return clipTemplateStartTime;
 }
 
-static double _GetClipTemplateEndTime(UsdClipsAPI &self) {
+template <class... Args>
+static double _GetClipTemplateEndTime(const UsdClipsAPI &self, 
+                                      const Args&... args) 
+{
     double clipTemplateEndTime;
-    self.GetClipTemplateEndTime(&clipTemplateEndTime);
+    self.GetClipTemplateEndTime(&clipTemplateEndTime, args...);
     return clipTemplateEndTime;
 }
 
 WRAP_CUSTOM {
     _class
-        .def("GetClipAssetPaths", _GetClipAssetPaths,
+        .def("GetClips", _GetClips)
+        .def("SetClips", &UsdClipsAPI::SetClips,
+             arg("clips"))
+
+        .def("GetClipSets", _GetClipSets)
+        .def("SetClipSets", &UsdClipsAPI::SetClipSets,
+             arg("clipSets"))
+
+        .def("GetClipAssetPaths", 
+             (VtArray<SdfAssetPath>(*)(const UsdClipsAPI&))
+                 (&_GetClipAssetPaths),
              return_value_policy<TfPySequenceToList>())
-        .def("SetClipAssetPaths", _SetClipAssetPaths, arg("assetPaths"))
-        .def("GetClipPrimPath", _GetClipPrimPath)
-        .def("SetClipPrimPath", &UsdClipsAPI::SetClipPrimPath, arg("primPath"))
-        .def("GetClipActive", _GetClipActive)
-        .def("SetClipActive", _SetClipActive, arg("activeClips"))
-        .def("GetClipTimes", _GetClipTimes)
-        .def("SetClipTimes", _SetClipTimes, arg("clipTimes"))
-        .def("GetClipManifestAssetPath", _GetClipManifestAssetPath)
+        .def("GetClipAssetPaths", 
+             (VtArray<SdfAssetPath>(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipAssetPaths),
+             return_value_policy<TfPySequenceToList>(),
+             arg("clipSet"))
+        .def("SetClipAssetPaths", 
+             (void(*)(UsdClipsAPI&, TfPyObjWrapper))
+                 (&_SetClipAssetPaths), 
+             arg("assetPaths"))
+        .def("SetClipAssetPaths", 
+             (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
+                 (&_SetClipAssetPaths), 
+             (arg("assetPaths"), arg("clipSet")))
+
+        .def("GetClipPrimPath", 
+             (std::string(*)(const UsdClipsAPI&))
+                (&_GetClipPrimPath))
+        .def("GetClipPrimPath", 
+             (std::string(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipPrimPath),
+             arg("clipSet"))
+        .def("SetClipPrimPath", 
+             (bool(UsdClipsAPI::*)(const std::string&))
+                 (&UsdClipsAPI::SetClipPrimPath), 
+             arg("primPath"))
+        .def("SetClipPrimPath", 
+             (bool(UsdClipsAPI::*)(const std::string&, const std::string&))
+                 (&UsdClipsAPI::SetClipPrimPath), 
+             (arg("primPath"), arg("clipSet")))
+
+        .def("GetClipActive", 
+             (TfPyObjWrapper(*)(const UsdClipsAPI&))
+                 (&_GetClipActive))
+        .def("GetClipActive", 
+             (TfPyObjWrapper(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipActive),
+             arg("clipSet"))
+        .def("SetClipActive", 
+             (void(*)(UsdClipsAPI&, TfPyObjWrapper))
+                 (&_SetClipActive), 
+             arg("activeClips"))
+        .def("SetClipActive", 
+             (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
+                 (&_SetClipActive), 
+             (arg("activeClips"), arg("clipSet")))
+
+        .def("GetClipTimes", 
+             (TfPyObjWrapper(*)(const UsdClipsAPI&))
+                 (&_GetClipTimes))
+        .def("GetClipTimes", 
+             (TfPyObjWrapper(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipTimes),
+             arg("clipSet"))
+        .def("SetClipTimes", 
+             (void(*)(UsdClipsAPI&, TfPyObjWrapper))
+                 (&_SetClipTimes), 
+             arg("clipTimes"))
+        .def("SetClipTimes", 
+             (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
+                 (&_SetClipTimes), 
+             (arg("clipTimes"), arg("clipSet")))
+
+        .def("GetClipManifestAssetPath", 
+             (SdfAssetPath(*)(const UsdClipsAPI&))
+                 (&_GetClipManifestAssetPath))
+        .def("GetClipManifestAssetPath", 
+             (SdfAssetPath(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipManifestAssetPath),
+             arg("clipSet"))
         .def("SetClipManifestAssetPath", 
-             &UsdClipsAPI::SetClipManifestAssetPath, arg("manifestAssetPath"))
-        .def("GetClipTemplateAssetPath", _GetClipTemplateAssetPath)
-        .def("SetClipTemplateAssetPath", _SetClipTemplateAssetPath,
+             (bool(UsdClipsAPI::*)(const SdfAssetPath&))
+                 (&UsdClipsAPI::SetClipManifestAssetPath), 
+             arg("manifestAssetPath"))
+        .def("SetClipManifestAssetPath", 
+             (bool(UsdClipsAPI::*)(const SdfAssetPath&, const std::string&))
+                 (&UsdClipsAPI::SetClipManifestAssetPath), 
+             (arg("manifestAssetPath"), arg("clipSet")))
+
+
+        .def("GetClipTemplateAssetPath", 
+             (std::string(*)(const UsdClipsAPI&))
+                (&_GetClipTemplateAssetPath))
+        .def("GetClipTemplateAssetPath", 
+             (std::string(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipTemplateAssetPath),
+             arg("clipSet"))
+        .def("SetClipTemplateAssetPath", 
+             (void(*)(UsdClipsAPI&, TfPyObjWrapper))
+                 (&_SetClipTemplateAssetPath), 
              arg("clipTemplateAssetPath"))
-        .def("GetClipTemplateStride", _GetClipTemplateStride)
-        .def("SetClipTemplateStride", &UsdClipsAPI::SetClipTemplateStride,
+        .def("SetClipTemplateAssetPath", 
+             (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
+                 (&_SetClipTemplateAssetPath), 
+             (arg("clipTemplateAssetPath"), arg("clipSet")))
+
+        .def("GetClipTemplateStride", 
+             (double(*)(const UsdClipsAPI&))
+                (&_GetClipTemplateStride))
+        .def("GetClipTemplateStride", 
+             (double(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipTemplateStride),
+             arg("clipSet"))
+        .def("SetClipTemplateStride", 
+             (bool(UsdClipsAPI::*)(double))
+                 (&UsdClipsAPI::SetClipTemplateStride),
              arg("clipTemplateStride"))
-        .def("GetClipTemplateStride", _GetClipTemplateStride)
-        .def("SetClipTemplateStride", &UsdClipsAPI::SetClipTemplateStride,
-             arg("clipTemplateStride"))
-        .def("GetClipTemplateStartTime", _GetClipTemplateStartTime)
-        .def("SetClipTemplateStartTime", &UsdClipsAPI::SetClipTemplateStartTime,
+        .def("SetClipTemplateStride", 
+             (bool(UsdClipsAPI::*)(double, const std::string&))
+                 (&UsdClipsAPI::SetClipTemplateStride),
+             (arg("clipTemplateStride"), arg("clipSet")))
+
+        .def("GetClipTemplateStartTime", 
+             (double(*)(const UsdClipsAPI&))
+                (&_GetClipTemplateStartTime))
+        .def("GetClipTemplateStartTime", 
+             (double(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipTemplateStartTime),
+             arg("clipSet"))
+        .def("SetClipTemplateStartTime", 
+             (bool(UsdClipsAPI::*)(double))
+                 (&UsdClipsAPI::SetClipTemplateStartTime),
              arg("clipTemplateStartTime"))
-        .def("GetClipTemplateEndTime", _GetClipTemplateEndTime)
-        .def("SetClipTemplateEndTime", &UsdClipsAPI::SetClipTemplateEndTime,
+        .def("SetClipTemplateStartTime", 
+             (bool(UsdClipsAPI::*)(double, const std::string&))
+                 (&UsdClipsAPI::SetClipTemplateStartTime),
+             (arg("clipTemplateStartTime"), arg("clipSet")))
+
+        .def("GetClipTemplateEndTime", 
+             (double(*)(const UsdClipsAPI&))
+                (&_GetClipTemplateEndTime))
+        .def("GetClipTemplateEndTime", 
+             (double(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipTemplateEndTime),
+             arg("clipSet"))
+        .def("SetClipTemplateEndTime", 
+             (bool(UsdClipsAPI::*)(double))
+                 (&UsdClipsAPI::SetClipTemplateEndTime),
              arg("clipTemplateEndTime"))
+        .def("SetClipTemplateEndTime", 
+             (bool(UsdClipsAPI::*)(double, const std::string&))
+                 (&UsdClipsAPI::SetClipTemplateEndTime),
+             (arg("clipTemplateEndTime"), arg("clipSet")))
+
         .def("ClearNonTemplateClipMetadata", 
              &UsdClipsAPI::ClearNonTemplateClipMetadata)
         .def("ClearTemplateClipMetadata", 

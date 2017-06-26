@@ -3,7 +3,11 @@
 over "main" 
 (
     references = [@./root.usda@</main>]
-    clipActive = [(101, 1), (103, 0)]
+    clips = {
+        dictionary default = {
+            double2[] active = [(101, 1), (103, 0)]
+        }
+    }
 )
 {
 }

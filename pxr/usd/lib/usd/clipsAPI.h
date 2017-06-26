@@ -66,14 +66,23 @@ class SdfAssetPath;
 /// map to this prim, i.e. the location within the clip at which we will look
 /// for opinions for this prim. 
 /// 
-/// The clipAssetPaths, clipTimes and clipActive metadata can also be specified 
+/// The clip asset paths, times and active metadata can also be specified 
 /// through template clip metadata. This can be desirable when your set of 
 /// assets is very large, as the template metadata is much more concise. 
 /// SetClipTemplateAssetPath() establishes the asset identifier pattern of the 
 /// set of clips to be consulted. SetClipTemplateStride(), 
 /// SetClipTemplateEndTime(), and SetClipTemplateStartTime() specify the range 
 /// in which USD will search, based on the template. From the set of resolved 
-/// asset paths, clipTimes, and clipActive will be derived internally.
+/// asset paths, times and active will be derived internally.
+/// 
+/// A prim may have multiple "clip sets" -- named sets of clips that each
+/// have their own values for the metadata described above. For example, 
+/// a prim might have a clip set named "Clips_1" that specifies some group
+/// of clip asset paths, and another clip set named "Clips_2" that uses
+/// an entirely different set of clip asset paths. These clip sets are 
+/// composed across composition arcs, so clip sets for a prim may be
+/// defined in multiple sublayers or references, for example. Individual
+/// metadata for a given clip set may be sparsely overridden.
 /// 
 /// Important facts about clips:            
 /// \li Within the layerstack in which clips are established, the           
@@ -168,17 +177,82 @@ public:
     // --(BEGIN CUSTOM CODE)--
     //
 
-    /// List of asset paths to the clips for this prim. This list is
-    /// unordered, but elements in this list are referred to by index in
-    /// other clip-related fields.
+    // --------------------------------------------------------------------- //
+    /// \anchor Usd_ClipInfo_API
+    /// \name Value Clip Info
+    ///
+    /// Setters and getters for interacting with metadata that control
+    /// value clip behavior.
+    ///
+    /// @{
+    // --------------------------------------------------------------------- //
+
+    /// Dictionary that contains the definition of the clip sets on this prim.
+    ///
+    /// Each entry in this dictionary defines a clip set: the entry's key
+    /// is the name of the clip set and the entry's value is a dictionary
+    /// containing the metadata that specifies the clips in the set.
+    ///
+    /// See \ref UsdClipsAPIInfoKeys for the keys used for each clip set's
+    /// dictionary, or use the other API to set or get values for a given
+    /// clip set.
+    USD_API
+    bool GetClips(VtDictionary* clips) const;
+
+    /// Set the clips dictionary for this prim.
+    /// \sa GetClips
+    USD_API
+    bool SetClips(const VtDictionary& clips);
+
+    /// ListOp that may be used to affect how opinions from clip 
+    /// sets are applied during value resolution.
+    ///
+    /// By default, clip sets in a layer stack are examined in 
+    /// lexicographical order by name for attribute values during value 
+    /// resolution. The clip sets listOp can be used to reorder the clip 
+    /// sets in a layer stack or remove them entirely from consideration
+    /// during value resolution without modifying the clips dictionary.
+    ///
+    /// This is *not* the list of clip sets that are authored on this prim.
+    /// To retrieve that information, use GetClips to examine the clips 
+    /// dictionary directly.
+    ///
+    /// This function returns the clip sets listOp from the current edit
+    /// target.
+    USD_API
+    bool GetClipSets(SdfStringListOp* clipSets) const;
+
+    /// Set the clip sets list op for this prim.
+    /// \sa GetClipSets
+    USD_API
+    bool SetClipSets(const SdfStringListOp& clipSets);
+
+    /// List of asset paths to the clips in the clip set named \p clipSet.
+    /// This list is unordered, but elements in this list are referred to 
+    /// by index in other clip-related fields.
+    USD_API
+    bool GetClipAssetPaths(VtArray<SdfAssetPath>* assetPaths,
+                           const std::string& clipSet) const;
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool GetClipAssetPaths(VtArray<SdfAssetPath>* assetPaths) const;
-    /// Set the clipAssetPaths metadata for this prim.
+
+    /// Set the clip asset paths for the clip set named \p clipSet
     /// \sa GetClipAssetPaths()
+    USD_API
+    bool SetClipAssetPaths(const VtArray<SdfAssetPath>& assetPaths,
+                           const std::string& clipSet);
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool SetClipAssetPaths(const VtArray<SdfAssetPath>& assetPaths);
 
-    /// Path to the prim in the clips from which time samples will be read.
+    /// Path to the prim in the clips in the clip set named \p clipSet
+    /// from which time samples will be read.
+    ///
     /// This prim's path will be substituted with this value to determine
     /// the final path in the clip from which to read data. For instance,
     /// if this prims' path is '/Prim_1', the clip prim path is '/Prim', 
@@ -186,26 +260,53 @@ public:
     /// clip prim path will be substituted in, yielding '/Prim.size', and
     /// each clip will be examined for values at that path.
     USD_API
+    bool GetClipPrimPath(std::string* primPath, 
+                         const std::string& clipSet) const;
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
+    USD_API
     bool GetClipPrimPath(std::string* primPath) const;
-    /// Set the clipPrimPath metadata for this prim.
+
+    /// Set the clip prim path for the clip set named \p clipSet.
     /// \sa GetClipPrimPath()
+    USD_API
+    bool SetClipPrimPath(const std::string& primPath, 
+                         const std::string& clipSet);
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool SetClipPrimPath(const std::string& primPath);
 
     /// List of pairs (time, clip index) indicating the time on the stage
-    /// at which the clip specified by the clip index is active. For instance,
-    /// a value of [(0.0, 0), (20.0, 1)] indicates that clip 0 is active
-    /// at time 0 and clip 1 is active at time 20.
+    /// at which the clip in the clip set named \p clipSet specified by 
+    /// the clip index is active. For instance, a value of 
+    /// [(0.0, 0), (20.0, 1)] indicates that clip 0 is active at time 0 
+    /// and clip 1 is active at time 20.
+    USD_API
+    bool GetClipActive(VtVec2dArray* activeClips, 
+                       const std::string& clipSet) const;
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool GetClipActive(VtVec2dArray* activeClips) const;
-    /// Set the clipActive metadata for this prim.
+
+    /// Set the active clip metadata for the clip set named \p clipSet.
     /// \sa GetClipActive()
+    USD_API
+    bool SetClipActive(const VtVec2dArray& activeClips, 
+                       const std::string& clipSet);
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool SetClipActive(const VtVec2dArray& activeClips);
 
     /// List of pairs (stage time, clip time) indicating the time in the
-    /// active clip that should be consulted for values at the corresponding
-    /// stage time. 
+    /// active clip in the clip set named \p clipSet that should be 
+    /// consulted for values at the corresponding stage time. 
     ///
     /// During value resolution, this list will be sorted by stage time; 
     /// times will then be linearly interpolated between consecutive entries.
@@ -214,97 +315,178 @@ public:
     /// at stage time 5, values from the active clip at time 10, and at stage 
     /// time 10, clip values at time 20.
     USD_API
+    bool GetClipTimes(VtVec2dArray* clipTimes, 
+                      const std::string& clipSet) const;
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
+    USD_API
     bool GetClipTimes(VtVec2dArray* clipTimes) const;
-    /// Set the clipTimes metadata for this prim.
+
+    /// Set the clip times metadata for this prim.
     /// \sa GetClipTimes()
+    USD_API
+    bool SetClipTimes(const VtVec2dArray& clipTimes, 
+                      const std::string& clipSet);
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool SetClipTimes(const VtVec2dArray& clipTimes);
 
-    /// Asset path for the clip manifest. The clip manifest indicates which
-    /// attributes have time samples authored in the clips specified on this
-    /// prim. During value resolution, we will only look for time samples 
-    /// in clips if the attribute exists and is declared as varying in the
-    /// manifest. Note that the clip manifest is only consulted to check
-    /// check if an attribute exists and what its variability is. Other values
-    /// and metadata authored in the manifest will be ignored.
+    /// Asset path for the clip manifest for the clip set named \p clipSet. 
+    /// The clip manifest indicates which attributes have time samples 
+    /// authored in the clips specified on this prim. During value resolution, 
+    /// clips will only be examined if the attribute exists and is declared 
+    /// as varying in the manifest. Note that the clip manifest is only 
+    /// consulted to check if an attribute exists and what its variability is. 
+    /// Other values and metadata authored in the manifest will be ignored.
     ///
     /// For instance, if this prim's path is </Prim_1>, the clip prim path is
     /// </Prim>, and we want values for the attribute </Prim_1.size>, we will
     /// only look within this prim's clips if the attribute </Prim.size>
     /// exists and is varying in the manifest.
     USD_API
+    bool GetClipManifestAssetPath(SdfAssetPath* manifestAssetPath,
+                                  const std::string& clipSet) const;
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
+    USD_API
     bool GetClipManifestAssetPath(SdfAssetPath* manifestAssetPath) const;
-    /// Set the clipManifestAssetPath metadata for this prim.
+
+    /// Set the clip manifest asset path for this prim.
     /// \sa GetClipManifestAssetPath()
+    USD_API
+    bool SetClipManifestAssetPath(const SdfAssetPath& manifestAssetPath,
+                                  const std::string& clipSet);
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool SetClipManifestAssetPath(const SdfAssetPath& manifestAssetPath);
 
-    /// A template string representing a set of assets. This string
-    /// can be of two forms: 
+    /// A template string representing a set of assets to be used as clips
+    /// for the clip set named \p clipSet. This string can be of two forms: 
     ///
     /// integer frames: path/basename.###.usd 
     ///
     /// subinteger frames: path/basename.##.##.usd.
     ///
     /// For the integer portion of the specification, USD will take 
-    /// a particular time, determined by the clipTemplateStartTime, 
-    /// clipTemplateStride and clipTemplateEndTime, and pad it with 
-    /// zeros up to the number of hashes provided so long as the number of hashes 
-    /// is greater than the digits required to specify the integer value.
+    /// a particular time, determined by the template start time, stride, and
+    /// end time, and pad it with zeros up to the number of hashes provided 
+    /// so long as the number of hashes is greater than the digits required 
+    /// to specify the integer value.
     ///
     /// For instance:
     ///
-    ///    time = 12,  clipTemplateAssetPath = foo.##.usd  => foo.12.usd
-    ///    time = 12,  clipTemplateAssetPath = foo.###.usd => foo.012.usd
-    ///    time = 333, clipTemplateAssetPath = foo.#.usd   => foo.333.usd
+    ///    time = 12,  template asset path = foo.##.usd  => foo.12.usd
+    ///    time = 12,  template asset path = foo.###.usd => foo.012.usd
+    ///    time = 333, template asset path = foo.#.usd   => foo.333.usd
     ///
     /// In the case of subinteger portion of a specifications, USD requires the 
     /// specification to be exact. 
     ///
     /// For instance:
     /// 
-    ///    time = 1.15,  clipTemplateAssetPath = foo.#.###.usd => foo.1.150.usd
-    ///    time = 1.145, clipTemplateAssetPath = foo.#.##.usd  => foo.1.15.usd
-    ///    time = 1.1,   clipTemplateAssetPath = foo.#.##.usd  => foo.1.10.usd
+    ///    time = 1.15,  template asset path = foo.#.###.usd => foo.1.150.usd
+    ///    time = 1.145, template asset path = foo.#.##.usd  => foo.1.15.usd
+    ///    time = 1.1,   template asset path = foo.#.##.usd  => foo.1.10.usd
     ///
     /// Note that USD requires that hash groups be adjacent in the string, 
     /// and that there only be one or two such groups.
     USD_API
+    bool GetClipTemplateAssetPath(std::string* clipTemplateAssetPath, 
+                                  const std::string& clipSet) const;
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
+    USD_API
     bool GetClipTemplateAssetPath(std::string* clipTemplateAssetPath) const;
-    /// Set the clipTemplateAssetPath metadata for this prim.
+
+    /// Set the clip template asset path for the clip set named \p clipSet.
     /// \sa GetClipTemplateAssetPath
+    USD_API
+    bool SetClipTemplateAssetPath(const std::string& clipTemplateAssetPath, 
+                                  const std::string& clipSet);
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool SetClipTemplateAssetPath(const std::string& clipTemplateAssetPath);
 
     /// A double representing the increment value USD will use when
-    /// searching for asset paths. For example usage \sa GetClipTemplateAssetPath.
+    /// searching for asset paths for the clip set named \p clipSet.
+    /// \sa GetClipTemplateAssetPath.
+    USD_API
+    bool GetClipTemplateStride(double* clipTemplateStride, 
+                               const std::string& clipSet) const;
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool GetClipTemplateStride(double* clipTemplateStride) const;
-    /// Set the clipTemplateStride metadata for this prim
+
+    /// Set the template stride for the clip set named \p clipSet.
     /// \sa GetClipTemplateStride()
+    USD_API
+    bool SetClipTemplateStride(const double clipTemplateStride, 
+                               const std::string& clipSet);
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool SetClipTemplateStride(const double clipTemplateStride);
 
     /// A double which indicates the start of the range USD will use 
-    /// to search for asset paths. This value is inclusive in that range.
-    /// For example usage \sa GetClipTemplateAssetPath.
+    /// to search for asset paths for the clip set named \p clipSet. 
+    /// This value is inclusive in that range.
+    /// \sa GetClipTemplateAssetPath.
+    USD_API
+    bool GetClipTemplateStartTime(double* clipTemplateStartTime, 
+                                  const std::string& clipSet) const;
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool GetClipTemplateStartTime(double* clipTemplateStartTime) const;
-    /// Set the clipTemplateStartTime metadata for this prim
+
+    /// Set the template start time for the clip set named \p clipSet.
     /// \sa GetClipTemplateStartTime
+    USD_API
+    bool SetClipTemplateStartTime(const double clipTemplateStartTime, 
+                                  const std::string& clipSet);
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool SetClipTemplateStartTime(const double clipTemplateStartTime);
 
     /// A double which indicates the end of the range USD will use to
-    /// to search for asset paths. This value is inclusive in that range.
-    /// For example usage \sa GetClipTemplateAssetPath.
+    /// to search for asset paths for the clip set named \p clipSet. 
+    /// This value is inclusive in that range.
+    /// \sa GetClipTemplateAssetPath.
+    USD_API
+    bool GetClipTemplateEndTime(double* clipTemplateEndTime, 
+                                const std::string& clipSet) const;
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool GetClipTemplateEndTime(double* clipTemplateEndTime) const;
-    /// Set the clipTemplateEndTime metadata for this prim
+
+    /// Set the template end time for the clipset named \p clipSet. 
     /// \sa GetClipTemplateEndTime()
     USD_API
+    bool SetClipTemplateEndTime(const double clipTemplateEndTime, 
+                                const std::string& clipSet);
+    /// \overload
+    /// This function operates on the default clip set. 
+    /// \sa \ref UsdClipsAPISetNames
+    USD_API
     bool SetClipTemplateEndTime(const double clipTemplateEndTime);
-
+    
     /// Clear out the following metadata from the current edit target:
     /// 
     /// clipTemplateAssetPath
@@ -326,7 +508,55 @@ public:
     USD_API
     bool ClearNonTemplateClipMetadata();
 
+    /// @}
+
 };
+
+/// \hideinitializer
+#define USDCLIPS_INFO_KEYS  \
+    (active)                \
+    (assetPaths)            \
+    (manifestAssetPath)     \
+    (primPath)              \
+    (templateAssetPath)     \
+    (templateEndTime)       \
+    (templateStartTime)     \
+    (templateStride)        \
+    (times)                 \
+
+/// \anchor UsdClipsAPIInfoKeys
+///
+/// <b>UsdClipsAPIInfoKeys</b> provides tokens for the various entries
+/// in the clips dictionary. UsdClipsAPI provides named API corresponding
+/// to each of these entries; see documentation on API for expected values.
+///
+/// \sa UsdClipsAPI::GetClips
+///
+/// The keys provided here are:
+/// \li <b>active</b> - see UsdClipsAPI::GetClipActive
+/// \li <b>assetPaths</b> - see UsdClipsAPI::GetClipAssetPaths
+/// \li <b>manifestAssetPath</b> - see UsdClipsAPI::GetClipManifestAssetPath
+/// \li <b>primPath</b> - see UsdClipsAPI::GetClipPrimPath
+/// \li <b>templateAssetPath</b> - see UsdClipsAPI::GetClipTemplateAssetPath
+/// \li <b>templateEndTime</b> - see UsdClipsAPI::GetClipTemplateEndTime
+/// \li <b>templateStartTime</b> - see UsdClipsAPI::GetClipTemplateStartTime
+/// \li <b>templateStride</b> - see UsdClipsAPI::GetClipTemplateStride
+/// \li <b>times</b> - see UsdClipsAPI::GetClipTimes
+TF_DECLARE_PUBLIC_TOKENS(UsdClipsAPIInfoKeys, USD_API, USDCLIPS_INFO_KEYS);
+
+/// \hideinitializer
+#define USDCLIPS_SET_NAMES     \
+    ((default_, "default"))    \
+
+/// \anchor UsdClipsAPISetNames
+///
+/// <b>UsdClipsAPISetNames</b> provides tokens for pre-defined clip set
+/// names that may be used with the 
+/// \ref Usd_ClipInfo_API "value clip info functions" on UsdClipsAPI.
+///
+/// The tokens are:
+/// \li <b>default_</b> - The default clip set used for API where no clip set is specified.
+TF_DECLARE_PUBLIC_TOKENS(UsdClipsAPISetNames, USD_API, USDCLIPS_SET_NAMES);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

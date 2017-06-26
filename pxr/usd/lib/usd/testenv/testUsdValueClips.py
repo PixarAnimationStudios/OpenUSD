@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+import os
 import shutil
 import unittest
 from pxr import Sdf, Tf, Usd, Vt, Gf
@@ -757,6 +758,85 @@ class TestUsdValueClips(unittest.TestCase):
             with self.assertRaises(Tf.ErrorException) as e:
                 model.SetClipTemplateStride(0)
 
+    def test_ClipSetAuthoring(self):
+        """Tests clip authoring API with clip sets on Usd.ClipsAPI"""
+        allFormats = ['usd' + x for x in 'ac']
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory('TestClipSetAuthoring.'+fmt)
+
+            prim = stage.DefinePrim('/Model')
+            model = Usd.ClipsAPI(prim)
+
+            prim2 = stage.DefinePrim('/Model2')
+            model2 = Usd.ClipsAPI(prim2)
+
+            clipSetName = "my_clip_set"
+
+            # Clip authoring API supports the use of lists as well as Vt arrays.
+            clipAssetPaths = [Sdf.AssetPath('clip1.usda'), 
+                              Sdf.AssetPath('clip2.usda')]
+            model.SetClipAssetPaths(clipAssetPaths, clipSetName)
+            self.assertEqual(model.GetClipAssetPaths(clipSetName), 
+                             clipAssetPaths)
+
+            model2.SetClipAssetPaths(
+                Sdf.AssetPathArray([Sdf.AssetPath('clip1.usda'),
+                                    Sdf.AssetPath('clip2.usda')]),
+                clipSetName)
+            self.assertEqual(model2.GetClipAssetPaths(clipSetName), 
+                             clipAssetPaths)
+
+            clipPrimPath = "/Clip"
+            model.SetClipPrimPath(clipPrimPath, clipSetName)
+            self.assertEqual(model.GetClipPrimPath(clipSetName), clipPrimPath)
+
+            clipTimes = Vt.Vec2dArray([(0.0, 0.0),(10.0, 10.0),(20.0, 20.0)])
+            model.SetClipTimes(clipTimes, clipSetName)
+            self.assertEqual(model.GetClipTimes(clipSetName), clipTimes)
+
+            model2.SetClipTimes(
+                Vt.Vec2dArray([Gf.Vec2d(0.0, 0.0),
+                               Gf.Vec2d(10.0, 10.0),
+                               Gf.Vec2d(20.0, 20.0)]),
+                clipSetName)
+            self.assertEqual(model2.GetClipTimes(clipSetName), clipTimes)
+
+            clipActive = [(0.0, 0.0),(10.0, 1.0),(20.0, 0.0)]
+            model.SetClipActive(clipActive, clipSetName)
+            self.assertEqual(model.GetClipActive(clipSetName), 
+                             Vt.Vec2dArray(clipActive))
+
+            model2.SetClipActive(
+                Vt.Vec2dArray([Gf.Vec2d(0.0, 0.0),
+                               Gf.Vec2d(10.0, 1.0),
+                               Gf.Vec2d(20.0, 0.0)]),
+                clipSetName)
+            self.assertEqual(model2.GetClipActive(clipSetName), 
+                             Vt.Vec2dArray(clipActive))
+
+            clipManifestAssetPath = Sdf.AssetPath('clip_manifest.usda')
+            model.SetClipManifestAssetPath(clipManifestAssetPath, clipSetName)
+            self.assertEqual(model.GetClipManifestAssetPath(clipSetName), 
+                             clipManifestAssetPath)
+
+            # Test authoring of template clip metadata
+            model.SetClipTemplateAssetPath('clip.###.usda', clipSetName)
+            self.assertEqual(model.GetClipTemplateAssetPath(clipSetName), 
+                             'clip.###.usda')
+
+            model.SetClipTemplateStride(4.5, clipSetName)
+            self.assertEqual(model.GetClipTemplateStride(clipSetName), 4.5)
+
+            model.SetClipTemplateStartTime(1, clipSetName)
+            self.assertEqual(model.GetClipTemplateStartTime(clipSetName), 1)
+
+            model.SetClipTemplateEndTime(5, clipSetName)
+            self.assertEqual(model.GetClipTemplateEndTime(clipSetName), 5)
+        
+            # Ensure we can't set the clipTemplateStride to 0
+            with self.assertRaises(Tf.ErrorException) as e:
+                model.SetClipTemplateStride(0, clipSetName)
+
     def test_ClipTimesBracketingTimeSamplePrecision(self):
         stage = Usd.Stage.Open('precision/root.usda')
         prim = stage.GetPrimAtPath('/World/fx/Particles_Splash/points')
@@ -942,6 +1022,61 @@ class TestUsdValueClips(unittest.TestCase):
 
         _Check(self.assertEqual, attr,  time=101.0, expected=1.0)
         _Check(self.assertEqual, attr,  time=103.0, expected=3.0)
+
+    def test_MultipleClipSets(self):
+        """Verifies behavior with multiple clip sets defined on
+        the same prim that affect different prims"""
+        # This test is not valid for legacy clips, so if the
+        # test asset doesn't exist, just skip over it.
+        if not os.path.isdir('clipsets'):
+            return
+
+        stage = Usd.Stage.Open('clipsets/root.usda')
+        
+        prim = stage.GetPrimAtPath('/Set/Child_1')
+        attr = prim.GetAttribute('attr')
+        _Check(self.assertEqual, attr, time=0, expected=-5.0)
+        _Check(self.assertEqual, attr, time=1, expected=-10.0)
+        _Check(self.assertEqual, attr, time=2, expected=-15.0)
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
+
+        prim = stage.GetPrimAtPath('/Set/Child_2')
+        attr = prim.GetAttribute('attr')
+        _Check(self.assertEqual, attr, time=0, expected=-50.0)
+        _Check(self.assertEqual, attr, time=1, expected=-100.0)
+        _Check(self.assertEqual, attr, time=2, expected=-200.0)
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
+
+    def test_ListEditClipSets(self):
+        """Verifies reordering and deleting clip sets via list editing
+        operations"""
+        # This test is not valid for legacy clips, so if the
+        # test asset doesn't exist, just skip over it.
+        if not os.path.isdir('clipsetListEdits'):
+            return
+        
+        stage = Usd.Stage.Open('clipsetListEdits/root.usda')
+
+        prim = stage.GetPrimAtPath('/DefaultOrderTest')
+        attr = prim.GetAttribute('attr')
+        _Check(self.assertEqual, attr, time=0, expected=10.0)
+        _Check(self.assertEqual, attr, time=1, expected=20.0)
+        _Check(self.assertEqual, attr, time=2, expected=30.0)
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
+
+        prim = stage.GetPrimAtPath('/ReorderTest')
+        attr = prim.GetAttribute('attr')
+        _Check(self.assertEqual, attr, time=0, expected=100.0)
+        _Check(self.assertEqual, attr, time=1, expected=200.0)
+        _Check(self.assertEqual, attr, time=2, expected=300.0)
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
+
+        prim = stage.GetPrimAtPath('/DeleteTest')
+        attr = prim.GetAttribute('attr')
+        _Check(self.assertEqual, attr, time=0, expected=100.0)
+        _Check(self.assertEqual, attr, time=1, expected=200.0)
+        _Check(self.assertEqual, attr, time=2, expected=300.0)
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
 
 if __name__ == "__main__":
     unittest.main()

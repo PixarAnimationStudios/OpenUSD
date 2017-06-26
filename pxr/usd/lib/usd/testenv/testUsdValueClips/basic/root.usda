@@ -12,9 +12,13 @@ over "_class_Model"
 }
 
 def "Model_1" (
-    clipAssetPaths = [@./clip.usda@]
-    clipPrimPath = "/Model"
-    clipActive = [(10.0, 0)]
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/Model"
+            double2[] active = [(10.0, 0)]
+        }
+    }
 
     references = @./ref.usda@</Model>
     payload = @./payload.usda@</Model>

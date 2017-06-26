@@ -1,0 +1,55 @@
+#usda 1.0
+
+def "Model"
+{
+    float local = -100.0
+    float local.timeSamples = {
+        5: -5.0,
+        10: -10.0,
+        15: -15.0,
+        20: -20.0
+    }
+
+    float ref = -100.0
+    float ref.timeSamples = {
+        5: -5.0,
+        10: -10.0,
+        15: -15.0,
+        20: -20.0
+    }
+
+    float cls = -100.0
+    float cls.timeSamples = {
+        5: -5.0,
+        10: -10.0,
+        15: -15.0,
+        20: -20.0
+    }
+
+    float payload = -100.0
+    float payload.timeSamples = {
+        5: -5.0,
+        10: -10.0,
+        15: -15.0,
+        20: -20.0
+    }
+
+    float var = -100.0
+    float var.timeSamples = {
+        5: -5.0,
+        10: -10.0,
+        15: -15.0,
+        20: -20.0
+    }
+
+    def "Child"
+    {
+        float attr = -100.0
+        float attr.timeSamples = {
+            5: -5.0,
+            10: -10.0,
+            15: -15.0,
+            20: -20.0
+        }
+    }
+}

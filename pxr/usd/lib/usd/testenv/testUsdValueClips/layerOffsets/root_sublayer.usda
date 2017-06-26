@@ -3,10 +3,14 @@
 def "Model_1" (
     references = @./ref.usda@</Model>
 
-    clipAssetPaths = [@./clip.usda@]
-    clipPrimPath = "/Model"
-    clipActive = [(0.0, 0)]
-    clipTimes = [(0.0, 0.0), (20.0, 20.0)]    
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/Model"
+            double2[] active = [(0.0, 0)]
+            double2[] times = [(0.0, 0.0), (20.0, 20.0)]    
+        }
+    }
 )
 {
 }
@@ -14,10 +18,14 @@ def "Model_1" (
 def "Model_2" (
     references = @./ref.usda@</Model>
 
-    clipAssetPaths = [@./clip.usda@]
-    clipPrimPath = "/Model"
-    clipActive = [(0.0, 0)]
-    clipTimes = [(0.0, 0.0), (20.0, 20.0)]    
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/Model"
+            double2[] active = [(0.0, 0)]
+            double2[] times = [(0.0, 0.0), (20.0, 20.0)]    
+        }
+    }
 )
 {
 }

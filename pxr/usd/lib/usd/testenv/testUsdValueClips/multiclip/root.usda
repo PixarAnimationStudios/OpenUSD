@@ -3,10 +3,14 @@
 def "Model_1" (
     references = @./ref.usda@</Model>
 
-    clipAssetPaths = [@./clip1.usda@, @./clip2.usda@]
-    clipPrimPath = "/Model"
-    clipActive = [(0.0, 0.0), (16.0, 1.0)]
-    clipTimes = [(0.0, 0.0), (15.0, 15.0), (16.0, 0.0), (31.0, 15.0)]
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip1.usda@, @./clip2.usda@]
+            string primPath = "/Model"
+            double2[] active = [(0.0, 0.0), (16.0, 1.0)]
+            double2[] times = [(0.0, 0.0), (15.0, 15.0), (16.0, 0.0), (31.0, 15.0)]
+        }
+    }
 )
 {
 }
@@ -14,10 +18,14 @@ def "Model_1" (
 def "ModelWithNoClipSamples" (
     references = @./ref.usda@</Model>
 
-    clipAssetPaths = [@./nosamples_clip.usda@, @./nosamples_clip2.usda@]
-    clipPrimPath = "/Model"
-    clipActive = [(0.0, 0.0), (16.0, 1.0)]
-    clipTimes = [(0.0, 0.0), (15.0, 15.0), (16.0, 0.0), (31.0, 15.0)]
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./nosamples_clip.usda@, @./nosamples_clip2.usda@]
+            string primPath = "/Model"
+            double2[] active = [(0.0, 0.0), (16.0, 1.0)]
+            double2[] times = [(0.0, 0.0), (15.0, 15.0), (16.0, 0.0), (31.0, 15.0)]
+        }
+    }
 )
 {
 }
@@ -25,10 +33,14 @@ def "ModelWithNoClipSamples" (
 def "ModelWithSomeClipSamples" (
     references = @./ref.usda@</Model>
 
-    clipAssetPaths = [@./nosamples_clip.usda@, @./clip2.usda@]
-    clipPrimPath = "/Model"
-    clipActive = [(0.0, 0.0), (16.0, 1.0)]
-    clipTimes = [(0.0, 0.0), (15.0, 15.0), (16.0, 0.0), (31.0, 15.0)]
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./nosamples_clip.usda@, @./clip2.usda@]
+            string primPath = "/Model"
+            double2[] active = [(0.0, 0.0), (16.0, 1.0)]
+            double2[] times = [(0.0, 0.0), (15.0, 15.0), (16.0, 0.0), (31.0, 15.0)]
+        }
+    }
 )
 {
 }
@@ -36,10 +48,14 @@ def "ModelWithSomeClipSamples" (
 def "ModelWithSomeClipSamples2" (
     references = @./ref.usda@</Model>
 
-    clipAssetPaths = [@./clip2.usda@, @./nosamples_clip.usda@, @./clip2.usda@]
-    clipPrimPath = "/Model"
-    clipActive = [(0.0, 0.0), (4.0, 1.0), (8.0, 2.0)]
-    clipTimes = [(0.0, 3.0), (3.0, 6.0), (4.0, 0.0), (7.0, 3.0), (8.0, 6.0), (11.0, 9.0)]
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip2.usda@, @./nosamples_clip.usda@, @./clip2.usda@]
+            string primPath = "/Model"
+            double2[] active = [(0.0, 0.0), (4.0, 1.0), (8.0, 2.0)]
+            double2[] times = [(0.0, 3.0), (3.0, 6.0), (4.0, 0.0), (7.0, 3.0), (8.0, 6.0), (11.0, 9.0)]
+        }
+    }
 )
 {
 }

@@ -41,14 +41,23 @@ class "ClipsAPI" (
     map to this prim, i.e. the location within the clip at which we will look
     for opinions for this prim. 
 
-    The clipAssetPaths, clipTimes and clipActive metadata can also be specified 
+    The clip asset paths, times and active metadata can also be specified 
     through template clip metadata. This can be desirable when your set of 
     assets is very large, as the template metadata is much more concise. 
     SetClipTemplateAssetPath() establishes the asset identifier pattern of the 
     set of clips to be consulted. SetClipTemplateStride(), 
     SetClipTemplateEndTime(), and SetClipTemplateStartTime() specify the range 
     in which USD will search, based on the template. From the set of resolved 
-    asset paths, clipTimes, and clipActive will be derived internally.
+    asset paths, times and active will be derived internally.
+
+    A prim may have multiple \"clip sets\" -- named sets of clips that each
+    have their own values for the metadata described above. For example, 
+    a prim might have a clip set named \"Clips_1\" that specifies some group
+    of clip asset paths, and another clip set named \"Clips_2\" that uses
+    an entirely different set of clip asset paths. These clip sets are 
+    composed across composition arcs, so clip sets for a prim may be
+    defined in multiple sublayers or references, for example. Individual
+    metadata for a given clip set may be sparsely overridden.
                 
     Important facts about clips:            
     - Within the layerstack in which clips are established, the           

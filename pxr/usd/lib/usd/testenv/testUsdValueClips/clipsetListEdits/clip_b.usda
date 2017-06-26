@@ -1,0 +1,10 @@
+#usda 1.0
+
+def "ClipB"
+{
+    double attr.timeSamples = {
+        0: 100.0,
+        1: 200.0,
+        2: 300.0
+    }
+}

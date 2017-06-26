@@ -11,12 +11,15 @@ def "World" (
     over "fx"
     {
         over "Particles_Splash" (
-            clipActive = [(101, 0), (102, 1), (103, 2)]
-            clipAssetPaths = [@./p101.usda@, @./p102.usda@, @./p103.usda@]
-            clipManifestAssetPath = @./root.topology.usda@
-            clipPrimPath = "/World/fx/Particles_Splash"
-            clipTimes = [(101, 101), (101, 101), (101.99, 101), (101.99, 101),
-                         (102, 102), (102, 102), (103, 103), (103, 103)]
+            clips = {
+                dictionary default = {
+                    double2[] active = [(101, 0), (102, 1), (103, 2)]
+                    asset[] assetPaths = [@./p101.usda@, @./p102.usda@, @./p103.usda@]
+                    asset manifestAssetPath = @./root.topology.usda@
+                    string primPath = "/World/fx/Particles_Splash"
+                    double2[] times = [(101, 101), (101, 101), (101.99, 101), (101.99, 101), (102, 102), (102, 102), (103, 103), (103, 103)]
+                }
+            }
         )
         {
         }

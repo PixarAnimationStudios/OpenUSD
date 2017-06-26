@@ -1,0 +1,83 @@
+#usda 1.0
+(
+    """
+    Collection of error cases due to invalid clip metadata
+    authored on prims.
+    """
+)
+
+def "Error1" (
+    """Error if clipActive contains an invalid index into clipAssetPaths"""
+    kind = "model"
+ 
+    clipAssetPaths = [@./test.usda@]
+    clipPrimPath = "/Test"
+    clipActive = [(0.0, 1.0)]
+)
+{
+}
+
+def "Error2" (
+    """Error if clipActive sets two clips active at the same time"""
+    kind = "model"
+ 
+    clipAssetPaths = [@./test.usda@, @./test2.usda@]
+    clipPrimPath = "/Test"
+    clipActive = [(0.0, 0.0), (0.0, 1.0)]
+)
+{
+}
+
+def "NoError1" (
+    """No error if all required clip fields are not present. In such cases,
+    clips are silently ignored."""
+    kind = "model"
+    clipAssetPaths = []
+)
+{
+}
+
+def "NoError2" (
+    """No error if all required clip fields are not present. In such cases,
+    clips are silently ignored."""
+    kind = "model"
+    clipActive = []
+)
+{
+}
+
+def "NoError3" (
+    """No error if all required clip fields are not present. In such cases,
+    clips are silently ignored."""
+    kind = "model"
+    clipPrimPath = ""
+)
+{
+}
+
+def "NoError4" (
+    """No error if all required clip fields are not present. In such cases,
+    clips are silently ignored."""
+    kind = "model"
+    clipTimes = []
+)
+{
+}
+
+def "NoError5" (
+    """A model with no clip metadata should not produce an error"""
+    kind = "model"
+)
+{
+}
+
+def "NoError6" (
+    """clipTimes is an optional metadata field, so no error if it's not set"""
+    kind = "model"
+
+    clipAssetPaths = [@./test.usda@]
+    clipPrimPath = "/Test"
+    clipActive = [(0.0, 0.0)]
+)
+{
+}

@@ -6,10 +6,14 @@
 
 def "main" 
 (
-    clipAssetPaths = [@./a.usda@, @./b.usda@]
-    clipTimes = [(101, 101), (103, 103)]
-    clipActive = [(101, 0), (103, 1)]
-    clipPrimPath = "/clip"
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./a.usda@, @./b.usda@]
+            double2[] times = [(101, 101), (103, 103)]
+            double2[] active = [(101, 0), (103, 1)]
+            string primPath = "/clip"
+        }
+    }
 )
 {
     double foo

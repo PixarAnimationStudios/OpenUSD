@@ -18,21 +18,20 @@ or sublayered timeSamples.  However, sometimes more flexibility is required!
 
 The USD Value Clips feature allows users to decompose time-varying data
 across many layers that can then be sequenced and re-sequenced back together
-in flexible ways. This feature is purely a \ref Usd_ValueResolution "value
-resolution" -level feature, not a composition-level feature.  Value clips
-allow users to retime sequence in various ways. This allows users to reuse a
-set of value clips in different scenarios, with only the sequencing metadata
-changing.  At Pixar, we have found value clips useful for efficiently animating
-medium to large crowds, and for representing very large, simulated effects.
-For more detail on these use cases, see the <a
-HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-ValueClips">
-glossary entry for Value Clips</a>.
+in flexible ways. This feature is purely a 
+\ref Usd_ValueResolution "value resolution" -level feature, not a 
+composition-level feature.  Value clips allow users to retime sequence in 
+various ways. This allows users to reuse a set of value clips in different 
+scenarios, with only the sequencing metadata changing.  At Pixar, we have found 
+value clips useful for efficiently animating medium to large crowds, and for 
+representing very large, simulated effects. For more detail on these use cases, 
+see the <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-ValueClips"> glossary entry for Value Clips</a>.
 
 At a very high level, value clips consume special metadata on a \ref UsdPrim "prim", 
 indicating:
-- the targeted \em "clip" layers (which are <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-Asset">assets</a>) to be sequenced
-- the intervals over which each clip is \em active, and how "stage time" maps into each clip
-- which samples to consume within the \em active clip
+- the targeted "clip" layers (which are <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-Asset">assets</a>) to be sequenced
+- the intervals over which each clip is active, and how "stage time" maps into each clip
+- which samples to consume within the active clip
 
 
 \subsection Terminology
@@ -54,9 +53,12 @@ Before going further, let's establish some terminology:
 - **Clip Metadata**: A set of prim-level metadata which control USD's value
   resolution semantics.
 
+- **Clip Set**: A named set of value clips defined by a group of clip metadata.
+  A prim may have multiple clip sets.
+
 - \anchor Usd_ValueClips_AnchorPoint **Anchor Point**: The strongest layer 
-  in which either clipAssetPaths or clipTemplateAssetPath is authored. 
-  This determines the \em strength of clips with respect to
+  in which either \em assetPaths or \em templateAssetPath is authored for a
+  given clip set. This determines the strength of clips with respect to
   value resolution, see \ref Usd_ValueClips_ClipValueResolution for details.
 
 \subsection Metadata
@@ -74,11 +76,11 @@ of regularly named files. Regardless of which form a value clip application
 takes, there are also a set of "universal" metadata common to both.
 
 - Universal Clip Metadata
-    - clipPrimPath
+    - \em primPath
         - A prim path (\ref SdfPath) that will be substituted for the stage
           prim's path when querying data in the clips.  See 
           UsdClipsAPI::GetClipPrimPath() for further details.
-    - clipManifestAssetPath
+    - \em manifestAssetPath
         - An asset path (\ref SdfAssetPath) representing the path to a layer
           that contains an optimized index of the data we can expect to find
           authored in the set of clips.  Depending on how it was created, this
@@ -87,23 +89,23 @@ takes, there are also a set of "universal" metadata common to both.
           explanation of the use of this \em optional layer.
 
 - Explicit Clip Metadata
-    - clipAssetPaths
+    - \em assetPaths
         - An ordered list of asset paths to the clips holding time varying data.
-    - clipActive
-        - A list of pairs of the form (stageTime, clipAssetIndex)
+    - \em active
+        - A list of pairs of the form (stageTime, assetIndex)
           representing when, in terms of stage time, a particular clip in
-          clipAssetPaths is active. For example, given a clipAssetPaths of
-          [ \@foo.usd\@, \@bar.usd\@ ] and a clipActive of [ (101, 0), (102, 0) ],
-          foo.usd would be the only clip ever examined for attribute values
-          under this particular prim.
-    - clipTimes 
+          \em assetPaths is active. For example, given a \em assetPaths of
+          [ \@foo.usd\@, \@bar.usd\@ ] and a \em active of 
+          [ (101, 0), (102, 0) ], foo.usd would be the only clip ever 
+          examined for attribute values under this particular prim.
+    - \em times 
         - A list of pairs of the form (stageTime, clipTime) representing
           the mapping from stage time to clip time, for whichever clip is 
           active at the given stage time. Note that every authored pair will 
           be represented in a call to \ref UsdAttribute::GetTimeSamples() .
 
 - Template Clip Metadata
-    - clipTemplateAssetPath
+    - \em templateAssetPath
         - A regex-esque template string representing the form of our asset
           paths' names. This can be of two forms: 'path/basename.###.usd' and
           'path/basename.###.###.usd'. These represent integer stage times and
@@ -114,8 +116,8 @@ takes, there are also a set of "universal" metadata common to both.
           hashes, and if there are two, they must be adjacent, separated by a
           dot.
 
-    - clipTemplateStartTime
-        - The (double precision float) \em first number to substitute into our
+    - \em templateStartTime
+        - The (double precision float) first number to substitute into our
           template asset path. For example, given 'path/basename.###.usd' as a
           template string, and 12 as a template start time, USD will populate
           the internal asset path list with 'path/basename.012.usd' as its
@@ -124,13 +126,13 @@ takes, there are also a set of "universal" metadata common to both.
           path represents integer frames and the start time has a fractional 
           component, USD will truncate this to an integer.
 
-    - clipTemplateEndTime
-        - The (double precision float) \em last number to substitute into our template
+    - \em templateEndTime
+        - The (double precision float) last number to substitute into our template
           string. If the template asset path represents integer frames and the
           end time has a fractional component, USD will truncate this to an
           integer.
 
-    - clipTemplateStride 
+    - \em templateStride 
         - A (double precision float) number indicating the stride at which USD 
           will increment when
           looking for files to resolve. For example, given a start time of 12, 
@@ -146,6 +148,54 @@ USD provides schema level support for authoring this metadata via \ref UsdClipsA
 This gives a typesafe way to interact with the relevant metadata as well as 
 various helper functions.
 
+\section Usd_ValueClips_ClipSets Clip Sets
+
+A "clip set" is a named group of value clips specified by the metadata 
+described above. Prims can have multiple clip sets. In this example, 
+the prim "Prim" has two clip sets, "clip_set_1" and  "clip_set_2", 
+each defined by a different set of clip metadata. 
+
+\code
+#usda 1.0
+
+def "Prim" (
+    clips = {
+        dictionary clip_set_1 = {
+            double2[] active = [(101, 0), (102, 1), (103, 2)] 
+            asset[] assetPaths = [@./clip1.usda@, @./clip2.usda@, @./clip3.usda@]
+            asset manifestAssetPath = @./clipset1.topology.usda@
+            string primPath = "/ClipSet1"
+            double2[] times = [(101, 101), (102, 102), (103, 103)]
+        }
+        dictionary clip_set_2 = {
+            string templateAssetPath = "clipset2.#.usd"
+            double templateStartTime = 101
+            double templateEndTime = 103
+            double templateStride = 1
+            asset manifestAssetPath = @./clipset2.topology.usda@
+            string primPath = "/ClipSet2"
+        }
+    }
+    reorder clipSets = ["clip_set_2", "clip_set_1"]
+)
+{
+}
+\endcode
+
+The clip set definitions are stored in a dictionary-valued metadata field
+named "clips", which is composed according to the rules in 
+\ref Usd_Dictionary_Type. This allows users to define clip sets in various 
+layers and have them compose together, or sparsely override metadata in 
+clip sets non-destructively.
+
+The "clipSets" metadata field is a list op that allows users to control
+how clip sets are used during value resolution. 
+See \ref Usd_ValueClips_ClipValueResolution for more details.
+
+Users can specify the clip set to author to when using the UsdClipsAPI
+schema to clip metadata. If no clip set is specified, UsdClipsAPI will
+author to a clip set named "default".
+
 \section Usd_ValueClips_ClipValueResolution Value Resolution Semantics
 
 The presence of Value Clips introduces a new behavior to value resolution of 
@@ -155,20 +205,30 @@ descendant prims' attributes. The \em strength of data in a set of value clips
 is based on the \ref Usd_ValueClips_AnchorPoint "anchor point". 
 The clip data is just weaker than the "Local" (L in 
 <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-LIVRPSStrengthOrdering">LIVRPS</a>)
-data of the anchoring layer.  Clip data can be overridden by adding overrides to a 
-stronger layer or in a local opinion, just as for any other kind of data.
+data of the anchoring layer.  Clip data can be overridden by adding overrides 
+to a stronger layer or in a local opinion, just as for any other kind of data.
+
+During attribute value resolution, each clip set defined on the attribute's
+owning prim will be queried to find the first clip that affects the attribute.
+If no such clip exists, clip sets defined on the owning prim's parents will
+be queried. 
+
+By default, the clip sets will be queried in lexicographical order by name. 
+However, users may change the order in which clip sets are queried or
+even remove a clip set from consideration by authoring reorder or delete
+statements in the "clipSets" list op.
 
 When an attribute is affected by a clip, value resolution performs the 
 following extra computation:
 
-- Determine the active clip, through the clip active metadata. Given the
-  following clipActive: [(t1, c1), (t2, c2)], USD will look in c1 from the
-  beginning of time until t2-epsilon. That is, the value of the leftmost
-  clipActive hold from the beginning of time until the next clip. Similarly, the
-  rightmost clipActive will hold until the end of time. 
+- Determine the active clip, through the \em active metadata. Given the
+  following \em active metadata: [(t1, c1), (t2, c2)], USD will look in c1 
+  from the beginning of time until t2-epsilon. That is, the value of the 
+  leftmost \em active holds from the beginning of time until the next clip. 
+  Similarly, the rightmost \em active will hold until the end of time. 
 
-- Once the active clip is known, USD will open the value clip in clipAssetPaths
-  at the index determined.
+- Once the active clip is known, USD will open the value clip in 
+  \em assetPaths at the index determined.
 
 - From the relevant value clip, USD will do any necessary mapping from the
   "external time" of the stage, to the "internal time" of the clip.
@@ -177,59 +237,59 @@ following extra computation:
   Get() call for a timeSamples-based query, as if the active clip were the
   immediate super-layer of the anchoring layer.
 
-- <b>Addendum 1:</b> What happens if the clipTime points to a time 
+- <b>Addendum 1:</b> What happens if the \em times metadata points to a time 
   outside the range of provided samples in a clip? In this case, the first 
   and last samples in the clip are held in their respective directions, which 
   is the same behavior for timeSamples appearing in non-clip layers.
 
-- <b>Addendum 2:</b> What happens if there is no current active clip? The 
-  value from the prior active clip (in the \em clipActive timeline) is held. 
+- <b>Addendum 2:</b> What happens if there is no active clip at the current time? 
+  The value from the prior active clip (in the \em active timeline) is held. 
   Within the active clip, the normal resolution semantics apply.
 
 - <b>Addendum 3:</b> What happens if there is no attribute in the active clip
   that we are querying? In this case, calls to Get() will return nothing.
 
 All of the above behavior applies to the template metadata as well. The key
-difference is that the neceesary metadata (clipTimes, clipActive and clipAssetPaths)
-are derived from the template metadata. Although this derivation is not a direct component of value resolution, it
-sets the stage for it, so it may be worthwhile understanding how it works:
+difference is that the \em times, \em active and \em assetPaths metadata 
+are derived from the template metadata. Although this derivation is not a 
+direct component of value resolution, it sets the stage for it, so it may 
+be worthwhile understanding how it works:
 
-- The set of explicit asset paths (clipAssetPaths) is derived by taking the template
-  pattern (clipTemplateAssetPath) and substituting times from
-  clipTemplateStartTime to clipTemplateEndTime, incrementing by
-  clipTemplateStride.
+- The set of explicit asset paths (\em assetPaths) is derived by taking 
+  the template pattern (\em templateAssetPath) and substituting times from
+  \em templateStartTime to \em templateEndTime, incrementing by 
+  \em templateStride.
 
-- Once the set of relevant asset paths has been determined. The clipTimes
-  and clipActive metadata can be derived. For each time t specified in each
-  derived clipAssetPath, the clipTime (t, t) will be authored; similarly,
-  the clipActive (t, n) will be authored, where n represents the index of the
-  derived clipAssetPath.
+- Once the set of relevant asset paths has been determined. The \em times
+  and \em active metadata can be derived. For each time t specified in each
+  derived assetPath, the time (t, t) will be authored; similarly,
+  the active (t, n) will be authored, where n represents the index of the
+  derived assetPath.
 
 \subsection Usd_ValueClips_ClipValueResolution_LayerOffsets Layer Offsets
 
 Layer offsets affect value clips in the following ways:
 
 - If using template metadata encoding:
-    - Layer offsets are applied to generated clipTimes and clipActive relative
+    - Layer offsets are applied to generated times and active metadata relative
     to the \ref Usd_ValueClips_AnchorPoint "anchor point". Note that layer offsets
     will *not* affect the generated set of asset paths, as they are not
-    applied to clipTemplateStartTime, clipTemplateEndTime and clipTemplateStride. 
+    applied to \em templateStartTime, \em templateEndTime and \em templateStride. 
 
 - If using explicit metadata encoding:
-    - Layer offsets are applied to clipTimes and clipActive metadata relative to the
-    strongest layer in which they were authored. Note that this layer may be different from
-    the \ref Usd_ValueClips_AnchorPoint "anchor point".
-
+    - Layer offsets are applied to \em times and \em active metadata relative 
+    to the strongest layer in which they were authored. Note that this layer 
+    may be different from the \ref Usd_ValueClips_AnchorPoint "anchor point".
 
 \section Usd_ValueClips_ClipPerformance Performance Characteristics and Maximizing Clip Performance
 
 The flexibility and reuse of animated data that clips provides does come with
-some performance characteristics with which pipeine builders may want to
+some performance characteristics with which pipeline builders may want to
 be familiar.
 
 \subsection Usd_ValueClips_ClipHint Clip Manifest Asset Path
 
-The clipManifestAssetPath metadata can be crucial for achieving good performance
+The \em manifestAssetPath metadata can be crucial for achieving good performance
 with value clips. While this metadata is currently optional, specifying it
 allows USD to make much faster queries.
 
@@ -295,11 +355,15 @@ root.usda, our root layer:
 )                                                                                
                                                                                  
 over "points" (                                                      
-    clipActive = [(101, 0), (102, 1), (103, 2)]            
-    clipAssetPaths = [@./clip1.usda@, @./clip2.usda@, @./clip3.usda@]
-    clipManifestAssetPath = @./root.topology.usda@                      
-    clipPrimPath = "/points"               
-    clipTimes = [(101, 101), (102, 102), (103, 103)]     
+    clips = {
+        dictionary default = {
+            double2[] active = [(101, 0), (102, 1), (103, 2)] 
+            asset[] assetPaths = [@./clip1.usda@, @./clip2.usda@, @./clip3.usda@]
+            asset manifestAssetPath = @./root.topology.usda@
+            string primPath = "/points"
+            double2[] times = [(101, 101), (102, 102), (103, 103)]
+        }
+    }
 )                                                                       
 {                                                                    
 }                                                                    
@@ -369,7 +433,8 @@ def Points "points"
 \endcode
 
 Note that both clip1.usda, which has an authored \ref SdfValueBlock,  
-and clip3.usda, which does not have an authored value, produce a block in the resulting timeSamples. 
+and clip3.usda, which does not have an authored value, produce a block in the 
+resulting timeSamples. 
 
 \subsection usdstitchclips
 
@@ -398,11 +463,15 @@ Will generate the following result.usda:
 over "World" 
 {
     over "model" (
-        clipActive = [(101, 0), (102, 1), (103, 2)]
-        clipAssetPaths = [@./101.usd@, @./102.usd@, @./103.usd@]
-        clipManifestAssetPath = @./result.topology.usda@
-        clipPrimPath = "/World/model"
-        clipTimes = [(101, 101), (102, 102), (103, 103)]
+        clips = {
+            dictionary default = {
+                double2[] active = [(101, 0), (102, 1), (103, 2)]
+                asset[] assetPaths = [@./101.usd@, @./102.usd@, @./103.usd@]
+                asset manifestAssetPath = @./result.topology.usda@
+                string primPath = "/World/model"
+                double2[] times = [(101, 101), (102, 102), (103, 103)]
+            }
+        }
     )
     {
     }
@@ -453,12 +522,16 @@ Will generate the following result.usda:
 def "World" 
 {
     over "model" (
-        clipTemplateAssetPath = "clip.#.usd"
-        clipTemplateStartTime = 101
-        clipTemplateEndTime = 103
-        clipTemplateStride = 1
-        clipManifestAssetPath = @./result.topology.usda@
-        clipPrimPath = "/World/model"
+        clips = {
+            dictionary default = {
+                string templateAssetPath = "clip.#.usd"
+                double templateStartTime = 101
+                double templateEndTime = 103
+                double templateStride = 1
+                asset manifestAssetPath = @./result.topology.usda@
+                string primPath = "/World/model"
+            }
+        }
     )
     {
     }
@@ -487,15 +560,19 @@ following encoding:
 def "World" 
 {
     over "model" (
-        clipManifestAssetPath = @./result.topology.usda@
-        clipPrimPath = "/World/model"
-        clipAssetPaths = [@clip1.usd@, @clip2.usd@, @clip3.usd@]
-        clipActive = [(1, 0), (2, 1), (3, 2),
-                      (4, 0), (5, 1), (6, 2),
-                      (7, 0), (8, 1), (9, 2)]
-        clipTimes = [(1, 1), (2, 2), (3, 3),
-                     (4, 1), (5, 2), (6, 3),
-                     (7, 1), (8, 2), (9, 3)]
+        clips = {
+            dictionary default = {
+                asset manifestAssetPath = @./result.topology.usda@
+                string primPath = "/World/model"
+                asset[] assetPaths = [@clip1.usd@, @clip2.usd@, @clip3.usd@]
+                double2[] active = [(1, 0), (2, 1), (3, 2),
+                                    (4, 0), (5, 1), (6, 2),
+                                    (7, 0), (8, 1), (9, 2)]
+                double2[] times = [(1, 1), (2, 2), (3, 3),
+                                   (4, 1), (5, 2), (6, 3),
+                                   (7, 1), (8, 2), (9, 3)]
+            }
+        }
     )
     {
     }

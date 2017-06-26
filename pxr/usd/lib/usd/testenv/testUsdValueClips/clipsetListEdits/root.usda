@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    subLayers = [
+        @./sublayer.usda@
+    ]
+)
+
+def "DefaultOrderTest" (
+    clips = {
+        # Note clip_b is explicitly authored by hand above clip_a
+        # to test that clip set ordering is independent of the text
+        # representation.
+        dictionary clip_b = {
+            double2[] active = [(0, 0)]
+            asset[] assetPaths = [@./clip_b.usda@]
+            string primPath = "/ClipB"
+        }
+        dictionary clip_a = {
+            double2[] active = [(0, 0)]
+            asset[] assetPaths = [@./clip_a.usda@]
+            string primPath = "/ClipA"
+        }
+    }
+    references = @./ref.usda@</Prim>
+)
+{
+}
+
+over "ReorderTest" (
+    reorder clipSets = ["clip_b", "clip_a"]
+)
+{
+}
+
+over "DeleteTest" (
+    delete clipSets = ["clip_a"]
+)
+{
+}

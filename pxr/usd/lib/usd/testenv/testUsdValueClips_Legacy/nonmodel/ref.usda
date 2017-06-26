@@ -1,0 +1,9 @@
+#usda 1.0
+
+def "NonModel"
+{
+    float a = 1.0
+    float a.timeSamples = {
+        1: 100.0
+    }
+}

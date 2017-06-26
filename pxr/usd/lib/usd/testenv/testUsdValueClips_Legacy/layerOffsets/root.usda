@@ -1,0 +1,7 @@
+#usda 1.0
+(
+    subLayers = [
+        @./root_anim.usda@ (offset = 20),
+        @./root_sublayer.usda@ (offset = 10)
+    ]
+)

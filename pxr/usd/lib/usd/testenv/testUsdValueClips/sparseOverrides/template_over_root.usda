@@ -3,7 +3,11 @@
 over "main" 
 (
     references = [@./template_root.usda@</main>]
-    clipTemplateStartTime = 103
+    clips = {
+        dictionary default = {
+            double templateStartTime = 103
+        }
+    }
 )
 {
 }

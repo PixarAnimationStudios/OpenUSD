@@ -139,13 +139,10 @@ _ValidateClipFields(
 }
 
 static void
-_AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
+_AddClipsFromClipInfo(
+    const SdfPath& usdPrimPath, 
+    const Usd_ResolvedClipInfo& clipInfo, Usd_ClipCache::Clips* clips)
 {
-    Usd_ResolvedClipInfo clipInfo;
-    if (!Usd_ResolveClipInfo(primIndex, &clipInfo)) {
-        return;
-    }
-
     // If we haven't found all of the required clip metadata we can just 
     // bail out. Note that clipTimes and clipManifestAssetPath are *not* 
     // required.
@@ -161,8 +158,8 @@ _AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
     if (!clipInfo.clipManifestAssetPath) {
         TF_DEBUG(USD_CLIPS).Msg(
             "No clip manifest specified for prim <%s>. " 
-            "Performance may be improved if a manifest is specified.",
-            primIndex.GetPath().GetString().c_str());
+            "Performance may be improved if a manifest is specified.\n",
+            usdPrimPath.GetText());
     }
 
     // XXX: Possibly want a better way to inform consumers of the error
@@ -173,9 +170,8 @@ _AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
             *clipInfo.clipActive, &error)) {
 
         TF_WARN(
-            "Invalid clips specified for prim <%s> in LayerStack %s: %s",
+            "Invalid clips specified for prim <%s>: %s",
             clipInfo.sourcePrimPath.GetString().c_str(),
-            TfStringify(clipInfo.sourceLayerStack).c_str(),
             error.c_str());
         return;
     }
@@ -263,6 +259,25 @@ _AddClipsFromNode(const PcpPrimIndex& primIndex, Usd_ClipCache::Clips* clips)
     clips->sourceLayerIndex = clipInfo.indexOfLayerWhereAssetPathsFound;    
 }
 
+static void
+_AddClipsFromPrimIndex(
+    const PcpPrimIndex& primIndex, 
+    std::vector<Usd_ClipCache::Clips>* clips)
+{
+    std::vector<Usd_ResolvedClipInfo> clipInfo;
+    if (!Usd_ResolveClipInfo(primIndex, &clipInfo)) {
+        return;
+    }
+
+    for (const Usd_ResolvedClipInfo& entry : clipInfo) {
+        Usd_ClipCache::Clips entryClips;
+        _AddClipsFromClipInfo(primIndex.GetPath(), entry, &entryClips);
+        if (!entryClips.valueClips.empty()) {
+            clips->push_back(entryClips);
+        }
+    }
+}
+
 bool
 Usd_ClipCache::PopulateClipsForPrim(
     const SdfPath& path, const PcpPrimIndex& primIndex)
@@ -270,11 +285,7 @@ Usd_ClipCache::PopulateClipsForPrim(
     TRACE_FUNCTION();
 
     std::vector<Clips> allClips;
-    Clips clipsFromNode;
-    _AddClipsFromNode(primIndex, &clipsFromNode);
-    if (!clipsFromNode.valueClips.empty()) {
-        allClips.push_back(clipsFromNode);
-    }
+    _AddClipsFromPrimIndex(primIndex, &allClips);
 
     const bool primHasClips = !allClips.empty();
     if (primHasClips) {

@@ -1,11 +1,15 @@
 #usda 1.0
 
 def "Model" (
-    clipPrimPath = "/Clip"
-    clipTemplateAssetPath = "./#.usda"
-    clipTemplateEndTime = 3
-    clipTemplateStartTime = 1
-    clipTemplateStride = 1
+    clips = {
+        dictionary default = {
+            string primPath = "/Clip"
+            string templateAssetPath = "./#.usda"
+            double templateEndTime = 3
+            double templateStartTime = 1
+            double templateStride = 1
+        }
+    }
 )
 {
     double a

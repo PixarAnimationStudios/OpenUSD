@@ -1,0 +1,37 @@
+#usda 1.0
+
+def "ReorderTest" (
+    clips = {
+        dictionary clip_a = {
+            double2[] active = [(0, 0)]
+            asset[] assetPaths = [@./clip_a.usda@]
+            string primPath = "/ClipA"
+        }
+        dictionary clip_b = {
+            double2[] active = [(0, 0)]
+            asset[] assetPaths = [@./clip_b.usda@]
+            string primPath = "/ClipB"
+        }
+    }
+    references = @./ref.usda@</Prim>
+)
+{
+}
+
+def "DeleteTest" (
+    clips = {
+        dictionary clip_a = {
+            double2[] active = [(0, 0)]
+            asset[] assetPaths = [@./clip_a.usda@]
+            string primPath = "/ClipA"
+        }
+        dictionary clip_b = {
+            double2[] active = [(0, 0)]
+            asset[] assetPaths = [@./clip_b.usda@]
+            string primPath = "/ClipB"
+        }
+    }
+    references = @./ref.usda@</Prim>
+)
+{
+}

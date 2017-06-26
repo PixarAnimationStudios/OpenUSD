@@ -130,7 +130,7 @@ struct Usd_ResolvedClipInfo
 bool
 Usd_ResolveClipInfo(
     const PcpPrimIndex& primIndex,
-    Usd_ResolvedClipInfo* clipInfo);
+    std::vector<Usd_ResolvedClipInfo>* clipInfo);
 
 /// Sentinel values authored on the edges of a clipTimes range.
 constexpr double Usd_ClipTimesEarliest = -std::numeric_limits<double>::max();

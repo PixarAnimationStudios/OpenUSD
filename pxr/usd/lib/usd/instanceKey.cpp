@@ -36,9 +36,9 @@ Usd_InstanceKey::Usd_InstanceKey()
 Usd_InstanceKey::Usd_InstanceKey(const PcpPrimIndex& instance)
     : _pcpInstanceKey(instance)
 {
-    Usd_ResolvedClipInfo clipInfo;
+    std::vector<Usd_ResolvedClipInfo> clipInfo;
     if (Usd_ResolveClipInfo(instance, &clipInfo)) {
-        _clipInfo.push_back(clipInfo);
+        _clipInfo.swap(clipInfo);
     }
 }
 

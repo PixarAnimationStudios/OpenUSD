@@ -3,9 +3,13 @@
 def "NonModel" (
     references = @./ref.usda@</NonModel>
 
-    clipAssetPaths = [@./clip.usda@]
-    clipPrimPath = "/NonModel"
-    clipActive = [(1.0, 0)]
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/NonModel"
+            double2[] active = [(1.0, 0)]
+        }
+    }
 )
 {
 }
