@@ -45,7 +45,11 @@ GlfPostPendingGLErrors(std::string const & where)
 {
     bool foundError = false;
     GLenum error;
-    while ((error = glGetError()) != GL_NO_ERROR) {
+    // Protect from doing infinite looping when glGetError
+    // is called from an invalid context.
+    int watchDogCount = 0;
+    while ((watchDogCount++ < 256) &&
+            ((error = glGetError()) != GL_NO_ERROR)) {
         foundError = true;
         const GLubyte *errorString = gluErrorString(error);
 
