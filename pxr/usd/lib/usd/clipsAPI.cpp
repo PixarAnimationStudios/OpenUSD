@@ -117,6 +117,12 @@ TF_DEFINE_ENV_SETTING(
     "instead of in the clips dictionary when using API that does "
     "not specify a clip set.");
 
+bool 
+UsdClipsAPI::IsAuthoringLegacyClipMetadata()
+{
+    return TfGetEnvSetting(USD_AUTHOR_LEGACY_CLIPS);
+}
+
 namespace
 {
 

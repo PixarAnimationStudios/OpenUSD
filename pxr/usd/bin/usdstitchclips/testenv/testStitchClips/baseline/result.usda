@@ -12,11 +12,15 @@ over "World"
     over "fx"
     {
         over "Particles_Splash" (
-            clipActive = [(101, 0), (102, 1), (103, 2), (104, 3), (105, 4), (106, 5), (107, 6), (108, 7), (109, 8)]
-            clipAssetPaths = [@./Particles_Splash.101.usd@, @./Particles_Splash.102.usd@, @./Particles_Splash.103.usd@, @./Particles_Splash.104.usd@, @./Particles_Splash.105.usd@, @./Particles_Splash.106.usd@, @./Particles_Splash.107.usd@, @./Particles_Splash.108.usd@, @./Particles_Splash.109.usd@]
-            clipManifestAssetPath = @./result.topology.usda@
-            clipPrimPath = "/World/fx/Particles_Splash"
-            clipTimes = [(101, 101), (102, 102), (103, 103), (104, 104), (105, 105), (106, 106), (107, 107), (108, 108), (109, 109)]
+            clips = {
+                dictionary default = {
+                    double2[] active = [(101, 0), (102, 1), (103, 2), (104, 3), (105, 4), (106, 5), (107, 6), (108, 7), (109, 8)]
+                    asset[] assetPaths = [@./Particles_Splash.101.usd@, @./Particles_Splash.102.usd@, @./Particles_Splash.103.usd@, @./Particles_Splash.104.usd@, @./Particles_Splash.105.usd@, @./Particles_Splash.106.usd@, @./Particles_Splash.107.usd@, @./Particles_Splash.108.usd@, @./Particles_Splash.109.usd@]
+                    asset manifestAssetPath = @./result.topology.usda@
+                    string primPath = "/World/fx/Particles_Splash"
+                    double2[] times = [(101, 101), (102, 102), (103, 103), (104, 104), (105, 105), (106, 106), (107, 107), (108, 108), (109, 109)]
+                }
+            }
         )
         {
         }

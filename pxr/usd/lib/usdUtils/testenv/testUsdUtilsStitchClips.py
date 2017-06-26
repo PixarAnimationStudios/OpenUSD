@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Sdf, UsdUtils
+from pxr import Sdf, Tf, UsdUtils
 import unittest
 
 class TestUsdUtilsStitchClips(unittest.TestCase):
@@ -75,9 +75,18 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
     def test_ValidClipMetadata(self):
         clipPrim = self.rootLayer.GetPrimAtPath(self.clipPath)
         self.assertTrue(clipPrim)
-        self.assertEqual(set(clipPrim.ListInfoKeys()), set(['clipTimes',
-            'clipAssetPaths', 'clipPrimPath', 'clipManifestAssetPath',
-            'clipActive', 'specifier']))
+        if Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'):
+            self.assertEqual(set(clipPrim.ListInfoKeys()), set(['clipTimes',
+                'clipAssetPaths', 'clipPrimPath', 'clipManifestAssetPath',
+                'clipActive', 'specifier']))
+        else:
+            self.assertEqual(set(clipPrim.ListInfoKeys()), 
+                             set(['clips', 'specifier']))
+            self.assertEqual(set(clipPrim.GetInfo('clips').keys()),
+                             set(['default']))
+            self.assertEqual(set(clipPrim.GetInfo('clips')['default'].keys()),
+                             set(['times', 'assetPaths', 'primPath', 
+                                  'manifestAssetPath', 'active']))
 
     def test_ValidUsdLayerGeneration(self):
         self.assertTrue(self.rootLayer)

@@ -508,6 +508,15 @@ public:
     USD_API
     bool ClearNonTemplateClipMetadata();
 
+    /// Return true if the setter functions that do not take a clip set author
+    /// values to legacy metadata fields (e.g. clipAssetPaths, clipTimes, etc.),
+    /// or false if values are authored to the default clip set. 
+    /// 
+    /// This is controlled by the USD_AUTHOR_LEGACY_CLIPS environment variable
+    /// and is intended to be an aid for transitioning.
+    USD_API
+    static bool IsAuthoringLegacyClipMetadata();
+
     /// @}
 
 };

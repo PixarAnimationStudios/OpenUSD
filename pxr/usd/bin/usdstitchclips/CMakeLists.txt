@@ -78,6 +78,23 @@ pxr_register_test(testUsdStitchClips
     /World/fx/Particles_Splash --out result.usda Particles_Splash.101.usd Particles_Splash.102.usd Particles_Splash.103.usd Particles_Splash.104.usd Particles_Splash.105.usd Particles_Splash.106.usd Particles_Splash.107.usd Particles_Splash.108.usd Particles_Splash.109.usd "
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE result.usda result.topology.usda
+    ENV
+        USD_AUTHOR_LEGACY_CLIPS=0
+)
+
+pxr_install_test_dir(
+    SRC testenv/testStitchClips
+    DEST testUsdStitchClips_Legacy
+)
+
+pxr_register_test(testUsdStitchClips_Legacy
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdstitchclips --noComment --clipPath
+    /World/fx/Particles_Splash --out result_legacy.usda Particles_Splash.101.usd Particles_Splash.102.usd Particles_Splash.103.usd Particles_Splash.104.usd Particles_Splash.105.usd Particles_Splash.106.usd Particles_Splash.107.usd Particles_Splash.108.usd Particles_Splash.109.usd "
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE result_legacy.usda result_legacy.topology.usda
+    ENV
+        USD_AUTHOR_LEGACY_CLIPS=1
 )
 
 pxr_install_test_dir(
@@ -90,6 +107,22 @@ pxr_register_test(testUsdStitchClipsTemplate1
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdstitchclips --noComment --templateMetadata --startTimeCode 101 --endTimeCode 104 --stride 1 --templatePath p.#.usd --clipPath /World/fx/Particles_Splash/points --out result.usda p.101.usda p.102.usda p.103.usda p.104.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE result.usda result.topology.usda
+    ENV
+        USD_AUTHOR_LEGACY_CLIPS=0
+)
+
+pxr_install_test_dir(
+    SRC testenv/testStitchClipsTemplate
+    DEST testUsdStitchClipsTemplate1_Legacy
+)
+
+pxr_register_test(testUsdStitchClipsTemplate1_Legacy
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdstitchclips --noComment --templateMetadata --startTimeCode 101 --endTimeCode 104 --stride 1 --templatePath p.#.usd --clipPath /World/fx/Particles_Splash/points --out result_legacy.usda p.101.usda p.102.usda p.103.usda p.104.usda"
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE result_legacy.usda result_legacy.topology.usda
+    ENV
+        USD_AUTHOR_LEGACY_CLIPS=1
 )
 
 pxr_install_test_dir(
