@@ -48,6 +48,9 @@ function(pxr_python_bin BIN_NAME)
     # Source file.
     if( "${pb_PYTHON_FILE}" STREQUAL "")
         set(infile ${CMAKE_CURRENT_SOURCE_DIR}/${BIN_NAME}.py)
+    # This way we can specify the full path, if the file is configured before this script.
+    elseif(EXISTS "${pb_PYTHON_FILE}")
+        set(infile ${pb_PYTHON_FILE})
     else()
         set(infile ${CMAKE_CURRENT_SOURCE_DIR}/${pb_PYTHON_FILE})
     endif()

@@ -125,11 +125,23 @@ pxr_library(usd
 if (NOT JINJA2_FOUND)
     message(WARNING "Skipping building usdGenSchema due to missing dependency: Jinja2")
 else()
+    set(_configuredGenSchema "${CMAKE_CURRENT_BINARY_DIR}/usdGenSchemaConfigured.py")
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/codegenTemplates/api.h TEMPLATE_API_H)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/codegenTemplates/plugInfo.json TEMPLATE_PLUGINFO_JSON)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/codegenTemplates/schemaClass.cpp TEMPLATE_SCHEMA_CLASS_CPP)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/codegenTemplates/schemaClass.h TEMPLATE_SCHEMA_CLASS_H)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/codegenTemplates/tokens.cpp TEMPLATE_TOKENS_CPP)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/codegenTemplates/tokens.h TEMPLATE_TOKENS_H)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/codegenTemplates/wrapSchemaClass.cpp TEMPLATE_WRAP_SCHEMA_CLASS_CPP)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/codegenTemplates/wrapTokens.cpp TEMPLATE_WRAP_TOKENS_CPP)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/usdGenSchema.py ${_configuredGenSchema})
     pxr_python_bin(usdGenSchema
         DEPENDENCIES
             tf
             sdf
             usd
+        PYTHON_FILE
+            ${_configuredGenSchema}
     )
 endif()
 
