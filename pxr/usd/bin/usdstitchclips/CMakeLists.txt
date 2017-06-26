@@ -75,11 +75,9 @@ pxr_install_test_dir(
 pxr_register_test(testUsdStitchClips
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdstitchclips --noComment --clipPath
-    /World/fx/Particles_Splash --out result.usd Particles_Splash.101.usd Particles_Splash.102.usd Particles_Splash.103.usd Particles_Splash.104.usd Particles_Splash.105.usd Particles_Splash.106.usd Particles_Splash.107.usd Particles_Splash.108.usd Particles_Splash.109.usd "
+    /World/fx/Particles_Splash --out result.usda Particles_Splash.101.usd Particles_Splash.102.usd Particles_Splash.103.usd Particles_Splash.104.usd Particles_Splash.105.usd Particles_Splash.106.usd Particles_Splash.107.usd Particles_Splash.108.usd Particles_Splash.109.usd "
     EXPECTED_RETURN_CODE 0
-    DIFF_COMPARE result.usd result.topology.usd
-    ENV
-        USD_DEFAULT_FILE_FORMAT=usda
+    DIFF_COMPARE result.usda result.topology.usda
 )
 
 pxr_install_test_dir(
