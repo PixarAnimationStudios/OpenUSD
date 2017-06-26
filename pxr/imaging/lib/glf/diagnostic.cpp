@@ -159,6 +159,34 @@ GlfDebugEnumToString(GLenum debugEnum)
     return "unknown";
 }
 
+static void _GlfPushDebugGroup(char const * message)
+{
+#if defined(GL_KHR_debug)
+    if (GLEW_KHR_debug) {
+        glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, message);
+    }
+#endif
+}
+
+static void _GlfPopDebugGroup()
+{
+#if defined(GL_KHR_debug)
+    if (GLEW_KHR_debug) {
+        glPopDebugGroup();
+    }
+#endif
+}
+
+GlfDebugGroup::GlfDebugGroup(char const *message)
+{
+    _GlfPushDebugGroup(message);
+}
+
+GlfDebugGroup::~GlfDebugGroup()
+{
+    _GlfPopDebugGroup();
+}
+
 GlfGLQueryObject::GlfGLQueryObject()
     : _id(0), _target(0)
 {
