@@ -247,7 +247,31 @@ GusdGroupBaseWrapper::updateGroupFromGTPrim(
             updatePrimvarFromGTPrim( uniformAttrs, filter, UsdGeomTokens->uniform, ctxt.time );
         }
     }
+
+    // Set active state
+    updateGroupActiveFromGTPrim(destPrim, sourcePrim, ctxt.time);
+
     return true;
 }
+
+void
+GusdGroupBaseWrapper::updateGroupActiveFromGTPrim(
+        const UsdGeomImageable& destPrim,
+        const GT_PrimitiveHandle& sourcePrim,
+        UsdTimeCode time)
+{
+    UsdPrim prim = destPrim.GetPrim();
+
+    GT_Owner attrOwner;
+    GT_DataArrayHandle houAttr
+        = sourcePrim->findAttribute("usdactive", attrOwner, 0);
+    if (houAttr) {
+        int active = houAttr->getI32(0);
+        if ((bool)active != prim.IsActive()) {
+            prim.SetActive((bool)active);            
+        }
+    }
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

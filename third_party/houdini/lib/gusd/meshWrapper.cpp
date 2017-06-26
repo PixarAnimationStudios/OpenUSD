@@ -947,10 +947,10 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     if( writeNewGeo || overlayAll || overlayPrimvars ) {
 
         GusdGT_AttrFilter filter = ctxt.attributeFilter;
-        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^visible");
-        filter.appendPattern(GT_OWNER_VERTEX, "^N ^visible ^creaseweight");
-        filter.appendPattern(GT_OWNER_UNIFORM, "^visible");
-        filter.appendPattern(GT_OWNER_CONSTANT, "^visible");
+        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^visible ^usdactive");
+        filter.appendPattern(GT_OWNER_VERTEX, "^N ^visible ^creaseweight ^usdactive");
+        filter.appendPattern(GT_OWNER_UNIFORM, "^visible ^usdactive");
+        filter.appendPattern(GT_OWNER_CONSTANT, "^visible ^usdactive");
         if( !ctxt.primPathAttribute.empty() ) {
             filter.appendPattern(GT_OWNER_UNIFORM, "^" + ctxt.primPathAttribute );
         }
@@ -1041,7 +1041,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
     // ------------------------------------------------------------------------
 
-    return true;
+    return GusdPrimWrapper::updateFromGTPrim(sourcePrim, houXform, ctxt, xformCache);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

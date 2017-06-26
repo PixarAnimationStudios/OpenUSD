@@ -798,21 +798,21 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
         // facevarying through GT
         GusdGT_AttrFilter filter = ctxt.attributeFilter;
 
-        filter.appendPattern(GT_OWNER_VERTEX, "^P ^N ^v ^width ^pscale ^visible");
+        filter.appendPattern(GT_OWNER_VERTEX, "^P ^N ^v ^width ^pscale ^visible ^usdactive");
         if(const GT_AttributeListHandle vtxAttrs = sourcePrim->getVertexAttributes()) {
             GusdGT_AttrFilter::OwnerArgs owners;
             owners << GT_OWNER_VERTEX;
             filter.setActiveOwners(owners);
             updatePrimvarFromGTPrim( vtxAttrs, filter, UsdGeomTokens->vertex, ctxt.time );
         }
-        filter.appendPattern(GT_OWNER_CONSTANT, "^visible");
+        filter.appendPattern(GT_OWNER_CONSTANT, "^visible ^usdactive");
         if(const GT_AttributeListHandle constAttrs = sourcePrim->getDetailAttributes()) {
             GusdGT_AttrFilter::OwnerArgs owners;
             owners << GT_OWNER_CONSTANT;
             filter.setActiveOwners(owners);
             updatePrimvarFromGTPrim( constAttrs, filter, UsdGeomTokens->constant, ctxt.time );
         }
-        filter.appendPattern(GT_OWNER_UNIFORM, "^visible");
+        filter.appendPattern(GT_OWNER_UNIFORM, "^visible ^usdactive");
         if(const GT_AttributeListHandle uniformAttrs = sourcePrim->getUniformAttributes()) {
             GusdGT_AttrFilter::OwnerArgs owners;
             owners << GT_OWNER_UNIFORM;
@@ -838,7 +838,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     }
 
     // -------------------------------------------------------------------------
-    return true;
+    return GusdPrimWrapper::updateFromGTPrim(sourcePrim, houXform, ctxt, xformCache);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

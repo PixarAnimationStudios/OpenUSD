@@ -62,6 +62,12 @@ protected:
             const UT_Matrix4D&        houXform,
             const GusdContext&        ctxt,
             GusdSimpleXformCache&     xformCache );
+
+    void updateGroupActiveFromGTPrim( 
+            const UsdGeomImageable&     destPrim,
+            const GT_PrimitiveHandle&   sourcePrim,
+            UsdTimeCode                 time );
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

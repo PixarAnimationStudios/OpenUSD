@@ -291,12 +291,15 @@ GusdPrimWrapper::redefine(
 
 bool 
 GusdPrimWrapper::updateFromGTPrim(
-    const GT_PrimitiveHandle&,
+    const GT_PrimitiveHandle&  sourcePrim,
     const UT_Matrix4D&         houXform,
     const GusdContext&         ctxt,
     GusdSimpleXformCache&      xformCache)
-{ 
-    return false; 
+{
+    // Set the active state of the UsdPrim if any "usdactive" attributes exist
+    updateActiveFromGTPrim(sourcePrim, ctxt.time);
+
+    return true;
 }
 
 void
@@ -341,6 +344,24 @@ GusdPrimWrapper::updateVisibilityFromGTPrim(
             setVisibility(UsdGeomTokens->inherited, time);
         } else {
             setVisibility(UsdGeomTokens->invisible, time);
+        }
+    }
+}
+
+void
+GusdPrimWrapper::updateActiveFromGTPrim(
+        const GT_PrimitiveHandle& sourcePrim,
+        UsdTimeCode time)
+{
+    UsdPrim prim = getUsdPrimForWrite().GetPrim();
+
+    GT_Owner attrOwner;
+    GT_DataArrayHandle houAttr
+        = sourcePrim->findAttribute("usdactive", attrOwner, 0);
+    if (houAttr) {
+        int active = houAttr->getI32(0);
+        if ((bool)active != prim.IsActive()) {
+            prim.SetActive((bool)active);            
         }
     }
 }

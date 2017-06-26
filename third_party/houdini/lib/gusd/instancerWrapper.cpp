@@ -1054,10 +1054,11 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         // and prototype relationships.
         filter.appendPattern(GT_OWNER_POINT,
                 "^__* ^orient ^rot ^scale ^instancepath ^usdinstancepath \
-                 ^usdprototypespath ^trans ^up");
-        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^visible");
+                 ^usdprototypespath ^trans ^up ^usdactive");
+        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^visible ^usdactive");
         filter.appendPattern(GT_OWNER_CONSTANT, "^visible ^usdprimpath \
-                 ^instancepath ^usdinstancepath ^usdprototypespath");
+                 ^instancepath ^usdinstancepath ^usdprototypespath \
+                 ^usdactive");
         if(const GT_AttributeListHandle pointAttrs = sourcePrim->getPointAttributes()) {
 
             GusdGT_AttrFilter::OwnerArgs owners;
@@ -1076,7 +1077,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     
     // -------------------------------------------------------------------------
 
-    return true;
+    return GusdPrimWrapper::updateFromGTPrim(sourcePrim, houXform, ctxt, xformCache);
 }
 
 const UsdGeomImageable 

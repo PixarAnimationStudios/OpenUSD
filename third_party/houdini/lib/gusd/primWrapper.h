@@ -264,6 +264,11 @@ protected:
     void updateVisibilityFromGTPrim( const GT_PrimitiveHandle& sourcePrim,
                                      UsdTimeCode time );
 
+    /// Look for a "usdactive" attribute on sourcePrim. UsdPrim::SetActive
+    /// based on this value. If attribute doesn't exist, do nothing.
+    void updateActiveFromGTPrim( const GT_PrimitiveHandle& sourcePrim,
+                                 UsdTimeCode time );
+
     void updateTransformFromGTPrim( const GfMatrix4d &xform, UsdTimeCode time, bool force );
 
     bool updateAttributeFromGTPrim( GT_Owner owner, 
