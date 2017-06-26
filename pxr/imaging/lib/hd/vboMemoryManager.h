@@ -48,6 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdVBOMemoryManager : public HdAggregationStrategy {
 public:
+    HdVBOMemoryManager(bool isImmutable) : _isImmutable(isImmutable) {}
+
     /// Factory for creating HdBufferArray managed by
     /// HdVBOMemoryManager aggregation.
     HD_API
@@ -73,6 +75,9 @@ public:
     virtual size_t GetResourceAllocation(
         HdBufferArraySharedPtr const &bufferArray, 
         VtDictionary &result) const;
+
+private:
+    bool _isImmutable;
 
 protected:
     class _StripedBufferArray;
@@ -102,6 +107,8 @@ protected:
         HD_API
         virtual bool IsAssigned() const;
 
+        /// Returns true if this bar is marked as immutable.
+        virtual bool IsImmutable() const;
 
         /// Resize memory area for this range. Returns true if it causes container
         /// buffer reallocation.
@@ -222,7 +229,9 @@ protected:
     public:
         /// Constructor.
         HD_API
-        _StripedBufferArray(TfToken const &role, HdBufferSpecVector const &bufferSpecs);
+        _StripedBufferArray(TfToken const &role,
+                            HdBufferSpecVector const &bufferSpecs,
+                            bool isImmutable);
 
         /// Destructor. It invalidates _rangeList
         HD_API

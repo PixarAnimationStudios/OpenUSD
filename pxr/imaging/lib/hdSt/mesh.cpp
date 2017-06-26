@@ -67,6 +67,7 @@ HdStMesh::HdStMesh(SdfPath const& id,
     : HdMesh(id, instancerId)
     , _topology()
     , _topologyId(0)
+    , _vertexPrimvarId(0)
     , _customDirtyBitsInUse(0)
     , _doubleSided(false)
     , _packedNormals(IsEnabledPackedNormals())
@@ -697,47 +698,99 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         return;
     }
 
+    // new buffer specs
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
+    HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+
     HdBufferArrayRangeSharedPtr const &bar = drawItem->GetVertexPrimVarRange();
     if ((!bar) || (!bar->IsValid())) {
-        // new buffer specs
-        HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+        // allocate new range
+        HdBufferArrayRangeSharedPtr range;
+        if (_IsEnabledSharedVertexPrimvar()) {
+            // see if we can share an immutable primvar range
+            // include topology and other topological computations
+            // in the sharing id so that we can take into account
+            // sharing of computed primvar data.
+            _vertexPrimvarId = _ComputeSharedPrimvarId(_topologyId,
+                                                       sources,
+                                                       computations);
 
-        // allocate new range.
-        HdBufferArrayRangeSharedPtr range =
-            resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+            bool isFirstInstance = true;
+            range = _GetSharedPrimvarRange(_vertexPrimvarId,
+                                           bufferSpecs, nullptr,
+                                           &isFirstInstance);
+            if (!isFirstInstance) {
+                // this is not the first instance, skip redundant
+                // sources and computations.
+                sources.clear();
+                computations.clear();
+            }
+
+        } else {
+            range = resourceRegistry->AllocateNonUniformBufferArrayRange(
+                    HdTokens->primVar, bufferSpecs);
+        }
 
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(), range);
+
     } else {
-        // already have a valid range.
-        if (isNew) {
+        // already have a valid range
+        HdBufferArrayRangeSharedPtr range = bar;
+        if (bar->IsImmutable() && _IsEnabledSharedVertexPrimvar()) {
+            if (isNew) {
+                // see if we can share an immutable buffer primvar range
+                // include our existing sharing id so that we can take
+                // into account previously committed sources along
+                // with our new sources and computations.
+                _vertexPrimvarId = _ComputeSharedPrimvarId(_vertexPrimvarId,
+                                                           sources,
+                                                           computations);
+
+                bool isFirstInstance = true;
+                range = _GetSharedPrimvarRange(_vertexPrimvarId,
+                                               bufferSpecs, bar,
+                                               &isFirstInstance);
+                if (!isFirstInstance) {
+                    // this is not the first instance, skip redundant
+                    // sources and computations.
+                    sources.clear();
+                    computations.clear();
+                }
+
+            } else {
+                // something is going to change and the existing bar
+                // is immutable, migrate to a mutable buffer array
+                _vertexPrimvarId = 0;
+                range = resourceRegistry->MergeNonUniformBufferArrayRange(
+                            HdTokens->primVar, bufferSpecs, bar);
+            }
+
+        } else if (isNew) {
             // the range was created by other repr. check compatibility.
-            HdBufferSpecVector bufferSpecs;
-            HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
-            HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+            range = resourceRegistry->MergeNonUniformBufferArrayRange(
+                        HdTokens->primVar, bufferSpecs, bar);
+        }
 
-            HdBufferArrayRangeSharedPtr range =
-                resourceRegistry->MergeNonUniformBufferArrayRange(
-                    HdTokens->primVar, bufferSpecs,
-                    drawItem->GetVertexPrimVarRange());
-
+        if (range != bar) {
             _sharedData.barContainer.Set(
                 drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(), range);
 
             // If buffer migration actually happens, the old buffer will no
             // longer be needed, and GC is required to reclaim their memory.
             // But we don't trigger GC here for now, since it ends up
-            // to make all collections dirty (see HdEngine::Draw), which can be
-            // expensive.
+            // to make all collections dirty (see HdEngine::Draw),
+            // which can be expensive.
             // (in other words, we should fix bug 103767:
             //  "Optimize varying topology buffer updates" first)
             //
             // if (range != bar) {
             //    _GetRenderIndex().GetChangeTracker().SetGarbageCollectionNeeded();
             // }
+
+            // set deep invalidation to rebuild draw batch
+            sceneDelegate->GetRenderIndex().GetChangeTracker().MarkShaderBindingsDirty();
         }
     }
 

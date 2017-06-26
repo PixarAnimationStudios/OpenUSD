@@ -60,7 +60,8 @@ class HdBufferArray : public boost::enable_shared_from_this<HdBufferArray>,
 public:
     HD_API
     HdBufferArray(TfToken const &role,
-                  TfToken const garbageCollectionPerfToken);
+                  TfToken const garbageCollectionPerfToken,
+                  bool isImmutable=false);
 
     HD_API
     virtual ~HdBufferArray();
@@ -120,6 +121,11 @@ public:
         return _needsReallocation;
     }
 
+    /// Returns true if this buffer array is marked as immutable.
+    bool IsImmutable() const {
+        return _isImmutable;
+    }
+
 protected:
     /// Dirty bit to set when the ranges attached to the buffer
     /// changes.  If set Reallocate() should be called to clean it.
@@ -151,6 +157,7 @@ private:
     size_t _version;
 
     size_t             _maxNumRanges;
+    bool               _isImmutable;
 };
 
 

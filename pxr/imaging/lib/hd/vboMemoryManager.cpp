@@ -56,7 +56,7 @@ HdVBOMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs)
 {
     return boost::make_shared<HdVBOMemoryManager::_StripedBufferArray>(
-        role, bufferSpecs);
+        role, bufferSpecs, _isImmutable);
 }
 
 
@@ -136,8 +136,9 @@ HdVBOMemoryManager::GetResourceAllocation(
 // ---------------------------------------------------------------------------
 HdVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
-    : HdBufferArray(role, HdPerfTokens->garbageCollectedVbo),
+    HdBufferSpecVector const &bufferSpecs,
+    bool isImmutable)
+    : HdBufferArray(role, HdPerfTokens->garbageCollectedVbo, isImmutable),
       _needsCompaction(false),
       _totalCapacity(0),
       _maxBytesPerElement(0)
@@ -559,6 +560,12 @@ HdVBOMemoryManager::_StripedBufferArrayRange::IsAssigned() const
     return (_stripedBufferArray != nullptr);
 }
 
+bool
+HdVBOMemoryManager::_StripedBufferArrayRange::IsImmutable() const
+{
+    return (_stripedBufferArray != nullptr)
+         && _stripedBufferArray->IsImmutable();
+}
 
 bool
 HdVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)

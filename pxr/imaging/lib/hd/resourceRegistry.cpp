@@ -57,14 +57,17 @@ TF_INSTANTIATE_SINGLETON(HdResourceRegistry);
 
 HdResourceRegistry::HdResourceRegistry() :
     _nonUniformAggregationStrategy(),
+    _nonUniformImmutableAggregationStrategy(),
     _uniformUboAggregationStrategy(),
     _uniformSsboAggregationStrategy(),
     _singleAggregationStrategy(),
     _numBufferSourcesToResolve(0)
 {
-    // default aggregation strategy for varying (vertex, varying) primvars
+    // default aggregation strategies for varying (vertex, varying) primvars
     _nonUniformAggregationStrategy.reset(
-        new HdVBOMemoryManager());
+        new HdVBOMemoryManager(/*isImmutable=*/false));
+    _nonUniformImmutableAggregationStrategy.reset(
+        new HdVBOMemoryManager(/*isImmutable=*/true));
 
     // default aggregation strategy for uniform on SSBO (for primvars)
     _uniformSsboAggregationStrategy.reset(
@@ -94,6 +97,17 @@ HdResourceRegistry::AllocateNonUniformBufferArrayRange(
 {
     return _nonUniformBufferArrayRegistry.AllocateRange(
                                     _nonUniformAggregationStrategy.get(),
+                                    role,
+                                    bufferSpecs);
+}
+
+HdBufferArrayRangeSharedPtr
+HdResourceRegistry::AllocateNonUniformImmutableBufferArrayRange(
+    TfToken const &role,
+    HdBufferSpecVector const &bufferSpecs)
+{
+    return _nonUniformImmutableBufferArrayRegistry.AllocateRange(
+                                    _nonUniformImmutableAggregationStrategy.get(),
                                     role,
                                     bufferSpecs);
 }
@@ -147,8 +161,8 @@ HdResourceRegistry::MergeBufferArrayRange(
     HdBufferSpecVector oldBufferSpecs;
     range->AddBufferSpecs(&oldBufferSpecs);
 
-    // compare bufferspec
-    if (!HdBufferSpec::IsSubset(newBufferSpecs, oldBufferSpecs)) {
+    // immutable ranges should always be migrated, otherwise compare bufferspec
+    if (range->IsImmutable() || !HdBufferSpec::IsSubset(newBufferSpecs, oldBufferSpecs)) {
         // create / moveto the new buffer array.
 
         HdComputationVector computations;
@@ -210,6 +224,16 @@ HdResourceRegistry::MergeNonUniformBufferArrayRange(
                                  role, newBufferSpecs, range);
 }
 
+HdBufferArrayRangeSharedPtr
+HdResourceRegistry::MergeNonUniformImmutableBufferArrayRange(
+    TfToken const &role,
+    HdBufferSpecVector const &newBufferSpecs,
+    HdBufferArrayRangeSharedPtr const &range)
+{
+    return MergeBufferArrayRange(_nonUniformImmutableAggregationStrategy.get(),
+                                 _nonUniformImmutableBufferArrayRegistry,
+                                 role, newBufferSpecs, range);
+}
 HdBufferArrayRangeSharedPtr
 HdResourceRegistry::MergeUniformBufferArrayRange(
     TfToken const &role,
@@ -460,6 +484,8 @@ HdResourceRegistry::Commit()
         //
         _nonUniformBufferArrayRegistry.ReallocateAll(
             _nonUniformAggregationStrategy.get());
+        _nonUniformImmutableBufferArrayRegistry.ReallocateAll(
+            _nonUniformImmutableAggregationStrategy.get());
         _uniformUboBufferArrayRegistry.ReallocateAll(
             _uniformUboAggregationStrategy.get());
         _uniformSsboBufferArrayRegistry.ReallocateAll(
@@ -579,10 +605,15 @@ HdResourceRegistry::GarbageCollect()
     // reset index range perf counters
     HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopologyRange, numIndexRange);
 
+    // reset shared primvar range perf counter
+    size_t numSharedPrimvarRanges = _primvarRangeRegistry.GarbageCollect();
+    HD_PERF_COUNTER_SET(HdPerfTokens->instPrimvarRange, numSharedPrimvarRanges);
+
     // cleanup buffer array
     // buffer array retains weak_ptrs of range. All unused ranges should be
     // deleted (expired) at this point.
     _nonUniformBufferArrayRegistry.GarbageCollect();
+    _nonUniformImmutableBufferArrayRegistry.GarbageCollect();
     _uniformUboBufferArrayRegistry.GarbageCollect();
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
@@ -609,7 +640,9 @@ HdResourceRegistry::GetResourceAllocation() const
 
     size_t nonUniformSize   = 
         _nonUniformBufferArrayRegistry.GetResourceAllocation(
-            _nonUniformAggregationStrategy.get(), result);
+            _nonUniformAggregationStrategy.get(), result) +
+        _nonUniformImmutableBufferArrayRegistry.GetResourceAllocation(
+            _nonUniformImmutableAggregationStrategy.get(), result);
     size_t uboSize          = 
         _uniformUboBufferArrayRegistry.GetResourceAllocation(
             _uniformUboAggregationStrategy.get(), result);
@@ -790,6 +823,14 @@ HdResourceRegistry::RegisterBasisCurvesIndexRange(HdTopology::ID id,
 }
 
 std::unique_lock<std::mutex>
+HdResourceRegistry::RegisterPrimvarRange(HdTopology::ID id,
+		        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
+{
+    return _Register(id, _primvarRangeRegistry,
+                     HdPerfTokens->instPrimvarRange, instance);
+}
+
+std::unique_lock<std::mutex>
 HdResourceRegistry::RegisterGeometricShader(HdShaderKey::ID id,
                         HdInstance<HdShaderKey::ID, Hd_GeometricShaderSharedPtr> *instance)
 {
@@ -831,6 +872,7 @@ std::ostream &operator <<(std::ostream &out,
     out << "HdResourceRegistry " << &self << " :\n";
 
     out << self._nonUniformBufferArrayRegistry;
+    out << self._nonUniformImmutableBufferArrayRegistry;
     out << self._uniformUboBufferArrayRegistry;
     out << self._uniformSsboBufferArrayRegistry;
     out << self._singleBufferArrayRegistry;

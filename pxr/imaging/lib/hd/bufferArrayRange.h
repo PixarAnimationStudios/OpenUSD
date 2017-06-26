@@ -67,6 +67,9 @@ public:
     /// Returns true is the range has been assigned to a buffer
     virtual bool IsAssigned() const = 0;
 
+    /// Returns true if this range is marked as immutable.
+    virtual bool IsImmutable() const = 0;
+
     /// Resize memory area for this range. Returns true if it causes container
     /// buffer reallocation.
     virtual bool Resize(int numElements) = 0;

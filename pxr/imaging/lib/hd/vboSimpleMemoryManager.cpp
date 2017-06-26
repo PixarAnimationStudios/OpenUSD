@@ -436,6 +436,13 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::IsAssigned() const
     return (_bufferArray != nullptr);
 }
 
+bool
+HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::IsImmutable() const
+{
+    return (_bufferArray != nullptr)
+         && _bufferArray->IsImmutable();
+}
+
 void
 HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     HdBufferSourceSharedPtr const &bufferSource)

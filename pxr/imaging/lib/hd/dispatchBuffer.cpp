@@ -49,6 +49,11 @@ public:
         return (_buffer != nullptr);
     }
 
+    /// Dispatch buffer array range is always mutable
+    virtual bool IsImmutable() const {
+        return false;
+    }
+
     /// Resize memory area for this range. Returns true if it causes container
     /// buffer reallocation.
     virtual bool Resize(int numElements) {

@@ -602,12 +602,18 @@ HdInterleavedMemoryManager::_StripedInterleavedBufferRange::~_StripedInterleaved
 }
 
 
-bool HdInterleavedMemoryManager::_StripedInterleavedBufferRange::IsAssigned() const
+bool
+HdInterleavedMemoryManager::_StripedInterleavedBufferRange::IsAssigned() const
 {
     return (_stripedBuffer != nullptr);
 }
 
-
+bool
+HdInterleavedMemoryManager::_StripedInterleavedBufferRange::IsImmutable() const
+{
+    return (_stripedBuffer != nullptr)
+         && _stripedBuffer->IsImmutable();
+}
 
 
 bool

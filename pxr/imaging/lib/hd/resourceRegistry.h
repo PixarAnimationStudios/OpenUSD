@@ -88,6 +88,12 @@ public:
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs);
 
+    /// Allocate new immutable non uniform buffer array range
+    HD_API
+    HdBufferArrayRangeSharedPtr AllocateNonUniformImmutableBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs);
+
     /// Allocate new uniform buffer range
     HD_API
     HdBufferArrayRangeSharedPtr AllocateUniformBufferArrayRange(
@@ -121,6 +127,13 @@ public:
     /// MergeBufferArrayRange of non uniform buffer.
     HD_API
     HdBufferArrayRangeSharedPtr MergeNonUniformBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayRangeSharedPtr const &range);
+
+    /// MergeBufferArrayRange of non uniform immutable buffer.
+    HD_API
+    HdBufferArrayRangeSharedPtr MergeNonUniformImmutableBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &newBufferSpecs,
         HdBufferArrayRangeSharedPtr const &range);
@@ -179,6 +192,13 @@ public:
         _nonUniformAggregationStrategy.reset(strategy);
     }
 
+    /// Set the aggregation strategy for non uniform immutable parameters
+    /// (vertex, varying, facevarying)
+    /// Takes ownership of the passed in strategy object.
+    void SetNonUniformImmutableAggregationStrategy(HdAggregationStrategy *strategy) {
+        _nonUniformImmutableAggregationStrategy.reset(strategy);
+    }
+
     /// Set the aggregation strategy for uniform (shader globals)
     /// Takes ownership of the passed in strategy object.
     void SetUniformAggregationStrategy(HdAggregationStrategy *strategy) {
@@ -231,6 +251,13 @@ public:
 
     HD_API
     std::unique_lock<std::mutex> RegisterBasisCurvesIndexRange(HdTopology::ID id, TfToken const &name,
+         HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
+
+    /// Primvar array range instancing
+    /// Returns the HdInstance pointing to shared HdBufferArrayRange,
+    /// distinguished by given ID.
+    /// *Refer the comment on RegisterTopology for the same consideration.
+    std::unique_lock<std::mutex> RegisterPrimvarRange(HdTopology::ID id,
          HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
 
     /// Registere a geometric shader.
@@ -292,12 +319,14 @@ private:
 
     // aggregated buffer array
     HdBufferArrayRegistry _nonUniformBufferArrayRegistry;
+    HdBufferArrayRegistry _nonUniformImmutableBufferArrayRegistry;
     HdBufferArrayRegistry _uniformUboBufferArrayRegistry;
     HdBufferArrayRegistry _uniformSsboBufferArrayRegistry;
     HdBufferArrayRegistry _singleBufferArrayRegistry;
 
     // current aggregation strategies
     std::unique_ptr<HdAggregationStrategy> _nonUniformAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy> _nonUniformImmutableAggregationStrategy;
     std::unique_ptr<HdAggregationStrategy> _uniformUboAggregationStrategy;
     std::unique_ptr<HdAggregationStrategy> _uniformSsboAggregationStrategy;
     std::unique_ptr<HdAggregationStrategy> _singleAggregationStrategy;
@@ -363,6 +392,10 @@ private:
 
     _TopologyIndexRangeInstanceRegMap _meshTopologyIndexRangeRegistry;
     _TopologyIndexRangeInstanceRegMap _basisCurvesTopologyIndexRangeRegistry;
+
+    typedef HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr>
+        _PrimvarRangeInstance;
+    HdInstanceRegistry<_PrimvarRangeInstance> _primvarRangeRegistry;
 
     // geometric shader registry
     typedef HdInstance<HdShaderKey::ID, Hd_GeometricShaderSharedPtr>

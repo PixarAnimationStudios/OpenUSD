@@ -33,7 +33,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 static std::atomic_size_t _uniqueVersion(0);
 
 HdBufferArray::HdBufferArray(TfToken const &role,
-                             TfToken const garbageCollectionPerfToken) 
+                             TfToken const garbageCollectionPerfToken,
+                             bool isImmutable)
     : _needsReallocation(false),
       _rangeList(),
       _rangeCount(0),
@@ -41,7 +42,8 @@ HdBufferArray::HdBufferArray(TfToken const &role,
       _role(role), 
       _garbageCollectionPerfToken(garbageCollectionPerfToken),
       _version(_uniqueVersion++),   // Atomic
-      _maxNumRanges(1)
+      _maxNumRanges(1),
+      _isImmutable(isImmutable)
 {
     /*NOTHING*/
 }

@@ -142,6 +142,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (instBasisCurvesTopologyRange)              \
     (instMeshTopology)                          \
     (instMeshTopologyRange)                     \
+    (instPrimvarRange)                          \
     (instVertexAdjacency)                       \
     (meshTopology)                              \
     (nonUniformSize)                            \

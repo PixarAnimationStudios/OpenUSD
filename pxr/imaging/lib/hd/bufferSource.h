@@ -71,6 +71,10 @@ public:
     /// note: buffer specs has to be determined before the source resolution.
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const = 0;
 
+    /// Computes and returns a hash value for the underlying data.
+    HD_API
+    virtual size_t ComputeHash() const;
+
     /// Prepare the access of GetData(). This process may include some
     /// computations (e.g. cpu smooth normals).
     /// Important notes: Resolve itself doesn't have to be thread safe, but
@@ -222,6 +226,8 @@ public:
     HD_API
     virtual TfToken const &GetName() const;
     HD_API
+    virtual size_t ComputeHash() const;
+    HD_API
     virtual void const* GetData() const;
     HD_API
     virtual int GetGLComponentDataType() const;
@@ -248,6 +254,8 @@ class HdNullBufferSource : public HdBufferSource {
 public:
     HD_API
     virtual TfToken const &GetName() const;
+    HD_API
+    virtual size_t ComputeHash() const;
     HD_API
     virtual void const* GetData() const;
     HD_API

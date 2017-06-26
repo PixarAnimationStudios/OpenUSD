@@ -143,6 +143,7 @@ private:
     Hd_VertexAdjacencySharedPtr _vertexAdjacency;
 
     HdTopology::ID _topologyId;
+    HdTopology::ID _vertexPrimvarId;
     int _customDirtyBitsInUse;
     bool _doubleSided;
     bool _packedNormals;

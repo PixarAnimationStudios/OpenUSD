@@ -73,6 +73,9 @@ protected:
         HD_API
         virtual bool IsAssigned() const;
 
+        /// Returns true if this range is marked as immutable.
+        virtual bool IsImmutable() const;
+
         /// Resize memory area for this range. Returns true if it causes container
         /// buffer reallocation.
         HD_API
