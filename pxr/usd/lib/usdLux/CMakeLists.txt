@@ -55,5 +55,6 @@ pxr_library(usdLux
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+        schema.usda
 )
 

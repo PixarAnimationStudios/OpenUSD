@@ -38,5 +38,7 @@ pxr_library(usdHydra
 
     RESOURCE_FILES
         plugInfo.json
+        generatedSchema.usda
+        schema.usda
 )
 
