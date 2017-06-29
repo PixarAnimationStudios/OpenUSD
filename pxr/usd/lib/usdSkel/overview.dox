@@ -1,0 +1,10 @@
+/*!
+\page usdSkel_page_front UsdSkel : USD Skeletal Skinning Schemas
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdSkel : USD Skeletal Skinning Schemas
+\publicLib
+\endif
+
+Schemas for encoding and decoding Skeletal skinning deformation for geometry
+in USD.  Detailed documentation coming shortly.
+*/
