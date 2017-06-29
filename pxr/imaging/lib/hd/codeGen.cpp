@@ -593,27 +593,48 @@ Hd_CodeGen::Compile()
         hasTCS = hasTES = false;
     };
 
+    bool shaderCompiled = false;
     // compile shaders
     // note: _vsSource, _fsSource etc are used for diagnostics (see header)
     if (hasVS) {
         _vsSource = _genCommon.str() + _genVS.str();
-        glslProgram->CompileShader(GL_VERTEX_SHADER, _vsSource);
+        if (!glslProgram->CompileShader(GL_VERTEX_SHADER, _vsSource)) {
+            return HdGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
     }
     if (hasFS) {
         _fsSource = _genCommon.str() + _genFS.str();
-        glslProgram->CompileShader(GL_FRAGMENT_SHADER, _fsSource);
+        if (!glslProgram->CompileShader(GL_FRAGMENT_SHADER, _fsSource)) {
+            return HdGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
     }
     if (hasTCS) {
         _tcsSource = _genCommon.str() + _genTCS.str();
-        glslProgram->CompileShader(GL_TESS_CONTROL_SHADER, _tcsSource);
+        if (!glslProgram->CompileShader(GL_TESS_CONTROL_SHADER, _tcsSource)) {
+            return HdGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
     }
     if (hasTES) {
         _tesSource = _genCommon.str() + _genTES.str();
-        glslProgram->CompileShader(GL_TESS_EVALUATION_SHADER, _tesSource);
+        if (!glslProgram->CompileShader(
+                    GL_TESS_EVALUATION_SHADER, _tesSource)) {
+            return HdGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
     }
     if (hasGS) {
         _gsSource = _genCommon.str() + _genGS.str();
-        glslProgram->CompileShader(GL_GEOMETRY_SHADER, _gsSource);
+        if (!glslProgram->CompileShader(GL_GEOMETRY_SHADER, _gsSource)) {
+            return HdGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
+    }
+
+    if (!shaderCompiled) {
+        return HdGLSLProgramSharedPtr();
     }
 
     return glslProgram;
