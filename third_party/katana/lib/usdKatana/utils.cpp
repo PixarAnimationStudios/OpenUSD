@@ -625,6 +625,31 @@ _KTypeAndSizeFromUsdVec3(TfToken const &roleName,
 }
 
 static bool
+_KTypeAndSizeFromUsdVec4(TfToken const &roleName,
+                         const char *typeStr,
+                         FnKat::Attribute *inputTypeAttr, 
+                         FnKat::Attribute *elementSizeAttr)
+{
+    if (roleName == SdfValueRoleNames->Point) {
+        *inputTypeAttr = FnKat::StringAttribute("point4");
+    } else if (roleName == SdfValueRoleNames->Vector) {
+        *inputTypeAttr = FnKat::StringAttribute("vector4");
+    } else if (roleName == SdfValueRoleNames->Normal) {
+        *inputTypeAttr = FnKat::StringAttribute("normal4");
+    } else if (roleName == SdfValueRoleNames->Color) {
+        *inputTypeAttr = FnKat::StringAttribute("color4");
+    } else if (roleName.IsEmpty()) {
+        // We are mimicking the behavior of
+        // _KTypeAndSizeFromUsdVec3 here.
+        *inputTypeAttr = FnKat::StringAttribute(typeStr);
+        *elementSizeAttr = FnKat::IntAttribute(4);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+static bool
 _KTypeAndSizeFromUsdVec2(TfToken const &roleName,
                          FnKat::Attribute *inputTypeAttr, 
                          FnKat::Attribute *elementSizeAttr)
@@ -739,6 +764,22 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         }
         return;
     }
+    if (val.IsHolding<GfVec4f>()) {
+        if (_KTypeAndSizeFromUsdVec4(roleName, "float",
+                                     inputTypeAttr, elementSizeAttr)){
+            const GfVec4f rawVal = val.Get<GfVec4f>();
+            FnKat::FloatBuilder builder(/* tupleSize = */ 4);
+            std::vector<float> vec;
+            vec.resize(4);
+            vec[0] = rawVal[0];
+            vec[1] = rawVal[1];
+            vec[2] = rawVal[2];
+            vec[3] = rawVal[3];
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
     if (val.IsHolding<GfVec2f>()) {
         if (_KTypeAndSizeFromUsdVec2(roleName, inputTypeAttr, elementSizeAttr)){
             const GfVec2f rawVal = val.Get<GfVec2f>();
@@ -762,6 +803,22 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
             vec[0] = rawVal[0];
             vec[1] = rawVal[1];
             vec[2] = rawVal[2];
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
+    if (val.IsHolding<GfVec4d>()) {
+        if (_KTypeAndSizeFromUsdVec4(roleName, "double",
+                                     inputTypeAttr, elementSizeAttr)){
+            const GfVec4d rawVal = val.Get<GfVec4d>();
+            FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
+            std::vector<double> vec;
+            vec.resize(4);
+            vec[0] = rawVal[0];
+            vec[1] = rawVal[1];
+            vec[2] = rawVal[2];
+            vec[3] = rawVal[3];
             builder.set(vec);
             *valueAttr = builder.build();
         }
@@ -875,6 +932,30 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
             std::vector<double> vec;
             _ConvertArrayToVector(rawVal, &vec);
             FnKat::DoubleBuilder builder(/* tupleSize = */ 3);
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
+    if (val.IsHolding<VtArray<GfVec4f> >()) {
+        if (_KTypeAndSizeFromUsdVec4(roleName, "float",
+                                     inputTypeAttr, elementSizeAttr)){
+            const VtArray<GfVec4f> rawVal = val.Get<VtArray<GfVec4f> >();
+            std::vector<float> vec;
+            _ConvertArrayToVector(rawVal, &vec);
+            FnKat::FloatBuilder builder(/* tupleSize = */ 4);
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
+    if (val.IsHolding<VtArray<GfVec4d> >()) {
+        if (_KTypeAndSizeFromUsdVec4(roleName, "double",
+                                     inputTypeAttr, elementSizeAttr)){
+            const VtArray<GfVec4d> rawVal = val.Get<VtArray<GfVec4d> >();
+            std::vector<double> vec;
+            _ConvertArrayToVector(rawVal, &vec);
+            FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
             builder.set(vec);
             *valueAttr = builder.build();
         }
