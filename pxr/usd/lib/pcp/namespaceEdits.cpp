@@ -45,6 +45,7 @@ TF_REGISTRY_FUNCTION(TfEnum)
 {
     TF_ADD_ENUM_NAME(PcpNamespaceEdits::EditPath);
     TF_ADD_ENUM_NAME(PcpNamespaceEdits::EditInherit);
+    TF_ADD_ENUM_NAME(PcpNamespaceEdits::EditSpecializes);
     TF_ADD_ENUM_NAME(PcpNamespaceEdits::EditReference);
     TF_ADD_ENUM_NAME(PcpNamespaceEdits::EditPayload);
     TF_ADD_ENUM_NAME(PcpNamespaceEdits::EditRelocate);
@@ -350,6 +351,11 @@ _AddLayerStackSite(
         case PcpArcTypeLocalInherit:
         case PcpArcTypeGlobalInherit:
             type = PcpNamespaceEdits::EditInherit;
+            break;
+
+        case PcpArcTypeLocalSpecializes:
+        case PcpArcTypeGlobalSpecializes:
+            type = PcpNamespaceEdits::EditSpecializes;
             break;
 
         case PcpArcTypeReference:

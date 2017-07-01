@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/unitTestHelper.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/unitTestNullRenderPass.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 
@@ -198,7 +199,7 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
                                      _reprName);
             col.SetRenderTags(renderTags);
             _geomAndGuidePass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_sceneDelegate->GetRenderIndex(), col));
+                new Hd_UnitTestNullRenderPass(&_sceneDelegate->GetRenderIndex(), col));
         }
         return _geomAndGuidePass;
     } else {
@@ -211,7 +212,7 @@ Hd_TestDriver::GetRenderPass(bool withGuides)
                                         _reprName);
             col.SetRenderTags(renderTags);
             _geomPass = HdRenderPassSharedPtr(
-                new HdRenderPass(&_sceneDelegate->GetRenderIndex(), col));
+                new Hd_UnitTestNullRenderPass(&_sceneDelegate->GetRenderIndex(), col));
         }
         return _geomPass;
     }

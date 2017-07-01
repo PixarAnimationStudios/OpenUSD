@@ -29,7 +29,6 @@
 #include "pxr/base/tf/type.h"
 
 #include "pxr/base/vt/array.h"
-#include "pxr/base/vt/wrapArray.h"
 #include "pxr/base/vt/value.h"
 
 #include <iostream>
@@ -47,7 +46,6 @@ TF_REGISTRY_FUNCTION(TfType)
 TF_REGISTRY_FUNCTION(VtValue)
 {
     VtValue::RegisterSimpleCast<std::string, SdfAssetPath>();
-    VtRegisterValueCastsFromPythonSequencesToArray<SdfAssetPath>();
 }
 
 TF_DEFINE_PRIVATE_TOKENS(

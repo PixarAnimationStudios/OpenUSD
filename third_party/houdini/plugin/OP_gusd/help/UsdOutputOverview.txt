@@ -1,0 +1,119 @@
+
+#type: include
+#tags: usd
+
+= USD Output Overview =
+
+"""USD ROP Nodes"""
+
+Exporting USD from Houdini is handled by a few ROP nodes that can be wired together
+using ROP networks in flexible ways.
+
+Our most common workflows involve an existing USD scene that we want to either add 
+new geometry to or to modify some existing geometry. The ["USD Output" node|/nodes/out/pixar--usdoutput] 
+is used to write the bulk of the geometry and then a ["USD Reference" node|/nodes/out/pixar--usdreference] 
+or a ["USD Sublayer" node|/nodes/out/pixar--usdlayer] is used to add the geometry 
+into the existing scene. A USD reference is used when we are adding new
+geometry to a scene and sublayers are used to modify existing geometry.
+
+If you can run a Houdini job on many machines at once, it is often very efficient to 
+run multiple frames in parallel and write the results to per frame files. When we
+do this, we use a ["USD coalesce" node|/nodes/out/UsdCoalesce] to build a "USD clip". 
+These clips join the per frame data so that it looks to clients exactly the same 
+as if they had been written to a single file.
+
+=== Modifying USD ====
+
+To modify existing USD geometry, the ["USD Output" ROP|/nodes/out/pixar--usdoutput] has an "overlay"
+mode. In overlay mode, the ROP does not write a full USD prim definition but instead 
+writes attribute definitions that replace the original attributes. For example, 
+to deform a mesh, the ROP writes new attribute definitions for just the point
+positions.
+
+The ROP has a few overlay options that can be used in combination, points, 
+transforms, and primvars. In addition there is an "overlay all" option. This is 
+used when you need to replace the entire primitive with a new one. This is needed 
+if you are changing the topology of a primitive.
+
+To modify USD, the original geometry is loaded into Houdini as "USD Packed Primitives". 
+If we are rigidly transforming the geometry then it should be possible to keep 
+the geometry packed. To just modify the transforms we can pass these prims directly 
+to the ["USD Output" ROP|/nodes/out/pixar--usdoutput] and select the "overlay transforms" option on the ROP.
+
+To deform the geometry, we need to unpack the USD geometry into native Houdini geometry. 
+The unpack will add a "usdprimpath" primitive attribute to the geometry. The ROP will
+use this attribute to know which prims to write. The "overlay points" option on the 
+ROP can be used to modify just the geometry's points. You can use the standard Houdini [unpack SOP|/nodes/sop/unpack] SOP or 
+[USD unpack SOP|/nodes/sop/pixar--usdunpack] if you require custom options.
+
+=== Naming Geometry ===
+
+In USD, all geometry is organized into a name hierarchy but in Houdini the geometry
+is a flat list of primitives in a SOP context. On output we need to assign a 
+path to each primitive. 
+
+If geometry primitives don't have name attributes, the ROP will automatically name the 
+primitives. By default, each prim will named something 
+like $PREFIX/mesh_0, where $PREFIX is the value of the "Prefix" parameter on the ROP. 
+
+To use attributes to name primitives, the "Path attribute" parameter 
+on the ROP sets which attribute to use. The default is "usdprimpath". 
+
+If you are modifying existing geometry, your geometry needs to know the name of the thing
+that it is modifying. This name can either be a ["USD Packed Prim"|/USDPackedPrims] intrinsic or a 
+name attribute.
+
+The value in a name attribute can either be an absolute or relative. Absolute names
+have a leading slash. If you are importing geometry and modifying it, the name 
+will be absolute. 
+
+If the name attribute contains a relative name, the ROP will build the full path 
+to the prim using the "prefix" parameter and the packed prim hierarchy. 
+
+One simple use for relative names is to partition geometry. If you are outputting
+a collection of polygon primitives, they will be partitioned into meshes based 
+on the name attribute.
+
+You can build geometry hierarchies by repeatedly using the pack node and assigning a 
+relative name to each packed prim.
+
+=== Primvars ===
+
+Any Houdini attribute that is not written as part of the basic schema for a 
+prim, can be written as a prim var. The ROP has parameters that can be used
+to filter the attributes.
+
+=== Writing subdivision surfaces ===
+
+When writing meshes, the ROP looks for parameters on the OBJ node indicating 
+that the meshes should be written as subdivision surfaces. These parms can 
+be added using the "Edit Rendering Parameters" entry in the "gear" menu. The
+parameters for either Mantra or PrMan will work.
+
+=== Purpose ===
+
+USD prims can have an attribute called "purpose". As a renderer iterates over the
+USD prim hierarchy, if it finds a prim that has a purpose that it doesn't care about,
+it skips that prim. So we can create a two sibling groups, one called "render" and
+one called "proxy". The renderer can choose to ignore one of them. 
+
+There is a OTL called UsdBindProxy that demonstrates this.
+
+=== Writing USD Packed Prims as references ===
+
+USD packed prims are a reference to a prim in a USD file with an applied transform. 
+When a USD packed prim is passed to the Usd Output ROP, it writes the reference with 
+the transform. This reference can be a normal USD reference or it can be a entry
+in a point instancer.
+
+=== Granularity ===
+
+It can sometimes be very efficient to execute a SOP network in parallel using 
+one process to compute each frame. In this case we need to be able to write each
+frame individually and then coalesce the results with a post process.
+
+
+
+=== Partitioning Meshes ===
+
+

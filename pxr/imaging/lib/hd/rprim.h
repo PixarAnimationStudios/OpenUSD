@@ -35,8 +35,10 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/gf/range3d.h"
+#include "pxr/base/arch/inttypes.h"
 
 #include <boost/shared_ptr.hpp>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,6 +49,13 @@ class HdRepr;
 class HdRenderParam;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
+
+typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
+typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
+typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceVector;
+typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
+typedef std::vector<HdComputationSharedPtr> HdComputationVector;
 
 /// \class HdRprim
 ///
@@ -161,13 +170,24 @@ protected:
                                    HdDirtyBits *dirtyBits);
 
     HD_API
-    void _PopulateInstancePrimVars(HdSceneDelegate *sceneDelegate,
-                                   HdDrawItem *drawItem,
-                                   HdDirtyBits *dirtyBits,
-                                   int instancePrimVarSlot);
+    VtMatrix4dArray _GetInstancerTransforms(HdSceneDelegate* delegate);
+
+    // methods to assist allocating and migrating shared primvar ranges
+    HD_API
+    static bool _IsEnabledSharedVertexPrimvar();
 
     HD_API
-    VtMatrix4dArray _GetInstancerTransforms(HdSceneDelegate* delegate);
+    uint64_t
+    _ComputeSharedPrimvarId(uint64_t baseId,
+                      HdBufferSourceVector const &sources,
+                      HdComputationVector const &computations) const;
+
+    HD_API
+    HdBufferArrayRangeSharedPtr
+    _GetSharedPrimvarRange(uint64_t primvarId,
+                           HdBufferSpecVector const &bufferSpecs,
+                           HdBufferArrayRangeSharedPtr const &existing,
+                           bool * isFirstInstance) const;
 
     HD_API
     TfToken _GetReprName(HdSceneDelegate* delegate,

@@ -26,49 +26,112 @@
 #include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readPointInstancer.h"
+#include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/pointInstancer.h"
+#include "pxr/base/gf/matrix4d.h"
+
+#include "pxrUsdInShipped/pointInstancerUtils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, interface)
 {
-    // Attrs that are modified.
+    UsdGeomPointInstancer instancer =
+        UsdGeomPointInstancer(privateData.GetUsdPrim());
+
+    // Generate input attr map for consumption by the reader.
     //
-    PxrUsdKatanaAttrMap attrs;
+    PxrUsdKatanaAttrMap inputAttrMap;
+
+    // Get the instancer's Katana location.
+    //
+    inputAttrMap.set("outputLocationPath",
+            FnKat::StringAttribute(interface.getOutputLocationPath()));
+
+    //--------------------------------------------------------------------------
+    // XXX At some point, instance matrix computation will get folded into
+    // PxrUsdKatanaReadPointInstancer; until then, do the computation here and
+    // add the result to the input attr map for the reader to use.
+    //
+    {
+        const double currentTime = privateData.GetCurrentTime();
+
+        // Gather frame-relative sample times and add them to the current time
+        // to generate absolute sample times.
+        //
+        const std::vector<double> &motionSampleTimes =
+            privateData.GetMotionSampleTimes(instancer.GetPositionsAttr());
+        const size_t numSamples = motionSampleTimes.size();
+        std::vector<UsdTimeCode> sampleTimes(numSamples);
+        for (size_t a = 0; a < numSamples; ++a) {
+            sampleTimes[a] = UsdTimeCode(currentTime + motionSampleTimes[a]);
+        }
+
+        // Compute the instancer's instance transforms.
+        //
+        std::vector<std::vector<GfMatrix4d>> xformSamples(numSamples);
+        size_t numXformSamples = 0;
+        PxrUsdInShipped_PointInstancerUtils::
+            ComputeInstanceTransformsAtTime(
+                xformSamples, numXformSamples, instancer, sampleTimes,
+                UsdTimeCode(currentTime));
+        if (numXformSamples == 0) {
+            interface.setAttr("type", FnKat::StringAttribute("error"));
+            interface.setAttr("errorMessage", FnKat::StringAttribute(
+                                                  "Could not compute "
+                                                  "sample/topology-invarying "
+                                                  "instance transform matrix"));
+            return;
+        }
+
+        size_t numInstances = xformSamples[0].size();
+
+        // Add the result to the input attr map.
+        //
+        FnKat::DoubleBuilder instanceMatrixBldr(16);
+        for (size_t a = 0; a < numXformSamples; ++a) {
+
+            double relSampleTime = motionSampleTimes[a];
+
+            // Shove samples into the builder at the frame-relative sample time.
+            // If motion is backwards, make sure to reverse time samples.
+            std::vector<double> &matVec = instanceMatrixBldr.get(
+                privateData.IsMotionBackward()
+                    ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
+                    : relSampleTime);
+
+            matVec.reserve(16 * numInstances);
+            for (size_t i = 0; i < numInstances; ++i) {
+
+                GfMatrix4d instanceXform = xformSamples[a][i];
+                const double *matArray = instanceXform.GetArray();
+
+                for (int j = 0; j < 16; ++j) {
+                    matVec.push_back(matArray[j]);
+                }
+            }
+        }
+        inputAttrMap.set("instanceMatrix", instanceMatrixBldr.build());
+    }
+    //--------------------------------------------------------------------------
+
+    // Generate output attr maps.
+    //
+    // Instancer attr map: describes the instancer itself
+    // Sources attr map: describes the instancer's "instance source" children.
+    // Instances attr map: describes the instancer's "instance array" child.
+    //
+    PxrUsdKatanaAttrMap instancerAttrMap;
     PxrUsdKatanaAttrMap sourcesAttrMap;
     PxrUsdKatanaAttrMap instancesAttrMap;
-
-    // Attrs that are parsed.
-    //
-    PxrUsdKatanaAttrMap instancerOpArgsAttrMap;
-
-    // Transfer instancer args.
-    //
-    FnKat::GroupAttribute opArgsAttr =
-            interface.getAttr("usdPointInstancer.opArgs");
-    for (int64_t i = 0; i < opArgsAttr.getNumberOfChildren(); ++i)
-    {
-        instancerOpArgsAttrMap.set(
-            opArgsAttr.getChildName(i),
-            opArgsAttr.getChildByIndex(i));
-    }
-
-    // Add additional args.
-    //
-    instancerOpArgsAttrMap.set("outputLocationPath",
-            FnKat::StringAttribute(interface.getOutputLocationPath()));
-    instancerOpArgsAttrMap.set("spruneEnabled",
-            interface.getAttr("info.sprune.enabled", "/root"));
-
     PxrUsdKatanaReadPointInstancer(
-            UsdGeomPointInstancer(privateData.GetUsdPrim()),
-            privateData, attrs, sourcesAttrMap, instancesAttrMap,
-            instancerOpArgsAttrMap);
+            instancer, privateData, instancerAttrMap, sourcesAttrMap,
+            instancesAttrMap, inputAttrMap);
 
-    // Send regular attrs directly to the interface.
+    // Send instancer attrs directly to the interface.
     //
-    attrs.toInterface(interface);
+    instancerAttrMap.toInterface(interface);
 
     // Early exit if any errors were encountered.
     //
@@ -78,24 +141,23 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
         return;
     }
 
-    // Build out the attrs that were modified.
+    // Build the other output attr maps.
     //
-    FnKat::GroupAttribute sourcesAttrs = sourcesAttrMap.build();
-    FnKat::GroupAttribute instancesAttrs = instancesAttrMap.build();
-    if (not sourcesAttrs.isValid() or not instancesAttrs.isValid())
+    FnKat::GroupAttribute sourcesSSCAttrs = sourcesAttrMap.build();
+    FnKat::GroupAttribute instancesSSCAttrs = instancesAttrMap.build();
+    if (not sourcesSSCAttrs.isValid() or not instancesSSCAttrs.isValid())
     {
         return;
     }
 
-    // Tell UsdIn to skip all children; we'll create them ourselves.
+    // Tell UsdIn to skip all children; we'll create them ourselves below.
     //
     interface.setAttr("__UsdIn.skipAllChildren", FnKat::IntAttribute(1));
 
-    // Create 'sources' child using BuildIntermediate with the built-out
-    // sourcesAttrMap.
+    // Create "instance source" children using BuildIntermediate.
     //
     PxrUsdKatanaUsdInArgsRefPtr usdInArgs = privateData.GetUsdInArgs();
-    FnKat::GroupAttribute childAttrs = sourcesAttrs.getChildByName("c");
+    FnKat::GroupAttribute childAttrs = sourcesSSCAttrs.getChildByName("c");
     for (int64_t i = 0; i < childAttrs.getNumberOfChildren(); ++i)
     {
         interface.createChild(
@@ -111,8 +173,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
             PxrUsdKatanaUsdInPrivateData::Delete);
     }
 
-    // Create 'instances' child using StaticSceneCreate with the built-out
-    // instancesAttrMap.
+    // Create "instance array" child using StaticSceneCreate.
     //
-    interface.execOp("StaticSceneCreate", instancesAttrs);
+    interface.execOp("StaticSceneCreate", instancesSSCAttrs);
 }

@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(USDVIEWQ_STATIC)
+#if defined(PXR_STATIC)
 #   define USDVIEWQ_API
 #   define USDVIEWQ_API_TEMPLATE_CLASS(...)
 #   define USDVIEWQ_API_TEMPLATE_STRUCT(...)

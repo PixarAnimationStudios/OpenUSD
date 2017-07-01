@@ -35,7 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class UsdGeomXformable;
 class UsdTimeCode;
 
@@ -60,10 +59,10 @@ struct AnimChannel
 // Writes an MFnTransform
 class MayaTransformWriter : public MayaPrimWriter
 {
-  public:
+public:
 
     PXRUSDMAYA_API
-    MayaTransformWriter(MDagPath & iDag, UsdStageRefPtr stage, const JobExportArgs & iArgs);
+    MayaTransformWriter(const MDagPath & iDag, const SdfPath& uPath, bool instanceSource, usdWriteJobCtx& jobCtx);
     virtual ~MayaTransformWriter() {};
 
     PXRUSDMAYA_API
@@ -73,31 +72,32 @@ class MayaTransformWriter : public MayaPrimWriter
             bool writeAnim);
     
     PXRUSDMAYA_API
-    virtual UsdPrim write(const UsdTimeCode &usdTime);
+    virtual void write(const UsdTimeCode &usdTime);
 
     virtual bool isShapeAnimated()     const { return mIsShapeAnimated; };
 
     const MDagPath& getTransformDagPath() { return mXformDagPath; };
 
-  protected:
+protected:
     PXRUSDMAYA_API
     bool writeTransformAttrs(
             const UsdTimeCode& usdTime, 
             UsdGeomXformable& primSchema);
 
-  private:
+private:
     bool mWriteTransformAttrs;
     MDagPath mXformDagPath;
     bool mIsShapeAnimated;
     std::vector<AnimChannel> mAnimChanList;
+    bool mIsInstanceSource;
 
     size_t mJointOrientOpIndex[3];
     size_t mRotateOpIndex[3];
     size_t mRotateAxisOpIndex[3];
-    
+
 };
 
-typedef shared_ptr < MayaTransformWriter > MayaTransformWriterPtr;
+typedef std::shared_ptr<MayaTransformWriter> MayaTransformWriterPtr;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

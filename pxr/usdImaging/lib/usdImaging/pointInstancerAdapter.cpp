@@ -113,6 +113,32 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     UsdRelationship protosRel = inst.GetPrototypesRel();
     if (!protosRel.GetForwardedTargets(&usdProtoPaths) 
         || usdProtoPaths.empty()) {
+        TF_WARN("Point instancer %s does not have a valid 'prototypes' "
+                "relationship. Not adding it to the render index."
+                , instancerPath.GetText());
+        return SdfPath();
+    }
+
+    // protoIndices is a required property; it is allowed to be empty if
+    // time-varying data is provided via protoIndices.timeSamples. we only
+    // check for its definition  since USD doesn't have a cheap mechanism to
+    // check if an attribute has data
+    UsdAttribute protoIndicesAttr = inst.GetProtoIndicesAttr();
+    if (!protoIndicesAttr.HasValue()) {
+        TF_WARN("Point instancer %s does not have a 'protoIndices'"
+                "attribute. Not adding it to the render index.",
+                instancerPath.GetText());
+        return SdfPath();
+    }
+
+    // positions is a required property; it is allowed to be empty if
+    // time-varying data is provided via positions.timeSamples. we only
+    // check for its definition  since USD doesn't have a cheap mechanism to
+    // check if an attribute has data
+    UsdAttribute positionsAttr = inst.GetPositionsAttr();
+    if (!positionsAttr.HasValue()) {
+        TF_WARN("Point instancer %s does not have a 'positions' attribute. "
+                "Not adding it to the render index.", instancerPath.GetText());
         return SdfPath();
     }
 
@@ -143,8 +169,6 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     TF_DEBUG(USDIMAGING_INSTANCER).Msg("[Add PI] %s\n", instancerPath.GetText());
     index->InsertInstancer(instancerPath, instancerContext);
 
-    UsdAttribute indicesAttr = inst.GetProtoIndicesAttr();
-
     // ---------------------------------------------------------------------- //
     // Main Prototype allocation loop.
     // ---------------------------------------------------------------------- //
@@ -159,16 +183,12 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
         // -------------------------------------------------------------- //
         // Initialize this prototype.
         // -------------------------------------------------------------- //
-        if (!TF_VERIFY(protoIndex < usdProtoPaths.size())) {
-            continue;
-        }
-
         _PrototypeSharedPtr &prototype = instrData.prototypes[protoIndex];
         prototype.reset(new _Prototype());
         prototype->enabled = false;        // initialize as disabled.
         prototype->requiresUpdate = true;
         prototype->protoRootPath = usdProtoPaths[protoIndex];
-        prototype->indices = VtIntArray(1);
+        prototype->indices = VtIntArray(1); // overwritten in _UpdateInstanceMap
 
         UsdPrim protoRootPrim = _GetPrim(prototype->protoRootPath);
         if (!protoRootPrim) {

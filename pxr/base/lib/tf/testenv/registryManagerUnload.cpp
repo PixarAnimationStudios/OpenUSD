@@ -57,7 +57,12 @@ Test_TfRegistryManagerUnload()
     // Compute path to test library.
     std::string libraryPath;
     TF_AXIOM(ArchGetAddressInfo((void*)Test_TfRegistryManagerUnload, &libraryPath, NULL, NULL, NULL));
-    libraryPath = TfGetPathName(libraryPath) + "lib/libTestTfRegistryFunctionPlugin.so";
+    libraryPath = TfGetPathName(libraryPath) +
+                  "lib" ARCH_PATH_SEP
+#if !defined(ARCH_OS_WINDOWS)
+                  "lib"
+#endif
+                  "TestTfRegistryFunctionPlugin" ARCH_LIBRARY_SUFFIX;
 
     // Make sure that this .so exists
     printf("Checking test shared lib: %s\n", libraryPath.c_str());

@@ -481,6 +481,43 @@ public:
     /// @}
     
     // ---------------------------------------------------------------------- //
+    /// \anchor Usd_AttributeColorSpaceAPI
+    /// \name ColorSpace API
+    /// 
+    /// The color space in which a given color or texture valued attribute is 
+    /// authored is set as token-valued metadata 'colorSpace' on the attribute. 
+    /// For color or texture attributes that don't have an authored 'colorSpace'
+    /// value, the fallback color-space is gleaned from whatever color 
+    /// management system is specified by UsdStage::GetColorManagementSystem().
+    /// 
+    /// @{
+    // ---------------------------------------------------------------------- //
+
+    /// Gets the color space in which the attribute is authored.
+    /// \sa SetColorSpace()
+    /// \ref Usd_ColorConfigurationAPI
+    USD_API
+    TfToken GetColorSpace() const;
+
+    /// Sets the color space of the attribute to \p colorSpace.
+    /// \sa GetColorSpace()
+    /// \ref Usd_ColorConfigurationAPI
+    USD_API
+    void SetColorSpace(const TfToken &colorSpace) const;
+
+    /// Returns whether color-space is authored on the attribute.
+    /// \sa GetColorSpace()
+    USD_API
+    bool HasColorSpace() const;
+
+    /// Clears authored color-space value on the attribute.
+    /// \sa SetColorSpace()
+    USD_API
+    bool ClearColorSpace() const;
+
+    /// @}
+
+    // ---------------------------------------------------------------------- //
     // Private Methods and Members 
     // ---------------------------------------------------------------------- //
 private:
@@ -489,7 +526,8 @@ private:
     friend class UsdPrim;
     friend class UsdSchemaBase;
     friend class Usd_PrimData;
-
+    friend struct UsdPrim_AttrConnectionFinder;
+    
     UsdAttribute(const Usd_PrimDataHandle &prim,
                  const SdfPath &proxyPrimPath,
                  const TfToken &attrName)

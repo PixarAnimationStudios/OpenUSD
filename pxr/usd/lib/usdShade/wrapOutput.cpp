@@ -23,11 +23,9 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/parameter.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 
-#include "pxr/usd/usd/conversions.h"
-
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 

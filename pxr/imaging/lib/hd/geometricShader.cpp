@@ -40,15 +40,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 Hd_GeometricShader::Hd_GeometricShader(std::string const &glslfxString,
-                                       int16_t primitiveMode,
-                                       int16_t primitiveIndexSize,
+                                       PrimitiveType primType,
                                        HdCullStyle cullStyle,
                                        HdPolygonMode polygonMode,
                                        bool cullingPass,
                                        SdfPath const &debugId)
     : HdShaderCode()
-    , _primitiveMode(primitiveMode)
-    , _primitiveIndexSize(primitiveIndexSize)
+    , _primType(primType)
     , _cullStyle(cullStyle)
     , _polygonMode(polygonMode)
     , _cullingPass(cullingPass)
@@ -71,8 +69,7 @@ Hd_GeometricShader::Hd_GeometricShader(std::string const &glslfxString,
     _glslfx.reset(new GlfGLSLFX(ss));
     boost::hash_combine(_hash, _glslfx->GetHash());
     boost::hash_combine(_hash, cullingPass);
-    boost::hash_combine(_hash, primitiveMode);
-    boost::hash_combine(_hash, primitiveIndexSize);
+    boost::hash_combine(_hash, primType);
     //
     // note: Don't include cullStyle and polygonMode into the hash.
     //      They are independent from the GLSL program.
@@ -108,8 +105,8 @@ Hd_GeometricShader::BindResources(Hd_ResourceBinder const &binder, int program)
         // don't care -- use renderPass's fallback
     }
 
-    if (_primitiveMode == GL_PATCHES) {
-        glPatchParameteri(GL_PATCH_VERTICES, _primitiveIndexSize);
+    if (GetPrimitiveMode() == GL_PATCHES) {
+        glPatchParameteri(GL_PATCH_VERTICES, GetPrimitiveIndexSize());
     }
 
     if (_polygonMode == HdPolygonModeLine) {
@@ -130,6 +127,95 @@ void
 Hd_GeometricShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     // no-op
+}
+
+GLenum
+Hd_GeometricShader::GetPrimitiveMode() const 
+{
+    GLenum primMode = GL_POINTS;
+
+    switch (_primType)
+    {
+        case PrimitiveType::PRIM_POINTS:
+            primMode = GL_POINTS;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_LINES:
+            primMode = GL_LINES;
+            break;
+        case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+            primMode = GL_TRIANGLES;
+            break;
+        case PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_QUADS:
+            primMode = GL_LINES_ADJACENCY;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_PATCHES:
+        case PrimitiveType::PRIM_MESH_PATCHES:
+            primMode = GL_PATCHES;
+            break;    
+    }
+
+    return primMode;
+}
+
+int
+Hd_GeometricShader::GetPrimitiveIndexSize() const
+{
+    int primIndexSize = 1;
+
+    switch (_primType)
+    {
+        case PrimitiveType::PRIM_POINTS:
+            primIndexSize = 1;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_LINES:
+            primIndexSize = 2;
+            break;
+        case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+            primIndexSize = 3;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_PATCHES:
+        case PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_QUADS:
+            primIndexSize = 4;
+            break;
+        case PrimitiveType::PRIM_MESH_PATCHES:
+            primIndexSize = 16;
+            break;
+    }
+
+    return primIndexSize;
+}
+
+int
+Hd_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
+{
+    int numPrimVerts = 1;
+
+    switch (_primType)
+    {
+        case PrimitiveType::PRIM_POINTS:
+            numPrimVerts = 1;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_LINES:
+            numPrimVerts = 2;
+            break;
+        case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case PrimitiveType::PRIM_BASIS_CURVES_PATCHES:
+        case PrimitiveType::PRIM_MESH_PATCHES: 
+        // for patches with tesselation, input to GS is still a series of tris
+            numPrimVerts = 3;
+            break;
+        case PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_QUADS:
+            numPrimVerts = 4;
+            break;
+    }
+
+    return numPrimVerts;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

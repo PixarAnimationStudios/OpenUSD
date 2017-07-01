@@ -24,6 +24,16 @@
 #
 from pxr import Tf
 
+# On Windows if this script is run with stdout redirected then the C++
+# stdout buffer is different from Python's stdout buffer.  As a result
+# output from Python stdout and C++ stdout will not interleave as
+# expected unless we flush both after each write.  We force flushing
+# in Python here.
+import platform
+if platform.system() == 'Windows':
+    import os, sys
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', 0)
+
 sml = Tf.ScriptModuleLoader()
 
 # Preload all currently known libraries to avoid their output in the test

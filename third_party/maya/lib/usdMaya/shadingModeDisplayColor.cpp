@@ -29,8 +29,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/primvar.h"
-#include "pxr/usd/usdRi/lookAPI.h"
+#include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usdRi/risBxdf.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
 
 #include <maya/MColor.h>
@@ -138,18 +139,16 @@ private:
                 UsdShadeMaterial(context.MakeStandardMaterialPrim(assignments))) {
                 // Create a Diffuse RIS shader for the Material.
                 // Although Maya can't yet make use of it, downstream apps
-                // can make use of Material interface attributes, so create one to
+                // can make use of Material interface inputs, so create one to
                 // drive the shader's color.
                 //
                 // NOTE!  We do not set any values directly on the shaders;
                 // instead we set the values only on the material's interface,
                 // emphasizing that the interface is a value provider for
                 // its shading networks.
-                UsdShadeInterfaceAttribute dispColorIA = material.CreateInterfaceAttribute(
-                    _tokens->displayColor,
-                    SdfValueTypeNames->Color3f);
-                dispColorIA.Set(VtValue(color));
-
+                UsdShadeInput dispColorIA = material.CreateInput(
+                    _tokens->displayColor, SdfValueTypeNames->Color3f);
+                    dispColorIA.Set(VtValue(color));
 
                 UsdPrim materialPrim = material.GetPrim();
                 std::string shaderName = TfStringPrintf("%s_lambert",
@@ -158,31 +157,32 @@ private:
                 UsdRiRisBxdf bxdfSchema = UsdRiRisBxdf::Define(
                     stage, materialPrim.GetPath().AppendChild(shaderPrimName));
                 bxdfSchema.CreateFilePathAttr(VtValue(SdfAssetPath("PxrDiffuse")));
-                UsdShadeParameter diffuse =
-                    bxdfSchema.CreateParameter(_tokens->diffuseColor,
-                                               SdfValueTypeNames->Color3f);
-                UsdRiLookAPI(material).SetInterfaceRecipient(dispColorIA, diffuse);
+                UsdShadeInput diffuse = bxdfSchema.CreateInput(
+                    _tokens->diffuseColor, SdfValueTypeNames->Color3f);
 
+                UsdRiMaterialAPI(material).SetInterfaceInputConsumer(
+                    dispColorIA, diffuse);
 
-                // Make an interface attr for transparency, which we will hook up
+                // Make an interface input for transparency, which we will hook up
                 // to the shader, and a displayOpacity, for any shader that might
                 // want to consume it.  Only author a *value* if we got a
                 // non-zero transparency
-                UsdShadeInterfaceAttribute transparencyIA =
-                    material.CreateInterfaceAttribute(_tokens->transparency,
-                                                      SdfValueTypeNames->Color3f);
-                UsdShadeInterfaceAttribute dispOpacityIA =
-                    material.CreateInterfaceAttribute(_tokens->displayOpacity,
-                                                      SdfValueTypeNames->Float);
+                UsdShadeInput transparencyIA = 
+                    material.CreateInput(_tokens->transparency, 
+                                         SdfValueTypeNames->Color3f);
+                UsdShadeInput dispOpacityIA = 
+                    material.CreateInput(_tokens->displayOpacity, 
+                                         SdfValueTypeNames->Float);
 
                 // PxrDiffuse's transmissionColor may not produce similar
                 // results to MfnLambertShader's transparency, but it's in
                 // the general ballpark...
-                UsdShadeParameter transmission =
-                    bxdfSchema.CreateParameter(_tokens->transmissionColor,
-                                               SdfValueTypeNames->Color3f);
-                UsdRiLookAPI(material).SetInterfaceRecipient(transparencyIA,
-                                                             transmission);
+                UsdShadeInput transmission =
+                    bxdfSchema.CreateInput(_tokens->transmissionColor, 
+                                           SdfValueTypeNames->Color3f);
+                UsdRiMaterialAPI(material).SetInterfaceInputConsumer(
+                    transparencyIA, transmission);
+
                 if (transparencyAvg > 0){
                     transparencyIA.Set(VtValue(transparency));
                     dispOpacityIA.Set(VtValue((float)(1.0-transparencyAvg)));
@@ -218,8 +218,13 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
 
     // Get Display Color from USD (linear) and convert to Display
     GfVec3f linearDisplayColor(.5,.5,.5), linearTransparency(0, 0, 0);
-    if (!shadeMaterial || 
-        !shadeMaterial.GetInterfaceAttribute(_tokens->displayColor).GetAttr().Get(&linearDisplayColor)) {
+
+    UsdShadeInput shadeInput = shadeMaterial ? 
+        shadeMaterial.GetInput(_tokens->displayColor) :
+        UsdShadeInput();
+
+    if (!shadeInput || !shadeInput.Get(&linearDisplayColor)) {
+
         VtArray<GfVec3f> gprimDisplayColor(1);
         if (primSchema && 
             primSchema.GetDisplayColorPrimvar().ComputeFlattened(&gprimDisplayColor)) 
@@ -243,7 +248,7 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
         }
     } else {
         shadeMaterial
-            .GetInterfaceAttribute(_tokens->transparency)
+            .GetInput(_tokens->transparency)
             .GetAttr()
             .Get(&linearTransparency);
         gotDisplayColorAndOpacity = true;

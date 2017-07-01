@@ -615,6 +615,23 @@ void wrapLayer()
              "Return list of muted layers.\n")
              .staticmethod("GetMutedLayers")
 
+        .add_property("colorConfiguration",
+            &This::GetColorConfiguration,
+            &This::SetColorConfiguration,
+            "The color configuration asset-path of this layer.")
+
+        .def("HasColorConfiguration", &This::HasColorConfiguration)
+        .def("ClearColorConfiguration", &This::ClearColorConfiguration)
+
+        .add_property("colorManagementSystem",
+            &This::GetColorManagementSystem,
+            &This::SetColorManagementSystem,
+            "The name of the color management system used to interpret the "
+            "colorConfiguration asset.")
+
+        .def("HasColorManagementSystem", &This::HasColorManagementSystem)
+        .def("ClearColorManagementSystem", &This::ClearColorManagementSystem)
+
         .add_property("comment",
             &This::GetComment,
             &This::SetComment,
@@ -804,6 +821,8 @@ void wrapLayer()
         .def("ApplyRootPrimOrder", &_ApplyRootPrimOrder,
                  return_value_policy<TfPySequenceToList>())
 
+        .setattr("ColorConfigurationKey", SdfFieldKeys->ColorConfiguration)
+        .setattr("ColorManagementSystemKey", SdfFieldKeys->ColorManagementSystem)
         .setattr("CommentKey", SdfFieldKeys->Comment)
         .setattr("DocumentationKey", SdfFieldKeys->Documentation)
         .setattr("HasOwnedSubLayers", SdfFieldKeys->HasOwnedSubLayers)

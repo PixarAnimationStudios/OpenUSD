@@ -116,7 +116,6 @@ public:
     virtual int GetRefineLevel(SdfPath const& id);
 
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
-    virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &shaderId);
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &shaderId);
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId,
                                                TfToken const &paramName);

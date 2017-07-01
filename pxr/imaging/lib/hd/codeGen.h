@@ -85,13 +85,11 @@ public:
     Hd_ResourceBinder::MetaData *GetMetaData() { return &_metaData; }
 
 private:
-    enum { PRIM_OTHER, PRIM_TRI, PRIM_COARSE_QUAD, PRIM_REFINED_QUAD, PRIM_PATCH };
-
     void _GenerateDrawingCoord();
     void _GenerateConstantPrimVar();
     void _GenerateInstancePrimVar();
-    void _GenerateElementPrimVar(int primType);
-    void _GenerateVertexPrimVar(int primType);
+    void _GenerateElementPrimVar();
+    void _GenerateVertexPrimVar();
     void _GenerateShaderParameters();
 
     Hd_ResourceBinder::MetaData _metaData;

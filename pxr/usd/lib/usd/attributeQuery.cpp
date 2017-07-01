@@ -24,7 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/attributeQuery.h"
 
-#include "pxr/usd/usd/conversions.h"
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/usd/sdf/types.h"

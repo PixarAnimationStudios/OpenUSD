@@ -189,9 +189,12 @@ Sdf_LayerRegistry::Find(
         // or a layer relative to the current working directory. Use the
         // look-here-first scheme to check whether the registry holds a
         // layer with the correct absolute identifier.
+        //
+        // We call TfNormPath() so we get a platform independent
+        // representation;  specifically on Windows we get forward slashes.
         const bool isRelativePath = resolver.IsRelativePath(layerPath);
         if (isRelativePath)
-            foundLayer = FindByIdentifier(TfAbsPath(layerPath));
+            foundLayer = FindByIdentifier(TfNormPath(TfAbsPath(layerPath)));
 
         // If the layer path is not relative, and we haven't found a layer
         // yet, look up the layer using the normalized identifier.
@@ -286,6 +289,11 @@ Sdf_LayerRegistry::FindByRealPath(
     searchPath = !resolvedPath.empty() ?
         resolvedPath : Sdf_ComputeFilePath(searchPath);
     searchPath = Sdf_CreateIdentifier(searchPath, arguments);
+
+    // Avoid ambiguity by converting the path to a platform dependent
+    // path.  (On Windows this converts slashes to backslashes.)  The
+    // real paths stored in the registry are in platform dependent form.
+    searchPath = TfAbsPath(searchPath);
 
     const _LayersByRealPath& byRealPath = _layers.get<by_real_path>();
     _LayersByRealPath::const_iterator realPathIt =

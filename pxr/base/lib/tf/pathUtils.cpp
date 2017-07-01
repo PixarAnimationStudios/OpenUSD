@@ -56,38 +56,72 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+
+// Expands symlinks in path.  Used on Windows as a partial replacement
+// for realpath(), partial because is doesn't handle /./, /../ and
+// duplicate slashes.
+std::string
+_ExpandSymlinks(const std::string& path)
+{
+    // Find the first directory in path that's a symbolic link, if any,
+    // and the remaining part of the path.
+    std::string::size_type i = path.find_first_of("/\\");
+    while (i != std::string::npos) {
+        const std::string prefix = path.substr(0, i);
+        if (TfIsLink(prefix)) {
+            // Expand the link and repeat with the new path.
+            return _ExpandSymlinks(TfReadLink(prefix) + path.substr(i));
+        }
+        else {
+            i = path.find_first_of("/\\", i + 1);
+        }
+    }
+
+    // No ancestral symlinks.
+    if (TfIsLink(path)) {
+        return _ExpandSymlinks(TfReadLink(path));
+    }
+
+    // No links at all.
+    return path;
+}
+
+void
+_ClearError()
+{
+#if defined(ARCH_OS_WINDOWS)
+    SetLastError(ERROR_SUCCESS);
+#else
+    errno = 0;
+#endif
+}
+
+void
+_GetError(std::string* err)
+{
+    if (err->empty()) {
+#if defined(ARCH_OS_WINDOWS)
+        *err = ArchStrSysError(GetLastError());
+#else
+        *err = errno ? ArchStrerror() : std::string();
+#endif
+    }
+}
+
+} // anonymous namespace
+
 string
 TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
 {
-    if (path.empty())
-        return string();
-
-#if defined(ARCH_OS_WINDOWS)
-    char fullPath[ARCH_PATH_MAX];
-
-    if (!GetFullPathName(path.c_str(), ARCH_PATH_MAX, fullPath, NULL)) {
-        if (error) {
-            *error = "Call to GetFullPathName failed";
-        }
-        return string();
-    }
-    else {
-        // Make sure drive letters are always lower-case out of TfRealPath on
-        // Windows -- this is so that we can be sure we can reliably use the
-        // paths as keys in tables, etc.
-        if (fullPath[1] == ':') {
-            fullPath[0] = tolower(fullPath[0]);
-        }
-
-    }
-
-    return std::string(fullPath);
-#else
     string localError;
     if (!error)
         error = &localError;
     else
         error->clear();
+
+    if (path.empty())
+        return string();
 
     string suffix, prefix = path;
 
@@ -100,18 +134,38 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
         suffix = string(path, split);
     }
 
+    if (prefix.empty()) {
+        return TfAbsPath(suffix);
+    }
+
+#if defined(ARCH_OS_WINDOWS)
+    // Expand all symbolic links.
+    if (!TfPathExists(prefix)) {
+        *error = "the named file does not exist";
+        return string();
+    }
+    std::string resolved = _ExpandSymlinks(prefix);
+
+    // Make sure drive letters are always lower-case out of TfRealPath on
+    // Windows -- this is so that we can be sure we can reliably use the
+    // paths as keys in tables, etc.
+    if (resolved[0] && resolved[1] == ':') {
+        resolved[0] = tolower(resolved[0]);
+    }
+    return TfAbsPath(resolved + suffix);
+#else
     char resolved[ARCH_PATH_MAX];
-    return TfAbsPath(TfSafeString(realpath(prefix.c_str(), resolved)) + suffix);
+    if (!realpath(prefix.c_str(), resolved)) {
+        *error = ArchStrerror(errno);
+        return string();
+    }
+    return TfAbsPath(resolved + suffix);
 #endif
 }
 
 string::size_type
 TfFindLongestAccessiblePrefix(string const &path, string* error)
 {
-#if defined(ARCH_OS_WINDOWS)
-    TF_CODING_ERROR("TfFindLongestAccessiblePrefix not implemented on Windows");
-    return path.size();
-#else
     typedef string::size_type size_type;
     static const size_type npos = string::npos;
 
@@ -130,36 +184,37 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
 
         static bool Accessible(string const &str, size_type index, string *err) {
             string checkPath(str, 0, index);
-            struct stat st;
-            if (lstat(checkPath.c_str(), &st) == -1) {
-                if (errno != ENOENT && err->empty())
-                    *err = ArchStrerror(errno);
+
+            // False if non-existent or if a symlink and the target is
+            // non-existent.  Also false on any error.
+            _ClearError();
+            if (!TfPathExists(checkPath)) {
+                _GetError(err);
                 return false;
             }
-
-            // If the lstat succeeds and the target is a symbolic link, do
-            // an extra stat to see if the link is dangling.
-            if (S_ISLNK(st.st_mode)) {
-                if (stat(checkPath.c_str(), &st) == -1) {
-                    if (err->empty()) {
-                        if (errno == ENOENT)
-                            *err = "encountered dangling symbolic link";
-                        else
-                            *err = ArchStrerror(errno);
-                    }
-                    return false;
+            if (TfIsLink(checkPath) &&
+                !TfPathExists(checkPath, /* resolveSymlinks = */ true)) {
+                _GetError(err);
+                if (err->empty()) {
+                    *err = "encountered dangling symbolic link";
                 }
             }
-
-            // Path exists, no errors occurred.
-            return true;
+            else {
+                _GetError(err);
+            }
+            return err->empty();
         }
     };
 
     // Build a vector of split point indexes.
     vector<size_type> splitPoints;
+#if defined(ARCH_OS_WINDOWS)
+    for (size_type p = path.find_first_of("/\\", path.find_first_not_of("/\\"));
+         p != npos; p = path.find_first_of("/\\", p+1))
+#else
     for (size_type p = path.find('/', path.find_first_not_of('/'));
          p != npos; p = path.find('/', p+1))
+#endif
         splitPoints.push_back(p);
     splitPoints.push_back(path.size());
 
@@ -175,53 +230,7 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
     if (result == splitPoints.end())
         return path.length();
     return *(result - 1);
-#endif // !defined(ARCH_OS_WINDOWS)
 }
-
-#if defined(ARCH_OS_WINDOWS)
-
-string
-TfNormPath(string const &inPath)
-{
-    // PathCanonicalize() doesn't handle forward slashes so make them all
-    // backslashes.  While we're at it replace double backslashes with
-    // single backslashes.  Note that we don't correctly handle UNC paths
-    // or paths that start with \\? (which allow longer paths).
-    string path = TfStringReplace(inPath, "/", "\\");
-    path.erase(std::unique(path.begin(), path.end(),
-                           [](char a, char b){ return a == b && a == '\\'; }),
-               path.end());
-    char result[ARCH_PATH_MAX];
-    if (PathCanonicalize(result, path.c_str())) {
-        // Convert backslashes to forward slashes since we largely
-        // assume forward slashes elsewhere.
-        path = result;
-        path = TfStringReplace(path, "\\", "/");
-
-        // Trim any trailing slashes, leaving a single slash if there is
-        // nothing but slashes and leaving the string untouched if there
-        // are no slashes.
-        auto i = path.find_last_not_of('/');
-        if (i != std::string::npos) {
-            path.erase(i + 1);
-        }
-        else if (!path.empty()) {
-            path.erase(1);
-        }
-
-        // Make sure drive letters are always lower-case out of TfNormPath on
-        // Windows -- this is so that we can be sure we can reliably use the
-        // paths as keys in tables, etc.
-        if (path.size() >= 2 && path[1] == ':' && std::isupper(path[0])) {
-            path[0] = std::tolower(path[0]);
-        }
-
-        return path;
-    }
-    return inPath;
-}
-
-#else
 
 namespace { // Helpers for TfNormPath.
 
@@ -260,10 +269,8 @@ _GetTokenType(pair<Iter, Iter> t) {
     return Elem;
 }
 
-} // anon
-
 string
-TfNormPath(string const &inPath)
+_NormPath(string const &inPath)
 {
     // We take one pass through the string, transforming it into a normalized
     // path in-place.  This works since the normalized path never grows, except
@@ -391,7 +398,34 @@ TfNormPath(string const &inPath)
     return path;
 }
 
+} // anon
+
+string
+TfNormPath(string const &inPath)
+{
+#if defined(ARCH_OS_WINDOWS)
+    // Convert backslashes to forward slashes.
+    string path = TfStringReplace(inPath, "\\", "/");
+
+    // Extract the drive specifier.  Note that we don't correctly handle
+    // UNC paths or paths that start with \\? (which allow longer paths).
+    //
+    // Also make sure drive letters are always lower-case out of TfNormPath
+    // on Windows -- this is so that we can be sure we can reliably use the
+    // paths as keys in tables, etc.
+    string prefix;
+    if (path.size() >= 2 && path[1] == ':') {
+        prefix.assign(2, ':');
+        prefix[0] = std::tolower(path[0]);
+        path.erase(0, 2);
+    }
+
+    // Normalize and prepend drive specifier, if any.
+    return prefix + _NormPath(path);
+#else
+    return _NormPath(inPath);
 #endif // defined(ARCH_OS_WINDOWS)
+}
 
 string
 TfAbsPath(string const& path)

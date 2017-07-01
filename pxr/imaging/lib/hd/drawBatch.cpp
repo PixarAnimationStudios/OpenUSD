@@ -298,7 +298,7 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
 
         if (programInstance.IsFirstInstance()) {
             HdGLSLProgramSharedPtr glslProgram = codeGen.Compile();
-            if (_Link(glslProgram)) {
+            if (glslProgram && _Link(glslProgram)) {
                 // store the program into the program registry.
                 programInstance.SetValue(glslProgram);
             }
@@ -307,7 +307,7 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
         _glslProgram = programInstance.GetValue();
 
         if (_glslProgram) {
-            _resourceBinder.IntrospectBindings(_glslProgram->GetProgram().GetId());
+            _resourceBinder.IntrospectBindings(_glslProgram->GetProgram());
         } else {
             // Failed to compile and link a valid glsl program.
             return false;

@@ -274,11 +274,10 @@ UsdGeomPrimvar::GetUnauthoredValuesIndex() const
 }
 
 template <typename ArrayType>
-/* static */
 bool 
 UsdGeomPrimvar::_ComputeFlattenedArray(const VtValue &attrVal,
                                         const VtIntArray &indices,
-                                        VtValue *value)
+                                        VtValue *value) const
 {
     if (!attrVal.IsHolding<ArrayType>())
         return false;

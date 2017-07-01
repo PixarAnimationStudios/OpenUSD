@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE vt)
 
-pxr_shared_library(vt
+pxr_library(vt
     LIBRARIES
         arch
         tf
@@ -31,6 +31,7 @@ pxr_shared_library(vt
         api.h
         traits.h
         operators.h
+        pyOperators.h
         PRIVATE_CLASSES
         PRIVATE_HEADERS
         typeHeaders.h
@@ -69,12 +70,10 @@ pxr_test_scripts(
     testenv/testVtValue.py
     testenv/testVtFunctions.py
 )
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    pxr_register_test(testVtValue
-        PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtValue"
-    )
-endif()
+pxr_register_test(testVtValue
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtValue"
+)
 pxr_register_test(testVtArray
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArray"

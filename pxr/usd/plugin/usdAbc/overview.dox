@@ -1,7 +1,25 @@
 /*!
-\mainpage
+\page usdabc_page_front UsdAbc : Alembic File Format Plugin 
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdAbc : Alembic File Format Plugin
+\publicLib
+\endif
+
+\section usdAbc_overview Overview
 
 This library currently exists to provide the alembic file format plugin for
 USD, and currently has no user-level API.
+
+\section usdAbc_behavior Behavior
+
+UsdAbc exposes some TfEnvSettings for controlling behavior. 
+
+Setting Name                        | Meaning                                                         | Default Value 
+------------------------------------|-----------------------------------------------------------------|-------
+USD_ABC_NUM_OGAWA_STREAMS           | The number of threads available for reading ogawa-backed files. | 4 
+USD_ABC_EXPAND_INSTANCES            | Force alembic instances to be expanded                          | false 
+USD_ABC_DISABLE_INSTANCES           | Disable instancing on masters created from alembic              | false
+USD_ABC_PARENT_INSTANCES            | Make parent of instance source into masters where possible      | true
+USD_ABC_WARN_ALL_UNSUPPORTED_VALUES | Issue warnings for all unsupported values encountered.          | false
 
 */

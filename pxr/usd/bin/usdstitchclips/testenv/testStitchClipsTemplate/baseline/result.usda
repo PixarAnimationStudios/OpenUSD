@@ -14,11 +14,16 @@ over "World"
         over "Particles_Splash"
         {
             over "points" (
-                clipPrimPath = "/World/fx/Particles_Splash/points"
-                clipTemplateAssetPath = "p.#.usd"
-                clipTemplateEndTime = 104
-                clipTemplateStartTime = 101
-                clipTemplateStride = 1
+                clips = {
+                    dictionary default = {
+                        asset manifestAssetPath = @./result.topology.usda@
+                        string primPath = "/World/fx/Particles_Splash/points"
+                        string templateAssetPath = "p.#.usd"
+                        double templateEndTime = 104
+                        double templateStartTime = 101
+                        double templateStride = 1
+                    }
+                }
             )
             {
             }

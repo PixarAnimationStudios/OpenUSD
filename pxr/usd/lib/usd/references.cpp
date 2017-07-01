@@ -33,7 +33,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 bool
 _ValidateNoSubRootReferences(const SdfReference &ref)
 {
@@ -156,11 +155,8 @@ UsdReferences::_CreatePrimSpecForEditing()
         return SdfPrimSpecHandle();
     }
 
-    return _prim.GetStage()->_CreatePrimSpecForEditing(_prim.GetPath());
+    return _prim.GetStage()->_CreatePrimSpecForEditing(_prim);
 }
-
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

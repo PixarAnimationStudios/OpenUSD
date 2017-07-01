@@ -126,6 +126,16 @@ UsdShadeInput::UsdShadeInput(
 }
 
 bool
+UsdShadeInput::Get(VtValue* value, UsdTimeCode time) const
+{
+    if (!_attr) {
+        return false;
+    }
+
+    return _attr.Get(value, time);
+}
+
+bool
 UsdShadeInput::Set(const VtValue& value, UsdTimeCode time) const
 {
     return _attr.Set(value, time);
@@ -165,6 +175,22 @@ UsdShadeInput::IsInput(const UsdAttribute &attr)
                                 UsdShadeTokens->outputs) :
              TfStringStartsWith(attr.GetName().GetString(), 
                                 UsdShadeTokens->inputs));
+}
+
+/* static */
+bool
+UsdShadeInput::IsInterfaceInputName(const std::string & name)
+{
+    if (TfStringStartsWith(name, UsdShadeTokens->inputs)) {
+        return true;
+    }
+
+    if (UsdShadeUtils::ReadOldEncoding() &&
+        TfStringStartsWith(name, UsdShadeTokens->interface_)) {
+        return true;
+    }
+
+    return false;
 }
 
 bool 
@@ -219,30 +245,13 @@ UsdShadeInput::GetConnectability() const
     TfToken connectability; 
     _attr.GetMetadata(_tokens->connectability, &connectability);
 
-    // If there's no authored connectability, then check the owner of the 
-    // input to see if it's a node-graph or a shader.
-    // If it's a node-graph, the default connectability is "interfaceOnly".
-    // If it's a shader, the default connectability is "full".
-    // 
-    // If the owner's type is unknown, then get the fallback value from the  
-    // schema registry.
-    // 
-    if (connectability.IsEmpty()) {
-        UsdShadeConnectableAPI connectable(GetPrim());
-        if (connectable.IsNodeGraph())
-            return UsdShadeTokens->interfaceOnly;
-        else if (connectable.IsShader()) {
-            return UsdShadeTokens->full;
-        }
-    } else {
+    // If there's an authored non-empty connectability value, then return it. 
+    // If not, return "full".
+    if (!connectability.IsEmpty()) {
         return connectability;
     }
 
-    static const VtValue fallback = SdfSchema::GetInstance().GetFallback(
-        _tokens->connectability);
-
-    return fallback.IsHolding<TfToken>() ? fallback.UncheckedGet<TfToken>()
-                                         : UsdShadeTokens->full;
+    return UsdShadeTokens->full;
 }
 
 bool 

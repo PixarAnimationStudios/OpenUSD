@@ -33,21 +33,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 int ArchVsnprintf(char *str, size_t size, const char *format, va_list ap)
 {
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
     /*
-     * Built-in vsnprintf either prints into str, or aborts the print
+     * vsnprintf either prints into str, or aborts the print
      * but tells you how much room was needed.  
      */
     return vsnprintf(str, size, format, ap);
-#elif defined(ARCH_OS_WINDOWS)
-    int n = _vscprintf(format, ap);
-    if (n < size)
-        return vsnprintf_s(str, size /*size of buffer */, n, format, ap);
-    else
-        return n;
-#else
-#error Unknown system architecture.    
-#endif
 }
 
 string

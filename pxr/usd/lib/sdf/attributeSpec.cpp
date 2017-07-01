@@ -417,6 +417,8 @@ SdfAttributeSpec::SetConnectionMarkers(const ConnectionMarkerMap& markers)
 
 SDF_DEFINE_GET_SET_HAS_CLEAR(AllowedTokens, SdfFieldKeys->AllowedTokens, VtTokenArray)
 
+SDF_DEFINE_GET_SET_HAS_CLEAR(ColorSpace, SdfFieldKeys->ColorSpace, TfToken)
+
 TfEnum
 SdfAttributeSpec::GetDisplayUnit() const
 {

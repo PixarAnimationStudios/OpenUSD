@@ -168,6 +168,41 @@ void _PxrUsdKatana_PrimReaderFn_##T(\
         Foundry::Katana::GeolibCookInterface &interfaceName )\
 
 
+/// \def PXRUSDKATANA_USDIN_PLUGIN_DECLARE_WITH_FLUSH(T)
+/// \brief Declares a plugin of opType which also includes a flush function T.
+#define PXRUSDKATANA_USDIN_PLUGIN_DECLARE_WITH_FLUSH(T) \
+class T : public FnKat::GeolibOp\
+{\
+public:\
+    static void setup(FnKat::GeolibSetupInterface& interface);\
+    static void cook(FnKat::GeolibCookInterface& interface);\
+    static void flush();\
+};\
+
+/// \def PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(T, argsName, interfaceName) 
+/// \brief Defines a plugin of opType T with inclusion of a flush function.  
+#define PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(T, argsName, interfaceName, flushFnc) \
+void T::setup(FnKat::GeolibSetupInterface& interface) {\
+    interface.setThreading(FnKat::GeolibSetupInterface::ThreadModeConcurrent);\
+}\
+void T::flush() {\
+    flushFnc();\
+}\
+void _PxrUsdKatana_PrimReaderFn_##T(\
+        const PxrUsdKatanaUsdInPrivateData&,\
+        Foundry::Katana::GeolibCookInterface &);\
+void T::cook(FnKat::GeolibCookInterface& interface) \
+{\
+    if (PxrUsdKatanaUsdInPrivateData* args \
+            = static_cast<PxrUsdKatanaUsdInPrivateData*>(interface.getPrivateData())) {\
+        _PxrUsdKatana_PrimReaderFn_##T(*args, interface);\
+    }\
+}\
+void _PxrUsdKatana_PrimReaderFn_##T(\
+        const PxrUsdKatanaUsdInPrivateData& argsName,\
+        Foundry::Katana::GeolibCookInterface &interfaceName )\
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDKATANA_USDIN_PLUGINREGISTRY_H

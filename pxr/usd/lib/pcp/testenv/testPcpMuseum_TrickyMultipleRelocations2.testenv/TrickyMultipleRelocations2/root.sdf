@@ -1,0 +1,26 @@
+#sdf 1.4.32
+
+def "ModelGroup" (
+    references = @./group.sdf@</Group>
+    relocates = {
+        <Model> : <Model_2>
+    }
+)
+{
+    rel groupRel = </ModelGroup/Model_2/Anim/Collider>
+
+    over "Model_2" (
+        relocates = {
+            <Rig/Collider> : <Anim/Collider>
+        }
+    )
+    {
+        rel modelRel = </ModelGroup/Model_2/Anim/Collider>
+
+        def "Rig" (
+            references = @./rig.sdf@</Rig>
+        )
+        {
+        }
+    }
+}

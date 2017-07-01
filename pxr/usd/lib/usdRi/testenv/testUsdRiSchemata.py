@@ -27,46 +27,19 @@ from pxr import Sdf, Usd, UsdRi, UsdShade
 import unittest
 
 class TestUsdRiSchemata(unittest.TestCase):
-    def _SingleTargetRel(self, schema, getRelFn, createRelFn, 
-                         getTargetFn, validTargetObjectPath):
-        rel = getRelFn(schema)
-        assert not rel
-        rel = createRelFn(schema)
-        assert rel
 
-        # Add a valid target object
-        rel.AppendTarget(validTargetObjectPath)
-        assert getTargetFn(schema)
-        # Add one more target to the rel which should cause it to 
-        # return nothing since it expects exactly one valid target.
-        rel.AppendTarget(schema.GetPrim().GetPath())
-        assert not getTargetFn(schema)
-        # Clear targets and add one again that is not a prim path, that should
-        # also be an error condition.
-        # XXX:Note here is where we'd like a validation scheme for USD.
-        rel.ClearTargets(True)
-        rel.AppendTarget(schema.GetPrim().GetPath())
-        assert not getTargetFn(schema)
-        # Clean up
-        rel.ClearTargets(True)
-        assert not getTargetFn(schema)
+    def _TestOutput(self, schema, getOutputFn, setOutputSrcFn, getFn, 
+                    validTargetObjectPath):
+        output = getOutputFn(schema)
+        assert not output.GetProperty()
 
-    def _MultiTargetRel(self, schema, getRelFn, createRelFn, 
-                        getTargetFn, validTargetObjectPath):
-        rel = getRelFn(schema)
-        assert not rel
-        rel = createRelFn(schema)
-        assert rel
+        assert setOutputSrcFn(schema, validTargetObjectPath)
 
-        rel.AppendTarget(validTargetObjectPath)
-        assert rel
-        assert len(getTargetFn(schema)) == 1
-        # Add an invalid target and make sure that we still get one valid object.
-        rel.AppendTarget(schema.GetPrim().GetPath())
-        assert len(getTargetFn(schema)) == 1
-        # Clean up
-        rel.ClearTargets(True)
+        output = getOutputFn(schema)
+        assert output.GetProperty()
 
+        targetObj = getFn(schema)
+        self.assertEqual(targetObj.GetPath(), validTargetObjectPath)
 
     def test_Basic(self):
         l = Sdf.Layer.CreateAnonymous()
@@ -92,8 +65,8 @@ class TestUsdRiSchemata(unittest.TestCase):
         p = stage.DefinePrim("/World/Group/Model/Mesh", "Scope")
         assert p
 
-        print ("Test look")
-        material = UsdShade.Material.Define(stage, "/World/Group/Model/Look")
+        print ("Test Material")
+        material = UsdShade.Material.Define(stage, "/World/Group/Model/Material")
         assert material
         assert material.GetPrim()
         material.Bind(p)
@@ -105,37 +78,30 @@ class TestUsdRiSchemata(unittest.TestCase):
         assert not UsdRi.Statements.IsRiAttribute(shader.GetSloPathAttr())
         shader.GetSloPathAttr().Set('foo')
 
-        print ("Test RiLookAPI")
-        rilook = UsdRi.LookAPI(material)
-        assert rilook 
-        assert rilook.GetPrim()
+        print ("Test RiMaterialAPI")
+        riMaterial = UsdRi.MaterialAPI(material)
+        assert riMaterial
+        assert riMaterial.GetPrim()
 
-        # Test surface rel
-        self._SingleTargetRel(rilook, 
-            UsdRi.LookAPI.GetSurfaceRel, 
-            UsdRi.LookAPI.CreateSurfaceRel,
-            UsdRi.LookAPI.GetSurface,
+        # Test surface output
+        self._TestOutput(riMaterial, 
+            UsdRi.MaterialAPI.GetSurfaceOutput, 
+            UsdRi.MaterialAPI.SetSurfaceSource,
+            UsdRi.MaterialAPI.GetSurface,
             shader.GetPath())
 
-        # Test displacement rel
-        self._SingleTargetRel(rilook, 
-            UsdRi.LookAPI.GetDisplacementRel, 
-            UsdRi.LookAPI.CreateDisplacementRel,
-            UsdRi.LookAPI.GetDisplacement,
+        # Test displacement output
+        self._TestOutput(riMaterial, 
+            UsdRi.MaterialAPI.GetDisplacementOutput, 
+            UsdRi.MaterialAPI.SetDisplacementSource,
+            UsdRi.MaterialAPI.GetDisplacement,
             shader.GetPath())
 
-        # Test volume rel
-        self._SingleTargetRel(rilook, 
-            UsdRi.LookAPI.GetVolumeRel, 
-            UsdRi.LookAPI.CreateVolumeRel,
-            UsdRi.LookAPI.GetVolume,
-            shader.GetPath())
-
-        # Test coshaders rel
-        self._MultiTargetRel(rilook,
-            UsdRi.LookAPI.GetCoshadersRel,
-            UsdRi.LookAPI.CreateCoshadersRel,
-            UsdRi.LookAPI.GetCoshaders,
+        # Test volume output
+        self._TestOutput(riMaterial, 
+            UsdRi.MaterialAPI.GetVolumeOutput, 
+            UsdRi.MaterialAPI.SetVolumeSource,
+            UsdRi.MaterialAPI.GetVolume,
             shader.GetPath())
 
         print ("Test pattern")
@@ -161,26 +127,18 @@ class TestUsdRiSchemata(unittest.TestCase):
         bxdf.GetFilePathAttr().Set('foo')
         bxdf.GetArgsPathAttr().Set('argspath')
 
-        print ("Test RIS Look")
-        rislook = UsdRi.LookAPI(material.GetPrim())
-        assert rislook 
-        assert rislook.GetPrim()
-        assert not rislook.GetBxdf()
-        assert len(rislook.GetPatterns()) == 0
+        print ("Test RIS Material")
+        risMaterial = UsdRi.MaterialAPI(material.GetPrim())
+        assert risMaterial 
+        assert risMaterial.GetPrim()
+        assert not risMaterial.GetBxdf()
 
-        # Test the bxdf relationship
-        self._SingleTargetRel(rislook,
-            UsdRi.LookAPI.GetBxdfRel,
-            UsdRi.LookAPI.CreateBxdfRel,
-            UsdRi.LookAPI.GetBxdf,
+        # Test the bxdf output
+        self._TestOutput(risMaterial,
+            UsdRi.MaterialAPI.GetBxdfOutput,
+            UsdRi.MaterialAPI.SetBxdfSource,
+            UsdRi.MaterialAPI.GetBxdf,
             bxdf.GetPath())
-
-        # Test the patterns relationship
-        self._MultiTargetRel(rislook,
-            UsdRi.LookAPI.GetPatternsRel,
-            UsdRi.LookAPI.CreatePatternsRel,
-            UsdRi.LookAPI.GetPatterns,
-            pattern.GetPath())
 
         print ("Test riStatements")
         riStatements = UsdRi.Statements(shader.GetPrim())

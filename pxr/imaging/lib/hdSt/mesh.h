@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/mesh.h"
@@ -45,30 +44,6 @@ class HdSceneDelegate;
 
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
-
-/// \class HdStMeshReprDesc
-///
-/// descriptor to configure a drawItem for a repr
-///
-struct HdStMeshReprDesc {
-    HdStMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
-                   HdCullStyle cullStyle = HdCullStyleDontCare,
-                   bool lit = false,
-                   bool smoothNormals = false,
-                   bool blendWireframeColor = true)
-        : geomStyle(geomStyle)
-        , cullStyle(cullStyle)
-        , lit(lit)
-        , smoothNormals(smoothNormals)
-        , blendWireframeColor(blendWireframeColor)
-        {}
-
-    HdMeshGeomStyle geomStyle:3;
-    HdCullStyle     cullStyle:3;
-    bool            lit:1;
-    bool            smoothNormals:1;
-    bool            blendWireframeColor:1;
-};
 
 /// A subdivision surface or poly-mesh object.
 ///
@@ -96,14 +71,6 @@ public:
     HDST_API
     static bool IsEnabledPackedNormals();
 
-    /// Configure geometric style of drawItems for \p reprName
-    /// HdMesh can have up to 2 descriptors for some complex styling
-    /// (FeyRay, Outline)
-    HDST_API
-    static void ConfigureRepr(TfToken const &reprName,
-                              HdStMeshReprDesc desc1,
-                              HdStMeshReprDesc desc2=HdStMeshReprDesc());
-
 protected:
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
@@ -119,12 +86,12 @@ protected:
                          HdDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
                          bool isNew,
-                         HdStMeshReprDesc desc,
+                         HdMeshReprDesc desc,
                          bool requireSmoothNormals);
 
     void _UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
                                         HdDrawItem *drawItem,
-                                        HdStMeshReprDesc desc);
+                                        HdMeshReprDesc desc);
 
     void _SetGeometricShaders(HdRenderIndex &renderIndex);
 
@@ -133,7 +100,7 @@ protected:
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
-                           HdStMeshReprDesc desc);
+                           HdMeshReprDesc desc);
 
     void _PopulateAdjacency();
 
@@ -141,20 +108,20 @@ protected:
                                  HdDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
                                  bool isNew,
-                                 HdStMeshReprDesc desc,
+                                 HdMeshReprDesc desc,
                                  bool requireSmoothNormals);
 
     void _PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
                                       HdDrawItem *drawItem,
                                       HdDirtyBits *dirtyBits,
-                                      HdStMeshReprDesc desc);
+                                      HdMeshReprDesc desc);
 
     void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
                                   HdDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
                                   TfTokenVector const &primVarNames);
 
-    int _GetRefineLevelForDesc(HdStMeshReprDesc desc);
+    int _GetRefineLevelForDesc(HdMeshReprDesc desc);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const override;
 
@@ -176,13 +143,11 @@ private:
     Hd_VertexAdjacencySharedPtr _vertexAdjacency;
 
     HdTopology::ID _topologyId;
+    HdTopology::ID _vertexPrimvarId;
     int _customDirtyBitsInUse;
     bool _doubleSided;
     bool _packedNormals;
     HdCullStyle _cullStyle;
-
-    typedef _ReprDescConfigs<HdStMeshReprDesc, /*max drawitems=*/2> _MeshReprConfig;
-    static _MeshReprConfig _reprDescConfig;
 };
 
 

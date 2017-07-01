@@ -301,8 +301,10 @@ ARCH_API
 ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
 
 enum ArchMemAdvice {
-    ArchMemAdviceWillNeed, // OS may prefetch this range.
-    ArchMemAdviceDontNeed  // OS may free resources related to this range.
+    ArchMemAdviceNormal,       // Treat range with default behavior.
+    ArchMemAdviceWillNeed,     // OS may prefetch this range.
+    ArchMemAdviceDontNeed,     // OS may free resources related to this range.
+    ArchMemAdviceRandomAccess, // Prefetching may not be beneficial.
 };
 
 /// Advise the OS regarding how the application intends to access a range of
@@ -332,8 +334,10 @@ ARCH_API
 std::string ArchReadLink(const char* path);
 
 enum ArchFileAdvice {
-    ArchFileAdviceWillNeed, // OS may prefetch this range.
-    ArchFileAdviceDontNeed  // OS may free resources related to this range.
+    ArchFileAdviceNormal,       // Treat range with default behavior.
+    ArchFileAdviceWillNeed,     // OS may prefetch this range.
+    ArchFileAdviceDontNeed,     // OS may free resources related to this range.
+    ArchFileAdviceRandomAccess, // Prefetching may not be beneficial.
 };
 
 /// Advise the OS regarding how the application intends to access a range of

@@ -31,7 +31,6 @@
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include <boost/noncopyable.hpp>
 #include <string>
 #include <cstdint>
 
@@ -65,11 +64,30 @@ void GlfDefaultDebugOutputMessageCallback(
 GLF_API
 char const * GlfDebugEnumToString(GLenum debugEnum);
 
+/// \class GlfDebugGroup
+///
+/// Represents a GL debug group in Glf
+///
+class GlfDebugGroup {
+    public:
+    /// Pushes a new debug group onto the GL api debug trace stack
+    GLF_API
+    GlfDebugGroup(char const *message);
+    
+    /// Pops a debug group off the GL api debug trace stack
+    GLF_API
+    ~GlfDebugGroup();
+
+    GlfDebugGroup() = delete;
+    GlfDebugGroup(GlfDebugGroup const&) = delete;
+    GlfDebugGroup& operator =(GlfDebugGroup const&) = delete;
+};
+
 /// \class GlfGLQueryObject
 ///
 /// Represents a GL query object in Glf
 ///
-class GlfGLQueryObject : public boost::noncopyable {
+class GlfGLQueryObject {
 public:
     GLF_API
     GlfGLQueryObject();
@@ -117,6 +135,8 @@ public:
     GLF_API
     int64_t GetResultNoWait();
 
+    GlfGLQueryObject(GlfGLQueryObject const&) = delete;
+    GlfGLQueryObject& operator =(GlfGLQueryObject const&) = delete;
 private:
     GLuint _id;
     GLenum _target;

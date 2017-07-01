@@ -44,14 +44,25 @@ def VerifyUsdFileFormat(usdFileName, underlyingFormatId):
 
     # Copy the file to a temporary location and replace the extension with
     # the expected format, then try to open it.
-    tmpFileName = '/tmp/%s.%s' % \
-        (os.path.splitext(os.path.basename(usdFileName))[0], underlyingFormatId)
+    import tempfile
+    (tmpFile, tmpFileName) = \
+        tempfile.mkstemp(
+            prefix=os.path.splitext(os.path.basename(usdFileName))[0],
+            suffix='.' + underlyingFormatId)
+    os.close(tmpFile)
 
     shutil.copyfile(usdFileName, tmpFileName)
 
     assert not Sdf.Layer.Find(tmpFileName)
     assert not Sdf.Layer.Find(usdFileName)
-    assert Sdf.Layer.FindOrOpen(tmpFileName)
+    layer = Sdf.Layer.FindOrOpen(tmpFileName)
+    assert layer
+
+    # NOTE: We want to delete tmpFileName but layer may have it open.
+    #       On Windows the delete will fail if the file is open.
+    #       Explicitly release our reference to the layer to close
+    #       the file.
+    del layer
 
     os.unlink(tmpFileName)
 

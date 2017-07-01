@@ -530,7 +530,8 @@ template <>                                                              \
 Vt_DefaultValueHolder Vt_DefaultValueFactory<VT_TYPE(elem)>::Invoke()    \
 {                                                                        \
     return Vt_DefaultValueHolder::Create(VtZero<VT_TYPE(elem)>());       \
-}
+}                                                                        \
+template struct Vt_DefaultValueFactory<VT_TYPE(elem)>;
 
 BOOST_PP_SEQ_FOR_EACH(_VT_IMPLEMENT_ZERO_VALUE_FACTORY,
                       unused,

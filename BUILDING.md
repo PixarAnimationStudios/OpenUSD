@@ -2,12 +2,74 @@ Advanced Build Configuration
 ============================
 
 ## Table of Contents
+- [Building With CMake](#building-with-cmake)
 - [Optional Components](#optional-components)
 - [Third Party Plugins](#third-party-plugins)
 - [Tests](#tests)
 - [Other Build Options](#other-build-options)
 - [USD Developer Options](#usd-developer-options)
 - [Optimization Options](#optimization-options)
+- [Linker Options](#linker-options)
+
+## Building With CMake
+
+Users may specify libraries to build USD against and other build options by 
+passing arguments when running cmake. Documentation for these arguments
+are below.
+
+Some examples:
+
+#### On Linux 
+
+```bash
+cmake                                       \
+-DTBB_ROOT_DIR=/path/to/tbb                 \    
+-DOPENEXR_LOCATION=/path/to/openexr         \
+-DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
+-DPTEX_LOCATION=/path/to/ptex               \
+-DOIIO_LOCATION=/path/to/openimageio        \
+-DBOOST_ROOT=/path/to/boost                 \
+/path/to/USD/source
+
+cmake --build . --target install -- -j <NUM_CORES>
+```
+
+#### On OS X
+
+The following will generate an Xcode project that can be used to build USD.
+
+```bash
+cmake                                       \
+-G "Xcode"                                  \
+-DTBB_ROOT_DIR=/path/to/tbb                 \    
+-DOPENEXR_LOCATION=/path/to/openexr         \
+-DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
+-DPTEX_LOCATION=/path/to/ptex               \
+-DOIIO_LOCATION=/path/to/openimageio        \
+-DBOOST_ROOT=/path/to/boost                 \
+/path/to/USD/source
+
+cmake --build . --target install -- -j <NUM_CORES>
+```
+
+#### On Windows
+
+The following will generate a Visual Studio 2015 solution that can be used to 
+build USD.
+
+```cmd.exe
+"C:\Program Files\CMake\bin\cmake.exe"      ^
+-G "Visual Studio 14 Win64"                 ^
+-DTBB_ROOT_DIR=C:\path\to\tbb               ^
+-DOPENEXR_LOCATION=C:\path\to\openexr       ^
+-DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv ^
+-DPTEX_LOCATION=C:\path\to\ptex             ^
+-DOIIO_LOCATION=C:\path\to\openimageio      ^
+-DBOOST_ROOT=C:\path\to\boost               ^
+\path\to\USD\source
+
+cmake --build . --target install -- /m:%NUMBER_OF_PROCESSORS%
+```  
 
 ## Optional Components
 
@@ -51,7 +113,7 @@ component.
 ## Third Party Plugins
 
 USD provides several plugins for integration with third-party software packages,
-including Maya, Katana, and Alembic. There is additional documentation on each plugin 
+including Maya, Katana, Houdini, and Alembic. There is additional documentation on each plugin 
 [here](http://openusd.org/docs/USD-3rd-Party-Plugins.html).
 These plugins are not built by default and must be enabled via the instructions below.
 
@@ -64,6 +126,14 @@ This plugin is compatible with Alembic 1.5.2. The additional dependencies that m
 | Dependency Name    | Description                                                             | Version |
 | ------------------ |-----------------------------------------------------------------------  | ------- |
 | ALEMBIC_LOCATION   | The location of [Alembic](https://https://github.com/alembic/alembic)   | 1.5.2   |
+| OPENEXR_LOCATION   | The location of [OpenEXR](http://www.openexr.com)                       | 2.2.0   |
+
+Support for Alembic files using the HDF5 backend is enabled by default but can be
+disabled by specifying the cmake flag ```PXR_ENABLE_HDF5_SUPPORT=FALSE```. HDF5
+support requires the following dependencies:
+
+| Dependency Name    | Description                                                             | Version |
+| ------------------ |-----------------------------------------------------------------------  | ------- |
 | HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/)                  | 1.8.11  |
 
 For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
@@ -90,6 +160,17 @@ when invoking cmake. This plugin is compatible with Katana 2.0v5. The additional
 | KATANA_API_LOCATION   | The root path to a Katana SDK install.| 2.0v5     |
 
 For further information see our additional documentation on the Katana plugins [here](http://openusd.org/docs/Katana-USD-Plugins.html).
+
+##### Houdini Plugin
+
+Enable the Houdini plugin in the build by specifying the cmake flag ```PXR_BUILD_HOUDINI_PLUGIN=TRUE``` 
+when invoking cmake. This plugin is compatible with Houdini 16.0. The additional dependencies that must be supplied when invoking cmake are:
+
+| Dependency Name       | Description                            | Version   |
+| --------------        | -----------------------------------    | -------   |
+| HOUDINI_ROOT          | The root path to a Houdini SDK install.| 16.0      |
+
+For further information see our additional documentation on the Houdini plugins [here](http://openusd.org/docs/Houdini-USD-Plugins.html).
 
 ## Tests
 
@@ -196,3 +277,154 @@ This variable should be set to a path to a shared object for the allocator. For 
 If none are specified, the default allocator will be used. More information on getting the most out of
 USD can be found [Getting the Best Performance with USD](http://openusd.org/docs/Maximizing-USD-Performance.html).
 
+## Linker Options
+
+There are four ways to link USD controlled by the following options:
+
+| Option Name            | Default   | Description                               |
+| ---------------------- | --------- | ----------------------------------------- |
+| BUILD_SHARED_LIBS      | ```ON```  | Build shared or static libraries          |
+| PXR_BUILD_MONOLITHIC   | ```OFF``` | Build single or several libraries         |
+| PXR_MONOLITHIC_IMPORT  |           | CMake file defining usd_ms import library |
+
+##### Shared Libraries
+
+The default creates several shared libraries.  This option allows loading
+just the libraries necessary for a given task.
+
+| Option Name            | Value     |
+| ---------------------- | --------- |
+| BUILD_SHARED_LIBS      | ```ON```  |
+| PXR_BUILD_MONOLITHIC   | ```OFF``` |
+| PXR_MONOLITHIC_IMPORT  |           |
+
+```bash
+cmake -DBUILD_SHARED_LIBS=ON ...
+```
+
+##### Static Libraries
+
+This mode builds several static libraries.  This option allows embedding
+just the libraries necessary for a given task.  However, it does not allow
+USD plugins or Python modules since that would necessarily cause multiple
+symbol definitions;  for any given symbol we'd have an instance in the main
+application and another in each plugin/module.
+
+| Option Name            | Value     |
+| ---------------------- | --------- |
+| BUILD_SHARED_LIBS      | ```OFF``` |
+| PXR_BUILD_MONOLITHIC   | ```OFF``` |
+| PXR_MONOLITHIC_IMPORT  |           |
+
+```bash
+cmake -DBUILD_SHARED_LIBS=OFF ...
+```
+
+##### Internal Monolithic Library
+
+This mode builds the core libraries (i.e. everything under `pxr/`) into a
+single archive library, 'usd_m', and from that it builds a single shared
+library, 'usd_ms'.  It builds plugins outside of `pxr/` and Python modules
+as usual except they link against 'usd_ms' instead of the individual
+libraries of the default mode.  Plugins inside of `pxr/` are compiled into
+'usd_m' and 'usd_ms'.  plugInfo.json files under `pxr/` refer to 'usd_ms'.
+
+This mode is useful to reduce the number of installed files and simplify
+linking against USD.
+
+| Option Name            | Value      |
+| ---------------------- | ---------- |
+| BUILD_SHARED_LIBS      | _Don't care_ |
+| PXR_BUILD_MONOLITHIC   | ```ON```   |
+| PXR_MONOLITHIC_IMPORT  |            |
+
+```bash
+cmake -DPXR_BUILD_MONOLITHIC=ON ...
+```
+
+##### External Monolithic Library
+
+This mode is similar to the
+[Internal Monolithic Library](#internal-monolithic-library) except the
+client has control of building the monolithic shared library.  This mode
+is useful to embed USD into another shared library.  The build steps are
+significantly more complicated and are described below.
+
+| Option Name            | Value      |
+| ---------------------- | ---------- |
+| BUILD_SHARED_LIBS      | _Don't care_ |
+| PXR_BUILD_MONOLITHIC   | ```ON```   |
+| PXR_MONOLITHIC_IMPORT  | _Path-to-import-file_ |
+
+To build in this mode:
+
+1. Choose a path where the import file will be.  You'll be creating a cmake
+file with `add_library(usd_ms SHARED IMPORTED)` and one or more `set_property`
+calls.  The file doesn't need to exist.  If it does exist it should be empty
+or valid cmake code.
+1. Configure the build in the usual way but with `PXR_BUILD_MONOLITHIC=ON`
+and `PXR_MONOLITHIC_IMPORT` set to the path in step 1.
+1. Build the usual way except the target is `monolithic`.
+1. Create your shared library. If using cmake you can include the file
+`pxr/usd-targets-<CONFIG>` under the USD binary (build) directory, where
+`<CONFIG>` is the configuration you built in step 3. Then you can link your
+library against 'usd_m'.  However, this isn't as simple as
+`target_link_libraries(mylib PUBLIC usd_m)` because you must get
+**everything** from 'usd_m'.  See [Linking Whole Archives](#linking-whole-archives)
+for more details.
+1. Edit the import file to describe your library.  Your cmake build may
+be able to generate the file directly via `export()`.  The USD build
+will include this file and having done so must be able to link against
+your library by adding 'usd_ms' as a target link library.  The file
+should look something like this:
+    ```cmake
+    add_library(usd_ms SHARED IMPORTED)
+    set_property(TARGET usd_ms PROPERTY IMPORTED_LOCATION ...)
+    # The following is necessary on Windows.
+    #set_property(TARGET usd_ms PROPERTY IMPORTED_IMPLIB ...)
+    set_property(TARGET usd_ms PROPERTY INTERFACE_COMPILE_DEFINITIONS ...)
+    set_property(TARGET usd_ms PROPERTY INTERFACE_INCLUDE_DIRECTORIES ...)
+    set_property(TARGET usd_ms PROPERTY INTERFACE_LINK_LIBRARIES ...)
+    ```
+1. Complete the USD build by building the usual way, either with the
+default target or the 'install' target.
+
+Two notes:
+1. Your library does **not** need to be named usd_ms. That's simply the
+name given to it by the import file. The IMPORTED_LOCATION  has the real
+name and path to your library.
+1. USD currently only supports installations where your library is in
+the same directory the USD library/libraries would have been relative
+to the other installed USD files.  Specifically, the location of your
+library will be used to find plugInfo.json files using the relative
+paths `../share/usd/plugins` and `../plugin/usd`.
+
+###### Linking Whole Archives
+
+Normally when linking against a static library the linker will only pull
+in object files that provide a needed symbol. USD has many files that
+have static global objects with constructors with side effects.  If
+nothing uses any visible symbol from those object files then a normal
+link would not include them. The side effects will not occur and USD
+will not work.
+
+To include everything you need to tell the linker to include the whole
+archive.  That's platform dependent and you'll want code something like
+this:
+
+```cmake
+if(MSVC)
+    target_link_libraries(mylib -WHOLEARCHIVE:$<TARGET_FILE:usd_m> usd_m)
+elseif(CMAKE_COMPILER_IS_GNUCXX)
+    target_link_libraries(mylib -Wl,--whole-archive usd_m -Wl,--no-whole-archive)
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    target_link_libraries(mylib -Wl,-force_load usd_m)
+endif()
+```
+
+On Windows cmake cannot recognize 'usd_m' as a library when appended to
+ -WHOLEARCHIVE: because it's not a word to itself so we use TARGET_FILE
+to get the path to the library. We also link 'usd_m' separately so cmake
+will add usd_m's interface link libraries, etc. This second instance
+doesn't increase the resulting file size because all symbols will be
+found in the first (-WHOLEARCHIVE) instance.

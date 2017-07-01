@@ -28,3 +28,8 @@ include(gccclangshareddefaults)
 # containers on platforms where we can't. The implementation will
 # substitute C++11 containers with equivalent semantics in this case.
 set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -DTF_NO_GNU_EXT")
+
+# clang annoyingly warns about the -pthread option if it's only linking.
+if(CMAKE_USE_PTHREADS_INIT)
+    _disable_warning("unused-command-line-argument")
+endif()

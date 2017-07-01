@@ -24,11 +24,12 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/object.h"
 
-#include "pxr/usd/usd/conversions.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/wrapUtils.h"
 
 #include "pxr/base/tf/ostreamMethods.h"
+
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"

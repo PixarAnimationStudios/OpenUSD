@@ -84,6 +84,7 @@ elseif(WIN32)
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
             "C:/Program Files/Autodesk/Maya2017"
+            "C:/Program Files/Autodesk/Maya2016.5"
             "C:/Program Files/Autodesk/Maya2015.5-x64"
             "C:/Program Files/Autodesk/Maya2015.5"
             "C:/Program Files/Autodesk/Maya2014.5-x64"

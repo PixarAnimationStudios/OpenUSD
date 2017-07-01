@@ -1,8 +1,12 @@
 #usda 1.0
 
 over "Model_2" (
-    clipActive = [(0.0, 0)]
-    clipTimes = [(0.0, 0.0), (20.0, 20.0)]    
+    clips = {
+        dictionary default = {
+            double2[] active = [(0.0, 0)]
+            double2[] times = [(0.0, 0.0), (20.0, 20.0)]
+        }
+    }
 )
 {
 }

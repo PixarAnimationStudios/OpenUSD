@@ -26,6 +26,7 @@
 
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/pointsShaderKey.h"
+#include "pxr/imaging/hdSt/instancer.h"
 
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/getenv.h"
@@ -41,10 +42,6 @@
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-// static repr configuration
-HdStPoints::_PointsReprConfig HdStPoints::_reprDescConfig;
 
 HdStPoints::HdStPoints(SdfPath const& id,
                        SdfPath const& instancerId)
@@ -96,8 +93,14 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
 
     /* INSTANCE PRIMVARS */
-    _PopulateInstancePrimVars(sceneDelegate, drawItem, dirtyBits,
-                              InstancePrimVar);
+    if (!GetInstancerId().IsEmpty()) {
+        HdStInstancer *instancer = static_cast<HdStInstancer*>(
+            sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
+        if (TF_VERIFY(instancer)) {
+            instancer->PopulateDrawItem(drawItem, &_sharedData,
+                dirtyBits, InstancePrimVar);
+        }
+    }
 
     HdSt_PointsShaderKey shaderKey;
     drawItem->SetGeometricShader(Hd_GeometricShader::Create(shaderKey));
@@ -112,16 +115,6 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     TF_VERIFY(drawItem->GetConstantPrimVarRange());
 }
 
-/* static */
-void
-HdStPoints::ConfigureRepr(TfToken const &reprName,
-                          const HdStPointsReprDesc &desc)
-{
-    HD_TRACE_FUNCTION();
-
-    _reprDescConfig.Append(reprName, _PointsReprConfig::DescArray{desc});
-}
-
 HdReprSharedPtr const &
 HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
                      TfToken const &reprName,
@@ -130,7 +123,7 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _PointsReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
+    _PointsReprConfig::DescArray descs = _GetReprDesc(reprName);
 
     _ReprVector::iterator it = _reprs.begin();
     bool isNew = it == _reprs.end();

@@ -32,20 +32,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdBufferArrayRange::~HdBufferArrayRange() {
 }
 
-void
-HdBufferArrayRange::AddBufferSpecs(HdBufferSpecVector *specs) const
-{
-    HD_TRACE_FUNCTION();
-
-    HdBufferResourceNamedList const &resources = GetResources();
-
-    TF_FOR_ALL(it, resources) {
-        specs->push_back(HdBufferSpec(it->first,
-                                      it->second->GetGLDataType(),
-                                      it->second->GetNumComponents()));
-    }
-}
-
 std::ostream &operator <<(std::ostream &out,
                           const HdBufferArrayRange &self)
 {

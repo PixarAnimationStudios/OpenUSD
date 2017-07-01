@@ -50,30 +50,29 @@ const float MayaMeshWriter::_ColorSetDefaultAlpha = 1.0;
 
 
 MayaMeshWriter::MayaMeshWriter(
-        MDagPath & iDag, 
-        UsdStageRefPtr stage, 
-        const JobExportArgs & iArgs) :
-    MayaTransformWriter(iDag, stage, iArgs)
+        const MDagPath & iDag,
+        const SdfPath& uPath,
+        bool instanceSource,
+        usdWriteJobCtx& jobCtx) :
+    MayaTransformWriter(iDag, uPath, instanceSource, jobCtx)
 {
-}
-
-//virtual 
-UsdPrim MayaMeshWriter::write(const UsdTimeCode &usdTime)
-{
-
     if ( !isMeshValid() ) {
-        return UsdPrim();
+        return;
     }
 
     // Get schema
     UsdGeomMesh primSchema = UsdGeomMesh::Define(getUsdStage(), getUsdPath());
     TF_AXIOM(primSchema);
-    UsdPrim meshPrim = primSchema.GetPrim();
-    TF_AXIOM(meshPrim);
+    mUsdPrim = primSchema.GetPrim();
+    TF_AXIOM(mUsdPrim);
+}
 
+//virtual 
+void MayaMeshWriter::write(const UsdTimeCode &usdTime)
+{
+    UsdGeomMesh primSchema(mUsdPrim);
     // Write the attrs
     writeMeshAttrs(usdTime, primSchema);
-    return meshPrim;
 }
 
 static
@@ -187,7 +186,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
 
     // Read usdSdScheme attribute. If not set, we default to defaultMeshScheme
     // flag that can be user defined and initialized to catmullClark
-    TfToken sdScheme = PxrUsdMayaMeshUtil::getSubdivScheme(lMesh, getArgs().defaultMeshScheme);    
+    TfToken sdScheme = PxrUsdMayaMeshUtil::getSubdivScheme(lMesh, getArgs().defaultMeshScheme);
     primSchema.CreateSubdivisionSchemeAttr(VtValue(sdScheme), true);
 
     // Polygonal Mesh Case

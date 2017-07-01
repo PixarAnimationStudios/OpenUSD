@@ -79,10 +79,23 @@ class Launcher(object):
                             dest='primPath', type=str,
                             help='A prim path to initially select and frame')
 
-        parser.add_argument('--mask', action='store', nargs='+',
-                            dest='populationMask', metavar='PRIMPATH',
+        parser.add_argument('--camera', action='store', default="main_cam",
+                            type=str, help="Which camera to set the view to on "
+                            "open - may be given as either just the camera's "
+                            "prim name (ie, just the last element in the prim "
+                            "path), or as a full prim path.  Note that if only "
+                            "the prim name is used, and more than one camera "
+                            "exists with the name, which is used will be"
+                            "effectively random")
+
+        parser.add_argument('--mask', action='store',
+                            dest='populationMask',
+                            metavar='PRIMPATH[,PRIMPATH...]',
                             help='Limit stage population to these prims, '
-                            'their descendants and ancestors')
+                            'their descendants and ancestors.  To specify '
+                            'multiple paths, either use commas with no spaces '
+                            'or quote the argument and separate paths by '
+                            'commas and/or spaces.')
         
         parser.add_argument('--clearsettings', action='store_true', 
                             dest='clearSettings', 
@@ -138,9 +151,46 @@ class Launcher(object):
         '''
         if arg_parse_result.complexity < 1.0 or arg_parse_result.complexity > 2.0:
             newComplexity = max(min(2.0, arg_parse_result.complexity), 1.0)
-            print >> sys.stderr, "WARNING: complexity %.1f is out of range [1.0, 2.0], using %.1f instead" %  \
-                                 (arg_parse_result.complexity, newComplexity)
+            print >> sys.stderr, "WARNING: complexity %.1f is out of range " \
+                "[1.0, 2.0], using %.1f instead" %  \
+                (arg_parse_result.complexity, newComplexity)
             arg_parse_result.complexity = newComplexity
+
+        # split arg_parse_result.populationMask into paths.
+        if arg_parse_result.populationMask:
+            arg_parse_result.populationMask = (
+                arg_parse_result.populationMask.replace(',', ' ').split())
+
+        # convert the camera result to an sdf path, if possible, and verify
+        # that it is "just" a prim path
+        if arg_parse_result.camera:
+            from pxr import Sdf
+            camPath = Sdf.Path(arg_parse_result.camera)
+            if camPath.isEmpty:
+                print >> sys.stderr, "ERROR: invalid camera path - %r" % \
+                                     (arg_parse_result.camera,)
+                return False
+            if not camPath.IsPrimPath():
+                print >> sys.stderr, "ERROR: invalid camera path - must be a " \
+                                     "raw prim path, without variant " \
+                                     "selections, relational attributes, etc " \
+                                     "- got: %r" % \
+                                     (arg_parse_result.camera,)
+                return False
+
+            # check if it's a path, or just a name...
+            if camPath.name != arg_parse_result.camera:
+                # it's a "real" path, store the SdfPath version
+                if not camPath.IsAbsolutePath():
+                    # perhaps we should error here? For now just pre-pending
+                    # root, and printing warning...
+                    print >> sys.stderr, "WARNING: camera path %r was not " \
+                                         "absolute, prepending %r to make " \
+                                         "it absolute" % \
+                                         (str(camPath),
+                                          str(Sdf.Path.absoluteRootPath))
+                    camPath = camPath.MakeAbsolutePath(Sdf.Path.absoluteRootPath)
+                arg_parse_result.camera = camPath
         return True
             
     def __LaunchProcess(self, arg_parse_result):

@@ -63,6 +63,7 @@ void wrapUsdTimeCode()
 {
     class_<UsdTimeCode>("TimeCode")
         .def(init<double>())
+        .def(init<UsdTimeCode>())
 
         .def("EarliestTime", &UsdTimeCode::EarliestTime)
         .staticmethod("EarliestTime")

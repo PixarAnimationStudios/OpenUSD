@@ -1,0 +1,56 @@
+#type: node
+#context: out
+#internal: USDReference
+#tags: usd reference
+
+= USD Reference =
+
+"""insert a USD primative from one usd file to another as a reference"""
+
+== Overview ==
+
+This ROP will insert a [reference|http://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-References]  to a usd primative into a usd file.
+
+@parameters
+
+Render to Disk:
+    Saves the usd reference to disk.
+
+Controls...:
+    #id: renderdialog
+
+    Opens the control dialog to allow adjustments of the render parameters
+    before rendering.
+
+
+[Include:standard#valid_frame_range]
+
+Start/End/Inc:
+    Specifies the range of frames to render (start frame, end frame, and increment). All values may be floating point values. The range is inclusive. 
+
+    These parameters determine the values of the local variables for the output driver.
+
+	`$NRENDER`:
+	    The number of frames to be rendered by the output driver.
+	`$N`:
+	    The current frame being rendered (starting at 1 and going to `$NRENDER`).
+
+Render with Take:
+    #id: take
+
+    Uses the settings in a particular take while rendering. Choose
+    __Current__ to use the current take when rendering.
+
+== USD ==
+Destination File:
+    The USD file to which the reference will be inserted.
+Reference Prim Path:
+    USD location in the destination scene.
+Reference File:
+    The USD file to be inserted as a reference. 
+
+@related
+* [Node:sop/pixar--usdimport]
+* [Node:sop/pixar--usdunpack]
+* [Node:out/pixar--usdoutput]
+* [Node:out/pixar--usdlayer]

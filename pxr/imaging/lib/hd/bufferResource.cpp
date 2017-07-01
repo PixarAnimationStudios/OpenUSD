@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/bufferResource.h"
+#include "pxr/imaging/hd/conversions.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -64,74 +65,20 @@ HdBufferResource::HdBufferResource(TfToken const &role,
       _numComponents(numComponents),
       _arraySize(arraySize),
       _offset(offset),
-      _stride(stride),
-      _gpuAddr(0),
-      _texId(0)
+      _stride(stride)
 {
     /*NOTHING*/
 }
 
 HdBufferResource::~HdBufferResource()
 {
-    TF_VERIFY(_texId == 0);
+    /*NOTHING*/
 }
 
-void
-HdBufferResource::SetAllocation(GLuint id, GLsizeiptr size)
+size_t 
+HdBufferResource::GetComponentSize() const
 {
-    // call base class
-    HdResource::SetAllocation(id, size);
-
-    // note: gpu address remains valid until the buffer object is deleted,
-    // or when the data store is respecified via BufferData/BufferStorage.
-    // It doesn't change even when we make the buffer resident or non-resident.
-    // https://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
-    if (id != 0 && glGetNamedBufferParameterui64vNV) {
-        glGetNamedBufferParameterui64vNV(
-            id, GL_BUFFER_GPU_ADDRESS_NV, (GLuint64EXT*)&_gpuAddr);
-    } else {
-        _gpuAddr = 0;
-    }
-
-    // release texid if exist. SetAllocation is guaranteed to be called
-    // at the destruction of the hosting buffer array.
-    if (_texId) {
-        glDeleteTextures(1, &_texId);
-        _texId = 0;
-    }
-}
-
-GLuint
-HdBufferResource::GetTextureBuffer()
-{
-    // XXX: need change tracking.
-
-    if (_texId == 0) {
-        glGenTextures(1, &_texId);
-
-        GLenum format = GL_R32F;
-        if (_glDataType == GL_FLOAT) {
-            if (_numComponents <= 4) {
-                static const GLenum floats[]
-                    = { GL_R32F, GL_RG32F, GL_RGB32F, GL_RGBA32F };
-                format = floats[_numComponents-1];
-            }
-        } else if (_glDataType == GL_INT) {
-            if (_numComponents <= 4) {
-                static const GLenum ints[]
-                    = { GL_R32I, GL_RG32I, GL_RGB32I, GL_RGBA32I };
-                format = ints[_numComponents-1];
-            }
-        } else {
-            TF_CODING_ERROR("unsupported type: 0x%x numComponents = %d\n",
-                            _glDataType, _numComponents);
-        }
-
-        glBindTexture(GL_TEXTURE_BUFFER, _texId);
-        glTexBuffer(GL_TEXTURE_BUFFER, format, GetId());
-        glBindTexture(GL_TEXTURE_BUFFER, 0);
-    }
-    return _texId;
+    return HdConversions::GetComponentSize(_glDataType);
 }
 
 TfToken
@@ -184,6 +131,7 @@ HdBufferResource::GetGLTypeName() const
     // float instead of empty
     return _tokens->_float;
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

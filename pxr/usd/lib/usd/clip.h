@@ -25,7 +25,7 @@
 #define USD_CLIP_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/pcp/node.h"
+#include "pxr/usd/pcp/layerStack.h"
 
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layer.h"
@@ -69,6 +69,8 @@ struct Usd_ResolvedClipInfo
             && clipPrimPath == rhs.clipPrimPath
             && clipActive == rhs.clipActive
             && clipTimes == rhs.clipTimes
+            && sourceLayerStack == rhs.sourceLayerStack
+            && sourcePrimPath == rhs.sourcePrimPath
             && indexOfLayerWhereAssetPathsFound 
                     == rhs.indexOfLayerWhereAssetPathsFound);
     }
@@ -81,6 +83,9 @@ struct Usd_ResolvedClipInfo
     size_t GetHash() const
     {
         size_t hash = indexOfLayerWhereAssetPathsFound;
+        boost::hash_combine(hash, sourceLayerStack);
+        boost::hash_combine(hash, sourcePrimPath);
+
         if (clipAssetPaths) {
             for (const auto& assetPath : *clipAssetPaths) {
                 boost::hash_combine(hash, assetPath.GetHash());
@@ -113,16 +118,19 @@ struct Usd_ResolvedClipInfo
     boost::optional<std::string> clipPrimPath;
     boost::optional<VtVec2dArray> clipActive;
     boost::optional<VtVec2dArray> clipTimes;
+
+    PcpLayerStackPtr sourceLayerStack;
+    SdfPath sourcePrimPath;
     size_t indexOfLayerWhereAssetPathsFound;
 };
 
 /// Resolves clip metadata values for the prim index \p primIndex.
-/// Returns the source node where either clipAssetPaths or 
-/// clipTemplateAssetPath was found.
-PcpNodeRef
+/// Returns true if clip info was found and \p clipInfo was populated,
+/// false otherwise.
+bool
 Usd_ResolveClipInfo(
     const PcpPrimIndex& primIndex,
-    Usd_ResolvedClipInfo* clipInfo);
+    std::vector<Usd_ResolvedClipInfo>* clipInfo);
 
 /// Sentinel values authored on the edges of a clipTimes range.
 constexpr double Usd_ClipTimesEarliest = -std::numeric_limits<double>::max();
@@ -175,7 +183,8 @@ public:
 
     Usd_Clip();
     Usd_Clip(
-        const PcpNodeRef& clipSourceNode,
+        const PcpLayerStackPtr& clipSourceLayerStack,
+        const SdfPath& clipSourcePrimPath,
         size_t clipSourceLayerIndex,
         const SdfAssetPath& clipAssetPath,
         const SdfPath& clipPrimPath,
@@ -198,6 +207,16 @@ public:
     }
 
     size_t GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
+
+    // Internal function used during value resolution. When determining
+    // resolve info sources, value resolution needs to determine when clipTimes
+    // are mapping into an empty clip with no samples, so it can continue
+    // searching for value sources. 
+    size_t _GetNumTimeSamplesForPathInLayerForClip(
+            const SdfAbstractDataSpecId& id) const {
+        return _GetLayerForClip()->GetNumTimeSamplesForPath(
+                                        _TranslateIdToClip(id).id);
+    }
 
     std::set<ExternalTime>
     ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
@@ -237,9 +256,10 @@ public:
     /// open, it will generally be kept open for the life of the stage.
     SdfLayerHandle GetLayerIfOpen() const;
 
-    /// Node in the composed prim index and index of layer in its LayerStack
-    /// where this clip was introduced.
-    PcpNodeRef sourceNode;
+    /// Layer stack, prim spec path, and index of layer where this clip
+    /// was introduced.
+    PcpLayerStackPtr sourceLayerStack;
+    SdfPath sourcePrimPath;
     size_t sourceLayerIndex;
 
     /// Asset path for the clip and the path to the prim in the clip
@@ -269,6 +289,15 @@ private:
     private:
         SdfPath _path;
     };
+
+    std::set<InternalTime>
+    _GetMergedTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
+
+    bool 
+    _GetBracketingTimeSamplesForPathInternal(const SdfAbstractDataSpecId& id, 
+                                             ExternalTime time, 
+                                             ExternalTime* tLower, 
+                                             ExternalTime* tUpper) const;
 
     _TranslatedSpecId _TranslateIdToClip(const SdfAbstractDataSpecId& id) const;
 

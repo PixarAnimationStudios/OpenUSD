@@ -1,0 +1,24 @@
+#usda 1.0
+(
+    endTimeCode = 103
+    startTimeCode = 101
+)
+
+def "World" (
+    add references = @./root.topology.usda@</World>
+)
+{
+    over "fx"
+    {
+        over "Particles_Splash" (
+            clipActive = [(101, 0), (102, 1), (103, 2)]
+            clipAssetPaths = [@./p101.usda@, @./p102.usda@, @./p103.usda@]
+            clipManifestAssetPath = @./root.topology.usda@
+            clipPrimPath = "/World/fx/Particles_Splash"
+            clipTimes = [(101, 101), (101, 101), (101.99, 101), (101.99, 101),
+                         (102, 102), (102, 102), (103, 103), (103, 103)]
+        )
+        {
+        }
+    }
+}

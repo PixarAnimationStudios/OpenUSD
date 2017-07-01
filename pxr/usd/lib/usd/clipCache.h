@@ -66,13 +66,15 @@ public:
 
         void Swap(Clips& rhs)
         {
-            std::swap(sourceNode, rhs.sourceNode);
+            std::swap(sourceLayerStack, rhs.sourceLayerStack);
+            std::swap(sourcePrimPath, rhs.sourcePrimPath);
             std::swap(sourceLayerIndex, rhs.sourceLayerIndex);
             std::swap(manifestClip, rhs.manifestClip);
             std::swap(valueClips, rhs.valueClips);
         }
 
-        PcpNodeRef sourceNode;
+        PcpLayerStackPtr sourceLayerStack;
+        SdfPath sourcePrimPath;
         size_t sourceLayerIndex;
         Usd_ClipRefPtr manifestClip;
         Usd_ClipRefPtrVector valueClips;

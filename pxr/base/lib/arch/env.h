@@ -76,6 +76,14 @@ ARCH_API
 std::string
 ArchExpandEnvironmentVariables(const std::string& str);
 
+///
+/// Return an array of the environment variables.
+/// \ingroup group_arch_SystemFunctions
+///
+ARCH_API
+char**
+ArchEnviron();
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_ENV_H

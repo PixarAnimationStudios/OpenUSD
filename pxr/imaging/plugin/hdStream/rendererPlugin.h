@@ -37,12 +37,6 @@ public:
     virtual HdRenderDelegate *CreateRenderDelegate() override;
     virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) override;
 
-    virtual HdxTaskController *CreateTaskController(
-                                          HdRenderIndex *renderIndex,
-                                          const SdfPath &controllerId) override;
-    virtual void DeleteTaskController(
-                                    HdxTaskController *taskController) override;
-
 private:
     HdStreamRendererPlugin(const HdStreamRendererPlugin &)             = delete;
     HdStreamRendererPlugin &operator =(const HdStreamRendererPlugin &) = delete;

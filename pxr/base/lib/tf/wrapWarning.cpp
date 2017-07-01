@@ -25,7 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/warning.h"
-
+#include "pxr/base/tf/pyCallContext.h"
 #include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/stringUtils.h"

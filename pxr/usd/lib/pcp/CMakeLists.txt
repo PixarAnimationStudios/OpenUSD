@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE pcp)
 
-pxr_shared_library(pcp
+pxr_library(pcp
     LIBRARIES
         tf
         tracelite
@@ -600,6 +600,21 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyMultipleRelocations2.testenv
+    DEST testPcpMuseum_TrickyMultipleRelocations2
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyMultipleRelocations3.testenv
+    DEST testPcpMuseum_TrickyMultipleRelocations3
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickyMultipleRelocations4.testenv
+    DEST testPcpMuseum_TrickyMultipleRelocations4
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyMultipleRelocationsAndClasses.testenv
     DEST testPcpMuseum_TrickyMultipleRelocationsAndClasses
 )
@@ -1152,6 +1167,27 @@ pxr_register_test(testPcpMuseum_TrickyMultipleRelocations
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocations/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations.txt
     DIFF_COMPARE compositionResults_TrickyMultipleRelocations.txt 
+)
+
+pxr_register_test(testPcpMuseum_TrickyMultipleRelocations2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocations2/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations2.txt
+    DIFF_COMPARE compositionResults_TrickyMultipleRelocations2.txt 
+)
+
+pxr_register_test(testPcpMuseum_TrickyMultipleRelocations3
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocations3/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations3.txt
+    DIFF_COMPARE compositionResults_TrickyMultipleRelocations3.txt 
+)
+
+pxr_register_test(testPcpMuseum_TrickyMultipleRelocations4
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_TrickyMultipleRelocations4.txt TrickyMultipleRelocations4/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations4.txt
+    DIFF_COMPARE compositionResults_TrickyMultipleRelocations4.txt compositionErrors_TrickyMultipleRelocations4.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocationsAndClasses

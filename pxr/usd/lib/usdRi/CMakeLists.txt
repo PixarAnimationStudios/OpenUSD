@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdRi)
 
-pxr_shared_library(usdRi
+pxr_library(usdRi
     LIBRARIES
         tf
         vt
@@ -9,22 +9,35 @@ pxr_shared_library(usdRi
         usd
         usdShade
         usdGeom
+        usdLux
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        tokens
-        statements
-        lookAPI
-        rmanUtilities
-        rslShader
-        risIntegrator
+        lightAPI
+        lightFilterAPI
+        lightPortalAPI
+        materialAPI
+        pxrAovLight
+        pxrBarnLightFilter
+        pxrCookieLightFilter
+        pxrEnvDayLight
+        pxrIntMultLightFilter
+        pxrRampLightFilter
+        pxrRodLightFilter
         risBxdf
+        risIntegrator
         risObject
         risOslPattern
         risPattern
+        rmanUtilities
+        rslShader
+        splineAPI
+        statements
+        textureAPI
+        tokens
 
     PUBLIC_HEADERS
         api.h
@@ -35,15 +48,27 @@ pxr_shared_library(usdRi
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapLookAPI.cpp
-        wrapRmanUtilities.cpp
+        wrapLightAPI.cpp
+        wrapLightFilterAPI.cpp
+        wrapLightPortalAPI.cpp
+        wrapMaterialAPI.cpp
+        wrapPxrAovLight.cpp
+        wrapPxrBarnLightFilter.cpp
+        wrapPxrCookieLightFilter.cpp
+        wrapPxrEnvDayLight.cpp
+        wrapPxrIntMultLightFilter.cpp
+        wrapPxrRampLightFilter.cpp
+        wrapPxrRodLightFilter.cpp
         wrapRisBxdf.cpp
         wrapRisIntegrator.cpp
         wrapRisObject.cpp
         wrapRisOslPattern.cpp
         wrapRisPattern.cpp
+        wrapRmanUtilities.cpp
         wrapRslShader.cpp
+        wrapSplineAPI.cpp
         wrapStatements.cpp
+        wrapTextureAPI.cpp
         wrapTokens.cpp
 
     PYTHON_FILES
@@ -56,12 +81,19 @@ pxr_shared_library(usdRi
 
 pxr_test_scripts(
     testenv/testUsdRiSchemata.py
+    testenv/testUsdRiSplineAPI.py
     testenv/testUsdRiUtilities.py
 )
 
 pxr_register_test(testUsdRiSchemata
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSchemata"  
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdRiSplineAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSplineAPI"  
     EXPECTED_RETURN_CODE 0
 )
 

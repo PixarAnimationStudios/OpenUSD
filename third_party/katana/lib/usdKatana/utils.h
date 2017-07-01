@@ -61,7 +61,8 @@ struct PxrUsdKatanaUtils {
     /// The pathsAsModel argument is used when trying to resolve asset paths.
     static FnKat::Attribute ConvertVtValueToKatAttr( const VtValue & val,
                                                      bool asShaderParam,
-                                                     bool pathsAsModel = false );
+                                                     bool pathsAsModel = false,
+                                                     bool resolvePaths = true);
 
     /// Extract the targets of a relationship to a Katana attribute.
     /// If asShaderParam is true, it will use the special encoding
@@ -96,15 +97,26 @@ struct PxrUsdKatanaUtils {
     // Scan the model hierarchy for models with kind=camera.
     static SdfPathVector FindCameraPaths( const UsdStageRefPtr& stage );
 
+    /// Use UsdLuxListAPI to discover published lights (without a
+    /// full scene traversal).
+    static SdfPathSet FindLightPaths( const UsdStageRefPtr& stage );
+
     /// Convert the given SdfPath in the UsdStage to the corresponding
     /// katana location, given a scenegraph generator configuration.
     static std::string ConvertUsdPathToKatLocation(
             const SdfPath &path,
             const PxrUsdKatanaUsdInPrivateData& data);
+    static std::string ConvertUsdPathToKatLocation(
+            const SdfPath &path,
+            const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs);
 
     /// USD Looks can have Katana child-parent relationships, which means that
     /// we'll have to do some extra processing to find the correct path that
     /// these resolve to
+    static std::string _GetDisplayGroup(
+            const UsdPrim &prim,
+            const SdfPath& path);
+    static std::string _GetDisplayName(const UsdPrim &prim);
     static std::string ConvertUsdMaterialPathToKatLocation(
             const SdfPath &path,
             const PxrUsdKatanaUsdInPrivateData& data);
@@ -127,6 +139,10 @@ struct PxrUsdKatanaUtils {
     /// having to do with number of children and how many are components (non-group
     /// models).
     static bool ModelGroupNeedsProxy(const UsdPrim &prim);
+
+    /// Creates the 'proxies' group attribute for consumption by the viewer.
+    static FnKat::GroupAttribute GetViewerProxyAttr(
+            const PxrUsdKatanaUsdInPrivateData& data);
 
     /// Returns the asset name for the given prim.  It should be a model.  This
     /// will fallback to the name of the prim.

@@ -45,7 +45,11 @@ GlfPostPendingGLErrors(std::string const & where)
 {
     bool foundError = false;
     GLenum error;
-    while ((error = glGetError()) != GL_NO_ERROR) {
+    // Protect from doing infinite looping when glGetError
+    // is called from an invalid context.
+    int watchDogCount = 0;
+    while ((watchDogCount++ < 256) &&
+            ((error = glGetError()) != GL_NO_ERROR)) {
         foundError = true;
         const GLubyte *errorString = gluErrorString(error);
 
@@ -153,6 +157,34 @@ GlfDebugEnumToString(GLenum debugEnum)
 #endif
     TF_CODING_ERROR("unknown debug enum");
     return "unknown";
+}
+
+static void _GlfPushDebugGroup(char const * message)
+{
+#if defined(GL_KHR_debug)
+    if (GLEW_KHR_debug) {
+        glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, message);
+    }
+#endif
+}
+
+static void _GlfPopDebugGroup()
+{
+#if defined(GL_KHR_debug)
+    if (GLEW_KHR_debug) {
+        glPopDebugGroup();
+    }
+#endif
+}
+
+GlfDebugGroup::GlfDebugGroup(char const *message)
+{
+    _GlfPushDebugGroup(message);
+}
+
+GlfDebugGroup::~GlfDebugGroup()
+{
+    _GlfPopDebugGroup();
 }
 
 GlfGLQueryObject::GlfGLQueryObject()

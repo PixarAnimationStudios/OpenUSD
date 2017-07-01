@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/glf/ptexMipmapTextureLoader.h"
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/tf/diagnostic.h"
 
 #include <Ptexture.h>
 #include <vector>
@@ -46,7 +47,9 @@ GlfPtexMipmapTextureLoader::Block::guttering(
     int lineBufferSize = std::max(wid, hei) * bpp;
     unsigned char * lineBuffer = new unsigned char[lineBufferSize];
 
-    for (int edge = 0; edge < 4; edge++) {
+    int numEdges = ptex->meshType() == Ptex::mt_triangle ? 3 : 4;  
+
+    for (int edge = 0; edge < numEdges; edge++) {
         int len = (edge == 0 || edge == 2) ? wid : hei;
         loader->sampleNeighbor(lineBuffer, this->index, edge, len, bpp);
 
@@ -79,7 +82,7 @@ GlfPtexMipmapTextureLoader::Block::guttering(
     int uv[4][2] = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
 
 
-    for (int edge = 0; edge < 4; edge++) {
+    for (int edge = 0; edge < numEdges; edge++) {
         int du = uv[edge][0];
         int dv = uv[edge][1];
 
@@ -497,6 +500,7 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
                                            int dstLength, int bpp,
                                            float srcStart, float srcEnd)
 {
+    TF_VERIFY(static_cast<size_t>(face) < _blocks.size());
     Ptex::Res res(_blocks[face].ulog2, _blocks[face].vlog2);
 
     int edgeLength = (edgeId == 0 || edgeId == 2) ? res.u() : res.v();
@@ -504,8 +508,16 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
     int srcLength = (int)((srcEnd-srcStart)*edgeLength);
 
     if (dstLength >= srcLength) {
-        // copy or up sampling (nearest)
         PtexFaceData * data = _ptex->getData(face, res);
+        if (!data) {
+            // XXX:validation
+            // We should add a validation step to ensure we don't have missing
+            // face data and that the format is right (quad vs tri).
+            TF_WARN("Ptex missing texture face for face %d at res (%d x %d)",
+                face, res.u(), res.v());
+            return srcLength;
+        }
+        // copy or up sampling (nearest)
         unsigned char *border = new unsigned char[bpp*srcLength];
 
         // order of the result will be flipped to match adjacent pixel order
@@ -533,8 +545,8 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
                 result[i*bpp+j] = border[(i*srcLength/dstLength)*bpp+j];
             }
         }
-        data->release();
         delete[] border;
+        data->release();
     } else {
         // down sampling
         while (srcLength > dstLength && res.ulog2 && res.vlog2) {
@@ -542,8 +554,17 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
             --res.vlog2;
             srcLength /= 2;
         }
-
+        
         PtexFaceData * data = _ptex->getData(face, res);
+        if (!data) {
+            // XXX:validation
+            // We should add a validation step to ensure we don't have missing
+            // face data and that the format is right (quad vs tri).
+            TF_WARN("Ptex missing texture face for face %d at res (%d x %d)",
+                face, res.u(), res.v());
+            return srcLength;
+        }
+
         unsigned char *border = new unsigned char[bpp*srcLength];
         edgeLength = (edgeId == 0 || edgeId == 2) ? res.u() : res.v();
         srcOffset = (int)(srcStart*edgeLength);
@@ -570,8 +591,8 @@ GlfPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
             }
         }
 
-        data->release();
         delete[] border;
+        data->release();
     }
 
     return srcLength;
@@ -607,12 +628,16 @@ GlfPtexMipmapTextureLoader::sampleNeighbor(unsigned char *border, int face,
               | adj face |       |
               +----------+-------+
             */
-            resampleBorder(adjface, ae, border, length/2, bpp);
-            const Ptex::FaceInfo &sfi1 = _ptex->getFaceInfo(adjface);
-            adjface = sfi1.adjface((ae+3)%4);
-            ae = (sfi1.adjedge((ae+3)%4)+3)%4;
-            resampleBorder(adjface, ae, border+(length/2*bpp),
-                           length/2, bpp);
+            if (_ptex->meshType() == Ptex::mt_quad) {
+                resampleBorder(adjface, ae, border, length/2, bpp);
+                const Ptex::FaceInfo &sfi1 = _ptex->getFaceInfo(adjface);
+                adjface = sfi1.adjface((ae+3)%4);
+                ae = (sfi1.adjedge((ae+3)%4)+3)%4;
+                resampleBorder(adjface, ae, border+(length/2*bpp),
+                               length/2, bpp);
+            } else {
+                TF_WARN("Assuming quad mesh format");
+            }
 
         } else if (fi.isSubface() && !_ptex->getFaceInfo(adjface).isSubface()) {
             /* subface -> nonsubface (0.5:1).   two possible configuration
@@ -624,16 +649,21 @@ GlfPtexMipmapTextureLoader::sampleNeighbor(unsigned char *border, int face,
               |       adj face      |  |       adj face      |
               +---------------------+  +---------------------+
             */
-            int Bf = fi.adjface((edge+1)%4);
-            int Be = fi.adjedge((edge+1)%4);
-            int f = _ptex->getFaceInfo(Bf).adjface((Be+1)%4);
-            int e = _ptex->getFaceInfo(Bf).adjedge((Be+1)%4);
-            if (f == adjface && e == ae)  // case 1
-                resampleBorder(adjface, ae, border,
-                               length, bpp, 0.0, 0.5);
-            else  // case 2
-                resampleBorder(adjface, ae, border,
-                               length, bpp, 0.5, 1.0);
+            if (_ptex->meshType() == Ptex::mt_quad) {
+                int Bf = fi.adjface((edge+1)%4);
+                int Be = fi.adjedge((edge+1)%4);
+                int f = _ptex->getFaceInfo(Bf).adjface((Be+1)%4);
+                int e = _ptex->getFaceInfo(Bf).adjedge((Be+1)%4);
+                if (f == adjface && e == ae) { // case 1
+                    resampleBorder(adjface, ae, border,
+                            length, bpp, 0.0, 0.5);
+                } else { // case 2
+                    resampleBorder(adjface, ae, border,
+                            length, bpp, 0.5, 1.0);
+                }
+            } else {
+                TF_WARN("Assuming quad mesh format");
+            }
 
         } else {
             /*  ordinary case (1:1 match)

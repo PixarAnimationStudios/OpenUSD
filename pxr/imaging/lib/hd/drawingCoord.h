@@ -27,7 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/base/tf/diagnostic.h"
+#include <stdint.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

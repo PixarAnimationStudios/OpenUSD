@@ -180,7 +180,7 @@ private:
     {
     }
 
-    SdfPrimSpecHandle _CreatePrimSpecForEditing(const SdfPath &path);
+    SdfPrimSpecHandle _CreatePrimSpecForEditing();
     SdfVariantSetSpecHandle _AppendVariantSet();
 
     UsdPrim _prim;

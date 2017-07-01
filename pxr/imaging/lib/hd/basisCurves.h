@@ -31,6 +31,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \class HdBasisCurvesReprDesc
+///
+/// Descriptor to configure a drawItem for a repr.
+///
+struct HdBasisCurvesReprDesc {
+    HdBasisCurvesReprDesc(
+        HdBasisCurvesGeomStyle geomStyle = HdBasisCurvesGeomStyleInvalid)
+        : geomStyle(geomStyle)
+        {}
+
+    HdBasisCurvesGeomStyle geomStyle:2;
+};
 
 /// Hydra Schema for a collection of curves using a particular basis.
 ///
@@ -45,17 +57,33 @@ public:
     inline HdBasisCurvesTopology  GetBasisCurvesTopology(HdSceneDelegate* delegate) const;
     inline int                    GetRefineLevel(HdSceneDelegate* delegate)         const;
 
+    /// Configure geometric style of drawItems for \p reprName
+    HD_API
+    static void ConfigureRepr(TfToken const &reprName,
+                              HdBasisCurvesReprDesc desc);
 
+    /// Returns whether refinement is always on or not.
+    HD_API
+    static bool IsEnabledForceRefinedCurves();
+    
 protected:
     HD_API
     HdBasisCurves(SdfPath const& id,
                   SdfPath const& instancerId = SdfPath());
+
+    typedef _ReprDescConfigs<HdBasisCurvesReprDesc> _BasisCurvesReprConfig;
+
+    HD_API
+    static _BasisCurvesReprConfig::DescArray
+        _GetReprDesc(TfToken const &reprName);
 
 private:
     // Class can not be default constructed or copied.
     HdBasisCurves()                                  = delete;
     HdBasisCurves(const HdBasisCurves &)             = delete;
     HdBasisCurves &operator =(const HdBasisCurves &) = delete;
+
+    static _BasisCurvesReprConfig _reprDescConfig;
 };
 
 inline HdBasisCurvesTopology

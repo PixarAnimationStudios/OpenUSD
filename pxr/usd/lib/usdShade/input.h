@@ -75,6 +75,16 @@ public:
         return _attr.GetPrim();
     }
 
+    /// Convenience wrapper for the templated UsdAttribute::Get().
+    template <typename T>
+    bool Get(T* value, UsdTimeCode time = UsdTimeCode::Default()) const {
+        return GetAttr().Get(value, time);
+    }
+
+    /// Convenience wrapper for VtValue version of UsdAttribute::Get().
+    USDSHADE_API
+    bool Get(VtValue* value, UsdTimeCode time = UsdTimeCode::Default()) const;
+
     /// Set a value for the Input at \p time.
     /// 
     USDSHADE_API
@@ -148,6 +158,11 @@ public:
     USDSHADE_API
     static bool IsInput(const UsdAttribute &attr);
 
+    /// Test if this name has a namespace that indicates it could be an
+    /// input.
+    USDSHADE_API
+    static bool IsInterfaceInputName(const std::string & name);
+
     /// Explicit UsdAttribute extractor.
     const UsdAttribute &GetAttr() const { return _attr; }
 
@@ -211,7 +226,6 @@ public:
     /// connectability of the input. This is done by setting the 
     /// "connectability" metadata on the associated attribute.
     /// 
-    /// 
     /// Connectability of an Input can be set to UsdShadeTokens->full or 
     /// UsdShadeTokens->interfaceOnly. 
     /// 
@@ -222,9 +236,7 @@ public:
     /// render-time dataflow connection), or another Input whose connectability 
     /// is also "interfaceOnly".
     /// 
-    /// The default connectability of a node-graph interface input is 
-    /// UsdShadeTokens->interfaceOnly. 
-    /// The default connectability of a shader input is UsdShadeTokens->full. 
+    /// The default connectability of an input is UsdShadeTokens->full.
     /// 
     /// \sa SetConnectability()
     USDSHADE_API

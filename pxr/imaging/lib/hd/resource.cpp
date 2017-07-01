@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/resource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -29,7 +28,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdResource::HdResource(TfToken const & role) 
     : _role(role)
-    , _id(0)
     , _size(0)
 {
     /*NOTHING*/
@@ -41,11 +39,11 @@ HdResource::~HdResource()
 }
 
 void
-HdResource::SetAllocation(GLuint id, GLsizeiptr size)
+HdResource::SetSize(size_t size)
 {
-    _id = id;
     _size = size;
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

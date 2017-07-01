@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE cameraUtil)
 
-pxr_shared_library(cameraUtil
+pxr_library(cameraUtil
     LIBRARIES
         tf
         gf

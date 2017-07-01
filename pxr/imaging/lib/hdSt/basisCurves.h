@@ -39,20 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-/// \class HdStBasisCurvesReprDesc
-///
-/// Descriptor to configure a drawItem for a repr.
-///
-struct HdStBasisCurvesReprDesc {
-    HdStBasisCurvesReprDesc(
-        HdBasisCurvesGeomStyle geomStyle = HdBasisCurvesGeomStyleInvalid)
-        : geomStyle(geomStyle)
-        {}
-
-    HdBasisCurvesGeomStyle geomStyle:2;
-};
-
 typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
                                               HdSt_BasisCurvesTopologySharedPtr;
 
@@ -77,15 +63,6 @@ public:
                       TfToken const &  reprName,
                       bool             forcedRepr) override;
 
-    /// Configure geometric style of drawItems for \p reprName
-    HDST_API
-    static void ConfigureRepr(TfToken const &reprName,
-                              HdStBasisCurvesReprDesc desc);
-
-    /// Returns whether refinement is always on or not.
-    HDST_API
-    static bool IsEnabledForceRefinedCurves();
-    
 protected:
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
@@ -95,7 +72,7 @@ protected:
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
-                           const HdStBasisCurvesReprDesc &desc);
+                           const HdBasisCurvesReprDesc &desc);
 
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                  HdDrawItem *drawItem,
@@ -123,16 +100,16 @@ private:
     /// We only support drawing smooth curves for a small subset of all the
     /// curves that hydra needs to support
     /// We will fallback to line segments for unsupported curves.
-    bool _SupportsSmoothCurves(const HdStBasisCurvesReprDesc &desc,
+    bool _SupportsSmoothCurves(const HdBasisCurvesReprDesc &desc,
                                int refineLevel);
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
-                         const HdStBasisCurvesReprDesc &desc);
+                         const HdBasisCurvesReprDesc &desc);
 
     void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                                        const HdStBasisCurvesReprDesc &desc);
+                                        const HdBasisCurvesReprDesc &desc);
 
     void _SetGeometricShaders();
 
@@ -142,9 +119,6 @@ private:
     HdTopology::ID _topologyId;
     int _customDirtyBitsInUse;
     int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
-
-    typedef _ReprDescConfigs<HdStBasisCurvesReprDesc> _BasisCurvesReprConfig;
-    static _BasisCurvesReprConfig _reprDescConfig;
 };
 
 

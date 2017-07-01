@@ -108,6 +108,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/primIndex.h"
+
+#include "pxr/usd/sdf/attributeSpec.h"
+#include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 
 #include "pxr/usd/usdShade/tokens.h"
@@ -134,6 +137,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outputs)
 );
 
+/* static */
+bool 
+UsdShadeConnectableAPI::AreBidirectionalInterfaceConnectionsEnabled()
+{
+    return TfGetEnvSetting(USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS);
+}
 
 bool 
 UsdShadeConnectableAPI::IsShader() const
@@ -233,11 +242,8 @@ _CanConnectInputToSource(const UsdShadeInput &input,
         return true;
     } else if (inputConnectability == UsdShadeTokens->interfaceOnly) {
         if (UsdShadeInput::IsInput(source)) {
-            if (source.GetPrim().IsA<UsdShadeNodeGraph>()) {
-                return true;
-            }
-
-            TfToken sourceConnectability = UsdShadeInput(source).GetConnectability();
+            TfToken sourceConnectability = 
+                UsdShadeInput(source).GetConnectability();
             if (sourceConnectability == UsdShadeTokens->interfaceOnly) {
                 return true;
             }
@@ -299,6 +305,24 @@ _GetConnectionRel(
     return UsdRelationship();
 }
 
+// Creates an old-style interfaceRecipientsOf relationship for an interface 
+// attribute. Exists temporarily for backwards compatibility.
+static UsdRelationship
+_GetInterfaceAttributeRel(const UsdAttribute &interfaceAttr,
+                          const TfToken &renderTarget)
+{
+    std::string relPrefix = renderTarget.IsEmpty() ? 
+            UsdShadeTokens->interfaceRecipientsOf :
+            TfStringPrintf("%s:%s", renderTarget.GetText(),
+                UsdShadeTokens->interfaceRecipientsOf.GetText());
+    std::string baseName = UsdShadeUtils::GetBaseNameAndType(
+            interfaceAttr.GetName()).first.GetString();
+
+    TfToken relName(relPrefix + baseName);
+    return interfaceAttr.GetPrim().CreateRelationship(relName, 
+        /*custom */ false);
+}
+
 /* static */
 bool  
 UsdShadeConnectableAPI::_ConnectToSource(
@@ -340,11 +364,13 @@ UsdShadeConnectableAPI::_ConnectToSource(
         {
             // Author "interfaceRecipientsOf" pointing in the reverse direction
             // if we're authoring the old-style encoding.
-            success = UsdShadeInterfaceAttribute(sourceAttr).SetRecipient(
-                renderTarget, shadingProp.GetPath());
+            if (UsdRelationship rel = _GetInterfaceAttributeRel(sourceAttr,
+                                                                renderTarget)) {
+                SdfPathVector targets{shadingProp.GetPath()};
+                success = rel.SetTargets(targets);
+            }
 
-            if (!TfGetEnvSetting(
-                USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS)) {
+            if (!AreBidirectionalInterfaceConnectionsEnabled()) {
                 return success;
             }
         }
@@ -379,18 +405,37 @@ UsdShadeConnectableAPI::_ConnectToSource(
                 /* custom = */ false);
         }
 
-        UsdRelationship rel = _GetConnectionRel(shadingProp, /* create */ true);
-        if (!rel) {
-            TF_CODING_ERROR("Failed connecting shading property <%s>. "
-                            "Unable to make the connection to source <%s>.", 
-                            shadingProp.GetPath().GetText(),
-                            sourcePrim.GetPath().GetText());
-            return false;
+        // If writing of new encoding is disabled or if the shadingProp
+        // is a relationship (i.e. old-style terminal output), then author the
+        // connection as a relationship.
+        if (!UsdShadeUtils::WriteNewEncoding() ||
+            shadingProp.Is<UsdRelationship>()) 
+        {
+            UsdRelationship rel = _GetConnectionRel(shadingProp, /* create */ true);
+            if (!rel) {
+                TF_CODING_ERROR("Failed connecting shading property <%s>. "
+                                "Unable to make the connection to source <%s>.", 
+                                shadingProp.GetPath().GetText(),
+                                sourcePrim.GetPath().GetText());
+                return false;
+            }
+
+            SdfPathVector  target{sourceAttr.GetPath()};
+            success = rel.SetTargets(target);
+
+        } else {
+            UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
+            if (!shadingAttr) {
+                TF_CODING_ERROR("Attempted to author a connection on an invalid"
+                    "shading property <%s>.", UsdDescribe(shadingAttr).c_str());
+                return false;
+            }
+            success = shadingAttr.SetConnections(
+                SdfPathVector{sourceAttr.GetPath()});
         }
 
-        SdfPathVector  target(1, sourceAttr.GetPath());
-        success = rel.SetTargets(target);
-
+            
+        
     } else if (!source) {
         TF_CODING_ERROR("Failed connecting shading property <%s>. "
                         "The given source shader prim <%s> is not defined", 
@@ -512,20 +557,34 @@ UsdShadeConnectableAPI::GetConnectedSource(
         return false;
     }
     
-    UsdRelationship connection = _GetConnectionRel(shadingProp, false);
-
     *source = UsdShadeConnectableAPI();
-    SdfPathVector targets;
-    // There should be no possibility of forwarding, here, since the API
-    // only allows targetting prims
-    if (connection) {
-        connection.GetTargets(&targets);
+
+    SdfPathVector sources;
+    if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
+        shadingAttr.GetConnections(&sources);
     }
 
-    // XXX(validation)  targets.size() <= 1, also sourceName
-    if (targets.size() == 1) {
-        SdfPath const & path = targets[0];
-        *source = UsdShadeConnectableAPI::Get(connection.GetStage(), 
+    // Check the old encoding only when we haven't already found a source 
+    // authored via UsdAttribute connections.
+    if (UsdShadeUtils::ReadOldEncoding() && sources.empty()) {
+        UsdRelationship connection = _GetConnectionRel(shadingProp, false);
+        // There should be no possibility of forwarding here, unless the given 
+        // shading property is a terminal output (or relationship).
+        if (connection) {
+            bool shadingPropIsTerminal = shadingProp.Is<UsdRelationship>();
+            shadingPropIsTerminal ? connection.GetForwardedTargets(&sources)
+                : connection.GetTargets(&sources);
+
+            if (TfGetEnvSetting(USD_SHADE_BACK_COMPAT)) {
+                connection.GetMetadata(_tokens->outputName, sourceName);
+            }
+        }
+    }
+
+    // XXX(validation)  sources.size() <= 1, also sourceName
+    if (sources.size() == 1) {
+        SdfPath const & path = sources[0];
+        *source = UsdShadeConnectableAPI::Get(shadingProp.GetStage(), 
                                               path.GetPrimPath());
         if (path.IsPropertyPath()){
             TfToken const &attrName(path.GetNameToken());
@@ -533,13 +592,14 @@ UsdShadeConnectableAPI::GetConnectedSource(
             std::tie(*sourceName, *sourceType) = 
                 UsdShadeUtils::GetBaseNameAndType(attrName);
         } else {
-            // XXX validation error
-            if ( TfGetEnvSetting(USD_SHADE_BACK_COMPAT) ) {
-                return connection.GetMetadata(_tokens->outputName, sourceName)
-                    && *source;
+            // If this is a terminal-style output, then allow connection 
+            // to a prim.
+            if (shadingProp.Is<UsdRelationship>()) {
+                return *source;
             }
         }
     }
+
     return *source;
 }
 
@@ -549,16 +609,27 @@ UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
     UsdProperty const &shadingProp, 
     SdfPathVector *sourcePaths)
 {
-    TfToken relName = _GetConnectionRelName(shadingProp.GetName());
-    UsdRelationship rel = shadingProp.GetPrim().GetRelationship(relName);
-    if (!rel) {
-        return false;
+    if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
+        if (!shadingAttr.GetConnections(sourcePaths)) {
+            TF_WARN("Unable to get connections for shading attribute <%s>", 
+                shadingAttr.GetPath().GetText());
+            return false;
+        }
     }
+    
+    // If we already have a sourcePath authored as an attribute connection,
+    // return it.
+    if (sourcePaths->empty() && UsdShadeUtils::ReadOldEncoding()) {
+        const UsdRelationship rel = _GetConnectionRel(shadingProp, /* create */ false);
+        if (!rel) {
+            return false;
+        }
 
-    if (!rel.GetTargets(sourcePaths)) {
-        TF_WARN("Unable to get targets for relationship <%s>",
-                rel.GetPath().GetText());
-        return false;
+        if (!rel.GetTargets(sourcePaths)) {
+            TF_WARN("Unable to get targets for relationship <%s>",
+                    rel.GetPath().GetText());
+            return false;
+        }
     }
 
     return true;
@@ -618,6 +689,45 @@ bool
 UsdShadeConnectableAPI::IsSourceFromBaseMaterial(
     const UsdProperty &shadingProp)
 {
+    if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
+        // USD core doesn't provide a UsdResolveInfo style API for asking where
+        // connections are authored, so we do it here ourselves.
+        // Find the strongest opinion about connections.
+        SdfAttributeSpecHandle strongestAttrSpecWithConnections;
+        SdfPropertySpecHandleVector propStack = shadingAttr.GetPropertyStack();
+        for (const SdfPropertySpecHandle &prop: propStack) {
+            if (SdfAttributeSpecHandle attrSpec =
+                TfDynamic_cast<SdfAttributeSpecHandle>(prop)) {
+                if (attrSpec->HasConnectionPaths()) {
+                    strongestAttrSpecWithConnections = attrSpec;
+                    break;
+                }
+            }
+        }
+
+        // Find which prim node introduced that opinion.
+        if (strongestAttrSpecWithConnections) {
+            for(const PcpNodeRef &node:
+                shadingProp.GetPrim().GetPrimIndex().GetNodeRange()) {
+                if (node.GetPath() == strongestAttrSpecWithConnections->
+                        GetPath().GetPrimPath() 
+                    &&
+                    node.GetLayerStack()->HasLayer(
+                        strongestAttrSpecWithConnections->GetLayer())) 
+                {
+                    return _NodeRepresentsLiveBaseMaterial(node);
+                }
+            }
+        }
+        
+        
+    }
+
+    if (!UsdShadeUtils::ReadOldEncoding()) {
+        return false;
+    }
+
+    // Check the old encoding.
     UsdRelationship rel = _GetConnectionRel(shadingProp, /*create*/ false);
     if (!rel) {
         return false;
@@ -647,6 +757,7 @@ UsdShadeConnectableAPI::IsSourceFromBaseMaterial(
             }
         }
     }
+
     return false;
 
 }
@@ -656,9 +767,20 @@ bool
 UsdShadeConnectableAPI::DisconnectSource(UsdProperty const &shadingProp)
 {
     bool success = true;
-    if (UsdRelationship rel = _GetConnectionRel(shadingProp, false)) {
-        success = rel.BlockTargets();
+    if (UsdShadeUtils::WriteNewEncoding()) {
+        if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
+            success = shadingAttr.BlockConnections();
+        }
     }
+
+    // Don't bother looking for and blocking rel targets, if reading of old 
+    // encoding is disabled.
+    if (UsdShadeUtils::ReadOldEncoding()) {
+        if (UsdRelationship rel = _GetConnectionRel(shadingProp, false)) {
+            success = rel.BlockTargets();
+        }
+    }
+
     return success;
 }
 
@@ -667,9 +789,20 @@ bool
 UsdShadeConnectableAPI::ClearSource(UsdProperty const &shadingProp)
 {
     bool success = true;
-    if (UsdRelationship rel = _GetConnectionRel(shadingProp, false)) {
-        success = rel.ClearTargets(/* removeSpec = */ true);
+    if (UsdShadeUtils::WriteNewEncoding()) {
+        if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
+            success = shadingAttr.ClearConnections();
+        }
     }
+
+    // Don't bother looking for and clearing rel targets, if reading of old 
+    // encoding is disabled.
+    if (UsdShadeUtils::ReadOldEncoding()) {
+        if (UsdRelationship rel = _GetConnectionRel(shadingProp, false)) {
+            success = rel.ClearTargets(/* removeSpec = */ true);
+        }
+    }
+
     return success;
 }
 

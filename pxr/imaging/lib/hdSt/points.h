@@ -39,20 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-/// \class HdStPointsReprDesc
-///
-/// Descriptor to configure a drawItem for a repr.
-///
-struct HdStPointsReprDesc {
-    HdStPointsReprDesc(
-        HdPointsGeomStyle geomStyle = HdPointsGeomStyleInvalid)
-        : geomStyle(geomStyle)
-        {}
-
-    HdPointsGeomStyle geomStyle:1;
-};
-
 /// \class HdStPoints
 ///
 /// Points.
@@ -74,12 +60,6 @@ public:
                       TfToken const&   reprName,
                       bool             forcedRepr) override;
 
-    /// Configure geometric style of drawItems for \p reprName
-    HDST_API
-    static void ConfigureRepr(TfToken const &reprName,
-                              const HdStPointsReprDesc &desc);
-
-
 protected:
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
@@ -100,9 +80,6 @@ private:
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdDrawItem *drawItem,
                          HdDirtyBits *dirtyBits);
-
-    typedef _ReprDescConfigs<HdStPointsReprDesc> _PointsReprConfig;
-    static _PointsReprConfig _reprDescConfig;
 };
 
 

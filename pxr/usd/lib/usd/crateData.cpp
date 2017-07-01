@@ -29,6 +29,7 @@
 #include "pxr/base/tf/bitUtils.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/typeInfoMap.h"
 #include "pxr/base/tracelite/trace.h"
@@ -107,8 +108,12 @@ public:
         , _crateFile(CrateFile::CreateNew()) {}
     
     ~Usd_CrateDataImpl() {
+        // Close file synchronously.  We don't want a race condition
+        // on Windows due to the file being open for an indeterminate
+        // amount of time.
+        _crateFile.reset();
+
         // Tear down asynchronously.
-        WorkMoveDestroyAsync(_crateFile);
         WorkMoveDestroyAsync(_flatTypes);
         WorkMoveDestroyAsync(_flatData);
         if (_hashData)
@@ -983,7 +988,7 @@ Usd_CrateData::GetSoftwareVersionToken()
 bool
 Usd_CrateData::CanRead(string const &fileName)
 {
-    return CrateFile::CanRead(fileName);
+    return CrateFile::CanRead(TfAbsPath(fileName));
 }
 
 bool
@@ -994,23 +999,24 @@ Usd_CrateData::Save(string const &fileName)
         return false;
     }
 
+    auto newFileName = TfAbsPath(fileName);
     bool hasFile = !_impl->GetFileName().empty();
-    bool saveToOtherFile = _impl->GetFileName() != fileName;
+    bool saveToOtherFile = _impl->GetFileName() != newFileName;
         
     if (hasFile && saveToOtherFile) {
         // We copy to a temporary data and save that.
         Usd_CrateData tmp;
         tmp.CopyFrom(SdfAbstractDataConstPtr(this));
-        return tmp.Save(fileName);
+        return tmp.Save(newFileName);
     }
 
-    return _impl->Save(fileName);
+    return _impl->Save(newFileName);
 }
 
 bool
 Usd_CrateData::Open(const std::string &fileName)
 {
-    return _impl->Open(fileName);
+    return _impl->Open(TfAbsPath(fileName));
 }
 
 // ------------------------------------------------------------------------- //

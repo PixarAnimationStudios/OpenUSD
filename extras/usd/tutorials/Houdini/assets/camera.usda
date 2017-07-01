@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def "World" (
+    customData = {
+        bool zUp = 0
+    }
+)
+{
+    def Camera "main_cam"
+    {
+        float4[] clippingPlanes.timeSamples = {
+            1: [],
+        }
+        float2 clippingRange.timeSamples = {
+            1: (0.15815565, 6045.622),
+        }
+        float focalLength.timeSamples = {
+            1: 50,
+        }
+        float focusDistance.timeSamples = {
+            1: 5,
+        }
+        float fStop.timeSamples = {
+            1: 5.6,
+        }
+        float horizontalAperture.timeSamples = {
+            1: 41.4214,
+        }
+        float horizontalApertureOffset.timeSamples = {
+            1: 0,
+        }
+        token projection.timeSamples = {
+            1: "perspective",
+        }
+        float verticalAperture.timeSamples = {
+            1: 23.299536,
+        }
+        float verticalApertureOffset.timeSamples = {
+            1: 0,
+        }
+        matrix4d xformOp:transform.timeSamples = {
+            1: ( (0.059943807735188225, -1.332267629550113e-15, -0.9982017531111668, 0), (-0.01351388660534071, 0.9999083539418763, -0.0008115331574024953, 0), (0.9981102718552819, 0.013538231688354678, 0.05993831412150035, 0), (3.540906248085247, 17.80380269485346, 30.296463988732828, 1) ),
+        }
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+

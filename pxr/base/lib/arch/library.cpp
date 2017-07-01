@@ -34,10 +34,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if defined(ARCH_OS_WINDOWS)
+namespace {
+DWORD arch_lastLibraryError = 0;
+}
+#endif
+
 void* ArchLibraryOpen(const std::string &filename, int flag)
 {
 #if defined(ARCH_OS_WINDOWS)
-    return LoadLibrary(filename.c_str());
+    arch_lastLibraryError = 0;
+    if (void* result = LoadLibrary(filename.c_str())) {
+        return result;
+    }
+    else {
+        arch_lastLibraryError = GetLastError();
+        return nullptr;
+    }
 #else
     // Clear any unchecked error first.
     (void)dlerror();
@@ -48,7 +61,7 @@ void* ArchLibraryOpen(const std::string &filename, int flag)
 std::string ArchLibraryError()
 {
 #if defined(ARCH_OS_WINDOWS)
-    const DWORD error = ::GetLastError();
+    const DWORD error = arch_lastLibraryError;
     return error ? ArchStrSysError(error) : std::string();
 #else
     const char* const error = dlerror();
@@ -59,7 +72,13 @@ std::string ArchLibraryError()
 int ArchLibraryClose(void* handle)
 {
 #if defined(ARCH_OS_WINDOWS)
-    int status = ::FreeLibrary(reinterpret_cast<HMODULE>(handle));
+    arch_lastLibraryError = 0;
+    // dlclose() returns 0 on success and non-zero on error, the opposite of
+    // FreeLibrary().
+    int status = ::FreeLibrary(reinterpret_cast<HMODULE>(handle)) ? 0 : -1;
+    if (status) {
+        arch_lastLibraryError = GetLastError();
+    }
 #else
     int status = dlclose(handle);
 #endif

@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/bufferResource.h"
+#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -166,6 +166,7 @@ public:
                             HdBufferSourceSharedPtr const &osdTopology);
     virtual ~HdSt_OsdRefineComputation();
     virtual TfToken const &GetName() const;
+    virtual size_t ComputeHash() const;
     virtual void const* GetData() const;
     virtual int GetGLComponentDataType() const;
     virtual int GetGLElementDataType() const;
@@ -173,6 +174,8 @@ public:
     virtual short GetNumComponents() const;
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
+    virtual bool HasPreChainedBuffer() const;
+    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const;
 
 protected:
     virtual bool _CheckValid() const;
@@ -206,8 +209,10 @@ public:
     //
     class VertexBuffer {
     public:
-        VertexBuffer(HdBufferResourceSharedPtr const &resource) :
-            _resource(resource) { }
+        VertexBuffer(HdBufferResourceSharedPtr const &resource) { 
+            _resource =
+                boost::static_pointer_cast<HdBufferResourceGL> (resource);
+        }
 
         // bit confusing, osd expects 'GetNumElements()' returns the num components,
         // in hydra sense
@@ -217,7 +222,7 @@ public:
         GLuint BindVBO() {
             return _resource->GetId();
         }
-        HdBufferResourceSharedPtr _resource;
+        HdBufferResourceGLSharedPtr _resource;
     };
 
 private:
@@ -251,6 +256,13 @@ TfToken const &
 HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetName() const
 {
     return _source->GetName();
+}
+
+template <typename VERTEX_BUFFER>
+size_t
+HdSt_OsdRefineComputation<VERTEX_BUFFER>::ComputeHash() const
+{
+    return 0;
 }
 
 template <typename VERTEX_BUFFER>
@@ -337,6 +349,20 @@ HdSt_OsdRefineComputation<VERTEX_BUFFER>::AddBufferSpecs(HdBufferSpecVector *spe
 {
     // produces same spec buffer as source
     _source->AddBufferSpecs(specs);
+}
+
+template <typename VERTEX_BUFFER>
+bool
+HdSt_OsdRefineComputation<VERTEX_BUFFER>::HasPreChainedBuffer() const
+{
+    return true;
+}
+
+template <typename VERTEX_BUFFER>
+HdBufferSourceSharedPtr
+HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetPreChainedBuffer() const
+{
+    return _source;
 }
 
 

@@ -67,6 +67,9 @@ public:
     /// Returns true is the range has been assigned to a buffer
     virtual bool IsAssigned() const = 0;
 
+    /// Returns true if this range is marked as immutable.
+    virtual bool IsImmutable() const = 0;
+
     /// Resize memory area for this range. Returns true if it causes container
     /// buffer reallocation.
     virtual bool Resize(int numElements) = 0;
@@ -96,16 +99,6 @@ public:
     /// Returns the max number of elements
     virtual size_t GetMaxNumElements() const = 0;
 
-    /// Returns the GPU resource. If the buffer array contains more than one
-    /// resource, this method raises a coding error.
-    virtual HdBufferResourceSharedPtr GetResource() const = 0;
-
-    /// Returns the named GPU resource.
-    virtual HdBufferResourceSharedPtr GetResource(TfToken const& name) = 0;
-
-    /// Returns the list of all named GPU resources for this bufferArrayRange.
-    virtual HdBufferResourceNamedList const& GetResources() const = 0;
-
     /// Sets the buffer array assosiated with this buffer;
     virtual void SetBufferArray(HdBufferArray *bufferArray) = 0;
 
@@ -119,7 +112,7 @@ public:
 
     /// Sets the bufferSpecs for all resources.
     HD_API
-    void AddBufferSpecs(HdBufferSpecVector *bufferSpecs) const;
+    virtual void AddBufferSpecs(HdBufferSpecVector *bufferSpecs) const = 0;
 
 protected:
     /// Returns the aggregation container to be used in IsAggregatedWith()

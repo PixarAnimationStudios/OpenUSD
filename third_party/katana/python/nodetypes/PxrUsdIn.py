@@ -23,6 +23,7 @@
 #
 from Katana import (
     Nodes3DAPI,
+    NodegraphAPI,
     FnAttribute,
     FnGeolibServices,
 )
@@ -39,6 +40,8 @@ gb = FnAttribute.GroupBuilder()
 gb.set('fileName', '')
 nb.setHintsForParameter('fileName', {
     'help' : 'The USD file to read.',
+    'widget':'assetIdInput',
+    'fileTypes':'usd|usda|usdb|usdc',
 })
 
 gb.set('location', '/root/world/geo')
@@ -88,13 +91,9 @@ nb.setHintsForParameter('instanceMode', {
     """,
 })
 
-gb.set('prePopulate', FnAttribute.IntAttribute(0))
+gb.set('prePopulate', FnAttribute.IntAttribute(1))
 nb.setHintsForParameter('prePopulate', {
-    'widget' : 'mapper',
-    'options' : {
-        'yes': 0,
-        'no': 1,
-    },
+    'widget' : 'boolean',
     'help' : """
       Controls USD pre-population.  Pre-population loads all payloads
       and pre-populates the stage.  Assuming the entire stage will be
@@ -142,7 +141,8 @@ def buildOpChain(self, interface):
         self.getParameter('instanceMode')))
     
     gb.set('prePopulate', interface.buildAttrFromParam(
-        self.getParameter('prePopulate')))
+        self.getParameter('prePopulate'),
+        numberType=FnAttribute.IntAttribute))
 
     sessionValues = (
             interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
@@ -176,6 +176,26 @@ def buildOpChain(self, interface):
 
 nb.setGetScenegraphLocationFnc(getScenegraphLocation)
 nb.setBuildOpChainFnc(buildOpChain)
+
+
+# XXX prePopulate exists in some production data with an incorrect default
+#     value. Assume all studio uses of it prior to this fix intend for
+#     it to be enabled.
+def pxrUsdInUpgradeToVersionTwo(nodeElement):
+    prePopulateElement = NodegraphAPI.Xio.Node_getParameter(
+            nodeElement, 'prePopulate')
+    if prePopulateElement:
+        NodegraphAPI.Xio.Parameter_setValue(prePopulateElement, 1)
+
+nb.setNodeTypeVersion(2)
+nb.setNodeTypeVersionUpdateFnc(2, pxrUsdInUpgradeToVersionTwo)
+
+
+
+
+
+
+
 nb.build()
 
 

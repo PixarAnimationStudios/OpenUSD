@@ -237,6 +237,7 @@ private:
     friend class UsdObject;
     friend class UsdPrim;
     friend class Usd_PrimData;
+    template <class A0, class A1>
     friend struct UsdPrim_TargetFinder;
 
     UsdRelationship(const Usd_PrimDataHandle &prim,

@@ -6,11 +6,15 @@
 
 def "main" 
 (
-    clipPrimPath = "/clip"
-    clipTemplateAssetPath = "./#.usda"
-    clipTemplateEndTime = 103 
-    clipTemplateStartTime = 101
-    clipTemplateStride = 1
+    clips = {
+        dictionary default = {
+            string primPath = "/clip"
+            string templateAssetPath = "./#.usda"
+            double templateEndTime = 103 
+            double templateStartTime = 101
+            double templateStride = 1
+        }
+    }
 )
 {
     double foo

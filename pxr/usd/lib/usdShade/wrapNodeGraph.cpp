@@ -23,10 +23,10 @@
 //
 #include "pxr/usd/usdShade/nodeGraph.h"
 #include "pxr/usd/usd/schemaBase.h"
-#include "pxr/usd/usd/conversions.h"
 
 #include "pxr/usd/sdf/primSpec.h"
 
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -113,16 +113,6 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("ConnectableAPI", &UsdShadeNodeGraph::ConnectableAPI)
-
-        .def("CreateInterfaceAttribute", 
-             &UsdShadeNodeGraph::CreateInterfaceAttribute,
-             (arg("interfaceAttrName"), arg("typeName")))
-        .def("GetInterfaceAttribute", 
-             &UsdShadeNodeGraph::GetInterfaceAttribute,
-             (arg("interfaceAttrName")))
-        .def("GetInterfaceAttributes",
-             &UsdShadeNodeGraph::GetInterfaceAttributes,
-             (arg("renderTarget")))
 
         .def("CreateOutput", 
              &UsdShadeNodeGraph::CreateOutput,

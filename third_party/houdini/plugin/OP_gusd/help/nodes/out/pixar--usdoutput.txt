@@ -1,0 +1,92 @@
+#type: node
+#context: out
+#internal: USDOutput
+#tags: usd output
+
+= USD Output =
+
+"""Export geometry to a USD file"""
+
+This ROP writes geometry to the USD format. Meshes, curves, points are written directly
+to USD. Most other geometry can be refined into one of these three types.
+
+This ROP can  write references to USD primitives in other USD files.
+
+This ROP can write concrete geometry or it can write overlays that modify 
+existing geometry.
+
+A more complete overview of exporting USD files from Houdini can be found [here|/UsdOutputOverview].  
+
+@parameters
+
+SOP Path:
+    Geometry to export
+USD File:
+    File to write to
+Granularity:
+    Write one file per frame or write all frames to one file
+== Paths ==
+Prefix:
+    Prefix used to build USD prim names
+Path attribute:
+    Attribute used to partition geometry and to build the names of USD prims.
+Always Write Root Prim:
+    If this option is checked, if no geometry is cooked in the SOP, write
+    an empty group into the file with the name given in the "Prefix" parameter.
+== Geometry ==
+Coalesce Fragments:
+    Coalesce packed fragments into a single mesh(see [pack SOP|/ for more information)
+== Overlay ==
+Overlay Existing Geometry:
+    If checked, write USD primitive overs rather than USD primitive defs.
+Overlay Reference File:
+    This should be set to the file that you are overriding.         
+== Primvars ==
+
+A full description of suppoted primvar intrepolation can be found in the [Usd api documentation|http://graphics.pixar.com/usd/docs/api/class_usd_geom_primvar.html#Usd_InterpolationVals]
+
+Varying:
+    Varying primvars to export
+FaceVarying:
+    FaceVarying primvars to export
+Uniform:
+    Uniform primvars to export
+Constant:
+    Varying primvars to export
+== Shaders ==
+Output Shaders:
+    Enable USD shading on export
+USD Shading File:
+    Absolute path to shading file
+USD Shader:
+    USD shader Name
+
+== Scripts ==
+
+Each script command refers to an hscript command which will be run, regardless of the expression language selected for the parameter. The resulting string will be run as an hscript command. 
+
+NOTE:
+    It is possible to use the python, unix or source hscript commands to perform complex processing.
+
+The commands are always run when rendering occurs. The command checks the parameters of the output driver when it is rendering a range or sending output to a command.
+
+Before the render occurs, Houdini will automatically set the current hscript directory to point to the output driver.    
+
+Pre-Render Script:
+    This command is run before any USD file is generated. It is only run once per render.
+    
+Pre-Frame Script:
+    This command is run before each USD file is generated.
+    
+Post-Frame Script:
+    This command is run after each USD file is generated.
+
+
+Post-Render Script: 
+    This command is run one time, after all RIBs have been generated.
+
+
+
+
+
+

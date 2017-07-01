@@ -36,9 +36,7 @@
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/input.h"
-#include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/parameter.h"
 
 
 #include "pxr/base/vt/value.h"
@@ -68,9 +66,9 @@ class SdfAssetPath;
 /// 
 /// One of the most important functions of a node-graph is to host the "interface"
 /// with which clients of already-built shading networks will interact.  Please
-/// see \ref UsdShadeNodeGraph_Interfaces "Interface Attributes" for a detailed
+/// see \ref UsdShadeNodeGraph_Interfaces "Interface Inputs" for a detailed
 /// explanation of what the interface provides, and how to construct and
-/// use it to effectively share/instance shader networks.
+/// use it, to effectively share/instance shader networks.
 /// 
 /// <b>Node Graph Outputs</b>
 /// 
@@ -196,75 +194,6 @@ public:
     USDSHADE_API
     UsdShadeConnectableAPI ConnectableAPI() const;
 
-    /// \anchor UsdShadeNodeGraph_Interfaces
-    /// \name Interface Attributes
-    ///
-    /// In addition to serving as the "head" for all of the shading networks
-    /// that describe each render target's particular node-graph, the node-graph
-    /// prim provides a unified "interface" that allows node-graphs to share 
-    /// shading networks while retaining the ability for each to specify its own
-    /// set of unique values for the parameters that users may need to modify.
-    ///
-    /// A "Node-graph Interface" is a combination of:
-    /// \li a flat collection of attributes, of arbitrary names
-    /// \li for each such attribute, a list of UsdShaderParameter targets
-    /// whose attributes on Shader prims should be driven by the interface
-    /// attribute
-    ///
-    /// A single interface attribute can drive multiple shader parameters - 
-    /// within the same or multiple render targets.  Connections to the driven
-    /// shader parameters are encoded in such a way that is easy to filter
-    /// the node-graph interface by render target; \em however, the set of 
-    /// interface attributes itself is intentionally flat, to encourage
-    /// sharing of interface between render targets.  Clients are always free
-    /// to create interface attributes with namespacing to segregate "private"
-    /// attributes exclusive to the render target, but we hope this will be
-    /// an exception.
-    ///
-    /// To facilitate connecting, qualifying, and interrogating interface
-    /// attributes, we provide an attribute schema UsdShadeInterfaceAttribute
-    /// that performs services similar to UsdShadeParameter .
-    ///
-    /// <b>Scoped Interfaces</b>
-    ///
-    /// \todo describe scoped interfaces and fix bug/108940 to account for them
-    /// @{
-
-    /// Create an interface attribute.
-    ///
-    /// \p interfaceAttrName may be any legal property name, including
-    /// arbitrary namespaces
-    ///
-    /// \todo clarify error behavior if typeName does not match existing,
-    /// defined attribute - should match UsdPrim::CreateAttribute - bug/108970
-    USDSHADE_API
-    UsdShadeInterfaceAttribute CreateInterfaceAttribute(
-            const TfToken& interfaceAttrName,
-            const SdfValueTypeName& typeName);
-
-    /// Return the Interface attribute named by \p name, which will
-    /// be valid if an Interface attribute definition already exists.
-    ///
-    /// Name lookup will account for Interface namespacing, which means
-    /// that this method will succeed in some cases where
-    /// \code
-    /// UsdShadeInterfaceAtribute(prim->GetAttribute(interfaceAttrName))
-    /// \endcode
-    /// will not, unless \p interfaceAttrName is properly namespace prefixed.
-    USDSHADE_API
-    UsdShadeInterfaceAttribute GetInterfaceAttribute(
-            const TfToken& interfaceAttrName) const;
-
-    /// Returns all interface attributes that drive parameters of a
-    /// \p renderTarget shading network.
-    USDSHADE_API
-    std::vector<UsdShadeInterfaceAttribute> GetInterfaceAttributes(
-            const TfToken& renderTarget) const;
-
-    /// \todo GetInterfaceValueMap()
-
-    /// @}
-
     /// \anchor UsdShadeNodeGraph_Output
     /// \name Outputs of a node-graph. These typically connect to outputs of 
     /// shaders or nested node-graphs within the node-graph.
@@ -291,16 +220,46 @@ public:
     
     /// @}
 
-    /// \anchor UsdShadeNodeGraph_Inputs
-    /// \name Inputs of a node-graph. These define the interface afforded by the 
-    /// node-graph.
-    /// 
+    /// \anchor UsdShadeNodeGraph_Interfaces
+    /// \name Interface inputs of a node-graph. 
+    ///
+    /// In addition to serving as the "head" for all of the shading networks
+    /// that describe each render target's particular node-graph, the node-graph
+    /// prim provides a unified "interface" that allows node-graphs to share 
+    /// shading networks while retaining the ability for each to specify its own
+    /// set of unique values for the interface inputs that users may need to 
+    /// modify.
+    ///
+    /// A "Node-graph Interface" is a combination of:
+    /// \li a flat collection of attributes, of arbitrary names
+    /// \li for each such attribute, a list of UsdShaderInput targets
+    /// whose attributes on Shader prims should be driven by the interface
+    /// input.
+    ///
+    /// A single interface input can drive multiple shader inputs and be 
+    /// consumed by multiple render targets. The set of interface inputs itself 
+    /// is intentionally flat, to encourage sharing of the interface between 
+    /// render targets.  Clients are always free to create interface inputs with 
+    /// namespacing to segregate "private" attributes exclusive to the render 
+    /// target, but we hope this will be an exception.
+    ///
+    /// To facilitate connecting, qualifying, and interrogating interface
+    /// attributes, we use the attribute schema UsdShadeInput, which also
+    /// serves as an abstraction for shader inputs.
+    ///
+    /// <b>Scoped Interfaces</b>
+    ///
+    /// \todo describe scoped interfaces and fix bug/108940 to account for them.
+    ///
     /// @{
 
     /// Create an Input which can either have a value or can be connected.
     /// The attribute representing the input is created in the "inputs:" 
     /// namespace.
     /// 
+    /// \todo clarify error behavior if typeName does not match existing,
+    /// defined attribute - should match UsdPrim::CreateAttribute - bug/108970
+    ///
     USDSHADE_API
     UsdShadeInput CreateInput(const TfToken& name,
                               const SdfValueTypeName& typeName);
@@ -389,19 +348,36 @@ public:
         bool computeTransitiveConsumers=false) const;
 
 protected:
+    
+    // Befriend UsdRiLookAPI and UsdRiMaterialAPI temporarily to assist in the
+    // transition to the new shading encoding.
     friend class UsdRiLookAPI;
+    friend class UsdRiMaterialAPI;
 
-    /// \overload
     /// \deprecated
-    /// This overload takes an additonal "renderTarget" argument which needs to 
-    /// be considered when collecting old-style interface-input connections. 
+    /// This is similar to ComputeInterfaceInputConsumersMap(), but takes an 
+    /// additonal "renderTarget" argument which needs to be considered when 
+    /// collecting old-style interface-input connections. 
     /// 
-    /// Provided for use by UsdRiLookAPI. 
+    /// Provided for use by UsdRiLookAPI and UsdRiMaterialAPI. 
     /// 
     USDSHADE_API
     InterfaceInputConsumersMap _ComputeInterfaceInputConsumersMap(
         bool computeTransitiveConsumers, 
         const TfToken &renderTarget) const;
+    
+
+    
+    /// \deprecated
+    /// This is similar to GetInterfaceInputs(), but takes an additonal 
+    /// "renderTarget" argument which needs to be considered when collecting 
+    /// old-style interface-input connections. 
+    /// 
+    /// Provided for use by UsdRiLookAPI and UsdRiMaterialAPI. 
+    /// 
+    USDSHADE_API
+    std::vector<UsdShadeInput> _GetInterfaceInputs(const TfToken &renderTarget) 
+        const;
 
     /// @}
 

@@ -633,16 +633,16 @@ private:
 
     // Helper method for computing the flattened value of an indexed primvar.
     template<typename ScalarType>
-    static bool _ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
-                                  const VtIntArray &indices,
-                                  VtArray<ScalarType> *value);
+    bool _ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
+                                 const VtIntArray &indices,
+                                 VtArray<ScalarType> *value) const;
     
     // Helper function to evaluate the flattened array value of a primvar given
     // the attribute value and the indices array.
     template <typename ArrayType>
-    static bool _ComputeFlattenedArray(const VtValue &attrVal,
-                                        const VtIntArray &indices,
-                                        VtValue *value);
+    bool _ComputeFlattenedArray(const VtValue &attrVal,
+                                const VtIntArray &indices,
+                                VtValue *value) const;
 
     // Should only be called if _idTargetRelName is set
     UsdRelationship _GetIdTargetRel(bool create) const;
@@ -688,21 +688,21 @@ UsdGeomPrimvar::ComputeFlattened(VtArray<ScalarType> *value, UsdTimeCode time) c
 }
 
 template<typename ScalarType>
-/* static */
 bool
 UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
-                                  const VtIntArray &indices,
-                                  VtArray<ScalarType> *value)
+                                        const VtIntArray &indices,
+                                        VtArray<ScalarType> *value) const
 {
     value->resize(indices.size());
     bool success = true;
-    for(size_t i=0; i < indices.size(); i++) {
+    for (size_t i=0; i < indices.size(); i++) {
         int index = indices[i];
         if (index >= 0 && index < authored.size()) {
             (*value)[i] = authored[index];
         } else {
-            TF_WARN("Index %d is out of range [0,%ld)", index, 
-                authored.size());
+            TF_WARN("Index %d at element %zu is out of range [0,%ld) for "
+                "primvar <%s>.", index, i, authored.size(),
+                _attr.GetPath().GetText());
             success = false;
         }
     }

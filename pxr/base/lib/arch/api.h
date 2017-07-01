@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(ARCH_STATIC)
+#if defined(PXR_STATIC)
 #   define ARCH_API
 #   define ARCH_API_TEMPLATE_CLASS(...)
 #   define ARCH_API_TEMPLATE_STRUCT(...)

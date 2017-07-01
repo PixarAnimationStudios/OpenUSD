@@ -52,6 +52,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 ((SdfFieldKeys->Active,                  bool))                          \
 ((SdfFieldKeys->AllowedTokens,           VtTokenArray))                  \
 ((SdfFieldKeys->AssetInfo,               VtDictionary))                  \
+((SdfFieldKeys->ColorConfiguration,      SdfAssetPath))                  \
+((SdfFieldKeys->ColorManagementSystem,   TfToken))                       \
+((SdfFieldKeys->ColorSpace,              TfToken))                       \
 ((SdfFieldKeys->Comment,                 std::string))                   \
 ((SdfFieldKeys->ConnectionPaths,         SdfPathListOp))                 \
 ((SdfFieldKeys->Custom,                  bool))                          \

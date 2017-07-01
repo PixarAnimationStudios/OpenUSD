@@ -1,0 +1,16 @@
+#usda 1.0
+
+def "ModelShading"
+{
+    def "Materials"
+    {
+        def "ParentMaterial"
+        {
+            def Backdrop "Backdrop_1"
+            {
+                uniform token ui:description = "Backdrop test description"
+            }
+        }
+    }
+}
+

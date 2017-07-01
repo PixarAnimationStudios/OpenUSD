@@ -470,6 +470,10 @@ public:
     HD_API
     unsigned GetShaderBindingsVersion() const;
 
+    /// Returns the current version of the Render Index's RPrim set.
+    HD_API
+    unsigned GetRenderIndexVersion() const;
+
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name General state tracking

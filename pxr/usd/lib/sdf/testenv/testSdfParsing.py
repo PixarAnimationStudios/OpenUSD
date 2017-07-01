@@ -53,6 +53,10 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        199_bad_colorSpace_metadata.sdf
+        198_colorSpace_metadata.sdf
+        197_bad_colorConfiguration_metadata.sdf
+        196_colorConfiguration_metadata.sdf
         195_specializes.sdf
         194_bad_customLayerData_metadata.sdf
         193_customLayerData_metadata.sdf
@@ -212,24 +216,31 @@ class TestSdfParsing(unittest.TestCase):
         # Disabled tests - this has not failed properly ever, but a bug in this script masked the problem
         # 34_bad_relationship_duplicate_target_attr.sdf
 
-        # Register test plugin containing plugin metadata definitions.
+        # Create a temporary file for diffs and choose where to get test data.
         import tempfile
-
         if os.environ.get('SDF_WRITE_OLD_TYPENAMES') == '1':
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingOld1.sdf')
+            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingOld1.sdf', delete=False)
             layerDir = os.path.join(os.getcwd(), 'testSdfParsingOld.testenv')
             baselineDir = os.path.join(layerDir, 'baseline')
         elif os.environ.get('SDF_CONVERT_TO_NEW_TYPENAMES') == "1":
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingNew1.sdf')
+            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingNew1.sdf', delete=False)
             layerDir = os.path.join(os.getcwd(), 'testSdfParsingNew.testenv')
             baselineDir = os.path.join(layerDir, 'baseline_newtypes')
         else:
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsing1.sdf')
+            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsing1.sdf', delete=False)
             layerDir = os.path.join(os.getcwd(), 'testSdfParsing.testenv')
             baselineDir = os.path.join(layerDir, 'baseline')
 
+        # Close the temporary file.  We only wanted a temporary file name
+        # and we'll open/close/remove this file once per test file.  On
+        # Unix this isn't necessary because holding a file open doesn't
+        # prevent unlinking it but on Windows we'll get access denied if
+        # we don't close our handle.
+        layerFileOut.close()
+
         print "LAYERDIR: %s"%layerDir
 
+        # Register test plugin containing plugin metadata definitions.
         from pxr import Plug
         Plug.Registry().RegisterPlugins(layerDir)
 
@@ -296,14 +307,14 @@ class TestSdfParsing(unittest.TestCase):
             print '\tWriting...'
             try:
                 self.assertTrue(layer.Export( layerFileOut.name ))
-            except:
+            except Exception as e:
                 if '_badwrite_' in file:
                     # Write errors should always be Tf.ErrorExceptions
                     print '\tErrors encountered during write, as expected'
                     print '\tPassed'
                     continue
                 else:
-                    raise RuntimeError, "failure to write '%s'" % layerFile
+                    raise RuntimeError, "failure to write '%s': %s" % (layerFile, e)
 
             # Compare the exported layer against baseline results. Note that we can't
             # simply compare against the original layer, because exporting may have

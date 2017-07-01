@@ -49,6 +49,7 @@
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>
 #include <maya/MEdit.h>
+#include <maya/MFileIO.h>
 #include <maya/MFnAssembly.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnDependencyNode.h>
@@ -61,6 +62,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MItEdits.h>
 #include <maya/MItSelectionList.h>
+#include <maya/MNamespace.h>
 #include <maya/MPlugArray.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
@@ -72,7 +74,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaVariantSetTokens, PXRUSDMAYA_VARIANT_SET_TOKENS);
 
 TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_REF_ASSEMBLIES, true,
                       "Uses USD scene assemblies for set dressing");
@@ -214,6 +216,24 @@ MStatus UsdMayaReferenceAssembly::initialize(
     status = addAttribute(psData->inStageData);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    // Having to store the representation namespace in an attribute on the
+    // assembly is not ideal, but it is necessary to ensure that namespace
+    // changes are handled correctly and that assembly edits do not fall off
+    // because of renaming/duplicating/etc. MPxAssembly does not do this for us.
+    // This pattern is adapted from Autodesk's sample assembly reference node:
+    //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    psData->repNamespace = typedAttrFn.create(
+        "repNamespace",
+        "rns",
+        MFnData::kString,
+        MObject::kNullObj,
+        &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    typedAttrFn.setInternal(true);
+    status = addAttribute(psData->repNamespace);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
     // inStageData or filepath-> inStageDataCached -> outStageData
     psData->inStageDataCached = typedAttrFn.create(
         "inStageDataCached",
@@ -271,6 +291,7 @@ MStatus UsdMayaReferenceAssembly::initialize(
 UsdMayaReferenceAssembly::UsdMayaReferenceAssembly(
         const PluginStaticData& psData) :
     _psData(psData),
+    _updatingRepNamespace(false),
     _activateRepOnFileLoad(false),
     _inSetInternalValue(false),
     _hasEdits(false)
@@ -413,13 +434,20 @@ bool UsdMayaReferenceAssembly::activateRep(const MString& repMStr)
 
 void UsdMayaReferenceAssembly::postLoad()
 {
-    // Handle postLoad functions:
-    //        * set the initial representation
-    //        * ...
+    MFnAssembly assemblyFn(thisMObject());
+
+    // If this is not a top-level assembly, lock the repNamespace attribute.
+    // Users should not be able to change this attribute on nested assemblies.
+    // This was adapted from Autodesk's sample assembly reference node:
     //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    if (!assemblyFn.isTopLevel()) {
+        MPlug repNamespacePlug(thisMObject(), _psData.repNamespace);
+        repNamespacePlug.setLocked(true);
+    }
+
     // Activate Representation
     if (_activateRepOnFileLoad) {
-        MFnAssembly assemblyFn( thisMObject() );
         //logging.debug("In postLoad activate: isTopLevel=%r canActivate=%r"%(assemblyFn.isTopLevel(), assemblyFn.canActivate()))
         if (assemblyFn.canActivate()) {  // Consider adding assemblyFn.isTopLevel() to the conditional
             MPlug initialRepPlg(thisMObject(), _psData.initialRep);
@@ -448,19 +476,59 @@ bool UsdMayaReferenceAssembly::inactivateRep()
 }
 
 MString
-UsdMayaReferenceAssembly::getRepNamespace() const
+UsdMayaReferenceAssembly::getDefaultRepNamespace() const
 {
-    if (TfGetEnvSetting(PIXMAYA_USE_USD_ASSEM_NAMESPACE))
-    {
-        std::string defaultNs( MPxAssembly::getRepNamespace().asChar() );
-        std::string ns( TfStringPrintf("NS_%s", TfStringGetBeforeSuffix( defaultNs, '_' ).c_str() ) ) ;
-        return ns.c_str();
-    }
-    MString emptyNS;
-    return emptyNS;
+    const std::string defaultNs(MPxAssembly::getRepNamespace().asChar());
+    const std::string ns(TfStringPrintf("NS_%s", TfStringGetBeforeSuffix(defaultNs, '_').c_str()));
+
+    return MString(ns.c_str());
 }
 
-static const std::string USD_VARIANT_SET_PREFIX("usdVariantSet_");
+/* virtual */
+MString
+UsdMayaReferenceAssembly::getRepNamespace() const
+{
+    MString repNamespaceStr;
+    if (!TfGetEnvSetting(PIXMAYA_USE_USD_ASSEM_NAMESPACE)) {
+        return repNamespaceStr;
+    }
+
+    // This was adapted from Autodesk's sample assembly reference node:
+    //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    MPlug repNamespacePlug(thisMObject(), _psData.repNamespace);
+    repNamespacePlug.getValue(repNamespaceStr);
+
+    if (repNamespaceStr.numChars() == 0) {
+        repNamespaceStr = getDefaultRepNamespace();
+
+        // Update the attribute with the default representation namespace since
+        // the attribute was previously empty.
+        repNamespacePlug.setValue(repNamespaceStr);
+    }
+
+    return repNamespaceStr;
+}
+
+/* virtual */
+void
+UsdMayaReferenceAssembly::updateRepNamespace(const MString& repNamespace)
+{
+    // This was adapted from Autodesk's sample assembly reference node:
+    //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    MPlug repNamespacePlug(thisMObject(), _psData.repNamespace);
+    MString repCurrentNamespaceStr;
+    repNamespacePlug.getValue(repCurrentNamespaceStr);
+
+    bool prevVal = _updatingRepNamespace;
+    _updatingRepNamespace = true;
+
+    // Update the assembly attribute.
+    repNamespacePlug.setValue(repNamespace);
+
+    _updatingRepNamespace = prevVal;
+}
 
 // virtual
 MStatus UsdMayaReferenceAssembly::setDependentsDirty( const MPlug& dirtiedPlug, MPlugArray& affectedPlugs)
@@ -468,7 +536,7 @@ MStatus UsdMayaReferenceAssembly::setDependentsDirty( const MPlug& dirtiedPlug, 
     // Hardcoded dynamic attr naming: usdVariantSet_*
     // If an attr starts with "usdVariantSet_", then dirty the stage
     MString dirtiedPlugName = dirtiedPlug.partialName();
-    const MString variantSetPrefix(USD_VARIANT_SET_PREFIX.c_str());
+    const MString variantSetPrefix(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
     if ((dirtiedPlugName.length() > variantSetPrefix.length()) && 
         (dirtiedPlugName.substring(0, variantSetPrefix.length()-1) == variantSetPrefix))
     {
@@ -543,11 +611,12 @@ std::set<std::string> _GetVariantSetNamesForStageCache(
         }
 
         std::string attrName(attrPlug.partialName().asChar());
-        if (!TfStringStartsWith(attrName, USD_VARIANT_SET_PREFIX)) {
+        if (!TfStringStartsWith(attrName, PxrUsdMayaVariantSetTokens->PlugNamePrefix)) {
             continue;
         }
 
-        std::string variantSet = attrName.substr(USD_VARIANT_SET_PREFIX.size());
+        std::string variantSet = attrName.substr(
+            PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetString().size());
         varSetNames.insert(variantSet);
     }
     return varSetNames;
@@ -597,7 +666,7 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
             TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
             const std::set<std::string> varSetNamesForCache = _GetVariantSetNamesForStageCache(depNodeFn);
             TF_FOR_ALL(variantSet, varSetNamesForCache) {
-                MString variantSetPlugName(USD_VARIANT_SET_PREFIX.c_str());
+                MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
                 variantSetPlugName += variantSet->c_str();
                 MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
                 if (!varSetPlg.isNull()) {
@@ -738,7 +807,7 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
         std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
         MFnDependencyNode depNodeFn(thisMObject());
         TF_FOR_ALL(variantSet, variantSetNames) {
-            MString variantSetPlugName(USD_VARIANT_SET_PREFIX.c_str());
+            MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
             variantSetPlugName += variantSet->c_str();
             MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
             if (!varSetPlg.isNull()) {
@@ -794,9 +863,79 @@ bool UsdMayaReferenceAssembly::setInternalValueInContext( const MPlug& plug,
         return false;
     }
 
+    // This was adapted from Autodesk's sample assembly reference node:
+    //
+    // http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__cpp_ref_scene_assembly_2assembly_reference_8cpp_example_html
+    if (plug == _psData.repNamespace && !_updatingRepNamespace) {
+        // Rename the namespace associated with the assembly with the new
+        // repNamespace. Correct the repNamespace if needed.
+        // To rename the namespace, there are 2 cases to get the oldNS to
+        // rename:
+        //     1 - If the assembly namespace attribute is changed directly
+        //         (i.e. someone did a setAttr directly, or modified it via the
+        //         attribute editor), we get the oldNS (the namespace to be
+        //         renamed) using the plug value, which has not been set yet.
+        //         So query the oldNS name from current state of the datablock,
+        //         and the new one from the the data handle that is passed into
+        //         this method.
+        //
+        //     2 - If we are in IO, the plug value has already been set, but
+        //         the namespace still has the default value given by
+        //         getDefaultRepNamespace().
+        MString oldNS;
+        plug.getValue(oldNS);
+
+        // Early-out if the plug value is empty: the namespace has not been created yet.
+        if (oldNS.numChars() == 0) {
+            return false;
+        }
+
+        // Get the default namespace to rename.
+        if (MFileIO::isOpeningFile() || MFileIO::isReadingFile()) {
+            oldNS = getDefaultRepNamespace();
+        }
+
+        MString newNS = dataHandle.asString();
+
+        // Validate the name and only use it if it is valid (not empty).
+        // If the name is not valid, or if the user entered "" as repNamespace,
+        // use the default namespace.
+        MString validNewNS = MNamespace::validateName(newNS, &status);
+        if (status != MStatus::kSuccess) {
+            return false;
+        }
+
+        if (validNewNS.numChars() == 0) {
+            validNewNS = getDefaultRepNamespace();
+        }
+
+        if (validNewNS != newNS) {
+            // Update the value of newNS and of the data-handle.
+            newNS = validNewNS;
+            MDataHandle* nonConstHandle = (MDataHandle*) &dataHandle;
+            nonConstHandle->set(newNS);
+        }
+
+        // Finally, tell Maya to rename namespaces.
+        if (oldNS.numChars() > 0 && newNS.numChars() > 0 && oldNS != newNS) {
+            status = MNamespace::renameNamespace(oldNS, newNS);
+            if (status != MStatus::kSuccess) {
+                // The rename failed. Set back the old value.
+                // Note: if the rename failed, it is probably because the
+                // namespace newNS already existed, but it is the
+                // responsibility of the user to provide a name that does not
+                // exist.
+                MDataHandle* nonConstHandle = (MDataHandle*) &dataHandle;
+                nonConstHandle->set(oldNS);
+            }
+        }
+
+        return true;
+    }
+
     bool setAttrSuccess = MPxAssembly::setInternalValueInContext(plug, dataHandle, ctx);
 
-    bool varSelChanged = TfStringStartsWith(plug.partialName().asChar(), USD_VARIANT_SET_PREFIX);
+    bool varSelChanged = TfStringStartsWith(plug.partialName().asChar(), PxrUsdMayaVariantSetTokens->PlugNamePrefix);
 
     if ( varSelChanged || 
          (std::find(_psData.attrsAffectingRepresentation.begin(), 
@@ -879,7 +1018,7 @@ std::map<std::string, std::string> UsdMayaReferenceAssembly::GetVariantSetSelect
 
     std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
     for (std::string variantSetName : variantSetNames) {
-        MString variantSetPlugName(USD_VARIANT_SET_PREFIX.c_str());
+        MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
         variantSetPlugName += variantSetName.c_str();
         MPlug variantSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
         if (!variantSetPlg.isNull()) {

@@ -51,11 +51,6 @@ public:
     USDIMAGING_API
     std::string GetSurfaceShaderSource(SdfPath const& usdPath) const;
 
-    /// \brief Returns the parameter names for \p usdPath.
-    /// \deprecated This is now replaced by UsdImagingShaderAdapter::GetSurfaceShaderParams
-    USDIMAGING_API
-    TfTokenVector GetSurfaceShaderParamNames(SdfPath const& usdPath) const;
-
     /// \brief Returns the value of param \p paramName for \p usdPath.
     USDIMAGING_API
     VtValue GetSurfaceShaderParamValue(SdfPath const& usdPath, TfToken const& paramName) const;

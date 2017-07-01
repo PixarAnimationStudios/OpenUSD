@@ -1,11 +1,16 @@
 #usda 1.0
 
 def "WithManifestClip" (
-    clipActive = [(0, 0), (2, 1)]
-    clipAssetPaths = [@./clip_1.usda@, @./clip_2.usda@]
-    clipPrimPath = "/Clip"
-    clipTimes = [(0, 0), (1, 1), (2, 0), (3, 1)]
-    clipManifestAssetPath = @./clip_manifest.usda@
+    clips = {
+        dictionary default = {
+            double2[] active = [(0, 0), (2, 1)]
+            asset[] assetPaths = [@./clip_1.usda@, @./clip_2.usda@]
+            string primPath = "/Clip"
+            double2[] times = [(0, 0), (1, 1), (2, 0), (3, 1)]
+            asset manifestAssetPath = @./clip_manifest.usda@
+        }
+    }
+
     references = @./ref.usda@</Ref>
 )
 {

@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/resource.h"
+#include "pxr/imaging/hd/resourceGL.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -41,7 +41,7 @@ typedef boost::shared_ptr<class HdPersistentBuffer> HdPersistentBufferSharedPtr;
 /// A buffer used to prepare data on the GPU that has a persistent mapping
 /// from the CPU.
 ///
-class HdPersistentBuffer : public HdResource {
+class HdPersistentBuffer : public HdResourceGL {
 public:
     HD_API
     HdPersistentBuffer(TfToken const &role, size_t dataSize, void* data);

@@ -122,31 +122,18 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 
     std::vector<UsdPrim> nestedInstances;
 
-    // If this instance prim itself is a drawable gprim, we need to add an
-    // rprim for it to the render index. This won't happen when processing 
-    // the instance's master, since the master is never a drawable prim.
-    // 
-    // We need to ensure this rprim has a different path from the instancer,
-    // so we follow the same scheme as above: we insert a new proto rprim
-    // for this instance under a child path with a unique suffix.
+    // If this instance prim itself is an imageable prim, we disable
+    // drawing and report the issue to the user. We can not instance
+    // a gprim (or instancer) directly since we can not derive any 
+    // scalability benefit from mesh-to-mesh instancing. 
     //
-    // In this case, we dispatch to the underlying PrimAdapter and disable
-    // instancing.
+    // This won't happen when processing the instance's master, 
+    // since the master is never a drawable prim.
     if (instancedPrimAdapter) {
-        UsdPrimRange range(prim);
-        auto iter = range.begin();
-
-        bool isLeafInstancer;
-        const SdfPath protoPath = 
-            _InsertProtoRprim(&iter, TfToken(),
-                              instanceShaderBinding,
-                              SdfPath(), instancedPrimAdapter, index,
-                              &isLeafInstancer);
         instancePath = SdfPath();
 
-        TF_WARN("The prim at path <%s> was directly instanced, but rendering "
-                "cannot use the instancing. "
-                "To effectively instance gprims, put the gprim under an Xform, "
+        TF_WARN("The gprim at path <%s> was directly instanced. "
+                "In order to instance this prim, put the prim under an Xform, "
                 "and instance the Xform parent.",
                 prim.GetPath().GetText());
     } else if(instancerData.instancePaths.empty()) {

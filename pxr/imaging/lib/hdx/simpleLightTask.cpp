@@ -108,20 +108,21 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
                     renderIndex.GetSprim(HdPrimTypeTokens->camera,
                                          params.cameraPath));
 
-        // XXX: This is inefficient, need to be optimized
-        SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
-                                                   HdPrimTypeTokens->light,
-                                                   SdfPath::AbsoluteRootPath());
+        SdfPathVector lights;
+        if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->light)) {
+            // XXX: This is inefficient, need to be optimized
+            SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
+                HdPrimTypeTokens->light, SdfPath::AbsoluteRootPath());
 
-        SdfPathVector lights = ComputeIncludedLights(sprimPaths,
-                                                     params.lightIncludePaths,
-                                                     params.lightExcludePaths);
+            lights = ComputeIncludedLights(sprimPaths, params.lightIncludePaths,
+                params.lightExcludePaths);
+        }
+
         _lights.clear();
         _lights.reserve(lights.size());
         TF_FOR_ALL (it, lights) {
             HdStLight const *light = static_cast<const HdStLight *>(
-                                   renderIndex.GetSprim(HdPrimTypeTokens->light,
-                                                        *it));
+                renderIndex.GetSprim(HdPrimTypeTokens->light, *it));
 
             if (light != nullptr) {
                 _lights.push_back(light);

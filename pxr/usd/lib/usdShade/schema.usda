@@ -87,14 +87,14 @@ over "GLOBAL" (
             }
             dictionary interface = {
                 string value = "interface:"
-                string doc = """The prefix on UsdShadeNodeGraph attributes 
-                denoting an interface attribute.
+                string doc = """(DEPRECATED) The prefix on UsdShadeNodeGraph 
+                attributes denoting an interface attribute.
                 """
             }
             dictionary interfaceRecipientsOf = {
                 string value = "interfaceRecipientsOf:"
-                string doc = """The prefix on UsdShadeNodeGraph relationships
-                denoting the target of an interface attribute.
+                string doc = """(DEPRECATED) The prefix on UsdShadeNodeGraph
+                relationships denoting the target of an interface attribute.
                 """
             }
         }
@@ -125,9 +125,9 @@ class NodeGraph "NodeGraph" (
     
     One of the most important functions of a node-graph is to host the "interface"
     with which clients of already-built shading networks will interact.  Please
-    see \\ref UsdShadeNodeGraph_Interfaces "Interface Attributes" for a detailed
+    see \\ref UsdShadeNodeGraph_Interfaces "Interface Inputs" for a detailed
     explanation of what the interface provides, and how to construct and
-    use it to effectively share/instance shader networks.
+    use it, to effectively share/instance shader networks.
 
     <b>Node Graph Outputs</b>
 
@@ -140,9 +140,7 @@ class NodeGraph "NodeGraph" (
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/input.h"
-#include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/parameter.h"
 """
     }
 ) {
@@ -270,18 +268,18 @@ class Shader "Shader" (
     correspondence with shader objects of some kind in the target renderer.
     The purpose of representing them in Usd is two-fold:
     \\li To represent, via "connections" the topology of the shading network
-    that must be reconstructed in the renderer.
-    \\li To present a (partial or full) interface of typed parameters whose
-    values can be set and overridden in Usd, to be provided later at 
-    render-time as parameter values to the actual render shader objects.
-    
-    Facilities for both of these missions are largely encapsulated in the
-    UsdShadeParameter schema.""" 
+    that must be reconstructed in the renderer. Facilities for authoring and 
+    manipulating connections are encapsulated in the Has-A schema 
+    \ref UsdShadeConnectableAPI.
+    \\li To present a (partial or full) interface of typed input parameters 
+    whose values can be set and overridden in Usd, to be provided later at 
+    render-time as parameter values to the actual render shader objects. Shader 
+    input parameters are encapsulated in the property schema UsdShadeInput.
+    """ 
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/parameter.h"
     """
     }
 ) {

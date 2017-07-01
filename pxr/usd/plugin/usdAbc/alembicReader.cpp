@@ -29,6 +29,7 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticData.h"
@@ -46,9 +47,12 @@
 
 #ifdef USDABC_MULTIVERSE_SUPPORT
 #include <Alembic/AbcCoreGit/All.h>
-#endif // #ifdef USDABC_MULTIVERSE_SUPPORT
+#endif // USDABC_MULTIVERSE_SUPPORT
 
+#ifdef USDABC_HDF5_SUPPORT
 #include <Alembic/AbcCoreHDF5/All.h>
+#endif // USDABC_HD5_SUPPORT
+
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/GeometryScope.h>
 #include <Alembic/AbcGeom/ICamera.h>
@@ -77,15 +81,28 @@ TF_DEFINE_ENV_SETTING(
     USD_ABC_WARN_ALL_UNSUPPORTED_VALUES, false,
     "Issue warnings for all unsupported values encountered.");
 
+TF_DEFINE_ENV_SETTING(
+    USD_ABC_NUM_OGAWA_STREAMS, 4,
+    "The number of threads available for reading ogawa-backed files via UsdAbc.");
+
 namespace {
 
 using namespace ::Alembic::AbcGeom;
 using namespace UsdAbc_AlembicUtil;
 
+static size_t
+_GetNumOgawaStreams()
+{
+    return std::min(TfGetEnvSetting(USD_ABC_NUM_OGAWA_STREAMS),
+                    static_cast<int>(WorkGetConcurrencyLimit()));
+}
+
+#ifdef USDABC_HDF5_SUPPORT
 // A global mutex until our HDF5 library is thread safe.  It has to be
 // recursive to handle the case where we write an Alembic file using an
 // UsdAbc_AlembicData as the source.
 static TfStaticData<std::recursive_mutex> _hdf5;
+#endif // USDABC_HDF5_SUPPORT
 
 // The SdfAbstractData time samples type.
 // XXX: SdfAbstractData should typedef this.
@@ -748,11 +765,8 @@ private:
                    std::string* format, std::recursive_mutex** mutex) const;
     bool _OpenOgawa(const std::string& filePath, IArchive*,
                     std::string* format, std::recursive_mutex** mutex) const;
-
-#ifdef USDABC_MULTIVERSE_SUPPORT
     bool _OpenGit(const std::string& filePath, IArchive*,
                     std::string* format, std::recursive_mutex** mutex) const;
-#endif // #ifdef USDABC_MULTIVERSE_SUPPORT
 
     // Walk the object hierarchy looking for instances and instance sources.
     static void _FindInstances(const IObject& parent,
@@ -858,20 +872,12 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
 
     IArchive archive;
     std::string format;
-#ifdef USDABC_MULTIVERSE_SUPPORT
     if (!(_OpenOgawa(filePath, &archive, &format, &_mutex) ||
           _OpenHDF5(filePath, &archive, &format, &_mutex) ||
           _OpenGit(filePath, &archive, &format, &_mutex))) {
         *errorLog = "Unsupported format";
         return false;
     }
-#else
-    if (!(_OpenOgawa(filePath, &archive, &format, &_mutex) ||
-          _OpenHDF5(filePath, &archive, &format, &_mutex))) {
-        *errorLog = "Unsupported format";
-        return false;
-    }
-#endif // #ifdef USDABC_MULTIVERSE_SUPPORT
 
     // Lock _mutex if it exists for remainder of this method.
     _Lock lock(_mutex);
@@ -1312,6 +1318,7 @@ _ReaderContext::_OpenHDF5(
     std::string* format,
     std::recursive_mutex** mutex) const
 {
+#ifdef USDABC_HDF5_SUPPORT
     // HDF5 may not be thread-safe.
     std::lock_guard<std::recursive_mutex> lock(*_hdf5);
 
@@ -1324,6 +1331,9 @@ _ReaderContext::_OpenHDF5(
         return true;
     }
     return false;
+#else
+    return false;
+#endif // USDABC_HDF5_SUPPORT
 }
 
 bool
@@ -1334,12 +1344,11 @@ _ReaderContext::_OpenOgawa(
     std::recursive_mutex** mutex) const
 {
     *format = "Ogawa";
-    *result = IArchive(Alembic::AbcCoreOgawa::ReadArchive(),
+    *result = IArchive(Alembic::AbcCoreOgawa::ReadArchive(_GetNumOgawaStreams()),
                        filePath, ErrorHandler::kQuietNoopPolicy);
     return *result;
 }
 
-#ifdef USDABC_MULTIVERSE_SUPPORT
 bool
 _ReaderContext::_OpenGit(
     const std::string& filePath,
@@ -1347,12 +1356,15 @@ _ReaderContext::_OpenGit(
     std::string* format,
     std::recursive_mutex** mutex) const
 {
+#ifdef USDABC_MULTIVERSE_SUPPORT
     *format = "Git";
     *result = IArchive(Alembic::AbcCoreGit::ReadArchive(),
                        filePath, ErrorHandler::kQuietNoopPolicy);
     return *result;
+#else
+    return false;
+#endif // USDABC_MULTIVERSE_SUPPORT
 }
-#endif // #ifdef USDABC_MULTIVERSE_SUPPORT
 
 void
 _ReaderContext::_FindInstances(

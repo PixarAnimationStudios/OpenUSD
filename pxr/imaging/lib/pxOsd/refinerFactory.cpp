@@ -172,18 +172,18 @@ Converter::GetOptions() const {
     // triangle subdivision
     //
 
-    TfToken const trianglesSubdivision =
+    TfToken const triangleSubdivision =
         topology.GetSubdivTags().GetTriangleSubdivision();
 
-    if (!trianglesSubdivision.IsEmpty()) {
-        if (trianglesSubdivision==PxOsdOpenSubdivTokens->catmark || 
-                trianglesSubdivision==PxOsdOpenSubdivTokens->catmullClark) {
+    if (!triangleSubdivision.IsEmpty()) {
+        if (triangleSubdivision==PxOsdOpenSubdivTokens->catmark || 
+                triangleSubdivision==PxOsdOpenSubdivTokens->catmullClark) {
             options.SetTriangleSubdivision(Options::TRI_SUB_CATMARK);
-        } else if (trianglesSubdivision==PxOsdOpenSubdivTokens->smooth) {
+        } else if (triangleSubdivision==PxOsdOpenSubdivTokens->smooth) {
             options.SetTriangleSubdivision(Options::TRI_SUB_SMOOTH);
         } else {
             TF_WARN("Unknown triangle subdivision rule (%s) (%s)",
-                trianglesSubdivision.GetText(), name.GetText());
+                triangleSubdivision.GetText(), name.GetText());
         }
     }
 

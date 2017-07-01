@@ -40,46 +40,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-// XXX Backwards-compatibility code for transitioning from customData["zUp"]
-// XXX encoding to newer, permanent upAxis metadata.
-
-TF_DEFINE_ENV_SETTING(
-    USD_READ_ZUP_FOR_UP_AXIS, false, 
-    "Whether UsdGeomGetStageUpAxis() will consult old-style customData[\"zUp\"]"
-    " if upAxis metadata is unauthored.  Will eventually be retired - provided"
-    " for backwards compatibility while transitioning.");
-
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (zUp)
     (UsdGeomMetrics)
 );
-
-static
-TfToken
-_GetUpAxisFromZUp(const UsdStageWeakPtr &stage)
-{
-    TF_FOR_ALL(prim, stage->GetPseudoRoot().
-                            GetFilteredChildren(UsdPrimIsDefined &&
-                                                !UsdPrimIsAbstract)){
-        VtValue isZup = prim->GetCustomDataByKey(_tokens->zUp);
-        if (isZup.IsEmpty()){
-            continue;
-        }
-        else if (isZup.IsHolding<bool>()){
-            return isZup.Get<bool>() ? UsdGeomTokens->z : UsdGeomTokens->y;
-        }
-        else {
-            TF_WARN("Found non-boolean 'zUp' customData in UsdStage root at "
-                    "layer '%s', primPath <%s>.",
-                    stage->GetRootLayer()->GetIdentifier().c_str(),
-                    prim->GetPath().GetText());
-            return TfToken();
-        }
-    }
-
-    return TfToken();
-}
 
 TfToken 
 UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage)
@@ -97,12 +61,6 @@ UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage)
         return axis;
     }
 
-    if (TfGetEnvSetting(USD_READ_ZUP_FOR_UP_AXIS)){
-        TfToken upAxis = _GetUpAxisFromZUp(stage);
-        if (!upAxis.IsEmpty())
-            return upAxis;
-    }
-    
     return UsdGeomGetFallbackUpAxis();
 }
 

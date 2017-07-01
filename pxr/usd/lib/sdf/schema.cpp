@@ -460,6 +460,9 @@ SdfSchemaBase::_RegisterStandardFields()
         .MapKeyValidator(&_ValidateIdentifier)
         .MapValueValidator(&_ValidateIsSceneDescriptionValue);
     _DoRegisterField(SdfFieldKeys->TimeSamples, SdfTimeSampleMap());
+    _DoRegisterField(SdfFieldKeys->ColorConfiguration, SdfAssetPath());
+    _DoRegisterField(SdfFieldKeys->ColorManagementSystem, TfToken());
+    _DoRegisterField(SdfFieldKeys->ColorSpace, TfToken());
     _DoRegisterField(SdfFieldKeys->Comment, "");
     
     // Connection paths are marked read-only because adding/removing 
@@ -586,6 +589,8 @@ SdfSchemaBase::_RegisterStandardFields()
     //
 
     _Define(SdfSpecTypePseudoRoot)
+        .MetadataField(SdfFieldKeys->ColorConfiguration)
+        .MetadataField(SdfFieldKeys->ColorManagementSystem)
         .Field(SdfFieldKeys->Comment)
         .MetadataField(SdfFieldKeys->CustomLayerData)
         .MetadataField(SdfFieldKeys->DefaultPrim)
@@ -704,6 +709,8 @@ SdfSchemaBase::_RegisterStandardFields()
         .Field(SdfFieldKeys->ConnectionPaths)
         .Field(SdfFieldKeys->DisplayUnit)
         .MetadataField(SdfFieldKeys->AllowedTokens,
+                       SdfMetadataDisplayGroupTokens->core)
+        .MetadataField(SdfFieldKeys->ColorSpace, 
                        SdfMetadataDisplayGroupTokens->core)
         ;
 
@@ -1569,9 +1576,9 @@ SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
     r.AddType("color4h",    GfVec4h(0.0), color, Dim(4));
     r.AddType("color4f",    GfVec4f(0.0), color, Dim(4));
     r.AddType("color4d",    GfVec4d(0.0), color, Dim(4));
-    r.AddType("quath",      GfQuath(0.0), Dim(4));
-    r.AddType("quatf",      GfQuatf(0.0), Dim(4));
-    r.AddType("quatd",      GfQuatd(0.0), Dim(4));
+    r.AddType("quath",      GfQuath(1.0), Dim(4));
+    r.AddType("quatf",      GfQuatf(1.0), Dim(4));
+    r.AddType("quatd",      GfQuatd(1.0), Dim(4));
     r.AddType("matrix2d",   GfMatrix2d(1.0), Dim(2, 2));
     r.AddType("matrix3d",   GfMatrix3d(1.0), Dim(3, 3));
     r.AddType("matrix4d",   GfMatrix4d(1.0), Dim(4, 4));
@@ -1602,9 +1609,9 @@ SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
     r.AddType("VectorFloat",GfVec3f(0.0), length, vector, Dim(3));
     r.AddType("Color",      GfVec3d(0.0), color, Dim(3));
     r.AddType("ColorFloat", GfVec3f(0.0), color, Dim(3));
-    r.AddType("Quath",      GfQuath(0.0), Dim(4));
-    r.AddType("Quatf",      GfQuatf(0.0), Dim(4));
-    r.AddType("Quatd",      GfQuatd(0.0), Dim(4));
+    r.AddType("Quath",      GfQuath(1.0), Dim(4));
+    r.AddType("Quatf",      GfQuatf(1.0), Dim(4));
+    r.AddType("Quatd",      GfQuatd(1.0), Dim(4));
     r.AddType("Matrix2d",   GfMatrix2d(1.0), Dim(2, 2));
     r.AddType("Matrix3d",   GfMatrix3d(1.0), Dim(3, 3));
     r.AddType("Matrix4d",   GfMatrix4d(1.0), Dim(4, 4));

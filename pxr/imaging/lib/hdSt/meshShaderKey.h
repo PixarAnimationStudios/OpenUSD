@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdSt_MeshShaderKey
 {
-    HdSt_MeshShaderKey(GLenum primitiveMode,
+    HdSt_MeshShaderKey(Hd_GeometricShader::PrimitiveType primType,
                        bool lit,
                        bool smoothNormals,
                        bool doubleSided,
@@ -58,12 +58,13 @@ struct HdSt_MeshShaderKey
     TfToken const *GetGS() const  { return GS; }
     TfToken const *GetFS() const  { return FS; }
     bool IsCullingPass() const { return false; }
-    GLenum GetPrimitiveMode() const { return primitiveMode; }
-    int16_t GetPrimitiveIndexSize() const { return primitiveIndexSize; }
     HdCullStyle GetCullStyle() const { return cullStyle; }
     HdPolygonMode GetPolygonMode() const { return polygonMode; }
-    GLenum primitiveMode;
-    int16_t primitiveIndexSize;
+    Hd_GeometricShader::PrimitiveType GetPrimitiveType() const {
+        return primType; 
+    }
+
+    Hd_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
     HdPolygonMode polygonMode;
     TfToken glslfx;

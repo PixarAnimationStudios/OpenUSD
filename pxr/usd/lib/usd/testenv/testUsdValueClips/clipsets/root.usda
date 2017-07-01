@@ -1,0 +1,22 @@
+#usda 1.0
+
+def "Set" (
+    clips = {
+        dictionary non_template_clips = {
+            double2[] active = [(0.0, 0)]
+            asset[] assetPaths = [@./non_template_clip.usda@]
+            string primPath = "/NonTemplate"
+        }
+        dictionary template_clips = {
+            string templateAssetPath = "./template_clip.##.usda"
+            double templateEndTime = 2
+            double templateStartTime = 0
+            double templateStride = 1
+            string primPath = "/Template"
+        }
+    }
+
+    references = @./set.usda@</Set>
+)
+{
+}

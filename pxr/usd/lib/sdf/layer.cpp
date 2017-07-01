@@ -130,8 +130,11 @@ SdfLayer::SdfLayer(
     _permissionToEdit(true),
     _permissionToSave(true)
 {
+    const string realPathFinal =
+        TfIsRelativePath(realPath) ? realPath : TfAbsPath(realPath);
+
     TF_DEBUG(SDF_LAYER).Msg("SdfLayer::SdfLayer('%s', '%s')\n",
-        identifier.c_str(), realPath.c_str());
+        identifier.c_str(), realPathFinal.c_str());
 
     // If the identifier has the anonymous layer identifier prefix, it is a
     // template into which the layer address must be inserted. This ensures
@@ -147,7 +150,8 @@ SdfLayer::SdfLayer(
     _initializationMutex.lock();
 
     // Initialize layer asset information.
-    _InitializeFromIdentifier(layerIdentifier, realPath, std::string(), assetInfo);
+    _InitializeFromIdentifier(
+        layerIdentifier, realPathFinal, std::string(), assetInfo);
 
     // A new layer is not dirty.
     _MarkCurrentStateAsClean();
@@ -197,11 +201,14 @@ SdfLayer::_CreateNewWithFormat(
     const ArAssetInfo& assetInfo,
     const FileFormatArguments& args)
 {
+    const string realPathFinal =
+        TfIsRelativePath(realPath) ? realPath : TfAbsPath(realPath);
+
     // This method should be called with the layerRegistryMutex already held.
 
     // Create and return a new layer with _initializationMutex locked.
     return fileFormat->NewLayer<SdfLayer>(
-        fileFormat, identifier, realPath, assetInfo, args);
+        fileFormat, identifier, realPathFinal, assetInfo, args);
 }
 
 void
@@ -1307,6 +1314,57 @@ SdfLayer::_GetValue(const TfToken& key) const
     }
     
     return value.Get<T>();
+}
+
+SdfAssetPath 
+SdfLayer::GetColorConfiguration() const
+{
+    return _GetValue<SdfAssetPath>(SdfFieldKeys->ColorConfiguration);
+}
+
+void 
+SdfLayer::SetColorConfiguration(const SdfAssetPath &colorConfiguration)
+{
+    _SetValue(SdfFieldKeys->ColorConfiguration, colorConfiguration);
+}
+
+bool 
+SdfLayer::HasColorConfiguration() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), 
+                    SdfFieldKeys->ColorConfiguration);
+}
+    
+void 
+SdfLayer::ClearColorConfiguration()
+{
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ColorConfiguration);
+}
+
+TfToken
+SdfLayer::GetColorManagementSystem() const
+{
+    return _GetValue<TfToken>(SdfFieldKeys->ColorManagementSystem);
+}
+
+void 
+SdfLayer::SetColorManagementSystem(const TfToken &cms)
+{
+    _SetValue(SdfFieldKeys->ColorManagementSystem, cms);
+}
+
+bool 
+SdfLayer::HasColorManagementSystem() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), 
+                    SdfFieldKeys->ColorManagementSystem);    
+}
+
+void 
+SdfLayer::ClearColorManagementSystem() 
+{
+    EraseField(SdfPath::AbsoluteRootPath(), 
+               SdfFieldKeys->ColorManagementSystem);
 }
 
 void

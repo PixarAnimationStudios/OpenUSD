@@ -1,17 +1,25 @@
 #usda 1.0
 
 def "ModelGroup" (
-    references = @ref.usda@</ModelGroup>
+    references = @./ref.usda@</ModelGroup>
 
-    clipAssetPaths = [@clip-group.usda@]
-    clipPrimPath = "/ModelGroup"
-    clipActive = [(0.0, 0)]
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip-group.usda@]
+            string primPath = "/ModelGroup"
+            double2[] active = [(0.0, 0)]
+        }
+    }
 )
 {
     over "Model" (
-        clipAssetPaths = [@clip-model.usda@]
-        clipPrimPath = "/Model"
-        clipActive = [(0.0, 0)]
+        clips = {
+            dictionary default = {
+                asset[] assetPaths = [@./clip-model.usda@]
+                string primPath = "/Model"
+                double2[] active = [(0.0, 0)]
+            }
+        }
     )
     {
     }

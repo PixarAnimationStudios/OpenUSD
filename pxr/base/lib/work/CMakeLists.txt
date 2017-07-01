@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE work)
 
-pxr_shared_library(work
+pxr_library(work
     LIBRARIES
         tf
         tracelite

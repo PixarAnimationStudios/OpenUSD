@@ -26,9 +26,9 @@
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/instanceCache.h"
 
-#include "pxr/usd/usd/conversions.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/interpolators.h"
+#include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
@@ -241,6 +241,32 @@ UsdAttribute::ClearDefault() const
     return ClearAtTime(UsdTimeCode::Default());
 }
 
+TfToken 
+UsdAttribute::GetColorSpace() const
+{
+    TfToken colorSpace;
+    GetMetadata(SdfFieldKeys->ColorSpace, &colorSpace);
+    return colorSpace;
+}
+
+void 
+UsdAttribute::SetColorSpace(const TfToken &colorSpace) const
+{
+    SetMetadata(SdfFieldKeys->ColorSpace, colorSpace);
+}
+
+bool 
+UsdAttribute::HasColorSpace() const
+{
+    return HasMetadata(SdfFieldKeys->ColorSpace);
+}
+
+bool 
+UsdAttribute::ClearColorSpace() const
+{
+    return ClearMetadata(SdfFieldKeys->ColorSpace);
+}
+
 SdfAttributeSpecHandle
 UsdAttribute::_CreateSpec(const SdfValueTypeName& typeName, bool custom,
                           const SdfVariability &variability) const
@@ -269,7 +295,7 @@ UsdAttribute::_CreateSpec(const SdfValueTypeName& typeName, bool custom,
     if (m.IsClean()) {
         SdfChangeBlock block;
         return SdfAttributeSpec::New(
-            stage->_CreatePrimSpecForEditing(GetPrimPath()),
+            stage->_CreatePrimSpecForEditing(GetPrim()),
             _PropName(), typeName, variability, custom);
     }
     return TfNullPtr;

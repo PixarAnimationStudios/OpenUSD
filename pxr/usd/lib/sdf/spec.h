@@ -259,6 +259,7 @@ public:
     }
 
 private:
+    SDF_API
     bool _HasField(const TfToken& name, SdfAbstractDataValue* value) const;
 
 protected:

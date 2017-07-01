@@ -986,6 +986,11 @@ class StageView(QtOpenGL.QGLWidget):
         self._allSceneCameras = value
 
     @property
+    def gfCamera(self):
+        """Return the last computed Gf Camera"""
+        return self._lastComputedGfCamera
+
+    @property
     def cameraFrustum(self):
         """Unlike the StageView.freeCamera property, which is invalid/None
         whenever we are viewing from a scene/stage camera, the 'cameraFrustum'
@@ -1132,7 +1137,8 @@ class StageView(QtOpenGL.QGLWidget):
             return []
 
     def SetRendererPlugin(self, name):
-        self._renderer.SetRendererPlugin(name)
+        if self._renderer:
+            self._renderer.SetRendererPlugin(name)
 
     def GetStage(self):
         return self._stage
@@ -1438,6 +1444,9 @@ class StageView(QtOpenGL.QGLWidget):
 
     def _updateSelection(self):
         psuRoot = self._stage.GetPseudoRoot()
+        if not self._renderer:
+            return
+
         self._renderer.ClearSelected()
 
         for p in self._nodes:
@@ -1515,8 +1524,11 @@ class StageView(QtOpenGL.QGLWidget):
 
 
     def initializeGL(self):
+        if not self.context():
+            return
         from pxr import Glf
-        Glf.GlewInit()
+        if not Glf.GlewInit():
+            return
         Glf.RegisterDefaultDebugOutputMessageCallback()
         # Initialize the renderer now since the context is available
         self.InitRenderer()
@@ -2044,11 +2056,12 @@ class StageView(QtOpenGL.QGLWidget):
     def pick(self, pickFrustum):
         '''
         Find closest point in scene rendered through 'pickFrustum'.  
-        Returns a triple:
-          selectedPoint, selectedPrimPath, selectedInstanceIndex
+        Returns a quintuple:
+          selectedPoint, selectedPrimPath, selectedInstancerPath,
+          selectedInstanceIndex, selectedElementIndex
         '''
         if not self._stage or not self._renderer:
-            return None, None, None, None
+            return None, Sdf.Path.emptyPath, None, None, None
         
         from OpenGL import GL
 
@@ -2100,6 +2113,8 @@ class StageView(QtOpenGL.QGLWidget):
         Emits a signalPrimSelected or signalRollover depending on
         whether 'button' is None.
         '''
+        if not self._stage:
+            return
 
         selectedPoint, selectedPrimPath, selectedInstancerPath, selectedInstanceIndex, selectedElementIndex = \
             self.pick(self.computePickFrustum(x, y))
@@ -2155,7 +2170,8 @@ class StageView(QtOpenGL.QGLWidget):
     def glDraw(self):
         # override glDraw so we can time it.
         startTime = time()
-        QtOpenGL.QGLWidget.glDraw(self)
+        if self._renderer:
+            QtOpenGL.QGLWidget.glDraw(self)
         self._renderTime = time() - startTime
 
     def SetForceRefresh(self, val):

@@ -23,10 +23,10 @@
 //
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/schemaBase.h"
-#include "pxr/usd/usd/conversions.h"
 
 #include "pxr/usd/sdf/primSpec.h"
 
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -119,12 +119,13 @@ void wrapUsdGeomXformable()
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/usd/usd/timeCode.h"
 
 namespace {
 
 static GfMatrix4d
 _GetLocalTransformation1(const UsdGeomXformable &self,
-                        const UsdTimeCode time) 
+                         const UsdTimeCode time) 
 {
     GfMatrix4d result(1);
     bool resetsXformStack;
@@ -275,6 +276,7 @@ WRAP_CUSTOM {
             return_value_policy<TfPySequenceToList>())
 
         .def("GetLocalTransformation", _GetLocalTransformation1,
+            (arg("time")=UsdTimeCode::Default()),
             "Compute the fully-combined, local-to-parent transformation for "
             "this prim.\n"
             "If a client does not need to manipulate the individual ops "
@@ -288,6 +290,7 @@ WRAP_CUSTOM {
             " GetResetXformStack() to be able to construct the local-to-world"
             " transformation.")
         .def("GetLocalTransformation", _GetLocalTransformation2,
+            (arg("ops"),arg("time")=UsdTimeCode::Default()),
             "Compute the fully-combined, local-to-parent transformation for "
             "this prim as efficiently as possible, using pre-fetched "
             "list of ordered xform ops supplied by the client.\n"

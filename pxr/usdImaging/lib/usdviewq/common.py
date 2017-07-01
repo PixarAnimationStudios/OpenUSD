@@ -400,3 +400,18 @@ def DumpMallocTags(stage, contextStr):
         print "Unable to accumulate memory usage since the Pxr MallocTag system was not initialized"
 
         
+
+def GetInstanceIdForIndex(prim, instanceIndex, time):
+    '''Attempt to find an authored Id value for the instance at index
+    'instanceIndex' at time 'time', on the given prim 'prim', which we access
+    as a UsdGeom.PointInstancer (whether it actually is or not, to provide
+    some dynamic duck-typing for custom instancer types that support Ids.
+    Returns 'None' if no ids attribute was found, or if instanceIndex is
+    outside the bounds of the ids array.'''
+    from pxr import UsdGeom
+    if not prim or instanceIndex < 0:
+        return None
+    ids = UsdGeom.PointInstancer(prim).GetIdsAttr().Get(time)
+    if not ids or instanceIndex >= len(ids):
+        return None
+    return ids[instanceIndex]

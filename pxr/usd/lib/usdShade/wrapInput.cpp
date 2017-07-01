@@ -23,11 +23,9 @@
 //
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/interfaceAttribute.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 
-#include "pxr/usd/usd/conversions.h"
-
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
@@ -51,6 +49,13 @@ _Set(const UsdShadeInput &self, object val, const UsdTimeCode &time)
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
 
+static TfPyObjWrapper
+_Get(const UsdShadeInput &self, UsdTimeCode time) {
+    VtValue val;
+    self.Get(&val, time);
+    return UsdVtValueToPython(val);
+}
+
 } // anonymous namespace 
 
 void wrapUsdShadeInput()
@@ -66,6 +71,7 @@ void wrapUsdShadeInput()
         .def("GetBaseName", &Input::GetBaseName)
         .def("GetPrim", &Input::GetPrim)
         .def("GetTypeName", &Input::GetTypeName)
+        .def("Get", _Get, (arg("time")=UsdTimeCode::Default()))
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
         .def("SetRenderType", &Input::SetRenderType,
              (arg("renderType")))
@@ -83,6 +89,11 @@ void wrapUsdShadeInput()
 
         .def("GetAttr", &Input::GetAttr,
              return_value_policy<return_by_value>())
+
+        .def("IsInput", &Input::IsInput)
+        .staticmethod("IsInput")
+        .def("IsInterfaceInputName", &Input::IsInterfaceInputName)
+        .staticmethod("IsInterfaceInputName")
         ;
 
     implicitly_convertible<Input, UsdAttribute>();

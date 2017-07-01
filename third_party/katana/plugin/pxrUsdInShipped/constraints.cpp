@@ -45,29 +45,34 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_ConstraintsOp, privateData, interf
 
     gb.set("scenegraph.stopExpand.a.tabs", FnKat::IntAttribute(1));
 
+    // TODO: SHould this use the ModelAPI?
     std::vector<UsdProperty> constraintTargets =
         privateData.GetUsdPrim().GetPropertiesInNamespace("constraintTargets");
 
-    TF_FOR_ALL(constraintTargetsIter, constraintTargets)
+    for (auto constraintTargetProperty : constraintTargets)
     {
-        UsdGeomConstraintTarget constraintTarget(constraintTargetsIter->As<UsdAttribute>());
+        UsdAttribute constraintTargetAttr = constraintTargetProperty.As<UsdAttribute>();
+        UsdResolveInfo constraintTargetResolveInfo = constraintTargetAttr.GetResolveInfo();
+        if (!constraintTargetResolveInfo.ValueIsBlocked()){
+            UsdGeomConstraintTarget constraintTarget(constraintTargetAttr);
 
-        std::string constraintName = constraintTarget.GetIdentifier().GetString();
+            std::string constraintName = constraintTarget.GetIdentifier().GetString();
 
-        if (constraintName.empty())
-        {
-            // If no identifier was authored, use the full namespace path to
-            // construct the constraint attribute name to avoid name collisions.
-            std::vector<std::string> nameElements = constraintTarget.GetAttr().SplitName();
-            constraintName = TfStringJoin(nameElements.begin()+1, 
-                                    nameElements.end(), "_");
+            if (constraintName.empty())
+            {
+                // If no identifier was authored, use the full namespace path to
+                // construct the constraint attribute name to avoid name collisions.
+                std::vector<std::string> nameElements = constraintTargetAttr.SplitName();
+                constraintName = TfStringJoin(nameElements.begin()+1, 
+                                        nameElements.end(), "_");
+            }
+
+            PxrUsdKatanaAttrMap attrs;
+            PxrUsdKatanaReadConstraintTarget(
+                constraintTarget, privateData, attrs);
+
+            gb.set("c." + constraintName + ".a", attrs.build());
         }
-
-        PxrUsdKatanaAttrMap attrs;
-        PxrUsdKatanaReadConstraintTarget(
-            constraintTarget, privateData, attrs);
-
-        gb.set("c." + constraintName + ".a", attrs.build());
     }
 
     interface.execOp("StaticSceneCreate", gb.build());

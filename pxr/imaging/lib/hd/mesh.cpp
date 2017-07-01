@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -36,6 +37,27 @@ HdMesh::HdMesh(SdfPath const& id,
 HdMesh::~HdMesh()
 {
     /*NOTHING*/
+}
+
+// static repr configuration
+HdMesh::_MeshReprConfig HdMesh::_reprDescConfig;
+
+/* static */
+void
+HdMesh::ConfigureRepr(TfToken const &reprName,
+                      HdMeshReprDesc desc1,
+                      HdMeshReprDesc desc2)
+{
+    HD_TRACE_FUNCTION();
+
+    _reprDescConfig.Append(reprName, _MeshReprConfig::DescArray{desc1, desc2});
+}
+
+/* static */
+HdMesh::_MeshReprConfig::DescArray
+HdMesh::_GetReprDesc(TfToken const &reprName)
+{
+    return _reprDescConfig.Find(reprName);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

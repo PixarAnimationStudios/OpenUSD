@@ -35,7 +35,7 @@
 #include "pxr/base/tf/api.h"
 
 #include <boost/operators.hpp>
-#include <boost/preprocessor/punctuation/comma.hpp>
+#include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -108,7 +108,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// // source file
 /// #include "pxr/base/tf/registryManager.h"
-/// TF_REGISTRY_FUNCTION(TfEnum, Season) {
+/// TF_REGISTRY_FUNCTION(TfEnum) {
 ///     // Register the names for the values:
 ///     TF_ADD_ENUM_NAME(SPRING);
 ///     TF_ADD_ENUM_NAME(SUMMER);

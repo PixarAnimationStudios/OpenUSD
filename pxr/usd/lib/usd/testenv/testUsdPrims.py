@@ -499,6 +499,13 @@ class TestUsdPrim(unittest.TestCase):
         assert [a.GetName() for a in attrs] == expected, \
             '%s != %s' % ([a.GetName() for a in attrs], expected)
 
+        rels = po.GetRelationships()
+        # expected order:
+        expected = ['R0', 'r1', 'r2', 'R3', 'r4', 'r5', 'r10', 'R20']
+        assert [r.GetName() for r in rels] == expected, \
+            '%s != %s' % ([r.GetName() for r in rels], expected)
+        
+        
     def test_PropertyReorder(self):
         def l(chars):
             return list(x for x in chars)

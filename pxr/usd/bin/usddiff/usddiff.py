@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import os, sys
+import difflib, os, sys
 from subprocess import call
 
 import platform
@@ -76,18 +76,11 @@ def _findDiffTools():
         _exit("Error: Could not find 'usdcat'. Expected it to be in PATH", 
               ERROR_EXIT_CODE)
 
-    diffBuiltin = 'diff'
-    if isWindows:
-        diffBuiltin = 'fc'
-
-    # prefer USD_DIFF, then DIFF, else 'diff' 
-    diffCmd = (os.environ.get('USD_DIFF') or 
-               os.environ.get('DIFF') or 
-               _findExe(diffBuiltin))
-    if not diffCmd:
-        _exit("Error: Failed to find suitable diff tool. "
-              "Expected $USD_DIFF/$DIFF to be set, or '%s' "
-              "to be installed." % (diffBuiltin, ), ERROR_EXIT_CODE)
+    # prefer USD_DIFF, then DIFF, else use the internal unified diff.
+    diffCmd = (os.environ.get('USD_DIFF') or os.environ.get('DIFF'))
+    if diffCmd and not _findExe(diffCmd):
+        _exit("Error: Failed to find diff tool %s." % (diffCmd, ),
+              ERROR_EXIT_CODE)
 
     return (usdcatCmd, diffCmd)
 
@@ -179,7 +172,25 @@ def _runDiff(baseline, comparison, flatten, noeffect):
         tempBaselineTimestamp = os.path.getmtime(tempBaseline.name)
         tempComparisonTimestamp = os.path.getmtime(tempComparison.name)
 
-        diffResult = call([diffCmd, tempBaseline.name, tempComparison.name])
+        if diffCmd:
+            # Run the external diff tool.
+            diffResult = call([diffCmd, tempBaseline.name, tempComparison.name])
+        else:
+            # Read the files.
+            with open(tempBaseline.name, "r") as f:
+                baselineData = f.readlines()
+            with open(tempComparison.name, "r") as f:
+                comparisonData = f.readlines()
+
+            # Generate unified diff and output if there are any differences.
+            diff = list(difflib.unified_diff(
+                baselineData, comparisonData,
+                tempBaseline.name, tempComparison.name, n=0))
+            if diff:
+                # Skip the file names.
+                for line in diff[2:]:
+                    print line,
+                diffResult = 1
 
         tempBaselineChanged = ( 
             os.path.getmtime(tempBaseline.name) != tempBaselineTimestamp)

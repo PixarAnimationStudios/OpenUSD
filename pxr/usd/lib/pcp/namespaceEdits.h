@@ -59,11 +59,12 @@ struct PcpNamespaceEdits {
     /// Types of namespace edits that a given layer stack site could need
     /// to perform to respond to a namespace edit.
     enum EditType {
-        EditPath,      ///< Must namespace edit spec
-        EditInherit,   ///< Must fixup inherits
-        EditReference, ///< Must fixup references
-        EditPayload,   ///< Must fixup payload
-        EditRelocate,  ///< Must fixup relocates
+        EditPath,        ///< Must namespace edit spec
+        EditInherit,     ///< Must fixup inherits
+        EditSpecializes, ///< Must fixup specializes
+        EditReference,   ///< Must fixup references
+        EditPayload,     ///< Must fixup payload
+        EditRelocate,    ///< Must fixup relocates
     };
 
     void Swap(PcpNamespaceEdits& rhs)

@@ -362,7 +362,7 @@ Pcp_BuildPrimIndex(
     const PcpPrimIndexInputs& inputs,
     PcpPrimIndexOutputs* outputs);
 
-static bool
+static inline bool
 _NodeCanBeCulled(const PcpNodeRef& node, 
                  const PcpLayerStackSite& rootLayerStack);
 
@@ -1822,9 +1822,25 @@ _EvalNodeRelocations(
         "Evaluating relocations under %s", 
         Pcp_FormatSite(node.GetSite()).c_str());
 
-    // Determine if this node was relocated, and from what source path.    
+    // Unlike other tasks, we skip processing if this node can't contribute 
+    // specs, but only if this node was introduced at this level at namespace.
+    // This additional check is needed because a descendant node might not
+    // have any specs and thus be marked as culled, but still have relocates
+    // that affect that node.
+    if (!node.CanContributeSpecs() && node.GetDepthBelowIntroduction() == 0) {
+        return;
+    }
+
+    // Determine if this node was relocated, and from what source path.
+    //
+    // We need to use the incremental relocates map instead of the 
+    // fully-combined map to ensure we examine all sources of opinions
+    // in the case where there are multiple relocations nested in different
+    // levels of namespace that affect the same prim. The fully-combined 
+    // map collapses these relocations into a single entry, which would
+    // cause us to skip looking at any intermediate sites.
     const SdfRelocatesMap & relocatesTargetToSource = 
-        node.GetLayerStack()->GetRelocatesTargetToSource();
+        node.GetLayerStack()->GetIncrementalRelocatesTargetToSource();
     SdfRelocatesMap::const_iterator i =
         relocatesTargetToSource.find(node.GetPath());
     if (i == relocatesTargetToSource.end()) {
@@ -4094,6 +4110,14 @@ struct Pcp_DisableNonInstanceableNodesVisitor
     }
 };
 
+const PcpPrimIndex &
+Pcp_ComputePrimIndexWithCompatibleInputs(
+    PcpCache &cache,
+    const SdfPath & path, const PcpPrimIndexInputs &inputs,
+    PcpErrorVector *allErrors) {
+    return cache._ComputePrimIndexWithCompatibleInputs(path, inputs, allErrors);
+}    
+
 static void
 _BuildInitialPrimIndexFromAncestor(
     const PcpLayerStackSite &site,
@@ -4119,8 +4143,9 @@ _BuildInitialPrimIndexFromAncestor(
         // of layer stacks brought in by ancestors.
         const PcpPrimIndex& parentIndex =
             inputs.parentIndex ? *inputs.parentIndex :
-            inputs.cache->ComputePrimIndex(
-                site.path.GetParentPath(), &outputs->allErrors);
+            Pcp_ComputePrimIndexWithCompatibleInputs(
+                *inputs.cache, site.path.GetParentPath(), inputs,
+                &outputs->allErrors);
 
         // Clone the parent's graph..
         outputs->primIndex.SetGraph(
@@ -4445,8 +4470,9 @@ _ComposePrimChildNamesAtNode(
         std::map<TfToken, TfToken> namesToReplace;
 
         // Check for relocations with a child as source.
+        // See _EvalNodeRelocations for why we use the incremental relocates.
         const SdfRelocatesMap & relocatesSourceToTarget =
-            node.GetLayerStack()->GetRelocatesSourceToTarget();
+            node.GetLayerStack()->GetIncrementalRelocatesSourceToTarget();
         for (SdfRelocatesMap::const_iterator i =
                  relocatesSourceToTarget.lower_bound(node.GetPath());
              i != relocatesSourceToTarget.end() &&
@@ -4469,8 +4495,9 @@ _ComposePrimChildNamesAtNode(
         }
 
         // Check for relocations with a child as target.
+        // See _EvalNodeRelocations for why we use the incremental relocates.
         const SdfRelocatesMap & relocatesTargetToSource =
-            node.GetLayerStack()->GetRelocatesTargetToSource();
+            node.GetLayerStack()->GetIncrementalRelocatesTargetToSource();
         for (SdfRelocatesMap::const_iterator i =
                  relocatesTargetToSource.lower_bound(node.GetPath());
              i != relocatesTargetToSource.end() &&

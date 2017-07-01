@@ -1,0 +1,11 @@
+{
+    "nodetype" : "pixar::usdrop",
+
+    "flagmapping" : {
+	"3" : {
+	    "flag" : "r",
+	    "color" : "GraphRenderFlag",
+	    "icon" : "NETVIEW_render_flag"
+	}
+    }
+}

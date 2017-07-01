@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(GARCH_STATIC)
+#if defined(PXR_STATIC)
 #   define GARCH_API
 #   define GARCH_API_TEMPLATE_CLASS(...)
 #   define GARCH_API_TEMPLATE_STRUCT(...)

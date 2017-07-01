@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primFlags.h"
 
 #include <boost/python/class.hpp>
@@ -88,6 +89,11 @@ size_t __hash__Predicate(const Usd_PrimFlagsPredicate &p) {
     return hash_value(p);
 }
 
+// Call implementations.
+bool __call__Predicate(const Usd_PrimFlagsPredicate &p, const UsdPrim& prim){
+    return p(prim);
+}
+
 } // anonymous namespace 
 
 void wrapUsdPrimFlags()
@@ -112,6 +118,7 @@ void wrapUsdPrimFlags()
         .def(self == self)
         .def(self != self)
         .def("__hash__", __hash__Predicate)
+        .def("__call__", __call__Predicate)
         ;
 
     class_<Usd_PrimFlagsConjunction, bases<Usd_PrimFlagsPredicate> >

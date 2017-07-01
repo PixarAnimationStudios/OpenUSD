@@ -33,9 +33,17 @@ def _getModules(pxrSourceRoot):
         # Ignore any hidden directories
         if os.path.basename(p).startswith('.'):
             continue
+
+        # add all lib/ subdirs, such as usdGeom
         path = os.path.join(os.path.join(pxrSourceRoot, p), 'lib/')
         if os.path.isdir(path):
             topLevel.append(path)
+
+        # add all plugin subdirs, such as usdAbc
+        path = os.path.join(os.path.join(pxrSourceRoot, p), 'plugin/')
+        if os.path.isdir(path):
+            topLevel.append(path)
+
     for t in topLevel:
         for p in os.listdir(t):
             if os.path.basename(p).startswith('.'):
@@ -93,10 +101,13 @@ def _generateDocs(pxrSourceRoot, pxrBuildRoot, installLoc,
 
     os.chdir(installLoc)
     cmd = [doxygenBin, doxyConfigDest] 
-    with tempfile.TemporaryFile() as tmpFile:
-        if subprocess.call(cmd, stdout=tmpFile, stderr=tmpFile) != 0:
-            sys.stderr.write(tmpFile.read())
-            sys.exit('Error: doxygen failed to complete.')
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+    output = proc.communicate()[0]
+    if proc.wait() != 0:
+        print >>sys.stderr, output.replace('\r\n', '\n')
+        sys.exit('Error: doxygen failed to complete; '
+                 'exit code %d.' % proc.returncode)
 
 def _checkPath(path, ident, perm):
     if not os.path.exists(path):

@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// A thread safe wrapper around glewInit()
 GLF_API
-void GlfGlewInit();
+bool GlfGlewInit();
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

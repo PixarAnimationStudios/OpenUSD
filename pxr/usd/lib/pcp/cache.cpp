@@ -47,7 +47,6 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/work/arenaDispatcher.h"
-#include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/singularTask.h"
 #include "pxr/base/work/utils.h"
@@ -1180,10 +1179,8 @@ struct Pcp_ParallelIndexer
 {
     typedef Pcp_ParallelIndexer This;
 
-    template <class PayloadPredicate>
     Pcp_ParallelIndexer(PcpCache *cache,
                         ChildrenPredicate childrenPred,
-                        PayloadPredicate payloadPred,
                         const PcpLayerStackPtr &layerStack,
                         PcpPrimIndexInputs baseInputs,
                         PcpErrorVector *allErrors,
@@ -1205,7 +1202,6 @@ struct Pcp_ParallelIndexer
         // includedPayloadsMutex.
         _baseInputs
             .IncludedPayloadsMutex(&_includedPayloadsMutex)
-            .IncludePayloadPredicate(payloadPred)
             ;
     }
 
@@ -1421,7 +1417,7 @@ struct Pcp_ParallelIndexer
     PcpErrorVector *_allErrors;
     ChildrenPredicate _childrenPredicate;
     vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
-    const PcpLayerStackPtr &_layerStack;
+    PcpLayerStackPtr _layerStack;
     PcpPrimIndexInputs _baseInputs;
     tbb::concurrent_vector<PcpPrimIndexOutputs> _results;
     tbb::spin_rw_mutex _primIndexCacheMutex;
@@ -1430,7 +1426,7 @@ struct Pcp_ParallelIndexer
     vector<PcpPrimIndex> _consumerScratch;
     vector<SdfPath> _consumerScratchPayloads;
     ArResolver& _resolver;
-    WorkDispatcher _dispatcher;
+    WorkArenaDispatcher _dispatcher;
     WorkSingularTask _consumer;
     const ArResolverScopedCache* _parentCache;
     char const * const _mallocTag1;
@@ -1470,16 +1466,21 @@ PcpCache::_ComputePrimIndexesInParallel(
     // Once all the indexes are computed, add them to the cache and add their
     // dependencies to the dependencies structures.
 
-    Indexer indexer(this, childrenPred, payloadPred, _layerStack,
-                    GetPrimIndexInputs().USD(_usd), allErrors, &parentCache,
-                    mallocTag1, mallocTag2);
+    PcpPrimIndexInputs inputs = GetPrimIndexInputs()
+        .USD(_usd)
+        .IncludePayloadPredicate(payloadPred)
+        ;
+    
+    Indexer indexer(this, childrenPred, _layerStack, inputs,
+                    allErrors, &parentCache, mallocTag1, mallocTag2);
 
     for (const auto& rootPath : roots) {
         // Obtain the parent index, if this is not the absolute root.  Note that
         // the call to ComputePrimIndex below is not concurrency safe.
         const PcpPrimIndex *parentIndex =
-            rootPath == SdfPath::AbsoluteRootPath() ? NULL :
-            &ComputePrimIndex(rootPath.GetParentPath(), allErrors);
+            rootPath == SdfPath::AbsoluteRootPath() ? nullptr :
+            &_ComputePrimIndexWithCompatibleInputs(
+                rootPath.GetParentPath(), inputs, allErrors);
         indexer.ComputeIndex(parentIndex, rootPath);
     }
 
@@ -1488,7 +1489,15 @@ PcpCache::_ComputePrimIndexesInParallel(
 }
 
 const PcpPrimIndex &
-PcpCache::ComputePrimIndex(const SdfPath & path, PcpErrorVector *allErrors)
+PcpCache::ComputePrimIndex(const SdfPath & path, PcpErrorVector *allErrors) {
+    return _ComputePrimIndexWithCompatibleInputs(
+        path, GetPrimIndexInputs().USD(_usd), allErrors);
+}
+
+const PcpPrimIndex &
+PcpCache::_ComputePrimIndexWithCompatibleInputs(
+    const SdfPath & path, const PcpPrimIndexInputs &inputs,
+    PcpErrorVector *allErrors)
 {
     // NOTE:TRACE_FUNCTION() is too much overhead here.
 
@@ -1508,8 +1517,7 @@ PcpCache::ComputePrimIndex(const SdfPath & path, PcpErrorVector *allErrors)
 
     // Run the prim indexing algorithm.
     PcpPrimIndexOutputs outputs;
-    PcpComputePrimIndex(path, _layerStack,
-                        GetPrimIndexInputs().USD(_usd), &outputs);
+    PcpComputePrimIndex(path, _layerStack, inputs, &outputs);
     allErrors->insert(
         allErrors->end(),
         outputs.allErrors.begin(),
@@ -1517,6 +1525,11 @@ PcpCache::ComputePrimIndex(const SdfPath & path, PcpErrorVector *allErrors)
 
     // Add dependencies.
     _primDependencies->Add(outputs.primIndex);
+
+    // Update _includedPayloads if we included a discovered payload.
+    if (outputs.includedDiscoveredPayload) {
+        _includedPayloads.insert(path);
+    }
 
     // Save the prim index.
     PcpPrimIndex &cacheEntry = _primIndexCache[path];

@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdHydra)
 
-pxr_shared_library(usdHydra
+pxr_library(usdHydra
 
     LIBRARIES
         tf

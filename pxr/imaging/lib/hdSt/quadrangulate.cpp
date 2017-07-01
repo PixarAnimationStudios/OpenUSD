@@ -28,6 +28,8 @@
 #include "pxr/imaging/hdSt/meshTopology.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/bufferArrayRangeGL.h"
+#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -306,6 +308,18 @@ HdSt_QuadrangulateComputation::_CheckValid() const
     return (_source->IsValid());
 }
 
+bool
+HdSt_QuadrangulateComputation::HasPreChainedBuffer() const
+{
+    return true;
+}
+
+HdBufferSourceSharedPtr
+HdSt_QuadrangulateComputation::GetPreChainedBuffer() const
+{
+    return _source;
+}
+
 // ---------------------------------------------------------------------------
 
 HdSt_QuadrangulateFaceVaryingComputation::HdSt_QuadrangulateFaceVaryingComputation(
@@ -413,10 +427,21 @@ HdSt_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &ran
 
     GLuint program = computeProgram->GetProgram().GetId();
 
+    HdBufferArrayRangeGLSharedPtr range_ =
+        boost::static_pointer_cast<HdBufferArrayRangeGL> (range);
+
     // buffer resources for GPU computation
-    HdBufferResourceSharedPtr primVar = range->GetResource(_name);
-    HdBufferResourceSharedPtr quadrangulateTable =
-        quadrangulateTableRange->GetResource();
+    HdBufferResourceSharedPtr primVar_ = range_->GetResource(_name);
+    HdBufferResourceGLSharedPtr primVar =
+        boost::static_pointer_cast<HdBufferResourceGL> (primVar_);
+
+    HdBufferArrayRangeGLSharedPtr quadrangulateTableRange_ =
+        boost::static_pointer_cast<HdBufferArrayRangeGL> (quadrangulateTableRange);
+
+    HdBufferResourceSharedPtr quadrangulateTable_ =
+        quadrangulateTableRange_->GetResource();
+    HdBufferResourceGLSharedPtr quadrangulateTable =
+        boost::static_pointer_cast<HdBufferResourceGL> (quadrangulateTable_);
 
     // prepare uniform buffer for GPU computation
     struct Uniform {

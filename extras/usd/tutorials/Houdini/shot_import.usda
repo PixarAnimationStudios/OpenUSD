@@ -1,0 +1,40 @@
+#usda 1.0
+(
+    endTimeCode = 240
+    startTimeCode = 1
+    subLayers = [
+        
+        @assets/World.usda@,
+        @assets/terrain.usdc@,
+        @assets/house.usdc@,
+        @assets/camera.usda@
+    ]
+)
+
+over "World" (
+    kind = "group"
+)
+{
+    over "sets" (
+        kind = "group"
+    )
+    {
+        over "house1" (
+            add references = @assets/blue_house.usdc@</house>
+        )
+        {
+        }
+    }
+
+    def Xform "clouds" (
+        kind = "group"
+    )
+    {
+        over "lil_cloud" (
+            add references = @assets/lil_cloud.usdc@</clouds>
+        )
+        {
+        }
+    }
+}
+

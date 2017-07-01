@@ -209,6 +209,28 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         stage2 = Usd.Stage.OpenMasked(
             stage.GetRootLayer(), Usd.StagePopulationMask(['/i1']))
         assert len(stage2.GetMasters())
+
+    def test_Bug145873(self):
+        # The payload inclusion predicate wasn't being invoked on ancestors of
+        # requested index paths in pcp.
+        payload = Usd.Stage.CreateInMemory()
+        for n in ('One', 'Two', 'Three'):
+            payload.DefinePrim('/CubesModel/Geom/Cube' + n)
+
+        root = Usd.Stage.CreateInMemory()
+        cubes = root.DefinePrim('/Cubes')
+        cubes.SetPayload(payload.GetRootLayer().identifier, '/CubesModel')
+
+        testStage = Usd.Stage.OpenMasked(
+            root.GetRootLayer(),
+            Usd.StagePopulationMask(['/Cubes/Geom/CubeTwo']))
+
+        # Only /Cubes/Geom/CubeTwo (and ancestors) should be present.
+        assert testStage.GetPrimAtPath('/Cubes')
+        assert testStage.GetPrimAtPath('/Cubes/Geom')
+        assert not testStage.GetPrimAtPath('/Cubes/Geom/CubeOne')
+        assert testStage.GetPrimAtPath('/Cubes/Geom/CubeTwo')
+        assert not testStage.GetPrimAtPath('/Cubes/Geom/CubeThree')
     
 if __name__ == '__main__':
     unittest.main()

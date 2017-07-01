@@ -10,7 +10,7 @@ if (OPENSUBDIV_HAS_GLSL_COMPUTE)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
-pxr_shared_library(hdStream
+pxr_library(hdStream
     LIBRARIES
         plug
         tf
@@ -30,7 +30,6 @@ pxr_shared_library(hdStream
 
     PUBLIC_CLASSES
         rendererPlugin
-        taskController
 
     RESOURCE_FILES
         plugInfo.json

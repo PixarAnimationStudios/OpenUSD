@@ -1,0 +1,9 @@
+#sdf 1.4.32
+(
+    # color config should not be an array.
+    colorConfiguration = [@https://github.com/imageworks/OpenColorIO-Configs/blob/master/aces_1.0.1/config.ocio@]
+)
+
+def "UnusedPrim" {
+
+}

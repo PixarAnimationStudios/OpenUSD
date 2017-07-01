@@ -46,12 +46,19 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// Makes no attempt to clear metadata that may already be authored in
 /// \p destination, but any fields that are already in \p destination but also
 /// in \p source will be replaced.
-///
+/// 
+/// Certain bits of layer metadata (eg. colorConfiguration and 
+/// colorManagementSystem) can have their fallback values specified in the 
+/// plugInfo.json files of plugins. When such metadata is unauthored in the 
+/// source layer, if \p bakeUnauthoredFallbacks is set to true, then the 
+/// fallback values are baked into the destination layer.
+/// 
 /// \return \c true on success, \c false on error.
 USDUTILS_API
 bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
                                const SdfLayerHandle &destination,
-                               bool skipSublayers = false);
+                               bool skipSublayers = false,
+                               bool bakeUnauthoredFallbacks = false);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

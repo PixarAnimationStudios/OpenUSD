@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usd)
 
-pxr_shared_library(usd
+pxr_library(usd
     LIBRARIES
         arch
         kind
@@ -25,7 +25,6 @@ pxr_shared_library(usd
         clipsAPI
         attributeQuery
         common
-        conversions
         crateInfo
         debugCodes
         editContext
@@ -41,6 +40,8 @@ pxr_shared_library(usd
         primFlags
         primRange
         property
+        pyEditContext
+        pyConversions
         references
         relationship
         resolveInfo
@@ -151,6 +152,7 @@ pxr_test_scripts(
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
     testenv/testUsdPayloads.py
+    testenv/testUsdPrimFlagsPredicate.py
     testenv/testUsdPrimRange.py
     testenv/testUsdPrims.py
     testenv/testUsdReferences.py
@@ -266,12 +268,10 @@ pxr_install_test_dir(
     DEST testUsdFlatten
 )
 
-
 pxr_install_test_dir(
     SRC testenv/testUsdFlatten2
     DEST testUsdFlatten2
 )
-
 
 pxr_install_test_dir(
     SRC testenv/testUsdFlatten2
@@ -359,6 +359,16 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdValueClips
+    DEST testUsdValueClips
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdValueClips_Legacy
+    DEST testUsdValueClips_Legacy
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdVariants
     DEST testUsdVariants
 )
@@ -378,6 +388,23 @@ pxr_register_test(testUsdAttributeConnections
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeConnections"
     EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValueClips
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
+    EXPECTED_RETURN_CODE 0
+)
+
+# This test runs the same test script as testUsdValueClips
+# but uses a different set of test assets that are installed above.
+pxr_register_test(testUsdValueClips_Legacy
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_AUTHOR_LEGACY_CLIPS=1
+        USD_READ_LEGACY_CLIPS=1
 )
 
 pxr_register_test(testUsdVariantEditing

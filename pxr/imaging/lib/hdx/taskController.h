@@ -32,17 +32,18 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/gf/matrix4d.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// XXX: This API is transitional.
-// Eventually, camera and lighting should be managed as Sprims, and the
-// render/picking/selection APIs could be decoupled.
+// XXX: This API is transitional. At the least, render/picking/selection
+// APIs should be decoupled.
 
 /// Task set tokens:
 /// - "colorRender" is the set of tasks needed to render to a color buffer.
@@ -72,7 +73,10 @@ TF_DECLARE_PUBLIC_TOKENS(HdxIntersectionModeTokens, HDX_API, \
 class HdxTaskController {
 public:
     HDX_API
-    virtual ~HdxTaskController();
+    HdxTaskController(HdRenderIndex *renderIndex,
+                      SdfPath const& controllerId);
+    HDX_API
+    ~HdxTaskController();
 
     /// Return the render index this controller is bound to.
     HdRenderIndex* GetRenderIndex() { return _index; }
@@ -91,17 +95,22 @@ public:
     /// HdxTaskSet->idRender
     ///
     /// A vector of zero length indicates the specified taskSet is unsupported.
-    virtual HdTaskSharedPtrVector const &GetTasks(TfToken const& taskSet) = 0;
+    HDX_API
+    HdTaskSharedPtrVector const &GetTasks(TfToken const& taskSet);
 
     /// -------------------------------------------------------
     /// Rendering API
 
     /// Set the collection to be rendered.
-    virtual void SetCollection(HdRprimCollection const& collection) = 0;
+    HDX_API
+    void SetCollection(HdRprimCollection const& collection);
 
     /// Set the render params. Note: params.camera and params.viewport will
     /// be overwritten, since they come from SetCameraState.
-    virtual void SetRenderParams(HdxRenderTaskParams const& params) = 0;
+    /// XXX: For GL renders, HdxTaskController relies on the caller to
+    /// correctly set GL_SAMPLE_ALPHA_TO_COVERAGE.
+    HDX_API
+    void SetRenderParams(HdxRenderTaskParams const& params);
 
     /// -------------------------------------------------------
     /// Lighting API
@@ -112,62 +121,65 @@ public:
     ///               or HdxSimpleLightBypassTask.  The former stores lighting
     ///               state in Sprims.
     /// XXX: remove "bypass"
-    virtual void SetLightingState(GlfSimpleLightingContextPtr const& src,
-                                  bool bypass) = 0;
+    HDX_API
+    void SetLightingState(GlfSimpleLightingContextPtr const& src,
+                                  bool bypass);
 
     /// -------------------------------------------------------
     /// Camera API
     
     /// Set the parameters for the viewer default camera.
-    virtual void SetCameraMatrices(GfMatrix4d const& viewMatrix,
-                                   GfMatrix4d const& projectionMatrix) = 0;
+    HDX_API
+    void SetCameraMatrices(GfMatrix4d const& viewMatrix,
+                           GfMatrix4d const& projectionMatrix);
 
     /// Set the camera viewport.
-    virtual void SetCameraViewport(GfVec4d const& viewport) = 0;
+    HDX_API
+    void SetCameraViewport(GfVec4d const& viewport);
 
     /// Set the camera clip planes.
-    virtual void SetCameraClipPlanes(
-            std::vector<GfVec4d> const& clipPlanes) = 0;
+    HDX_API
+    void SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes);
 
     /// -------------------------------------------------------
     /// Picking API
 
     /// Set pick target resolution (if applicable).
-    /// XXX: Is there a better place for this to live? This is stream-specific.
-    virtual void SetPickResolution(unsigned int size) = 0;
+    /// XXX: Is there a better place for this to live?
+    HDX_API
+    void SetPickResolution(unsigned int size);
 
     /// Test for intersection.
-    virtual bool TestIntersection(
+    /// XXX: This should be changed to not take an HdEngine*.
+    HDX_API
+    bool TestIntersection(
             HdEngine* engine,
             HdRprimCollection const& collection,
             HdxIntersector::Params const& qparams,
             TfToken const& intersectionMode,
-            HdxIntersector::HitVector *allHits) = 0;
+            HdxIntersector::HitVector *allHits);
 
     /// -------------------------------------------------------
     /// Selection API
 
     /// Turns the selection task on or off.
-    virtual void SetEnableSelection(bool enable) = 0;
+    HDX_API
+    void SetEnableSelection(bool enable);
 
     /// Set the selection color.
-    virtual void SetSelectionColor(GfVec4f const& color) = 0;
+    HDX_API
+    void SetSelectionColor(GfVec4f const& color);
 
     /// -------------------------------------------------------
     /// Progressive Image Generation
     
     /// Reset the image render to reflect a changed scene.
-    virtual void ResetImage() = 0;
+    HDX_API
+    void ResetImage();
 
     /// Return whether the image has converged.
-    virtual bool IsConverged() const = 0;
-
-protected:
-    /// This class must be derived from
-    HdxTaskController(HdRenderIndex *renderIndex,
-                      SdfPath const& controllerId)
-        : _index(renderIndex), _controllerId(controllerId)
-        {}
+    HDX_API
+    bool IsConverged() const;
 
 private:
     ///
@@ -178,6 +190,76 @@ private:
 
     HdRenderIndex *_index;
     SdfPath const _controllerId;
+
+    HdTaskSharedPtrVector _tasks;
+    HdxIntersector       *_intersector;
+
+    // Create taskController objects. Since the camera is a parameter
+    // to the tasks, _CreateCamera() should be called first.
+    void _CreateCamera();
+    void _CreateRenderTasks();
+    void _CreateSelectionTask();
+    void _CreateLightingTasks();
+
+    // A private scene delegate member variable backs the tasks this
+    // controller generates. To keep _Delegate simple, the containing class
+    // is responsible for marking things dirty.
+    class _Delegate : public HdSceneDelegate
+    {
+    public:
+        _Delegate(HdRenderIndex *parentIndex,
+                  SdfPath const& delegateID)
+            : HdSceneDelegate(parentIndex, delegateID)
+            {}
+        virtual ~_Delegate() = default;
+
+        // HdxTaskController set/get interface
+        template <typename T>
+        void SetParameter(SdfPath const& id, TfToken const& key,
+                          T const& value) {
+            _valueCacheMap[id][key] = value;
+        }
+        template <typename T>
+        T const& GetParameter(SdfPath const& id, TfToken const& key) {
+            VtValue vParams = _valueCacheMap[id][key];
+            TF_VERIFY(vParams.IsHolding<T>());
+            return vParams.Get<T>();
+        }
+
+        // HdSceneDelegate interface
+        virtual VtValue Get(SdfPath const& id, TfToken const& key);
+        virtual bool IsEnabled(TfToken const& option) const;
+        virtual std::vector<GfVec4d> GetClipPlanes(SdfPath const& cameraId);
+
+    private:
+        typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
+        typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
+        _ValueCacheMap _valueCacheMap;
+    };
+    _Delegate _delegate;
+
+    // Generated tasks.
+    //
+    // _renderTaskId and _idRenderTaskId are both of type HdxRenderTask.
+    // The reason we have two around is so that they can have parallel sets of
+    // HdxRenderTaskParams; if there were only one render task, we'd thrash the
+    // params switching between id and color render.
+    //
+    // _activeLightTaskId is just an alias, pointing to one of
+    // _simpleLightTaskId or _simpleLightBypassTaskId, depending on which one
+    // was set most recently.
+    SdfPath _renderTaskId;
+    SdfPath _idRenderTaskId;
+    SdfPath _selectionTaskId;
+    SdfPath _simpleLightTaskId;
+    SdfPath _simpleLightBypassTaskId;
+    SdfPath _activeLightTaskId;
+
+    // Generated cameras
+    SdfPath _cameraId;
+
+    // Generated lights
+    SdfPathVector _lightIds;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

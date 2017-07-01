@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,8 +45,9 @@ struct Hd_CullingShaderKey
     TfToken const *GetGS() const  { return NULL; }
     TfToken const *GetFS() const  { return NULL; }
     bool IsCullingPass() const { return true; }
-    GLenum GetPrimitiveMode() const { return GL_POINTS; }
-    int16_t GetPrimitiveIndexSize() const { return 1; }
+    Hd_GeometricShader::PrimitiveType GetPrimitiveType() const { 
+        return Hd_GeometricShader::PrimitiveType::PRIM_POINTS; 
+    }
     HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
     HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
 

@@ -1,0 +1,145 @@
+#usda 1.0
+(
+    """ This file contains a schema for supporting skeletal animation in USD.
+    """
+    subLayers = [
+        @../usdGeom/schema.usda@
+    ]
+) 
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "usdSkel"
+        string libraryPath       = "pxr/usd/usdSkel"
+    }
+) {
+}
+
+
+
+class Joint "Joint" (
+    inherits = </Typed>
+    doc="""Describes a skeleton joint."""
+) {
+    
+}
+
+
+
+class Skeleton "Skeleton" (
+    inherits = </Typed>
+    doc="""Describes a skeleton."""
+) {
+    rel joints (
+        doc = """A relationship that defines the order of all Skeleton joints 
+        for pose evaluation, for a "primary" Skeleton, or provides re-indexing 
+        of joints into an ancestor Skeleton's joints for a nested (in namespace)
+        Skeleton."""
+    )
+
+    uniform matrix4d[] restTransforms (
+        doc = """specifies rest transforms of each joint in 
+        **joint-local space**, in the ordering imposed by *joints*."""
+    )
+}
+
+
+
+class PackedJointAnimation "PackedJointAnimation" (
+    inherits = </Xformable>
+    doc="""Describes a vectorized collection of joint animations."""
+) {
+    rel joints (
+        doc = """A relationship whose targets define the joints to which this
+        animation's data applies, relative to the animation prim itself, so
+        that it is self-contained.  This list of Joints that an animation 
+        targets need not be identical to any Skeleton to which the animation
+        will will applied."""
+    )
+
+    float3[] translations (
+        doc = """Joint-local translations of all affected joints. Array length 
+        should match the size of the *joints* relationship."""
+    )
+    
+    quath[] rotations (
+        doc = """Joint-local unit quaternion rotations of all affected joints, 
+        in 16-bit precision.  Array length should match the size of the 
+        *joints* relationship."""
+    )
+
+    half3[] scales (
+        doc = """Joint-local quaternion scaling of all affected joints, in
+        16 bit precision. Array length should match the size of the *joints* 
+        relationship."""
+    )
+}
+
+
+
+class "BindingAPI" (
+    doc="""Provides API for authoring and extracting all the skinning-related
+    data that lives in the "geometry hierarchy" of prims and models that want
+    to be skeletally deformed.
+    
+    This includes binding to both skeletons and animations that drive the 
+    skeleton's joints, as well as describing the mapping and weighting of
+    joints to gprims and trees of geometry, and of gprims to the primary
+    bound Skeleton."""
+)
+{
+    rel skel:animationSource (
+        customData = {
+            string apiName = "animationSource"
+        }       
+        doc = """Animation source to be bound to this prim and its 
+        descendants."""
+    )
+
+    rel skel:skeleton (
+        customData = {
+            string apiName = "skeleton"
+        }       
+        doc = """Skeleton to be bound to this prim and its descendents that
+        possess a mapping and weighting to the joints of the identified
+        Skeleton."""
+    )
+
+    matrix4d primvars:skel:geomBindTransform (
+        customData = {
+            string apiName = "geomBindTransform"
+        }       
+        doc = """Encodes the **inverse** of the transform that positions 
+        gprims in the space in which it is bound to a Skeleton.  If the 
+        transform is identical for a group of gprims that share a common
+        ancestor, the transform may be authored on the ancestor, to "inherit"
+        down to all the leaf gprims."""
+    )
+
+    int[] primvars:skel:jointIndices (
+        customData = {
+            string apiName = "jointIndices"
+        }       
+        doc = """Indices into the *joints* relationship of the closest
+        (in namespace) bound Skeleton that affect each point of a PointBased
+        gprim.  The primvar can be either *constant* or *vertex* interpolation.
+        In either case, this primvar's *elementSize* will determine how many
+        joints apply to each vertex.  See UsdGeomPrimvar for more information
+        on interpolation and elementSize."""
+    )
+
+    float[] primvars:skel:jointWeights (
+        customData = {
+            string apiName = "jointWeights"
+        }       
+        doc = """Weights for the  joints that affect each point of a PointBased
+        gprim.  The primvar can be either *constant* or *vertex* interpolation.
+        In either case, this primvar's *elementSize* will determine how many
+        joints apply to each vertex.  The length, interpolation, and 
+        elementSize of *jointWeights* must match that of *jointIndices*.
+        See UsdGeomPrimvar for more information on interpolation and 
+        elementSize."""
+    )
+}
+
+

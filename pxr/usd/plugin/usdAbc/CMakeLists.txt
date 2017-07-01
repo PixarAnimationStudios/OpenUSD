@@ -6,26 +6,35 @@ if(NOT ALEMBIC_FOUND)
     return()
 endif()
 
+set(optionalLibs "")
+set(optionalIncludeDirs "")
+
 if (PXR_ENABLE_MULTIVERSE_SUPPORT)
     add_definitions(-DUSDABC_MULTIVERSE_SUPPORT)
+endif()
+
+if (PXR_ENABLE_HDF5_SUPPORT)
+   add_definitions(-DUSDABC_HDF5_SUPPORT)
+   list(APPEND optionalLibs ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+   list(APPEND optionalIncludeDirs ${HDF5_INCLUDE_DIRS})
 endif()
 
 pxr_plugin(usdAbc
     LIBRARIES
         tf
+        work
         sdf
         usd
         usdGeom
         ${ALEMBIC_LIBRARIES}
-        ${HDF5_LIBRARIES}
-        ${HDF5_HL_LIBRARIES}
         ${OPENEXR_Iex_LIBRARY}
         ${OPENEXR_Half_LIBRARY}
+        ${optionalLibs}
 
     INCLUDE_DIRS
         ${ALEMBIC_INCLUDE_DIR}
-        ${HDF5_INCLUDE_DIRS}
         ${OPENEXR_INCLUDE_DIRS}
+        ${optionalIncludeDirs}
 
     PRIVATE_CLASSES
         alembicData
@@ -104,6 +113,8 @@ pxr_register_test(testUsdAbcAlembicData
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcAlembicData"
     EXPECTED_RETURN_CODE 0
+    ENV 
+        USD_ABC_NUM_OGAWA_STREAMS=2
 )
 
 pxr_register_test(testUsdAbcBugs

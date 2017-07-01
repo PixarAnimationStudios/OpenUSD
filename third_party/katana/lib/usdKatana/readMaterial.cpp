@@ -36,11 +36,10 @@
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/utils.h"
 
-#include "pxr/usd/usdRi/lookAPI.h"
+#include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usdRi/risObject.h"
 #include "pxr/usd/usdRi/risOslPattern.h"
 #include "pxr/usd/usdUI/nodeGraphNodeAPI.h"
-#include "pxr/usd/usdUI/sceneGraphPrimAPI.h"
 
 #include <FnGeolibServices/FnAttributeFunctionUtil.h>
 #include <FnLogging/FnLogging.h>
@@ -93,46 +92,29 @@ PxrUsdKatanaReadMaterial(
     UsdStageRefPtr stage = prim.GetStage();
     SdfPath primPath = prim.GetPath();
     std::string katanaPath = prim.GetName();
-    std::string displayGroup;
 
     // we do this before ReadPrim because ReadPrim calls ReadBlindData 
     // (primvars only) which we don't want to stomp here.
     attrs.set("material", _GetMaterialAttr(
         material, data.GetCurrentTime(), flatten));
 
-    UsdUISceneGraphPrimAPI sgp(material.GetPrim());
-    UsdAttribute displayNameAttr = sgp.GetDisplayNameAttr();
-    if (displayNameAttr) {
-        // override prim name
-        displayNameAttr.Get(&katanaPath);
-    }
-    UsdAttribute displayGroupAttr = sgp.GetDisplayGroupAttr();
-    if (displayGroupAttr) {
-        displayGroupAttr.Get(&displayGroup);
-        displayGroup = TfStringReplace(displayGroup, ":", "/");
-        if (displayGroup.length()) {
-            katanaPath = displayGroup + "/" + katanaPath;
-        }
-    }
-    else {
-        // infer the metadata
-        const std::string& parentPrefix = (looksGroupLocation.empty()) ?
-            data.GetUsdInArgs()->GetRootLocationPath() : looksGroupLocation;
-        
-        std::string fullKatanaPath = 
-            PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
-                primPath, data);
-        if (!fullKatanaPath.empty()) {
-            katanaPath = fullKatanaPath.substr(parentPrefix.size()+1);
+    const std::string& parentPrefix = (looksGroupLocation.empty()) ?
+        data.GetUsdInArgs()->GetRootLocationPath() : looksGroupLocation;
+    
+    std::string fullKatanaPath = 
+        PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
+            primPath, data);
+    if (!fullKatanaPath.empty()) {
+        katanaPath = fullKatanaPath.substr(parentPrefix.size()+1);
 
-            // these paths are relative in katana
-            if (!katanaPath.empty() && katanaPath[0] == '/') {
-                katanaPath = katanaPath.substr(1);
-            }
+        // these paths are relative in katana
+        if (!katanaPath.empty() && katanaPath[0] == '/') {
+            katanaPath = katanaPath.substr(1);
         }
     }
 
     attrs.set("material.katanaPath", FnKat::StringAttribute(katanaPath));
+    attrs.set("material.usdPrimName", FnKat::StringAttribute(prim.GetName()));
 
     PxrUsdKatanaReadPrim(material.GetPrim(), data, attrs);
 
@@ -151,7 +133,6 @@ _GatherShadingParameters(
     const UsdShadeShader &shaderSchema, 
     const string &handle,
     double currentTime,
-
     GroupBuilder& nodesBuilder,
     GroupBuilder& paramsBuilder,
     GroupBuilder& interfaceBuilder,
@@ -162,21 +143,21 @@ _GatherShadingParameters(
     UsdPrim prim = shaderSchema.GetPrim();
     string primName = prim.GetName();
 
-    std::vector<UsdShadeParameter> shaderParams = shaderSchema.GetParameters();
-    TF_FOR_ALL(shadeParamIter, shaderParams) {
-        UsdShadeParameter shaderParam = *shadeParamIter;
-        std::string inputParamId = shaderParam.GetAttr().GetName();
+    std::vector<UsdShadeInput> shaderInputs = shaderSchema.GetInputs();
+    TF_FOR_ALL(shaderInputIter, shaderInputs) {
+        UsdShadeInput shaderInput = *shaderInputIter;
+        std::string inputId = shaderInput.GetBaseName();
 
         // We do not try to extract presentation metadata from parameters -
         // only material interface attributes should bother recording such.
-        
-        if (shaderParam.IsConnected()) {
-            UsdShadeConnectableAPI source;
-            TfToken outputName;
-            UsdShadeAttributeType sourceType;
+        UsdShadeConnectableAPI source;
+        TfToken outputName;
+        UsdShadeAttributeType sourceType;
 
-            if (shaderParam.GetConnectedSource(&source, &outputName, &sourceType)) 
-            {
+        if (UsdShadeConnectableAPI::GetConnectedSource(shaderInput, 
+                &source, &outputName, &sourceType))
+        {
+            if (sourceType == UsdShadeAttributeType::Output) {
                 std::string targetHandle = _CreateShadingNode(
                         source.GetPrim(), 
                         currentTime,
@@ -188,13 +169,13 @@ _GatherShadingParameters(
                 // Check the relationship representing this connection
                 // to see if the targets come from a base material.
                 // Ignore them if so.
-                const TfToken relName = shaderParam.GetConnectionRelName();
-                const UsdRelationship rel = prim.GetRelationship(relName);
+                
+
                 if (flatten || 
-                    !PxrUsdKatana_AreRelTargetsFromBaseMaterial(rel)) {
+                    !UsdShadeConnectableAPI::IsSourceFromBaseMaterial(shaderInput)) {
                     // These targets are local, so include them.
                     connectionsBuilder.set(
-                        inputParamId, 
+                        inputId, 
                         FnKat::StringAttribute(
                             outputName.GetString() + "@" + targetHandle));
                 }
@@ -203,7 +184,7 @@ _GatherShadingParameters(
 
         // produce the value here and let katana handle the connection part
         // correctly..
-        UsdAttribute attr = shaderParam.GetAttr();
+        UsdAttribute attr = shaderInput.GetAttr();
         VtValue vtValue;
         if (!attr.Get(&vtValue, currentTime)) {
             continue;
@@ -213,7 +194,7 @@ _GatherShadingParameters(
         // empty -- we will inherit it from the parent katana material.
         if (flatten || 
             !PxrUsdKatana_IsAttrValFromBaseMaterial(attr)) {
-            paramsBuilder.set(inputParamId,
+            paramsBuilder.set(inputId,
                     PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true));
         }
     }
@@ -276,11 +257,7 @@ _CreateShadingNode(
     GroupBuilder shdNodeAttr;
     bool validData = false;
 
-#if defined(USDRI_LOOK_API_VERSION)
     if (UsdRiRslShader rslShaderObjectSchema = UsdRiRslShader(shadingNode))
-#else
-    if (UsdRiRslShaderObject rslShaderObjectSchema = UsdRiRslShaderObject(shadingNode)) 
-#endif
     {
         validData = true;
         SdfAssetPath sloAssetPath;
@@ -440,7 +417,7 @@ _GetMaterialAttr(
     UsdPrim materialPrim = materialSchema.GetPrim();
     
     // TODO: we need a hasA schema
-    UsdRiLookAPI riLookAPI(materialPrim);
+    UsdRiMaterialAPI riMaterialAPI(materialPrim);
     UsdStageWeakPtr stage = materialPrim.GetStage();
 
     GroupBuilder materialBuilder;
@@ -454,65 +431,32 @@ _GetMaterialAttr(
     /////////////////
 
     // look for surface
-    if (UsdRelationship surfaceRel = riLookAPI.GetSurfaceRel()) {
-        if (flatten ||
-                !PxrUsdKatana_AreRelTargetsFromBaseMaterial(surfaceRel)) {
-            SdfPathVector targetPaths;
-            surfaceRel.GetForwardedTargets(&targetPaths);
-            if (targetPaths.size() > 1) {
-                FnLogWarn("Multiple surfaces detected on look:" << 
-                    materialPrim.GetPath());
-            }
-            if (targetPaths.size() > 0) {
-                const SdfPath targetPath = targetPaths[0];
-                if (UsdPrim surfacePrim =
-                    stage->GetPrimAtPath(targetPath)) {
-
-                    std::string handle = _CreateShadingNode(
-                        surfacePrim, currentTime,
-                        nodesBuilder, interfaceBuilder, "prman", flatten);
-                    terminalsBuilder.set(
-                        "prmanSurface",
-                        FnKat::StringAttribute(handle));
-                } else {
-                    FnLogWarn("Surface shader does not exist at:" << 
-                              targetPath.GetString());
-                }
-            }
-        }
+    UsdRiRslShader surfaceShader = riMaterialAPI.GetSurface(
+            /*ignoreBaseMaterial*/ not flatten);
+    if (surfaceShader.GetPrim()) {
+        std::string handle = _CreateShadingNode(
+            surfaceShader.GetPrim(), currentTime,
+            nodesBuilder, interfaceBuilder, "prman", flatten);
+        terminalsBuilder.set("prmanSurface",
+                             FnKat::StringAttribute(handle));
     }
 
     // look for displacement
-    if (UsdRelationship displacementRel = riLookAPI.GetDisplacementRel()) {
-        if (flatten ||
-                !PxrUsdKatana_AreRelTargetsFromBaseMaterial(displacementRel)) {
-            SdfPathVector targetPaths;
-            displacementRel.GetForwardedTargets(&targetPaths);
-        
-            if (targetPaths.size() > 1) {
-                FnLogWarn("Multiple displacement detected on look:" << 
-                    materialPrim.GetPath());
-            }
-            if (targetPaths.size() > 0) {
-                const SdfPath targetPath = targetPaths[0];
-                if (UsdPrim displacementPrim =
-                    stage->GetPrimAtPath(targetPath)) {
-
-                    string handle = _CreateShadingNode(
-                        displacementPrim, currentTime,
-                        nodesBuilder, interfaceBuilder, "prman", flatten);
-                    terminalsBuilder.set("prmanDisplacement",
-                                         FnKat::StringAttribute(handle));
-                } else {
-                    FnLogWarn("Displacement shader does not exist at:" << 
-                              targetPath.GetString());
-                }
-            }
-        }
+    UsdRiRslShader displacementShader = riMaterialAPI.GetDisplacement(
+            /*ignoreBaseMaterial*/ not flatten);
+    if (displacementShader.GetPrim()) {
+        string handle = _CreateShadingNode(
+            displacementShader.GetPrim(), currentTime,
+            nodesBuilder, interfaceBuilder, "prman", flatten);
+        terminalsBuilder.set("prmanDisplacement",
+                             FnKat::StringAttribute(handle));
     }
 
     // look for coshaders
-    if (UsdRelationship coshadersRel = riLookAPI.GetCoshadersRel()) {
+    // XXX: Can we simply delete this section?
+    // coshaders should not be used anywhere.
+    if (UsdRelationship coshadersRel = 
+            materialPrim.GetRelationship(TfToken("riLook:coshaders"))) {
         if (flatten ||
                 !PxrUsdKatana_AreRelTargetsFromBaseMaterial(coshadersRel)) {
             SdfPathVector targetPaths;
@@ -548,39 +492,77 @@ _GetMaterialAttr(
     // this does not exclude the rsl part
 
     // look for bxdf's
-    if (UsdRelationship bxdfRel = riLookAPI.GetBxdfRel()) {
-        if (flatten ||
-                !PxrUsdKatana_AreRelTargetsFromBaseMaterial(bxdfRel)) {
+    UsdRiRisBxdf bxdfShader = riMaterialAPI.GetBxdf(
+            /*ignoreBaseMaterial*/ not flatten);
+    if (bxdfShader.GetPrim()) {
+        string handle = _CreateShadingNode(
+            bxdfShader.GetPrim(), currentTime,
+            nodesBuilder, interfaceBuilder, "prman", flatten);
+
+        terminalsBuilder.set("prmanBxdf",
+                             FnKat::StringAttribute(handle));
+    }
+
+    // XXX BEGIN This code is in support of Subgraph workflows
+    //           and is currently necessary to match equivalent SGG behavior
+     
+    // Look for labeled patterns - TODO: replace with UsdShade::ShadingSubgraph
+    vector<UsdProperty> properties = 
+        materialPrim.GetPropertiesInNamespace("patternTerminal");
+    if (properties.size()) {
+        TF_FOR_ALL(propIter, properties) {
+            // if (propIter->Is<UsdRelationship>()) {
+            UsdRelationship rel = propIter->As<UsdRelationship>();
+            if (not rel) {
+                continue;
+            }
+
             SdfPathVector targetPaths;
-            bxdfRel.GetForwardedTargets(&targetPaths);
-        
+            rel.GetForwardedTargets(&targetPaths);
+            if (targetPaths.size() == 0) {
+                continue;
+            }
             if (targetPaths.size() > 1) {
-                FnLogWarn("Multiple bxdf detected on look:" << 
+                FnLogWarn(
+                    "Multiple targets for one output port detected on look:" << 
                     materialPrim.GetPath());
             }
-            if (targetPaths.size() > 0) {
-                const SdfPath targetPath = targetPaths[0];
-                if (UsdPrim bxdfPrim =
-                    stage->GetPrimAtPath(targetPath)) {
 
-                    string handle = _CreateShadingNode(
-                        bxdfPrim, currentTime,
-                        nodesBuilder, interfaceBuilder, "prman", flatten);
-
-                    terminalsBuilder.set("prmanBxdf",
-                                            FnKat::StringAttribute(handle));
-                } else {
-                    FnLogWarn("Bxdf does not exist at "
-                                << targetPath.GetString());
-                }
+            const SdfPath targetPath = targetPaths[0];
+            if (not targetPath.IsPropertyPath()) {
+                FnLogWarn("Pattern wants a usd property path, not a prim: "
+                    << targetPath.GetString());
+                continue;
             }
+            
+            SdfPath nodePath = targetPath.GetPrimPath();
+    
+            if (UsdPrim patternPrim =
+                    stage->GetPrimAtPath(nodePath)) {
+
+                string propertyName = targetPath.GetName();
+                string patternPort = propertyName.substr(
+                    propertyName.find(':')+1);
+
+                string terminalName = rel.GetName();
+                terminalName = terminalName.substr(terminalName.find(':')+1);
+    
+                string handle = _CreateShadingNode(
+                    patternPrim, currentTime, nodesBuilder,
+                            interfaceBuilder, "prman", flatten);
+                terminalsBuilder.set("prmanCustom_"+terminalName,
+                    FnKat::StringAttribute(handle));
+                terminalsBuilder.set("prmanCustom_"+terminalName+"Port",
+                    FnKat::StringAttribute(patternPort));
+            } 
             else {
-                FnLogWarn("No bxdf detected on look:" 
-                        << materialPrim.GetPath());
+                FnLogWarn("Pattern does not exist at "
+                            << targetPath.GetString());
             }
         }
     }
-
+    // XXX END
+    
 
     // XXX, Because of relationship forwarding, there are possible name
     //      clashes with the standard prman shading.
@@ -719,54 +701,57 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
 {
     UsdStageRefPtr stage = prim.GetStage();
 
-
     // TODO: Right now, the exporter doesn't always move thing into
     // the right spot.  for example, we have "Paint_Base_Color" on
     // /PaintedMetal_Material.Paint_Base_Color
-    // Which makes it so we can't use the riLookAPI.GetInterfaceAttributes
+    // Which makes it so we can't use the materialSchema.GetInterfaceInputs()
     // (because /PaintedMetal_Material.Paint_Base_Color doesn't have the
-    // corresponding "ri" interface connection).
+    // corresponding "ri" interfaceInput connection).
     //
     // that should really be on
     // /PaintedMetal_Material/Paint_.Base_Color  which does have that
     // connection.
     // 
     UsdShadeMaterial materialSchema(prim);
-    std::vector<UsdShadeInterfaceAttribute> interfaceAttrs = materialSchema.GetInterfaceAttributes(TfToken());
-    TF_FOR_ALL(interfaceAttrIter, interfaceAttrs) {
-        UsdShadeInterfaceAttribute interfaceAttribute = *interfaceAttrIter;
+    std::vector<UsdShadeInput> interfaceInputs = 
+        materialSchema.GetInterfaceInputs();
+    UsdShadeNodeGraph::InterfaceInputConsumersMap interfaceInputConsumers =
+        materialSchema.ComputeInterfaceInputConsumersMap(
+            /*computeTransitiveMapping*/ true);
 
-        const TfToken& paramName = interfaceAttribute.GetName();
+    TF_FOR_ALL(interfaceInputIter, interfaceInputs) {
+        UsdShadeInput interfaceInput = *interfaceInputIter;
+
+        // Skip invalid interface inputs.
+        if (!interfaceInput.GetAttr()) { 
+            continue;
+        }
+
+        const TfToken& paramName = interfaceInput.GetBaseName();
         const std::string renamedParam = paramPrefix + paramName.GetString();
 
         // handle parameters with values 
         VtValue attrVal;
-        if (interfaceAttribute.Get(&attrVal) && !attrVal.IsEmpty()) {
+        if (interfaceInput.GetAttr().Get(&attrVal) && !attrVal.IsEmpty()) {
             materialBuilder.set(
                     TfStringPrintf("parameters.%s", renamedParam.c_str()),
                     PxrUsdKatanaUtils::ConvertVtValueToKatAttr(attrVal, true));
         }
 
-    }
+        if (interfaceInputConsumers.count(interfaceInput) == 0) {
+            continue;
+        }
+            
+        const std::vector<UsdShadeInput> &consumers = 
+            interfaceInputConsumers.at(interfaceInput);
 
-    UsdRiLookAPI riLookAPI(prim);
-    std::vector<UsdShadeInterfaceAttribute> riInterfaceAttrs = riLookAPI.GetInterfaceAttributes();
-    TF_FOR_ALL(interfaceAttrIter, riInterfaceAttrs) {
-        UsdShadeInterfaceAttribute interfaceAttribute = *interfaceAttrIter;
+        for (const UsdShadeInput &consumer : consumers) {
+            UsdPrim consumerPrim = consumer.GetPrim();
+            
+            TfToken inputName = consumer.GetBaseName();
 
-        const TfToken& paramName = interfaceAttribute.GetName();
-        const std::string renamedParam = paramPrefix + paramName.GetString();
-
-        // handle parameter connections
-        std::vector<UsdShadeParameter> recipients = riLookAPI.GetInterfaceRecipientParameters(
-                interfaceAttribute);
-        TF_FOR_ALL(recipientIter, recipients) {
-            UsdShadeParameter recipient = *recipientIter;
-
-            UsdPrim recipientPrim = recipient.GetAttr().GetPrim();
-            TfToken inputName = recipient.GetAttr().GetName();
-
-            std::string handle = PxrUsdKatanaUtils::GenerateShadingNodeHandle(recipientPrim);
+            std::string handle = PxrUsdKatanaUtils::GenerateShadingNodeHandle(
+                consumerPrim);
 
             std::string srcKey = renamedParam + ".src";
 
@@ -783,13 +768,13 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
 
         // USD's group delimeter is :, whereas Katana's is .
         std::string page = TfStringReplace(
-                interfaceAttribute.GetDisplayGroup(), ":", ".");
+                interfaceInput.GetDisplayGroup(), ":", ".");
         if (!page.empty()) {
             std::string pageKey = renamedParam + ".hints.page";
             interfaceBuilder.set(pageKey, FnKat::StringAttribute(page), true);
         }
 
-        std::string doc = interfaceAttribute.GetDocumentation();
+        std::string doc = interfaceInput.GetDocumentation();
         if (!doc.empty()) {
             std::string docKey = renamedParam + ".hints.help";
 

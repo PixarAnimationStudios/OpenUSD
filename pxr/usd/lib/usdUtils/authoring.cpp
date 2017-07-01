@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/schema.h"
 
+#include "pxr/usd/usd/stage.h"
+
 #include <vector>
 #include <algorithm>
 
@@ -37,7 +39,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 bool 
 UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
                           const SdfLayerHandle &destination,
-                          bool skipSublayers)
+                          bool skipSublayers, 
+                          bool bakeUnauthoredFallbacks)
 {
     if (!TF_VERIFY(source && destination))
         return false;
@@ -57,7 +60,34 @@ UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
         destPseudo->SetInfo(*key, sourcePseudo->GetInfo(*key));
     }
 
-    return true;
+    if (bakeUnauthoredFallbacks) {
+        bool bakeColorConfiguration = 
+            std::find(infoKeys.begin(), infoKeys.end(), 
+                    SdfFieldKeys->ColorConfiguration) == infoKeys.end();
+        bool bakeColorManagementSystem = 
+            std::find(infoKeys.begin(), infoKeys.end(), 
+                    SdfFieldKeys->ColorManagementSystem) == infoKeys.end();
+        
+        if (bakeColorConfiguration || bakeColorManagementSystem) {
+            SdfAssetPath fallbackColorConfig;
+            TfToken fallbackCms;
+            
+            UsdStage::GetColorConfigFallbacks(&fallbackColorConfig, 
+                                              &fallbackCms);
+
+            if (bakeColorConfiguration &&
+                !fallbackColorConfig.GetAssetPath().empty()) {
+                destPseudo->SetInfo(SdfFieldKeys->ColorConfiguration,
+                                    VtValue(fallbackColorConfig));
+            }
+            if (bakeColorManagementSystem && !fallbackCms.IsEmpty()) {
+                destPseudo->SetInfo(SdfFieldKeys->ColorManagementSystem, 
+                                    VtValue(fallbackCms));
+            }
+        }
+    }
+
+    return true; 
 }
 
 

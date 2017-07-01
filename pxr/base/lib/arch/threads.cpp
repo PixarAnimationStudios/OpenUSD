@@ -24,17 +24,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/threads.h"
-#if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
-typedef DWORD ArchThreadId;
-#define ArchCurrentThread() GetCurrentThreadId()
-#define ArchThreadsAreEqual(t1_, t2_) (t1_) == (t2_)
-#else
-#include <pthread.h>
-typedef pthread_t ArchThreadId;
-#define ArchCurrentThread() pthread_self()
-#define ArchThreadsAreEqual(t1_, t2_) pthread_equal(t1_, t2_)
-#endif
+
+#include <thread>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,18 +35,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-static ArchThreadId _GetThreadId()
-{
-    return ArchCurrentThread();
-}
-
-const ArchThreadId _mainThreadId = _GetThreadId();
+const std::thread::id _mainThreadId = std::this_thread::get_id();
 
 } // anonymous namespace
 
 bool ArchIsMainThread()
 {
-    return ArchThreadsAreEqual(_GetThreadId(), _mainThreadId);
+    return std::this_thread::get_id() == _mainThreadId;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -183,6 +183,23 @@ UsdGeomMesh::CreateFaceVaryingLinearInterpolationAttr(VtValue const &defaultValu
 }
 
 UsdAttribute
+UsdGeomMesh::GetTriangleSubdivisionRuleAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->triangleSubdivisionRule);
+}
+
+UsdAttribute
+UsdGeomMesh::CreateTriangleSubdivisionRuleAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->triangleSubdivisionRule,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdGeomMesh::GetHoleIndicesAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->holeIndices);
@@ -306,6 +323,7 @@ UsdGeomMesh::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->subdivisionScheme,
         UsdGeomTokens->interpolateBoundary,
         UsdGeomTokens->faceVaryingLinearInterpolation,
+        UsdGeomTokens->triangleSubdivisionRule,
         UsdGeomTokens->holeIndices,
         UsdGeomTokens->cornerIndices,
         UsdGeomTokens->cornerSharpnesses,

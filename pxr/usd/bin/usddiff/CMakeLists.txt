@@ -49,38 +49,6 @@ pxr_register_test(testUsdDiffToolSelectionDefault
 )
 
 pxr_install_test_dir(
-    SRC testenv/testDiffToolSelectionSingleEnvVar
-    DEST testUsdDiffToolSelectionSingleEnvVar
-)
-
-pxr_register_test(testUsdDiffToolSelectionSingleEnvVar
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usda b.usda --noeffect"
-    STDOUT_REDIRECT out.txt
-    DIFF_COMPARE out.txt
-    EXPECTED_RETURN_CODE 1
-    ENV
-        DIFF=sdiff
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/bin
-)
-
-pxr_install_test_dir(
-    SRC testenv/testDiffToolSelectionMultiEnvVar
-    DEST testUsdDiffToolSelectionMultiEnvVar
-)
-
-pxr_register_test(testUsdDiffToolSelectionMultiEnvVar
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usda b.usda --noeffect"
-    STDOUT_REDIRECT out.txt
-    DIFF_COMPARE out.txt
-    EXPECTED_RETURN_CODE 1
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/bin
-)
-
-pxr_install_test_dir(
     SRC testenv/testDiffToolVariousUsdFormats
     DEST testUsdDiffToolVariousFormats1
 )
@@ -175,7 +143,7 @@ pxr_register_test(testUsdDiffComposedResults2
     EXPECTED_RETURN_CODE 1 
     STDOUT_REDIRECT composed_diff.txt
     DIFF_COMPARE composed_diff.txt
-    CLEAN_OUTPUT "\\/.*\\/"
+    CLEAN_OUTPUT "(?:[A-Za-z]:)?\\/.*\\/"
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
 )

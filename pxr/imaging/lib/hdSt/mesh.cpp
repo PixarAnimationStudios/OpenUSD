@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
+#include "pxr/imaging/hdSt/instancer.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -61,14 +62,12 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_FORCE_QUADRANGULATE, 0,
 TF_DEFINE_ENV_SETTING(HD_ENABLE_PACKED_NORMALS, 1,
                       "Use packed normals");
 
-// static repr configuration
-HdStMesh::_MeshReprConfig HdStMesh::_reprDescConfig;
-
 HdStMesh::HdStMesh(SdfPath const& id,
                    SdfPath const& instancerId)
     : HdMesh(id, instancerId)
     , _topology()
     , _topologyId(0)
+    , _vertexPrimvarId(0)
     , _customDirtyBitsInUse(0)
     , _doubleSided(false)
     , _packedNormals(IsEnabledPackedNormals())
@@ -120,7 +119,7 @@ HdStMesh::IsEnabledPackedNormals()
 }
 
 int
-HdStMesh::_GetRefineLevelForDesc(HdStMeshReprDesc desc)
+HdStMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc)
 {
     if (desc.geomStyle == HdMeshGeomStyleHull         ||
         desc.geomStyle == HdMeshGeomStyleHullEdgeOnly || 
@@ -135,7 +134,7 @@ void
 HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                             HdDrawItem *drawItem,
                             HdDirtyBits *dirtyBits,
-                            HdStMeshReprDesc desc)
+                            HdMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -381,17 +380,13 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
 
     if (!HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
         // CPU quadrangulation
-        HdResourceRegistry *resourceRegistry =
-            &HdResourceRegistry::GetInstance();
-
         // set quadrangulation as source instead of original source.
         HdBufferSourceSharedPtr quadsource =
             topology->GetQuadrangulateComputation(source, id);
 
         if (quadsource) {
             // don't transfer source to gpu, it needs to be quadrangulated.
-            // but it still has to be resolved. add to registry.
-            resourceRegistry->AddSource(source);
+            // It will be resolved as a pre-chained source.
             return quadsource;
         } else {
             return source;
@@ -479,7 +474,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                   HdDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
                                   bool isNew,
-                                  HdStMeshReprDesc desc,
+                                  HdMeshReprDesc desc,
                                   bool requireSmoothNormals)
 {
     HD_TRACE_FUNCTION();
@@ -556,8 +551,8 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 *nameIt != HdTokens->points ||
                 !(HdChangeTracker::IsPrimVarDirty(
                          *dirtyBits, id, HdTokens->normals))) {
-                continue;
-            }
+            continue;
+        }
         }
 
         // TODO: We don't need to pull primvar metadata every time a
@@ -608,8 +603,8 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         bool doQuadrangulate =
             _UsePtexIndices(sceneDelegate->GetRenderIndex());
         if (_packedNormals && (doRefine || doQuadrangulate)) {
-            // we can't use packed normals for refined/quad,
-            // let's migrate the buffer to full precision
+        // we can't use packed normals for refined/quad,
+        // let's migrate the buffer to full precision
             isNew = true;
             _packedNormals = false;
         }
@@ -622,13 +617,13 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 if (doRefine || doQuadrangulate) {
                     normal = _vertexAdjacency->GetSmoothNormalsComputation(
                             points, HdTokens->normals);
-                    if (doRefine) {
-                        normal = _RefinePrimVar(normal, /*varying=*/false,
-                                                &computations, _topology);
-                    } else if (doQuadrangulate) {
-                        normal = _QuadrangulatePrimVar(
-                            normal, &computations, _topology, GetId());
-                    }
+                if (doRefine) {
+                    normal = _RefinePrimVar(normal, /*varying=*/false,
+                                                          &computations, _topology);
+                } else if (doQuadrangulate) {
+                    normal = _QuadrangulatePrimVar(
+                                         normal, &computations, _topology, GetId());
+                }
                 } else {
                     // if we haven't refined or quadrangulated normals,
                     // may use packed format if enabled.
@@ -650,10 +645,6 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             // source. Otherwise (if we're updating just normals) ask delegate.
             // This is very unfortunate. Can we force normals to be always
             // float? (e.g. when switing flat -> smooth first time).
-            //
-            // or, we should use HdSceneDelegate::GetPrimVarDataType() and
-            // HdSceneDelegate::GetPrimVarComponents() once they are implemented
-            // in UsdImagindDelegate.
 
             if (!points) {
                 VtValue value = GetPoints(sceneDelegate);
@@ -671,10 +662,10 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 if (_packedNormals) {
                     normalsDataType = GL_INT_2_10_10_10_REV;
                     normalsName = HdTokens->packedNormals;
-                }
+                    }
 
                 computations.push_back(
-                    _vertexAdjacency->GetSmoothNormalsComputationGPU(
+                        _vertexAdjacency->GetSmoothNormalsComputationGPU(
                         HdTokens->points, normalsName,
                         pointsDataType, normalsDataType));
 
@@ -687,67 +678,119 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                         _topology->GetOsdRefineComputationGPU(
                             HdTokens->normals,
                             normalsDataType, 3);
-                        // computation can be null for empty mesh
+                    // computation can be null for empty mesh
                         if (computation)
-                            computations.push_back(computation);
+                        computations.push_back(computation);
                 } else if (_UsePtexIndices(sceneDelegate->GetRenderIndex())) {
                     HdComputationSharedPtr computation =
                         _topology->GetQuadrangulateComputationGPU(
-                            HdTokens->normals, normalsDataType, GetId());
+                                   HdTokens->normals, normalsDataType, GetId());
                     // computation can be null for all-quad mesh
                     if (computation)
-                        computations.push_back(computation);
+                            computations.push_back(computation);
+                    }
                 }
             }
         }
-    }
 
     // return before allocation if it's empty.
     if (sources.empty() && computations.empty()) {
         return;
     }
 
+    // new buffer specs
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
+    HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+
     HdBufferArrayRangeSharedPtr const &bar = drawItem->GetVertexPrimVarRange();
     if ((!bar) || (!bar->IsValid())) {
-        // new buffer specs
-        HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+        // allocate new range
+        HdBufferArrayRangeSharedPtr range;
+        if (_IsEnabledSharedVertexPrimvar()) {
+            // see if we can share an immutable primvar range
+            // include topology and other topological computations
+            // in the sharing id so that we can take into account
+            // sharing of computed primvar data.
+            _vertexPrimvarId = _ComputeSharedPrimvarId(_topologyId,
+                                                       sources,
+                                                       computations);
 
-        // allocate new range.
-        HdBufferArrayRangeSharedPtr range =
-            resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+            bool isFirstInstance = true;
+            range = _GetSharedPrimvarRange(_vertexPrimvarId,
+                                           bufferSpecs, nullptr,
+                                           &isFirstInstance);
+            if (!isFirstInstance) {
+                // this is not the first instance, skip redundant
+                // sources and computations.
+                sources.clear();
+                computations.clear();
+            }
+
+        } else {
+            range = resourceRegistry->AllocateNonUniformBufferArrayRange(
+                    HdTokens->primVar, bufferSpecs);
+        }
 
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(), range);
+
     } else {
-        // already have a valid range.
-        if (isNew) {
+        // already have a valid range
+        HdBufferArrayRangeSharedPtr range = bar;
+        if (bar->IsImmutable() && _IsEnabledSharedVertexPrimvar()) {
+            if (isNew) {
+                // see if we can share an immutable buffer primvar range
+                // include our existing sharing id so that we can take
+                // into account previously committed sources along
+                // with our new sources and computations.
+                _vertexPrimvarId = _ComputeSharedPrimvarId(_vertexPrimvarId,
+                                                           sources,
+                                                           computations);
+
+                bool isFirstInstance = true;
+                range = _GetSharedPrimvarRange(_vertexPrimvarId,
+                                               bufferSpecs, bar,
+                                               &isFirstInstance);
+                if (!isFirstInstance) {
+                    // this is not the first instance, skip redundant
+                    // sources and computations.
+                    sources.clear();
+                    computations.clear();
+                }
+
+            } else {
+                // something is going to change and the existing bar
+                // is immutable, migrate to a mutable buffer array
+                _vertexPrimvarId = 0;
+                range = resourceRegistry->MergeNonUniformBufferArrayRange(
+                            HdTokens->primVar, bufferSpecs, bar);
+            }
+
+        } else if (isNew) {
             // the range was created by other repr. check compatibility.
-            HdBufferSpecVector bufferSpecs;
-            HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
-            HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+            range = resourceRegistry->MergeNonUniformBufferArrayRange(
+                        HdTokens->primVar, bufferSpecs, bar);
+        }
 
-            HdBufferArrayRangeSharedPtr range =
-                resourceRegistry->MergeNonUniformBufferArrayRange(
-                    HdTokens->primVar, bufferSpecs,
-                    drawItem->GetVertexPrimVarRange());
-
+        if (range != bar) {
             _sharedData.barContainer.Set(
                 drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(), range);
 
             // If buffer migration actually happens, the old buffer will no
             // longer be needed, and GC is required to reclaim their memory.
             // But we don't trigger GC here for now, since it ends up
-            // to make all collections dirty (see HdEngine::Draw), which can be
-            // expensive.
+            // to make all collections dirty (see HdEngine::Draw),
+            // which can be expensive.
             // (in other words, we should fix bug 103767:
             //  "Optimize varying topology buffer updates" first)
             //
             // if (range != bar) {
             //    _GetRenderIndex().GetChangeTracker().SetGarbageCollectionNeeded();
             // }
+
+            // set deep invalidation to rebuild draw batch
+            sceneDelegate->GetRenderIndex().GetChangeTracker().MarkShaderBindingsDirty();
         }
     }
 
@@ -770,7 +813,7 @@ void
 HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
                                        HdDrawItem *drawItem,
                                        HdDirtyBits *dirtyBits,
-                                       HdStMeshReprDesc desc)
+                                       HdMeshReprDesc desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -942,7 +985,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                           HdDrawItem *drawItem,
                           HdDirtyBits *dirtyBits,
                           bool isNew,
-                          HdStMeshReprDesc desc,
+                          HdMeshReprDesc desc,
                           bool requireSmoothNormals)
 {
     HD_TRACE_FUNCTION();
@@ -957,8 +1000,14 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
 
     /* INSTANCE PRIMVARS */
-    _PopulateInstancePrimVars(sceneDelegate, drawItem, dirtyBits,
-                              InstancePrimVar);
+    if (!GetInstancerId().IsEmpty()) {
+        HdStInstancer *instancer = static_cast<HdStInstancer*>(
+            sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
+        if (TF_VERIFY(instancer)) {
+            instancer->PopulateDrawItem(drawItem, &_sharedData,
+                dirtyBits, InstancePrimVar);
+        }
+    }
 
     /* TOPOLOGY */
     // XXX: _PopulateTopology should be split into two phase
@@ -1023,21 +1072,10 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     // Element primvar, Facevarying primvar and Instance primvar are optional
 }
 
-/* static */
-void
-HdStMesh::ConfigureRepr(TfToken const &reprName,
-                        HdStMeshReprDesc desc1,
-                        HdStMeshReprDesc desc2)
-{
-    HD_TRACE_FUNCTION();
-
-    _reprDescConfig.Append(reprName, _MeshReprConfig::DescArray{desc1, desc2});
-}
-
 void
 HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
                                          HdDrawItem *drawItem,
-                                         HdStMeshReprDesc desc)
+                                         HdMeshReprDesc desc)
 {
     if (drawItem->GetGeometricShader()) return;
 
@@ -1046,23 +1084,26 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
 
     int refineLevel = _GetRefineLevelForDesc(desc);
 
-    // geometry type
-    GLenum primType = GL_TRIANGLES;
+    Hd_GeometricShader::PrimitiveType primType = 
+        Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES;
+
     if (desc.geomStyle == HdMeshGeomStylePoints) {
-        primType = GL_POINTS;
+        primType = Hd_GeometricShader::PrimitiveType::PRIM_POINTS;
     } else if (refineLevel > 0) {
         if (_topology->RefinesToTriangles()) {
             // e.g. loop subdivision.
-            primType = GL_TRIANGLES;
+            primType = 
+                Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES;
         } else if (_topology->RefinesToBSplinePatches()) {
-            primType = GL_PATCHES;
+            primType = Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES;
         } else {
             // uniform catmark/bilinear subdivision generates quads.
-            primType = GL_LINES_ADJACENCY;
+            primType = 
+                Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS;
         }
     } else if (_UsePtexIndices(renderIndex)) {
         // quadrangulate coarse mesh (for ptex)
-        primType = GL_LINES_ADJACENCY;
+        primType = Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS;
     }
 
     // resolve geom style, cull style
@@ -1137,7 +1178,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _MeshReprConfig::DescArray descs = _reprDescConfig.Find(reprName);
+    _MeshReprConfig::DescArray descs = _GetReprDesc(reprName);
 
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprName));
@@ -1149,7 +1190,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
 
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-            const HdStMeshReprDesc &desc = descs[descIdx];
+            const HdMeshReprDesc &desc = descs[descIdx];
 
             if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
 
@@ -1217,7 +1258,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     // and one requires smooth normals but the other doesn't.
     bool requireSmoothNormals = false;
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-        const HdStMeshReprDesc &desc = descs[descIdx];
+        const HdMeshReprDesc &desc = descs[descIdx];
         if (desc.smoothNormals) {
             requireSmoothNormals = true;
             break;
@@ -1227,7 +1268,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     // iterate and update all draw items
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-        const HdStMeshReprDesc &desc = descs[descIdx];
+        const HdMeshReprDesc &desc = descs[descIdx];
 
         if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
 
@@ -1264,10 +1305,10 @@ void
 HdStMesh::_SetGeometricShaders(HdRenderIndex &renderIndex)
 {
     TF_FOR_ALL (it, _reprs) {
-        _MeshReprConfig::DescArray descs = _reprDescConfig.Find(it->first);
+        _MeshReprConfig::DescArray descs = _GetReprDesc(it->first);
         int drawItemIndex = 0;
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-            const HdStMeshReprDesc &desc = descs[descIdx];
+            const HdMeshReprDesc &desc = descs[descIdx];
             if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
 
             HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);

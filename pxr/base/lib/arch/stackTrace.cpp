@@ -28,6 +28,7 @@
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
+#include "pxr/base/arch/env.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/export.h"
@@ -44,10 +45,8 @@
 #define MAXHOSTNAMELEN 64
 #endif
 #else
-#include <alloca.h>
 #include <dlfcn.h>
 #include <netdb.h>
-#include <pthread.h>
 #include <unistd.h>
 #include <sys/param.h>
 #include <sys/resource.h>
@@ -223,13 +222,6 @@ static const char* const* stackTraceArgv = nullptr;
 
 static long _GetAppElapsedTime();
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
-// asgetenv() want's this but we can't declare it inside the namespace.
-extern char **environ;
-
-PXR_NAMESPACE_OPEN_SCOPE
-
 namespace {
 
 // Return the length of s.
@@ -292,7 +284,7 @@ const char* asgetenv(const char* name)
 {
     if (name) {
         const size_t len = asstrlen(name);
-        for (char** i = environ; *i; ++i) {
+        for (char** i = ArchEnviron(); *i; ++i) {
             const char* var = *i;
             if (asstrneq(var, name, len)) {
                 if (var[len] == '=') {
@@ -393,11 +385,10 @@ int _GetStackTraceName(char* buf, size_t len)
     // the empty file.
     int suffix = 0;
 #if defined(ARCH_OS_WINDOWS)
-    int fd;
-    _sopen_s(&fd, buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 
-                _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    int fd = _open(buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 
+                   _S_IREAD | _S_IWRITE);
 #else
-    int fd = open(buf, O_CREAT|O_WRONLY|O_TRUNC|O_EXCL, 0640);
+    int fd =  open(buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0640);
 #endif
 
     while (fd == -1 && errno == EEXIST) {
@@ -411,10 +402,10 @@ int _GetStackTraceName(char* buf, size_t len)
         asstrcpy(end, ".");
         asitoa(end + 1, suffix);
 #if defined(ARCH_OS_WINDOWS)
-        _sopen_s(&fd, buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 
-                            _SH_DENYNO, _S_IREAD | _S_IWRITE);
+        fd = _open(buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 
+                   _S_IREAD | _S_IWRITE);
 #else
-        fd = open(buf, O_CREAT|O_WRONLY|O_TRUNC|O_EXCL, 0640);
+        fd =  open(buf, O_CREAT | O_WRONLY | O_TRUNC | O_EXCL, 0640);
 #endif
     }
     if (fd != -1) {

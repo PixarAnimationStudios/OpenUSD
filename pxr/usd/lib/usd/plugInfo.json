@@ -30,6 +30,12 @@
                         ], 
                         "type": "string"
                     }, 
+                    "clipSets": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "type": "stringlistop"
+                    }, 
                     "clipTemplateAssetPath": {
                         "appliesTo": [
                             "prims"
@@ -59,6 +65,12 @@
                             "prims"
                         ], 
                         "type": "double2[]"
+                    }, 
+                    "clips": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "type": "dictionary"
                     }
                 }, 
                 "Types": {

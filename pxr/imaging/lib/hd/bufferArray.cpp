@@ -33,7 +33,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 static std::atomic_size_t _uniqueVersion(0);
 
 HdBufferArray::HdBufferArray(TfToken const &role,
-                             TfToken const garbageCollectionPerfToken) 
+                             TfToken const garbageCollectionPerfToken,
+                             bool isImmutable)
     : _needsReallocation(false),
       _rangeList(),
       _rangeCount(0),
@@ -41,7 +42,8 @@ HdBufferArray::HdBufferArray(TfToken const &role,
       _role(role), 
       _garbageCollectionPerfToken(garbageCollectionPerfToken),
       _version(_uniqueVersion++),   // Atomic
-      _maxNumRanges(1)
+      _maxNumRanges(1),
+      _isImmutable(isImmutable)
 {
     /*NOTHING*/
 }
@@ -55,81 +57,6 @@ void
 HdBufferArray::IncrementVersion()
 {
     _version = _uniqueVersion++;  // Atomic
-}
-
-HdBufferResourceSharedPtr
-HdBufferArray::GetResource() const
-{
-    HD_TRACE_FUNCTION();
-
-    if (_resourceList.empty()) return HdBufferResourceSharedPtr();
-
-    if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
-        // make sure this buffer array has only one resource.
-        GLuint id = _resourceList.begin()->second->GetId();
-        TF_FOR_ALL (it, _resourceList) {
-            if (it->second->GetId() != id) {
-                TF_CODING_ERROR("GetResource(void) called on"
-                                "HdBufferArray having multiple GL resources");
-            }
-        }
-    }
-
-    // returns the first item
-    return _resourceList.begin()->second;
-}
-
-HdBufferResourceSharedPtr
-HdBufferArray::GetResource(TfToken const& name)
-{
-    HD_TRACE_FUNCTION();
-
-    // linear search.
-    // The number of buffer resources should be small (<10 or so).
-    for (HdBufferResourceNamedList::iterator it = _resourceList.begin();
-         it != _resourceList.end(); ++it) {
-        if (it->first == name) return it->second;
-    }
-    return HdBufferResourceSharedPtr();
-}
-
-HdBufferSpecVector
-HdBufferArray::GetBufferSpecs() const
-{
-    HdBufferSpecVector result;
-    result.reserve(_resourceList.size());
-    TF_FOR_ALL (it, _resourceList) {
-        HdBufferResourceSharedPtr const &bres = it->second;
-        HdBufferSpec spec(it->first, bres->GetGLDataType(), bres->GetNumComponents());
-        result.push_back(spec);
-    }
-    return result;
-}
-
-HdBufferResourceSharedPtr
-HdBufferArray::_AddResource(TfToken const& name,
-                            int glDataType,
-                            short numComponents,
-                            int arraySize,
-                            int offset,
-                            int stride)
-{
-    HD_TRACE_FUNCTION();
-
-    if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
-        // duplication check
-        HdBufferResourceSharedPtr bufferRes = GetResource(name);
-        if (!TF_VERIFY(!bufferRes)) {
-            return bufferRes;
-        }
-    }
-
-    HdBufferResourceSharedPtr bufferRes = HdBufferResourceSharedPtr(
-        new HdBufferResource(GetRole(), glDataType,
-                             numComponents, arraySize, offset, stride));
-
-    _resourceList.push_back(std::make_pair(name, bufferRes));
-    return bufferRes;
 }
 
 bool
@@ -224,20 +151,6 @@ HdBufferArray::GetMaxNumElements() const
 {
     // 1 element per range is allowed by default (for uniform buffers)
     return _maxNumRanges;
-}
-
-HD_API
-std::ostream &operator <<(std::ostream &out,
-                          const HdBufferArray &self)
-{
-    out << "    HdBufferArray:\n";
-    int resourceIndex = 0;
-    TF_FOR_ALL (bresIt, self.GetResources()) {
-        out << "      " << resourceIndex << " : " << bresIt->first.GetText() << "\n";
-        resourceIndex++;
-    }
-    self.DebugDump(out);
-    return out;
 }
 
 

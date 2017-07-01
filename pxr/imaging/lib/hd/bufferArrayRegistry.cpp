@@ -22,11 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/bufferArrayRegistry.h"
-
 #include "pxr/imaging/hd/bufferArray.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 
 HdBufferArrayRegistry::HdBufferArrayRegistry()
@@ -148,7 +146,8 @@ HdBufferArrayRegistry::ReallocateAll(HdAggregationStrategy *strategy)
                 // over aggregation check of non-uniform buffer
                 if (numTotalElements + numElements > maxTotalElements) {
                     // create new BufferArray with same specification
-                    HdBufferSpecVector bufferSpecs = bufferArray->GetBufferSpecs();
+                    HdBufferSpecVector bufferSpecs = 
+                        strategy->GetBufferSpecs(bufferArray);
                     HdBufferArraySharedPtr newBufferArray =
                         strategy->CreateBufferArray(bufferArray->GetRole(),
                                                     bufferSpecs);
@@ -169,7 +168,6 @@ HdBufferArrayRegistry::ReallocateAll(HdAggregationStrategy *strategy)
         }
     }
 }
-
 
 void
 HdBufferArrayRegistry::GarbageCollect()
@@ -197,44 +195,20 @@ HdBufferArrayRegistry::GarbageCollect()
     }
 }
 
-
 size_t
-HdBufferArrayRegistry::GetResourceAllocation(VtDictionary &result) const
+HdBufferArrayRegistry::GetResourceAllocation(HdAggregationStrategy *strategy,
+                                             VtDictionary &result) const
 {
     size_t gpuMemoryUsed = 0;
-    std::set<GLuint> idSet;
-
     TF_FOR_ALL (entryIt, _entries) {
         TF_FOR_ALL(bufferIt, entryIt->second.bufferArrays) {
-            idSet.clear();
-
-            TF_FOR_ALL(resIt, (*bufferIt)->GetResources()) {
-                HdResourceSharedPtr const & resource = resIt->second;
-
-                // XXX avoid double counting of resources shared within a buffer
-                GLuint id = resource->GetId();
-                if (idSet.count(id) == 0) {
-                    idSet.insert(id);
-
-                    std::string const & role = resource->GetRole().GetString();
-                    size_t size = size_t(resource->GetSize());
-
-                    if (result.count(role)) {
-                        size_t currentSize = result[role].Get<size_t>();
-                        result[role] = VtValue(currentSize + size);
-                    } else {
-                        result[role] = VtValue(size);
-                    }
-
-                    gpuMemoryUsed += size;
-                }
-            }
+            gpuMemoryUsed += strategy->GetResourceAllocation(
+                                                *bufferIt, result);
         }
     }
 
     return gpuMemoryUsed;
 }
-
 
 void
 HdBufferArrayRegistry::_InsertNewBufferArray(_Entry &entry,
@@ -277,13 +251,13 @@ operator <<(std::ostream &out, const HdBufferArrayRegistry& self)
         size_t bufferNum = 0;
         TF_FOR_ALL(bufferIt, entryIt->second.bufferArrays) {
             out << "HdBufferArray " << bufferNum << "\n";
-            out << **bufferIt;
         }
     }
 
 
     return out;
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

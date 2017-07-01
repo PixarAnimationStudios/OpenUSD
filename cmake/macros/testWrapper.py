@@ -102,19 +102,35 @@ def _resolvePath(baselineDir, fileName):
 
 def _stripPath(f, pathPattern):
     import re
+    import platform
 
+    # Paths on Windows may have backslashes but test baselines never do.
+    # On Windows, we rewrite the pattern so slash and backslash both match
+    # either a slash or backslash.  In addition, we match the remainder of
+    # the path and rewrite it to have forward slashes so it matches the
+    # baseline.
+    repl = ''
+    if platform.system() == 'Windows':
+        def _windowsReplacement(m):
+            return m.group(1).replace('\\', '/')
+        pathPattern = pathPattern.replace('\\', '/')
+        pathPattern = pathPattern.replace('/', '[/\\\\]')
+        pathPattern = pathPattern + '(\S*)'
+        repl = _windowsReplacement
+
+    # Read entire file and perform substitution.
     with open(f, 'r+') as inputFile:
         data = inputFile.read()
-        data = re.sub(pathPattern, "", data)
+        data = re.sub(pathPattern, repl, data)
         inputFile.seek(0)
         inputFile.write(data)
         inputFile.truncate()
 
 def _cleanOutput(pathPattern, fileName, verbose):
-    _stripPath(fileName, pathPattern)
     if verbose:
         print "stripping path pattern {0} from file {1}".format(pathPattern, 
                                                                 fileName)
+    _stripPath(fileName, pathPattern)
     return True
 
 def _diff(fileName, baselineDir, verbose):
@@ -240,7 +256,7 @@ if __name__ == '__main__':
             sys.stderr.write("Error: use --pre-path or --post-path to edit PATH.")
             sys.exit(1)
         try:
-            k, v = varStr.split('=')
+            k, v = varStr.split('=', 1)
             env[k] = v
         except IndexError:
             sys.stderr.write("Error: envvar '{0}' not of the form "

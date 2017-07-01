@@ -668,6 +668,17 @@ public:
     USD_API
     bool HasAttribute(const TfToken& attrName) const;
 
+    /// Search the prim subtree rooted at this prim for attributes for which
+    /// \p predicate returns true, collect their connection source paths and
+    /// return them in an arbitrary order.  If \p recurseOnSources is true,
+    /// act as if this function was invoked on the connected prims and owning
+    /// prims of connected properties also and return the union.
+    USD_API
+    SdfPathVector
+    FindAllAttributeConnectionPaths(
+        std::function<bool (UsdAttribute const &)> const &pred = nullptr,
+        bool recurseOnSources = false) const;
+
     // --------------------------------------------------------------------- //
     /// \name Relationships
     // --------------------------------------------------------------------- //
@@ -994,7 +1005,8 @@ private:
     friend class UsdPrimRange;
     friend class Usd_PrimData;
     friend class Usd_PrimFlagsPredicate;
-    friend struct UsdPrim_TargetFinder;
+    friend class UsdPrim_RelTargetFinder;
+    friend struct UsdPrim_AttrConnectionFinder;
 
     // Prim constructor.
     UsdPrim(const Usd_PrimDataHandle &primData,
@@ -1030,7 +1042,8 @@ private:
                               bool onlyAuthored) const;
 
     // Helper for Get(Authored)Attributes.
-    std::vector<UsdAttribute> _GetAttributes(bool onlyAuthored) const;
+    std::vector<UsdAttribute>
+    _GetAttributes(bool onlyAuthored, bool applyOrder=false) const;
 
     // Helper for Get(Authored)Relationships.
     std::vector<UsdRelationship>

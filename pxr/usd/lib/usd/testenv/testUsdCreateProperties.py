@@ -465,8 +465,11 @@ class TestUsdCreateProperties(unittest.TestCase):
                 self.assertEqual([ap.path for ap in arrayAssetValue],
                             [ap.path for ap in arrayAssetQueryValue])
 
-                self.assertEqual(singleAssetValue.resolvedPath, targetFile.name)
-                self.assertTrue(all([ap.resolvedPath == targetFile.name
+                # NOTE: We use os.path.abspath() to ensure the paths can be
+                #       accurately compared.  On Windows this will change
+                #       forward slash directory separators to backslashes.
+                self.assertEqual(os.path.abspath(singleAssetValue.resolvedPath), targetFile.name)
+                self.assertTrue(all([os.path.abspath(ap.resolvedPath) == targetFile.name
                                 for ap in arrayAssetValue]))
                 self.assertEqual(singleAssetValue.resolvedPath, 
                             singleAssetQueryValue.resolvedPath)
@@ -485,6 +488,13 @@ class TestUsdCreateProperties(unittest.TestCase):
                 self.assertTrue(all([ap.path == relPath for ap in arrayAssetValue]))
                 self.assertEqual(singleAssetValue.resolvedPath, '')
                 self.assertTrue(all([ap.resolvedPath == '' for ap in arrayAssetValue]))
+
+                # NOTE: rootFile will want to delete the underlying file
+                #       on __exit__ from the context manager.  But stage s
+                #       may have the file open.  If so the deletion will
+                #       fail on Windows.  Explicitly release our reference
+                #       to the stage to close the file.
+                del s
 
     def test_GetPropertyStack(self):
         primPath = Sdf.Path('/root')

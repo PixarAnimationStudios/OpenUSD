@@ -70,13 +70,7 @@ static inline HANDLE _FileToWinHANDLE(FILE *file)
 
 FILE* ArchOpenFile(char const* fileName, char const* mode)
 {
-    FILE* stream = nullptr;
-#if defined(ARCH_OS_WINDOWS)
-    fopen_s(&stream, fileName, mode);
-#else
-    stream = fopen(fileName, mode);
-#endif
-    return stream;
+    return fopen(fileName, mode);
 }
 
 #if defined(ARCH_OS_WINDOWS)
@@ -262,7 +256,7 @@ MakeUnique(
     // Copy template to a writable buffer.
     const auto length = sTemplate.size();
     char* cTemplate = reinterpret_cast<char*>(alloca(length + 1));
-    strcpy_s(cTemplate, length + 1, sTemplate.c_str());
+    strcpy(cTemplate, sTemplate.c_str());
 
     // Fill template with random characters from table.
     const char* table = "abcdefghijklmnopqrstuvwxyz123456";
@@ -388,7 +382,7 @@ Arch_InitTmpDir()
     _TmpDir = _strdup(tmpPath);
 #else
     const std::string tmpdir = ArchGetEnv("TMPDIR");
-    if (not tmpdir.empty()) {
+    if (!tmpdir.empty()) {
         // This function is not exposed in the header; it is only used during
         // Arch_InitConfig. If this is called more than once when TMPDIR is
         // set, the following call will leak a string.
@@ -483,9 +477,21 @@ void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv)
     // No windows implementation yet.  Look at
     // PrefetchVirtualMemory()/OfferVirtualMemory() in future.
 #else // assume POSIX
-    posix_madvise(const_cast<void *>(addr), len,
-                  adv == ArchMemAdviceWillNeed ?
-                  POSIX_MADV_WILLNEED : POSIX_MADV_DONTNEED);
+    // Have to adjust addr to be page-size aligned.
+    static size_t mask = ~(static_cast<size_t>(sysconf(_SC_PAGESIZE)) - 1);
+    uintptr_t addrInt = reinterpret_cast<uintptr_t>(addr);
+    uintptr_t alignedAddrInt = addrInt & mask;
+
+    // This must follow ArchMemAdvice exactly.
+    int adviceMap[] = {
+        /* ArchMemAdviceNormal       = */ POSIX_MADV_NORMAL,
+        /* ArchMemAdviceWillNeed     = */ POSIX_MADV_WILLNEED,
+        /* ArchMemAdviceDontNeed     = */ POSIX_MADV_DONTNEED,
+        /* ArchMemAdviceRandomAccess = */ POSIX_MADV_RANDOM
+    };
+        
+    posix_madvise(reinterpret_cast<void *>(alignedAddrInt),
+                  len + (addrInt - alignedAddrInt), adviceMap[adv]);
 #endif
 }
 
@@ -791,7 +797,7 @@ std::string ArchReadLink(const char* path)
                 reparse->SymbolicLinkReparseBuffer.PrintNameLength /
                                                                 sizeof(WCHAR);
             std::unique_ptr<WCHAR[]> reparsePath(new WCHAR[length + 1]);
-            wcsncpy_s(reparsePath.get(), length + 1,
+            wcsncpy(reparsePath.get(),
               &reparse->SymbolicLinkReparseBuffer.PathBuffer[
               reparse->SymbolicLinkReparseBuffer.PrintNameOffset / sizeof(WCHAR)
               ], length);
@@ -868,9 +874,15 @@ void ArchFileAdvise(
 #elif defined(ARCH_OS_DARWIN)
     // No OSX implementation; posix_fadvise does not exist on that platform.
 #else // assume POSIX
+    // This must follow ArchFileAdvice exactly.
+    int adviceMap[] = {
+        /* ArchFileAdviceNormal       = */ POSIX_FADV_NORMAL,
+        /* ArchFileAdviceWillNeed     = */ POSIX_FADV_WILLNEED,
+        /* ArchFileAdviceDontNeed     = */ POSIX_FADV_DONTNEED,
+        /* ArchFileAdviceRandomAccess = */ POSIX_FADV_RANDOM
+    };
     posix_fadvise(fileno(file), offset, static_cast<off_t>(count),
-                  adv == ArchFileAdviceWillNeed ?
-                  POSIX_FADV_WILLNEED : POSIX_FADV_DONTNEED);
+                  adviceMap[adv]);
 #endif
 }
 

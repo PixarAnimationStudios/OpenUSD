@@ -4,7 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE gf)
 
-pxr_shared_library(gf
+pxr_library(gf
     LIBRARIES
         arch
         tf
@@ -137,9 +137,9 @@ pxr_shared_library(gf
 # generate them. If not, a diff displaying the difference will be printed to
 # stdout and the build will fail.
 if (NOT ${PXR_VALIDATE_GENERATED_CODE})
-    message(WARNING "Skipping validation of gf generated code because PXR_VALIDATE_GENERATED_CODE=OFF")
+    message(STATUS "Skipping validation of gf generated code because PXR_VALIDATE_GENERATED_CODE=OFF")
 elseif(NOT JINJA2_FOUND)
-    message(WARNING "Skipping validation of gf generated code because of missing dependency: jinja2")
+    message(STATUS "Skipping validation of gf generated code because of missing dependency: jinja2")
 else()
     add_custom_command(
         TARGET gf 
@@ -191,7 +191,7 @@ pxr_register_test(testGfDecomposeRotation
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDecomposeRotation"
 )
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (NOT APPLE)
     pxr_register_test(testGfFrustum
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfFrustum"

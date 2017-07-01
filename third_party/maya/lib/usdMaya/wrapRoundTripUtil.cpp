@@ -27,7 +27,7 @@
 
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/conversions.h"
+#include "pxr/usd/usd/pyConversions.h"
 
 #include <boost/python.hpp>
 

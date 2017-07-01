@@ -65,8 +65,7 @@ HdShaderKey::ComputeHash(TfToken const &glslfxFile,
                          TfToken const *TES,
                          TfToken const *GS,
                          TfToken const *FS,
-                         int16_t primitiveMode,
-                         int16_t primitiveIndexSize,
+                         int16_t primType,                         
                          HdCullStyle cullStyle,
                          HdPolygonMode polygonMode,
                          bool cullingPass)
@@ -93,8 +92,7 @@ HdShaderKey::ComputeHash(TfToken const &glslfxFile,
         boost::hash_combine(hash, FS->Hash());
         ++FS;
     }
-    boost::hash_combine(hash, primitiveMode);
-    boost::hash_combine(hash, primitiveIndexSize);
+    boost::hash_combine(hash, primType);    
     boost::hash_combine(hash, cullStyle);
     boost::hash_combine(hash, polygonMode);
     boost::hash_combine(hash, cullingPass);

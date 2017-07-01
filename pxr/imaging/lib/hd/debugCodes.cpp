@@ -31,6 +31,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_BPRIM_ADDED, "Report when bprims are added");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_BPRIM_REMOVED, "Report when bprims are removed")
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_BUFFER_ARRAY_INFO, "Report detail info of HdBufferArrays");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_BUFFER_ARRAY_RANGE_CLEANED, "Report when bufferArrayRange is cleaned");
 
@@ -83,14 +86,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SPRIM_ADDED, "Report when sprims are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SPRIM_REMOVED, "Report when sprims are removed")
 ;
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SHADER_ADDED, "Report when shaders are added");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SHADER_REMOVED, "Report when shaders are removed");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TASK_ADDED, "Report when tasks are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TASK_REMOVED, "Report when tasks are removed");
 
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TEXTURE_ADDED, "Report when textures are added");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TEXTURE_REMOVED, "Report when textures are removed");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_VARYING_STATE, "Reports state tracking of varying state");
 }
 

@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(JS_STATIC)
+#if defined(PXR_STATIC)
 #   define JS_API
 #   define JS_API_TEMPLATE_CLASS(...)
 #   define JS_API_TEMPLATE_STRUCT(...)

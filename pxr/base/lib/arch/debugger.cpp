@@ -26,6 +26,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/daemon.h"
+#include "pxr/base/arch/env.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
 #include "pxr/base/arch/stackTrace.h"
@@ -328,18 +329,12 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     _exit(0);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
-extern char** environ;
-
-PXR_NAMESPACE_OPEN_SCOPE
-
 static
 bool
 Arch_DebuggerAttachExecPosix(void* data)
 {
     char** args = (char**)data;
-    execve(args[0], args, environ);
+    execve(args[0], args, ArchEnviron());
     return false;
 }
 
@@ -579,9 +574,7 @@ Arch_InitDebuggerAttach()
     }
 #elif defined(ARCH_OS_WINDOWS)
     // If ARCH_DEBUGGER is in the environment then enable attaching.
-    size_t requiredSize;
-    getenv_s(&requiredSize, nullptr, 0, "ARCH_DEBUGGER");
-    if (requiredSize) {
+    if (getenv("ARCH_DEBUGGER")) {
         _archDebuggerAttachArgs = (char**)&_archDebuggerAttachArgs;
     }
 #endif
@@ -615,13 +608,7 @@ namespace {
 bool
 _ArchAvoidJIT()
 {
-#if defined(ARCH_OS_WINDOWS)
-    size_t requiredSize;
-    getenv_s(&requiredSize, nullptr, 0, "ARCH_AVOID_JIT");
-    return (requiredSize != 0);
-#else
     return (getenv("ARCH_AVOID_JIT") != nullptr);
-#endif
 }
 }
 

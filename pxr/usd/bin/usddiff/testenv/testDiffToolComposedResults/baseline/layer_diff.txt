@@ -1,4 +1,3 @@
-5c5
-<     payload = @a_payload.usd@</StoolDorm>
----
->     payload = @b_payload.usd@</StoolDorm>
+@@ -5 +5 @@
+-    payload = @a_payload.usd@</StoolDorm>
++    payload = @b_payload.usd@</StoolDorm>

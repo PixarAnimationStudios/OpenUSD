@@ -67,9 +67,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct PxrUsdMayaPrimWriterRegistry
 {
     typedef std::function< MayaPrimWriterPtr (
-            MDagPath &curDag,
-            UsdStageRefPtr& stage,
-            const JobExportArgs& args) > WriterFactoryFn;
+            const MDagPath&,
+            const SdfPath&, bool,
+            usdWriteJobCtx&) > WriterFactoryFn;
 
     /// \brief Register \p fn as a factory function providing a
     /// \link MayaPrimWriter subclass that can be used to write \p mayaType.
@@ -81,8 +81,9 @@ struct PxrUsdMayaPrimWriterRegistry
     /// class MyWriter : public MayaPrimWriter {
     ///     static MayaPrimWriterPtr Create(
     ///             MDagPath &curDag,
-    ///             UsdStageRefPtr& stage,
-    ///             const JobExportArgs& args);
+    ///             const SdfPath& uPath,
+    ///             bool instanceSource,
+    ///             usdWriteJobCtx& jobCtx);
     /// };
     /// TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimWriterRegistry, MyWriter) {
     ///     PxrUsdMayaPrimWriterRegistry::Register("MyCustomPrim",

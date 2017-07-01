@@ -58,11 +58,11 @@ public:
     HD_API
     virtual ~HdTask();
 
-    /// Sync the resources
+    /// Sync the resources. Syncs this task, then child tasks, if applicable.
     HD_API
     void Sync(HdTaskContext* ctx);
 
-    /// Execute the task
+    /// Execute the task. Runs this task, then child tasks, if applicable.
     HD_API
     void Execute(HdTaskContext* ctx);
 
@@ -84,14 +84,14 @@ protected:
     virtual void _Sync( HdTaskContext* ctx) = 0;
     HD_API
     virtual void _Execute(HdTaskContext* ctx) = 0;
+
+    // _MarkClean is a hook for when Sync() is done running.
     HD_API
     virtual void _MarkClean();
 
-    // Child tasks 
+    // Child task API: _SyncChildren is responsible for populating _children.
     HD_API
     virtual void _SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children);
-    HD_API
-    virtual void _ExecuteChildren(HdTaskContext* ctx);
 
 private:
     HdTaskSharedPtrVector _children;
@@ -202,7 +202,6 @@ HdSceneTask::_GetSceneDelegateValue(TfToken const& valueId, T* outValue)
 
 // Task parameters for scene based synchronization
 struct HdTaskParams {
-    SdfPathVector childTasks;
 };
 
 

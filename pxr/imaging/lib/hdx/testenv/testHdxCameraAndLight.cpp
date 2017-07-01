@@ -25,13 +25,13 @@
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/renderPass.h"
 
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 
@@ -91,7 +91,8 @@ static void CameraAndLightTest()
     perfLog.Enable();
     HdRprimCollection collection(HdTokens->geometry, HdTokens->hull);
     HdRenderPassStateSharedPtr renderPassState(new HdRenderPassState());
-    HdRenderPassSharedPtr renderPass(new HdRenderPass(index.get(), collection));
+    HdRenderPassSharedPtr renderPass(
+        new HdSt_RenderPass(index.get(), collection));
     HdEngine engine;
 
     HdTaskSharedPtr drawTask = boost::make_shared<Hd_TestTask>(renderPass,
@@ -118,7 +119,8 @@ static void CameraAndLightTest()
 
     // Update camera matrix
     delegate->SetCamera(camera, GfMatrix4d(2), GfMatrix4d(2));
-    tracker.MarkSprimDirty(camera, HdStCamera::DirtyMatrices);
+    tracker.MarkSprimDirty(camera, HdStCamera::DirtyViewMatrix);
+    tracker.MarkSprimDirty(camera, HdStCamera::DirtyProjMatrix);
 
     engine.Execute(*index, tasks);
 

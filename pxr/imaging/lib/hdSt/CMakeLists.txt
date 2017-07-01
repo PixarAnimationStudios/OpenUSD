@@ -8,7 +8,7 @@ if (OPENSUBDIV_HAS_GLSL_COMPUTE)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
-pxr_shared_library(hdSt
+pxr_library(hdSt
     LIBRARIES
         cameraUtil
         hd
@@ -25,10 +25,12 @@ pxr_shared_library(hdSt
         drawTargetAttachmentDesc
         drawTargetAttachmentDescArray
         drawTargetRenderPassState
+        instancer
         light      
         mesh
         points
         renderDelegate
+        renderPass
         shader
 
     PUBLIC_HEADERS

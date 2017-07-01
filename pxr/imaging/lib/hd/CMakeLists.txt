@@ -10,7 +10,7 @@ if (OPENSUBDIV_HAS_GLSL_COMPUTE)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
-pxr_shared_library(hd
+pxr_library(hd
     LIBRARIES
         plug
         tf
@@ -39,8 +39,10 @@ pxr_shared_library(hd
         bprim
         bufferArray
         bufferArrayRange
+        bufferArrayRangeGL
         bufferArrayRegistry
         bufferResource
+        bufferResourceGL
         bufferSource
         bufferSpec
         changeTracker
@@ -86,6 +88,7 @@ pxr_shared_library(hd
         renderPassState
         repr
         resource
+        resourceGL
         resourceBinder
         resourceRegistry
         rprim
@@ -122,6 +125,7 @@ pxr_shared_library(hd
         cullingShaderKey
         unitTestHelper
         unitTestNullRenderDelegate
+        unitTestNullRenderPass
         ${optionalPrivateClasses}
 
     RESOURCE_FILES

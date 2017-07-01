@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdUI)
 
-pxr_shared_library(usdUI
+pxr_library(usdUI
     LIBRARIES
         tf
         vt
@@ -9,6 +9,7 @@ pxr_shared_library(usdUI
         usd
 
     PUBLIC_CLASSES
+        backdrop
         nodeGraphNodeAPI
         sceneGraphPrimAPI
         tokens
@@ -21,6 +22,7 @@ pxr_shared_library(usdUI
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapBackdrop.cpp
         wrapNodeGraphNodeAPI.cpp
         wrapSceneGraphPrimAPI.cpp
         wrapTokens.cpp

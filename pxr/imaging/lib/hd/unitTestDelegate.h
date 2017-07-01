@@ -248,6 +248,9 @@ public:
     void UpdateInstancerPrimVars(float time);
     HD_API
     void UpdateInstancerPrototypes(float time);
+    HD_API
+    void UpdateCurvePrimVarsInterpMode(float time);
+
 
     void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId)
     {
@@ -299,10 +302,6 @@ public:
     virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
     HD_API
     virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
-    HD_API
-    virtual int GetPrimVarDataType(SdfPath const& id, TfToken const& key);
-    HD_API
-    virtual int GetPrimVarComponents(SdfPath const& id, TfToken const& key);
 
     HD_API
     virtual VtIntArray GetInstanceIndices(SdfPath const& instancerId,
@@ -314,8 +313,6 @@ public:
 
     HD_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
-    HD_API
-    virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &shaderId);
     HD_API
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &shaderId);
     HD_API

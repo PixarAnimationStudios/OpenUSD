@@ -388,7 +388,7 @@ UsdGeomCollectionAPI::Validate(std::string *reason) const
         return true;
     } 
 
-    TF_VERIFY(!((bool)targetFaceCountsAttr ^ (bool)targetFaceIndicesAttr));
+    TF_VERIFY(!targetFaceCountsAttr == !targetFaceIndicesAttr);
 
     // The list of all timeSamples at which the collection attributes are 
     // authored.

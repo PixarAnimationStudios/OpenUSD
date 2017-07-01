@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(HDST_STATIC)
+#if defined(PXR_STATIC)
 #   define HDST_API
 #   define HDST_API_TEMPLATE_CLASS(...)
 #   define HDST_API_TEMPLATE_STRUCT(...)

@@ -51,7 +51,7 @@ typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 
 /// \class HdDrawItem
 ///
-/// An abstraction for a single OpenGL draw call.
+/// An abstraction for a single draw item.
 ///
 class HdDrawItem {
 public:

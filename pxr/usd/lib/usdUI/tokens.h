@@ -44,12 +44,14 @@ PXR_NAMESPACE_OPEN_SCOPE
     (closed) \
     (minimized) \
     (open) \
+    ((uiDescription, "ui:description")) \
     ((uiDisplayGroup, "ui:displayGroup")) \
     ((uiDisplayName, "ui:displayName")) \
     ((uiNodegraphNodeDisplayColor, "ui:nodegraph:node:displayColor")) \
     ((uiNodegraphNodeExpansionState, "ui:nodegraph:node:expansionState")) \
     ((uiNodegraphNodeIcon, "ui:nodegraph:node:icon")) \
     ((uiNodegraphNodePos, "ui:nodegraph:node:pos")) \
+    ((uiNodegraphNodeSize, "ui:nodegraph:node:size")) \
     ((uiNodegraphNodeStackingOrder, "ui:nodegraph:node:stackingOrder"))
 
 /// \anchor UsdUITokens
@@ -75,12 +77,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>closed</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
 /// \li <b>minimized</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
 /// \li <b>open</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+/// \li <b>uiDescription</b> - UsdUIBackdrop
 /// \li <b>uiDisplayGroup</b> - UsdUISceneGraphPrimAPI
 /// \li <b>uiDisplayName</b> - UsdUISceneGraphPrimAPI
 /// \li <b>uiNodegraphNodeDisplayColor</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodeExpansionState</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodeIcon</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodePos</b> - UsdUINodeGraphNodeAPI
+/// \li <b>uiNodegraphNodeSize</b> - UsdUINodeGraphNodeAPI
 /// \li <b>uiNodegraphNodeStackingOrder</b> - UsdUINodeGraphNodeAPI
 TF_DECLARE_PUBLIC_TOKENS(UsdUITokens, USDUI_API, USDUI_TOKENS);
 

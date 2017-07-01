@@ -23,10 +23,11 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/conversions.h"
 #include "pxr/usd/usd/primRange.h"
 
 #include "pxr/usd/ar/resolverContext.h"
+
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/pcp/pyUtils.h"
 #include "pxr/usd/sdf/pyUtils.h"
 
@@ -39,6 +40,7 @@
 #include "pxr/base/tf/makePyConstructor.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/tuple.hpp>
 
 using std::string;
 
@@ -152,6 +154,16 @@ _ExpandPopulationMask(UsdStage &self, boost::python::object pypred)
     if (pypred != boost::python::object())
         pred = boost::python::extract<Predicate>(pypred);
     return self.ExpandPopulationMask(pred);
+}
+
+static object 
+_GetColorConfigFallbacks()
+{
+    SdfAssetPath colorConfiguration;
+    TfToken colorManagementSystem;
+    UsdStage::GetColorConfigFallbacks(&colorConfiguration, 
+                                      &colorManagementSystem);
+    return boost::python::make_tuple(colorConfiguration, colorManagementSystem);
 }
 
 } // anonymous namespace 
@@ -464,6 +476,20 @@ void wrapUsdStage()
         .def("GetFramesPerSecond", &UsdStage::GetFramesPerSecond)
         .def("SetFramesPerSecond", &UsdStage::SetFramesPerSecond)
 
+        .def("GetColorConfiguration", &UsdStage::GetColorConfiguration)
+        .def("SetColorConfiguration", &UsdStage::SetColorConfiguration)
+
+        .def("GetColorManagementSystem", &UsdStage::GetColorManagementSystem)
+        .def("SetColorManagementSystem", &UsdStage::SetColorManagementSystem)
+
+        .def("GetColorConfigFallbacks", &_GetColorConfigFallbacks)
+        .staticmethod("GetColorConfigFallbacks")
+
+        .def("SetColorConfigFallbacks", &UsdStage::SetColorConfigFallbacks,
+            (arg("colorConfiguration")=SdfAssetPath(), 
+             arg("colorManagementSystem")=TfToken()))
+        .staticmethod("SetColorConfigFallbacks")        
+            
         .def("GetInterpolationType", &UsdStage::GetInterpolationType)
         .def("SetInterpolationType", &UsdStage::SetInterpolationType)
         .def("IsSupportedFile", &UsdStage::IsSupportedFile, arg("filePath"))

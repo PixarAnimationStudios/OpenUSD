@@ -26,22 +26,15 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(PX_VP20_STATIC)
-#   define PX_VP20_API
-#   define PX_VP20_API_TEMPLATE_CLASS(...)
-#   define PX_VP20_API_TEMPLATE_STRUCT(...)
-#   define PX_VP20_LOCAL
+#if defined(PX_VP20_EXPORTS)
+#    define PX_VP20_API ARCH_EXPORT
+#    define PX_VP20_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#    define PX_VP20_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
 #else
-#   if defined(PX_VP20_EXPORTS)
-#       define PX_VP20_API ARCH_EXPORT
-#       define PX_VP20_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
-#       define PX_VP20_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
-#   else
-#       define PX_VP20_API ARCH_IMPORT
-#       define PX_VP20_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
-#       define PX_VP20_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
-#   endif
-#   define PX_VP20_LOCAL ARCH_HIDDEN
+#    define PX_VP20_API ARCH_IMPORT
+#    define PX_VP20_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#    define PX_VP20_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
 #endif
+#define PX_VP20_LOCAL ARCH_HIDDEN
 
 #endif

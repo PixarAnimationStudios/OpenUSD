@@ -29,11 +29,11 @@
 #include "pxr/imaging/hdx/package.h"
 
 #include "pxr/imaging/hdSt/light.h"
+#include "pxr/imaging/hdSt/renderPass.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -151,14 +151,14 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         // collection for shadows mapping
         
         // XXX: This is inefficient, need to be optimized
-        SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
-                                                   HdPrimTypeTokens->light,
-                                                   SdfPath::AbsoluteRootPath());
-        SdfPathVector lightPaths =
-            HdxSimpleLightTask::ComputeIncludedLights(
-                sprimPaths,
-                params.lightIncludePaths,
-                params.lightExcludePaths);
+        SdfPathVector lightPaths;
+        if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->light)) {
+            SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
+                HdPrimTypeTokens->light, SdfPath::AbsoluteRootPath());
+
+            lightPaths = HdxSimpleLightTask::ComputeIncludedLights(
+                sprimPaths, params.lightIncludePaths, params.lightExcludePaths);
+        }
         
         HdStLightPtrConstVector lights;
         TF_FOR_ALL (it, lightPaths) {
@@ -173,7 +173,10 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         
         GlfSimpleLightVector const glfLights = lightingContext->GetLights();
         
-        TF_VERIFY(lights.size() == glfLights.size());
+        if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->light) ||
+            !TF_VERIFY(lights.size() == glfLights.size())) {
+            return;
+        }
         
         // Iterate through all lights and for those that have
         // shadows enabled we will extract the colection from 
@@ -194,7 +197,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
 
             // Creates a pass with the right geometry that will be
             // use during Execute phase to draw the maps
-            HdRenderPassSharedPtr p = boost::make_shared<HdRenderPass>
+            HdRenderPassSharedPtr p = boost::make_shared<HdSt_RenderPass>
                 (&delegate->GetRenderIndex(), col);
 
             HdRenderPassShaderSharedPtr renderPassShadowShader

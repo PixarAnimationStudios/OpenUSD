@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "main" 
+{
+    int bas = 10
+    def "baz"
+    {
+        int bas.connect = </main.bas>
+        int foo
+    }
+}

@@ -57,10 +57,10 @@ class HdRprimCollection;
 class HdSceneDelegate;
 class HdRenderDelegate;
 class VtValue;
+class HdInstancer;
 
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
-typedef boost::shared_ptr<class HdInstancer> HdInstancerSharedPtr;
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
 typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
 typedef std::unordered_map<TfToken,
@@ -208,7 +208,7 @@ public:
 
     /// Returns the instancer of id
     HD_API
-    HdInstancerSharedPtr GetInstancer(SdfPath const &id) const;
+    HdInstancer *GetInstancer(SdfPath const &id) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Task Support
@@ -368,7 +368,7 @@ private:
     HdChangeTracker _tracker;
     int32_t _nextPrimId; 
 
-    typedef TfHashMap<SdfPath, HdInstancerSharedPtr, SdfPath::Hash> _InstancerMap;
+    typedef TfHashMap<SdfPath, HdInstancer*, SdfPath::Hash> _InstancerMap;
     _InstancerMap _instancerMap;
 
     // XXX: TO FIX Move
@@ -385,6 +385,11 @@ private:
 
     /// Release the fallback prims.
     void _DestroyFallbackPrims();
+
+    /// Register core hydra reprs. Only ever called once, the first time
+    /// a render index is created.
+    /// XXX: This code should move to the application layer.
+    static void _ConfigureReprs();
 
     // Remove default constructor
     HdRenderIndex() = delete;

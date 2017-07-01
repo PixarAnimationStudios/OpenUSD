@@ -3,7 +3,7 @@ set(PXR_PACKAGE hf)
 
 set(optionalPublicClasses "")
 
-pxr_shared_library(hf
+pxr_library(hf
     LIBRARIES
         plug
         tf

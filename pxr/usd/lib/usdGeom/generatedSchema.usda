@@ -15,7 +15,7 @@ class "Imageable" (
     primitive and can override shader inputs.'''
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -271,7 +271,7 @@ class "Xformable" (
 """
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -360,7 +360,7 @@ class Scope "Scope" (
     transformability perspective."""
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -435,7 +435,7 @@ class Xform "Xform" (
     doc = "Concrete prim schema for a transform, which implements Xformable "
 )
 {
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -559,7 +559,7 @@ class "Boundable" (
         the extent of all children, as they will be pruned from BBox computation
         during traversal."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -698,7 +698,7 @@ class "Gprim" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -827,7 +827,7 @@ class Cube "Cube" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -962,7 +962,7 @@ class Sphere "Sphere" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1108,7 +1108,7 @@ class Cylinder "Cylinder" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1253,7 +1253,7 @@ class Capsule "Capsule" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1400,7 +1400,7 @@ class Cone "Cone" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1555,7 +1555,7 @@ class "PointBased" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1794,7 +1794,7 @@ class Mesh "Mesh" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -1865,6 +1865,14 @@ class Mesh "Mesh" (
         apply to bilinear meshes but not polymeshes.  Polymeshes may be
         lighterweight and faster to render, depending on renderer and render
         mode.)'''
+    )
+    token triangleSubdivisionRule = "catmullClark" (
+        allowedTokens = ["catmullClark", "smooth"]
+        doc = '''Specifies what weights are used during triangle subdivision for
+        the Catmull-Clark scheme. Valid values are "catmullClark" (the default) 
+        and "smooth".
+
+        See http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#triangle-subdivision-rule'''
     )
     vector3f[] velocities (
         doc = """If provided, 'velocities' should be used by renderers to 
@@ -2018,7 +2026,7 @@ class NurbsPatch "NurbsPatch" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -2269,7 +2277,7 @@ class "Curves" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -2551,7 +2559,7 @@ class BasisCurves "BasisCurves" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -2665,7 +2673,7 @@ class NurbsCurves "NurbsCurves" (
     doc = """This schema is analagous to NURBS Curves in packages like Maya
     and Houdini, often used for interchange of rigging and modeling curves.  
     Unlike Maya, this curve spec supports batching of multiple curves into a 
-    single prim and widths in the schema.  Additionally, we require 
+    single prim, widths, and normals in the schema.  Additionally, we require 
     'numSegments + 2 * degree + 1' knots (2 more than maya does).  This is to
     be more consistent with RenderMan's NURBS patch specification.  
     
@@ -2678,7 +2686,11 @@ class NurbsCurves "NurbsCurves" (
     - knot[-1] = knot[-2];
     
     In spite of these slight differences in the spec, curves generated in Maya
-    should be preserved when roundtripping."""
+    should be preserved when roundtripping.
+    
+    'order' and 'range', when representing a batched NurbsCurve should be
+    authored one value per curve.  'knots' should be the concatentation of
+    all batched curves."""
 )
 {
     int[] curveVertexCounts (
@@ -2720,7 +2732,10 @@ class NurbsCurves "NurbsCurves" (
         during traversal."""
     )
     double[] knots (
-        doc = "Knot vectors are batched together and define how to interpolate curve segments."
+        doc = """Knot vector providing curve parameterization.
+        The length of the slice of the array for the ith curve 
+        must be ( curveVertexCount[i] + order[i] ), and its
+        entries must take on monotonically increasing values."""
     )
     normal3f[] normals (
         doc = """Provide orientation for individual points, which, depending on
@@ -2732,8 +2747,10 @@ class NurbsCurves "NurbsCurves" (
         its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
     )
     int[] order = [] (
-        doc = """Order is degree + 1.  It must be less than or equal to the 
-        number of cvsPerCurve"""
+        doc = """Order of the curve.  Order must be positive and is
+        equal to the degree of the polynomial basis to be evaluated, plus 1.
+        Its value for the 'i'th curve must be less than or equal to the 
+        number of cvs in the curveVertexCount[i]"""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -2756,7 +2773,7 @@ class NurbsCurves "NurbsCurves" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -2817,7 +2834,12 @@ class NurbsCurves "NurbsCurves" (
         a better tool for dynamic, interactive complexity management.'''
     )
     double2[] ranges (
-        doc = "Specifies the parametric range used to evaluate the curve."
+        doc = """Provides the minimum and maximum parametric values (as defined
+        by knots) over which the curve is actually defined.  The minimum must 
+        be less than the maximum, and greater than or equal to the value of the 
+        knots['i'th curve slice][order[i]-1]. The maxium must be less 
+        than or equal to the last element's value in knots['i'th curve slice].
+\tRange maps to (vmin, vmax) in the RenderMan spec."""
     )
     vector3f[] velocities (
         doc = """If provided, 'velocities' should be used by renderers to 
@@ -2937,7 +2959,7 @@ class Points "Points" (
         each can be indepedently overridden, and because shaders rarely consume
         rgba parameters."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -3291,13 +3313,13 @@ class PointInstancer "PointInstancer" (
       drawn for each instance.  <b>Topology attribute</b> - can be animated, 
       but at a potential performance impact for streaming."""
     )
-    uniform token prototypeDrawMode = "fullGeom" (
+    uniform token prototypeDrawMode (
         allowedTokens = ["point", "card", "fullGeom"]
         doc = """Draw modes that host applications can use as a hint for how each
       instance of each prototype should be represented.  This hint should only
       affect interactive/preview representations and is optional."""
     )
-    rel prototypes = None (
+    rel prototypes (
         doc = """<b>Required property</b>. Orders and targets the prototype root 
       prims, which can be located anywhere in the scenegraph that is convenient,
       although we promote organizing prototypes as children of the 
@@ -3306,7 +3328,7 @@ class PointInstancer "PointInstancer" (
       instance that prototype. Since relationships are uniform, this property
       cannot be animated."""
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -3466,7 +3488,7 @@ class Camera "Camera" (
     token projection = "perspective" (
         allowedTokens = ["perspective", "orthographic"]
     )
-    rel proxyPrim = None (
+    rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be

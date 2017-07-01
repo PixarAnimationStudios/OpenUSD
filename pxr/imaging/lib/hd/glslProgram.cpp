@@ -135,6 +135,11 @@ HdGLSLProgram::CompileShader(GLenum type,
         // XXX:validation
         TF_WARN("Failed to compile shader (%s): \n%s",
                 shaderType, logString.c_str());
+
+        // shader is no longer needed.
+        glDeleteShader(shader);
+        
+        return false;
     }
 
     // attach the shader to the program
@@ -228,7 +233,7 @@ HdGLSLProgram::Validate() const
         if (size == 0) {
             return false;
         }
-        if (size != _program.GetSize()) {
+        if (static_cast<size_t>(size) != _program.GetSize()) {
             return false;
         }
     }

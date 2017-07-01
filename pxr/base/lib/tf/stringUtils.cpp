@@ -310,20 +310,22 @@ TfStringGetBeforeSuffix(const string& name, char delimiter)
 string
 TfGetBaseName(const string& fileName)
 {
+    if (fileName.empty())
+        return fileName;
+#if defined(ARCH_OS_WINDOWS)
+    const string::size_type i = fileName.find_last_of("\\/");
+#else
+    const string::size_type i = fileName.rfind("/");
+#endif
+    if (i == fileName.size() - 1)    // ends in directory delimiter
+        return TfGetBaseName(fileName.substr(0, i));
 #if defined(ARCH_OS_WINDOWS)
     return PathFindFileName(fileName.c_str());
 #else
-    if (fileName.empty())
+    if (i == string::npos)                      // no / in name
         return fileName;
-    else if (fileName[fileName.size()-1] == '/')    // ends in /
-        return TfGetBaseName(fileName.substr(0, fileName.size() - 1));
-    else {
-        size_t i = fileName.rfind("/");
-        if (i == string::npos)                      // no / in name
-            return fileName;
-        else
-            return fileName.substr(i+1);
-    }
+    else
+        return fileName.substr(i+1);
 #endif
 }
 

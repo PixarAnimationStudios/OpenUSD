@@ -748,6 +748,7 @@ EXCLUDE_SYMBOLS        = Usd_* \
                          UsdHydra_* \
                          UsdUI_* \
                          UsdUtils_* \
+                         UsdAbc_* \
                          Sdf_* \
                          Pcp_* \
                          PcpNodeRef_* \
@@ -1669,11 +1670,11 @@ INCLUDE_FILE_PATTERNS  =
 # undefined via #undef or recursively expanded use the := operator
 # instead of the = operator.
 
-PREDEFINED             = doxygen                                                         \
-                         "TF_DEFINE_STACKED(name, x, y)=class name"                      \
-                         "PXR_NAMESPACE_OPEN_SCOPE=namespace @PXR_EXTERNAL_NAMESPACE@ {" \
-                         "PXR_NAMESPACE_CLOSE_SCOPE=}"                                   \
-                         "PXR_NS=@PXR_EXTERNAL_NAMESPACE@"
+PREDEFINED             = doxygen                                        \
+                         "TF_DEFINE_STACKED(name, x, y)=class name"     \
+                         "PXR_NAMESPACE_OPEN_SCOPE"                     \
+                         "PXR_NAMESPACE_CLOSE_SCOPE"                    \
+                         "PXR_NS"
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
 # this tag can be used to specify a list of macro names that should be expanded.
@@ -1900,7 +1901,7 @@ INTERACTIVE_SVG        = NO
 # The tag DOT_PATH can be used to specify the path where the dot tool can be
 # found. If left blank, it is assumed the dot tool can be found in the path.
 
-DOT_PATH               = @DOT_EXECUTABLE@
+DOT_PATH               = "@DOT_EXECUTABLE@"
 
 # The DOTFILE_DIRS tag can be used to specify one or more directories that
 # contain dot files that are included in the documentation (see the

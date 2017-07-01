@@ -1,0 +1,6 @@
+#sdf 1.4.32
+(
+    colorConfiguration = @https://github.com/imageworks/OpenColorIO-Configs/blob/master/aces_1.0.1/config.ocio@
+    colorManagementSystem = "OCIO"
+)
+

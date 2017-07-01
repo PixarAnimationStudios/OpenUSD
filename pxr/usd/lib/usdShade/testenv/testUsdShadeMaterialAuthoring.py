@@ -231,21 +231,17 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
         # TODO: move this into it's own test
         hairPrim = stage.GetPrimAtPath('/ModelShading/Materials/HairMaterial')
         hairMaterial = UsdShade.Material(hairPrim)
-        interfaceAttribute = hairMaterial.CreateInterfaceAttribute("myParam", Sdf.ValueTypeNames.Float)
-        interfaceAttribute.SetDocumentation("this is my float")
-        interfaceAttribute.SetDisplayGroup("numbers")
+        interfaceInput = hairMaterial.CreateInput("myParam", Sdf.ValueTypeNames.Float)
+        interfaceInput.SetDocumentation("this is my float")
+        interfaceInput.SetDisplayGroup("numbers")
 
-        # Make sure the IA is namespaced, but also that we can retrieve it with or
-        # without the namespace
-        plain = hairPrim.GetAttribute("interface:myParam")
+        byName = hairMaterial.GetInput("myParam")
+        self.assertTrue(byName and 
+            ( byName.GetDocumentation() == "this is my float") and 
+            ( byName.GetDisplayGroup() == "numbers"))
+
+        plain = hairPrim.GetAttribute(byName.GetFullName())
         self.assertTrue(plain and ( plain.GetTypeName() == "float"))
-
-        # plain was a UsdAttribue, but these are UsdShadeInterfaceAttributes
-        byName = hairMaterial.GetInterfaceAttribute("myParam")
-        self.assertTrue(byName and ( byName.GetDocumentation() == "this is my float"))
-
-        fullName = hairMaterial.GetInterfaceAttribute("interface:myParam")
-        self.assertTrue(fullName and ( fullName.GetDisplayGroup() == "numbers"))
-
+        
 if __name__ == "__main__":
     unittest.main()

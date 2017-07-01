@@ -1649,7 +1649,7 @@
     </widget>
     <widget class="QMenu" name="menuRendererPlugin">
      <property name="title">
-      <string>Viewer Renderer Plugin...</string>
+      <string>Viewport Renderer...</string>
      </property>
     </widget>
     <addaction name="actionToggle_Viewer_Mode"/>

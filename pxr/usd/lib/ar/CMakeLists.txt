@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE ar)
 
-pxr_shared_library(ar
+pxr_library(ar
     LIBRARIES
         arch
         tf
@@ -47,6 +47,8 @@ pxr_shared_library(ar
 
     PYTHON_FILES
         __init__.py
+
+    RESOURCE_FILES
         plugInfo.json
 )
 

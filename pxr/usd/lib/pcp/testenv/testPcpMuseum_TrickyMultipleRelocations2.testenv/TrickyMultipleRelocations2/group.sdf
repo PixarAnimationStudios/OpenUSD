@@ -1,0 +1,11 @@
+#sdf 1.4.32
+
+def Scope "Group"
+{
+    def Scope "Model"
+    {
+        def "Anim"
+        {
+        }
+    }
+}

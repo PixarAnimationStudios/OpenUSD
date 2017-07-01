@@ -34,6 +34,23 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+static bool
+_NodeRepresentsDirectReference(const PcpNodeRef &node)
+{
+    for (PcpNodeRef n = node; 
+            n; // 0, or false, means we are at the root node
+            n = n.GetParentNode()) {
+        if (n.GetArcType() == PcpArcTypeReference) {
+            if (! n.IsDueToAncestor()) {
+                // direct reference!
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
 // This tests if a given node represents a "live" base material,
 // i.e. once that hasn't been "flattened out" due to being
 // pulled across a reference to a library.
@@ -68,6 +85,14 @@ _NodeRepresentsLiveBaseMaterial(const PcpNodeRef &node)
     }
     return isLiveBaseMaterial;
 }
+
+
+bool
+PxrUsdKatana_IsAttrValFromDirectReference(const UsdAttribute &attr)
+{
+    return _NodeRepresentsDirectReference( attr.GetResolveInfo().GetNode() );
+}
+
 
 bool
 PxrUsdKatana_IsAttrValFromBaseMaterial(const UsdAttribute &attr)

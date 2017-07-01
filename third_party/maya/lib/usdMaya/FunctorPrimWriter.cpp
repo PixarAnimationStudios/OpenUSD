@@ -29,11 +29,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 FunctorPrimWriter::FunctorPrimWriter(
-        MDagPath& iDag,
-        UsdStageRefPtr& stage,
-        const JobExportArgs& iArgs,
+        const MDagPath& iDag,
+        const SdfPath& uPath,
+        bool instanceSource,
+        usdWriteJobCtx& jobCtx,
         WriterFn plugFn) :
-    MayaTransformWriter(iDag, stage, iArgs),
+    MayaTransformWriter(iDag, uPath, instanceSource, jobCtx),
     _plugFn(plugFn),
     _exportsGprims(false),
     _exportsReferences(false),
@@ -45,7 +46,7 @@ FunctorPrimWriter::~FunctorPrimWriter()
 {
 }
 
-UsdPrim
+void
 FunctorPrimWriter::write(
         const UsdTimeCode& usdTime)
 {
@@ -60,18 +61,16 @@ FunctorPrimWriter::write(
     _exportsReferences = ctx.GetExportsReferences();
     _pruneChildren = ctx.GetPruneChildren();
 
-    UsdPrim prim = stage->GetPrimAtPath(authorPath);
-    if (!prim) {
-        return prim;
+    mUsdPrim = stage->GetPrimAtPath(authorPath);
+    if (!mUsdPrim) {
+        return;
     }
 
     // Write "parent" class attrs
-    UsdGeomXformable primSchema(prim);
+    UsdGeomXformable primSchema(mUsdPrim);
     if (primSchema) {
         writeTransformAttrs(usdTime, primSchema);
     }
-
-    return prim;
 }
 
 bool
@@ -95,17 +94,19 @@ FunctorPrimWriter::shouldPruneChildren() const
 /* static */
 MayaPrimWriterPtr
 FunctorPrimWriter::Create(
-    MDagPath& dag,
-    UsdStageRefPtr& stage,
-    const JobExportArgs& args,
+    const MDagPath& dag,
+    const SdfPath& path,
+    bool instanceSource,
+    usdWriteJobCtx& jobCtx,
     WriterFn plugFn)
 {
-    return MayaPrimWriterPtr(new FunctorPrimWriter(dag, stage, args, plugFn));
+    return MayaPrimWriterPtr(new FunctorPrimWriter(dag, path, instanceSource, jobCtx, plugFn));
 }
 
 /* static */
-std::function< MayaPrimWriterPtr(MDagPath&, UsdStageRefPtr&,
-    const JobExportArgs&) >
+std::function< MayaPrimWriterPtr(const MDagPath&,
+                                 const SdfPath&, bool,
+                                 usdWriteJobCtx&) >
 FunctorPrimWriter::CreateFactory(WriterFn fn)
 {
     return std::bind(
@@ -113,6 +114,7 @@ FunctorPrimWriter::CreateFactory(WriterFn fn)
             std::placeholders::_1,
             std::placeholders::_2,
             std::placeholders::_3,
+            std::placeholders::_4,
             fn);
 }
 

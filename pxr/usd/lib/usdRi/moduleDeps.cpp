@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     std::vector<TfToken> reqs;
-    reqs.reserve(15);
+    reqs.reserve(16);
     reqs.push_back(TfToken("ar"));
     reqs.push_back(TfToken("arch"));
     reqs.push_back(TfToken("gf"));
@@ -49,6 +49,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     reqs.push_back(TfToken("tracelite"));
     reqs.push_back(TfToken("usd"));
     reqs.push_back(TfToken("usdGeom"));
+    reqs.push_back(TfToken("usdLux"));
     reqs.push_back(TfToken("usdShade"));
     reqs.push_back(TfToken("vt"));
     reqs.push_back(TfToken("work"));

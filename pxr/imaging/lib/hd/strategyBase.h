@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/bufferSpec.h"
 
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/dictionary.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -63,6 +64,15 @@ public:
     /// Returns id for given bufferSpecs to be used for aggregation
     virtual AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs) const = 0;
+
+    /// Returns the buffer specs from a given buffer array
+    virtual HdBufferSpecVector GetBufferSpecs(
+        HdBufferArraySharedPtr const &bufferArray) const = 0;
+
+    /// Returns the accumulated GPU resource allocation      /// for items in the BufferArray passed as parameter
+    virtual size_t GetResourceAllocation(
+        HdBufferArraySharedPtr const &bufferArray, 
+        VtDictionary &result) const = 0;
 };
 
 

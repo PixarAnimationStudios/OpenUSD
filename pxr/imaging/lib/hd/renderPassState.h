@@ -27,9 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-
-#include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/conversions.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"
@@ -39,7 +38,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
@@ -75,6 +74,12 @@ public:
     void SetCamera(GfMatrix4d const &worldToViewMatrix,
                    GfMatrix4d const &projectionMatrix,
                    GfVec4d const &viewport);
+
+    /// temp.
+    /// Get camera parameters.
+    GfMatrix4d const & GetWorldToViewMatrix() const { return _worldToViewMatrix; }
+    GfMatrix4d const & GetProjectionMatrix() const { return _projectionMatrix; }
+    GfVec4f const & GetViewport() const { return _viewport; }
 
     /// Set additional clipping planes (defined in camera/view space).
     typedef std::vector<GfVec4d> ClipPlanesVector;

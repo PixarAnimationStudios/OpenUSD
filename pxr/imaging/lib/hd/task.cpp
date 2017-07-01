@@ -45,7 +45,9 @@ void
 HdTask::Execute(HdTaskContext* ctx)
 {
     _Execute(ctx);
-    _ExecuteChildren(ctx);
+    TF_FOR_ALL(task, _children) {
+        (*task)->Execute(ctx);
+    }
 }
 
 void
@@ -53,20 +55,15 @@ HdTask::Sync(HdTaskContext* ctx)
 {
     _Sync(ctx);
     _SyncChildren(ctx, &_children);
+    TF_FOR_ALL(task, _children) {
+        (*task)->Sync(ctx);
+    }
     _MarkClean();
 }
 
 void
 HdTask::_MarkClean()
 {
-}
-
-void
-HdTask::_ExecuteChildren(HdTaskContext* ctx)
-{
-    TF_FOR_ALL(task, _children) {
-        (*task)->Execute(ctx);
-    }
 }
 
 void
@@ -118,10 +115,6 @@ HdSceneTask::_SyncChildren(HdTaskContext* ctx, HdTaskSharedPtrVector* children)
             }
             children->push_back(task);
         }
-    }
-
-    TF_FOR_ALL(task, *children) {
-        (*task)->Sync(ctx);
     }
 }
 

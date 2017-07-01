@@ -144,8 +144,9 @@ private:
     unsigned int _collectionVersion;
     unsigned int _varyingStateVersion;
     unsigned int _changeCount;
+    unsigned int _indexVersion;
     bool _isEmpty;
-    bool _reprDirty;
+    TfToken _currentRepr;
 };
 
 

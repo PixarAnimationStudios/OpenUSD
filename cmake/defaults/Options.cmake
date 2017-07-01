@@ -29,8 +29,10 @@ option(PXR_BUILD_USD_IMAGING "Build USD imaging components" ON)
 option(PXR_BUILD_KATANA_PLUGIN "Build usd katana plugin" OFF)
 option(PXR_BUILD_MAYA_PLUGIN "Build usd maya plugin" OFF)
 option(PXR_BUILD_ALEMBIC_PLUGIN "Build the Alembic plugin for USD" OFF)
+option(PXR_BUILD_HOUDINI_PLUGIN "Build the Houdini plugin for USD" OFF)
 option(PXR_BUILD_DOCUMENTATION "Generate doxygen documentation" OFF)
 option(PXR_ENABLE_MULTIVERSE_SUPPORT "Enable Multiverse backend in the Alembic plugin for USD" OFF)
+option(PXR_ENABLE_HDF5_SUPPORT "Enable HDF5 backend in the Alembic plugin for USD" ON)
 option(PXR_ENABLE_PTEX_SUPPORT "Enable Ptex support" ON)
 option(PXR_MAYA_TBB_BUG_WORKAROUND "Turn on linker flag (-Wl,-Bsymbolic) to work around a Maya TBB bug" OFF)
 option(PXR_ENABLE_NAMESPACES "Enable C++ namespaces." ON)
@@ -58,6 +60,22 @@ set(PXR_ALL_LIBS ""
     INTERNAL
     "Aggregation of all built libraries."
 )
+set(PXR_STATIC_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all built explicitly static libraries."
+)
+set(PXR_CORE_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all built core libraries."
+)
+set(PXR_OBJECT_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all core libraries built as OBJECT libraries."
+)
+
 set(PXR_LIB_PREFIX "lib"
     CACHE
     STRING
@@ -69,3 +87,10 @@ if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
     )
 endif()
 
+option(BUILD_SHARED_LIBS "Build shared libraries." ON)
+option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
+set(PXR_MONOLITHIC_IMPORT ""
+    CACHE
+    STRING
+    "Path to cmake file that imports a usd_ms target"
+)

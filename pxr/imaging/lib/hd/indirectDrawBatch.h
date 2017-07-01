@@ -92,14 +92,14 @@ protected:
 
 private:
     void _ValidateCompatibility(
-            HdBufferArrayRangeSharedPtr const& constantBar,
-            HdBufferArrayRangeSharedPtr const& indexBar,
-            HdBufferArrayRangeSharedPtr const& elementBar,
-            HdBufferArrayRangeSharedPtr const& fvarBar,
-            HdBufferArrayRangeSharedPtr const& vertexBar,
+            HdBufferArrayRangeGLSharedPtr const& constantBar,
+            HdBufferArrayRangeGLSharedPtr const& indexBar,
+            HdBufferArrayRangeGLSharedPtr const& elementBar,
+            HdBufferArrayRangeGLSharedPtr const& fvarBar,
+            HdBufferArrayRangeGLSharedPtr const& vertexBar,
             int instancerNumLevels,
-            HdBufferArrayRangeSharedPtr const& instanceIndexBar,
-            std::vector<HdBufferArrayRangeSharedPtr> const& instanceBars) const;
+            HdBufferArrayRangeGLSharedPtr const& instanceIndexBar,
+            std::vector<HdBufferArrayRangeGLSharedPtr> const& instanceBars) const;
 
     // Culling requires custom resource binding.
     class _CullingProgram : public _DrawingProgram {

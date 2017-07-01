@@ -32,13 +32,14 @@ Schema classes can be classified into the following two types:
     considered to be non-concrete. We are in-process as of 5/15 on
     establishing a convention that the C++/python class name for API schemas
     ends in "API".  In core USD, UsdModelAPI is an example
-    of an API schema; UsdRiLookAPI is an example from our RenderMan schema
+    of an API schema; UsdRiMaterialAPI is an example from our RenderMan schema
     module, which adds/extracts RenderMan-specific shading information from a
     generic UsdShadeMaterial-typed prim.  Also by convention (with which
     usdGenSchema can help), the properties that "belong" to an API schema are
-    typically namespaced with the base-name of the schema, camelCased.  For
-    example, UsdRiLookAPI::CreateBxdfRel() will create a relationship named
-    riLook:bxdf.
+    typically namespaced under a common namespace.  For example,
+    UsdRiMaterialAPI::CreateBxdfAttr() will create an attribute named
+    "outputs:ri:bxdf" and UsdRiMaterialAPI::CreateSurfaceAttr() will create an 
+    attribute named "outputs:ri:surface".
 
  - <b>IsA schema</b> - An IsA schema can impart a typeName to a prim in
     addition to providing an interface to a prim's qualities. Every IsA

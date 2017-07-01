@@ -2559,24 +2559,6 @@ UsdImagingDelegate::GetPrimVarInstanceNames(SdfPath const& id)
 }
 
 /*virtual*/
-int
-UsdImagingDelegate::GetPrimVarDataType(SdfPath const& id, TfToken const& key)
-{
-    HD_TRACE_FUNCTION();
-    //SdfPath usdPath = GetPathForUsd(id);
-    return 1;
-}
-
-/*virtual*/
-int
-UsdImagingDelegate::GetPrimVarComponents(SdfPath const& id, TfToken const& key)
-{
-    HD_TRACE_FUNCTION();
-    //SdfPath usdPath = GetPathForUsd(id);
-    return 1;
-}
-
-/*virtual*/
 VtIntArray
 UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerId,
                                        SdfPath const &prototypeId)
@@ -2674,22 +2656,6 @@ UsdImagingDelegate::GetSurfaceShaderSource(SdfPath const &shaderId)
 
     TF_CODING_ERROR("Unable to find a shader adapter.");
     return "";
-}
-
-/*virtual*/
-TfTokenVector
-UsdImagingDelegate::GetSurfaceShaderParamNames(SdfPath const &shaderId)
-{
-    // PERFORMANCE: We should schedule this to be updated during Sync, rather
-    // than pulling values on demand.
-
-    if (_ShaderAdapterSharedPtr adapter = _ShaderAdapterLookup(shaderId)) {
-        return adapter->GetSurfaceShaderParamNames(GetPathForUsd(shaderId));
-    }
-
-    TF_CODING_ERROR("Unable to find a shader adapter.");
-    TfTokenVector names;
-    return names;
 }
 
 /*virtual*/

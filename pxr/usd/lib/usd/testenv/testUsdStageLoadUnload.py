@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-import os, sys, unittest
+import os, sys, tempfile, unittest
 from pxr import Gf, Tf, Sdf, Usd
 
 allFormats = ['usd' + x for x in 'ac']
@@ -399,7 +399,9 @@ class TestUsdLoadUnload(unittest.TestCase):
         # Try with a real file -- saved changes preserved, unsaved changes get
         # discarded.
         def _TestStageReload(fmt):
-            with Tf.NamedTemporaryFile(suffix='.%s' % fmt) as f:
+            with tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as f:
+                f.close()
+
                 s = Usd.Stage.CreateNew(f.name)
                 s.OverridePrim('/foo')
                 s.GetRootLayer().Save()
@@ -410,6 +412,13 @@ class TestUsdLoadUnload(unittest.TestCase):
                 s.Reload()
                 assert s.GetPrimAtPath('/foo')
                 assert not s.GetPrimAtPath('/bar')
+
+                # NOTE: f will want to delete the underlying file on
+                #       __exit__ from the context manager.  But stage s
+                #       may have the file open.  If so the deletion will
+                #       fail on Windows.  Explicitly release our reference
+                #       to the stage to close the file.
+                del s
 
         for fmt in allFormats:
             # XXX: This verifies current behavior, however this is probably
@@ -424,8 +433,10 @@ class TestUsdLoadUnload(unittest.TestCase):
         def _TestLayerReload(fmt):
             # First, test case where the reloaded layer is in the
             # stage's root LayerStack.
-            with Tf.NamedTemporaryFile(suffix='.%s' % fmt) as l1name, \
-                 Tf.NamedTemporaryFile(suffix='.%s' % fmt) as l2name:
+            with tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as l1name, \
+                 tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as l2name:
+                l1name.close()
+                l2name.close()
 
                 l1 = Sdf.Layer.CreateAnonymous()
                 Sdf.CreatePrimInLayer(l1, '/foo')
@@ -446,11 +457,20 @@ class TestUsdLoadUnload(unittest.TestCase):
 
                 assert not s.GetPrimAtPath('/foo')
                 assert s.GetPrimAtPath('/bar')
-            
+                
+                # NOTE: l1name will want to delete the underlying file
+                #       on __exit__ from the context manager.  But stage s
+                #       may have the file open.  If so the deletion will
+                #       fail on Windows.  Explicitly release our reference
+                #       to the stage to close the file.
+                del s
+
             # Now test the case where the reloaded layer is in a referenced
             # LayerStack.
-            with Tf.NamedTemporaryFile(suffix='.%s' % fmt) as rootLayerName, \
-                 Tf.NamedTemporaryFile(suffix='.%s' % fmt) as refLayerName:
+            with tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as rootLayerName, \
+                 tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as refLayerName:
+                rootLayerName.close()
+                refLayerName.close()
 
                 refLayer = Sdf.Layer.CreateAnonymous()
                 Sdf.CreatePrimInLayer(refLayer, '/foo/bar')
@@ -458,8 +478,9 @@ class TestUsdLoadUnload(unittest.TestCase):
 
                 rootLayer = Sdf.Layer.CreateAnonymous()
                 rootPrim = Sdf.CreatePrimInLayer(rootLayer, '/foo')
+                # The resolver wants references with forward slashes.
                 rootPrim.referenceList.Add(
-                    Sdf.Reference(refLayerName.name, '/foo'))
+                    Sdf.Reference(refLayerName.name.replace('\\', '/'), '/foo'))
                 rootLayer.Export(rootLayerName.name)
 
                 s = Usd.Stage.Open(rootLayerName.name)
@@ -471,10 +492,21 @@ class TestUsdLoadUnload(unittest.TestCase):
                 assert s.GetPrimAtPath('/foo')
                 assert not s.GetPrimAtPath('/foo/bar')
 
+                # NOTE: rootLayerName will want to delete the underlying file
+                #       on __exit__ from the context manager.  But stage s
+                #       may have the file open.  If so the deletion will
+                #       fail on Windows.  Explicitly release our reference
+                #       to the stage to close the file.
+                del s
+
+        import platform
         for fmt in allFormats:
             # XXX: This verifies current behavior, however this is probably
             #      not the behavior we ultimately want -- see bug 102444.
-            _TestLayerReload(fmt)
+            # Can't test Reload() for usdc on Windows because the system
+            # won't allow us to modify the memory-mapped file.
+            if not (platform.system() == 'Windows' and fmt == 'usdc'):
+                _TestLayerReload(fmt)
 
 if __name__ == "__main__":
     unittest.main()

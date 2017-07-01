@@ -95,6 +95,14 @@ void wrapLayerStack()
         .add_property("relocatesTargetToSource",
                       make_function(&PcpLayerStack::GetRelocatesTargetToSource,
                                     return_value_policy<return_by_value>()))
+        .add_property("incrementalRelocatesSourceToTarget",
+                      make_function(
+                          &PcpLayerStack::GetIncrementalRelocatesSourceToTarget,
+                          return_value_policy<return_by_value>()))
+        .add_property("incrementalRelocatesTargetToSource",
+                      make_function(
+                          &PcpLayerStack::GetIncrementalRelocatesTargetToSource,
+                          return_value_policy<return_by_value>()))
         .add_property("localErrors", 
                       make_function(&PcpLayerStack::GetLocalErrors,
                                     return_value_policy<TfPySequenceToList>()))

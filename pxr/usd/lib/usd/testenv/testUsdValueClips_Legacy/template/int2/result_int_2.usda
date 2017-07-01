@@ -1,0 +1,28 @@
+#usda 1.0
+(
+    endTimeCode = 49
+    startTimeCode = 1
+)
+
+def "World" (
+    add references = @./result.topology.usda@</World>
+)
+{
+    over "fx"
+    {
+        over "Particles_Splash"
+        {
+            over "points" (
+                clipTemplateAssetPath = "./p.#.usd"
+                clipTemplateStartTime = 1
+                clipTemplateEndTime   = 49
+                clipTemplateStride    = 16 
+                clipManifestAssetPath = @./result.topology.usda@
+                clipPrimPath = "/World/fx/Particles_Splash/points"
+            )
+            {
+            }
+        }
+    }
+}
+

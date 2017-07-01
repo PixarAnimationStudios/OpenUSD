@@ -2,7 +2,7 @@ set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdImaging)
 
 # Note: both python include directives are included for compatibility.
-pxr_shared_library(usdImaging
+pxr_library(usdImaging
     LIBRARIES
         gf
         tf

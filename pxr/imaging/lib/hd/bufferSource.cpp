@@ -24,11 +24,20 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/conversions.h"
 
+#include "pxr/base/arch/hash.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdBufferSource::~HdBufferSource()
 {
+}
+
+size_t
+HdBufferSource::ComputeHash() const
+{
+    size_t hash = 0;
+    return ArchHash64((const char*)GetData(), GetSize(), hash);
 }
 
 size_t
@@ -50,6 +59,18 @@ HdBufferSource::GetSize() const
 }
 
 bool
+HdBufferSource::HasPreChainedBuffer() const
+{
+    return false;
+}
+
+HdBufferSourceSharedPtr
+HdBufferSource::GetPreChainedBuffer() const
+{
+    return HdBufferSourceSharedPtr();
+}
+
+bool
 HdBufferSource::HasChainedBuffer() const
 {
     return false;
@@ -68,6 +89,12 @@ HdBufferSource::IsValid() const
 }
 
 // ---------------------------------------------------------------------------
+
+size_t
+HdComputedBufferSource::ComputeHash() const
+{
+    return 0;
+}
 
 TfToken const &
 HdComputedBufferSource::GetName() const
@@ -127,6 +154,12 @@ HdComputedBufferSource::GetNumComponents() const
 }
 
 // ---------------------------------------------------------------------------
+
+size_t
+HdNullBufferSource::ComputeHash() const
+{
+    return 0;
+}
 
 TfToken const &
 HdNullBufferSource::GetName() const

@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE pxOsd)
 
-pxr_shared_library(pxOsd
+pxr_library(pxOsd
     LIBRARIES
         tf
         gf

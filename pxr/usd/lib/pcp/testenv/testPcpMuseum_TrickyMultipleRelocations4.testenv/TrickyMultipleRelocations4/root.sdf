@@ -1,0 +1,49 @@
+#sdf 1.4.32
+
+class "SymRig" 
+{
+    def "Leg_bone"
+    {
+        def "Knee_bone"
+        {
+            def "Ankle_bone"
+            {
+            }
+        }
+    }
+}
+
+def "RearLegRig" (
+    relocates = {
+        <Legs/LeftRig/Leg_bone/Leg_bone/Knee_bone>: <Knee_bone>, 
+    }
+)
+{
+    def "Legs" (
+        relocates = {
+            <RightRig/Leg_bone>: <LeftRig/Leg_bone/Leg_bone>
+        }
+    )
+    {
+        def "RightRig" (
+            inherits = </SymRig>
+        )
+        {
+        }
+
+        def "LeftRig" (
+            inherits = </SymRig>
+        )
+        {
+        }
+    }
+
+    over "Knee_bone" (
+        relocates = {
+            <Ankle_bone>: <Ankle_bone_phrbv>
+        }
+    )
+    {
+    }
+}
+

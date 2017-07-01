@@ -217,12 +217,46 @@ _IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
             (baseName =="texture" || baseName=="primvar");
 }
 
+void 
+UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
+    UsdGeomGprim const& gprim,
+    SdfPath const& cachePath,
+    TfToken const& primvarName,
+    UsdTimeCode time,
+    UsdImagingValueCache* valueCache)
+{
+    UsdGeomPrimvar primvarAttr = gprim.GetPrimvar(primvarName);
+
+    if (!primvarAttr) {
+        return;
+    }
+
+    VtValue v;
+    if (primvarAttr.ComputeFlattened(&v, time)) {
+
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("Found primvar %s\n",
+            primvarName.GetText());
+
+        UsdImagingValueCache::PrimvarInfo primvar;
+        primvar.name = primvarName;
+        primvar.interpolation = primvarAttr.GetInterpolation();
+        valueCache->GetPrimvar(cachePath, primvar.name) = v;
+        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+
+    } else {
+
+        TF_DEBUG(USDIMAGING_SHADERS).Msg( "\t\t No primvar on <%s> named %s\n",
+            gprim.GetPath().GetText(), primvarName.GetText());
+    }
+}
+
 void
-UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& gprim,
-                                          SdfPath const& cachePath, 
-                                          UsdShadeShader const& shader,
-                                          UsdTimeCode time,
-                                          UsdImagingValueCache* valueCache)
+UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(
+    UsdGeomGprim const& gprim,
+    SdfPath const& cachePath, 
+    UsdShadeShader const& shader,
+    UsdTimeCode time,
+    UsdImagingValueCache* valueCache)
 {
     // TODO: It might be convenient to implicitly wire up PtexFaceOffset and
     // PtexFaceIndex primvars.
@@ -252,27 +286,10 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& g
             if (id == UsdHydraTokens->HwPrimvar_1) {
                 UsdShadeShader sourceShader(source);
                 TfToken t;
-                VtValue v;
-                UsdGeomPrimvar primvarAttr;
                 if (UsdHydraPrimvar(sourceShader).GetVarnameAttr().Get(&t, 
                                             UsdTimeCode::Default())) {
-                    primvarAttr = gprim.GetPrimvar(t);
-                    if (primvarAttr.ComputeFlattened(&v, time)) {
-                        TF_DEBUG(USDIMAGING_SHADERS).Msg("Found primvar %s\n",
-                            t.GetText());
-
-                        UsdImagingValueCache::PrimvarInfo primvar;
-                        primvar.name = t;
-                        primvar.interpolation = primvarAttr.GetInterpolation();
-                        valueCache->GetPrimvar(cachePath, t) = v;
-                        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                    } else {
-                        TF_DEBUG(USDIMAGING_SHADERS).Msg(
-                            "\t\t No primvar on <%s> named %s\n",
-                            gprim.GetPath().GetText(),
-                            t.GetText());
-
-                    }
+                    _ComputeAndMergePrimvar(
+                        gprim, cachePath, t, time, valueCache);
                 }
             } else {
                 // Recursively look for more primvars
@@ -307,40 +324,26 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
                                 + ":texture"))) {
             TfToken t;
             SdfAssetPath ap;
-            VtValue v;
-            UsdGeomPrimvar primvarAttr;
             texAttr.Get(&ap, UsdTimeCode::Default());
 
             bool isPtex = GlfIsSupportedPtexTexture(TfToken(ap.GetAssetPath()));
             if (isPtex) {
+
                 t = UsdImagingTokens->ptexFaceIndex;
                 // Allow the client to override this name
                 texAttr.GetMetadata(UsdImagingTokens->faceIndexPrimvar, &t);
-                primvarAttr = gprim.GetPrimvar(t);
-                if (primvarAttr) {
-                    if (primvarAttr.ComputeFlattened(&v, time)) {
-                        primvar.name = t;
-                        primvar.interpolation = primvarAttr.GetInterpolation();
-                        valueCache->GetPrimvar(cachePath, t) = v;
-                        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                    }
-                }
+                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
+
                 t = UsdImagingTokens->ptexFaceOffset;
                 // Allow the client to override this name
                 texAttr.GetMetadata(UsdImagingTokens->faceOffsetPrimvar, &t);
-                primvarAttr = gprim.GetPrimvar(t);
-                if (primvarAttr) {
-                    primvar.name = t;
-                    primvar.interpolation = primvarAttr.GetInterpolation();
-                    if (primvarAttr.ComputeFlattened(&v, time)) {
-                        valueCache->GetPrimvar(cachePath, t) = v;
-                        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                    }
-                }
+                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
+
             } else {
                 texAttr.GetMetadata(UsdImagingTokens->uvPrimvar, &t);
-                primvarAttr = gprim.GetPrimvar(t);
+                UsdGeomPrimvar primvarAttr = gprim.GetPrimvar(t);
                 if (TF_VERIFY(primvarAttr, "%s\n", t.GetText())) {
+                    VtValue v;
                     if (TF_VERIFY(primvarAttr.ComputeFlattened(&v, time))) {
                         primvar.name = t; // does not include primvars:
                         primvar.interpolation = primvarAttr.GetInterpolation();
@@ -357,16 +360,8 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
                                         TfToken(attr.GetPath().GetName() 
                                                 + ":primvar"))) {
             TfToken t;
-            VtValue v;
-            UsdGeomPrimvar primvarAttr;
             if (TF_VERIFY(pvAttr.Get(&t, UsdTimeCode::Default()))) {
-                primvarAttr = gprim.GetPrimvar(t);
-                if (TF_VERIFY(primvarAttr.ComputeFlattened(&v, time))) {
-                    primvar.name = t; // does not include primvars:
-                    primvar.interpolation = primvarAttr.GetInterpolation();
-                    valueCache->GetPrimvar(cachePath, t) = v;
-                   _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                }
+                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
             }
         }
     }
@@ -477,158 +472,288 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GfVec3f color(0.5f);
-    float opacity = 1.0f;
+    const GfVec3f defaultColor(0.5f);
+    const float defaultOpacity = 1.0f;
     VtVec4fArray result(1);
-    result[0] = GfVec4f(color[0], color[1], color[2], opacity);
-    UsdGeomGprim gprimSchema(prim);
+    result[0] = GfVec4f(defaultColor[0],
+                        defaultColor[1],
+                        defaultColor[2],
+                        defaultOpacity);
 
-    // XXX: Need to define surface relationship in UsdGeomGprim.
-    TfToken colorInterp;
-    TfToken opacityInterp;
+    size_t numColors = 1, numOpacities = 1;
+    TfToken colorInterp, opacityInterp;
+    TfToken colorPrimvarName, opacityPrimvarName;
 
+    // for a prim's color & opacity, we use the following precedence:
+    // material rel >  shader rel > local prim vars   
+    {
+        // -- Material --        
+        // XXX: Primvar values that come from shaders should not be part of
+        // the Rprim data, it should live as part of the shader so it can be 
+        // shared, though that poses some interesting questions for vertex & 
+        // varying rate shader provided primvars.
+        static TfToken displayColorToken("displayColor");
+        static TfToken displayOpacityToken("displayOpacity");
 
-    // XXX: Primvar values that come from shaders should not be part of
-    // the Rprim data, it should live as part of the shader so it can be shared,
-    // though that poses some interesting questions for vertex & varying rate
-    // shader provided primvars.
-    static TfToken displayColorToken("displayColor");
-    static TfToken displayOpacityToken("displayOpacity");
-
-    UsdRelationship mat = UsdShadeMaterial::GetBindingRel(prim);
-    SdfPathVector matTargets;
-    if (mat.GetForwardedTargets(&matTargets)) {
-        if (!matTargets.empty()) {
-            if (matTargets.size() > 1) {
-                TF_WARN("<%s> has more than one material target; "\
-                        "using first one found: <%s>",
-                        prim.GetPath().GetText(),
-                        matTargets.front().GetText());
-            }
-            UsdPrim matPrim(
-                prim.GetStage()->GetPrimAtPath(matTargets.front()));
-
-            if (matPrim &&
-                matPrim.GetAttribute(displayColorToken).Get(&color, time)) {
-                colorInterp = UsdGeomTokens->constant; 
-                result[0] = GfVec4f(color[0], color[1], color[2], opacity);
-            }
-
-            if (matPrim &&
-                matPrim.GetAttribute(displayOpacityToken).Get(&opacity, time)) {
-                opacityInterp = UsdGeomTokens->constant;
-                result[0][3] = opacity;
-            }
-        }
-    }
-
-    // XXX: Primvar values that come from shaders should not be part of
-    // the Rprim data, it should live as part of the shader so it can be shared,
-    // though that poses some interesting questions for vertex & varying rate
-    // shader provided primvars.
-    // XXX SHOULD OBSOLETE THIS WHEN LOOK IS THE DEFAULT SHADING MODEL
-    if (colorInterp.IsEmpty() && opacityInterp.IsEmpty()) {
-        static TfToken surfaceToken("surface");
-        UsdRelationship surface = prim.GetRelationship(surfaceToken);
-        SdfPathVector surfaceTargets;
-        if (surface.GetForwardedTargets(&surfaceTargets)) {
-            if (!surfaceTargets.empty()) {
-                if (surfaceTargets.size() > 1) {
-                    TF_WARN("<%s> has more than one surface target; "\
-                        "using first one found: <%s>",
-                        prim.GetPath().GetText(),
-                        surfaceTargets.front().GetText());
+        UsdRelationship mat = UsdShadeMaterial::GetBindingRel(prim);
+        SdfPathVector matTargets;
+        if (mat.GetForwardedTargets(&matTargets)) {
+            if (!matTargets.empty()) {
+                if (matTargets.size() > 1) {
+                    TF_WARN("<%s> has more than one material target; "\
+                            "using first one found: <%s>",
+                            prim.GetPath().GetText(),
+                            matTargets.front().GetText());
                 }
-                UsdShadePShader shaderSchema(
-                    prim.GetStage()->GetPrimAtPath(surfaceTargets.front()));
-                if (shaderSchema &&
-                    shaderSchema.GetDisplayColorAttr().Get(&color, time)) {
+                UsdPrim matPrim(
+                    prim.GetStage()->GetPrimAtPath(matTargets.front()));
+
+                GfVec3f matColor;
+                if (matPrim &&
+                    matPrim.GetAttribute(displayColorToken)
+                        .Get(&matColor, time)) {
                     colorInterp = UsdGeomTokens->constant; 
-                    result[0] = GfVec4f(color[0], color[1], color[2], opacity);
+                    colorPrimvarName = displayColorToken;
+                    result[0][0] = matColor[0];
+                    result[0][1] = matColor[1];
+                    result[0][2] = matColor[2];
                 }
-                if (shaderSchema &&
-                    shaderSchema.GetDisplayOpacityAttr().Get(&opacity, time)) {
+
+                float matOpacity;
+                if (matPrim &&
+                    matPrim.GetAttribute(displayOpacityToken)
+                        .Get(&matOpacity, time)) {
                     opacityInterp = UsdGeomTokens->constant;
-                    result[0][3] = opacity;
+                    opacityPrimvarName = displayOpacityToken;
+                    result[0][3] = matOpacity;
                 }
             }
         }
     }
-    if (colorInterp.IsEmpty()) {
-        VtArray<GfVec3f> colorArray;
-        UsdGeomPrimvar primvar = gprimSchema.GetDisplayColorPrimvar();
-        if (primvar.ComputeFlattened(&colorArray, time)) {
-            colorInterp = primvar.GetInterpolation();
-            result.resize(colorArray.size());
-            for (size_t i = 0; i < colorArray.size(); i++) {
-                GfVec3f& c = colorArray[i];
-                result[i] = GfVec4f(c[0], c[1], c[2], opacity);
+
+    {
+        // -- Shader rel --
+        // XXX: Primvar values that come from shaders should not be part of
+        // the Rprim data, it should live as part of the shader so it can be 
+        // shared, though that poses some interesting questions for vertex & 
+        // varying rate shader provided primvars.
+        // XXX SHOULD OBSOLETE THIS WHEN LOOK IS THE DEFAULT SHADING MODEL
+        if (colorInterp.IsEmpty() && opacityInterp.IsEmpty()) {
+            static TfToken surfaceToken("surface");
+            UsdRelationship surface = prim.GetRelationship(surfaceToken);
+            SdfPathVector surfaceTargets;
+            if (surface.GetForwardedTargets(&surfaceTargets)) {
+                if (!surfaceTargets.empty()) {
+                    if (surfaceTargets.size() > 1) {
+                        TF_WARN("<%s> has more than one surface target; "\
+                            "using first one found: <%s>",
+                            prim.GetPath().GetText(),
+                            surfaceTargets.front().GetText());
+                    }
+                    UsdShadePShader shaderSchema(
+                        prim.GetStage()->GetPrimAtPath(surfaceTargets.front()));
+
+                    if (shaderSchema) {
+                        const UsdAttribute& colorAttr = 
+                            shaderSchema.GetDisplayColorAttr();
+                        const UsdAttribute& opacityAttr = 
+                            shaderSchema.GetDisplayOpacityAttr();
+                        GfVec3f shaderColor;
+                        float shaderOpacity;
+
+                        if (colorAttr.Get(&shaderColor, time)) {
+                            colorInterp = UsdGeomTokens->constant; 
+                            colorPrimvarName = colorAttr.GetTypeName().
+                                                GetAsToken();
+                            result[0][0] = shaderColor[0];
+                            result[0][1] = shaderColor[1];
+                            result[0][2] = shaderColor[2];
+                        }
+
+                        if (opacityAttr.Get(&shaderOpacity, time)) {
+                            opacityInterp = UsdGeomTokens->constant;
+                            opacityPrimvarName = opacityAttr.GetTypeName().
+                                                    GetAsToken();
+                            result[0][3] = shaderOpacity;
+                        }
+                    }
+                }
             }
-        } else {
-            colorInterp = UsdGeomTokens->constant;
-            result[0] = GfVec4f(color[0], color[1], color[2], opacity);
         }
     }
-    if (opacityInterp.IsEmpty()) {
-        VtArray<float> opacityArray;
-        UsdGeomPrimvar primvar = gprimSchema.GetDisplayOpacityPrimvar();
-        if (primvar.ComputeFlattened(&opacityArray, time)) {
-            opacityInterp = primvar.GetInterpolation();
-            if (colorInterp == opacityInterp 
-                || result.size() == opacityArray.size()) {
-                if (TF_VERIFY(result.size() == opacityArray.size(),
-                            "Color and Opacity have the same interpolation, "
-                            "but different lengths (color:%lu, opacity:%lu) "
-                            "for prim: %s",
-                            result.size(), opacityArray.size(),
-                            prim.GetPath().GetText())) {
-                    for (size_t i = 0; i < result.size(); ++i) {
-                        result[i][3] = opacityArray[i];
+
+    {
+        // -- Prim local prim var --
+        UsdGeomGprim gprimSchema(prim);
+ 
+        if (colorInterp.IsEmpty()) {
+            VtArray<GfVec3f> colorArray;
+                const UsdGeomPrimvar& primvar = 
+                    gprimSchema.GetDisplayColorPrimvar();
+            if (primvar.ComputeFlattened(&colorArray, time)) {
+                colorInterp = primvar.GetInterpolation();
+                colorPrimvarName = primvar.GetName();
+                numColors = colorArray.size();
+                result.resize(numColors);
+
+                if (colorInterp == UsdGeomTokens->constant) {
+                    result[0][0] = colorArray[0][0];
+                    result[0][1] = colorArray[0][1];
+                    result[0][2] = colorArray[0][2];
+
+                    if (numColors > 1) {
+                        // warn and copy default color for remaining elements
+                         TF_WARN("Prim %s has %lu elements for %s even "
+                                 "though it is marked constant.",
+                                 prim.GetPath().GetText(), numColors,
+                                 colorPrimvarName.GetText());
+                        
+                        for (size_t ii = 1; ii < numColors; ii++) {
+                            result[ii][0] = defaultColor[0];
+                            result[ii][1] = defaultColor[1];
+                            result[ii][2] = defaultColor[2];
+                        }
+                    }
+                } else {
+                    for (size_t ii = 0; ii < numColors; ii++) {
+                        result[ii][0] = colorArray[ii][0];
+                        result[ii][1] = colorArray[ii][1];
+                        result[ii][2] = colorArray[ii][2];
                     }
                 }
             } else {
-                // We have conflicting interpolation modes, must find LCD.
-                if (result.size() > opacityArray.size()) {
-                    if (opacityArray.size() == 1) {
-                        for (size_t i = 0; i < result.size(); ++i) {
-                            result[i][3] = opacityArray[0];
+                // displayColor is treated as a special primvar -- if it isn't
+                // authored by the user, the schema defaults it to constant 
+                // interp. 
+                // if authored with no data (allowed for non-constant interp),
+                // we should return an empty result.
+                colorInterp = primvar.GetInterpolation();
+                if (colorInterp != UsdGeomTokens->constant) {
+                    numColors = 0;
+                }
+            }
+        }
+
+        // Guaranteed to have set either material/shader/primvar/default color
+        TF_VERIFY(!colorInterp.IsEmpty());
+
+        if (opacityInterp.IsEmpty()) {
+                // did not get opacity from either material or shader
+            VtArray<float> opacityArray;
+                const UsdGeomPrimvar& primvar = 
+                    gprimSchema.GetDisplayOpacityPrimvar();
+            if (primvar.ComputeFlattened(&opacityArray, time)) {
+                opacityInterp = primvar.GetInterpolation();
+                opacityPrimvarName = primvar.GetName();
+                numOpacities = opacityArray.size();
+                if (numOpacities > result.size()) {
+                    result.resize(numOpacities);
+                }
+
+                // copy just the opacities; color is populated in the 
+                // consolidation step
+                if (opacityInterp == UsdGeomTokens->constant) {
+                    result[0][3] = opacityArray[0];
+
+                    if (numOpacities > 1) {
+                        // warn and copy default opacity for remaining elements
+                         TF_WARN("Prim %s has %lu elements for %s even "
+                                 "though it is marked constant.",
+                                 prim.GetPath().GetText(), numOpacities,
+                                 opacityPrimvarName.GetText());
+                        
+                        for (size_t ii = 1; ii < numOpacities; ii++) {
+                            result[ii][3] = defaultOpacity;
                         }
-                    } else {
-                        // TODO: splice the primvars together, this logic
-                        // depends on the prim type.
-                        for (size_t i = 0; i < result.size(); ++i) {
-                            result[i][3] = opacityArray[0];
-                        }
-                        TF_WARN("color has interpolation %s but opacity has "
-                                "interpolation %s, this combination not yet "
-                                "supported by UsdImaging",
-                                colorInterp.GetText(), opacityInterp.GetText());
                     }
                 } else {
-                    if (result.size() == 1) {
-                        result.resize(opacityArray.size());
-                        for (size_t i = 0; i < result.size(); ++i) {
-                            result[i] = GfVec4f(result[0][0], result[0][1], 
-                                                result[0][2], opacityArray[0]);
-                        }
-                        // We just changed the interpolation, so we need to
-                        // change the declared interpolation as well.
-                        colorInterp = opacityInterp;
-                    } else {
-                        // TODO: splice the primvars together, this logic
-                        // depends on the prim type.
-                        for (size_t i = 0; i < result.size(); ++i) {
-                            result[i][3] = opacityArray[0];
-                        }
-                        TF_WARN("color has interpolation %s but opacity has "
-                                "interpolation %s, this combination not yet "
-                                "supported by UsdImaging",
-                                colorInterp.GetText(), opacityInterp.GetText());
+                    for (size_t ii = 0; ii < numOpacities; ii++) {
+                        result[ii][3] = opacityArray[ii];
                     }
+                }
+            } else {
+                // displayOpacity is treated as a special primvar -- if it isn't
+                // authored by the user, the schema defaults it to constant 
+                // interp. 
+                // if authored with no data (allowed for non-constant interp),
+                // we should return an empty result.
+                opacityInterp = primvar.GetInterpolation();
+                if (opacityInterp != UsdGeomTokens->constant) {
+                    numOpacities = 0;
+                }
+            }
+        }
+        // Guaranteed to have set either material/shader/primvar/default opacity
+        TF_VERIFY(!opacityInterp.IsEmpty());
+    }
+
+    {
+        // --  Cases where we can surely issue warnings --
+        if (colorInterp == opacityInterp && numColors != numOpacities) {
+            // interp modes same but lengths different for primvars is surely
+            // an input error
+            TF_WARN("Prim %s has %lu elements for %s and %lu "
+                    "elements for %s even though they have the "
+                    "same interpolation mode %s", prim.GetPath().GetText(), 
+                    numColors, colorPrimvarName.GetText(),
+                    numOpacities, opacityPrimvarName.GetText(),
+                    colorInterp.GetText());
+
+        } else if (colorInterp != opacityInterp && 
+                   (colorInterp != UsdGeomTokens->constant &&
+                    opacityInterp != UsdGeomTokens->constant)) {
+            // we can sensibly handle the case of different interp modes with
+            // one of them being constant by splatting it across. 
+            // for everything else, issue a warning.
+            TF_WARN("Prim %s has %s interpolation for %s and %s "
+                    "interpolation for %s; this combination is not "
+                    "supported by UsdImaging", prim.GetPath().GetText(),
+                    colorInterp.GetText(), colorPrimvarName.GetText(),
+                    opacityInterp.GetText(), opacityPrimvarName.GetText());
+        }
+    }
+
+    {
+        // -- Consolidate missing color or opacity values in result --
+        if (numColors == 0 || numOpacities == 0) {
+            // remove default value that was filled in
+            result.resize(0);
+            // override the (default) color interp mode if opacity was authored
+            // and empty
+            if (numOpacities == 0) {
+                colorInterp = opacityInterp;
+            }
+        } else {
+            const size_t resultSize = result.size();
+            if (numColors < numOpacities) {
+                GfVec3f splatColor = defaultColor;
+                if (colorInterp == UsdGeomTokens->constant) {
+                    // override color interp mode and splat first color
+                    colorInterp = opacityInterp;
+                    splatColor = GfVec3f(
+                        result[0][0], result[0][1], result[0][2]);
+                }
+                for(size_t ii = numColors; ii < resultSize; ii++) {
+                    result[ii][0] = splatColor[0];
+                    result[ii][1] = splatColor[1];
+                    result[ii][2] = splatColor[2];
+                }
+            }
+            else {
+                float splatOpacity = defaultOpacity;
+                // resultSize may be 0 (if empty color primvar array), so don't 
+                // splat 
+                if (opacityInterp == UsdGeomTokens->constant) {
+                    // splat first opacity
+                    splatOpacity = result[0][3];
+                }
+                for(size_t ii = numOpacities; ii < resultSize; ii++) {
+                    result[ii][3] = splatOpacity;
                 }
             }
         }
     }
+
     if (primvarInfo) {
         primvarInfo->name = HdTokens->color;
         primvarInfo->interpolation = colorInterp;

@@ -1,0 +1,88 @@
+#type: node
+#context: sop
+#internal: USDUnpack
+#tags: usd import
+
+= USD Unpack =
+
+Unpack ["USD Packed Prims"|/USDPackedPrims] or points representing USD prims into their constituant parts.
+
+The USD Unpack SOP traverses the USD hieriarchy represented by the input packed prims or points to find descendant prims that match a search criteria.
+
+If the "Geometry Type" is "Packed Prims" the results of the traversal are returned directly. If the "Geometry Type" is set to "Polygons" the prims found in the traversal are converted to Houdini geometry. 
+
+When we convert a USD prim to Houdini geometry, any primvars on the USD prim that match the pattern in the "Import Primvars" param will be converted to Houdini attributes. 
+
+@parameters
+    Group:
+        Group of points to process from input
+
+    Class:
+        If set to primitive, the OP will create USD Packed USD prims. If set to points, the SOP will create points with attributes that describe the USD packed prims.
+
+    Delete Old Points/Prims:
+        How to treat points or prims from connected input.
+
+    Time:
+        Time assigned to useach unpacked prim.
+
+    Traversal:
+        Method to use to find prims to unpack within the USD hierarchy of the input prims.
+
+    Geometry Type:
+        Unpacked to USD Packed Prims or Houdini geometry.
+
+    Transfer Attributes:
+        Specifies a list of attributes to transfer from the input prims to the result geometry.
+
+    Import Primvars:
+        Specifies a list of primvars to import from the traversed USD prims.
+
+    Prim Types:
+        USD prim types to select when doing a custom traversal of the USD hierarchy. The pulldown menu list all the valid types. Multiple types and wild cards are supported.
+
+    Purposes:
+        USD prim purposes to select when doing a custom traversal of the USD hierarchy. The pulldown menu lists all the valid purposes. Multiple purposes and wild cards are supported.
+
+    Kinds:
+       USD prim kinds to select when doing a custom traversal of the USD hierarchy. The pulldown menu lists all the valid kinds. Multiple kinds and wild cards are supported.
+
+    Name Mask:
+       Pattern used match against prim names when doing a custom traversal of the USD hierarchy. Wild cards are supported.
+
+    Path Mask:
+       Pattern used match against prim paths when doing a custom traversal of the USD hierarchy. Wild cards are supported.
+
+    Traverse Matched:
+        If this is on, when a matching prim is found, that prim is returned and the traverse will continue looking for matches amoung the prims descendants. Is "Traverse Matched" is off, 
+        the traverse will not match any of the prims descendants.
+
+    Is Active:
+        Return only prims that are active.
+
+    Is Visible:
+        Return only prims that are visible.
+
+    Is Imageable:
+        Return only prims that are imageable.
+
+    Is Defined:
+        Return only prims that are defined.
+
+    Is Abstract:
+        Return only prims that are abtract.
+
+    Is Group:
+        Return only prims that are groups.
+
+    Is Model:
+        Return only prims that are models.
+
+    Is Instance:
+        Return only prims that are instances.
+
+    Is Instance Master:
+        Return only prims that are instance masters.
+
+    Has Clips:
+        Return only prims that have clips.

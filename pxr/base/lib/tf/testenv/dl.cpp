@@ -58,7 +58,11 @@ Test_TfDl()
     string dlname;
     TF_AXIOM(ArchGetAddressInfo((void*)Test_TfDl, &dlname, NULL, NULL, NULL));
     dlname = TfGetPathName(dlname) +
-        "lib" ARCH_PATH_SEP "libTestTfDl" ARCH_LIBRARY_SUFFIX;
+        "lib" ARCH_PATH_SEP
+#if !defined(ARCH_OS_WINDOWS)
+        "lib"
+#endif
+        "TestTfDl" ARCH_LIBRARY_SUFFIX;
 
     // Make sure that this .so does indeed exist first
     printf("Checking test shared lib: %s\n", dlname.c_str());

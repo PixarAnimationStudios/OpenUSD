@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "Template"
+{
+    def "Child_2"
+    {
+        float attr.timeSamples = {
+            1: -100,
+        }
+    }
+}
+

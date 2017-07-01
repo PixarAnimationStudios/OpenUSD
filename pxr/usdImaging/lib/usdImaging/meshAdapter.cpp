@@ -267,9 +267,8 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
     //_GetPtr(prim, UsdGeomTokens->creaseMethod, time, &token);
     //tags->SetCreaseMethod(token);
 
-    //_GetPtr(prim, UsdGeomTokens->trianglesSubdivision, time, &token);
-    //tags->SetTriangleSubdivision(token);
-
+    _GetPtr(prim, UsdGeomTokens->triangleSubdivisionRule, time, &token);
+    tags->SetTriangleSubdivision(token);
 
     _GetPtr(prim, UsdGeomTokens->creaseIndices, time, &iarray);
     tags->SetCreaseIndices(iarray);

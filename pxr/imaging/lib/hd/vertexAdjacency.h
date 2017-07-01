@@ -101,6 +101,12 @@ public:
     HD_API
     ~Hd_VertexAdjacency();
 
+    /// Updates the internal adjacency table using the supplied topology.
+    /// Important! The adjacency table needs to be computed before smooth
+    /// normals.
+    HD_API
+    bool BuildAdjacencyTable(HdMeshTopology const *topology);
+
     /// Returns an array of the same size and type as the source points
     /// containing normal vectors computed by averaging the cross products
     /// of incident face edges.
@@ -173,9 +179,6 @@ public:
     }
 
 private:
-    // only AdjacencyBuilder can generate _entry and _stride.
-    friend class Hd_AdjacencyBuilderComputation;
-
     int _numPoints;
     std::vector<int> _adjacencyTable;
 

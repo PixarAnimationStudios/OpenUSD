@@ -29,8 +29,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-void GlfGlewInit()
+bool GlfGlewInit()
 {
+    static bool result = false;
     static std::once_flag once;
     std::call_once(once, [](){
         GlfSharedGLContextScopeHolder sharedGLContext;
@@ -40,8 +41,10 @@ void GlfGlewInit()
         glewExperimental = true;
 #endif
 
-        glewInit();
+        result = glewInit() == GLEW_OK;
     });
+
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

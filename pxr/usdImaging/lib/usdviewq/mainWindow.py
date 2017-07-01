@@ -56,7 +56,7 @@ from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor,
                     RedColor, BoldFont, ItalicFont, GetAttributeColor,
                     GetAttributeTextFont, HasArcsColor, InstanceColor,
                     NormalColor, MasterColor, Timer, 
-                    BusyContext, DumpMallocTags)
+                    BusyContext, DumpMallocTags, GetInstanceIdForIndex)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -300,6 +300,12 @@ class MainWindow(QtGui.QMainWindow):
         self._timeSamples = None
         self._stageView = None
         self._startingPrimCamera = None
+        if isinstance(parserData.camera, Sdf.Path):
+            self._startingPrimCameraName = None
+            self._startingPrimCameraPath = parserData.camera
+        else:
+            self._startingPrimCameraName = parserData.camera
+            self._startingPrimCameraPath = None
 
         self.setWindowTitle(parserData.usdFile)
         self._statusBar = QtGui.QStatusBar(self)
@@ -2685,14 +2691,35 @@ class MainWindow(QtGui.QMainWindow):
                 preserveCurrCamera = False
 
         if not preserveCurrCamera:
-            for camera in self._allSceneCameras:
-                # XXX This logic needs to be de-pixarified.  Perhaps
-                # a "primaryCamera" attribute on UsdGeomCamera?
-                if camera.GetName() == "main_cam":
-                    self._startingPrimCamera = currCamera = camera
-                    if self._stageView:
-                        self._stageView.setCameraPrim(camera)
-                    break
+            cameraWasSet = False
+            def setCamera(camera):
+                self._startingPrimCamera = currCamera = camera
+                if self._stageView:
+                    self._stageView.setCameraPrim(camera)
+                cameraWasSet = True
+
+            if self._startingPrimCameraPath:
+                prim = self._stage.GetPrimAtPath(self._startingPrimCameraPath)
+                if not prim.IsValid():
+                    msg = sys.stderr
+                    print >> msg, "WARNING: Camera path %r did not exist in " \
+                                  "stage" % (str(self._startingPrimCameraPath),)
+                    self._startingPrimCameraPath = None
+                elif not prim.IsA(UsdGeom.Camera):
+                    msg = sys.stderr
+                    print >> msg, "WARNING: Camera path %r was not a " \
+                                  "UsdGeom.Camera" % \
+                                  (str(self._startingPrimCameraPath),)
+                    self._startingPrimCameraPath = None
+                else:
+                    setCamera(prim)
+
+            if not cameraWasSet and self._startingPrimCameraName:
+                for camera in self._allSceneCameras:
+                    if camera.GetName() == self._startingPrimCameraName:
+                        setCamera(camera)
+                        break
+
         # Now that we have the current camera and all cameras, build the menu
         self._ui.menuCamera.clear()
         for camera in self._allSceneCameras:
@@ -4273,6 +4300,21 @@ class MainWindow(QtGui.QMainWindow):
             if mesh:
                 propertyStr += "<br> -- <em>subdivisionScheme</em> = %s" %\
                     mesh.GetSubdivisionSchemeAttr().Get()
+            pi = UsdGeom.PointInstancer(prim)
+            if pi:
+                indices = pi.GetProtoIndicesAttr().Get(self._currentFrame)
+                propertyStr += "<br> -- <em>%d instances</em>" % len(indices)
+                protos = pi.GetPrototypesRel().GetForwardedTargets()
+                propertyStr += "<br> -- <em>%d unique prototypes</em>" % len(protos)
+                if instanceIndex >= 0 and instanceIndex < len(indices):
+                    protoIndex = indices[instanceIndex]
+                    if protoIndex < len(protos):
+                        currProtoPath = protos[protoIndex]
+                        # If, as is common, proto is beneath the PI,
+                        # strip the PI's prefix for display
+                        if currProtoPath.HasPrefix(path):
+                            currProtoPath = currProtoPath.MakeRelativePath(path)
+                        propertyStr += "<br> -- <em>instance of prototype &lt;%s&gt;</em>" % str(currProtoPath)
     
             # Material info - this IS expected
             materialStr = "<hr><b>Material assignment:</b><br>"
@@ -4289,15 +4331,19 @@ class MainWindow(QtGui.QMainWindow):
             else:
                 materialStr += "<small><em>No assigned Material!</em></small>"
 
-            # Instance / master info, if this prim is an instance
+            # Instance / master info, if this prim is a native instance, else
+            # instance index/id if it's from a PointInstancer
             instanceStr = ""
             if prim.IsInstance():
                 instanceStr = "<hr><b>Instancing:</b><br>"
                 instanceStr += "<nobr><small><em>Instance of master:</em></small> %s</nobr>" % \
                     str(prim.GetMaster().GetPath())
-                
-            # Finally, important properties (mesh scheme, vis animated?, 
-            # non-default purpose, doubleSided)
+            elif instanceIndex != -1:
+                instanceStr = "<hr><b>Instance Index:</b> %d" % instanceIndex
+                instanceId = GetInstanceIdForIndex(prim, instanceIndex,
+                                                   self._currentFrame)
+                if instanceId is not None:
+                    instanceStr += "<br><b>Instance Id:</b> %d" % instanceId
 
             # Then put it all together
             tip = headerStr + propertyStr + materialStr + instanceStr + aiStr + vsStr

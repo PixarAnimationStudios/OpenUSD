@@ -86,8 +86,7 @@ struct Tf_PyNoticeObjectFinder : public Tf_PyObjectFinderBase {
     virtual boost::python::object Find(void const *objPtr) const {
         using namespace boost::python;
         TfPyLock lock;
-        TfPyNoticeWrapperBase const *wrapper =
-            static_cast<TfPyNoticeWrapperBase const *>(objPtr);
+        Notice const *wrapper = static_cast<Notice const *>(objPtr);
         return wrapper ? object(wrapper->GetNoticePythonObject()) : object();
     }
 };

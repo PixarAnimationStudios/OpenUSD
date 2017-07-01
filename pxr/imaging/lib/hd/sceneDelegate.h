@@ -223,11 +223,6 @@ public:
     HD_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
 
-    /// Returns a vector of shader parameter names. These names can be used to
-    /// fetch parameter values.
-    HD_API
-    virtual TfTokenVector GetSurfaceShaderParamNames(SdfPath const &shaderId);
-
     /// Returns a single value for the given shader and named parameter.
     HD_API
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId, 
@@ -289,14 +284,6 @@ public:
     HD_API
     virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
 
-    /// Returns the primVar data type.
-    HD_API
-    virtual int GetPrimVarDataType(SdfPath const& id, TfToken const& key);
-
-    /// Returns the number of components in the primVar, for example a
-    /// vec4-valued primVar would return 4.
-    HD_API
-    virtual int GetPrimVarComponents(SdfPath const& id, TfToken const& key);
 
 private:
     HdRenderIndex *_index;

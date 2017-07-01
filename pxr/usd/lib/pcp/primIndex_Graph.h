@@ -325,8 +325,9 @@ private:
             // node that was marked \c SdfPermissionPrivate, or we arrive
             // at this node from  another node that was denied permission.
             bool permissionDenied:1;
-            // The type of the arc to the parent node.
-            PcpArcType arcType:4;
+            // The type of the arc to the parent node.  We only need 4
+            // bits but we use 5 to avoid signed/unsigned issues.
+            PcpArcType arcType:5;
             // Index among sibling arcs at origin; lower is stronger
             _ChildrenSizeType arcSiblingNumAtOrigin:_childrenSize;
             // Absolute depth in namespace of node that introduced this

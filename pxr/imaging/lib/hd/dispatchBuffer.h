@@ -28,8 +28,8 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferArray.h"
-#include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/bufferResource.h"
+#include "pxr/imaging/hd/bufferArrayRangeGL.h"
+#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 
 #include <boost/shared_ptr.hpp>
@@ -115,12 +115,12 @@ public:
 
     /// Returns a bar which locates all interleaved resources of the entire
     /// buffer.
-    HdBufferArrayRangeSharedPtr GetBufferArrayRange() const {
+    HdBufferArrayRangeGLSharedPtr GetBufferArrayRange() const {
         return _bar;
     }
 
     /// Returns entire buffer as a single HdBufferResource.
-    HdBufferResourceSharedPtr GetEntireResource() const {
+    HdBufferResourceGLSharedPtr GetEntireResource() const {
         return _entireResource;
     }
 
@@ -135,11 +135,37 @@ public:
     HD_API
     virtual void DebugDump(std::ostream &out) const;
 
+    /// Returns the GPU resource. If the buffer array contains more than one
+    /// resource, this method raises a coding error.
+    HD_API
+    HdBufferResourceGLSharedPtr GetResource() const;
+
+    /// Returns the named GPU resource. This method returns the first found
+    /// resource. In HD_SAFE_MODE it checkes all underlying GL buffers
+    /// in _resourceMap and raises a coding error if there are more than
+    /// one GL buffers exist.
+    HD_API
+    HdBufferResourceGLSharedPtr GetResource(TfToken const& name);
+
+    /// Returns the list of all named GPU resources for this bufferArray.
+    HdBufferResourceGLNamedList const& GetResources() const {return _resourceList;}
+
+protected:
+    /// Adds a new, named GPU resource and returns it.
+    HD_API
+    HdBufferResourceGLSharedPtr _AddResource(TfToken const& name,
+                                           int glDataType,
+                                           short numComponents,
+                                           int arraySize,
+                                           int offset,
+                                           int stride);
+
 private:
     int _count;
     unsigned int _commandNumUints;
-    HdBufferResourceSharedPtr _entireResource;
-    HdBufferArrayRangeSharedPtr _bar;  // Alternative to range list in base class
+    HdBufferResourceGLNamedList _resourceList;
+    HdBufferResourceGLSharedPtr _entireResource;
+    HdBufferArrayRangeGLSharedPtr _bar;  // Alternative to range list in base class
 };
 
 

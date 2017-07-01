@@ -86,10 +86,6 @@ public:
     /// \name Texture API
     // ---------------------------------------------------------------------- //
     
-    /// Returns the binary data for the texture.
-    HD_API
-    HdTextureResourceSharedPtr GetTextureData() const;
-
     /// Returns true if the texture should be interpreted as a PTex texture.
     HD_API
     bool IsPtex() const;

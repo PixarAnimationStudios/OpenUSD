@@ -26,7 +26,7 @@
 
 #include "pxr/base/arch/export.h"
 
-#if defined(PLUG_STATIC)
+#if defined(PXR_STATIC)
 #   define PLUG_API
 #   define PLUG_API_TEMPLATE_CLASS(...)
 #   define PLUG_API_TEMPLATE_STRUCT(...)

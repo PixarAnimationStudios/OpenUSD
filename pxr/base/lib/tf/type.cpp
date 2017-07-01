@@ -288,8 +288,10 @@ public:
         return it != _typeNameToTypeMap.end() ? it->second : nullptr;
     }
 
-    TfType::_TypeInfo *FindByTypeid(const std::type_info &typeInfo) const {
-        TfType::_TypeInfo **info = _typeInfoMap.Find(typeInfo);
+    template <class Upgrader>
+    TfType::_TypeInfo *
+    FindByTypeid(const std::type_info &typeInfo, Upgrader upgrader) {
+        TfType::_TypeInfo **info = _typeInfoMap.Find(typeInfo, upgrader);
         return info ? *info : nullptr;
     }
 
@@ -418,7 +420,7 @@ TfType::FindDerivedByName(const string &name) const
 
     // If we didn't find an alias we now look in the registry.
     if (!result) {
-        auto &r = Tf_TypeRegistry::GetInstance();
+        const auto &r = Tf_TypeRegistry::GetInstance();
         ScopedLock regLock(r.GetMutex(), /*write=*/false);
         TfType::_TypeInfo *foundInfo = r.FindByName(name);
         regLock.release();
@@ -455,9 +457,16 @@ TfType::GetUnknownType()
 TfType const&
 TfType::_FindByTypeid(const std::type_info &typeInfo)
 {
+    // Functor to upgrade the read lock to a write lock.
+    struct WriteUpgrader {
+        WriteUpgrader(ScopedLock& lock) : lock(lock) { }
+        void operator()() { lock.upgrade_to_writer(); }
+        ScopedLock& lock;
+    };
+
     auto &r = Tf_TypeRegistry::GetInstance();
     ScopedLock readLock(r.GetMutex(), /*write=*/false);
-    TfType::_TypeInfo *info = r.FindByTypeid(typeInfo);
+    TfType::_TypeInfo *info = r.FindByTypeid(typeInfo, WriteUpgrader(readLock));
 
     return info ? info->canonicalTfType : GetUnknownType();
 }
@@ -465,7 +474,7 @@ TfType::_FindByTypeid(const std::type_info &typeInfo)
 TfType const&
 TfType::FindByPythonClass(const TfPyObjWrapper & classObj)
 {
-    auto &r = Tf_TypeRegistry::GetInstance();
+    const auto &r = Tf_TypeRegistry::GetInstance();
     ScopedLock readLock(r.GetMutex(), /*write=*/false);
     TfType::_TypeInfo *info = r.FindByPythonClass(classObj.Get());
 

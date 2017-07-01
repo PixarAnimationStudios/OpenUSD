@@ -37,5 +37,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapAuthoring()
 {
     def("CopyLayerMetadata", UsdUtilsCopyLayerMetadata, 
-        (arg("source"), arg("destination"), arg("skipSublayers") = false ));
+        (arg("source"), arg("destination"), arg("skipSublayers") = false,
+         arg("bakeUnauthoredFallbacks") = false ));
 }

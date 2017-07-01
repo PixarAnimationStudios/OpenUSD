@@ -28,21 +28,15 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/commandBuffer.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
 #include <boost/shared_ptr.hpp>
 
-#include <unordered_map>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class HdCommandBuffer;
 class HdRenderIndex;
 class HdSceneDelegate;
-
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
@@ -55,9 +49,7 @@ typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 class HdRenderPass : boost::noncopyable {
 public:
     HD_API
-    HdRenderPass(HdRenderIndex *index);
-    HD_API
-    HdRenderPass(HdRenderIndex *index, const HdRprimCollection &collection);
+    HdRenderPass(HdRenderIndex *index, HdRprimCollection const& collection);
     HD_API
     virtual ~HdRenderPass();
 
@@ -80,16 +72,6 @@ public:
     HD_API
     TfTokenVector const &GetRenderTags();
 
-    /// Execute render pass task
-    HD_API
-    void Execute(HdRenderPassStateSharedPtr const &renderPassState);
-
-    /// Execute a specific render bucket specified by the 
-    /// render tag.
-    HD_API
-    void Execute(HdRenderPassStateSharedPtr const &renderPassState,
-                 TfToken const &renderTag);
-
     /// Sync the render pass resources
     HD_API
     void Sync();
@@ -97,26 +79,41 @@ public:
     /// Return the render index
     HdRenderIndex * const GetRenderIndex() const { return _renderIndex; }
 
-private:
-    void _PrepareCommandBuffer(HdRenderPassStateSharedPtr const &renderPasssState);
+    /// Execute all of the buckets in this renderpass.
+    HD_API
+    void Execute(HdRenderPassStateSharedPtr const &renderPassState);
+    /// Execute a subset of buckets of this renderpass.
+    HD_API
+    void Execute(HdRenderPassStateSharedPtr const &renderPassState,
+                 TfTokenVector const &renderTags);
+    /// Execute a single bucket of this renderpass.
+    HD_API
+    void Execute(HdRenderPassStateSharedPtr const &renderPassState,
+                 TfToken const &renderTag);
 
+    /// Optional API: Hooks for progressive rendering.
+    virtual void ResetImage() {}
+    virtual bool IsConverged() const { return true; }
+
+protected:
+    /// Virtual API: Execute the buckets corresponding to renderTags;
+    /// renderTags.empty() implies execute everything.
+    virtual void _Execute(HdRenderPassStateSharedPtr const &renderPassState,
+                         TfTokenVector const &renderTags) = 0;
+
+    /// Optional API: let derived classes mark their collection tracking as dirty.
+    virtual void _MarkCollectionDirty() {}
+
+    /// Optional API: let derived classes sync data.
+    virtual void _Sync() {}
+
+private:
     // ---------------------------------------------------------------------- //
     // Change Tracking State
     // ---------------------------------------------------------------------- //
     // The renderIndex to which this renderPass belongs
     // (can't change after construction)
     HdRenderIndex * const _renderIndex;
-
-    // The version number of the currently held collection.
-    int _collectionVersion;
-
-    // A flag indicating that the held collection changed since this renderPass
-    // was last drawn.
-    //
-    // When _collectionChanged is true, it indicates that _collectionVersion is
-    // no longer accurate, because _collectionVersion was stored for the
-    // previously held collection.
-    bool _collectionChanged;
 
     // cached dirty prims list
     HdDirtyListSharedPtr _dirtyList;
@@ -125,15 +122,7 @@ private:
     // Core RenderPass State
     // ---------------------------------------------------------------------- //
     HdRprimCollection _collection;
-    typedef std::unordered_map<TfToken, 
-                               HdCommandBuffer,
-                               boost::hash<TfToken> > _HdCommandBufferMap;
-    _HdCommandBufferMap _cmdBuffers;
-
-    bool _lastCullingDisabledState;
-
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

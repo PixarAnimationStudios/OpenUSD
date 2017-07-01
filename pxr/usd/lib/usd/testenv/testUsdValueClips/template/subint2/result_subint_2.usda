@@ -5,7 +5,7 @@
 )
 
 def "World" (
-    add references = @result.topology.usda@</World>
+    add references = @./result.topology.usda@</World>
 )
 {
     over "fx"
@@ -13,12 +13,16 @@ def "World" (
         over "Particles_Splash"
         {
             over "points" (
-                clipTemplateAssetPath = "p.##.##.usd"
-                clipTemplateStartTime = 10.00
-                clipTemplateEndTime   = 10.15
-                clipTemplateStride    = 0.05
-                clipManifestAssetPath = @result.topology.usda@
-                clipPrimPath = "/World/fx/Particles_Splash/points"
+                clips = {
+                    dictionary default = {
+                        string templateAssetPath = "./p.##.##.usd"
+                        double templateStartTime = 10.00
+                        double templateEndTime   = 10.15
+                        double templateStride    = 0.05
+                        asset manifestAssetPath = @./result.topology.usda@
+                        string primPath = "/World/fx/Particles_Splash/points"
+                    }
+                }
             )
             {
             }

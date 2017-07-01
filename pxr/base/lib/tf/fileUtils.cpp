@@ -66,6 +66,48 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if defined(ARCH_OS_WINDOWS)
+// Test if file exists (attribute == 0) or has or doesn't have particular
+// attributes by testing: (actual & attributes) == expected
+bool
+Tf_HasAttribute(
+    string const& path,
+    bool resolveSymlinks,
+    DWORD attribute,
+    DWORD expected)
+{
+    if (path.empty()) {
+        SetLastError(ERROR_SUCCESS);
+        return false;
+    }
+    const DWORD attribs = GetFileAttributes(path.c_str());
+    if (attribs == INVALID_FILE_ATTRIBUTES) {
+        if (attribute == 0 && GetLastError() == ERROR_FILE_NOT_FOUND) {
+            // Don't report an error if we're just testing existence.
+            SetLastError(ERROR_SUCCESS);
+        }
+        return false;
+    }
+    if (!resolveSymlinks || (attribs & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+        return attribute == 0 || (attribs & attribute) == expected;
+    }
+
+    // Read symlinks until we find the real file.
+    return Tf_HasAttribute(TfReadLink(path.c_str()), resolveSymlinks,
+                           attribute, expected);
+}
+
+// Same as above but the bits in attribute must all be set.
+bool
+Tf_HasAttribute(
+    string const& path,
+    bool resolveSymlinks,
+    DWORD attribute)
+{
+    return Tf_HasAttribute(path, resolveSymlinks, attribute, attribute);
+}
+#endif
+
 static bool
 Tf_Stat(string const& path, bool resolveSymlinks, ArchStatType* st = 0)
 {
@@ -79,8 +121,9 @@ Tf_Stat(string const& path, bool resolveSymlinks, ArchStatType* st = 0)
     }
 
 #if defined(ARCH_OS_WINDOWS)
-    if (resolveSymlinks) {
-        printf("Tf_IsStat: symlink resolving not yet implemented for windows\n");
+    if (!resolveSymlinks) {
+        TF_CODING_ERROR("resolveSymlinks must be true on Windows");
+        return false;
     }
     return _stat64(path.c_str(), st) == 0;
 #else
@@ -93,17 +136,29 @@ Tf_Stat(string const& path, bool resolveSymlinks, ArchStatType* st = 0)
 bool
 TfPathExists(string const& path, bool resolveSymlinks)
 {
-    return Tf_Stat(path, resolveSymlinks);
+#if defined(ARCH_OS_WINDOWS)
+    return Tf_HasAttribute(path, resolveSymlinks, 0);
+#else
+    if (Tf_Stat(path, resolveSymlinks)) {
+        return true;
+    }
+    // Reset error code if path doesn't exist.
+    if (errno == ENOENT) {
+        errno = 0;
+    }
+    return false;
+#endif
 }
 
 bool
 TfIsDir(string const& path, bool resolveSymlinks)
 {
 #if defined (ARCH_OS_WINDOWS)
-    DWORD attribs = GetFileAttributes(path.c_str());
-
-    return (attribs != INVALID_FILE_ATTRIBUTES &&
-        (attribs & FILE_ATTRIBUTE_DIRECTORY));
+    // Report not a directory if path is a symlink and resolveSymlinks is
+    // false.
+    return Tf_HasAttribute(path, resolveSymlinks,
+                    FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT,
+                    FILE_ATTRIBUTE_DIRECTORY);
 #else
     ArchStatType st;
     if (Tf_Stat(path, resolveSymlinks, &st)) {
@@ -117,10 +172,10 @@ bool
 TfIsFile(string const& path, bool resolveSymlinks)
 {
 #if defined (ARCH_OS_WINDOWS)
-    DWORD attribs = GetFileAttributes(path.c_str());
-
-    return (attribs != INVALID_FILE_ATTRIBUTES &&
-        !(attribs & FILE_ATTRIBUTE_DIRECTORY));
+    // Report not a file if path is a symlink and resolveSymlinks is false.
+    return Tf_HasAttribute(path, resolveSymlinks,
+                    FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT,
+                    0);
 #else
     ArchStatType st;
     if (Tf_Stat(path, resolveSymlinks, &st)) {
@@ -134,10 +189,8 @@ bool
 TfIsLink(string const& path)
 {
 #if defined(ARCH_OS_WINDOWS)
-    DWORD attribs = GetFileAttributes(path.c_str());
-
-    return (attribs != INVALID_FILE_ATTRIBUTES &&
-        (attribs & FILE_ATTRIBUTE_REPARSE_POINT));
+    return Tf_HasAttribute(path, /* resolveSymlinks = */ false,
+                           FILE_ATTRIBUTE_REPARSE_POINT);
 #else
     ArchStatType st;
     if (Tf_Stat(path, /* resolveSymlinks */ false, &st)) {
@@ -188,9 +241,19 @@ bool
 TfSymlink(string const& src, string const& dst)
 {
 #if defined(ARCH_OS_WINDOWS)
-    return ::CreateSymbolicLink(src.c_str(), dst.c_str(), 
-                         TfIsDir(src) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0) 
-                         ? true : false;
+    if (CreateSymbolicLink(dst.c_str(), src.c_str(),
+                           TfIsDir(src) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0)) {
+        return true;
+    }
+
+    // Translate lack of privilege to EPERM,  Anything else translates
+    // to something else.  This is used by tests to disable symlink
+    // testing.
+    errno = EACCES;
+    if (GetLastError() == ERROR_PRIVILEGE_NOT_HELD) {
+        errno = EPERM;
+    }
+    return false;
 #else
     return (symlink(src.c_str(), dst.c_str()) != -1);
 #endif

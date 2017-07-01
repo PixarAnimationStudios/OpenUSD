@@ -21,6 +21,15 @@ def "Set_1" (
         </Set_1/PropNotAnInstance_1/geom>
     ]
 
+    int setInstanceAttr.connect = [
+        </Set_1/PropInstance_1.foo>,
+        </Set_1/PropInstance_1/geom.foo>,
+        </Set_1/PropInstance_2.foo>,
+        </Set_1/PropInstance_2/geom.foo>,
+        </Set_1/PropNotAnInstance_1.foo>,
+        </Set_1/PropNotAnInstance_1/geom.foo>
+    ]
+
     over "PropInstance_1"
     {
         over "geom"

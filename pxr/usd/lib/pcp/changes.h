@@ -73,7 +73,10 @@ public:
     /// as part of determining the changes to this layer stack.
     /// However, we do not immediately apply those changes to the
     /// layer stack; we store them here and commit them in Apply().
-    SdfRelocatesMap newRelocatesTargetToSource, newRelocatesSourceToTarget;
+    SdfRelocatesMap newRelocatesTargetToSource;
+    SdfRelocatesMap newRelocatesSourceToTarget;
+    SdfRelocatesMap newIncrementalRelocatesSourceToTarget;
+    SdfRelocatesMap newIncrementalRelocatesTargetToSource;
     SdfPathVector newRelocatesPrimPaths;
 
     /// Paths that are affected by the above relocation changes.

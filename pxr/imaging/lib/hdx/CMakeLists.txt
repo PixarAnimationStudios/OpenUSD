@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdx)
 
-pxr_shared_library(hdx
+pxr_library(hdx
     LIBRARIES
         plug
         tf

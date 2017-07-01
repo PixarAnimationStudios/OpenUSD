@@ -116,7 +116,7 @@ std::string Pcp_Dump(
         s += TfStringPrintf("    Map to root:\n");
         s += TfStringPrintf("        %s\n",
             TfStringReplace(
-                node.GetMapToParent().GetString(),
+                node.GetMapToRoot().GetString(),
                 "\n", "\n        ").c_str());
     }
 

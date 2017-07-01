@@ -21,10 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINED_CURVES, 0, 
+                      "Force curves to always be refined.");
 
 HdBasisCurves::HdBasisCurves(SdfPath const& id,
                  SdfPath const& instancerId)
@@ -36,6 +40,38 @@ HdBasisCurves::HdBasisCurves(SdfPath const& id,
 HdBasisCurves::~HdBasisCurves()
 {
     /*NOTHING*/
+}
+
+// static repr configuration
+HdBasisCurves::_BasisCurvesReprConfig HdBasisCurves::_reprDescConfig;
+
+/* static */
+bool
+HdBasisCurves::IsEnabledForceRefinedCurves()
+{
+    return TfGetEnvSetting(HD_ENABLE_REFINED_CURVES) == 1;
+}
+
+
+/* static */
+void
+HdBasisCurves::ConfigureRepr(TfToken const &reprName,
+                             HdBasisCurvesReprDesc desc)
+{
+    HD_TRACE_FUNCTION();
+
+    if (IsEnabledForceRefinedCurves()) {
+        desc.geomStyle = HdBasisCurvesGeomStyleRefined;
+    }
+
+    _reprDescConfig.Append(reprName, _BasisCurvesReprConfig::DescArray{desc});
+}
+
+/* static */
+HdBasisCurves::_BasisCurvesReprConfig::DescArray
+HdBasisCurves::_GetReprDesc(TfToken const &reprName)
+{
+    return _reprDescConfig.Find(reprName);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

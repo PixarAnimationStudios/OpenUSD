@@ -23,10 +23,10 @@
 //
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usd/schemaBase.h"
-#include "pxr/usd/usd/conversions.h"
 
 #include "pxr/usd/sdf/primSpec.h"
 
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -127,12 +127,6 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("ConnectableAPI", &UsdShadeShader::ConnectableAPI)
-
-        .def("CreateParameter", &UsdShadeShader::CreateParameter,
-             (arg("name"), arg("type")))
-        .def("GetParameter", &UsdShadeShader::GetParameter, arg("name"))
-        .def("GetParameters", &UsdShadeShader::GetParameters,
-             return_value_policy<TfPySequenceToList>())
 
         .def("CreateOutput", &UsdShadeShader::CreateOutput,
              (arg("name"), arg("type")))

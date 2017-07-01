@@ -137,62 +137,6 @@ UsdShadeNodeGraph::ConnectableAPI() const
     return UsdShadeConnectableAPI(GetPrim());
 }
 
-UsdShadeInterfaceAttribute
-UsdShadeNodeGraph::CreateInterfaceAttribute(
-        const TfToken& interfaceAttrName,
-        const SdfValueTypeName& typeName)
-{
-    return UsdShadeInterfaceAttribute(
-            GetPrim(),
-            interfaceAttrName,
-            typeName);
-}
-
-UsdShadeInterfaceAttribute
-UsdShadeNodeGraph::GetInterfaceAttribute(
-        const TfToken& interfaceAttrName) const
-{
-    return UsdShadeInterfaceAttribute(
-            GetPrim().GetAttribute(
-                UsdShadeInterfaceAttribute::_GetName(interfaceAttrName)));
-}
-
-std::vector<UsdShadeInterfaceAttribute> 
-UsdShadeNodeGraph::GetInterfaceAttributes(
-        const TfToken& renderTarget) const
-{
-    std::vector<UsdShadeInterfaceAttribute> ret;
-
-    if (renderTarget.IsEmpty()) {
-        std::vector<UsdAttribute> attrs = GetPrim().GetAttributes();
-        TF_FOR_ALL(attrIter, attrs) {
-            UsdAttribute attr = *attrIter;
-            if (UsdShadeInterfaceAttribute interfaceAttr = 
-                    UsdShadeInterfaceAttribute(attr)) {
-                ret.push_back(interfaceAttr);
-            }
-        }
-    }
-    else {
-        const std::string relPrefix = 
-            UsdShadeInterfaceAttribute::_GetInterfaceAttributeRelPrefix(renderTarget);
-        std::vector<UsdRelationship> rels = GetPrim().GetRelationships();
-        TF_FOR_ALL(relIter, rels) {
-            UsdRelationship rel = *relIter;
-            std::string relName = rel.GetName().GetString();
-            if (TfStringStartsWith(relName, relPrefix)) {
-                TfToken interfaceAttrName(relName.substr(relPrefix.size()));
-                if (UsdShadeInterfaceAttribute interfaceAttr = 
-                        GetInterfaceAttribute(interfaceAttrName)) {
-                    ret.push_back(interfaceAttr);
-                }
-            }
-        }
-    }
-
-    return ret;
-}
-
 UsdShadeOutput
 UsdShadeNodeGraph::CreateOutput(const TfToken& name,
                              const SdfValueTypeName& typeName)
@@ -242,6 +186,40 @@ UsdShadeNodeGraph::GetInterfaceInputs() const
     return GetInputs();
 }
 
+static std::string
+_GetInterfaceAttributeRelPrefix(const TfToken& renderTarget)
+{
+    return renderTarget.IsEmpty() ? UsdShadeTokens->interfaceRecipientsOf:
+            TfStringPrintf("%s:%s", renderTarget.GetText(),
+                UsdShadeTokens->interfaceRecipientsOf.GetText());
+}
+
+std::vector<UsdShadeInput> 
+UsdShadeNodeGraph::_GetInterfaceInputs(const TfToken &renderTarget) const
+{
+    if (renderTarget.IsEmpty() ||
+        !UsdShadeUtils::ReadOldEncoding()) {
+        return GetInterfaceInputs();
+    }
+
+    std::vector<UsdShadeInput> result;
+    const std::string relPrefix = _GetInterfaceAttributeRelPrefix(renderTarget);
+    std::vector<UsdRelationship> rels = GetPrim().GetRelationships();
+    TF_FOR_ALL(relIter, rels) {
+        UsdRelationship rel = *relIter;
+        std::string relName = rel.GetName().GetString();
+        if (TfStringStartsWith(relName, relPrefix)) {
+            TfToken interfaceAttrName(relName.substr(relPrefix.size()));
+            UsdShadeInput interfaceInput = GetInput(interfaceAttrName);
+            if (interfaceInput.GetAttr()) {
+                result.push_back(interfaceInput);
+            }
+        }
+    }
+
+    return result;
+}
+
 static bool 
 _IsValidInput(UsdShadeConnectableAPI const &source, 
               UsdShadeAttributeType const sourceType) 
@@ -256,30 +234,97 @@ _IsValidInput(UsdShadeConnectableAPI const &source,
 }
 
 static 
+std::vector<UsdShadeInput>
+_GetInterfaceAttributeRecipientInputs(
+    const UsdAttribute &interfaceAttr,
+    const TfToken &renderTarget)
+{
+    UsdPrim prim = interfaceAttr.GetPrim();
+    std::vector<UsdShadeInput> ret;
+    std::string baseName = UsdShadeUtils::GetBaseNameAndType(
+            interfaceAttr.GetName()).first.GetString();
+
+    std::vector<UsdRelationship> interfaceRecipientsOfRels;
+    if (!renderTarget.IsEmpty()) {
+        TfToken relName(_GetInterfaceAttributeRelPrefix(renderTarget) 
+                        + baseName);
+        if (UsdRelationship rel = prim.GetRelationship(relName)) {
+            interfaceRecipientsOfRels.push_back(rel);
+        }
+    } else {
+        // Find "interfaceRecipientsOf:" relationships for all renderTargets.
+        for (const UsdRelationship &rel : prim.GetRelationships()) {
+            // If the relationship name contains "interfaceRecipientsOf:"
+            // and if its basename matches the basename of the interface 
+            // attribute, it must be relevant to this relationship.
+            if (TfStringContains(rel.GetName(), 
+                UsdShadeTokens->interfaceRecipientsOf) &&
+                rel.GetBaseName() == interfaceAttr.GetBaseName()) {
+                interfaceRecipientsOfRels.push_back(rel);
+            }
+        }
+    }
+
+    for (const UsdRelationship &rel : interfaceRecipientsOfRels) {
+        std::vector<SdfPath> targets;
+        rel.GetTargets(&targets);
+        TF_FOR_ALL(targetIter, targets) {
+            const SdfPath& targetPath = *targetIter;
+            if (targetPath.IsPropertyPath()) {
+                if (UsdPrim targetPrim = prim.GetStage()->GetPrimAtPath(
+                            targetPath.GetPrimPath())) {
+                    if (UsdAttribute attr = targetPrim.GetAttribute(
+                                targetPath.GetNameToken())) {
+                        ret.push_back(UsdShadeInput(attr));
+                    }
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
+static
 UsdShadeNodeGraph::InterfaceInputConsumersMap 
-_ComputeNonTransitiveInputConsumersMap(const UsdShadeNodeGraph &nodeGraph,
-                                       const TfToken &renderTarget)
+_ComputeNonTransitiveInputConsumersMap(
+    const UsdShadeNodeGraph &nodeGraph,
+    const TfToken &renderTarget)
 {
     UsdShadeNodeGraph::InterfaceInputConsumersMap result;
 
+    bool foundOldStyleInterfaceInputs = false;
     std::vector<UsdShadeInput> inputs = nodeGraph.GetInputs();
     for (const auto &input : inputs) {
         std::vector<UsdShadeInput> consumers;
         if (UsdShadeUtils::ReadOldEncoding()) {
-            // If the input is an interface attribute, then get all consumer 
-            // params using available API on UsdShadeInterfaceAttribute.
+            // If the interface input is an interface attribute, then get all 
+            // consumer params using _GetInterfaceAttributeRecipientInputs.
             if (UsdShadeUtils::GetBaseNameAndType(input.GetAttr().GetName()).second
                     == UsdShadeAttributeType::InterfaceAttribute) {
-                UsdShadeInterfaceAttribute interfaceAttr(input.GetAttr());
-                // How do we get all driven params of all render targets?!
-                std::vector<UsdShadeParameter> consumerParams = 
-                    interfaceAttr.GetRecipientParameters(renderTarget);
-                for (const auto &param: consumerParams) {
-                    consumers.push_back(UsdShadeInput(param.GetAttr()));
+                                
+                const std::vector<UsdShadeInput> &recipients = 
+                    _GetInterfaceAttributeRecipientInputs(input.GetAttr(), 
+                        renderTarget);
+                if (!recipients.empty()) {
+                    foundOldStyleInterfaceInputs = true;
+                    consumers = recipients;
                 }
             }
         }
         result[input] = consumers;
+    }
+
+    // If we find old-style interface inputs on the material, then it's likely 
+    // that the material and all its descendants have old-style encoding of 
+    // shading networks. Hence, skip the downward traversal.
+    // 
+    // If authoring of bidirectional connections on old-style interface 
+    // attributes (which is a feature we only use for testing) is enabled, 
+    // then we can't skip the downward traversal.
+    if (foundOldStyleInterfaceInputs && 
+        !UsdShadeConnectableAPI::AreBidirectionalInterfaceConnectionsEnabled()) {
+        return result;
     }
 
     // XXX: This traversal isn't instancing aware. We must update this 

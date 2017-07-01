@@ -77,7 +77,8 @@ class TestFileUtils(unittest.TestCase):
         if os.path.islink(linkname):
             os.unlink(linkname)
 
-        os.symlink(filename, linkname)
+        if hasattr(os, 'symlink'):
+            os.symlink(filename, linkname)
 
     def SetupDirStructure(self, structure, withSymlink=False):
         """Create a dir structure for testing"""

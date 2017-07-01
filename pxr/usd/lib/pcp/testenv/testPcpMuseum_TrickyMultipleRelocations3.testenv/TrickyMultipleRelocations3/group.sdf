@@ -1,0 +1,26 @@
+#sdf 1.4.32
+
+class "ClassB"
+{
+}
+
+class "ClassA" (
+    inherits = </ClassB>
+)
+{
+}
+
+def Scope "Group"
+{
+    def Scope "Subgroup"
+    {
+        def Scope "Char"
+        {
+            def "Rig" (
+                add inherits = </ClassA>
+            )
+            {
+            }
+        }
+    }
+}

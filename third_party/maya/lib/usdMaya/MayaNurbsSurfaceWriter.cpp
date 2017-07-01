@@ -41,11 +41,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 MayaNurbsSurfaceWriter::MayaNurbsSurfaceWriter(
-        MDagPath & iDag, 
-        UsdStageRefPtr stage, 
-        const JobExportArgs & iArgs) :
-    MayaTransformWriter(iDag, stage, iArgs)
+        const MDagPath & iDag,
+        const SdfPath& uPath,
+        bool instanceSource,
+        usdWriteJobCtx& jobCtx) :
+    MayaTransformWriter(iDag, uPath, instanceSource, jobCtx)
 {
+    UsdGeomNurbsPatch primSchema =
+        UsdGeomNurbsPatch::Define(getUsdStage(), getUsdPath());
+    TF_AXIOM(primSchema);
+    mUsdPrim = primSchema.GetPrim();
+    TF_AXIOM(mUsdPrim);
 }
 
 static void
@@ -81,18 +87,13 @@ _FixNormalizedKnotRange(
 }
 
 //virtual 
-UsdPrim MayaNurbsSurfaceWriter::write(const UsdTimeCode &usdTimeCode)
+void MayaNurbsSurfaceWriter::write(const UsdTimeCode &usdTimeCode)
 {
     // == Write
-    UsdGeomNurbsPatch primSchema =
-        UsdGeomNurbsPatch::Define(getUsdStage(), getUsdPath());
-    TF_AXIOM(primSchema);
-    UsdPrim prim = primSchema.GetPrim();
-    TF_AXIOM(prim);
+    UsdGeomNurbsPatch primSchema(mUsdPrim);
 
     // Write the attrs
     writeNurbsSurfaceAttrs(usdTimeCode, primSchema);
-    return prim;
 }
 
 // virtual

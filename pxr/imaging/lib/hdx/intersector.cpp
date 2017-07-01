@@ -28,9 +28,10 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 
+#include "pxr/imaging/hdSt/renderPass.h"
+
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/rprim.h"
@@ -54,7 +55,7 @@ void
 HdxIntersector::_Init(GfVec2i const& size)
 {
     HdRprimCollection col(HdTokens->geometry, HdTokens->hull);
-    _renderPass = boost::make_shared<HdRenderPass>(&*_index, col);
+    _renderPass = boost::make_shared<HdSt_RenderPass>(&*_index, col);
     // initialize renderPassState with ID render shader
     _renderPassState = boost::make_shared<HdRenderPassState>(
         boost::make_shared<HdRenderPassShader>(HdxPackageRenderPassIdShader()));
@@ -174,9 +175,7 @@ protected:
 
         _renderPassState->Bind();
         if(_renderTags.size()) {
-            TF_FOR_ALL(rt, _renderTags) {
-                _renderPass->Execute(_renderPassState, *rt);
-            }
+            _renderPass->Execute(_renderPassState, _renderTags);
         } else {
             _renderPass->Execute(_renderPassState);
         }

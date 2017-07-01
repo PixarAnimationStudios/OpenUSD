@@ -43,4 +43,13 @@ def "PropertyOrder"
     double a4
     double A20
     double A3
+
+    rel r2
+    rel r1
+    rel r5
+    rel R0
+    rel r10
+    rel r4
+    rel R20
+    rel R3
 }

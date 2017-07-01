@@ -20,14 +20,6 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-//
-// XXX: 
-// We need to include Python.h at the top of this file because one
-// of the headers below (likely tf/type.h) includes Python.h, but 
-// Python.h needs to come at the top of the file or else we run
-// into compilation errors. This should be removed when we fix
-// the Python include issues throughout the codebase.
-#include <Python.h>
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/debugCodes.h"

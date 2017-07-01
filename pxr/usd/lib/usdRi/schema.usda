@@ -3,7 +3,8 @@
     "This file describes the USD Shader (RSL) schemata for code generation."
     subLayers = [
         @../usd/schema.usda@,
-        @../usdShade/schema.usda@
+        @../usdShade/schema.usda@,
+        @../usdLux/schema.usda@,
     ]
 )
 
@@ -14,6 +15,32 @@ def "GLOBAL" (
         # string libraryPrefix  = "UsdRi"
         # string tokensPrefix   = "UsdRi"
         # dictionary libraryTokens = {}
+        dictionary libraryTokens = {
+            dictionary spline = {
+                string doc = "UsdSplineAPI - Namespace for spline attributes"
+            }
+            dictionary interpolation = {
+                string doc = "UsdSplineAPI - Interpolation attribute name"
+            }
+            dictionary positions = {
+                string doc = "UsdSplineAPI - Positions attribute name"
+            }
+            dictionary values = {
+                string doc = "UsdSplineAPI - values attribute name"
+            }
+            dictionary linear = {
+                string doc = "UsdSplineAPI - Linear spline interpolation"
+            }
+            dictionary bspline = {
+                string doc = "UsdSplineAPI - BSpline spline interpolation"
+            }
+            dictionary catmullRom = {
+                string doc = "UsdSplineAPI - Catmull-Rom spline interpolation"
+            }
+            dictionary constant = {
+                string doc = "UsdSplineAPI - Constant-value spline interpolation"
+            }
+        }
     }
 )
 {
@@ -102,53 +129,722 @@ class RisIntegrator "RisIntegrator" (
     asset argsPath
 }
 
-### Look API common to both RSL and RIS ###
+### Material API common to both RSL and RIS ###
 
-class "RiLookAPI" (
-    doc = """This API provides the relationships to prman shaders and RIS objects."""
+class "RiMaterialAPI" (
+    doc = """This API provides outputs that connect a material prim to prman 
+    shaders and RIS objects."""
     customData = {
-        # We want the class name to be UsdRiLookAPI
-        string className = "LookAPI"    
+        # We want the class name to be UsdRiMaterialAPI
+        string className = "MaterialAPI"    
         string extraIncludes = """
-#include "pxr/usd/usdShade/interfaceAttribute.h"
-#include "pxr/usd/usdShade/look.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdRi/rslShader.h"
 #include "pxr/usd/usdRi/risBxdf.h"
-#include "pxr/usd/usdRi/risPattern.h"
-
-// Version 1 changes UsdRiRslShaderObject to UsdRiRslShader
-#define USDRI_LOOK_API_VERSION 1
 """
     }
 ) {
-    rel riLook:surface (
+    uniform token outputs:ri:surface (
         customData = {
             string apiName = "surface"
         }
     )
-    rel riLook:displacement (
+    uniform token outputs:ri:displacement (
         customData = {
             string apiName = "displacement"
         }
     )
-    rel riLook:volume (
+    uniform token outputs:ri:volume (
         customData = {
             string apiName = "volume"
         }
     )
-    rel riLook:coshaders (
-        customData = {
-            string apiName = "coshaders"
-        }
-    )
-    rel riLook:bxdf (
+    uniform token outputs:ri:bxdf (
         customData = {
             string apiName = "bxdf"
         }
     )
-    rel riLook:patterns (
-        customData = {
-            string apiName = "patterns"
-        }
+}
+
+
+########################################################################
+# Lighting API
+
+class "RiLightAPI" (
+    doc = """RiLightAPI is an API schema that provides an interface
+    to add Renderman-specific attributes to lights."""
+    customData = {
+        string className = "LightAPI"
+    }
+) {
+    int ri:sampling:fixedSampleCount (
+        displayGroup = "Advanced"
+        displayName = "Light Samples"
+        doc = """Specifies an override of the number of light samples to be
+        taken for this light source. If set to something other than zero,
+        it will override the sampling performed by the integrator and can 
+        result in a performance impact. For scenes that have lots of lights,
+        resulting in some lights that are under-sampled, you may want to set
+        it to non-zero."""
+    )
+    float ri:sampling:importanceMultiplier = 1 (
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = "Importance of this light for noise control."
+    )
+    float ri:intensityNearDist (
+        displayGroup = "Refine"
+        displayName = "Intensity Near Dist"
+        doc = """Near distance between the point being illuminated and the
+        light at which the sample doesn't get brighter. This may help you
+        avoid hot spots and sampling issues where a light is near a
+        surface."""
+    )
+    string ri:lightGroup (
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """Specify the light group name used for light group LPEs.
+        This is useful to generate per-light AOVs for later adjustment
+        in compositing."""
+    )
+    bool ri:shadow:thinShadow (
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = """Enable thin shadow and disable refraction caustics for this
+        light. This parameter will ignored if Trace Light Paths is
+        enabled. This is a non-physical control that creates "fake"
+        colored shadows for transmissive objects without needing to
+        generate photons for caustics."""
+    )
+    bool ri:trace:lightPaths (
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """Enable light and photon tracing from this light. This
+        value enforces a physically-based light and as a side-effect
+        disables the above Shadows controls. Users may use this feature
+        to selectively decide which lights emit photons when using the
+        PxrVCM or PxrUPBP Integrators."""
+    )
+}
+
+class "RiLightFilterAPI" (
+    doc = """Renderman-specific attributes for light filters."""
+    customData = {
+        string className = "LightFilterAPI"
+    }
+)
+{
+    token ri:combineMode (
+        allowedTokens = ["multiply", "max", "min", "screen"]
+        doc = """Specifies how this filter combines with others.
+        Valid values are:
+
+        - multiply: The results of filters are multiplied together
+        - max: The maximum result of the filters is used.  This
+          works best for grey-scale filters.
+        - min: The minimum result of the filters is used. This
+          works best for grey-scale filters.
+        - screen: Similar to max, but combines gradients in a smoother
+          way by using a screen operation:
+          <pre>screen(a,b) = 1-(1-a)(1-b)</pre>
+          This works best for grey-scale filters.
+
+        Light filters on a light are grouped by their combine mode.
+        Each group is executed and combined using that mode.  Then,
+        the final results of each group are multiplied together.
+
+        Fallback: multiply
+        """
+    )
+    float ri:density (
+        doc = """Scales the strength of the filter."""
+    )
+    bool ri:invert (
+        doc = """When true, inverts the output of the light filter."""
+    )
+    float ri:intensity (
+        doc = """Multipier for the diffuse and specular result."""
+    )
+    float ri:exposure = 0 (
+        doc = """Exposure control for the multiplier."""
+    )
+    float ri:diffuse (
+        doc = """A multiplier for the effect of this light on the diffuse
+        response of materials.  This is a non-physical control."""
+    )
+    float ri:specular (
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
+    )
+}
+
+class "RiLightPortalAPI" (
+    doc = """Renderman-specific attributes for light portals."""
+    customData = {
+        string className = "LightPortalAPI"
+    }
+)
+{
+    float ri:portal:intensity (
+        displayGroup = "Basic"
+        doc = """Intensity adjustment relative to the light intensity.
+        This gets multiplied by the light's intensity and power"""
+    )
+    color3f ri:portal:tint (
+        displayGroup = "Basic"
+        displayName = "Color Tint"
+        doc = "tint: This parameter tints the color from the dome texture."
+    )
+}
+
+class "RiSplineAPI" (
+    doc = """RiSplineAPI is a general purpose API schema used to describe
+    a named spline stored as a set of attributes on a prim.
+    
+    It is an add-on schema that can be applied many times to a prim with
+    different spline names. All the attributes authored by the schema
+    are namespaced under "$NAME:spline:", with the name of the
+    spline providing a namespace for the attributes.
+
+    The spline describes a 2D piecewise cubic curve with a position and
+    value for each knot. This is chosen to give straightforward artistic
+    control over the shape. The supported basis types are:
+
+    - linear (UsdRiTokens->linear)
+    - bspline (UsdRiTokens->bspline)
+    - Catmull-Rom (UsdRiTokens->catmullRom)
+    """
+    customData = {
+        string className = "SplineAPI"
+    }
+) {
+}
+
+class "RiTextureAPI" (
+    doc = """RiTextureAPI is an API schema that provides an interface
+    to add Renderman-specific attributes to adjust textures."""
+    customData = {
+        string className = "TextureAPI"
+    }
+) {
+    float ri:texture:gamma (
+        doc = """Gamma-correct the texture"""
+    )
+    float ri:texture:saturation (
+        doc = """Adjust the texture's saturation"""
+    )
+}
+
+#########################################################################
+# Lights
+
+class PxrEnvDayLight "PxrEnvDayLight" (
+    inherits = </Light>
+)
+{
+    int day = 1 (
+        displayGroup = "MsApprox"
+        displayName = "Day"
+        doc = """day: Day of the month, 1 through 31.
+        This is ignored if month is 0."""
+    )
+    float haziness = 2 (
+        displayGroup = "MsApprox"
+        displayName = "Haziness"
+        doc = """haziness: The turbidity of the sky.  The lower limit of the
+        model is 1.7 for  an exceptionally clear sky, and 10, for an
+        nversion, is the upper  limit."""
+    )
+    float hour = 14.633333 (
+        displayGroup = "MsApprox"
+        displayName = "Hour"
+        doc = """hour: Hours since midnight, local standard time.  May be
+        fractional to include minutes and seconds.  If daylight saving time
+        is in effect, subtract 1 to correct to standard time.  This is
+        ignored if month is 0."""
+    )
+    float latitude = 47.602 (
+        displayGroup = "MsApprox"
+        displayName = "Latitude"
+        doc = """latitude: Latitude in degrees.  Positive for north, negative
+        for south.  Ranges frmo -90 to +90 degrees. This is ignored if
+        month is 0."""
+    )
+    float longitude = -122.332 (
+        displayGroup = "MsApprox"
+        displayName = "Longitude"
+        doc = """longitude: Longitude in degrees.  Positive for east, negative
+        for west.  Ranges frmo -180 to +180 degrees.    This is ignored
+        if month is 0."""
+    )
+    int month = 0 (
+        displayGroup = "MsApprox"
+        displayName = "Month"
+        doc = """month: Month of the year, 1 through 12.      The default,
+        0, means to use the explicitly given sun direction   instead of
+        automatically computing it."""
+    )
+    color3f skyTint = (1, 1, 1) (
+        displayGroup = "MsApprox"
+        displayName = "Sky Tint"
+        doc = """skyTint: Tweak the sky's contribution and color.  The
+        default, white (1,1,1),  gives results based on measured
+        physical values."""
+    )
+    vector3f sunDirection = (0, 0, 1) (
+        displayGroup = "MsApprox"
+        displayName = "Direction"
+        doc = """sunDirection: The *apparent* direction towards the center
+        of the sun. The zenith  is at +Y (for noon light) and the horizon
+        is in the XZ plane (for  sunrise/set).  Note that the Y component
+        must non- negative.  Ignored if a month is given."""
+    )
+    float sunSize = 1 (
+        displayGroup = "MsApprox"
+        displayName = "Sun Size"
+        doc = """sunSize: Scale the apparent size of the sun in the sky.
+        Leave at 1 for a  realistic sun size with an 0.55 degree
+        angular diameter."""
+    )
+    color3f sunTint = (1, 1, 1) (
+        displayGroup = "MsApprox"
+        displayName = "Sun Tint"
+        doc = """sunTint: Tweak the sun's contribution and color.  The
+        default, white (1,1,1),  gives results based on measured
+        physical values. Setting this to black removes the sun
+        contribution."""
+    )
+    int year = 2015 (
+        displayGroup = "MsApprox"
+        displayName = "Year"
+        doc = "year: Four-digit year.    This is ignored if month is 0."
+    )
+    float zone = -8 (
+        displayGroup = "MsApprox"
+        displayName = "Time Zone"
+        doc = """zone: Standard time zone offset from GMT/UTC in hours.
+        Positive for east,  negative for west.  For example, this would
+        be -8 for Pacific time.    This is ignored if month is 0."""
+    )
+}
+
+class PxrAovLight "PxrAovLight" (
+    inherits = </Light>
+)
+{
+    string aovName = "" (
+        displayGroup = "Advanced"
+        displayName = "AOV Name"
+        doc = "The name of the AOV to write to."
+    )
+    bool inPrimaryHit = True (
+        displayGroup = "Refine"
+        displayName = "In Primvary Hit"
+        doc = """If this is on, the usual mask of the illuminated objects
+        is generated. If this is off, you can get a mask of only in the
+        refraction or reflection."""
+    )
+    bool inReflection = False (
+        displayGroup = "Refine"
+        displayName = "In Reflection"
+        doc = """If this is on, the rays are traced through the specular
+        reflections to get  the masking signal.  Warning: this will
+        require some amount of samples to get a clean mask."""
+    )
+    bool inRefraction = False (
+        displayGroup = "Refine"
+        displayName = "In Refraction"
+        doc = """If this is on, the rays are traced through the glass
+        refractions  to get the masking signal.  Warning: this will
+        require some amount of samples to get a clean mask."""
+    )
+    bool invert = False (
+        displayGroup = "Refine"
+        displayName = "Invert"
+        doc = "If this is on, it inverts the signal for the AOV."
+    )
+    bool onVolumeBoundaries = True (
+        displayGroup = "Refine"
+        displayName = "On Volume Boundaries"
+        doc = """If this is on, the bounding box or shape of volumes will
+        appear in the mask. Since this is not always desirable, this can
+        be turned off."""
+    )
+    bool useColor = False (
+        displayGroup = "Refine"
+        displayName = "Use Color"
+        doc = """If this is on, it outputs a RGB color image instead of a
+        float image for the AOV."""
+    )
+    bool useThroughput = True (
+        displayGroup = "Refine"
+        displayName = "Use Throughput"
+        doc = """If this is on, the values in the mask for the reflected
+        or refracted rays will be affected by the strength of the reflection
+        or refraction. This can lead to values below and above 1.0. Turn
+        this off if you want a more solid mask."""
+    )
+}
+
+#########################################################################
+# Light filters
+
+class PxrIntMultLightFilter "PxrIntMultLightFilter" (
+    inherits = </LightFilter>
+    doc = """Multiplies the intensity of a given light."""
+) {
+}
+
+class PxrBarnLightFilter "PxrBarnLightFilter" (
+    inherits = </LightFilter>
+    doc = """Simulated geometric barn doors that control the spread of light."""
+) {
+    token barnMode = "physical" (
+        allowedTokens = ["physical", "analytic"]
+        doc = """Chooses a physical or analytic evaluation model for
+        the barn."""
+    )
+    float width = 1 (
+        doc = """Width of the inner region of the barn (X axis)."""
+    )
+    float height = 1 (
+        doc = """Height of the inner region of the barn (Y axis)."""
+    )
+    float radius = 0.5 (
+        doc = """Radius of the corners of the inner barn square."""
+    )
+    bool analytic:directional = false (
+        doc = """When this is on, the texture projects along a direction
+        using the orthographic projection. When it is off, the texture
+        projects using a focal point specified by the analytic:apex."""
+    )
+    float analytic:shearX = 0 (
+        doc = """Shear the projection along the X axis."""
+    )
+    float analytic:shearY = 0 (
+        doc = """Shear the projection along the Y axis."""
+    )
+    float analytic:apex = 0 (
+        doc = """Shear the projection along the Y axis."""
+    )
+    bool analytic:useLightDirection = false (
+        doc = """When this is on, If this is on, the projection direction
+        is determined by the position of the center of the light source.
+        Otherwise, it only follows the orientation of the barn. WARNING:
+        This does not work with dome and mesh lights."""
+    )
+    float analytic:density:nearDistance = 0 (
+        doc = """Distance from the barn where the density
+        interpolation starts."""
+    )
+    float analytic:density:farDistance = 0 (
+        doc = """Distance from the barn where the density interpolation
+        ends."""
+    )
+    float analytic:density:nearValue = 0 (
+        doc = """Density multiplier where the density interpolation starts."""
+    )
+    float analytic:density:farValue = 0 (
+        doc = """Density multiplier at the end of interpolation."""
+    )
+    float analytic:density:exponent = 0 (
+        doc = """Power exponent of the density interpolation."""
+    )
+    float edgeThickness = 0 (
+        doc = """Thickness of the edge region.  Larger values will
+        soften the edge shape."""
+    )
+    token preBarnEffect = "noEffect" (
+        allowedTokens = ["noEffect", "cone", "noLight"]
+        doc = """The effect on light before it reaches the barn
+        geometry."""
+    )
+    float scale:width = 1 (
+        doc = """Scale the width of the inner barn shape."""
+    )
+    float scale:height = 1 (
+        doc = """Scale the height of the inner barn shape."""
+    )
+    float refine:top = 0 (
+        doc = """Additional adjustment to the top region."""
+    )
+    float refine:bottom = 0 (
+        doc = """Additional adjustment to the top region."""
+    )
+    float refine:left = 0 (
+        doc = """Additional adjustment to the left region."""
+    )
+    float refine:right = 0 (
+        doc = """Additional adjustment to the left region."""
+    )
+    float edge:top = 0 (
+        doc = """Additional adjustment to the top region."""
+    )
+    float edge:bottom = 0 (
+        doc = """Additional adjustment to the top region."""
+    )
+    float edge:left = 0 (
+        doc = """Additional adjustment to the left region."""
+    )
+    float edge:right = 0 (
+        doc = """Additional adjustment to the left region."""
+    )
+}
+
+class PxrCookieLightFilter "PxrCookieLightFilter" (
+    inherits = </LightFilter>
+    doc = """A textured surface that filters light."""
+) {
+    token cookieMode = "physical" (
+        allowedTokens = ["physical", "analytic"]
+        doc = """Chooses a physical or analytic evaluation model for
+        the cookie:
+        - physical: The cookie behaves like a stained glass window
+          through which light falls. The falloff and blur are determined
+          by the size of the light, the distance to the light and distance
+          from the cookie.
+        - analytic: The cookie has a fixed projection and manual blur
+          and falloff controls.
+        """
+    )
+    float width = 1 (
+        doc = """Width of the rect the light is shining through."""
+    )
+    float height = 1 (
+        doc = """Height of the rect the light is shining through."""
+    )
+    asset texture:map (
+        doc = """A color texture to use on the cookie.  May use alpha."""
+    )
+    token texture:wrapMode = "off" (
+        allowedTokens = ["off", "repeat", "clamp"]
+        doc = """Specifies what value to use outside the texture's domain:
+        - off: no repeat
+        - repeat: repeats in X and Y
+        - clamp: uses the value from the nearest edge
+        """
+    )
+    color3f texture:fillColor (
+        doc = """If the texture is not repeating, this specifies the
+        color for the region outside of and behind the projected rectangle."""
+    )
+    bool texture:invertU = false (
+        doc = """Flips the texture from left to right. By default, the
+        orientation of the texture as seen from the light source matches
+        the orientation as it is viewed in an image viewer."""
+    )
+    bool texture:invertV = false (
+        doc = """Flips the texture from top to bottom. By default, the
+        orientation of the texture as seen from the light source matches
+        the orientation as it is viewed in an image viewer."""
+    )
+    float texture:scaleU = 1 (
+        doc = """Scales the U dimension."""
+    )
+    float texture:scaleV = 1 (
+        doc = """Scales the V dimension."""
+    )
+    float texture:offsetU = 0 (
+        doc = """Offsets the texture in the U direction."""
+    )
+    float texture:offsetV = 0 (
+        doc = """Offsets the texture in the V direction."""
+    )
+
+    bool analytic:directional = false (
+        doc = """When this is on, the texture projects along a direction
+        using the orthographic projection. When it is off, the texture
+        projects using a focal point specified by the analytic:apex."""
+    )
+    float analytic:shearX = 0 (
+        doc = """Shear the projection along the X axis."""
+    )
+    float analytic:shearY = 0 (
+        doc = """Shear the projection along the Y axis."""
+    )
+    float analytic:apex = 0 (
+        doc = """Shear the projection along the Y axis."""
+    )
+    bool analytic:useLightDirection = false (
+        doc = """When this is on, If this is on, the projection direction
+        is determined by the position of the center of the light source.
+        Otherwise, it only follows the orientation of the filter. WARNING:
+        This does not work with dome and mesh lights."""
+    )
+    float analytic:blur:amount = 0 (
+        doc = """Specify the blur of projected texture from 0-1. This
+        gets multiplied by the blurNear/blurFar interpolation. This
+        blurs between the projected color and the fill color when the
+        texture is not repeating."""
+    )
+    float analytic:blur:sMult = 0 (
+        doc = """Blur multiplier in the S direction."""
+    )
+    float analytic:blur:tMult = 0 (
+        doc = """Blur multiplier in the T direction."""
+    )
+    float analytic:blur:nearDistance = 0 (
+        doc = """Distance from the cookie where the blur interpolation
+        starts."""
+    )
+    float analytic:blur:midpoint = 0 (
+        doc = """Distance between near and far where midValue is located."""
+    )
+    float analytic:blur:farDistance = 0 (
+        doc = """Distance from the cookie where the blur interpolation ends."""
+    )
+    float analytic:blur:nearValue = 0 (
+        doc = """Blur multiplier where the blur interpolation starts."""
+    )
+    float analytic:blur:midValue = 0 (
+        doc = """Blur multiplier in the middle of interpolation."""
+    )
+    float analytic:blur:farValue = 0 (
+        doc = """Blur multiplier at the end of interpolation."""
+    )
+    float analytic:blur:exponent = 0 (
+        doc = """Power exponent of the blur interpolation."""
+    )
+
+
+    float analytic:density:nearDistance = 0 (
+        doc = """Distance from the cookie where the density
+        interpolation starts."""
+    )
+    float analytic:density:midpoint = 0 (
+        doc = """Distance between near and far where midValue is located."""
+    )
+    float analytic:density:farDistance = 0 (
+        doc = """Distance from the cookie where the density interpolation
+        ends."""
+    )
+    float analytic:density:nearValue = 0 (
+        doc = """Density multiplier where the density interpolation starts."""
+    )
+    float analytic:density:midValue = 0 (
+        doc = """Density multiplier in the middle of interpolation."""
+    )
+    float analytic:density:farValue = 0 (
+        doc = """Density multiplier at the end of interpolation."""
+    )
+    float analytic:density:exponent = 0 (
+        doc = """Power exponent of the density interpolation."""
+    )
+
+    float color:saturation = 1 (
+        doc = """Saturation of the result (0=greyscale, 1=normal,
+        >1=boosted colors)."""
+    )
+    float color:midpoint = 0.18 (
+        doc = """Midpoint for the contrast control."""
+    )
+    float color:contrast = 1 (
+        doc = """Contrast control (less than 1 = contrast reduction,
+        larger than 1 = contrast increase)."""
+    )
+    float color:whitepoint = 1 (
+        doc = """White point for the contrast control if (contrast > 1.0)."""
+    )
+    color3f color:tint  (
+        doc = """Tint of the resulting color after saturation, contrast
+        and clamp."""
+    )
+}
+
+class PxrRampLightFilter "PxrRampLightFilter" (
+    inherits = </LightFilter>
+    doc = """A ramp to modulate how a light falls off with distance."""
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdRi/splineAPI.h"
+"""
+    }
+) {
+    token rampMode = "distanceToLight" (
+        allowedTokens = ["distanceToLight", "linear", "spherical", "radial"]
+        doc = """Specifies the direction in which the ramp is applied"""
+    )
+    float falloffRamp:beginDistance = 0
+    float falloffRamp:endDistance = 10
+}
+
+class PxrRodLightFilter "PxrRodLightFilter" (
+    inherits = </LightFilter>
+    doc = """Simulates a rod or capsule-shaped region to modulate light."""
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdRi/splineAPI.h"
+"""
+    }
+) {
+    float width = 1 (
+        doc = """Width of the inner region of the rod (X axis)."""
+    )
+    float height = 1 (
+        doc = """Height of the inner region of the rod (Y axis)."""
+    )
+    float depth = 1 (
+        doc = """Depth of the inner region of the rod (Z axis)."""
+    )
+    float radius = 0.5 (
+        doc = """Radius of the corners of the inner rod box."""
+    )
+    float edgeThickness = 0 (
+        doc = """Thickness of the edge region.  Larger values will
+        soften the edge shape."""
+    )
+    float scale:width = 1 (
+        doc = """Scale the width of the inner rod shape."""
+    )
+    float scale:height = 1 (
+        doc = """Scale the height of the inner rod shape."""
+    )
+    float scale:depth = 1 (
+        doc = """Scale the depth of the inner rod shape."""
+    )
+
+    float refine:top = 0 (
+        doc = """Additional adjustment to the top region."""
+    )
+    float refine:bottom = 0 (
+        doc = """Additional adjustment to the top region."""
+    )
+    float refine:left = 0 (
+        doc = """Additional adjustment to the left region."""
+    )
+    float refine:right = 0 (
+        doc = """Additional adjustment to the left region."""
+    )
+    float refine:front = 0 (
+        doc = """Additional adjustment to the front region."""
+    )
+    float refine:back = 0 (
+        doc = """Additional adjustment to the back region."""
+    )
+
+    float edge:top = 0 (
+        doc = """Additional adjustment to the top region."""
+    )
+    float edge:bottom = 0 (
+        doc = """Additional adjustment to the top region."""
+    )
+    float edge:left = 0 (
+        doc = """Additional adjustment to the left region."""
+    )
+    float edge:right = 0 (
+        doc = """Additional adjustment to the left region."""
+    )
+    float edge:front = 0 (
+        doc = """Additional adjustment to the front region."""
+    )
+    float edge:back = 0 (
+        doc = """Additional adjustment to the back region."""
+    )
+
+    float color:saturation = 1 (
+        doc = """Saturation of the result (0=greyscale, 1=normal,
+        >1=boosted colors)."""
     )
 }

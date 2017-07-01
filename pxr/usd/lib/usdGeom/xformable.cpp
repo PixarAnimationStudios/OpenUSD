@@ -154,6 +154,10 @@ TF_DEFINE_ENV_SETTING(
 
 using std::vector;
 
+TF_MAKE_STATIC_DATA(GfMatrix4d, _IDENTITY) {
+    *_IDENTITY = GfMatrix4d(1.0);
+}
+
 bool 
 UsdGeomXformable::_GetXformOpOrderValue(
     VtTokenArray *xformOpOrder,
@@ -479,7 +483,7 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
             if (UsdAttribute attr = UsdGeomXformOp::_GetXformOpAttr(
                     GetPrim(), opName, &isInverseOp)) {
                 // Only add valid xform ops.                
-                result.push_back(UsdGeomXformOp(attr, isInverseOp));
+                result.emplace_back(attr, isInverseOp);
             } else {
                 // Skip invalid xform ops that appear in xformOpOrder, but issue
                 // a warning.
@@ -676,8 +680,6 @@ UsdGeomXformable::GetLocalTransformation(
     const UsdTimeCode time) const
 {
     TRACE_FUNCTION();
-
-    static const GfMatrix4d identity(1.0);
  
     VtTokenArray opOrderVec;
     if (!_GetXformOpOrderValue(&opOrderVec))
@@ -693,7 +695,7 @@ UsdGeomXformable::GetLocalTransformation(
             }
         }
 
-        *transform = identity;
+        transform->SetIdentity();
         return true;
     }
     
@@ -726,7 +728,11 @@ UsdGeomXformable::GetLocalTransformation(
                 // Only add valid xform ops.                
                 UsdGeomXformOp op(attr, isInverseOp);
                 if (op) {
-                    localXform *= op.GetOpTransform(time);
+                    GfMatrix4d opTransform = op.GetOpTransform(time);
+                    // Avoid multiplying by the identity matrix when possible.
+                    if (opTransform != *_IDENTITY) {
+                        localXform *= opTransform;
+                    }
                 }
             } else {
                 // Skip invalid xform ops that appear in xformOpOrder, but issue
@@ -796,7 +802,11 @@ UsdGeomXformable::GetLocalTransformation(
             }
         }
 
-        xform *= xformOp.GetOpTransform(time);
+        GfMatrix4d opTransform = xformOp.GetOpTransform(time);
+        // Avoid multiplying by the identity matrix when possible.
+        if (opTransform != *_IDENTITY) {
+            xform *= opTransform;
+        }
     }
     
     if (transform) {

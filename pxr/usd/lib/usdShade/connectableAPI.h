@@ -189,9 +189,10 @@ public:
     /// source attribute, which can be an input or an output.
     /// 
     /// The result depends on the "connectability" of the input and the source 
-    /// attributes and the types of prims they belong to.
+    /// attributes. 
     /// 
     /// \sa UsdShadeInput::SetConnectability
+    /// \sa UsdShadeInput::GetConnectability
     USDSHADE_API
     static bool CanConnect(const UsdShadeInput &input, 
                            const UsdAttribute &source);
@@ -372,8 +373,9 @@ public:
 
 private:
     /// \deprecated 
-    /// Provided for use by UsdRiLookAPI to author old-style interface 
-    /// attribute connections, which require the \p renderTarget argument. 
+    /// Provided for use by UsdRiLookAPI and UsdRiMaterialAPI to author 
+    /// old-style interface attribute connections, which require the 
+    /// \p renderTarget argument. 
     /// 
     static bool _ConnectToSource(
         UsdProperty const &shadingProp,
@@ -384,13 +386,17 @@ private:
         SdfValueTypeName typeName=SdfValueTypeName());
 
 protected:
+    // Befriend UsdRiLookAPI and UsdRiMaterialAPI temporarily to assist in the
+    // transition to the new shading encoding.
     friend class UsdRiLookAPI;
+    friend class UsdRiMaterialAPI;
     
     /// \deprecated
     /// Connect the given shading property to the given source input. 
     /// 
-    /// Provided for use by UsdRiLookAPI to author old-style interface 
-    /// attribute connections, which require the \p renderTarget argument. 
+    /// Provided for use by UsdRiLookAPI and UsdRiMaterialAPI to author 
+    /// old-style interface attribute connections, which require the 
+    /// \p renderTarget argument. 
     /// 
     USDSHADE_API
     static bool _ConnectToSource(UsdProperty const &shadingProp, 
@@ -560,6 +566,17 @@ public:
     static bool ClearSource(UsdShadeOutput const &output) {
         return ClearSource(output.GetProperty());
     }
+
+    /// \deprecated
+    /// 
+    /// Returns whether authoring of bidirectional connections for the old-style 
+    /// interface attributes is enabled. When this returns true, interface 
+    /// attribute connections are authored both ways (using both 
+    /// interfaceRecipientOf: and connectedSourceFor: relationships)
+    /// 
+    /// \note This method exists only for testing equality of the old and new
+    /// encoding of shading networks in USD. 
+    static bool AreBidirectionalInterfaceConnectionsEnabled();
 
     /// @}
 
