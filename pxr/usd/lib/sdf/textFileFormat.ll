@@ -159,7 +159,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
     }
 
     /* asset references */
-@([[:alnum:]$_/\. \-:]+([@#][[:alnum:]_/\.\-:]+)?)?@ {
+@([[:alnum:]$_/\. \-\!\<\>\=\+:]+([@#][[:alnum:]_/\.\-:]+)?)?@ {
         (*yylval_param) = Sdf_EvalQuotedString(yytext, yyleng, 1);
         return TOK_ASSETREF;
     }
