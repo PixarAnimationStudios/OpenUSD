@@ -125,6 +125,26 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
             Msg("\tfacevaryinginterpolateboundary SKIPPED because it was not authored\n");
     }
 
+    TfToken triangleSubdivisionRule;
+    if (mesh.GetTriangleSubdivisionRuleAttr().Get(&triangleSubdivisionRule, time)) {
+        if (triangleSubdivisionRule != UsdGeomTokens->catmullClark) {
+            TF_DEBUG(USDKATANA_MESH_IMPORT).
+                Msg("\ttriangleSubdivisionRule = %s (%d)\n",
+                    triangleSubdivisionRule.GetText(),
+                    UsdRiConvertToRManTriangleSubdivisionRule(triangleSubdivisionRule));
+            attrs.set("geometry.triangleSubdivisionRule",
+                  FnKat::IntAttribute(
+                    UsdRiConvertToRManTriangleSubdivisionRule(triangleSubdivisionRule)));
+        }
+        else {
+            TF_DEBUG(USDKATANA_MESH_IMPORT).
+                Msg("\ttriangleSubdivisionRule SKIPPED because it is default\n");
+        }
+    }
+    else {
+        TF_DEBUG(USDKATANA_MESH_IMPORT).
+            Msg("\ttriangleSubdivisionRule SKIPPED because we failed to read it!\n");
+    }
 
     // Holes
     VtIntArray holeIndices;

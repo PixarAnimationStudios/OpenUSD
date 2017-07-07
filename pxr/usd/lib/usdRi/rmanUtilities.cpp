@@ -108,6 +108,37 @@ UsdRiConvertFromRManFaceVaryingLinearInterpolation(int i)
     }
 }
 
+int
+UsdRiConvertToRManTriangleSubdivisionRule(TfToken const& token)
+{
+    // XXX A value of 2 is needed in order for the smoothing algorithm to work.
+    if(token == UsdGeomTokens->catmullClark) {
+        return 0;
+    }
+    else if(token == UsdGeomTokens->smooth)
+        return 2;
+    else{
+        TF_CODING_ERROR("Invalid TriangleSubdivisionRule Token: %s",
+            token.GetText());
+        return 0;
+    }
+}
+
+TfToken const&
+UsdRiConvertFromRManTriangleSubdivisionRule(int i)
+{
+    // XXX A value of 2 is needed in order for the smoothing algorithm to work.
+    switch(i){
+    case 0:
+        return UsdGeomTokens->catmullClark;
+    case 2:
+        return UsdGeomTokens->smooth;
+    default:
+        TF_CODING_ERROR("Invalid TriangleSubdivisionRule int: %d", i);
+        return UsdGeomTokens->catmullClark;
+    }
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
