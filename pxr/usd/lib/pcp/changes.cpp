@@ -296,6 +296,30 @@ Pcp_MayNeedPrimIndexChangeForDecorator(PcpPayloadDecorator* decorator,
     return false;
 }
 
+static bool
+Pcp_PrimSpecOrDescendantHasRelocates(const SdfLayerHandle& layer, 
+                                     const SdfPath& primPath)
+{
+    TRACE_FUNCTION();
+
+    if (layer->HasField(primPath, SdfFieldKeys->Relocates)) {
+        return true;
+    }
+
+    TfTokenVector primChildNames;
+    if (layer->HasField(primPath, SdfChildrenKeys->PrimChildren,
+                        &primChildNames)) {
+        for (const TfToken& name : primChildNames) {
+            if (Pcp_PrimSpecOrDescendantHasRelocates(
+                    layer, primPath.AppendChild(name))) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void
 PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                       const SdfLayerChangeListMap& changes)
@@ -739,10 +763,40 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                 onlyExistingDependentPaths, debugSummary);
         }
 
+        // For every non-inert prim spec that has been added to this layer,
+        // check if it or any of its descendant prim specs contains relocates.
+        // If so, all dependent layer stacks need to recompute its cached
+        // relocates. We can skip this if all caches are in USD mode, since 
+        // relocates are disabled for those caches.
+        if (!allCachesInUsdMode) {
+            for (const auto& value : pathsWithSpecChangesTypes) {
+                const SdfPath& path = value.first;
+                if (!path.IsPrimOrPrimVariantSelectionPath() || 
+                    !(value.second & Pcp_EntryChangeSpecsAddNonInert)) {
+                    continue;
+                }
+
+                if (Pcp_PrimSpecOrDescendantHasRelocates(layer, path)) {
+                    for (const CacheLayerStacks &i: cacheLayerStacks) {
+                        if (i.first->IsUsd()) {
+                            // No relocations in usd mode
+                            continue;
+                        }
+                        for (const PcpLayerStackPtr &layerStack: i.second) {
+                            layerStackChangesMap[layerStack] 
+                                |= LayerStackRelocatesChange;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
         // For every path we've found that has a significant change,
         // check layer stacks that have discovered relocations that
-        // could be affected by that change.
-        if (!pathsWithSignificantChanges.empty()) {
+        // could be affected by that change. We can skip this if all caches
+        // are in USD mode, since relocates are disabled for those caches.
+        if (!pathsWithSignificantChanges.empty() && !allCachesInUsdMode) {
             // If this scope turns out to be expensive, we should look
             // at switching PcpLayerStack's _relocatesPrimPaths from
             // a std::vector to a path set.  _AddRelocateEditsForLayerStack
@@ -751,7 +805,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                         "relocations against significant prim resyncs");
 
             for(const CacheLayerStacks &i: cacheLayerStacks) {
-                if (i.first->_usd) {
+                if (i.first->IsUsd()) {
                     // No relocations in usd mode
                     continue;
                 }
