@@ -686,7 +686,7 @@ _NodeRepresentsLiveBaseMaterial(const PcpNodeRef &node)
 
 /* static */
 bool 
-UsdShadeConnectableAPI::IsSourceFromBaseMaterial(
+UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(
     const UsdProperty &shadingProp)
 {
     if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {

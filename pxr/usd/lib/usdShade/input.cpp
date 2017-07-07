@@ -305,9 +305,9 @@ UsdShadeInput::HasConnectedSource() const
 }
 
 bool 
-UsdShadeInput::IsSourceFromBaseMaterial() const 
+UsdShadeInput::IsSourceConnectionFromBaseMaterial() const 
 {
-    return UsdShadeConnectableAPI::IsSourceFromBaseMaterial(*this);
+    return UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(*this);
 }
 
 bool 

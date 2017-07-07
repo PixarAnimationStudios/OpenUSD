@@ -148,7 +148,8 @@ void wrapUsdShadeInput()
         .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths,
             return_value_policy<TfPySequenceToList>())
         .def("HasConnectedSource", &Input::HasConnectedSource)
-        .def("IsSourceFromBaseMaterial", &Input::IsSourceFromBaseMaterial)
+        .def("IsSourceConnectionFromBaseMaterial",
+             &Input::IsSourceConnectionFromBaseMaterial)
         .def("DisconnectSource", &Input::DisconnectSource)
         .def("ClearSource", &Input::ClearSource)
 

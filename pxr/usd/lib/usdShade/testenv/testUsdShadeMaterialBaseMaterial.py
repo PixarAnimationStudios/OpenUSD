@@ -62,7 +62,8 @@ class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
         print stage.GetRootLayer().ExportToString()
         print ConnAPI.GetConnectedSource(floatShaderInput)
         self.assertTrue(ConnAPI.HasConnectedSource(floatShaderInput))
-        self.assertFalse(ConnAPI.IsSourceFromBaseMaterial(floatShaderInput))
+        self.assertFalse(ConnAPI.IsSourceConnectionFromBaseMaterial(
+                floatShaderInput))
         self.assertTrue(not parentMaterial.HasBaseMaterial())
 
         # Create child materials
@@ -95,8 +96,8 @@ class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
                 self.assertTrue(childShader)
                 childShaderInput = childShader.GetInput('floatInput')
                 self.assertEqual(childShaderInput.GetAttr().Get(), 1.0)
-                self.assertTrue(ConnAPI.IsSourceFromBaseMaterial(
-                    childShaderInput))
+                self.assertTrue(ConnAPI.IsSourceConnectionFromBaseMaterial(
+                        childShaderInput))
             else:
                 # OLD encoding
                 # verify that child shader is not found by default 

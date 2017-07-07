@@ -303,10 +303,10 @@ public:
     /// GetConnectedSource(), is authored across a specializes arc, which is 
     /// used to denote a base material.
     /// 
-    /// \sa UsdShadeConnectableAPI::IsSourceFromBaseMaterial
+    /// \sa UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial
     ///
     USDSHADE_API
-    bool IsSourceFromBaseMaterial() const;
+    bool IsSourceConnectionFromBaseMaterial() const;
 
     /// Disconnect source for this Output.
     /// 
