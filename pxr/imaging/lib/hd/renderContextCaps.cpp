@@ -196,7 +196,7 @@ HdRenderContextCaps::_LoadCaps()
         directStateAccessEnabled = true;
     }
 
-    // initialize by individual exntention.
+    // initialize by individual extension.
     if (GLEW_ARB_bindless_texture && glMakeTextureHandleResidentNV) {
         bindlessTextureEnabled = true;
     }
