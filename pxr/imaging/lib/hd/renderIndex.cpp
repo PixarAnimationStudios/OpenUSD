@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
+#include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprim.h"
@@ -59,14 +60,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
-typedef tbb::concurrent_unordered_map<TfToken, 
-                        tbb::concurrent_vector<HdDrawItem const*>, 
-                        TfToken::HashFunctor > _ConcurrentDrawItemView; 
+
 
 HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
-    : _delegateRprimMap()
-    , _rprimMap()
-    , _rprimIDSet()
+    :  _rprimMap()
+    , _rprimIds()
     , _rprimPrimIdMap()
     , _taskMap()
     , _sprimIndex()
@@ -129,18 +127,17 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
         return;
     }
 
-    SdfPath const &sceneDelegateId = sceneDelegate->GetDelegateID();
+    // Do Insertion sort to insert id into list of paths.
+    SdfPathVector::iterator it = std::lower_bound(_rprimIds.begin(),
+                                                  _rprimIds.end(),
+                                                  rprimId);
+    _rprimIds.insert(it, rprimId);
 
-    _rprimIDSet.insert(rprimId);
     _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask());
     _AllocatePrimId(rprim);
 
-    SdfPathVector* vec = &_delegateRprimMap[sceneDelegateId];
-    vec->push_back(rprimId);
-
     _RprimInfo info = {
       sceneDelegate,
-      vec->size()-1,
       rprim
     };
     _rprimMap[rprimId] = std::move(info);
@@ -166,33 +163,13 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
 
     SdfPath instancerId = rprimInfo.rprim->GetInstancerId();
 
-    SdfPath const &sceneDelegateId = rprimInfo.sceneDelegate->GetDelegateID();
-
-    _DelegateRprimMap::iterator dit = _delegateRprimMap.find(sceneDelegateId);
-    SdfPathVector* vec = &dit->second;
-    size_t rem = rprimInfo.childIndex;
-
-    TF_VERIFY(rem < vec->size());
-    TF_VERIFY(vec->size() > 0);
-
-    if (rem != vec->size()-1) {
-        // Swap the item to remove to the back.
-        std::swap(vec->at(rem), vec->back());
-        // Update the index of the child we swapped.
-        _RprimMap::iterator nit = _rprimMap.find(vec->at(rem));
-        if (TF_VERIFY(nit != _rprimMap.end(),
-                    "%s\n", vec->at(rem).GetText()))
-            nit->second.childIndex = rem;
-    }
-
-    // The rprim to remove is now the last element in the path vector.
-    // Remove the dead rprim.
-    vec->pop_back();
-
-    // If that was the last rprim for the delegate, clear out the delegate map
-    // entry as well.
-    if (vec->empty()) {
-        _delegateRprimMap.erase(dit);
+    SdfPathVector::iterator it = std::lower_bound(_rprimIds.begin(),
+                                                  _rprimIds.end(),
+                                                  id);
+    if (it != _rprimIds.end()) {
+        if (*it == id) {
+            _rprimIds.erase(it);
+        }
     }
 
     if (!instancerId.IsEmpty()) {
@@ -206,7 +183,6 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
     _renderDelegate->DestroyRprim(rprimInfo.rprim);
     rprimInfo.rprim = nullptr;
 
-    _rprimIDSet.erase(id);
     _rprimMap.erase(rit);
 }
 
@@ -221,9 +197,9 @@ HdRenderIndex::Clear()
         rprimInfo.rprim = nullptr;
     }
     // Clear Rprims, Rprim IDs, and delegate mappings.
-    _rprimIDSet.clear();
     _rprimMap.clear();
-    _delegateRprimMap.clear();
+    _rprimIds.clear();
+    _CompactPrimIds();
 
     // Clear S & B prims
     _sprimIndex.Clear(_tracker, _renderDelegate);
@@ -245,41 +221,6 @@ HdRenderIndex::Clear()
     // any dependent state to be updated.
     _tracker.MarkAllCollectionsDirty();
 }
-
-// -------------------------------------------------------------------------- //
-/// \name Rprim Support
-// -------------------------------------------------------------------------- //
-
-void
-HdRenderIndex::GetDelegateIDsWithDirtyRprims(int dirtyMask, 
-                                             SdfPathVector* IDs) const
-{
-    IDs->reserve(_delegateRprimMap.size());
-    HdChangeTracker const& tracker = GetChangeTracker();
-
-    TF_FOR_ALL(delegateIt, _delegateRprimMap) {
-        SdfPathVector const& rprimChildren = delegateIt->second;
-        TF_FOR_ALL(rprimIt, rprimChildren) {
-            if (dirtyMask == 0 || tracker.GetRprimDirtyBits(*rprimIt) & dirtyMask) {
-                SdfPath const& delegateID = delegateIt->first;
-                IDs->push_back(delegateID);
-                break;
-            }
-        }
-    }
-}
-
-SdfPathVector const& 
-HdRenderIndex::GetDelegateRprimIDs(SdfPath const& delegateID) const
-{
-    static SdfPathVector const EMPTY;
-    _DelegateRprimMap::const_iterator it = _delegateRprimMap.find(delegateID);
-    if (it == _delegateRprimMap.end())
-        return EMPTY;
-
-    return it->second;
-}
-
 
 // -------------------------------------------------------------------------- //
 /// \name Task Support
@@ -526,206 +467,82 @@ HdRenderIndex::_ConfigureReprs()
 /// \name Draw Item Handling 
 // -------------------------------------------------------------------------- //
 
-static
-void
-_AppendDrawItem(HdSceneDelegate* delegate,
-                HdRprim* rprim,
-                HdRprimCollection const& collection,
-                TfToken const& reprName,
-                bool forcedRepr,
-                _ConcurrentDrawItemView* result)
+
+struct _FilterParam {
+    const HdRprimCollection &collection;
+    const HdRenderIndex     *renderIndex;
+};
+
+static bool
+_DrawItemFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
 {
-    // Get the tag for this rprim and if the tag is included in the collection
-    // we will add it to the buffer
-    TfToken const & rprimTag =  rprim->GetRenderTag(delegate, reprName);
-    if (!collection.HasRenderTag(rprimTag)){
-        return;  
-    } 
+    const _FilterParam *filterParam =
+                              static_cast<const _FilterParam *>(predicateParam);
 
-    // Extract the draw items and assign them to the right command buffer
-    // based on the tag
-    std::vector<HdDrawItem> *drawItems =
-            rprim->GetDrawItems(delegate, reprName, forcedRepr);
+    const HdRprimCollection &collection = filterParam->collection;
+    const HdRenderIndex *renderIndex    = filterParam->renderIndex;
 
-    if (drawItems != nullptr) {
-        TF_FOR_ALL(drawItemIt, *drawItems) {
-            (*result)[rprimTag].push_back(&(*drawItemIt));
-        }
-    }
+   TfToken const & repr = collection.GetReprName();
+
+   if (collection.HasRenderTag(renderIndex->GetRenderTag(rprimID, repr))) {
+       return true;
+   }
+
+   return false;
 }
 
-static
-bool
-_IsPathExcluded(SdfPath const & path,
-                SdfPathVector const & rootPaths,
-                SdfPathVector const & excludePaths)
-{
-    // XXX : We will need something more efficient
-    //       specially if the list of excluded paths is big.
-    //       Also, since the array of excluded paths is sorted
-    //       we could for instance use lower_bound
-    bool isExcludedPath = false;
-
-    for (SdfPathVector::const_iterator excludeIt = excludePaths.begin();
-            excludeIt != excludePaths.end(); excludeIt++) {
-
-        SdfPath const& excludePath = *excludeIt;
-        if (path.HasPrefix(excludePath)) { 
-            isExcludedPath = true;
-
-            // Looking for paths that might be included inside the 
-            // excluded paths
-            for (SdfPathVector::const_iterator includedIt = rootPaths.begin();
-                    includedIt != rootPaths.end(); includedIt++) 
-            {
-                if (path.HasPrefix(*includedIt) && 
-                        includedIt->HasPrefix(excludePath)) {
-                    isExcludedPath = false;
-                }
-            }
-        }
-    }
-    return isExcludedPath;
-}
-
-HdRenderIndex::HdDrawItemView 
+HdRenderIndex::HdDrawItemView
 HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
 {
     HD_TRACE_FUNCTION();
 
-    // 
-    // PERFORMANCE: Warning, this function is performance sensitive.
-    //
+    SdfPathVector rprimIds;
 
-    // Note that root paths are always sorted and will never be an empty vector.
-    SdfPathVector const& rootPaths = collection.GetRootPaths();
-    SdfPathVector const& excludePaths = collection.GetExcludePaths();
-    TfToken const& reprName = collection.GetReprName();
-    bool forcedRepr = collection.IsForcedRepr();
+    const SdfPathVector &paths        = GetRprimIds();
+    const SdfPathVector &includePaths = collection.GetRootPaths();
+    const SdfPathVector &excludePaths = collection.GetExcludePaths();
 
-    _ConcurrentDrawItemView result;
+    _FilterParam filterParam = {collection, this};
 
-    // Structure that will hold the values to be returned
+    HdPrimGather gather;
+
+    gather.PredicatedFilter(paths,
+                            includePaths,
+                            excludePaths,
+                            _DrawItemFilterPredicate,
+                            &filterParam,
+                            &rprimIds);
+
+    _ConcurrentDrawItems concurrentDrawItems;
+
+
+    WorkParallelForN(rprimIds.size(),
+                         std::bind(&HdRenderIndex::_AppendDrawItems,
+                                   this,
+                                   rprimIds,
+                                   std::placeholders::_1,     // begin
+                                   std::placeholders::_2,     // end
+                                   collection,
+                                   &concurrentDrawItems));
+
+
+    typedef tbb::flattened2d<_ConcurrentDrawItems> _FlattenDrawItems;
+
+    _FlattenDrawItems result = tbb::flatten2d(concurrentDrawItems);
+
+    // Merge thread results to the output data structure
     HdDrawItemView finalResult;
+    for (_FlattenDrawItems::iterator it  = result.begin();
+                                     it != result.end();
+                                   ++it) {
+        const TfToken &rprimTag = it->first;
+        HdDrawItemPtrVector &threadDrawItems = it->second;
 
-    // Here we are going to leverage a common pattern: often a delegate will be
-    // created and its root will be used to filter the items being drawn, as a
-    // result we can lookup each root in the delegate map and if there is a
-    // match, we can process all the rprims that belong to that delegate without
-    // having to filter each path individually.
-    //
-    // Any paths that are not found in the delegate map will be added to the
-    // remaining root paths vector to be processed and filtered against each
-    // individual Rprim.
-    SdfPathVector remainingRootPaths;
+        HdDrawItemPtrVector &finalDrawItems = finalResult[rprimTag];
 
-    WorkArenaDispatcher dispatcher;
-
-    for (SdfPathVector::const_iterator rootIt = rootPaths.begin();
-            rootIt != rootPaths.end(); rootIt++)
-    {
-        SdfPath const& rootPath = *rootIt;
-        SdfPathVector const* children = 
-                                TfMapLookupPtr(_delegateRprimMap, rootPath);
-
-        if (!children) {
-            remainingRootPaths.push_back(rootPath);
-            continue;
-        }
-
-        dispatcher.Run(
-          [children, &collection, &reprName, forcedRepr, 
-            &rootPaths, &excludePaths, &result, this]() {
-            
-            // In the loop below, we process the previous item while fetching
-            // the next, this is done to hide the memory latency of accessing
-            // each item.
-            //
-            // As a result, we fetch the first item and process the last item
-            // outside the loop. 
-            SdfPathVector::const_iterator pathIt = children->begin();
-            _RprimInfo const* info = TfMapLookupPtr(_rprimMap, *pathIt);
-            pathIt++;
-
-
-            // Main loop.
-            for (; pathIt != children->end(); pathIt++) {
-                if (_IsPathExcluded(*pathIt, rootPaths, excludePaths)) {
-                    continue;
-                }
-                
-                // Grab the current item.
-                HdRprim*         rprim         = info->rprim;
-                HdSceneDelegate *sceneDelegate = info->sceneDelegate;
-
-                // Prefetch the next item.
-                info = TfMapLookupPtr(_rprimMap, *pathIt);
-
-                // Process the current item.
-                _AppendDrawItem(sceneDelegate, rprim, collection, reprName,
-                                forcedRepr, &result);
-            }
-
-            // Process the last item.
-            _AppendDrawItem(info->sceneDelegate, info->rprim, collection,
-                            reprName, forcedRepr, &result);
-        });
-    }
-    
-    dispatcher.Wait();
-
-    // If we had all delegate roots in the rootPaths vector, we're done.
-    if (remainingRootPaths.empty()) {
-        for (_ConcurrentDrawItemView::iterator it = result.begin(); 
-                                              it != result.end(); ++it) {
-            finalResult[it->first].reserve(it->second.size());
-            finalResult[it->first].insert(
-                finalResult[it->first].begin(), 
-                it->second.begin(), it->second.end());
-        }
-        return finalResult;
-    }
-
-    // 
-    // Now do the slower filter of all the remaining root paths.
-    //
-    SdfPathVector::const_iterator rootIt = remainingRootPaths.begin();
-    _RprimIDSet::const_iterator pathIt = _rprimIDSet.lower_bound(*rootIt);
-     
-    while (pathIt != _rprimIDSet.end()) {
-        // Precondition: rootIt is either a prefix of the current prim or we've
-        // passed that prefix in the iteration.
-        if (!pathIt->HasPrefix(*rootIt)) {
-            // continue to next root prefix
-            rootIt++;
-            if (rootIt == remainingRootPaths.end())
-                break;
-
-            // PERFORMANCE: could iterate here instead of calling lower_bound.
-            pathIt = _rprimIDSet.lower_bound(*rootIt);
-            continue;
-        } else {
-            // Here we know the path is potentially renderable
-            // now we need to check if the path is excluded
-            if (_IsPathExcluded(*pathIt, rootPaths, excludePaths)) {
-                pathIt++;
-                continue;
-            }
-        }
-
-        _RprimInfo const* info = TfMapLookupPtr(_rprimMap, *pathIt);
-        _AppendDrawItem(info->sceneDelegate, info->rprim, collection,
-                        reprName, forcedRepr, &result);
-        pathIt++;
-    }
-
-    // Copy results to the output data structure
-    for (_ConcurrentDrawItemView::iterator it = result.begin(); 
-                                           it != result.end(); ++it) {
-        finalResult[it->first].reserve(it->second.size());
-        finalResult[it->first].insert(
-            finalResult[it->first].begin(), 
-            it->second.begin(), it->second.end());
+        finalDrawItems.insert(finalDrawItems.end(),
+                              threadDrawItems.begin(),
+                              threadDrawItems.end());
     }
 
     return finalResult;
@@ -745,15 +562,11 @@ HdRenderIndex::GetRenderTag(SdfPath const& id, TfToken const& reprName) const
 SdfPathVector
 HdRenderIndex::GetRprimSubtree(SdfPath const& rootPath) const
 {
-    // PERFORMANCE: This loop can get really hot, ideally we wouldn't iterate
-    // over a map, since memory coherency is so bad.
     SdfPathVector paths;
-    paths.reserve(1024);
-    for (auto p = _rprimIDSet.lower_bound(rootPath); 
-            p != _rprimIDSet.end() && p->HasPrefix(rootPath); ++p)
-    {
-        paths.push_back(*p);
-    }
+
+    HdPrimGather gather;
+    gather.Subtree(_rprimIds, rootPath, &paths);
+
     return paths;
 }
 
@@ -1234,6 +1047,57 @@ HdRenderIndex::IsBprimTypeSupported(TfToken const& typeId) const
 {
     TfTokenVector const& supported = _renderDelegate->GetSupportedBprimTypes();
     return (std::find(supported.begin(), supported.end(), typeId) != supported.end());
+}
+
+void
+HdRenderIndex::_AppendDrawItems(
+                const SdfPathVector &rprimIds,
+                size_t begin,
+                size_t end,
+                HdRprimCollection const& collection,
+                _ConcurrentDrawItems* result)
+{
+    TfToken const& reprName = collection.GetReprName();
+    bool forcedRepr = collection.IsForcedRepr();
+
+    // Get draw item view for this thread.
+    HdDrawItemView &drawItemView = result->local();
+
+    for (size_t idNum = begin; idNum < end; ++idNum)
+    {
+        const SdfPath &rprimId = rprimIds[idNum];
+
+        _RprimMap::const_iterator it = _rprimMap.find(rprimId);
+        if (it != _rprimMap.end()) {
+            const _RprimInfo &rprimInfo = it->second;
+
+            // Extract the draw items and assign them to the right command buffer
+            // based on the tag
+            std::vector<HdDrawItem> *drawItems =
+                          rprimInfo.rprim->GetDrawItems(rprimInfo.sceneDelegate,
+                                                        reprName,
+                                                        forcedRepr);
+            if (drawItems != nullptr) {
+                const TfToken &rprimTag = rprimInfo.rprim->GetRenderTag(
+                                                        rprimInfo.sceneDelegate,
+                                                        reprName);
+
+                HdDrawItemPtrVector &resultDrawItems = drawItemView[rprimTag];
+
+                // Loop over each draw item, taking it's address and pushing
+                // that into the results array.
+                resultDrawItems.reserve(resultDrawItems.size() +
+                                        drawItems->size());
+                typedef std::vector<HdDrawItem>::iterator HdDrawItemIt;
+                for (HdDrawItemIt diIt  = drawItems->begin();
+                                  diIt != drawItems->end();
+                                ++diIt) {
+                    HdDrawItem &drawItem = *diIt;
+                    resultDrawItems.push_back(&drawItem);
+                }
+            }
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -151,12 +151,11 @@ private:
     };
 
     typedef std::unordered_map<SdfPath, _PrimInfo, SdfPath::Hash> _PrimMap;
-    typedef std::set<SdfPath> _PrimIDSet;
 
     struct _PrimTypeEntry
-    {
+   {
         _PrimMap         primMap;
-        _PrimIDSet       primIds;           // Primarily for sub-tree searching
+        SdfPathVector    primIds;   // Primarily for sub-tree searching (sorted)
         PrimType        *fallbackPrim;
 
         _PrimTypeEntry()

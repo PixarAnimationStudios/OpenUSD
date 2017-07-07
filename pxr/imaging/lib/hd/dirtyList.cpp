@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -32,90 +33,36 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct _FilterParam {
+    const HdRprimCollection &collection;
+    const HdRenderIndex     &renderIndex;
+    HdDirtyBits              mask;
+};
 
-static void
-_FilterByRootPaths(SdfPathVector* paths, HdRenderIndex const& index, 
-                   HdRprimCollection const& collection)
+static bool
+_DirtyListFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
 {
-    HD_TRACE_FUNCTION();
-    SdfPathVector newPaths;
-    newPaths.reserve(paths->size());
+    const _FilterParam *filterParam =
+                              static_cast<const _FilterParam *>(predicateParam);
 
-    SdfPathVector::iterator idIt, idEnd;
-    SdfPathVector::const_iterator rootIt = collection.GetRootPaths().begin();
-    SdfPathVector::const_iterator rootItEnd = collection.GetRootPaths().end();
-    TfToken const& repr = collection.GetReprName();
+    const HdRprimCollection &collection = filterParam->collection;
+    const HdRenderIndex &renderIndex    = filterParam->renderIndex;
+    HdDirtyBits mask                    = filterParam->mask;
 
-    // If the collection is empty no processing is required and
-    // we will early out, otherwise dereferencing rootIt will crash hd
-    if (rootIt == rootItEnd) {
-        paths->clear();
-        return;
-    }
+    HdChangeTracker const &tracker = renderIndex.GetChangeTracker();
 
-    bool absoluteRoot = (*rootIt == SdfPath::AbsoluteRootPath());
+   if (mask == 0 || tracker.GetRprimDirtyBits(rprimID) & mask) {
+       TfToken const & repr = collection.GetReprName();
 
-    idIt = paths->begin();
-    if (!absoluteRoot) {
-        // Sort dirty item lists for efficient exclusion.
-        HD_TRACE_SCOPE("Sort dirty paths");
+       if (collection.HasRenderTag(renderIndex.GetRenderTag(rprimID, repr))) {
+           return true;
+       }
+   }
 
-        // We prefer std::sort to std::set here,
-        // since dirtyList could be pre-sorted in someway in future.
-        std::sort(paths->begin(), paths->end());
-
-        // skip the first excluded prims.
-        idIt = std::lower_bound(paths->begin(),
-                                paths->end(),
-                                *rootIt);
-    }
-    idEnd = paths->end();
-
-    // iterate over dirty items and clean subset of dirty bits
-    // designated by the given mask.
-
-    while (idIt != idEnd) {
-        // this logic is covered by testHdChangeTracker and testHdRenderIndex.
-        //
-        //   [paths]    [rootPaths]
-        //   /A/a0         /A <-(R)
-        //   /A/a1         /D
-        //   /B/b0 <-(I)
-        //   /B/b1
-        //   /D/c0
-        //   /D/c1
-        //
-        //   if idIt is at (I) and rootId is at (R), the following if-clause
-        //   is taken since HasPrefix returns false. rootId moves to /D,
-        //   and idIt will proceed until !(*idIt < *rootIt), which is /D/c0.
-        //   Then it starts over to the outer while loop.
-        //
-        if (!(absoluteRoot ||
-                 idIt->HasPrefix(*rootIt))) {
-            // next root prefix
-            ++rootIt;
-            while (idIt != idEnd &&
-                   (rootIt == rootItEnd || *idIt < *rootIt)) {
-                // this id doesn't belong to rootPaths of the collection.
-                idIt++;
-            }
-            // don't increment idIt here.
-            continue;
-        }
-
-        // This is expensive because it requires a std::map lookup using
-        // SdfPath::operator<, which is slow. It would be nice to improve this
-        // in the future, but caching it here is better for playback
-        // performance, despite the std::map hit.
-        if (collection.HasRenderTag(index.GetRenderTag(*idIt, repr))) {
-            newPaths.push_back(*idIt);
-        }
-
-        ++idIt;
-    }
-
-    paths->swap(newPaths);
+   return false;
 }
+
+
 
 HdDirtyList::HdDirtyList(HdRprimCollection const& collection,
                   HdRenderIndex & index)
@@ -148,87 +95,22 @@ HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdDirtyBits mask)
 {
     HD_TRACE_FUNCTION();
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyListsRebuilt);
-    ids->resize(0);
+
     
-    TfToken const & repr = _collection.GetReprName();
-    SdfPathVector roots = _collection.GetRootPaths();
-    SdfPathVector delegateIDs;
-    _renderIndex.GetDelegateIDsWithDirtyRprims(mask, &delegateIDs);
+    const SdfPathVector &paths        = _renderIndex.GetRprimIds();
+    const SdfPathVector &includePaths = _collection.GetRootPaths();
+    const SdfPathVector &excludePaths = _collection.GetExcludePaths();
 
-    SdfPath::FastLessThan less;
-    {
-        HD_TRACE_SCOPE("Sort delegate IDs");
-        // This seems crazy, but is actually faster than doing something
-        // in-place.
-        std::sort(delegateIDs.begin(), delegateIDs.end(), less);
-        std::sort(roots.begin(), roots.end(), less);
-    }
+    _FilterParam filterParam = {_collection, _renderIndex, mask};
 
-    // Root paths to unroll into RprimIDs.
-    SdfPathVector mustFilter;
-    SdfPathVector directAdd;
+    HdPrimGather gather;
 
-    // We hope everything ends up in this bucket, so try to avoid reallocation.
-    directAdd.reserve(delegateIDs.size());
-
-    // Actual RprimIDs.
-    SdfPathVector toBeFiltered;
-
-    {
-        HD_TRACE_SCOPE("Root Match");
-
-        SdfPathVector::iterator root = roots.begin();
-        TF_FOR_ALL(it, delegateIDs) {
-            {
-                HD_TRACE_SCOPE("walk");
-                // Walk together instead of lower_bound to increase cache
-                // coherency.
-                while (root != roots.end() && less(*root, *it)) {
-                    root++;
-                }
-            }
-            // Expand prims in two-phases to increase cache coherency.
-            if (root != roots.end() && *root == *it) {
-                directAdd.push_back(*it);
-            } else {
-                mustFilter.push_back(*it);
-            }
-        }
-    }
-
-    HdChangeTracker const &tracker = _renderIndex.GetChangeTracker();
-
-    {
-        HD_TRACE_SCOPE("build direct list");
-        TF_FOR_ALL(it, directAdd) {
-            TF_FOR_ALL(rprimID, _renderIndex.GetDelegateRprimIDs(*it)) {
-                if (mask == 0 || tracker.GetRprimDirtyBits(*rprimID) & mask) {
-                    if (_collection.HasRenderTag(
-                            _renderIndex.GetRenderTag(*rprimID, repr))) {
-                        ids->push_back(*rprimID);
-                    }
-                }
-            }
-        }
-    }
-
-    {
-        HD_TRACE_SCOPE("build filter list");
-        TF_FOR_ALL(it, mustFilter) {
-            TF_FOR_ALL(rprimID, _renderIndex.GetDelegateRprimIDs(*it)) {
-                if (mask == 0 || tracker.GetRprimDirtyBits(*rprimID) & mask) {
-                    toBeFiltered.push_back(*rprimID);
-                }
-            }
-        }
-    }
-
-    _FilterByRootPaths(&toBeFiltered, _renderIndex, _collection);
-
-    {
-        HD_TRACE_SCOPE("(Insert Filtered)");
-        ids->insert(ids->end(), toBeFiltered.begin(), toBeFiltered.end());
-    }
+    gather.PredicatedFilter(paths,
+                  includePaths,
+                  excludePaths,
+                  _DirtyListFilterPredicate,
+                  &filterParam,
+                  ids);
 }
 
 void
@@ -264,6 +146,8 @@ HdDirtyList::Clear()
 bool
 HdDirtyList::ApplyEdit(HdRprimCollection const& col)
 {
+    HD_TRACE_FUNCTION();
+
     // Don't attempt to transition dirty lists where the collection
     // fundamentally changed, we can't reused filtered paths in those cases.
     //
@@ -283,6 +167,14 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
                  int(_collection.GetRootPaths().size())) > 100) {
         return false;
     }
+
+    // If the either the old or new collection has Exclude paths do
+    // the full rebuild.
+    if (!col.GetExcludePaths().empty() ||
+        !_collection.GetExcludePaths().empty()) {
+        return false;
+    }
+
 
     SdfPathVector added, removed;
     typedef SdfPathVector::const_iterator ITR;
@@ -306,6 +198,8 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
         }
     }
 
+    const SdfPathVector &paths = _renderIndex.GetRprimIds();
+
     while (newI != newEnd || oldI != oldEnd) {
         if (newI != newEnd && oldI != oldEnd && *newI == *oldI) {
             ++newI;
@@ -323,22 +217,19 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
             return false;          
         }
         if (newI != newEnd && (oldI == oldEnd || *newI < *oldI)) {
-            // Item added in the new list
-            SdfPathVector const& d = index.GetDelegateRprimIDs(*newI);
-            if (!d.empty()) {
-                _dirtyIds.reserve(_dirtyIds.size() + d.size());
-                for (auto const& path : d) {
-                    if (col.HasRenderTag(index.GetRenderTag(path, repr))) {
-                        _dirtyIds.push_back(path);
-                    }
-                }
-            } else {
-                SdfPathVector const& r = index.GetRprimSubtree(*newI);
-                _dirtyIds.reserve(_dirtyIds.size() + r.size());
-                for (auto const& path : r) {
-                    if (col.HasRenderTag(index.GetRenderTag(path, repr))) {
-                        _dirtyIds.push_back(path);
-                    }
+            HdPrimGather gather;
+
+            SdfPathVector newPaths;
+            gather.Subtree(paths, *newI, &newPaths);
+
+            size_t numNewPaths = newPaths.size();
+            for (size_t newPathNum = 0;
+                        newPathNum < numNewPaths;
+                      ++newPathNum) {
+                const SdfPath &newPath = newPaths[newPathNum];
+
+                if (col.HasRenderTag(index.GetRenderTag(newPath, repr))) {
+                    _dirtyIds.push_back(newPath);
                 }
             }
             ++newI;

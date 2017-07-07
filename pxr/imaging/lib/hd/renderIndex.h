@@ -34,14 +34,16 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
-#include "pxr/base/gf/vec4i.h"
-
 #include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/gf/vec4i.h"
+#include "pxr/base/tf/hashmap.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr.hpp>
-#include "pxr/base/tf/hashmap.h"
+
+#include <tbb/enumerable_thread_specific.h>
 
 #include <vector>
 #include <unordered_map>
@@ -79,8 +81,8 @@ typedef std::unordered_map<TfToken,
 ///
 class HdRenderIndex final : public boost::noncopyable {
 public:
-
-    typedef std::unordered_map<TfToken, std::vector<HdDrawItem const*>,
+    typedef std::vector<HdDrawItem const*> HdDrawItemPtrVector;
+    typedef std::unordered_map<TfToken, HdDrawItemPtrVector,
                                boost::hash<TfToken> > HdDrawItemView;
 
     /// Create a render index with the given render delegate.
@@ -123,15 +125,7 @@ public:
     void SyncAll(HdTaskSharedPtrVector const &tasks, HdTaskContext *taskContext);
 
     /// Returns a vector of Rprim IDs that are bound to the given DelegateID.
-    HD_API
-    SdfPathVector const& GetDelegateRprimIDs(SdfPath const& delegateID) const;
 
-    /// For each delegate that has at least one child with dirty bits matching
-    /// the given dirtyMask, pushes the delegate ID into the given IDs vector.
-    /// The resulting vector is a list of all delegate IDs who have at least one
-    /// child that matches the mask.
-    HD_API
-    void GetDelegateIDsWithDirtyRprims(int dirtyMask, SdfPathVector* IDs) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Tracker
@@ -182,6 +176,12 @@ public:
     /// Returns the render tag for the given rprim
     HD_API
     TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName) const;
+
+    /// Returns a sorted list of all Rprims in the render index.
+    /// The list is sorted by std::less<SdfPath>
+    HD_API
+    const SdfPathVector &GetRprimIds() const { return _rprimIds; }
+
 
     /// Returns the subtree rooted under the given path.
     HD_API
@@ -344,26 +344,20 @@ private:
     // ---------------------------------------------------------------------- //
     struct _RprimInfo {
         HdSceneDelegate *sceneDelegate;
-        size_t           childIndex;
         HdRprim         *rprim;
     };
 
 
     typedef TfHashMap<SdfPath, HdTaskSharedPtr, SdfPath::Hash> _TaskMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
-    typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash> _DelegateRprimMap;
-
-
-    typedef std::set<SdfPath> _RprimIDSet;
     typedef std::map<uint32_t, SdfPath> _RprimPrimIDMap;
 
     typedef Hd_PrimTypeIndex<HdSprim> _SprimIndex;
     typedef Hd_PrimTypeIndex<HdBprim> _BprimIndex;
 
-    _DelegateRprimMap _delegateRprimMap;
-    _RprimMap _rprimMap;
+    _RprimMap     _rprimMap;
+    SdfPathVector _rprimIds;  // Sorted list of Rprim paths
 
-    _RprimIDSet _rprimIDSet;
     _RprimPrimIDMap _rprimPrimIdMap;
 
     _TaskMap _taskMap;
@@ -391,6 +385,15 @@ private:
 
     /// Release the fallback prims.
     void _DestroyFallbackPrims();
+
+    typedef tbb::enumerable_thread_specific<HdRenderIndex::HdDrawItemView>
+                                                           _ConcurrentDrawItems;
+
+    void _AppendDrawItems(const SdfPathVector &rprimIds,
+                          size_t begin,
+                          size_t end,
+                          HdRprimCollection const& collection,
+                          _ConcurrentDrawItems* result);
 
     /// Register core hydra reprs. Only ever called once, the first time
     /// a render index is created.

@@ -25,6 +25,7 @@
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/tokens.h" // XXX: To be removed, so workaround below.
@@ -119,7 +120,14 @@ Hd_PrimTypeIndex<PrimType>::InsertPrim(const TfToken    &typeId,
     _PrimTypeEntry &typeEntry = _entries[typeIt->second];
 
     typeEntry.primMap.emplace(primId, _PrimInfo{sceneDelegate, prim});
-    typeEntry.primIds.emplace(primId);
+
+    SdfPathVector &primIds = typeEntry.primIds;
+
+    // Do Insertion sort to insert prim into list of id.
+    SdfPathVector::iterator it = std::lower_bound(primIds.begin(),
+                                                  primIds.end(),
+                                                  primId);
+    primIds.insert(it, primId);
 }
 
 
@@ -152,7 +160,17 @@ Hd_PrimTypeIndex<PrimType>::RemovePrim(const TfToken    &typeId,
     primInfo.prim = nullptr;
 
     typeEntry.primMap.erase(primIt);
-    typeEntry.primIds.erase(primId);
+
+    SdfPathVector &primIds = typeEntry.primIds;
+
+    SdfPathVector::iterator it = std::lower_bound(primIds.begin(),
+                                                  primIds.end(),
+                                                  primId);
+    if (it != primIds.end()) {
+        if (*it == primId) {
+            primIds.erase(it);
+        }
+    }
 }
 
 
@@ -214,17 +232,8 @@ Hd_PrimTypeIndex<PrimType>::GetPrimSubtree(const TfToken &typeId,
 
     const _PrimTypeEntry &typeEntry = _entries[typeIt->second];
 
-    // Over-allocate paths, assuming worse-case all paths are going to be
-    // returned.
-    outPaths->reserve(typeEntry.primIds.size());
-
-    typename _PrimIDSet::const_iterator pathIt =
-                                        typeEntry.primIds.lower_bound(rootPath);
-     while ((pathIt != typeEntry.primIds.end()) &&
-            (pathIt->HasPrefix(rootPath))) {
-         outPaths->push_back(*pathIt);
-         ++pathIt;
-    }
+    HdPrimGather gather;
+    gather.Subtree(typeEntry.primIds, rootPath, outPaths);
 }
 
 template <class PrimType>

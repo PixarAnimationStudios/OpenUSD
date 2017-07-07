@@ -79,6 +79,7 @@ pxr_library(hd
         perfLog
         persistentBuffer
         points
+        primGather
         primTypeIndex
         renderContextCaps
         renderDelegate
