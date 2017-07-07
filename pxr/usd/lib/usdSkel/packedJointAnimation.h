@@ -218,7 +218,7 @@ public:
     /// animation's data applies, relative to the animation prim itself, so
     /// that it is self-contained.  This list of Joints that an animation 
     /// targets need not be identical to any Skeleton to which the animation
-    /// will will applied.
+    /// will be applied.
     ///
     USDSKEL_API
     UsdRelationship GetJointsRel() const;

@@ -90,7 +90,7 @@ UsdSkelBindingAPI::CreateGeomBindTransformAttr(VtValue const &defaultValue, bool
     return UsdSchemaBase::_CreateAttr(UsdSkelTokens->primvarsSkelGeomBindTransform,
                        SdfValueTypeNames->Matrix4d,
                        /* custom = */ false,
-                       SdfVariabilityVarying,
+                       SdfVariabilityUniform,
                        defaultValue,
                        writeSparsely);
 }

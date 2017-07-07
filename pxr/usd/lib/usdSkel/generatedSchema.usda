@@ -34,7 +34,7 @@ class PackedJointAnimation "PackedJointAnimation" (
         animation's data applies, relative to the animation prim itself, so
         that it is self-contained.  This list of Joints that an animation 
         targets need not be identical to any Skeleton to which the animation
-        will will applied."""
+        will be applied."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -143,12 +143,14 @@ class "BindingAPI" (
     bound Skeleton."""
 )
 {
-    matrix4d primvars:skel:geomBindTransform (
+    uniform matrix4d primvars:skel:geomBindTransform (
         doc = '''Encodes the **inverse** of the transform that positions 
         gprims in the space in which it is bound to a Skeleton.  If the 
         transform is identical for a group of gprims that share a common
         ancestor, the transform may be authored on the ancestor, to "inherit"
-        down to all the leaf gprims.'''
+        down to all the leaf gprims.  The *geomBindTransform* is defined as
+        moving a gprim from its own object space (untransformed by its own 
+        transform) out into Skeleton space.'''
     )
     int[] primvars:skel:jointIndices (
         doc = """Indices into the *joints* relationship of the closest
