@@ -350,6 +350,7 @@ def InstallBoost(context, force):
             'runtime-link=shared',
             'threading=multi', 
             'variant=release',
+            '--with-atomic',
             '--with-date_time',
             '--with-filesystem',
             '--with-program_options',
