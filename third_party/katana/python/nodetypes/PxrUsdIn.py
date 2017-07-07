@@ -512,3 +512,104 @@ def buildOpChain(self, interface):
 nb.setBuildOpChainFnc(buildOpChain)
 
 nb.build()
+
+
+#-----------------------------------------------------------------------------
+
+nb = Nodes3DAPI.NodeTypeBuilder('PxrUsdInAttributeSet')
+
+nb.setInputPortNames(("in",))
+
+nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
+    .set('locations', '')
+    .set('attrName', 'attr')
+    .set('type', 'float')
+    
+    .set('numberValue', 1.0)
+    .set('stringValue', '')
+    .build(),
+        forceArrayNames=(
+            'locations',
+            'numberValue',
+            'stringValue'))
+
+nb.setHintsForParameter('locations', {
+    'widget' : 'scenegraphLocationArray',
+    'help' : 'locations on which to set.'
+})
+
+nb.setHintsForParameter('type', {
+    'widget' : 'popup',
+    'options' : ['int', 'float', 'double', 'string'],
+})
+
+nb.setHintsForParameter('numberValue', {
+    'widget' : 'sortableArray',
+    'conditionalVisOp' : 'notEqualTo',
+    'conditionalVisPath' : '../type',
+    'conditionalVisValue' : 'string',
+})
+
+nb.setHintsForParameter('stringValue', {
+    'widget' : 'sortableArray',
+    'conditionalVisOp' : 'equalTo',
+    'conditionalVisPath' : '../type',
+    'conditionalVisValue' : 'string',
+})
+
+__numberAttrTypes = {
+    'int' : FnAttribute.IntAttribute,
+    'float' : FnAttribute.FloatAttribute,
+    'double': FnAttribute.DoubleAttribute,
+}
+
+def buildOpChain(self, interface):
+    interface.setExplicitInputRequestsEnabled(True)
+    
+    graphState = interface.getGraphState()
+    frameTime = interface.getFrameTime()
+    locationsParam = self.getParameter("locations")
+    
+    attrName = self.getParameter('attrName').getValue(
+            frameTime).replace('.', ':')
+    
+    locations = [y for y in
+        (x.getValue(frameTime) for x in locationsParam.getChildren()) if y]
+    
+    if attrName and locations:
+        typeValue = self.getParameter('type').getValue(frameTime)
+        if typeValue == 'string':
+            valueAttr = interface.buildAttrFromParam(
+                    self.getParameter('stringValue'))
+        else:
+            valueAttr =  interface.buildAttrFromParam(
+                    self.getParameter('numberValue'),
+                    numberType=__numberAttrTypes.get(typeValue,
+                                FnAttribute.FloatAttribute))
+        
+        
+        entryGroup = (FnAttribute.GroupBuilder()
+            .set('value', valueAttr)
+            .build())
+        
+        gb = FnAttribute.GroupBuilder()
+
+        for loc in locations:
+            gb.set("attrs.%s.%s" % (
+                    FnAttribute.DelimiterEncode(loc), attrName,), entryGroup)
+
+        existingValue = (
+                interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
+        
+        if isinstance(existingValue, FnAttribute.GroupAttribute):
+            gb.deepUpdate(existingValue)
+        
+        graphState = (graphState.edit()
+                .setDynamicEntry("var:pxrUsdInSession", gb.build())
+                .build())
+        
+    interface.addInputRequest("in", graphState)
+
+nb.setBuildOpChainFnc(buildOpChain)
+
+nb.build()
