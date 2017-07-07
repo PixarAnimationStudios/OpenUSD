@@ -1161,6 +1161,22 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits dirtyBits)
 {
     dirtyBits = _PropagateRprimDirtyBits(dirtyBits);
 
+    // If subdiv tags are dirty, topology needs to be recomputed.
+    // The latter implies we'll need to recompute all primvar data.
+    // Any data fetched by the scene delegate should be marked dirty here.
+    if (dirtyBits & HdChangeTracker::DirtySubdivTags) {
+        dirtyBits |= (HdChangeTracker::DirtyPoints   |
+                      HdChangeTracker::DirtyNormals  |
+                      HdChangeTracker::DirtyPrimVar  |
+                      HdChangeTracker::DirtyTopology | 
+                      HdChangeTracker::DirtyRefineLevel);
+    } else if (dirtyBits & HdChangeTracker::DirtyTopology) {
+        // Unlike basis curves, we always request refineLevel when topology is
+        // dirty
+        dirtyBits |= HdChangeTracker::DirtySubdivTags |
+                     HdChangeTracker::DirtyRefineLevel;
+    }
+
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (dirtyBits & HdChangeTracker::DirtyPoints) {
         dirtyBits |= _customDirtyBitsInUse & DirtySmoothNormals;
