@@ -11,6 +11,7 @@ pxr_shared_library(${PXR_PACKAGE}
         tf
         usd
         usdGeom
+        usdRi
         usdShade
         usdUtils
 
