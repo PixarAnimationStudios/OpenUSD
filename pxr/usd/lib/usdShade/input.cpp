@@ -24,6 +24,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/input.h"
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/utils.h"
 
 #include "pxr/usd/sdf/schema.h"
@@ -231,6 +233,93 @@ UsdShadeInput::GetDisplayGroup() const
     }
 
     return _attr.GetDisplayGroup();
+}
+
+bool 
+UsdShadeInput::CanConnect(const UsdAttribute &source) const 
+{
+    return UsdShadeConnectableAPI::CanConnect(*this, source);
+}
+
+bool 
+UsdShadeInput::CanConnect(const UsdShadeInput &sourceInput) const 
+{
+    return CanConnect(sourceInput.GetAttr());
+}
+
+bool 
+UsdShadeInput::CanConnect(const UsdShadeOutput &sourceOutput) const
+{
+    return CanConnect(sourceOutput.GetAttr());
+}
+
+bool 
+UsdShadeInput::ConnectToSource(
+    UsdShadeConnectableAPI const &source, 
+    TfToken const &sourceName, 
+    UsdShadeAttributeType const sourceType,
+    SdfValueTypeName typeName) const 
+{
+    return UsdShadeConnectableAPI::ConnectToSource(*this, source, 
+        sourceName, sourceType, typeName);   
+}
+
+bool 
+UsdShadeInput::ConnectToSource(SdfPath const &sourcePath) const 
+{
+    return UsdShadeConnectableAPI::ConnectToSource(*this, sourcePath);
+}
+
+bool 
+UsdShadeInput::ConnectToSource(UsdShadeInput const &sourceInput) const 
+{
+    return UsdShadeConnectableAPI::ConnectToSource(*this, sourceInput);
+}
+
+bool 
+UsdShadeInput::ConnectToSource(UsdShadeOutput const &sourceOutput) const 
+{
+    return UsdShadeConnectableAPI::ConnectToSource(*this, sourceOutput);
+}
+
+bool 
+UsdShadeInput::GetConnectedSource(UsdShadeConnectableAPI *source, 
+                                  TfToken *sourceName,
+                                  UsdShadeAttributeType *sourceType) const 
+{
+    return UsdShadeConnectableAPI::GetConnectedSource(*this, source, 
+        sourceName, sourceType);
+}
+
+bool 
+UsdShadeInput::GetRawConnectedSourcePaths(SdfPathVector *sourcePaths) const 
+{
+    return UsdShadeConnectableAPI::GetRawConnectedSourcePaths(*this, 
+        sourcePaths);
+}
+
+bool 
+UsdShadeInput::HasConnectedSource() const 
+{
+    return UsdShadeConnectableAPI::HasConnectedSource(*this);
+}
+
+bool 
+UsdShadeInput::IsSourceFromBaseMaterial() const 
+{
+    return UsdShadeConnectableAPI::IsSourceFromBaseMaterial(*this);
+}
+
+bool 
+UsdShadeInput::DisconnectSource() const 
+{
+    return UsdShadeConnectableAPI::DisconnectSource(*this);
+}
+
+bool 
+UsdShadeInput::ClearSource() const 
+{
+    return UsdShadeConnectableAPI::ClearSource(*this);
 }
 
 bool 

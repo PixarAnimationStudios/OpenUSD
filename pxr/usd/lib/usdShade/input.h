@@ -34,6 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdShadeConnectableAPI;
+class UsdShadeOutput;
 
 /// \class UsdShadeInput
 /// 
@@ -212,6 +213,134 @@ public:
     friend bool operator==(const UsdShadeInput &lhs, const UsdShadeInput &rhs) {
         return lhs.GetAttr() == rhs.GetAttr();
     }
+
+    // -------------------------------------------------------------------------
+    /// \name Connections API
+    // -------------------------------------------------------------------------
+    /// @{
+
+    /// Determines whether this Input can be connected to the given 
+    /// source attribute, which can be an input or an output.
+    /// 
+    /// \sa UsdShadeConnectableAPI::CanConnect
+    USDSHADE_API
+    bool CanConnect(const UsdAttribute &source) const;
+
+    /// \overload
+    USDSHADE_API
+    bool CanConnect(const UsdShadeInput &sourceInput) const;
+
+    /// \overload
+    USDSHADE_API
+    bool CanConnect(const UsdShadeOutput &sourceOutput) const;
+
+    /// Authors a connection for this Input to the source described by the 
+    /// following three elements: 
+    /// \p source, the connectable owning the source,
+    /// \p sourceName, the name of the source and 
+    /// \p sourceType, the value type of the source shading attribute.
+    /// 
+    /// \p typeName if specified, is the typename of the attribute to create 
+    /// on the source if it doesn't exist. It is also used to validate whether 
+    /// the types of the source and consumer of the connection are compatible.
+    ///
+    /// \sa UsdShadeConnectableAPI::ConnectToSource
+    ///
+    USDSHADE_API
+    bool ConnectToSource(
+        UsdShadeConnectableAPI const &source, 
+        TfToken const &sourceName, 
+        UsdShadeAttributeType const sourceType=UsdShadeAttributeType::Output,
+        SdfValueTypeName typeName=SdfValueTypeName()) const;
+
+    /// Authors a connection for this Input to the source at the given path.
+    /// 
+    /// \sa UsdShadeConnectableAPI::ConnectToSource
+    ///
+    USDSHADE_API
+    bool ConnectToSource(SdfPath const &sourcePath) const;
+
+    /// Connects this Input to the given input, \p sourceInput.
+    /// 
+    /// \sa UsdShadeConnectableAPI::ConnectToSource
+    ///
+    USDSHADE_API
+    bool ConnectToSource(UsdShadeInput const &sourceInput) const;
+
+    /// Connects this Input to the given output, \p sourceOutput.
+    /// 
+    /// \sa UsdShadeConnectableAPI::ConnectToSource
+    ///
+    USDSHADE_API
+    bool ConnectToSource(UsdShadeOutput const &sourceOutput) const;
+
+    /// Finds the source of a connection for this Input.
+    /// 
+    /// \p source is an output parameter which will be set to the source 
+    /// connectable prim.
+    /// \p sourceName will be set to the name of the source shading property, 
+    /// which could be the parameter name, output name or the interface 
+    /// attribute name. This does not include the namespace prefix associated 
+    /// with the source type. 
+    /// \p sourceType will have the value type of the source shading property.
+    ///
+    /// \return 
+    /// \c true if this Input is connected to a valid, defined source.
+    /// \c false if this Input is not connected to a single, valid source.
+    /// 
+    /// \note The python wrapping for this method returns a 
+    /// (source, sourceName, sourceType) tuple if the parameter is connected, 
+    /// else \c None
+    ///
+    /// \sa UsdShadeConnectableAPI::GetConnectedSource
+    ///
+    USDSHADE_API
+    bool GetConnectedSource(UsdShadeConnectableAPI *source, 
+                            TfToken *sourceName,
+                            UsdShadeAttributeType *sourceType) const;
+
+    /// Returns the "raw" (authored) connected source paths for this Input.
+    /// 
+    /// \sa UsdShadeConnectableAPI::GetRawConnectedSourcePaths
+    ///
+    USDSHADE_API
+    bool GetRawConnectedSourcePaths(SdfPathVector *sourcePaths) const;
+
+    /// Returns true if and only if this Input is currently connected to a 
+    /// valid (defined) source. 
+    ///
+    /// \sa UsdShadeConnectableAPI::HasConnectedSource
+    /// 
+    USDSHADE_API
+    bool HasConnectedSource() const;
+
+    /// Returns true if the connection to this Input's source, as returned by 
+    /// GetConnectedSource(), is authored across a specializes arc, which is 
+    /// used to denote a base material.
+    /// 
+    /// \sa UsdShadeConnectableAPI::IsSourceFromBaseMaterial
+    ///
+    USDSHADE_API
+    bool IsSourceFromBaseMaterial() const;
+
+    /// Disconnect source for this Input.
+    /// 
+    /// \sa UsdShadeConnectableAPI::DisconnectSource
+    ///
+    USDSHADE_API
+    bool DisconnectSource() const;
+
+    /// Clears source for this shading property in the current UsdEditTarget.
+    ///
+    /// Most of the time, what you probably want is DisconnectSource()
+    /// rather than this function.
+    ///
+    /// \sa UsdShadeConnectableAPI::ClearSource
+    ///
+    USDSHADE_API
+    bool ClearSource() const;
+
+    /// @}
 
     // -------------------------------------------------------------------------
     /// \name Connectability API

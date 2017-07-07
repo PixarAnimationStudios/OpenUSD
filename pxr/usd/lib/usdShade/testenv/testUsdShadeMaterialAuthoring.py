@@ -95,20 +95,18 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
                     with materialPrim.GetEditContextForVariant(variant):
                         surfaceOutput = materialPrim.CreateOutput("surface",
                             colorOut.GetTypeName())
-                        UsdShade.ConnectableAPI.ConnectToSource(surfaceOutput, 
+                        surfaceOutput.ConnectToSource(
                             UsdShade.ConnectableAPI(colorOut.GetPrim()),
                             colorOut.GetBaseName(), 
                             UsdShade.AttributeType.Output)
 
                         displacementOutput = materialPrim.CreateOutput("displacement", 
                             dispOut.GetTypeName())
-                        UsdShade.ConnectableAPI.ConnectToSource(displacementOutput, 
-                            dispOut)
+                        displacementOutput.ConnectToSource(dispOut)
 
                         patternOutput = materialPrim.CreateOutput("pattern", 
                             patternOut.GetTypeName())
-                        UsdShade.ConnectableAPI.ConnectToSource(patternOutput, 
-                            patternOut)
+                        patternOutput.ConnectToSource(patternOut)
                         
                         # XXX: If we replace these terminals with UsdShadeOutput's, then
                         ## we can't have these point to prim paths.
@@ -131,20 +129,17 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
             wetHairDispPath = Sdf.Path('/ModelShading/Shaders/HairWetDisp.out')
             wetHairPatternPath = Sdf.Path('/ModelShading/Shaders/HairWetPattern.out')
 
-            connectedSurface = UsdShade.ConnectableAPI.GetConnectedSource(
-                hairMaterial.GetOutput('surface'))
+            connectedSurface = hairMaterial.GetOutput('surface').GetConnectedSource()
             connectedSurfacePath = connectedSurface[0].GetPath().AppendProperty(
                 connectedSurface[1])
             self.assertEqual(connectedSurfacePath, wetHairSurfPath)
 
-            connectedDisplacement = UsdShade.ConnectableAPI.GetConnectedSource(
-                hairMaterial.GetOutput('displacement'))
+            connectedDisplacement = hairMaterial.GetOutput('displacement').GetConnectedSource()
             connectedDisplacementPath = connectedDisplacement[0].GetPath().AppendProperty(
                 connectedDisplacement[1])
             self.assertEqual(connectedDisplacementPath, wetHairDispPath)
 
-            connectedPattern = UsdShade.ConnectableAPI.GetConnectedSource(
-                hairMaterial.GetOutput('pattern'))
+            connectedPattern = hairMaterial.GetOutput('pattern').GetConnectedSource()
             connectedPatternPath = connectedPattern[0].GetPath().AppendProperty(
                 connectedPattern[1])
             self.assertEqual(connectedPatternPath, wetHairPatternPath)
@@ -156,24 +151,20 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
             dryHairDispPath = Sdf.Path('/ModelShading/Shaders/HairDryDisp.out')
             dryHairPatternPath = Sdf.Path('/ModelShading/Shaders/HairDryPattern.out')
 
-            connectedSurface = UsdShade.ConnectableAPI.GetConnectedSource(
-                hairMaterial.GetOutput('surface'))
+            connectedSurface = hairMaterial.GetOutput('surface').GetConnectedSource()
             connectedSurfacePath = connectedSurface[0].GetPath().AppendProperty(
                 connectedSurface[1])
             self.assertEqual(connectedSurfacePath, dryHairSurfPath)
 
-            connectedDisplacement = UsdShade.ConnectableAPI.GetConnectedSource(
-                hairMaterial.GetOutput('displacement'))
+            connectedDisplacement = hairMaterial.GetOutput('displacement').GetConnectedSource()
             connectedDisplacementPath = connectedDisplacement[0].GetPath().AppendProperty(
                 connectedDisplacement[1])
             self.assertEqual(connectedDisplacementPath, dryHairDispPath)
 
-            connectedPattern = UsdShade.ConnectableAPI.GetConnectedSource(
-                hairMaterial.GetOutput('pattern'))
+            connectedPattern = hairMaterial.GetOutput('pattern').GetConnectedSource()
             connectedPatternPath = connectedPattern[0].GetPath().AppendProperty(
                 connectedPattern[1])
             self.assertEqual(connectedPatternPath, dryHairPatternPath)
-
 
         fileName = "char_shading.usda"
         stage = Usd.Stage.CreateNew(fileName)

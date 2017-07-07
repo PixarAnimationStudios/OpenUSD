@@ -108,37 +108,29 @@ class TestUsdShadeInterfaceInputConsumer(unittest.TestCase):
                                                           Sdf.ValueTypeNames.Color3f)
 
         # Wire up the connections.
-        UsdShade.ConnectableAPI.ConnectToSource(shader1Input1, floatInput)
-        UsdShade.ConnectableAPI.ConnectToSource(shader1Input2, colorInput)
+        shader1Input1.ConnectToSource(floatInput)
+        shader1Input2.ConnectToSource(colorInput)
 
-        UsdShade.ConnectableAPI.ConnectToSource(shader2Input1, colorInput)
-        UsdShade.ConnectableAPI.ConnectToSource(shader2Input2, floatInput)
+        shader2Input1.ConnectToSource(colorInput)
+        shader2Input2.ConnectToSource(floatInput)
 
-        UsdShade.ConnectableAPI.ConnectToSource(nodeGraph1ColorInput, colorInput)
-        UsdShade.ConnectableAPI.ConnectToSource(nodeGraph1FloatInput, floatInput)
+        nodeGraph1ColorInput.ConnectToSource(colorInput)
+        nodeGraph1FloatInput.ConnectToSource(floatInput)
 
-        UsdShade.ConnectableAPI.ConnectToSource(nodeGraph2ColorInput, colorInput)
-        UsdShade.ConnectableAPI.ConnectToSource(nodeGraph2FloatInput, floatInput)
+        nodeGraph2ColorInput.ConnectToSource(colorInput)
+        nodeGraph2FloatInput.ConnectToSource(floatInput)
 
-        UsdShade.ConnectableAPI.ConnectToSource(nestedShader1Input1, 
-                                                nodeGraph1ColorInput)
-        UsdShade.ConnectableAPI.ConnectToSource(nestedShader1Input2, 
-                                                nodeGraph1FloatInput)
+        nestedShader1Input1.ConnectToSource(nodeGraph1ColorInput)
+        nestedShader1Input2.ConnectToSource(nodeGraph1FloatInput)
 
-        UsdShade.ConnectableAPI.ConnectToSource(nestedShader2Input1, 
-                                                nodeGraph1FloatInput)
-        UsdShade.ConnectableAPI.ConnectToSource(nestedShader2Input2, 
-                                                nodeGraph1ColorInput)
+        nestedShader2Input1.ConnectToSource(nodeGraph1FloatInput)
+        nestedShader2Input2.ConnectToSource(nodeGraph1ColorInput)
 
-        UsdShade.ConnectableAPI.ConnectToSource(nestedShader3Input1, 
-                                                nodeGraph2ColorInput)
-        UsdShade.ConnectableAPI.ConnectToSource(nestedShader3Input2, 
-                                                nodeGraph2FloatInput)
+        nestedShader3Input1.ConnectToSource(nodeGraph2ColorInput)
+        nestedShader3Input2.ConnectToSource(nodeGraph2FloatInput)
 
-        UsdShade.ConnectableAPI.ConnectToSource(nestedNodeGraphInput1, 
-                                                nodeGraph1FloatInput)
-        UsdShade.ConnectableAPI.ConnectToSource(nestedNodeGraphInput2, 
-                                                nodeGraph1ColorInput)
+        nestedNodeGraphInput1.ConnectToSource(nodeGraph1FloatInput)
+        nestedNodeGraphInput2.ConnectToSource(nodeGraph1ColorInput)
 
     def test_InterfaceConsumers(self):
         usdStage = Usd.Stage.CreateInMemory()
