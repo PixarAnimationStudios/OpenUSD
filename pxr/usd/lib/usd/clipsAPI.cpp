@@ -511,37 +511,4 @@ UsdClipsAPI::SetClipTemplateEndTime(const double clipTemplateEndTime,
         clipTemplateEndTime, clipSet, UsdClipsAPIInfoKeys->templateEndTime);
 }
 
-bool
-UsdClipsAPI::ClearTemplateClipMetadata()
-{
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    auto prim = GetPrim();
-    prim.ClearMetadata(UsdTokens->clipTemplateAssetPath);
-    prim.ClearMetadata(UsdTokens->clipTemplateStride);
-    prim.ClearMetadata(UsdTokens->clipTemplateEndTime);
-    prim.ClearMetadata(UsdTokens->clipTemplateStartTime);
-
-    return true;
-}
-
-bool
-UsdClipsAPI::ClearNonTemplateClipMetadata()
-{
-    if (GetPath() == SdfPath::AbsoluteRootPath()) {
-        // Special-case to pre-empt coding errors.
-        return false;
-    }
-
-    auto prim = GetPrim();
-    prim.ClearMetadata(UsdTokens->clipAssetPaths);
-    prim.ClearMetadata(UsdTokens->clipTimes);
-    prim.ClearMetadata(UsdTokens->clipActive);
-
-    return true;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
