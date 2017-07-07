@@ -1522,6 +1522,61 @@
      <addaction name="actionExpand_All"/>
      <addaction name="actionCollapse_All"/>
     </widget>
+    <widget class="QMenu" name="menuCameraMask">
+     <property name="title">
+      <string>Camera Masking</string>
+     </property>
+     <addaction name="actionCameraMask_Outline"/>
+     <addaction name="separator"/>
+     <actiongroup name="actionGroupCameraMask">
+      <action name="actionCameraMask_Full">
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Full Mask</string>
+       </property>
+      </action>
+      <action name="actionCameraMask_Partial">
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Partial Mask</string>
+       </property>
+      </action>
+      <action name="actionCameraMask_None">
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>No Mask</string>
+       </property>
+      </action>
+      <property name="exclusive">
+        <bool>true</bool>
+      </property>
+     </actiongroup>
+     <addaction name="actionCameraMask_Full"/>
+     <addaction name="actionCameraMask_Partial"/>
+     <addaction name="actionCameraMask_None"/>
+    </widget>
+    <widget class="QMenu" name="menuCameraReticles">
+     <property name="title">
+      <string>Camera Reticles</string>
+     </property>
+     <addaction name="actionCameraReticles_Inside"/>
+     <addaction name="actionCameraReticles_Outside"/>
+    </widget>
     <widget class="QMenu" name="menuHUD">
      <property name="title">
       <string>Heads-Up Display</string>
@@ -1558,6 +1613,8 @@
      <addaction name="actionAlways"/>
      <addaction name="menuHighlightColor"/>
     </widget>
+    <addaction name="menuCameraMask"/>
+    <addaction name="menuCameraReticles"/>
     <addaction name="menuHUD"/>
     <addaction name="separator"/>
     <addaction name="menuNode_View_Depth"/>
@@ -2353,6 +2410,39 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="actionCameraMask_Outline">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Frame</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Inside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Inside</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Outside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Outside</string>
    </property>
   </action>
   <action name="actionDisplay_Guide">

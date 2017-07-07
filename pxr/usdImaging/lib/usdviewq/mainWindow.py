@@ -1014,6 +1014,30 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('clicked()'),
                                self._playClicked)
 
+        QtCore.QObject.connect(self._ui.actionCameraMask_Full,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraMaskMenu)
+
+        QtCore.QObject.connect(self._ui.actionCameraMask_Partial,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraMaskMenu)
+        
+        QtCore.QObject.connect(self._ui.actionCameraMask_None,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraMaskMenu)
+
+        QtCore.QObject.connect(self._ui.actionCameraMask_Outline,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraMaskMenu)
+
+        QtCore.QObject.connect(self._ui.actionCameraReticles_Inside,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraReticlesMenu)
+
+        QtCore.QObject.connect(self._ui.actionCameraReticles_Outside,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraReticlesMenu)
+
         QtCore.QObject.connect(self._ui.actionHUD,
                                QtCore.SIGNAL('triggered()'),
                                self._updateHUDMenu)
@@ -2130,7 +2154,24 @@ class MainWindow(QtGui.QMainWindow):
         cullBackfaces = self._settings.get("CullBackfaces", False)
         self._ui.actionCull_Backfaces.setChecked(cullBackfaces)
         self._stageView.setCullBackfaces(cullBackfaces)
+
+        showMask = self._settings.get("actionCameraMask", "none")
+        showMask_Outline = self._settings.get("actionCameraMask_Outline", False)
+        self._ui.actionCameraMask_Full.setChecked(showMask == "full")
+        self._ui.actionCameraMask_Partial.setChecked(showMask == "partial")
+        self._ui.actionCameraMask_None.setChecked(showMask == "none")
+        self._ui.actionCameraMask_Outline.setChecked(showMask_Outline)
+        self._stageView.showMask = (showMask != "none")
+        self._stageView.showMask_Opaque = (showMask == "full")
+        self._stageView.showMask_Outline = showMask_Outline
         
+        showReticles_Inside = self._settings.get("actionCameraReticles_Inside", False)
+        showReticles_Outside = self._settings.get("actionCameraReticles_Outside", False)
+        self._ui.actionCameraReticles_Inside.setChecked(showReticles_Inside)
+        self._ui.actionCameraReticles_Outside.setChecked(showReticles_Outside)
+        self._stageView.showReticles_Inside = showReticles_Inside
+        self._stageView.showReticles_Outside = showReticles_Outside
+
         self._stageView.showHUD = self._settings.get("actionHUD", True)
         self._ui.actionHUD.setChecked(self._stageView.showHUD)
         # XXX Until we can make the "Subtree Info" stats-gathering faster,
@@ -3820,6 +3861,35 @@ class MainWindow(QtGui.QMainWindow):
         visibility menu as well as the 'Subtree Info' menu"""
         return self._ui.actionHUD.isChecked() and self._ui.actionHUD_Info.isChecked()
         
+    def _updateCameraMaskMenu(self):
+        self._CameraMaskMenuChanged()
+
+    def _CameraMaskMenuChanged(self):
+        showMask = "none"
+        if self._ui.actionCameraMask_Full.isChecked():
+            showMask = "full"
+        if self._ui.actionCameraMask_Partial.isChecked():
+            showMask = "partial"
+        self._stageView.showMask = (showMask != "none")
+        self._stageView.showMask_Opaque = (showMask == "full")
+        self._stageView.showMask_Outline = self._ui.actionCameraMask_Outline.isChecked()
+
+        self._stageView.updateGL()
+
+        self._settings.setAndSave(actionCameraMask=showMask)
+        self._settings.setAndSave(actionCameraMask_Outline=self._ui.actionCameraMask_Outline.isChecked())
+
+    def _updateCameraReticlesMenu(self):
+        self._CameraReticlesMenuChanged()
+
+    def _CameraReticlesMenuChanged(self):
+        self._stageView.showReticles_Inside = self._ui.actionCameraReticles_Inside.isChecked()
+        self._stageView.showReticles_Outside = self._ui.actionCameraReticles_Outside.isChecked()
+        self._stageView.updateGL()
+
+        self._settings.setAndSave(actionCameraReticles_Inside=self._ui.actionCameraReticles_Inside.isChecked())
+        self._settings.setAndSave(actionCameraReticles_Outside=self._ui.actionCameraReticles_Outside.isChecked())
+
     def _updateHUDMenu(self):
         """updates the upper HUD with both prim info and geom counts
         this function is called by the UI when the HUD is hidden or shown"""
