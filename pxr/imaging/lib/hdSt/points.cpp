@@ -103,7 +103,10 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     HdSt_PointsShaderKey shaderKey;
-    drawItem->SetGeometricShader(Hd_GeometricShader::Create(shaderKey));
+    drawItem->SetGeometricShader(
+        Hd_GeometricShader::Create(
+            shaderKey, 
+            sceneDelegate->GetRenderIndex().GetResourceRegistry()));
 
     /* PRIMVAR */
     if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
@@ -165,7 +168,8 @@ HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     // The "points" attribute is expected to be in this list.
     TfTokenVector primVarNames = GetPrimVarVertexNames(sceneDelegate);

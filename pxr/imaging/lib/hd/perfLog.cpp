@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/resourceRegistry.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -233,6 +234,30 @@ HdPerfLog::ResetCounters()
                                          counterIt->second);
         counterIt->second = 0;
     }
+}
+
+void 
+HdPerfLog::AddResourceRegistry(
+    HdResourceRegistrySharedPtr const &resourceRegistry)
+{
+    _resourceRegistryVector.push_back(resourceRegistry);
+}
+
+void 
+HdPerfLog::RemoveResourceRegistry(
+    HdResourceRegistrySharedPtr const &resourceRegistry)
+{
+    _resourceRegistryVector.erase(
+        std::remove(_resourceRegistryVector.begin(),
+                    _resourceRegistryVector.end(), 
+                    resourceRegistry), 
+        _resourceRegistryVector.end());
+}
+
+std::vector<HdResourceRegistrySharedPtr> const&
+HdPerfLog::GetResourceRegistryVector()
+{
+    return _resourceRegistryVector;
 }
 
 

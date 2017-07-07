@@ -216,8 +216,8 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
 
     SdfPath const& id = GetId();
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        renderIndex.GetResourceRegistry();
 
     // XXX: this should be in a different method
     // XXX: This should be in HdSt getting the HdSt Shader
@@ -478,13 +478,11 @@ HdRprim::_ComputeSharedPrimvarId(uint64_t baseId,
 
 HdBufferArrayRangeSharedPtr
 HdRprim::_GetSharedPrimvarRange(uint64_t primvarId,
-                                HdBufferSpecVector const &bufferSpecs,
-                                HdBufferArrayRangeSharedPtr const &existing,
-                                bool * isFirstInstance) const
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayRangeSharedPtr const &existing,
+    bool * isFirstInstance,
+    HdResourceRegistrySharedPtr const &resourceRegistry) const
 {
-    HdResourceRegistry *resourceRegistry =
-            &HdResourceRegistry::GetInstance();
-
     HdInstance<uint64_t, HdBufferArrayRangeSharedPtr> barInstance;
     std::unique_lock<std::mutex> regLock = 
         resourceRegistry->RegisterPrimvarRange(primvarId, &barInstance);

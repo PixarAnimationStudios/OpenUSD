@@ -105,12 +105,10 @@ HdRenderPassState::~HdRenderPassState()
 }
 
 void
-HdRenderPassState::Sync()
+HdRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 
     VtVec4fArray clipPlanes;
     TF_FOR_ALL(it, _clipPlanes) {

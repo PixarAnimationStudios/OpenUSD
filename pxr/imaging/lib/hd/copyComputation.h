@@ -44,7 +44,8 @@ public:
                           TfToken const &name);
 
     HD_API
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range);
+    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
+                         HdResourceRegistry *resourceRegistry);
 
     HD_API
     virtual int GetNumOutputElements() const;

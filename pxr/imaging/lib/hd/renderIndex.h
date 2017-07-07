@@ -62,6 +62,7 @@ class HdInstancer;
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
 typedef std::unordered_map<TfToken,
                            VtValue,
@@ -304,6 +305,11 @@ public:
 
     HD_API
     TfToken GetRenderDelegateType() const;
+
+    /// Returns a shared ptr to the resource registry of the current render
+    /// delegate.
+    HD_API
+    HdResourceRegistrySharedPtr GetResourceRegistry() const;
 
 private:
     // The render index constructor is private so we can check

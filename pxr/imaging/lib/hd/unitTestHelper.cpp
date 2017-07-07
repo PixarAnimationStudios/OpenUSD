@@ -66,7 +66,8 @@ protected:
     virtual void _Sync(HdTaskContext* ctx) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync();
+        _renderPassState->Sync(
+            _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
     virtual void _Execute(HdTaskContext* ctx) override

@@ -206,10 +206,9 @@ HdSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
 }
 
 void
-HdSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources)
+HdSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
+                                  HdResourceRegistrySharedPtr const &resourceRegistry)
 {
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-
     if (bufferSources.empty()) {
         _paramArray.reset();
     } else {

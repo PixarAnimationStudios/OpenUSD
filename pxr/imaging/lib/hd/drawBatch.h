@@ -51,6 +51,7 @@ typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef std::vector<Hd_DrawBatchSharedPtr> Hd_DrawBatchSharedPtrVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 /// \class Hd_DrawBatch
 ///
@@ -84,10 +85,14 @@ public:
     virtual bool Validate(bool deepValidation) = 0;
 
     /// Prepare draw commands and apply view frustum culling for this batch.
-    virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState) = 0;
+    virtual void PrepareDraw(
+        HdRenderPassStateSharedPtr const &renderPassState,
+        HdResourceRegistrySharedPtr const &resourceRegistry) = 0;
 
     /// Executes the drawing commands for this batch.
-    virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState) = 0;
+    virtual void ExecuteDraw(
+        HdRenderPassStateSharedPtr const &renderPassState,
+        HdResourceRegistrySharedPtr const & resourceRegistry) = 0;
 
     /// Let the batch know that one of it's draw item instances has changed
     /// NOTE: This callback is called from multiple threads, so needs to be
@@ -111,7 +116,8 @@ protected:
         HD_API
         bool CompileShader(
                 HdDrawItem const *drawItem,
-                bool indirect);
+                bool indirect,
+                HdResourceRegistrySharedPtr const &resourceRegistry);
 
         HdGLSLProgramSharedPtr GetGLSLProgram() const {
             return _glslProgram;
@@ -191,7 +197,9 @@ protected:
 
     HD_API
     _DrawingProgram & _GetDrawingProgram(
-        HdRenderPassStateSharedPtr const &state, bool indirect);
+        HdRenderPassStateSharedPtr const &state, 
+        bool indirect,
+        HdResourceRegistrySharedPtr const &resourceRegistry);
 
 protected:
     HD_API

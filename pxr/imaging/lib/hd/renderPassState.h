@@ -38,6 +38,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
@@ -66,7 +68,7 @@ public:
     /// Schedule to update renderPassState parameters.
     /// e.g. camera matrix, override color, id blend factor.
     HD_API
-    void Sync();
+    void Sync(HdResourceRegistrySharedPtr const &resourceRegistry);
 
     /// temp.
     /// Set camera framing of this render pass state.

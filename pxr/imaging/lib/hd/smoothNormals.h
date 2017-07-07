@@ -38,6 +38,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+
 class Hd_VertexAdjacency;
 
 /// \class Hd_SmoothNormalsComputation
@@ -92,8 +94,10 @@ public:
     HD_API
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     HD_API
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range);
-    /// This computaion doesn't generate buffer source (i.e. 2nd phase)
+    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
+                         HdResourceRegistry *resourceRegistry);
+
+    /// This computation doesn't generate buffer source (i.e. 2nd phase)
     /// This is a gpu computation, but no need to resize the destination
     /// since it belongs the same range as src buffer.
     virtual int GetNumOutputElements() const { return 0; }

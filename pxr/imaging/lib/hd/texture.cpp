@@ -62,8 +62,10 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
     //       can be separated functionally and have different 
     //       delegate methods.
     if ((bits & (DirtyParams | DirtyTexture)) != 0) {
-        HdResourceRegistry *resourceRegistry = 
-                                            &HdResourceRegistry::GetInstance();
+
+        HdResourceRegistrySharedPtr const &resourceRegistry = 
+            sceneDelegate->GetRenderIndex().GetResourceRegistry();
+
         HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
         {
             HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 

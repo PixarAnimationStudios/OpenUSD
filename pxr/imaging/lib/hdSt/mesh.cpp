@@ -140,7 +140,8 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     // note: there's a potential optimization if _topology is already registered
     // and it's not shared across prims, it can be updated without inserting new
@@ -220,8 +221,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                     HdSt_QuadInfoBuilderComputationSharedPtr quadInfoBuilder =
                         topology->GetQuadInfoBuilderComputation(
                             HdRenderContextCaps::GetInstance().gpuComputeEnabled,
-                            id,
-                            resourceRegistry);
+                            id, resourceRegistry.get());
                     resourceRegistry->AddSource(quadInfoBuilder);
                 }
             }
@@ -322,7 +322,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdStMesh::_PopulateAdjacency()
+HdStMesh::_PopulateAdjacency(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -330,51 +330,49 @@ HdStMesh::_PopulateAdjacency()
     // The topology may be null in the event that it has zero faces.
     if (!_topology) return;
 
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-    {
-        HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr> adjacencyInstance;
+    HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr> adjacencyInstance;
 
-        // ask registry if there's a sharable vertex adjacency
-        std::unique_lock<std::mutex> regLock = 
-            resourceRegistry->RegisterVertexAdjacency(_topologyId, &adjacencyInstance);
+    // ask registry if there's a sharable vertex adjacency
+    std::unique_lock<std::mutex> regLock = 
+        resourceRegistry->RegisterVertexAdjacency(_topologyId, &adjacencyInstance);
 
-        if (adjacencyInstance.IsFirstInstance()) {
-            Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
+    if (adjacencyInstance.IsFirstInstance()) {
+        Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
 
-            // create adjacency table for smooth normals
-            HdBufferSourceSharedPtr adjacencyComputation =
-                adjacency->GetAdjacencyBuilderComputation(_topology.get());
+        // create adjacency table for smooth normals
+        HdBufferSourceSharedPtr adjacencyComputation =
+            adjacency->GetAdjacencyBuilderComputation(_topology.get());
 
-            resourceRegistry->AddSource(adjacencyComputation);
+        resourceRegistry->AddSource(adjacencyComputation);
 
-            if (HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
-                // also send adjacency table to gpu
-                HdBufferSourceSharedPtr adjacencyForGpuComputation =
-                    adjacency->GetAdjacencyBuilderForGPUComputation();
+        if (HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
+            // also send adjacency table to gpu
+            HdBufferSourceSharedPtr adjacencyForGpuComputation =
+                adjacency->GetAdjacencyBuilderForGPUComputation();
 
-                HdBufferSpecVector bufferSpecs;
-                adjacencyForGpuComputation->AddBufferSpecs(&bufferSpecs);
+            HdBufferSpecVector bufferSpecs;
+            adjacencyForGpuComputation->AddBufferSpecs(&bufferSpecs);
 
-                HdBufferArrayRangeSharedPtr adjRange =
-                    resourceRegistry->AllocateNonUniformBufferArrayRange(
-                        HdTokens->topology, bufferSpecs);
+            HdBufferArrayRangeSharedPtr adjRange =
+                resourceRegistry->AllocateNonUniformBufferArrayRange(
+                    HdTokens->topology, bufferSpecs);
 
-                adjacency->SetAdjacencyRange(adjRange);
-                resourceRegistry->AddSource(adjRange,
-                                            adjacencyForGpuComputation);
-            }
-
-            adjacencyInstance.SetValue(adjacency);
+            adjacency->SetAdjacencyRange(adjRange);
+            resourceRegistry->AddSource(adjRange,
+                                        adjacencyForGpuComputation);
         }
-        _vertexAdjacency = adjacencyInstance.GetValue();
+
+        adjacencyInstance.SetValue(adjacency);
     }
+    _vertexAdjacency = adjacencyInstance.GetValue();
 }
 
 static HdBufferSourceSharedPtr
 _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
                       HdComputationVector *computations,
                       HdSt_MeshTopologySharedPtr const &topology,
-                      SdfPath const &id)
+                      SdfPath const &id,
+                      HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (!TF_VERIFY(computations)) return source;
 
@@ -408,10 +406,10 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
 static HdBufferSourceSharedPtr
 _QuadrangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
                                  HdSt_MeshTopologySharedPtr const &topology,
-                                 SdfPath const &id)
+                                 SdfPath const &id,
+                                 HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     // note: currently we don't support GPU facevarying quadrangulation.
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
 
     // set quadrangulation as source instead of original source.
     HdBufferSourceSharedPtr quadSource =
@@ -427,10 +425,9 @@ _QuadrangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
 static HdBufferSourceSharedPtr
 _TriangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
                                HdSt_MeshTopologySharedPtr const &topology,
-                               SdfPath const &id)
+                               SdfPath const &id, 
+                               HdResourceRegistrySharedPtr const &resourceRegistry)
 {
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-
     HdBufferSourceSharedPtr triSource =
         topology->GetTriangulateFaceVaryingComputation(source, id);
 
@@ -481,7 +478,8 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     // The "points" attribute is expected to be in this list.
     TfTokenVector primVarNames = GetPrimVarVertexNames(sceneDelegate);
@@ -578,7 +576,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                         &computations, _topology);
             } else if (_UsePtexIndices(sceneDelegate->GetRenderIndex())) {
                 source = _QuadrangulatePrimVar(source, &computations, _topology,
-                                               GetId());
+                                               GetId(), resourceRegistry);
             }
             sources.push_back(source);
 
@@ -622,7 +620,8 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                                           &computations, _topology);
                 } else if (doQuadrangulate) {
                     normal = _QuadrangulatePrimVar(
-                                         normal, &computations, _topology, GetId());
+                                         normal, &computations, _topology, GetId(),
+                                         resourceRegistry);
                 }
                 } else {
                     // if we haven't refined or quadrangulated normals,
@@ -719,7 +718,8 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             bool isFirstInstance = true;
             range = _GetSharedPrimvarRange(_vertexPrimvarId,
                                            bufferSpecs, nullptr,
-                                           &isFirstInstance);
+                                           &isFirstInstance,
+                                           resourceRegistry);
             if (!isFirstInstance) {
                 // this is not the first instance, skip redundant
                 // sources and computations.
@@ -751,7 +751,8 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 bool isFirstInstance = true;
                 range = _GetSharedPrimvarRange(_vertexPrimvarId,
                                                bufferSpecs, bar,
-                                               &isFirstInstance);
+                                               &isFirstInstance,
+                                               resourceRegistry);
                 if (!isFirstInstance) {
                     // this is not the first instance, skip redundant
                     // sources and computations.
@@ -822,7 +823,8 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
     TfTokenVector primVarNames = GetPrimVarFacevaryingNames(sceneDelegate);
     if (primVarNames.empty()) return;
 
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     HdBufferSourceVector sources;
     sources.reserve(primVarNames.size());
@@ -864,10 +866,10 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
             if (_UsePtexIndices(sceneDelegate->GetRenderIndex()) ||
                 refineLevel > 0) {
                 source = _QuadrangulateFaceVaryingPrimVar(source, _topology,
-                                                          GetId());
+                                                          GetId(), resourceRegistry);
             } else {
                 source = _TriangulateFaceVaryingPrimVar(source, _topology,
-                                                        GetId());
+                                                        GetId(), resourceRegistry);
             }
             sources.push_back(source);
         }
@@ -905,7 +907,9 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
+
 
     HdBufferSourceVector sources;
     sources.reserve(primVarNames.size());
@@ -993,6 +997,9 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
 
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
+
     /* VISIBILITY */
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
@@ -1037,7 +1044,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     if (requireSmoothNormals && !_vertexAdjacency) {
-        _PopulateAdjacency();
+        _PopulateAdjacency(resourceRegistry);
     }
 
     /* FACEVARYING PRIMVARS */
@@ -1140,7 +1147,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
                                  cullStyle,
                                  geomStyle);
 
-    drawItem->SetGeometricShader(Hd_GeometricShader::Create(shaderKey));
+    drawItem->SetGeometricShader(
+        Hd_GeometricShader::Create(
+            shaderKey, 
+            renderIndex.GetResourceRegistry()));
 
     // The batches need to be validated and rebuilt if necessary.
     renderIndex.GetChangeTracker().MarkShaderBindingsDirty();

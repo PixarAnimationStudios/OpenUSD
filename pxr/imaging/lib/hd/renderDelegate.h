@@ -44,6 +44,7 @@ class HdRenderPass;
 class HdInstancer;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 ///
 /// The HdRenderParam is an opaque (to core Hydra) handle, to an object
@@ -102,6 +103,12 @@ public:
     /// A render delegate may return null for the param.
     ///
     virtual HdRenderParam *GetRenderParam() const = 0;
+
+    ///
+    /// Returns a shared ptr to the resource registry of the current render
+    /// delegate.
+    ///
+    virtual HdResourceRegistrySharedPtr GetResourceRegistry() const = 0;
 
     ////////////////////////////////////////////////////////////////////////////
     ///

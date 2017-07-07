@@ -233,7 +233,8 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
             shadows->GetProjectionMatrix(passId),
             GfVec4d(0,0,shadows->GetSize()[0],shadows->GetSize()[1]));
 
-        _renderPassStates[passId]->Sync();
+        _renderPassStates[passId]->Sync(
+            GetDelegate()->GetRenderIndex().GetResourceRegistry());
         _passes[passId]->Sync();
     }
 }

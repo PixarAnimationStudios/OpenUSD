@@ -257,7 +257,7 @@ HdxDrawTargetTask::_Sync(HdTaskContext* ctx)
                 lightingContext->GetUseColorMaterialDiffuse());
         }
 
-        renderPassState->Sync();
+        renderPassState->Sync(renderIndex.GetResourceRegistry());
         renderPass->Sync();
     }
 }

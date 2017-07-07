@@ -105,8 +105,8 @@ HdStInstancer::GetInstancePrimVars()
         // check the dirtyBits of this instancer so that the instance primvar will
         // be updated just once even if there're multiple prototypes.
         if (HdChangeTracker::IsAnyPrimVarDirty(dirtyBits, instancerId)) {
-            HdResourceRegistry *resourceRegistry = 
-                &HdResourceRegistry::GetInstance();
+            HdResourceRegistrySharedPtr const& resourceRegistry = 
+                _GetDelegate()->GetRenderIndex().GetResourceRegistry();
 
             TfTokenVector primVarNames;
             primVarNames = _GetDelegate()->GetPrimVarInstanceNames(instancerId);
@@ -260,7 +260,8 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     // the prototype has DirtyInstanceIndex. There's no need to guard using
     // dirtyBits within this function.
 
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const& resourceRegistry = 
+        _GetDelegate()->GetRenderIndex().GetResourceRegistry();
 
     // delegate provides sparse index array for prototypeId.
     std::vector<VtIntArray> instanceIndicesArray;

@@ -419,6 +419,12 @@ HdRenderIndex::GetRenderDelegateType() const
     return TfToken(typeName);
 }
 
+HdResourceRegistrySharedPtr 
+HdRenderIndex::GetResourceRegistry() const
+{
+    return _renderDelegate->GetResourceRegistry();
+}
+
 bool
 HdRenderIndex::_CreateFallbackPrims()
 {

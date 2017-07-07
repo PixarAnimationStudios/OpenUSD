@@ -36,6 +36,7 @@
 
 #include "pxr/imaging/hd/glslfxShader.h"
 #include "pxr/imaging/hd/package.h"
+#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/texture.h"
 
@@ -64,8 +65,25 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
     HdPrimTypeTokens->texture
 };
 
+std::atomic_int HdStRenderDelegate::_counterResourceRegistry;
+HdResourceRegistrySharedPtr HdStRenderDelegate::_resourceRegistry;
+
 HdStRenderDelegate::HdStRenderDelegate()
 {
+    // Initialize one resource registry for all St plugins
+    // It will also add the resource to the logging object so we
+    // can query the resources used by all St plugins later
+    if (_counterResourceRegistry.fetch_add(1) == 0) {
+        _resourceRegistry.reset( new HdResourceRegistry() );
+        HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry);
+    }
+}
+
+HdStRenderDelegate::~HdStRenderDelegate()
+{
+    // Here we could destroy the resource registry when the last render
+    // delegate HdSt is destroyed, however we prefer to keep the resources
+    // around to match previous singleton behaviour (for now).
 }
 
 const TfTokenVector &
@@ -90,6 +108,12 @@ HdRenderParam *
 HdStRenderDelegate::GetRenderParam() const
 {
     return nullptr;
+}
+
+HdResourceRegistrySharedPtr
+HdStRenderDelegate::GetResourceRegistry() const
+{
+    return _resourceRegistry;
 }
 
 HdRenderPassSharedPtr
@@ -230,8 +254,6 @@ HdStRenderDelegate::_CreateFallbackShaderPrim()
 void
 HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
-    HdResourceRegistry &resourceRegistry = HdResourceRegistry::GetInstance();
-
     // --------------------------------------------------------------------- //
     // RESOLVE, COMPUTE & COMMIT PHASE
     // --------------------------------------------------------------------- //
@@ -242,17 +264,18 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     //     3) Update any scene-level acceleration structures.
 
     // Commit all pending source data.
-    resourceRegistry.Commit();
+    _resourceRegistry->Commit();
 
     if (tracker->IsGarbageCollectionNeeded()) {
-        resourceRegistry.GarbageCollect();
+        _resourceRegistry->GarbageCollect();
         tracker->ClearGarbageCollectionNeeded();
         tracker->MarkAllCollectionsDirty();
     }
 
     // see bug126621. currently dispatch buffers need to be released
     //                more frequently than we expect.
-    resourceRegistry.GarbageCollectDispatchBuffers();
+    _resourceRegistry->GarbageCollectDispatchBuffers();
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

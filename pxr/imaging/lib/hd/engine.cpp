@@ -145,7 +145,7 @@ HdEngine::ReloadAllShaders(HdRenderIndex& index)
     }
 
     // Invalidate Geometry shader cache in Resource Registry.
-    HdResourceRegistry::GetInstance().InvalidateGeometricShaderRegistry();
+    index.GetResourceRegistry()->InvalidateGeometricShaderRegistry();
 
     // Fallback Shader
     HdShader *shader = static_cast<HdShader *>(

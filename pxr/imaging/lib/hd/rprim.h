@@ -185,9 +185,10 @@ protected:
     HD_API
     HdBufferArrayRangeSharedPtr
     _GetSharedPrimvarRange(uint64_t primvarId,
-                           HdBufferSpecVector const &bufferSpecs,
-                           HdBufferArrayRangeSharedPtr const &existing,
-                           bool * isFirstInstance) const;
+                    HdBufferSpecVector const &bufferSpecs,
+                    HdBufferArrayRangeSharedPtr const &existing,
+                    bool * isFirstInstance,
+                    HdResourceRegistrySharedPtr const &resourceRegistry) const;
 
     HD_API
     TfToken _GetReprName(HdSceneDelegate* delegate,

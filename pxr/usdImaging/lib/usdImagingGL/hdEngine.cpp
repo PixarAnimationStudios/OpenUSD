@@ -1023,7 +1023,7 @@ UsdImagingGLHdEngine::_DeleteHydraResources()
 VtDictionary
 UsdImagingGLHdEngine::GetResourceAllocation() const
 {
-    return HdResourceRegistry::GetInstance().GetResourceAllocation();
+    return _renderIndex->GetResourceRegistry()->GetResourceAllocation();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

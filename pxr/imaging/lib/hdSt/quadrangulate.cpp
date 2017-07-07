@@ -390,13 +390,14 @@ HdSt_QuadrangulateComputationGPU::HdSt_QuadrangulateComputationGPU(
 }
 
 void
-HdSt_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
+HdSt_QuadrangulateComputationGPU::Execute(
+    HdBufferArrayRangeSharedPtr const &range,
+    HdResourceRegistry *resourceRegistry)
 {
     if (!TF_VERIFY(_topology))
         return;
 
     HD_TRACE_FUNCTION();
-
     HD_PERF_COUNTER_INCR(HdPerfTokens->quadrangulateGPU);
 
     // if this topology doesn't contain non-quad faces, quadInfoRange is null.
@@ -422,7 +423,7 @@ HdSt_QuadrangulateComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &ran
                            HdGLSLProgramTokens->quadrangulateDouble);
 
     HdGLSLProgramSharedPtr computeProgram =
-        HdGLSLProgram::GetComputeProgram(shaderToken);
+        HdGLSLProgram::GetComputeProgram(shaderToken, resourceRegistry);
     if (!computeProgram) return;
 
     GLuint program = computeProgram->GetProgram().GetId();

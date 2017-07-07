@@ -91,13 +91,15 @@ Hd_ImmediateDrawBatch::Validate(bool deepValidation)
 
 void
 Hd_ImmediateDrawBatch::PrepareDraw(
-    HdRenderPassStateSharedPtr const &renderPassState)
+    HdRenderPassStateSharedPtr const &renderPassState,
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
 }
 
 void
 Hd_ImmediateDrawBatch::ExecuteDraw(
-    HdRenderPassStateSharedPtr const &renderPassState)
+    HdRenderPassStateSharedPtr const &renderPassState,
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -116,7 +118,8 @@ Hd_ImmediateDrawBatch::ExecuteDraw(
 
     // bind program
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
-                                                   /*indirect=*/false);
+                                                   /*indirect=*/false,
+                                                   resourceRegistry);
 
     HdGLSLProgramSharedPtr const &glslProgram = program.GetGLSLProgram();
     if (!TF_VERIFY(glslProgram)) return;

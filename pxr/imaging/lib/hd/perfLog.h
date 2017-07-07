@@ -36,6 +36,7 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
 #include "pxr/base/tf/hashmap.h"
 
 #include <mutex>
@@ -44,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class SdfPath;
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 // XXX: it would be nice to move this into Trace or use the existing Trace
 // counter mechanism, however we are restricted to TraceLite in the rocks.
@@ -161,7 +163,8 @@ public:
     HD_API
     double GetCounter(TfToken const& name);
 
-    /// Reset all conter values to 0.0. Note that this doesn't reset cache counters.
+    /// Reset all conter values to 0.0. 
+    /// Note that this doesn't reset cache counters.
     HD_API
     void ResetCounters();
 
@@ -170,6 +173,20 @@ public:
 
     /// Disable performance logging.
     void Disable() { _enabled = false; }
+
+    /// Add a resource registry to the tracking.
+    HD_API
+    void AddResourceRegistry(
+        HdResourceRegistrySharedPtr const &resourceRegistry);
+
+    /// Remove Resource Registry from the tracking.
+    HD_API
+    void RemoveResourceRegistry(
+        HdResourceRegistrySharedPtr const &resourceRegistry);
+
+    /// Returns a vector of resource registry.
+    HD_API
+    std::vector<HdResourceRegistrySharedPtr> const& GetResourceRegistryVector();
 
 private:
     friend class TfSingleton<HdPerfLog>;
@@ -203,6 +220,9 @@ private:
     // Named value counters.
     typedef TfHashMap<TfToken, double, TfToken::HashFunctor> _CounterMap;
     _CounterMap _counterMap;
+
+    // Resource registry vector.
+    std::vector<HdResourceRegistrySharedPtr> _resourceRegistryVector;
 
     // Enable / disable performance tracking.
     bool _enabled;

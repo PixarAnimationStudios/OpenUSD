@@ -251,6 +251,7 @@ operator <<(std::ostream &out, const HdBufferArrayRegistry& self)
         size_t bufferNum = 0;
         TF_FOR_ALL(bufferIt, entryIt->second.bufferArrays) {
             out << "HdBufferArray " << bufferNum << "\n";
+            bufferNum++;
         }
     }
 

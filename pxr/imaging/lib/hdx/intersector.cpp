@@ -28,10 +28,10 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hdSt/renderPass.h"
-
 #include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/rprim.h"
@@ -55,11 +55,11 @@ void
 HdxIntersector::_Init(GfVec2i const& size)
 {
     HdRprimCollection col(HdTokens->geometry, HdTokens->hull);
-    _renderPass = boost::make_shared<HdSt_RenderPass>(&*_index, col);
+    _renderPass = _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
+
     // initialize renderPassState with ID render shader
     _renderPassState = boost::make_shared<HdRenderPassState>(
         boost::make_shared<HdRenderPassShader>(HdxPackageRenderPassIdShader()));
-
 
     // Make sure master draw target is always modified on the shared context,
     // so we access it consistently.
@@ -158,12 +158,13 @@ protected:
     virtual void _Sync(HdTaskContext* ctx) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync();
+        _renderPassState->Sync(
+            _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
     virtual void _Execute(HdTaskContext* ctx) override
     {
-	// Try to extract render tags from the context in case
+        // Try to extract render tags from the context in case
         // there are render tags passed to the graph that 
         // we should be using while rendering the id buffer
         // XXX If this was a task (in the render graph) we could

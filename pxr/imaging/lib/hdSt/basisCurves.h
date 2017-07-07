@@ -39,6 +39,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
                                               HdSt_BasisCurvesTopologySharedPtr;
 
@@ -109,9 +111,10 @@ private:
                          const HdBasisCurvesReprDesc &desc);
 
     void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                                        const HdBasisCurvesReprDesc &desc);
+                                const HdBasisCurvesReprDesc &desc,
+                                HdResourceRegistrySharedPtr const& resourceRegistry);
 
-    void _SetGeometricShaders();
+    void _SetGeometricShaders(HdResourceRegistrySharedPtr const& resourceRegistry);
 
     void _ResetGeometricShaders();
 

@@ -383,7 +383,8 @@ HdStDrawTarget::_RegisterTextureResource(
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    HdResourceRegistry &resourceRegistry = HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const& resourceRegistry =
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     // Create Path for the texture resource
     SdfPath resourcePath = GetID().AppendProperty(TfToken(name));
@@ -395,7 +396,7 @@ HdStDrawTarget::_RegisterTextureResource(
     // Add to resource registry
     HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> texInstance;
     std::unique_lock<std::mutex> regLock =
-                  resourceRegistry.RegisterTextureResource(texID, &texInstance);
+                  resourceRegistry->RegisterTextureResource(texID, &texInstance);
 
     if (texInstance.IsFirstInstance()) {
         texInstance.SetValue(HdTextureResourceSharedPtr(

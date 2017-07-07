@@ -112,7 +112,7 @@ HdComputedBufferSource::GetData() const
     if (!_result) {
         TF_CODING_ERROR("HdComputedBufferSource::GetData() called without "
                         "setting the result.");
-        return NULL;
+        return nullptr;
     }
     return _result->GetData();
 }
@@ -173,7 +173,7 @@ void const*
 HdNullBufferSource::GetData() const
 {
     TF_CODING_ERROR("HdNullBufferSource can't be scheduled with a buffer range");
-    return NULL;
+    return nullptr;
 }
 
 int
