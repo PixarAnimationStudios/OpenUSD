@@ -599,12 +599,28 @@ _ResolveClipSetsInNode(
     const SdfPath& primPath = node.GetPath();
     const SdfLayerRefPtrVector& layers = node.GetLayerStack()->GetLayers();
 
+    // Do an initial scan to see if any of the layers have a 'clips'
+    // metadata field. If none do, we can bail out early without looking
+    // for any other metadata.
+    size_t weakestLayerWithClips = std::numeric_limits<size_t>::max();
+    for (size_t i = layers.size(); i-- != 0;) {
+        const SdfLayerRefPtr& layer = layers[i];
+        if (layer->HasField(primPath, UsdTokens->clips)) {
+            weakestLayerWithClips = i;
+            break;
+        }
+    }
+
+    if (weakestLayerWithClips == std::numeric_limits<size_t>::max()) {
+        return;
+    }
+
     // Iterate from weak-to-strong to build up the composed clip info
     // dictionaries for each clip set, as well as the list of clip sets 
     // that should be added from this layer stack.
     std::map<std::string, _ClipSet> clipSetsInNode;
     std::vector<std::string> addedClipSets;
-    for (size_t i = layers.size(); i-- != 0;) {
+    for (size_t i = weakestLayerWithClips + 1; i-- != 0;) {
         const SdfLayerRefPtr& layer = layers[i];
 
         VtDictionary clips;
