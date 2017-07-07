@@ -34,7 +34,7 @@ from PySide import QtGui, QtCore, QtOpenGL
 from pxr import Tf
 from pxr import Gf
 from pxr import Glf
-from pxr import Sdf, Usd, UsdGeom, UsdUtils
+from pxr import Sdf, Usd, UsdGeom
 from pxr import UsdImagingGL
 from pxr import CameraUtil
 
@@ -1028,7 +1028,6 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._stage = None
         self._stageIsZup = True
-        self._cameraIsZup = True
         self._currentFrame = 0
         self._cameraMode = "none"
         self._rolloverPicking = False
@@ -1161,7 +1160,6 @@ class StageView(QtOpenGL.QGLWidget):
         if self._renderer != None:
             self.InitRenderer()
         self._stageIsZup = UsdGeom.GetStageUpAxis(stage) == UsdGeom.Tokens.z
-        self._cameraIsZup = UsdUtils.GetCamerasAreZup(stage)
         self.allSceneCameras = None
 
     # simple GLSL program for axis/bbox drawings
@@ -1286,8 +1284,7 @@ class StageView(QtOpenGL.QGLWidget):
             if camera == self._cameraPrim or not (camera and camera.IsActive()):
                 continue
 
-            gfCamera = UsdGeom.Camera(camera).GetCamera(self._currentFrame, 
-                                                        self._cameraIsZup)
+            gfCamera = UsdGeom.Camera(camera).GetCamera(self._currentFrame)
             frustum = gfCamera.frustum
 
             # (Gf documentation seems to be wrong)-- Ordered as
@@ -1552,7 +1549,7 @@ class StageView(QtOpenGL.QGLWidget):
     def computeGfCameraForCurrentPrim(self):
         if self._cameraPrim and self._cameraPrim.IsActive():
             gfCamera = UsdGeom.Camera(self._cameraPrim).GetCamera(
-                self._currentFrame, self._cameraIsZup)
+                self._currentFrame)
             return gfCamera
         else:
             return None
