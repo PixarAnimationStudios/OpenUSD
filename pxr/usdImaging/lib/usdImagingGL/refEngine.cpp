@@ -53,9 +53,6 @@
 #include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usdGeom/nurbsPatch.h"
 
-// Shader Schema
-#include "pxr/usd/usdShade/pShader.h"
-
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tracelite/trace.h"

@@ -3,15 +3,6 @@
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
 )
 
-class PShader "PShader"
-{
-    color3f displayColor
-    float displayOpacity
-    uniform string shaderProtocol
-    uniform string shaderType
-    asset sloPath
-}
-
 class NodeGraph "NodeGraph" (
     doc = '''A node-graph is a container for shading nodes, as well as other 
     node-graphs. It has a public input interface and provides a list of public 

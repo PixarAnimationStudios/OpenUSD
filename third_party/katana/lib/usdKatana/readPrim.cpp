@@ -45,7 +45,6 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/collectionAPI.h"
 
-#include "pxr/usd/usdShade/pShaderUtils.h"
 #include "pxr/usd/usdShade/material.h"
 
 #include "pxr/usd/usdRi/statements.h"

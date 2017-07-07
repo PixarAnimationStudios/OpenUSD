@@ -16,8 +16,6 @@ pxr_library(usdShade
         look
         material
         output
-        pShader
-        pShaderUtils
         shader
         nodeGraph
         tokens
@@ -36,7 +34,6 @@ pxr_library(usdShade
         wrapLook.cpp
         wrapMaterial.cpp
         wrapOutput.cpp
-        wrapPShader.cpp
         wrapShader.cpp
         wrapNodeGraph.cpp
         wrapTokens.cpp
