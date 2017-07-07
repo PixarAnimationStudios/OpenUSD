@@ -2631,6 +2631,24 @@ struct _CopyCameraVerticalApertureOffset : _CopyCameraBase {
     }
 };
 
+/// Class to copy clippingRange
+struct _CopyCameraClippingRange : _CopyCameraBase {
+    using _CopyCameraBase::operator();
+
+    _CopyCameraClippingRange(const ICamera& object_)
+        : _CopyCameraBase(object_) {};
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const
+    {
+        const CameraSample sample = object.getSchema().getValue(iss);
+
+        const float near = sample.getNearClippingPlane();
+        const float far = sample.getFarClippingPlane();
+        return dst.Set(GfVec2f(near, far));
+    }
+};
+
 /// Copy a subdivision scheme from an IStringProperty.
 struct _CopySubdivisionScheme : _CopyGeneric<IStringProperty> {
     _CopySubdivisionScheme(const AlembicProperty& object_) :
@@ -3281,6 +3299,10 @@ _ReadCameraParameters(_PrimReaderContext* context)
         UsdGeomTokens->verticalApertureOffset,
         SdfValueTypeNames->Float,
         _CopyCameraVerticalApertureOffset(object));
+    context->AddProperty(
+        UsdGeomTokens->clippingRange,
+        SdfValueTypeNames->Float2,
+        _CopyCameraClippingRange(object));
 
     // Extract all other alembic camera properties so that they don't show up
     // in USD.
