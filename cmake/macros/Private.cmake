@@ -65,6 +65,10 @@ function(_copy_headers LIBRARY_NAME)
     add_custom_target(${LIBRARY_NAME}_headerfiles
         DEPENDS ${files_copied}
     )
+    set_target_properties(${LIBRARY_NAME}_headerfiles
+        PROPERTIES
+            FOLDER "headerfiles"
+    )
 
     # Make sure headers are installed before building the library.
     add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_headerfiles)
