@@ -534,7 +534,9 @@ OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 if Windows():
     GLEW_URL = "http://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0-win32.zip"
 else:
-    GLEW_URL = "https://github.com/nigels-com/glew/archive/glew-2.0.0.tar.gz"
+    # Important to get source package from this URL and NOT github. This package
+    # contains pre-generated code that the github repo does not.
+    GLEW_URL = "https://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0.tgz"
 
 def InstallGLEW(context, force):
     if Windows():
@@ -555,8 +557,6 @@ def InstallGLEW_Windows(context, force):
 
 def InstallGLEW_LinuxOrMacOS(context, force):
     with CurrentWorkingDirectory(DownloadURL(GLEW_URL, context, force)):
-        # GLEW requires code generation in the source tree
-        Run("make extensions")
         Run('make GLEW_DEST="{instDir}" -j{procs} install'
             .format(instDir=context.instDir,
                     procs=multiprocessing.cpu_count()))
