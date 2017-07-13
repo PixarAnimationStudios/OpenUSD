@@ -45,7 +45,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_VERTEX_PRIMVAR, 0,
+TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
                       "Enable sharing of vertex primvar");
 
 HdRprim::HdRprim(SdfPath const& id,
