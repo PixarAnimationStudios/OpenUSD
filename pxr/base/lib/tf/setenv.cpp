@@ -34,11 +34,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 bool
 TfSetenv(const std::string & name, const std::string & value)
 {
-    if (TfPyIsInitialized())
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+    if (TfPyIsInitialized()) {
         return TfPySetenv(name, value);
+    }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
-    if (ArchSetEnv(name.c_str(), value.c_str(), /* overwrite */ true))
+    if (ArchSetEnv(name.c_str(), value.c_str(), /* overwrite */ true)) {
         return true;
+    }
 
     TF_WARN("Error setting '%s': %s", name.c_str(), ArchStrerror().c_str());
     return false;
@@ -47,11 +51,15 @@ TfSetenv(const std::string & name, const std::string & value)
 bool
 TfUnsetenv(const std::string & name)
 {
-    if (TfPyIsInitialized())
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+    if (TfPyIsInitialized()) {
         return TfPyUnsetenv(name);
+    }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
-    if (ArchRemoveEnv(name.c_str()))
+    if (ArchRemoveEnv(name.c_str())) {
         return true;
+    }
 
     TF_WARN("Error unsetting '%s': %s", name.c_str(), ArchStrerror().c_str());
     return false;
