@@ -512,12 +512,13 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 
     _drawMode = UsdImagingGLEngine::DRAW_SHADED_SMOOTH;
 
-    // Only wireOnSurface/flat are supported
     if (args.shading.compare("wireOnSurface") == 0) {
         _drawMode = UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE;
     } else if (args.shading.compare("flat") == 0 ) {
         _drawMode = UsdImagingGLEngine::DRAW_SHADED_FLAT;
-    }
+    }else if (args.shading.compare("wire") == 0 ) {
+        _drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+    } 
 
     if (!args.unresolvedStageFilePath.empty()) {
         _stageFilePath = args.unresolvedStageFilePath;
