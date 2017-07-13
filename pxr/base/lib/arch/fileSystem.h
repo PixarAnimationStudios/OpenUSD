@@ -132,6 +132,12 @@ ARCH_API FILE*
 ArchOpenFile(char const* fileName, char const* mode);
 
 #if defined(ARCH_OS_WINDOWS)
+#   define ArchChmod(path, mode)        _chmod(path, mode)
+#else
+#   define ArchChmod(path, mode)        chmod(path, mode)
+#endif
+
+#if defined(ARCH_OS_WINDOWS)
 #   define ArchCloseFile(fd)            _close(fd)
 #else
 #   define ArchCloseFile(fd)            close(fd)
@@ -199,6 +205,13 @@ ARCH_API bool ArchGetModificationTime(const char* pathname, double* time);
 /// This function returns the modification time with as much precision as is
 /// available in the stat structure for the current platform.
 ARCH_API double ArchGetModificationTime(const ArchStatType& st);
+
+/// Returns the permissions mode (mode_t) for the given pathname.
+///
+/// This function stats the given pathname and returns the permissions flags
+/// for it and returns true.  If the stat fails, returns false.
+///
+ARCH_API bool ArchGetStatMode(const char *pathname, int *mode);
 
 /// Return the path to a temporary directory for this platform.
 ///
