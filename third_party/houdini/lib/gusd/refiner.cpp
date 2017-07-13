@@ -516,7 +516,7 @@ GusdRefinerCollector::add(
 {
     // If addNumericSuffix is true, use the name directly unless there
     // is a conflict. Otherwise add a numeric suffix to keep names unique.
-    long int count = 0;
+    int64_t count = 0;
     auto it = m_names.find( path );
     if( it == m_names.end() ) {
         // Name has not been used before
