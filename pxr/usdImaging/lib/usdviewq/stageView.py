@@ -842,7 +842,10 @@ class Reticles(Prim2DDrawTask):
     def __init__(self):
         Prim2DDrawTask.__init__(self)
         self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.7, 1.0, 0.9))
-        
+
+    def updateColor(self, color):
+        self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
+
     def updatePrims(self, croppedViewport, qglwidget, inside, outside):
         width = float(qglwidget.width())
         height = float(qglwidget.height())
@@ -880,8 +883,8 @@ class Mask(Prim2DDrawTask):
     def __init__(self):
         Prim2DDrawTask.__init__(self)
         self._maskColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.0, 0.0, 1.0))
-    
-    def updateMaskColor(self, color):
+
+    def updateColor(self, color):
         self._maskColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
 
     def updatePrims(self, croppedViewport, qglwidget):
@@ -1093,6 +1096,14 @@ class StageView(QtOpenGL.QGLWidget):
         @property
         def defaultMaterialSpecular(self):
             return self._defaultMaterialSpecular
+
+        @property
+        def cameraMaskColor(self):
+            return (0.1, 0.1, 0.1, 1.0)
+
+        @property
+        def cameraReticlesColor(self):
+            return (0.0, 0.7, 1.0, 1.0)
 
     ###########
     # Signals #
@@ -1404,7 +1415,6 @@ class StageView(QtOpenGL.QGLWidget):
 
         # prep Mask regions
         self._mask = Mask()
-        self._maskColor = (0.1, 0.1, 0.1, 0.7)
         self._maskOutline = Outline()
 
         self._reticles = Reticles()
@@ -2241,14 +2251,22 @@ class StageView(QtOpenGL.QGLWidget):
 
         # reset the viewport for 2D and HUD drawing
         uiTasks = [ Prim2DSetupTask((0, 0, self.size().width(), self.size().height())) ]
-        if self.showMask and not self.showMask_Opaque:
-            self._mask.updateMaskColor(self._maskColor)
+        if self.showMask:
+            color = self._dataModel.cameraMaskColor
+            if self.showMask_Opaque:
+                color = color[0:3] + (1.0,)
+            else:
+                color = color[0:3] + (color[3] * 0.7,)
+            self._mask.updateColor(color)
             self._mask.updatePrims(cameraViewport, self)
             uiTasks.append(self._mask)
         if self.showMask_Outline:
             self._maskOutline.updatePrims(cameraViewport, self)
             uiTasks.append(self._maskOutline)
         if self.showReticles:
+            color = self._dataModel.cameraReticlesColor
+            color = color[0:3] + (color[3] * 0.85,)
+            self._reticles.updateColor(color)
             self._reticles.updatePrims(cameraViewport, self,
                     self.showReticles_Inside, self.showReticles_Outside)
             uiTasks.append(self._reticles)

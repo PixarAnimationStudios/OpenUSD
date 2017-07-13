@@ -1526,7 +1526,6 @@
      <property name="title">
       <string>Camera Masking</string>
      </property>
-     <addaction name="actionCameraMask_Outline"/>
      <addaction name="separator"/>
      <actiongroup name="actionGroupCameraMask">
       <action name="actionCameraMask_Full">
@@ -1566,16 +1565,36 @@
         <bool>true</bool>
       </property>
      </actiongroup>
+     <action name="actionCameraMask_Color">
+      <property name="checkable">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Select Color...</string>
+      </property>
+     </action>
      <addaction name="actionCameraMask_Full"/>
      <addaction name="actionCameraMask_Partial"/>
      <addaction name="actionCameraMask_None"/>
+     <addaction name="separator"/>
+     <addaction name="actionCameraMask_Color"/>
     </widget>
     <widget class="QMenu" name="menuCameraReticles">
      <property name="title">
       <string>Camera Reticles</string>
      </property>
+     <action name="actionCameraReticles_Color">
+      <property name="checkable">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Select Color...</string>
+      </property>
+     </action>
      <addaction name="actionCameraReticles_Inside"/>
      <addaction name="actionCameraReticles_Outside"/>
+     <addaction name="separator"/>
+     <addaction name="actionCameraReticles_Color"/>
     </widget>
     <widget class="QMenu" name="menuHUD">
      <property name="title">
@@ -1613,8 +1632,6 @@
      <addaction name="actionAlways"/>
      <addaction name="menuHighlightColor"/>
     </widget>
-    <addaction name="menuCameraMask"/>
-    <addaction name="menuCameraReticles"/>
     <addaction name="menuHUD"/>
     <addaction name="separator"/>
     <addaction name="menuNode_View_Depth"/>
@@ -1677,6 +1694,18 @@
      </property>
      <addaction name="actionFreeCam"/>
     </widget>
+    <widget class="QMenu" name="menuCameraGuides">
+     <property name="tearOffEnabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>Camera Guides...</string>
+     </property>
+     <addaction name="actionCameraMask_Outline"/>
+     <addaction name="actionDisplay_Camera_Oracles"/>
+     <addaction name="menuCameraMask"/>
+     <addaction name="menuCameraReticles"/>
+    </widget>
     <widget class="QMenu" name="menuDisplay">
      <property name="title">
       <string>Display Purposes...</string>
@@ -1684,8 +1713,6 @@
      <addaction name="actionDisplay_Guide"/>
      <addaction name="actionDisplay_Proxy"/>
      <addaction name="actionDisplay_Render"/>
-     <addaction name="separator"/>
-     <addaction name="actionDisplay_Camera_Oracles"/>
     </widget>
     <widget class="QMenu" name="menuBBox">
      <property name="title">
@@ -1731,6 +1758,7 @@
     <addaction name="menuLights"/>
     <addaction name="menuBackground_Color"/>
     <addaction name="menuCamera"/>
+    <addaction name="menuCameraGuides"/>
     <addaction name="menuDisplay"/>
     <addaction name="menuInterpolation"/>
     <addaction name="actionEnable_Hardware_Shading"/>
