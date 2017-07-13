@@ -1432,19 +1432,19 @@ Hd_UnitTestDelegate::PopulateBasicTestSet()
     // non-quads
     {
         dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
-        AddPolygons(SdfPath("nonquads1"), GfMatrix4f(dmat),
+        AddPolygons(SdfPath("/nonquads1"), GfMatrix4f(dmat),
                              Hd_UnitTestDelegate::CONSTANT);
 
         dmat.SetTranslate(GfVec3d(xPos,  0.0, 0.0));
-        AddPolygons(SdfPath("nonquads2"), GfMatrix4f(dmat),
+        AddPolygons(SdfPath("/nonquads2"), GfMatrix4f(dmat),
                              Hd_UnitTestDelegate::UNIFORM);
 
         dmat.SetTranslate(GfVec3d(xPos,  3.0, 0.0));
-        AddPolygons(SdfPath("nonquads3"), GfMatrix4f(dmat),
+        AddPolygons(SdfPath("/nonquads3"), GfMatrix4f(dmat),
                              Hd_UnitTestDelegate::VERTEX);
 
         dmat.SetTranslate(GfVec3d(xPos,  6.0, 0.0));
-        AddPolygons(SdfPath("nonquads4"), GfMatrix4f(dmat),
+        AddPolygons(SdfPath("/nonquads4"), GfMatrix4f(dmat),
                              Hd_UnitTestDelegate::FACEVARYING);
 
         xPos += 3.0;

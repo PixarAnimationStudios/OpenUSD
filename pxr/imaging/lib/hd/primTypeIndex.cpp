@@ -27,8 +27,8 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
-#include "pxr/imaging/hd/tokens.h" // XXX: To be removed, so workaround below.
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -95,15 +95,19 @@ Hd_PrimTypeIndex<PrimType>::InsertPrim(const TfToken    &typeId,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (primId.IsEmpty()) {
-        return;
-    }
-
     typename _TypeIndex::iterator typeIt = _index.find(typeId);
     if (typeIt ==_index.end()) {
         TF_CODING_ERROR("Unsupported prim type: %s", typeId.GetText());
         return;
     }
+
+    SdfPath const &sceneDelegateId = sceneDelegate->GetDelegateID();
+    if (!primId.HasPrefix(sceneDelegateId)) {
+        TF_CODING_ERROR("Scene Delegate Id (%s) must prefix prim Id (%s)",
+                        sceneDelegateId.GetText(), primId.GetText());
+        return;
+    }
+
 
     PrimType *prim = _RenderDelegateCreatePrim(renderDelegate, typeId, primId);
 

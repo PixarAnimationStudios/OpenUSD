@@ -110,17 +110,17 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-#if 0
-    // TODO: enable this after patching.
-    if (!id.IsAbsolutePath()) {
-        TF_CODING_ERROR("All Rprim IDs must be absolute paths <%s>\n",
-                id.GetText());
+    if (ARCH_UNLIKELY(TfMapLookupPtr(_rprimMap, rprimId))) {
         return;
     }
-#endif
 
-    if (ARCH_UNLIKELY(TfMapLookupPtr(_rprimMap, rprimId)))
+    SdfPath const &sceneDelegateId = sceneDelegate->GetDelegateID();
+    if (!rprimId.HasPrefix(sceneDelegateId)) {
+        TF_CODING_ERROR("Scene Delegate Id (%s) must prefix prim Id (%s)",
+                        sceneDelegateId.GetText(), rprimId.GetText());
         return;
+    }
+
 
     HdRprim *rprim = _renderDelegate->CreateRprim(typeId,
                                                   rprimId,
