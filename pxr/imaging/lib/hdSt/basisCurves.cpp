@@ -487,6 +487,21 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    HdBufferSourceVector extCompVertexPrimvars;
+    _GetExtComputationPrimVarsComputations(sceneDelegate,
+                                           HdInterpolationVertex,
+                                           *dirtyBits,
+                                           &extCompVertexPrimvars);
+
+    // XXX: To Do: Check primvar counts against Topology expected counts
+    // XXX: To Do: Width / Normal Interpolation
+    // XXX: To Do: Custom Primvar Interpolation
+    // XXX: To Do: Varying Interpolation mode
+    sources.insert(sources.end(),
+                   extCompVertexPrimvars.begin(),
+                   extCompVertexPrimvars.end());
+
+
     // return before allocation if it's empty.
     if (sources.empty()) {
         return;
@@ -609,6 +624,7 @@ HdStBasisCurves::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyTransform 
         | HdChangeTracker::DirtyVisibility 
         | HdChangeTracker::DirtyWidths
+        | HdChangeTracker::DirtyComputationPrimvarDesc
         ;
 
     return mask;

@@ -43,12 +43,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class HdBufferSource;
 class HdDrawItem;
 class HdRenderIndex;
 class HdRepr;
 class HdRenderParam;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
+typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
@@ -190,6 +192,29 @@ protected:
                     bool * isFirstInstance,
                     HdResourceRegistrySharedPtr const &resourceRegistry) const;
 
+    /// For a given interpolation mode, obtains a set of ExtComputation primVar
+    /// source computations needed for this Rprim.
+    ///
+    /// The list of primVars that are obtained through an ExtComputation
+    /// for the given interpolationMode is obtained from the scene delegate.
+    ///
+    /// The scene delegate also provides information about which output on
+    /// which computation is providing the source of the primVar.
+    ///
+    /// Based on the information, the function creates the necessary
+    /// computations and appends them on to the sources list (the sources vector
+    /// need not be empty).
+    ///
+    /// The caller is expected to pass these computation on these computations
+    /// onto the resource registry (associating them with BAR's if it is
+    /// expected the primVar will be downloaded)
+    HD_API
+    void _GetExtComputationPrimVarsComputations(
+                                              HdSceneDelegate *sceneDelegate,
+                                              HdInterpolation interpolationMode,
+                                              HdDirtyBits dirtyBits,
+                                              HdBufferSourceVector *sources);
+
     HD_API
     TfToken _GetReprName(HdSceneDelegate* delegate,
                          TfToken const &defaultReprName, bool forced,
@@ -212,7 +237,6 @@ private:
     /// Sets a new surface shader id to be used by this rprim
     void _SetSurfaceShaderId(HdChangeTracker &changeTracker,
                              SdfPath const& surfaceShaderId);
-
 
 protected:
     // shared data across reprs: bufferArrayRanges, bounds, visibility

@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/package.h"
@@ -72,6 +73,7 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     , _tracker()
     , _nextPrimId(1)
     , _instancerMap()
+    , _extComputationMap()
     , _syncQueue()
     , _renderDelegate(renderDelegate)
 {
@@ -217,6 +219,13 @@ HdRenderIndex::Clear()
     }
     _taskMap.clear();
 
+    // Clear ExtComputations.
+    TF_FOR_ALL(it, _extComputationMap) {
+        _tracker.ExtComputationRemoved(it->first);
+    }
+    _extComputationMap.clear();
+
+
     // After clearing the index, all collections must be invalidated to force
     // any dependent state to be updated.
     _tracker.MarkAllCollectionsDirty();
@@ -347,6 +356,88 @@ HdRenderIndex::GetFallbackBprim(TfToken const& typeId) const
     return _bprimIndex.GetFallbackPrim(typeId);
 }
 
+// ---------------------------------------------------------------------- //
+// ExtComputation Support
+// ---------------------------------------------------------------------- //
+
+void
+HdRenderIndex::InsertExtComputation(HdSceneDelegate *sceneDelegate,
+                                    SdfPath const &id)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    HdExtComputationPtr extComputation =
+                                  HdExtComputationPtr(new HdExtComputation(id));
+
+
+    _extComputationMap.emplace(id,
+                               _ExtComputationInfo {
+                                   sceneDelegate,
+                                   std::move(extComputation)
+                               });
+
+    _tracker.ExtComputationInserted(id,
+                                    extComputation->GetInitialDirtyBits());
+
+}
+
+void
+HdRenderIndex::RemoveExtComputation(SdfPath const& id)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _ExtComputationMap::const_iterator it = _extComputationMap.find(id);
+    if (it == _extComputationMap.cend()) {
+        return;
+    }
+
+    _tracker.ExtComputationRemoved(id);
+    _extComputationMap.erase(it);
+}
+
+HdExtComputation const *
+HdRenderIndex::GetExtComputation(SdfPath const &id) const
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _ExtComputationMap::const_iterator it = _extComputationMap.find(id);
+    if (it == _extComputationMap.cend()) {
+        return nullptr;
+    }
+
+    return it->second.extComputation.get();
+}
+
+void
+HdRenderIndex::GetExtComputationInfo(SdfPath const &id,
+                                     HdExtComputation **computation,
+                                     HdSceneDelegate **sceneDelegate)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (computation == nullptr || sceneDelegate == nullptr) {
+        TF_CODING_ERROR("Null passed for argument");
+        return;
+    }
+
+    _ExtComputationMap::const_iterator it = _extComputationMap.find(id);
+    if (it == _extComputationMap.cend()) {
+        *computation   = nullptr;
+        *sceneDelegate = nullptr;
+        return;
+    }
+
+    *computation   = it->second.extComputation.get();
+    *sceneDelegate = it->second.sceneDelegate;
+}
+
+// ---------------------------------------------------------------------- //
+// Render Delegate
+// ---------------------------------------------------------------------- //
 HdRenderDelegate *HdRenderIndex::GetRenderDelegate() const
 {
     return _renderDelegate;
@@ -697,6 +788,21 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
     _bprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
     _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
+
+    TRACE_SCOPE("Sync Ext Computations");
+    TF_FOR_ALL(it, _extComputationMap) {
+        const SdfPath &compId = it->first;
+        _ExtComputationInfo &compInfo = it->second;
+
+        HdDirtyBits dirtyBits = _tracker.GetExtComputationDirtyBits(compId);
+        if (HdChangeTracker::IsDirty(dirtyBits)) {
+            compInfo.extComputation->Sync(compInfo.sceneDelegate, &dirtyBits);
+            _tracker.MarkExtComputationClean(compId, dirtyBits);
+        }
+    }
+
+
+
 
     // could be in parallel... but how?
     // may be just gathering dirtyLists at first, and then index->sync()?

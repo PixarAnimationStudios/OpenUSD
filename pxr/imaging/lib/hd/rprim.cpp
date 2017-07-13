@@ -27,6 +27,8 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hd/extCompPrimvarBufferSource.h"
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/repr.h"
@@ -139,6 +141,15 @@ HdRprim::_GetReprName(HdSceneDelegate* delegate,
 HdDirtyBits
 HdRprim::_PropagateRprimDirtyBits(HdDirtyBits bits)
 {
+    // If the dependent computations changed - assume all
+    // primvars are dirty
+    if (bits & HdChangeTracker::DirtyComputationPrimvarDesc) {
+        bits |= (HdChangeTracker::DirtyPoints  |
+                 HdChangeTracker::DirtyNormals |
+                 HdChangeTracker::DirtyWidths  |
+                 HdChangeTracker::DirtyPrimVar);
+    }
+
     // propagate point dirtiness to normal
     bits |= (bits & HdChangeTracker::DirtyPoints) ?
                                               HdChangeTracker::DirtyNormals : 0;
@@ -510,5 +521,51 @@ HdRprim::_GetSharedPrimvarRange(uint64_t primvarId,
     return range;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+void
+HdRprim::_GetExtComputationPrimVarsComputations(
+                                              HdSceneDelegate *sceneDelegate,
+                                              HdInterpolation interpolationMode,
+                                              HdDirtyBits dirtyBits,
+                                              HdBufferSourceVector *sources)
+{
+    const SdfPath &id = GetId();
 
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    TfTokenVector compPrimVars =
+            sceneDelegate->GetExtComputationPrimVarNames(id, interpolationMode);
+
+    TF_FOR_ALL(compPrimVarIt, compPrimVars) {
+        const TfToken &compPrimVarName =  *compPrimVarIt;
+
+        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, compPrimVarName)) {
+            HdExtComputationPrimVarDesc primVarDesc =
+                   sceneDelegate->GetExtComputationPrimVarDesc(id,
+                                                               compPrimVarName);
+
+
+            HdExtComputation *sourceComp;
+            HdSceneDelegate *sourceCompSceneDelegate;
+
+            renderIndex.GetExtComputationInfo(primVarDesc.computationId,
+                                              &sourceComp,
+                                              &sourceCompSceneDelegate);
+            if (sourceComp != nullptr) {
+                HdExtCompCpuComputationSharedPtr cpuComputation =
+                            sourceComp->GetComputation(sourceCompSceneDelegate);
+
+
+                HdBufferSourceSharedPtr primVarBufferSource(
+                    new HdExtCompPrimvarBufferSource(
+                                              compPrimVarName,
+                                              cpuComputation,
+                                              primVarDesc.computationOutputName,
+                                              primVarDesc.defaultValue));
+
+
+                sources->push_back(primVarBufferSource);
+            }
+        }
+    }
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

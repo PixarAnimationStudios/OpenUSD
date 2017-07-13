@@ -60,6 +60,10 @@ pxr_library(hd
         drawItemInstance
         drawItemState
         engine
+        extCompCpuComputation
+        extCompPrimvarBufferSource
+        extComputation
+        extComputationContext
         fallbackLightingShader
         geometricShader
         glslProgram
@@ -123,7 +127,11 @@ pxr_library(hd
         version.h
 
     PRIVATE_CLASSES
+        compExtCompInputSource
         cullingShaderKey
+        extCompInputSource
+        extComputationContextInternal
+        sceneExtCompInputSource
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass

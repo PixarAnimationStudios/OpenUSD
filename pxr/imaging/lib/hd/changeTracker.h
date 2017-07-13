@@ -58,32 +58,33 @@ class HdChangeTracker : public boost::noncopyable {
 public:
 
     enum RprimDirtyBits {
-        Clean                 = 0,
-        ForceSync             = 1 << 0,
-        Varying               = 1 << 1,
-        AllDirty              = ~Varying,
-        DirtyPrimID           = 1 << 2,
-        DirtyExtent           = 1 << 3,
-        DirtyRefineLevel      = 1 << 4,
-        DirtyPoints           = 1 << 5,
-        DirtyPrimVar          = 1 << 6,
-        DirtySurfaceShader    = 1 << 7,
-        DirtyTopology         = 1 << 8,
-        DirtyTransform        = 1 << 9,
-        DirtyVisibility       = 1 << 10,
-        DirtyNormals          = 1 << 11,
-        DirtyDoubleSided      = 1 << 12,
-        DirtyCullStyle        = 1 << 13,
-        DirtySubdivTags       = 1 << 14,
-        DirtyWidths           = 1 << 15,
-        DirtyInstancer        = 1 << 16,
-        DirtyInstanceIndex    = 1 << 17,
-        DirtyRepr             = 1 << 18,
-        DirtyPurpose          = 1 << 19,
-        AllSceneDirtyBits     = ((1<<20) - 1),
+        Clean                       = 0,
+        ForceSync                   = 1 << 0,
+        Varying                     = 1 << 1,
+        AllDirty                    = ~Varying,
+        DirtyPrimID                 = 1 << 2,
+        DirtyExtent                 = 1 << 3,
+        DirtyRefineLevel            = 1 << 4,
+        DirtyPoints                 = 1 << 5,
+        DirtyPrimVar                = 1 << 6,
+        DirtySurfaceShader          = 1 << 7,
+        DirtyTopology               = 1 << 8,
+        DirtyTransform              = 1 << 9,
+        DirtyVisibility             = 1 << 10,
+        DirtyNormals                = 1 << 11,
+        DirtyDoubleSided            = 1 << 12,
+        DirtyCullStyle              = 1 << 13,
+        DirtySubdivTags             = 1 << 14,
+        DirtyWidths                 = 1 << 15,
+        DirtyInstancer              = 1 << 16,
+        DirtyInstanceIndex          = 1 << 17,
+        DirtyRepr                   = 1 << 18,
+        DirtyPurpose                = 1 << 19,
+        DirtyComputationPrimvarDesc = 1 << 20,
+        AllSceneDirtyBits           = ((1<<21) - 1),
 
-        CustomBitsBegin       = 1 << 20,
-        CustomBitsEnd         = 1 << 30,
+        CustomBitsBegin             = 1 << 21,
+        CustomBitsEnd               = 1 << 30,
     };
 
     // Dirty bits for Tasks
@@ -400,6 +401,33 @@ public:
     HD_API
     void MarkBprimClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
+    // ---------------------------------------------------------------------- //
+    /// @}
+    /// \name ExtComputation Object Tracking
+    /// @{
+    // ---------------------------------------------------------------------- //
+
+    /// Start tracking ExtComputation with the given \p id.
+    HD_API
+    void ExtComputationInserted(SdfPath const& id,
+                                HdDirtyBits initialDirtyState);
+
+    /// Stop tracking ExtComputation with the given \p id.
+    HD_API
+    void ExtComputationRemoved(SdfPath const& id);
+
+    /// Set the dirty flags to \p bits.
+    HD_API
+    void MarkExtComputationDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
+
+    /// Get the dirty bits for ExtComputation with the given \p id.
+    HD_API
+    HdDirtyBits GetExtComputationDirtyBits(SdfPath const& id) const;
+
+    /// Set the dirty flags to \p newBits.
+    HD_API
+    void MarkExtComputationClean(SdfPath const& id, HdDirtyBits newBits=Clean);
+
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -522,6 +550,7 @@ private:
     _IDStateMap _taskState;
     _IDStateMap _sprimState;
     _IDStateMap _bprimState;
+    _IDStateMap _extComputationState;
     _GeneralStateMap _generalState;
 
     // Collection versions / state.
