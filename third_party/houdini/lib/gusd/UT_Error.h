@@ -24,6 +24,8 @@
 #ifndef _GUSD_UT_TFERROR_H_
 #define _GUSD_UT_TFERROR_H_
 
+#include "gusd/api.h"
+
 #include <pxr/pxr.h>
 #include "pxr/base/tf/errorMark.h"
 
@@ -47,11 +49,14 @@ class GusdUT_ErrorManager
 {
 public:
     /** Construct a manager that wraps an existing error mangager.*/
+    GUSD_API
     GusdUT_ErrorManager(UT_ErrorManager& mgr);
 
     /** Construct a manager that holds its own error manager.*/
+    GUSD_API
     GusdUT_ErrorManager();
 
+    GUSD_API
     ~GusdUT_ErrorManager();
 
     UT_ErrorSeverity    operator()() const  { return _sev; }
@@ -73,6 +78,7 @@ public:
         /// Copy errors from @a src that are greater than or equal to @a sev.
         /// Any errors greater than @a maxSev are given a
         /// severity of @a maxSev, with the exception of UT_ERROR_FATAL.
+        GUSD_API
         void                CopyErrors(const UT_ErrorManager& src,
                                        UT_ErrorSeverity sev=UT_ERROR_NONE,
                                        UT_ErrorSeverity maxSev=UT_ERROR_ABORT);
@@ -82,6 +88,7 @@ public:
         UT_AutoLock             _lock;
     };
 
+    GUSD_API
     void                GetErrorMessages(UT_String& messages,
                                          UT_ErrorSeverity sev=UT_ERROR_NONE);
 
@@ -156,6 +163,7 @@ public:
     GusdUT_ErrorManager*    GetErrorManager()       { return _mgr; }
     UT_ErrorSeverity        GetLogSeverity() const  { return _sev; }
 
+    GUSD_API
     UT_ErrorSeverity        AddError(const char* msg,
                                      const UT_SourceLocation* loc=NULL);
 

@@ -24,6 +24,8 @@
 #ifndef _GUSD_USD_UTILS_H_
 #define _GUSD_USD_UTILS_H_
 
+#include "gusd/api.h"
+
 #include <pxr/pxr.h>
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/imageable.h"
@@ -76,6 +78,7 @@ public:
     PrimIdentifier(const char* primPath, GusdUT_ErrorContext* err=NULL)
         { SetPrimPath(primPath, err); }
 
+    GUSD_API
     PrimIdentifier(const UT_StringRef& primPath,
                    const UT_StringRef& variants=UT_StringRef(),
                    GusdUT_ErrorContext* err=NULL);
@@ -87,20 +90,24 @@ public:
     const SdfPath&  GetPrimPath() const     { return _primPath; }
     void            SetPrimPath(const SdfPath& path)
                     { _primPath = path; }
+    GUSD_API
     bool            SetPrimPath(const UT_StringRef& path,
                                 GusdUT_ErrorContext* err=NULL);
 
     const SdfPath&  GetVariants() const     { return _variants; }
     void            SetVariants(const SdfPath& variants)
                     { _variants = variants; }
+    GUSD_API
     bool            SetVariants(const UT_StringRef& path,
                                 GusdUT_ErrorContext* err=NULL);
 
     /** Update the prim and variant paths from
         a single path that might container variant selections.
         @{ */
+    GUSD_API
     bool            SetFromVariantPath(const SdfPath& variants);
 
+    GUSD_API
     bool            SetFromVariantPath(const UT_StringRef& variants,
                                        GusdUT_ErrorContext* err=NULL);
     /** @} */
@@ -117,6 +124,7 @@ private:
     The resulting @a primPaths and @a variantPaths arrays
     will be the same size. If no variants are associated with a path,
     then the corresponding entry in @a variants will be an empty path. */
+GUSD_API
 bool        GetPrimAndVariantPathsFromPathList(
                 const char* str,
                 UT_Array<SdfPath>& primPaths,
@@ -124,23 +132,28 @@ bool        GetPrimAndVariantPathsFromPathList(
                 GusdUT_ErrorContext* err=NULL);
 
 /** Extract a prim path and variant selection from a path.*/
+GUSD_API
 void        ExtractPathComponents(const SdfPath& path,
                                   SdfPath& primPath,
                                   SdfPath& variants);
 
+GUSD_API
 bool        ImageablePrimIsVisible(const UsdGeomImageable& prim,
                                    UsdTimeCode time);
 
+GUSD_API
 bool        ImageablePrimHasDefaultPurpose(const UsdGeomImageable& prim);
 
 
 /** Helper to check that a prim should be drawn.
     This tests both visibility and that a prim has a default purpose.*/
+GUSD_API
 bool        ImageablePrimIsDefaultDrawable(const UsdGeomImageable& prim,
                                            UsdTimeCode time);
 
 
 /** Sort an array of prims (by path) */
+GUSD_API
 bool        SortPrims(UT_Array<UsdPrim>& prims);
 
 
@@ -149,6 +162,7 @@ bool        SortPrims(UT_Array<UsdPrim>& prims);
     Derived types of types that match the pattern are not added
     to the list; the minimal set of matching types is returned
     to simplify later type comparisons.*/
+GUSD_API
 void        GetBaseSchemaTypesMatchingPattern(const char* pattern,
                                               UT_Array<TfType>& types,
                                               bool caseSensitive=true);
@@ -158,11 +172,13 @@ void        GetBaseSchemaTypesMatchingPattern(const char* pattern,
     Derived types of types that match the pattern are not added
     to the list; the minimal set of matching types is returned
     to simplify later type comparisons.*/
+GUSD_API
 void        GetBaseModelKindsMatchingPattern(const char* pattern,
                                              UT_Array<TfToken>& kinds,
                                              bool caseSensitive=true);
 
 
+GUSD_API
 void        GetPurposesMatchingPattern(const char* pattern,
                                        UT_Array<TfToken>& purposes,
                                        bool caseSensitive=true);
@@ -193,6 +209,7 @@ typedef UT_Array<VariantSel> VariantSelArray;
     Appends string {vset=sel} to @a buf. If the buffer is empty,
     the buffer is initialized to the path up to @a prim, including
     any of the variant selections specified in @a variants.*/
+GUSD_API
 void        AppendVariantSelectionString(UT_WorkBuffer& buf,
                                          const SdfPath& prim,
                                          const SdfPath& variants,
@@ -209,6 +226,7 @@ void        AppendVariantSelectionString(UT_WorkBuffer& buf,
     The resulting @a indices array provides an index per-prim into
     the @a orderedVariants array. The indices may be -1 to indicate
     that the entry has no variant selections.*/
+GUSD_API
 bool        AppendVariantSelections(const UT_Array<UsdPrim>& prims,
                                     const VariantSelArray& selections,
                                     UT_Array<UT_StringHolder>& orderedVariants,
@@ -231,6 +249,7 @@ typedef UT_Array<IndexPair>     IndexPairArray;
     The first component of the pair in @a indices is the index of the
     original prim from @a prims from which the entry was expanded.
     The second component is an index into the @a orderedVariants array. */
+GUSD_API
 bool        ExpandVariantSetPaths(const UT_Array<UsdPrim>& prims,
                                   const std::string& variantSet,
                                   const NameMatcher& matcher,
@@ -245,6 +264,7 @@ bool        ExpandVariantSetPaths(const UT_Array<UsdPrim>& prims,
     is the index of the original prim from @a prims that the attribute
     was matched from. The second component is an index into the
     @a orderedNames array.*/
+GUSD_API
 bool        GetPropertyNames(const UT_Array<UsdPrim>& prims,
                              const NameMatcher& matcher,
                              UT_Array<UT_StringHolder>& orderedNames,
@@ -253,18 +273,21 @@ bool        GetPropertyNames(const UT_Array<UsdPrim>& prims,
 
 
 /** Query all unique variant set names for a range of prims.*/
+GUSD_API
 bool        GetUniqueVariantSetNames(const UT_Array<UsdPrim>& prims,
                                      UT_Array<UT_StringHolder>& names);
 
 
 /** Query all unique variant names for a specific variant
     set on all of the given prims.*/
+GUSD_API
 bool        GetUniqueVariantNames(const UT_Array<UsdPrim>& prims,
                                   const std::string& variantSet,
                                   UT_Array<UT_StringHolder>& names);
 
 
 /** Query all unique property names for a range of prims.*/
+GUSD_API
 bool        GetUniquePropertyNames(const UT_Array<UsdPrim>& prims,
                                    UT_Array<UT_StringHolder>& names,
                                    const std::string& nameSpace=std::string());

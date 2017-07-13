@@ -30,6 +30,8 @@
 
 #include <pxr/pxr.h>
 
+#include "gusd/api.h"
+
 #include <PRM/PRM_Include.h>
 #include <PRM/PRM_SpareData.h>
 
@@ -39,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class GusdPRM_Shared
 {
 public:
+    GUSD_API
     GusdPRM_Shared();
 
     struct Components

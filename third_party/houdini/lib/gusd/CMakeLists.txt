@@ -49,6 +49,7 @@ pxr_shared_library(${PXR_PACKAGE}
         xformWrapper
 
     PUBLIC_HEADERS
+        api.h
         gusd.h
         purpose.h
         USD_Holder.h

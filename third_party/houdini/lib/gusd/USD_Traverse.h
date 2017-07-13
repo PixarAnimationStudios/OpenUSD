@@ -36,6 +36,7 @@
 #include <UT/UT_String.h>
 #include <UT/UT_StringMap.h>
 
+#include "gusd/api.h"
 #include "gusd/purpose.h"
 #include "gusd/USD_Utils.h"
 
@@ -151,12 +152,16 @@ public:
     typedef Map::const_iterator                         const_iterator;
     typedef Map::iterator                               iterator;
 
+    GUSD_API
     static GusdUSD_TraverseTable&   GetInstance();
 
+    GUSD_API
     void                            Register(const GusdUSD_TraverseType* type);
 
+    GUSD_API
     const GusdUSD_TraverseType*     Find(const char* name) const;
     
+    GUSD_API
     const GusdUSD_Traverse*         FindTraversal(const char* name) const;
 
     const char*                     GetDefault() const  

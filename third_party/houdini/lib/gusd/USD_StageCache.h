@@ -25,6 +25,7 @@
 #define _GUSD_USD_PRIMCACHE_H_
 
 
+#include "gusd/api.h"
 #include "gusd/USD_Proxy.h"
 #include "gusd/USD_Utils.h"
 
@@ -114,10 +115,13 @@ public:
     using StageKeyHandle = GusdUSD_StageProxy::KeyHandle;
 
     /** Access a common cache.*/
+    GUSD_API
     static GusdUSD_StageCache&  GetInstance();
 
+    GUSD_API
     GusdUSD_StageCache();
 
+    GUSD_API
     ~GusdUSD_StageCache();
 
     UsdStageCache&          GetCache()          { return _cache; }
@@ -128,9 +132,11 @@ public:
         but does *not* cause the stages to be loaded.
         Stages are loaded from proxies using proxy accessors.
         @{ */
+    GUSD_API
     StageProxyHandle        FindProxy(const StageKeyHandle& key,
                                       const SdfPath& variants=SdfPath());
 
+    GUSD_API
     StageProxyHandle        FindOrCreateProxy(
                                 const StageKeyHandle& key,
                                 const SdfPath& variants=SdfPath());
@@ -139,22 +145,30 @@ public:
     /** Create a layer from a string.
         Since these become session layers, and different session
         layers lead to different stages, the results are cached.*/
+    GUSD_API
     static SdfLayerRefPtr   LayerFromString(UT_StringHolder& contents,
                                             GusdUT_ErrorContext* err=NULL);
 
     /** Clear all data caches attched to this stage cache.*/
+    GUSD_API
     void                    ClearDataCaches();
 
     /** Clear data cache entries associated with @a proxy.*/ 
+    GUSD_API
     int64                   ClearDataCaches(const GusdUSD_StageProxy& proxy);
 
     /** Clear data cache entries for all stages using path @a path.*/
+    GUSD_API
     int64                   ClearDataCaches(const std::string& path);
 
+    GUSD_API
     void                    AddDataCache(GusdUSD_DataCache* cache);
+
+    GUSD_API
     void                    RemoveDataCache(GusdUSD_DataCache* cache);
 
     /** Unload all stages matching @a path.*/
+    GUSD_API
     void                    Unload(const std::string& path);
 
 private:
@@ -176,6 +190,7 @@ public:
     using StageProxyHandle = GusdUSD_StageProxyHandle;
     using StageKeyHandle = GusdUSD_StageProxy::KeyHandle;
 
+    GUSD_API
     GusdUSD_StageCacheContext(
         UsdStage::InitialLoadSet loadSet=UsdStage::LoadNone);
 
@@ -192,25 +207,30 @@ public:
     const UsdStage::InitialLoadSet& GetLoadSet() const  { return _loadSet; }
 
     /** Create a stage key from strings. */
+    GUSD_API
     StageKeyHandle      CreateStageKey(const TfToken& path);
 
     /** Find or create a proxy from strings.*/
+    GUSD_API
     StageProxyHandle    FindOrCreateProxy(const TfToken& path,
                                           const SdfPath& variants=SdfPath());
 
     /** Find or create multiple proxies.
         The input arrays must all be the same size.*/
+    GUSD_API
     bool                FindOrCreateProxies(UT_Array<StageProxyHandle>& proxies,
                                             const UT_Array<TfToken>& paths,
                                             const UT_Array<SdfPath>& variants);
 
     /** Bind an accessor to a stage.
         The stage may contain unloaded prims.*/
+    GUSD_API
     bool                Bind(StageProxy::Accessor& accessor,
                              const TfToken& path,
                              GusdUT_ErrorContext* err=NULL);
 
     /** Bind an accessor for @a prim in USD file at @a path.*/
+    GUSD_API
     bool                Bind(StageProxy::Accessor& accessor,
                              const TfToken& path,
                              const PrimIdentifier& prim,
@@ -219,12 +239,14 @@ public:
     /** Bind an accessor for @a prim in @a proxy.
         Variants must be specified when extract a proxy from the cache,
         so any variants set on @a prim are ignored here.*/
+    GUSD_API
     bool                Bind(StageProxy::Accessor& accessor,
                              const StageProxyHandle& proxy,
                              const PrimIdentifier& prim,
                              GusdUT_ErrorContext* err=NULL);
 
     /** Fetch a prim in USD file at @a path.*/
+    GUSD_API
     UsdPrim             GetPrim(StageProxy::Accessor& accessor,
                                 const TfToken& path,
                                 const PrimIdentifier& prim,
@@ -233,6 +255,7 @@ public:
     /** Fetch a prim from @a proxy.
         Variants must be specified when extract a proxy from the cache,
         so any variants set on @a prim are ignored here.*/
+    GUSD_API
     UsdPrim             GetPrim(StageProxy::Accessor& accessor,
                                 const StageProxyHandle& proxy,
                                 const PrimIdentifier& prim,
@@ -241,6 +264,7 @@ public:
     /** Given arrays of @a proxies with corresponding @a paths, 
         bind an accessor for all of the proxies and retrieve the stages.
         All prims returned will be loaded together with their descendants.*/
+    GUSD_API
     bool                GetPrims(StageProxy::MultiAccessor& accessor,
                                  const UT_Array<StageProxyHandle>& proxies,
                                  const UT_Array<SdfPath>& paths,
@@ -250,6 +274,7 @@ public:
 
     /** Find or open a stage.
         Note that the stage may hold inactive prims.*/
+    GUSD_API
     UsdStageRefPtr      GetStage(StageProxy::Accessor& accessor,
                                  const TfToken& path,
                                  GusdUT_ErrorContext* err=NULL);
@@ -260,12 +285,14 @@ public:
         These methods use an older style of error reporting,
         and should not be used in future code.
         @{ */
+    GUSD_API
     UsdPrim             Deprecated_GetPrim(StageProxy::Accessor& accessor,
                                            const TfToken& path,
                                            const UT_StringRef& primPath,
                                            const UT_StringRef& variants,
                                            std::string* err=NULL);
 
+    GUSD_API
     UsdStageRefPtr      Deprecated_GetStage(StageProxy::Accessor& accessor,
                                             const TfToken& path,
                                             std::string* err=NULL);

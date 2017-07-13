@@ -24,6 +24,8 @@
 #ifndef __GUSD_REFINER_H__
 #define __GUSD_REFINER_H__
 
+#include "gusd/api.h"
+
 #include <GT/GT_Refine.h>
 #include <GT/GT_RefineParms.h>
 #include <GU/GU_DetailHandle.h>
@@ -96,6 +98,7 @@ public:
     /// that we only write packed prims that have been tagged with a prim path. We
     /// kee track of the transform of the last group we wrote in parentToWorldXform
     /// \p localToWorldXform is initialized to the OBJ Node's transform by the ROP.
+    GUSD_API
     GusdRefiner(
         GusdRefinerCollector&   collector,
         const SdfPath&          pathPrefix,
@@ -106,12 +109,15 @@ public:
 
     virtual bool allowThreading() const override { return false; }
 
+    GUSD_API
     virtual void addPrimitive( const GT_PrimitiveHandle& gtPrim ) override;
 
+    GUSD_API
     void refineDetail( 
         const GU_ConstDetailHandle& detail,
         const GT_RefineParms&       parms  );
 
+    GUSD_API
     const GprimArray& finish();
 
     //////////////////////////////////////////////////////////////////////////

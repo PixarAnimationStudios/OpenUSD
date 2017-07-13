@@ -21,45 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __GUSD_SHADERWRAPPER_H__
-#define __GUSD_SHADERWRAPPER_H__
+#ifndef GUSD_API_H
+#define GUSD_API_H
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usdShade/material.h>
+#include "pxr/base/arch/export.h"
 
-#include "gusd/api.h"
+#if defined(GUSD_EXPORTS)
+#    define GUSD_API ARCH_EXPORT
+#    define GUSD_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#    define GUSD_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#else
+#    define GUSD_API ARCH_IMPORT
+#    define GUSD_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#    define GUSD_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#endif
+#define GUSD_LOCAL ARCH_HIDDEN
 
-class VOP_Node;
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-class GusdContext;
-
-class GusdShaderWrapper
-{
-public:
-
-    GUSD_API
-    GusdShaderWrapper(
-        const VOP_Node* terminalNode,
-        const UsdStagePtr& stage,
-        const std::string& path,
-        const std::string& shaderOutDir);
-
-    GUSD_API
-    bool bind(UsdPrim& prim) const;
-
-    GUSD_API
-    bool isValid() const;
-
-private:
-
-    void buildLook(const VOP_Node* terminalNode);
-
-    UsdShadeMaterial m_usdMaterial;
-    std::string m_shaderOutDir;
-};
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // __GUSD_SHADERWRAPPER_H__
+#endif
