@@ -240,13 +240,25 @@ def DownloadURL(url, context, force):
         else:
             PrintInfo("Downloading {0} to {1}"
                       .format(url, os.path.abspath(filename)))
-            try:
-                r = urllib2.urlopen(url)
-                with open(filename, "wb") as outfile:
-                    outfile.write(r.read())
-            except Exception as e:
+
+            # To work around occasional hiccups with downloading from websites
+            # (SSL validation errors, etc.), retry a few times if we don't
+            # succeed in downloading the file.
+            maxRetries = 5
+            lastError = None
+            for i in xrange(maxRetries):
+                try:
+                    r = urllib2.urlopen(url)
+                    with open(filename, "wb") as outfile:
+                        outfile.write(r.read())
+                    break
+                except Exception as e:
+                    PrintCommandOutput("Retrying download due to error: {err}\n"
+                                       .format(err=e))
+                    lastError = e
+            else:
                 raise RuntimeError("Failed to download {url}: {err}"
-                                   .format(url=url, err=e))
+                                   .format(url=url, err=lastError))
 
         # Open the archive and retrieve the name of the top-most directory.
         # This assumes the archive contains a single directory with all
@@ -607,9 +619,16 @@ OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-1.7.14.zip"
 
 def InstallOpenImageIO(context, force):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
-        RunCMake(context, force,
-                 ['-DOIIO_BUILD_TOOLS=OFF',
-                  '-DOIIO_BUILD_TESTS=OFF'])
+        extraArgs = ['-DOIIO_BUILD_TOOLS=OFF',
+                     '-DOIIO_BUILD_TESTS=OFF']
+
+        # If Ptex support is disabled in USD, disable support in OpenImageIO
+        # as well. This ensures OIIO doesn't accidentally pick up a Ptex
+        # library outside of our build.
+        if not context.enablePtex:
+            extraArgs.append('-DUSE_PTEX=OFF')
+
+        RunCMake(context, force, extraArgs)
 
 OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
                          "include/OpenImageIO/oiioversion.h")
@@ -1053,7 +1072,8 @@ if (not find_executable("g++") and
     sys.exit(1)
 
 if not find_executable("python"):
-    PrintError("python not found -- please ensure python is included in your PATH")
+    PrintError("python not found -- please ensure python is included in your "
+               "PATH")
     sys.exit(1)
 
 if not find_executable("cmake"):
@@ -1066,7 +1086,24 @@ if context.buildDocs:
         sys.exit(1)
         
     if not find_executable("dot"):
-        PrintError("dot not found -- please install graphviz and adjust your PATH")
+        PrintError("dot not found -- please install graphviz and adjust your "
+                   "PATH")
+        sys.exit(1)
+
+if context.buildUsdImaging:
+    # The USD build will skip building usdview if pyside-uic is not found, 
+    # so check for it here to avoid confusing users. This list of PySide
+    # executable names comes from cmake/modules/FindPySide.cmake
+    pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
+    if not any([find_executable(p) for p in pysideUic]):
+        PrintError("pyside-uic not found -- please install PySide and adjust "
+                   "your PATH")
+        sys.exit(1)
+
+if JPEG in requiredDependencies:
+    # NASM is required to build libjpeg-turbo
+    if (Windows() and not find_executable("nasm")):
+        PrintError("nasm not found -- please install it and adjust your PATH")
         sys.exit(1)
 
 if AnyPythonDependencies(dependenciesToBuild):

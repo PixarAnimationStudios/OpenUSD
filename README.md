@@ -92,6 +92,7 @@ additional documentation for running cmake directly.
    - gcc
    - Xcode
    - Microsoft Visual Studio
+- NASM (required for Imaging on Windows)
 - CMake
 - Python
 - PySide (required for USD Imaging)
