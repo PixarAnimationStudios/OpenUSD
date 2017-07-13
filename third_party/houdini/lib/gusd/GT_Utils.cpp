@@ -669,7 +669,7 @@ setPvSample(UsdGeomImageable&           usdPrim,
     TfToken interpolation = interpolationIn;
     //bool isArrayType = (interpolation != UsdGeomTokens->constant);
     SdfValueTypeName typeName = usdTypename( gtData, true );
-    if( not typeName ) {
+    if( !typeName ) {
         TF_WARN( "Can't find type name for primvar %s:%s", 
                 usdPrim.GetPrim().GetPath().GetText(),
                 name.GetText() );

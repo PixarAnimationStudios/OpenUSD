@@ -987,7 +987,7 @@ GusdPrimWrapper::loadPrimvars(
 
         // If the name of this primvar doesn't
         // match the primvarPattern, skip it.
-        if (not name.multiMatch(primvarPattern, 1, " ")) {
+        if (!name.multiMatch(primvarPattern, 1, " ")) {
             continue;
         }
 
