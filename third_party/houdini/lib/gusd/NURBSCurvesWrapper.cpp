@@ -38,6 +38,8 @@
 #include <GT/GT_DAIndirect.h>
 #include <GT/GT_GEOPrimPacked.h>
 
+#include <numeric>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::cerr;
