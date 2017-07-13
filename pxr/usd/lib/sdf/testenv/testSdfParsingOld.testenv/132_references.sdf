@@ -312,3 +312,21 @@ def MfScope "TestMixed" (
 {
 }
 
+def MfScope "TestMixed2" (
+    references = [
+        @/test/layer.sdf@</Prim>,
+        @/test/layer2.sdf@,
+        @@@/test/layer3.sdf@@@</Prim>,
+        @@@/test/layer4.sdf@@@
+    ]
+)
+{
+}
+
+def MfScope "TestMixed3" (
+    references = [
+        @/test/layer.sdf@</Prim>,@/test/layer2.sdf@,@@@/test/layer3.sdf@@@</Prim>,@@@/test/layer4.sdf@@@
+    ]
+)
+{
+}

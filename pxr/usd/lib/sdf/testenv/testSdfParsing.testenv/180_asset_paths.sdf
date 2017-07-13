@@ -10,11 +10,29 @@ over "AssetPathTest"
     asset token = @//$STAGEDIR/sim/$MODELINSTANCE.sdf@
     asset overlay = @///global/unit_defs.sdf@
     asset search = @Model/menv30/Model.sdf@
-
-    asset wlabel = @//menv30/global/unit_defs.sdf@stable-prepro_0.42@
-    asset wchangeno = @//menv30/global/unit_defs.sdf@12345@
-    asset wdate = @//menv30/global/unit_defs.sdf@2012/06/20@
-    asset wdatetime = @//menv30/global/unit_defs.sdf@2012/06/20:16:18:00@
     asset wversion = @//menv30/global/unit_defs.sdf#20@
+
+    asset allchars = @ !"#$%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@
 }
 
+over "AssetPathTest2"
+{
+    asset empty = @@@@@@
+    asset relative1 = @@@sdf/Model.sdf@@@
+    asset relative2 = @@@../sdf/Model.sdf@@@
+    asset abs = @@@/usr/anim/menv30/global/unit_defs.sdf@@@
+    asset repo = @@@//menv30/global/unit_defs.sdf@@@
+    asset token = @@@//$STAGEDIR/sim/$MODELINSTANCE.sdf@@@
+    asset overlay = @@@///global/unit_defs.sdf@@@
+    asset search = @@@Model/menv30/Model.sdf@@@
+
+    asset wlabel = @@@//menv30/global/unit_defs.sdf@stable-prepro_0.42@@@
+    asset wchangeno = @@@//menv30/global/unit_defs.sdf@12345@@@
+    asset wdate = @@@//menv30/global/unit_defs.sdf@2012/06/20@@@
+    asset wdatetime = @@@//menv30/global/unit_defs.sdf@2012/06/20:16:18:00@@@
+    asset wversion = @@@//menv30/global/unit_defs.sdf#20@@@
+
+    asset allchars = @@@ !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@@@
+    asset escapeddelimiter = @@@foo.sdf\@@@testing\\@@@@@@
+    asset beginandendwithextradelim = @@@@foo.sdf@@@@
+}

@@ -56,7 +56,7 @@ class TestSdfTextReferenceParser(unittest.TestCase):
             lambda: Sdf.ExtractExternalReferencesFromString(layerData))
 
     def test_Parsing(self):
-        for layerName in ('test',):
+        for layerName in ('test','test_triple_delim','test_mixed_delim'):
             layerFile = layerName + '.sdf'
             self.assertEqual(self.ParseFile(layerFile), self.ParseLayer(layerFile))
 

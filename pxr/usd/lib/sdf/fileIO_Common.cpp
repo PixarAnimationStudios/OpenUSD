@@ -26,11 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
-#include "pxr/usd/sdf/reference.h"
 
-#include <boost/assign.hpp>
-#include <fstream>
-#include <sstream>
 #include <cctype>
 
 using std::map;
@@ -79,6 +75,38 @@ _StringFromVtStringValue(string* valueStr, const VtValue& value)
         return true;
     }
     return false;
+}
+
+// Helper for creating string representation of an asset path
+static string
+_StringFromAssetPath(const string& assetPath)
+{
+    // See Sdf_EvalAssetPath for the code that reads asset paths at parse time.
+
+    // We want to avoid writing asset paths with escape sequences in them
+    // so that it's easy for users to copy and paste these paths into other
+    // apps without having to clean up those escape sequences.
+    //
+    // We use "@"s as delimiters so that asset paths are easily identifiable.
+    // but use "@@@" if the path already has an "@" in it rather than escaping
+    // it. If the path has a "@@@", then we'll escape that, but hopefully that's
+    // a rarer case. We'll also strip out non-printable characters. so we don't
+    // have to escape those.
+    static const string singleDelim = "@";
+    static const string tripleDelim = "@@@";
+    const string* delim = (assetPath.find('@') == std::string::npos) ? 
+        &singleDelim : &tripleDelim;
+
+    string s = assetPath;
+    s.erase(std::remove_if(s.begin(), s.end(), 
+                           [](char s) { return !std::isprint(s); }),
+            s.end());
+
+    if (delim == &tripleDelim) {
+        s = TfStringReplace(s, tripleDelim, "\\@@@");
+    }
+
+    return *delim + s + *delim;
 }
 
 // ------------------------------------------------------------
@@ -302,9 +330,10 @@ Sdf_FileIOUtility::WriteQuotedString(ostream &out,
 }
 
 void
-Sdf_FileIOUtility::WriteAssetPath(ostream &out, 
-                                 size_t indent, const string &str) {
-    Write(out, indent, "@%s@", str.c_str());
+Sdf_FileIOUtility::WriteAssetPath(
+    ostream &out, size_t indent, const string &assetPath) 
+{
+    Puts(out, indent, _StringFromAssetPath(assetPath));
 }
 
 void
@@ -696,7 +725,10 @@ Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
     } else if (value.IsHolding<signed char>()) {
         return TfStringify(
             static_cast<int>(value.UncheckedGet<signed char>()));
-    }
+    } else if (value.IsHolding<SdfAssetPath>()) {
+        return _StringFromAssetPath(
+            value.UncheckedGet<SdfAssetPath>().GetAssetPath());
+    } 
 
     return TfStringify(value);
 }

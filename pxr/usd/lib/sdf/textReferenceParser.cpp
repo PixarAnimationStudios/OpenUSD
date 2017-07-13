@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/textReferenceParser.h"
 #include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tracelite/trace.h"
 
 #include <boost/range/iterator_range.hpp>
 #include <boost/regex.hpp>
@@ -77,9 +76,19 @@ Sdf_ParseExternalReferences(
             "(asset|asset\\[\\])\\s+\\S+"
         ")\\s*=");
 
-    // Matches a reference, with optional label/revision specifier.
-    boost::regex assetRef("@([^@]+(?:[@#][^@,]+)?)?@");
-    
+    // Matches a reference. These regexes are the asset regexes in the
+    // text file format parser. Combining them into a single regex here
+    // ensures we handle multiple references with different delimiters
+    // in a single line properly. 
+    //
+    // Note that having the same asset path in an external reference
+    // statement (with or without different delimiters) will result in
+    // duplicates in the corresponding output vector.
+    boost::regex assetRef(
+        "@([^[:cntrl:]@]+)?@"
+        "|"
+        "@@@(([^[:cntrl:]@]|@{1,2}[^@]|\\@@@)+)?(@{0,2})@@@");
+
     for (auto lineIter = begin; lineIter != end; ++lineIter) {
         const string& line = *lineIter;
         // Look for an approximation of the most common kinds of comments, and

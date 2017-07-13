@@ -343,6 +343,11 @@ ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
 std::string Sdf_EvalQuotedString(const char* x, size_t n, size_t trimBothSides,
                                  unsigned int* numLines = NULL);
 
+// Read the string representing an asset path at [x..x+n]. If tripleDelimited
+// is true, the string is assumed to have 3 delimiters on both sides of the
+// asset path, otherwise the string is assumed to have just 1.
+std::string Sdf_EvalAssetPath(const char* x, size_t n, bool tripleDelimited);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PARSER_HELPERS_H
