@@ -599,7 +599,11 @@ private:
     // held value, but requires that the entry already exists in the map.
     HdDirtyBits* _GetDirtyBits(SdfPath const& usdPath);
 
-    void _MarkRprimOrInstancerDirty(SdfPath const& usdPath, HdDirtyBits dirtyFlags);
+    // Marks usdPath dirty in hydra, with dirtyFlags. If addToDirtyMap
+    // is true, the bits are cached in _dirtyMap.
+    void _MarkRprimOrInstancerDirty(SdfPath const& usdPath,
+                                    HdDirtyBits dirtyFlags,
+                                    bool cacheDirtyFlags);
 
     void _MarkSubtreeDirty(SdfPath const &subtreeRoot,
                            HdDirtyBits rprimDirtyFlag,

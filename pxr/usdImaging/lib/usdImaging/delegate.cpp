@@ -137,7 +137,8 @@ UsdImagingDelegate::_GetDirtyBits(SdfPath const& usdPath)
 
 void 
 UsdImagingDelegate::_MarkRprimOrInstancerDirty(SdfPath const& usdPath,
-                                               HdDirtyBits dirtyFlags)
+                                               HdDirtyBits dirtyFlags,
+                                               bool cacheDirtyFlags)
 {
     // This function handles external client driven dirty tracking.
     // e.g. SetRootTransform, SetRefineLevel, SetCullStyle, ...
@@ -154,7 +155,9 @@ UsdImagingDelegate::_MarkRprimOrInstancerDirty(SdfPath const& usdPath,
     if (!TF_VERIFY(it != _dirtyMap.end(), "%s\n", usdPath.GetText())) {
         return;
     }
-    it->second |= dirtyFlags;
+    if (cacheDirtyFlags) {
+        it->second |= dirtyFlags;
+    }
 
     if (_instancerPrimPaths.find(usdPath) != _instancerPrimPaths.end()) {
         tracker.MarkInstancerDirty(indexPath, dirtyFlags);
@@ -392,7 +395,7 @@ public:
                     (unsigned long long)dirtyFlags,
                     HdChangeTracker::StringifyDirtyBits(dirtyFlags).c_str());
             
-            delegate->_MarkRprimOrInstancerDirty(path, dirtyFlags);
+            delegate->_MarkRprimOrInstancerDirty(path, dirtyFlags, true);
         }
     }
 };
@@ -1170,7 +1173,7 @@ UsdImagingDelegate::_PrepareWorkerForTimeUpdate(_Worker* worker)
         HdDirtyBits& dirtyFlags = it->second;
         if (dirtyFlags == HdChangeTracker::Clean)
             continue;
-        _MarkRprimOrInstancerDirty(it->first, dirtyFlags);
+        _MarkRprimOrInstancerDirty(it->first, dirtyFlags, true);
     }
 
     // If any shader is time varying now it is the time to invalidate it.
@@ -1558,7 +1561,7 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
                 // stored in _dirtyBits, since the _dirtyBits include all
                 // time-varying attributes, not just the ones affected by this
                 // change.
-                _MarkRprimOrInstancerDirty(usdPath, requestBits);
+                _MarkRprimOrInstancerDirty(usdPath, requestBits, true);
             } else {
                 _ResyncPrim(usdPath, proxy);
             }
@@ -1800,7 +1803,8 @@ UsdImagingDelegate::SetRefineLevelFallback(int level)
         // Dont mark prims with explicit refine levels as dirty.
         if (_refineLevelMap.find(it->first) == _refineLevelMap.end()) {
             _MarkRprimOrInstancerDirty(it->first,
-                                       HdChangeTracker::DirtyRefineLevel);
+                                       HdChangeTracker::DirtyRefineLevel,
+                                       false);
         }
     }
 }
@@ -1825,7 +1829,8 @@ UsdImagingDelegate::SetRefineLevel(SdfPath const& usdPath, int level)
     }
 
     // XXX this might not work with instancing.
-    _MarkRprimOrInstancerDirty(usdPath, HdChangeTracker::DirtyRefineLevel);
+    _MarkRprimOrInstancerDirty(usdPath, HdChangeTracker::DirtyRefineLevel,
+                               false);
 }
 
 void
@@ -1838,7 +1843,8 @@ UsdImagingDelegate::ClearRefineLevel(SdfPath const& usdPath)
     int oldLevel = it->second;
     _refineLevelMap.erase(it);
     if (oldLevel != _refineLevelFallback) {
-        _MarkRprimOrInstancerDirty(usdPath, HdChangeTracker::DirtyRefineLevel);
+        _MarkRprimOrInstancerDirty(usdPath, HdChangeTracker::DirtyRefineLevel,
+                                   false);
     }
 }
 
@@ -1855,7 +1861,8 @@ UsdImagingDelegate::SetReprFallback(TfToken const &repr)
         // XXX: MarkRprimDirty causes Varying bit set. If a performance
         // regression observed due to inefficient dirtylist, we might want
         // to consider to not DirtyRepr provoke Varying state change.
-        _MarkRprimOrInstancerDirty(it->first, HdChangeTracker::DirtyRepr);
+        _MarkRprimOrInstancerDirty(it->first, HdChangeTracker::DirtyRepr,
+                                   false);
     }
 
     // XXX: currently we need to make collection dirty so that
@@ -1878,7 +1885,8 @@ UsdImagingDelegate::SetCullStyleFallback(HdCullStyle cullStyle)
         // XXX: MarkRprimDirty causes Varying bit set. If a performance
         // regression observed due to inefficient dirtylist, we might want
         // to consider to not DirtyRepr provoke Varying state change.
-        _MarkRprimOrInstancerDirty(it->first, HdChangeTracker::DirtyCullStyle);
+        _MarkRprimOrInstancerDirty(it->first, HdChangeTracker::DirtyCullStyle,
+                                   false);
     }
 
     // XXX: currently we need to make collection dirty so that
@@ -1928,7 +1936,8 @@ UsdImagingDelegate::_UpdateRootTransform()
     // Mark dirty.
     TF_FOR_ALL(it, _dirtyMap) {
         SdfPath const& usdPath = it->first;
-        _MarkRprimOrInstancerDirty(usdPath, HdChangeTracker::DirtyTransform);
+        _MarkRprimOrInstancerDirty(usdPath, HdChangeTracker::DirtyTransform,
+                                   true);
     }
 }
 
@@ -2079,7 +2088,7 @@ UsdImagingDelegate::_MarkSubtreeDirty(SdfPath const &subtreeRoot,
             }
 
             // redirect to native instancer.
-            _MarkRprimOrInstancerDirty(instancer, instancerDirtyFlag);
+            _MarkRprimOrInstancerDirty(instancer, instancerDirtyFlag, true);
 
 
             // also communicate adapter to get the list of instanced proto rprims
@@ -2100,7 +2109,7 @@ UsdImagingDelegate::_MarkSubtreeDirty(SdfPath const &subtreeRoot,
             }
 
             // instancer itself
-            _MarkRprimOrInstancerDirty(it->first, instancerDirtyFlag);
+            _MarkRprimOrInstancerDirty(it->first, instancerDirtyFlag, true);
 
             // also communicate adapter to get the list of instanced proto rprims
             // to be marked as dirty. for those are not in the namespace children
@@ -2112,7 +2121,7 @@ UsdImagingDelegate::_MarkSubtreeDirty(SdfPath const &subtreeRoot,
             }
         } else {
             // rprim
-            _MarkRprimOrInstancerDirty(it->first, rprimDirtyFlag);
+            _MarkRprimOrInstancerDirty(it->first, rprimDirtyFlag, true);
         }
     }
 }
@@ -2125,7 +2134,8 @@ UsdImagingDelegate::SetRootVisibility(bool isVisible)
     _rootIsVisible = isVisible;
 
     TF_FOR_ALL(it, _dirtyMap) {
-        _MarkRprimOrInstancerDirty(it->first, HdChangeTracker::DirtyVisibility);
+        _MarkRprimOrInstancerDirty(it->first, HdChangeTracker::DirtyVisibility,
+                                   true);
     }
 }
 
