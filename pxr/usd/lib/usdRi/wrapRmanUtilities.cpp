@@ -22,6 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+
+#include <locale>
+
 #include "pxr/usd/usdRi/rmanUtilities.h"
 
 #include "pxr/base/tf/token.h"

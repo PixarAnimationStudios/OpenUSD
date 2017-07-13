@@ -29,7 +29,10 @@
 
 #include "pxr/pxr.h"
 
+#include <locale>
+
 #include "pxr/base/tf/staticTokens.h"
+
 #include <boost/bind.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/scope.hpp>

@@ -24,13 +24,14 @@
 
 #include "pxr/pxr.h"
 
+#include <locale>
+#include <string>
+
 #include "pxr/base/tf/timeStamp.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
-
-#include <string>
 
 using std::string;
 using namespace boost::python;
