@@ -220,7 +220,7 @@ ParallelFindPrims(const UsdPrim& root,
                   GusdPurposeSet purposes,
                   UT_Array<UsdPrim>& prims,
                   const Visitor& visitor,
-                  bool skipRoot=true)
+                  bool skipRoot)
 {
     TaskData data;
     bool skipPrim = skipRoot || root.GetPath() == SdfPath::AbsoluteRootPath();
@@ -287,7 +287,7 @@ ParallelFindPrims(const UT_Array<UsdPrim>& roots,
                   const UT_Array<GusdPurposeSet>& purposes,
                   UT_Array<GusdUSD_Traverse::PrimIndexPair>& prims,
                   const Visitor& visitor,
-                  bool skipRoot=true)
+                  bool skipRoot)
 {
     TaskData data;
     UTparallelFor(UT_BlockedRange<std::size_t>(0, roots.size()),
