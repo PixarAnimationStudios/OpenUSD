@@ -878,19 +878,18 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
                 return abort("Unable to create temporary file in: " + dir);
             }
             // Copy file permissions from fileName to tmpFileName.
-            mode_t mode = 0664; // Use 0664 (-rw-rw-r--) if copy fails.
-            struct stat st;
-            if (stat(fileName.c_str(), &st) == 0) {
-                mode = st.st_mode;
+            int mode;
+            if (!ArchGetStatMode(fileName.c_str(), &mode)) {
+                mode = 0664; // Use 0664 (-rw-rw-r--) if stat of fileName fails.
             }
-            fchmod(m_fdTmpFile, mode);
+            ArchChmod(tmpFileName.c_str(), mode);
 
             // Create a rootLayer and stage with tmpFileName.
             SdfLayerRefPtr tmpLayer = SdfLayer::CreateNew(format, tmpFileName);
             m_usdStage = UsdStage::Open(tmpLayer);
 
             if (!m_usdStage) {
-                unlink(tmpFileName.c_str());
+                ArchUnlinkFile(tmpFileName.c_str());
                 return abort("Unable to create new stage: " + tmpFileName);
             }
 
