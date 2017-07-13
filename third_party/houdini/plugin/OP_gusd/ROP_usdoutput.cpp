@@ -1655,7 +1655,7 @@ bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
     }
 
     // If there are no shaders, exit now before defining a "Looks" scope.
-    if (usdRefShaderMap.empty() and houMaterialMap.empty()) {
+    if (usdRefShaderMap.empty() && houMaterialMap.empty()) {
         return ROP_CONTINUE_RENDER;
     }
 
@@ -1831,14 +1831,14 @@ getStringUniformOrDetailAttribute(
 bool 
 setCamerasAreZup(UsdStageWeakPtr const &stage, bool isZup)
 {
-    if (not stage){
+    if (!stage){
         return false;
     }
     bool anySet = false;
     
     TF_FOR_ALL(prim, stage->GetPseudoRoot().
-                            GetFilteredChildren(UsdPrimIsDefined and
-                                                not UsdPrimIsAbstract)){
+                            GetFilteredChildren(UsdPrimIsDefined && 
+                                                !UsdPrimIsAbstract)){
         prim->SetCustomDataByKey(TfToken("zUp"), VtValue(isZup));
         anySet = true;
     }
