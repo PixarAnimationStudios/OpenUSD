@@ -32,6 +32,9 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/base/gf/vec3d.h"
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 

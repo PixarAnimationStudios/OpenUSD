@@ -127,6 +127,7 @@ pxr_library(hd
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
+        vtExtractor
         ${optionalPrivateClasses}
 
     RESOURCE_FILES
