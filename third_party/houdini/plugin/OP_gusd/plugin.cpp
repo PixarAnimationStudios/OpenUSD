@@ -26,6 +26,7 @@
 #include "SOP_usdunpack.h"
 #include "OBJ_usdcamera.h"
 
+#include "pxr/base/arch/export.h"
 #include "gusd/gusd.h"
 
 #include <SYS/SYS_Version.h>
@@ -36,17 +37,20 @@
 using std::cerr;
 using std::endl;
 
+ARCH_EXPORT
 void HoudiniDSOInit(UT_DSOInfo& info)
 {
     PXR_NS::GusdInit();
 }
 
+ARCH_EXPORT
 void 
 newDriverOperator(OP_OperatorTable* operators) 
 {
     PXR_NS::GusdROP_usdoutput::Register(operators);
 }
 
+ARCH_EXPORT
 void 
 newSopOperator( OP_OperatorTable* operators) 
 {
@@ -54,18 +58,21 @@ newSopOperator( OP_OperatorTable* operators)
     PXR_NS::GusdSOP_usdunpack::Register(operators);
 }
 
+ARCH_EXPORT
 void 
 newObjectOperator(OP_OperatorTable *operators)
 {
     PXR_NS::GusdOBJ_usdcamera::Register(operators);
 }
 
+ARCH_EXPORT
 void
 newGeometryPrim( GA_PrimitiveFactory *f ) 
 {
     PXR_NS::GusdNewGeometryPrim( f );
 }
 
+ARCH_EXPORT
 void
 newGeometryIO( void * )
 {
