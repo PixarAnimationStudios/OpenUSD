@@ -67,7 +67,7 @@ using std::vector;
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
-    MENV30_ENABLE_NEW_DEFAULT_STANDIN_BEHAVIOR, false,
+    MENV30_ENABLE_NEW_DEFAULT_STANDIN_BEHAVIOR, true,
     "If enabled then standin preference is weakest opinion.");
 
 static inline PcpPrimIndex const *
