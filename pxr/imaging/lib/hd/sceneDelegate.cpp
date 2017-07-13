@@ -37,6 +37,13 @@ HdSceneDelegate::HdSceneDelegate(HdRenderIndex *parentIndex,
     : _index(parentIndex)
     , _delegateID(delegateID)
 {
+    if (!_delegateID.IsAbsolutePath()) {
+        TF_CODING_ERROR("Scene Delegate Id must be an absolute path: %s",
+                        delegateID.GetText());
+
+
+        _delegateID.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
+    }
 }
 
 HdSceneDelegate::~HdSceneDelegate()
