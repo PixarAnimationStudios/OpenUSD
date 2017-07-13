@@ -57,9 +57,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 using std::cerr;
 using std::endl;
 
+static bool libInitialized = false;
+
 void
 GusdInit() 
 {
+    if( libInitialized )
+        return;
+
     // register GT_USD conversion functions keyed on GT type id
     GusdPrimWrapper::registerPrimDefinitionFuncForWrite(
             GT_PRIM_CURVE_MESH, 
@@ -101,6 +106,7 @@ GusdInit()
             TfToken("PointInstancer"), &GusdInstancerWrapper::defineForRead);
 
     GusdUSD_TraverseTable::GetInstance().SetDefault("std:components");
+    libInitialized = true;
 }
 
 void 
