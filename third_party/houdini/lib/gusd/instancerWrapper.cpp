@@ -1055,8 +1055,8 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         filter.appendPattern(GT_OWNER_POINT,
                 "^__* ^orient ^rot ^scale ^instancepath ^usdinstancepath \
                  ^usdprototypespath ^trans ^up ^usdactive");
-        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^visible ^usdactive");
-        filter.appendPattern(GT_OWNER_CONSTANT, "^visible ^usdprimpath \
+        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^usdvisible ^usdactive");
+        filter.appendPattern(GT_OWNER_CONSTANT, "^usdvisible ^usdprimpath \
                  ^instancepath ^usdinstancepath ^usdprototypespath \
                  ^usdactive");
         if(const GT_AttributeListHandle pointAttrs = sourcePrim->getPointAttributes()) {

@@ -769,7 +769,7 @@ GusdNURBSCurvesWrapper::updateFromGTPrim(
     }
 
     // -------------------------------------------------------------------------
-    return true;
+    return GusdPrimWrapper::updateFromGTPrim(sourcePrim, houXform, ctxt, xformCache);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

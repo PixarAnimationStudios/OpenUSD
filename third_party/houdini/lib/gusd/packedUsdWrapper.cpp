@@ -280,14 +280,16 @@ GusdPackedUsdWrapper::updateFromGTPrim(
             UsdGeomImageable( m_primRefForWrite ).GetPurposeAttr().Set( ctxt.purpose );
         }
 
-        //// visibility
-        if( ctxt.granularity == GusdContext::PER_FRAME ) { 
-            updateVisibilityFromGTPrim(sourcePrim, ctxt.time);
-        }
-
         // Make instanceable
         if( ctxt.makeRefsInstanceable ) {
             m_primRefForWrite.SetInstanceable( true );
+        }
+    }
+
+    if (writeNewGeo || overlayAll) {
+        //// visibility
+        if( ctxt.granularity == GusdContext::PER_FRAME ) { 
+            updateVisibilityFromGTPrim(sourcePrim, ctxt.time);
         }
     }
 

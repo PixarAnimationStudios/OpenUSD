@@ -28,6 +28,7 @@
 #include "USD_Proxy.h"
 #include "GU_PackedUSD.h"
 #include "USD_XformCache.h"
+#include "GU_USD.h"
 
 #include "pxr/usd/usdGeom/boundable.h"
 
@@ -264,12 +265,10 @@ GusdGroupBaseWrapper::updateGroupActiveFromGTPrim(
 
     GT_Owner attrOwner;
     GT_DataArrayHandle houAttr
-        = sourcePrim->findAttribute("usdactive", attrOwner, 0);
+        = sourcePrim->findAttribute(GUSD_ACTIVE_ATTR, attrOwner, 0);
     if (houAttr) {
         int active = houAttr->getI32(0);
-        if ((bool)active != prim.IsActive()) {
-            prim.SetActive((bool)active);            
-        }
+        prim.SetActive((bool)active);            
     }
 }
 

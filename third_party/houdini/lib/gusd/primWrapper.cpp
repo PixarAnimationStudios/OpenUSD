@@ -27,6 +27,7 @@
 #include "UT_Gf.h"
 #include "GT_VtArray.h"
 #include "USD_XformCache.h"
+#include "GU_USD.h"
 
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_DAIndexedString.h>
@@ -330,7 +331,7 @@ GusdPrimWrapper::updateVisibilityFromGTPrim(
                     UsdTimeCode::Default()); 
     GT_Owner attrOwner;
     GT_DataArrayHandle houAttr
-        = sourcePrim->findAttribute("visible", attrOwner, 0);
+        = sourcePrim->findAttribute(GUSD_VISIBLE_ATTR, attrOwner, 0);
     if(houAttr) {
         int visible = houAttr->getI32(0);
         if(visible) {
@@ -357,12 +358,10 @@ GusdPrimWrapper::updateActiveFromGTPrim(
 
     GT_Owner attrOwner;
     GT_DataArrayHandle houAttr
-        = sourcePrim->findAttribute("usdactive", attrOwner, 0);
+        = sourcePrim->findAttribute(GUSD_ACTIVE_ATTR, attrOwner, 0);
     if (houAttr) {
         int active = houAttr->getI32(0);
-        if ((bool)active != prim.IsActive()) {
-            prim.SetActive((bool)active);            
-        }
+        prim.SetActive((bool)active);
     }
 }
 

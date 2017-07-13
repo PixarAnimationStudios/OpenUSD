@@ -55,6 +55,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define GUSD_OVERPOINTS_ATTR        "usdoverpoints"
 #define GUSD_OVERPRIMVARS_ATTR      "usdoverprimvars"
 #define GUSD_OVERALL_ATTR           "usdoverall"
+#define GUSD_ACTIVE_ATTR            "usdactive"
+#define GUSD_VISIBLE_ATTR           "usdvisible"
 /** @} */
 
 
