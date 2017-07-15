@@ -111,6 +111,10 @@ if (PXR_BUILD_IMAGING)
     find_package(PySide)
     # --PyOpenGL
     find_package(PyOpenGL)
+    # --Embree
+    if (PXR_BUILD_EMBREE_PLUGIN)
+        find_package(Embree REQUIRED)
+    endif()
 endif()
 
 # Third Party Plugin Package Requirements

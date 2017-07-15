@@ -4,6 +4,7 @@ Advanced Build Configuration
 ## Table of Contents
 - [Building With CMake](#building-with-cmake)
 - [Optional Components](#optional-components)
+- [Imaging Plugins](#imaging-plugins)
 - [Third Party Plugins](#third-party-plugins)
 - [Tests](#tests)
 - [Other Build Options](#other-build-options)
@@ -95,7 +96,7 @@ This component contains Hydra, a high-performance graphics rendering engine.
 
 Disable this component by specifying the cmake flag ```PXR_BUILD_IMAGING=FALSE``` when 
 invoking cmake. Disabling this component will also disable the [USD Imaging](#usd-imaging)
-component.
+component and any [Imaging Plugins](#imaging-plugins).
 
 Support for Ptex can optionally be disabled by specifying the cmake flag
 ```PXR_ENABLE_PTEX_SUPPORT=FALSE```.
@@ -109,6 +110,21 @@ usdview, a standalone native viewer for USD files.
 Disable this component by specifying the cmake flag ```PXR_BUILD_USD_IMAGING=FALSE``` when
 invoking cmake. Enabling this component will enable the [Imaging](#imaging)
 component.
+
+## Imaging Plugins
+
+Hydra's rendering functionality can be extended with these optional plugins.
+
+##### Embree Rendering
+
+This component contains an example rendering backend for Hydra and usdview, based on the
+embree raycasting library. Enable the plugin in the build by specifying the cmake flag
+```PXR_BUILD_EMBREE_PLUGIN=TRUE``` when invoking cmake. This plugin is compatible with
+Embree 2.16.1. The additional dependencies that must be supplied when invoking cmake are:
+
+| Dependency Name       | Description                                 | Version   |
+| --------------        | -----------------------------------         | -------   |
+| EMBREE_LOCATION       | The root path to an embree library install. | 2.16.1    |
 
 ## Third Party Plugins
 
