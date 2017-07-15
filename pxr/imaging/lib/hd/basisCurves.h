@@ -41,7 +41,7 @@ struct HdBasisCurvesReprDesc {
         : geomStyle(geomStyle)
         {}
 
-    HdBasisCurvesGeomStyle geomStyle:2;
+    HdBasisCurvesGeomStyle geomStyle;
 };
 
 /// Hydra Schema for a collection of curves using a particular basis.

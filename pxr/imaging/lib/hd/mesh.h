@@ -52,11 +52,11 @@ struct HdMeshReprDesc {
         , blendWireframeColor(blendWireframeColor)
         {}
 
-    HdMeshGeomStyle geomStyle:3;
-    HdCullStyle     cullStyle:3;
-    bool            lit:1;
-    bool            smoothNormals:1;
-    bool            blendWireframeColor:1;
+    HdMeshGeomStyle geomStyle;
+    HdCullStyle     cullStyle;
+    bool            lit;
+    bool            smoothNormals;
+    bool            blendWireframeColor;
 };
 
 /// Hydra Schema for a subdivision surface or poly-mesh object.

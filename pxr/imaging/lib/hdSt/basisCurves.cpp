@@ -268,7 +268,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
 
     // curves don't have multiple draw items (for now)
     if (isNew || HdChangeTracker::IsDirty(*dirtyBits)) {
-        if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {
+        if (descs[0].geomStyle != HdBasisCurvesGeomStyleInvalid) {
             HdDrawItem *drawItem = it->second->GetDrawItem(0);
             _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, descs[0]);
             _UpdateDrawItemGeometricShader(drawItem, 
