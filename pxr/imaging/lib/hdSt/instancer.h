@@ -37,7 +37,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdDrawItem;
-class HdRprimSharedData;
+struct HdRprimSharedData;
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 
