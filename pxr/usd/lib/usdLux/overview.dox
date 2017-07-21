@@ -90,7 +90,7 @@ over attenuation can be modelled as light filters.
 
 More complex behaviors are provided via a set of API classes.
 These behaviors are common and well-defined but may not be supported
-in all rendering envrionments.  These API classes provide
+in all rendering environments.  These API classes provide
 functions to specify the relevant semantic behavior:
 
 - UsdLuxListAPI provides a "light list" relationship to enumerate

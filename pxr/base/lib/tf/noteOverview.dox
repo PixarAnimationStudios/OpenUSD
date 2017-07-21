@@ -99,6 +99,6 @@ First, if your listening object receives more than one notice at the same time a
 
 Second, if you are worried that your listener object might be deleted while in the middle of receiving a notice call, then you need to make your listening object support both TfRefPtr and TfWeakPtr.  That is, your object must derive from TfWeakBase \e and TfRefBase (one of the rarely allowed cases on concrete multiple inheritance) and should only be accessed through these smart pointers.  Additionally, you must register your listener using TfNotice::RegisterDeletionSafe().
 
-The above actions furnish a guaranteee against untimely deletion, because the notification center prevents a listener from being destroyed while receiving a notice, by temporarily creating a TfRefPtr pointing to the object.  (In between notices, the notification center points to the listener only by a TfWeakPtr, which allows the listener to destruct when not in use).
+The above actions furnish a guarantee against untimely deletion, because the notification center prevents a listener from being destroyed while receiving a notice, by temporarily creating a TfRefPtr pointing to the object.  (In between notices, the notification center points to the listener only by a TfWeakPtr, which allows the listener to destruct when not in use).
 
 */

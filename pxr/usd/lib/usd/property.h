@@ -196,7 +196,7 @@ public:
     /// success, false if the value can not be written.
     ///
     /// \b Note that this value should not be changed as it is typically either
-    /// automatically authored or provided by a property defintion. This method
+    /// automatically authored or provided by a property definition. This method
     /// is provided primarily for fixing invalid scene description.
     USD_API
     bool SetCustom(bool isCustom) const;

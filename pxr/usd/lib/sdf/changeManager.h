@@ -48,7 +48,7 @@ class SdfSpec;
 ///
 /// Pathway for invalidation and change notification emitted by Sdf.
 ///
-/// Since Sdf is the base represntation in our system, and doesn't have
+/// Since Sdf is the base representation in our system, and doesn't have
 /// many derived computations, this primarily just queues up invalidation
 /// notifications directly.
 ///

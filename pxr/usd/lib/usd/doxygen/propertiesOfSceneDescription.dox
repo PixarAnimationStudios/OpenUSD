@@ -22,7 +22,7 @@ to create the model hierarchy.
   <li><b>group</b> - a model that is simply a container for other models.</li>
     <ul>
     <li><b>assembly</b> - An "important" group model - often because it is
-                          iself a published asset.</li>
+                          itself a published asset.</li>
     </ul>
   </ul>
 <li><b>subcomponent</b> - Within a component model, subcomponents identify
