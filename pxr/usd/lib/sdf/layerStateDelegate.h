@@ -248,53 +248,53 @@ protected:
     SdfSimpleLayerStateDelegate();
 
     // SdfLayerStateDelegateBase overrides
-    virtual bool _IsDirty();
-    virtual void _MarkCurrentStateAsClean();
-    virtual void _MarkCurrentStateAsDirty();
+    virtual bool _IsDirty() override;
+    virtual void _MarkCurrentStateAsClean() override;
+    virtual void _MarkCurrentStateAsDirty() override;
 
     virtual void _OnSetLayer(
-        const SdfLayerHandle& layer);
+        const SdfLayerHandle& layer) override;
 
     virtual void _OnSetField(
         const SdfAbstractDataSpecId& id,
         const TfToken& fieldName,
-        const VtValue& value);
+        const VtValue& value) override;
     virtual void _OnSetField(
         const SdfAbstractDataSpecId& id,
         const TfToken& fieldName,
-        const SdfAbstractDataConstValue& value);
+        const SdfAbstractDataConstValue& value) override;
     virtual void _OnSetFieldDictValueByKey(
         const SdfAbstractDataSpecId& id,
         const TfToken& fieldName,
         const TfToken& keyPath,
-        const VtValue& value);
+        const VtValue& value) override;
     virtual void _OnSetFieldDictValueByKey(
         const SdfAbstractDataSpecId& id,
         const TfToken& fieldName,
         const TfToken& keyPath,
-        const SdfAbstractDataConstValue& value);
+        const SdfAbstractDataConstValue& value) override;
 
     virtual void _OnSetTimeSample(
         const SdfAbstractDataSpecId& id,
         double time,
-        const VtValue& value);
+        const VtValue& value) override;
     virtual void _OnSetTimeSample(
         const SdfAbstractDataSpecId& id,
         double time,
-        const SdfAbstractDataConstValue& value);
+        const SdfAbstractDataConstValue& value) override;
 
     virtual void _OnCreateSpec(
         const SdfPath& path,
         SdfSpecType specType,
-        bool inert);
+        bool inert) override;
 
     virtual void _OnDeleteSpec(
         const SdfPath& path,
-        bool inert);
+        bool inert) override;
 
     virtual void _OnMoveSpec(
         const SdfPath& oldPath,
-        const SdfPath& newPath);
+        const SdfPath& newPath) override;
 
     virtual void _OnPushChild(
         const SdfPath& id,
