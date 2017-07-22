@@ -335,6 +335,11 @@ public:
     USDIMAGING_API
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const &id);
 
+    // Light Support
+    USDIMAGING_API
+    virtual VtValue GetLightParamValue(SdfPath const &id, 
+                                       TfToken const &paramName);
+
     // Instance path resolution
 
     /// Returns the path of the instance prim corresponding to the
@@ -364,7 +369,7 @@ public:
     virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoPrimPath,
                                             int instanceIndex,
                                             int *absoluteInstanceIndex,
-                                            SdfPath * rprimPath=NULL,
+                                            SdfPath *rprimPath=NULL,
                                             SdfPathVector *instanceContext=NULL);
 
 private:
@@ -590,9 +595,13 @@ private:
     typedef TfHashMap<SdfPath, bool, SdfPath::Hash> _ShaderMap;
     _ShaderMap _shaderMap;
 
+    typedef TfHashMap<SdfPath, TfToken, SdfPath::Hash> _LightMap;
+    _LightMap _lightMap;
+
     typedef TfHashSet<SdfPath, SdfPath::Hash> _TextureSet;
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
     _TextureSet _texturePaths;
+
+    typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
     _InstancerSet _instancerPrimPaths;
 
     // Retrieves the dirty bits for a given usdPath and allows mutation of the
@@ -697,6 +706,11 @@ public:
                        SdfPath const& shaderBinding,
                        UsdImagingInstancerContext const* instancerContext);
 
+    // Insert a light into the HdRenderIndex and schedules it for updates
+    // from the delegate.
+    USDIMAGING_API
+    SdfPath InsertLight(SdfPath const& usdPath, TfToken const& lightType);
+
     // Inserts an instancer into the HdRenderIndex and schedules it for updates
     // from the delegate.
     USDIMAGING_API
@@ -731,6 +745,12 @@ public:
         _instancersToRemove.push_back(instancerPath);
     }
 
+    // Removes a light HdSprim at the specified render index path.
+    // XXX : This will become RemoveSprims when we standarize shaders/lights.
+    void RemoveLight(SdfPath const& cachePath) { 
+        _lightsToRemove.push_back(cachePath);
+    }    
+
     // Recursively repopulate the specified usdPath into the render index.
     USDIMAGING_API
     void Repopulate(SdfPath const& usdPath);
@@ -763,6 +783,7 @@ private:
     UsdImagingDelegate::_Worker* _worker;
     SdfPathVector _pathsToRepopulate;
     SdfPathVector _rprimsToRemove;
+    SdfPathVector _lightsToRemove;
     SdfPathVector _instancersToRemove;
     SdfPathVector _depsToRemove;
 };

@@ -257,10 +257,22 @@ HdSceneDelegate::GetTextureResource(SdfPath const& textureId)
     return HdTextureResourceSharedPtr();
 }
 
+// -----------------------------------------------------------------------//
+/// \name Light Aspects
+// -----------------------------------------------------------------------//
+
+/*virtual*/
+VtValue 
+HdSceneDelegate::GetLightParamValue(SdfPath const &id, 
+                                    TfToken const &paramName) 
+{
+    return VtValue();
+}
 
 // -----------------------------------------------------------------------//
 /// \name Camera Aspects
 // -----------------------------------------------------------------------//
+
 /*virtual*/
 std::vector<GfVec4d>
 HdSceneDelegate::GetClipPlanes(SdfPath const& cameraId)

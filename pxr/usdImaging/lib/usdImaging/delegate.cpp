@@ -53,6 +53,8 @@
 #include "pxr/usd/usdHydra/shader.h"
 #include "pxr/usd/usdHydra/uvTexture.h"
 
+#include "pxr/usd/usdLux/domeLight.h"
+
 #include "pxr/base/work/loops.h"
 
 #include "pxr/base/tf/pyLock.h"
@@ -75,6 +77,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (instance)
+    (texturePath)
 );
 
 // -------------------------------------------------------------------------- //
@@ -121,6 +124,9 @@ UsdImagingDelegate::~UsdImagingDelegate()
     }
     TF_FOR_ALL(it, _shaderMap) {
         index.RemoveSprim(HdPrimTypeTokens->shader, GetPathForIndex(it->first));
+    }
+    TF_FOR_ALL(it, _lightMap) {
+        index.RemoveSprim(it->second, GetPathForIndex(it->first));
     }
 }
 
@@ -220,7 +226,6 @@ UsdImagingDelegate::_AdapterLookupByPath(SdfPath const& usdPath)
                 ? it->second 
                 : NULL_ADAPTER;
 }
-
 
 UsdImagingDelegate::_ShaderAdapterSharedPtr 
 UsdImagingDelegate::_ShaderAdapterLookup(
@@ -486,6 +491,22 @@ UsdImagingIndexProxy::InsertPoints(SdfPath const& usdPath,
 }
 
 SdfPath
+UsdImagingIndexProxy::InsertLight(SdfPath const& usdPath, 
+                                  TfToken const& lightType)
+{
+    _delegate->_lightMap[usdPath] = lightType;
+
+    _delegate->GetRenderIndex().InsertSprim(
+                                lightType,
+                                _delegate,
+                                _delegate->GetPathForIndex(usdPath));
+
+    AddDependency(usdPath, UsdImagingPrimAdapterSharedPtr());
+
+    return usdPath;
+}
+
+SdfPath
 UsdImagingIndexProxy::_InsertRprim(TfToken const& primType,
                             SdfPath const& usdPath,
                             SdfPath const& shaderBinding,
@@ -619,6 +640,19 @@ UsdImagingIndexProxy::_ProcessRemovals()
         index.RemoveInstancer(_delegate->GetPathForIndex(*it));
     }
     _instancersToRemove.clear();
+
+    TF_FOR_ALL(it, _lightsToRemove) {
+        TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Light Sprim] <%s>\n",
+                                it->GetText());
+
+        index.RemoveSprim(
+            _delegate->_lightMap[_delegate->GetPathForIndex(*it)],
+            _delegate->GetPathForIndex(*it));
+
+        // General Light Sprim-specific data:
+        _delegate->_lightMap.erase(*it);
+    }
+    _lightsToRemove.clear();
 
     TF_FOR_ALL(it, _depsToRemove) {
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Dependency] <%s>\n",
@@ -2943,6 +2977,59 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
 
     return texResource;
 }
+
+VtValue 
+UsdImagingDelegate::GetLightParamValue(SdfPath const &id, 
+                                       TfToken const &paramName)
+{
+    // PERFORMANCE: We should schedule this to be updated during Sync, rather
+    // than pulling values on demand.
+ 
+    if (!TF_VERIFY(id != SdfPath())) {
+        return VtValue();
+    }
+
+    SdfPath usdPath = GetPathForUsd(id);
+
+    UsdPrim prim = _GetPrim(usdPath);
+    if (!TF_VERIFY(prim)) {
+        return VtValue();
+    }
+
+    VtValue value;
+    UsdAttribute attr = prim.GetAttribute(paramName);
+    if (!attr) {
+        // Special handling of non-attribute parameters
+
+        // This can be moved to a separate function as we add support for 
+        // other light types that use textures in multiple ways
+        if (paramName == _tokens->texturePath) {
+            UsdLuxDomeLight domeLight(prim);
+            SdfAssetPath asset; 
+            if (!domeLight.GetTextureFileAttr().Get(&asset)) {
+                return VtValue();
+            }
+            return VtValue(asset.GetResolvedPath());
+
+        // XXX : As soon as we have sprim dirty bits and time variability 
+        // we can use another mechanism
+        } else if (paramName == HdTokens->transform) {
+            GfMatrix4d ctm = UsdImaging_XfStrategy::ComputeTransform(
+                prim, _xformCache.GetRootPath(), UsdTimeCode(1.0), 
+                _rigidXformOverrides) * GetRootTransform();
+            return VtValue(ctm);
+        }
+        
+        TF_WARN("Unable to find attribute '%s' in prim '%s'.", 
+            paramName.GetText(), id.GetText());
+        return VtValue();
+    }
+
+    // Reading the value may fail, should we warn here when it does?
+    attr.Get(&value, GetTime());
+    return value;    
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

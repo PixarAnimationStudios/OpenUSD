@@ -282,6 +282,15 @@ public:
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
 
     // -----------------------------------------------------------------------//
+    /// \name Light Aspects
+    // -----------------------------------------------------------------------//
+
+    // Returns a single value for a given light and parameter.
+    HD_API
+    virtual VtValue GetLightParamValue(SdfPath const &id, 
+                                       TfToken const &paramName);
+
+    // -----------------------------------------------------------------------//
     /// \name Camera Aspects
     // -----------------------------------------------------------------------//
 
