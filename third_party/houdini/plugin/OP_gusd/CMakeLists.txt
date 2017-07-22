@@ -44,6 +44,7 @@ install(
         ROP_usdreference.otl
         SOP_camerafrustum.otl
         SOP_usdbindproxy.otl
+        SOP_usdinstanceprototypes.hda
     DESTINATION
         ${PXR_INSTALL_SUBDIR}/otls
 )
