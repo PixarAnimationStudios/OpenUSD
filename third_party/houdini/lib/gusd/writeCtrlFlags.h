@@ -46,11 +46,18 @@ struct GusdWriteCtrlFlags {
                      // For point instancers, if overlayAll is set and 
                      // prototypes are specified, replace the prototypes.
 
+    bool writeStaticGeo;
+    bool writeStaticTopology;
+    bool writeStaticPrimvars;
+
     GusdWriteCtrlFlags() 
         : overPoints( false )
         , overTransforms( false )
         , overPrimvars( false )
         , overAll( false )
+        , writeStaticGeo( false )
+        , writeStaticTopology( false )
+        , writeStaticPrimvars( false )
     {}
 
     // Update flags with values read from prims attributes.

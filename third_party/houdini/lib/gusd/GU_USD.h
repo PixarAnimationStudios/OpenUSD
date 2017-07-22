@@ -51,12 +51,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define GUSD_VARIANTS_ATTR          "usdvariants"
 #define GUSD_CONSTRAINT_ATTR        "usdconstraint"
 #define GUSD_PURPOSE_ATTR           "usdpurpose"
+#define GUSD_ACTIVE_ATTR            "usdactive"
+#define GUSD_VISIBLE_ATTR           "usdvisible"
+
 #define GUSD_OVERTRANSFORMS_ATTR    "usdovertransforms"
 #define GUSD_OVERPOINTS_ATTR        "usdoverpoints"
 #define GUSD_OVERPRIMVARS_ATTR      "usdoverprimvars"
 #define GUSD_OVERALL_ATTR           "usdoverall"
-#define GUSD_ACTIVE_ATTR            "usdactive"
-#define GUSD_VISIBLE_ATTR           "usdvisible"
+
+#define GUSD_WRITESTATICTOPOLOGY_ATTR  "usdwritestatictopology"
+#define GUSD_WRITESTATICPRIMVARS_ATTR  "usdwritestaticprimvars"
+#define GUSD_WRITESTATICGEO_ATTR      "usdwritestaticgeo"
 /** @} */
 
 

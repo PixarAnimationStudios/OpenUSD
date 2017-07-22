@@ -1358,6 +1358,10 @@ renderFrame(fpreal time,
         ctxt.overlayPrimvars =   overlayGeo && (flags.overPrimvars || flags.overAll);
         ctxt.overlayAll =        overlayGeo && flags.overAll;
 
+        ctxt.writeStaticGeo = flags.writeStaticGeo;
+        ctxt.writeStaticTopology = flags.writeStaticTopology;
+        ctxt.writeStaticPrimvars = flags.writeStaticPrimvars;
+
         if( ctxt.overlayPoints || ctxt.overlayTransforms ) {
             needToUpdateModelExtents = true;
         }

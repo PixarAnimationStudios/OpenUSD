@@ -746,6 +746,11 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     // and I don't thik its necessary so lets not.
     bool overlayTransforms = ctxt.overlayTransforms && !ctxt.overlayPoints;
 
+    UsdTimeCode geoTime = ctxt.time;
+    if( ctxt.writeStaticGeo ) {
+        geoTime = UsdTimeCode::Default();
+    }
+
     bool reverseWindingOrder = false;
     GT_DataArrayHandle vertexIndirect;
     if( writeOverlay && (ctxt.overlayPrimvars || ctxt.overlayPoints) && !ctxt.overlayAll ) {
@@ -754,7 +759,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         // the orientation of the underlying prim. All geometry in Houdini is left
         // handed.
         TfToken orientation;
-        m_usdMeshForWrite.GetOrientationAttr().Get(&orientation, ctxt.time);
+        m_usdMeshForWrite.GetOrientationAttr().Get(&orientation, geoTime);
         if( orientation == UsdGeomTokens->rightHanded ) {
             reverseWindingOrder = true;
 
@@ -777,14 +782,14 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     // Compute transform not including this prims transform.
     GfMatrix4d xform = computeTransform( 
                             m_usdMeshForWrite.GetPrim().GetParent(),
-                            ctxt.time,
+                            geoTime,
                             houXform,
                             xformCache );
 
     // Compute transform including this prims transform.
     GfMatrix4d loc_xform = computeTransform( 
                             m_usdMeshForWrite.GetPrim(),
-                            ctxt.time,
+                            geoTime,
                             houXform,
                             xformCache );
 
@@ -803,7 +808,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     GT_Owner attrOwner = GT_OWNER_INVALID;
     GT_DataArrayHandle houAttr;
     UsdAttribute usdAttr;
-    
+
     if( !writeOverlay || ctxt.overlayAll || 
         ctxt.overlayPoints || overlayTransforms ) {
         // extent
@@ -813,17 +818,17 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         if(houAttr && usdAttr && transformPoints ) {
             houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
         }       
-        updateAttributeFromGTPrim( GT_OWNER_INVALID, "extents", houAttr, usdAttr, ctxt.time );
+        updateAttributeFromGTPrim( GT_OWNER_INVALID, "extents", houAttr, usdAttr, geoTime );
     }
 
     // transform ---------------------------------------------------------------
     if( !writeOverlay || overlayTransforms ) {
 
-        updateTransformFromGTPrim( xform, ctxt.time, 
+        updateTransformFromGTPrim( xform, geoTime, 
                                    ctxt.granularity == GusdContext::PER_FRAME );
     }
 
-    updateVisibilityFromGTPrim(sourcePrim, ctxt.time, 
+    updateVisibilityFromGTPrim(sourcePrim, geoTime, 
                                (!ctxt.writeOverlay || ctxt.overlayAll) && 
                                 ctxt.granularity == GusdContext::PER_FRAME );
 
@@ -838,7 +843,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
         }
         updateAttributeFromGTPrim( attrOwner, "P",
-                                   houAttr, usdAttr, ctxt.time );
+                                   houAttr, usdAttr, geoTime );
 
 
         // N
@@ -849,7 +854,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         }
         usdAttr = m_usdMeshForWrite.GetNormalsAttr();
         if( updateAttributeFromGTPrim( attrOwner, "N",
-                                       houAttr, usdAttr, ctxt.time ) ) {
+                                       houAttr, usdAttr, geoTime ) ) {
             if(GT_OWNER_VERTEX == attrOwner) {
                 m_usdMeshForWrite.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
             } else {
@@ -866,16 +871,22 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         usdAttr = m_usdMeshForWrite.GetVelocitiesAttr();
 
         updateAttributeFromGTPrim( attrOwner, "v",
-                                   houAttr, usdAttr, ctxt.time );
+                                   houAttr, usdAttr, geoTime );
     }
 
     // Topology
     if( !writeOverlay || ctxt.overlayAll ) {
+
+        UsdTimeCode topologyTime = ctxt.time;
+        if( ctxt.writeStaticTopology ) {
+            topologyTime = UsdTimeCode::Default();
+        }
+
         // FaceVertexCounts
         GT_DataArrayHandle houVertexCounts = gtMesh->getFaceCounts();
         usdAttr = m_usdMeshForWrite.GetFaceVertexCountsAttr();
         updateAttributeFromGTPrim( GT_OWNER_INVALID, "facevertexcounts",
-                                   houVertexCounts, usdAttr, ctxt.time );
+                                   houVertexCounts, usdAttr, topologyTime );
 
         // FaceVertexIndices
         GT_DataArrayHandle houVertexList = gtMesh->getVertexList();
@@ -884,7 +895,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         }
         usdAttr = m_usdMeshForWrite.GetFaceVertexIndicesAttr();
         updateAttributeFromGTPrim( GT_OWNER_INVALID, "facevertexindices",
-                                   houVertexList, usdAttr, ctxt.time );
+                                   houVertexList, usdAttr, topologyTime );
 
         // Creases
         if(const GT_PrimSubdivisionMesh* subdMesh
@@ -938,6 +949,11 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
     if( !writeOverlay || ctxt.overlayAll || ctxt.overlayPrimvars ) {
 
+        UsdTimeCode primvarTime = ctxt.time;
+        if( ctxt.writeStaticPrimvars ) {
+            primvarTime = UsdTimeCode::Default();
+        }
+
         GusdGT_AttrFilter filter = ctxt.attributeFilter;
         filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^visible ^usdactive");
         filter.appendPattern(GT_OWNER_VERTEX, "^N ^visible ^creaseweight ^usdactive");
@@ -947,10 +963,11 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             filter.appendPattern(GT_OWNER_UNIFORM, "^" + ctxt.primPathAttribute );
         }
         if(const GT_AttributeListHandle pointAttrs = sourcePrim->getPointAttributes()) {
+
             GusdGT_AttrFilter::OwnerArgs owners;
             owners << GT_OWNER_POINT;
             filter.setActiveOwners(owners);
-            updatePrimvarFromGTPrim( pointAttrs, filter, UsdGeomTokens->vertex, ctxt.time );
+            updatePrimvarFromGTPrim( pointAttrs, filter, UsdGeomTokens->vertex, primvarTime );
         }
         if(GT_AttributeListHandle vertexAttrs = sourcePrim->getVertexAttributes()) {
             GusdGT_AttrFilter::OwnerArgs owners;
@@ -963,7 +980,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                 vertexAttrs = vertexAttrs->createIndirect(vertexIndirect); 
             }           
 
-            updatePrimvarFromGTPrim( vertexAttrs, filter, UsdGeomTokens->faceVarying, ctxt.time );
+            updatePrimvarFromGTPrim( vertexAttrs, filter, UsdGeomTokens->faceVarying, primvarTime );
         }
 
         if(const GT_AttributeListHandle primAttrs = sourcePrim->getUniformAttributes()) {
@@ -999,7 +1016,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                     TfToken( it.getName() ),
                     GT_OWNER_UNIFORM, 
                     interpolation,
-                    ctxt.time, 
+                    primvarTime, 
                     data );
             }
         }
@@ -1008,7 +1025,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             GusdGT_AttrFilter::OwnerArgs owners;
             owners << GT_OWNER_CONSTANT;
             filter.setActiveOwners(owners);
-            updatePrimvarFromGTPrim( constAttrs, filter, UsdGeomTokens->constant, ctxt.time );
+            updatePrimvarFromGTPrim( constAttrs, filter, UsdGeomTokens->constant, primvarTime );
         }
 
         // If we have a "Cd" attribute, write it as both "Cd" and "displayColor".
@@ -1027,12 +1044,9 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             }
 
             updatePrimvarFromGTPrim( TfToken("displayColor"), GT_OWNER_UNIFORM, 
-                                     interpolation, ctxt.time, Cd );
+                                     interpolation, primvarTime, Cd );
         }
     }
-
-    // ------------------------------------------------------------------------
-
     return GusdPrimWrapper::updateFromGTPrim(sourcePrim, houXform, ctxt, xformCache);
 }
 

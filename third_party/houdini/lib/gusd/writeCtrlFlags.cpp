@@ -41,6 +41,9 @@ GusdWriteCtrlFlags::update( const GT_PrimitiveHandle &sourcePrim )
     overTransforms = getBoolAttr( sourcePrim, GUSD_OVERTRANSFORMS_ATTR, overTransforms );
     overPrimvars =   getBoolAttr( sourcePrim, GUSD_OVERPRIMVARS_ATTR, overPrimvars );
     overAll =        getBoolAttr( sourcePrim, GUSD_OVERALL_ATTR, overAll );
+    writeStaticGeo = getBoolAttr( sourcePrim, GUSD_WRITESTATICGEO_ATTR, writeStaticGeo );
+    writeStaticTopology = getBoolAttr( sourcePrim, GUSD_WRITESTATICTOPOLOGY_ATTR, writeStaticTopology );
+    writeStaticPrimvars = getBoolAttr( sourcePrim, GUSD_WRITESTATICPRIMVARS_ATTR, writeStaticPrimvars );
 }
 
 /* static */

@@ -57,6 +57,9 @@ public:
         , overlayTransforms( false )
         , overlayPrimvars( false )
         , overlayAll( false )
+        , writeStaticGeo( false )
+        , writeStaticTopology( false )
+        , writeStaticPrimvars( false )
         , attributeFilter( af )
         , purpose( UsdGeomTokens->default_ )
         , makeRefsInstanceable( true )
@@ -77,6 +80,10 @@ public:
     bool overlayAll;    // Completely replace prims, including topology. 
                      // For point instancers, if overlayAll is set and 
                      // prototypes are specified, replace the prototypes.
+
+    bool writeStaticGeo;
+    bool writeStaticTopology;
+    bool writeStaticPrimvars;
 
     // Filter specifing what primvars to write for each prim.
     const GusdGT_AttrFilter& attributeFilter;
