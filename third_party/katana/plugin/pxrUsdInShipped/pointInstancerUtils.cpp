@@ -78,7 +78,8 @@ PxrUsdInShipped_PointInstancerUtils::ComputeInstanceTransformsAtTime(
         std::vector<GfMatrix4d> &curr = xforms[a];
         curr.reserve(numInstances);
 
-        // Get sample-dependent values. Stop if topology differs.
+        // Get sample-dependent values. Stop if topology differs, but permit
+        // unspecified scales and orientations.
         positionsAttr.Get(&positions, sampleTimes[a]);
         if (positions.size() != numInstances) {
             break;
@@ -95,8 +96,12 @@ PxrUsdInShipped_PointInstancerUtils::ComputeInstanceTransformsAtTime(
         for (auto i = decltype(numInstances){0}; i < numInstances; ++i) {
             GfTransform transform;
             transform.SetTranslation(positions[i]);
-            transform.SetScale(scales[i]);
-            transform.SetRotation(GfRotation(orientations[i]));
+            if (scales.size() > 0) {
+                transform.SetScale(scales[i]);
+            }
+            if (orientations.size() > 0) {
+                transform.SetRotation(GfRotation(orientations[i]));
+            }
             curr.push_back(transform.GetMatrix());
         }
 
