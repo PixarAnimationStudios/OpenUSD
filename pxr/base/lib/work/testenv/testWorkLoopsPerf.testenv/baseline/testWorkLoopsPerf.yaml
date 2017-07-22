@@ -9,9 +9,9 @@ configs:
     digest: d41d8cd98f00b204e9800998ecf8427e
     inputs: []
     outputs:
-    - {metric: time, value: 0.21208873304347825}
+    - {metric: time, value: 0.096406483871}
   - name: TBB for_each Loops_time
     digest: d41d8cd98f00b204e9800998ecf8427e
     inputs: []
     outputs:
-    - {metric: time, value: 0.056750925}
+    - {metric: time, value: 0.0467952333333}
