@@ -32,9 +32,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
 
-#include "pxr/base/tf/refBase.h"
-#include "pxr/base/tf/staticTokens.h"
-
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>

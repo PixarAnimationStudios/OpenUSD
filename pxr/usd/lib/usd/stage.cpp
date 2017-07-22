@@ -5405,7 +5405,7 @@ bool
 UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr, 
                     VtValue* result) const
 {
-    Usd_UntypedInterpolator interpolator(result);
+    Usd_UntypedInterpolator interpolator(attr, result);
     return _GetValueImpl(time, attr, &interpolator, result);
 }
 
@@ -5488,7 +5488,7 @@ public:
         }
 
         return interpolator->Interpolate(
-            attr, layer, specId, localTime, lower, upper);
+            layer, specId, localTime, lower, upper);
     } 
 
     template <class T>
@@ -5519,7 +5519,7 @@ public:
         }
 
         return interpolator->Interpolate(
-            attr, clip, specId, localTime, lower, upper);
+            clip, specId, localTime, lower, upper);
     }
 };
 
@@ -6063,7 +6063,7 @@ UsdStage::_GetValueFromResolveInfo(const UsdResolveInfo &info,
                                    UsdTimeCode time, const UsdAttribute &attr,
                                    VtValue* value) const
 {
-    Usd_UntypedInterpolator interpolator(value);
+    Usd_UntypedInterpolator interpolator(attr, value);
     return _GetValueFromResolveInfoImpl(
         info, time, attr, &interpolator, value);
 }
@@ -6105,7 +6105,7 @@ UsdStage::_GetTimeSampleMap(const UsdAttribute &attr,
                                   &timeSamples)) {
         for (const auto& timeSample : timeSamples) {
             VtValue value;
-            Usd_UntypedInterpolator interp(&value);
+            Usd_UntypedInterpolator interp(attr, &value);
 
             if (_GetValueImpl(timeSample, attr, &interp, &value)) {
                 (*out)[timeSample] = value;

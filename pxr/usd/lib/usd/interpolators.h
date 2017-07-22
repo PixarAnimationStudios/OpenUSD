@@ -29,10 +29,7 @@
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/sdf/layer.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class SdfAbstractDataSpecId;
 class UsdAttribute;
@@ -47,11 +44,9 @@ class Usd_InterpolatorBase
 {
 public:
     virtual bool Interpolate(
-        const UsdAttribute& attr,
         const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
         double time, double lower, double upper) = 0;
     virtual bool Interpolate(
-        const UsdAttribute& attr,
         const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
         double time, double lower, double upper) = 0;
 };
@@ -66,17 +61,15 @@ class Usd_NullInterpolator
 {
 public:
     virtual bool Interpolate(
-        const UsdAttribute& attr,
         const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper)
+        double time, double lower, double upper) final
     {
         return false;
     }
 
     virtual bool Interpolate(
-        const UsdAttribute& attr, 
         const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper)
+        double time, double lower, double upper) final
     {
         return false;
     }
@@ -94,29 +87,28 @@ class Usd_UntypedInterpolator
     : public Usd_InterpolatorBase
 {
 public:
-    Usd_UntypedInterpolator(VtValue* result)
-        : _result(result)
+    Usd_UntypedInterpolator(const UsdAttribute& attr, VtValue* result)
+        : _attr(attr)
+        , _result(result)
     {
     }
 
     virtual bool Interpolate(
-        const UsdAttribute& attr, 
         const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper);
+        double time, double lower, double upper) final;
 
     virtual bool Interpolate(
-        const UsdAttribute& attr, 
         const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper);
+        double time, double lower, double upper) final;
 
 private:
     template <class Src>
     bool _Interpolate(
-        const UsdAttribute& attr, 
         const Src& src, const SdfAbstractDataSpecId& specId,
         double time, double lower, double upper);
 
 private:
+    const UsdAttribute& _attr;
     VtValue* _result;
 };
 
@@ -140,17 +132,15 @@ public:
     }
 
     virtual bool Interpolate(
-        const UsdAttribute& attr,
         const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper)
+        double time, double lower, double upper) final
     {
         return layer->QueryTimeSample(specId, lower, _result);
     }
 
     virtual bool Interpolate(
-        const UsdAttribute& attr,
         const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper)
+        double time, double lower, double upper) final
     {
         return clip->QueryTimeSample(specId, lower, _result);
     }
@@ -202,17 +192,15 @@ public:
     }
 
     virtual bool Interpolate(
-        const UsdAttribute& attr, 
         const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper)
+        double time, double lower, double upper) final
     {
         return _Interpolate(layer, specId, time, lower, upper);
     }
 
     virtual bool Interpolate(
-        const UsdAttribute& attr, 
         const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper)
+        double time, double lower, double upper) final
     {
         return _Interpolate(clip, specId, time, lower, upper);
     }
@@ -259,17 +247,15 @@ public:
     }
 
     virtual bool Interpolate(
-        const UsdAttribute& attr, 
         const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper)
+        double time, double lower, double upper) final
     {
         return _Interpolate(layer, specId, time, lower, upper);
     }
 
     virtual bool Interpolate(
-        const UsdAttribute& attr, 
         const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
-        double time, double lower, double upper)
+        double time, double lower, double upper) final
     {
         return _Interpolate(clip, specId, time, lower, upper);
     }
@@ -317,7 +303,6 @@ private:
 private:
     VtArray<T>* _result;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
