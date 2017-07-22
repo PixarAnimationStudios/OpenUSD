@@ -443,14 +443,6 @@ HdRenderDelegate *HdRenderIndex::GetRenderDelegate() const
     return _renderDelegate;
 }
 
-TfToken
-HdRenderIndex::GetRenderDelegateType() const
-{
-    TfType const &type = TfType::Find(_renderDelegate);
-    const std::string &typeName  = type.GetTypeName();
-    return TfToken(typeName);
-}
-
 HdResourceRegistrySharedPtr 
 HdRenderIndex::GetResourceRegistry() const
 {

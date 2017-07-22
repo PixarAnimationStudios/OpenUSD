@@ -333,9 +333,6 @@ public:
     HD_API
     HdRenderDelegate *GetRenderDelegate() const;
 
-    HD_API
-    TfToken GetRenderDelegateType() const;
-
     /// Returns a shared ptr to the resource registry of the current render
     /// delegate.
     HD_API
