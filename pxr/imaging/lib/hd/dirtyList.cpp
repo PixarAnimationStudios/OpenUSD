@@ -74,10 +74,7 @@ HdDirtyList::HdDirtyList(HdRprimCollection const& collection,
             _renderIndex.GetChangeTracker().GetVaryingStateVersion() - 1)
         , _changeCount(
             _renderIndex.GetChangeTracker().GetChangeCount() - 1)
-        , _indexVersion(
-                    _renderIndex.GetChangeTracker().GetRenderIndexVersion() - 1)
         , _isEmpty(false)
-        , _currentRepr()
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyLists);
 }
@@ -175,6 +172,25 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
         return false;
     }
 
+    // If the varying state has changed - Rebuild the base list
+    // before adding the new items
+    HdChangeTracker &changeTracker = _renderIndex.GetChangeTracker();
+
+    unsigned int currentVaryingStateVersion =
+                                         changeTracker.GetVaryingStateVersion();
+
+    if (_varyingStateVersion != currentVaryingStateVersion) {
+           TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): varying state changed "
+                   "(%s, %d -> %d)\n",
+                   (void*)this,
+                   _collection.GetName().GetText(),
+                   _varyingStateVersion,
+                   currentVaryingStateVersion);
+
+           // populate only varying prims in the collection
+           _UpdateIDs(&_dirtyIds, HdChangeTracker::Varying);
+           _varyingStateVersion = currentVaryingStateVersion;
+    }
 
     SdfPathVector added, removed;
     typedef SdfPathVector::const_iterator ITR;
@@ -230,6 +246,8 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
 
                 if (col.HasRenderTag(index.GetRenderTag(newPath, repr))) {
                     _dirtyIds.push_back(newPath);
+                    changeTracker.MarkRprimDirty(newPath,
+                                                 HdChangeTracker::ForceSync);
                 }
             }
             ++newI;
@@ -244,6 +262,9 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
     }
 
     _collection = col;
+    _collectionVersion
+                    = changeTracker.GetCollectionVersion(_collection.GetName());
+
 
     // make sure the next GetDirtyRprims() picks up the updated list.
     _isEmpty = false;
@@ -304,8 +325,6 @@ HdDirtyList::GetDirtyRprims()
         = changeTracker.GetVaryingStateVersion();
     unsigned int currentChangeCount
         = changeTracker.GetChangeCount();
-    unsigned int currentRenderIndexVersion
-        = changeTracker.GetRenderIndexVersion();
 
     // if nothing changed, and if it's clean, returns empty.
     if (_isEmpty && _changeCount == currentChangeCount) {
@@ -324,19 +343,13 @@ HdDirtyList::GetDirtyRprims()
                 (void*)this,
                 _collection.GetName().GetText(),
                 _collectionVersion, currentCollectionVersion);
-        // populate dirty rprims in the collection
-        if (_currentRepr != _collection.GetReprName() || _indexVersion != currentRenderIndexVersion) {
-            // Mark all Repr dirty, when the default repr changes...
-            _UpdateIDs(&_dirtyIds, 0);
-            TF_FOR_ALL(it, _dirtyIds) {
-                changeTracker.MarkRprimDirty(*it, HdChangeTracker::ForceSync);
-            }
-            _currentRepr = _collection.GetReprName();
-            _indexVersion = currentRenderIndexVersion;
 
-        } else {
-            _UpdateIDs(&_dirtyIds, HdChangeTracker::AllDirty|HdChangeTracker::Varying);
+        // populate dirty rprims in the collection
+        _UpdateIDs(&_dirtyIds, 0);
+        TF_FOR_ALL(it, _dirtyIds) {
+            changeTracker.MarkRprimDirty(*it, HdChangeTracker::ForceSync);
         }
+
         // this is very conservative list and is expected to be rebuilt
         // once it gets cleaned.
         //
