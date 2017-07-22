@@ -7,7 +7,7 @@
                         "bases": [
                             "HdxRendererPlugin"
                         ],
-                        "displayName": "Hydra Embree",
+                        "displayName": "Embree",
                         "priority": 99
                     }
                 }

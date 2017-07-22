@@ -34,6 +34,7 @@ from PySide import QtGui, QtCore, QtOpenGL
 from pxr import Tf
 from pxr import Gf
 from pxr import Glf
+from pxr import Plug
 from pxr import Sdf, Usd, UsdGeom
 from pxr import UsdImagingGL
 from pxr import CameraUtil
@@ -1537,6 +1538,7 @@ class StageView(QtOpenGL.QGLWidget):
         self.noRender to True prior to calling this function'''
         if not self._noRender:
             self._renderer = UsdImagingGL.GL()
+        self._rendererPluginName = ""
 
     def GetRendererPlugins(self):
         if self._renderer:
@@ -1544,8 +1546,13 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             return []
 
+    def GetRendererPluginDisplayName(self, pluginType):
+        return Plug.Registry().GetStringFromPluginMetaData(
+            pluginType, 'displayName')
+
     def SetRendererPlugin(self, name):
         if self._renderer:
+            self._rendererPluginName = self.GetRendererPluginDisplayName(name)
             self._renderer.SetRendererPlugin(name)
 
     def GetStage(self):
@@ -2327,9 +2334,14 @@ class StageView(QtOpenGL.QGLWidget):
             self._hud.updateGroup("BottomRight", 0, 0, col, {})
 
         # Hydra Enabled (Top Right)
-        toPrint = {"Hydra":
-                     "Enabled" if UsdImagingGL.GL.IsEnabledHydra() 
-                     else "Disabled"}
+        hydraMode = "Disabled"
+        
+        if UsdImagingGL.GL.IsEnabledHydra():
+            hydraMode = self._rendererPluginName
+            if not hydraMode:
+                hydraMode = "Enabled"
+                
+        toPrint = {"Hydra": hydraMode}
         self._hud.updateGroup("TopRight", self.width()-140, 14, col, toPrint)
 
         # bottom left
