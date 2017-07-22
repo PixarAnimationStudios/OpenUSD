@@ -183,6 +183,15 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertTrue(len(u1.ComputeFlattened(2.0)) == 0)
         self.assertNotEqual(u1.ComputeFlattened(2.0), u1.Get(2.0))
 
+        # Ensure that primvars with indices only authored at timeSamples
+        # (i.e. no default) are recognized as such.  Manual name-munging
+        # necessitated by UsdGeomPrimvar's lack of API for accessing
+        # the indices attribute directly!
+        u1Indices = p.GetAttribute(u1.GetName() + ":indices")
+        self.assertTrue(u1Indices)
+        u1Indices.ClearDefault()
+        self.assertTrue(u1.IsIndexed())
+        
         # Finally, ensure the values returned by GetDeclarationInfo
         # (on new Primvar objects, to test the GprimSchema API)
         # is identical to the individual queries, and matches what we set above
