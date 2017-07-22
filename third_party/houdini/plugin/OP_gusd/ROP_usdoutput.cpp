@@ -303,7 +303,7 @@ getTemplates()
             PRM_TOGGLE,
             1,
             &instanceRefsName,
-            PRMoneDefaults, // default
+            PRMzeroDefaults, // default
             0, // menu choices
             0, // range
             0, // callback
