@@ -1340,6 +1340,7 @@ renderFrame(fpreal time,
 
     UT_Set<SdfPath> gprimsProcessedThisFrame;
     GusdSimpleXformCache xformCache;
+    bool needToUpdateModelExtents = false;
 
     // Iterate over the refined prims and write
     for( auto& gtPrim : gPrims ) {
@@ -1356,6 +1357,10 @@ renderFrame(fpreal time,
         ctxt.overlayTransforms = overlayGeo && (flags.overTransforms || flags.overAll);
         ctxt.overlayPrimvars =   overlayGeo && (flags.overPrimvars || flags.overAll);
         ctxt.overlayAll =        overlayGeo && flags.overAll;
+
+        if( ctxt.overlayPoints || ctxt.overlayTransforms ) {
+            needToUpdateModelExtents = true;
+        }
 
         gprimsProcessedThisFrame.insert(primPath);
 
@@ -1547,7 +1552,7 @@ renderFrame(fpreal time,
         // except primvars) then bounds have likely changed due to prims being
         // moved or deformed. Now the "extentsHint" attribute will need to be
         // updated for ancestors of the prims that have been overlayed.
-        if (overlayAll || overlayPoints || overlayXforms) {
+        if (needToUpdateModelExtents) {
             // Create a UsdGeomBBoxCache for computing extents.
             TfTokenVector includePurposes(1, UsdGeomTokens->default_);
             UsdGeomBBoxCache cache(ctxt.time, includePurposes,
