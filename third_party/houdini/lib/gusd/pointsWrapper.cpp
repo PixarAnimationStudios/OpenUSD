@@ -292,7 +292,17 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         return false;
     }
 
-    bool writeNewGeo = !ctxt.getOverGeo( sourcePrim );
+    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
+    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
+    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
+    bool overlayAll =        ctxt.getOverAll( sourcePrim );
+
+    // While I suppose we could write both points and transforms, it gets confusing,
+    // and I don't this its necessary so lets not.
+    if( overlayPoints || overlayAll ) {
+        overlayTransforms = false;
+    }
+    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
 
     GfMatrix4d xform = computeTransform( 
                             m_usdPointsForWrite.GetPrim().GetParent(),
@@ -322,9 +332,9 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     }
 
     // visibility
-    if( ctxt.granularity == GusdContext::PER_FRAME ) { 
-        updateVisibilityFromGTPrim(sourcePrim, ctxt.time);
-    }
+    updateVisibilityFromGTPrim(sourcePrim, ctxt.time, 
+                               (writeNewGeo || overlayAll) && 
+                                ctxt.granularity == GusdContext::PER_FRAME );
 
     // P
     houAttr = sourcePrim->findAttribute("P", attrOwner, 0);

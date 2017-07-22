@@ -281,11 +281,11 @@ public:
 
 protected:
 
-
     /// Look for "visible" attribute on sourcePrim. If it doesn't exist
     /// set a visibility sample based on isVisible()
     void updateVisibilityFromGTPrim( const GT_PrimitiveHandle& sourcePrim,
-                                     UsdTimeCode time );
+                                     UsdTimeCode time,
+                                     bool forceWrite = true );
 
     /// Look for a "usdactive" attribute on sourcePrim. UsdPrim::SetActive
     /// based on this value. If attribute doesn't exist, do nothing.

@@ -732,11 +732,9 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     }
 
     // visibility ---------------------------------------------------------------
-    if( writeNewGeo || overlayAll ) {
-        if( ctxt.granularity == GusdContext::PER_FRAME ) { 
-            updateVisibilityFromGTPrim(sourcePrim, ctxt.time);
-        }
-    }
+    updateVisibilityFromGTPrim(sourcePrim, ctxt.time, 
+                               (writeNewGeo || overlayAll) && 
+                                ctxt.granularity == GusdContext::PER_FRAME );
 
     if( writeNewGeo || overlayAll || overlayPoints ) {
         

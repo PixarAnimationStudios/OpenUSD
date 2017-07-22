@@ -313,22 +313,25 @@ GusdPrimWrapper::setVisibility(const TfToken& visibility, UsdTimeCode time)
     }
 
     UsdAttribute visAttr = getUsdPrimForWrite().GetVisibilityAttr();
-    if( visAttr.IsValid() )
+    if( visAttr.IsValid() ) {
+        TfToken oldVal;
+        if( !visAttr.Get( &oldVal, 
+                          UsdTimeCode::Default() ) || oldVal != UsdGeomTokens->invisible ) {
+            visAttr.Set(UsdGeomTokens->invisible, UsdTimeCode::Default()); 
+        }
         visAttr.Set(visibility, time); 
+    }
 }
 
 void
 GusdPrimWrapper::updateVisibilityFromGTPrim(
         const GT_PrimitiveHandle& sourcePrim,
-        UsdTimeCode time)
+        UsdTimeCode time,
+        bool forceWrite )
 {
     // If we're tracking visibility, set this prim's default state to
     // invisible. File-per-frame exports rely on this if the prim isn't
     // persistent throughout the frame range.
-    UsdAttribute visAttr = getUsdPrimForWrite().GetVisibilityAttr();
-    if( visAttr.IsValid() )
-        visAttr.Set(UsdGeomTokens->invisible,
-                    UsdTimeCode::Default()); 
     GT_Owner attrOwner;
     GT_DataArrayHandle houAttr
         = sourcePrim->findAttribute(GUSD_VISIBLE_ATTR, attrOwner, 0);
@@ -340,7 +343,7 @@ GusdPrimWrapper::updateVisibilityFromGTPrim(
             setVisibility(UsdGeomTokens->invisible, time);
         }
     }
-    else {
+    else if ( forceWrite ) {
         if(isVisible()) {
             setVisibility(UsdGeomTokens->inherited, time);
         } else {

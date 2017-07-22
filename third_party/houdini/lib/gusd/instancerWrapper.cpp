@@ -916,9 +916,8 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         worldToLocal.invert();
  
         // visibility
-        if( ctxt.granularity == GusdContext::PER_FRAME ) { 
-            updateVisibilityFromGTPrim(sourcePrim, ctxt.time);
-        }        
+        updateVisibilityFromGTPrim(sourcePrim, ctxt.time, 
+                               ctxt.granularity == GusdContext::PER_FRAME );
 
         // P
         houAttr = sourcePrim->findAttribute("P", attrOwner, 0);

@@ -286,12 +286,9 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         }
     }
 
-    if (writeNewGeo || overlayAll) {
-        //// visibility
-        if( ctxt.granularity == GusdContext::PER_FRAME ) { 
-            updateVisibilityFromGTPrim(sourcePrim, ctxt.time);
-        }
-    }
+    updateVisibilityFromGTPrim(sourcePrim, ctxt.time, 
+                               (writeNewGeo || overlayAll) && 
+                                ctxt.granularity == GusdContext::PER_FRAME );
 
     // transform ---------------------------------------------------------------
 
