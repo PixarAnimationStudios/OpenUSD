@@ -75,7 +75,9 @@ HdPersistentBuffer::HdPersistentBuffer(
 HdPersistentBuffer::~HdPersistentBuffer()
 {
     GLuint id = GetId();
-    glDeleteBuffers(1, &id);
+    if (id) {
+        glDeleteBuffers(1, &id);
+    }
     SetAllocation(0, 0);
 }
 
