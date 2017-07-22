@@ -27,7 +27,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/clip.h"
+#include "pxr/usd/usd/valueUtils.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/base/gf/math.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -303,6 +305,25 @@ private:
 private:
     VtArray<T>* _result;
 };
+
+/// If \p lower == \p upper, sets \p result to the time sample at 
+/// that time in the given \p src clip or layer. Otherwise,
+/// interpolates the value at the given \p time between \p lower 
+/// and \p upper using the given \p interpolator.
+template <class Src, class T>
+inline bool
+Usd_GetOrInterpolateValue(
+    const Src& src, const SdfAbstractDataSpecId& specId,
+    double time, double lower, double upper,
+    Usd_InterpolatorBase* interpolator, T* result)
+{
+    if (GfIsClose(lower, upper, /* epsilon = */ 1e-6)) {
+        bool queryResult = src->QueryTimeSample(specId, lower, result);
+        return queryResult && (!Usd_ClearValueIfBlocked(result));
+    }
+
+    return interpolator->Interpolate(src, specId, time, lower, upper);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

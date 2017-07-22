@@ -76,6 +76,7 @@ pxr_library(usd
     PRIVATE_HEADERS
         crateDataTypes.h
         crateValueInliners.h
+        valueUtils.h
         wrapUtils.h
 
     CPPFILES

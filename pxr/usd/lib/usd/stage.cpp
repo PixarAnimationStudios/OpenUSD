@@ -32,6 +32,7 @@
 #include "pxr/usd/usd/interpolators.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/resolver.h"
@@ -41,8 +42,8 @@
 #include "pxr/usd/usd/stageCache.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/tokens.h"
-#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/usdFileFormat.h"
+#include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/pcp/changes.h"
 #include "pxr/usd/pcp/errors.h"
@@ -1436,48 +1437,13 @@ UsdStage::_SetValue(
     return _SetValueImpl(time, attr, newValue);
 }
 
-namespace {
-bool 
-_ValueContainsBlock(const VtValue* value) {
-    return value && value->IsHolding<SdfValueBlock>();
-}
-
-bool
-_ValueContainsBlock(const SdfAbstractDataValue* value) 
-{
-    return value && value->isValueBlock;
-}
-
-bool
-_ValueContainsBlock(const SdfAbstractDataConstValue* value)
-{
-    const std::type_info& valueBlockTypeId(typeid(SdfValueBlock));
-    return value && value->valueType == valueBlockTypeId;
-}
-
-bool 
-_ClearValueIfBlocked(VtValue* value) {
-    if (_ValueContainsBlock(value)) {
-        *value = VtValue();
-        return true;
-    }
-
-    return false;
-}
-
-bool 
-_ClearValueIfBlocked(SdfAbstractDataValue* value) {
-    return _ValueContainsBlock(value);
-}
-}
-
 template <class T>
 bool
 UsdStage::_SetValueImpl(
     UsdTimeCode time, const UsdAttribute &attr, const T& newValue)
 {
     // if we are setting a value block, we don't want type checking
-    if (!_ValueContainsBlock(&newValue)) {
+    if (!Usd_ValueContainsBlock(&newValue)) {
         // Do a type check.  Obtain typeName.
         TfToken typeName;
         SdfAbstractDataTypedValue<TfToken> abstrToken(&typeName);
@@ -5482,13 +5448,8 @@ public:
             localTime,
             lower);
 
-        if (GfIsClose(lower, upper, /* epsilon = */ 1e-6)) {
-            bool queryResult = layer->QueryTimeSample(specId, lower, result);
-            return queryResult && (!_ClearValueIfBlocked(result));
-        }
-
-        return interpolator->Interpolate(
-            layer, specId, localTime, lower, upper);
+        return Usd_GetOrInterpolateValue(
+            layer, specId, localTime, lower, upper, interpolator, result);
     } 
 
     template <class T>
@@ -5513,13 +5474,8 @@ public:
             localTime,
             lower);
 
-        if (GfIsClose(lower, upper, /* epsilon = */ 1e-6)) {
-            bool queryResult = clip->QueryTimeSample(specId, lower, result);
-            return queryResult && (!_ClearValueIfBlocked(result));
-        }
-
-        return interpolator->Interpolate(
-            clip, specId, localTime, lower, upper);
+        return Usd_GetOrInterpolateValue(
+            clip, specId, localTime, lower, upper, interpolator, result);
     }
 };
 
@@ -5574,7 +5530,7 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
     if (time.IsDefault()) {
         bool valueFound = _GetMetadata(attr, SdfFieldKeys->Default,
                                        TfToken(), /*useFallbacks=*/true, result);
-        return valueFound && (!_ClearValueIfBlocked(result));
+        return valueFound && (!Usd_ClearValueIfBlocked(result));
     }
 
     UsdResolveInfo resolveInfo;
@@ -5661,7 +5617,7 @@ _HasDefault(const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
     }
 
     if (layer->HasField(specId, SdfFieldKeys->Default, value)) {
-        if (_ClearValueIfBlocked(value)) {
+        if (Usd_ClearValueIfBlocked(value)) {
             return _DefaultValueBlocked;
         }
         return _DefaultValueFound;
@@ -5983,7 +5939,7 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
     if (time.IsDefault()) {
         bool valueFound = _GetMetadata(attr, SdfFieldKeys->Default,
                                        TfToken(), /*useFallbacks=*/true, result);
-        return valueFound && (!_ClearValueIfBlocked(result));
+        return valueFound && (!Usd_ClearValueIfBlocked(result));
     }
 
     if (info._source == UsdResolveInfoSourceTimeSamples) {
