@@ -26,7 +26,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hf/pluginBase.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/base/tf/token.h"
 
@@ -65,7 +64,7 @@ private:
 
 /// \class HdRenderDelegate
 ///
-class HdRenderDelegate : public HfPluginBase
+class HdRenderDelegate
 {
 public:
     HD_API
