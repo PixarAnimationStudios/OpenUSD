@@ -84,6 +84,7 @@ GusdCurvesWrapper(
         const UsdStagePtr& stage,
         const SdfPath& path,
         bool isOverride )
+    : m_forceCreateNewGeo( false )
 {
     initUsdPrim( stage, path, isOverride );
 }
@@ -96,6 +97,7 @@ GusdCurvesWrapper(
         const GusdPurposeSet&           purposes )
     : GusdPrimWrapper( time, purposes )
     , m_usdCurvesForRead( usdCurves, stage->GetLock() )
+    , m_forceCreateNewGeo( false )
 {
 }
 
@@ -109,6 +111,7 @@ initUsdPrim(const UsdStagePtr& stage,
             bool asOverride)
 {
     bool newPrim = true;
+    m_forceCreateNewGeo = false;
     if( asOverride ) {
         UsdPrim existing = stage->GetPrimAtPath( path );
         if( existing ) {
@@ -120,6 +123,7 @@ initUsdPrim(const UsdStagePtr& stage,
             // new inside surfaces in one export. So if we don't find an existing prim
             // with the given path, create a new one.
             m_usdCurvesForWrite = UsdGeomBasisCurves::Define( stage, path );
+            m_forceCreateNewGeo = true;
         }
     }
     else {
@@ -145,8 +149,6 @@ defineForWrite(
 
     auto sourceCurves = UTverify_cast<const GT_PrimCurveMesh*>(sourcePrim.get());
 
-    bool overlayGeo = ctxt.getOverGeo( sourcePrim );
-
     // For most types, the prim wrapper base classes decides what type USD prim to 
     // create based on the type of the GT prim. However, Basis curves and NURBs share
     // the same GT type.
@@ -156,7 +158,7 @@ defineForWrite(
     if( sourceCurves->getBasis() == GT_BASIS_BSPLINE && sourceCurves->knots() ) {
 
         bool validNURB = true;
-        if( overlayGeo ) {
+        if( ctxt.writeOverlay ) {
             UsdPrim existing = stage->GetPrimAtPath( path );
             if( existing && existing.IsA<UsdGeomBasisCurves>() ) {
                 validNURB = false;
@@ -168,14 +170,14 @@ defineForWrite(
                             sourcePrim, 
                             stage, 
                             path, 
-                            overlayGeo );
+                            ctxt.writeOverlay );
         }
     }
     return new GusdCurvesWrapper( 
                     sourcePrim,
                     stage, 
                     path, 
-                    overlayGeo );
+                    ctxt.writeOverlay );
 }
 
 GT_PrimitiveHandle GusdCurvesWrapper::
@@ -198,7 +200,7 @@ redefine( const UsdStagePtr& stage,
           const GusdContext& ctxt,
           const GT_PrimitiveHandle& sourcePrim )
 {
-    initUsdPrim( stage, path, ctxt.getOverGeo( sourcePrim ));
+    initUsdPrim( stage, path, ctxt.writeOverlay );
     clearCaches();
     return true;
 }
@@ -631,17 +633,11 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
         return false;
     }
 
-    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
-    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
-    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
-    bool overlayAll =        ctxt.getOverAll( sourcePrim );
+    bool writeOverlay = ctxt.writeOverlay && !m_forceCreateNewGeo;
 
     // While I suppose we could write both points and transforms, it gets confusing,
-    // and I don't this its necessary so lets not.
-    if( overlayPoints || overlayAll ) {
-        overlayTransforms = false;
-    }
-    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
+    // and I don't thik its necessary so lets not.
+    bool overlayTransforms = ctxt.overlayTransforms && !ctxt.overlayPoints;
 
     // USD only supports linear and cubic curves. Houdini supports higher order
     // curves but we just issue a warning when we see them.
@@ -667,7 +663,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
 
     bool closed = gtCurves->getWrap();
 
-    if( writeNewGeo || overlayAll ) {
+    if( !writeOverlay || ctxt.overlayAll ) {
 
         m_usdCurvesForWrite.CreateTypeAttr().Set( 
             order == 2 ? UsdGeomTokens->linear : UsdGeomTokens->cubic );
@@ -701,20 +697,20 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     // If we are writing points for an overlay but not writing transforms, 
     // then we have to transform the points into the proper space.
     bool transformPoints = 
-        (overlayPoints || overlayAll) && 
+        writeOverlay && ctxt.overlayPoints && 
         !GusdUT_Gf::Cast(loc_xform).isIdentity();
 
     GT_Owner attrOwner = GT_OWNER_INVALID;
     GT_DataArrayHandle houAttr;
     UsdAttribute usdAttr;
     
-    if( writeNewGeo && ctxt.purpose != UsdGeomTokens->default_ ) {
+    if( !writeOverlay && ctxt.purpose != UsdGeomTokens->default_ ) {
         m_usdCurvesForWrite.GetPurposeAttr().Set( ctxt.purpose );
     }
 
     // intrinsic attributes ----------------------------------------------------
 
-    if( writeNewGeo || overlayAll || overlayTransforms || overlayPoints) {
+    if( !writeOverlay || ctxt.overlayAll || overlayTransforms || ctxt.overlayPoints) {
 
         // extent ------------------------------------------------------------------
         houAttr = GusdGT_Utils::getExtentsArray(sourcePrim);
@@ -726,17 +722,17 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     }
 
     // transform ---------------------------------------------------------------
-    if( writeNewGeo || overlayAll || overlayTransforms) {
+    if( !writeOverlay || ctxt.overlayAll || overlayTransforms) {
         updateTransformFromGTPrim( xform, ctxt.time, 
                                    ctxt.granularity == GusdContext::PER_FRAME );
     }
 
     // visibility ---------------------------------------------------------------
     updateVisibilityFromGTPrim(sourcePrim, ctxt.time, 
-                               (writeNewGeo || overlayAll) && 
+                               (!ctxt.writeOverlay || ctxt.overlayAll) && 
                                 ctxt.granularity == GusdContext::PER_FRAME );
 
-    if( writeNewGeo || overlayAll || overlayPoints ) {
+    if( !writeOverlay || ctxt.overlayAll || ctxt.overlayPoints ) {
         
         // P
         houAttr = sourcePrim->findAttribute("P", attrOwner, 0);
@@ -747,7 +743,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
         updateAttributeFromGTPrim( attrOwner, "P", houAttr, usdAttr, ctxt.time );
     }
     
-    if( writeNewGeo || overlayAll ) {
+    if( !writeOverlay || ctxt.overlayAll ) {
         // Vertex counts
         houAttr = gtCurves->getCurveCounts();
         usdAttr = m_usdCurvesForWrite.GetCurveVertexCountsAttr();
@@ -764,7 +760,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
                                    houAttr, usdAttr, ctxt.time );
     }
 
-    if( writeNewGeo || overlayAll || overlayPoints ) {
+    if( !writeOverlay || ctxt.overlayAll || ctxt.overlayPoints ) {
         // N
         houAttr = sourcePrim->findAttribute("N", attrOwner, 0);
         usdAttr = m_usdCurvesForWrite.GetNormalsAttr();
@@ -790,7 +786,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     
     // primvars ----------------------------------------------------------------
     
-    if( writeNewGeo || overlayAll || overlayPrimvars ) {
+    if( !writeOverlay || ctxt.overlayAll || ctxt.overlayPrimvars ) {
 
         // TODO check that varying & facevarying working -- houdini might not support
         // facevarying through GT

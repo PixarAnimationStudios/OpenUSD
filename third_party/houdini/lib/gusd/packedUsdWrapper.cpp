@@ -87,7 +87,7 @@ defineForWrite(
         const SdfPath& path,
         const GusdContext& ctxt)
 {
-    return new GusdPackedUsdWrapper( stage, path, ctxt.getOverGeo( sourcePrim ));
+    return new GusdPackedUsdWrapper( stage, path, ctxt.writeOverlay );
 }
 
 bool GusdPackedUsdWrapper::
@@ -200,14 +200,7 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         return false;
     }
 
-    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
-    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
-    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
-    bool overlayAll =        ctxt.getOverAll( sourcePrim );
-
-    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
-
-    if( writeNewGeo ) {
+    if( !ctxt.writeOverlay ) {
 
         string fileName = gtPackedUSD->getAuxFileName().toStdString();
         if( fileName.empty() )
@@ -287,12 +280,13 @@ GusdPackedUsdWrapper::updateFromGTPrim(
     }
 
     updateVisibilityFromGTPrim(sourcePrim, ctxt.time, 
-                               (writeNewGeo || overlayAll) && 
+                               (!ctxt.writeOverlay || ctxt.overlayAll) && 
                                 ctxt.granularity == GusdContext::PER_FRAME );
 
     // transform ---------------------------------------------------------------
 
-    if( writeNewGeo || overlayAll || overlayPoints || overlayTransforms ) {
+    if( !ctxt.writeOverlay || ctxt.overlayAll || 
+        ctxt.overlayPoints || ctxt.overlayTransforms ) {
 
         GfMatrix4d xform = computeTransform( 
                                 m_primRefForWrite.GetPrim().GetParent(),

@@ -23,7 +23,7 @@ pxr_shared_library(${PXR_PACKAGE}
         GU_PackedUSD
         GU_USD
         OP_ParmChangeMicroNode
-        context
+        writeCtrlFlags
         primWrapper
         PRM_Shared
         refiner
@@ -49,6 +49,7 @@ pxr_shared_library(${PXR_PACKAGE}
         xformWrapper
 
     PUBLIC_HEADERS
+        context.h
         api.h
         gusd.h
         purpose.h

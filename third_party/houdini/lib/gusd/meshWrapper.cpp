@@ -97,6 +97,7 @@ GusdMeshWrapper::GusdMeshWrapper(
         const SdfPath& path,
         const GusdContext& ctxt,
         bool isOverride )
+    : m_forceCreateNewGeo( false )
 {
     initUsdPrim( stage, path, isOverride );
     initialize( ctxt, sourcePrim );
@@ -109,6 +110,7 @@ GusdMeshWrapper::GusdMeshWrapper(
         const GusdPurposeSet& purposes )
     : GusdPrimWrapper( time, purposes )
     , m_usdMeshForRead( mesh, stage->GetLock() )
+    , m_forceCreateNewGeo( false )
 {
 }    
 
@@ -116,6 +118,7 @@ GusdMeshWrapper::GusdMeshWrapper( const GusdMeshWrapper &in )
     : GusdPrimWrapper( in )
     , m_usdMeshForRead( in.m_usdMeshForRead )
     , m_usdMeshForWrite( in.m_usdMeshForWrite )
+    , m_forceCreateNewGeo( false )
 {
 }
 
@@ -130,6 +133,7 @@ initUsdPrim(const UsdStagePtr& stage,
             bool asOverride)
 {
     bool newPrim = true;
+    m_forceCreateNewGeo = false;
     if( asOverride ) {
         UsdPrim existing = stage->GetPrimAtPath( path );
         if( existing ) {
@@ -141,6 +145,7 @@ initUsdPrim(const UsdStagePtr& stage,
             // new inside surfaces in one export. So if we don't find an existing prim
             // with the given path, create a new one.
             m_usdMeshForWrite = UsdGeomMesh::Define( stage, path );
+            m_forceCreateNewGeo = true;
         }
     }
     else {
@@ -164,7 +169,7 @@ defineForWrite(
                             stage,
                             path,
                             ctxt,
-                            ctxt.getOverGeo( sourcePrim ));
+                            ctxt.writeOverlay);
 }
 
 GT_PrimitiveHandle GusdMeshWrapper::
@@ -186,7 +191,7 @@ redefine( const UsdStagePtr& stage,
           const GusdContext& ctxt,
           const GT_PrimitiveHandle& sourcePrim )
 {
-    initUsdPrim( stage, path, ctxt.getOverGeo( sourcePrim ));
+    initUsdPrim( stage, path, ctxt.writeOverlay );
     clearCaches();
 
     initialize( ctxt, sourcePrim );
@@ -198,14 +203,9 @@ void GusdMeshWrapper::
 initialize( const GusdContext& ctxt,
             const GT_PrimitiveHandle& sourcePrim )
 {
-    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
-    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
-    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
-    bool overlayAll =        ctxt.getOverAll( sourcePrim );
-    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
-
          // Set defaults from source prim if one was passed in
-    if((writeNewGeo || overlayAll) && isValid() && sourcePrim) {
+    if((m_forceCreateNewGeo || !ctxt.writeOverlay || ctxt.overlayAll) && 
+       isValid() && sourcePrim) {
         
         UsdAttribute usdAttr;
 
@@ -219,7 +219,7 @@ initialize( const GusdContext& ctxt,
             // otherwise just write the left handled verts directly.
             TfToken orientation;
             usdAttr.Get(&orientation, UsdTimeCode::Default());
-            if( writeNewGeo && orientation == UsdGeomTokens->rightHanded ) {
+            if( !ctxt.writeOverlay && orientation == UsdGeomTokens->rightHanded ) {
                 usdAttr.Set(UsdGeomTokens->leftHanded, UsdTimeCode::Default());
             }
         }
@@ -740,21 +740,15 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         return false;
     }
 
-    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
-    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
-    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
-    bool overlayAll =        ctxt.getOverAll( sourcePrim );
+    bool writeOverlay = ctxt.writeOverlay && !m_forceCreateNewGeo;
 
     // While I suppose we could write both points and transforms, it gets confusing,
-    // and I don't this its necessary so lets not.
-    if( overlayPoints || overlayAll ) {
-        overlayTransforms = false;
-    }
-    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
+    // and I don't thik its necessary so lets not.
+    bool overlayTransforms = ctxt.overlayTransforms && !ctxt.overlayPoints;
 
     bool reverseWindingOrder = false;
     GT_DataArrayHandle vertexIndirect;
-    if( overlayPrimvars || overlayAll ) {
+    if( writeOverlay && (ctxt.overlayPrimvars || ctxt.overlayPoints) && !ctxt.overlayAll ) {
 
         // If we are writing an overlay, we need to write geometry that matches
         // the orientation of the underlying prim. All geometry in Houdini is left
@@ -797,10 +791,10 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     // If we are writing points for an overlay but not writing transforms, 
     // then we have to transform the points into the proper space.
     bool transformPoints = 
-        (overlayPoints || overlayAll) && 
+        writeOverlay && ctxt.overlayPoints && 
         !GusdUT_Gf::Cast(loc_xform).isIdentity();
 
-    if( writeNewGeo && ctxt.purpose != UsdGeomTokens->default_ ) {
+    if( !writeOverlay && ctxt.purpose != UsdGeomTokens->default_ ) {
         m_usdMeshForWrite.GetPurposeAttr().Set( ctxt.purpose );
     }
 
@@ -810,7 +804,8 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     GT_DataArrayHandle houAttr;
     UsdAttribute usdAttr;
     
-    if( writeNewGeo || overlayAll || overlayTransforms || overlayPoints ) {
+    if( !writeOverlay || ctxt.overlayAll || 
+        ctxt.overlayPoints || overlayTransforms ) {
         // extent
         houAttr = GusdGT_Utils::getExtentsArray(sourcePrim);
 
@@ -822,18 +817,18 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     }
 
     // transform ---------------------------------------------------------------
-    if( writeNewGeo || overlayTransforms ) {
+    if( !writeOverlay || overlayTransforms ) {
 
         updateTransformFromGTPrim( xform, ctxt.time, 
                                    ctxt.granularity == GusdContext::PER_FRAME );
     }
 
     updateVisibilityFromGTPrim(sourcePrim, ctxt.time, 
-                               (writeNewGeo || overlayAll) && 
+                               (!ctxt.writeOverlay || ctxt.overlayAll) && 
                                 ctxt.granularity == GusdContext::PER_FRAME );
 
     //  Points
-    if( writeNewGeo || overlayAll || overlayPoints ) {
+    if( !writeOverlay || ctxt.overlayAll || ctxt.overlayPoints ) {
         
         // P
         houAttr = sourcePrim->findAttribute("P", attrOwner, 0);
@@ -875,7 +870,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     }
 
     // Topology
-    if( writeNewGeo || overlayAll ) {
+    if( !writeOverlay || ctxt.overlayAll ) {
         // FaceVertexCounts
         GT_DataArrayHandle houVertexCounts = gtMesh->getFaceCounts();
         usdAttr = m_usdMeshForWrite.GetFaceVertexCountsAttr();
@@ -941,7 +936,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
         // primvars ----------------------------------------------------------------
 
-    if( writeNewGeo || overlayAll || overlayPrimvars ) {
+    if( !writeOverlay || ctxt.overlayAll || ctxt.overlayPrimvars ) {
 
         GusdGT_AttrFilter filter = ctxt.attributeFilter;
         filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^visible ^usdactive");

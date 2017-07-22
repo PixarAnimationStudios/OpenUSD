@@ -1250,11 +1250,6 @@ renderFrame(fpreal time,
     // If writing an overlay and a prim has an instinsic path, write the prim to that path
     refiner.m_useUSDIntrinsicNames = overlayGeo;
 
-    // Build a structure to hold the data that the wrapper prims need to 
-    // write to USD.
-    GusdContext ctxt( UsdTimeCode(frame), 
-                      GusdContext::Granularity(m_granularity), 
-                      m_primvarFilter );
     // Check for a (usd)instancepath paramter/property to set as the default
     // value. This tells us to build a point instancer.
     UT_String usdInstancePath;
@@ -1267,8 +1262,12 @@ renderFrame(fpreal time,
     }
     if(usdInstancePath.isstring()) {
         refiner.m_buildPointInstancer = true;
-        ctxt.usdInstancePath = usdInstancePath;
     }
+
+    refiner.m_writeCtrlFlags.overAll = overlayAll;
+    refiner.m_writeCtrlFlags.overPoints = overlayPoints;
+    refiner.m_writeCtrlFlags.overTransforms = overlayXforms;
+    refiner.m_writeCtrlFlags.overPrimvars = overlayPrimvars;
 
     refiner.refineDetail( cookedGeoHdl, refineParms );
 
@@ -1278,7 +1277,17 @@ renderFrame(fpreal time,
 
     DBG( cerr << "Num of refined gt prims = " << gprimArray.size() << endl );
 
-    UT_Set<SdfPath> gprimsProcessedThisFrame;
+    // Build a structure to hold the data that the wrapper prims need to 
+    // write to USD.
+    GusdContext ctxt( UsdTimeCode(frame), 
+                      GusdContext::Granularity(m_granularity), 
+                      m_primvarFilter );
+
+    if(usdInstancePath.isstring()) {
+        ctxt.usdInstancePath = usdInstancePath;
+    }
+
+    ctxt.writeOverlay = overlayGeo;
 
     // Check for a usdprototypespath paramter/property to set as the default
     // for point instancing.
@@ -1302,12 +1311,6 @@ renderFrame(fpreal time,
         objNode->evalParameterOrProperty("usdtimescale", 0, 0, usdTimeScale);
     }
     ctxt.usdTimeScale = usdTimeScale;
-
-    ctxt.overlayAll = overlayAll;
-    ctxt.overlayGeo = overlayGeo;
-    ctxt.overlayPoints = overlayPoints;
-    ctxt.overlayTransforms = overlayXforms;
-    ctxt.overlayPrimvars = overlayPrimvars;
 
     if( m_hasPartitionAttr )
         ctxt.primPathAttribute = m_partitionAttrName;
@@ -1335,14 +1338,24 @@ renderFrame(fpreal time,
                 const GusdRefinerCollector::GprimArrayEntry& b ) -> bool
             { return a.path < b.path; } );
 
+    UT_Set<SdfPath> gprimsProcessedThisFrame;
     GusdSimpleXformCache xformCache;
 
-    // Iterate over the prims we need to write
+    // Iterate over the refined prims and write
     for( auto& gtPrim : gPrims ) {
 
         const SdfPath& primPath = gtPrim.path;
 
         DBG(cerr << "Write prim: " << primPath << ", type = " << gtPrim.prim->className() << endl);
+
+        // Copy properties that were accumulated in the refiner and stored with 
+        // the refined prim to the context.
+        ctxt.purpose = gtPrim.purpose;
+        const GusdWriteCtrlFlags& flags = gtPrim.writeCtrlFlags;
+        ctxt.overlayPoints =     overlayGeo && (flags.overPoints || flags.overAll);
+        ctxt.overlayTransforms = overlayGeo && (flags.overTransforms || flags.overAll);
+        ctxt.overlayPrimvars =   overlayGeo && (flags.overPrimvars || flags.overAll);
+        ctxt.overlayAll =        overlayGeo && flags.overAll;
 
         gprimsProcessedThisFrame.insert(primPath);
 
@@ -1404,8 +1417,6 @@ renderFrame(fpreal time,
             GusdPrimWrapper* primPtr
                     = UTverify_cast<GusdPrimWrapper*>(usdPrim.get());
 
-            ctxt.purpose = gtPrim.purpose;
-            
             // Copy attributes from gt prim to USD prim.
             primPtr->updateFromGTPrim(gtPrim.prim,
                                       gtPrim.xform,
@@ -1530,7 +1541,7 @@ renderFrame(fpreal time,
 
         bindAndWriteShaders(usdRefShaderMap, houMaterialMap);
     }
-
+    
     if (overlayGeo) {
         // If doing an overlay of xforms or points (basically any overlay type
         // except primvars) then bounds have likely changed due to prims being

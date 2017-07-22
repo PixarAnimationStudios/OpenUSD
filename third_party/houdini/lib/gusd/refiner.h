@@ -35,6 +35,8 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/sdf/path.h>
 
+#include "writeCtrlFlags.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class GusdRefiner
@@ -74,17 +76,20 @@ public:
         GT_PrimitiveHandle  prim;
         UT_Matrix4D         xform;
         TfToken             purpose;
+        GusdWriteCtrlFlags  writeCtrlFlags;
 
         GprimArrayEntry() {}
         GprimArrayEntry( 
             const SdfPath&              path, 
             const GT_PrimitiveHandle&   prim,
             const UT_Matrix4D&          xform,
-            const TfToken&              purpose )
+            const TfToken&              purpose,
+            const GusdWriteCtrlFlags&   writeCtrlFlags )
                 : path( path )
                 , prim( prim )
                 , xform( xform )
-                , purpose(purpose) {}
+                , purpose(purpose)
+                , writeCtrlFlags(writeCtrlFlags) {}
     };
     using GprimArray = std::vector<GprimArrayEntry>;
 
@@ -156,6 +161,8 @@ public:
     // "PointInstancer").
     std::string             m_pointInstancerType;  
 
+    GusdWriteCtrlFlags      m_writeCtrlFlags;
+
     /////////////////////////////////////////////////////////////////////////////
 
 private:
@@ -215,7 +222,8 @@ public:
         bool                        explicitPrimPath,
         GT_PrimitiveHandle          prim,
         const UT_Matrix4D&          xform,
-        const TfToken &             purpose );
+        const TfToken &             purpose,
+        const GusdWriteCtrlFlags&   writeCtrlFlags );
 
     /// Add a prim to be added to a point instancer during finish
     void addInstPrim( const SdfPath& path, GT_PrimitiveHandle p, int index=0 );

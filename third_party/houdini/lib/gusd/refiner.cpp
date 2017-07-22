@@ -448,7 +448,8 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
                                                 addNumericSuffix,
                                                 gtPrim,
                                                 newCtm,
-                                                purpose );
+                                                purpose,
+                                                m_writeCtrlFlags );
             
                     // If we are just writing transforms and encounter a packed prim, we 
                     // just want to write it's transform and not refine it further.
@@ -465,6 +466,9 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
                     childRefiner.m_refinePackedPrims = refinePackedPrims;
                     childRefiner.m_forceGroupTopPackedPrim = m_forceGroupTopPackedPrim;
                     childRefiner.m_isTopLevel = false;
+
+                    childRefiner.m_writeCtrlFlags = m_writeCtrlFlags;
+                    childRefiner.m_writeCtrlFlags.update( geometry );
 
 #if UT_MAJOR_VERSION_INT >= 16
                     childRefiner.refineDetail( packedGeo->getPackedDetail(), m_refineParms );
@@ -499,7 +503,8 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
                          addNumericSuffix,
                          gtPrim,
                          newCtm,
-                         purpose);
+                         purpose,
+                         m_writeCtrlFlags );
     }
     else {
         gtPrim->refine( *this, &m_refineParms );
@@ -512,8 +517,14 @@ GusdRefinerCollector::add(
     bool                        addNumericSuffix,
     GT_PrimitiveHandle          prim,
     const UT_Matrix4D&          xform,
-    const TfToken &             purpose )
+    const TfToken &             purpose,
+    const GusdWriteCtrlFlags&   writeCtrlFlagsIn )
 {
+    // Update the write control flags from the attributes on the prim
+    GusdWriteCtrlFlags writeCtrlFlags = writeCtrlFlagsIn;
+
+    writeCtrlFlags.update( prim );
+
     // If addNumericSuffix is true, use the name directly unless there
     // is a conflict. Otherwise add a numeric suffix to keep names unique.
     int64_t count = 0;
@@ -522,7 +533,7 @@ GusdRefinerCollector::add(
         // Name has not been used before
         m_names[path] = NameInfo(m_gprims.size() - 1);
         if( !addNumericSuffix ) {
-            m_gprims.push_back(GprimArrayEntry(path,prim,xform,purpose));
+            m_gprims.push_back(GprimArrayEntry(path,prim,xform,purpose,writeCtrlFlags));
             return path;
         }
     }
@@ -546,7 +557,8 @@ GusdRefinerCollector::add(
 
     // Add a numeric suffix to get a unique name
     SdfPath newPath( TfStringPrintf( "%s_%ld", path.GetText(), count ));
-    m_gprims.push_back(GprimArrayEntry(newPath,prim,xform,purpose));
+
+    m_gprims.push_back(GprimArrayEntry(newPath,prim,xform,purpose,writeCtrlFlags));
     return newPath;
 }
 

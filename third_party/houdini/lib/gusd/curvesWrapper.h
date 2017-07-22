@@ -102,6 +102,7 @@ private:
 
     GusdUSD_CurvesHolder        m_usdCurvesForRead;
     UsdGeomBasisCurves          m_usdCurvesForWrite;
+    bool                        m_forceCreateNewGeo;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

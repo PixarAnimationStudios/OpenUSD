@@ -84,7 +84,7 @@ defineForWrite(
         const SdfPath& path,
         const GusdContext& ctxt)
 {
-    return new GusdPointsWrapper( stage, path, ctxt.getOverGeo( sourcePrim ));
+    return new GusdPointsWrapper( stage, path, ctxt.writeOverlay );
 }
 
 GT_PrimitiveHandle GusdPointsWrapper::
@@ -107,7 +107,7 @@ redefine( const UsdStagePtr& stage,
           const GusdContext& ctxt,
           const GT_PrimitiveHandle& sourcePrim )
 {
-    initUsdPrim( stage, path, ctxt.getOverGeo( sourcePrim ));
+    initUsdPrim( stage, path, ctxt.writeOverlay );
     clearCaches();
     return true;
 }
@@ -292,18 +292,6 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         return false;
     }
 
-    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
-    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
-    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
-    bool overlayAll =        ctxt.getOverAll( sourcePrim );
-
-    // While I suppose we could write both points and transforms, it gets confusing,
-    // and I don't this its necessary so lets not.
-    if( overlayPoints || overlayAll ) {
-        overlayTransforms = false;
-    }
-    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
-
     GfMatrix4d xform = computeTransform( 
                             m_usdPointsForWrite.GetPrim().GetParent(),
                             ctxt.time,
@@ -327,13 +315,13 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
     // intrinsic attributes ----------------------------------------------------
 
-    if( writeNewGeo && ctxt.purpose != UsdGeomTokens->default_ ) {
+    if( !ctxt.writeOverlay && ctxt.purpose != UsdGeomTokens->default_ ) {
         m_usdPointsForWrite.GetPurposeAttr().Set( ctxt.purpose );
     }
 
     // visibility
     updateVisibilityFromGTPrim(sourcePrim, ctxt.time, 
-                               (writeNewGeo || overlayAll) && 
+                               (!ctxt.writeOverlay || ctxt.overlayAll) && 
                                 ctxt.granularity == GusdContext::PER_FRAME );
 
     // P
