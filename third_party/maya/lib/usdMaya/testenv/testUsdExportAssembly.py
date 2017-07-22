@@ -80,5 +80,12 @@ class testUsdExportAssembly(unittest.TestCase):
         self.assertEqual(children[0].GetPath(),
                 "/GoodCollapsedAssembly/DummyChild")
 
+    def testAssemblyWithClasses(self):
+        """
+        Tests that classes were exported.
+        """
+        assembly = self._stage.GetPrimAtPath('/AssemblyWithClasses')
+        self.assertTrue(assembly.HasAuthoredInherits())
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
