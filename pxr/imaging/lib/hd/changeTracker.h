@@ -472,12 +472,12 @@ public:
 
     /// Returns the current version of the named collection.
     HD_API
-    unsigned GetCollectionVersion(TfToken const& collectionName);
+    unsigned GetCollectionVersion(TfToken const& collectionName) const;
 
     /// Returns the number of changes to visibility. This is intended to be used
     /// to detect when visibility has changed for *any* Rprim.
     HD_API
-    unsigned GetVisibilityChangeCount();
+    unsigned GetVisibilityChangeCount() const;
 
     /// Returns the current version of varying state. This is used to refresh
     /// cached DirtyLists
