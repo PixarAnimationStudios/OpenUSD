@@ -323,6 +323,16 @@ HdPrimGather::_WriteResults(const SdfPathVector &paths,
                             SdfPathVector *results) const
 {
     results->clear();
+
+    size_t numPaths = 0;
+    for (_RangeArray::const_iterator it  = ranges.begin();
+                                     it != ranges.end();
+                                   ++it) {
+        numPaths += (it->_end - it->_start) + 1; // +1 for inclusive range.
+    }
+
+    results->reserve(numPaths);
+
     for (_RangeArray::const_iterator it  = ranges.begin();
                                      it != ranges.end();
                                    ++it) {
@@ -336,6 +346,5 @@ HdPrimGather::_WriteResults(const SdfPathVector &paths,
         results->insert(results->end(), rangeStartIt, rangeEndIt);
     }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
