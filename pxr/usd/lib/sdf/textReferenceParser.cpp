@@ -84,10 +84,18 @@ Sdf_ParseExternalReferences(
     // Note that having the same asset path in an external reference
     // statement (with or without different delimiters) will result in
     // duplicates in the corresponding output vector.
+    //
+    // The order of the regexes is important, otherwise an asset path
+    // like @@@foo.sdf@bar@@@ would match the shorter regex and cause
+    // the "@bar" part of the path to be ignored.
     boost::regex assetRef(
-        "@([^[:cntrl:]@]+)?@"
+        "@@@((([^[:cntrl:]@]|@{1,2}[^@]|\\\\@@@)+)?(@{0,2}))@@@"
         "|"
-        "@@@(([^[:cntrl:]@]|@{1,2}[^@]|\\@@@)+)?(@{0,2})@@@");
+        "@([^[:cntrl:]@]+)?@"
+        );
+
+    // Sub-expressions 1 and 5 contain the matched asset paths.
+    const int submatches[2] = { 1, 5 };
 
     for (auto lineIter = begin; lineIter != end; ++lineIter) {
         const string& line = *lineIter;
@@ -109,7 +117,8 @@ Sdf_ParseExternalReferences(
         if (type == _Tokens->baseAsset)
             continue;
 
-        boost::sregex_token_iterator it(line.begin(), line.end(), assetRef, 1);
+        boost::sregex_token_iterator it(
+            line.begin(), line.end(), assetRef, submatches);
         boost::sregex_token_iterator end;
         for ( ; it != end ; ++it) {
             if (!it->length())

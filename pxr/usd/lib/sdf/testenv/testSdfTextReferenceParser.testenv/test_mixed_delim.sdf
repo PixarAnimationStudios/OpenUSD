@@ -34,7 +34,7 @@ def "foo" (
                 asset[] v_meta_a = [@./v_meta_b.sdf@, @@@./v_meta_c.sdf@@@, @@@./v_meta_d.sdf@@@, @./v_meta_e.sdf@, @./v_meta_c.sdf@]
             }
         ) {
-            asset[] v_attr_b = [@@@./v_attr_b.sdf@@@, @./v_attr_c.sdf@, @@@./v_attr_d.sdf@@@, @./v_attr_e.sdf@, @./v_attr_c.sdf@]
+            asset[] v_attr_b = [@@@./v_attr_b.sdf@1@@@, @./v_attr_c.sdf$2@, @@@./v_attr_d.sdf#3@@@@@, @./v_attr_e.sdf?4@, @./v_attr_c.sdf@]
         }
     }
 }

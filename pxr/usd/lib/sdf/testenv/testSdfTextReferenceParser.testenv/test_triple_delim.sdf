@@ -21,8 +21,8 @@ def "foo" (
 
     def "bar" (
         references = [
-            @@@./ref_a.sdf@@@,
-            @@@./ref_b.sdf@@@
+            @@@./ref_a.sdf@1@@@,
+            @@@./ref_b.sdf#2@@@
         ]
     )
     {
@@ -31,12 +31,12 @@ def "foo" (
     variantSet "standin" = {
         "full" (
             assetInfo = {
-                asset[] v_meta_a = [@@@./v_meta_a.sdf@@@, @@@./v_meta_b.sdf@@@]
+                asset[] v_meta_a = [@@@./v_meta_a.sdf@foo@@@, @@@./v_meta_b.sdf@bar@@@]
             }
             references = @@@./v_ref_a.sdf@@@
         ) {
-            asset v_attr_a = @@@./v_attr_a.sdf@@@
-            asset[] v_attr_b = [@@@./v_attr_b.sdf@@@, @@@./v_attr_c.sdf@@@]
+            asset v_attr_a = @@@./v_attr_a.sdf@foo@@@
+            asset[] v_attr_b = [@@@./v_attr_b.sdf#foo@@@, @@@./v_attr_c.sdf?foo@@@]
         }
     }
 }
