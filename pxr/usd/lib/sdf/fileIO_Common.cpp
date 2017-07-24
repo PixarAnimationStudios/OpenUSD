@@ -38,45 +38,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static const char *_IndentString = "    ";
 
-// basically duplicate Vt::Array::_StreamRecursive() but specialize for
-// string arrays by putting in quotes
-template <class T>
-static void
-_StringFromVtStringArray(
-    string *valueStr,
-    const VtArray<T> &valArray)
-{
-    valueStr->append("[");
-    if (typename VtArray<T>::const_pointer d = valArray.cdata()) {
-        if (const size_t n = valArray.size()) {
-            valueStr->append(Sdf_FileIOUtility::Quote(d[0]));
-            for (size_t i = 1; i != n; ++i) {
-                valueStr->append(", ");
-                valueStr->append(Sdf_FileIOUtility::Quote(d[i]));
-            }
-        }
-    }
-    valueStr->append("]");
-}
-
-// Helper to created a quoted string if the given value is holding a 
-// string-valued type (specified by T).
-template <class T>
-static bool
-_StringFromVtStringValue(string* valueStr, const VtValue& value)
-{
-    if (value.IsHolding<T>()) {
-        *valueStr = Sdf_FileIOUtility::Quote( value.UncheckedGet<T>() );
-        return true;
-    } 
-    else if (value.IsHolding<VtArray<T> >()) {
-        const VtArray<T>& valArray = value.UncheckedGet<VtArray<T> >();
-        _StringFromVtStringArray(valueStr,valArray);
-        return true;
-    }
-    return false;
-}
-
 // Helper for creating string representation of an asset path
 static string
 _StringFromAssetPath(const string& assetPath)
@@ -107,6 +68,61 @@ _StringFromAssetPath(const string& assetPath)
     }
 
     return *delim + s + *delim;
+}
+
+static string
+_StringFromValue(const string& s)
+{
+    return Sdf_FileIOUtility::Quote(s);
+}
+
+static string
+_StringFromValue(const TfToken& s)
+{
+    return Sdf_FileIOUtility::Quote(s);
+}
+
+static string
+_StringFromValue(const SdfAssetPath& assetPath)
+{
+    return _StringFromAssetPath(assetPath.GetAssetPath());
+}
+
+template <class T>
+static void
+_StringFromVtArray(
+    string *valueStr,
+    const VtArray<T> &valArray)
+{
+    valueStr->append("[");
+    if (typename VtArray<T>::const_pointer d = valArray.cdata()) {
+        if (const size_t n = valArray.size()) {
+            valueStr->append(_StringFromValue(d[0]));
+            for (size_t i = 1; i != n; ++i) {
+                valueStr->append(", ");
+                valueStr->append(_StringFromValue(d[i]));
+            }
+        }
+    }
+    valueStr->append("]");
+}
+
+// Helper for creating strings for VtValues holding certain types
+// that can't use TfStringify, and arrays of those types.
+template <class T>
+static bool
+_StringFromVtValueHelper(string* valueStr, const VtValue& value)
+{
+    if (value.IsHolding<T>()) {
+        *valueStr = _StringFromValue(value.UncheckedGet<T>());
+        return true;
+    }
+    else if (value.IsHolding<VtArray<T> >()) {
+        const VtArray<T>& valArray = value.UncheckedGet<VtArray<T> >();
+        _StringFromVtArray(valueStr,valArray);
+        return true;
+    }
+    return false;
 }
 
 // ------------------------------------------------------------
@@ -513,8 +529,9 @@ Sdf_FileIOUtility::_WriteDictionary(ostream &out,
                 // XXX: The logic here is very similar to that in
                 //      WriteDefaultValue. WBN to refactor.
                 string str;
-                if (_StringFromVtStringValue<string>(&str, value) || 
-                    _StringFromVtStringValue<TfToken>(&str, value)) {
+                if (_StringFromVtValueHelper<string>(&str, value) || 
+                    _StringFromVtValueHelper<TfToken>(&str, value) ||
+                    _StringFromVtValueHelper<SdfAssetPath>(&str, value)) {
                     Puts(out, 0, str);
                 } else {
                     Puts(out, 0, TfStringify(value));
@@ -712,8 +729,9 @@ string
 Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
 {
     string s;
-    if (_StringFromVtStringValue<string>(&s, value) || 
-        _StringFromVtStringValue<TfToken>(&s, value)) {
+    if (_StringFromVtValueHelper<string>(&s, value) || 
+        _StringFromVtValueHelper<TfToken>(&s, value) ||
+        _StringFromVtValueHelper<SdfAssetPath>(&s, value)) {
         return s;
     }
     
@@ -725,10 +743,7 @@ Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
     } else if (value.IsHolding<signed char>()) {
         return TfStringify(
             static_cast<int>(value.UncheckedGet<signed char>()));
-    } else if (value.IsHolding<SdfAssetPath>()) {
-        return _StringFromAssetPath(
-            value.UncheckedGet<SdfAssetPath>().GetAssetPath());
-    } 
+    }
 
     return TfStringify(value);
 }
