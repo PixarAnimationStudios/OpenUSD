@@ -137,9 +137,8 @@ HdRprim::_GetReprName(HdSceneDelegate* delegate,
     return defaultReprName;
 }
 
-// Static
 HdDirtyBits
-HdRprim::_PropagateRprimDirtyBits(HdDirtyBits bits)
+HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
 {
     // If the dependent computations changed - assume all
     // primvars are dirty
@@ -166,7 +165,22 @@ HdRprim::_PropagateRprimDirtyBits(HdDirtyBits bits)
                  HdChangeTracker::DirtyNormals |
                  HdChangeTracker::DirtyPrimVar);
     }
-    return bits;
+
+    // Let subclasses propagate bits
+    return _PropagateDirtyBits(bits);
+}
+
+void
+HdRprim::InitRepr(HdSceneDelegate* delegate,
+                  TfToken const &defaultReprName,
+                  bool forced,
+                  HdDirtyBits *dirtyBits)
+{
+    TfToken reprName = _GetReprName(delegate, defaultReprName,
+                                    forced, dirtyBits);
+
+    _InitRepr(reprName, dirtyBits);
+
 }
 
 void

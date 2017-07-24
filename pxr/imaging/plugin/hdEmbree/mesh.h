@@ -130,6 +130,34 @@ protected:
     // the geometry object in the embree scene graph.
     virtual HdDirtyBits _GetInitialDirtyBits() const override;
 
+    // This callback from Rprim gives the prim an opportunity to set
+    // additional dirty bits based on those already set.  This is done
+    // before the dirty bits are passed to the scene delegate, so can be
+    // used to communicate that extra information is needed by the prim to
+    // process the changes.
+    //
+    // The return value is the new set of dirty bits, which replaces the bits
+    // passed in.
+    //
+    // See HdRprim::PropagateRprimDirtyBits()
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+
+    // Initialize the given representation of this Rprim.
+    // This is called prior to syncing the prim, the first time the repr
+    // is used.
+    //
+    // reprName is the name of the repr to initalize.  HdRprim has already
+    // resolved the reprName to its final value.
+    //
+    // dirtyBits is an in/out value.  It is initialized to the dirty bits
+    // from the change tracker.  InitRepr can then set additional dirty bits
+    // if additional data is required from the scene delegate when this
+    // repr is synced.  InitRepr occurs before dirty bit propagation.
+    //
+    // See HdRprim::InitRepr()
+    virtual void _InitRepr(TfToken const &reprName,
+                           HdDirtyBits *dirtyBits) override;
+
 private:
     // Populate the embree geometry object based on scene data.
     void _PopulateRtMesh(HdSceneDelegate *sceneDelegate,

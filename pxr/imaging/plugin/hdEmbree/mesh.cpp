@@ -93,6 +93,23 @@ HdEmbreeMesh::_GetInitialDirtyBits() const
     return (HdDirtyBits)mask;
 }
 
+HdDirtyBits
+HdEmbreeMesh::_PropagateDirtyBits(HdDirtyBits bits) const
+{
+    return bits;
+}
+
+void
+HdEmbreeMesh::_InitRepr(TfToken const &reprName,
+                        HdDirtyBits *dirtyBits)
+{
+    TF_UNUSED(reprName);
+    TF_UNUSED(dirtyBits);
+
+    // No-op
+}
+
+
 HdReprSharedPtr const &
 HdEmbreeMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
                        TfToken const &reprName,
