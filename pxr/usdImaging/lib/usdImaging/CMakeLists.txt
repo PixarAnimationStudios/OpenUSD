@@ -53,6 +53,7 @@ pxr_library(usdImaging
         pointsAdapter
         pointInstancerAdapter
         primAdapter
+        rectLightAdapter
         sphereAdapter
         sphereLightAdapter
         nurbsPatchAdapter

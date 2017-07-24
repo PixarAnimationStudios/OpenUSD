@@ -99,19 +99,26 @@
                         "isInternal": true,
                         "primTypeName": "Sphere"
                     },
-                    "UsdImagingSphereLightAdapter": {
-                        "bases": [
-                            "UsdImagingLightAdapter"
-                        ],
-                        "isInternal": true,
-                        "primTypeName": "SphereLight"
-                    },
                     "UsdImagingDomeLightAdapter": {
                         "bases": [
                             "UsdImagingLightAdapter"
                         ],
                         "isInternal": true,
                         "primTypeName": "DomeLight"
+                    },
+                    "UsdImagingRectLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "RectLight"
+                    },
+                    "UsdImagingSphereLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "SphereLight"
                     }
                 }
             },

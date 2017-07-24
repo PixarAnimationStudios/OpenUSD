@@ -210,8 +210,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (shader)                                    \
     /* Sprims Lights */                         \
     (light)                                     \
-    (sphereLight)                               \
     (domeLight)                                 \
+    (rectLight)                                 \
+    (sphereLight)                               \
                                                 \
     /* Bprims */                                \
     (texture)
