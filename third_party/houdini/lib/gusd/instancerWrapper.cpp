@@ -984,6 +984,13 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
         }
 
+        // w
+        houAttr = sourcePrim->findAttribute("w", attrOwner, 0);
+        usdAttr = m_usdPointInstancerForWrite.GetAngularVelocitiesAttr();
+        if(houAttr && usdAttr) {
+            GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
+        }
+
         // instance rotation and scale
         UsdAttribute usdPositionAttr = m_usdPointInstancerForWrite.GetPositionsAttr();
         UsdAttribute usdRotationAttr = m_usdPointInstancerForWrite.GetOrientationsAttr();
