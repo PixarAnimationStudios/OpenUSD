@@ -203,7 +203,7 @@ void GusdMeshWrapper::
 initialize( const GusdContext& ctxt,
             const GT_PrimitiveHandle& sourcePrim )
 {
-         // Set defaults from source prim if one was passed in
+    // Set defaults from source prim if one was passed in
     if((m_forceCreateNewGeo || !ctxt.writeOverlay || ctxt.overlayAll) && 
        isValid() && sourcePrim) {
         
@@ -219,7 +219,7 @@ initialize( const GusdContext& ctxt,
             // otherwise just write the left handled verts directly.
             TfToken orientation;
             usdAttr.Get(&orientation, UsdTimeCode::Default());
-            if( !ctxt.writeOverlay && orientation == UsdGeomTokens->rightHanded ) {
+            if( (m_forceCreateNewGeo || !ctxt.writeOverlay) && orientation == UsdGeomTokens->rightHanded ) {
                 usdAttr.Set(UsdGeomTokens->leftHanded, UsdTimeCode::Default());
             }
         }
