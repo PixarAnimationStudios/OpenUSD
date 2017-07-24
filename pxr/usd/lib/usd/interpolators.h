@@ -144,7 +144,7 @@ public:
         const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
         double time, double lower, double upper) final
     {
-        return clip->QueryTimeSample(specId, lower, _result);
+        return clip->QueryTimeSample(specId, lower, this, _result);
     }
 
 private:
@@ -220,17 +220,22 @@ private:
         // because the provided time samples should all have valid values.
         // So this call fails because our <T> is not an SdfValueBlock,
         // which is the type of the contained value.
-        if (!src->QueryTimeSample(specId, lower, &lowerValue)) {
+        Usd_LinearInterpolator<T> lowerInterpolator(&lowerValue);
+        Usd_LinearInterpolator<T> upperInterpolator(&upperValue);
+
+        if (!Usd_QueryTimeSample(
+                src, specId, lower, &lowerInterpolator, &lowerValue)) {
             return false;
         } 
-        else if (!src->QueryTimeSample(specId, upper, &upperValue)) {
+        else if (!Usd_QueryTimeSample(
+                src, specId, upper, &upperInterpolator, &upperValue)) {
             upperValue = lowerValue; 
         }
 
         const double parametricTime = (time - lower) / (upper - lower);
         *_result = Usd_Lerp(parametricTime, lowerValue, upperValue);
         return true;
-    }        
+    }
 
 private:
     T* _result;
@@ -275,10 +280,15 @@ private:
         // because the provided time samples should all have valid values.
         // So this call fails because our <T> is not an SdfValueBlock,
         // which is the type of the contained value.
-        if (!src->QueryTimeSample(specId, lower, &lowerValue)) {
+        Usd_LinearInterpolator<VtArray<T> > lowerInterpolator(&lowerValue);
+        Usd_LinearInterpolator<VtArray<T> > upperInterpolator(&upperValue);
+        
+        if (!Usd_QueryTimeSample(
+                src, specId, lower, &lowerInterpolator, &lowerValue)) {
             return false;
         } 
-        else if (!src->QueryTimeSample(specId, upper, &upperValue)) {
+        else if (!Usd_QueryTimeSample(
+                src, specId, upper, &upperInterpolator, &upperValue)) {
             upperValue = lowerValue;
         }
 
@@ -318,7 +328,8 @@ Usd_GetOrInterpolateValue(
     Usd_InterpolatorBase* interpolator, T* result)
 {
     if (GfIsClose(lower, upper, /* epsilon = */ 1e-6)) {
-        bool queryResult = src->QueryTimeSample(specId, lower, result);
+        bool queryResult = Usd_QueryTimeSample(
+            src, specId, lower, interpolator, result);
         return queryResult && (!Usd_ClearValueIfBlocked(result));
     }
 

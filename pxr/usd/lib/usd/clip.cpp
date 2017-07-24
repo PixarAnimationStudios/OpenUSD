@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/clipsAPI.h"
+#include "pxr/usd/usd/interpolators.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
@@ -1399,6 +1400,48 @@ Usd_Clip::GetLayerIfOpen() const
 
     return SdfLayerHandle();
 }
+
+template <class T>
+bool
+Usd_Clip::_Interpolate(
+    const SdfLayerRefPtr& clip, const _TranslatedSpecId& clipId,
+    InternalTime clipTime, Usd_InterpolatorBase* interpolator,
+    T* value) const
+{
+    double lowerInClip, upperInClip;
+    if (clip->GetBracketingTimeSamplesForPath(
+            clipId.id, clipTime, &lowerInClip, &upperInClip)) {
+            
+        return Usd_GetOrInterpolateValue(
+            clip, clipId.id, clipTime, lowerInClip, upperInClip,
+            interpolator, value);
+    }
+
+    return false;
+}
+
+#define _INSTANTIATE_INTERPOLATE(r, unused, elem)               \
+    template bool Usd_Clip::_Interpolate(                       \
+        const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
+        InternalTime, Usd_InterpolatorBase*,                    \
+        SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;              \
+    template bool Usd_Clip::_Interpolate(                       \
+        const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
+        InternalTime, Usd_InterpolatorBase*,                    \
+        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;        \
+
+BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_INTERPOLATE, ~, SDF_VALUE_TYPES)
+#undef _INSTANTIATE_INTERPOLATE
+
+template bool Usd_Clip::_Interpolate(
+    const SdfLayerRefPtr&, const _TranslatedSpecId&,
+    InternalTime, Usd_InterpolatorBase*,
+    SdfAbstractDataValue*) const;
+
+template bool Usd_Clip::_Interpolate(
+    const SdfLayerRefPtr&, const _TranslatedSpecId&,
+    InternalTime, Usd_InterpolatorBase*,
+    VtValue*) const;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

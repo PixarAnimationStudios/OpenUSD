@@ -25,15 +25,35 @@
 #define USD_VALUE_UTILS_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/clip.h"
 
 #include "pxr/usd/sdf/abstractData.h"
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Usd_InterpolatorBase;
+
 /// Returns true if \p value contains an SdfValueBlock, false otherwise.
+template <class T>
+inline bool
+Usd_ValueContainsBlock(const T* value)
+{
+    return false;
+}
+
+/// \overload
+template <class T>
+inline bool
+Usd_ValueContainsBlock(const SdfValueBlock* value)
+{
+    return value;
+}
+
+/// \overload
 inline bool 
 Usd_ValueContainsBlock(const VtValue* value) 
 {
@@ -57,6 +77,18 @@ Usd_ValueContainsBlock(const SdfAbstractDataConstValue* value)
 
 /// If \p value contains an SdfValueBlock, clear the value and
 /// return true. Otherwise return false.
+template <class T>
+inline bool
+Usd_ClearValueIfBlocked(T* value)
+{
+    // We can't actually clear the value here, since there's
+    // no good API for doing so. If the value is holding a
+    // block, we just return true and rely on the consumer
+    // to act as if the value were cleared.
+    return Usd_ValueContainsBlock(value);
+}
+
+/// \overload
 inline bool 
 Usd_ClearValueIfBlocked(VtValue* value) 
 {
@@ -68,15 +100,22 @@ Usd_ClearValueIfBlocked(VtValue* value)
     return false;
 }
 
-/// \overload
-inline bool 
-Usd_ClearValueIfBlocked(SdfAbstractDataValue* value) 
+template <class T>
+inline bool
+Usd_QueryTimeSample(
+    const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+    double time, Usd_InterpolatorBase* interpolator, T* result)
 {
-    // We can't actually clear the value here, since there's
-    // no good API for doing so. If the value is holding a
-    // block, we just return true and rely on the consumer
-    // to act as if the value were cleared.
-    return Usd_ValueContainsBlock(value);
+    return layer->QueryTimeSample(specId, time, result);
+}
+
+template <class T>
+inline bool
+Usd_QueryTimeSample(
+    const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+    double time, Usd_InterpolatorBase* interpolator, T* result)
+{
+    return clip->QueryTimeSample(specId, time, interpolator, result);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
