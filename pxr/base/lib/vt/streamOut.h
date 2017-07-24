@@ -89,7 +89,6 @@ VT_API std::ostream &VtStreamOut(unsigned char const &, std::ostream &);
 VT_API std::ostream &VtStreamOut(signed char const &, std::ostream &);
 VT_API std::ostream &VtStreamOut(float const &, std::ostream &);
 VT_API std::ostream &VtStreamOut(double const &, std::ostream &);
-VT_API std::ostream &VtStreamOut(class TfPyObjWrapper const &, std::ostream &);
 
 class VtStreamOutIterator {
 public:
@@ -101,6 +100,10 @@ struct Vt_Reserved;
 
 VT_API void VtStreamOutArray(VtStreamOutIterator*, size_t size,
                              const Vt_Reserved*, std::ostream&);
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+VT_API std::ostream &VtStreamOut(class TfPyObjWrapper const &, std::ostream &);
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
