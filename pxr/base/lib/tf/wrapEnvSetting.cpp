@@ -30,7 +30,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 extern boost::python::object Tf_GetEnvSettingByName(std::string const& name);
-extern boost::python::object Tf_GetEnvSettingDictionary();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
@@ -38,5 +37,4 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapEnvSetting() {
     def("GetEnvSetting", &Tf_GetEnvSettingByName);
-    def("GetEnvSettingDictionary", &Tf_GetEnvSettingDictionary);
 }

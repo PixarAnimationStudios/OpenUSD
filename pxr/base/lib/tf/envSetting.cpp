@@ -174,17 +174,6 @@ public:
         return r ? r->value() : boost::python::object();
     }
 
-    boost::python::object GetAllEntries() {
-        std::lock_guard<std::mutex> lock(_lock);
-        boost::python::dict result;
-        TF_FOR_ALL(it, _recordsByName) {
-            result[it->first] = boost::python::make_tuple(it->second.defValue(),
-                                                          it->second.description);
-        }
-
-        return result;
-    }
-
     std::mutex _lock;
     TfHashMap<void*, _Record, TfHash> _recordsByPtrKey;
     TfHashMap<string, _Record, TfHash> _recordsByName;
@@ -261,13 +250,6 @@ boost::python::object
 Tf_GetEnvSettingByName(string const& name)
 {
     return Tf_EnvSettingRegistry::GetInstance().LookupByName(name);
-}
-
-TF_API
-boost::python::object
-Tf_GetEnvSettingDictionary()
-{
-    return Tf_EnvSettingRegistry::GetInstance().GetAllEntries();
 }
 
 void TF_API Tf_InitEnvSettings()
