@@ -151,6 +151,7 @@ def buildOpChain(self, interface):
 
     
     gb.set('system', interface.getGraphState().getOpSystemArgs())
+    gb.set('processStageWideQueries', FnAttribute.IntAttribute(1))
 
     # our primary op in the chain that will create the root location
     sscb = FnGeolibServices.OpArgsBuilders.StaticSceneCreate(True)

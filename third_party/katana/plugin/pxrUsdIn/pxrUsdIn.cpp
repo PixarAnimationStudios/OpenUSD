@@ -164,8 +164,17 @@ public:
             return;
         }
 
-        if (interface.atRoot()) {
+        // Determine if we want to perform the stage-wide queries.
+        FnAttribute::IntAttribute processStageWideQueries = 
+            opArgs.getChildByName("processStageWideQueries");
+        if (processStageWideQueries.isValid() &&
+            processStageWideQueries.getValue(0, false) == 1) {
             interface.stopChildTraversal();
+            // Reset processStageWideQueries for children ops.
+            opArgs = FnKat::GroupBuilder()
+                .update(opArgs)
+                .set("processStageWideQueries", FnAttribute::IntAttribute(0))
+                .build();
 
             const bool stageIsZup =
                 (UsdGeomGetStageUpAxis(stage)==UsdGeomTokens->z);
