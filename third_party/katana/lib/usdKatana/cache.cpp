@@ -56,8 +56,9 @@ namespace
 {
     template <typename fnAttrT, typename podT>
     bool AddSimpleTypedSdfAttribute(SdfPrimSpecHandle prim,
-            const std::string & attrName, const fnAttrT & valueAttr,
-                    SdfValueTypeName scalarType)
+            const std::string & attrName, const fnAttrT & valueAttr, 
+            const FnAttribute::IntAttribute & forceArrayAttr, 
+            SdfValueTypeName scalarType)
     {
         if (!prim)
         {
@@ -69,7 +70,13 @@ namespace
             return false;
         }
         
-        bool isArray = valueAttr.getNumberOfValues() != 1;
+        bool isArray;
+        if (forceArrayAttr.isValid()) {
+            isArray = forceArrayAttr.getValue();
+        }
+        else {
+            isArray = valueAttr.getNumberOfValues() != 1;
+        }
         auto sdfAttr = SdfAttributeSpec::New(prim, attrName,
                 isArray ? scalarType.GetArrayType() : scalarType);
         
@@ -215,6 +222,7 @@ UsdKatanaCache::_FindOrCreateSessionLayer(
         
         FnAttribute::GroupAttribute attrsAttr =
                 sessionAttr.getChildByName("attrs");
+        
         for (int64_t i = 0, e = attrsAttr.getNumberOfChildren(); i != e;
                 ++i)
         {
@@ -222,8 +230,7 @@ UsdKatanaCache::_FindOrCreateSessionLayer(
                     attrsAttr.getChildName(i));
             
             FnAttribute::GroupAttribute entryAttr =
-                    attrsAttr.getChildByIndex(i);
-            
+                    attrsAttr.getChildByIndex(i);            
             
             if (!pystring::startswith(entryName, rootLocationPlusSlash))
             {
@@ -249,6 +256,9 @@ UsdKatanaCache::_FindOrCreateSessionLayer(
                 std::string attrName = entryAttr.getChildName(i);
                 FnAttribute::GroupAttribute attrDef =
                         entryAttr.getChildByIndex(i);
+
+                FnAttribute::IntAttribute forceArrayAttr = 
+                    attrDef.getChildByName("forceArray");
                 
                 
                 FnAttribute::DataAttribute valueAttr =
@@ -266,7 +276,7 @@ UsdKatanaCache::_FindOrCreateSessionLayer(
                 {
                     AddSimpleTypedSdfAttribute<
                             FnAttribute::IntAttribute, int>(
-                            spec, attrName, valueAttr,
+                            spec, attrName, valueAttr, forceArrayAttr,
                             SdfValueTypeNames->Int);
                     
                     break;
@@ -275,7 +285,7 @@ UsdKatanaCache::_FindOrCreateSessionLayer(
                 {
                     AddSimpleTypedSdfAttribute<
                             FnAttribute::FloatAttribute, float>(
-                            spec, attrName, valueAttr,
+                            spec, attrName, valueAttr, forceArrayAttr,
                             SdfValueTypeNames->Float);
                     
                     break;
@@ -284,7 +294,7 @@ UsdKatanaCache::_FindOrCreateSessionLayer(
                 {
                     AddSimpleTypedSdfAttribute<
                             FnAttribute::DoubleAttribute, double>(
-                            spec, attrName, valueAttr,
+                            spec, attrName, valueAttr, forceArrayAttr,
                             SdfValueTypeNames->Double);
                     break;
                 }
@@ -292,7 +302,7 @@ UsdKatanaCache::_FindOrCreateSessionLayer(
                 {
                     AddSimpleTypedSdfAttribute<
                             FnAttribute::StringAttribute, std::string>(
-                            spec, attrName, valueAttr,
+                            spec, attrName, valueAttr, forceArrayAttr,
                             SdfValueTypeNames->String);
                     
                     break;
