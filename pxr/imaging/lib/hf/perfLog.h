@@ -51,6 +51,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     TF_MALLOC_TAG_NEW(BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME), x);
 
 
+#define HF_TRACE_FUNCTION_SCOPE(tag)                                  \
+  TRACE_SCOPE(ArchGetPrettierFunctionName(__ARCH_FUNCTION__,          \
+                                          __ARCH_PRETTY_FUNCTION__) + \
+              std::string (" (" tag ")"))
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HF_PERF_LOG_H

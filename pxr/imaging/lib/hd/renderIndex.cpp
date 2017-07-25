@@ -841,20 +841,19 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
     _bprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
     _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
 
-    TRACE_SCOPE("Sync Ext Computations");
-    TF_FOR_ALL(it, _extComputationMap) {
-        const SdfPath &compId = it->first;
-        _ExtComputationInfo &compInfo = it->second;
+    {
+        HF_TRACE_FUNCTION_SCOPE("Sync Ext Computations");
+        TF_FOR_ALL(it, _extComputationMap) {
+            const SdfPath &compId = it->first;
+            _ExtComputationInfo &compInfo = it->second;
 
-        HdDirtyBits dirtyBits = _tracker.GetExtComputationDirtyBits(compId);
-        if (HdChangeTracker::IsDirty(dirtyBits)) {
-            compInfo.extComputation->Sync(compInfo.sceneDelegate, &dirtyBits);
-            _tracker.MarkExtComputationClean(compId, dirtyBits);
+            HdDirtyBits dirtyBits = _tracker.GetExtComputationDirtyBits(compId);
+            if (HdChangeTracker::IsDirty(dirtyBits)) {
+                compInfo.extComputation->Sync(compInfo.sceneDelegate, &dirtyBits);
+                _tracker.MarkExtComputationClean(compId, dirtyBits);
+            }
         }
     }
-
-
-
 
     // could be in parallel... but how?
     // may be just gathering dirtyLists at first, and then index->sync()?
@@ -875,7 +874,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
     std::map<SdfPath, /*reprMask=*/size_t, SdfPath::FastLessThan> dirtyIds;
     _ReprList reprs;
     {
-        TRACE_SCOPE("Merge Dirty Lists");
+        HF_TRACE_FUNCTION_SCOPE("Merge Dirty Lists");
         // If dirty list prims are all sorted, we could do something more
         // efficient here.
         for (auto const& hdDirtyList : _syncQueue) {
@@ -917,7 +916,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
     _RprimSyncRequestMap syncMap;
     bool resetVaryingState = false;
     {
-        TRACE_SCOPE("Build Sync Map: Rprims");
+        HF_TRACE_FUNCTION_SCOPE("Build Sync Map: Rprims");
         // Collect dirty Rprim IDs.
         HdSceneDelegate* curdel = nullptr;
         _RprimSyncRequestVector* curvec = nullptr;
@@ -984,7 +983,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
     // So that the entity marking the changes does not need to be aware of
     // render delegate specific data dependencies.
     {
-        TRACE_SCOPE("Pre-Sync Rprims");
+        HF_TRACE_FUNCTION_SCOPE("Pre-Sync Rprims");
 
         // Dispatch synchronization work to each delegate.
         WorkArenaDispatcher dirtyBitDispatcher;
@@ -1001,7 +1000,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
 
     {
-        TRACE_SCOPE("Delegate Sync");
+        HF_TRACE_FUNCTION_SCOPE("Delegate Sync");
         // Dispatch synchronization work to each delegate.
         _Worker worker(&syncMap);
         WorkParallelForN(syncMap.size(), 
@@ -1034,7 +1033,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
     dispatcher.Wait();
 
     {
-        TRACE_SCOPE("Clean Up");
+        HF_TRACE_FUNCTION_SCOPE("Clean Up");
         // Give Delegate's to do any post-parrellel work,
         // such as garbage collection.
         TF_FOR_ALL(dlgIt, syncMap) {
