@@ -82,15 +82,6 @@ _CreateGrid(int nx, int ny, VtVec3fArray *points,
     }
 }
 
-template <typename T>
-static VtArray<T>
-_BuildArray(T values[], int numValues)
-{
-    VtArray<T> result(numValues);
-    std::copy(values, values+numValues, result.begin());
-    return result;
-}
-
 namespace {
 class ShadowMatrix : public HdxShadowMatrixComputation
 {
@@ -461,25 +452,64 @@ Hdx_UnitTestDelegate::SetInstancerProperties(SdfPath const &id,
     _instancers[id].prototypeIndices = prototypeIndex;
 }
 
+//------------------------------------------------------------------------------
+//                                  PRIMS
+//------------------------------------------------------------------------------
 void
-Hdx_UnitTestDelegate::AddGrid(SdfPath const &id, GfMatrix4d const &transform,
-                              bool guide, SdfPath const &instancerId)
+Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
+                             GfMatrix4d const &transform,
+                             VtVec3fArray const &points,
+                             VtIntArray const &numVerts,
+                             VtIntArray const &verts,
+                             bool guide,
+                             SdfPath const &instancerId,
+                             TfToken const &scheme,
+                             TfToken const &orientation,
+                             bool doubleSided)
 {
-    VtVec3fArray points;
-    VtIntArray numVerts;
-    VtIntArray verts;
-    _CreateGrid(10, 10, &points, &numVerts, &verts);
-    _meshes[id] = _Mesh(transform, points, numVerts, verts, guide);
+    HdRenderIndex& index = GetRenderIndex();
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
 
-    GetRenderIndex().InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+    _meshes[id] = _Mesh(scheme, orientation, transform,
+                        points, numVerts, verts, PxOsdSubdivTags(),
+                        /*color=*/VtValue(GfVec4f(1, 1, 0, 1)),
+                        /*colorInterpolation=*/CONSTANT, guide, doubleSided);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
 
 void
-Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform,
-                              bool guide, SdfPath const &instancerId)
+Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
+                             GfMatrix4d const &transform,
+                             VtVec3fArray const &points,
+                             VtIntArray const &numVerts,
+                             VtIntArray const &verts,
+                             PxOsdSubdivTags const &subdivTags,
+                             VtValue const &color,
+                             Interpolation colorInterpolation,
+                             bool guide,
+                             SdfPath const &instancerId,
+                             TfToken const &scheme,
+                             TfToken const &orientation,
+                             bool doubleSided)
+{
+    HdRenderIndex& index = GetRenderIndex();
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+
+    _meshes[id] = _Mesh(scheme, orientation, transform,
+                        points, numVerts, verts, subdivTags,
+                        color, colorInterpolation, guide, doubleSided);
+    if (!instancerId.IsEmpty()) {
+        _instancers[instancerId].prototypes.push_back(id);
+    }
+}
+
+void
+Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform, 
+                              bool guide, SdfPath const &instancerId, 
+                              TfToken const &scheme, VtValue const &color,
+                              Interpolation colorInterpolation)
 {
     GfVec3f points[] = {
         GfVec3f( 1.0f, 1.0f, 1.0f ),
@@ -492,31 +522,78 @@ Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform,
         GfVec3f( 1.0f,-1.0f,-1.0f ),
     };
 
-    int numVerts[] = { 4, 4, 4, 4, 4, 4 };
-    int verts[] = {
-        0, 1, 2, 3,
-        4, 5, 6, 7,
-        0, 6, 5, 1,
-        4, 7, 3, 2,
-        0, 3, 7, 6,
-        4, 2, 1, 5,
-    };
-    _meshes[id] = _Mesh(transform,
-                        _BuildArray(points, sizeof(points)/sizeof(points[0])),
-                        _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-                        _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
-                        guide);
-    _meshes[id].color = GfVec4f(1,1,1,1);
-
-    GetRenderIndex().InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
-    if (!instancerId.IsEmpty()) {
-        _instancers[instancerId].prototypes.push_back(id);
+    if (scheme == PxOsdOpenSubdivTokens->loop) {
+        int numVerts[] = { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+        int verts[] = {
+            0, 1, 2, 0, 2, 3,
+            4, 5, 6, 4, 6, 7,
+            0, 6, 5, 0, 5, 1,
+            4, 7, 3, 4, 3, 2,
+            0, 3, 7, 0, 7, 6,
+            4, 2, 1, 4, 1, 5,
+        };
+        AddMesh(
+            id,
+            transform,
+            _BuildArray(points, sizeof(points)/sizeof(points[0])),
+            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            guide,
+            instancerId,
+            scheme);
+    } else {
+        int numVerts[] = { 4, 4, 4, 4, 4, 4 };
+        int verts[] = {
+            0, 1, 2, 3,
+            4, 5, 6, 7,
+            0, 6, 5, 1,
+            4, 7, 3, 2,
+            0, 3, 7, 6,
+            4, 2, 1, 5,
+        };
+        AddMesh(
+            id,
+            transform,
+            _BuildArray(points, sizeof(points)/sizeof(points[0])),
+            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            PxOsdSubdivTags(),
+            color,
+            colorInterpolation,
+            guide,
+            instancerId,
+            scheme);
     }
 }
 
 void
+Hdx_UnitTestDelegate::AddGrid(SdfPath const &id,
+                             GfMatrix4d const &transform,
+                             bool guide,
+                             SdfPath const &instancerId)
+{
+    VtVec3fArray points;
+    VtIntArray numVerts;
+    VtIntArray verts;
+    _CreateGrid(10, 10, &points, &numVerts, &verts);
+
+    AddMesh(id,
+            transform,
+            _BuildArray(&points[0], points.size()),
+            _BuildArray(&numVerts[0], numVerts.size()),
+            _BuildArray(&verts[0], verts.size()),
+            PxOsdSubdivTags(),
+            /*color=*/VtValue(GfVec4f(1,1,0,1)),
+            /*colorInterpolation=*/CONSTANT,
+            false,
+            instancerId);
+}
+
+void
 Hdx_UnitTestDelegate::AddTet(SdfPath const &id, GfMatrix4d const &transform,
-                             bool guide, SdfPath const &instancerId)
+
+                             bool guide, SdfPath const &instancerId,
+                             TfToken const &scheme)
 {
     GfVec3f points[] = {
         GfVec3f(-1, -1, -1),
@@ -551,19 +628,19 @@ Hdx_UnitTestDelegate::AddTet(SdfPath const &id, GfMatrix4d const &transform,
                     16, 17, 6, 8, 2, 1, 15, 17, 17, 15, 5, 6,
                     2, 4, 19, 18, 18, 19, 8, 6, 4, 3, 20, 19,
                     19, 20, 7, 8, 3, 2, 18, 20, 20, 18, 6, 7 };
-    _meshes[id] = _Mesh(transform,
-                        _BuildArray(points, sizeof(points)/sizeof(points[0])),
-                        _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-                        _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
-                        guide);
-    _meshes[id].color = GfVec4f(1,1,1,1);
 
-    SdfPath shaderId;
-    TfMapLookup(_surfaceShaderBindings, id, &shaderId);
-    GetRenderIndex().InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
-    if (!instancerId.IsEmpty()) {
-        _instancers[instancerId].prototypes.push_back(id);
-    }
+     AddMesh(
+            id,
+            transform,
+            _BuildArray(points, sizeof(points)/sizeof(points[0])),
+            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            PxOsdSubdivTags(),
+            /*color=*/VtValue(GfVec4f(1,1,1,1)),
+            /*colorInterpolation=*/CONSTANT,
+            guide,
+            instancerId,
+            scheme);
 }
 
 void
@@ -707,28 +784,55 @@ Hdx_UnitTestDelegate::GetRefineLevel(SdfPath const& id)
 TfTokenVector
 Hdx_UnitTestDelegate::GetPrimVarVertexNames(SdfPath const& id)
 {
-    TfTokenVector tokens;
+    TfTokenVector names;
+    names.push_back(HdTokens->points);
     if(_meshes.find(id) != _meshes.end()) {
-        tokens.push_back(HdTokens->points);
-    }
-    return tokens;
+        if (_meshes[id].colorInterpolation == VERTEX) {
+            names.push_back(HdTokens->color);
+        }
+    } 
+    return names;
 }
 
 TfTokenVector
 Hdx_UnitTestDelegate::GetPrimVarConstantNames(SdfPath const& id)
 {
-    TfTokenVector tokens;
+    TfTokenVector names;
     if(_meshes.find(id) != _meshes.end()) {
-        tokens.push_back(HdTokens->color);
+        if (_meshes[id].colorInterpolation == CONSTANT) {
+            names.push_back(HdTokens->color);
+        }
     }
-    return tokens;
+    return names;
+}
+
+TfTokenVector
+Hdx_UnitTestDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
+{
+    TfTokenVector names;
+    if (_meshes.find(id) != _meshes.end()) {
+        if (_meshes[id].colorInterpolation == FACEVARYING) {
+            names.push_back(HdTokens->color);
+        }
+    }
+    return names;
+}
+
+TfTokenVector
+Hdx_UnitTestDelegate::GetPrimVarUniformNames(SdfPath const& id)
+{
+    TfTokenVector names;
+    if(_meshes.find(id) != _meshes.end()) {
+        if (_meshes[id].colorInterpolation == UNIFORM) {
+            names.push_back(HdTokens->color);
+        }
+    }
+    return names;
 }
 
 TfTokenVector
 Hdx_UnitTestDelegate::GetPrimVarInstanceNames(SdfPath const &id)
 {
-    HD_TRACE_FUNCTION();
-
     TfTokenVector names;
     if (_instancers.find(id) != _instancers.end()) {
         names.push_back(_tokens->scale);

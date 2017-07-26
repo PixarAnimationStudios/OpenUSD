@@ -127,10 +127,37 @@ My_TestGLDrawing::InitTest()
                                    _reprName)));
 
     // prepare scene
-    _delegate->AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5));
-    _delegate->AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5));
+    // To ensure that the non-aggregated element index returned via picking, 
+    // we need to have at least two cubes with uniform colors.
+    GfVec4f red(1,0,0,1), green(0,1,0,1), blue(0,0,1,1),
+            yellow(1,1,0,1), magenta(1,0,1,1), cyan(0,1,1,1),
+            white(1,1,1,1), black(0,0,0,1);
+
+    GfVec4f faceColors[] = { red, green, blue, yellow, magenta, cyan};
+    VtValue faceColor = VtValue(_BuildArray(&faceColors[0],
+                                 sizeof(faceColors)/sizeof(faceColors[0])));
+
+    GfVec4f vertColors[] = { white, blue, green, yellow,
+                             black, blue, magenta, red};
+    VtValue vertColor = VtValue(_BuildArray(&vertColors[0],
+                                 sizeof(vertColors)/sizeof(vertColors[0])));
+
+    _delegate->AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5),
+                       /*guide=*/false, /*instancerId=*/SdfPath(),
+                       /*scheme=*/PxOsdOpenSubdivTokens->catmark,
+                       /*color=*/faceColor,
+                       /*colorInterpolation=*/Hdx_UnitTestDelegate::UNIFORM);
+    _delegate->AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5),
+                       /*guide=*/false, /*instancerId=*/SdfPath(),
+                       /*scheme=*/PxOsdOpenSubdivTokens->catmark,
+                       /*color=*/faceColor,
+                       /*colorInterpolation=*/Hdx_UnitTestDelegate::UNIFORM);
     _delegate->AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
-    _delegate->AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5));
+    _delegate->AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5),
+                        /*guide=*/false, /*instancerId=*/SdfPath(),
+                       /*scheme=*/PxOsdOpenSubdivTokens->catmark,
+                       /*color=*/vertColor,
+                       /*colorInterpolation=*/Hdx_UnitTestDelegate::VERTEX);
 
     {
         _delegate->AddInstancer(SdfPath("/instancerTop"));
@@ -233,11 +260,28 @@ My_TestGLDrawing::OffscreenTest()
     int elementIndex = -1;
     bool refined = (_reprName == HdTokens->refined);
 
-    primId = PickScene(180, 100, &instanceIndex, &elementIndex);
+    primId = PickScene(175, 90, &instanceIndex, &elementIndex);
     TF_VERIFY(primId == SdfPath("/cube1") &&
             instanceIndex == 0 &&
             elementIndex == 3);
 
+    primId = PickScene(470, 90, &instanceIndex, &elementIndex);
+    TF_VERIFY(primId == SdfPath("/cube0") &&
+            instanceIndex == 0 &&
+            elementIndex == 3);
+
+    primId = PickScene(470, 364, &instanceIndex, &elementIndex);
+    if (refined) {
+        TF_VERIFY(primId == SdfPath("/cube3") &&
+            instanceIndex == 0 &&
+            elementIndex == 0);
+    }
+    else {
+        TF_VERIFY(primId == SdfPath("/cube3") &&
+            instanceIndex == 0 &&
+            elementIndex == 3);
+    }
+    
     primId = PickScene(250, 190, &instanceIndex, &elementIndex);
     if (refined) {
         TF_VERIFY(primId == SdfPath("/protoTop") &&

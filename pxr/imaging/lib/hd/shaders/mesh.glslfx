@@ -213,7 +213,7 @@ void emit(int index, int triIndex0, int triIndex1, int triIndex2, vec3 normal)
     outData.Peye = displacementShader(index, inData[index].Peye, normal, GetPatchCoord(index));
     outData.Neye = normal;
     gsPatchCoord = GetPatchCoord(index);
-    gsPatchCoord.w = GetElementID() - GetDrawingCoord().elementCoord + 0.5;
+    gsPatchCoord.w = GetElementID() + 0.5;
     gsTessCoord = vec2(0);
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
