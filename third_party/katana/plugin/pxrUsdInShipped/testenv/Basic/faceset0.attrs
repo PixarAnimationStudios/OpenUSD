@@ -1,0 +1,17 @@
+<attr type="GroupAttr">
+  <attr name="geometry" type="GroupAttr">
+    <attr name="faces" tupleSize="1" type="IntAttr">
+      <sample size="12" time="0" value="1 2 4 5 6 7 8 9 10 11 13 14 "/>
+    </attr>
+  </attr>
+  <attr name="materialAssign" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="/root/world/geo/World/FaceSet/Looks/initialShadingGroup"/>
+    </sample>
+  </attr>
+  <attr name="type" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="faceset"/>
+    </sample>
+  </attr>
+</attr>

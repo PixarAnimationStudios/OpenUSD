@@ -1,0 +1,67 @@
+<attr type="GroupAttr">
+  <attr name="geometry" type="GroupAttr">
+    <attr name="arbitrary" type="GroupAttr"/>
+  </attr>
+  <attr name="kind" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="model"/>
+    </sample>
+  </attr>
+  <attr name="modelInstanceName" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value=""/>
+    </sample>
+  </attr>
+  <attr name="modelName" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="Model"/>
+    </sample>
+  </attr>
+  <attr name="proxies" type="GroupAttr">
+    <attr name="viewer" type="GroupAttr">
+      <attr name="load" type="GroupAttr">
+        <attr name="opType" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="StaticSceneCreate"/>
+          </sample>
+        </attr>
+        <attr name="opArgs" type="GroupAttr">
+          <attr name="a" type="GroupAttr">
+            <attr name="type" tupleSize="1" type="StringAttr">
+              <sample size="1" time="0">
+                <str value="usd"/>
+              </sample>
+            </attr>
+            <attr name="currentTime" tupleSize="1" type="DoubleAttr">
+              <sample size="1" time="0" value="1"/>
+            </attr>
+            <attr name="forcePopulateUsdStage" tupleSize="1" type="FloatAttr">
+              <sample size="1" time="0" value="1 "/>
+            </attr>
+            <attr name="referencePath" tupleSize="1" type="StringAttr">
+              <sample size="1" time="0">
+                <str value="/World/anim/Model"/>
+              </sample>
+            </attr>
+            <attr name="rootLocation" tupleSize="1" type="StringAttr">
+              <sample size="1" time="0">
+                <str value="/root/world/geo"/>
+              </sample>
+            </attr>
+            <attr name="session" type="GroupAttr"/>
+            <attr name="ignoreLayerRegex" tupleSize="1" type="StringAttr">
+              <sample size="1" time="0">
+                <str value=""/>
+              </sample>
+            </attr>
+          </attr>
+        </attr>
+      </attr>
+    </attr>
+  </attr>
+  <attr name="type" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="component"/>
+    </sample>
+  </attr>
+</attr>

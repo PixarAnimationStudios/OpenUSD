@@ -1,0 +1,54 @@
+<attr type="GroupAttr">
+  <attr name="geometry" type="GroupAttr">
+    <attr name="projection" tupleSize="1" type="StringAttr">
+      <sample size="1" time="0">
+        <str value="perspective"/>
+      </sample>
+    </attr>
+    <attr name="fov" tupleSize="1" type="DoubleAttr">
+      <sample size="1" time="0" value="60.383243560791016 "/>
+    </attr>
+    <attr name="left" tupleSize="1" type="DoubleAttr">
+      <sample size="1" time="0" value="-0.8984374866122381 "/>
+    </attr>
+    <attr name="right" tupleSize="1" type="DoubleAttr">
+      <sample size="1" time="0" value="1.1015625133877618 "/>
+    </attr>
+    <attr name="bottom" tupleSize="1" type="DoubleAttr">
+      <sample size="1" time="0" value="-0.52539060972048923 "/>
+    </attr>
+    <attr name="top" tupleSize="1" type="DoubleAttr">
+      <sample size="1" time="0" value="0.52539060972048923 "/>
+    </attr>
+    <attr name="near" tupleSize="1" type="DoubleAttr">
+      <sample size="1" time="0" value="20 "/>
+    </attr>
+    <attr name="far" tupleSize="1" type="DoubleAttr">
+      <sample size="1" time="0" value="5000 "/>
+    </attr>
+    <attr name="isZUp" tupleSize="1" type="IntAttr">
+      <sample size="1" time="0" value="0 "/>
+    </attr>
+  </attr>
+  <attr name="kind" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="camera"/>
+    </sample>
+  </attr>
+  <attr name="prmanGlobalStatements" type="GroupAttr">
+    <attr name="camera" type="GroupAttr">
+      <attr name="depthOfField" type="GroupAttr">
+        <attr name="fStopInfinite" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="Yes"/>
+          </sample>
+        </attr>
+      </attr>
+    </attr>
+  </attr>
+  <attr name="type" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="camera"/>
+    </sample>
+  </attr>
+</attr>
