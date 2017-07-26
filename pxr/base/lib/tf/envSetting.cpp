@@ -37,15 +37,17 @@
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/fileSystem.h"
 
-#include <boost/python.hpp>
-#include <boost/noncopyable.hpp>
+#include <boost/variant.hpp>
 
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Tf_EnvSettingRegistry : boost::noncopyable {
+class Tf_EnvSettingRegistry {
 public:
+    Tf_EnvSettingRegistry(const Tf_EnvSettingRegistry&) = delete;
+    Tf_EnvSettingRegistry& operator=(const Tf_EnvSettingRegistry&) = delete;
+
     static Tf_EnvSettingRegistry& GetInstance() {
         return TfSingleton<Tf_EnvSettingRegistry>::GetInstance();
     }
@@ -54,7 +56,11 @@ public:
         string fileName = TfGetenv("PIXAR_TF_ENV_SETTING_FILE", "");
         if (FILE* fp = ArchOpenFile(fileName.c_str(), "r")) {
             char buffer[1024];
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
             bool syncPython = TfPyIsInitialized();
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+
             int lineNo = 0;
             while (fgets(buffer, 1024, fp)) {
                 if (buffer[strlen(buffer)-1] != '\n') {
@@ -74,11 +80,15 @@ public:
                     string value = TfStringTrim(string(eqPtr+1));
                     if (!key.empty()) {
                         ArchSetEnv(key, value, false /* overwrite */);
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
                         if (syncPython) {
                             if (ArchGetEnv(key) == value) {
                                 TfPySetenv(key, value);
                             }
                         }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+
                     }
                     else {
                         fprintf(stderr, "File '%s' "
@@ -103,17 +113,22 @@ public:
         TfRegistryManager::GetInstance().SubscribeTo<Tf_EnvSettingRegistry>();
     }
 
-    // Function to convert a cached C++ object to a Python object on demand.
-    typedef boost::function<boost::python::object()> MakePyObject;
+    using VariantType = boost::variant<int, bool, std::string>;
+    using VariantCreationFn = std::function<VariantType()>;
 
     struct _Record {
-        MakePyObject defValue, value;
+        VariantCreationFn defValue;
+        VariantCreationFn value;
         string description;
     };
 
-    bool _Define(void* ptrKey, string const& varName, MakePyObject defValue,
-                 string const& description, MakePyObject value,
-                 std::atomic<void*>* cachedValue, void** potentialCachedValue) {
+    bool _Define(void* ptrKey,
+                 string const& varName, 
+                 VariantCreationFn defValue,
+                 string const& description, 
+                 VariantCreationFn value,
+                 std::atomic<void*>* cachedValue, 
+                 void** potentialCachedValue) {
         _Record r;
         r.defValue = defValue;
         r.value = value;
@@ -157,21 +172,24 @@ public:
     }
 
     template <typename T, typename U>
-    bool Define(void* ptrKey, string const& varName, T defValue,
-                string const& description, U value,
-                std::atomic<void*>* cachedValue, void** potentialCachedValue) {
-        constexpr bool reportError = true;
+    bool Define(void* ptrKey, 
+                string const& varName, 
+                T defValue,
+                string const& description, 
+                U value,
+                std::atomic<void*>* cachedValue, 
+                void** potentialCachedValue) {
         return _Define(ptrKey, varName,
-                       boost::bind(&TfPyObject<U>, defValue, !reportError),
+                       [defValue](){ return VariantType(defValue); },
                        description,
-                       boost::bind(&TfPyObject<U>, value, !reportError),
+                       [value](){ return VariantType(value); },
                        cachedValue, potentialCachedValue);
     }
 
-    boost::python::object LookupByName(string const& name) {
+    boost::variant<int, bool, std::string> LookupByName(string const& name) {
         std::lock_guard<std::mutex> lock(_lock);
         _Record* r = TfMapLookupPtr(_recordsByName, name);
-        return r ? r->value() : boost::python::object();
+        return r ? r->value() : VariantType(); 
     }
 
     std::mutex _lock;
@@ -216,18 +234,19 @@ void Tf_InitializeEnvSetting(TfEnvSetting<T> *setting)
     // value.
     Tf_EnvSettingRegistry &reg = Tf_EnvSettingRegistry::GetInstance();
     if (reg.Define(static_cast<void *>(setting),
-                   setting->_name, setting->_default,
-                   setting->_description, *cachedValue,
+                   setting->_name, 
+                   setting->_default,
+                   setting->_description, 
+                   *cachedValue,
                    reinterpret_cast< std::atomic<void*>* >(setting->_value),
                    reinterpret_cast<void**>(&cachedValue))) {
         // Setting was defined successfully and we should print alerts.
         if (setting->_default != value) {
-            string text =
-                TfStringPrintf("#  %s is overridden to '%s'.  "
-                               "Default is '%s'.  #",
-                               setting->_name,
-                               _Str(value).c_str(),
-                               _Str(setting->_default).c_str());
+            string text = TfStringPrintf("#  %s is overridden to '%s'.  "
+                                         "Default is '%s'.  #",
+                                         setting->_name,
+                                         _Str(value).c_str(),
+                                         _Str(setting->_default).c_str());
             string line(text.length(), '#');
             fprintf(stderr, "%s\n%s\n%s\n",
                     line.c_str(), text.c_str(), line.c_str());
@@ -246,8 +265,8 @@ template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<int> *);
 template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<string> *);
 
 TF_API
-boost::python::object
-Tf_GetEnvSettingByName(string const& name)
+boost::variant<int, bool, std::string>
+Tf_GetEnvSettingByName(std::string const& name)
 {
     return Tf_EnvSettingRegistry::GetInstance().LookupByName(name);
 }
