@@ -83,6 +83,20 @@ public:
     /// zero are considered "true".
     bool fixRandomSeed;
 
+    /// Should the renderpass use the color primvar, or flat white colors?
+    /// (Flat white shows off ambient occlusion better).
+    ///
+    /// Override with *HDEMBREE_USE_FACE_COLORS*. Integer values greater than
+    /// zero are considered "true".
+    bool useFaceColors;
+
+    /// How should the ambient occlusion be scaled? Specified in percent
+    /// values from 0 to 100.  A value of 25 maps the ambient occlusion term,
+    /// from [0,1], to [0.75, 1].
+    ///
+    /// Override with *HDEMBREE_AMBIENT_OCCLUSION_SCALE*.
+    float ambientOcclusionScale;
+
 private:
     // The constructor initializes the config variables with their
     // default or environment-provided override, and optionally prints

@@ -48,7 +48,7 @@ HdEmbreeRenderPass::HdEmbreeRenderPass(HdRenderIndex *index,
     , _scene(scene)
     , _inverseViewMatrix(1.0f) // == identity
     , _inverseProjMatrix(1.0f) // == identity
-    , _clearColor(0.0f, 0.0f, 0.0f)
+    , _clearColor(0.0707f, 0.0707f, 0.0707f)
 {
 }
 
@@ -296,7 +296,8 @@ HdEmbreeRenderPass::_TraceRay(GfVec3f const &origin, GfVec3f const &dir)
         // If a color primvar is present, use that as diffuse color; otherwise,
         // use flat white.
         GfVec4f color = GfVec4f(1.0f, 1.0f, 1.0f, 1.0f);
-        if (prototypeContext->primvarMap.count(HdTokens->color) > 0) {
+        if (HdEmbreeConfig::GetInstance().useFaceColors &&
+            prototypeContext->primvarMap.count(HdTokens->color) > 0) {
             prototypeContext->primvarMap[HdTokens->color]->Sample(
                 ray.primID, ray.u, ray.v, &color);
         }
@@ -317,8 +318,11 @@ HdEmbreeRenderPass::_TraceRay(GfVec3f const &origin, GfVec3f const &dir)
         // Lighting gets modulated by an ambient occlusion term.
         float aoLightIntensity =
             (1.0f - _ComputeAmbientOcclusion(hitPos, normal));
-        aoLightIntensity = (aoLightIntensity * 0.5f) + 0.5f;
-
+        // Rescale based on config settings. An AO scale of 0.25 means map
+        // [0, 1] to [0.75, 1].
+        float aoScale = HdEmbreeConfig::GetInstance().ambientOcclusionScale;
+        aoLightIntensity = (aoScale * aoLightIntensity) + (1.0f - aoScale);
+            
         // Return color.xyz * diffuseLight * aoLightIntensity.
         // XXX: Transparency?
         return GfVec3f(color[0], color[1], color[2]) * diffuseLight *
