@@ -129,11 +129,8 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
         return;
     }
 
-    // Do Insertion sort to insert id into list of paths.
-    SdfPathVector::iterator it = std::lower_bound(_rprimIds.begin(),
-                                                  _rprimIds.end(),
-                                                  rprimId);
-    _rprimIds.insert(it, rprimId);
+    _rprimIds.Insert(rprimId);
+
 
     _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask());
     _AllocatePrimId(rprim);
@@ -165,14 +162,7 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
 
     SdfPath instancerId = rprimInfo.rprim->GetInstancerId();
 
-    SdfPathVector::iterator it = std::lower_bound(_rprimIds.begin(),
-                                                  _rprimIds.end(),
-                                                  id);
-    if (it != _rprimIds.end()) {
-        if (*it == id) {
-            _rprimIds.erase(it);
-        }
-    }
+    _rprimIds.Remove(id);
 
     if (!instancerId.IsEmpty()) {
         _tracker.InstancerRPrimRemoved(instancerId, id);
@@ -200,7 +190,7 @@ HdRenderIndex::Clear()
     }
     // Clear Rprims, Rprim IDs, and delegate mappings.
     _rprimMap.clear();
-    _rprimIds.clear();
+    _rprimIds.Clear();
     _CompactPrimIds();
 
     // Clear S & B prims
@@ -299,7 +289,7 @@ HdRenderIndex::GetSprim(TfToken const& typeId, SdfPath const& id) const
 
 SdfPathVector
 HdRenderIndex::GetSprimSubtree(TfToken const& typeId,
-                               SdfPath const& rootPath) const
+                               SdfPath const& rootPath)
 {
     SdfPathVector result;
     _sprimIndex.GetPrimSubtree(typeId, rootPath, &result);
@@ -343,7 +333,7 @@ HdRenderIndex::GetBprim(TfToken const& typeId, SdfPath const& id) const
 
 SdfPathVector
 HdRenderIndex::GetBprimSubtree(TfToken const& typeId,
-                               SdfPath const& rootPath) const
+                               SdfPath const& rootPath)
 {
     SdfPathVector result;
     _bprimIndex.GetPrimSubtree(typeId, rootPath, &result);
@@ -643,12 +633,12 @@ HdRenderIndex::GetRenderTag(SdfPath const& id, TfToken const& reprName) const
 }
 
 SdfPathVector
-HdRenderIndex::GetRprimSubtree(SdfPath const& rootPath) const
+HdRenderIndex::GetRprimSubtree(SdfPath const& rootPath)
 {
     SdfPathVector paths;
 
     HdPrimGather gather;
-    gather.Subtree(_rprimIds, rootPath, &paths);
+    gather.Subtree(_rprimIds.GetIds(), rootPath, &paths);
 
     return paths;
 }
@@ -836,7 +826,6 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
     HD_TRACE_FUNCTION();
 
     HdRenderParam *renderParam = _renderDelegate->GetRenderParam();
-
 
     _bprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
     _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());

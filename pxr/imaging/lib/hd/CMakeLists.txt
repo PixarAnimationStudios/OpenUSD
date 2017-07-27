@@ -104,6 +104,7 @@ pxr_library(hd
         shaderCode
         shaderKey
         shaderParam
+        sortedIds                   
         smoothNormals
         sprim
         strategyBase

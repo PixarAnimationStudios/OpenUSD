@@ -80,7 +80,7 @@ Hd_PrimTypeIndex<PrimType>::Clear(HdChangeTracker &tracker,
             primInfo.prim = nullptr;
         }
         typeEntry.primMap.clear();
-        typeEntry.primIds.clear();
+        typeEntry.primIds.Clear();
     }
 }
 
@@ -125,13 +125,7 @@ Hd_PrimTypeIndex<PrimType>::InsertPrim(const TfToken    &typeId,
 
     typeEntry.primMap.emplace(primId, _PrimInfo{sceneDelegate, prim});
 
-    SdfPathVector &primIds = typeEntry.primIds;
-
-    // Do Insertion sort to insert prim into list of id.
-    SdfPathVector::iterator it = std::lower_bound(primIds.begin(),
-                                                  primIds.end(),
-                                                  primId);
-    primIds.insert(it, primId);
+    typeEntry.primIds.Insert(primId);
 }
 
 
@@ -164,17 +158,7 @@ Hd_PrimTypeIndex<PrimType>::RemovePrim(const TfToken    &typeId,
     primInfo.prim = nullptr;
 
     typeEntry.primMap.erase(primIt);
-
-    SdfPathVector &primIds = typeEntry.primIds;
-
-    SdfPathVector::iterator it = std::lower_bound(primIds.begin(),
-                                                  primIds.end(),
-                                                  primId);
-    if (it != primIds.end()) {
-        if (*it == primId) {
-            primIds.erase(it);
-        }
-    }
+    typeEntry.primIds.Remove(primId);
 }
 
 
@@ -223,7 +207,7 @@ template <class PrimType>
 void
 Hd_PrimTypeIndex<PrimType>::GetPrimSubtree(const TfToken &typeId,
                                            const SdfPath &rootPath,
-                                           SdfPathVector *outPaths) const
+                                           SdfPathVector *outPaths)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -234,10 +218,10 @@ Hd_PrimTypeIndex<PrimType>::GetPrimSubtree(const TfToken &typeId,
         return;
     }
 
-    const _PrimTypeEntry &typeEntry = _entries[typeIt->second];
+    _PrimTypeEntry &typeEntry = _entries[typeIt->second];
 
     HdPrimGather gather;
-    gather.Subtree(typeEntry.primIds, rootPath, outPaths);
+    gather.Subtree(typeEntry.primIds.GetIds(), rootPath, outPaths);
 }
 
 template <class PrimType>

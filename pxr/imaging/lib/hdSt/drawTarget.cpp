@@ -414,7 +414,7 @@ HdStDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    const HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     SdfPathVector sprimPaths;
 

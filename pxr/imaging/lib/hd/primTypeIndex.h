@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/sortedIds.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -115,7 +116,7 @@ public:
     ///
     void GetPrimSubtree(const TfToken &typeId,
                         const SdfPath &rootPath,
-                        SdfPathVector *outPaths) const;
+                        SdfPathVector *outPaths);
 
     ///
     /// Uses the provided render delegate to create the fallback prims
@@ -155,7 +156,7 @@ private:
     struct _PrimTypeEntry
    {
         _PrimMap         primMap;
-        SdfPathVector    primIds;   // Primarily for sub-tree searching (sorted)
+        Hd_SortedIds     primIds;   // Primarily for sub-tree searching
         PrimType        *fallbackPrim;
 
         _PrimTypeEntry()

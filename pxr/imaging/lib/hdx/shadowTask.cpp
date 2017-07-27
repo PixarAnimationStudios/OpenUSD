@@ -144,7 +144,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         _renderPassStates.clear();
 
         HdSceneDelegate* delegate = GetDelegate();
-        const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+        HdRenderIndex &renderIndex = delegate->GetRenderIndex();
         
         // Extract the HD lights used to render the scene from the 
         // task context, we will use them to find out what

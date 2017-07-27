@@ -104,7 +104,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         }
 
         HdSceneDelegate* delegate = GetDelegate();
-        const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+        HdRenderIndex &renderIndex = delegate->GetRenderIndex();
         _camera = static_cast<const HdStCamera *>(
                     renderIndex.GetSprim(HdPrimTypeTokens->camera,
                                          params.cameraPath));

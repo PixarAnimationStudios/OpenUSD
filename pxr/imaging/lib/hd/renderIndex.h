@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primTypeIndex.h"
+#include "pxr/imaging/hd/sortedIds.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -182,12 +183,12 @@ public:
     /// Returns a sorted list of all Rprims in the render index.
     /// The list is sorted by std::less<SdfPath>
     HD_API
-    const SdfPathVector &GetRprimIds() const { return _rprimIds; }
+    const SdfPathVector &GetRprimIds() { return _rprimIds.GetIds(); }
 
 
     /// Returns the subtree rooted under the given path.
     HD_API
-    SdfPathVector GetRprimSubtree(SdfPath const& root) const;
+    SdfPathVector GetRprimSubtree(SdfPath const& root);
 
 
     // ---------------------------------------------------------------------- //
@@ -258,7 +259,7 @@ public:
     /// type.
     HD_API
     SdfPathVector GetSprimSubtree(TfToken const& typeId,
-                                  SdfPath const& root) const;
+                                  SdfPath const& root);
 
     /// Returns the fullback prim for the Sprim of the given type.
     HD_API
@@ -289,7 +290,7 @@ public:
     /// type.
     HD_API
     SdfPathVector GetBprimSubtree(TfToken const& typeId,
-                                  SdfPath const& root) const;
+                                  SdfPath const& root);
 
     /// Returns the fallback prim for the Bprim of the given type.
     HD_API
@@ -389,7 +390,7 @@ private:
     typedef Hd_PrimTypeIndex<HdBprim> _BprimIndex;
 
     _RprimMap     _rprimMap;
-    SdfPathVector _rprimIds;  // Sorted list of Rprim paths
+    Hd_SortedIds  _rprimIds;
 
     _RprimPrimIDMap _rprimPrimIdMap;
 
