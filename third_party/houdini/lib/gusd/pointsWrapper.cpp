@@ -393,6 +393,16 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         filter.setActiveOwners(owners);
         updatePrimvarFromGTPrim( attrList, filter, s_ownerToUsdInterp[own], ctxt.time );
     }
+    if(GT_DataArrayHandle Alpha = sourcePrim->findAttribute( "Alpha", own, 0 )) {
+        GT_AttributeMapHandle attrMap = new GT_AttributeMap();
+        GT_AttributeListHandle attrList = new GT_AttributeList( attrMap );
+        attrList = attrList->addAttribute( "displayOpacity", Alpha, true );
+        GusdGT_AttrFilter filter( "*" );
+        GusdGT_AttrFilter::OwnerArgs owners;
+        owners << own;
+        filter.setActiveOwners(owners);
+        updatePrimvarFromGTPrim( attrList, filter, s_ownerToUsdInterp[own], ctxt.time );
+    }
 
     // -------------------------------------------------------------------------
     return GusdPrimWrapper::updateFromGTPrim(sourcePrim, houXform, ctxt, xformCache);

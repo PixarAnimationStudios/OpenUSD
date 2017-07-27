@@ -473,6 +473,69 @@ GusdCurvesWrapper::refine(
                 }
             }
         }
+
+        UsdGeomPrimvar alphaPrimvar = usdCurves.GetPrimvar(TfToken("Alpha"));
+        if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
+            alphaPrimvar = usdCurves.GetPrimvar(TfToken("displayOpacity"));
+        }
+
+        if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValueOpinion()) {
+
+            // cerr << "curve color primvar " << alphaPrimvar.GetBaseName() << "\t" << alphaPrimvar.GetTypeName() << "\t" << alphaPrimvar.GetInterpolation() << endl;
+
+            GT_DataArrayHandle gtData = convertPrimvarData( alphaPrimvar, m_time );
+            if( gtData ) {
+                if( alphaPrimvar.GetInterpolation() == UsdGeomTokens->constant ) {
+
+                    gtDetailAttrs = gtDetailAttrs->addAttribute( "Alpha", gtData, true );
+                }
+                else if( alphaPrimvar.GetInterpolation() == UsdGeomTokens->uniform ) {
+
+                    gtUniformAttrs = gtUniformAttrs->addAttribute( "Alpha", gtData, true );
+                }
+                else if( alphaPrimvar.GetInterpolation() == UsdGeomTokens->vertex ||
+                       ( alphaPrimvar.GetInterpolation() == UsdGeomTokens->varying && 
+                            basis == GT_BASIS_LINEAR )) {
+
+                    gtVertexAttrs = gtVertexAttrs->addAttribute( "Alpha", gtData, true );
+                }
+                else {
+
+                    // In this case there is one value per segment end point
+
+                    auto segEndPointIndicies = new GT_Int32Array( usdPoints.size(), 1 );  
+
+                    GT_Offset srcIdx = 0;
+                    GT_Offset dstIdx = 0;
+                    if( basis == GT_BASIS_BEZIER ) { 
+                        for( const auto& c : usdCounts ) {
+                            for( int i = 0, segs = c / 3; i < segs; ++i ) {
+                                segEndPointIndicies->set( srcIdx, dstIdx++ );
+                                segEndPointIndicies->set( srcIdx, dstIdx++ );
+                                segEndPointIndicies->set( srcIdx, dstIdx++ );
+                                ++srcIdx;
+                            }
+                            if( !wrap ) {
+                                segEndPointIndicies->set( srcIdx++, dstIdx++ );
+                            }
+                        }
+                    }
+                    else if ( basis == GT_BASIS_BSPLINE || basis == GT_BASIS_CATMULLROM ) {
+                        for( const auto& c : usdCounts ) {
+                            segEndPointIndicies->set( srcIdx, dstIdx++ );
+                            for( int i = 0; i < c; ++i ) {
+                                segEndPointIndicies->set( srcIdx++, dstIdx++ );
+                            }
+                            if( !wrap ) {
+                                segEndPointIndicies->set( srcIdx, dstIdx++ );
+                            }
+                        }
+                    }
+                    gtData = new GT_DAIndirect( segEndPointIndicies, gtData );
+                    gtVertexAttrs = gtVertexAttrs->addAttribute( "Alpha", gtData, true );
+                }
+            }
+        }
     }
 
     auto prim = new GT_PrimCurveMesh( 
@@ -839,6 +902,18 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
             GT_AttributeMapHandle attrMap = new GT_AttributeMap();
             GT_AttributeListHandle attrList = new GT_AttributeList( attrMap );
             attrList = attrList->addAttribute( "displayColor", Cd, true );
+            GusdGT_AttrFilter filter( "*" );
+            GusdGT_AttrFilter::OwnerArgs owners;
+            owners << own;
+            filter.setActiveOwners(owners);
+            updatePrimvarFromGTPrim( attrList, filter, s_ownerToUsdInterpCurve[own], primvarTime );
+        }
+        // If we have a "Alpha" attribute, write it as both "Alpha" and "displayAlpha".
+        if(GT_DataArrayHandle Alpha = sourcePrim->findAttribute( "Alpha", own, 0 )) {
+
+            GT_AttributeMapHandle attrMap = new GT_AttributeMap();
+            GT_AttributeListHandle attrList = new GT_AttributeList( attrMap );
+            attrList = attrList->addAttribute( "displayOpacity", Alpha, true );
             GusdGT_AttrFilter filter( "*" );
             GusdGT_AttrFilter::OwnerArgs owners;
             owners << own;

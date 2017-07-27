@@ -396,8 +396,8 @@ GusdMeshWrapper::refine(
 
     else {
 
-        // When refining for the viewport, the only attribute we care about is color.
-        // Prefer Cd, but fallback to display_color.
+        // When refining for the viewport, the only attributes we care about is color 
+        // and opacity. Prefer Cd / Alpha, but fallback to displayColor and displayOpacity.
         // In order to be able to coalesce meshes in the GT_PrimCache, we need to use
         // the same attribute owner for the attribute in all meshes. So promote 
         // to vertex.
@@ -418,6 +418,31 @@ GusdMeshWrapper::refine(
                     usdMesh.GetPrim().GetPath().GetText(),
                     gtData,
                     colorPrimvar.GetInterpolation(),
+                    usdCounts.size(),
+                    usdPoints.size(),
+                    usdFaceIndex.size(),
+                    &gtVertexAttrs,
+                    &gtPointAttrs,
+                    &gtUniformAttrs,
+                    &gtDetailAttrs );
+            }
+        }
+        UsdGeomPrimvar alphaPrimvar = usdMesh.GetPrimvar(TfToken("Alpha"));
+        if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
+            alphaPrimvar = usdMesh.GetPrimvar(TfToken("displayOpacity"));
+        }
+
+        if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValueOpinion()) {
+
+            GT_DataArrayHandle gtData = convertPrimvarData( alphaPrimvar, m_time );
+            if( gtData ) {
+
+                _validateAttrData(
+                    "Alpha",
+                    alphaPrimvar.GetBaseName().GetText(),
+                    usdMesh.GetPrim().GetPath().GetText(),
+                    gtData,
+                    alphaPrimvar.GetInterpolation(),
                     usdCounts.size(),
                     usdPoints.size(),
                     usdFaceIndex.size(),
@@ -1045,6 +1070,21 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
             updatePrimvarFromGTPrim( TfToken("displayColor"), GT_OWNER_UNIFORM, 
                                      interpolation, primvarTime, Cd );
+        }
+        // If we have a "Alpha" attribute, write it as both "Alpha" and "displayOpacity".
+        if(GT_DataArrayHandle Alpha = sourcePrim->findAttribute( "Alpha", own, 0 )) {
+
+            TfToken interpolation = s_ownerToUsdInterp[own];
+            if ( own == GT_OWNER_PRIMITIVE ) {
+
+                if( GusdGT_Utils::isDataConstant( Alpha ) ) {
+                    interpolation = UsdGeomTokens->constant;
+                    Alpha = new GT_DASubArray( Alpha, 0, 1 );
+                }
+            }
+
+            updatePrimvarFromGTPrim( TfToken("displayOpacity"), GT_OWNER_UNIFORM, 
+                                     interpolation, primvarTime, Alpha );
         }
     }
     return GusdPrimWrapper::updateFromGTPrim(sourcePrim, houXform, ctxt, xformCache);
