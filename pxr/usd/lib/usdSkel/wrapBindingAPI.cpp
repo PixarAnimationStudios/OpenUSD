@@ -132,6 +132,11 @@ void wrapUsdSkelBindingAPI()
              &This::GetSkeletonRel)
         .def("CreateSkeletonRel",
              &This::CreateSkeletonRel)
+        
+        .def("GetJointsRel",
+             &This::GetJointsRel)
+        .def("CreateJointsRel",
+             &This::CreateJointsRel)
     ;
 
     _CustomWrapCode(cls);

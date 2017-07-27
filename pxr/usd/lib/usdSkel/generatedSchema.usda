@@ -173,6 +173,13 @@ class "BindingAPI" (
         doc = """Animation source to be bound to this prim and its 
         descendants."""
     )
+    rel skel:joints (
+        doc = """An (optional) relationship whose targets define the list of
+        joints to which jointIndices apply, relative to the gprim itself, so
+        that it is self-contained. If not defined, jointIndices applies to
+        the ordered list of joints defined in the bound Skeleton's *joints*
+        relationship."""
+    )
     rel skel:skeleton (
         doc = """Skeleton to be bound to this prim and its descendents that
         possess a mapping and weighting to the joints of the identified

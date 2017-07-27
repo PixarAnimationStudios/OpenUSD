@@ -49,6 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (rotations) \
     (scales) \
     ((skelAnimationSource, "skel:animationSource")) \
+    ((skelJoints, "skel:joints")) \
     ((skelSkeleton, "skel:skeleton")) \
     (translations)
 
@@ -80,6 +81,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>rotations</b> - UsdSkelPackedJointAnimation
 /// \li <b>scales</b> - UsdSkelPackedJointAnimation
 /// \li <b>skelAnimationSource</b> - UsdSkelBindingAPI
+/// \li <b>skelJoints</b> - UsdSkelBindingAPI
 /// \li <b>skelSkeleton</b> - UsdSkelBindingAPI
 /// \li <b>translations</b> - UsdSkelPackedJointAnimation
 TF_DECLARE_PUBLIC_TOKENS(UsdSkelTokens, USDSKEL_API, USDSKEL_TOKENS);

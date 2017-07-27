@@ -155,6 +155,19 @@ UsdSkelBindingAPI::CreateSkeletonRel() const
                        /* custom = */ false);
 }
 
+UsdRelationship
+UsdSkelBindingAPI::GetJointsRel() const
+{
+    return GetPrim().GetRelationship(UsdSkelTokens->skelJoints);
+}
+
+UsdRelationship
+UsdSkelBindingAPI::CreateJointsRel() const
+{
+    return GetPrim().CreateRelationship(UsdSkelTokens->skelJoints,
+                       /* custom = */ false);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)

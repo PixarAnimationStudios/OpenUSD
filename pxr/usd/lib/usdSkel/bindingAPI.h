@@ -236,6 +236,24 @@ public:
     UsdRelationship CreateSkeletonRel() const;
 
 public:
+    // --------------------------------------------------------------------- //
+    // JOINTS 
+    // --------------------------------------------------------------------- //
+    /// An (optional) relationship whose targets define the list of
+    /// joints to which jointIndices apply, relative to the gprim itself, so
+    /// that it is self-contained. If not defined, jointIndices applies to
+    /// the ordered list of joints defined in the bound Skeleton's *joints*
+    /// relationship.
+    ///
+    USDSKEL_API
+    UsdRelationship GetJointsRel() const;
+
+    /// See GetJointsRel(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDSKEL_API
+    UsdRelationship CreateJointsRel() const;
+
+public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
