@@ -90,12 +90,11 @@ public:
     /// zero are considered "true".
     bool useFaceColors;
 
-    /// How should the ambient occlusion be scaled? Specified in percent
-    /// values from 0 to 100.  A value of 25 maps the ambient occlusion term,
-    /// from [0,1], to [0.75, 1].
+    /// What should the intensity of the camera light be, specified as a
+    /// percent of <1, 1, 1>.  For example, 300 would be <3, 3, 3>.
     ///
-    /// Override with *HDEMBREE_AMBIENT_OCCLUSION_SCALE*.
-    float ambientOcclusionScale;
+    /// Override with *HDEMBREE_CAMERA_LIGHT_INTENSITY*.
+    float cameraLightIntensity;
 
 private:
     // The constructor initializes the config variables with their

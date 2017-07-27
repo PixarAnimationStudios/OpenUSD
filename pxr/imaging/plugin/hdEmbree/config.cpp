@@ -57,8 +57,8 @@ TF_DEFINE_ENV_SETTING(HDEMBREE_FIX_RANDOM_SEED, 0,
 TF_DEFINE_ENV_SETTING(HDEMBREE_USE_FACE_COLORS, 1,
         "Should HdEmbree use face colors while rendering?");
 
-TF_DEFINE_ENV_SETTING(HDEMBREE_AMBIENT_OCCLUSION_SCALE, 75,
-        "Percent (0-100) scale factor to apply to the ambient occlusion term.");
+TF_DEFINE_ENV_SETTING(HDEMBREE_CAMERA_LIGHT_INTENSITY, 300,
+        "Intensity of the camera light, specified as a percentage of <1,1,1>.");
 
 TF_DEFINE_ENV_SETTING(HDEMBREE_PRINT_CONFIGURATION, 0,
         "Should HdEmbree print configuration on startup? (values > 0 are true)");
@@ -78,8 +78,8 @@ HdEmbreeConfig::HdEmbreeConfig()
             TfGetEnvSetting(HDEMBREE_SUBDIVISION_CACHE));
     fixRandomSeed = (TfGetEnvSetting(HDEMBREE_FIX_RANDOM_SEED) > 0);
     useFaceColors = (TfGetEnvSetting(HDEMBREE_USE_FACE_COLORS) > 0);
-    ambientOcclusionScale = (std::max(0,std::min(100,
-            TfGetEnvSetting(HDEMBREE_AMBIENT_OCCLUSION_SCALE))) / 100.0f);
+    cameraLightIntensity = (std::max(100,
+            TfGetEnvSetting(HDEMBREE_CAMERA_LIGHT_INTENSITY)) / 100.0f);
 
     if (TfGetEnvSetting(HDEMBREE_PRINT_CONFIGURATION) > 0) {
         std::cout
@@ -98,8 +98,8 @@ HdEmbreeConfig::HdEmbreeConfig()
             <<    fixRandomSeed           << "\n"
             << "  useFaceColors              = "
             <<    useFaceColors           << "\n"
-            << "  ambientOcclusionScale      = "
-            <<    ambientOcclusionScale   << "\n"
+            << "  cameraLightIntensity      = "
+            <<    cameraLightIntensity   << "\n"
             ;
     }
 }

@@ -313,20 +313,23 @@ HdEmbreeRenderPass::_TraceRay(GfVec3f const &origin, GfVec3f const &dir)
 
         // Lighting model: (camera dot normal), i.e. diffuse-only point light
         // centered on the camera.
-        float diffuseLight = fabs(GfDot(-dir, normal));
+        float diffuseLight = fabs(GfDot(-dir, normal)) *
+            HdEmbreeConfig::GetInstance().cameraLightIntensity;
 
         // Lighting gets modulated by an ambient occlusion term.
         float aoLightIntensity =
             (1.0f - _ComputeAmbientOcclusion(hitPos, normal));
-        // Rescale based on config settings. An AO scale of 0.25 means map
-        // [0, 1] to [0.75, 1].
-        float aoScale = HdEmbreeConfig::GetInstance().ambientOcclusionScale;
-        aoLightIntensity = (aoScale * aoLightIntensity) + (1.0f - aoScale);
             
         // Return color.xyz * diffuseLight * aoLightIntensity.
         // XXX: Transparency?
-        return GfVec3f(color[0], color[1], color[2]) * diffuseLight *
-            aoLightIntensity;
+        GfVec3f finalColor = GfVec3f(color[0], color[1], color[2]) *
+            diffuseLight * aoLightIntensity;
+
+        // Clamp colors to [0,1].
+        finalColor[0] = std::max(0.0f, std::min(1.0f, finalColor[0]));
+        finalColor[1] = std::max(0.0f, std::min(1.0f, finalColor[1]));
+        finalColor[2] = std::max(0.0f, std::min(1.0f, finalColor[2]));
+        return finalColor;
     }
 }
 
