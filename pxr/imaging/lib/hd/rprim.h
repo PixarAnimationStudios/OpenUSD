@@ -173,6 +173,7 @@ public:
     inline TfTokenVector GetPrimVarVaryingNames(HdSceneDelegate* delegate)     const;
     inline TfTokenVector GetPrimVarFacevaryingNames(HdSceneDelegate* delegate) const;
     inline TfTokenVector GetPrimVarUniformNames(HdSceneDelegate* delegate)     const;
+    inline TfTokenVector GetPrimVarConstantNames(HdSceneDelegate* delegate)    const;
 
     inline VtValue GetPrimVar(HdSceneDelegate* delegate, const TfToken &name)  const;
 
@@ -347,6 +348,12 @@ inline TfTokenVector
 HdRprim::GetPrimVarUniformNames(HdSceneDelegate* delegate) const
 {
     return delegate->GetPrimVarUniformNames(GetId());
+}
+
+inline TfTokenVector
+HdRprim::GetPrimVarConstantNames(HdSceneDelegate* delegate) const
+{
+    return delegate->GetPrimVarConstantNames(GetId());
 }
 
 inline VtValue
