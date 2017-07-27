@@ -640,23 +640,38 @@ OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3
 
 def InstallOpenSubdiv(context, force):
     with CurrentWorkingDirectory(DownloadURL(OPENSUBDIV_URL, context, force)):
+        extraArgs = [
+            '-DNO_EXAMPLES=ON',
+            '-DNO_TUTORIALS=ON',
+            '-DNO_REGRESSION=ON',
+            '-DNO_DOC=ON',
+            '-DNO_OMP=ON',
+            '-DNO_CUDA=ON',
+            '-DNO_OPENCL=ON',
+            '-DNO_DX=ON',
+            '-DNO_TESTS=ON',
+        ]
+
+        # OpenSubdiv's FindGLEW module won't look in CMAKE_PREFIX_PATH, so
+        # we need to explicitly specify GLEW_LOCATION here.
+        extraArgs.append('-DGLEW_LOCATION="{instDir}"'
+                         .format(instDir=context.instDir))
+
+        # If Ptex support is disabled in USD, disable support in OpenSubdiv
+        # as well. This ensures OSD doesn't accidentally pick up a Ptex
+        # library outside of our build.
+        if not context.enablePtex:
+            extraArgs.append('-DNO_PTEX=ON')
+
         # NOTE: For now, we disable TBB in our OpenSubdiv build.
         # This avoids an issue where OpenSubdiv will link against
         # all TBB libraries it finds, including libtbbmalloc and
         # libtbbmalloc_proxy. On Linux and MacOS, this has the
         # unwanted effect of replacing the system allocator with
         # tbbmalloc, which can cause problems with the Maya plugin.
-        RunCMake(context, force,
-                 ['-DNO_EXAMPLES=ON',
-                  '-DNO_TUTORIALS=ON',
-                  '-DNO_REGRESSION=ON',
-                  '-DNO_DOC=ON',
-                  '-DNO_OMP=ON',
-                  '-DNO_CUDA=ON',
-                  '-DNO_OPENCL=ON',
-                  '-DNO_DX=ON',
-                  '-DNO_TESTS=ON',
-                  '-DNO_TBB=ON'])
+        extraArgs.append('-DNO_TBB=ON')
+
+        RunCMake(context, force, extraArgs)
 
 OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv, 
                         "include/opensubdiv/version.h")
@@ -742,6 +757,11 @@ ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 def InstallUSD(context):
     with CurrentWorkingDirectory(context.usdSrcDir):
         extraArgs = []
+
+        if context.buildShared:
+            extraArgs.append('-DBUILD_SHARED_LIBS=ON')
+        elif context.buildMonolithic:
+            extraArgs.append('-DPXR_BUILD_MONOLITHIC=ON')
         
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
@@ -759,6 +779,14 @@ def InstallUSD(context):
                 extraArgs.append('-DPXR_ENABLE_PTEX_SUPPORT=ON')
             else:
                 extraArgs.append('-DPXR_ENABLE_PTEX_SUPPORT=OFF')
+
+            if context.buildEmbree:
+                if context.embreeLocation:
+                    extraArgs.append('-DEMBREE_LOCATION="{location}"'
+                                     .format(location=context.embreeLocation))
+                extraArgs.append('-DPXR_BUILD_EMBREE_PLUGIN=ON')
+            else:
+                extraArgs.append('-DPXR_BUILD_EMBREE_PLUGIN=OFF')
         else:
             extraArgs.append('-DPXR_BUILD_IMAGING=OFF')
 
@@ -845,6 +873,16 @@ group.add_argument("--generator", type=str,
                    help=("CMake generator to use when building libraries with "
                          "cmake"))
 
+(SHARED_LIBS, MONOLITHIC_LIB) = (0, 1)
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--build-shared", dest="build_type",
+                      action="store_const", const=SHARED_LIBS, 
+                      default=SHARED_LIBS,
+                      help="Build individual shared libraries (default)")
+subgroup.add_argument("--build-monolithic", dest="build_type",
+                      action="store_const", const=MONOLITHIC_LIB,
+                      help="Build a single monolithic shared library")
+
 group = parser.add_argument_group(title="3rd Party Dependency Build Options")
 group.add_argument("--src", type=str,
                    help=("Directory where dependencies will be downloaded "
@@ -890,6 +928,17 @@ subgroup.add_argument("--ptex", dest="enable_ptex", action="store_true",
 subgroup.add_argument("--no-ptex", dest="enable_ptex", 
                       action="store_false",
                       help="Disable Ptex support in imaging (default)")
+
+group = parser.add_argument_group(title="Imaging Plugin Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--embree", dest="build_embree", action="store_true",
+                      default=False,
+                      help="Build Embree sample imaging plugin")
+subgroup.add_argument("--no-embree", dest="build_embree", action="store_true",
+                      default=False,
+                      help="Do not build Embree sample imaging plugin (default)")
+group.add_argument("--embree-location", type=str,
+                   help="Directory where Embree is installed.")
 
 group = parser.add_argument_group(title="Alembic Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -961,6 +1010,10 @@ class InstallContext:
         # CMake generator
         self.cmakeGenerator = args.generator
 
+        # Build type
+        self.buildShared = (args.build_type == SHARED_LIBS)
+        self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
+
         # Dependencies that are forced to be built
         self.forceBuildAll = args.force_all
         self.forceBuild = [dep.lower() for dep in args.force_build]
@@ -976,6 +1029,11 @@ class InstallContext:
 
         # - USD Imaging
         self.buildUsdImaging = (args.build_imaging == USD_IMAGING)
+
+        # - Imaging plugins
+        self.buildEmbree = self.buildImaging and args.build_embree
+        self.embreeLocation = (os.path.abspath(args.embree_location)
+                               if args.embree_location else None)
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
@@ -1120,7 +1178,7 @@ Building with settings:
   3rd-party install directory   {instDir}
   Build directory               {buildDir}
 
-  Building
+  Building                      {buildType}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
     UsdImaging                  {buildUsdImaging}
@@ -1141,6 +1199,9 @@ Building with settings:
     instDir=context.instDir,
     dependencies=("None" if not dependenciesToBuild else 
                   ", ".join([d.name for d in dependenciesToBuild])),
+    buildType=("Shared libraries" if context.buildShared
+               else "Monolithic shared library" if context.buildMonolithic
+               else ""),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
