@@ -30,10 +30,15 @@
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/base/gf/matrix4f.h"
 
+#include "pxr/imaging/hdEmbree/meshSamplers.h"
+
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class HdEmbreePrototypeContext;
+class HdEmbreeInstanceContext;
 
 /// \class HdEmbreeMesh
 ///
@@ -159,12 +164,32 @@ protected:
                            HdDirtyBits *dirtyBits) override;
 
 private:
+    // Helper functions for getting the prototype and instance contexts.
+    // These don't do null checks, so the user is responsible for calling them
+    // carefully.
+    HdEmbreePrototypeContext* _GetPrototypeContext();
+    HdEmbreeInstanceContext* _GetInstanceContext(RTCScene scene, size_t i);
+
     // Populate the embree geometry object based on scene data.
     void _PopulateRtMesh(HdSceneDelegate *sceneDelegate,
                          RTCScene scene,
                          RTCDevice device,
                          HdDirtyBits *dirtyBits,
                          HdMeshReprDesc const &desc);
+
+    // Populate _primvarSourceMap (our local cache of primvar data) based on
+    // scene data. Primvars will be turned into samplers in _PopulateRtMesh,
+    // through the help of the _CreatePrimvarSampler() method.
+    void _UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
+                               HdDirtyBits dirtyBits);
+
+    // Populate a single primvar, with given name and data, in the prototype
+    // context. Overwrites the current mapping for the name, if necessary.
+    // This function's main purpose is to resolve the (interpolation, refined)
+    // tuple into the concrete primvar sampler type.
+    void _CreatePrimvarSampler(TfToken const& name, VtValue const& data,
+                               HdInterpolation interpolation,
+                               bool refined);
 
     // Utility function to call rtcNewSubdivisionMesh and populate topology.
     void _CreateEmbreeSubdivMesh(RTCScene scene);
@@ -174,6 +199,7 @@ private:
     // An embree intersection filter callback, for doing backface culling.
     static void _EmbreeCullFaces(void *userData, RTCRay &ray);
 
+private:
     // Every HdEmbreeMesh is treated as instanced; if there's no instancer,
     // the prototype has a single identity istance. The prototype is stored
     // as _rtcMeshId, in _rtcMeshScene.
@@ -193,9 +219,12 @@ private:
     // Derived scene data:
     // - _triangulatedIndices holds a triangulation of the source topology,
     //   which can have faces of arbitrary arity.
+    // - _trianglePrimitiveParams holds a mapping from triangle index (in
+    //   the triangulated topology) to authored face index.
     // - _computedNormals holds per-vertex normals computed as an average of
     //   adjacent face normals.
     VtVec3iArray _triangulatedIndices;
+    VtIntArray _trianglePrimitiveParams;
     VtVec3fArray _computedNormals;
 
     // Derived scene data. Hd_VertexAdjacency is an acceleration datastructure
@@ -212,6 +241,20 @@ private:
     bool _smoothNormals;
     bool _doubleSided;
     HdCullStyle _cullStyle;
+
+    // A local cache of primvar scene data. "data" is a copy-on-write handle to
+    // the actual primvar buffer, and "interpolation" is the interpolation mode
+    // to be used. This cache is used in _PopulateRtMesh to populate the
+    // primvar sampler map in the prototype context, which is used for shading.
+    struct PrimvarSource {
+        VtValue data;
+        HdInterpolation interpolation;
+    };
+    TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
+
+    // An object used to manage allocation of embree user vertex buffers to
+    // primvars.
+    HdEmbreeRTCBufferAllocator _embreeBufferAllocator;
 
     // This class does not support copying.
     HdEmbreeMesh(const HdEmbreeMesh&)             = delete;

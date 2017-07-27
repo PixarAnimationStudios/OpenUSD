@@ -23,7 +23,9 @@
 //
 #include "pxr/imaging/hdEmbree/instancer.h"
 
+#include "pxr/imaging/hdEmbree/sampler.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -49,6 +51,14 @@ HdEmbreeInstancer::HdEmbreeInstancer(HdSceneDelegate* delegate,
                                      SdfPath const &parentId)
     : HdInstancer(delegate, id, parentId)
 {
+}
+
+HdEmbreeInstancer::~HdEmbreeInstancer()
+{
+    TF_FOR_ALL(it, _primvarMap) {
+        delete it->second;
+    }
+    _primvarMap.clear();
 }
 
 void
@@ -80,7 +90,11 @@ HdEmbreeInstancer::_SyncPrimvars()
                 if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt)) {
                     VtValue value = _GetDelegate()->Get(id, *nameIt);
                     if (!value.IsEmpty()) {
-                        _primvarMap[*nameIt] = value;
+                        if (_primvarMap.count(*nameIt) > 0) {
+                            delete _primvarMap[*nameIt];
+                        }
+                        _primvarMap[*nameIt] =
+                            new HdVtBufferSource(*nameIt, value);
                     }
                 }
             }
@@ -116,59 +130,54 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
         transforms[i] = instancerTransform;
     }
 
-    // XXX: We should handle VtValues more robustly.
-
-    // "translate" is by convention a VtVec3fArray, holding a translation
-    // vector for each index.
-    if (_primvarMap.count(_tokens->translate) > 0 &&
-        _primvarMap[_tokens->translate].IsHolding<VtVec3fArray>()) {
-        VtVec3fArray translate = _primvarMap[_tokens->translate]
-            .UncheckedGet<VtVec3fArray>();
+    // "translate" holds a translation vector for each index.
+    if (_primvarMap.count(_tokens->translate) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[_tokens->translate]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            GfMatrix4d translateMat(1);
-            translateMat.SetTranslate(GfVec3d(translate[instanceIndices[i]]));
-            transforms[i] = translateMat * transforms[i];
+            GfVec3f translate;
+            if (sampler.Sample(instanceIndices[i], &translate)) {
+                GfMatrix4d translateMat(1);
+                translateMat.SetTranslate(GfVec3d(translate));
+                transforms[i] = translateMat * transforms[i];
+            }
         }
     }
 
-    // "rotate" is by convention a VtVec4fArray, holding a quaternion in
-    // <real, i, j, k> format for each index.
-    if (_primvarMap.count(_tokens->rotate) > 0 &&
-        _primvarMap[_tokens->rotate].IsHolding<VtVec4fArray>()) {
-        VtVec4fArray rotate = _primvarMap[_tokens->rotate]
-            .UncheckedGet<VtVec4fArray>();
+    // "rotate" holds a quaternion in <real, i, j, k> format for each index.
+    if (_primvarMap.count(_tokens->rotate) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[_tokens->rotate]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            GfMatrix4d rotateMat(1);
-            GfVec4f quat = rotate[instanceIndices[i]];
-            rotateMat.SetRotate(GfRotation(GfQuaternion(
-                quat[0], GfVec3d(quat[1], quat[2], quat[3]))));
-            transforms[i] = rotateMat * transforms[i];
+            GfVec4f quat;
+            if (sampler.Sample(instanceIndices[i], &quat)) {
+                GfMatrix4d rotateMat(1);
+                rotateMat.SetRotate(GfRotation(GfQuaternion(
+                    quat[0], GfVec3d(quat[1], quat[2], quat[3]))));
+                transforms[i] = rotateMat * transforms[i];
+            }
         }
     }
 
-    // "scale" is by convention a VtVec3fArray, holding an axis-aligned
-    // scale vector for each index.
-    if (_primvarMap.count(_tokens->scale) > 0 &&
-        _primvarMap[_tokens->scale].IsHolding<VtVec3fArray>()) {
-        VtVec3fArray scale = _primvarMap[_tokens->scale]
-            .UncheckedGet<VtVec3fArray>();
+    // "scale" holds an axis-aligned scale vector for each index.
+    if (_primvarMap.count(_tokens->scale) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[_tokens->scale]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            GfMatrix4d scaleMat(1);
-            scaleMat.SetScale(GfVec3d(scale[i]));
-            transforms[i] = scaleMat * transforms[i];
+            GfVec3f scale;
+            if (sampler.Sample(instanceIndices[i], &scale)) {
+                GfMatrix4d scaleMat(1);
+                scaleMat.SetScale(GfVec3d(scale));
+                transforms[i] = scaleMat * transforms[i];
+            }
         }
     }
 
-    // "instanceTransform" is by convention a VtMatrix4dArray, holding a
-    // transformation matrix for each index.
-    if (_primvarMap.count(_tokens->instanceTransform) > 0 &&
-        _primvarMap[_tokens->instanceTransform].IsHolding<VtMatrix4dArray>()) {
-        VtMatrix4dArray instanceTransform =
-            _primvarMap[_tokens->instanceTransform]
-            .UncheckedGet<VtMatrix4dArray>();
+    // "instanceTransform" holds a 4x4 transform matrix for each index.
+    if (_primvarMap.count(_tokens->instanceTransform) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[_tokens->instanceTransform]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            transforms[i] = instanceTransform[instanceIndices[i]] *
-                            transforms[i];
+            GfMatrix4d instanceTransform;
+            if (sampler.Sample(instanceIndices[i], &instanceTransform)) {
+                transforms[i] = instanceTransform * transforms[i];
+            }
         }
     }
 

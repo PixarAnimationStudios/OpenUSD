@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdEmbree/renderPass.h"
 
 #include "pxr/imaging/hdEmbree/config.h"
+#include "pxr/imaging/hdEmbree/context.h"
 #include "pxr/imaging/hdEmbree/mesh.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -33,6 +34,7 @@
 #include "pxr/base/work/loops.h"
 
 #include <embree2/rtcore_ray.h>
+#include <random>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -268,30 +270,40 @@ HdEmbreeRenderPass::_TraceRay(GfVec3f const &origin, GfVec3f const &dir)
         // Ray miss gets the clear color.
         return _clearColor;
     } else {
+        
+        // Get the instance and prototype context structures for the hit prim.
+        HdEmbreeInstanceContext *instanceContext =
+            static_cast<HdEmbreeInstanceContext*>(
+                rtcGetUserData(_scene, ray.instID));
+
+        HdEmbreePrototypeContext *prototypeContext =
+            static_cast<HdEmbreePrototypeContext*>(
+                rtcGetUserData(instanceContext->rootScene, ray.geomID));
+
         // Compute the worldspace location of the ray hit.
         GfVec3f hitPos = GfVec3f(ray.org[0] + ray.tfar * ray.dir[0],
                                  ray.org[1] + ray.tfar * ray.dir[1],
                                  ray.org[2] + ray.tfar * ray.dir[2]);
-        
-        // Flat shading uses the face normal provided by embree.
+
+        // If a normal primvar is present (e.g. from smooth shading), use that
+        // for shading; otherwise use the flat face normal.
         GfVec3f normal = -GfVec3f(ray.Ng[0], ray.Ng[1], ray.Ng[2]);
+        if (prototypeContext->primvarMap.count(HdTokens->normals) > 0) {
+            prototypeContext->primvarMap[HdTokens->normals]->Sample(
+                ray.primID, ray.u, ray.v, &normal);
+        }
 
-        HdEmbreeInstanceContext *context =
-            static_cast<HdEmbreeInstanceContext*>(
-                rtcGetUserData(_scene, ray.instID));
-
-        // Check if smooth shading is supported by this rprim, and if so
-        // calculate the normal with rtcInterpolate. RTC_USER_VERTEX_BUFFER0
-        // will have been filled with per-vertex vec3f normal data.
-        if(context->useInterpolatedNormals) {
-            rtcInterpolate(context->rootScene, ray.geomID, ray.primID,
-                ray.u, ray.v, RTC_USER_VERTEX_BUFFER0, normal.data(),
-                nullptr, nullptr, 3);
+        // If a color primvar is present, use that as diffuse color; otherwise,
+        // use flat white.
+        GfVec4f color = GfVec4f(1.0f, 1.0f, 1.0f, 1.0f);
+        if (prototypeContext->primvarMap.count(HdTokens->color) > 0) {
+            prototypeContext->primvarMap[HdTokens->color]->Sample(
+                ray.primID, ray.u, ray.v, &color);
         }
 
         // Transform the normal from object space to world space.
         GfVec4f expandedNormal(normal[0], normal[1], normal[2], 0.0f);
-        expandedNormal = expandedNormal * context->objectToWorldMatrix;
+        expandedNormal = expandedNormal * instanceContext->objectToWorldMatrix;
         normal = GfVec3f(expandedNormal[0], expandedNormal[1],
             expandedNormal[2]);
 
@@ -300,15 +312,17 @@ HdEmbreeRenderPass::_TraceRay(GfVec3f const &origin, GfVec3f const &dir)
 
         // Lighting model: (camera dot normal), i.e. diffuse-only point light
         // centered on the camera.
-        float diffuse = fabs(GfDot(-dir, normal));
-        GfVec3f color = GfVec3f(diffuse, diffuse, diffuse);
+        float diffuseLight = fabs(GfDot(-dir, normal));
 
         // Lighting gets modulated by an ambient occlusion term.
         float aoLightIntensity =
             (1.0f - _ComputeAmbientOcclusion(hitPos, normal));
-        color *= aoLightIntensity;
+        aoLightIntensity = (aoLightIntensity * 0.5f) + 0.5f;
 
-        return color;
+        // Return color.xyz * diffuseLight * aoLightIntensity.
+        // XXX: Transparency?
+        return GfVec3f(color[0], color[1], color[2]) * diffuseLight *
+            aoLightIntensity;
     }
 }
 

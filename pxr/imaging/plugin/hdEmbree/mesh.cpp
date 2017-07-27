@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdEmbree/mesh.h"
 
+#include "pxr/imaging/hdEmbree/context.h"
 #include "pxr/imaging/hdEmbree/instancer.h"
 #include "pxr/imaging/hdEmbree/renderParam.h"
 #include "pxr/imaging/hdEmbree/renderPass.h"
@@ -55,8 +56,7 @@ HdEmbreeMesh::Finalize(HdRenderParam *renderParam)
     // Delete any instances of this mesh in the top-level embree scene.
     for (size_t i = 0; i < _rtcInstanceIds.size(); ++i) {
         // Delete the instance context first...
-        delete static_cast<HdEmbreeInstanceContext*>(
-            rtcGetUserData(scene, _rtcInstanceIds[i]));
+        delete _GetInstanceContext(scene, i);
         // ...then the instance object in the top-level scene.
         rtcDeleteGeometry(scene, _rtcInstanceIds[i]);
     }
@@ -65,8 +65,15 @@ HdEmbreeMesh::Finalize(HdRenderParam *renderParam)
     // Delete the prototype geometry and the prototype scene.
     if (_rtcMeshScene != nullptr) {
         if (_rtcMeshId != RTC_INVALID_GEOMETRY_ID) {
+            // Delete the prototype context first...
+            TF_FOR_ALL(it, _GetPrototypeContext()->primvarMap) {
+                delete it->second;
+            }
+            delete _GetPrototypeContext();
+            // ... then the geometry object in the prototype scene...
             rtcDeleteGeometry(_rtcMeshScene, _rtcMeshId);
         }
+        // ... then the prototype scene.
         rtcDeleteScene(_rtcMeshScene);
     }
     _rtcMeshId = RTC_INVALID_GEOMETRY_ID;
@@ -88,6 +95,8 @@ HdEmbreeMesh::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyDoubleSided
         | HdChangeTracker::DirtyRefineLevel
         | HdChangeTracker::DirtySubdivTags
+        | HdChangeTracker::DirtyPrimVar
+        | HdChangeTracker::DirtyNormals
         ;
 
     return (HdDirtyBits)mask;
@@ -168,9 +177,10 @@ HdEmbreeMesh::_EmbreeCullFaces(void *userData, RTCRay &ray)
 
     // Only HdEmbreeMesh gets HdEmbreeMesh::_EmbreeCullFaces bound
     // as an intersection filter. The filter is bound to the prototype,
-    // whose userdata is always set to be a pointer back to the original
-    // HdEmbreeMesh, so this cast is safe.
-    HdEmbreeMesh *mesh = static_cast<HdEmbreeMesh*>(userData);
+    // whose context's rprim always points back to the original HdEmbreeMesh.
+    HdEmbreePrototypeContext *ctx =
+        static_cast<HdEmbreePrototypeContext*>(userData);
+    HdEmbreeMesh *mesh = static_cast<HdEmbreeMesh*>(ctx->rprim);
 
     // Calculate whether the provided hit is a front-face or back-face.
     bool isFrontFace = (ray.Ng[0] * ray.dir[0] + 
@@ -319,14 +329,10 @@ HdEmbreeMesh::_CreateEmbreeSubdivMesh(RTCScene scene)
 void
 HdEmbreeMesh::_CreateEmbreeTriangleMesh(RTCScene scene)
 {
-    // primitiveParams stores the mapping from triangle face to authored face,
-    // so it's necessary for sampling uniform primvar data. For now, HdEmbree
-    // doesn't support primvars for shading, so we don't keep it around.
-    VtIntArray primitiveParams;
-
     // Triangulate the input faces.
     HdMeshUtil meshUtil(&_topology, GetId());
-    meshUtil.ComputeTriangleIndices(&_triangulatedIndices, &primitiveParams);
+    meshUtil.ComputeTriangleIndices(&_triangulatedIndices,
+        &_trianglePrimitiveParams);
 
     // Create the new mesh.
     _rtcMeshId = rtcNewTriangleMesh(scene, RTC_GEOMETRY_DEFORMABLE,
@@ -339,6 +345,146 @@ HdEmbreeMesh::_CreateEmbreeTriangleMesh(RTCScene scene)
     // Populate topology.
     rtcSetBuffer(scene, _rtcMeshId, RTC_INDEX_BUFFER,
         _triangulatedIndices.cdata(), 0, sizeof(GfVec3i));
+}
+
+void
+HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
+                                    HdDirtyBits dirtyBits)
+{
+    HD_TRACE_FUNCTION();
+    SdfPath const& id = GetId();
+
+    // Update _primvarSourceMap, our local cache of raw primvar data.
+    // This function pulls data from the scene delegate, but defers processing.
+    //
+    // While iterating primvars, we skip "points" (vertex positions) because
+    // the points primvar is processed by _PopulateRtMesh. We only call
+    // GetPrimVar on primvars that have been marked dirty.
+    //
+    // Currently, hydra doesn't have a good way of communicating changes in
+    // the set of primvars, so we only ever add and update to the primvar set.
+
+    TfTokenVector names = GetPrimVarVertexNames(sceneDelegate);
+    TF_FOR_ALL(nameIt, names) {
+        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
+            *nameIt != HdTokens->points) {
+            _primvarSourceMap[*nameIt] = {
+                GetPrimVar(sceneDelegate, *nameIt),
+                HdInterpolationVertex
+            };
+        }
+    }
+    names = GetPrimVarVaryingNames(sceneDelegate);
+    TF_FOR_ALL(nameIt, names) {
+        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
+            *nameIt != HdTokens->points) {
+            _primvarSourceMap[*nameIt] = {
+                GetPrimVar(sceneDelegate, *nameIt),
+                HdInterpolationVarying
+            };
+        }
+    }
+    names = GetPrimVarFacevaryingNames(sceneDelegate);
+    TF_FOR_ALL(nameIt, names) {
+        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
+            *nameIt != HdTokens->points) {
+            _primvarSourceMap[*nameIt] = {
+                GetPrimVar(sceneDelegate, *nameIt),
+                HdInterpolationFaceVarying
+            };
+        }
+    }
+    names = GetPrimVarUniformNames(sceneDelegate);
+    TF_FOR_ALL(nameIt, names) {
+        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
+            *nameIt != HdTokens->points) {
+            _primvarSourceMap[*nameIt] = {
+                GetPrimVar(sceneDelegate, *nameIt),
+                HdInterpolationUniform
+            };
+        }
+    }
+    names = GetPrimVarConstantNames(sceneDelegate);
+    TF_FOR_ALL(nameIt, names) {
+        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
+            *nameIt != HdTokens->points) {
+            _primvarSourceMap[*nameIt] = {
+                GetPrimVar(sceneDelegate, *nameIt),
+                HdInterpolationConstant
+            };
+        }
+    }
+}
+
+void
+HdEmbreeMesh::_CreatePrimvarSampler(TfToken const& name, VtValue const& data,
+                                    HdInterpolation interpolation,
+                                    bool refined)
+{
+    // Delete the old sampler, if it exists.
+    HdEmbreePrototypeContext *ctx = _GetPrototypeContext();
+    if (ctx->primvarMap.count(name) > 0) {
+        delete ctx->primvarMap[name];
+    }
+    ctx->primvarMap.erase(name);
+
+    // Construct the correct type of sampler from the interpolation mode and
+    // geometry mode.
+    HdEmbreePrimvarSampler *sampler = nullptr;
+    switch(interpolation) {
+        case HdInterpolationConstant:
+            sampler = new HdEmbreeConstantSampler(name, data);
+            break;
+        case HdInterpolationUniform:
+            if (refined) {
+                sampler = new HdEmbreeUniformSampler(name, data);
+            } else {
+                sampler = new HdEmbreeUniformSampler(name, data,
+                    _trianglePrimitiveParams);
+            }
+            break;
+        case HdInterpolationVertex:
+            if (refined) {
+                sampler = new HdEmbreeSubdivVertexSampler(name, data,
+                    _rtcMeshScene, _rtcMeshId, &_embreeBufferAllocator);
+            } else {
+                sampler = new HdEmbreeTriangleVertexSampler(name, data,
+                    _triangulatedIndices);
+            }
+            break;
+        case HdInterpolationVarying:
+            if (refined) {
+                // XXX: Fixme! This isn't strictly correct, as "varying" in
+                // the context of subdiv meshes means bilinear interpolation,
+                // not reconstruction from the subdivision basis.
+                sampler = new HdEmbreeSubdivVertexSampler(name, data,
+                    _rtcMeshScene, _rtcMeshId, &_embreeBufferAllocator);
+            } else {
+                sampler = new HdEmbreeTriangleVertexSampler(name, data,
+                    _triangulatedIndices);
+            }
+            break;
+        case HdInterpolationFaceVarying:
+            if (refined) {
+                // XXX: Fixme! HdEmbree doesn't currently support face-varying
+                // primvars on subdivision meshes.
+                TF_WARN("HdEmbreeMesh doesn't support face-varying primvars"
+                        " on refined meshes.");
+            } else {
+                HdMeshUtil meshUtil(&_topology, GetId());
+                sampler = new HdEmbreeTriangleFaceVaryingSampler(name, data,
+                    meshUtil);
+            }
+            break;
+        default:
+            TF_CODING_ERROR("Unrecognized interpolation mode");
+            break;
+    }
+
+    // Put the new sampler back in the primvar map.
+    if (sampler != nullptr) {
+        ctx->primvarMap[name] = sampler;
+    }
 }
 
 void
@@ -394,6 +540,11 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     if (HdChangeTracker::IsDoubleSidedDirty(*dirtyBits, id)) {
         _doubleSided = IsDoubleSided(sceneDelegate);
     }
+    if (HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->normals) ||
+        HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->widths) ||
+        HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->primVar)) {
+        _UpdatePrimvarSources(sceneDelegate, *dirtyBits);
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // 2. Resolve drawstyles
@@ -418,6 +569,14 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         (_topology.GetScheme() != PxOsdOpenSubdivTokens->none) &&
         (_topology.GetScheme() != PxOsdOpenSubdivTokens->bilinear);
 
+    // If the scene delegate has provided authored normals, force us to not use
+    // smooth normals.
+    bool authoredNormals = false;
+    if (_primvarSourceMap.count(HdTokens->normals) > 0) {
+        authoredNormals = true;
+    }
+    _smoothNormals = _smoothNormals && !authoredNormals;
+
     ////////////////////////////////////////////////////////////////////////
     // 3. Populate embree prototype object.
 
@@ -434,6 +593,12 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         // Destroy the old mesh, if it exists.
         if (_rtcMeshScene != nullptr &&
             _rtcMeshId != RTC_INVALID_GEOMETRY_ID) {
+            // Delete the prototype context first...
+            TF_FOR_ALL(it, _GetPrototypeContext()->primvarMap) {
+                delete it->second;
+            }
+            delete _GetPrototypeContext();
+            // then the prototype geometry.
             rtcDeleteGeometry(_rtcMeshScene, _rtcMeshId);
             _rtcMeshId = RTC_INVALID_GEOMETRY_ID;
         }
@@ -454,17 +619,20 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         _refined = doRefine;
         // In both cases, RTC_VERTEX_BUFFER will be populated below.
 
+        // Prototype geometry gets tagged with a prototype context, that the
+        // ray-hit algorithm can use to look up data.
+        rtcSetUserData(_rtcMeshScene, _rtcMeshId,
+            new HdEmbreePrototypeContext);
+        _GetPrototypeContext()->rprim = this;
+
         // Add _EmbreeCullFaces as a filter function for backface culling.
-        // The filter functions get a userdata (void*) argument;
-        // _EmbreeCullFaces expects a pointer to this HdEmbreeMesh.
-        rtcSetUserData(_rtcMeshScene, _rtcMeshId, this);
         rtcSetIntersectionFilterFunction(_rtcMeshScene, _rtcMeshId,
             _EmbreeCullFaces);
         rtcSetOcclusionFilterFunction(_rtcMeshScene, _rtcMeshId,
             _EmbreeCullFaces);
 
-        // _normalsValid implies the embree mesh object has populated normal
-        // data, which is no longer true.
+        // Force the smooth normals code to rebuild the "normals" primvar the
+        // next time smooth normals is enabled.
         _normalsValid = false;
     }
 
@@ -489,7 +657,29 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         }
     }
 
-    // Update the smooth normals in two steps:
+    // If the subdiv tags changed or the mesh was recreated, we need to update
+    // the subdivision boundary mode.
+    if (newMesh || HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
+        if (doRefine) {
+            TfToken const vertexRule =
+                _topology.GetSubdivTags().GetVertexInterpolationRule();
+            if (vertexRule == PxOsdOpenSubdivTokens->none) {
+                rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
+                    RTC_BOUNDARY_NONE);
+            } else if (vertexRule == PxOsdOpenSubdivTokens->edgeOnly) {
+                rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
+                    RTC_BOUNDARY_EDGE_ONLY);
+            } else if (vertexRule == PxOsdOpenSubdivTokens->edgeAndCorner) {
+                rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
+                    RTC_BOUNDARY_EDGE_AND_CORNER);
+            } else {
+                TF_WARN("Unknown vertex interpolation rule: %s",
+                    vertexRule.GetText());
+            }
+        }
+    }
+
+    // Update the smooth normals in steps:
     // 1. If the topology is dirty, update the adjacency table, a processed
     //    form of the topology that helps calculate smooth normals quickly.
     // 2. If the points are dirty, update the smooth normal buffer itself.
@@ -504,8 +694,35 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
             _points.cdata());
         _normalsValid = true;
 
-        rtcSetBuffer(_rtcMeshScene, _rtcMeshId, RTC_USER_VERTEX_BUFFER0,
-            _computedNormals.cdata(), 0, sizeof(GfVec3f));
+        // Create a sampler for the "normals" primvar. If there are authored
+        // normals, the smooth normals flag has been suppressed, so it won't
+        // be overwritten by the primvar population below.
+        _CreatePrimvarSampler(HdTokens->normals, VtValue(_computedNormals),
+            HdInterpolationVertex, _refined);
+    }
+
+    // If smooth normals are off and there are no authored normals, make sure
+    // there's no "normals" sampler so the renderpass can use its fallback
+    // behavior.
+    if (!_smoothNormals && !authoredNormals) {
+        HdEmbreePrototypeContext *ctx = _GetPrototypeContext();
+        if (ctx->primvarMap.count(HdTokens->normals) > 0) {
+            delete ctx->primvarMap[HdTokens->normals];
+        }
+        ctx->primvarMap.erase(HdTokens->normals);
+
+        // Force the smooth normals code to rebuild the "normals" primvar the
+        // next time smooth normals is enabled.
+        _normalsValid = false;
+    }
+
+    // Populate primvars if they've changed or we recreated the mesh.
+    TF_FOR_ALL(it, _primvarSourceMap) {
+        if (newMesh ||
+            HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, it->first)) {
+            _CreatePrimvarSampler(it->first, it->second.data,
+                    it->second.interpolation, _refined);
+        }
     }
 
     // Populate points in the RTC mesh.
@@ -552,8 +769,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         // Size down (if necessary).
         for(size_t i = newSize; i < oldSize; ++i) {
             // Delete instance context first...
-            delete static_cast<HdEmbreeInstanceContext*>(
-                rtcGetUserData(scene, _rtcInstanceIds[i]));
+            delete _GetInstanceContext(scene, i);
             // Then Embree instance.
             rtcDeleteGeometry(scene, _rtcInstanceIds[i]);
         }
@@ -577,9 +793,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
             rtcSetTransform(scene, _rtcInstanceIds[i],
                 RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, matf.GetArray());
             // Update the transform in the instance context.
-            static_cast<HdEmbreeInstanceContext*>(
-                rtcGetUserData(scene, _rtcInstanceIds[i]))->
-                    objectToWorldMatrix = matf;
+            _GetInstanceContext(scene, i)->objectToWorldMatrix = matf;
             // Mark the instance as updated in the BVH.
             rtcUpdate(scene, _rtcInstanceIds[i]);
         }
@@ -603,9 +817,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
             rtcSetTransform(scene, _rtcInstanceIds[0],
                 RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, _transform.GetArray());
             // Update the transform in the render context.
-            static_cast<HdEmbreeInstanceContext*>(
-                rtcGetUserData(scene, _rtcInstanceIds[0]))->
-                    objectToWorldMatrix = _transform;
+            _GetInstanceContext(scene, 0)->objectToWorldMatrix = _transform;
         }
         if (newInstance || newMesh ||
             HdChangeTracker::IsTransformDirty(*dirtyBits, id) ||
@@ -616,15 +828,22 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         }
     }
 
-    // Update the smooth shading flag on all instances.
-    for (size_t i = 0; i < _rtcInstanceIds.size(); ++i) {
-        static_cast<HdEmbreeInstanceContext*>(
-            rtcGetUserData(scene, _rtcInstanceIds[i]))->
-                useInterpolatedNormals = _smoothNormals;
-    }
-
     // Clean all dirty bits.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+}
+
+HdEmbreePrototypeContext*
+HdEmbreeMesh::_GetPrototypeContext()
+{
+    return static_cast<HdEmbreePrototypeContext*>(
+        rtcGetUserData(_rtcMeshScene, _rtcMeshId));
+}
+
+HdEmbreeInstanceContext*
+HdEmbreeMesh::_GetInstanceContext(RTCScene scene, size_t i)
+{
+    return static_cast<HdEmbreeInstanceContext*>(
+        rtcGetUserData(scene, _rtcInstanceIds[i]));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

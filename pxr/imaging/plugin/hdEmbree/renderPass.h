@@ -29,10 +29,8 @@
 #include "pxr/imaging/hd/renderPass.h"
 
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/matrix4f.h"
 
 #include <embree2/rtcore.h>
-#include <random>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -143,25 +141,6 @@ private:
 
     // The color of a ray miss.
     GfVec3f _clearColor;
-};
-
-///
-/// \class HdEmbreeInstanceContext
-///
-/// A small bit of state attached to each bit of instanced geometry in embree,
-/// for the benefit of HdEmbreeRenderPass::_TraceRay.
-///
-struct HdEmbreeInstanceContext
-{
-    /// Whether to call rtcInterpolate (to interpolate per-vertex computed
-    /// normals) or use ray.Ng (the flat face normal) for the shading normal.
-    /// Both normals are stored in object space.
-    bool useInterpolatedNormals;
-    /// The object-to-world transform, for transforming normals to worldspace.
-    GfMatrix4f objectToWorldMatrix;
-    /// The scene the prototype geometry lives in, for passing to
-    /// rtcInterpolate.
-    RTCScene rootScene;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,10 +27,10 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/instancer.h"
+#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
 
 #include <mutex>
 
@@ -59,6 +59,9 @@ public:
     HdEmbreeInstancer(HdSceneDelegate* delegate, SdfPath const& id,
                       SdfPath const &parentInstancerId);
 
+    /// Destructor.
+    ~HdEmbreeInstancer();
+
     /// Computes all instance transforms for the provided prototype id,
     /// taking into account the scene delegate's instancerTransform and the
     /// instance primvars "instanceTransform", "translate", "rotate", "scale".
@@ -85,7 +88,7 @@ private:
     // primvar name. Primvar values are VtValue, an any-type; they are
     // interpreted at consumption time (here, in ComputeInstanceTransforms).
     TfHashMap<TfToken,
-              VtValue,
+              HdVtBufferSource*,
               TfToken::HashFunctor> _primvarMap;
 };
 

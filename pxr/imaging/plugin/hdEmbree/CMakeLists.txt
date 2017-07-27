@@ -27,11 +27,14 @@ pxr_plugin(hdEmbree
         config
         instancer
         mesh
+        meshSamplers
         rendererPlugin
         renderDelegate
         renderPass
+        sampler
 
     PUBLIC_HEADERS
+        context.h
         renderParam.h
 
     RESOURCE_FILES
