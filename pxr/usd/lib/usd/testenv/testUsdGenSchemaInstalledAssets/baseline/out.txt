@@ -1,0 +1,20 @@
+Validation on, any diffs found will cause failure.
+Processing schema classes:
+ModelAPI, ClipsAPI
+Loading Templates
+Writing API:
+	unchanged usd/lib/usd/api.h
+Writing Schema Tokens:
+	unchanged usd/lib/usd/tokens.h
+	unchanged usd/lib/usd/tokens.cpp
+	unchanged usd/lib/usd/wrapTokens.cpp
+Generating Classes:
+	unchanged usd/lib/usd/modelAPI.h
+	unchanged usd/lib/usd/modelAPI.cpp
+	unchanged usd/lib/usd/wrapModelAPI.cpp
+	unchanged usd/lib/usd/clipsAPI.h
+	unchanged usd/lib/usd/clipsAPI.cpp
+	unchanged usd/lib/usd/wrapClipsAPI.cpp
+	unchanged usd/lib/usd/plugInfo.json
+Generating Schematics:
+	unchanged usd/lib/usd/generatedSchema.usda

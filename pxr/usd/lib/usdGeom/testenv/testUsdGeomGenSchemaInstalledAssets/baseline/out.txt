@@ -1,0 +1,74 @@
+Validation on, any diffs found will cause failure.
+Processing schema classes:
+Imageable, Xformable, Scope, Xform, Boundable, Gprim, Cube, Sphere, Cylinder, Capsule, Cone, PointBased, Mesh, NurbsPatch, Curves, BasisCurves, NurbsCurves, Points, PointInstancer, Camera
+Loading Templates
+Writing API:
+	unchanged usd/lib/usdGeom/api.h
+Writing Schema Tokens:
+	unchanged usd/lib/usdGeom/tokens.h
+	unchanged usd/lib/usdGeom/tokens.cpp
+	unchanged usd/lib/usdGeom/wrapTokens.cpp
+Generating Classes:
+	unchanged usd/lib/usdGeom/imageable.h
+	unchanged usd/lib/usdGeom/imageable.cpp
+	unchanged usd/lib/usdGeom/wrapImageable.cpp
+	unchanged usd/lib/usdGeom/xformable.h
+	unchanged usd/lib/usdGeom/xformable.cpp
+	unchanged usd/lib/usdGeom/wrapXformable.cpp
+	unchanged usd/lib/usdGeom/scope.h
+	unchanged usd/lib/usdGeom/scope.cpp
+	unchanged usd/lib/usdGeom/wrapScope.cpp
+	unchanged usd/lib/usdGeom/xform.h
+	unchanged usd/lib/usdGeom/xform.cpp
+	unchanged usd/lib/usdGeom/wrapXform.cpp
+	unchanged usd/lib/usdGeom/boundable.h
+	unchanged usd/lib/usdGeom/boundable.cpp
+	unchanged usd/lib/usdGeom/wrapBoundable.cpp
+	unchanged usd/lib/usdGeom/gprim.h
+	unchanged usd/lib/usdGeom/gprim.cpp
+	unchanged usd/lib/usdGeom/wrapGprim.cpp
+	unchanged usd/lib/usdGeom/cube.h
+	unchanged usd/lib/usdGeom/cube.cpp
+	unchanged usd/lib/usdGeom/wrapCube.cpp
+	unchanged usd/lib/usdGeom/sphere.h
+	unchanged usd/lib/usdGeom/sphere.cpp
+	unchanged usd/lib/usdGeom/wrapSphere.cpp
+	unchanged usd/lib/usdGeom/cylinder.h
+	unchanged usd/lib/usdGeom/cylinder.cpp
+	unchanged usd/lib/usdGeom/wrapCylinder.cpp
+	unchanged usd/lib/usdGeom/capsule.h
+	unchanged usd/lib/usdGeom/capsule.cpp
+	unchanged usd/lib/usdGeom/wrapCapsule.cpp
+	unchanged usd/lib/usdGeom/cone.h
+	unchanged usd/lib/usdGeom/cone.cpp
+	unchanged usd/lib/usdGeom/wrapCone.cpp
+	unchanged usd/lib/usdGeom/pointBased.h
+	unchanged usd/lib/usdGeom/pointBased.cpp
+	unchanged usd/lib/usdGeom/wrapPointBased.cpp
+	unchanged usd/lib/usdGeom/mesh.h
+	unchanged usd/lib/usdGeom/mesh.cpp
+	unchanged usd/lib/usdGeom/wrapMesh.cpp
+	unchanged usd/lib/usdGeom/nurbsPatch.h
+	unchanged usd/lib/usdGeom/nurbsPatch.cpp
+	unchanged usd/lib/usdGeom/wrapNurbsPatch.cpp
+	unchanged usd/lib/usdGeom/curves.h
+	unchanged usd/lib/usdGeom/curves.cpp
+	unchanged usd/lib/usdGeom/wrapCurves.cpp
+	unchanged usd/lib/usdGeom/basisCurves.h
+	unchanged usd/lib/usdGeom/basisCurves.cpp
+	unchanged usd/lib/usdGeom/wrapBasisCurves.cpp
+	unchanged usd/lib/usdGeom/nurbsCurves.h
+	unchanged usd/lib/usdGeom/nurbsCurves.cpp
+	unchanged usd/lib/usdGeom/wrapNurbsCurves.cpp
+	unchanged usd/lib/usdGeom/points.h
+	unchanged usd/lib/usdGeom/points.cpp
+	unchanged usd/lib/usdGeom/wrapPoints.cpp
+	unchanged usd/lib/usdGeom/pointInstancer.h
+	unchanged usd/lib/usdGeom/pointInstancer.cpp
+	unchanged usd/lib/usdGeom/wrapPointInstancer.cpp
+	unchanged usd/lib/usdGeom/camera.h
+	unchanged usd/lib/usdGeom/camera.cpp
+	unchanged usd/lib/usdGeom/wrapCamera.cpp
+	unchanged usd/lib/usdGeom/plugInfo.json
+Generating Schematics:
+	unchanged usd/lib/usdGeom/generatedSchema.usda
