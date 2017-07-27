@@ -1299,13 +1299,29 @@ function(_pxr_library NAME)
     #
 
     if(NOT isObject)
-        install(
-            TARGETS ${NAME}
-            LIBRARY DESTINATION ${libInstallPrefix}
-            ARCHIVE DESTINATION ${libInstallPrefix}
-            RUNTIME DESTINATION ${libInstallPrefix}
-            PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
-        )
+        if(BUILD_SHARED_LIBS AND NOT PXR_BUILD_MONOLITHIC)
+            install(
+                TARGETS ${NAME}
+                EXPORT pxrTargets
+                LIBRARY DESTINATION ${libInstallPrefix}
+                ARCHIVE DESTINATION ${libInstallPrefix}
+                RUNTIME DESTINATION ${libInstallPrefix}
+                PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
+            )
+
+            export(TARGETS ${NAME}
+                APPEND
+                FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
+            )
+        else()
+            install(
+                TARGETS ${NAME}
+                LIBRARY DESTINATION ${libInstallPrefix}
+                ARCHIVE DESTINATION ${libInstallPrefix}
+                RUNTIME DESTINATION ${libInstallPrefix}
+                PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
+            )
+        endif()
     endif()
     _install_resource_files(
         ${NAME}
