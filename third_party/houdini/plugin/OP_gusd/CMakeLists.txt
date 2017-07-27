@@ -46,6 +46,7 @@ install(
         SOP_usdbindproxy.otl
         SOP_usdexportattributes.hda
         SOP_usdinstanceprototypes.hda
+        SOP_usdretime.hda
     DESTINATION
         ${PXR_INSTALL_SUBDIR}/otls
 )
