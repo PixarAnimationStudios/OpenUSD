@@ -46,16 +46,19 @@ PXR_NAMESPACE_OPEN_SCOPE
     (automatic) \
     (color) \
     (colorTemperature) \
+    (consumeAndContinue) \
+    (consumeAndHalt) \
     (cubeMapVerticalCross) \
     (diffuse) \
     (enableColorTemperature) \
     (exposure) \
     (filters) \
     (geometry) \
+    (ignore) \
     (intensity) \
     (latlong) \
     (lightList) \
-    ((lightListIsValid, "lightList:isValid")) \
+    ((lightListCacheBehavior, "lightList:cacheBehavior")) \
     (mirroredBall) \
     (normalize) \
     (portals) \
@@ -101,16 +104,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>automatic</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr(), Default value for UsdLuxDomeLight::GetTextureFormatAttr()
 /// \li <b>color</b> - UsdLuxLight
 /// \li <b>colorTemperature</b> - UsdLuxLight
+/// \li <b>consumeAndContinue</b> - Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
+/// \li <b>consumeAndHalt</b> - Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
 /// \li <b>cubeMapVerticalCross</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
 /// \li <b>diffuse</b> - UsdLuxLight
 /// \li <b>enableColorTemperature</b> - UsdLuxLight
 /// \li <b>exposure</b> - UsdLuxLight
 /// \li <b>filters</b> - UsdLuxLight
 /// \li <b>geometry</b> - UsdLuxGeometryLight
+/// \li <b>ignore</b> - Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
 /// \li <b>intensity</b> - UsdLuxDistantLight, UsdLuxLight
 /// \li <b>latlong</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
 /// \li <b>lightList</b> - UsdLuxListAPI
-/// \li <b>lightListIsValid</b> - UsdLuxListAPI
+/// \li <b>lightListCacheBehavior</b> - UsdLuxListAPI
 /// \li <b>mirroredBall</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
 /// \li <b>normalize</b> - UsdLuxLight
 /// \li <b>portals</b> - UsdLuxDomeLight
