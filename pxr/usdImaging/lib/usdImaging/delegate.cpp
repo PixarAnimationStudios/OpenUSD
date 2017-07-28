@@ -1882,6 +1882,19 @@ UsdImagingDelegate::ClearRefineLevel(SdfPath const& usdPath)
     }
 }
 
+
+bool
+UsdImagingDelegate::IsRefined(SdfPath const& usdPath) const
+{
+    _RefineLevelMap::const_iterator it = _refineLevelMap.find(usdPath);
+    if (it == _refineLevelMap.end()) {
+        return (GetRefineLevelFallback() > 0);
+    }
+
+    return (it->second > 0);
+}
+
+
 void
 UsdImagingDelegate::SetReprFallback(TfToken const &repr)
 {
