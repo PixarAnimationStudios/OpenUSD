@@ -37,6 +37,8 @@
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_geometry.h>
 
+#include <bitset>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdEmbreeRTCBufferAllocator

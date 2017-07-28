@@ -41,7 +41,7 @@ if (APPLE)
 elseif (UNIX)
     set (EMBREE_LIB_NAME libembree.so)
 elseif (WIN32)
-    set (EMBREE_LIB_NAME libembree.lib)
+    set (EMBREE_LIB_NAME embree.lib)
 endif()
 
 find_library(EMBREE_LIBRARY

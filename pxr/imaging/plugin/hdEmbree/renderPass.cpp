@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/glf/glew.h"
+
 #include "pxr/imaging/hdEmbree/renderPass.h"
 
 #include "pxr/imaging/hdEmbree/config.h"
@@ -225,7 +227,8 @@ HdEmbreeRenderPass::_RenderTiles(size_t tileStart, size_t tileEnd)
 
 /// Fill in an RTCRay structure from the given parameters.
 static void
-_PopulateRay(RTCRay *ray, GfVec3f const& origin, GfVec3f const& dir, float near)
+_PopulateRay(RTCRay *ray, GfVec3f const& origin, 
+             GfVec3f const& dir, float nearest)
 {
     ray->org[0] = origin[0];
     ray->org[1] = origin[1];
@@ -233,7 +236,7 @@ _PopulateRay(RTCRay *ray, GfVec3f const& origin, GfVec3f const& dir, float near)
     ray->dir[0] = dir[0];
     ray->dir[1] = dir[1];
     ray->dir[2] = dir[2];
-    ray->tnear = near; 
+    ray->tnear = nearest; 
     ray->tfar = std::numeric_limits<float>::infinity();
     ray->geomID = RTC_INVALID_GEOMETRY_ID;
     ray->primID = RTC_INVALID_GEOMETRY_ID;
