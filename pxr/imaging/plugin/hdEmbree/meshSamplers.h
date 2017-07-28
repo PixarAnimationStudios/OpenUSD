@@ -24,11 +24,6 @@
 #ifndef HDEMBREE_MESH_SAMPLERS_H
 #define HDEMBREE_MESH_SAMPLERS_H
 
-// Old versions of embree didn't define this, and had 2 hardcoded user buffers.
-#ifndef RTC_MAX_USER_VERTEX_BUFFERS
-#define RTC_MAX_USER_VERTEX_BUFFERS 2
-#endif
-
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdEmbree/sampler.h"
 #include "pxr/imaging/hd/meshUtil.h"
@@ -38,6 +33,11 @@
 #include <embree2/rtcore_geometry.h>
 
 #include <bitset>
+
+// Old versions of embree didn't define this, and had 2 hardcoded user buffers.
+#ifndef RTC_MAX_USER_VERTEX_BUFFERS
+#define RTC_MAX_USER_VERTEX_BUFFERS 2
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
