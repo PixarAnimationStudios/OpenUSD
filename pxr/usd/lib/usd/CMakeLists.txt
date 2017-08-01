@@ -121,6 +121,7 @@ pxr_library(usd
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+        schema.usda
 )
 
 if (NOT JINJA2_FOUND)

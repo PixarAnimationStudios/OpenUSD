@@ -435,6 +435,9 @@ public:
     JsValue GetDataFromPluginMetaData(TfType type,
                                       const std::string &key) const;
 
+    /// Returns all the registered plugin paths.
+    PLUG_API
+    std::vector<std::string> GetAllRegisteredPluginPaths() const;
 private:
     // Private ctor and dtor since this is a constructed as a singleton.
     PLUG_LOCAL

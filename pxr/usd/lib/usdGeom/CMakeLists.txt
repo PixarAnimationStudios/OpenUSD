@@ -97,6 +97,7 @@ pxr_library(usdGeom
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+        schema.usda
 )
 
 pxr_test_scripts(
