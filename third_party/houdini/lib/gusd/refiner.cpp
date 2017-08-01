@@ -219,9 +219,11 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
                     identifier.SetFromVariantPath(instancerPrimPath);
                     if (cache.Bind(accessor, filePath, identifier, NULL)) {
                         m_usdPrim = accessor.GetPrimHolderAtPath(identifier.GetPrimPath(), NULL);
-                    }
-                    if( m_usdPrim ) {
                         lock.Acquire(m_usdPrim, /*write*/false);
+
+                        if( *lock == NULL ) {
+                            return;
+                        }
 
                         // Get the type name of the usd file to overlay
                         m_pointInstancerType = (*lock).GetTypeName().GetText();
