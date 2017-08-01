@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include <cstddef>
 
+#include "pxr/imaging/glf/glew.h"
+
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
