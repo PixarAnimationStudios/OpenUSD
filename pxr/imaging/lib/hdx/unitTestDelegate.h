@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/glf/simpleLight.h"
+#include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
@@ -40,10 +41,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+template <typename T>
+static VtArray<T>
+_BuildArray(T values[], int numValues)
+{
+    VtArray<T> result(numValues);
+    std::copy(values, values+numValues, result.begin());
+    return result;
+}
 
 class Hdx_UnitTestDelegate : public HdSceneDelegate
 {
 public:
+    enum Interpolation { VERTEX, UNIFORM, CONSTANT, FACEVARYING, VARYING };
+
     Hdx_UnitTestDelegate(HdRenderIndex *renderIndex);
 
     void SetRefineLevel(int level);
@@ -90,13 +101,45 @@ public:
                     HdShaderParamVector const &params);
     void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId);
 
-    // prims
+    // prims    
+    void AddMesh(SdfPath const &id,
+                 GfMatrix4d const &transform,
+                 VtVec3fArray const &points,
+                 VtIntArray const &numVerts,
+                 VtIntArray const &verts,
+                 bool guide=false,
+                 SdfPath const &instancerId=SdfPath(),
+                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
+                 TfToken const &orientation=HdTokens->rightHanded,
+                 bool doubleSided=false);
+    
+    void AddMesh(SdfPath const &id,
+                 GfMatrix4d const &transform,
+                 VtVec3fArray const &points,
+                 VtIntArray const &numVerts,
+                 VtIntArray const &verts,
+                 PxOsdSubdivTags const &subdivTags,
+                 VtValue const &color,
+                 Interpolation colorInterpolation,
+                 bool guide=false,
+                 SdfPath const &instancerId=SdfPath(),
+                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
+                 TfToken const &orientation=HdTokens->rightHanded,
+                 bool doubleSided=false);
+
+    void AddCube(SdfPath const &id, GfMatrix4d const &transform, bool guide=false,
+                 SdfPath const &instancerId=SdfPath(),
+                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
+                 VtValue const &color = VtValue(GfVec4f(1,1,1,1)),
+                 Interpolation colorInterpolation = CONSTANT);
+
     void AddGrid(SdfPath const &id, GfMatrix4d const &transform,
                  bool guide=false, SdfPath const &instancerId=SdfPath());
-    void AddCube(SdfPath const &id, GfMatrix4d const &transform,
-                 bool guide=false, SdfPath const &instancerId=SdfPath());
+
     void AddTet(SdfPath const &id, GfMatrix4d const &transform,
-                 bool guide=false, SdfPath const &instancerId=SdfPath());
+                 bool guide=false, SdfPath const &instancerId=SdfPath(),
+                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmark);
+
     void SetRefineLevel(SdfPath const &id, int level);
 
     // delegate methods
@@ -108,6 +151,8 @@ public:
     virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
     virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
     virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const &id);
+    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
     virtual VtIntArray GetInstanceIndices(SdfPath const& instancerId,
                                           SdfPath const& prototypeId);
 
@@ -125,23 +170,38 @@ public:
 private:
     struct _Mesh {
         _Mesh() { }
-        _Mesh(GfMatrix4d const &transform,
+        _Mesh(TfToken const &scheme,
+              TfToken const &orientation,
+              GfMatrix4d const &transform,
               VtVec3fArray const &points,
               VtIntArray const &numVerts,
               VtIntArray const &verts,
-              bool guide) :
+              PxOsdSubdivTags const &subdivTags,
+              VtValue const &color,
+              Interpolation colorInterpolation,
+              bool guide,
+              bool doubleSided) :
+            scheme(scheme), orientation(orientation),
             transform(transform),
-            points(points), numVerts(numVerts), verts(verts), guide(guide) {
-            color = GfVec4f(1, 1, 0, 1);
-        }
+            points(points), numVerts(numVerts), verts(verts),
+            subdivTags(subdivTags), color(color),
+            colorInterpolation(colorInterpolation), guide(guide),
+            doubleSided(doubleSided) { }
 
+        TfToken scheme;
+        TfToken orientation;
         GfMatrix4d transform;
         VtVec3fArray points;
         VtIntArray numVerts;
         VtIntArray verts;
-        GfVec4f color;
+        PxOsdSubdivTags subdivTags;
+        VtValue color;
+        Interpolation colorInterpolation;
         bool guide;
+        bool doubleSided;
+        TfToken reprName;
     };
+    
     struct _Instancer {
         _Instancer() { }
         _Instancer(VtVec3fArray const &scale,

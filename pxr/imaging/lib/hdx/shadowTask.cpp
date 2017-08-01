@@ -33,6 +33,7 @@
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -143,7 +144,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         _renderPassStates.clear();
 
         HdSceneDelegate* delegate = GetDelegate();
-        const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+        HdRenderIndex &renderIndex = delegate->GetRenderIndex();
         
         // Extract the HD lights used to render the scene from the 
         // task context, we will use them to find out what
@@ -156,8 +157,12 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
             SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
                 HdPrimTypeTokens->light, SdfPath::AbsoluteRootPath());
 
-            lightPaths = HdxSimpleLightTask::ComputeIncludedLights(
-                sprimPaths, params.lightIncludePaths, params.lightExcludePaths);
+            HdPrimGather gather;
+
+            gather.Filter(sprimPaths,
+                          params.lightIncludePaths,
+                          params.lightExcludePaths,
+                          &lightPaths);
         }
         
         HdStLightPtrConstVector lights;
@@ -233,7 +238,8 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
             shadows->GetProjectionMatrix(passId),
             GfVec4d(0,0,shadows->GetSize()[0],shadows->GetSize()[1]));
 
-        _renderPassStates[passId]->Sync();
+        _renderPassStates[passId]->Sync(
+            GetDelegate()->GetRenderIndex().GetResourceRegistry());
         _passes[passId]->Sync();
     }
 }

@@ -23,20 +23,44 @@
 //
 #include "pxr/pxr.h"
 
+#include <locale>
+
 #include <boost/python/def.hpp>
+#include <boost/python/object.hpp>
+#include <boost/variant.hpp>
+
+#include <string>
 
 #include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-extern boost::python::object Tf_GetEnvSettingByName(std::string const& name);
-extern boost::python::object Tf_GetEnvSettingDictionary();
+extern boost::variant<int, bool, std::string>
+Tf_GetEnvSettingByName(std::string const&);
+
+static boost::python::object
+_GetEnvSettingByName(std::string const& name) {
+    auto variantValue = Tf_GetEnvSettingByName(name);
+
+    if (variantValue.empty()) {
+        return boost::python::object();
+    } 
+
+    if (std::string* value = boost::get<std::string>(&variantValue)) {
+        return boost::python::object(*value);
+    } else if (bool* value = boost::get<bool>(&variantValue)) {
+        return boost::python::object(*value);
+    } else if (int* value = boost::get<int>(&variantValue)) {
+        return boost::python::object(*value); 
+    } 
+            
+    return boost::python::object();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapEnvSetting() {
-    def("GetEnvSetting", &Tf_GetEnvSettingByName);
-    def("GetEnvSettingDictionary", &Tf_GetEnvSettingDictionary);
+    def("GetEnvSetting", &_GetEnvSettingByName);
 }

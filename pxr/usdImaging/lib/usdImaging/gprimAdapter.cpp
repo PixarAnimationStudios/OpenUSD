@@ -34,7 +34,6 @@
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/pShader.h"
 #include "pxr/usd/usdShade/shader.h"
 
 #include "pxr/usd/usdHydra/shader.h"
@@ -526,57 +525,6 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                     opacityInterp = UsdGeomTokens->constant;
                     opacityPrimvarName = displayOpacityToken;
                     result[0][3] = matOpacity;
-                }
-            }
-        }
-    }
-
-    {
-        // -- Shader rel --
-        // XXX: Primvar values that come from shaders should not be part of
-        // the Rprim data, it should live as part of the shader so it can be 
-        // shared, though that poses some interesting questions for vertex & 
-        // varying rate shader provided primvars.
-        // XXX SHOULD OBSOLETE THIS WHEN LOOK IS THE DEFAULT SHADING MODEL
-        if (colorInterp.IsEmpty() && opacityInterp.IsEmpty()) {
-            static TfToken surfaceToken("surface");
-            UsdRelationship surface = prim.GetRelationship(surfaceToken);
-            SdfPathVector surfaceTargets;
-            if (surface.GetForwardedTargets(&surfaceTargets)) {
-                if (!surfaceTargets.empty()) {
-                    if (surfaceTargets.size() > 1) {
-                        TF_WARN("<%s> has more than one surface target; "\
-                            "using first one found: <%s>",
-                            prim.GetPath().GetText(),
-                            surfaceTargets.front().GetText());
-                    }
-                    UsdShadePShader shaderSchema(
-                        prim.GetStage()->GetPrimAtPath(surfaceTargets.front()));
-
-                    if (shaderSchema) {
-                        const UsdAttribute& colorAttr = 
-                            shaderSchema.GetDisplayColorAttr();
-                        const UsdAttribute& opacityAttr = 
-                            shaderSchema.GetDisplayOpacityAttr();
-                        GfVec3f shaderColor;
-                        float shaderOpacity;
-
-                        if (colorAttr.Get(&shaderColor, time)) {
-                            colorInterp = UsdGeomTokens->constant; 
-                            colorPrimvarName = colorAttr.GetTypeName().
-                                                GetAsToken();
-                            result[0][0] = shaderColor[0];
-                            result[0][1] = shaderColor[1];
-                            result[0][2] = shaderColor[2];
-                        }
-
-                        if (opacityAttr.Get(&shaderOpacity, time)) {
-                            opacityInterp = UsdGeomTokens->constant;
-                            opacityPrimvarName = opacityAttr.GetTypeName().
-                                                    GetAsToken();
-                            result[0][3] = shaderOpacity;
-                        }
-                    }
                 }
             }
         }

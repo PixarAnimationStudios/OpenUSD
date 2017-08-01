@@ -27,6 +27,7 @@
 #include "UT_Gf.h"
 #include "GT_VtArray.h"
 #include "USD_XformCache.h"
+#include "GU_USD.h"
 
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_DAIndexedString.h>
@@ -312,25 +313,28 @@ GusdPrimWrapper::setVisibility(const TfToken& visibility, UsdTimeCode time)
     }
 
     UsdAttribute visAttr = getUsdPrimForWrite().GetVisibilityAttr();
-    if( visAttr.IsValid() )
+    if( visAttr.IsValid() ) {
+        TfToken oldVal;
+        if( !visAttr.Get( &oldVal, 
+                          UsdTimeCode::Default() ) || oldVal != UsdGeomTokens->invisible ) {
+            visAttr.Set(UsdGeomTokens->invisible, UsdTimeCode::Default()); 
+        }
         visAttr.Set(visibility, time); 
+    }
 }
 
 void
 GusdPrimWrapper::updateVisibilityFromGTPrim(
         const GT_PrimitiveHandle& sourcePrim,
-        UsdTimeCode time)
+        UsdTimeCode time,
+        bool forceWrite )
 {
     // If we're tracking visibility, set this prim's default state to
     // invisible. File-per-frame exports rely on this if the prim isn't
     // persistent throughout the frame range.
-    UsdAttribute visAttr = getUsdPrimForWrite().GetVisibilityAttr();
-    if( visAttr.IsValid() )
-        visAttr.Set(UsdGeomTokens->invisible,
-                    UsdTimeCode::Default()); 
     GT_Owner attrOwner;
     GT_DataArrayHandle houAttr
-        = sourcePrim->findAttribute("visible", attrOwner, 0);
+        = sourcePrim->findAttribute(GUSD_VISIBLE_ATTR, attrOwner, 0);
     if(houAttr) {
         int visible = houAttr->getI32(0);
         if(visible) {
@@ -339,7 +343,7 @@ GusdPrimWrapper::updateVisibilityFromGTPrim(
             setVisibility(UsdGeomTokens->invisible, time);
         }
     }
-    else {
+    else if ( forceWrite ) {
         if(isVisible()) {
             setVisibility(UsdGeomTokens->inherited, time);
         } else {
@@ -357,12 +361,10 @@ GusdPrimWrapper::updateActiveFromGTPrim(
 
     GT_Owner attrOwner;
     GT_DataArrayHandle houAttr
-        = sourcePrim->findAttribute("usdactive", attrOwner, 0);
+        = sourcePrim->findAttribute(GUSD_ACTIVE_ATTR, attrOwner, 0);
     if (houAttr) {
         int active = houAttr->getI32(0);
-        if ((bool)active != prim.IsActive()) {
-            prim.SetActive((bool)active);            
-        }
+        prim.SetActive((bool)active);
     }
 }
 
@@ -987,7 +989,7 @@ GusdPrimWrapper::loadPrimvars(
 
         // If the name of this primvar doesn't
         // match the primvarPattern, skip it.
-        if (not name.multiMatch(primvarPattern, 1, " ")) {
+        if (!name.multiMatch(primvarPattern, 1, " ")) {
             continue;
         }
 

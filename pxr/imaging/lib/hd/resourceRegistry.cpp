@@ -53,8 +53,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_INSTANTIATE_SINGLETON(HdResourceRegistry);
-
 HdResourceRegistry::HdResourceRegistry() :
     _nonUniformAggregationStrategy(),
     _nonUniformImmutableAggregationStrategy(),
@@ -86,9 +84,6 @@ HdResourceRegistry::~HdResourceRegistry()
 {
     /*NOTHING*/
 }
-
-
-
 
 HdBufferArrayRangeSharedPtr
 HdResourceRegistry::AllocateNonUniformBufferArrayRange(
@@ -425,7 +420,8 @@ HdResourceRegistry::Commit()
                         // could be costly.
                         if (!(*sourceIt)->IsResolved()) {
                             if ((*sourceIt)->Resolve()) {
-                                TF_VERIFY((*sourceIt)->IsResolved());
+                                TF_VERIFY((*sourceIt)->IsResolved(), 
+                                "Name = %s", (*sourceIt)->GetName().GetText());
 
                                 ++numBufferSourcesResolved;
 
@@ -552,7 +548,7 @@ HdResourceRegistry::Commit()
         //   e.g. smooth normals -> quadrangulation.
         //
         TF_FOR_ALL(it, _pendingComputations) {
-            it->computation->Execute(it->range);
+            it->computation->Execute(it->range, this);
 
             HD_PERF_COUNTER_INCR(HdPerfTokens->computationsCommited);
         }

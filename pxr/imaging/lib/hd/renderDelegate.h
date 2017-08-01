@@ -26,7 +26,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hf/pluginBase.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/base/tf/token.h"
 
@@ -44,6 +43,7 @@ class HdRenderPass;
 class HdInstancer;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 ///
 /// The HdRenderParam is an opaque (to core Hydra) handle, to an object
@@ -64,7 +64,7 @@ private:
 
 /// \class HdRenderDelegate
 ///
-class HdRenderDelegate : public HfPluginBase
+class HdRenderDelegate
 {
 public:
     HD_API
@@ -102,6 +102,12 @@ public:
     /// A render delegate may return null for the param.
     ///
     virtual HdRenderParam *GetRenderParam() const = 0;
+
+    ///
+    /// Returns a shared ptr to the resource registry of the current render
+    /// delegate.
+    ///
+    virtual HdResourceRegistrySharedPtr GetResourceRegistry() const = 0;
 
     ////////////////////////////////////////////////////////////////////////////
     ///

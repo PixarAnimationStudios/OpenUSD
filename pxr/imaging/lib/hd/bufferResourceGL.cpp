@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
+#include "pxr/imaging/hd/renderContextCaps.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -55,11 +56,13 @@ HdBufferResourceGL::SetAllocation(GLuint id, size_t size)
     _id = id;
     HdResource::SetSize(size);
 
+    HdRenderContextCaps const & caps = HdRenderContextCaps::GetInstance();
+
     // note: gpu address remains valid until the buffer object is deleted,
     // or when the data store is respecified via BufferData/BufferStorage.
     // It doesn't change even when we make the buffer resident or non-resident.
     // https://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
-    if (id != 0 && glGetNamedBufferParameterui64vNV) {
+    if (id != 0 && caps.bindlessBufferEnabled) {
         glGetNamedBufferParameterui64vNV(
             id, GL_BUFFER_GPU_ADDRESS_NV, (GLuint64EXT*)&_gpuAddr);
     } else {

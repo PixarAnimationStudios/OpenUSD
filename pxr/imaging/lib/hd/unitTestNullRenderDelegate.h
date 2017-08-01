@@ -40,6 +40,7 @@ public:
     virtual const TfTokenVector &GetSupportedSprimTypes() const override;
     virtual const TfTokenVector &GetSupportedBprimTypes() const override;
     virtual HdRenderParam *GetRenderParam() const override;
+    virtual HdResourceRegistrySharedPtr GetResourceRegistry() const override;
 
     ////////////////////////////////////////////////////////////////////////////
     ///

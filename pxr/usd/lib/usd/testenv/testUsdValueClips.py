@@ -1078,5 +1078,20 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, attr, time=2, expected=300.0)
         ValidateAttributeTimeSamples(self.assertEqual, attr)
 
+    def test_InterpolateSamplesInClip(self):
+        """Tests that time samples in clips are interpolated
+        when a clip time is specified and no sample exists in
+        the clip at that time."""
+        stage = Usd.Stage.Open('interpolation/root.usda')
+
+        prim = stage.GetPrimAtPath('/InterpolationTest')
+        attr = prim.GetAttribute('attr')
+        _Check(self.assertEqual, attr, time=0, expected=0.0)
+        _Check(self.assertEqual, attr, time=1, expected=5.0)
+        _Check(self.assertEqual, attr, time=2, expected=10.0)
+        _Check(self.assertEqual, attr, time=3, expected=15.0)
+        _Check(self.assertEqual, attr, time=4, expected=20.0)
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
+
 if __name__ == "__main__":
     unittest.main()

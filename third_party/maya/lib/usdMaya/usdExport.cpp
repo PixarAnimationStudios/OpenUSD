@@ -95,6 +95,9 @@ MSyntax usdExport::createSyntax()
     syntax.enableQuery(false);
     syntax.enableEdit(false);
 
+    syntax.setObjectType(MSyntax::kSelectionList);
+    syntax.setMinObjects(0);
+
     return syntax;
 }
 

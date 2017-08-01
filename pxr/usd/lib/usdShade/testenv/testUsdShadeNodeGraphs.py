@@ -69,11 +69,9 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
                                                      Sdf.ValueTypeNames.Int)
             self.assertTrue(nodeGraphOutput)
     
-            self.assertTrue(UsdShade.ConnectableAPI.ConnectToSource(nodeGraphOutput, 
-                shaderOutput))
+            self.assertTrue(nodeGraphOutput.ConnectToSource(shaderOutput))
     
-            self.assertTrue(UsdShade.ConnectableAPI.ConnectToSource(shaderInput, 
-                                                                    nodeGraphInput))
+            self.assertTrue(shaderInput.ConnectToSource(nodeGraphInput))
 
         nestedNodeGraph = UsdShade.NodeGraph.Define(usdStage, 
             NESTED_NODEGRAPH_PATH)
@@ -83,7 +81,7 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
             Sdf.ValueTypeNames.Float)
         self.assertTrue(nestedNodeGraphInput)
 
-        UsdShade.ConnectableAPI.ConnectToSource(nestedNodeGraphInput,
+        nestedNodeGraphInput.ConnectToSource(
             NODEGRAPH_PATH.AppendProperty("inputs:InputTwo"))
     
         nestedNodeGraphOutput = nestedNodeGraph.CreateOutput("NestedOutput", 
@@ -93,8 +91,7 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
         nodeGraphOutputThree = nodeGraph.GetOutput("OutputThree")
         # This should trigger a warning since the source is outside the nested 
         # nodeGraph, but should continue.
-        UsdShade.ConnectableAPI.ConnectToSource(nestedNodeGraphOutput, 
-                                                nodeGraphOutputThree)
+        nestedNodeGraphOutput.ConnectToSource(nodeGraphOutputThree)
     
         return usdStage
     
@@ -125,8 +122,7 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
         nestedNodeGraphOutputs = nestedNodeGraph.GetOutputs()
         self.assertEqual(len(nestedNodeGraphOutputs), 1)
     
-        nestedOutputSource = UsdShade.ConnectableAPI.GetConnectedSource(
-            nestedNodeGraphOutputs[0])
+        nestedOutputSource = nestedNodeGraphOutputs[0].GetConnectedSource()
     
         self.assertEqual(nestedOutputSource[0].GetPath(), nodeGraph.GetPath())
         self.assertTrue(nestedOutputSource[1] in outputNames)
@@ -151,8 +147,7 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
         # Test input to input connections.
         nestedInputs = nestedNodeGraph.GetInputs()
         self.assertEqual(len(nestedInputs), 1)
-        nestedInputSource = UsdShade.ConnectableAPI.GetConnectedSource(
-            nestedInputs[0])
+        nestedInputSource = nestedInputs[0].GetConnectedSource()
         self.assertEqual(nestedInputSource[0].GetPath(), nodeGraph.GetPath())
         self.assertEqual(nestedInputSource[1], 'InputTwo')
         self.assertEqual(nestedInputSource[2], UsdShade.AttributeType.Input)

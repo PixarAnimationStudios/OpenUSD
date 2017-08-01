@@ -31,6 +31,7 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/property.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -853,6 +854,34 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
     return true;
 }
 
+// static
+bool
+PxrUsdMayaWriteUtil::WriteClassInherits(
+        const UsdPrim& prim,
+        const std::vector<std::string>& classNamesToInherit)
+{
+    if (classNamesToInherit.empty()) {
+        return true;
+    }
+
+    for (const auto& className: classNamesToInherit) {
+        if (!TfIsValidIdentifier(className)) {
+            return false;
+        }
+    }
+
+    UsdStagePtr stage = prim.GetStage();
+
+    auto inherits = prim.GetInherits();
+    for (const auto& className: classNamesToInherit) {
+        const SdfPath inheritPath = SdfPath::AbsoluteRootPath().AppendChild(
+                TfToken(className));
+        UsdPrim classPrim = stage->CreateClassPrim(inheritPath);
+        inherits.AppendInherit(classPrim.GetPath());
+    }
+    return true;
+}
+
 bool
 PxrUsdMayaWriteUtil::ReadMayaAttribute(
         const MFnDependencyNode& depNode,
@@ -871,6 +900,38 @@ PxrUsdMayaWriteUtil::ReadMayaAttribute(
 
             (*val) = std::string(plug.asString().asChar());
             return true;
+        }
+    }
+
+    return false;
+}
+
+bool
+PxrUsdMayaWriteUtil::ReadMayaAttribute(
+        const MFnDependencyNode& depNode,
+        const MString& name,
+        std::vector<std::string>* val)
+{
+    MStatus status;
+    depNode.attribute(name, &status);
+
+    if (status == MS::kSuccess) {
+        MPlug plug = depNode.findPlug(name);
+        MObject dataObj;
+
+        if ( (plug.getValue(dataObj) == MS::kSuccess) &&
+             (dataObj.hasFn(MFn::kStringArrayData)) ) {
+
+            MFnStringArrayData dData(dataObj, &status);
+            if (status == MS::kSuccess) {
+                MStringArray arrayValues = dData.array();
+                size_t numValues = arrayValues.length();
+                val->resize(numValues);
+                for (size_t i = 0; i < numValues; ++i) {
+                    (*val)[i] = std::string(arrayValues[i].asChar());
+                }
+                return true;
+            }
         }
     }
 

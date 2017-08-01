@@ -35,7 +35,6 @@ from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL
 from pxr import Glf
 from pxr import Sdf
 from pxr import Tf
-from pxr import Plug
 
 from ._usdviewq import Utils
 
@@ -1014,6 +1013,38 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('clicked()'),
                                self._playClicked)
 
+        QtCore.QObject.connect(self._ui.actionCameraMask_Full,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraMaskMenu)
+
+        QtCore.QObject.connect(self._ui.actionCameraMask_Partial,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraMaskMenu)
+        
+        QtCore.QObject.connect(self._ui.actionCameraMask_None,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraMaskMenu)
+
+        QtCore.QObject.connect(self._ui.actionCameraMask_Outline,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraMaskMenu)
+        
+        QtCore.QObject.connect(self._ui.actionCameraMask_Color,
+                               QtCore.SIGNAL('triggered()'),
+                               self._pickCameraMaskColor)
+
+        QtCore.QObject.connect(self._ui.actionCameraReticles_Inside,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraReticlesMenu)
+
+        QtCore.QObject.connect(self._ui.actionCameraReticles_Outside,
+                               QtCore.SIGNAL('triggered()'),
+                               self._updateCameraReticlesMenu)
+
+        QtCore.QObject.connect(self._ui.actionCameraReticles_Color,
+                               QtCore.SIGNAL('triggered()'),
+                               self._pickCameraReticlesColor)
+
         QtCore.QObject.connect(self._ui.actionHUD,
                                QtCore.SIGNAL('triggered()'),
                                self._updateHUDMenu)
@@ -1394,8 +1425,7 @@ class MainWindow(QtGui.QMainWindow):
 
             pluginTypes = self._stageView.GetRendererPlugins()
             for pluginType in pluginTypes:
-                name = Plug.Registry().GetStringFromPluginMetaData(
-                    pluginType, 'displayName')
+                name = self._stageView.GetRendererPluginDisplayName(pluginType)
                 action = self._ui.menuRendererPlugin.addAction(name)
                 action.setCheckable(True)
                 action.pluginType = pluginType
@@ -1410,6 +1440,7 @@ class MainWindow(QtGui.QMainWindow):
             # If any plugins exist, the first render plugin is the default one.
             if len(self._ui.rendererPluginActionGroup.actions()) > 0:
                 self._ui.rendererPluginActionGroup.actions()[0].setChecked(True)
+                self._stageView.SetRendererPlugin(pluginTypes[0])
 
             # Otherwise, put a no-op placeholder in.
             else:
@@ -1605,6 +1636,24 @@ class MainWindow(QtGui.QMainWindow):
     def bboxCache(self):
         return self._bboxCache
 
+    @property
+    def cameraMaskColor(self):
+        return self._cameraMaskColor
+
+    @cameraMaskColor.setter
+    def cameraMaskColor(self, color):
+        self._cameraMaskColor = color
+        self._settings.setAndSave(cameraMaskColor=color)
+    
+    @property
+    def cameraReticlesColor(self):
+        return self._cameraReticlesColor
+
+    @cameraReticlesColor.setter
+    def cameraReticlesColor(self, color):
+        self._cameraReticlesColor = color
+        self._settings.setAndSave(cameraReticlesColor=color)
+    
     @property
     def defaultMaterialAmbient(self):
         return self._defaultMaterialAmbient
@@ -2130,7 +2179,28 @@ class MainWindow(QtGui.QMainWindow):
         cullBackfaces = self._settings.get("CullBackfaces", False)
         self._ui.actionCull_Backfaces.setChecked(cullBackfaces)
         self._stageView.setCullBackfaces(cullBackfaces)
+
+        showMask = self._settings.get("actionCameraMask", "none")
+        showMask_Outline = self._settings.get("actionCameraMask_Outline", False)
+        self._cameraMaskColor = self._settings.get("cameraMaskColor",
+                (0.1, 0.1, 0.1, 1.0)) 
+        self._ui.actionCameraMask_Full.setChecked(showMask == "full")
+        self._ui.actionCameraMask_Partial.setChecked(showMask == "partial")
+        self._ui.actionCameraMask_None.setChecked(showMask == "none")
+        self._ui.actionCameraMask_Outline.setChecked(showMask_Outline)
+        self._stageView.showMask = (showMask != "none")
+        self._stageView.showMask_Opaque = (showMask == "full")
+        self._stageView.showMask_Outline = showMask_Outline
         
+        showReticles_Inside = self._settings.get("actionCameraReticles_Inside", False)
+        showReticles_Outside = self._settings.get("actionCameraReticles_Outside", False)
+        self._cameraReticlesColor = self._settings.get("cameraReticlesColor",
+                (0.0, 0.7, 1.0, 1.0))
+        self._ui.actionCameraReticles_Inside.setChecked(showReticles_Inside)
+        self._ui.actionCameraReticles_Outside.setChecked(showReticles_Outside)
+        self._stageView.showReticles_Inside = showReticles_Inside
+        self._stageView.showReticles_Outside = showReticles_Outside
+
         self._stageView.showHUD = self._settings.get("actionHUD", True)
         self._ui.actionHUD.setChecked(self._stageView.showHUD)
         # XXX Until we can make the "Subtree Info" stats-gathering faster,
@@ -2671,8 +2741,11 @@ class MainWindow(QtGui.QMainWindow):
     def _cameraSelectionChanged(self, camera):
         # Because the camera menu can be torn off, we need
         # to update its check-state whenever the selection changes
+        cameraPath = None
+        if camera:
+            cameraPath = camera.GetPath()
         for action in self._ui.menuCamera.actions():
-            action.setChecked(action._node == camera)
+            action.setChecked(action.data() == cameraPath)
         self._stageView.setCameraPrim(camera)
         self._stageView.updateGL()
 
@@ -2722,16 +2795,20 @@ class MainWindow(QtGui.QMainWindow):
 
         # Now that we have the current camera and all cameras, build the menu
         self._ui.menuCamera.clear()
+        currCameraPath = None
+        if currCamera:
+            currCameraPath = currCamera.GetPath()
         for camera in self._allSceneCameras:
             action = self._ui.menuCamera.addAction(camera.GetName())
+            action.setData(camera.GetPath())
+            action.setToolTip(str(camera.GetPath()))
             action.setCheckable(True)
-            action._node = camera
             
             QtCore.QObject.connect(
                 action,
                 QtCore.SIGNAL('triggered()'),
                 lambda camera = camera: self._cameraSelectionChanged(camera))
-            action.setChecked(action._node == currCamera)
+            action.setChecked(action.data() == currCameraPath)
 
     # ===================================================================
     # ==================== Attribute Inspector ==========================
@@ -3820,6 +3897,61 @@ class MainWindow(QtGui.QMainWindow):
         visibility menu as well as the 'Subtree Info' menu"""
         return self._ui.actionHUD.isChecked() and self._ui.actionHUD_Info.isChecked()
         
+    def _updateCameraMaskMenu(self):
+        self._CameraMaskMenuChanged()
+
+    def _pickCameraMaskColor(self):
+        QtGui.QColorDialog.setCustomColor(0, 0xFF000000)
+        QtGui.QColorDialog.setCustomColor(1, 0xFF808080)
+        color = QtGui.QColorDialog.getColor()
+        color = (
+                color.redF(),
+                color.greenF(),
+                color.blueF(),
+                color.alphaF()
+        )
+        self.cameraMaskColor = color
+        self._stageView.updateGL()
+
+    def _CameraMaskMenuChanged(self):
+        showMask = "none"
+        if self._ui.actionCameraMask_Full.isChecked():
+            showMask = "full"
+        if self._ui.actionCameraMask_Partial.isChecked():
+            showMask = "partial"
+        self._stageView.showMask = (showMask != "none")
+        self._stageView.showMask_Opaque = (showMask == "full")
+        self._stageView.showMask_Outline = self._ui.actionCameraMask_Outline.isChecked()
+
+        self._stageView.updateGL()
+
+        self._settings.setAndSave(actionCameraMask=showMask)
+        self._settings.setAndSave(actionCameraMask_Outline=self._ui.actionCameraMask_Outline.isChecked())
+
+    def _updateCameraReticlesMenu(self):
+        self._CameraReticlesMenuChanged()
+
+    def _pickCameraReticlesColor(self):
+        QtGui.QColorDialog.setCustomColor(0, 0xFF000000)
+        QtGui.QColorDialog.setCustomColor(1, 0xFF0080FF)
+        color = QtGui.QColorDialog.getColor()
+        color = (
+                color.redF(),
+                color.greenF(),
+                color.blueF(),
+                color.alphaF()
+        )
+        self.cameraReticlesColor = color
+        self._stageView.updateGL()
+
+    def _CameraReticlesMenuChanged(self):
+        self._stageView.showReticles_Inside = self._ui.actionCameraReticles_Inside.isChecked()
+        self._stageView.showReticles_Outside = self._ui.actionCameraReticles_Outside.isChecked()
+        self._stageView.updateGL()
+
+        self._settings.setAndSave(actionCameraReticles_Inside=self._ui.actionCameraReticles_Inside.isChecked())
+        self._settings.setAndSave(actionCameraReticles_Outside=self._ui.actionCameraReticles_Outside.isChecked())
+
     def _updateHUDMenu(self):
         """updates the upper HUD with both prim info and geom counts
         this function is called by the UI when the HUD is hidden or shown"""

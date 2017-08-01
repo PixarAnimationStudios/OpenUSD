@@ -51,11 +51,13 @@ public:
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     HD_API
-    virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState);
+    virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
+                             HdResourceRegistrySharedPtr const & resourceRegistry);
 
     /// Executes the drawing commands for this batch.
     HD_API
-    virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState);
+    virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
+                             HdResourceRegistrySharedPtr const & resourceRegistry);
 
 protected:
     HD_API

@@ -200,6 +200,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     // If wireColor is unset (zero), ignore it altogether
     
     Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, wireColor.a);
+    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
 
     return Cfill;
 }
@@ -222,6 +223,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     float p = exp2(-4 * d * d);
     if (p < 0.5) discard;
 
+    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
     return Cfill;
 }
 
@@ -276,6 +278,8 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
                       edgeDistance.z));
     float p = exp2(-4 * d * d);
     if (p < 0.5) discard;
+
+    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
 
     return Cfill;
 }

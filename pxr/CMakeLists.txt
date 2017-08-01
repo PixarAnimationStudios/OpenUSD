@@ -20,3 +20,7 @@ install(FILES
   "${PROJECT_BINARY_DIR}/pxrConfig.cmake"
   DESTINATION "${CMAKE_INSTALL_PREFIX}"
 )
+
+if(BUILD_SHARED_LIBS AND NOT PXR_BUILD_MONOLITHIC)
+	install(EXPORT pxrTargets DESTINATION "cmake")
+endif()

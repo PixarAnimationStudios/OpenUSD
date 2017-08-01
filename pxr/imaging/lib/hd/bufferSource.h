@@ -128,8 +128,14 @@ public:
 
     /// Returns true it this computation has already been resolved.
     bool IsResolved() const {
-        return _state == RESOLVED;
+        return _state >= RESOLVED;
     }
+
+    /// Returns true if an error occured during resolve.
+    bool HasResolveError() const {
+        return _state == RESOLVE_ERROR;
+    }
+
 
     /// \name Chained Buffers
     /// Buffer sources may be daisy-chained together.
@@ -179,6 +185,20 @@ protected:
         _state = RESOLVED;
     }
 
+    /// Called during Resolve() to indicate an unrecoverable failure occurred
+    /// and the results of the computation can not be used.
+    /// Further calls to Resolve() will not lead to success.
+    ///
+    /// This is different from Resolve() returning false, which indicates
+    /// that additional calls to Resolve() will eventually lead to success.
+    ///
+    /// This is also later in the pipeline than IsValid, which checks
+    /// that the buffer is setup such that Resolve() can be successful.
+    void _SetResolveError() {
+        TF_VERIFY(_state == BEING_RESOLVED);
+        _state = RESOLVE_ERROR;
+    }
+
     /// Non-blocking lock acquisition.
     /// If no one else is resolving this buffer source, returns true.
     /// In that case the caller needs to call _SetResolved at the end
@@ -209,7 +229,7 @@ protected:
     virtual bool _CheckValid() const = 0;
 
 private:
-    enum State { UNRESOLVED=0, BEING_RESOLVED, RESOLVED };
+    enum State { UNRESOLVED=0, BEING_RESOLVED, RESOLVED,  RESOLVE_ERROR};
     std::atomic<State> _state;
 };
 

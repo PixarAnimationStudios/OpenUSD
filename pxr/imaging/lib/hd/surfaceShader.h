@@ -50,6 +50,7 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 typedef std::vector<HdTextureResourceSharedPtr> HdTextureResourceSharedPtrVector;
 typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 /// \class HdSurfaceShader
 ///
@@ -97,7 +98,8 @@ public:
     HD_API
     void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
     HD_API
-    void SetBufferSources(HdBufferSourceVector &bufferSources);
+    void SetBufferSources(HdBufferSourceVector &bufferSources, 
+                          HdResourceRegistrySharedPtr const &resourceRegistry);
 
     /// If the prim is based on asset, reload that asset.
     HD_API

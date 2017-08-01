@@ -57,11 +57,13 @@ public:
 
     /// Prepare the command buffer for draw
     HD_API
-    void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState);
+    void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
+                     HdResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Execute the command buffer
     HD_API
-    void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState);
+    void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
+                     HdResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Cull drawItemInstances based on passed in combined view and projection matrix
     HD_API

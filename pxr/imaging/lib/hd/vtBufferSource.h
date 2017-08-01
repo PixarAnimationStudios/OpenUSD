@@ -28,26 +28,13 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/glUtils.h"
-#include "pxr/imaging/hd/patchIndex.h"
+
 #include "pxr/base/tf/token.h"
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/vec2d.h"
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec2i.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec3i.h"
-#include "pxr/base/gf/vec4d.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/gf/vec4i.h"
 #include "pxr/base/vt/value.h"
 
 #include <vector>
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/mpl/vector/vector40.hpp>
 
 #include <iosfwd>
 
@@ -69,52 +56,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdVtBufferSource : public HdBufferSource {
 public:
-
-    // TODO: Add support for scalar types (float, int, bool)
-
-    // TODO: Make this internal or perhaps use a TfHashMap/dispatch table.
-
-    // This struct is required to avoid instantiation of the actual types during
-    // type dispatch.
-    template <typename T> struct THolder {
-    typedef T Type;
-    };
-
-    // The valid types a HdBufferSource can be constructed from.
-    typedef boost::mpl::vector32<
-            THolder<bool>,
-            THolder<int>,
-            THolder<float>,
-            THolder<double>,
-            THolder<size_t>,
-            THolder<VtIntArray>,
-            THolder<VtFloatArray>,
-            THolder<VtDoubleArray>,
-            THolder<VtVec2fArray>,
-            THolder<VtVec3fArray>,
-            THolder<VtVec4fArray>,
-            THolder<VtVec2dArray>,
-            THolder<VtVec3dArray>,
-            THolder<VtVec4dArray>,
-            THolder<VtVec2iArray>,
-            THolder<VtVec3iArray>,
-            THolder<VtVec4iArray>,
-            THolder<GfMatrix4d>,
-            THolder<GfMatrix4f>,
-            THolder<GfVec2f>,
-            THolder<GfVec3f>,
-            THolder<GfVec4f>,
-            THolder<GfVec2d>,
-            THolder<GfVec3d>,
-            THolder<GfVec4d>,
-            THolder<GfVec2i>,
-            THolder<GfVec3i>,
-            THolder<GfVec4i>,
-            THolder<VtArray<HdVec4f_2_10_10_10_REV> >,
-            THolder<VtArray<GfMatrix4f> >,
-            THolder<VtArray<GfMatrix4d> >,
-            THolder<VtArray<Hd_BSplinePatchIndex> >
-            > AcceptedTypes;
 
     /// Constructs a new buffer from an existing VtValue, the data is fully
     /// copied into a new internal buffer.

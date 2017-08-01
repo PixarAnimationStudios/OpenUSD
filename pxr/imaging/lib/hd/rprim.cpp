@@ -27,6 +27,8 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hd/extCompPrimvarBufferSource.h"
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/repr.h"
@@ -43,7 +45,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_VERTEX_PRIMVAR, 0,
+TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
                       "Enable sharing of vertex primvar");
 
 HdRprim::HdRprim(SdfPath const& id,
@@ -135,10 +137,18 @@ HdRprim::_GetReprName(HdSceneDelegate* delegate,
     return defaultReprName;
 }
 
-// Static
 HdDirtyBits
-HdRprim::_PropagateRprimDirtyBits(HdDirtyBits bits)
+HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
 {
+    // If the dependent computations changed - assume all
+    // primvars are dirty
+    if (bits & HdChangeTracker::DirtyComputationPrimvarDesc) {
+        bits |= (HdChangeTracker::DirtyPoints  |
+                 HdChangeTracker::DirtyNormals |
+                 HdChangeTracker::DirtyWidths  |
+                 HdChangeTracker::DirtyPrimVar);
+    }
+
     // propagate point dirtiness to normal
     bits |= (bits & HdChangeTracker::DirtyPoints) ?
                                               HdChangeTracker::DirtyNormals : 0;
@@ -155,7 +165,22 @@ HdRprim::_PropagateRprimDirtyBits(HdDirtyBits bits)
                  HdChangeTracker::DirtyNormals |
                  HdChangeTracker::DirtyPrimVar);
     }
-    return bits;
+
+    // Let subclasses propagate bits
+    return _PropagateDirtyBits(bits);
+}
+
+void
+HdRprim::InitRepr(HdSceneDelegate* delegate,
+                  TfToken const &defaultReprName,
+                  bool forced,
+                  HdDirtyBits *dirtyBits)
+{
+    TfToken reprName = _GetReprName(delegate, defaultReprName,
+                                    forced, dirtyBits);
+
+    _InitRepr(reprName, dirtyBits);
+
 }
 
 void
@@ -216,8 +241,8 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
 
     SdfPath const& id = GetId();
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        renderIndex.GetResourceRegistry();
 
     // XXX: this should be in a different method
     // XXX: This should be in HdSt getting the HdSt Shader
@@ -478,13 +503,11 @@ HdRprim::_ComputeSharedPrimvarId(uint64_t baseId,
 
 HdBufferArrayRangeSharedPtr
 HdRprim::_GetSharedPrimvarRange(uint64_t primvarId,
-                                HdBufferSpecVector const &bufferSpecs,
-                                HdBufferArrayRangeSharedPtr const &existing,
-                                bool * isFirstInstance) const
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayRangeSharedPtr const &existing,
+    bool * isFirstInstance,
+    HdResourceRegistrySharedPtr const &resourceRegistry) const
 {
-    HdResourceRegistry *resourceRegistry =
-            &HdResourceRegistry::GetInstance();
-
     HdInstance<uint64_t, HdBufferArrayRangeSharedPtr> barInstance;
     std::unique_lock<std::mutex> regLock = 
         resourceRegistry->RegisterPrimvarRange(primvarId, &barInstance);
@@ -512,5 +535,51 @@ HdRprim::_GetSharedPrimvarRange(uint64_t primvarId,
     return range;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+void
+HdRprim::_GetExtComputationPrimVarsComputations(
+                                              HdSceneDelegate *sceneDelegate,
+                                              HdInterpolation interpolationMode,
+                                              HdDirtyBits dirtyBits,
+                                              HdBufferSourceVector *sources)
+{
+    const SdfPath &id = GetId();
 
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    TfTokenVector compPrimVars =
+            sceneDelegate->GetExtComputationPrimVarNames(id, interpolationMode);
+
+    TF_FOR_ALL(compPrimVarIt, compPrimVars) {
+        const TfToken &compPrimVarName =  *compPrimVarIt;
+
+        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, compPrimVarName)) {
+            HdExtComputationPrimVarDesc primVarDesc =
+                   sceneDelegate->GetExtComputationPrimVarDesc(id,
+                                                               compPrimVarName);
+
+
+            HdExtComputation *sourceComp;
+            HdSceneDelegate *sourceCompSceneDelegate;
+
+            renderIndex.GetExtComputationInfo(primVarDesc.computationId,
+                                              &sourceComp,
+                                              &sourceCompSceneDelegate);
+            if (sourceComp != nullptr) {
+                HdExtCompCpuComputationSharedPtr cpuComputation =
+                            sourceComp->GetComputation(sourceCompSceneDelegate);
+
+
+                HdBufferSourceSharedPtr primVarBufferSource(
+                    new HdExtCompPrimvarBufferSource(
+                                              compPrimVarName,
+                                              cpuComputation,
+                                              primVarDesc.computationOutputName,
+                                              primVarDesc.defaultValue));
+
+
+                sources->push_back(primVarBufferSource);
+            }
+        }
+    }
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

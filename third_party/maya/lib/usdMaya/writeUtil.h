@@ -142,6 +142,15 @@ struct PxrUsdMayaWriteUtil
             const MDagPath& dagPath,
             const UsdPrim& usdPrim,
             const UsdTimeCode& usdTime);
+
+    /// Authors class inherits on \p usdPrim.  \p inheritClassNames are
+    /// specified as names (not paths).  For example, they should be
+    /// ["_class_Special", ...].
+    PXRUSDMAYA_API
+    static bool WriteClassInherits(
+            const UsdPrim& usdPrim,
+            const std::vector<std::string>& inheritClassNames);
+
     /// \}
 
     /// \name Helpers for reading Maya data
@@ -153,6 +162,12 @@ struct PxrUsdMayaWriteUtil
             const MFnDependencyNode& depNode,
             const MString& name, 
             std::string* val);
+
+    PXRUSDMAYA_API
+    static bool ReadMayaAttribute(
+            const MFnDependencyNode& depNode,
+            const MString& name, 
+            std::vector<std::string>* val);
 
     /// \brief Reads attribute \p name on \p depNode into \p val.
     PXRUSDMAYA_API

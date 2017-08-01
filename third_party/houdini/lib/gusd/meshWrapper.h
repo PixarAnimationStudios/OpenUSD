@@ -122,6 +122,7 @@ private:
 
     GusdUSD_MeshHolder          m_usdMeshForRead;
     UsdGeomMesh                 m_usdMeshForWrite;
+    bool                        m_forceCreateNewGeo;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,0 +1,29 @@
+Validation on, any diffs found will cause failure.
+Processing schema classes:
+NodeGraph, Material, Look, Shader, ConnectableAPI
+Loading Templates
+Writing API:
+	unchanged usd/lib/usdShade/api.h
+Writing Schema Tokens:
+	unchanged usd/lib/usdShade/tokens.h
+	unchanged usd/lib/usdShade/tokens.cpp
+	unchanged usd/lib/usdShade/wrapTokens.cpp
+Generating Classes:
+	unchanged usd/lib/usdShade/nodeGraph.h
+	unchanged usd/lib/usdShade/nodeGraph.cpp
+	unchanged usd/lib/usdShade/wrapNodeGraph.cpp
+	unchanged usd/lib/usdShade/material.h
+	unchanged usd/lib/usdShade/material.cpp
+	unchanged usd/lib/usdShade/wrapMaterial.cpp
+	unchanged usd/lib/usdShade/look.h
+	unchanged usd/lib/usdShade/look.cpp
+	unchanged usd/lib/usdShade/wrapLook.cpp
+	unchanged usd/lib/usdShade/shader.h
+	unchanged usd/lib/usdShade/shader.cpp
+	unchanged usd/lib/usdShade/wrapShader.cpp
+	unchanged usd/lib/usdShade/connectableAPI.h
+	unchanged usd/lib/usdShade/connectableAPI.cpp
+	unchanged usd/lib/usdShade/wrapConnectableAPI.cpp
+	unchanged usd/lib/usdShade/plugInfo.json
+Generating Schematics:
+	unchanged usd/lib/usdShade/generatedSchema.usda

@@ -340,7 +340,9 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
             }
 
             // delete old buffer
-            glDeleteBuffers(1, &oldId);
+            if (oldId) {
+                glDeleteBuffers(1, &oldId);
+            }
 
             bres->SetAllocation(newId, bufferSize);
         } else {

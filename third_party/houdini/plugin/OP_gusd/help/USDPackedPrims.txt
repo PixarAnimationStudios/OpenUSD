@@ -91,6 +91,11 @@ If you unpack USD to Houdini geometry using the Houdini Unpack SOP it will unpac
 
 === Point Instancers ===
 
+Point instancers can be imported and unpacked in the same way as other USD geometry types, though they
+will not unpack to native Houdini point instancers. The simplest workflow for working with imported
+USD point instancers is to import it, apply transformations to the instances, then write out an overlay
+with the Overlay Transform option. For more complicated operations, and to generate new USD point instancers
+from Houdini, there is the USD Instance Prototypes SOP.
 
 === Related Nodes ===
 

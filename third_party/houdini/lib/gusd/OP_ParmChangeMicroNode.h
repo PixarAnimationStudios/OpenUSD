@@ -30,6 +30,8 @@
 
 #include <pxr/pxr.h>
 
+#include "gusd/api.h"
+
 #include <DEP/DEP_TimedMicroNode.h>
 #include <OP/OP_Parameters.h>
 #include <SYS/SYS_SequentialThreadIndex.h>
@@ -50,15 +52,18 @@ public:
     explicit GusdOP_ParmChangeMicroNode(OP_Parameters& node)
         : DEP_TimedMicroNode(), _node(node), _parmsAdded(false) {}
 
+    GUSD_API
     virtual ~GusdOP_ParmChangeMicroNode();
 
     /** Begin tracking the given parm.
         If @a vectorIdx is less than zero, all elements of the parm
         tuple are tracked.*/
+    GUSD_API
     void            addParm(int parmIdx, int vecIdx=-1);
 
     /** Update the resolved parm values.
         @return true if any resolved values changed.*/
+    GUSD_API
     bool            updateVals(fpreal t, int thread=SYSgetSTID());
 
     bool            updateIfNeeded(fpreal t, int thread=SYSgetSTID())
@@ -71,10 +76,11 @@ public:
         which are meant to persist on this micro node.*/
     virtual void    clearInputs()       { setTimeDependent(false); }
 
+    struct _ParmCache;
+
 private:
     OP_Parameters&          _node;
 
-    struct _ParmCache;
     UT_Array<_ParmCache*>   _cachedVals;
     bool                    _parmsAdded;
 };

@@ -63,12 +63,16 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     // CPU frustum culling (if chosen)
     _PrepareCommandBuffer(renderPassState);
 
+    // Get the resource registry
+    HdResourceRegistrySharedPtr const& resourceRegistry =
+        GetRenderIndex()->GetResourceRegistry();
+
     // renderTags.empty() means draw everything in the collection.
     if (renderTags.empty()) {
         for (_HdCommandBufferMap::iterator it  = _cmdBuffers.begin();
                                            it != _cmdBuffers.end(); it++) {
-            it->second.PrepareDraw(renderPassState);
-            it->second.ExecuteDraw(renderPassState);
+            it->second.PrepareDraw(renderPassState, resourceRegistry);
+            it->second.ExecuteDraw(renderPassState, resourceRegistry);
         }
     } else {
         TF_FOR_ALL(tag, renderTags) {
@@ -78,8 +82,8 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
             }
 
             // GPU frustum culling (if chosen)
-            _cmdBuffers[*tag].PrepareDraw(renderPassState);
-            _cmdBuffers[*tag].ExecuteDraw(renderPassState);
+            _cmdBuffers[*tag].PrepareDraw(renderPassState, resourceRegistry);
+            _cmdBuffers[*tag].ExecuteDraw(renderPassState, resourceRegistry);
         }
     }
 }

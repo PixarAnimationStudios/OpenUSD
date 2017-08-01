@@ -67,7 +67,7 @@ using std::vector;
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
-    MENV30_ENABLE_NEW_DEFAULT_STANDIN_BEHAVIOR, false,
+    MENV30_ENABLE_NEW_DEFAULT_STANDIN_BEHAVIOR, true,
     "If enabled then standin preference is weakest opinion.");
 
 static inline PcpPrimIndex const *
@@ -3660,11 +3660,8 @@ _EvalNodePayload(
     SdfPath const &payloadPath = defaultPayloadPath.IsEmpty() ?
         payload.GetPrimPath() : defaultPayloadPath;
 
-    // Layer offsets that apply to the site where the payload was
-    // introduced should apply to the payload as well. We have to
-    // manually bake in this offset because the new payload node 
-    // will be a child of the root node, which is not necessarily where
-    // the payload was authored.
+    // Incorporate any layer offset from this site to the sublayer
+    // where the payload was expressed.
     const SdfLayerOffset *maybeOffset =
         node.GetSite().layerStack->
         GetLayerOffsetForLayer(payloadSpecLayer);

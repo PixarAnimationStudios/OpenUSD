@@ -1,0 +1,115 @@
+<attr type="GroupAttr">
+  <attr name="bound" tupleSize="6" type="DoubleAttr">
+    <sample size="6" time="0" value="-10 10 -10 10 0 0 "/>
+  </attr>
+  <attr name="geometry" type="GroupAttr">
+    <attr name="arbitrary" type="GroupAttr">
+      <attr name="displayColor" type="GroupAttr">
+        <attr name="scope" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="face"/>
+          </sample>
+        </attr>
+        <attr name="inputType" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="color3"/>
+          </sample>
+        </attr>
+        <attr name="value" tupleSize="3" type="FloatAttr">
+          <sample size="48" time="0" value="1 0 0 0 1 1.16524e-05 0 1 1.16524e-05 1 0 0 0 1 1.16524e-05 0 1 1.16524e-05 0 1 1.16524e-05 0 1 1.16524e-05 0 1 1.16524e-05 0 1 1.16524e-05 0 1 1.16524e-05 0 1 1.16524e-05 1 0 0 0 1 1.16524e-05 0 1 1.16524e-05 1 0 0 "/>
+        </attr>
+      </attr>
+      <attr name="st" type="GroupAttr">
+        <attr name="scope" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="point"/>
+          </sample>
+        </attr>
+        <attr name="inputType" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="float"/>
+          </sample>
+        </attr>
+        <attr name="elementSize" tupleSize="1" type="IntAttr">
+          <sample size="1" time="0" value="2 "/>
+        </attr>
+        <attr name="value" tupleSize="2" type="FloatAttr">
+          <sample size="50" time="0" value="0 0 0.25 0 0.5 0 0.75 0 1 0 0 0.25 0.25 0.25 0.5 0.25 0.75 0.25 1 0.25 0 0.5 0.25 0.5 0.5 0.5 0.75 0.5 1 0.5 0 0.75 0.25 0.75 0.5 0.75 0.75 0.75 1 0.75 0 1 0.25 1 0.5 1 0.75 1 1 1 "/>
+        </attr>
+        <attr name="interpolationType" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="subdiv"/>
+          </sample>
+        </attr>
+      </attr>
+      <attr name="SPT_HwColor" type="GroupAttr">
+        <attr name="inputType" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="color3"/>
+          </sample>
+        </attr>
+        <attr name="scope" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="primitive"/>
+          </sample>
+        </attr>
+        <attr name="value" tupleSize="3" type="FloatAttr">
+          <sample size="3" time="0" value="1 0 0 "/>
+        </attr>
+      </attr>
+    </attr>
+    <attr name="point" type="GroupAttr">
+      <attr name="P" tupleSize="3" type="FloatAttr">
+        <sample size="75" time="0" value="-10 -10 0 -5 -10 0 0 -10 0 5 -10 0 10 -10 0 -10 -5 0 -5 -5 0 0 -5 0 5 -5 0 10 -5 0 -10 0 0 -5 0 0 0 0 0 5 0 0 10 0 0 -10 5 0 -5 5 0 0 5 0 5 5 0 10 5 0 -10 10 0 -5 10 0 0 10 0 5 10 0 10 10 0 "/>
+      </attr>
+    </attr>
+    <attr name="poly" type="GroupAttr">
+      <attr name="vertexList" tupleSize="1" type="IntAttr">
+        <sample size="64" time="0" value="0 1 6 5 1 2 7 6 2 3 8 7 3 4 9 8 5 6 11 10 6 7 12 11 7 8 13 12 8 9 14 13 10 11 16 15 11 12 17 16 12 13 18 17 13 14 19 18 15 16 21 20 16 17 22 21 17 18 23 22 18 19 24 23 "/>
+      </attr>
+      <attr name="startIndex" tupleSize="1" type="IntAttr">
+        <sample size="17" time="0" value="0 4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 "/>
+      </attr>
+    </attr>
+    <attr name="interpolateBoundary" tupleSize="1" type="IntAttr">
+      <sample size="1" time="0" value="1 "/>
+    </attr>
+  </attr>
+  <attr name="prmanStatements" type="GroupAttr">
+    <attr name="orientation" tupleSize="1" type="StringAttr">
+      <sample size="1" time="0">
+        <str value="outside"/>
+      </sample>
+    </attr>
+    <attr name="subdivisionMesh" type="GroupAttr">
+      <attr name="scheme" tupleSize="1" type="StringAttr">
+        <sample size="1" time="0">
+          <str value="catmull-clark"/>
+        </sample>
+      </attr>
+    </attr>
+  </attr>
+  <attr name="tabs" type="GroupAttr">
+    <attr name="scenegraph" type="GroupAttr">
+      <attr name="stopExpand" tupleSize="1" type="IntAttr">
+        <sample size="1" time="0" value="1 "/>
+      </attr>
+    </attr>
+  </attr>
+  <attr name="type" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="subdmesh"/>
+    </sample>
+  </attr>
+  <attr name="viewer" type="GroupAttr">
+    <attr name="default" type="GroupAttr">
+      <attr name="drawOptions" type="GroupAttr">
+        <attr name="windingOrder" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="clockwise"/>
+          </sample>
+        </attr>
+      </attr>
+    </attr>
+  </attr>
+</attr>

@@ -103,22 +103,18 @@ class TestUsdShadeConnectability(unittest.TestCase):
         # connected to any input or output.
         self._CanConnect(shaderInputColor, colorInterfaceInput)
         # Make the connection.
-        self.assertTrue(UsdShade.ConnectableAPI.ConnectToSource(shaderInputColor, 
-                                                       colorInterfaceInput))
+        self.assertTrue(shaderInputColor.ConnectToSource(colorInterfaceInput))
 
         if UsdShade.Utils.WriteNewEncoding():
             self.assertEqual(
-                UsdShade.ConnectableAPI.GetRawConnectedSourcePaths(
-                    shaderInputColor),
+                shaderInputColor.GetRawConnectedSourcePaths(),
                 [colorInterfaceInput.GetAttr().GetPath()])
     
         self._CanConnect(shaderInputFloat, floatInterfaceInput)
-        self.assertTrue(UsdShade.ConnectableAPI.ConnectToSource(shaderInputFloat, 
-                floatInterfaceInput))
+        self.assertTrue(shaderInputFloat.ConnectToSource(floatInterfaceInput))
 
         if UsdShade.Utils.WriteNewEncoding():
-            self.assertEqual(UsdShade.ConnectableAPI.GetRawConnectedSourcePaths(
-                                shaderInputFloat),
+            self.assertEqual(shaderInputFloat.GetRawConnectedSourcePaths(),
                              [floatInterfaceInput.GetAttr().GetPath()])
 
         shaderOutputColor = shader.CreateOutput("color", Sdf.ValueTypeNames.Color3f)
@@ -138,8 +134,7 @@ class TestUsdShadeConnectability(unittest.TestCase):
         # NodeGraph Input with full connectability can be connected to an output.
         self.assertTrue(nodeGraphInputFloat.SetConnectability(UsdShade.Tokens.full))
         self._CanConnect(nodeGraphInputFloat, shaderOutputFloat)
-        self.assertTrue(UsdShade.ConnectableAPI.ConnectToSource(nodeGraphInputFloat, 
-                                                       shaderOutputFloat))
+        self.assertTrue(nodeGraphInputFloat.ConnectToSource(shaderOutputFloat))
 
         nodeGraphInputColor = nodeGraph.CreateInput("nodeGraphColor", 
                                                     Sdf.ValueTypeNames.Color3f)
@@ -156,8 +151,7 @@ class TestUsdShadeConnectability(unittest.TestCase):
         # previously attempted connection.
         self.assertTrue(shaderInputColor.SetConnectability(UsdShade.Tokens.interfaceOnly))
         self._CanConnect(nodeGraphInputColor, shaderInputColor)
-        self.assertTrue(UsdShade.ConnectableAPI.ConnectToSource(nodeGraphInputColor, 
-                                                       shaderInputColor))
+        self.assertTrue(nodeGraphInputColor.ConnectToSource(shaderInputColor))
 
         # Change connectability of an interface input to full, to test connection 
         # from an "interfaceOnly" to a "full" input on a nodegraph. 
@@ -176,8 +170,7 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self.assertTrue(floatInterfaceInput.SetConnectability(
                             UsdShade.Tokens.interfaceOnly))
         self._CanConnect(nestedShaderInputFloat, floatInterfaceInput)
-        self.assertTrue(UsdShade.ConnectableAPI.ConnectToSource(
-                nestedShaderInputFloat, floatInterfaceInput))
+        self.assertTrue(nestedShaderInputFloat.ConnectToSource(floatInterfaceInput))
    
 if __name__ == "__main__":
     unittest.main()

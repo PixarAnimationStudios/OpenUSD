@@ -26,11 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
-#include "pxr/usd/sdf/reference.h"
 
-#include <boost/assign.hpp>
-#include <fstream>
-#include <sstream>
 #include <cctype>
 
 using std::map;
@@ -42,40 +38,88 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static const char *_IndentString = "    ";
 
-// basically duplicate Vt::Array::_StreamRecursive() but specialize for
-// string arrays by putting in quotes
+// Helper for creating string representation of an asset path
+static string
+_StringFromAssetPath(const string& assetPath)
+{
+    // See Sdf_EvalAssetPath for the code that reads asset paths at parse time.
+
+    // We want to avoid writing asset paths with escape sequences in them
+    // so that it's easy for users to copy and paste these paths into other
+    // apps without having to clean up those escape sequences.
+    //
+    // We use "@"s as delimiters so that asset paths are easily identifiable.
+    // but use "@@@" if the path already has an "@" in it rather than escaping
+    // it. If the path has a "@@@", then we'll escape that, but hopefully that's
+    // a rarer case. We'll also strip out non-printable characters. so we don't
+    // have to escape those.
+    static const string singleDelim = "@";
+    static const string tripleDelim = "@@@";
+    const string* delim = (assetPath.find('@') == std::string::npos) ? 
+        &singleDelim : &tripleDelim;
+
+    string s = assetPath;
+    s.erase(std::remove_if(s.begin(), s.end(), 
+                           [](char s) { return !std::isprint(s); }),
+            s.end());
+
+    if (delim == &tripleDelim) {
+        s = TfStringReplace(s, tripleDelim, "\\@@@");
+    }
+
+    return *delim + s + *delim;
+}
+
+static string
+_StringFromValue(const string& s)
+{
+    return Sdf_FileIOUtility::Quote(s);
+}
+
+static string
+_StringFromValue(const TfToken& s)
+{
+    return Sdf_FileIOUtility::Quote(s);
+}
+
+static string
+_StringFromValue(const SdfAssetPath& assetPath)
+{
+    return _StringFromAssetPath(assetPath.GetAssetPath());
+}
+
 template <class T>
 static void
-_StringFromVtStringArray(
+_StringFromVtArray(
     string *valueStr,
     const VtArray<T> &valArray)
 {
     valueStr->append("[");
     if (typename VtArray<T>::const_pointer d = valArray.cdata()) {
         if (const size_t n = valArray.size()) {
-            valueStr->append(Sdf_FileIOUtility::Quote(d[0]));
+            valueStr->append(_StringFromValue(d[0]));
             for (size_t i = 1; i != n; ++i) {
                 valueStr->append(", ");
-                valueStr->append(Sdf_FileIOUtility::Quote(d[i]));
+                valueStr->append(_StringFromValue(d[i]));
             }
         }
     }
     valueStr->append("]");
 }
 
-// Helper to created a quoted string if the given value is holding a 
-// string-valued type (specified by T).
+// Helper for creating strings for VtValues holding certain types
+// that can't use TfStringify, and arrays of those types.
 template <class T>
 static bool
-_StringFromVtStringValue(string* valueStr, const VtValue& value)
+_StringFromVtValueHelper(string* valueStr, const VtValue& value)
 {
     if (value.IsHolding<T>()) {
-        *valueStr = Sdf_FileIOUtility::Quote( value.UncheckedGet<T>() );
+        *valueStr = _StringFromValue(value.UncheckedGet<T>());
         return true;
-    } 
+    }
     else if (value.IsHolding<VtArray<T> >()) {
         const VtArray<T>& valArray = value.UncheckedGet<VtArray<T> >();
-        _StringFromVtStringArray(valueStr,valArray);
+        _StringFromVtArray(valueStr,valArray);
         return true;
     }
     return false;
@@ -302,9 +346,10 @@ Sdf_FileIOUtility::WriteQuotedString(ostream &out,
 }
 
 void
-Sdf_FileIOUtility::WriteAssetPath(ostream &out, 
-                                 size_t indent, const string &str) {
-    Write(out, indent, "@%s@", str.c_str());
+Sdf_FileIOUtility::WriteAssetPath(
+    ostream &out, size_t indent, const string &assetPath) 
+{
+    Puts(out, indent, _StringFromAssetPath(assetPath));
 }
 
 void
@@ -484,8 +529,9 @@ Sdf_FileIOUtility::_WriteDictionary(ostream &out,
                 // XXX: The logic here is very similar to that in
                 //      WriteDefaultValue. WBN to refactor.
                 string str;
-                if (_StringFromVtStringValue<string>(&str, value) || 
-                    _StringFromVtStringValue<TfToken>(&str, value)) {
+                if (_StringFromVtValueHelper<string>(&str, value) || 
+                    _StringFromVtValueHelper<TfToken>(&str, value) ||
+                    _StringFromVtValueHelper<SdfAssetPath>(&str, value)) {
                     Puts(out, 0, str);
                 } else {
                     Puts(out, 0, TfStringify(value));
@@ -683,8 +729,9 @@ string
 Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
 {
     string s;
-    if (_StringFromVtStringValue<string>(&s, value) || 
-        _StringFromVtStringValue<TfToken>(&s, value)) {
+    if (_StringFromVtValueHelper<string>(&s, value) || 
+        _StringFromVtValueHelper<TfToken>(&s, value) ||
+        _StringFromVtValueHelper<SdfAssetPath>(&s, value)) {
         return s;
     }
     

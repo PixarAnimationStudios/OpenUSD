@@ -413,11 +413,6 @@ WRAP_CUSTOM {
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateEndTime),
              (arg("clipTemplateEndTime"), arg("clipSet")))
-
-        .def("ClearNonTemplateClipMetadata", 
-             &UsdClipsAPI::ClearNonTemplateClipMetadata)
-        .def("ClearTemplateClipMetadata", 
-             &UsdClipsAPI::ClearTemplateClipMetadata)
         ;
 }
 

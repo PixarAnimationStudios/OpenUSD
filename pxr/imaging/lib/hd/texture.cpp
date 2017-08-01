@@ -32,6 +32,9 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/base/gf/vec3d.h"
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -62,8 +65,10 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
     //       can be separated functionally and have different 
     //       delegate methods.
     if ((bits & (DirtyParams | DirtyTexture)) != 0) {
-        HdResourceRegistry *resourceRegistry = 
-                                            &HdResourceRegistry::GetInstance();
+
+        HdResourceRegistrySharedPtr const &resourceRegistry = 
+            sceneDelegate->GetRenderIndex().GetResourceRegistry();
+
         HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
         {
             HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 

@@ -41,7 +41,8 @@ HdCopyComputationGPU::HdCopyComputationGPU(
 }
 
 void
-HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_)
+HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
+                              HdResourceRegistry *resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

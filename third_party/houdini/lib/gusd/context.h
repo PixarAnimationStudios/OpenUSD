@@ -52,11 +52,14 @@ public:
                  const GusdGT_AttrFilter& af ) 
         : time( t )
         , granularity( g )
-        , overlayGeo( false )
+	    , writeOverlay( false )
         , overlayPoints( false )
         , overlayTransforms( false )
         , overlayPrimvars( false )
         , overlayAll( false )
+        , writeStaticGeo( false )
+        , writeStaticTopology( false )
+        , writeStaticPrimvars( false )
         , attributeFilter( af )
         , purpose( UsdGeomTokens->default_ )
         , makeRefsInstanceable( true )
@@ -68,15 +71,19 @@ public:
     // Are we writing on frame per file or all the frames into a single file?
     Granularity granularity;
 
-    bool overlayGeo;            // Overlay existing geometry rather than creating new geometry?
+    bool writeOverlay;    // Overlay existing geometry rather than creating new geometry?
 
     // Flags indicating what should be overlayed
     bool overlayPoints;         // For point instancers, overlayPoints and overlayTransforms are synonymous.π
     bool overlayTransforms;
     bool overlayPrimvars;
     bool overlayAll;    // Completely replace prims, including topology. 
-                        // For point instancers, if overlayAll is set and 
-                        // prototypes are specified, replace the prototypes.
+                     // For point instancers, if overlayAll is set and 
+                     // prototypes are specified, replace the prototypes.
+
+    bool writeStaticGeo;
+    bool writeStaticTopology;
+    bool writeStaticPrimvars;
 
     // Filter specifing what primvars to write for each prim.
     const GusdGT_AttrFilter& attributeFilter;
@@ -114,24 +121,6 @@ public:
     // Whether to make references to a USD prims instanceable.
     bool makeRefsInstanceable;
 
-    // Return value of prim or detail attribute "usdovertransforms" if it
-    // exists. Otherwise return the valid of overlayTransforms in this context.
-    bool getOverTransforms( const GT_PrimitiveHandle &sourcePrim ) const;
-    
-    // Return value of prim or detail attribute "usdoverpoints" if it
-    // exists. Otherwise return the valid of overlayPoints in this context.
-     bool getOverPoints(     const GT_PrimitiveHandle &sourcePrim ) const;
-
-    // Return value of prim or detail attribute "usdoverprimvars" if it
-    // exists. Otherwise return the valid of overlayPrimvars in this context.
-    bool getOverPrimvars(   const GT_PrimitiveHandle &sourcePrim ) const;
-
-    // Return value of prim or detail attribute "usdoverall" if it
-    // exists. Otherwise return the valid of overlayAll in this context.
-    bool getOverAll(        const GT_PrimitiveHandle &sourcePrim ) const;
-
-    // Return the logical or of other getOver* functions.
-    bool getOverGeo(        const GT_PrimitiveHandle &sourcePrim ) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

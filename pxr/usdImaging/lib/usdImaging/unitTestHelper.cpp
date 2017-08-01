@@ -46,7 +46,8 @@ void
 UsdImaging_DrawTask::_Sync(HdTaskContext* ctx)
 {
     _renderPass->Sync();
-    _renderPassState->Sync();
+    _renderPassState->Sync(
+        _renderPass->GetRenderIndex()->GetResourceRegistry());
 }
 
 /* virtual */

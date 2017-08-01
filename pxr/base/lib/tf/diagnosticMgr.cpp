@@ -29,10 +29,13 @@
 #include "pxr/base/tf/diagnosticNotice.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tf/pyExceptionState.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/tf/stringUtils.h"
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include "pxr/base/tf/pyExceptionState.h"
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/demangle.h"
@@ -586,10 +589,12 @@ _FormatDiagnostic(const TfEnum &code, const TfCallContext &context,
                                 msg.c_str());
     }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     if (const TfPyExceptionState* exc =
             boost::any_cast<TfPyExceptionState>(&info)) {
         output += TfStringPrintf("%s\n", exc->GetExceptionString().c_str());
     }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     return output;
 }

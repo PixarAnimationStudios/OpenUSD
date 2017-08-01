@@ -14,9 +14,7 @@ def "Group" (
     }
 )
 {
-    over "Model" (
-        doc = "This prim ends up having {standin=render} in Csd today, but we want this to instead respect the selection made by the modelgroup (sim).  See bug 33728 for some relevant history."
-    )
+    over "Model" 
     {
     }
 }

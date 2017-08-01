@@ -63,7 +63,8 @@ protected:
     virtual void _Sync( HdTaskContext* ctx) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync();
+        _renderPassState->Sync(
+            _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
     virtual void _Execute(HdTaskContext* ctx) override
@@ -101,11 +102,11 @@ static void CameraAndLightTest()
 
     GfMatrix4d tx(1.0f);
     tx.SetRow(3, GfVec4f(5, 0, 5, 1.0));
-    SdfPath cube("geometry");
+    SdfPath cube("/geometry");
     delegate->AddCube(cube, tx);
 
-    SdfPath camera("camera");
-    SdfPath light("light");
+    SdfPath camera("/camera");
+    SdfPath light("/light");
 
     delegate->AddCamera(camera);
     delegate->AddLight(light, GlfSimpleLight());

@@ -59,11 +59,13 @@ public:
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     HD_API
-    virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState);
+    virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
+                             HdResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Executes the drawing commands for this batch.
     HD_API
-    virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState);
+    virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
+                             HdResourceRegistrySharedPtr const &resourceRegistry);
 
     HD_API
     virtual void DrawItemInstanceChanged(HdDrawItemInstance const* instance);
@@ -121,17 +123,22 @@ private:
         bool _useInstanceCulling;
         size_t _bufferArrayHash;
     };
-    _CullingProgram &_GetCullingProgram();
 
-    void _CompileBatch();
+    _CullingProgram &_GetCullingProgram(
+        HdResourceRegistrySharedPtr const &resourceRegistry);
+
+    void _CompileBatch(HdResourceRegistrySharedPtr const &resourceRegistry);
 
     void _GPUFrustumCulling(HdDrawItem const *item,
-                            HdRenderPassStateSharedPtr const &renderPassState);
+                            HdRenderPassStateSharedPtr const &renderPassState,
+                            HdResourceRegistrySharedPtr const &resourceRegistry);
 
     void _GPUFrustumCullingXFB(HdDrawItem const *item,
-                               HdRenderPassStateSharedPtr const &renderPassState);
+                               HdRenderPassStateSharedPtr const &renderPassState,
+                               HdResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _BeginGPUCountVisibleInstances();
+    void _BeginGPUCountVisibleInstances(HdResourceRegistrySharedPtr const &resourceRegistry);
+
     // GLsync is not defined in gl.h. It's defined in spec as an opaque pointer:
     typedef struct __GLsync *GLsync;
     void _EndGPUCountVisibleInstances(GLsync resultSync, size_t * result);

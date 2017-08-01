@@ -60,6 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (drawingCoord0)                             \
     (drawingCoord1)                             \
     (drawingCoordI)                             \
+    (elementCount)                              \
     (extent)                                    \
     (faceColors)                                \
     (geometry)                                  \
@@ -205,9 +206,13 @@ PXR_NAMESPACE_OPEN_SCOPE
                                                 \
     /* Sprims */                                \
     (camera)                                    \
-    (light)                                     \
     (drawTarget)                                \
     (shader)                                    \
+    /* Sprims Lights */                         \
+    (light)                                     \
+    (domeLight)                                 \
+    (rectLight)                                 \
+    (sphereLight)                               \
                                                 \
     /* Bprims */                                \
     (texture)

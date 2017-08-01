@@ -158,9 +158,17 @@ PXR_NAMESPACE_USING_DIRECTIVE
         return TOK_PATHREF;
     }
 
-    /* asset references */
-@([[:alnum:]$_/\. \-:]+([@#][[:alnum:]_/\.\-:]+)?)?@ {
-        (*yylval_param) = Sdf_EvalQuotedString(yytext, yyleng, 1);
+    /* Single '@'-delimited asset references */
+@([^[:cntrl:]@]+)?@ {
+        (*yylval_param) = 
+            Sdf_EvalAssetPath(yytext, yyleng, /* tripleDelimited = */ false);
+        return TOK_ASSETREF;
+    }
+
+    /* Triple '@'-delimited asset references. */
+@@@(([^[:cntrl:]@]|@{1,2}[^@]|\\@@@)+)?(@{0,2})@@@ {
+        (*yylval_param) = 
+            Sdf_EvalAssetPath(yytext, yyleng, /* tripleDelimited = */ true);
         return TOK_ASSETREF;
     }
 

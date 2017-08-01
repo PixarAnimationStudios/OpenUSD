@@ -352,9 +352,9 @@ GusdUSD_StageProxy::_StageData::Update(const UsdStageRefPtr& stage)
         const TfToken prerollName("shot:preroll");
         const TfToken postrollName("shot:postroll");
 
-        static const Usd_PrimFlagsPredicate pred(UsdPrimIsActive and
-                                                 UsdPrimIsDefined and
-                                                 not UsdPrimIsAbstract);
+        static const Usd_PrimFlagsPredicate pred(UsdPrimIsActive &&
+                                                 UsdPrimIsDefined &&
+                                                 !UsdPrimIsAbstract);
         for(const auto& prim : pseudoRoot.GetFilteredChildren(pred)) {
 
             VtValue val;
@@ -786,7 +786,7 @@ GusdUSD_StageProxy::MultiAccessor::_GetPrims(
     std::atomic_bool workerInterrupt(false);
     UTparallelFor(UT_BlockedRange<size_t>(0, primPaths.size()),
                   _GetPrimsFn(*this, primPaths, prims, err, workerInterrupt));
-    return !UTgetInterrupt()->opInterrupt() and !workerInterrupt;
+    return !UTgetInterrupt()->opInterrupt() && !workerInterrupt;
 }
 
 

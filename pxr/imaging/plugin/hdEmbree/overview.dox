@@ -1,0 +1,109 @@
+// This file is used solely to put useful information on the main
+// index page produced by doxygen.
+
+/*!
+\page hdEmbree_page_front HdEmbree : Embree-based hydra renderer plugin.
+\if ( PIXAR_MFB_BUILD )
+\mainpage  HdEmbree : Embree-based hydra renderer plugin.
+\publicLib
+\endif
+
+\anchor hdEmbree_mainpage
+
+## Classes
+
+- HdEmbreeConfig
+- HdEmbreeInstancer
+- HdEmbreeMesh
+- HdEmbreeRendererPlugin
+- HdEmbreeRenderDelegate
+- HdEmbreeRenderParam
+- HdEmbreeRenderPass
+
+## Overview
+
+HdEmbree implements a Hydra renderer plugin based on Intel's Embree raytracing
+kernels. HdEmbree is provided as a minimal example of how to write a renderer
+plugin for hydra; it aims to be living documentation of that API.
+
+The embree API is prefixed by "rtc", for raytracing core, and documentation is
+available [here](https://embree.github.io/api.html).
+
+The hydra image generation algorithm (as implemented in HdEngine::Execute) has
+three main phases: sync, commit resources, and execution of tasks. At
+each point, hydra delegates some responsibility to the renderer plugin.
+
+## Sync
+
+Hydra tracks scene state in the HdRenderIndex datastructure. Before generating
+images, hydra updates scene state with HdRenderIndex::SyncAll(). Each prim
+(scene object) is bound to an HdSceneDelegate object, which acts as its
+datasource; SyncAll loops through each prim calling Sync(), which pulls new
+scene data from the scene delegate and updates the renderable representation.
+
+The render index uses an instance of HdRenderDelegate to create prim classes,
+and render delegates are specialized for each renderer so that they can create
+the appropriate renderable representation. HdEmbree provides
+HdEmbreeRenderDelegate, which can create HdEmbreeInstancer and HdEmbreeMesh.
+Together, these classes insert mesh objects and mesh instances into the
+embree scene, so that drawing code can raycast against them.
+
+In order to support the standard hydra render task, HdxRenderTask, the scene
+delegate also supports a basic camera type, HdStCamera.
+
+## Commit Resources
+
+After updating the render index, but before running tasks, HdEngine::Execute()
+calls the render delegate's CommitResources(). This gives the renderer a chance
+to commit the results of the sync phase, e.g. by copying buffers to the GPU or
+doing a final rebuild of intersection datastructures. HdEmbree calls rtcCommit
+here, which does a multithreaded rebuild of the embree bounding volume
+hierarchy.
+
+## Executing tasks
+
+The last phase of HdEngine::Execute() is running tasks. Hydra tasks are
+schedulable callbacks that can be used to render, to maintain scene state,
+or to interleave execution with other renderers or libraries.
+
+Hydra provides HdxRenderTask as a way to simply render a scene. HdxRenderTask
+takes collections and render parameters as inputs, and maps them to a set of
+render passes, created by the render delegate. Collections specify which parts
+of the scene to draw (by include/exclude paths), and how to draw them (via the
+repr token).
+
+HdEmbree provides HdEmbreeRenderPass, which draws by raycasting into the embree
+scene that's been populated by HdEmbree prim objects. The raycasting is done
+in a parallel for loop, and the results are blitted to the GL framebuffer.
+
+Note: HdEmbreeRenderPass currently doesn't support collection include/exclude
+paths, so it draws everything in every renderpass. Rendering with multiple
+embree render passes is unsupported, since they'll write over each other
+instead of compositing.
+
+## Renderer Plugin
+
+HdEmbree fits into the hydra runtime as a plugin, and the discoverable class
+is HdEmbreeRendererPlugin. The plugin class's only responsibility is to
+create instances of HdEmbreeRenderDelegate.
+
+## Embree Scene Ownership
+
+The embree scene that renderpasses raycast against lives in
+HdEmbreeRenderDelegate. Because of this, each render index should have a
+distinct render delegate. The scene is passed to prims during Sync() via the
+HdEmbreeRenderParam object, and the scene is passed to renderpasses through the
+constructor.
+
+## Configuration
+
+Embree exports some configuration parameters, controllable by environment
+variable, through the HdEmbreeConfig class.
+
+## Unit Test
+
+testHdEmbree provides an example of how to write a minimal hydra application.
+It uses Hd_UnitTestGLDrawing to create a window and provide a GL framebuffer,
+and Hd_UnitTestDelegate to provide a simple scene graph/data source. The scene
+is then rendered by running HdxRenderTask via HdEngine::Execute().
+*/

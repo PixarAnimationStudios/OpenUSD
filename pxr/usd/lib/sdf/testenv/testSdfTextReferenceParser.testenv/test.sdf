@@ -1,4 +1,4 @@
-#sdf 1.0
+#sdf 1.4.32
 (
     baseAsset = @./base_a.sdf@
     subLayers = [
@@ -36,7 +36,7 @@ def "foo" (
             references = @./v_ref_a.sdf@
         ) {
             asset v_attr_a = @./v_attr_a.sdf@
-            asset[] v_attr_b = [@./v_attr_b.sdf@, @./v_attr_c.sdf@]
+            asset[] v_attr_b = [@./v_attr_b.sdf#foo@, @./v_attr_c.sdf?foo@]
         }
     }
 }

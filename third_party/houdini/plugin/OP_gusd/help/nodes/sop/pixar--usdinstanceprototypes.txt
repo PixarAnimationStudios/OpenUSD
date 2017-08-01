@@ -1,0 +1,18 @@
+= USDInstancePrototypes =
+
+#type: node
+#context: sop
+#internal: USDInstancePrototypes
+#tags: usd instance prototypes point instancer
+
+= USD Instance Prototypes =
+
+This node will add the required attributes to insure proper exporting of a USD Point Instancer. The input must contain merged prototypes with one packed prim per expected prototype. Each prim can either be a native Houdini packed prim or a USD packed prim. These must not change per frame, for reasons explained below involving the USD Point Instancer.
+
+In the node, we then add a primitive attribute "usdinstancepath" per prim. This provides a unique id per prototype for each instance to indicate which prototype to use. It is comparable to the native houdini instancing attribute ("instancepath"), though it does not actually need to point to a real node. In fact, by default we just set it to prototype_# where the number is decided by primnum. This must be copied along with the prototype to your instances in order to indicate to USD which prototype each instance is using.
+
+In addition, we create a detail attribute "usdprototypespath" which must point to an actual sop containing all the merged prototypes, with their "usdinstancepath" attributes already attached. As indicated above, this must be consistent across all frames, regardless of whether a prototype is being used in every frame. This is due to USD creating a static mapping from a prototype index id to the actual prototype geometry. An instance then can indicate its prototype in USD with just that index id.
+
+These attributes make most sense as primitive for the instance path and detail for the prototypes path, but can be set as any attribute or even a paramater with the same name on the USD output ROP. In addition, "instancepath" will behave the same way as "usdinstancepath" in order to support native Houdini point instancing (points with a transform and "instancepath" point attribute pointing to a prototype OBJ node).
+  
+

@@ -141,21 +141,21 @@ KindRegistry::_IsA(const TfToken& derivedKind, const TfToken &baseKind) const
     return _IsA(it->second.baseKind, baseKind);
 }
 
-TfToken::HashSet
+std::vector<TfToken>
 KindRegistry::GetAllKinds()
 {
     return KindRegistry::GetInstance()._GetAllKinds();
 }
 
-TfToken::HashSet
+std::vector<TfToken>
 KindRegistry::_GetAllKinds() const
 {
-    TfToken::HashSet kinds;
-
-    TF_FOR_ALL(it, _kindMap)
-        kinds.insert(it->first);
-
-    return kinds;
+    std::vector<TfToken> r;
+    r.reserve(_kindMap.size());
+    for (const auto &entry: _kindMap) {
+        r.push_back(entry.first);
+    }
+    return r;
 }
 
 // Helper function to make reading from dictionaries easier

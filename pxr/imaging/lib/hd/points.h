@@ -41,7 +41,7 @@ struct HdPointsReprDesc {
         : geomStyle(geomStyle)
         {}
 
-    HdPointsGeomStyle geomStyle:1;
+    HdPointsGeomStyle geomStyle;
 };
 
 /// Hydra Schema for a point cloud.

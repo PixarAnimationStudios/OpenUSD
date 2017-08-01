@@ -60,12 +60,6 @@ public:
     HDX_API
     HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-    HDX_API
-    static SdfPathVector ComputeIncludedLights(
-        SdfPathVector const & allLightPaths,
-        SdfPathVector const & includedPaths,
-        SdfPathVector const & excludedPaths);
-
 protected:
     /// Execute render pass task
     HDX_API

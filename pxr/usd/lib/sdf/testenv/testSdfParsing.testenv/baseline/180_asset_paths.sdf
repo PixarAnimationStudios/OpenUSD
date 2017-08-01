@@ -1,8 +1,24 @@
 #sdf 1.4.32
 
-over "AssetPathTest"
+over "AssetPathTest" (
+    customData = {
+        asset abs = @/usr/anim/menv30/global/unit_defs.sdf@
+        asset allchars = @ !"#$%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@
+        asset[] array = [@@, @sdf/Model.sdf@, @//$STAGEDIR/sim/$MODELINSTANCE.sdf@, @//menv30/global/unit_defs.sdf#20@]
+        asset empty = @@
+        asset overlay = @///global/unit_defs.sdf@
+        asset relative1 = @sdf/Model.sdf@
+        asset relative2 = @../sdf/Model.sdf@
+        asset repo = @//menv30/global/unit_defs.sdf@
+        asset search = @Model/menv30/Model.sdf@
+        asset token = @//$STAGEDIR/sim/$MODELINSTANCE.sdf@
+        asset wversion = @//menv30/global/unit_defs.sdf#20@
+    }
+)
 {
     asset abs = @/usr/anim/menv30/global/unit_defs.sdf@
+    asset allchars = @ !"#$%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@
+    asset[] array = [@@, @sdf/Model.sdf@, @//$STAGEDIR/sim/$MODELINSTANCE.sdf@, @//menv30/global/unit_defs.sdf#20@]
     asset empty = @@
     asset overlay = @///global/unit_defs.sdf@
     asset relative1 = @sdf/Model.sdf@
@@ -10,10 +26,47 @@ over "AssetPathTest"
     asset repo = @//menv30/global/unit_defs.sdf@
     asset search = @Model/menv30/Model.sdf@
     asset token = @//$STAGEDIR/sim/$MODELINSTANCE.sdf@
-    asset wchangeno = @//menv30/global/unit_defs.sdf@12345@
-    asset wdate = @//menv30/global/unit_defs.sdf@2012/06/20@
-    asset wdatetime = @//menv30/global/unit_defs.sdf@2012/06/20:16:18:00@
-    asset wlabel = @//menv30/global/unit_defs.sdf@stable-prepro_0.42@
+    asset wversion = @//menv30/global/unit_defs.sdf#20@
+}
+
+over "AssetPathTest2" (
+    customData = {
+        asset abs = @/usr/anim/menv30/global/unit_defs.sdf@
+        asset allchars = @@@ !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@@@
+        asset[] array = [@@, @sdf/Model.sdf@, @@@//menv30/global/unit_defs.sdf@stable-prepro_0.42@@@, @@@//menv30/global/unit_defs.sdf@2012/06/20@@@]
+        asset beginandendwithextradelim = @@@@foo.sdf@@@@
+        asset empty = @@
+        asset escapeddelimiter = @@@foo.sdf\@@@testing\\@@@@@@
+        asset overlay = @///global/unit_defs.sdf@
+        asset relative1 = @sdf/Model.sdf@
+        asset relative2 = @../sdf/Model.sdf@
+        asset repo = @//menv30/global/unit_defs.sdf@
+        asset search = @Model/menv30/Model.sdf@
+        asset token = @//$STAGEDIR/sim/$MODELINSTANCE.sdf@
+        asset wchangeno = @@@//menv30/global/unit_defs.sdf@12345@@@
+        asset wdate = @@@//menv30/global/unit_defs.sdf@2012/06/20@@@
+        asset wdatetime = @@@//menv30/global/unit_defs.sdf@2012/06/20:16:18:00@@@
+        asset wlabel = @@@//menv30/global/unit_defs.sdf@stable-prepro_0.42@@@
+        asset wversion = @//menv30/global/unit_defs.sdf#20@
+    }
+)
+{
+    asset abs = @/usr/anim/menv30/global/unit_defs.sdf@
+    asset allchars = @@@ !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@@@
+    asset[] array = [@@, @sdf/Model.sdf@, @@@//menv30/global/unit_defs.sdf@stable-prepro_0.42@@@, @@@//menv30/global/unit_defs.sdf@2012/06/20@@@]
+    asset beginandendwithextradelim = @@@@foo.sdf@@@@
+    asset empty = @@
+    asset escapeddelimiter = @@@foo.sdf\@@@testing\\@@@@@@
+    asset overlay = @///global/unit_defs.sdf@
+    asset relative1 = @sdf/Model.sdf@
+    asset relative2 = @../sdf/Model.sdf@
+    asset repo = @//menv30/global/unit_defs.sdf@
+    asset search = @Model/menv30/Model.sdf@
+    asset token = @//$STAGEDIR/sim/$MODELINSTANCE.sdf@
+    asset wchangeno = @@@//menv30/global/unit_defs.sdf@12345@@@
+    asset wdate = @@@//menv30/global/unit_defs.sdf@2012/06/20@@@
+    asset wdatetime = @@@//menv30/global/unit_defs.sdf@2012/06/20:16:18:00@@@
+    asset wlabel = @@@//menv30/global/unit_defs.sdf@stable-prepro_0.42@@@
     asset wversion = @//menv30/global/unit_defs.sdf#20@
 }
 

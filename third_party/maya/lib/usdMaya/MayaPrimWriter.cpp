@@ -27,6 +27,7 @@
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 #include "usdMaya/translatorGprim.h"
+#include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/AttributeConverter.h"
 #include "usdMaya/AttributeConverterRegistry.h"
@@ -40,6 +41,8 @@
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/inherits.h"
 
+#include "pxr/base/tf/staticTokens.h"
+
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MObjectArray.h>
@@ -52,6 +55,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+        _tokens, 
+
+        (USD_inheritClassNames)
+);
+
 
 MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
                                const SdfPath& uPath,
@@ -61,6 +70,24 @@ MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
     mUsdPath(uPath),
     mIsValid(true)
 {
+}
+
+// In the future, we'd like to make this a plugin point.
+static bool 
+_GetClassNamesToWrite(
+        MObject mObj,
+        const UsdPrim& usdPrim,
+        std::vector<std::string>* outClassNames)
+{
+    std::vector<std::string> ret;
+    if (PxrUsdMayaWriteUtil::ReadMayaAttribute(
+            MFnDependencyNode(mObj), 
+            MString(_tokens->USD_inheritClassNames.GetText()),
+            outClassNames)) {
+        return true;
+    }
+
+    return false;
 }
 
 bool
@@ -107,6 +134,14 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
                 gprim,
                 unused);
 
+    }
+
+    std::vector<std::string> classNames;
+    if (_GetClassNamesToWrite(
+            getDagPath().node(),
+            usdPrim,
+            &classNames)) {
+        PxrUsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
     }
 
     // Process special "USD_" attributes.

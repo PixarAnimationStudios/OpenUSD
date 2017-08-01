@@ -548,4 +548,20 @@ Sdf_EvalQuotedString(const char* x, size_t n, size_t trimBothSides,
     return ret;
 }
 
+std::string 
+Sdf_EvalAssetPath(const char* x, size_t n, bool tripleDelimited)
+{
+    // See _StringFromAssetPath for the code that writes asset paths.
+
+    // Asset paths are assumed to only contain printable characters and 
+    // no escape sequences except for the "@@@" delimiter.
+    size_t numDelimiters = tripleDelimited ? 3 : 1;
+    std::string ret(x + numDelimiters, n - (2 * numDelimiters));
+    if (tripleDelimited) {
+        ret = TfStringReplace(ret, "\\@@@", "@@@");
+    }
+
+    return ret;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

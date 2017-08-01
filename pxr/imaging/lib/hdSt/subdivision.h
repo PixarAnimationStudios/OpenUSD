@@ -200,7 +200,8 @@ public:
                                GLenum dataType,
                                int numComponents);
 
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range);
+    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
+                         HdResourceRegistry *resourceRegistry);
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual int GetNumOutputElements() const;
 

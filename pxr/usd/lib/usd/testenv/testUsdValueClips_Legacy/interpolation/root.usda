@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "InterpolationTest" (
+    clipAssetPaths = [@./clip.usda@]
+    clipPrimPath = "/Clip"
+    clipActive = [(0, 0)]
+    clipTimes = [(0, 0), (1, 0.5), (2, 1), (4, 2)]
+    references = @./ref.usda@</Ref>
+)
+{
+}

@@ -24,11 +24,13 @@
 
 #include "pxr/pxr.h"
 
+#include <vector>
+#include <utility>
+#include <locale>
+
 #include "pxr/base/tf/token.h"
 
 #include <boost/python/class.hpp>
-#include <vector>
-#include <utility>
 
 using namespace boost::python;
 using std::pair;

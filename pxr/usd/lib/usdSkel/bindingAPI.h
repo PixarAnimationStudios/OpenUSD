@@ -132,11 +132,13 @@ public:
     /// gprims in the space in which it is bound to a Skeleton.  If the 
     /// transform is identical for a group of gprims that share a common
     /// ancestor, the transform may be authored on the ancestor, to "inherit"
-    /// down to all the leaf gprims.
+    /// down to all the leaf gprims.  The *geomBindTransform* is defined as
+    /// moving a gprim from its own object space (untransformed by its own 
+    /// transform) out into Skeleton space.
     ///
     /// \n  C++ Type: GfMatrix4d
     /// \n  Usd Type: SdfValueTypeNames->Matrix4d
-    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: No Fallback
     USDSKEL_API
     UsdAttribute GetGeomBindTransformAttr() const;
@@ -232,6 +234,24 @@ public:
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
     USDSKEL_API
     UsdRelationship CreateSkeletonRel() const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // JOINTS 
+    // --------------------------------------------------------------------- //
+    /// An (optional) relationship whose targets define the list of
+    /// joints to which jointIndices apply, relative to the gprim itself, so
+    /// that it is self-contained. If not defined, jointIndices applies to
+    /// the ordered list of joints defined in the bound Skeleton's *joints*
+    /// relationship.
+    ///
+    USDSKEL_API
+    UsdRelationship GetJointsRel() const;
+
+    /// See GetJointsRel(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDSKEL_API
+    UsdRelationship CreateJointsRel() const;
 
 public:
     // ===================================================================== //

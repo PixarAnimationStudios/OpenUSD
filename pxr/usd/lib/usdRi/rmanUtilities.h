@@ -55,6 +55,15 @@ int UsdRiConvertToRManFaceVaryingLinearInterpolation(const TfToken &token);
 USDRI_API
 const TfToken &UsdRiConvertFromRManFaceVaryingLinearInterpolation(int i);
 
+/// Given a \p token representing a UsdGeom Catmull-Clark triangle subdivision
+/// rule value, returns corresponding rman enum (converted to int).
+USDRI_API
+int UsdRiConvertToRManTriangleSubdivisionRule(const TfToken &token);
+
+/// Given the integer \p i that corresponds to an rman enum for a Catmull-
+/// Clark triangle subdivision rule, returns the equivalent UsdGeom token.
+USDRI_API
+const TfToken &UsdRiConvertFromRManTriangleSubdivisionRule(int i);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

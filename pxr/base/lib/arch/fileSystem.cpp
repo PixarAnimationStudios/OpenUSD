@@ -132,6 +132,21 @@ ArchGetModificationTime(const ArchStatType& st)
 #endif
 }
 
+bool 
+ArchGetStatMode(const char *pathname, int *mode)
+{
+    ArchStatType st;
+#if defined(ARCH_OS_WINDOWS)
+    if (__stat64(pathname, &st) == 0) {
+#else
+    if (stat(pathname, &st) == 0) {
+#endif
+        *mode = st.st_mode;
+        return true;
+    }
+    return false;
+}
+
 double
 ArchGetAccessTime(const struct stat& st)
 {

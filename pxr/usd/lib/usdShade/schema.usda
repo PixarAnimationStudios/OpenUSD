@@ -103,18 +103,6 @@ over "GLOBAL" (
 {
 }
 
-class PShader "PShader" (
-    inherits = </Typed>
-) {
-    asset sloPath
-    uniform string shaderProtocol
-    uniform string shaderType
-    color3f displayColor
-    float displayOpacity
-}
-
-
-
 class NodeGraph "NodeGraph" (
     inherits = </Typed>
     doc = """A node-graph is a container for shading nodes, as well as other 

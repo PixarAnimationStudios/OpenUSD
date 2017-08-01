@@ -23,6 +23,12 @@
 //
 
 #include "pxr/pxr.h"
+
+#include <set>
+#include <utility>
+#include <vector>
+#include <locale>
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -31,10 +37,6 @@
 #include "pxr/base/vt/valueFromPython.h"
 
 #include <boost/python.hpp>
-
-#include <set>
-#include <utility>
-#include <vector>
 
 using namespace boost::python;
 using std::pair;

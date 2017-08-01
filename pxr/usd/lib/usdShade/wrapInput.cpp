@@ -56,11 +56,51 @@ _Get(const UsdShadeInput &self, UsdTimeCode time) {
     return UsdVtValueToPython(val);
 }
 
+static object
+_GetConnectedSource(const UsdShadeInput &self)
+{
+    UsdShadeConnectableAPI source;
+    TfToken                sourceName;
+    UsdShadeAttributeType  sourceType;
+    
+    if (self.GetConnectedSource(&source, &sourceName, &sourceType)){
+        return boost::python::make_tuple(source, sourceName, sourceType);
+    } else {
+        return object();
+    }
+}
+
+static SdfPathVector
+_GetRawConnectedSourcePaths(const UsdShadeInput &self) 
+{
+    SdfPathVector sourcePaths;
+    self.GetRawConnectedSourcePaths(&sourcePaths);
+    return sourcePaths;
+}
+
 } // anonymous namespace 
 
 void wrapUsdShadeInput()
 {
     typedef UsdShadeInput Input;
+
+    bool (Input::*ConnectToSource_1)(
+        UsdShadeConnectableAPI const&,
+        TfToken const &,
+        UsdShadeAttributeType const,
+        SdfValueTypeName) const = &Input::ConnectToSource;
+
+    bool (Input::*ConnectToSource_2)(
+        SdfPath const &) const = &Input::ConnectToSource;
+
+    bool (Input::*ConnectToSource_3)(
+        UsdShadeInput const &) const = &Input::ConnectToSource;
+
+    bool (Input::*ConnectToSource_4)(
+        UsdShadeOutput const &) const = &Input::ConnectToSource;
+
+    bool (Input::*CanConnect_1)(
+        UsdAttribute const &) const = &Input::CanConnect;
 
     class_<Input>("Input")
         .def(init<UsdAttribute>(arg("attr")))
@@ -89,6 +129,29 @@ void wrapUsdShadeInput()
 
         .def("GetAttr", &Input::GetAttr,
              return_value_policy<return_by_value>())
+
+        .def("CanConnect", CanConnect_1,
+            (arg("source")))
+
+        .def("ConnectToSource", ConnectToSource_1, 
+            (arg("source"), arg("sourceName"), 
+             arg("sourceType")=UsdShadeAttributeType::Output,
+             arg("typeName")=SdfValueTypeName()))
+        .def("ConnectToSource", ConnectToSource_2,
+            (arg("sourcePath")))
+        .def("ConnectToSource", ConnectToSource_3,
+            (arg("input")))
+        .def("ConnectToSource", ConnectToSource_4,
+            (arg("output")))
+
+        .def("GetConnectedSource", _GetConnectedSource)
+        .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths,
+            return_value_policy<TfPySequenceToList>())
+        .def("HasConnectedSource", &Input::HasConnectedSource)
+        .def("IsSourceConnectionFromBaseMaterial",
+             &Input::IsSourceConnectionFromBaseMaterial)
+        .def("DisconnectSource", &Input::DisconnectSource)
+        .def("ClearSource", &Input::ClearSource)
 
         .def("IsInput", &Input::IsInput)
         .staticmethod("IsInput")

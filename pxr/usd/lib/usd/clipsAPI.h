@@ -486,27 +486,6 @@ public:
     /// \sa \ref UsdClipsAPISetNames
     USD_API
     bool SetClipTemplateEndTime(const double clipTemplateEndTime);
-    
-    /// Clear out the following metadata from the current edit target:
-    /// 
-    /// clipTemplateAssetPath
-    /// clipTemplateStride
-    /// clipTemplateStartTime
-    /// clipTemplateEndTime
-    ///
-    /// \sa ClearNonTemplateClipMetadata()
-    USD_API
-    bool ClearTemplateClipMetadata();
-
-    /// Clear out the following metadata from the current edit target:
-    ///
-    /// clipTimes
-    /// clipActive
-    /// clipAssetPaths
-    ///
-    /// \sa ClearTemplateClipMetadata()
-    USD_API
-    bool ClearNonTemplateClipMetadata();
 
     /// Return true if the setter functions that do not take a clip set author
     /// values to legacy metadata fields (e.g. clipAssetPaths, clipTimes, etc.),

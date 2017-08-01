@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/indirectDrawBatch.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
+#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/gf/matrix4f.h"
@@ -76,17 +77,19 @@ _NewDrawBatch(HdDrawItemInstance * drawItemInstance)
 }
 
 void
-HdCommandBuffer::PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState)
+HdCommandBuffer::PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
+                             HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
     TF_FOR_ALL(batchIt, _drawBatches) {
-        (*batchIt)->PrepareDraw(renderPassState);
+        (*batchIt)->PrepareDraw(renderPassState, resourceRegistry);
     }
 }
 
 void
-HdCommandBuffer::ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState)
+HdCommandBuffer::ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
+                             HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -102,7 +105,7 @@ HdCommandBuffer::ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState)
     // draw batches
     //
     TF_FOR_ALL(batchIt, _drawBatches) {
-        (*batchIt)->ExecuteDraw(renderPassState);
+        (*batchIt)->ExecuteDraw(renderPassState, resourceRegistry);
     }
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());
 

@@ -172,7 +172,8 @@ _GatherShadingParameters(
                 
 
                 if (flatten || 
-                    !UsdShadeConnectableAPI::IsSourceFromBaseMaterial(shaderInput)) {
+                    !UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(
+                            shaderInput)) {
                     // These targets are local, so include them.
                     connectionsBuilder.set(
                         inputId, 

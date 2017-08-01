@@ -113,7 +113,8 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate,
 
     TF_UNUSED(renderParam);
 
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
     HdDirtyBits bits = *dirtyBits;
 
     if(bits & DirtySurfaceShader) {
@@ -244,7 +245,7 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate,
         }
 
         _surfaceShader->SetTextureDescriptors(textures);
-        _surfaceShader->SetBufferSources(sources);
+        _surfaceShader->SetBufferSources(sources, resourceRegistry);
     }
 
     *dirtyBits = Clean;

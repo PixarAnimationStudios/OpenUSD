@@ -25,7 +25,7 @@
 Module that provides the StageView class.
 '''
 
-from math import tan, atan, radians as rad
+from math import tan, atan, floor, ceil, radians as rad
 import os
 from time import time
 
@@ -34,11 +34,46 @@ from PySide import QtGui, QtCore, QtOpenGL
 from pxr import Tf
 from pxr import Gf
 from pxr import Glf
-from pxr import Sdf, Usd, UsdGeom, UsdUtils
+from pxr import Plug
+from pxr import Sdf, Usd, UsdGeom
 from pxr import UsdImagingGL
 from pxr import CameraUtil
 
 DEBUG_CLIPPING = "USDVIEWQ_DEBUG_CLIPPING"
+
+# A viewport rectangle to be used for GL must be integer values.
+# In order to loose the least amount of precision the viewport
+# is centered and adjusted to initially contain entirely the
+# given viewport.
+# If it turns out that doing so gives more than a pixel width
+# or height of error the viewport is instead inset.
+# This does mean that the returned viewport may have a slightly
+# different aspect ratio to the given viewport.
+def ViewportMakeCenteredIntegral(viewport):
+
+    # The values are initially integral and containing the
+    # the given rect
+    left = int(floor(viewport[0]))
+    bottom = int(floor(viewport[1]))
+    right = int(ceil(viewport[0] + viewport[2]))
+    top = int(ceil(viewport[1] + viewport[3]))
+    
+    width = right - left
+    height = top - bottom
+
+    # Compare the integral height to the original height
+    # and do a centered 1 pixel adjustment if more than
+    # a pixel off.
+    if (height - viewport[3]) > 1.0:
+        bottom += 1
+        height -= 2
+    # Compare the integral width to the original width
+    # and do a centered 1 pixel adjustment if more than
+    # a pixel off.
+    if (width - viewport[2]) > 1.0:
+        left += 1
+        width -= 2
+    return (left, bottom, width, height)
 
 # FreeCamera inherits from QObject only so that it can send signals...
 # which is really a pretty nice, easy to use notification system.
@@ -528,6 +563,340 @@ class GLSLProgram():
         for param in uniformDict:
             self.uniformLocations[param] = GL.glGetUniformLocation(self.program, param)
 
+    def uniform4f(self, param, x, y, z, w):
+        from OpenGL import GL
+        GL.glUniform4f(self.uniformLocations[param], x, y, z, w) 
+
+class Rect():
+    def __init__(self):
+        self.xywh = [0.0] * 4
+
+    @classmethod
+    def fromXYWH(cls, xywh):
+        self = cls()
+        self.xywh[:] = map(float, xywh[:4])
+        return self
+
+    @classmethod
+    def fromCorners(cls, c0, c1):
+        self = cls()
+        self.xywh[0] = float(min(c0[0], c1[0]))
+        self.xywh[1] = float(min(c0[1], c1[1]))
+        self.xywh[2] = float(max(c0[0], c1[0])) - self.xywh[0]
+        self.xywh[3] = float(max(c0[1], c1[1])) - self.xywh[1]
+        return self
+
+    def scaledAndBiased(self, sxy, txy):
+        ret = self.__class__()
+        for c in range(2):
+            ret.xywh[c] = sxy[c] * self.xywh[c] + txy[c]
+            ret.xywh[c + 2] = sxy[c] * self.xywh[c + 2]
+        return ret
+
+    def _splitAlongY(self, y):
+        bottom = self.__class__()
+        top = self.__class__()
+        bottom.xywh[:] = self.xywh
+        top.xywh[:] = self.xywh
+        top.xywh[1] = y
+        bottom.xywh[3] = top.xywh[1] - bottom.xywh[1]
+        top.xywh[3] = top.xywh[3] - bottom.xywh[3]
+        return bottom, top
+
+    def _splitAlongX(self, x):
+        left = self.__class__()
+        right = self.__class__()
+        left.xywh[:] = self.xywh
+        right.xywh[:] = self.xywh
+        right.xywh[0] = x
+        left.xywh[2] = right.xywh[0] - left.xywh[0]
+        right.xywh[2] = right.xywh[2] - left.xywh[2]
+        return left, right
+
+    def difference(self, xywh):
+        #check x
+        if xywh[0] > self.xywh[0]:
+            #keep left, check right
+            left, right = self._splitAlongX(xywh[0])
+            return [left] + right.difference(xywh)
+        if (xywh[0] + xywh[2]) < (self.xywh[0] + self.xywh[2]):
+            #keep right
+            left, right = self._splitAlongX(xywh[0] + xywh[2])
+            return [right]
+        #check y
+        if xywh[1] > self.xywh[1]:
+            #keep bottom, check top
+            bottom, top = self._splitAlongY(xywh[1])
+            return [bottom] + top.difference(xywh)
+        if (xywh[1] + xywh[3]) < (self.xywh[1] + self.xywh[3]):
+            #keep top
+            bottom, top = self._splitAlongY(xywh[1] + xywh[3])
+            return [top]
+        return []
+        
+
+class OutlineRect(Rect):
+    _glslProgram = None
+    _vbo = 0
+    _vao = 0
+    def __init__(self):
+        Rect.__init__(self)
+
+    @classmethod
+    def compileProgram(self):
+        if self._glslProgram:
+            return self._glslProgram
+        from OpenGL import GL
+        import ctypes
+
+        # prep a quad line vbo
+        self._vbo = GL.glGenBuffers(1)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
+        st = [0, 0, 1, 0, 1, 1, 0, 1]
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, len(st)*4,
+                        (ctypes.c_float*len(st))(*st), GL.GL_STATIC_DRAW)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+        self._glslProgram = GLSLProgram(
+            # for OpenGL 3.1 or later
+            """#version 140
+               uniform vec4 rect;
+               in vec2 st;
+               void main() {
+                 gl_Position = vec4(rect.x + rect.z*st.x,
+                                    rect.y + rect.w*st.y, 0, 1); }""",
+            """#version 140
+               out vec4 fragColor;
+               uniform vec4 color;
+              void main() { fragColor = color; }""",
+            # for OpenGL 2.1 (osx compatibility profile)
+            """#version 120
+               uniform vec4 rect;
+               attribute vec2 st;
+               void main() {
+                 gl_Position = vec4(rect.x + rect.z*st.x,
+                                    rect.y + rect.w*st.y, 0, 1); }""",
+            """#version 120
+               uniform vec4 color;
+               void main() { gl_FragColor = color; }""",
+            ["rect", "color"])
+
+        return self._glslProgram
+
+    def glDraw(self, color):
+        from OpenGL import GL
+
+        cls = self.__class__
+
+        program = cls.compileProgram()
+        if (program.program == 0):
+            return
+
+        GL.glUseProgram(program.program)
+
+        if (program._glMajorVersion >= 4):
+            GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
+
+        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
+        if (program._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+            if (cls._vao == 0):
+                cls._vao = GL.glGenVertexArrays(1)
+            GL.glBindVertexArray(cls._vao)
+
+        # for some reason, we need to bind at least 1 vertex attrib (is OSX)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, cls._vbo)
+        GL.glEnableVertexAttribArray(0)
+        GL.glVertexAttribPointer(0, 2, GL.GL_FLOAT, False, 0, None)
+
+        program.uniform4f("color", *color)
+        program.uniform4f("rect", *self.xywh)
+        GL.glDrawArrays(GL.GL_LINE_LOOP, 0, 4)
+
+class FilledRect(Rect):
+    _glslProgram = None
+    _vbo = 0
+    _vao = 0
+    def __init__(self):
+        Rect.__init__(self)
+
+    @classmethod
+    def compileProgram(self):
+        if self._glslProgram:
+            return self._glslProgram
+        from OpenGL import GL
+        import ctypes
+
+        # prep a quad line vbo
+        self._vbo = GL.glGenBuffers(1)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
+        st = [0, 0, 1, 0, 0, 1, 1, 1]
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, len(st)*4,
+                        (ctypes.c_float*len(st))(*st), GL.GL_STATIC_DRAW)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+        self._glslProgram = GLSLProgram(
+            # for OpenGL 3.1 or later
+            """#version 140
+               uniform vec4 rect;
+               in vec2 st;
+               void main() {
+                 gl_Position = vec4(rect.x + rect.z*st.x,
+                                    rect.y + rect.w*st.y, 0, 1); }""",
+            """#version 140
+               out vec4 fragColor;
+               uniform vec4 color;
+              void main() { fragColor = color; }""",
+            # for OpenGL 2.1 (osx compatibility profile)
+            """#version 120
+               uniform vec4 rect;
+               attribute vec2 st;
+               void main() {
+                 gl_Position = vec4(rect.x + rect.z*st.x,
+                                    rect.y + rect.w*st.y, 0, 1); }""",
+            """#version 120
+               uniform vec4 color;
+               void main() { gl_FragColor = color; }""",
+            ["rect", "color"])
+
+        return self._glslProgram
+
+    def glDraw(self, color):
+        #don't draw if too small
+        if self.xywh[2] < 0.001 or self.xywh[3] < 0.001:
+            return
+
+        from OpenGL import GL
+
+        cls = self.__class__
+
+        program = cls.compileProgram()
+        if (program.program == 0):
+            return
+
+        GL.glUseProgram(program.program)
+
+        if (program._glMajorVersion >= 4):
+            GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
+
+        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
+        if (program._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+            if (cls._vao == 0):
+                cls._vao = GL.glGenVertexArrays(1)
+            GL.glBindVertexArray(cls._vao)
+
+        # for some reason, we need to bind at least 1 vertex attrib (is OSX)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, cls._vbo)
+        GL.glEnableVertexAttribArray(0)
+        GL.glVertexAttribPointer(0, 2, GL.GL_FLOAT, False, 0, None)
+
+        program.uniform4f("color", *color)
+        program.uniform4f("rect", *self.xywh)
+        GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
+
+class Prim2DSetupTask():
+    def __init__(self, viewport):
+        self._viewport = viewport[:]
+
+    def Sync(self, ctx):
+        pass
+
+    def Execute(self, ctx):
+        from OpenGL import GL
+        GL.glViewport(*self._viewport)
+        GL.glDisable(GL.GL_DEPTH_TEST)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+        GL.glEnable(GL.GL_BLEND)
+
+class Prim2DDrawTask():
+    def __init__(self):
+        self._prims = []
+        self._colors = []
+
+    def Sync(self, ctx):
+        for prim in self._prims:
+            prim.__class__.compileProgram()
+
+    def Execute(self, ctx):
+        from OpenGL import GL
+        for prim, color in zip(self._prims, self._colors):
+            prim.glDraw(color)
+
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        GL.glDisableVertexAttribArray(0)
+        GL.glBindVertexArray(0)
+        GL.glUseProgram(0)
+
+class Outline(Prim2DDrawTask):
+    def __init__(self):
+        Prim2DDrawTask.__init__(self)
+        self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.0, 0.0, 1.0))
+
+    def updatePrims(self, croppedViewport, qglwidget):
+        width = float(qglwidget.width())
+        height = float(qglwidget.height())
+        prims = [ OutlineRect.fromXYWH(croppedViewport) ]
+        self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
+                for p in prims]
+        self._colors = [ self._outlineColor ]
+
+class Reticles(Prim2DDrawTask):
+    def __init__(self):
+        Prim2DDrawTask.__init__(self)
+        self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.7, 1.0, 0.9))
+
+    def updateColor(self, color):
+        self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
+
+    def updatePrims(self, croppedViewport, qglwidget, inside, outside):
+        width = float(qglwidget.width())
+        height = float(qglwidget.height())
+        prims = [ ]
+        ascenders = [0, 0]
+        descenders = [0, 0]
+        if inside:
+            descenders = [7, 15]
+        if outside:
+            ascenders = [7, 15]
+        # vertical reticles on the top and bottom
+        for i in range(5):
+            w = 2.6
+            h = ascenders[i & 1] + descenders[i & 1]
+            x = croppedViewport[0] - (w / 2) + ((i + 1) * croppedViewport[2]) / 6
+            bottomY = croppedViewport[1] - ascenders[i & 1]
+            topY = croppedViewport[1] + croppedViewport[3] - descenders[i & 1]
+            prims.append(FilledRect.fromXYWH((x, bottomY, w, h)))
+            prims.append(FilledRect.fromXYWH((x, topY, w, h)))
+        # horizontal reticles on the left and right
+        for i in range(5):
+            w = ascenders[i & 1] + descenders[i & 1]
+            h = 2.6
+            leftX = croppedViewport[0] - ascenders[i & 1]
+            rightX = croppedViewport[0] + croppedViewport[2] - descenders[i & 1]
+            y = croppedViewport[1] - (h / 2) + ((i + 1) * croppedViewport[3]) / 6
+            prims.append(FilledRect.fromXYWH((leftX, y, w, h)))
+            prims.append(FilledRect.fromXYWH((rightX, y, w, h)))
+
+        self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
+                for p in prims]
+        self._colors = [ self._outlineColor ] * len(self._prims)
+
+class Mask(Prim2DDrawTask):
+    def __init__(self):
+        Prim2DDrawTask.__init__(self)
+        self._maskColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.0, 0.0, 1.0))
+
+    def updateColor(self, color):
+        self._maskColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
+
+    def updatePrims(self, croppedViewport, qglwidget):
+        width = float(qglwidget.width())
+        height = float(qglwidget.height())
+        rect = FilledRect.fromXYWH((0, 0, width, height))
+        prims = rect.difference(croppedViewport)
+        self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
+                for p in prims]
+        self._colors = [ self._maskColor ] * 2
+
 class HUD():
     class Group():
         def __init__(self, name, w, h):
@@ -650,9 +1019,6 @@ class HUD():
 
         if (self._glslProgram._glMajorVersion >= 4):
             GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
-        GL.glDisable(GL.GL_DEPTH_TEST)
-        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-        GL.glEnable(GL.GL_BLEND)
 
         # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
         if (self._glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
@@ -732,6 +1098,14 @@ class StageView(QtOpenGL.QGLWidget):
         def defaultMaterialSpecular(self):
             return self._defaultMaterialSpecular
 
+        @property
+        def cameraMaskColor(self):
+            return (0.1, 0.1, 0.1, 1.0)
+
+        @property
+        def cameraReticlesColor(self):
+            return (0.0, 0.7, 1.0, 1.0)
+
     ###########
     # Signals #
     ###########
@@ -793,7 +1167,28 @@ class StageView(QtOpenGL.QGLWidget):
     @showBBoxes.setter
     def showBBoxes(self, show):
         self._showBBoxes = show
+
+    @property
+    def showMask(self):
+        return self._showMask
         
+    @showMask.setter
+    def showMask(self, show):
+        self._showMask = show
+
+    @property
+    def showReticles(self):
+        return ((self.showReticles_Inside or self.showReticles_Outside)
+                and self._cameraPrim != None)
+    
+    @property
+    def _fitCameraInViewport(self):
+       return self.showMask or self.showMask_Outline or self.showReticles
+    
+    @property
+    def _cropViewportToCameraViewport(self):
+       return self.showMask and self.showMask_Opaque
+
     @property
     def showHUD(self):
         return self._showHUD
@@ -1019,6 +1414,12 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._complexity = 1.0
 
+        # prep Mask regions
+        self._mask = Mask()
+        self._maskOutline = Outline()
+
+        self._reticles = Reticles()
+
         # prep HUD regions
         self._hud = HUD()
         self._hud.addGroup("TopLeft",     250, 160)  # subtree
@@ -1028,7 +1429,6 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._stage = None
         self._stageIsZup = True
-        self._cameraIsZup = True
         self._currentFrame = 0
         self._cameraMode = "none"
         self._rolloverPicking = False
@@ -1088,7 +1488,16 @@ class StageView(QtOpenGL.QGLWidget):
         self._highlightColor = (1.0, 1.0, 0.0, 0.8)
         self._drawSelHighlights = True
         self._allSceneCameras = None
-        
+       
+        # Mask properties
+        self._showMask = False
+        self.showMask_Opaque = True
+        self.showMask_Outline = False
+       
+        # Reticle properties
+        self.showReticles_Inside = False
+        self.showReticles_Outside = False
+
         # HUD properties
         self._showHUD = False
         self.showHUD_Info = False
@@ -1129,6 +1538,7 @@ class StageView(QtOpenGL.QGLWidget):
         self.noRender to True prior to calling this function'''
         if not self._noRender:
             self._renderer = UsdImagingGL.GL()
+        self._rendererPluginName = ""
 
     def GetRendererPlugins(self):
         if self._renderer:
@@ -1136,8 +1546,13 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             return []
 
+    def GetRendererPluginDisplayName(self, pluginType):
+        return Plug.Registry().GetStringFromPluginMetaData(
+            pluginType, 'displayName')
+
     def SetRendererPlugin(self, name):
         if self._renderer:
+            self._rendererPluginName = self.GetRendererPluginDisplayName(name)
             self._renderer.SetRendererPlugin(name)
 
     def GetStage(self):
@@ -1161,7 +1576,6 @@ class StageView(QtOpenGL.QGLWidget):
         if self._renderer != None:
             self.InitRenderer()
         self._stageIsZup = UsdGeom.GetStageUpAxis(stage) == UsdGeom.Tokens.z
-        self._cameraIsZup = UsdUtils.GetCamerasAreZup(stage)
         self.allSceneCameras = None
 
     # simple GLSL program for axis/bbox drawings
@@ -1286,8 +1700,7 @@ class StageView(QtOpenGL.QGLWidget):
             if camera == self._cameraPrim or not (camera and camera.IsActive()):
                 continue
 
-            gfCamera = UsdGeom.Camera(camera).GetCamera(self._currentFrame, 
-                                                        self._cameraIsZup)
+            gfCamera = UsdGeom.Camera(camera).GetCamera(self._currentFrame)
             frustum = gfCamera.frustum
 
             # (Gf documentation seems to be wrong)-- Ordered as
@@ -1552,22 +1965,34 @@ class StageView(QtOpenGL.QGLWidget):
     def computeGfCameraForCurrentPrim(self):
         if self._cameraPrim and self._cameraPrim.IsActive():
             gfCamera = UsdGeom.Camera(self._cameraPrim).GetCamera(
-                self._currentFrame, self._cameraIsZup)
+                self._currentFrame)
             return gfCamera
         else:
             return None
 
-    def computeGfCamera(self):
+    def computeGfCameraAndViewport(self):
+        windowPolicy = CameraUtil.MatchVertically
+        targetAspect = (
+          float(self.size().width()) / max(1.0, self.size().height()))
+        conformCameraWindow = True
+
         camera = self.computeGfCameraForCurrentPrim()
         if not camera:
             # If 'camera' is None, make sure we have a valid freeCamera
             self.switchToFreeCamera()
             camera = self._freeCamera.computeGfCamera(self._bbox)
+        elif self._fitCameraInViewport:
+            if targetAspect < camera.aspectRatio:
+                windowPolicy = CameraUtil.MatchHorizontally
+            conformCameraWindow = False
+        
+        if conformCameraWindow:
+            CameraUtil.ConformWindow(camera, windowPolicy, targetAspect)
 
-        targetAspect = (
-            float(self.size().width()) / max(1.0, self.size().height()))
-        CameraUtil.ConformWindow(
-            camera, CameraUtil.MatchVertically, targetAspect)
+        viewport = Gf.Range2d(Gf.Vec2d(0, 0),
+                              Gf.Vec2d(self.size().width(),
+                                       self.size().height()))
+        viewport = CameraUtil.ConformedWindow(viewport, windowPolicy, camera.aspectRatio)
 
         frustumChanged = ((not self._lastComputedGfCamera) or
                           self._lastComputedGfCamera.frustum != camera.frustum)
@@ -1575,7 +2000,8 @@ class StageView(QtOpenGL.QGLWidget):
         self._lastComputedGfCamera = Gf.Camera(camera)
         if frustumChanged:
             self.signalFrustumChanged.emit()
-        return camera
+        return (camera, (viewport.GetMin()[0], viewport.GetMin()[1],
+                         viewport.GetSize()[0], viewport.GetSize()[1]))
 
     def copyViewState(self):
         """Returns a copy of this StageView's view-affecting state,
@@ -1687,8 +2113,17 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glEnable(GL.GL_BLEND)
 
-        gfCamera = self.computeGfCamera()
+        (gfCamera, cameraViewport) = self.computeGfCameraAndViewport()
         frustum = gfCamera.frustum
+
+        viewport = (0, 0, self.size().width(), self.size().height())
+        cameraViewport = ViewportMakeCenteredIntegral(cameraViewport)
+        if self._fitCameraInViewport:
+            if self._cropViewportToCameraViewport:
+                viewport = cameraViewport
+            else:
+                windowAspect = float(viewport[2]) / max(1.0, viewport[3])
+                CameraUtil.ConformWindow(frustum, CameraUtil.Fit, windowAspect)
 
         cam_pos = frustum.position
         cam_up = frustum.ComputeUpVector()
@@ -1697,16 +2132,17 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderer.SetCameraState(
             frustum.ComputeViewMatrix(),
             frustum.ComputeProjectionMatrix(),
-            Gf.Vec4d(0, 0, self.size().width(), self.size().height()))
+            Gf.Vec4d(*viewport))
 
         viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
                                            * frustum.ComputeProjectionMatrix())
 
-        # XXX: this is redundant for refEngine, but currently hdEngine
-        #      doesn't call glViewport.
-        GL.glViewport(0, 0, self.size().width(), self.size().height())
 
+        GL.glViewport(0, 0, self.size().width(), self.size().height())
         GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
+
+        # ensure viewport is right for the camera framing
+        GL.glViewport(*viewport)
 
         # Set the clipping planes.
         self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
@@ -1820,6 +2256,33 @@ class StageView(QtOpenGL.QGLWidget):
             self._glPrimitiveGeneratedQuery.End()
             self._glTimeElapsedQuery.End()
 
+        # reset the viewport for 2D and HUD drawing
+        uiTasks = [ Prim2DSetupTask((0, 0, self.size().width(), self.size().height())) ]
+        if self.showMask:
+            color = self._dataModel.cameraMaskColor
+            if self.showMask_Opaque:
+                color = color[0:3] + (1.0,)
+            else:
+                color = color[0:3] + (color[3] * 0.7,)
+            self._mask.updateColor(color)
+            self._mask.updatePrims(cameraViewport, self)
+            uiTasks.append(self._mask)
+        if self.showMask_Outline:
+            self._maskOutline.updatePrims(cameraViewport, self)
+            uiTasks.append(self._maskOutline)
+        if self.showReticles:
+            color = self._dataModel.cameraReticlesColor
+            color = color[0:3] + (color[3] * 0.85,)
+            self._reticles.updateColor(color)
+            self._reticles.updatePrims(cameraViewport, self,
+                    self.showReticles_Inside, self.showReticles_Outside)
+            uiTasks.append(self._reticles)
+        
+        for task in uiTasks:
+            task.Sync(None)
+        for task in uiTasks:
+            task.Execute(None)
+
         # ### DRAW HUD ### #
         if self.showHUD:
             self.drawHUD()
@@ -1871,9 +2334,14 @@ class StageView(QtOpenGL.QGLWidget):
             self._hud.updateGroup("BottomRight", 0, 0, col, {})
 
         # Hydra Enabled (Top Right)
-        toPrint = {"Hydra":
-                     "Enabled" if UsdImagingGL.GL.IsEnabledHydra() 
-                     else "Disabled"}
+        hydraMode = "Disabled"
+        
+        if UsdImagingGL.GL.IsEnabledHydra():
+            hydraMode = self._rendererPluginName
+            if not hydraMode:
+                hydraMode = "Enabled"
+                
+        toPrint = {"Hydra": hydraMode}
         self._hud.updateGroup("TopRight", self.width()-140, 14, col, toPrint)
 
         # bottom left
@@ -2034,7 +2502,7 @@ class StageView(QtOpenGL.QGLWidget):
         # range.  We don't expect the worst-case to happen often.
         if not self._freeCamera:
             return
-        cameraFrustum = self.computeGfCamera().frustum
+        cameraFrustum = self.computeGfCameraAndViewport()[0].frustum
         trueFar = cameraFrustum.nearFar.max
         smallNear = min(FreeCamera.defaultNear, 
                         self._freeCamera._selSize / 10.0)
@@ -2100,7 +2568,7 @@ class StageView(QtOpenGL.QGLWidget):
         size = Gf.Vec2d(1.0 / width, 1.0 / height)
         
         # compute pick frustum
-        cameraFrustum = self.computeGfCamera().frustum
+        cameraFrustum = self.computeGfCameraAndViewport()[0].frustum
         
         return cameraFrustum.ComputeNarrowedFrustum(
             Gf.Vec2d((2.0 * x) / width - 1.0,

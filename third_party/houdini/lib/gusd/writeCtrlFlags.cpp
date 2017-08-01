@@ -22,63 +22,33 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "context.h"
+#include "writeCtrlFlags.h"
 #include "GU_USD.h"
 
 #include <GT/GT_Primitive.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_AttributeList.h>
 
-namespace {
-bool getBoolAttr( 
-        const GT_PrimitiveHandle& prim,
-        const char *attrName,
-        bool defaultValue );
-}
+using std::cerr;
+using std::endl;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool
-GusdContext::getOverTransforms( const GT_PrimitiveHandle &sourcePrim ) const
+void
+GusdWriteCtrlFlags::update( const GT_PrimitiveHandle &sourcePrim )
 {
-    return getBoolAttr( sourcePrim, GUSD_OVERTRANSFORMS_ATTR,
-                        overlayGeo && overlayTransforms );
+    overPoints =     getBoolAttr( sourcePrim, GUSD_OVERPOINTS_ATTR, overPoints );
+    overTransforms = getBoolAttr( sourcePrim, GUSD_OVERTRANSFORMS_ATTR, overTransforms );
+    overPrimvars =   getBoolAttr( sourcePrim, GUSD_OVERPRIMVARS_ATTR, overPrimvars );
+    overAll =        getBoolAttr( sourcePrim, GUSD_OVERALL_ATTR, overAll );
+    writeStaticGeo = getBoolAttr( sourcePrim, GUSD_WRITESTATICGEO_ATTR, writeStaticGeo );
+    writeStaticTopology = getBoolAttr( sourcePrim, GUSD_WRITESTATICTOPOLOGY_ATTR, writeStaticTopology );
+    writeStaticPrimvars = getBoolAttr( sourcePrim, GUSD_WRITESTATICPRIMVARS_ATTR, writeStaticPrimvars );
 }
 
-bool
-GusdContext::getOverPoints( const GT_PrimitiveHandle &sourcePrim ) const
-{
-    return getBoolAttr( sourcePrim, GUSD_OVERPOINTS_ATTR,
-                        overlayGeo && overlayPoints );
-}
-
-bool
-GusdContext::getOverPrimvars( const GT_PrimitiveHandle &sourcePrim ) const
-{
-    return getBoolAttr( sourcePrim, GUSD_OVERPRIMVARS_ATTR,
-                        overlayGeo && overlayPrimvars );
-}
-
-bool
-GusdContext::getOverAll( const GT_PrimitiveHandle &sourcePrim ) const
-{
-    return getBoolAttr( sourcePrim, GUSD_OVERALL_ATTR,
-                        overlayGeo && overlayAll );
-}
-
-bool
-GusdContext::getOverGeo( const GT_PrimitiveHandle &sourcePrim ) const
-{
-    return getOverTransforms( sourcePrim ) || getOverPoints( sourcePrim ) ||
-           getOverPrimvars( sourcePrim ) || getOverAll( sourcePrim );
-}
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-namespace {
-
+/* static */
 bool 
-getBoolAttr( 
+GusdWriteCtrlFlags::getBoolAttr( 
     const GT_PrimitiveHandle& prim,
     const char *attrName,
     bool defaultValue ) 
@@ -94,12 +64,14 @@ getBoolAttr(
         }
         if( !data ) {
             GT_Owner own;
-            data = prim->findAttribute( attrName, own, 0 );        
+            data = prim->findAttribute( attrName, own, 0 );
         }
         if( data ) {
             return bool( data->getI32(0) );
         }
+
     }
     return defaultValue;
 }
-}
+
+PXR_NAMESPACE_CLOSE_SCOPE

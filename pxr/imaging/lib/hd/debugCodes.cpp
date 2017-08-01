@@ -63,6 +63,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_SOURCE, "Print generated shader code");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_BINARY, "Write out compiled GLSL shader binary");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_ADDED, "Report when ExtComputations are added");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_REMOVED, "Report when ExtComputations are removed");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_FREEZE_CULL_FRUSTUM,
                                 "Freeze the frustum used for culling at it's current value");
 

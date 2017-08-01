@@ -25,6 +25,7 @@
 #define _GUSD_USD_PROXY_H_
 
 
+#include "gusd/api.h"
 #include "gusd/UT_Error.h"
 #include "gusd/USD_Holder.h"
 #include "gusd/USD_Utils.h"
@@ -142,8 +143,10 @@ public:
 
     typedef boost::unordered_set<SdfPath>   UnorderedPathSet;
 
+    GUSD_API
     GusdUSD_StageProxy(GusdUSD_StageCache& cache, const KeyHandle& key);
     
+    GUSD_API
     ~GusdUSD_StageProxy();
 
     const KeyConstHandle&           GetKey() const  { return _key; }
@@ -164,6 +167,7 @@ public:
     void                            Unload();
 
     /** If the file containing th root layer of a stage has changed, dirty the cache */
+    GUSD_API
     void                            MarkDirtyIfFileChanged();
 
     class MultiAccessor;
@@ -225,6 +229,7 @@ public:
         /** Get a prim by path.
             This is a convenience method for error reporting when
             prims are not found. */
+        GUSD_API
         UsdPrim                 GetPrimAtPath(
                                     const SdfPath& path,
                                     GusdUT_ErrorContext* err=NULL) const;
@@ -282,6 +287,7 @@ public:
         MultiAccessor() : _accessors(NULL), _size(0), _numAccessors(0) {}
         ~MultiAccessor() { Release(); }
 
+        GUSD_API
         void    Release();
             
         /** Bind the accessor for the given @a proxies and @a paths.
@@ -290,6 +296,7 @@ public:
             If an entry in the @a proxies array is null, or the corresponding
             path from @a paths is empty, the resulting prim will be an
             invalid prim, and no errors will be thrown.*/
+        GUSD_API
         bool    Bind(const UT_Array<GusdUSD_StageProxyHandle>& proxies,
                      const UT_Array<SdfPath>& paths,
                      UT_Array<UsdPrim>& prims,
@@ -297,14 +304,18 @@ public:
                      GusdUT_ErrorContext* err=NULL);
         /** @} */
 
+        GUSD_API
         bool    ClampTimes(UT_Array<UsdTimeCode>& times) const;
 
+        GUSD_API
         bool    ClampTimes(GusdUSD_Utils::PrimTimeMap& timeMap) const;
 
         exint           size() const    { return _size; }
 
+        GUSD_API
         const Accessor* operator()(exint i) const;
 
+        GUSD_API
         Accessor*       operator()(exint i);
 
     private:

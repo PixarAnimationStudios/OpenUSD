@@ -240,13 +240,25 @@ def DownloadURL(url, context, force):
         else:
             PrintInfo("Downloading {0} to {1}"
                       .format(url, os.path.abspath(filename)))
-            try:
-                r = urllib2.urlopen(url)
-                with open(filename, "wb") as outfile:
-                    outfile.write(r.read())
-            except Exception as e:
+
+            # To work around occasional hiccups with downloading from websites
+            # (SSL validation errors, etc.), retry a few times if we don't
+            # succeed in downloading the file.
+            maxRetries = 5
+            lastError = None
+            for i in xrange(maxRetries):
+                try:
+                    r = urllib2.urlopen(url)
+                    with open(filename, "wb") as outfile:
+                        outfile.write(r.read())
+                    break
+                except Exception as e:
+                    PrintCommandOutput("Retrying download due to error: {err}\n"
+                                       .format(err=e))
+                    lastError = e
+            else:
                 raise RuntimeError("Failed to download {url}: {err}"
-                                   .format(url=url, err=e))
+                                   .format(url=url, err=lastError))
 
         # Open the archive and retrieve the name of the top-most directory.
         # This assumes the archive contains a single directory with all
@@ -350,6 +362,7 @@ def InstallBoost(context, force):
             'runtime-link=shared',
             'threading=multi', 
             'variant=release',
+            '--with-atomic',
             '--with-date_time',
             '--with-filesystem',
             '--with-program_options',
@@ -493,7 +506,7 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 ############################################################
 # PNG
 
-PNG_URL = "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.29/libpng-1.6.29.tar.gz"
+PNG_URL = "http://downloads.sourceforge.net/project/libpng/libpng16/older-releases/1.6.29/libpng-1.6.29.tar.gz"
 
 def InstallPNG(context, force):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
@@ -533,7 +546,9 @@ OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 if Windows():
     GLEW_URL = "http://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0-win32.zip"
 else:
-    GLEW_URL = "https://github.com/nigels-com/glew/archive/glew-2.0.0.tar.gz"
+    # Important to get source package from this URL and NOT github. This package
+    # contains pre-generated code that the github repo does not.
+    GLEW_URL = "https://downloads.sourceforge.net/project/glew/glew/2.0.0/glew-2.0.0.tgz"
 
 def InstallGLEW(context, force):
     if Windows():
@@ -554,8 +569,6 @@ def InstallGLEW_Windows(context, force):
 
 def InstallGLEW_LinuxOrMacOS(context, force):
     with CurrentWorkingDirectory(DownloadURL(GLEW_URL, context, force)):
-        # GLEW requires code generation in the source tree
-        Run("make extensions")
         Run('make GLEW_DEST="{instDir}" -j{procs} install'
             .format(instDir=context.instDir,
                     procs=multiprocessing.cpu_count()))
@@ -606,9 +619,16 @@ OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-1.7.14.zip"
 
 def InstallOpenImageIO(context, force):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
-        RunCMake(context, force,
-                 ['-DOIIO_BUILD_TOOLS=OFF',
-                  '-DOIIO_BUILD_TESTS=OFF'])
+        extraArgs = ['-DOIIO_BUILD_TOOLS=OFF',
+                     '-DOIIO_BUILD_TESTS=OFF']
+
+        # If Ptex support is disabled in USD, disable support in OpenImageIO
+        # as well. This ensures OIIO doesn't accidentally pick up a Ptex
+        # library outside of our build.
+        if not context.enablePtex:
+            extraArgs.append('-DUSE_PTEX=OFF')
+
+        RunCMake(context, force, extraArgs)
 
 OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
                          "include/OpenImageIO/oiioversion.h")
@@ -620,23 +640,38 @@ OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3
 
 def InstallOpenSubdiv(context, force):
     with CurrentWorkingDirectory(DownloadURL(OPENSUBDIV_URL, context, force)):
+        extraArgs = [
+            '-DNO_EXAMPLES=ON',
+            '-DNO_TUTORIALS=ON',
+            '-DNO_REGRESSION=ON',
+            '-DNO_DOC=ON',
+            '-DNO_OMP=ON',
+            '-DNO_CUDA=ON',
+            '-DNO_OPENCL=ON',
+            '-DNO_DX=ON',
+            '-DNO_TESTS=ON',
+        ]
+
+        # OpenSubdiv's FindGLEW module won't look in CMAKE_PREFIX_PATH, so
+        # we need to explicitly specify GLEW_LOCATION here.
+        extraArgs.append('-DGLEW_LOCATION="{instDir}"'
+                         .format(instDir=context.instDir))
+
+        # If Ptex support is disabled in USD, disable support in OpenSubdiv
+        # as well. This ensures OSD doesn't accidentally pick up a Ptex
+        # library outside of our build.
+        if not context.enablePtex:
+            extraArgs.append('-DNO_PTEX=ON')
+
         # NOTE: For now, we disable TBB in our OpenSubdiv build.
         # This avoids an issue where OpenSubdiv will link against
         # all TBB libraries it finds, including libtbbmalloc and
         # libtbbmalloc_proxy. On Linux and MacOS, this has the
         # unwanted effect of replacing the system allocator with
         # tbbmalloc, which can cause problems with the Maya plugin.
-        RunCMake(context, force,
-                 ['-DNO_EXAMPLES=ON',
-                  '-DNO_TUTORIALS=ON',
-                  '-DNO_REGRESSION=ON',
-                  '-DNO_DOC=ON',
-                  '-DNO_OMP=ON',
-                  '-DNO_CUDA=ON',
-                  '-DNO_OPENCL=ON',
-                  '-DNO_DX=ON',
-                  '-DNO_TESTS=ON',
-                  '-DNO_TBB=ON'])
+        extraArgs.append('-DNO_TBB=ON')
+
+        RunCMake(context, force, extraArgs)
 
 OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv, 
                         "include/opensubdiv/version.h")
@@ -722,6 +757,11 @@ ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 def InstallUSD(context):
     with CurrentWorkingDirectory(context.usdSrcDir):
         extraArgs = []
+
+        if context.buildShared:
+            extraArgs.append('-DBUILD_SHARED_LIBS=ON')
+        elif context.buildMonolithic:
+            extraArgs.append('-DPXR_BUILD_MONOLITHIC=ON')
         
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
@@ -739,6 +779,14 @@ def InstallUSD(context):
                 extraArgs.append('-DPXR_ENABLE_PTEX_SUPPORT=ON')
             else:
                 extraArgs.append('-DPXR_ENABLE_PTEX_SUPPORT=OFF')
+
+            if context.buildEmbree:
+                if context.embreeLocation:
+                    extraArgs.append('-DEMBREE_LOCATION="{location}"'
+                                     .format(location=context.embreeLocation))
+                extraArgs.append('-DPXR_BUILD_EMBREE_PLUGIN=ON')
+            else:
+                extraArgs.append('-DPXR_BUILD_EMBREE_PLUGIN=OFF')
         else:
             extraArgs.append('-DPXR_BUILD_IMAGING=OFF')
 
@@ -825,6 +873,16 @@ group.add_argument("--generator", type=str,
                    help=("CMake generator to use when building libraries with "
                          "cmake"))
 
+(SHARED_LIBS, MONOLITHIC_LIB) = (0, 1)
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--build-shared", dest="build_type",
+                      action="store_const", const=SHARED_LIBS, 
+                      default=SHARED_LIBS,
+                      help="Build individual shared libraries (default)")
+subgroup.add_argument("--build-monolithic", dest="build_type",
+                      action="store_const", const=MONOLITHIC_LIB,
+                      help="Build a single monolithic shared library")
+
 group = parser.add_argument_group(title="3rd Party Dependency Build Options")
 group.add_argument("--src", type=str,
                    help=("Directory where dependencies will be downloaded "
@@ -870,6 +928,17 @@ subgroup.add_argument("--ptex", dest="enable_ptex", action="store_true",
 subgroup.add_argument("--no-ptex", dest="enable_ptex", 
                       action="store_false",
                       help="Disable Ptex support in imaging (default)")
+
+group = parser.add_argument_group(title="Imaging Plugin Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--embree", dest="build_embree", action="store_true",
+                      default=False,
+                      help="Build Embree sample imaging plugin")
+subgroup.add_argument("--no-embree", dest="build_embree", action="store_true",
+                      default=False,
+                      help="Do not build Embree sample imaging plugin (default)")
+group.add_argument("--embree-location", type=str,
+                   help="Directory where Embree is installed.")
 
 group = parser.add_argument_group(title="Alembic Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -941,6 +1010,10 @@ class InstallContext:
         # CMake generator
         self.cmakeGenerator = args.generator
 
+        # Build type
+        self.buildShared = (args.build_type == SHARED_LIBS)
+        self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
+
         # Dependencies that are forced to be built
         self.forceBuildAll = args.force_all
         self.forceBuild = [dep.lower() for dep in args.force_build]
@@ -956,6 +1029,11 @@ class InstallContext:
 
         # - USD Imaging
         self.buildUsdImaging = (args.build_imaging == USD_IMAGING)
+
+        # - Imaging plugins
+        self.buildEmbree = self.buildImaging and args.build_embree
+        self.embreeLocation = (os.path.abspath(args.embree_location)
+                               if args.embree_location else None)
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
@@ -1052,7 +1130,8 @@ if (not find_executable("g++") and
     sys.exit(1)
 
 if not find_executable("python"):
-    PrintError("python not found -- please ensure python is included in your PATH")
+    PrintError("python not found -- please ensure python is included in your "
+               "PATH")
     sys.exit(1)
 
 if not find_executable("cmake"):
@@ -1065,7 +1144,24 @@ if context.buildDocs:
         sys.exit(1)
         
     if not find_executable("dot"):
-        PrintError("dot not found -- please install graphviz and adjust your PATH")
+        PrintError("dot not found -- please install graphviz and adjust your "
+                   "PATH")
+        sys.exit(1)
+
+if context.buildUsdImaging:
+    # The USD build will skip building usdview if pyside-uic is not found, 
+    # so check for it here to avoid confusing users. This list of PySide
+    # executable names comes from cmake/modules/FindPySide.cmake
+    pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
+    if not any([find_executable(p) for p in pysideUic]):
+        PrintError("pyside-uic not found -- please install PySide and adjust "
+                   "your PATH")
+        sys.exit(1)
+
+if JPEG in requiredDependencies:
+    # NASM is required to build libjpeg-turbo
+    if (Windows() and not find_executable("nasm")):
+        PrintError("nasm not found -- please install it and adjust your PATH")
         sys.exit(1)
 
 if AnyPythonDependencies(dependenciesToBuild):
@@ -1082,7 +1178,7 @@ Building with settings:
   3rd-party install directory   {instDir}
   Build directory               {buildDir}
 
-  Building
+  Building                      {buildType}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
     UsdImaging                  {buildUsdImaging}
@@ -1103,6 +1199,9 @@ Building with settings:
     instDir=context.instDir,
     dependencies=("None" if not dependenciesToBuild else 
                   ", ".join([d.name for d in dependenciesToBuild])),
+    buildType=("Shared libraries" if context.buildShared
+               else "Monolithic shared library" if context.buildMonolithic
+               else ""),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),

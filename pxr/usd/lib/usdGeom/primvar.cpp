@@ -251,9 +251,11 @@ UsdGeomPrimvar::GetIndices(VtIntArray *indices,
 bool 
 UsdGeomPrimvar::IsIndexed() const
 {
-    // XXX update this to api that can directly see if an attribute is blocked.
-    VtIntArray dummy;
-    return _GetIndicesAttr(/*create*/ false).Get(&dummy);
+    UsdResolveInfo valueSource = _GetIndicesAttr(/*create*/ false).
+        GetResolveInfo(UsdTimeCode::EarliestTime());
+
+    return (valueSource.HasAuthoredValueOpinion() && 
+            !valueSource.ValueIsBlocked());
 }
 
 bool 

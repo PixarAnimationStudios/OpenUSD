@@ -28,7 +28,6 @@
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/vt/wrapArray.h"
 
 #include "pxr/base/tf/type.h"
 
@@ -165,11 +164,6 @@ TF_REGISTRY_FUNCTION(VtValue)
     VtValue::RegisterSimpleBidirectionalCast<GfVec4h, GfVec4d>();
     VtValue::RegisterSimpleBidirectionalCast<GfVec4h, GfVec4f>();
     VtValue::RegisterSimpleBidirectionalCast<GfVec4f, GfVec4d>();
-
-    // Allow converting python sequences to VtArray for certain types.  Note
-    // that sequences of numeric types are handled in arrayNumpy.{cpp,h}.
-    VtRegisterValueCastsFromPythonSequencesToArray<std::string>();
-    VtRegisterValueCastsFromPythonSequencesToArray<TfToken>();
 
     // Precision casts.
     _RegisterArrayCasts<VtHalfArray, VtFloatArray>();

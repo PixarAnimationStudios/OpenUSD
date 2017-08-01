@@ -28,6 +28,7 @@
 #include "USD_Proxy.h"
 #include "GU_PackedUSD.h"
 #include "USD_XformCache.h"
+#include "GU_USD.h"
 
 #include "pxr/usd/usdGeom/boundable.h"
 
@@ -207,18 +208,11 @@ GusdGroupBaseWrapper::updateGroupFromGTPrim(
     if( !destPrim )
         return false;
 
-    bool overlayTransforms = ctxt.getOverTransforms( sourcePrim );
-    bool overlayPoints =     ctxt.getOverPoints( sourcePrim );
-    bool overlayPrimvars =   ctxt.getOverPrimvars( sourcePrim );
-    bool overlayAll =        ctxt.getOverAll( sourcePrim );
-
-    bool writeNewGeo = !(overlayTransforms || overlayPoints || overlayPrimvars || overlayAll);
-
-    if( writeNewGeo && ctxt.purpose != UsdGeomTokens->default_ ) {
+    if( !ctxt.writeOverlay && ctxt.purpose != UsdGeomTokens->default_ ) {
         destPrim.GetPurposeAttr().Set( ctxt.purpose );
     }
 
-    if( writeNewGeo || overlayTransforms || overlayAll )
+    if( !ctxt.writeOverlay || ctxt.overlayTransforms || ctxt.overlayAll )
     {
         GfMatrix4d xform = computeTransform( 
                         destPrim.GetPrim().GetParent(),
@@ -235,7 +229,7 @@ GusdGroupBaseWrapper::updateGroupFromGTPrim(
         xformCache[destPrim.GetPrim().GetPath()] = houXform;
     }
 
-    if( writeNewGeo || overlayPrimvars )
+    if( !ctxt.writeOverlay || ctxt.overlayPrimvars || ctxt.overlayAll )
     {
         GusdGT_AttrFilter filter = ctxt.attributeFilter;
         filter.appendPattern(GT_OWNER_UNIFORM, "^P");
@@ -264,12 +258,10 @@ GusdGroupBaseWrapper::updateGroupActiveFromGTPrim(
 
     GT_Owner attrOwner;
     GT_DataArrayHandle houAttr
-        = sourcePrim->findAttribute("usdactive", attrOwner, 0);
+        = sourcePrim->findAttribute(GUSD_ACTIVE_ATTR, attrOwner, 0);
     if (houAttr) {
         int active = houAttr->getI32(0);
-        if ((bool)active != prim.IsActive()) {
-            prim.SetActive((bool)active);            
-        }
+        prim.SetActive((bool)active);            
     }
 }
 

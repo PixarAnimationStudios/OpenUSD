@@ -222,7 +222,7 @@ UsdRiMaterialAPI::_GetSourceShaderObject(const UsdShadeOutput &output,
     }
 
     if (ignoreBaseMaterial && 
-        UsdShadeConnectableAPI::IsSourceFromBaseMaterial(output)) {
+        UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(output)) {
         return ShaderType();
     }
 

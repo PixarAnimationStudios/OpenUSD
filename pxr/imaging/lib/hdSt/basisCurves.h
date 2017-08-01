@@ -39,6 +39,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
                                               HdSt_BasisCurvesTopologySharedPtr;
 
@@ -82,9 +84,11 @@ protected:
                                   HdDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
 
-    HdDirtyBits _PropagateDirtyBits(HdDirtyBits dirtyBits);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const override;
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+    virtual void _InitRepr(TfToken const &reprName,
+                           HdDirtyBits *dirtyBits) override;
 
 private:
     enum DrawingCoord {
@@ -95,6 +99,7 @@ private:
     enum DirtyBits {
         DirtyIndices        = HdChangeTracker::CustomBitsBegin,
         DirtyHullIndices    = (DirtyIndices       << 1),
+        DirtyNewRepr        = (DirtyHullIndices   << 1),
     };
 
     /// We only support drawing smooth curves for a small subset of all the
@@ -109,9 +114,10 @@ private:
                          const HdBasisCurvesReprDesc &desc);
 
     void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                                        const HdBasisCurvesReprDesc &desc);
+                                const HdBasisCurvesReprDesc &desc,
+                                HdResourceRegistrySharedPtr const& resourceRegistry);
 
-    void _SetGeometricShaders();
+    void _SetGeometricShaders(HdResourceRegistrySharedPtr const& resourceRegistry);
 
     void _ResetGeometricShaders();
 

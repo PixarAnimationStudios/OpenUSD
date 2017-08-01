@@ -90,7 +90,7 @@ UsdSkelBindingAPI::CreateGeomBindTransformAttr(VtValue const &defaultValue, bool
     return UsdSchemaBase::_CreateAttr(UsdSkelTokens->primvarsSkelGeomBindTransform,
                        SdfValueTypeNames->Matrix4d,
                        /* custom = */ false,
-                       SdfVariabilityVarying,
+                       SdfVariabilityUniform,
                        defaultValue,
                        writeSparsely);
 }
@@ -152,6 +152,19 @@ UsdRelationship
 UsdSkelBindingAPI::CreateSkeletonRel() const
 {
     return GetPrim().CreateRelationship(UsdSkelTokens->skelSkeleton,
+                       /* custom = */ false);
+}
+
+UsdRelationship
+UsdSkelBindingAPI::GetJointsRel() const
+{
+    return GetPrim().GetRelationship(UsdSkelTokens->skelJoints);
+}
+
+UsdRelationship
+UsdSkelBindingAPI::CreateJointsRel() const
+{
+    return GetPrim().CreateRelationship(UsdSkelTokens->skelJoints,
                        /* custom = */ false);
 }
 

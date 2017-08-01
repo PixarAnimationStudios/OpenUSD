@@ -1,0 +1,74 @@
+Validation on, any diffs found will cause failure.
+Processing schema classes:
+Statements, RslShader, RisObject, RisPattern, RisOslPattern, RisBxdf, RisIntegrator, RiMaterialAPI, RiLightAPI, RiLightFilterAPI, RiLightPortalAPI, RiSplineAPI, RiTextureAPI, PxrEnvDayLight, PxrAovLight, PxrIntMultLightFilter, PxrBarnLightFilter, PxrCookieLightFilter, PxrRampLightFilter, PxrRodLightFilter
+Loading Templates
+Writing API:
+	unchanged usd/lib/usdRi/api.h
+Writing Schema Tokens:
+	unchanged usd/lib/usdRi/tokens.h
+	unchanged usd/lib/usdRi/tokens.cpp
+	unchanged usd/lib/usdRi/wrapTokens.cpp
+Generating Classes:
+	unchanged usd/lib/usdRi/statements.h
+	unchanged usd/lib/usdRi/statements.cpp
+	unchanged usd/lib/usdRi/wrapStatements.cpp
+	unchanged usd/lib/usdRi/rslShader.h
+	unchanged usd/lib/usdRi/rslShader.cpp
+	unchanged usd/lib/usdRi/wrapRslShader.cpp
+	unchanged usd/lib/usdRi/risObject.h
+	unchanged usd/lib/usdRi/risObject.cpp
+	unchanged usd/lib/usdRi/wrapRisObject.cpp
+	unchanged usd/lib/usdRi/risPattern.h
+	unchanged usd/lib/usdRi/risPattern.cpp
+	unchanged usd/lib/usdRi/wrapRisPattern.cpp
+	unchanged usd/lib/usdRi/risOslPattern.h
+	unchanged usd/lib/usdRi/risOslPattern.cpp
+	unchanged usd/lib/usdRi/wrapRisOslPattern.cpp
+	unchanged usd/lib/usdRi/risBxdf.h
+	unchanged usd/lib/usdRi/risBxdf.cpp
+	unchanged usd/lib/usdRi/wrapRisBxdf.cpp
+	unchanged usd/lib/usdRi/risIntegrator.h
+	unchanged usd/lib/usdRi/risIntegrator.cpp
+	unchanged usd/lib/usdRi/wrapRisIntegrator.cpp
+	unchanged usd/lib/usdRi/materialAPI.h
+	unchanged usd/lib/usdRi/materialAPI.cpp
+	unchanged usd/lib/usdRi/wrapMaterialAPI.cpp
+	unchanged usd/lib/usdRi/lightAPI.h
+	unchanged usd/lib/usdRi/lightAPI.cpp
+	unchanged usd/lib/usdRi/wrapLightAPI.cpp
+	unchanged usd/lib/usdRi/lightFilterAPI.h
+	unchanged usd/lib/usdRi/lightFilterAPI.cpp
+	unchanged usd/lib/usdRi/wrapLightFilterAPI.cpp
+	unchanged usd/lib/usdRi/lightPortalAPI.h
+	unchanged usd/lib/usdRi/lightPortalAPI.cpp
+	unchanged usd/lib/usdRi/wrapLightPortalAPI.cpp
+	unchanged usd/lib/usdRi/splineAPI.h
+	unchanged usd/lib/usdRi/splineAPI.cpp
+	unchanged usd/lib/usdRi/wrapSplineAPI.cpp
+	unchanged usd/lib/usdRi/textureAPI.h
+	unchanged usd/lib/usdRi/textureAPI.cpp
+	unchanged usd/lib/usdRi/wrapTextureAPI.cpp
+	unchanged usd/lib/usdRi/pxrEnvDayLight.h
+	unchanged usd/lib/usdRi/pxrEnvDayLight.cpp
+	unchanged usd/lib/usdRi/wrapPxrEnvDayLight.cpp
+	unchanged usd/lib/usdRi/pxrAovLight.h
+	unchanged usd/lib/usdRi/pxrAovLight.cpp
+	unchanged usd/lib/usdRi/wrapPxrAovLight.cpp
+	unchanged usd/lib/usdRi/pxrIntMultLightFilter.h
+	unchanged usd/lib/usdRi/pxrIntMultLightFilter.cpp
+	unchanged usd/lib/usdRi/wrapPxrIntMultLightFilter.cpp
+	unchanged usd/lib/usdRi/pxrBarnLightFilter.h
+	unchanged usd/lib/usdRi/pxrBarnLightFilter.cpp
+	unchanged usd/lib/usdRi/wrapPxrBarnLightFilter.cpp
+	unchanged usd/lib/usdRi/pxrCookieLightFilter.h
+	unchanged usd/lib/usdRi/pxrCookieLightFilter.cpp
+	unchanged usd/lib/usdRi/wrapPxrCookieLightFilter.cpp
+	unchanged usd/lib/usdRi/pxrRampLightFilter.h
+	unchanged usd/lib/usdRi/pxrRampLightFilter.cpp
+	unchanged usd/lib/usdRi/wrapPxrRampLightFilter.cpp
+	unchanged usd/lib/usdRi/pxrRodLightFilter.h
+	unchanged usd/lib/usdRi/pxrRodLightFilter.cpp
+	unchanged usd/lib/usdRi/wrapPxrRodLightFilter.cpp
+	unchanged usd/lib/usdRi/plugInfo.json
+Generating Schematics:
+	unchanged usd/lib/usdRi/generatedSchema.usda

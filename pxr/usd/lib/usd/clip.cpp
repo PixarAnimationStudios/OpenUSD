@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/clipsAPI.h"
+#include "pxr/usd/usd/interpolators.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
@@ -599,12 +600,28 @@ _ResolveClipSetsInNode(
     const SdfPath& primPath = node.GetPath();
     const SdfLayerRefPtrVector& layers = node.GetLayerStack()->GetLayers();
 
+    // Do an initial scan to see if any of the layers have a 'clips'
+    // metadata field. If none do, we can bail out early without looking
+    // for any other metadata.
+    size_t weakestLayerWithClips = std::numeric_limits<size_t>::max();
+    for (size_t i = layers.size(); i-- != 0;) {
+        const SdfLayerRefPtr& layer = layers[i];
+        if (layer->HasField(primPath, UsdTokens->clips)) {
+            weakestLayerWithClips = i;
+            break;
+        }
+    }
+
+    if (weakestLayerWithClips == std::numeric_limits<size_t>::max()) {
+        return;
+    }
+
     // Iterate from weak-to-strong to build up the composed clip info
     // dictionaries for each clip set, as well as the list of clip sets 
     // that should be added from this layer stack.
     std::map<std::string, _ClipSet> clipSetsInNode;
     std::vector<std::string> addedClipSets;
-    for (size_t i = layers.size(); i-- != 0;) {
+    for (size_t i = weakestLayerWithClips + 1; i-- != 0;) {
         const SdfLayerRefPtr& layer = layers[i];
 
         VtDictionary clips;
@@ -1383,6 +1400,48 @@ Usd_Clip::GetLayerIfOpen() const
 
     return SdfLayerHandle();
 }
+
+template <class T>
+bool
+Usd_Clip::_Interpolate(
+    const SdfLayerRefPtr& clip, const _TranslatedSpecId& clipId,
+    InternalTime clipTime, Usd_InterpolatorBase* interpolator,
+    T* value) const
+{
+    double lowerInClip, upperInClip;
+    if (clip->GetBracketingTimeSamplesForPath(
+            clipId.id, clipTime, &lowerInClip, &upperInClip)) {
+            
+        return Usd_GetOrInterpolateValue(
+            clip, clipId.id, clipTime, lowerInClip, upperInClip,
+            interpolator, value);
+    }
+
+    return false;
+}
+
+#define _INSTANTIATE_INTERPOLATE(r, unused, elem)               \
+    template bool Usd_Clip::_Interpolate(                       \
+        const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
+        InternalTime, Usd_InterpolatorBase*,                    \
+        SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;              \
+    template bool Usd_Clip::_Interpolate(                       \
+        const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
+        InternalTime, Usd_InterpolatorBase*,                    \
+        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;        \
+
+BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_INTERPOLATE, ~, SDF_VALUE_TYPES)
+#undef _INSTANTIATE_INTERPOLATE
+
+template bool Usd_Clip::_Interpolate(
+    const SdfLayerRefPtr&, const _TranslatedSpecId&,
+    InternalTime, Usd_InterpolatorBase*,
+    SdfAbstractDataValue*) const;
+
+template bool Usd_Clip::_Interpolate(
+    const SdfLayerRefPtr&, const _TranslatedSpecId&,
+    InternalTime, Usd_InterpolatorBase*,
+    VtValue*) const;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

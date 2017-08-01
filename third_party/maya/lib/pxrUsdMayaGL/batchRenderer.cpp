@@ -713,11 +713,41 @@ UsdMayaGLBatchRenderer::TaskDelegate::GetRenderTask(
         _renderTaskIdMap[hash] = renderTaskId;
     }
 
-    // Update collection in the value cache
+
+    //
+    // XXX: The Maya-Hydra plugin needs refactoring such that the plugin is
+    // creating a different collection name for each collection it is trying to
+    // manage. (i.e. Each collection within a frame that has different content
+    // should have a different collection name)
+    //
+    // With Hydra, changing the contents of a collection can be
+    // an expensive operation as it causes draw batches to be rebuilt.
+    //
+    // The Maya-Hydra Plugin is currently reusing the same collection
+    // name for all collections within a frame.
+    // (This stems from a time when collection name had a significant meaning
+    // rather than id'ing a collection).
+    //
+    // The plugin should also track deltas to the contents of a collection
+    // and set Hydra's dirty state when prims get added and removed from
+    // the collection.
+    //
+    // Another possible change that can be made to this code is HdxRenderTask
+    // now takes an array of collections, so it is possible to support different
+    // reprs using the same task.  Therefore, this code should be modified to
+    // only add one task that is provided with the active set of collections.
+    //
+    // However, a further improvement to the code could be made using
+    // UsdDelegate's fallback repr feature instead of using multiple
+    // collections as it would avoid modifying the collection as a Maya shape
+    // object display state changes.  This would result in a much cheaper state
+    // transition within Hydra itself.
+    //
     TfToken colName = renderParams.geometryCol;
     HdRprimCollection rprims(colName, renderParams.drawRepr);
     rprims.SetRootPaths(roots);
     rprims.SetRenderTags(renderParams.renderTags);
+    GetRenderIndex().GetChangeTracker().MarkCollectionDirty(colName);
 
     // update value cache
     _SetValue(renderTaskId, HdTokens->collection, rprims);

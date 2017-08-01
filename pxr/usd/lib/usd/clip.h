@@ -32,9 +32,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
 
-#include "pxr/base/tf/refBase.h"
-#include "pxr/base/tf/staticTokens.h"
-
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -48,6 +45,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpPrimIndex;
+class Usd_InterpolatorBase;
 
 /// Returns true if the given scene description metadata \p fieldName is
 /// associated with value clip functionality.
@@ -213,9 +211,10 @@ public:
     // are mapping into an empty clip with no samples, so it can continue
     // searching for value sources. 
     size_t _GetNumTimeSamplesForPathInLayerForClip(
-            const SdfAbstractDataSpecId& id) const {
+        const SdfAbstractDataSpecId& id) const 
+    {
         return _GetLayerForClip()->GetNumTimeSamplesForPath(
-                                        _TranslateIdToClip(id).id);
+            _TranslateIdToClip(id).id);
     }
 
     std::set<ExternalTime>
@@ -228,7 +227,7 @@ public:
     template <class T>
     bool QueryTimeSample(
         const SdfAbstractDataSpecId& id, ExternalTime time, 
-        T* value) const
+        Usd_InterpolatorBase* interpolator, T* value) const
     {
         const _TranslatedSpecId clipId = _TranslateIdToClip(id);
         const InternalTime clipTime = _TranslateTimeToInternal(time);
@@ -239,13 +238,7 @@ public:
         }
 
         // See comment in Usd_Clip::GetBracketingTimeSamples.
-        double lowerInClip, upperInClip;
-        if (clip->GetBracketingTimeSamplesForPath(
-                clipId.id, clipTime, &lowerInClip, &upperInClip)) {
-            return clip->QueryTimeSample(clipId.id, lowerInClip, value);
-        }
-
-        return false;
+        return _Interpolate(clip, clipId, clipTime, interpolator, value);
     }
 
     /// Return the layer associated with this clip iff it has already been
@@ -299,6 +292,12 @@ private:
                                              ExternalTime* tLower, 
                                              ExternalTime* tUpper) const;
 
+    template <class T>
+    bool _Interpolate(
+        const SdfLayerRefPtr& clip, const _TranslatedSpecId& clipId,
+        InternalTime clipTime, Usd_InterpolatorBase* interpolator,
+        T* value) const;
+
     _TranslatedSpecId _TranslateIdToClip(const SdfAbstractDataSpecId& id) const;
 
     // Helpers to translate between internal and external time domains.
@@ -320,7 +319,6 @@ typedef std::vector<Usd_ClipRefPtr> Usd_ClipRefPtrVector;
 
 std::ostream&
 operator<<(std::ostream& out, const Usd_ClipRefPtr& clip);
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

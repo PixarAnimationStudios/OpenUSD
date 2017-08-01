@@ -29,6 +29,7 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/valueFromPython.h"
+#include "pxr/base/vt/wrapArray.h"
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/inttypes.h"
@@ -63,6 +64,14 @@ using std::string;
 using std::map;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(VtValue)
+{
+    // Allow converting python sequences to VtArray for certain types.  Note
+    // that sequences of numeric types are handled in arrayNumpy.{cpp,h}.
+    VtRegisterValueCastsFromPythonSequencesToArray<std::string>();
+    VtRegisterValueCastsFromPythonSequencesToArray<TfToken>();
+}
 
 TfPyObjWrapper
 Vt_GetPythonObjectFromHeldValue(VtValue const &self)

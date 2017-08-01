@@ -60,6 +60,10 @@ pxr_library(hd
         drawItemInstance
         drawItemState
         engine
+        extCompCpuComputation
+        extCompPrimvarBufferSource
+        extComputation
+        extComputationContext
         fallbackLightingShader
         geometricShader
         glslProgram
@@ -79,6 +83,7 @@ pxr_library(hd
         perfLog
         persistentBuffer
         points
+        primGather
         primTypeIndex
         renderContextCaps
         renderDelegate
@@ -99,6 +104,7 @@ pxr_library(hd
         shaderCode
         shaderKey
         shaderParam
+        sortedIds                   
         smoothNormals
         sprim
         strategyBase
@@ -122,10 +128,15 @@ pxr_library(hd
         version.h
 
     PRIVATE_CLASSES
+        compExtCompInputSource
         cullingShaderKey
+        extCompInputSource
+        extComputationContextInternal
+        sceneExtCompInputSource
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
+        vtExtractor
         ${optionalPrivateClasses}
 
     RESOURCE_FILES

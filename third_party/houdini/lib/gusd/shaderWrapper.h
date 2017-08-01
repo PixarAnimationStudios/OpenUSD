@@ -27,6 +27,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usdShade/material.h>
 
+#include "gusd/api.h"
+
 class VOP_Node;
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,14 +39,17 @@ class GusdShaderWrapper
 {
 public:
 
+    GUSD_API
     GusdShaderWrapper(
         const VOP_Node* terminalNode,
         const UsdStagePtr& stage,
         const std::string& path,
         const std::string& shaderOutDir);
 
+    GUSD_API
     bool bind(UsdPrim& prim) const;
 
+    GUSD_API
     bool isValid() const;
 
 private:

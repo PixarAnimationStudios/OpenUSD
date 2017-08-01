@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
+#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -184,7 +185,8 @@ Hd_SmoothNormalsComputationGPU::Hd_SmoothNormalsComputationGPU(
 
 void
 Hd_SmoothNormalsComputationGPU::Execute(
-    HdBufferArrayRangeSharedPtr const &range_)
+    HdBufferArrayRangeSharedPtr const &range_,
+    HdResourceRegistry *resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -193,7 +195,8 @@ Hd_SmoothNormalsComputationGPU::Execute(
         return;
 
     TF_VERIFY(_adjacency);
-    HdBufferArrayRangeSharedPtr const &adjacencyRange_ = _adjacency->GetAdjacencyRange();
+    HdBufferArrayRangeSharedPtr const &adjacencyRange_ = 
+        _adjacency->GetAdjacencyRange();
     TF_VERIFY(adjacencyRange_);
 
     HdBufferArrayRangeGLSharedPtr adjacencyRange =
@@ -221,7 +224,7 @@ Hd_SmoothNormalsComputationGPU::Execute(
     if (!TF_VERIFY(!shaderToken.IsEmpty())) return;
 
     HdGLSLProgramSharedPtr computeProgram
-        = HdGLSLProgram::GetComputeProgram(shaderToken);
+        = HdGLSLProgram::GetComputeProgram(shaderToken, resourceRegistry);
     if (!computeProgram) return;
 
     GLuint program = computeProgram->GetProgram().GetId();

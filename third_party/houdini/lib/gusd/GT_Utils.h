@@ -24,6 +24,8 @@
 #ifndef __GUSD_GT_UTILS_H__
 #define __GUSD_GT_UTILS_H__
 
+#include "gusd/api.h"
+
 #include <GT/GT_Primitive.h>
 #include <GEO/GEO_Primitive.h>
 #include <UT/UT_Map.h>
@@ -57,16 +59,23 @@ public:
     typedef UT_VariadicT<GT_Owner> OwnerArgs;
 
 public:
+
+    GUSD_API
     explicit GusdGT_AttrFilter(const std::string& pattern="*");
 
+    GUSD_API
     GusdGT_AttrFilter( const GusdGT_AttrFilter& rhs );
 
+    GUSD_API
     void setPattern(GT_Owner owner, const std::string& pattern);
 
+    GUSD_API
     void appendPattern(GT_Owner owner, const std::string& pattern);
     
+    GUSD_API
     bool matches(const std::string& str) const;
 
+    GUSD_API
     void setActiveOwners(const OwnerArgs& owners) const;
 
 private:

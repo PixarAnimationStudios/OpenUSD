@@ -59,7 +59,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
-typedef boost::shared_ptr<class HdBasisCurvesTopology> HdBasisCurvesTopologySharedPtr;
+typedef boost::shared_ptr<class HdBasisCurvesTopology> 
+                                                 HdBasisCurvesTopologySharedPtr;
 typedef boost::weak_ptr<class HdBufferArrayRange> HdBufferArrayRangePtr;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
 typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
@@ -67,6 +68,7 @@ typedef boost::shared_ptr<class HdDispatchBuffer> HdDispatchBufferSharedPtr;
 typedef boost::shared_ptr<class HdPersistentBuffer> HdPersistentBufferSharedPtr;
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 /// \class HdResourceRegistry
 ///
@@ -76,11 +78,11 @@ class HdResourceRegistry : public boost::noncopyable  {
 public:
     HF_MALLOC_TAG_NEW("new HdResourceRegistry");
 
-    /// Returns an instance of resource registry
     HD_API
-    static HdResourceRegistry& GetInstance() {
-        return TfSingleton<HdResourceRegistry>::GetInstance();
-    }
+    HdResourceRegistry();
+
+    HD_API
+    ~HdResourceRegistry();
 
     /// Allocate new non uniform buffer array range
     HD_API
@@ -312,10 +314,6 @@ public:
                                      const HdResourceRegistry& self);
 
 private:
-    friend class TfSingleton<HdResourceRegistry>;
-
-    HdResourceRegistry();
-    ~HdResourceRegistry();
 
     // aggregated buffer array
     HdBufferArrayRegistry _nonUniformBufferArrayRegistry;
@@ -422,7 +420,6 @@ private:
 
 };
 
-HD_API_TEMPLATE_CLASS(TfSingleton<HdResourceRegistry>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

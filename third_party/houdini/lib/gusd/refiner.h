@@ -24,6 +24,8 @@
 #ifndef __GUSD_REFINER_H__
 #define __GUSD_REFINER_H__
 
+#include "gusd/api.h"
+
 #include <GT/GT_Refine.h>
 #include <GT/GT_RefineParms.h>
 #include <GU/GU_DetailHandle.h>
@@ -32,6 +34,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/sdf/path.h>
+
+#include "writeCtrlFlags.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -72,17 +76,20 @@ public:
         GT_PrimitiveHandle  prim;
         UT_Matrix4D         xform;
         TfToken             purpose;
+        GusdWriteCtrlFlags  writeCtrlFlags;
 
         GprimArrayEntry() {}
         GprimArrayEntry( 
             const SdfPath&              path, 
             const GT_PrimitiveHandle&   prim,
             const UT_Matrix4D&          xform,
-            const TfToken&              purpose )
+            const TfToken&              purpose,
+            const GusdWriteCtrlFlags&   writeCtrlFlags )
                 : path( path )
                 , prim( prim )
                 , xform( xform )
-                , purpose(purpose) {}
+                , purpose(purpose)
+                , writeCtrlFlags(writeCtrlFlags) {}
     };
     using GprimArray = std::vector<GprimArrayEntry>;
 
@@ -96,6 +103,7 @@ public:
     /// that we only write packed prims that have been tagged with a prim path. We
     /// kee track of the transform of the last group we wrote in parentToWorldXform
     /// \p localToWorldXform is initialized to the OBJ Node's transform by the ROP.
+    GUSD_API
     GusdRefiner(
         GusdRefinerCollector&   collector,
         const SdfPath&          pathPrefix,
@@ -106,12 +114,15 @@ public:
 
     virtual bool allowThreading() const override { return false; }
 
+    GUSD_API
     virtual void addPrimitive( const GT_PrimitiveHandle& gtPrim ) override;
 
+    GUSD_API
     void refineDetail( 
         const GU_ConstDetailHandle& detail,
         const GT_RefineParms&       parms  );
 
+    GUSD_API
     const GprimArray& finish();
 
     //////////////////////////////////////////////////////////////////////////
@@ -149,6 +160,8 @@ public:
     // of point instancer we need to overlay (old - "PxPointInstancer" or new
     // "PointInstancer").
     std::string             m_pointInstancerType;  
+
+    GusdWriteCtrlFlags      m_writeCtrlFlags;
 
     /////////////////////////////////////////////////////////////////////////////
 
@@ -209,7 +222,8 @@ public:
         bool                        explicitPrimPath,
         GT_PrimitiveHandle          prim,
         const UT_Matrix4D&          xform,
-        const TfToken &             purpose );
+        const TfToken &             purpose,
+        const GusdWriteCtrlFlags&   writeCtrlFlags );
 
     /// Add a prim to be added to a point instancer during finish
     void addInstPrim( const SdfPath& path, GT_PrimitiveHandle p, int index=0 );

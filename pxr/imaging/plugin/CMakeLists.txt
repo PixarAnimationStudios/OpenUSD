@@ -1,8 +1,4 @@
-set(DIRS
-    hdStream
-)
-
-foreach(d ${DIRS})
-    add_subdirectory(${d})
-endforeach()
-
+add_subdirectory(hdStream)
+if (${PXR_BUILD_EMBREE_PLUGIN})
+    add_subdirectory(hdEmbree)
+endif()

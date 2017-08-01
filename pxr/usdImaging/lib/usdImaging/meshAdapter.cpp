@@ -148,14 +148,21 @@ UsdImagingMeshAdapter::UpdateForTimePrep(UsdPrim const& prim,
         prim, cachePath, time, requestedBits, instancerContext);
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    if (requestedBits & HdChangeTracker::DirtyPoints)
+    if (requestedBits & HdChangeTracker::DirtyPoints) {
         valueCache->GetPoints(cachePath);
+    }
 
-    if (requestedBits & HdChangeTracker::DirtySubdivTags)
-        valueCache->GetSubdivTags(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyTopology)
+    if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath);
+    }
+
+    // Subdiv tags are only needed if the mesh is refined.  So
+    // there's no need to fetch the data if the prim isn't refined.
+    if (_delegate->IsRefined(cachePath)) {
+        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
+            valueCache->GetSubdivTags(cachePath);
+        }
+    }
 }
 
 void
@@ -187,9 +194,13 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
         _MergePrimvar(primvar, &primvars);
     }
 
-    if (requestedBits & HdChangeTracker::DirtySubdivTags) {
-        SubdivTags& tags = valueCache->GetSubdivTags(cachePath);
-        _GetSubdivTags(prim, &tags, time);
+    // Subdiv tags are only needed if the mesh is refined.  So
+    // there's no need to fetch the data if the prim isn't refined.
+    if (_delegate->IsRefined(cachePath)) {
+        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
+            SubdivTags& tags = valueCache->GetSubdivTags(cachePath);
+            _GetSubdivTags(prim, &tags, time);
+        }
     }
 }
 

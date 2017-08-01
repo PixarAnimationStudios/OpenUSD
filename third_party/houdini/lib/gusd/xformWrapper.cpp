@@ -128,7 +128,7 @@ defineForWrite(
     return new GusdXformWrapper( 
                     stage, 
                     path, 
-                    ctxt.overlayGeo );
+                    ctxt.writeOverlay );
 }
 
 GT_PrimitiveHandle GusdXformWrapper::
@@ -151,7 +151,7 @@ redefine( const UsdStagePtr& stage,
           const GusdContext& ctxt,
           const GT_PrimitiveHandle& sourcePrim )
 {
-    initUsdPrim( stage, path, ctxt.overlayGeo );
+    initUsdPrim( stage, path, ctxt.writeOverlay );
     clearCaches();
     return true;
 }

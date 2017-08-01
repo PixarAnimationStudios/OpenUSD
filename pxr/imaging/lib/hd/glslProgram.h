@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class HdResourceRegistry;
 typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
 
 /// \class HdGLSLProgram
@@ -77,7 +77,8 @@ public:
 
     /// Convenience method to get a shared compute shader program
     HD_API
-    static HdGLSLProgramSharedPtr GetComputeProgram(TfToken const &shaderToken);
+    static HdGLSLProgramSharedPtr GetComputeProgram(TfToken const &shaderToken,
+        HdResourceRegistry *resourceRegistry);
 
 private:
     HdResourceGL _program;

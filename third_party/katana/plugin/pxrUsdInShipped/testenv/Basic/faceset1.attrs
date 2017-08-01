@@ -1,0 +1,17 @@
+<attr type="GroupAttr">
+  <attr name="geometry" type="GroupAttr">
+    <attr name="faces" tupleSize="1" type="IntAttr">
+      <sample size="4" time="0" value="0 3 12 15 "/>
+    </attr>
+  </attr>
+  <attr name="materialAssign" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="/root/world/geo/World/FaceSet/Looks/lambert2SG"/>
+    </sample>
+  </attr>
+  <attr name="type" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="faceset"/>
+    </sample>
+  </attr>
+</attr>

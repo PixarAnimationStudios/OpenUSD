@@ -52,3 +52,22 @@ pxr_register_test(testUsdCatMissingOrInvalidFiles2
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat foo.usda"
     EXPECTED_RETURN_CODE 1 
 )
+
+pxr_install_test_dir(
+    SRC testenv/testUsdCatMask
+    DEST testUsdCatMask
+)
+
+pxr_register_test(testUsdCatMask
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --mask /InsideMask --flatten input.usda -o output.usda"
+    DIFF_COMPARE output.usda
+    CLEAN_OUTPUT "\\(.*\\n.*\\n.*\\n.*\\)"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdCatMask2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --mask /InsideMask input.usda -o output.usda"
+    EXPECTED_RETURN_CODE 1
+)

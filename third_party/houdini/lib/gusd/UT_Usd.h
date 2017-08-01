@@ -24,7 +24,7 @@
 #ifndef __GUSD_UT_USD_H__
 #define __GUSD_UT_USD_H__
 
-
+#include "gusd/api.h"
 #include "gusd/UT_Error.h"
 
 #include <pxr/pxr.h>
@@ -50,20 +50,24 @@ typedef std::vector<std::pair<std::string, std::string> >
 typedef std::vector<std::pair<SdfPath, GusdVariantSelection> >
     GusdVariantSelectionVec;
 
+GUSD_API
 UsdStageRefPtr GusdUT_GetStage(
         const char* file,
         std::string* err=NULL);
 
+GUSD_API
 UsdStageRefPtr GusdUT_GetStage(
         const char* file,
         SdfLayerHandle sessionLayer,
         std::string* err=NULL);
 
+GUSD_API
 UsdStageRefPtr GusdUT_GetStage(
         const char* file,
         const GusdVariantSelectionVec& variantSelections,
         std::string* err=NULL);
 
+GUSD_API
 bool
 GusdUT_GetLayer(
     const char* file,
@@ -74,6 +78,7 @@ GusdUT_GetLayer(
 /** Load @a file as a USD stage and fetch the prim at @a primPath from it.
     If @a session is provided, the session will be applied when loading the
     stage. */
+GUSD_API
 UsdPrim GusdUT_GetPrim(
         const char* file,
         const char* primPath,
@@ -81,6 +86,7 @@ UsdPrim GusdUT_GetPrim(
 
 /** Fetch a prim at the given path in a stage.
     This provides a common error message for lookup failures.*/
+GUSD_API
 UsdPrim GusdUT_GetPrim(const UsdStageRefPtr& stage,
                        const SdfPath& primPath,
                        std::string* err=NULL);
@@ -90,11 +96,13 @@ UsdPrim GusdUT_GetPrim(const UsdStageRefPtr& stage,
     Returns true if there were no parse errors.
     If @a primPath is empty, true is still returned, and @a path is
     untouched (left empty).*/
+GUSD_API
 bool GusdUT_CreateSdfPath(const char* pathStr,
                           SdfPath& path,
                           GusdUT_ErrorContext* err=NULL);
 
 
+GUSD_API
 void GusdUT_GetInheritedPrimInfo(
         const UsdPrim& prim,
         bool& active,

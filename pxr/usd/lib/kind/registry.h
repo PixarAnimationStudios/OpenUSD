@@ -34,7 +34,8 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/noncopyable.hpp>
-#include "pxr/base/tf/hashmap.h"
+#include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -92,9 +93,8 @@ public:
     /// Therefore this method will not raise any errors.
     KIND_API static bool IsA(const TfToken& derivedKind, const TfToken &baseKind);
 
-    /// Return an unordered set of all kinds known to the registry, as a
-    /// TfToken::HashSet for fast membership queries.
-    KIND_API static TfToken::HashSet GetAllKinds();
+    /// Return an unordered vector of all kinds known to the registry.
+    KIND_API static std::vector<TfToken>  GetAllKinds();
 
 private:
     friend class TfSingleton<KindRegistry>;
@@ -108,7 +108,7 @@ private:
 
     bool _IsA(const TfToken& derivedKind, const TfToken &baseKind) const;
 
-    TfToken::HashSet _GetAllKinds() const;
+    std::vector<TfToken> _GetAllKinds() const;
 
     /// Register the given \a kind with the given \a baseKind.
     /// It is valid for \a baseKind to be empty (the default),
@@ -122,7 +122,8 @@ private:
         TfToken baseKind;
     };
 
-    typedef TfHashMap<TfToken, _KindData, TfToken::HashFunctor> _KindMap;
+    typedef std::unordered_map<TfToken, _KindData, TfToken::HashFunctor>
+        _KindMap;
 
 private:
     _KindMap _kindMap;

@@ -7,7 +7,7 @@
                         "bases": [
                             "HdxRendererPlugin"
                         ],
-                        "displayName": "Hydra Stream (GL)",
+                        "displayName": "GL",
                         "priority": 0
                     }
                 }

@@ -34,6 +34,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdLux/light.h"
 #include "pxr/usd/usdLux/lightFilter.h"
 #include "pxr/usd/usdLux/linkingAPI.h"
@@ -42,9 +43,6 @@
 #include <FnLogging/FnLogging.h>
 
 #include "usdKatana/utils.h"
-
-// just for info
-#include "pxr/usd/usdUtils/pipeline.h"
 
 #include "pxr/base/tf/pathUtils.h"
 
@@ -166,15 +164,23 @@ public:
             return;
         }
 
-        if (interface.atRoot()) {
+        // Determine if we want to perform the stage-wide queries.
+        FnAttribute::IntAttribute processStageWideQueries = 
+            opArgs.getChildByName("processStageWideQueries");
+        if (processStageWideQueries.isValid() &&
+            processStageWideQueries.getValue(0, false) == 1) {
             interface.stopChildTraversal();
+            // Reset processStageWideQueries for children ops.
+            opArgs = FnKat::GroupBuilder()
+                .update(opArgs)
+                .set("processStageWideQueries", FnAttribute::IntAttribute(0))
+                .build();
 
-            // XXX This info currently gets used to determine whether
-            // to correctively rotate cameras. The camera's zUp needs to be
-            // recorded until we have no more USD z-Up assets and the katana
-            // assets have no more prerotate camera nodes.
+            const bool stageIsZup =
+                (UsdGeomGetStageUpAxis(stage)==UsdGeomTokens->z);
+
             interface.setAttr("info.usd.stageIsZup",
-                    FnKat::IntAttribute(UsdUtilsGetCamerasAreZup(stage)));
+                              FnKat::IntAttribute(stageIsZup));
 
             // Construct the global camera list at the USD scene root.
             //

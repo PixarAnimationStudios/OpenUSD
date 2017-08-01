@@ -161,9 +161,12 @@ public:
 
     /// template factory for convenience
     template <typename KEY>
-    static Hd_GeometricShaderSharedPtr Create(KEY const &shaderKey) {
-        HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-        HdInstance<HdShaderKey::ID, Hd_GeometricShaderSharedPtr> geometricShaderInstance;
+    static Hd_GeometricShaderSharedPtr Create(
+            KEY const &shaderKey, 
+            HdResourceRegistrySharedPtr const &resourceRegistry) {
+
+        HdInstance<HdShaderKey::ID, Hd_GeometricShaderSharedPtr> 
+            geometricShaderInstance;
 
         // lookup registry
         std::unique_lock<std::mutex> regLock =
@@ -175,7 +178,7 @@ public:
                 Hd_GeometricShaderSharedPtr(
                     new Hd_GeometricShader(
                         HdShaderKey::GetGLSLFXString(shaderKey),
-                        shaderKey.GetPrimitiveType(),                        
+                        shaderKey.GetPrimitiveType(),
                         shaderKey.GetCullStyle(),
                         shaderKey.GetPolygonMode(),
                         shaderKey.IsCullingPass())));

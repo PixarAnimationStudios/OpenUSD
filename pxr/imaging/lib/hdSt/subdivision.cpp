@@ -142,7 +142,8 @@ HdSt_OsdRefineComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 }
 
 void
-HdSt_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range)
+HdSt_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range,
+                                      HdResourceRegistry *resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

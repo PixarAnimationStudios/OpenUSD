@@ -43,12 +43,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class HdBufferSource;
 class HdDrawItem;
 class HdRenderIndex;
 class HdRepr;
 class HdRenderParam;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
+typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
@@ -126,8 +128,39 @@ public:
     /// Return the unique instance id
     int32_t GetPrimId() const { return _primId; };
 
+    /// Returns the set of dirty bits that should be
+    /// added to the change tracker for this prim, when this prim is inserted.
     HD_API
     HdDirtyBits GetInitialDirtyBitsMask() const;
+
+    /// This function gives an Rprim the chance to set additional dirty bits
+    /// based on those set in the change tracker, before passing the dirty bits
+    /// to the scene delegate.  This gives the Rprim an opportunity to specify
+    /// it needs more data to process the requested changes.
+    ///
+    /// The return value is the new set of dirty bits.
+    HD_API
+    HdDirtyBits PropagateRprimDirtyBits(HdDirtyBits bits);
+
+    /// Initialize the given representation of this Rprim.
+    /// This is called prior to syncing the prim, the first time the repr
+    /// is used.
+    ///
+    /// defaultReprName is the name of the repr to initalize.  However, this
+    /// can be overridden by the prim itself with an authored repr, which
+    /// is obtained from the scene delegate.  If the forced flag is set
+    /// the defaultReprName should be used, even if there is an authored repr.
+    ///
+    /// dirtyBits is an in/out value.  It is initialized to the dirty bits
+    /// from the change tracker.  InitRepr can then set additional dirty bits
+    /// if additional data is required from the scene delegate when this
+    /// repr is synced.  InitRepr occurs before dirty bit propagation.
+    HD_API
+    void InitRepr(HdSceneDelegate* delegate,
+                  TfToken const &defaultReprName,
+                  bool forced,
+                  HdDirtyBits *dirtyBits);
+
 
 
     /// Returns the bounds of the rprim in local, untransformed space.
@@ -140,6 +173,7 @@ public:
     inline TfTokenVector GetPrimVarVaryingNames(HdSceneDelegate* delegate)     const;
     inline TfTokenVector GetPrimVarFacevaryingNames(HdSceneDelegate* delegate) const;
     inline TfTokenVector GetPrimVarUniformNames(HdSceneDelegate* delegate)     const;
+    inline TfTokenVector GetPrimVarConstantNames(HdSceneDelegate* delegate)    const;
 
     inline VtValue GetPrimVar(HdSceneDelegate* delegate, const TfToken &name)  const;
 
@@ -151,7 +185,6 @@ protected:
               HdDirtyBits *dirtyBits);
 
 
-    HD_API
     virtual HdReprSharedPtr const &
         _GetRepr(HdSceneDelegate *sceneDelegate,
                  TfToken const &reprName,
@@ -185,9 +218,33 @@ protected:
     HD_API
     HdBufferArrayRangeSharedPtr
     _GetSharedPrimvarRange(uint64_t primvarId,
-                           HdBufferSpecVector const &bufferSpecs,
-                           HdBufferArrayRangeSharedPtr const &existing,
-                           bool * isFirstInstance) const;
+                    HdBufferSpecVector const &bufferSpecs,
+                    HdBufferArrayRangeSharedPtr const &existing,
+                    bool * isFirstInstance,
+                    HdResourceRegistrySharedPtr const &resourceRegistry) const;
+
+    /// For a given interpolation mode, obtains a set of ExtComputation primVar
+    /// source computations needed for this Rprim.
+    ///
+    /// The list of primVars that are obtained through an ExtComputation
+    /// for the given interpolationMode is obtained from the scene delegate.
+    ///
+    /// The scene delegate also provides information about which output on
+    /// which computation is providing the source of the primVar.
+    ///
+    /// Based on the information, the function creates the necessary
+    /// computations and appends them on to the sources list (the sources vector
+    /// need not be empty).
+    ///
+    /// The caller is expected to pass these computation on these computations
+    /// onto the resource registry (associating them with BAR's if it is
+    /// expected the primVar will be downloaded)
+    HD_API
+    void _GetExtComputationPrimVarsComputations(
+                                              HdSceneDelegate *sceneDelegate,
+                                              HdInterpolation interpolationMode,
+                                              HdDirtyBits dirtyBits,
+                                              HdBufferSourceVector *sources);
 
     HD_API
     TfToken _GetReprName(HdSceneDelegate* delegate,
@@ -195,10 +252,9 @@ protected:
                          HdDirtyBits *dirtyBits);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
 
-    HD_API
-    static HdDirtyBits _PropagateRprimDirtyBits(HdDirtyBits bits);
-
+    virtual void _InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits) = 0;
 
 private:
     SdfPath _id;
@@ -211,7 +267,6 @@ private:
     /// Sets a new surface shader id to be used by this rprim
     void _SetSurfaceShaderId(HdChangeTracker &changeTracker,
                              SdfPath const& surfaceShaderId);
-
 
 protected:
     // shared data across reprs: bufferArrayRanges, bounds, visibility
@@ -293,6 +348,12 @@ inline TfTokenVector
 HdRprim::GetPrimVarUniformNames(HdSceneDelegate* delegate) const
 {
     return delegate->GetPrimVarUniformNames(GetId());
+}
+
+inline TfTokenVector
+HdRprim::GetPrimVarConstantNames(HdSceneDelegate* delegate) const
+{
+    return delegate->GetPrimVarConstantNames(GetId());
 }
 
 inline VtValue

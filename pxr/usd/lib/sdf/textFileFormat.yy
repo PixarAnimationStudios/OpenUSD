@@ -1793,7 +1793,7 @@ reference_list_item:
         if (context->layerRefPath.empty()) {
             Err(context, "Reference asset path must not be empty. If this "
                 "is intended to be an internal reference, remove the "
-                "'@@'.");
+                "'@' delimiters.");
         }
 
         SdfReference ref(context->layerRefPath,

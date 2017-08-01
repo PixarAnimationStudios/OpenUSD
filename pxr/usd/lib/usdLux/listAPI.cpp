@@ -79,16 +79,16 @@ UsdLuxListAPI::_GetTfType() const
 }
 
 UsdAttribute
-UsdLuxListAPI::GetLightListIsValidAttr() const
+UsdLuxListAPI::GetLightListCacheBehaviorAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->lightListIsValid);
+    return GetPrim().GetAttribute(UsdLuxTokens->lightListCacheBehavior);
 }
 
 UsdAttribute
-UsdLuxListAPI::CreateLightListIsValidAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdLuxListAPI::CreateLightListCacheBehaviorAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->lightListIsValid,
-                       SdfValueTypeNames->Bool,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->lightListCacheBehavior,
+                       SdfValueTypeNames->Token,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,
@@ -125,7 +125,7 @@ const TfTokenVector&
 UsdLuxListAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->lightListIsValid,
+        UsdLuxTokens->lightListCacheBehavior,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -157,44 +157,57 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
-    TF_ADD_ENUM_NAME(UsdLuxListAPI::StoredListConsult,
-                     "Consult stored lightList");
-    TF_ADD_ENUM_NAME(UsdLuxListAPI::StoredListIgnore,
-                     "Ignore stored lightList");
+    TF_ADD_ENUM_NAME(UsdLuxListAPI::ComputeModeConsultModelHierarchyCache,
+                     "Consult lightList cache");
+    TF_ADD_ENUM_NAME(UsdLuxListAPI::ComputeModeIgnoreCache,
+                     "Ignore lightList cache");
 }
 
 static void
 _Traverse(const UsdPrim &prim,
-          UsdLuxListAPI::StoredListBehavior listBehavior,
+          UsdLuxListAPI::ComputeMode mode,
           SdfPathSet *lights)
 {
-    if (listBehavior == UsdLuxListAPI::StoredListConsult &&
-        prim.GetPath().IsPrimPath()) {
-        UsdLuxListAPI list_api(prim);
-        if (list_api.IsLightListValid()) {
-            UsdRelationship rel = list_api.GetLightListRel();
-            SdfPathVector targets;
-            rel.GetForwardedTargets(&targets);
-            lights->insert(targets.begin(), targets.end());
+    // If requested, check lightList cache.
+    if (mode == UsdLuxListAPI::ComputeModeConsultModelHierarchyCache &&
+        prim.GetPath().IsPrimPath() /* no cache on pseudoRoot */) {
+        UsdLuxListAPI listAPI(prim);
+        TfToken cacheBehavior;
+        if (listAPI.GetLightListCacheBehaviorAttr().Get(&cacheBehavior)) {
+            if (cacheBehavior == UsdLuxTokens->consumeAndContinue ||
+                cacheBehavior == UsdLuxTokens->consumeAndHalt) {
+                // Check stored lightList.
+                UsdRelationship rel = listAPI.GetLightListRel();
+                SdfPathVector targets;
+                rel.GetForwardedTargets(&targets);
+                lights->insert(targets.begin(), targets.end());
+                if (cacheBehavior == UsdLuxTokens->consumeAndHalt) {
+                    return;
+                }
+            }
         }
     }
+    // Accumulate discovered prims.
     if (prim.IsA<UsdLuxLight>() || prim.IsA<UsdLuxLightFilter>()) {
         lights->insert(prim.GetPath());
     }
-    // Allow unloaded and not-yet-defined prims
-    UsdPrim::SiblingRange range =
-        prim.GetFilteredChildren(UsdTraverseInstanceProxies(
-                                UsdPrimIsActive && !UsdPrimIsAbstract));
-    for (auto i = range.begin(); i != range.end(); ++i) {
-        _Traverse(*i, listBehavior, lights);
+    // Traverse descendants.
+    auto flags = UsdPrimIsActive && !UsdPrimIsAbstract && UsdPrimIsDefined;
+    if (mode == UsdLuxListAPI::ComputeModeConsultModelHierarchyCache) {
+        // When consulting the cache we only traverse model hierarchy.
+        flags = flags && UsdPrimIsModel;
+    }
+    for (const UsdPrim &child:
+         prim.GetFilteredChildren(UsdTraverseInstanceProxies(flags))) {
+        _Traverse(child, mode, lights);
     }
 }
 
 SdfPathSet
-UsdLuxListAPI::ComputeLightList(UsdLuxListAPI::StoredListBehavior b) const
+UsdLuxListAPI::ComputeLightList(UsdLuxListAPI::ComputeMode mode) const
 {
     SdfPathSet result;
-    _Traverse(GetPrim(), b, &result);
+    _Traverse(GetPrim(), mode, &result);
     return result;
 }
 
@@ -210,23 +223,13 @@ UsdLuxListAPI::StoreLightList(const SdfPathSet &lights) const
         targets.push_back(p);
     }
     CreateLightListRel().SetTargets(targets);
-    CreateLightListIsValidAttr().Set(true);
+    CreateLightListCacheBehaviorAttr().Set(UsdLuxTokens->consumeAndContinue);
 }
 
 void
 UsdLuxListAPI::InvalidateLightList() const
 {
-    CreateLightListIsValidAttr().Set(false);
-}
-
-bool
-UsdLuxListAPI::IsLightListValid() const
-{
-    bool valid = false;
-    if (GetPrim()) {
-        GetLightListIsValidAttr().Get(&valid);
-    }
-    return valid;
+    CreateLightListCacheBehaviorAttr().Set(UsdLuxTokens->ignore);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -142,7 +142,8 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
 void
 HdStBasisCurves::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                                                const HdBasisCurvesReprDesc &desc)
+                        const HdBasisCurvesReprDesc &desc,
+                        HdResourceRegistrySharedPtr const& resourceRegistry)
 {
     if (drawItem->GetGeometricShader()) return;
 
@@ -188,40 +189,37 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
                                         (_SupportsSmoothCurves(desc,
                                                                _refineLevel)));
 
-    drawItem->SetGeometricShader(Hd_GeometricShader::Create(shaderKey));
+    drawItem->SetGeometricShader(
+        Hd_GeometricShader::Create(shaderKey, resourceRegistry));
 }
 
 HdDirtyBits
-HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits dirtyBits)
+HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
 {
-    dirtyBits = _PropagateRprimDirtyBits(dirtyBits);
-
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
-    if (dirtyBits & HdChangeTracker::DirtyTopology) {
-        dirtyBits |= _customDirtyBitsInUse &
+    if (bits & HdChangeTracker::DirtyTopology) {
+        bits |= _customDirtyBitsInUse &
             (DirtyIndices|DirtyHullIndices);
     }
 
-    return dirtyBits;
+    return bits;
 }
 
-HdReprSharedPtr const &
-HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
-                          TfToken const &reprName,
+void
+HdStBasisCurves::_InitRepr(TfToken const &reprName,
                         HdDirtyBits *dirtyBits)
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprName);
-
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprName));
     bool isNew = it == _reprs.end();
     if (isNew) {
+        _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprName);
+
         // add new repr
-        it = _reprs.insert(_reprs.end(),
-                           std::make_pair(reprName, HdReprSharedPtr(new HdRepr())));
+        _reprs.emplace_back(reprName, boost::make_shared<HdRepr>());
+        HdReprSharedPtr &repr = _reprs.back().second;
+
+        *dirtyBits |= DirtyNewRepr;
 
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
@@ -231,7 +229,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
                 continue;
             }
 
-            HdDrawItem *drawItem = it->second->AddDrawItem(&_sharedData);
+            HdDrawItem *drawItem = repr->AddDrawItem(&_sharedData);
             if (desc.geomStyle == HdBasisCurvesGeomStyleLine) {
                 HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
                 drawingCoord->SetTopologyIndex(HdStBasisCurves::HullTopology);
@@ -247,8 +245,36 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
             }
         }
     }
+}
 
-    *dirtyBits = _PropagateDirtyBits(*dirtyBits);
+
+HdReprSharedPtr const &
+HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
+                          TfToken const &reprName,
+                          HdDirtyBits *dirtyBits)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _BasisCurvesReprConfig::DescArray const &descs = _GetReprDesc(reprName);
+    HdResourceRegistrySharedPtr const& resourceRegistry =
+                          sceneDelegate->GetRenderIndex().GetResourceRegistry();
+
+    _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
+                                            _ReprComparator(reprName));
+    if (it == _reprs.end()) {
+        // Hydra should have called _InitRepr earlier in sync when
+        // before sending dirty bits to the delegate.
+        TF_CODING_ERROR("_InitRepr() should be called for repr %s.",
+                        reprName.GetText());
+
+        static const HdReprSharedPtr ERROR_RETURN;
+
+        return ERROR_RETURN;
+    }
+
+    // Filter custom dirty bits to only those in use.
+    *dirtyBits &= (_customDirtyBitsInUse | HdChangeTracker::AllSceneDirtyBits);
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStBasisCurves::GetRepr " << GetId()
@@ -263,19 +289,23 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     }
 
     // curves don't have multiple draw items (for now)
-    if (isNew || HdChangeTracker::IsDirty(*dirtyBits)) {
-        if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {
+    if (HdChangeTracker::IsDirty(*dirtyBits)) {
+        if (descs[0].geomStyle != HdBasisCurvesGeomStyleInvalid) {
             HdDrawItem *drawItem = it->second->GetDrawItem(0);
             _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, descs[0]);
-            _UpdateDrawItemGeometricShader(drawItem, descs[0]);
+            _UpdateDrawItemGeometricShader(drawItem, 
+                                           descs[0], 
+                                           resourceRegistry);
         }
     }
 
     // if we need to rebuild geometric shader, make sure all reprs to have
     // their geometric shader up-to-date.
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel)) {
-        _SetGeometricShaders();
+        _SetGeometricShaders(resourceRegistry);
     }
+
+    *dirtyBits &= ~DirtyNewRepr;
 
     return it->second;
 }
@@ -291,7 +321,8 @@ HdStBasisCurves::_ResetGeometricShaders()
 }
 
 void
-HdStBasisCurves::_SetGeometricShaders()
+HdStBasisCurves::_SetGeometricShaders(
+    HdResourceRegistrySharedPtr const& resourceRegistry)
 {
     TF_FOR_ALL (it, _reprs) {
         _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(it->first);
@@ -300,7 +331,7 @@ HdStBasisCurves::_SetGeometricShaders()
             if (desc.geomStyle == HdBasisCurvesGeomStyleInvalid) continue;
 
             HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);
-            _UpdateDrawItemGeometricShader(drawItem, desc);
+            _UpdateDrawItemGeometricShader(drawItem, desc, resourceRegistry);
             ++drawItemIndex;
         }
     }
@@ -314,8 +345,10 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
     SdfPath const& id = GetId();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const& resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     if (*dirtyBits & HdChangeTracker::DirtyRefineLevel) {
         _refineLevel = GetRefineLevel(sceneDelegate);
@@ -425,7 +458,8 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const& resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     // The "points" attribute is expected to be in this list.
     TfTokenVector primVarNames = GetPrimVarVertexNames(sceneDelegate);
@@ -477,6 +511,21 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    HdBufferSourceVector extCompVertexPrimvars;
+    _GetExtComputationPrimVarsComputations(sceneDelegate,
+                                           HdInterpolationVertex,
+                                           *dirtyBits,
+                                           &extCompVertexPrimvars);
+
+    // XXX: To Do: Check primvar counts against Topology expected counts
+    // XXX: To Do: Width / Normal Interpolation
+    // XXX: To Do: Custom Primvar Interpolation
+    // XXX: To Do: Varying Interpolation mode
+    sources.insert(sources.end(),
+                   extCompVertexPrimvars.begin(),
+                   extCompVertexPrimvars.end());
+
+
     // return before allocation if it's empty.
     if (sources.empty()) {
         return;
@@ -511,7 +560,8 @@ HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
+    HdResourceRegistrySharedPtr const& resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     TfTokenVector primVarNames = GetPrimVarUniformNames(sceneDelegate);
 
@@ -598,6 +648,7 @@ HdStBasisCurves::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyTransform 
         | HdChangeTracker::DirtyVisibility 
         | HdChangeTracker::DirtyWidths
+        | HdChangeTracker::DirtyComputationPrimvarDesc
         ;
 
     return mask;

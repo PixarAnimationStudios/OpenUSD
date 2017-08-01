@@ -32,35 +32,31 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 bool 
 Usd_UntypedInterpolator::Interpolate(
-    const UsdAttribute& attr, 
     const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
     double time, double lower, double upper)
 {
-    return _Interpolate(attr, layer, specId, time, lower, upper);
+    return _Interpolate(layer, specId, time, lower, upper);
 }
 
 bool 
 Usd_UntypedInterpolator::Interpolate(
-    const UsdAttribute& attr, 
     const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
     double time, double lower, double upper)
 {
-    return _Interpolate(attr, clip, specId, time, lower, upper);
+    return _Interpolate(clip, specId, time, lower, upper);
 }
 
 template <class Src>
 bool 
 Usd_UntypedInterpolator::_Interpolate(
-    const UsdAttribute& attr, 
     const Src& src, const SdfAbstractDataSpecId& specId,
     double time, double lower, double upper)
 {
-    if (attr.GetStage()->GetInterpolationType() == UsdInterpolationTypeHeld) {
+    if (_attr.GetStage()->GetInterpolationType() == UsdInterpolationTypeHeld) {
         return Usd_HeldInterpolator<VtValue>(_result).Interpolate(
-            attr, src, specId, time, lower, upper);
+            src, specId, time, lower, upper);
     }
 
     // Since we're working with type-erased objects, we have no
@@ -68,12 +64,12 @@ Usd_UntypedInterpolator::_Interpolate(
     // what kind of interpolation is supported for the attribute's
     // value.
 
-    const TfType attrValueType = attr.GetTypeName().GetType();
+    const TfType attrValueType = _attr.GetTypeName().GetType();
     if (!attrValueType) {
         TF_RUNTIME_ERROR(
             "Unknown value type '%s' for attribute '%s'",
-            attr.GetTypeName().GetAsToken().GetText(),
-            attr.GetPath().GetString().c_str());
+            _attr.GetTypeName().GetAsToken().GetText(),
+            _attr.GetPath().GetString().c_str());
         return false;
     }
 
@@ -83,7 +79,7 @@ Usd_UntypedInterpolator::_Interpolate(
         if (attrValueType == valueType) {                               \
             type result;                                                \
             if (Usd_LinearInterpolator<type>(&result).Interpolate(      \
-                    attr, src, specId, time, lower, upper)) {           \
+                    src, specId, time, lower, upper)) {                 \
                 *_result = result;                                      \
                 return true;                                            \
             }                                                           \
@@ -95,7 +91,7 @@ Usd_UntypedInterpolator::_Interpolate(
 #undef _MAKE_CLAUSE
 
     return Usd_HeldInterpolator<VtValue>(_result).Interpolate(
-        attr, src, specId, time, lower, upper);
+        src, specId, time, lower, upper);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

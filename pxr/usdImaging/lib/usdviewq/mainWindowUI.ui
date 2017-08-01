@@ -1522,6 +1522,80 @@
      <addaction name="actionExpand_All"/>
      <addaction name="actionCollapse_All"/>
     </widget>
+    <widget class="QMenu" name="menuCameraMask">
+     <property name="title">
+      <string>Camera Masking</string>
+     </property>
+     <addaction name="separator"/>
+     <actiongroup name="actionGroupCameraMask">
+      <action name="actionCameraMask_Full">
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Full Mask</string>
+       </property>
+      </action>
+      <action name="actionCameraMask_Partial">
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Partial Mask</string>
+       </property>
+      </action>
+      <action name="actionCameraMask_None">
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>No Mask</string>
+       </property>
+      </action>
+      <property name="exclusive">
+        <bool>true</bool>
+      </property>
+     </actiongroup>
+     <action name="actionCameraMask_Color">
+      <property name="checkable">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Select Color...</string>
+      </property>
+     </action>
+     <addaction name="actionCameraMask_Full"/>
+     <addaction name="actionCameraMask_Partial"/>
+     <addaction name="actionCameraMask_None"/>
+     <addaction name="separator"/>
+     <addaction name="actionCameraMask_Color"/>
+    </widget>
+    <widget class="QMenu" name="menuCameraReticles">
+     <property name="title">
+      <string>Camera Reticles</string>
+     </property>
+     <action name="actionCameraReticles_Color">
+      <property name="checkable">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Select Color...</string>
+      </property>
+     </action>
+     <addaction name="actionCameraReticles_Inside"/>
+     <addaction name="actionCameraReticles_Outside"/>
+     <addaction name="separator"/>
+     <addaction name="actionCameraReticles_Color"/>
+    </widget>
     <widget class="QMenu" name="menuHUD">
      <property name="title">
       <string>Heads-Up Display</string>
@@ -1620,6 +1694,18 @@
      </property>
      <addaction name="actionFreeCam"/>
     </widget>
+    <widget class="QMenu" name="menuCameraGuides">
+     <property name="tearOffEnabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>Camera Guides...</string>
+     </property>
+     <addaction name="actionCameraMask_Outline"/>
+     <addaction name="actionDisplay_Camera_Oracles"/>
+     <addaction name="menuCameraMask"/>
+     <addaction name="menuCameraReticles"/>
+    </widget>
     <widget class="QMenu" name="menuDisplay">
      <property name="title">
       <string>Display Purposes...</string>
@@ -1627,8 +1713,6 @@
      <addaction name="actionDisplay_Guide"/>
      <addaction name="actionDisplay_Proxy"/>
      <addaction name="actionDisplay_Render"/>
-     <addaction name="separator"/>
-     <addaction name="actionDisplay_Camera_Oracles"/>
     </widget>
     <widget class="QMenu" name="menuBBox">
      <property name="title">
@@ -1649,7 +1733,7 @@
     </widget>
     <widget class="QMenu" name="menuRendererPlugin">
      <property name="title">
-      <string>Viewport Renderer...</string>
+      <string>Hydra Renderer...</string>
      </property>
     </widget>
     <addaction name="actionToggle_Viewer_Mode"/>
@@ -1674,6 +1758,7 @@
     <addaction name="menuLights"/>
     <addaction name="menuBackground_Color"/>
     <addaction name="menuCamera"/>
+    <addaction name="menuCameraGuides"/>
     <addaction name="menuDisplay"/>
     <addaction name="menuInterpolation"/>
     <addaction name="actionEnable_Hardware_Shading"/>
@@ -2353,6 +2438,39 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="actionCameraMask_Outline">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Frame</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Inside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Inside</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Outside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Outside</string>
    </property>
   </action>
   <action name="actionDisplay_Guide">

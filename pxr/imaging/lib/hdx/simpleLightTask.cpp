@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -103,7 +104,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         }
 
         HdSceneDelegate* delegate = GetDelegate();
-        const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+        HdRenderIndex &renderIndex = delegate->GetRenderIndex();
         _camera = static_cast<const HdStCamera *>(
                     renderIndex.GetSprim(HdPrimTypeTokens->camera,
                                          params.cameraPath));
@@ -114,8 +115,12 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
                 HdPrimTypeTokens->light, SdfPath::AbsoluteRootPath());
 
-            lights = ComputeIncludedLights(sprimPaths, params.lightIncludePaths,
-                params.lightExcludePaths);
+            HdPrimGather gather;
+
+            gather.Filter(sprimPaths,
+                          params.lightIncludePaths,
+                          params.lightExcludePaths,
+                          &lights);
         }
 
         _lights.clear();
@@ -291,47 +296,6 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         }
     }
     lightingContext->SetShadows(_shadows);
-}
-
-/* static */
-SdfPathVector
-HdxSimpleLightTask::ComputeIncludedLights(
-    SdfPathVector const & allLightPaths,
-    SdfPathVector const & includedPaths,
-    SdfPathVector const & excludedPaths)
-{
-    HD_TRACE_FUNCTION();
-
-    SdfPathVector result;
-
-    // In practice, the include and exclude containers will either
-    // be empty or have just one element. So, the complexity of this method
-    // should be dominated by the number of lights, which should also
-    // be small. The TRACE_FUNCTION above will help catch when this is
-    // no longer the case.
-    TF_FOR_ALL(lightPathIt, allLightPaths) {
-        bool included = false;
-        TF_FOR_ALL(includePathIt, includedPaths) {
-            if (lightPathIt->HasPrefix(*includePathIt)) {
-                included = true;
-                break;
-            }
-        }
-        if (!included) {
-            continue;
-        }
-        TF_FOR_ALL(excludePathIt, excludedPaths) {
-            if (lightPathIt->HasPrefix(*excludePathIt)) {
-                included = false;
-                break;
-            }
-        }
-        if (included) {
-            result.push_back(*lightPathIt);
-        }
-    }
-
-    return result;
 }
 
 // -------------------------------------------------------------------------- //

@@ -56,94 +56,126 @@ class SdfAssetPath;
 /// 
 /// \section UsdLuxListAPI_Discovery Discovering Lights via Traversal
 /// 
-/// To motivate this, first consider what is required to discover all
+/// To motivate this API, consider what is required to discover all
 /// lights in a scene.  We must load all payloads and traverse all prims:
 /// 
 /// \code
-/// 01  SdfPathVector result;
-/// 02  
-/// 03  // Load everything on the stage so we can find all lights,
-/// 04  // including those inside payloads
-/// 05  stage->Load();
-/// 06  
-/// 07  // Traverse all prims, checking if they are of type UsdLuxLight
-/// 08  // (Note: ignoring instancing and a few other things for simplicity)
-/// 09  UsdPrimRange range = stage->Traverse();
-/// 10  for (auto i = range.begin(); i != range.end(); ++i) {
-/// 11     if (i->IsA<UsdLuxLight>()) {
-/// 12         result.push_back(i->GetPath());
-/// 13     }
-/// 14  }
+/// 01  // Load everything on the stage so we can find all lights,
+/// 02  // including those inside payloads
+/// 03  stage->Load();
+/// 04  
+/// 05  // Traverse all prims, checking if they are of type UsdLuxLight
+/// 06  // (Note: ignoring instancing and a few other things for simplicity)
+/// 07  SdfPathVector lights;
+/// 08  for (UsdPrim prim: stage->Traverse()) {
+/// 09      if (prim.IsA<UsdLuxLight>()) {
+/// 10          lights.push_back(i->GetPath());
+/// 11      }
+/// 12  }
 /// \endcode
 /// 
-/// This traversal -- expanded to handle instancing, prim
-/// activation, and similar concerns -- is the first and
-/// simplest thing that UsdLuxListAPI provides. By invoking
-/// UsdLuxListAPI::ComputeLightList() on a schema bound to a prim, with
-/// StoredListIgnore as the argument, all lights within that prim and
-/// its active, non-abstract descendents will be returned.
+/// This traversal -- suitably elaborated to handle certain details --
+/// is the first and simplest thing UsdLuxListAPI provides.
+/// UsdLuxListAPI::ComputeLightList() performs this traversal and returns
+/// all lights in the scene:
+/// 
+/// \code
+/// 01  UsdLuxListAPI listAPI(stage->GetPseudoRoot());
+/// 02  SdfPathVector lights = listAPI.ComputeLightList();
+/// \endcode
 /// 
 /// \section UsdLuxListAPI_LightList Publishing a Cached Light List
 /// 
-/// Next consider a USD consumer that wants to defer loading payloads
-/// where possible, but needs a full list of lights, and is willing to do
-/// up-front computation and caching to achieve that.
-/// As one approach, we might pre-discover lights within payloads and
-/// publish that list on the outside of the payload arc, where it is
-/// discoverable without loading the payload.  In scene description:
+/// Consider a USD client that needs to quickly discover lights but
+/// wants to defer loading payloads and traversing the entire scene
+/// where possible, and is willing to do up-front computation and
+/// caching to achieve that.
+/// 
+/// UsdLuxListAPI provides a way to cache the computed light list,
+/// by publishing the list of lights onto prims in the model
+/// hierarchy.  Consider a big set that contains lights:
 /// 
 /// \code
-/// 01  def Model "BigSetWithLights" (
-/// 02      payload = @BigSetWithLights.usd@   // Lots of stuff inside here
-/// 03  ) {
-/// 04      // Pre-computed list of lights inside payload
-/// 05      rel lightList = [
-/// 06          <./Lights/light_1>,
-/// 07          <./Lights/light_2>,
-/// 08          ...
-/// 09      ]
-/// 10      bool lightList:isValid = true
-/// 11  }
+/// 01  def Xform "BigSetWithLights" (
+/// 02      kind = "assembly"
+/// 03      payload = @BigSetWithLights.usd@   // Heavy payload
+/// 04  ) {
+/// 05      // Pre-computed, cached list of lights inside payload
+/// 06      rel lightList = [
+/// 07          <./Lights/light_1>,
+/// 08          <./Lights/light_2>,
+/// 09          ...
+/// 10      ]
+/// 11      token lightList:cacheBehavior = "consumeAndContinue";
+/// 12  }
 /// \endcode
 /// 
-/// This list can be established with UsdLuxListAPI::StoreLightList().
-/// With this cache in place, UsdLuxListAPI::ComputeLightList() --
-/// given the StoredListConsult argument this time -- can terminate its
-/// recursion early whenever it discovers the lightList relationship,
-/// using the stored list of targets instead.
+/// The lightList relationship encodes a set of lights, and the
+/// lightList:cacheBehavior property provides fine-grained
+/// control over how to use that cache.  (See details below.)
 /// 
-/// To make use of this to find and load all lights in a large scene
-/// where the lightLists have been published, loading only the
-/// payloads required:
+/// The cache can be created by first invoking
+/// ComputeLightList(ComputeModeIgnoreCache) to pre-compute the list
+/// and then storing the result with UsdLuxListAPI::StoreLightList().
+/// 
+/// To enable efficient retrieval of the cache, it should be stored
+/// on a model hierarchy prim.  Furthermore, note that while you can
+/// use a UsdLuxListAPI bound to the pseudo-root prim to query the
+/// lights (as in the example above) because it will perform a
+/// traversal over descendants, you cannot store the cache back to the
+/// pseduo-root prim.
+/// 
+/// To consult the cached list, we invoke
+/// ComputeLightList(ComputeModeConsultModelHierarchyCache):
 /// 
 /// \code
-/// 01  // Find and load all light paths, including lights published
-/// 02  // in a lightList.
-/// 03  for (const auto &child: stage->GetPseudoRoot().GetChildren()) {
-/// 04      stage.LoadAndUnload(
-/// 05          /* load */ UsdLuxListAPI(child).ComputeLightList(true),
-/// 06          /* unload */ SdfPathSet());
-/// 07  }
+/// 01  // Find and load all lights, using lightList cache where available
+/// 02  UsdLuxListAPI list(stage->GetPseudoRoot());
+/// 03  SdfPathSet lights = list.ComputeLightList(
+/// 04      UsdLuxListAPI::ComputeModeConsultModelHierarchyCache);
+/// 05  stage.LoadAndUnload(lights, SdfPathSet());
 /// \endcode
 /// 
-/// \section UsdLuxListAPI_Invalidation Invalidating a Light List
+/// In this mode, ComputeLightList() will traverse the model
+/// hierarchy, accumulating cached light lists.
 /// 
-/// While ComputeLightList() allows code to choose to disregard
-/// any stored lightlist, it can be useful to do the same in
-/// scene description, invalidating the stored list for a prim.
-/// That can be achieved by calling InvalidateLightList(), which
-/// sets the \c lightList:isValid attribute to false.  A separate
-/// attribute is used because it is valid for a relationship to
-/// have an empty list of targets.
+/// \section UsdLuxListAPI_CacheBehavior Controlling Cache Behavior
+/// 
+/// The lightList:cacheBehavior property gives additional fine-grained
+/// control over cache behavior:
+/// 
+/// \li The fallback value, "ignore", indicates that the lightList should
+/// be disregarded.  This provides a way to invalidate cache entries.
+/// Note that unless "ignore" is specified, a lightList with an empty
+/// list of targets is considered a cache indicating that no lights
+/// are present.
+/// 
+/// \li The value "consumeAndContinue" indicates that the cache should
+/// be consulted to contribute lights to the scene, and that recursion
+/// should continue down the model hierarchy in case additional lights
+/// are added as descedants. This is the default value established when
+/// StoreLightList() is invoked. This behavior allows the lights within
+/// a large model, such as the BigSetWithLights example above, to be
+/// published outside the payload, while also allowing referencing and
+/// layering to add additional lights over that set.
+/// 
+/// \li The value "consumeAndHalt" provides a way to terminate recursive
+/// traversal of the scene for light discovery. The cache will be
+/// consulted but no descendant prims will be examined.
 /// 
 /// \section UsdLuxListAPI_Instancing Instancing
 /// 
-/// If instances are present, UsdLuxListAPI::ComputeLightList() will
+/// Where instances are present, UsdLuxListAPI::ComputeLightList() will
 /// return the instance-unqiue paths to any lights discovered within
 /// those instances.  Lights within a UsdGeomPointInstancer will
 /// not be returned, however, since they cannot be referred to
 /// solely via paths.
 /// 
+///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
+/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
+/// as the value.
 ///
 class UsdLuxListAPI : public UsdSchemaBase
 {
@@ -210,25 +242,37 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
-    // LIGHTLISTISVALID 
+    // LIGHTLISTCACHEBEHAVIOR 
     // --------------------------------------------------------------------- //
-    /// Bool indicating if the lightList targets should be
-    /// considered valid.
+    /// Controls how the lightList should be interpreted.
+    /// Valid values are:
+    /// - consumeAndHalt: The lightList should be consulted,
+    /// and if it exists, treated as a final authoritative statement
+    /// of any lights that exist at or below this prim, halting
+    /// recursive discovery of lights.
+    /// - consumeAndContinue: The lightList should be consulted,
+    /// but recursive traversal over nameChildren should continue
+    /// in case additional lights are added by descendants.
+    /// - ignore: The lightList should be entirely ignored.  This
+    /// provides a simple way to temporarily invalidate an existing
+    /// cache.  This is the fallback behavior.
+    /// 
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
+    /// \n  \ref UsdLuxTokens "Allowed Values": [consumeAndHalt, consumeAndContinue, ignore]
     USDLUX_API
-    UsdAttribute GetLightListIsValidAttr() const;
+    UsdAttribute GetLightListCacheBehaviorAttr() const;
 
-    /// See GetLightListIsValidAttr(), and also 
+    /// See GetLightListCacheBehaviorAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDLUX_API
-    UsdAttribute CreateLightListIsValidAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateLightListCacheBehaviorAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
@@ -256,41 +300,48 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    enum StoredListBehavior {
-        StoredListConsult,
-        StoredListIgnore,
+    /// Runtime control over whether to consult stored lightList caches.
+    enum ComputeMode {
+        /// Consult any caches found on the model hierarchy.
+        /// Do not traverse beneath the model hierarchy.
+        ComputeModeConsultModelHierarchyCache,
+        /// Ignore any caches found, and do a full prim traversal.
+        ComputeModeIgnoreCache,
     };
 
-    /// Computes and returns the list of lights in the stage, considering
-    /// this prim and any active, non-abstract descendents.
+    /// Computes and returns the list of lights and light filters in
+    /// the stage, optionally consulting a cached result.
     ///
-    /// If listBehavior is StoredListConsult, this will first check the
-    /// light list relationship on each prim, as well as the associated
-    /// isValid attribute.  If there is a valid opinion, the stored
-    /// list will be used in place of further recursion below that prim.
+    /// In ComputeModeIgnoreCache mode, caching is ignored, and this
+    /// does a prim traversal looking for prims of type UsdLuxLight
+    /// or UsdLuxLightFilter.
+    ///
+    /// In ComputeModeConsultModelHierarchyCache, this does a traversal
+    /// only of the model hierarchy. In this traversal, any lights that
+    /// live as model hiearchy prims are accumulated, as well as any
+    /// paths stored in lightList caches. The lightList:cacheBehavior
+    /// attribute gives further control over the cache behavior; see the
+    /// class overview for details.
     /// 
-    /// If instances are present, ComputeLightList() will return the
-    /// instance-unqiue paths to any lights discovered within those
-    /// instances. Lights within a UsdGeomPointInstancer will not be
-    /// returned, however, since they cannot be referred to solely via
-    /// paths.
+    /// When instances are present, ComputeLightList(ComputeModeIgnoreCache)
+    /// will return the instance-unqiue paths to any lights discovered
+    /// within those instances.  Lights within a UsdGeomPointInstancer
+    /// will not be returned, however, since they cannot be referred to
+    /// solely via paths.
     USDLUX_API
-    SdfPathSet ComputeLightList(StoredListBehavior listBehavior) const;
+    SdfPathSet ComputeLightList(ComputeMode mode) const;
 
     /// Store the given paths as the lightlist for this prim.
     /// Paths that do not have this prim's path as a prefix
     /// will be silently ignored.
+    /// This will set the listList:cacheBehavior to "consumeAndContinue".
     USDLUX_API
     void StoreLightList(const SdfPathSet &) const;
 
     /// Mark any stored lightlist as invalid, by setting the
-    /// lightList:isValid attribute to false.
+    /// lightList:cacheBehavior attribute to ignore.
     USDLUX_API
     void InvalidateLightList() const;
-
-    /// Return true if the prim has a valid lightList.
-    USDLUX_API
-    bool IsLightListValid() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

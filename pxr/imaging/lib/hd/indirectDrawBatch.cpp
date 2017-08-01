@@ -107,7 +107,8 @@ Hd_IndirectDrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
 }
 
 Hd_IndirectDrawBatch::_CullingProgram &
-Hd_IndirectDrawBatch::_GetCullingProgram()
+Hd_IndirectDrawBatch::_GetCullingProgram(
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (!_cullingProgram.GetGLSLProgram() || 
         _lastTinyPrimCulling != IsEnabledGPUTinyPrimCulling()) {
@@ -119,11 +120,13 @@ Hd_IndirectDrawBatch::_GetCullingProgram()
 
         // sharing the culling geometric shader for the same configuration.
         Hd_GeometricShaderSharedPtr cullShader =
-            Hd_GeometricShader::Create(shaderKey);
+            Hd_GeometricShader::Create(shaderKey, resourceRegistry);
         _cullingProgram.SetGeometricShader(cullShader);
 
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
-                                      /*indirect=*/true);
+                                      /*indirect=*/true,
+                                       resourceRegistry);
+
         // track the last tiny prim culling state as it can be modified at
         // runtime via TF_DEBUG_CODE HD_DISABLE_TINY_PRIM_CULLING
         _lastTinyPrimCulling = IsEnabledGPUTinyPrimCulling();
@@ -184,7 +187,8 @@ Hd_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 }
 
 void
-Hd_IndirectDrawBatch::_CompileBatch()
+Hd_IndirectDrawBatch::_CompileBatch(
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -518,8 +522,6 @@ Hd_IndirectDrawBatch::_CompileBatch()
     // make sure we filled all
     TF_VERIFY(cmdIt == _drawCommandBuffer.end());
 
-    HdResourceRegistry *resourceRegistry = &HdResourceRegistry::GetInstance();
-
     // allocate draw dispatch buffer
     _dispatchBuffer =
         resourceRegistry->RegisterDispatchBuffer(HdTokens->drawIndirect,
@@ -852,7 +854,8 @@ Hd_IndirectDrawBatch::_ValidateCompatibility(
 
 void
 Hd_IndirectDrawBatch::PrepareDraw(
-    HdRenderPassStateSharedPtr const &renderPassState)
+    HdRenderPassStateSharedPtr const &renderPassState,
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     if (!glBindBuffer) return; // glew initialized
@@ -862,7 +865,7 @@ Hd_IndirectDrawBatch::PrepareDraw(
     //
 
     if (!_dispatchBuffer) {
-        _CompileBatch();
+        _CompileBatch(resourceRegistry);
     }
 
     // there is no non-zero draw items.
@@ -903,9 +906,9 @@ Hd_IndirectDrawBatch::PrepareDraw(
 
     if (gpuCulling && !freezeCulling) {
         if (_useGpuInstanceCulling) {
-            _GPUFrustumCulling(batchItem, renderPassState);
+            _GPUFrustumCulling(batchItem, renderPassState, resourceRegistry);
         } else {
-            _GPUFrustumCullingXFB(batchItem, renderPassState);
+            _GPUFrustumCullingXFB(batchItem, renderPassState, resourceRegistry);
         }
     }
 
@@ -986,7 +989,8 @@ Hd_IndirectDrawBatch::PrepareDraw(
 
 void
 Hd_IndirectDrawBatch::ExecuteDraw(
-    HdRenderPassStateSharedPtr const &renderPassState)
+    HdRenderPassStateSharedPtr const &renderPassState,
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -1010,7 +1014,8 @@ Hd_IndirectDrawBatch::ExecuteDraw(
 
     // bind program
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
-                                                   /*indirect=*/true);
+                                                   /*indirect=*/true,
+                                                   resourceRegistry);
     HdGLSLProgramSharedPtr const &glslProgram = program.GetGLSLProgram();
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
@@ -1184,7 +1189,8 @@ Hd_IndirectDrawBatch::ExecuteDraw(
 void
 Hd_IndirectDrawBatch::_GPUFrustumCulling(
     HdDrawItem const *batchItem,
-    HdRenderPassStateSharedPtr const &renderPassState)
+    HdRenderPassStateSharedPtr const &renderPassState,
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HdBufferArrayRangeSharedPtr constantBar_ =
         batchItem->GetConstantPrimVarRange();
@@ -1208,7 +1214,8 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
     HdBufferArrayRangeGLSharedPtr cullDispatchBar =
         _dispatchBufferCullInput->GetBufferArrayRange();
 
-    _CullingProgram cullingProgram = _GetCullingProgram();
+    _CullingProgram cullingProgram = _GetCullingProgram(resourceRegistry);
+
     HdGLSLProgramSharedPtr const &
         glslProgram = cullingProgram.GetGLSLProgram();
 
@@ -1240,7 +1247,7 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
     }
 
     if (IsEnabledGPUCountVisibleInstances()) {
-        _BeginGPUCountVisibleInstances();
+        _BeginGPUCountVisibleInstances(resourceRegistry);
     }
 
     // bind destination buffer (using entire buffer bind to start from offset=0)
@@ -1332,7 +1339,8 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
 void
 Hd_IndirectDrawBatch::_GPUFrustumCullingXFB(
     HdDrawItem const *batchItem,
-    HdRenderPassStateSharedPtr const &renderPassState)
+    HdRenderPassStateSharedPtr const &renderPassState,
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HdBufferArrayRangeSharedPtr constantBar_ =
         batchItem->GetConstantPrimVarRange();
@@ -1342,7 +1350,7 @@ Hd_IndirectDrawBatch::_GPUFrustumCullingXFB(
     HdBufferArrayRangeGLSharedPtr cullDispatchBar =
         _dispatchBufferCullInput->GetBufferArrayRange();
 
-    _CullingProgram &cullingProgram = _GetCullingProgram();
+    _CullingProgram &cullingProgram = _GetCullingProgram(resourceRegistry);
 
     HdGLSLProgramSharedPtr const &
         glslProgram = cullingProgram.GetGLSLProgram();
@@ -1365,7 +1373,7 @@ Hd_IndirectDrawBatch::_GPUFrustumCullingXFB(
     binder.BindBufferArray(cullDispatchBar);
 
     if (IsEnabledGPUCountVisibleInstances()) {
-        _BeginGPUCountVisibleInstances();
+        _BeginGPUCountVisibleInstances(resourceRegistry);
     }
 
     // set cull parameters
@@ -1449,12 +1457,10 @@ Hd_IndirectDrawBatch::DrawItemInstanceChanged(HdDrawItemInstance const* instance
 }
 
 void
-Hd_IndirectDrawBatch::_BeginGPUCountVisibleInstances()
+Hd_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
+    HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (!_resultBuffer) {
-        HdResourceRegistry *resourceRegistry =
-                &HdResourceRegistry::GetInstance();
-
         _resultBuffer = 
             resourceRegistry->RegisterPersistentBuffer(
                 HdTokens->drawIndirectResult, sizeof(GLint), 0);

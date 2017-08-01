@@ -178,7 +178,8 @@ HdxRenderSetupTask::SyncCamera()
         // sync render pass state
         _renderPassState->SetCamera(modelView, projection, _viewport);
         _renderPassState->SetClipPlanes(clipPlanes);
-        _renderPassState->Sync();
+        _renderPassState->Sync(
+            GetDelegate()->GetRenderIndex().GetResourceRegistry());
     }
 }
 
