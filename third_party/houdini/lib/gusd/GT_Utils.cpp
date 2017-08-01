@@ -32,6 +32,8 @@
 #include <GA/GA_ATIGroupBool.h>
 
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/gf/vec3h.h>
+#include <pxr/base/gf/vec4h.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/boundable.h>
@@ -171,6 +173,21 @@ struct GtDataToUsdTypename
             = SdfValueTypeNames->Half;
         m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, -1, true)]
             = SdfValueTypeNames->HalfArray;
+        // Vec3h
+        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, 3, false)]
+            = SdfValueTypeNames->Half3;
+        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, 3, true)]
+            = SdfValueTypeNames->Half3Array;
+        // Vec4h
+        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, 4, false)]
+            = SdfValueTypeNames->Half4;
+        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, 4, true)]
+            = SdfValueTypeNames->Half4Array;
+        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_QUATERNION, 4, false)]
+            = SdfValueTypeNames->Half4;
+        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_QUATERNION, 4, true)]
+            = SdfValueTypeNames->Half4Array;
+
     }
 
     SdfValueTypeName operator()(const GT_DataArrayHandle& gtData, bool isArray) const
@@ -284,6 +301,77 @@ template <> struct TypeConvertTraits<GfHalf>
         usdArray.resize(numElements);
         for(int i=0; i<numElements; ++i)
             usdArray[i] = flatArray[i];
+        
+        return true;
+    }
+};
+
+template <> struct TypeConvertTraits<GfVec3h>
+{
+    enum {GT_Storage = GT_STORE_REAL16};
+    typedef GfVec3h Type;
+    typedef VtVec3hArray ArrayType;
+    
+    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
+    {
+        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
+        if(gtData->entries() < 1) return false;
+        usdValue.Set(static_cast<GfHalf>(gtData->getF32(0,0)),
+                     static_cast<GfHalf>(gtData->getF32(0,1)),
+                     static_cast<GfHalf>(gtData->getF32(0,2)));
+
+        return true;
+    }
+
+    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
+    {
+        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
+        if(gtData->getTupleSize() != 3) return false;
+        const int numElements = gtData->entries();
+        GT_DataArrayHandle buffer;
+        const fpreal16* flatArray = gtData->getF16Array(buffer);
+        usdArray.resize(numElements);
+        for(int i=0; i<numElements; ++i)
+            usdArray[i].Set(static_cast<GfHalf>(flatArray[i*3]),
+                            static_cast<GfHalf>(flatArray[i*3+1]),
+                            static_cast<GfHalf>(flatArray[i*3+2]));
+        
+        return true;
+    }
+};
+
+
+template <> struct TypeConvertTraits<GfVec4h>
+{
+    enum {GT_Storage = GT_STORE_REAL16};
+    typedef GfVec4h Type;
+    typedef VtVec4hArray ArrayType;
+    
+    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
+    {
+        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
+        if(gtData->entries() < 1) return false;
+        usdValue.Set(static_cast<GfHalf>(gtData->getF32(0,0)),
+                     static_cast<GfHalf>(gtData->getF32(0,1)),
+                     static_cast<GfHalf>(gtData->getF32(0,2)),
+                     static_cast<GfHalf>(gtData->getF32(0,3)));
+
+        return true;
+    }
+
+    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
+    {
+        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
+        if(gtData->getTupleSize() != 4) return false;
+        const int numElements = gtData->entries();
+        GT_DataArrayHandle buffer;
+        const fpreal16* flatArray = gtData->getF16Array(buffer);
+        usdArray.resize(numElements);
+        for(int i=0; i<numElements; ++i)
+            usdArray[i].Set(static_cast<GfHalf>(flatArray[i*4]),
+                            static_cast<GfHalf>(flatArray[i*4+1]),
+                            static_cast<GfHalf>(flatArray[i*4+2]),
+                            static_cast<GfHalf>(flatArray[i*4+3]));
         
         return true;
     }
@@ -1036,12 +1124,28 @@ GusdGT_Utils::setPrimvarSample(
                                  interpolation,
                                  time);
     }
-    else if(gtStorage == GT_STORE_REAL16 && gtTupleSize == 1) {
-        setPvSample<GfHalf>(usdPrim,
-                            name,
-                            data,
-                            interpolation,
-                            time);
+    else if(gtStorage == GT_STORE_REAL16) {
+        if(gtTupleSize == 3) {
+            setPvSample<GfVec3h>(usdPrim,
+                                 name,
+                                 data,
+                                 interpolation,
+                                 time);
+        }
+        else if(gtTupleSize == 4) {
+            setPvSample<GfVec4h>(usdPrim,
+                                 name,
+                                 data,
+                                 interpolation,
+                                 time);
+        }
+        else {
+            setPvSample<GfHalf>(usdPrim,
+                                name,
+                                data,
+                                interpolation,
+                                time);
+        }
     }
     else {
         TF_WARN( "Unsupported primvar type: %s, %s, tupleSize = %zd", 
