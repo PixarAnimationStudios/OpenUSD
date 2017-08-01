@@ -166,6 +166,11 @@ struct GtDataToUsdTypename
             = SdfValueTypeNames->String;
         m_typeLookup[KeyType(GT_STORE_STRING, GT_TYPE_NONE, -1, true)]
             = SdfValueTypeNames->StringArray;
+        // Half
+        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, -1, false)]
+            = SdfValueTypeNames->Half;
+        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, -1, true)]
+            = SdfValueTypeNames->HalfArray;
     }
 
     SdfValueTypeName operator()(const GT_DataArrayHandle& gtData, bool isArray) const
@@ -255,6 +260,34 @@ template <> struct TypeConvertTraits<int64_t>
     }
 };
 
+template <> struct TypeConvertTraits<GfHalf>
+{
+    enum {GT_Storage = GT_STORE_REAL16};
+    typedef GfHalf Type;
+    typedef VtHalfArray ArrayType;
+    
+    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
+    {
+        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
+        if(gtData->entries() < 1) return false;
+        usdValue = gtData->getF16(0);
+
+        return true;
+    }
+
+    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
+    {
+        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
+        const int numElements = gtData->entries() * gtData->getTupleSize();
+        GT_DataArrayHandle buffer;
+        const fpreal16* flatArray = gtData->getF16Array(buffer);
+        usdArray.resize(numElements);
+        for(int i=0; i<numElements; ++i)
+            usdArray[i] = flatArray[i];
+        
+        return true;
+    }
+};
 
 template <> struct TypeConvertTraits<float>
 {
@@ -876,6 +909,20 @@ setUsdAttribute(UsdAttribute& destAttr,
             return destAttr.Set(usdArray, time);
         }
     }
+    else if(SdfValueTypeNames->HalfArray == usdType) {        
+        TypeConvertTraits<GfHalf>::ArrayType usdArray;
+        if(!TypeConvertTraits<GfHalf>::fillArray(usdArray, sourceAttr)) {
+            return false;
+        }
+        return destAttr.Set(usdArray, time);
+    }
+    else if(SdfValueTypeNames->Half == usdType) {     
+        TypeConvertTraits<GfHalf>::Type usdValue;
+        if(!TypeConvertTraits<GfHalf>::fillValue(usdValue, sourceAttr)) {
+            return false;
+        }
+        return destAttr.Set(usdValue, time);
+    }
     cerr << "setUsdAttribute: type not implemented: " << usdType << endl;
 
     return false;
@@ -988,6 +1035,13 @@ GusdGT_Utils::setPrimvarSample(
                                  data,
                                  interpolation,
                                  time);
+    }
+    else if(gtStorage == GT_STORE_REAL16 && gtTupleSize == 1) {
+        setPvSample<GfHalf>(usdPrim,
+                            name,
+                            data,
+                            interpolation,
+                            time);
     }
     else {
         TF_WARN( "Unsupported primvar type: %s, %s, tupleSize = %zd", 
