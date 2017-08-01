@@ -1,5 +1,49 @@
 # Change Log
 
+## [0.8.0] - 2017-07-29
+
+### Added
+- Added option to build_usd.py for building monolithic shared library
+  and for building new sample Embree plugin.
+- Added --mask option to usdcat, matching the --mask option in usdview.
+- Added CPU-side external computation support to Hydra.
+- Added Embree backend to serve as an example of how to add renderer 
+  plugins to Hydra.
+- Added camera gates to usdview.
+- Added ability to Houdini plugin to set active state via usdactive 
+  attribute and to write static data to default time via usdwritestatictopology,
+  usdwritestaticprimvars, and usdwritestaticgeo attributes.
+- Added UsdExportAttributes hda to Houdini plugin for setting primitive and 
+  detail attributes which control various USD attributes or metadata.
+
+### Changed
+- Restored export of CMake targets from shared library builds.
+- Asset paths in .usda files may now contain any printable character.
+  (Issue #73)
+- Legacy special behavior for variant sets named "standin" has been disabled
+  by default.
+- Interpolation is now applied to time samples from clips when no sample
+  exists at a specified clip time.
+- Removed deprecated UsdShadePShader schema.
+- Enabled vertex primvar sharing in Hydra. Hydra can now use significantly 
+  less GPU memory.
+- Many internal performance improvements to Hydra.
+- usdview HUD now shows the backend renderer plugin used by Hydra
+- Wireframe drawing now ignores opacity.
+- Katana plugin properly interprets schema-supported triangle subdivision rule 
+  when meshes are read in and rendered.
+
+### Fixed
+- Fixed several issues in build_usd.py related to building dependencies.
+  (Issue #225, #230, #234)
+- Fixed bug where UsdGeomPrimvar::IsIndexed() would not work for attributes
+  with only authored time samples. (Issue #238)
+- Fixed small platform inconsistencies for Windows in Hydra.
+- Fixed crash in Katana plugin when using point instancers that did not have
+  scales or orientations specified. (Issue #239)
+- Fixed issue in Houdini plugin where the "w" attribute was not converted
+  to the "angularVelocities" attribute for point instancer prims.
+	
 ## [0.7.6] - 2017-06-30
 
 ### Added
