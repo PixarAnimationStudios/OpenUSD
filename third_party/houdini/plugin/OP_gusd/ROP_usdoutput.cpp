@@ -1558,8 +1558,8 @@ renderFrame(fpreal time,
         // updated for ancestors of the prims that have been overlayed.
         if (needToUpdateModelExtents) {
             // Create a UsdGeomBBoxCache for computing extents.
-            TfTokenVector includePurposes(1, UsdGeomTokens->default_);
-            UsdGeomBBoxCache cache(ctxt.time, includePurposes,
+            TfTokenVector includedPurposes = {UsdGeomTokens->default_ , UsdGeomTokens->render};
+            UsdGeomBBoxCache cache(ctxt.time, includedPurposes,
                                    /*useExtentsHint*/ false);
 
             // Maintain a set of paths of ancestors visited during the following
