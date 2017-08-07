@@ -122,8 +122,7 @@ public:
         string description;
     };
 
-    bool _Define(void* ptrKey,
-                 string const& varName, 
+    bool _Define(string const& varName,
                  VariantCreationFn defValue,
                  string const& description, 
                  VariantCreationFn value,
@@ -139,8 +138,6 @@ public:
             std::lock_guard<std::mutex> lock(_lock);
             inserted = _recordsByName.insert(std::make_pair(varName, r)).second;
             if (inserted) {
-                _recordsByPtrKey[ptrKey] = r;
-
                 // Install the cached value into the setting if one
                 // doesn't already exist, which it should not or we
                 // wouldn't be defining the setting.  If it didn't
@@ -172,14 +169,13 @@ public:
     }
 
     template <typename T, typename U>
-    bool Define(void* ptrKey, 
-                string const& varName, 
+    bool Define(string const& varName,
                 T defValue,
                 string const& description, 
                 U value,
                 std::atomic<void*>* cachedValue, 
                 void** potentialCachedValue) {
-        return _Define(ptrKey, varName,
+        return _Define(varName,
                        [defValue](){ return VariantType(defValue); },
                        description,
                        [value](){ return VariantType(value); },
@@ -193,7 +189,6 @@ public:
     }
 
     std::mutex _lock;
-    TfHashMap<void*, _Record, TfHash> _recordsByPtrKey;
     TfHashMap<string, _Record, TfHash> _recordsByName;
     bool _printAlerts;
 };
@@ -233,8 +228,7 @@ void Tf_InitializeEnvSetting(TfEnvSetting<T> *setting)
     // Define the setting in the registry and install the cached setting
     // value.
     Tf_EnvSettingRegistry &reg = Tf_EnvSettingRegistry::GetInstance();
-    if (reg.Define(static_cast<void *>(setting),
-                   setting->_name, 
+    if (reg.Define(setting->_name,
                    setting->_default,
                    setting->_description, 
                    *cachedValue,
