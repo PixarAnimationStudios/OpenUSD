@@ -440,14 +440,16 @@ class UsdGeomPrimvar
     /// 
     /// For non-constant values of interpolation, it is often the case that the 
     /// same value is repeated many times in the array value of a primvar. An 
-    /// indexed primvar can be used in such cases to optimize for data storage.
-    /// For example, on faceVarying primvars over quad meshes this could 
-    /// lead to roughly 4x compression ratio. Certain renderers can 
-    /// be smart about it too and achieve similar memory savings in renders.
-    /// Additionally, it provides a way of declaring topology, i.e. that the 
-    /// faces meeting at a vertex identically share a value and therefore 
-    /// form a continuous dataset, rather than (as prman does) trying to infer 
-    /// that with dicey floating-point value comparison.
+    /// indexed primvar can be used in such cases to optimize for data storage
+    /// if the primvar's interpolation is uniform, varying, or vertex.
+    /// For **faceVarying primvars,**  however, indexing serves a higher
+    /// purpose (and should be used *only* for this purpose, since renderers
+    /// and OpenSubdiv will assume it) of establishing a surface topology
+    /// for the primvar.  That is, faveVarying primvars use indexing to 
+    /// unambiguously define discontinuities in their functions at edges
+    /// and vertices.  Please see the <a href="http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules">
+    /// OpenSubdiv documentation on FaceVarying Primvars</a> for more 
+    /// information.
     /// 
     /// To create an indexed primvar, the value of the attribute associated with 
     /// the primvar is set to an array consisting of all the unique values that 

@@ -9,7 +9,9 @@
 together form a basis for interchanging geometry between DCC tools in a
 graphics pipeline.
 
-\section UsdGeom_Structure Class Structure
+\tableofcontents
+
+\section UsdGeom_Structure Geometric Primitive Schemas
 
 \subsection UsdGeom_Imageable UsdGeomImageable
 
@@ -30,12 +32,12 @@ necessarily be imageable are definitely transformable.
 
 \subsection UsdGeom_Xformable UsdGeomXformable
 
-UsdGeom takes a strong stance that geometry prims be transformable.  This is
+In UsdGeom, all geometry prims are directly transformable.  This is
 primarily a scalability and complexity management decision, since prim-count
 has a strong correlation to total scene composition time and memory
 footprint, and eliminating the need for a "shape" node for every piece of
 geometry generally reduces overall prim count by anywhere from 30% to 50%,
-depending on depth and branching factor of one's scene.
+depending on depth and branching factor of a scene's namespace hierarchy.
 
 UsdGeomXformable encapsulates the schema for a prim that is transformable.
 Readers familiar with AbcGeom's Xform schema will find Xformable familiar,
@@ -103,6 +105,169 @@ UsdGeomModelAPI is an API schema that extends the basic UsdModelAPI API with con
 unique to models that contain 3D geometry.  This includes:
 \li \ref UsdGeomModelAPI::GetExtentsHint "cached extent hints encompassing an entire model"
 \li API for collecting and extracting all \ref UsdGeomConstraintTarget "constraint targets" for a model from the model's root prim.
+
+\section UsdGeom_LinAlgBasics Linear Algebra in UsdGeom
+
+To ensure reliable interchange, we stipulate the following foundational
+mathematical assumptions, which are codified in the 
+\ref gf_overview "Graphics Foundations (Gf) math module":
+\li Matrices are laid out and indexed in row-major order, such that, given
+a \c GfMatrix4d datum \em mat, \em mat[3][1] denotes the second column
+of the fourth row.
+\li GfVec datatypes are row vectors that <b>pre-multiply</b> matrices to 
+effect transformations, which implies, for example, that it is the fourth 
+row of a GfMatrix4d that specifies the translation of the transformation.
+\li All rotation angles are expressed in degrees, not radians.
+\li Vector cross-products and rotations intrinsically follow the
+<A HREF="https://en.wikipedia.org/wiki/Right-hand_rule">right hand rule.</A>
+
+So, for example, transforming a vector **v** by first a Scale matrix **S**,
+then a Rotation matrix **R**, and finally a Translation matrix **T** can be
+written as the following mathematical expression:
+
+\par
+<b>vt</b> = <b>v</b> &times; <b>S</b> &times; <b>R</b> &times; <b>T</b>
+
+Because Gf exposes transformation methods on Matrices, not Vectors, to
+effect this transformation in Python, one would write:
+\code{py}
+vt = (S * R * T).Transform(v)
+\endcode
+
+\section UsdGeom_WindingOrder Winding Order, Orientation, and Surface Normals
+
+Deriving from the mathematical assumptions in the preceding section, UsdGeom
+positions objects in a **right handed coordinate system**.  It also, by
+default, applies the right hand rule to compute the "intrinsic", *surface
+normal* (also sometimes referred to as the *geometric normal*) for all
+non-implicit surface and solid types.  That is, the normal computed from
+(e.g.) a polygon's sequential vertices using the right handed winding rule
+determines the "front" or "outward" facing direction, that typically, when
+rendered will receive lighting calculations and shading.
+
+Since not all modeling and animation packages agree on the right hand rule,
+UsdGeomGprim introduces the \ref UsdGeomGprim::GetOrientationAttr() "orientation"
+attribute to enable individual gprims to select the left hand winding rule,
+instead.  So, gprims whose *orientation* is "rightHanded" (which is the 
+fallback) must use the right hand rule to compute their surface normal,
+while gprims whose *orientation* is "leftHanded" must use the left hand rule.
+
+However, any given gprim's \ref
+UsdGeomImageable::ComputeLocalToWorldTransform() "local-to-world transformation"
+can *flip* its effective orientation, when it contains an odd
+number of negative scales.  This condition can be reliably detected using the
+(Jacobian) determinant of the local-to-world transform: if the determinant 
+is **less than zero**, then the gprim's orientation has been flipped, and
+therefore one must apply the **opposite** handedness rule when computing its
+surface normals (or just flip the computed normals) for the purposes of
+hidden surface detection and lighting calculations.
+
+
+\section UsdGeom_VelocityInterpolation Applying Timesampled Velocities to Geometry
+
+UsdGeomPointBased primitives and UsdGeomPointInstancer primitives all allow
+the specification of \ref UsdGeomPointBased::GetVelocitiesAttr() "velocities"
+to describe point (or instance) motion at off-sample UsdTimeCode s, as an
+alternative to relying on native UsdStage linear sample interpolation.  
+Using velocities is the **only reliable way** of encoding the motion of 
+primitives whose topology is varying over time, as adjacent samples' indices
+may be unrelated to each other, and the samples themselves may not even 
+possesss the same number of elements.
+
+To help ensure that all consumers of UsdGeom data will compute identical posing
+from the same dataset, we describe how the position and velocity data should be
+sampled and combined to produce "interpolated" positions.  There are two
+cases to consider, for both of which, we stipulate the following logic:
+
+\li If no *velocities* are authored, then we fall back to the "standard" 
+position computation logic: if the timeSamples bracketing a requested sample 
+have the same number of elements, apply linear interpolation between the two 
+samples; otherwise, use the value of the sample with the lower/earlier ordinate.
+
+\li If *velocities* are authored at a higher frequency than *points* (or 
+\em positions, in the case of UsdGeomPointInstancer), fall back to standard
+position computation logic.  We are effectively considering this a silent error
+condition, because we do not, at this time, want to require integration to 
+compute positions.
+
+\li Othewise, if the bracketing timeSamples for *velocities* from the
+requested timeSample have the *same ordinates* as those for *points*, or if
+the lower timeSample for *velocities* is earlier than the lower timeSample
+for *points* and the upper timeSample for *velocities* is at or later than
+the upper timeSample for *points*, then **use the lower *velocities* 
+timeSample and the lower *points* timeSample** for the computations described 
+below. 
+
+<b>In summary,</b> we stipulate that the timeSampling of the *points* and
+<em>velocities</em> attributes be compatible.  We allow the velocities to be
+sampled at at a lower frequency than *points* (e.g. points in a constant
+velocity field) but not at a higher frequency, and we do not allow velocities
+to be recorded at times at which there is not a corresponding *points*
+sample.  This is to simplify and expedite the calculations required to
+compute a position at any requested time.  Since most simulators produce both
+a position and velocity at each timeStep, we do not believe this restriction
+should impose an undue burden.
+
+\subsection UsdGeom_VelocityAtOneSample Computing a Single Requested Position
+
+If one requires a pose at only a single point in time, *sampleTime*, such as
+when stepping through "sub-frames" in an application like *usdview*, then we
+need simply apply the above rules, and if we successfully sample both *points* 
+and *velocities*, let:
+
+\par
+<em>t<sub>points</sub></em> = the lower bracketing time sample for the 
+evaluated *points* attribute
+
+\par 
+<em>timeScale</em> = 1.0 / <tt>stage->GetTimeCodesPerSecond()</tt>
+
+... then
+
+\par
+<em> <b>pointsInterpolated</b> =  <b>points</b> + (sampleTime - t<sub>points</sub>) * timeScale * <b>velocities</b></em> 
+
+
+\subsection UsdGeom_VelocityAtMultipleSamples Computing a Range of Requested Positions
+
+Computer graphics renderers typically simulate the effect of non-zero camera
+shutter intervals (which introduces <a
+href="https://en.wikipedia.org/wiki/Motion_blur">motion blur</a> into an
+image) by sampling moving geometry at multiple, nearby sample times, for each
+rendered image, linearly blending the results of each sample.  Most, if not
+all renderers introduce the simplifying assumption that for any given image
+we wish to render, we will not allow the topology of geometry to change over
+the time-range we sample for motion blur.
+
+Therefore, if we are sampling a topologically varying,
+*velocities*-possessing UsdGeomMesh at sample times <em>t<sub>1</sub></em>,
+<em>t<sub>2</sub></em> ...  <em>t<sub>n</sub></em> in order to render the
+mesh with motion blur, we stipulate that all *n* samples be computed from
+<b>the same sampled points and velocities values sampled at
+<em>sampleTime</em></b>.  Therefore, we would compute all *n* samples using
+the above formula, but iterating over the *n* samples, substituting
+<em>t<sub>i</sub></em> for *sampleTime*.
+
+Two things to note:
+
+\li Since we are applying strictly linear interpolation, why is it useful to 
+compute more than two samples?  For UsdGeomPointBased primitives, the 
+object-space samples will not require more than two samples, although 
+local-to-world transformations may introduce non-linear motion.  For 
+UsdGeomPointInstancer primitives, which also possess an *angularVelocities*
+attribute for the instances, it may often be desirable to sample the 
+instance matrices (and therefore *positions*) at a higher frequency since
+angular motion is non-linear.
+\li If the range of <em>t<sub>1</sub></em> to <em>t<sub>n</sub></em> is greater
+than the recorded sampling frequency of *points*, then computing the
+"singular" value of *points* at some time <em>t<sub>other</sub></em> that is
+within the range <em>t<sub>1</sub></em> to <em>t<sub>n</sub></em> may 
+produce a different value (with differing number of elements) than the computed
+value for the same time using the motion blur technique.  This derives from our
+requirement that over the given motion range, the topology must not change, so
+we specifically ignore any other *points* or *velocities* samples that occur in
+the requested motion range.
+
 
 \section UsdGeom_StageMetrics Stage Metrics
 

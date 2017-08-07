@@ -145,12 +145,17 @@ public:
     // VELOCITIES 
     // --------------------------------------------------------------------- //
     /// If provided, 'velocities' should be used by renderers to 
-    /// compute motion blur for a given 'points' sample, rather than 
-    /// interpolating to a neighboring 'points' sample.  This is the only
-    /// reasonable means of specifying motion blur for topologically
+    /// 
+    /// compute positions between samples for the 'points' attribute, rather
+    /// than interpolating between neighboring 'points' samples.  This is the
+    /// only reasonable means of computing motion blur for topologically
     /// varying PointBased primitives.  It follows that the length of each
     /// 'velocities' sample must match the length of the corresponding
-    /// 'points' sample.
+    /// 'points' sample.  Velocity is measured in position units per second,
+    /// as per most simulation software. To convert to position units per
+    /// UsdTimeCode, divide by UsdStage::GetTimeCodesPerSecond().
+    /// 
+    /// See also \ref UsdGeom_VelocityInterpolation .
     ///
     /// \n  C++ Type: VtArray<GfVec3f>
     /// \n  Usd Type: SdfValueTypeNames->Vector3fArray

@@ -78,7 +78,7 @@ class SdfAssetPath;
 /// will transform the world such that the camera is at the origin, looking 
 /// down the -Z axis, with Y as the up axis.
 /// 
-/// \sa \ref usdGeom_linAlgBasics "UsdGeom Linear Algebra Basic Assumptions"
+/// \sa \ref UsdGeom_LinAlgBasics
 /// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below

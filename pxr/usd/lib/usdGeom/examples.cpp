@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdGeom/xformCommonAPI.h"
 #include "pxr/usd/usdGeom/xformOp.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,6 +39,32 @@ bool CreateMatrixWithDefault(UsdGeomXformable const &gprim, GfMatrix4d const &de
     }
 }
 //! [CreateMatrixWithDefault]
+
+
+//! [CreateExampleSRT]
+bool CreateExampleSRT(UsdGeomXformable const &gprim)
+{
+    // For insurance, we will make sure there aren't any ordered ops
+    // before we start
+    gprim.ClearXformOpOrder();
+
+    UsdGeomXformOp s, r, t;
+    
+    if ( !(t = gprim.AddTranslateOp())){
+        return false;
+    }
+    if ( !(r = gprim.AddRotateXYZOp())){
+        return false;
+    }
+    if ( !(s = gprim.AddScaleOp())){
+        return false;
+    }
+
+    return (t.Set(GfVec3d(0, 100, 0), UsdTimeCode::Default()) &&
+            r.Set(GfVec3f(30, 60, 90), UsdTimeCode::Default()) &&
+            s.Set(GfVec3f(2, 2, 2), UsdTimeCode::Default()));
+}
+//! [CreateExampleSRT]
 
 
 //! [CreateSRTWithDefaults]

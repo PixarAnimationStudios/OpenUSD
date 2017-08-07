@@ -216,7 +216,11 @@ public:
     // --------------------------------------------------------------------- //
     // ORIENTATION 
     // --------------------------------------------------------------------- //
-    /// See: http://renderman.pixar.com/resources/current/rps/attributes.html#orientation-and-sides
+    /// Orientation specifies whether the gprim's surface normal 
+    /// should be computed using the right hand rule, or the left hand rule.
+    /// Please see \ref UsdGeom_WindingOrder for a deeper explanation and
+    /// generalization of orientation to composed scenes with transformation
+    /// hierarchies.
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
