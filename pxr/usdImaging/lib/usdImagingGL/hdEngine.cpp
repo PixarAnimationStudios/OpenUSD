@@ -948,6 +948,10 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfType const &type)
         TF_CODING_ERROR("Couldn't find plugin named %s",
             type.GetTypeName().c_str());
         return false;
+    } else if (plugin == _renderPlugin) {
+        // It's a no-op to load the same plugin twice.
+        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+        return true;
     }
 
     // Pull old delegate/task controller state.
