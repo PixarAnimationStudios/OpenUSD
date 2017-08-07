@@ -82,6 +82,7 @@ public:
 protected:
     float _GetComplexity() const { return _complexity; }
     bool _ShouldFrameAll() const { return _shouldFrameAll; }
+    TfToken _GetRenderer() const { return _renderer; }
 
 private:
     struct _Args;
@@ -97,6 +98,8 @@ private:
     std::string _outputFilePath;
 
     float _complexity;
+    TfToken _renderer;
+
     std::vector<double> _times;
 
     std::vector<GfVec4d> _clipPlanes;
