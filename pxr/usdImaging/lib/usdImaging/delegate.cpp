@@ -2649,7 +2649,7 @@ UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerId,
         TF_DEBUG(HD_SAFE_MODE).Msg(
                                 "WARNING: Slow instance indices fetch for %s\n", 
                                 prototypeId.GetText());
-        _UpdateSingleValue(usdPath, HdChangeTracker::DirtyPrimVar);
+        _UpdateSingleValue(usdPath, HdChangeTracker::DirtyInstanceIndex);
         TF_VERIFY(_valueCache.FindInstanceIndices(usdPath, &indices));
     }
 

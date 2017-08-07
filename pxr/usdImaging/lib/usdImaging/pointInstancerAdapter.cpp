@@ -525,7 +525,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             // could probably update the instance index only once, since
             // currently subsequent updates are redundant.
             _InstancerDataMap::const_iterator instr =
-                                            _instancerData.find(prim.GetPath());
+                _instancerData.find(cachePath);
             if (instr != _instancerData.end()) {
                 SdfPath parentInstancerPath = instr->second.parentInstancerPath;
                 if (!parentInstancerPath.IsEmpty()) {
@@ -687,7 +687,7 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
             // InstanceIndices in the value cache and make sure the parent
             // instancer has been updated for the current time.
             _InstancerDataMap::const_iterator instr =
-                                            _instancerData.find(prim.GetPath());
+                _instancerData.find(cachePath);
             if (instr != _instancerData.end()) {
                 SdfPath parentInstancerPath = instr->second.parentInstancerPath;
                 if (!parentInstancerPath.IsEmpty()) {
