@@ -5432,7 +5432,12 @@ public:
         }
         else {
             if (!TF_VERIFY(layer->GetBracketingTimeSamplesForPath(
-                        specId, localTime, &lower, &upper))) {
+                        specId, localTime, &lower, &upper),
+                TfStringPrintf("No bracketing time samples for "
+                               "%s on <%s> for time %g between %g and %g",
+                               layer->GetIdentifier().c_str(),
+                               specId.GetFullSpecPath().GetText(),
+                               localTime, lower, upper).c_str())) {
                 return false;
             }
         }
@@ -5579,7 +5584,7 @@ _HasTimeSamples(const SdfLayerRefPtr& source,
             specId, *time, lower, upper);
     }
 
-    return source->HasField(specId, SdfFieldKeys->TimeSamples);
+    return source->GetNumTimeSamplesForPath(specId) > 0;
 }
 
 bool
@@ -5594,7 +5599,9 @@ _HasTimeSamples(const Usd_ClipRefPtr& source,
                source->_GetNumTimeSamplesForPathInLayerForClip(specId) != 0;
     }
 
-    return source->HasField(specId, SdfFieldKeys->TimeSamples);
+    // Use this method to directly access authored time samples,
+    // disregarding 'fake' samples used by clips.
+    return source->_GetNumTimeSamplesForPathInLayerForClip(specId) > 0;
 }
 
 enum _DefaultValueResult {

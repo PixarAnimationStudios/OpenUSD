@@ -488,6 +488,8 @@ class TestUsdValueClips(unittest.TestCase):
         # fall back to the default value and report that this attribute's values
         # are constant over time.
         self.assertFalse(attr.ValueMightBeTimeVarying())
+        self.assertEqual(attr.GetResolveInfo(0).GetSource(),
+            Usd.ResolveInfoSourceDefault)
 
         # Doing this check should have caused all clips to be opened, since
         # we need to check each one to see if any of them provide a time sample.

@@ -181,5 +181,21 @@ class TestUsdTimeSamples(unittest.TestCase):
             self.assertEqual(sdUnvaryingAttr.HasInfo("timeSamples"), False)
             self.assertEqual(sdVaryingAttr.HasInfo("timeSamples"), True)
 
+    def test_EmptyTimeSamplesMap(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.ImportFromString('''#sdf 1.4.32
+def "Foo" {
+    int x = 123
+    int x.timeSamples = {}
+}''')
+        stage = Usd.Stage.Open(layer)
+        x = stage.GetPrimAtPath('/Foo').GetAttribute('x')
+
+        # Empty timeSamples should have no effect on value resolution --
+        # should resolve through to the default value.
+        self.assertEqual(x.Get(), 123)
+        self.assertEqual(x.GetResolveInfo().GetSource(),
+            Usd.ResolveInfoSourceDefault)
+
 if __name__ == "__main__":
     unittest.main()
