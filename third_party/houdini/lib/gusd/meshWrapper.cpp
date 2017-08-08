@@ -219,7 +219,7 @@ initialize( const GusdContext& ctxt,
             // otherwise just write the left handled verts directly.
             TfToken orientation;
             usdAttr.Get(&orientation, UsdTimeCode::Default());
-            if( (m_forceCreateNewGeo || !ctxt.writeOverlay) && orientation == UsdGeomTokens->rightHanded ) {
+            if( orientation == UsdGeomTokens->rightHanded ) {
                 usdAttr.Set(UsdGeomTokens->leftHanded, UsdTimeCode::Default());
             }
         }
