@@ -89,6 +89,10 @@ over "GLOBAL" (
                 string doc = """A deprecated basis token for
                 UsdGeomBasisCurves."""
             }
+            dictionary procedural = {
+                string doc = """This is the namespace prefix used by 
+                UsdGeomProcedural for its custom attributes."""
+            }
         }
     }
 )
@@ -465,6 +469,27 @@ class "Boundable" (
         An authored extent on a prim which has children is expected to include
         the extent of all children, as they will be pruned from BBox computation
         during traversal."""
+    )
+}
+
+class Procedural "Procedural" (
+    inherits = </Boundable> 
+    doc = """Defines a geometry that is generated at render time.
+
+    This schema is useful for defining renderer-specific procedural geometry
+    that do not have their own schemas defined, but still require representation
+    on the USD stage. procedural:class defines the class / type / dso of the
+    renderer procedural to load, and the attributes that should be passed through
+    to the renderer procedural are created using Get/CreateProceduralAttr and
+    are prefixed with the procedural: namespace.
+    """
+) {
+    uniform token procedural:class (
+        customData = {
+            string apiName = "class"
+        }
+        doc = """Class name that specifies the type of the geometry that can be interpreted 
+        by the renderer."""
     )
 }
 

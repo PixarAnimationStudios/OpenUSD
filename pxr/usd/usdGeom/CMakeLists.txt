@@ -47,6 +47,7 @@ pxr_library(usdGeom
         points
         primvar
         primvarsAPI
+        procedural
         scope
         sphere
         subset
@@ -90,6 +91,7 @@ pxr_library(usdGeom
         wrapPoints.cpp
         wrapPrimvar.cpp
         wrapPrimvarsAPI.cpp
+        wrapProcedural.cpp
         wrapScope.cpp
         wrapSphere.cpp
         wrapSubset.cpp
@@ -184,6 +186,14 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdGeomPointInstancer
     DEST testUsdGeomPointInstancer
+)
+
+pxr_build_test(testUsdGeomProcedural
+    LIBRARIES
+        usd
+        usdGeom
+    CPPFILES
+        testenv/testUsdGeomProcedural.cpp
 )
 
 pxr_install_test_dir(
@@ -288,6 +298,11 @@ endif()
 pxr_register_test(testUsdGeomPrimvar
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPrimvar"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomProcedural
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomProcedural"
     EXPECTED_RETURN_CODE 0
 )
 

@@ -462,6 +462,14 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomGprim
     const TfToken primvarsDisplayOpacity;
+    /// \brief "procedural"
+    /// 
+    /// This is the namespace prefix used by  UsdGeomProcedural for its custom attributes.
+    const TfToken procedural;
+    /// \brief "procedural:class"
+    /// 
+    /// UsdGeomProcedural
+    const TfToken proceduralClass;
     /// \brief "projection"
     /// 
     /// UsdGeomCamera
