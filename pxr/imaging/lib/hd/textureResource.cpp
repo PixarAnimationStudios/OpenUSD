@@ -89,7 +89,7 @@ HdTextureResource::ComputeFallbackUVHash()
 HdSimpleTextureResource::HdSimpleTextureResource(
     GlfTextureHandleRefPtr const &textureHandle, bool isPtex):
         HdSimpleTextureResource(textureHandle, isPtex, 
-        /*wrapS*/ HdWrapRepeat, /*wrapT*/ HdWrapRepeat, 
+        /*wrapS*/ HdWrapUseMetaDict, /*wrapT*/ HdWrapUseMetaDict, 
         /*minFilter*/ HdMinFilterNearestMipmapLinear, 
         /*magFilter*/ HdMagFilterLinear)
 {
@@ -113,15 +113,20 @@ HdSimpleTextureResource::HdSimpleTextureResource(
     // When we are not using Ptex we will use samplers,
     // that includes both, bindless textures and no-bindless textures
     if (!_isPtex) {
-        // It is possible the texture provides wrap modes itself, in that
-        // case we will use the wrap modes provided by the texture
+        // If the HdSimpleTextureResource defines a wrap mode it will 
+        // use it, otherwise it gives an opportunity to the texture to define
+        // its own wrap mode. The fallback value is always HdWrapRepeat
         GLenum fwrapS = HdConversions::GetWrap(wrapS);
         GLenum fwrapT = HdConversions::GetWrap(wrapT);
         VtDictionary txInfo = _texture->GetTextureInfo();
-        if (VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeS")) {
+
+        if (wrapS == HdWrapUseMetaDict && 
+            VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeS")) {
             fwrapS = VtDictionaryGet<GLuint>(txInfo, "wrapModeS");
         }
-        if (VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeT")) {
+
+        if (wrapT == HdWrapUseMetaDict && 
+            VtDictionaryIsHolding<GLuint>(txInfo, "wrapModeT")) {
             fwrapT = VtDictionaryGet<GLuint>(txInfo, "wrapModeT");
         }
 
@@ -139,8 +144,10 @@ HdSimpleTextureResource::HdSimpleTextureResource(
         glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_T, fwrapT);
         glSamplerParameteri(_sampler, GL_TEXTURE_MIN_FILTER, fminFilter);
         glSamplerParameteri(_sampler, GL_TEXTURE_MAG_FILTER, fmagFilter);
-        glSamplerParameterf(_sampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, _maxAnisotropy);
-        glSamplerParameterfv(_sampler, GL_TEXTURE_BORDER_COLOR, _borderColor.GetArray());
+        glSamplerParameterf(_sampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, 
+            _maxAnisotropy);
+        glSamplerParameterfv(_sampler, GL_TEXTURE_BORDER_COLOR, 
+            _borderColor.GetArray());
     }
 
     bool bindlessTexture = 

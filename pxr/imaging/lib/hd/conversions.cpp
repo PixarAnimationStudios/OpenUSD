@@ -164,6 +164,7 @@ HdConversions::GetWrap(HdWrap wrap)
         case HdWrapClamp : return GL_CLAMP_TO_EDGE;
         case HdWrapRepeat : return GL_REPEAT;
         case HdWrapBlack : return GL_CLAMP_TO_BORDER;
+        case HdWrapUseMetaDict : return GL_REPEAT;
     }
 
     TF_CODING_ERROR("Unexpected HdWrap type %d", wrap);
