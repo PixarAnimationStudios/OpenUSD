@@ -27,6 +27,8 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -100,6 +102,7 @@ private:
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;
 
     /// Resource registry used in this render delegate
+    static std::mutex _mutexResourceRegistry;
     static std::atomic_int _counterResourceRegistry;
     static HdResourceRegistrySharedPtr _resourceRegistry;
 
