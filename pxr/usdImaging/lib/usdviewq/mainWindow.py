@@ -2677,12 +2677,14 @@ class MainWindow(QtGui.QMainWindow):
                 targetLayer = Sdf.Layer.FindOrOpen(saveName)
                 UsdUtils.CopyLayerMetadata(rootLayer, targetLayer,
                                            skipSublayers=True)
-                
+
                 # We don't ever store self.realStartTimeCode or 
                 # self.realEndTimeCode in a layer, so we need to author them
                 # here explicitly.
-                targetLayer.startTimeCode = self.realStartTimeCode
-                targetLayer.endTimeCode = self.realEndTimeCode
+                if self.realStartTimeCode:
+                    targetLayer.startTimeCode = self.realStartTimeCode
+                if self.realEndTimeCode:
+                    targetLayer.endTimeCode = self.realEndTimeCode
 
                 targetLayer.subLayerPaths.append(self._stage.GetRootLayer().realPath)
                 targetLayer.RemoveInertSceneDescription()
