@@ -59,6 +59,14 @@ HdPackageRenderPassShader()
 }
 
 TfToken
+HdPackageLightingIntegrationShader()
+{
+    static TfToken shader =
+        _GetShaderPath("lightingIntegrationShader.glslfx");
+    return shader;
+}
+
+TfToken
 HdPackageFallbackLightingShader()
 {
     static TfToken fallbackLightingShader =

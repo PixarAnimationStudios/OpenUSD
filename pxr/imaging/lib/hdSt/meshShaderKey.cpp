@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -52,15 +53,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBezierTES,           "Mesh.TessEval.Bezier"))
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
-    ((litFS,                   "Mesh.Fragment.Lit"))
-    ((unlitFS,                 "Mesh.Fragment.Unlit"))
+    ((surfaceFS,               "Fragment.Surface"))
+    ((surfaceUnlitFS,          "Fragment.SurfaceUnlit"))
+    ((constantColorFS,         "Fragment.ConstantColor"))
     ((mainFS,                  "Mesh.Fragment"))
     ((instancing,              "Instancing.Transform"))
 );
 
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     Hd_GeometricShader::PrimitiveType primitiveType,
-    bool lit,
+    TfToken shadingTerminal,
     bool smoothNormals,
     bool doubleSided,
     bool faceVarying,
@@ -147,7 +149,21 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             FS[3] = _tokens->edgeNoneFS;
         }
     }
-    FS[4] = lit ? _tokens->litFS : _tokens->unlitFS;
+
+    TfToken terminalFS;
+    if (shadingTerminal == HdMeshReprDescTokens->surfaceShader) {
+        terminalFS = _tokens->surfaceFS;
+    } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderUnlit) {
+        terminalFS = _tokens->surfaceUnlitFS;
+    } else if (shadingTerminal == HdMeshReprDescTokens->constantColor) {
+        terminalFS = _tokens->constantColorFS;
+    } else if (!shadingTerminal.IsEmpty()) {
+        terminalFS = shadingTerminal;
+    } else {
+        terminalFS = _tokens->surfaceFS;
+    }
+
+    FS[4] = terminalFS;
     FS[5] = _tokens->mainFS;
     FS[6] = TfToken();
 }

@@ -78,6 +78,13 @@ protected:
                  TfToken const &reprName,
                  HdDirtyBits *dirtyBitsState) override;
 
+    virtual
+    HdShaderCodeSharedPtr _GetShaderCode(HdSceneDelegate *sceneDelegate,
+                                         HdShader const *shader) const override;
+
+    HdDirtyBits _PropagateDirtyBits(
+        HdDirtyBits dirtyBits);
+
     bool _UsePtexIndices(const HdRenderIndex &renderIndex) const;
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
@@ -148,6 +155,7 @@ private:
     bool _doubleSided;
     bool _packedNormals;
     HdCullStyle _cullStyle;
+    VtValue _shadingStyle;
 };
 
 

@@ -48,6 +48,7 @@ class HdDrawItem;
 class HdRenderIndex;
 class HdRepr;
 class HdRenderParam;
+class HdShader;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
 typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
@@ -250,6 +251,10 @@ protected:
     TfToken _GetReprName(HdSceneDelegate* delegate,
                          TfToken const &defaultReprName, bool forced,
                          HdDirtyBits *dirtyBits);
+
+    HD_API
+    virtual HdShaderCodeSharedPtr _GetShaderCode(HdSceneDelegate *delegate,
+                                                 HdShader const *shader) const;
 
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;

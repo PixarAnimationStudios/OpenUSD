@@ -35,6 +35,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define HD_MESH_REPR_DESC_TOKENS \
+    (surfaceShader)                    \
+    (surfaceShaderUnlit)               \
+    (constantColor)
+
+TF_DECLARE_PUBLIC_TOKENS(HdMeshReprDescTokens, HD_API,
+        HD_MESH_REPR_DESC_TOKENS);
+
 /// \class HdMeshReprDesc
 ///
 /// descriptor to configure a drawItem for a repr
@@ -42,19 +50,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdMeshReprDesc {
     HdMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
                    HdCullStyle cullStyle = HdCullStyleDontCare,
-                   bool lit = false,
+                   TfToken shadingTerminal = HdMeshReprDescTokens->surfaceShader,
                    bool smoothNormals = false,
                    bool blendWireframeColor = true)
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
-        , lit(lit)
+        , shadingTerminal(shadingTerminal)
         , smoothNormals(smoothNormals)
         , blendWireframeColor(blendWireframeColor)
         {}
 
     HdMeshGeomStyle geomStyle;
     HdCullStyle     cullStyle;
-    bool            lit;
+    TfToken         shadingTerminal;
     bool            smoothNormals;
     bool            blendWireframeColor;
 };
@@ -71,6 +79,7 @@ public:
     ///
     inline bool        IsDoubleSided(HdSceneDelegate* delegate) const;
     inline HdCullStyle GetCullStyle(HdSceneDelegate* delegate)  const;
+    inline VtValue     GetShadingStyle(HdSceneDelegate* delegate)  const;
 
     ///
     /// Topology
@@ -127,6 +136,12 @@ inline HdCullStyle
 HdMesh::GetCullStyle(HdSceneDelegate* delegate) const
 {
     return delegate->GetCullStyle(GetId());
+}
+
+inline VtValue
+HdMesh::GetShadingStyle(HdSceneDelegate* delegate) const
+{
+    return delegate->GetShadingStyle(GetId());
 }
 
 inline HdMeshTopology

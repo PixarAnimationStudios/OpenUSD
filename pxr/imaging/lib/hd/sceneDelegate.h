@@ -176,6 +176,10 @@ public:
     HD_API
     virtual HdCullStyle GetCullStyle(SdfPath const &id);
 
+    /// Returns the shading style for the given prim.
+    HD_API
+    virtual VtValue GetShadingStyle(SdfPath const &id);
+
     /// Returns the refinement level for the given prim in the range [0,8].
     ///
     /// The refinement level indicates how many iterations to apply when
@@ -256,6 +260,12 @@ public:
     /// Returns the displacement source code for the given surface shader ID.
     HD_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
+
+    /// Returns the per delegate mixin source code for the given shader stage key.
+    /// This allows per-rprim customization of shading for a given delegate.
+    /// \see GetShadingStyle
+    HD_API
+    virtual std::string GetMixinShaderSource(TfToken const &shaderStageKey);
 
     /// Returns a single value for the given shader and named parameter.
     HD_API

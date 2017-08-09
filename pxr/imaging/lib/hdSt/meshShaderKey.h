@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdSt_MeshShaderKey
 {
     HdSt_MeshShaderKey(Hd_GeometricShader::PrimitiveType primType,
-                       bool lit,
+                       TfToken shadingTerminal,
                        bool smoothNormals,
                        bool doubleSided,
                        bool faceVarying,

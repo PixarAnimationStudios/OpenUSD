@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
+#include "pxr/imaging/hdSt/mixinShaderCode.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/instancer.h"
 
@@ -74,6 +75,7 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _doubleSided(false)
     , _packedNormals(IsEnabledPackedNormals())
     , _cullStyle(HdCullStyleDontCare)
+    , _shadingStyle()
 {
     /*NOTHING*/
 }
@@ -124,7 +126,7 @@ int
 HdStMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc)
 {
     if (desc.geomStyle == HdMeshGeomStyleHull         ||
-        desc.geomStyle == HdMeshGeomStyleHullEdgeOnly || 
+        desc.geomStyle == HdMeshGeomStyleHullEdgeOnly ||
         desc.geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
         return 0;
     }
@@ -142,7 +144,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
+    HdResourceRegistrySharedPtr const &resourceRegistry =
         sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     // note: there's a potential optimization if _topology is already registered
@@ -154,8 +156,8 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     // for the time being. In other words, each range of index buffer is
     // immutable.
 
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)    || 
-        HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id) || 
+    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)    ||
+        HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id) ||
         HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
         // make a shallow copy and the same time expand the topology to a
         // stream extended representation
@@ -300,7 +302,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
 
             // allocate new range
-            HdBufferArrayRangeSharedPtr range = 
+            HdBufferArrayRangeSharedPtr range =
                 resourceRegistry->AllocateNonUniformBufferArrayRange(
                     HdTokens->topology, bufferSpecs);
 
@@ -335,7 +337,7 @@ HdStMesh::_PopulateAdjacency(HdResourceRegistrySharedPtr const &resourceRegistry
     HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr> adjacencyInstance;
 
     // ask registry if there's a sharable vertex adjacency
-    std::unique_lock<std::mutex> regLock = 
+    std::unique_lock<std::mutex> regLock =
         resourceRegistry->RegisterVertexAdjacency(_topologyId, &adjacencyInstance);
 
     if (adjacencyInstance.IsFirstInstance()) {
@@ -394,7 +396,7 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
     } else {
         // GPU quadrangulation computation needs original vertices to be
         // transfered
-        HdComputationSharedPtr computation = 
+        HdComputationSharedPtr computation =
             topology->GetQuadrangulateComputationGPU(
                 source->GetName(), source->GetGLComponentDataType(), id);
         // computation can be null for all quad mesh.
@@ -427,7 +429,7 @@ _QuadrangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
 static HdBufferSourceSharedPtr
 _TriangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
                                HdSt_MeshTopologySharedPtr const &topology,
-                               SdfPath const &id, 
+                               SdfPath const &id,
                                HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HdBufferSourceSharedPtr triSource =
@@ -480,20 +482,20 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     SdfPath const& id = GetId();
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
+    HdResourceRegistrySharedPtr const &resourceRegistry =
                                               renderIndex.GetResourceRegistry();
 
     // The "points" attribute is expected to be in this list.
     TfTokenVector primVarNames = GetPrimVarVertexNames(sceneDelegate);
-    
+
     // Track the last vertex index to distinguish between vertex and varying
     // while processing.
     int vertexPartitionIndex = int(primVarNames.size()-1);
-    
+
     // Add varying primvars.
     TfTokenVector const& varyingNames = GetPrimVarVaryingNames(sceneDelegate);
     primVarNames.reserve(primVarNames.size() + varyingNames.size());
-    primVarNames.insert(primVarNames.end(), 
+    primVarNames.insert(primVarNames.end(),
                         varyingNames.begin(), varyingNames.end());
 
     HdBufferSourceVector sources;
@@ -876,7 +878,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
     TfTokenVector primVarNames = GetPrimVarFacevaryingNames(sceneDelegate);
     if (primVarNames.empty()) return;
 
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
+    HdResourceRegistrySharedPtr const &resourceRegistry =
         sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     HdBufferSourceVector sources;
@@ -960,7 +962,7 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
+    HdResourceRegistrySharedPtr const &resourceRegistry =
         sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
 
@@ -1037,6 +1039,27 @@ HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
     return _IsEnabledForceQuadrangulate();
 }
 
+HdShaderCodeSharedPtr
+HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate, HdShader const *shader) const
+{
+    HdShaderCodeSharedPtr shaderCode = shader->GetShaderCode();
+    VtValue mixinValue = _shadingStyle;
+    if (mixinValue.IsEmpty()) {
+        return shaderCode;
+    } else {
+        TfToken mixin = mixinValue.GetWithDefault<TfToken>();
+
+        /// XXX In the future this could be a place to pull on a surface entry
+        /// to get a custom terminal.
+        if (!mixin.IsEmpty()) {
+            std::string mixinSource = sceneDelegate->GetMixinShaderSource(mixin);
+            return HdShaderCodeSharedPtr(
+                new HdStMixinShaderCode(mixinSource, shaderCode));
+        }
+        return shaderCode;
+    }
+}
+
 void
 HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                           HdDrawItem *drawItem,
@@ -1049,13 +1072,16 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
 
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
+    HdResourceRegistrySharedPtr const &resourceRegistry =
         sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     /* VISIBILITY */
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
+    _shadingStyle = GetShadingStyle(sceneDelegate);
+
     /* CONSTANT PRIMVARS */
+    // This will call _GetShaderCode to resolve per rprim shader mixins
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
 
     /* INSTANCE PRIMVARS */
@@ -1123,7 +1149,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     // When we have multiple drawitems for the same mesh we need to clean the
     // bits for all the data fields touched in this function, otherwise it
-    // will try to extract topology (for instance) twice, and this won't 
+    // will try to extract topology (for instance) twice, and this won't
     // work with delegates that don't keep information around once extracted.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 
@@ -1144,7 +1170,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
 
     int refineLevel = _GetRefineLevelForDesc(desc);
 
-    Hd_GeometricShader::PrimitiveType primType = 
+    Hd_GeometricShader::PrimitiveType primType =
         Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES;
 
     if (desc.geomStyle == HdMeshGeomStylePoints) {
@@ -1152,13 +1178,13 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
     } else if (refineLevel > 0) {
         if (_topology->RefinesToTriangles()) {
             // e.g. loop subdivision.
-            primType = 
+            primType =
                 Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES;
         } else if (_topology->RefinesToBSplinePatches()) {
             primType = Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES;
         } else {
             // uniform catmark/bilinear subdivision generates quads.
-            primType = 
+            primType =
                 Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS;
         }
     } else if (_UsePtexIndices(renderIndex)) {
@@ -1192,7 +1218,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
 
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
-                                 desc.lit,
+                                 desc.shadingTerminal,
                                  smoothNormals,
                                  _doubleSided,
                                  hasFaceVaryingPrimVars,
@@ -1202,7 +1228,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
 
     drawItem->SetGeometricShader(
         Hd_GeometricShader::Create(
-            shaderKey, 
+            shaderKey,
             renderIndex.GetResourceRegistry()));
 
     // The batches need to be validated and rebuilt if necessary.
@@ -1280,8 +1306,8 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
             HdDrawItem *drawItem = repr->AddDrawItem(&_sharedData);
             HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
 
-            if (desc.geomStyle == HdMeshGeomStyleHull         || 
-                desc.geomStyle == HdMeshGeomStyleHullEdgeOnly || 
+            if (desc.geomStyle == HdMeshGeomStyleHull         ||
+                desc.geomStyle == HdMeshGeomStyleHullEdgeOnly ||
                 desc.geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
 
                 drawingCoord->SetTopologyIndex(HdStMesh::HullTopology);
@@ -1348,18 +1374,27 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     // For the bits geometric shader depends on, reset all geometric shaders.
     // they are populated again at the end of _GetRepr.
     // Since the dirty bits are cleaned by UpdateDrawItem (because certain
-    // reprs have multiple draw items) we need to remember if we need to set 
+    // reprs have multiple draw items) we need to remember if we need to set
     // the geometric shader again
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided)) {
         _ResetGeometricShaders();
         needsSetGeometricShader = true;
+    } else {
+        // Make sure none of the draw items have an unset geometric shader
+        // Can be the case after a collection rebuild of the draw items.
+        TF_FOR_ALL (drawItem, *(it->second->GetDrawItems())) {
+            if (!drawItem->GetGeometricShader()) {
+                needsSetGeometricShader = true;
+                break;
+            }
+        }
     }
 
     // iterate through all reprs to figure out if any requires smoothnormals
     // if so we will calculate the normals once (clean the bits) and reuse them.
-    // This is important for modes like FeyRay which requires 2 draw items 
+    // This is important for modes like FeyRay which requires 2 draw items
     // and one requires smooth normals but the other doesn't.
     bool requireSmoothNormals = false;
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {

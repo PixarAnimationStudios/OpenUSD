@@ -30,6 +30,7 @@
 #import $TOOLS/hd/shaders/instancing.glslfx
 #import $TOOLS/hd/shaders/meshNormal.glslfx
 #import $TOOLS/hd/shaders/meshWire.glslfx
+#import $TOOLS/hd/shaders/terminals.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Vertex
@@ -358,24 +359,6 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
--- glsl Mesh.Fragment.Unlit
-
-vec4 Lit(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
-{
-    return color;
-}
-
---- --------------------------------------------------------------------------
--- glsl Mesh.Fragment.Lit
-
-vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
-
-vec4 Lit(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
-{
-    return surfaceShader(Peye, Neye, color, patchCoord);
-}
-
---- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment
 
 in VertexData
@@ -421,7 +404,7 @@ void main(void)
     color.rgb = ApplyColorOverrides(color).rgb;
 
     color = mix(color,
-                Lit(vec4(Peye, 1), Neye, color, GetPatchCoord()),
+                ShadingTerminal(vec4(Peye, 1), Neye, color, GetPatchCoord()),
                 GetLightingBlendAmount());
 
     color = ApplyEdgeColor(color, GetPatchCoord());

@@ -37,6 +37,7 @@
             "fragmentShader" : {
                 "source": [
                     "PCF.ShadowFilterFragmentOnly",
+                    "SimpleLighting.LightIntegrator",
                     "SimpleLighting.SimpleLighting",
                     "LightingOverride.SimpleLighting"
                 ]

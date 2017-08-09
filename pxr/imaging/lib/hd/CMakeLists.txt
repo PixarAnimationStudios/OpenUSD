@@ -148,6 +148,8 @@ pxr_library(hd
         shaders/fallbackSurface.glslfx
         shaders/frustumCull.glslfx
         shaders/instancing.glslfx
+        shaders/lighting.glslfx
+        shaders/lightingIntegrationShader.glslfx
         shaders/mesh.glslfx
         shaders/meshNormal.glslfx
         shaders/meshWire.glslfx
@@ -155,5 +157,6 @@ pxr_library(hd
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
+        shaders/terminals.glslfx
 )
 

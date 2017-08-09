@@ -34,7 +34,10 @@
     "techniques": {
         "default": {
             "fragmentShader" : {
-                "source": [ "Fallback.Lighting" ]
+                "source": [ 
+                   "Fallback.LightIntegrator",
+                   "Fallback.Lighting"
+                ]
             }
         }
     }
