@@ -306,7 +306,7 @@ public:
 
         if (PxrUsdKatanaUtils::IsBoundable(prim)) {
             interface.setAttr("bound",
-                _MakeBoundsAttribute(prim, usdInArgs));
+                _MakeBoundsAttribute(prim, *privateData));
         }
 
         //
@@ -795,16 +795,16 @@ private:
     static FnKat::DoubleAttribute
     _MakeBoundsAttribute(
             const UsdPrim& prim,
-            PxrUsdKatanaUsdInArgsRefPtr usdInArgs)
+            const PxrUsdKatanaUsdInPrivateData& data)
     {
         if (prim.GetPath() == SdfPath::AbsoluteRootPath()) {
             // Special-case to pre-empt coding errors.
             return FnKat::DoubleAttribute();
         }
-        std::vector<GfBBox3d> bounds = usdInArgs->ComputeBounds(prim);
-        // TODO: apply motion sample time overrides stored in the session
-        const std::vector<double>& motionSampleTimes = 
-            usdInArgs->GetMotionSampleTimes();
+        const std::vector<double>& motionSampleTimes =
+            data.GetMotionSampleTimes();
+        std::vector<GfBBox3d> bounds =
+            data.GetUsdInArgs()->ComputeBounds(prim, motionSampleTimes);
 
         bool hasInfiniteBounds = false;
         bool isMotionBackward = motionSampleTimes.size() > 1 &&
