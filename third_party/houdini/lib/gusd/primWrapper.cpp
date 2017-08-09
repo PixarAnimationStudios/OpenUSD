@@ -440,7 +440,14 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
     }
 
     if( setKnot ) {
-        prim.MakeMatrixXform().Set( xform, time );
+        // Clear xform vec on prim if it exists, as we are overlaying a new one.
+        bool reset;
+        std::vector<UsdGeomXformOp> xformVec = prim.GetOrderedXformOps(&reset);
+        if (xformVec.size() > 0) {
+            prim.ClearXformOpOrder();
+        }
+        UsdGeomXformOp xformOp = prim.MakeMatrixXform();
+        xformOp.Set( xform, time );
         m_xformCache = xform;
         m_lastXformSet = time;
         m_lastXformCompared = time;
@@ -1073,7 +1080,7 @@ GusdPrimWrapper::computeTransform(
     //
     // The transform cache is necessary because the gobal cache 
     // will only contain transform that we read from the stage and 
-    // not anything that we have modified. 
+    // not anything that we have modified.
 
     UT_Matrix4D primXform;
     auto it = xformCache.find( prim.GetPath() );
