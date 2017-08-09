@@ -1541,7 +1541,7 @@ SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
     r.AddType("uint",   uint32_t());
     r.AddType("int64",  int64_t());
     r.AddType("uint64", uint64_t());
-    r.AddType("half",   GfHalf());
+    r.AddType("half",   GfHalf(0.0));
     r.AddType("float",  float());
     r.AddType("double", double());
     r.AddType("string", std::string());
