@@ -1,0 +1,12 @@
+#sdf 1.4.32
+
+def "Set" 
+{
+   def "SetA" (references = @./setA.sdf@</SetA>)
+   {
+   }
+
+   def "SetB" (references = @./setB.sdf@</SetB>)
+   {
+   }
+}

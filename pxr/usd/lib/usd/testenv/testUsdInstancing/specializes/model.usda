@@ -1,0 +1,12 @@
+#usda 1.0
+
+class "_class_Model" 
+{
+}
+
+def "Model" (
+    instanceable = True
+    add specializes = </_class_Model>
+)
+{
+}

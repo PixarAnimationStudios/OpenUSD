@@ -724,6 +724,82 @@ class TestUsdInstancing(unittest.TestCase):
         assert s.GetPrimAtPath('/__Master_1/Child_1')
         assert s.GetPrimAtPath('/__Master_2/Child_2')
 
+    def test_Inherits(self):
+        """Test expected instancing behavior for prims with inherits"""
+        nl = NoticeListener()
+
+        s = OpenStage('inherits/root.usda')
+
+        # The Model prim being referenced into the stage inherits from
+        # _class_Model, but there are no oveerrides for that class in
+        # either SetA or SetB. Because of this, /Set/SetA/Model and
+        # /Set/SetB/Model can share the same master prim initially.
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+
+        # Overriding _class_Model in the local layer stack causes
+        # the instancing key to change, so a new master prim is
+        # generated. However, this override would affect both Model
+        # prims on the stage in the same way, so /Set/SetA/Model and
+        # /Set/SetB/Model still share the same master prim.
+        print "-" * 60
+        print "Overriding class in local layer stack"
+        s.OverridePrim('/_class_Model')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_2': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+
+        # Overriding _class_Model in SetA means that SetA/Model may
+        # have name children or other opinions that SetB/Model would
+        # not. So, /Set/SetA/Model and /Set/SetB/Model can no longer
+        # share the same master prim.
+        print "-" * 60
+        print "Overriding class in SetA only"
+        s2 = OpenStage('inherits/setA.usda')
+        s2.OverridePrim('/_class_Model')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_2': ['/Set/SetB/Model'],
+              '/__Master_3': ['/Set/SetA/Model'] })
+
+    def test_Specializes(self):
+        """Test expected instancing behavior for prims with specializes"""
+        nl = NoticeListener()
+
+        s = OpenStage('specializes/root.usda')
+
+        # The Model prim being referenced into the stage specializes
+        # _class_Model, but there are no oveerrides for that class in
+        # either SetA or SetB. Because of this, /Set/SetA/Model and
+        # /Set/SetB/Model can share the same master prim initially.
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+
+        # Overriding _class_Model in the local layer stack causes
+        # the instancing key to change, so a new master prim is
+        # generated. However, this override would affect both Model
+        # prims on the stage in the same way, so /Set/SetA/Model and
+        # /Set/SetB/Model still share the same master prim.
+        print "-" * 60
+        print "Overriding class in local layer stack"
+        s.OverridePrim('/_class_Model')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_2': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+
+        # Overriding _class_Model in SetA means that SetA/Model may
+        # have name children or other opinions that SetB/Model would
+        # not. So, /Set/SetA/Model and /Set/SetB/Model can no longer
+        # share the same master prim.
+        print "-" * 60
+        print "Overriding class in SetA only"
+        s2 = OpenStage('specializes/setA.usda')
+        s2.OverridePrim('/_class_Model')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_2': ['/Set/SetB/Model'],
+              '/__Master_3': ['/Set/SetA/Model'] })
+
     def test_Editing(self):
         """Test that edits cannot be made on objects in masters"""
 
