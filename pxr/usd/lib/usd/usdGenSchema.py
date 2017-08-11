@@ -412,6 +412,18 @@ def _WriteFile(filePath, content, validate):
         if existingContent == content:
             print '\tunchanged %s' % filePath
             return
+
+        # In validation mode, we just want to see if the code being generated
+        # would differ from the code that currently exists without writing
+        # anything out. So just generate a diff and bail out immediately.
+        if validate:
+            print 'Diff: '
+            print '\n'.join(difflib.unified_diff(existingContent.split('\n'),
+                                                 content.split('\n')))
+            print ('Error: validation failed, diffs found. '
+                   'Please rerun usdGenSchema.')
+            sys.exit(1)
+
     # Otherwise attempt to write to file.
     try:
         with open(filePath, 'w') as curfile:
@@ -419,13 +431,6 @@ def _WriteFile(filePath, content, validate):
             print '\t    wrote %s' % filePath
     except IOError as ioe:
         print '\t', ioe
-        print 'Diff: '
-        print '\n'.join(difflib.unified_diff(existingContent.split('\n'),
-                                             content.split('\n')))
-        if validate:
-            print ('Error: validation failed, diffs found. '
-                   'Please rerun usdGenSchema.')
-            sys.exit(1)
 
 def _ExtractCustomCode(filePath, default=None):
     defaultTxt = default if default else ''
