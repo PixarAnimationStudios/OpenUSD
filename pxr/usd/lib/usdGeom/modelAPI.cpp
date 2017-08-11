@@ -21,26 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
-
-#include "pxr/usd/usdGeom/constraintTarget.h"
-#include "pxr/usd/usdGeom/imageable.h"
-#include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usd/schemaRegistry.h"
+#include "pxr/usd/usd/typed.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdGeomModelAPI,
         TfType::Bases< UsdModelAPI > >();
-    
     
 }
 
@@ -50,11 +44,31 @@ UsdGeomModelAPI::~UsdGeomModelAPI()
 }
 
 /* static */
+UsdGeomModelAPI
+UsdGeomModelAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+{
+    if (!stage) {
+        TF_CODING_ERROR("Invalid stage");
+        return UsdGeomModelAPI();
+    }
+    return UsdGeomModelAPI(stage->GetPrimAtPath(path));
+}
+
+
+/* static */
 const TfType &
 UsdGeomModelAPI::_GetStaticTfType()
 {
     static TfType tfType = TfType::Find<UsdGeomModelAPI>();
     return tfType;
+}
+
+/* static */
+bool 
+UsdGeomModelAPI::_IsTypedSchema()
+{
+    static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
+    return isTyped;
 }
 
 /* virtual */
@@ -83,6 +97,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 

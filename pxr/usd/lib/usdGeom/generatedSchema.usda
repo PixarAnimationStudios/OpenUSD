@@ -3704,3 +3704,20 @@ class Camera "Camera" (
     )
 }
 
+class "GeomModelAPI" (
+    doc = """UsdGeomModelAPI extends the generic UsdModelAPI schema with
+    geometry specific concepts such as cached extents for the entire model,
+    constraint targets, and geometry-inspired extensions to the payload
+    lofting process.
+   
+    As described in GetExtentsHint() below, it is useful to cache extents
+    at the model level.  UsdGeomModelAPI provides schema for computing and storing
+    these cached extents, which can be consumed by UsdGeomBBoxCache to provide
+    fast access to precomputed extents that will be used as the model's bounds
+    (see UsdGeomBBoxCache::UsdGeomBBoxCache() ).
+   
+    \\todo CreatePayload() """
+)
+{
+}
+

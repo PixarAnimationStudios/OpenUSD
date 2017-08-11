@@ -21,46 +21,53 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDGEOM_GENERATED_MODEL_H
-#define USDGEOM_GENERATED_MODEL_H
+#ifndef USDGEOM_GENERATED_MODELAPI_H
+#define USDGEOM_GENERATED_MODELAPI_H
+
+/// \file usdGeom/modelAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/api.h"
-#include "pxr/usd/usdGeom/bboxCache.h"
-
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
+#include "pxr/usd/usdGeom/bboxCache.h"
+#include "pxr/usd/usdGeom/constraintTarget.h"
+#include "pxr/usd/usdGeom/imageable.h" 
+
 #include "pxr/base/vt/value.h"
 
+#include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/matrix4d.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
-#include <vector>
-#include <string>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfAssetPath;
-class UsdGeomConstraintTarget;
+
+// -------------------------------------------------------------------------- //
+// GEOMMODELAPI                                                               //
+// -------------------------------------------------------------------------- //
 
 /// \class UsdGeomModelAPI
 ///
-/// UsdGeomModelAPI extends the generic UsdModelAPI schema with geometry
-/// specific concepts such as cached extents for the entire model,
+/// UsdGeomModelAPI extends the generic UsdModelAPI schema with
+/// geometry specific concepts such as cached extents for the entire model,
 /// constraint targets, and geometry-inspired extensions to the payload
 /// lofting process.
-///
+/// 
 /// As described in GetExtentsHint() below, it is useful to cache extents
 /// at the model level.  UsdGeomModelAPI provides schema for computing and storing
 /// these cached extents, which can be consumed by UsdGeomBBoxCache to provide
 /// fast access to precomputed extents that will be used as the model's bounds
 /// (see UsdGeomBBoxCache::UsdGeomBBoxCache() ).
+/// 
+/// \todo CreatePayload() 
 ///
-/// \todo CreatePayload()
 class UsdGeomModelAPI : public UsdModelAPI
 {
 public:
@@ -74,7 +81,7 @@ public:
     /// Equivalent to UsdGeomModelAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdGeomModelAPI(const UsdPrim& prim)
+    explicit UsdGeomModelAPI(const UsdPrim& prim=UsdPrim())
         : UsdModelAPI(prim)
     {
     }
@@ -93,16 +100,32 @@ public:
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
-    /// may be authored by custom/extended methods of the schemas involved
-    /// (such as primvars created by UsdGeomImageable).
+    /// may be authored by custom/extended methods of the schemas involved.
     USDGEOM_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
+    /// Return a UsdGeomModelAPI holding the prim adhering to this
+    /// schema at \p path on \p stage.  If no prim exists at \p path on
+    /// \p stage, or if the prim at that path does not adhere to this schema,
+    /// return an invalid schema object.  This is shorthand for the following:
+    ///
+    /// \code
+    /// UsdGeomModelAPI(stage->GetPrimAtPath(path));
+    /// \endcode
+    ///
+    USDGEOM_API
+    static UsdGeomModelAPI
+    Get(const UsdStagePtr &stage, const SdfPath &path);
+
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
+    USDGEOM_API
     static const TfType &_GetStaticTfType();
+
+    static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
     USDGEOM_API
@@ -113,8 +136,10 @@ public:
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
     //
-    // Just remember to close the class declaration with }; and complete the
-    // include guard with #endif
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
