@@ -41,7 +41,7 @@ Hd_SortedIds::Hd_SortedIds()
 
 }
 
-Hd_SortedIds::Hd_SortedIds(const Hd_SortedIds &&other)
+Hd_SortedIds::Hd_SortedIds(Hd_SortedIds &&other)
  : _ids(std::move(other._ids))
  , _sortedCount(other._sortedCount)
 {
