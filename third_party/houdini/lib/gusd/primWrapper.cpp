@@ -396,7 +396,38 @@ void
 GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform, 
                                             UsdTimeCode time, bool force )
 {
-    UsdGeomXformable prim( getUsdPrimForWrite() );
+    UsdGeomImageable usdGeom = getUsdPrimForWrite();
+    UsdGeomXformable prim( usdGeom );
+
+    // Determine if we need to clear previous transformations from a stronger
+    // opinion on the stage before authoring ours.
+    UsdStagePtr stage = usdGeom.GetPrim().GetStage();
+    UsdEditTarget currEditTarget = stage->GetEditTarget();
+
+    // If the edit target does no mapping, it is most likely the session
+    // layer which means it is in the local layer stack and can overlay
+    // any xformOps.
+    if ( !currEditTarget.GetMapFunction().IsNull() && 
+         !currEditTarget.GetMapFunction().IsIdentity() ) {
+        bool reset;
+        std::vector<UsdGeomXformOp> xformVec = prim.GetOrderedXformOps(&reset);
+
+        // The xformOps attribute is static so we only check if we haven't
+        // changed anything yet. In addition nothing needs to be cleared if it
+        // was previously empty.
+        if (m_lastXformSet.IsDefault() && (int)xformVec.size() > 0) {
+            // Load the root layer for temp, stronger opinion changes.
+            stage->GetRootLayer()->SetPermissionToSave(false);
+            stage->SetEditTarget(stage->GetRootLayer());
+            UsdGeomXformable stagePrim( getUsdPrimForWrite() );
+
+            // Clear the xformOps on the stronger layer, so our weaker edit
+            // target (with mapping across a reference) can write out clean,
+            // new transforms.
+            stagePrim.ClearXformOpOrder();
+            stage->SetEditTarget(currEditTarget);
+        }
+    }
 
     if( !prim )
         return;
@@ -440,14 +471,7 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
     }
 
     if( setKnot ) {
-        // Clear xform vec on prim if it exists, as we are overlaying a new one.
-        bool reset;
-        std::vector<UsdGeomXformOp> xformVec = prim.GetOrderedXformOps(&reset);
-        if (xformVec.size() > 0) {
-            prim.ClearXformOpOrder();
-        }
-        UsdGeomXformOp xformOp = prim.MakeMatrixXform();
-        xformOp.Set( xform, time );
+        prim.MakeMatrixXform().Set( xform, time );
         m_xformCache = xform;
         m_lastXformSet = time;
         m_lastXformCompared = time;

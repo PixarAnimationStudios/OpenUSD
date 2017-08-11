@@ -163,4 +163,22 @@ GusdGetAssetKind()
     return gusdAssetKind;
 }
 
+static GusdUsdPrimFunc gusdUsdPrimFunc;
+
+void 
+GusdRegisterOperateOnUsdPrimFunc( const GusdUsdPrimFunc &func )
+{
+    gusdUsdPrimFunc = func;
+}
+
+bool
+GusdOperateOnUsdPrim( const UsdPrim &prim  ) 
+{
+    if( gusdUsdPrimFunc ) {
+        return gusdUsdPrimFunc( prim );
+    }
+    return false;
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

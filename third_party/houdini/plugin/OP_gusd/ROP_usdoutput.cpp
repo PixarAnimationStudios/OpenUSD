@@ -52,6 +52,7 @@
 #include <GT/GT_Util.h>
 #include <GT/GT_PrimInstance.h>
 #include <GU/GU_Detail.h>
+#include <GEO/GEO_AttributeHandle.h>
 #include <OBJ/OBJ_Node.h>
 #include <OP/OP_Node.h>
 #include <OP/OP_OperatorTable.h>
@@ -859,6 +860,94 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         // Set m_usdStage's EditTarget to be its SessionLayer.
         m_usdStage->SetEditTarget(m_usdStage->GetSessionLayer());
 
+        // If given model path and asset name detail attributes, we set up an
+        // edit target to remap the output of the overlay to the specfied
+        // model's scope. For exmaple, uutput would be /model/geom/... instead
+        // of /World/sets/model/geom...
+
+        // Cook the node to get detail attributes.
+        OP_Context houdiniContext(startTimeCode);
+        GU_DetailHandle cookedGeoHdl = m_renderNode->getCookedGeoHandle(houdiniContext);
+
+        // Get the model path and asset name
+        UT_String modelPath;
+        if (cookedGeoHdl.isValid()) {
+            GU_DetailHandleAutoReadLock detailLock( cookedGeoHdl );
+            const GEO_AttributeHandle modelPathHandle = detailLock->getDetailAttribute("usdmodelpath");
+            const GEO_AttributeHandle assetNameHandle = detailLock->getDetailAttribute("usdassetname");
+            const GEO_AttributeHandle defaultPrimPathHandle = detailLock->getDetailAttribute("usddefaultprimpath");
+            modelPathHandle.getString(modelPath);
+            UT_String assetName;
+            if(assetNameHandle.getString(assetName)) {
+                m_assetName = assetName.toStdString();
+            }
+            UT_String defaultPrimPath;
+            if(defaultPrimPathHandle.getString(defaultPrimPath)) {
+                m_defaultPrimPath = defaultPrimPath.toStdString();
+            }
+        }
+
+        // If we have both, proceed to remapping through edit target.
+        if (!m_assetName.empty() && m_assetName != "None" &&
+            modelPath.isstring() && modelPath.toStdString() != "None") {
+
+            // Add a reference from the model path to the asset name. This
+            // allows us to create a pcp mapping function through that reference
+            // arc. The result is we can write to the normal shot convert
+            // usdprimpath, but it will automatically map to a prim path with
+            // the model as the root. Use the root later for temporary edits we
+            // don't want to save.
+            m_usdStage->GetRootLayer()->SetPermissionToSave(false);
+            m_usdStage->SetEditTarget(m_usdStage->GetRootLayer());
+
+            // Get the prim whose scope we are mapping to.
+            m_modelPrim = m_usdStage->GetPrimAtPath(SdfPath(modelPath.toStdString() ));
+
+            // Make sure model prim exists on stage.
+            if( !m_modelPrim.IsValid() ){
+                const std::string errorMessage = "Unable to find model at: "
+                                                 + modelPath.toStdString();
+                return abort(errorMessage);
+            }
+
+            // Create an overlay of the asset name as a root scope.
+            UsdPrim refPrim = m_usdStage->OverridePrim(SdfPath("/" + m_assetName ));
+
+            // Reference that new root scope.
+            SdfReference ref = SdfReference();
+            ref.SetPrimPath(SdfPath("/" + m_assetName ));
+            UsdReferences refs = m_modelPrim.GetReferences();
+            refs.AppendReference( ref );
+
+            // Get the model's prim index (contains all opinions on this node)
+            const PcpPrimIndex idx = m_modelPrim.ComputeExpandedPrimIndex();
+
+            // Find the node that referenced in the model.
+            PcpNodeRef node;
+            for (const PcpNodeRef& child : idx.GetNodeRange()) {
+                if (child.GetArcType() == PcpArcTypeReference &&
+                    child.GetDepthBelowIntroduction() == 0 &&
+                    child.GetPath() == SdfPath("/" + m_assetName ) ) {
+                    node = child;
+                    break;
+                }
+            }
+
+            // Can't remap if the node is invalid.
+            if (!node) {
+                const std::string errorMessage = "Unable to find valid node "
+                                                "for remapping with asset "
+                                                "name:" + m_assetName;
+                return abort(errorMessage);
+            }
+
+            // Create the edit target with the node (and its mapping). 
+            UsdEditTarget editTarget = UsdEditTarget(m_usdStage->GetSessionLayer(), node);
+            m_usdStage->SetEditTarget(editTarget);
+
+            // Remove the temp reference.
+            refs.ClearReferences();
+        }
     } else {
         
         // Find out if a layer with this fileName already exists.
@@ -1063,7 +1152,7 @@ startRender(int frameCount,
 
 
     // The ROP_Node built in preRenderScript does not always run when you expect it to.
-    // It seems to be unreliable when chaining networks. 
+    // It seems to be unreliable when chaining networks.
     // Add a new property and run the script ourselves so we can be sure it runs
     // at the right time.
     UT_String preRenderScript;
@@ -1080,7 +1169,7 @@ startRender(int frameCount,
 
     m_granularity = 
         static_cast<Granularity>(evalInt( "granularity", 0, tstart ));
-        
+
     if( m_granularity == ONE_FILE ) {
         int rv = openStage( tstart, m_startFrame, m_endFrame );
         if( rv != ROP_CONTINUE_RENDER )
@@ -1103,7 +1192,7 @@ startRender(int frameCount,
             s.pop_back();
         m_pathPrefix = s;
     }
-
+   
     // Partition by attribute
     if(evalInt("enablepathattrib", 0, tstart)) {
         UT_String partitionAttr;
@@ -1141,7 +1230,7 @@ setKind( const string &path, UsdStagePtr stage )
     // component (model) and all its ancestors need to be marked group.
     //
     // Unless we are writing a group of references to other assets. This is the 
-    // case if our chidren are models. 
+    // case if our chidren are models.
 
     if( path.empty() )
         return;
@@ -1406,9 +1495,10 @@ renderFrame(fpreal time,
             SdfLayerHandle layer = overlayGeo ? 
                     m_usdStage->GetSessionLayer() : m_usdStage->GetRootLayer();
 
-            // If a USD version of this prim doesn't exist on the stage, create a new USD prim. This 
-            // happens when we are writing per frame files.
-            SdfPrimSpecHandle ph = layer->GetPrimAtPath( primPath );
+            // If a USD version of this prim doesn't exist on the current edit
+            // target's layer, create a new USD prim. This happens when we are
+            // writing per frame files.
+            SdfPrimSpecHandle ph = m_usdStage->GetEditTarget().GetPrimSpecForScenePath( primPath );
             if( !ph ) {
                 dynamic_cast<GusdPrimWrapper*>(usdPrim.get())->
                     redefine( m_usdStage, SdfPath( primPath ), ctxt, gtPrim.prim );
@@ -1481,6 +1571,27 @@ renderFrame(fpreal time,
                 // Recurse on the parent prim in case it's nested as another instance
                 currPrim = instancePrim;
 
+            }
+
+            // Check for a hero prim to operate on.
+            GT_Owner owner = GT_OWNER_UNIFORM;
+            GT_DataArrayHandle heroAttr = gtPrim.prim->findAttribute( "usdheroprim", owner, 0);
+            if(heroAttr != NULL && heroAttr->getI32(0) > 0) {
+
+                // Get the hero prim from the stage.
+                UsdPrim heroPrim = m_usdStage->GetPrimAtPath( primPath );
+
+                // Call the registered operate on usd prim function on our hero.
+                if ( heroPrim && m_modelPrim.IsValid() ) {
+                    std::string modelPath = m_modelPrim.GetName().GetString();
+                    do {
+                        GusdOperateOnUsdPrim( heroPrim );
+                        if (heroPrim.GetName().GetString() == modelPath) {
+                            break;
+                        }
+                        heroPrim = heroPrim.GetParent();
+                    } while ( heroPrim.IsValid());
+                }
             }
         }
     }
@@ -1612,9 +1723,20 @@ renderFrame(fpreal time,
         }
     }
 
+    // Set the default prim path (to default or m_defaultPrimPath if set).
     if( m_granularity == PER_FRAME ) {
+        if( !m_defaultPrimPath.empty() ) {
+            setKind( m_defaultPrimPath, m_usdStage );
 
-        if( !overlayGeo ) {
+            SdfLayerHandle layer = overlayGeo ? 
+                    m_usdStage->GetSessionLayer() : m_usdStage->GetRootLayer();
+            if( m_defaultPrimPath[0] == '/' && m_defaultPrimPath.find( '/', 1 ) == string::npos ) {
+                SdfPrimSpecHandle defPrim = layer->GetPrimAtPath( SdfPath(m_defaultPrimPath) );
+                if( defPrim ) {
+                    layer->SetDefaultPrim( TfToken(m_defaultPrimPath.substr(1) ) );
+                }
+            }
+        } else if( !overlayGeo ) {
             setKind( m_pathPrefix, m_usdStage );
 
             if( m_pathPrefix[0] == '/' && m_pathPrefix.find( '/', 1 ) == string::npos ) {
@@ -1783,10 +1905,21 @@ endRender()
 {
     double endTimeCode = CHgetTimeFromFrame( m_endFrame );
 
+    // Set the default prim path (to default or m_defaultPrimPath if set).
     if( m_granularity == ONE_FILE ) {
-
         bool overlayGeo = evalInt( "overlay", 0, endTimeCode );
-        if( !overlayGeo && m_usdStage ) {
+        if( !m_defaultPrimPath.empty() ) {
+            setKind( m_defaultPrimPath, m_usdStage );
+
+            SdfLayerHandle layer = overlayGeo ? 
+                    m_usdStage->GetSessionLayer() : m_usdStage->GetRootLayer();
+            if( m_defaultPrimPath[0] == '/' && m_defaultPrimPath.find( '/', 1 ) == string::npos ) {
+                SdfPrimSpecHandle defPrim = layer->GetPrimAtPath( SdfPath(m_defaultPrimPath) );
+                if( defPrim ) {
+                    layer->SetDefaultPrim( TfToken(m_defaultPrimPath.substr(1) ) );
+                }
+            }
+        } else if( !overlayGeo && m_usdStage ) {
             setKind( m_pathPrefix, m_usdStage );
 
             if( m_pathPrefix[0] == '/' && m_pathPrefix.find( '/', 1 ) == string::npos ) {

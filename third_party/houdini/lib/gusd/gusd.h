@@ -24,6 +24,7 @@
 #ifndef __GUSD_PXGUSD_H__
 #define __GUSD_PXGUSD_H__
 
+#include "pxr/usd/usd/prim.h"
 #include "gusd/api.h"
 
 #include <pxr/pxr.h>
@@ -63,6 +64,16 @@ void GusdSetAssetKind( const TfToken &kind );
 
 GUSD_API
 TfToken GusdGetAssetKind();
+
+// We often need to call some function, which may be system
+// specific, on a USD prim so we provide a callback.
+typedef std::function<bool (const UsdPrim&)> GusdUsdPrimFunc;
+
+GUSD_API
+void GusdRegisterOperateOnUsdPrimFunc( const GusdUsdPrimFunc &func );
+
+GUSD_API
+bool GusdOperateOnUsdPrim( const UsdPrim &prim );
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
