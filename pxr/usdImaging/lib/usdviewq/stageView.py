@@ -2149,6 +2149,9 @@ class StageView(QtOpenGL.QGLWidget):
                                          gfCamera.clippingPlanes]
 
         if self._nodes:
+            sceneAmbient = (0.01, 0.01, 0.01, 1.0)
+            material = Glf.SimpleMaterial()
+            lights = []
             # for renderModes that need lights 
             if self.renderMode in ("Flat Shaded",
                                    "Smooth Shaded",
@@ -2159,7 +2162,6 @@ class StageView(QtOpenGL.QGLWidget):
                 stagePos = Gf.Vec3d(self._bbcenter[0], self._bbcenter[1],
                                     self._bbcenter[2])
                 stageDir = (stagePos - cam_pos).GetNormalized()
-                lights = []
 
                 # ambient light located at the camera
                 if self.ambientLightOnly:
@@ -2213,15 +2215,14 @@ class StageView(QtOpenGL.QGLWidget):
                         l.position = (backPos[0], backPos[1], backPos[2], 1)
                         lights.append(l)
 
-                material = Glf.SimpleMaterial()
                 kA = self._dataModel.defaultMaterialAmbient
                 kS = self._dataModel.defaultMaterialSpecular
                 material.ambient = (kA, kA, kA, 1.0)
                 material.specular = (kS, kS, kS, 1.0)
                 material.shininess = 32.0
-                sceneAmbient = (0.01, 0.01, 0.01, 1.0)
 
-                self._renderer.SetLightingState(lights, material, sceneAmbient)
+            # modes that want no lighting simply leave lights as an empty list
+            self._renderer.SetLightingState(lights, material, sceneAmbient)
 
             if self.renderMode == "Hidden Surface Wireframe":
                 GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
