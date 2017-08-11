@@ -237,7 +237,8 @@ static
 std::vector<UsdShadeInput>
 _GetInterfaceAttributeRecipientInputs(
     const UsdAttribute &interfaceAttr,
-    const TfToken &renderTarget)
+    const TfToken &renderTarget,
+    const TfTokenVector &propertyNames)
 {
     UsdPrim prim = interfaceAttr.GetPrim();
     std::vector<UsdShadeInput> ret;
@@ -253,14 +254,19 @@ _GetInterfaceAttributeRecipientInputs(
         }
     } else {
         // Find "interfaceRecipientsOf:" relationships for all renderTargets.
-        for (const UsdRelationship &rel : prim.GetRelationships()) {
+        for (const TfToken &propName : propertyNames) {
             // If the relationship name contains "interfaceRecipientsOf:"
             // and if its basename matches the basename of the interface 
             // attribute, it must be relevant to this relationship.
-            if (TfStringContains(rel.GetName(), 
+            if (TfStringContains(propName, 
                 UsdShadeTokens->interfaceRecipientsOf) &&
-                rel.GetBaseName() == interfaceAttr.GetBaseName()) {
-                interfaceRecipientsOfRels.push_back(rel);
+                TfStringEndsWith(propName,  std::string(":").append(
+                    interfaceAttr.GetBaseName().GetString()))) {
+                            
+                // Ignore silently if it's not a valid relationship.
+                if (UsdRelationship rel = prim.GetRelationship(propName)) {
+                    interfaceRecipientsOfRels.push_back(rel);
+                }
             }
         }
     }
@@ -293,6 +299,13 @@ _ComputeNonTransitiveInputConsumersMap(
 {
     UsdShadeNodeGraph::InterfaceInputConsumersMap result;
 
+    // If we're reading old encoding, cache the vector of property names to 
+    // avoid computing the entire vector once per node-graph input.
+    TfTokenVector propertyNames;
+    if (UsdShadeUtils::ReadOldEncoding()) {
+        propertyNames = nodeGraph.GetPrim().GetAuthoredPropertyNames();
+    }
+
     bool foundOldStyleInterfaceInputs = false;
     std::vector<UsdShadeInput> inputs = nodeGraph.GetInputs();
     for (const auto &input : inputs) {
@@ -305,7 +318,7 @@ _ComputeNonTransitiveInputConsumersMap(
                                 
                 const std::vector<UsdShadeInput> &recipients = 
                     _GetInterfaceAttributeRecipientInputs(input.GetAttr(), 
-                        renderTarget);
+                        renderTarget, propertyNames);
                 if (!recipients.empty()) {
                     foundOldStyleInterfaceInputs = true;
                     consumers = recipients;
