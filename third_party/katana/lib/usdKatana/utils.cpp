@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 
+#include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -132,6 +133,30 @@ PxrUsdKatanaUtils::ConvertNumVertsToStartVerts(
             index += numVertsVec[i];
         }
     }
+}
+
+static void
+_ConvertArrayToVector(const VtVec3hArray &a, std::vector<float> *r)
+{
+    r->resize(a.size()*3);
+    size_t i=0;
+    TF_FOR_ALL(vec, a) {
+        (*r)[i++] = (*vec)[0];
+        (*r)[i++] = (*vec)[1];
+        (*r)[i++] = (*vec)[2];
+    }
+    TF_VERIFY(i == r->size());
+}
+
+static void
+_ConvertArrayToVector(const VtHalfArray &a, std::vector<float> *r)
+{
+    r->resize(a.size());
+    size_t i=0;
+    TF_FOR_ALL(val, a) {
+        (*r)[i++] = *val;
+    }
+    TF_VERIFY(i == r->size());
 }
 
 static void
@@ -662,8 +687,10 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
     // > Depending on the renderer's capabilities, all these nodes might
     // > not be supported.
 
+    // Usd half and half3 are converted to katana float and float3
+
     // TODO:
-    // color4, vector4, point4, matrix9
+    // half4, color4, vector4, point4, matrix9
 
     if (val.IsHolding<float>()) {
         *valueAttr =  FnKat::FloatAttribute(val.Get<float>());
@@ -787,6 +814,20 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         // Leave elementSize empty.
         return;
     }
+
+    if (val.IsHolding<VtArray<GfHalf> >()) {
+        if (_KTypeAndSizeFromUsdVec3(roleName, "float",
+                                     inputTypeAttr, elementSizeAttr)){
+            const VtArray<GfHalf> rawVal = val.Get<VtArray<GfHalf> >();
+            std::vector<float> vec;
+            _ConvertArrayToVector(rawVal, &vec);
+            FnKat::FloatBuilder builder(/* tupleSize = */ 1);
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
+
     if (val.IsHolding<VtFloatArray>()) {
         const VtFloatArray rawVal = val.Get<VtFloatArray>();
         FnKat::FloatBuilder builder(/* tupleSize = */ 1);
@@ -851,6 +892,18 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
             std::vector<double> vec;
             _ConvertArrayToVector(rawVal, &vec);
             FnKat::DoubleBuilder builder(/* tupleSize = */ 2);
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
+    if (val.IsHolding<VtArray<GfVec3h> >()) {
+        if (_KTypeAndSizeFromUsdVec3(roleName, "float",
+                                     inputTypeAttr, elementSizeAttr)){
+            const VtArray<GfVec3h> rawVal = val.Get<VtArray<GfVec3h> >();
+            std::vector<float> vec;
+            _ConvertArrayToVector(rawVal, &vec);
+            FnKat::FloatBuilder builder(/* tupleSize = */ 3);
             builder.set(vec);
             *valueAttr = builder.build();
         }
