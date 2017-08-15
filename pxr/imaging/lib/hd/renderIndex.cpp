@@ -1064,7 +1064,6 @@ HdRenderIndex::_CompactPrimIds()
 void
 HdRenderIndex::_AllocatePrimId(HdRprim *prim)
 {
-    HD_TRACE_FUNCTION();
     int32_t maxId = (1 << 24) - 1;
     if(_nextPrimId > maxId) {
         // We are wrapping around our max prim id.. time to reallocate
