@@ -107,7 +107,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(
     // We know what must be drawn and that the stream needs to be updated, 
     // so iterate over each prim, cull it and schedule it to be drawn.
 
-    HdChangeTracker& tracker = GetRenderIndex()->GetChangeTracker();
+    HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
     HdRprimCollection const &collection = GetRprimCollection();
 
