@@ -178,12 +178,11 @@ UsdGeomPrimvar
 UsdGeomImageable::CreatePrimvar(const TfToken& attrName,
                                 const SdfValueTypeName &typeName,
                                 const TfToken& interpolation,
-                                int elementSize,
-                                bool custom)
+                                int elementSize) const
 {
     const UsdPrim prim = GetPrim();
 
-    UsdGeomPrimvar primvar(prim, attrName, typeName, custom);
+    UsdGeomPrimvar primvar(prim, attrName, typeName);
 
     if (primvar){
         if (!interpolation.IsEmpty())
@@ -212,9 +211,9 @@ UsdGeomImageable::_MakePrimvars(std::vector<UsdProperty> const &props) const
     primvars.reserve(props.size());
     
     TF_FOR_ALL(prop, props) {
-        // All prefixed properties except the ones that contain extra namespaces 
-        // (eg. the "indices" attributes belonging to indexed primvars) will be 
-        // valid primvars.
+        // All prefixed properties except the ones that contain extra
+        // namespaces (eg. the ":indices" attributes belonging to indexed
+        // primvars) will be valid primvars.
         if (UsdGeomPrimvar primvar = UsdGeomPrimvar(prop->As<UsdAttribute>()))
             primvars.push_back(primvar);
     }

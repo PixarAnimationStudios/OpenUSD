@@ -404,7 +404,7 @@ GusdMeshWrapper::refine(
 
         UsdGeomPrimvar colorPrimvar = usdMesh.GetPrimvar(TfToken("Cd"));
         if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            colorPrimvar = usdMesh.GetPrimvar(TfToken("displayColor"));
+            colorPrimvar = usdMesh.GetDisplayColorPrimvar();
         }
 
         if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
@@ -414,7 +414,7 @@ GusdMeshWrapper::refine(
 
                 _validateAttrData(
                     "Cd",
-                    colorPrimvar.GetBaseName().GetText(),
+                    colorPrimvar.GetPrimvarName().GetText(),
                     usdMesh.GetPrim().GetPath().GetText(),
                     gtData,
                     colorPrimvar.GetInterpolation(),
@@ -429,7 +429,7 @@ GusdMeshWrapper::refine(
         }
         UsdGeomPrimvar alphaPrimvar = usdMesh.GetPrimvar(TfToken("Alpha"));
         if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            alphaPrimvar = usdMesh.GetPrimvar(TfToken("displayOpacity"));
+            alphaPrimvar = usdMesh.GetDisplayOpacityPrimvar();
         }
 
         if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValueOpinion()) {
@@ -439,7 +439,7 @@ GusdMeshWrapper::refine(
 
                 _validateAttrData(
                     "Alpha",
-                    alphaPrimvar.GetBaseName().GetText(),
+                    alphaPrimvar.GetPrimvarName().GetText(),
                     usdMesh.GetPrim().GetPath().GetText(),
                     gtData,
                     alphaPrimvar.GetInterpolation(),

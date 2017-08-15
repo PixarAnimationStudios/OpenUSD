@@ -516,7 +516,7 @@ bool MayaMeshWriter::_addDisplayPrimvars(
     // If we already have an authored value, don't try to write a new one.
     UsdAttribute colorAttr = primSchema.GetDisplayColorAttr();
     if (!colorAttr.HasAuthoredValueOpinion() && !RGBData.empty()) {
-        UsdGeomPrimvar displayColor = primSchema.GetDisplayColorPrimvar();
+        UsdGeomPrimvar displayColor = primSchema.CreateDisplayColorPrimvar();
         if (interpolation != displayColor.GetInterpolation()) {
             displayColor.SetInterpolation(interpolation);
         }
@@ -547,7 +547,7 @@ bool MayaMeshWriter::_addDisplayPrimvars(
         // value.  We only want to write values that are not the "default".
         bool hasDefaultAlpha = AlphaData.size() == 1 && GfIsClose(AlphaData[0], 1.0, 1e-9);
         if (!hasDefaultAlpha) {
-            UsdGeomPrimvar displayOpacity = primSchema.GetDisplayOpacityPrimvar();
+            UsdGeomPrimvar displayOpacity = primSchema.CreateDisplayOpacityPrimvar();
             if (interpolation != displayOpacity.GetInterpolation()) {
                 displayOpacity.SetInterpolation(interpolation);
             }

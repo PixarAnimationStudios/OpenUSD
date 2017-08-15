@@ -338,7 +338,6 @@ UsdGeomPrimvar PxrUsdMayaWriteUtil::GetOrCreatePrimvar(
         const std::string& primvarName,
         const TfToken& interpolation,
         const int elementSize,
-        const bool custom,
         const bool translateMayaDoubleToUsdSinglePrecision)
 {
     UsdGeomPrimvar primvar;
@@ -371,8 +370,7 @@ UsdGeomPrimvar PxrUsdMayaWriteUtil::GetOrCreatePrimvar(
         primvar = imageable.CreatePrimvar(primvarNameToken,
                                           typeName,
                                           interpolation,
-                                          elementSize,
-                                          custom);
+                                          elementSize);
     }
 
     return primvar;
@@ -811,7 +809,6 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
                                                         usdAttrName,
                                                         interpolation,
                                                         -1,
-                                                        true,
                                                         translateMayaDoubleToUsdSinglePrecision);
             if (primvar) {
                 usdAttr = primvar.GetAttr();

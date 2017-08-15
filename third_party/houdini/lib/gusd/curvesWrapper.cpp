@@ -413,12 +413,12 @@ GusdCurvesWrapper::refine(
 
         UsdGeomPrimvar colorPrimvar = usdCurves.GetPrimvar(TfToken("Cd"));
         if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            colorPrimvar = usdCurves.GetPrimvar(TfToken("displayColor"));
+            colorPrimvar = usdCurves.GetDisplayColorPrimvar();
         }
 
         if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
 
-            // cerr << "curve color primvar " << colorPrimvar.GetBaseName() << "\t" << colorPrimvar.GetTypeName() << "\t" << colorPrimvar.GetInterpolation() << endl;
+            // cerr << "curve color primvar " << colorPrimvar.GetPrimvarName() << "\t" << colorPrimvar.GetTypeName() << "\t" << colorPrimvar.GetInterpolation() << endl;
 
             GT_DataArrayHandle gtData = convertPrimvarData( colorPrimvar, m_time );
             if( gtData ) {
@@ -476,12 +476,12 @@ GusdCurvesWrapper::refine(
 
         UsdGeomPrimvar alphaPrimvar = usdCurves.GetPrimvar(TfToken("Alpha"));
         if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            alphaPrimvar = usdCurves.GetPrimvar(TfToken("displayOpacity"));
+            alphaPrimvar = usdCurves.GetDisplayOpacityPrimvar();
         }
 
         if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValueOpinion()) {
 
-            // cerr << "curve color primvar " << alphaPrimvar.GetBaseName() << "\t" << alphaPrimvar.GetTypeName() << "\t" << alphaPrimvar.GetInterpolation() << endl;
+            // cerr << "curve color primvar " << alphaPrimvar.GetPrimvarName() << "\t" << alphaPrimvar.GetTypeName() << "\t" << alphaPrimvar.GetInterpolation() << endl;
 
             GT_DataArrayHandle gtData = convertPrimvarData( alphaPrimvar, m_time );
             if( gtData ) {

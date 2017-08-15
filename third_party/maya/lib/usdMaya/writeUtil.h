@@ -87,9 +87,6 @@ struct PxrUsdMayaWriteUtil
     /// Given an \p attrPlug, try to create a primvar on \p imageable with
     /// the name \p primvarName. Note, it's value will not be set.
     ///
-    /// Attributes that are not part of the primSchema should have \p custom
-    /// set to true.
-    ///
     /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
     /// contain double data will result in primvars of the appropriate
     /// float-based type. Otherwise, their type will be double-based.
@@ -100,7 +97,6 @@ struct PxrUsdMayaWriteUtil
             const std::string& primvarName,
             const TfToken& interpolation = TfToken(),
             const int elementSize = -1,
-            const bool custom = false,
             const bool translateMayaDoubleToUsdSinglePrecision =
                 PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 

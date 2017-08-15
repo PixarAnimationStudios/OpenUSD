@@ -47,15 +47,18 @@ UsdGeomPrimvar::UsdGeomPrimvar(const UsdAttribute &attr)
     _SetIdTargetRelName();
 }
 
-
-
-// Assumes that name is prefixed with the primvars namespace
-inline static
-bool _ContainsExtraNamespaces(const TfToken &name)
+static
+bool
+_IsValidPrimvarName(std::string const& name)
 {
-    static const size_t prefixSize = _tokens->primvarsPrefix.GetString().size();
-    return (name.GetString().find(':', prefixSize) != std::string::npos);
+    // All properly namespaced attributes are legal primvars, *except*
+    // the "sidecar" attributes we create as part of the schema, like
+    // "primvars:foo:indices".  We do not need to worry about the idFrom
+    // suffix because it only appears on relationships.
+    return (TfStringStartsWith(name, _tokens->primvarsPrefix) &&
+            !TfStringEndsWith(name, _tokens->indicesSuffix));
 }
+
 
 /* static */
 bool 
@@ -64,8 +67,7 @@ UsdGeomPrimvar::IsPrimvar(const UsdAttribute &attr)
     if (!attr)
         return false;
     
-    TfToken const &name = attr.GetName();
-    return _IsNamespaced(name) && !_ContainsExtraNamespaces(name);
+    return _IsValidPrimvarName(attr.GetName());
 }
 
 /* static */
@@ -87,11 +89,13 @@ UsdGeomPrimvar::_MakeNamespaced(const TfToken& name, bool quiet)
         result = TfToken(_tokens->primvarsPrefix.GetString() + name.GetString());
     }
 
-    if (_ContainsExtraNamespaces(result)){
+    if (!_IsValidPrimvarName(result)){
         result = TfToken();
         if (!quiet){
+            // XXX if we add more reserved keywords we'll need to extract
+            // the offending keyword rather than assume it is "indices".
             TF_CODING_ERROR("%s is not a valid name for a Primvar, because"
-                            " it contains namespaces.",
+                            " it contains the reserved name \"indices\"",
                             name.GetText());
         }
     }
@@ -185,7 +189,7 @@ UsdGeomPrimvar::GetDeclarationInfo(TfToken *name, SdfValueTypeName *typeName,
 
     // We don't have any more efficient access pattern yet, but at least
     // we're still saving client some code
-    *name = GetBaseName();
+    *name = GetPrimvarName();
     *typeName = GetTypeName();
     *interpolation = GetInterpolation();
     *elementSize = GetElementSize();
@@ -346,16 +350,15 @@ UsdGeomPrimvar::ComputeFlattened(VtValue *value, UsdTimeCode time) const
 }
 
 UsdGeomPrimvar::UsdGeomPrimvar(const UsdPrim& prim, 
-                               const TfToken& baseName,
-                               const SdfValueTypeName &typeName,
-                               bool custom)
+                               const TfToken& primvarName,
+                               const SdfValueTypeName &typeName)
 {
     TF_VERIFY(prim);
 
-    TfToken attrName = _MakeNamespaced(baseName);
+    TfToken attrName = _MakeNamespaced(primvarName);
 
     if (!attrName.IsEmpty()){
-        _attr = prim.CreateAttribute(attrName, typeName, custom);
+        _attr = prim.CreateAttribute(attrName, typeName, /* custom = */ false);
     }
     // If a problem occurred, an error should already have been issued,
     // and _attr will be invalid, which is what we want
@@ -548,6 +551,26 @@ UsdGeomPrimvar::ValueMightBeTimeVarying() const
     }
 
     return _attr.ValueMightBeTimeVarying();
+}
+
+TfToken 
+UsdGeomPrimvar::GetPrimvarName() const 
+{ 
+    std::string const & fullName = _attr.GetName().GetString();
+    static const size_t primvarsPrefixLen = _tokens->primvarsPrefix.GetString().size();
+    
+    if (TfStringStartsWith(fullName, _tokens->primvarsPrefix))
+        return TfToken(fullName.substr(primvarsPrefixLen));
+    else
+        return TfToken(); 
+}
+
+bool
+UsdGeomPrimvar::NameContainsNamespaces() const 
+{ 
+    static const size_t primvarsPrefixLen = _tokens->primvarsPrefix.GetString().size();
+    return (_attr.GetName().GetString().find(':', primvarsPrefixLen)
+            != std::string::npos);
 }
 
 

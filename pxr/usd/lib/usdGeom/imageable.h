@@ -275,11 +275,11 @@ public:
     /// \p attrName, due to the possible need to apply property namespacing
     /// for primvars.  See \ref Usd_Creating_and_Accessing_Primvars
     /// for more information.  Creation may fail and return an invalid
-    /// Primvar if \p attrName contains any other namespaces than the
-    /// canonical primvars namespace, as described in the above reference.
+    /// Primvar if \p attrName contains a reserved keyword, such as the 
+    /// "indices" suffix we use for indexed primvars.
     ///
-    /// The behavior with respect to the provided \p typeName,
-    /// and \p custom is the same as for UsdAttributes::Create(), and
+    /// The behavior with respect to the provided \p typeName
+    /// is the same as for UsdAttributes::Create(), and
     /// \p interpolation and \p elementSize are as described in
     /// UsdGeomPrimvar::GetInterpolation() and UsdGeomPrimvar::GetElementSize().
     ///
@@ -298,8 +298,7 @@ public:
     UsdGeomPrimvar CreatePrimvar(const TfToken& attrName,
                                  const SdfValueTypeName &typeName,
                                  const TfToken& interpolation = TfToken(),
-                                 int elementSize = -1,
-                                 bool custom = false);
+                                 int elementSize = -1) const;
 
     /// Return the Primvar attribute named by \p name, which will
     /// be valid if a Primvar attribute definition already exists.

@@ -992,7 +992,7 @@ GusdPrimWrapper::loadPrimvars(
             } else {
                 // There is no authored "Cd" primvar.
                 // Try to find "displayColor" instead.
-                colorPrimvar = prim.GetPrimvar(TfToken("displayColor"));
+                colorPrimvar = prim.GetPrimvar(UsdGeomTokens->primvarsDisplayColor);
                 if (colorPrimvar &&
                     colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
                     authoredPrimvars.push_back(colorPrimvar);
@@ -1007,14 +1007,15 @@ GusdPrimWrapper::loadPrimvars(
 
     for( const UsdGeomPrimvar &primvar : authoredPrimvars )
     {
-        DBG(cerr << "loadPrimvar " << primvar.GetBaseName() << "\t" << primvar.GetTypeName() << "\t" << primvar.GetInterpolation() << endl);
+        DBG(cerr << "loadPrimvar " << primvar.GetPrimvarName() << "\t" << primvar.GetTypeName() << "\t" << primvar.GetInterpolation() << endl);
 
-        UT_String name(primvar.GetBaseName());
+        UT_String name(primvar.GetPrimvarName());
 
         // One special case we always handle here is to change
         // the name of the USD "displayColor" primvar to "Cd",
         // as long as there is not already a "Cd" primvar.
-        if (!hasCdPrimvar && name == "displayColor") {
+        if (!hasCdPrimvar && 
+            primvar.GetName() == UsdGeomTokens->primvarsDisplayColor) {
             name = Cd;
         }
 
@@ -1030,7 +1031,7 @@ GusdPrimWrapper::loadPrimvars(
         {
             TF_WARN( "Failed to convert primvar %s:%s %s.", 
                         primPath.c_str(),
-                        primvar.GetBaseName().GetText(),
+                        primvar.GetPrimvarName().GetText(),
                         primvar.GetTypeName().GetAsToken().GetText() );
             continue;
         }
@@ -1042,7 +1043,7 @@ GusdPrimWrapper::loadPrimvars(
                 TF_WARN( "Not enough values found for primvar: %s:%s. "
                          "%zd values given for %d points.",
                          primPath.c_str(),
-                         primvar.GetBaseName().GetText(),
+                         primvar.GetPrimvarName().GetText(),
                          gtData->entries(), minPoint );
             }
             else {
@@ -1060,7 +1061,7 @@ GusdPrimWrapper::loadPrimvars(
                 TF_WARN( "Not enough values found for primvar: %s:%s. "
                          "%zd values given for %d verticies.", 
                          primPath.c_str(),
-                         primvar.GetBaseName().GetText(), 
+                         primvar.GetPrimvarName().GetText(), 
                          gtData->entries(), minVertex );
             }
             else if( vertex ) {           
@@ -1073,7 +1074,7 @@ GusdPrimWrapper::loadPrimvars(
                 TF_WARN( "Not enough values found for primvar: %s:%s. "
                          "%zd values given for %d faces.", 
                          primPath.c_str(),
-                         primvar.GetBaseName().GetText(),
+                         primvar.GetPrimvarName().GetText(),
                          gtData->entries(), minUniform );
             }
             else if( primitive ) {

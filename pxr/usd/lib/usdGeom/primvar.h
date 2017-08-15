@@ -81,12 +81,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// UsdGeomPrimvar using UsdGeomImageable::CreatePrimvar(), and then copy the
 /// existing attribute onto the new UsdGeomPrimvar.
 ///
-/// <b>Primvar names cannot contain other namespaces.</b> This is because
-/// when Primvars are consumed by a renderer, they are identified by their
-/// GetBaseName().  If arbitrary namespaces were allowed in Primvar names,
-/// it would be possible to create two otherwise legitimate attributes that
-/// would alias to the same property for renderer consumption.  This is
-/// enforced in UsdGeomImageable::CreatePrimvar().
+/// Primvar names can contain arbitrary sub-namespaces. The behavior of
+/// UsdGeomImageable::GetPrimvar(TfToken const &name) is to prepend "primvars:"
+/// onto 'name' if it is not already a prefix, and return the result, which
+/// means we do not have any ambiguity between the primvars
+/// "primvars:nsA:foo" and "primvars:nsB:foo".  <b>There are reserved keywords
+/// that may not be used as the base names of primvars,</b> and attempting to
+/// create Primvars of these names will result in a coding error.  The
+/// reserved keywords are tokens the Primvar uses internally to encode various
+/// features, such as the "indices" keyword used by
+/// \ref UsdGeomPrimvar_Indexed_primvars "Indexed Primvars".
 ///
 /// \anchor UsdGeomPrimvar_Using_Primvar
 /// If a client wishes to access an already-extant attribute as a Primvar,
@@ -335,8 +339,8 @@ class UsdGeomPrimvar
 
     /// Convenience function for fetching all information required to 
     /// properly declare this Primvar.  The \p name returned is the
-    /// "client name", stripped of all namespaces, i.e. equivalent to
-    /// GetBaseName()
+    /// "client name", stripped of the "primvars" namespace, i.e. equivalent to
+    /// GetPrimvarName()
     ///
     /// May also be more efficient than querying key individually.
     USDGEOM_API
@@ -373,6 +377,24 @@ class UsdGeomPrimvar
 
     /// \sa UsdAttribute::GetName()
     TfToken const &GetName() const { return _attr.GetName(); }
+
+    /// Returns the primvar's name, devoid of the "primvars:" namespace.
+    /// This is the name by which clients should refer to the primvar, if
+    /// not by its full attribute name - i.e. they should **not**, in general,
+    /// use GetBaseName().  In the error condition in which this Primvar
+    /// object is not backed by a properly namespaced UsdAttribute, return
+    /// an empty TfToken.
+    USDGEOM_API
+    TfToken GetPrimvarName() const;
+
+    /// Does this primvar contain any namespaces other than the "primvars:"
+    /// namespace?
+    ///
+    /// Some clients may only wish to consume primvars that have no extra
+    /// namespaces in their names, for ease of translating to other systems
+    /// that do not allow namespaces.
+    USDGEOM_API
+    bool NameContainsNamespaces() const;
 
     /// \sa UsdAttribute::GetBaseName()
     TfToken GetBaseName() const { return _attr.GetBaseName(); }
@@ -590,11 +612,11 @@ private:
     /// Does not validate name as a legal property identifier
     static bool _IsNamespaced(const TfToken& name);
 
-    /// Return a Primvar name whose baseName is the baseName of 
-    /// \p name, and is prepended with the proper primvars namespace.
+    /// Return \p name prepended with the proper primvars namespace, if
+    /// it is not already prefixed.
     ///
     /// Does not validate name as a legal property identifier, but will
-    /// verify that \p name contains no other namespaces, and will return
+    /// verify that \p name contains no reserved keywords, and will return
     /// an empty TfToken if it does. If \p quiet is true, the verification
     /// will be silent
     static TfToken _MakeNamespaced(const TfToken& name, bool quiet=false);
@@ -610,8 +632,8 @@ private:
     /// \p attrName, due to the possible need to apply property namespacing
     /// for Primvar.
     ///
-    /// The behavior with respect to the provided \p typeName,
-    /// and \p custom is the same as for UsdAttributes::Create().
+    /// The behavior with respect to the provided \p typeName
+    /// is the same as for UsdAttributes::Create().
     ///
     /// \return an invalid UsdGeomPrimvar if we failed to create a valid
     /// attribute, a valid UsdGeomPrimvar otherwise.  It is not an
@@ -621,7 +643,7 @@ private:
     ///
     /// \sa UsdPrim::CreateAttribute()
     UsdGeomPrimvar(const UsdPrim& prim, const TfToken& attrName,
-                   const SdfValueTypeName &typeName, bool custom);
+                   const SdfValueTypeName &typeName);
 
     UsdAttribute _attr;
 

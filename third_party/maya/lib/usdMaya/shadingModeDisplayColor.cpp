@@ -120,13 +120,13 @@ private:
                 if (!primSchema.GetDisplayColorAttr()
                     .HasAuthoredValueOpinion()) {
                     // not animatable
-                    primSchema.GetDisplayColorPrimvar().Set(displayColorAry);
+                    primSchema.CreateDisplayColorPrimvar().Set(displayColorAry);
                 }
                 if (transparencyAvg > 0 &&
                     !primSchema.GetDisplayOpacityAttr()
                         .HasAuthoredValueOpinion()) {
                     // not animatable
-                    primSchema.GetDisplayOpacityPrimvar().Set(displayOpacityAry);
+                    primSchema.CreateDisplayOpacityPrimvar().Set(displayOpacityAry);
                 }
             } else {
                 MGlobal::displayError("No prim bound to:" + MString(boundPrimPath.GetText()));

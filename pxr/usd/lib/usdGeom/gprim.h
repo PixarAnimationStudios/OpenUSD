@@ -252,15 +252,34 @@ public:
 
     /// Convenience function to get the displayColor Attribute as a Primvar.
     ///
-    /// \sa GetDisplayColorAttr()
+    /// \sa GetDisplayColorAttr(), CreateDisplayColorPrimvar()
     USDGEOM_API
     UsdGeomPrimvar GetDisplayColorPrimvar() const;
 
+    /// Convenience function to create the displayColor primvar, optionally
+    /// specifying interpolation and eementSize
+    ///
+    /// \sa CreateDisplayColorAttr(), GetDisplayColorPrimvar()
+    USDGEOM_API
+    UsdGeomPrimvar CreateDisplayColorPrimvar(
+                                const TfToken& interpolation = TfToken(),
+                                int elementSize = -1) const;
+
     /// Convenience function to get the displayOpacity Attribute as a Primvar.
     ///
-    /// \sa GetDisplayOpacityAttr()
+    /// \sa GetDisplayOpacityAttr(), CreateDisplayOpacityPrimvar()
     USDGEOM_API
     UsdGeomPrimvar GetDisplayOpacityPrimvar() const;
+
+    /// Convenience function to create the displayOpacity primvar, optionally
+    /// specifying interpolation and eementSize
+    ///
+    /// \sa CreateDisplayOpacityAttr(), GetDisplayOpacityPrimvar()
+    USDGEOM_API
+    UsdGeomPrimvar CreateDisplayOpacityPrimvar(
+                                const TfToken& interpolation = TfToken(),
+                                int elementSize = -1) const;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

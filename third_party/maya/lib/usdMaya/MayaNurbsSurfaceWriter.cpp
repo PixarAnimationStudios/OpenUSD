@@ -135,7 +135,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                                                  &interpolation,
                                                  &assignmentIndices)) {
             if (RGBData.size()>0) {
-                UsdGeomPrimvar dispColor = primSchema.GetDisplayColorPrimvar();
+                UsdGeomPrimvar dispColor = primSchema.CreateDisplayColorPrimvar();
                 if (interpolation != dispColor.GetInterpolation()) {
                     dispColor.SetInterpolation(interpolation);
                 }
@@ -146,7 +146,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
             }
             if (AlphaData.size() > 0 && 
                 GfIsClose(AlphaData[0], 1.0, 1e-9)==false) {
-                UsdGeomPrimvar dispOpacity = primSchema.GetDisplayOpacityPrimvar();
+                UsdGeomPrimvar dispOpacity = primSchema.CreateDisplayOpacityPrimvar();
                 if (interpolation != dispOpacity.GetInterpolation()) {
                     dispOpacity.SetInterpolation(interpolation);
                 }

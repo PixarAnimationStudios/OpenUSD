@@ -221,7 +221,6 @@ _WritePrefixedAttrs(
                     usdAttrName,
                     interpolation,
                     -1,
-                    true,
                     false);
             if (primvar) {
                 usdAttr = primvar.GetAttr();

@@ -254,7 +254,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         primvars = gprim.GetPrimvars()
         self.assertEqual(len(primvars), 9)
 
-        primvarNames = {primvar.GetBaseName() for primvar in primvars}
+        primvarNames = {primvar.GetPrimvarName() for primvar in primvars}
         self.assertEqual(primvarNames, expectedPrimvarNames)
 
         for primvarName in expectedPrimvars:
