@@ -256,7 +256,7 @@ public:
     /// Sets display guides rendering
     USDIMAGING_API
     void SetDisplayGuides(bool displayGuides);
-
+    bool GetDisplayGuides() const { return _displayGuides; }
 
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
