@@ -1263,8 +1263,12 @@ CrateFile::CanRead(string const &fileName) {
     if (!in)
         return false;
 
+    // Mark the entire file as random access to avoid prefetch.
+    int64_t fileLength = ArchGetFileLength(in.get());
+    ArchFileAdvise(in.get(), 0, fileLength, ArchFileAdviceRandomAccess);
+
     TfErrorMark m;
-    _ReadBootStrap(_PreadStream(in.get()), ArchGetFileLength(in.get()));
+    _ReadBootStrap(_PreadStream(in.get()), fileLength);
 
     // Clear any issued errors again to avoid propagation, and return true if
     // there were no errors issued.
@@ -1353,11 +1357,16 @@ CrateFile::CrateFile(
     _DoAllTypeRegistrations();
 
     if (_mapStart) {
+        // Mark the whole file as random access to start to avoid large NFS
+        // prefetch.  We explicitly prefetch the structural sections later.
+        ArchMemAdvise(_mapStart.get(), fileSize, ArchMemAdviceRandomAccess);
         auto reader = _MakeReader(_MmapStream(_mapStart.get()));
         TfErrorMark m;
         _ReadStructuralSections(reader, fileSize);
         if (!m.IsClean())
             _fileName.clear();
+        // Restore default prefetch behavior.
+        ArchMemAdvise(_mapStart.get(), fileSize, ArchMemAdviceNormal);
     } else {
         _fileName.clear();
     }
@@ -1371,11 +1380,16 @@ CrateFile::CrateFile(
 {
     _DoAllTypeRegistrations();
 
+    // Mark the whole file as random access to start to avoid large NFS
+    // prefetch.  We explicitly prefetch the structural sections later.
+    ArchFileAdvise(_inputFile.get(), 0, fileSize, ArchFileAdviceRandomAccess);
     auto reader = _MakeReader(_PreadStream(_inputFile.get()));
     TfErrorMark m;
     _ReadStructuralSections(reader, fileSize);
     if (!m.IsClean())
         _fileName.clear();
+    // Restore default prefetch behavior.
+    ArchFileAdvise(_inputFile.get(), 0, fileSize, ArchFileAdviceNormal);
 }
 
 CrateFile::~CrateFile()
