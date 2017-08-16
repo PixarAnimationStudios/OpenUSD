@@ -302,16 +302,22 @@ using ArchConstFileMapping = std::unique_ptr<char const, Arch_Unmapper>;
 using ArchMutableFileMapping = std::unique_ptr<char, Arch_Unmapper>;
 
 /// Privately map the passed \p file into memory and return a unique_ptr to the
-/// read-only mapped contents.  The contents may not be modified.
+/// read-only mapped contents.  The contents may not be modified.  If mapping
+/// fails, return a null unique_ptr and if errMsg is not null fill it with
+/// information about the failure.
 ARCH_API
-ArchConstFileMapping ArchMapFileReadOnly(FILE *file);
+ArchConstFileMapping
+ArchMapFileReadOnly(FILE *file, std::string *errMsg=nullptr);
 
 /// Privately map the passed \p file into memory and return a unique_ptr to the
 /// copy-on-write mapped contents.  If modified, the affected pages are
 /// dissociated from the underlying file and become backed by the system's swap
 /// or page-file storage.  Edits are not carried through to the underlying file.
+/// If mapping fails, return a null unique_ptr and if errMsg is not null fill it
+/// with information about the failure.
 ARCH_API
-ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
+ArchMutableFileMapping
+ArchMapFileReadWrite(FILE *file, std::string *errMsg=nullptr);
 
 enum ArchMemAdvice {
     ArchMemAdviceNormal,       // Treat range with default behavior.
