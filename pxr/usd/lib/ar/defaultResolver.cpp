@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolver.h"
+#include "pxr/usd/ar/defineResolver.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolverContext.h"
 
@@ -39,11 +40,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+AR_DEFINE_RESOLVER(ArDefaultResolver, ArResolver);
+
 static bool
 _IsFileRelative(const std::string& path) {
     return path.find("./") == 0 || path.find("../") == 0;
 }
-
 
 struct ArDefaultResolver::_Cache
 {

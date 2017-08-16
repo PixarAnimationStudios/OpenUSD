@@ -24,14 +24,17 @@
 #
 
 import os
-# Force Ar to fall back to the default resolver implementation.
-os.environ['PXR_AR_DISABLE_PLUGIN_RESOLVER'] = '1'
 from pxr import Ar
 
 import unittest
 import shutil
 
 class TestArDefaultResolver(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Force Ar to use the default resolver implementation.
+        Ar.SetPreferredResolver('ArDefaultResolver')
+
     def test_AnchorRelativePath(self):
         r = Ar.GetResolver()
 
