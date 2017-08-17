@@ -91,9 +91,10 @@ namespace
             return 0;
         }
 
+        double upperTimeSample = 0.0;
+
         bool positionsHasSamples = false;
         double positionsLowerTimeSample = 0.0;
-        double upperTimeSample = 0.0;
         if (!positionsAttr.GetBracketingTimeSamples(
                 baseTime.GetValue(), &positionsLowerTimeSample,
                 &upperTimeSample, &positionsHasSamples)) {
@@ -103,33 +104,70 @@ namespace
         const auto velocitiesAttr = instancer.GetVelocitiesAttr();
         const auto scalesAttr = instancer.GetScalesAttr();
         const auto orientationsAttr = instancer.GetOrientationsAttr();
+        const auto angularVelocitiesAttr = instancer.GetAngularVelocitiesAttr();
 
         VtVec3fArray positions;
         VtVec3fArray velocities;
         VtVec3fArray scales;
         VtQuathArray orientations;
+        VtVec3fArray angularVelocities;
 
         // Use velocity if it has almost the same lower time sample as positions
         // and the array lengths are equal to the number of instances.
-        bool velocityExists = false;
-        bool velocitiesHasSamples = false;
-        double velocitiesLowerTimeSample = 0.0;
-        if (positionsHasSamples and velocitiesAttr.HasValue() and
-            velocitiesAttr.GetBracketingTimeSamples(
-                baseTime.GetValue(), &velocitiesLowerTimeSample,
-                &upperTimeSample, &velocitiesHasSamples) and
-            velocitiesHasSamples and
-            GfIsClose(velocitiesLowerTimeSample, positionsLowerTimeSample,
-                      epsilonTest)) {
-            // Get positions, velocities, scales, and orientations at the lower
-            // time sample.
-            if (positionsAttr.Get(&positions, positionsLowerTimeSample) and
-                velocitiesAttr.Get(&velocities, positionsLowerTimeSample) and
-                positions.size() == numInstances and
-                velocities.size() == numInstances) {
-                scalesAttr.Get(&scales, positionsLowerTimeSample);
-                orientationsAttr.Get(&orientations, positionsLowerTimeSample);
-                velocityExists = true;
+        //
+        bool useVelocity = false;
+
+        if (positionsHasSamples and
+            positionsAttr.Get(&positions, positionsLowerTimeSample)) {
+            bool velocitiesHasSamples = false;
+            double velocitiesLowerTimeSample = 0.0;
+            if (velocitiesAttr.HasValue() and
+                velocitiesAttr.GetBracketingTimeSamples(
+                    baseTime.GetValue(), &velocitiesLowerTimeSample,
+                    &upperTimeSample, &velocitiesHasSamples) and
+                velocitiesHasSamples and
+                GfIsClose(velocitiesLowerTimeSample, positionsLowerTimeSample,
+                          epsilonTest)) {
+                if (velocitiesAttr.Get(&velocities,
+                                       positionsLowerTimeSample) and
+                    positions.size() == numInstances and
+                    velocities.size() == numInstances) {
+                    useVelocity = true;
+                }
+            }
+        }
+
+        // Use angular velocity if it has almost the same lower time sample as
+        // orientations and the array lengths are equal to the number of
+        // instances.
+        //
+        bool useAngularVelocity = false;
+
+        bool orientationsHasSamples = false;
+        double orientationsLowerTimeSample = 0.0;
+        if (orientationsAttr.GetBracketingTimeSamples(
+                baseTime.GetValue(), &orientationsLowerTimeSample,
+                &upperTimeSample, &orientationsHasSamples)) {
+
+            if (orientationsHasSamples and
+                orientationsAttr.Get(&orientations,
+                                     orientationsLowerTimeSample)) {
+                bool angularVelocitiesHasSamples = false;
+                double angularVelocitiesLowerTimeSample = 0.0;
+                if (angularVelocitiesAttr.HasValue() and
+                    angularVelocitiesAttr.GetBracketingTimeSamples(
+                        baseTime.GetValue(), &angularVelocitiesLowerTimeSample,
+                        &upperTimeSample, &angularVelocitiesHasSamples) and
+                    angularVelocitiesHasSamples and
+                    GfIsClose(angularVelocitiesLowerTimeSample,
+                              orientationsLowerTimeSample, epsilonTest)) {
+                    if (angularVelocitiesAttr.Get(
+                            &angularVelocities, orientationsLowerTimeSample) and
+                        orientations.size() == numInstances and
+                        angularVelocities.size() == numInstances) {
+                        useAngularVelocity = true;
+                    }
+                }
             }
         }
 
@@ -139,24 +177,39 @@ namespace
             std::vector<GfMatrix4d> &curr = xforms[a];
             curr.reserve(numInstances);
 
-            // Get sample-dependent values. Stop if topology differs, but permit
-            // unspecified scales and orientations.
-            float currentMultiplier = 1.0f;
-            if (velocityExists) {
-                currentMultiplier =
+            float velocityMultiplier = 1.0f;
+            if (useVelocity) {
+                velocityMultiplier =
                     static_cast<float>(
                         (sampleTimes[a].GetValue() - positionsLowerTimeSample) /
                         timeCodesPerSecond) *
                     velocityScale;
             } else {
-                // Get positions, scales, and orientations at the current time
-                // sample.
                 positionsAttr.Get(&positions, sampleTimes[a]);
-                if (positions.size() != numInstances) {
-                    break;
-                }
-                scalesAttr.Get(&scales, sampleTimes[a]);
+            }
+
+            float angularVelocityMultiplier = 1.0f;
+            if (useAngularVelocity) {
+                angularVelocityMultiplier =
+                    static_cast<float>((sampleTimes[a].GetValue() -
+                                        orientationsLowerTimeSample) /
+                                       timeCodesPerSecond) *
+                    velocityScale;
+            } else {
                 orientationsAttr.Get(&orientations, sampleTimes[a]);
+            }
+
+            if (useVelocity or useAngularVelocity) {
+                scalesAttr.Get(&scales, baseTime);
+            } else {
+                scalesAttr.Get(&scales, sampleTimes[a]);
+            }
+
+            // Abort if toplogy differs across samples. Note that we permit
+            // unspecified scales and orientations.
+            //
+            if (positions.size() != numInstances) {
+                break;
             }
             if (scales.size() > 0 and scales.size() != numInstances) {
                 break;
@@ -168,9 +221,9 @@ namespace
 
             for (auto i = decltype(numInstances){0}; i < numInstances; ++i) {
                 GfTransform transform;
-                if (velocityExists) {
-                    transform.SetTranslation(positions[i] +
-                                             velocities[i] * currentMultiplier);
+                if (useVelocity) {
+                    transform.SetTranslation(
+                        positions[i] + velocities[i] * velocityMultiplier);
                 } else {
                     transform.SetTranslation(positions[i]);
                 }
@@ -178,7 +231,15 @@ namespace
                     transform.SetScale(scales[i]);
                 }
                 if (orientations.size() > 0) {
-                    transform.SetRotation(GfRotation(orientations[i]));
+                    if (useAngularVelocity) {
+                        transform.SetRotation(
+                            GfRotation(orientations[i]) *
+                            GfRotation(angularVelocities[i],
+                                       (angularVelocityMultiplier *
+                                        angularVelocities[i].GetLength())));
+                    } else {
+                        transform.SetRotation(GfRotation(orientations[i]));
+                    }
                 }
                 curr.push_back(transform.GetMatrix());
             }
