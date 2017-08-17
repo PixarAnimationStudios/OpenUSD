@@ -104,12 +104,6 @@ _ExtractDependenciesForBinary(
         dfs.pop();
 
         if (curr != layer->GetPseudoRoot()) {
-            // references
-            const SdfReferencesProxy refList = curr->GetReferenceList();
-            for (const SdfReference& ref :
-                refList.GetAddedOrExplicitItems()) {
-                _AppendAssetPathIfNotEmpty(ref, references);
-            }
 
             // payloads
             if (curr->HasPayload()) {
@@ -117,7 +111,7 @@ _ExtractDependenciesForBinary(
                 _AppendAssetPathIfNotEmpty(payload, payloads);
             }
 
-            // attributes
+            // properties
             //
             // XXX:2016-04-14 Note that we use the field access API
             // here rather than calling GetAttributes, as creating specs for
@@ -126,12 +120,25 @@ _ExtractDependenciesForBinary(
             //
             const VtValue propertyNames =
                 curr->GetField(SdfChildrenKeys->PropertyChildren);
+
             if (propertyNames.IsHolding<vector<TfToken>>()) {
                 for (const auto& name :
                         propertyNames.UncheckedGet<vector<TfToken>>()) {
+                    // For every property
+                    // Build an SdfPath to the property
                     const SdfPath path = curr->GetPath().AppendProperty(name);
-                    const VtValue vtTypeName = layer->GetField(
-                        path, SdfFieldKeys->TypeName);
+
+                    // Check property metadata
+                    for (const TfToken& infoKey : layer->ListFields(path)) {
+                        if (infoKey != SdfFieldKeys->Default &&
+                            infoKey != SdfFieldKeys->TimeSamples)
+                            _AppendAssetValue(layer->GetField(path, infoKey),
+                                references);
+                    }
+
+                    // Check property existence
+                    const VtValue vtTypeName =
+                        layer->GetField(path, SdfFieldKeys->TypeName);
                     if (!vtTypeName.IsHolding<TfToken>())
                         continue;
 
@@ -139,15 +146,33 @@ _ExtractDependenciesForBinary(
                         vtTypeName.UncheckedGet<TfToken>();
                     if (typeName == SdfValueTypeNames->Asset ||
                         typeName == SdfValueTypeNames->AssetArray) {
-                        _AppendAssetValue(layer->GetField(
-                            path, SdfFieldKeys->Default), references);
+
+                        // Check default value
+                        _AppendAssetValue(layer->GetField(path,
+                            SdfFieldKeys->Default), references);
+
+                        // Check timeSample values
+                        for (double t : layer->ListTimeSamplesForPath(path)) {
+                            VtValue timeSampleVal;
+                            if (layer->QueryTimeSample(path,
+                                t, &timeSampleVal)) {
+                                _AppendAssetValue(timeSampleVal, references);
+                            }
+                        }
                     }
                 }
             }
 
-            // meta data
+            // metadata
             for (const TfToken& infoKey : curr->GetMetaDataInfoKeys()) {
                 _AppendAssetValue(curr->GetInfo(infoKey), references);
+            }
+
+            // references
+            const SdfReferencesProxy refList = curr->GetReferenceList();
+            for (const SdfReference& ref :
+                refList.GetAddedOrExplicitItems()) {
+                _AppendAssetPathIfNotEmpty(ref, references);
             }
         }
 
@@ -165,6 +190,15 @@ _ExtractDependenciesForBinary(
             dfs.push(child);
         }
     }
+
+    // Remove duplicates
+    std::sort(references->begin(), references->end());
+    references->erase(std::unique(references->begin(), references->end()),
+        references->end());
+    std::sort(payloads->begin(), payloads->end());
+    payloads->erase(std::unique(payloads->begin(), payloads->end()),
+        payloads->end());
+
 }
 
 // XXX:2014-10-23 It would be great if USD provided this for us.
