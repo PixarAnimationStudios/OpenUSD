@@ -170,7 +170,7 @@ def main():
                 exitCode = 1
         else:
             try:
-                print usdData.ExportToString()
+                sys.stdout.write(usdData.ExportToString())
             except Exception as e:
                 _Err("Error writing '%s' to stdout; %s" % (inputFile, e))
                 exitCode = 1
