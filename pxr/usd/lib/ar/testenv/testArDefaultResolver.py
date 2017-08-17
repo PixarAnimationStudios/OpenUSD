@@ -35,6 +35,13 @@ class TestArDefaultResolver(unittest.TestCase):
         # Force Ar to use the default resolver implementation.
         Ar.SetPreferredResolver('ArDefaultResolver')
 
+        # Set up default search path for test_ResolveSearchPaths below. This
+        # must be done before any calls to Ar.GetResolver()
+        Ar.DefaultResolver.SetDefaultSearchPath([
+            os.path.abspath('test1'),
+            os.path.abspath('test1/test2')
+        ])
+
     def test_AnchorRelativePath(self):
         r = Ar.GetResolver()
 
@@ -69,6 +76,27 @@ class TestArDefaultResolver(unittest.TestCase):
         # the path which, on Windows, means the forward slashes
         # returned by the resolver become backslashes.
         self.assertEqual(testFilePath, os.path.abspath(resolvedPath))
+
+    def test_ResolveSearchPaths(self):
+        testDir = os.path.abspath('test1/test2')
+        if os.path.isdir(testDir):
+            shutil.rmtree(testDir)
+        os.makedirs(testDir)
+
+        testFileName = 'test_ResolveWithContext.txt'
+        testFilePath = os.path.join(testDir, testFileName) 
+        with open(testFilePath, 'w') as ofp:
+            print >>ofp, 'Garbage'
+        
+        resolver = Ar.GetResolver()
+
+        self.assertEqual(
+            os.path.abspath('test1/test2/test_ResolveWithContext.txt'),
+            resolver.Resolve('test2/test_ResolveWithContext.txt'))
+
+        self.assertEqual(
+            os.path.abspath('test1/test2/test_ResolveWithContext.txt'),
+            resolver.Resolve('test_ResolveWithContext.txt'))
 
 if __name__ == '__main__':
     unittest.main()

@@ -40,6 +40,7 @@ pxr_library(ar
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapDefaultResolver.cpp
         wrapResolver.cpp
         wrapResolverContext.cpp
         wrapResolverContextBinder.cpp

@@ -33,6 +33,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/value.h"
 
@@ -47,6 +48,8 @@ _IsFileRelative(const std::string& path) {
     return path.find("./") == 0 || path.find("../") == 0;
 }
 
+static TfStaticData<std::vector<std::string>> _SearchPath;
+
 struct ArDefaultResolver::_Cache
 {
     using _PathToResolvedPathMap = 
@@ -56,18 +59,43 @@ struct ArDefaultResolver::_Cache
 
 ArDefaultResolver::ArDefaultResolver()
 {
-    _searchPath.push_back(ArchGetCwd());
+    std::vector<std::string> searchPath = *_SearchPath;
 
     const std::string envPath = TfGetenv("PXR_AR_DEFAULT_SEARCH_PATH");
     if (!envPath.empty()) {
-        for (const auto& p : TfStringTokenize(envPath, ARCH_PATH_LIST_SEP)) {
-            _searchPath.push_back(TfAbsPath(p));
+        const std::vector<std::string> envSearchPath = 
+            TfStringTokenize(envPath, ARCH_PATH_LIST_SEP);
+        searchPath.insert(
+            searchPath.end(), envSearchPath.begin(), envSearchPath.end());
+    }
+
+    _searchPath.reserve(searchPath.size());
+    for (const std::string& p : searchPath) {
+        if (p.empty()) {
+            continue;
         }
+
+        const std::string absPath = TfAbsPath(p);
+        if (absPath.empty()) {
+            TF_WARN(
+                "Could not determine absolute path for search path prefix "
+                "'%s'", p.c_str());
+            continue;
+        }
+
+        _searchPath.push_back(absPath);
     }
 }
 
 ArDefaultResolver::~ArDefaultResolver()
 {
+}
+
+void
+ArDefaultResolver::SetDefaultSearchPath(
+    const std::vector<std::string>& searchPath)
+{
+    *_SearchPath = searchPath;
 }
 
 void

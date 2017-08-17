@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,17 +22,25 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include <boost/python/class.hpp>
+
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/ar/defaultResolver.h"
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+void
+wrapDefaultResolver()
 {
-    TF_WRAP(Resolver);
-    TF_WRAP(ResolverContext);
-    TF_WRAP(ResolverContextBinder);
-    TF_WRAP(ResolverScopedCache);
+    using This = ArDefaultResolver;
 
-    TF_WRAP(DefaultResolver);
+    class_<This, bases<ArResolver>, boost::noncopyable>
+        ("DefaultResolver", no_init)
+
+        .def("SetDefaultSearchPath", &This::SetDefaultSearchPath,
+             args("searchPath"))
+        .staticmethod("SetDefaultSearchPath")
+        ;
 }
