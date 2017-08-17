@@ -104,6 +104,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (linear) \
     (loop) \
     (mono) \
+    ((motionVelocityScale, "motion:velocityScale")) \
     (none) \
     (nonperiodic) \
     (normals) \
@@ -257,6 +258,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>linear</b> - Possible value for UsdGeomBasisCurves::GetTypeAttr()
 /// \li <b>loop</b> - Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
 /// \li <b>mono</b> - Possible value for UsdGeomCamera::GetStereoRoleAttr(), Default value for UsdGeomCamera::GetStereoRoleAttr()
+/// \li <b>motionVelocityScale</b> - UsdGeomMotionAPI
 /// \li <b>none</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr(), Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
 /// \li <b>nonperiodic</b> - Possible value for UsdGeomBasisCurves::GetWrapAttr(), Default value for UsdGeomBasisCurves::GetWrapAttr()
 /// \li <b>normals</b> - UsdGeomPointBased
