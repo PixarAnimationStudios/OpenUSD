@@ -152,38 +152,6 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
     }
 }
 
-void 
-UsdImagingGprimAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath, 
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext)
-{
-    UsdImagingValueCache* valueCache = _GetValueCache();
-    // Prepopulate cache entries to avoid mutation during multi-threaded data
-    // fetch.
-    if (requestedBits & HdChangeTracker::DirtyPrimVar)
-        valueCache->GetColor(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyDoubleSided)
-        valueCache->GetDoubleSided(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyTransform)
-        valueCache->GetTransform(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyExtent)
-        valueCache->GetExtent(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyVisibility)
-        valueCache->GetVisible(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtySurfaceShader)
-        valueCache->GetSurfaceShader(cachePath);
-
-    valueCache->GetPrimvars(cachePath);
-}
-
 void
 UsdImagingGprimAdapter::_DiscoverPrimvars(
         UsdGeomGprim const& gprim,

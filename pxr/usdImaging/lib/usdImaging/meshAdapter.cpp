@@ -137,35 +137,6 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
 }
 
 void
-UsdImagingMeshAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath,
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext)
-{
-    BaseAdapter::UpdateForTimePrep(
-        prim, cachePath, time, requestedBits, instancerContext);
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        valueCache->GetPoints(cachePath);
-    }
-
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        valueCache->GetTopology(cachePath);
-    }
-
-    // Subdiv tags are only needed if the mesh is refined.  So
-    // there's no need to fetch the data if the prim isn't refined.
-    if (_delegate->IsRefined(cachePath)) {
-        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
-            valueCache->GetSubdivTags(cachePath);
-        }
-    }
-}
-
-void
 UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath,
                                UsdTimeCode time,

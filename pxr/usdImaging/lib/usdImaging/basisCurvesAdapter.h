@@ -74,14 +74,6 @@ public:
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL);
 
-    USDIMAGING_API
-    virtual void UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath, 
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext = NULL);
-
     /// Thread Safe.
     USDIMAGING_API
     virtual void UpdateForTime(UsdPrim const& prim,

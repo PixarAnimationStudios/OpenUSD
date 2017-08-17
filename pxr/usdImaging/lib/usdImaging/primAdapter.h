@@ -111,7 +111,7 @@ public:
                                    UsdTimeCode time,
                                    HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const* 
-                                       instancerContext = NULL) = 0;
+                                       instancerContext = NULL) {};
 
     /// Populates the \p cache for the given \p prim, \p time and \p
     /// requestedBits.

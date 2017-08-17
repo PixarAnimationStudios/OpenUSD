@@ -108,25 +108,6 @@ UsdImagingPointsAdapter::TrackVariability(UsdPrim const& prim,
 }
 
 void 
-UsdImagingPointsAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                           SdfPath const& cachePath, 
-                                           UsdTimeCode time,
-                                           HdDirtyBits requestedBits,
-                                           UsdImagingInstancerContext const* 
-                                               instancerContext)
-{
-    BaseAdapter::UpdateForTimePrep(
-        prim, cachePath, time, requestedBits, instancerContext);
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    if (requestedBits & HdChangeTracker::DirtyPoints)
-        valueCache->GetPoints(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyWidths)
-        valueCache->GetWidths(cachePath);
-}
-
-void 
 UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
                                        SdfPath const& cachePath, 
                                        UsdTimeCode time,

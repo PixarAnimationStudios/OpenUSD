@@ -61,15 +61,6 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
 {
 }
 
-void 
-UsdImagingLightAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath, 
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext)
-{
-}
 
 // Thread safe.
 //  * Populate dirty bits for the given \p time.

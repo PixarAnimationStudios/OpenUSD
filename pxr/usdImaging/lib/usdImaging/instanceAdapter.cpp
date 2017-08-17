@@ -755,48 +755,6 @@ UsdImagingInstanceAdapter::_IsInstanceTransformVarying(UsdPrim const& instancer)
 }
 
 void 
-UsdImagingInstanceAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath, 
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext)
-{
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    if (_IsChildPrim(prim, cachePath)) {
-        // Note that the proto group in this rproto has not yet been
-        // updated with new instances at this point.
-        UsdImagingInstancerContext instancerContext;
-        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
-                                                    cachePath,
-                                                    &instancerContext);
-        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
-            return;
-        }
-
-        // All Update code paths will update visibility.
-        valueCache->GetVisible(cachePath);
-
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex)
-            valueCache->GetInstanceIndices(cachePath);
-        if (requestedBits & HdChangeTracker::DirtyTransform)
-            valueCache->GetInstancerTransform(cachePath);
-        if (requestedBits & HdChangeTracker::DirtySurfaceShader)
-            valueCache->GetSurfaceShader(cachePath);
-
-        rproto.adapter->UpdateForTimePrep(
-            _GetPrim(rproto.path), cachePath, time, requestedBits,
-            &instancerContext);
-    } else {
-        if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-            valueCache->GetPrimvar(cachePath, HdTokens->instanceTransform);
-            valueCache->GetPrimvars(cachePath);
-        }
-    }
-}
-
-void 
 UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,

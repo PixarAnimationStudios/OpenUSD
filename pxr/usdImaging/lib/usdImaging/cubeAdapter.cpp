@@ -109,24 +109,6 @@ UsdImagingCubeAdapter::TrackVariability(UsdPrim const& prim,
 }
 
 void 
-UsdImagingCubeAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                         SdfPath const& cachePath, 
-                                         UsdTimeCode time,
-                                         HdDirtyBits requestedBits,
-                                         UsdImagingInstancerContext const* 
-                                             instancerContext)
-{
-    BaseAdapter::UpdateForTimePrep(prim, cachePath, time, requestedBits);
-    UsdImagingValueCache* valueCache = _GetValueCache();
-    // This adapter will never mark these as dirty, however the client may
-    // explicitly ask for them, after the initial cached value is gone.
-    if (requestedBits & HdChangeTracker::DirtyPoints)
-        valueCache->GetPoints(cachePath);
-    if (requestedBits & HdChangeTracker::DirtyTopology)
-        valueCache->GetTopology(cachePath);
-}
-
-void 
 UsdImagingCubeAdapter::UpdateForTime(UsdPrim const& prim,
                                      SdfPath const& cachePath, 
                                      UsdTimeCode time,
