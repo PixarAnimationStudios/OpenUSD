@@ -119,7 +119,8 @@ public:
     // bounds computation is kind of important, so we centralize it here.
     std::vector<GfBBox3d> ComputeBounds(
         const UsdPrim& prim,
-        const std::vector<double>& motionSampleTimes);
+        const std::vector<double>& motionSampleTimes,
+        bool applyLocalTransform = false);
 
     UsdPrim GetRootPrim() const;
 

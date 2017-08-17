@@ -251,27 +251,23 @@ namespace
     }
 
     // XXX This is based on UsdGeomPointInstancer::ComputeExtentAtTime. Ideally,
-    // we would just use UsdGeomPointInstancer, however it will compute the
-    // bounds of its prototypes if it can't use their extentsHints, which is an
-    // expensive operation we want to avoid here (see bug 147526).
+    // we would just use UsdGeomPointInstancer, however it does not account for
+    // multi-sampled transforms (see bug 147526).
     //
     bool
     _ComputeExtentAtTime(
         VtVec3fArray& extent,
-        const UsdGeomPointInstancer& instancer,
-        const UsdTimeCode baseTime,
+        PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
         const std::vector<std::vector<GfMatrix4d>>& xforms,
-        const size_t numSampleTimes,
+        const std::vector<double>& motionSampleTimes,
         const VtIntArray& protoIndices,
         const SdfPathVector& protoPaths,
         const _PathToPrimMap& primCache,
         const std::vector<bool> mask)
     {
-        const TfTokenVector purposes{UsdGeomTokens->default_,
-                                     UsdGeomTokens->proxy,
-                                     UsdGeomTokens->render};
-        _PathToRangeMap rangeCache;
         GfRange3d extentRange;
+
+        const size_t numSampleTimes = motionSampleTimes.size();
 
         for (size_t i = 0; i < protoIndices.size(); ++i) {
             if (!mask.empty() && !mask[i]) {
@@ -281,71 +277,32 @@ namespace
             const int protoIndex = protoIndices[i];
             const SdfPath &protoPath = protoPaths[protoIndex];
 
-            GfRange3d thisRange;
-
-            // Check to see if this prototype's range was already computed. If
-            // not, use its extents hint to compute one.
-            _PathToRangeMap::const_iterator rcIt = rangeCache.find(protoPath);
-            if (rcIt != rangeCache.end()) {
-                thisRange = rcIt->second;
-            } else {
-                _PathToPrimMap::const_iterator pcIt = primCache.find(protoPath);
-                const UsdPrim &protoPrim = pcIt->second;
-                if (!protoPrim) {
-                    continue;
-                }
-
-                VtVec3fArray extents;
-                UsdAttribute extentsAttr =
-                    protoPrim.GetAttribute(TfToken("extentsHint"));
-                if (extentsAttr and extentsAttr.Get(&extents, baseTime)) {
-
-                    // Get the ranges associated with each purpose.
-                    _PurposeToRangeMap ranges;
-                    for (size_t i = 0; i < purposes.size(); ++i) {
-                        size_t idx = i * 2;
-                        // If extents are not available for this purpose, it
-                        // implies that the rest of the bounds are empty. Hence,
-                        // we can break.
-                        if ((idx + 2) > extents.size()) {
-                            break;
-                        }
-                        ranges[purposes[i]] =
-                            GfRange3d(extents[idx], extents[idx + 1]);
-                    }
-
-                    // Combine ranges for each purpose in order to generate the
-                    // final range.
-                    for (auto purpose : purposes) {
-                        _PurposeToRangeMap::const_iterator rIt =
-                            ranges.find(purpose);
-                        if (rIt != ranges.end()) {
-                            const GfRange3d &rangeForPurpose = rIt->second;
-                            if (!rangeForPurpose.IsEmpty()) {
-                                thisRange = GfRange3d::GetUnion(
-                                    thisRange, rangeForPurpose);
-                            }
-                        }
-                    }
-                }
-
-                // Store the result so we don't have to compute it again.
-                rangeCache[protoPath] = thisRange;
-            }
-
-            // If a range could not be computed using extents, simply move on.
-            if (thisRange.IsEmpty()) {
+            _PathToPrimMap::const_iterator pcIt = primCache.find(protoPath);
+            const UsdPrim &protoPrim = pcIt->second;
+            if (!protoPrim) {
                 continue;
             }
 
+            // Leverage usdInArgs for calculating the proto prim's bound. Note
+            // that we apply the prototype's local transform to account for any
+            // offsets.
+            //
+            std::vector<GfBBox3d> sampledBounds = usdInArgs->ComputeBounds(
+                protoPrim, motionSampleTimes, /* applyLocalTransform */ true);
+
             for (size_t a = 0; a < numSampleTimes; ++a) {
-                // Get the prototype bounding box with the instance transform
-                // applied. We don't apply the parent transform here, as the
+                // Apply the instance transform to the bounding box for this
+                // time sample. We don't apply the parent transform here, as the
                 // bounds need to be in parent-local space.
-                GfMatrix4d instanceXform = xforms[a][i];
-                GfBBox3d thisBounds(thisRange, instanceXform);
+                //
+                GfBBox3d thisBounds(sampledBounds[a]);
+                thisBounds.Transform(xforms[a][i]);
                 extentRange.UnionWith(thisBounds.ComputeAlignedRange());
             }
+        }
+
+        if (extentRange.IsEmpty()) {
+            return false;
         }
 
         const GfVec3d extentMin = extentRange.GetMin();
@@ -512,8 +469,8 @@ PxrUsdKatanaReadPointInstancer(
     //
     VtVec3fArray aggregateExtent;
     if (_ComputeExtentAtTime(
-            aggregateExtent, instancer, UsdTimeCode(currentTime), xformSamples,
-            numXformSamples, protoIndices, protoPaths, primCache,
+            aggregateExtent, data.GetUsdInArgs(), xformSamples,
+            motionSampleTimes, protoIndices, protoPaths, primCache,
             pruneMaskValues)) {
         aggregateBoundsValid = true;
         aggregateBounds.resize(6);

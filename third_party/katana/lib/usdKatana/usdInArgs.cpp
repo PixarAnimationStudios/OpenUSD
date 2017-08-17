@@ -74,7 +74,8 @@ PxrUsdKatanaUsdInArgs::~PxrUsdKatanaUsdInArgs()
 std::vector<GfBBox3d>
 PxrUsdKatanaUsdInArgs::ComputeBounds(
         const UsdPrim& prim,
-        const std::vector<double>& motionSampleTimes)
+        const std::vector<double>& motionSampleTimes,
+        bool applyLocalTransform)
 {
     std::vector<GfBBox3d> ret;
 
@@ -105,11 +106,25 @@ PxrUsdKatanaUsdInArgs::ComputeBounds(
                                        /* useExtentsHint */ true);
             bboxCaches.insert(
                 std::pair<double, UsdGeomBBoxCache>(relSampleTime, bboxCache));
-            ret.push_back(bboxCache.ComputeUntransformedBound(prim));
+            if (applyLocalTransform)
+            {
+                ret.push_back(bboxCache.ComputeLocalBound(prim));
+            }
+            else
+            {
+                ret.push_back(bboxCache.ComputeUntransformedBound(prim));
+            }
         }
         else
         {
-            ret.push_back(it->second.ComputeUntransformedBound(prim));
+            if (applyLocalTransform)
+            {
+                ret.push_back(it->second.ComputeLocalBound(prim));
+            }
+            else
+            {
+                ret.push_back(it->second.ComputeUntransformedBound(prim));
+            }
         }
     }
 
