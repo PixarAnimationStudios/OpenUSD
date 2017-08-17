@@ -85,7 +85,7 @@ UsdAttribute::SetTypeName(const SdfValueTypeName& typeName) const
 }
 
 void 
-UsdAttribute::Block() 
+UsdAttribute::Block() const
 {
     Clear();
     Set(VtValue(SdfValueBlock()), UsdTimeCode::Default()); 

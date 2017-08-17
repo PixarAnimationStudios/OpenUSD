@@ -412,7 +412,7 @@ public:
     /// if there is a fallback, the client will receive that, otherwise they
     /// will receive false when calling Get(). 
     USD_API
-    void Block();
+    void Block() const;
 
     /// @}
 
