@@ -191,20 +191,6 @@ function(_install_python LIBRARY_NAME)
 endfunction() #_install_python
 
 function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
-    set(resourceFiles "")
-    foreach(resourceFile ${ARGN})
-        # plugInfo.json go through an initial template substitution step files
-        # install it from the binary (gen) directory specified by the full
-        # path. Otherwise, use the original relative path which is relative to
-        # the source directory.
-        if (${resourceFile} STREQUAL "plugInfo.json")
-            _plugInfo_subst(${NAME} "${pluginToLibraryPath}" ${resourceFile})
-            list(APPEND resourceFiles "${CMAKE_CURRENT_BINARY_DIR}/${resourceFile}")
-        else()
-            list(APPEND resourceFiles ${resourceFile})
-        endif()
-    endforeach()
-
     # Resource files install into a structure that looks like:
     # share/
     #     usd/
@@ -217,18 +203,39 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
     #                 ...
     #
     _get_resources_dir(${pluginInstallPrefix} ${NAME} resourcesPath)
-    foreach(f ${resourceFiles})
-        # Don't install subdirs for absolute paths, there's no way to tell
-        # what the intended subdir structure is. In practice, any absolute paths
-        # should only come from the plugInfo.json processing above, which 
-        # install at the top-level anyway.
-        if (NOT IS_ABSOLUTE ${f})
-            get_filename_component(dirPath ${f} PATH)
+
+    foreach(resourceFile ${ARGN})
+        # A resource file may be specified like <src file>:<dst file> to 
+        # indicate that it should be installed to a different location in
+        # the resources area. Check if this is the case.
+        string(REPLACE ":" ";" resourceFile "${resourceFile}")
+        list(LENGTH resourceFile n)
+        if (n EQUAL 1)
+           set(resourceDestFile ${resourceFile})
+        elseif (n EQUAL 2)
+           list(GET resourceFile 1 resourceDestFile)
+           list(GET resourceFile 0 resourceFile)
+        else()
+           message(FATAL_ERROR
+               "Failed to parse resource path ${resourceFile}")
         endif()
 
+        # plugInfo.json go through an initial template substitution step files
+        # install it from the binary (gen) directory specified by the full
+        # path. Otherwise, use the original relative path which is relative to
+        # the source directory.
+        if (${resourceFile} STREQUAL "plugInfo.json")
+            _plugInfo_subst(${NAME} "${pluginToLibraryPath}" ${resourceFile})
+            set(resourceFile "${CMAKE_CURRENT_BINARY_DIR}/${resourceFile}")
+        endif()
+
+        get_filename_component(dirPath ${resourceDestFile} PATH)
+        get_filename_component(destFileName ${resourceDestFile} NAME)
+
         install(
-            FILES ${f}
+            FILES ${resourceFile}
             DESTINATION ${resourcesPath}/${dirPath}
+            RENAME ${destFileName}
         )
     endforeach()
 endfunction() # _install_resource_files
