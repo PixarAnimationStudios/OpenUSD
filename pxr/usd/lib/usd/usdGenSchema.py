@@ -587,10 +587,15 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
         
         # wrap file
         clsWrapFilePath = os.path.join(codeGenPath, cls.GetWrapFile())
-        customCode = _ExtractCustomCode(clsWrapFilePath, default=(
-                                        '\nnamespace {\n'
-                                        '\nWRAP_CUSTOM {\n}\n'
-                                        '\n}'))
+
+        if useExportAPI:
+            customCode = _ExtractCustomCode(clsWrapFilePath, default=(
+                                            '\nnamespace {\n'
+                                            '\nWRAP_CUSTOM {\n}\n'
+                                            '\n}'))
+        else:
+            customCode = _ExtractCustomCode(clsWrapFilePath, default='\nWRAP_CUSTOM {\n}\n')
+
         _WriteFile(clsWrapFilePath,
                    wrapTemplate.render(cls=cls) + customCode, validate)
 
