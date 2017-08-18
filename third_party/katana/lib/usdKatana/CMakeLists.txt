@@ -68,5 +68,6 @@ pxr_shared_library(${PXR_PACKAGE}
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+        schema.usda:usdKatana/schema.usda
 )
 

@@ -40,5 +40,6 @@ pxr_library(usdSkel
     RESOURCE_FILES
         generatedSchema.usda
         plugInfo.json
+        schema.usda:usdSkel/schema.usda
 )
    

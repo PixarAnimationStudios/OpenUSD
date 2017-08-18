@@ -2,7 +2,7 @@
 (
     "This file describes the USD Lux light schemata for code generation."
     subLayers = [
-        @../usdGeom/schema.usda@
+        @usdGeom/schema.usda@
     ]
 )
 

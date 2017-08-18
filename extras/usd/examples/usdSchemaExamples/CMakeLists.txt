@@ -36,5 +36,6 @@ pxr_plugin(${PXR_PACKAGE}
     RESOURCE_FILES
         generatedSchema.usda
         plugInfo.json
+        schema.usda:usdSchemaExamples/schema.usda
 )
    

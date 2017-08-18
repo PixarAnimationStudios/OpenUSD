@@ -751,6 +751,29 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     _WriteFile(os.path.join(codeGenPath, 'generatedSchema.usda'), layerSource,
                validate)
 
+def InitializeResolver():
+    """Initialize the resolver so that search paths pointing to schema.usda
+    files are resolved to the directories where those files are installed"""
+    
+    from pxr import Ar, Plug
+
+    # Force the use of the ArDefaultResolver so we can take advantage
+    # of its search path functionality.
+    Ar.SetPreferredResolver('ArDefaultResolver')
+
+    # Figure out where all the plugins that provide schemas are located
+    # and add their resource directories to the search path prefix list.
+    resourcePaths = set()
+    pr = Plug.Registry()
+    for t in pr.GetAllDerivedTypes('UsdSchemaBase'):
+        plugin = pr.GetPluginForType(t)
+        if plugin:
+            resourcePaths.add(plugin.resourcePath)
+    
+    # The sorting shouldn't matter here, but we do it for consistency
+    # across runs.
+    Ar.DefaultResolver.SetDefaultSearchPath(sorted(list(resourcePaths)))
+
 if __name__ == '__main__':
     #
     # Parse Command-line
@@ -835,6 +858,10 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
+        #
+        # Initialize the asset resolver to resolve search paths
+        #
+        InitializeResolver()
         
         #
         # Gather Schema Class information

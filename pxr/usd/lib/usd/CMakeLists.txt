@@ -121,6 +121,7 @@ pxr_library(usd
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+        schema.usda:usd/schema.usda
         codegenTemplates/api.h
         codegenTemplates/plugInfo.json
         codegenTemplates/schemaClass.cpp

@@ -2,9 +2,9 @@
 (
     "This file describes the USD Shader (RSL) schemata for code generation."
     subLayers = [
-        @../usd/schema.usda@,
-        @../usdShade/schema.usda@,
-        @../usdLux/schema.usda@,
+        @usd/schema.usda@,
+        @usdShade/schema.usda@,
+        @usdLux/schema.usda@,
     ]
 )
 

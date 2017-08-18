@@ -2,7 +2,7 @@
 (
     "This file describes the USD Geometric schemata for code generation."
     subLayers = [
-        @../usd/schema.usda@
+        @usd/schema.usda@
     ]
 )
 

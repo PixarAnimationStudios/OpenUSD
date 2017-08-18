@@ -77,6 +77,7 @@ pxr_library(usdRi
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+        schema.usda:usdRi/schema.usda
 )
 
 pxr_test_scripts(

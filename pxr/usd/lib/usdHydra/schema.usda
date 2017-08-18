@@ -1,8 +1,8 @@
 #usda 1.0
 (
     subLayers = [
-        @../usd/schema.usda@,
-        @../usdShade/schema.usda@,
+        @usd/schema.usda@,
+        @usdShade/schema.usda@,
     ]
 )
 
