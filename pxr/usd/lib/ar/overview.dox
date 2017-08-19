@@ -7,24 +7,38 @@
 
 \section ar_overview Overview
 
-The Ar module defines a plugin point for asset resolution, an important
-part of referenced scene description.  The interface class ArResolver
-can be derived and customized for each installation of USD.  Each custom
-implementation can also reason about its own ArResolverContext type,
-which allows a single process to access multiple different state-sets
-(contexts) to guide asset resolution differently for different 
-datasets/contexts.
+The Ar (asset resolution) library provides functions for interacting
+with asset paths in USD. An asset path is a string that describes the 
+location of an asset in a user's system. These paths are used extensively
+throughout USD; for example, asset paths are used to specify sublayers,
+references, and other composition arcs in scene description.
 
-Since resolving assets to filesystem paths can be expensive, and typically
-clients (such as USD) will commonly attempt to resolve the same assets over 
-and over again, we also provide an RAII ArResolverScopedCache that can
-greatly speed up asset resolution by caching results.
+Ar's primary responsibility is to 'resolve' an asset path into a
+corresponding filesystem path. By default, Ar assumes that all asset 
+paths are simple filesystem paths and treats them accordingly. However, 
+clients may implement their own resolver class by implementing the ArResolver 
+interface to provide custom resolution logic for asset paths. This allows 
+clients to use asset paths that are appropriate for their situation.
 
-Finally, if no custom implementation of ArResolver is found, we will fall back
-to a ArDefaultResolver, which performs simple searchpath-based
-resolution, based on an environment variable <tt>PXR_AR_DEFAULT_SEARCH_PATH</tt>
-that is expected to hold a list of filesystem paths to search separated by
-the platform's standard path delimiter (See ARCH_PATH_LIST_SEP).
+For example, a client might have an asset management system that uses URLs 
+to identify assets. That client could implement a custom resolver that would 
+resolve those URLs and fetch data from a server to the local filesystem
+and return that filesystem path as the 'resolved' path. This would enable
+the client to use these URLs in scene description (e.g., for referencing)
+for USD.
+
+\section ar_resolver Accessing the Resolver
+
+Consumers may access the asset resolver by calling #ArGetResolver.
+
+\section ar_default_resolver Default Resolver
+
+If no custom implementation of ArResolver is found, Ar will fall back
+to using an ArDefaultResolver, which assumes all asset paths it encounters are
+filesystem paths. ArDefaultResolver also performs simple search path-based
+resolution that will search for an asset in a specified list of directories.
+See documentation on ArDefaultResolver for more information on configuring
+this behavior.
 
 \section ar_implementing_resolver Implementing a Custom Resolver
 
@@ -74,9 +88,23 @@ find it.
 \note Ar does not support custom resolvers implemented in Python to avoid
 performance issues, especially for multi-threaded consumers.
 
-Users may also declare that a particular object type may be used as a
-context object with this custom resolver implementation using 
-#AR_DECLARE_RESOLVER_CONTEXT.  This allows ArResolverContext objects to
-be constructed from objects of this type.
+\section ar_resolver_context Resolver Context Objects
+
+Each custom resolver can reason about its own ArResolverContext type,
+which allows a single process to access multiple different state-sets
+(contexts) to guide asset resolution differently for different 
+datasets/contexts.
+
+Users may declare that a particular object type may be used as a
+context object by using #AR_DECLARE_RESOLVER_CONTEXT.  This allows 
+ArResolverContext objects to be constructed from objects of this type.
+
+\section ar_resolver_scoped_cache Resolver Scoped Caches
+
+Since resolving assets to filesystem paths can be expensive, and typically
+clients (such as USD) will commonly attempt to resolve the same assets over 
+and over again, we also provide an RAII ArResolverScopedCache that can
+greatly speed up asset resolution by caching results. See ArDefaultResolver
+for an example implementation.
 
 */
