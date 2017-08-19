@@ -60,7 +60,7 @@ static UsdAttribute
 _CreateRotationsAttr(UsdSkelPackedJointAnimation &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRotationsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuathArray), writeSparsely);
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuatfArray), writeSparsely);
 }
         
 static UsdAttribute

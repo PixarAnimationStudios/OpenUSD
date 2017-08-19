@@ -124,7 +124,7 @@ UsdAttribute
 UsdSkelPackedJointAnimation::CreateRotationsAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdSkelTokens->rotations,
-                       SdfValueTypeNames->QuathArray,
+                       SdfValueTypeNames->QuatfArray,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,

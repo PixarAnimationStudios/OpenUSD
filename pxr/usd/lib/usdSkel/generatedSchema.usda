@@ -96,9 +96,9 @@ class PackedJointAnimation "PackedJointAnimation" (
         well with the needs of multithreaded rendering. Purpose provides us with
         a better tool for dynamic, interactive complexity management.'''
     )
-    quath[] rotations (
+    quatf[] rotations (
         doc = """Joint-local unit quaternion rotations of all affected joints, 
-        in 16-bit precision.  Array length should match the size of the 
+        in 32-bit precision.  Array length should match the size of the 
         *joints* relationship."""
     )
     half3[] scales (
