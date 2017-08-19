@@ -721,7 +721,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext)
 {
@@ -748,9 +747,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             rprotoRW.initialized = true;
         }
 
-        // Uphold the original precondition: result == requested bits.
-        *resultBits = requestedBits;
-
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             valueCache->GetInstanceIndices(cachePath) = 
                 rproto.prototype->indices;
@@ -766,46 +762,42 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         // Allow the prototype's adapter to update, if there's anything left
         // to do.
         if (protoReqBits != HdChangeTracker::Clean)
-            rproto.adapter->UpdateForTime(_GetPrim(rproto.paths.front()), cachePath,
-                                          time, protoReqBits, resultBits);
+            rproto.adapter->UpdateForTime(_GetPrim(rproto.paths.front()),
+                                          cachePath, time, protoReqBits);
 
         // Make sure we always query and return visibility. This is done
         // after the adapter update to ensure we get our specialized view of
         // visibility.
-        requestedBits |= HdChangeTracker::DirtyVisibility;
-        *resultBits |= HdChangeTracker::DirtyVisibility;
 
         // Apply the instancer visibility at the current time to the
         // instance. Notice that the instance will also pickup the instancer
         // visibility at the time offset.
-        if (requestedBits & HdChangeTracker::DirtyVisibility) {
-            bool& vis = valueCache->GetVisible(cachePath);
-            bool protoHasFixedVis = !(rproto.variabilityBits 
-                                      & HdChangeTracker::DirtyVisibility);
+        bool& vis = valueCache->GetVisible(cachePath);
+        bool protoHasFixedVis = !(rproto.variabilityBits
+                                  & HdChangeTracker::DirtyVisibility);
 
-            _InstancerDataMap::const_iterator it 
-                = _instancerData.find(instancerPath);
-            if (TF_VERIFY(it != _instancerData.end())) {
-                vis = it->second.visible;
-            }
-            if (protoHasFixedVis) { 
-                // The instancer is visible and the proto prim has fixed
-                // visibility (it does not vary over time), we can use the
-                // pre-cached visibility.
-                vis = vis && rproto.visible;
-            } else if (vis) {
-                // The instancer is visible and the prototype has varying
-                // visibility, we must compute visibility from the proto
-                // prim to the model instance root.
-                _ComputeProtoVisibility(
-                    _GetPrim(rproto.prototype->protoRootPath), 
-                    _GetPrim(rproto.paths.front()), 
-                    time,
-                    &vis); 
-            }
+        _InstancerDataMap::const_iterator it
+            = _instancerData.find(instancerPath);
+        if (TF_VERIFY(it != _instancerData.end())) {
+            vis = it->second.visible;
+        }
+        if (protoHasFixedVis) {
+            // The instancer is visible and the proto prim has fixed
+            // visibility (it does not vary over time), we can use the
+            // pre-cached visibility.
+            vis = vis && rproto.visible;
+        } else if (vis) {
+            // The instancer is visible and the prototype has varying
+            // visibility, we must compute visibility from the proto
+            // prim to the model instance root.
+            _ComputeProtoVisibility(
+                _GetPrim(rproto.prototype->protoRootPath),
+                _GetPrim(rproto.paths.front()),
+                time,
+                &vis);
         }
 
-        if (*resultBits & HdChangeTracker::DirtyTransform) {
+        if (requestedBits & HdChangeTracker::DirtyTransform) {
             _CorrectTransform(prim, _GetPrim(rproto.prototype->protoRootPath),
                               cachePath, rproto.paths, time);
         }

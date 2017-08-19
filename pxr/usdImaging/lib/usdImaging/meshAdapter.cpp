@@ -138,15 +138,14 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
 
 void
 UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath,
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
-                               UsdImagingInstancerContext const* 
-                                   instancerContext)
+                                     SdfPath const& cachePath,
+                                     UsdTimeCode time,
+                                     HdDirtyBits requestedBits,
+                                     UsdImagingInstancerContext const*
+                                         instancerContext)
 {
     BaseAdapter::UpdateForTime(
-        prim, cachePath, time, requestedBits, resultBits, instancerContext);
+        prim, cachePath, time, requestedBits, instancerContext);
 
     UsdImagingValueCache* valueCache = _GetValueCache();
     PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);

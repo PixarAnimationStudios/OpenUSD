@@ -132,12 +132,11 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext)
 {
     BaseAdapter::UpdateForTime(
-        prim, cachePath, time, requestedBits, resultBits, instancerContext);
+        prim, cachePath, time, requestedBits, instancerContext);
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
@@ -179,8 +178,6 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
             primvar.interpolation = UsdGeomTokens->vertex;
             _MergePrimvar(primvar, &primvars);
             valueCache->GetNormals(cachePath) = VtValue(normals);
-        } else {
-            *resultBits &= ~HdChangeTracker::DirtyNormals;
         }
     }
 }

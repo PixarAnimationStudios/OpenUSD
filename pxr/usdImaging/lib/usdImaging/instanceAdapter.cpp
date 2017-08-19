@@ -759,7 +759,6 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const*)
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
@@ -776,9 +775,6 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             return;
 
         _UpdateInstanceMap(_GetPrim(instancerContext.instancerId), time);
-
-        // Uphold the original precondition: result == requested bits.
-        *resultBits = requestedBits;
 
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             valueCache->GetInstanceIndices(cachePath) = 
@@ -797,36 +793,31 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
         if (protoReqBits != HdChangeTracker::Clean) {
             rproto.adapter->UpdateForTime(
                 _GetPrim(rproto.path), cachePath, 
-                rproto.protoGroup->time, protoReqBits, resultBits,
-                &instancerContext);
+                rproto.protoGroup->time, protoReqBits, &instancerContext);
         }
 
         // Make sure we always query and return visibility. This is done
         // after the adapter update to ensure we get our specialized view of
         // visibility.
-        requestedBits |= HdChangeTracker::DirtyVisibility;
-        *resultBits |= HdChangeTracker::DirtyVisibility;
 
         // Apply the instancer visibility at the current time to the
         // instance. Notice that the instance will also pickup the instancer
         // visibility at the time offset.
-        if (requestedBits & HdChangeTracker::DirtyVisibility) {
-            bool& vis = valueCache->GetVisible(cachePath);
-            bool protoHasFixedVis = !(rproto.variabilityBits 
-                                      & HdChangeTracker::DirtyVisibility);
-            if (protoHasFixedVis) { 
-                // The proto prim has fixed visibility (it does not vary over time), 
-                // we can use the pre-cached visibility.
-                vis = rproto.visible;
-            } 
-            else {
-                // The instancer is visible and the prototype has varying
-                // visibility, we must compute visibility.
-                vis = GetVisible(_GetPrim(instancerContext.instancerId), time);
-            }
+        bool& vis = valueCache->GetVisible(cachePath);
+        bool protoHasFixedVis = !(rproto.variabilityBits
+                                  & HdChangeTracker::DirtyVisibility);
+        if (protoHasFixedVis) {
+            // The proto prim has fixed visibility (it does not vary over time),
+            // we can use the pre-cached visibility.
+            vis = rproto.visible;
+        }
+        else {
+            // The instancer is visible and the prototype has varying
+            // visibility, we must compute visibility.
+            vis = GetVisible(_GetPrim(instancerContext.instancerId), time);
         }
 
-        if (*resultBits & HdChangeTracker::DirtyTransform) {
+        if (requestedBits & HdChangeTracker::DirtyTransform) {
             // Inverse out the root transform to avoid a double transformation
             // when applying the instancer transform.
             GfMatrix4d& childXf = _GetValueCache()->GetTransform(cachePath);

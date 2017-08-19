@@ -259,7 +259,6 @@ private:
     };
     std::vector<_Task> _tasks;
 
-    ResultVector _results;
     boost::optional<HdDirtyBits> _requestBits;
 
 public:
@@ -282,17 +281,10 @@ public:
     void AddTask(UsdImagingDelegate* delegate, SdfPath const& usdPath, 
                  HdDirtyBits requestBits=0) {
         _tasks.push_back(_Task(delegate, usdPath, requestBits));
-        // TODO: This is only used when updating, might be nice to split this
-        // out into two classes.
-        _results.push_back(std::make_pair(usdPath, 0));
     }
 
     size_t GetTaskCount() {
         return _tasks.size();
-    }
-
-    ResultVector const& GetResults() {
-        return _results;
     }
 
     // Disables value cache mutations for all imaging delegates that have
@@ -374,33 +366,8 @@ public:
             }
             _AdapterSharedPtr adapter = delegate->_AdapterLookupByPath(usdPath);
             if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
-                HdDirtyBits resultBits = requestBits;
-                adapter->UpdateForTime(prim, usdPath, time, 
-                                        requestBits, &resultBits);
-                _results[i] = std::make_pair(usdPath, resultBits);
-                _tasks[i].requestBits = resultBits;
+                adapter->UpdateForTime(prim, usdPath, time, requestBits);
             }
-        }
-    }
-
-    // Updates all delegates that have registered tasks in this worker with
-    // based on the results computed in UpdateForTime.
-    void ProcessUpdateResults()
-    {
-        for (size_t i = 0; i < _tasks.size(); ++i) {
-            UsdImagingDelegate* delegate = _tasks[i].delegate;
-
-            SdfPath const& path = _results[i].first;
-            HdDirtyBits dirtyFlags = _results[i].second;
-
-            TF_DEBUG(USDIMAGING_UPDATES).Msg(
-                    "[Update] RESULT: Dirtying rprim <%s> "
-                    "with dirtyFlags: 0x%llX [%s]\n",
-                    path.GetText(), 
-                    (unsigned long long)dirtyFlags,
-                    HdChangeTracker::StringifyDirtyBits(dirtyFlags).c_str());
-            
-            delegate->_MarkRprimOrInstancerDirty(path, dirtyFlags, true);
         }
     }
 };
@@ -780,9 +747,7 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
         }
     }
 
-    // Don't need to update delegates because we expect that has
-    // already happened.
-    _ExecuteWorkForTimeUpdate(&worker, /* updateDelegates = */ false);
+    _ExecuteWorkForTimeUpdate(&worker);
 }
 
 void
@@ -847,9 +812,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
         }
     }
 
-    // Don't need to update delegates because we expect that has
-    // already happened.
-    _ExecuteWorkForTimeUpdate(&worker, /* updateDelegates = */ false);
+    _ExecuteWorkForTimeUpdate(&worker);
 }
 
 void
@@ -1222,8 +1185,7 @@ UsdImagingDelegate::_PrepareWorkerForTimeUpdate(_Worker* worker)
 }
 
 void
-UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker, 
-                                              bool updateDelegates)
+UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1239,10 +1201,6 @@ UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker,
                         worker, _1, _2));
     }
     worker->EnableValueCacheMutations();
-
-    if (updateDelegates) {
-        worker->ProcessUpdateResults();
-    }
 }
 
 void
@@ -1633,8 +1591,7 @@ UsdImagingDelegate::_UpdateSingleValue(SdfPath const& usdPath, int requestBits)
     _AdapterSharedPtr adapter = _AdapterLookupByPath(usdPath);
     if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
         adapter->UpdateForTimePrep(prim, usdPath, _time, requestBits);
-        HdDirtyBits resultBits = 0;
-        adapter->UpdateForTime(prim, usdPath, _time, requestBits, &resultBits);
+        adapter->UpdateForTime(prim, usdPath, _time, requestBits);
     }
 }
 

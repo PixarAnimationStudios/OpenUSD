@@ -543,8 +543,7 @@ private:
     void _PrepareWorkerForTimeUpdate(_Worker* worker);
 
     // Execute all time update tasks that have been added to the given worker.
-    static void _ExecuteWorkForTimeUpdate(_Worker* worker, 
-                                          bool updateDelegates = true);
+    static void _ExecuteWorkForTimeUpdate(_Worker* worker);
 
     // ---------------------------------------------------------------------- //
     // Core Delegate state
