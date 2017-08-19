@@ -45,6 +45,10 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
     inputAttrMap.set("outputLocationPath",
             FnKat::StringAttribute(interface.getOutputLocationPath()));
 
+    // Pass along PxrUsdIn op args.
+    //
+    inputAttrMap.set("opArgs", interface.getOpArg());
+
     // Generate output attr maps.
     //
     // Instancer attr map: describes the instancer itself

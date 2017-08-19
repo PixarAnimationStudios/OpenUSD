@@ -35,6 +35,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/metrics.h"
+#include "pxr/usd/usdGeom/motionAPI.h"
 #include "pxr/usd/usdLux/light.h"
 #include "pxr/usd/usdLux/lightFilter.h"
 #include "pxr/usd/usdLux/linkingAPI.h"
@@ -294,6 +295,24 @@ public:
                     .build();
             }
         }
+
+        //
+        // Pass along the prim's velocityScale; if it isn't authored, let the
+        // inherited value flow through.
+        //
+
+         float velocityScale = FnKat::FloatAttribute(
+             opArgs.getChildByName("velocityScale")).getValue(1.0f, false);
+         auto motionAPI = UsdGeomMotionAPI(prim);
+         UsdAttribute velocityScaleAttr = motionAPI.GetVelocityScaleAttr();
+         if (velocityScaleAttr and velocityScaleAttr.HasAuthoredValueOpinion() and
+             velocityScaleAttr.Get(&velocityScale, privateData->GetCurrentTime()))
+         {
+             opArgs = FnKat::GroupBuilder()
+                 .update(opArgs)
+                 .set("velocityScale", FnKat::FloatAttribute(velocityScale))
+                 .build();
+         }
 
         //
         // Compute and set the 'bound' attribute.

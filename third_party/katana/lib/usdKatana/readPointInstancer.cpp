@@ -444,13 +444,18 @@ PxrUsdKatanaReadPointInstancer(
         sampleTimes[a] = UsdTimeCode(currentTime + motionSampleTimes[a]);
     }
 
+    // Get velocityScale from the opArgs.
+    //
+    float velocityScale = FnKat::FloatAttribute(
+        inputAttrs.getChildByName("opArgs.velocityScale")).getValue(1.0f, false);
+
     // XXX Replace with UsdGeomPointInstancer::ComputeInstanceTransformsAtTime.
     //
     std::vector<std::vector<GfMatrix4d>> xformSamples(sampleCount);
     const size_t numXformSamples =
         _ComputeInstanceTransformsAtTime(xformSamples, instancer, sampleTimes,
             UsdTimeCode(currentTime), timeCodesPerSecond, numInstances,
-            positionsAttr);
+            positionsAttr, velocityScale);
     if (numXformSamples == 0) {
         _LogAndSetError(instancerAttrMap, "Could not compute "
                                           "sample/topology-invarying instance "
