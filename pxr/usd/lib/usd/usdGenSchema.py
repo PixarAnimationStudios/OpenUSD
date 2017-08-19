@@ -423,6 +423,11 @@ def _WriteFile(filePath, content, validate):
             print ('Error: validation failed, diffs found. '
                    'Please rerun usdGenSchema.')
             sys.exit(1)
+    else:
+        if validate:
+            print ('Error: validation failed, file %s does not exist. '
+                   'Please rerun usdGenSchema.' % os.path.basename(filePath))
+            sys.exit(1)
 
     # Otherwise attempt to write to file.
     try:
