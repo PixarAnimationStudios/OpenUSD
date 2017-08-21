@@ -110,6 +110,7 @@ pxr_library(usd
         wrapStageCache.cpp
         wrapStageCacheContext.cpp
         wrapStagePopulationMask.cpp
+        wrapTokens.cpp
         wrapTimeCode.cpp
         wrapTyped.cpp
         wrapUtils.cpp
