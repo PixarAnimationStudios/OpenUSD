@@ -43,7 +43,7 @@ The diagnostic facilities in the Tf Library are appropriate for the following ta
 \li Communicating serious runtime errors whose cause is external (for example, a needed server can't be found, a vital configuration file is missing)
 \li Informing the user of problems that are not handled by other parts of the program.
 
-To communicate errors, warnings, and status messages, the Tf Library first attempts to call a delegate which may be installed by a higher-level library.  If there is no delegate installed, default actions include printing errors and warnings to \c stderr, printing status messages to \c stdout, printing stack traces, and terminating the program on fatal errors.  The following list describes usage scenarios for the diagnostsic facilities in the Tf Libarary:
+To communicate errors, warnings, and status messages, the Tf Library first attempts to call a delegate which may be installed by a higher-level library.  If there is no delegate installed, default actions include printing errors and warnings to \c stderr, printing status messages to \c stdout, printing stack traces, and terminating the program on fatal errors.  The following list describes usage scenarios for the diagnostic facilities in the Tf Library:
 
 \li For non-fatal coding errors (for example, something you didn't expect, non-fatal violation of an API requirement), use TF_CODING_ERROR().
 \li For fatal coding errors (for example, an unexpected, unrecoverable coding error, violation of an API requirement which cannot be handled), use TF_FATAL_ERROR() or TF_AXIOM().

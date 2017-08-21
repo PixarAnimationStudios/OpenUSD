@@ -3,7 +3,7 @@
 
 // IF YOU ADD A NEW GROUP, PLEASE ADD IT TO THE LIST BELOW!!
 
-// Comprehensive package documenation:
+// Comprehensive package documentation:
 
 /// \defgroup group_tf_Notification Notification System
 /// See \ref page_tf_Notification for a detailed description.

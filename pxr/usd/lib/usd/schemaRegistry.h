@@ -66,13 +66,13 @@ public:
 
     /// Return the PrimSpec that contains all the builtin metadata and
     /// properties for the given \a primType.  Return null if there is no such
-    /// prim defintion.
+    /// prim definition.
     USD_API
     static SdfPrimSpecHandle GetPrimDefinition(const TfToken &primType);
 
     /// Return the PrimSpec that contains all the bulitin metadata and
     /// properties for the given \a primType.  Return null if there is no such
-    /// prim defintion.
+    /// prim definition.
     USD_API
     static SdfPrimSpecHandle GetPrimDefinition(const TfType &primType);
 

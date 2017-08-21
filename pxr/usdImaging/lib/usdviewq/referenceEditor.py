@@ -49,7 +49,7 @@ class ReferenceEditor(QtGui.QDialog):
         self.populateMultirefList()
         
     def populateMultirefList(self):
-        # populate teh drop-down menu of multi refs
+        # populate the drop-down menu of multi refs
         for ref in self._references:
             self._ui.multirefList.addItem(ref.GetAssetPath(UNVAR).Get())
 
