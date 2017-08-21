@@ -257,7 +257,7 @@ public:
     UsdGeomPrimvar GetDisplayColorPrimvar() const;
 
     /// Convenience function to create the displayColor primvar, optionally
-    /// specifying interpolation and eementSize
+    /// specifying interpolation and elementSize
     ///
     /// \sa CreateDisplayColorAttr(), GetDisplayColorPrimvar()
     USDGEOM_API
@@ -272,7 +272,7 @@ public:
     UsdGeomPrimvar GetDisplayOpacityPrimvar() const;
 
     /// Convenience function to create the displayOpacity primvar, optionally
-    /// specifying interpolation and eementSize
+    /// specifying interpolation and elementSize
     ///
     /// \sa CreateDisplayOpacityAttr(), GetDisplayOpacityPrimvar()
     USDGEOM_API
