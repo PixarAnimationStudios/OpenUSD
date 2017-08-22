@@ -189,4 +189,19 @@ ArchGetExecutablePath()
 #endif
 }
 
+int
+ArchGetPageSize()
+{
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+    return sysconf(_SC_PAGE_SIZE);
+#elif defined(ARCH_OS_WINDOWS)
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    return info.dwPageSize;
+#else
+    #error Unknown architecture.    
+#endif
+
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
