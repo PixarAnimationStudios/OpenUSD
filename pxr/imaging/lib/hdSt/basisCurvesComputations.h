@@ -44,14 +44,14 @@ class HdSt_BasisCurvesIndexBuilderComputation : public HdComputedBufferSource {
 public:
     HdSt_BasisCurvesIndexBuilderComputation(HdBasisCurvesTopology *topology,
                                             bool supportSmoothCurves);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    virtual bool Resolve();
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual bool Resolve() override;
 
     virtual bool HasChainedBuffer() const override;
     virtual HdBufferSourceSharedPtr GetChainedBuffer() const override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 public:
     // For building index and primitive index arrays

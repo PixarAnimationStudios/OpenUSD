@@ -65,10 +65,10 @@ public:
     HDST_API
     virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
                                          SdfPath const& id,
-                                         SdfPath const& instancerId);
+                                         SdfPath const& instancerId) override;
 
     HDST_API
-    virtual void DestroyInstancer(HdInstancer *instancer);
+    virtual void DestroyInstancer(HdInstancer *instancer) override;
 
     HDST_API
     virtual HdRprim *CreateRprim(TfToken const& typeId,
