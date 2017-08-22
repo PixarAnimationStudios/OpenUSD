@@ -95,6 +95,7 @@ PlugRegistry::_RegisterPlugin(
                 metadata.plugInfo);
         break;
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     case Plug_RegistrationMetadata::PythonType:
         newPlugin =
             PlugPlugin::_NewPythonModulePlugin(
@@ -103,6 +104,7 @@ PlugRegistry::_RegisterPlugin(
                 metadata.resourcePath,
                 metadata.plugInfo);
         break;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     case Plug_RegistrationMetadata::ResourceType:
         newPlugin =

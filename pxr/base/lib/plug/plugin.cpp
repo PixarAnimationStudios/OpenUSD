@@ -36,7 +36,6 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticData.h"
@@ -44,6 +43,10 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include "pxr/base/tf/pyInterpreter.h"
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <mutex>
 #include <string>
@@ -117,6 +120,7 @@ PlugPlugin::_NewDynamicLibraryPlugin(const std::string & path,
     return result;
 }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 pair<PlugPluginPtr, bool>
 PlugPlugin::_NewPythonModulePlugin(const std::string & modulePath,
                                    const std::string & moduleName,
@@ -160,6 +164,7 @@ PlugPlugin::_NewPythonModulePlugin(const std::string & modulePath,
 
     return result;
 }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 std::pair<PlugPluginPtr, bool> 
 PlugPlugin::_NewResourcePlugin(const std::string & path,
@@ -253,6 +258,8 @@ PlugPlugin::_Load()
     TF_DEBUG(PLUG_LOAD).Msg("Loading plugin '%s'.\n", _name.c_str());
 
     bool isLoaded = true;
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     if (IsPythonModule()) {
         string cmd = TfStringPrintf("import %s\n", _name.c_str());
         if (TfPyRunSimpleString(cmd) != 0) {
@@ -260,6 +267,9 @@ PlugPlugin::_Load()
                             _name.c_str(), _name.c_str());
             isLoaded = false;
         }
+#else
+    if (false) {
+#endif // PXR_PYTHON_SUPPORT_ENABLED
     } else if (!IsResource()) {
         // XXX -- This is a hack to handle a static/non-monolithic library
         // build.  In this case some "plugins" will be static libraries
@@ -383,11 +393,13 @@ PlugPlugin::IsLoaded() const
     return _isLoaded;
 }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 bool
 PlugPlugin::IsPythonModule() const
 {
     return _type == PythonType;
 }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 bool
 PlugPlugin::IsResource() const
