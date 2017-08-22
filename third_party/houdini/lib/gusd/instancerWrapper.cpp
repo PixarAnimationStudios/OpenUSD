@@ -988,6 +988,20 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         houAttr = sourcePrim->findAttribute("w", attrOwner, 0);
         usdAttr = m_usdPointInstancerForWrite.GetAngularVelocitiesAttr();
         if(houAttr && usdAttr) {
+
+            // Houdini stores angular velocity in radians per second.
+            // USD is degrees per second
+            const GT_Size numVals = houAttr->entries() * houAttr->getTupleSize();
+            std::vector<fpreal32> wArray(numVals);
+            houAttr->fillArray(wArray.data(), 0, numVals, 1); 
+
+            std::transform(
+                wArray.begin(),
+                wArray.end(),
+                wArray.begin(),
+                std::bind1st(std::multiplies<fpreal32>(), 180.0 / M_PI));
+
+            houAttr.reset(new GT_Real32Array(wArray.data(), houAttr->entries() , houAttr->getTupleSize()));
             GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
         }
 
