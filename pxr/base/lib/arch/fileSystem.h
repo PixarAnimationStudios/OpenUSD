@@ -333,6 +333,23 @@ enum ArchMemAdvice {
 ARCH_API
 void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv);
 
+/// Report whether or not the mapped virtual memory pages starting at \p addr
+/// for \p len bytes are resident in RAM.  Pages that are resident will not,
+/// when accessed, cause a page fault while those that are not will.  Return
+/// true on success and false in case of an error.  The \p addr argument must be
+/// a multiple of ArchGetPageSize().  The \p len argument need not be a multiple
+/// of the page size; it will be rounded up to the next page boundary.  Fill
+/// \p pageMap with 0s for pages not resident in memory and 1s for pages that
+/// are. The \p pageMap argument must therefore point to at least (\p len +
+/// ArchGetPageSize()-1)/ArchGetPageSize() bytes.
+///
+/// Note that currently this function is only implemented on Linux and Darwin.
+/// On Windows it currently always returns false.
+ARCH_API
+bool
+ArchQueryMappedMemoryResidency(
+    void const *addr, size_t len, unsigned char *pageMap);
+
 /// Read up to \p count bytes from \p offset in \p file into \p buffer.  The
 /// file position indicator for \p file is not changed.  Return the number of
 /// bytes read, or zero if at end of file.  Return -1 in case of an error, with

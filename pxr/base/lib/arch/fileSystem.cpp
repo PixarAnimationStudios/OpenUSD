@@ -529,6 +529,24 @@ void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv)
 #endif
 }
 
+bool
+ArchQueryMappedMemoryResidency(
+    void const *addr, size_t len, unsigned char *pageMap)
+{
+#if defined(ARCH_OS_LINUX)
+    int ret = mincore(const_cast<void *>(addr), len, pageMap);
+    return ret == 0;
+#elif defined (ARCH_OS_DARWIN)
+    // On darwin the addr param is 'caddr_t' and the vec param is 'char *'.
+    int ret = mincore(
+        reinterpret_cast<caddr_t>(const_cast<void *>(addr)), len,
+        reinterpret_cast<char *>(pageMap));
+    return ret == 0;
+#endif
+    // XXX: Not implemented for other platforms yet.
+    return false;
+}
+
 int64_t
 ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
 {
