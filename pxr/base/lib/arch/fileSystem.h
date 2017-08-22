@@ -278,21 +278,15 @@ std::string ArchMakeTmpSubdir(const std::string& tmpdir,
                               const std::string& prefix);
 
 // Helper 'deleter' for use with std::unique_ptr for file mappings.
-#if defined(ARCH_OS_WINDOWS)
-struct Arch_Unmapper {
-    ARCH_API void operator()(char *mapStart) const;
-    ARCH_API void operator()(char const *mapStart) const;
-};
-#else // assume POSIX
 struct Arch_Unmapper {
     Arch_Unmapper() : _length(~0) {}
     explicit Arch_Unmapper(size_t length) : _length(length) {}
     ARCH_API void operator()(char *mapStart) const;
     ARCH_API void operator()(char const *mapStart) const;
+    size_t GetLength() const { return _length; }
 private:
     size_t _length;
 };
-#endif
 
 /// ArchConstFileMapping and ArchMutableFileMapping are std::unique_ptr<char
 /// const *, ...> and std::unique_ptr<char *, ...> respectively.  The functions
@@ -300,6 +294,18 @@ private:
 /// access to memory-mapped file contents.
 using ArchConstFileMapping = std::unique_ptr<char const, Arch_Unmapper>;
 using ArchMutableFileMapping = std::unique_ptr<char, Arch_Unmapper>;
+
+/// Return the length of an ArchConstFileMapping.
+inline size_t
+ArchGetFileMappingLength(ArchConstFileMapping const &m) {
+    return m.get_deleter().GetLength();
+}
+
+/// Return the length of an ArchMutableFileMapping.
+inline size_t
+ArchGetFileMappingLength(ArchMutableFileMapping const &m) {
+    return m.get_deleter().GetLength();
+}
 
 /// Privately map the passed \p file into memory and return a unique_ptr to the
 /// read-only mapped contents.  The contents may not be modified.  If mapping

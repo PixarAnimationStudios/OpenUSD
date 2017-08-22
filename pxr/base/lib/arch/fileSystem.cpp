@@ -464,7 +464,7 @@ Arch_MapFileImpl(FILE *file, std::string *errMsg)
                       /*offsetHigh=*/ 0, /*offsetLow=*/0, unsignedLength));
     // Close the mapping handle, and return the view pointer.
     CloseHandle(hFileMap);
-    return Mapping(ptr, Arch_Unmapper());
+    return Mapping(ptr, Arch_Unmapper(length));
 #else // Assume POSIX
     auto m = mmap(nullptr, length,
                   isConst ? PROT_READ : PROT_READ | PROT_WRITE,
