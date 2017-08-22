@@ -20,6 +20,7 @@ pxr_library(vt
         functions
         hash
         keyValue
+        pyDictionaryUtils
         streamOut
         types
         value
