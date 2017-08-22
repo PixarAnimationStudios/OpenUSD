@@ -370,9 +370,12 @@ template <> struct _IsBitwiseReadWrite<_ListOpHeader> : std::true_type {};
 
 struct _MmapStream {
     
-    explicit _MmapStream(char const *mapStart, char *debugPageMap)
-        : _cur(mapStart), _mapStart(mapStart), _debugPageMap(debugPageMap) {}
-
+    explicit _MmapStream(ArchConstFileMapping const &mapStart,
+                         char *debugPageMap)
+        : _cur(mapStart.get())
+        , _mapStart(mapStart.get())
+        , _debugPageMap(debugPageMap) {}
+    
     inline void Read(void *dest, size_t nBytes) {
         if (ARCH_UNLIKELY(_debugPageMap)) {
             int64_t pageStart = (_cur - _mapStart) / PAGESIZE;
@@ -1363,7 +1366,6 @@ CrateFile::CrateFile(
     string const &fileName, ArchConstFileMapping mapStart, int64_t fileSize)
     : _mapStart(std::move(mapStart))
     , _fileName(fileName)
-    , _fileLength(fileSize)
     , _useMmap(true)
 {
     _DoAllTypeRegistrations();
@@ -1384,8 +1386,7 @@ CrateFile::CrateFile(
             memset(_debugPageMap.get(), 0, npages);
         } 
 
-        auto reader =
-            _MakeReader(_MmapStream(_mapStart.get(), _debugPageMap.get()));
+        auto reader = _MakeReader(_MmapStream(_mapStart, _debugPageMap.get()));
         TfErrorMark m;
         _ReadStructuralSections(reader, fileSize);
         if (!m.IsClean())
@@ -1401,7 +1402,6 @@ CrateFile::CrateFile(
     string const &fileName, _UniqueFILE inputFile, int64_t fileSize)
     : _inputFile(std::move(inputFile))
     , _fileName(fileName)
-    , _fileLength(fileSize)
     , _useMmap(false)
 {
     _DoAllTypeRegistrations();
@@ -1424,10 +1424,11 @@ CrateFile::~CrateFile()
 
     // Dump a debug page map if requested.
     if (_useMmap && _mapStart && _debugPageMap) {
-        int64_t npages = (_fileLength + PAGESIZE-1) / PAGESIZE;
+        int64_t length = ArchGetFileMappingLength(_mapStart);
+        int64_t npages = (length + PAGESIZE-1) / PAGESIZE;
         std::unique_ptr<unsigned char []> mincoreMap(new unsigned char[npages]);
         void const *p = static_cast<void const *>(_mapStart.get());
-        if (!ArchQueryMappedMemoryResidency(p, _fileLength, mincoreMap.get())) {
+        if (!ArchQueryMappedMemoryResidency(p, length, mincoreMap.get())) {
             TF_WARN("failed to obtain memory residency information");
             return;
         }
@@ -1455,8 +1456,8 @@ CrateFile::~CrateFile()
         printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
                "page map for %s\n"
-               "%zd pages, %zd accessed (%.1f%%), %zd resident (%.1f%%) "
-               "%.1f%% efficient\n"
+               "%zd pages, %zd used (%.1f%%), %zd in mem (%.1f%%)\n"
+               "used %.1f%% of pages in mem\n"
                "legend: '+': in mem & used,     '-': in mem & unused\n"
                "        '!': not in mem & used, ' ': not in mem & unused\n"
                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -1518,16 +1519,8 @@ CrateFile::Packer::Close()
         bool writeResult = _crate->_Write();
 
         // If we wrote successfully, store the fileName and size.
-        if (writeResult) {
+        if (writeResult)
             _crate->_fileName = _crate->_packCtx->fileName;
-            _crate->_fileLength = ArchGetFileLength(fp);
-            // Create a new debugPageMap if we had one previously.
-            if (_crate->_debugPageMap) {
-                int64_t npages = (_crate->_fileLength + PAGESIZE-1) / PAGESIZE;
-                _crate->_debugPageMap.reset(new char[npages]);
-                memset(_crate->_debugPageMap.get(), 0, npages);
-            }
-        }
 
         // Pull out the file handle and kill the packing context.
         _UniqueFILE file(fp);
@@ -1544,6 +1537,13 @@ CrateFile::Packer::Close()
                 _MmapFile(_crate->_fileName.c_str(), file.get());
             if (!_crate->_mapStart)
                 return false;
+            // Create a new debugPageMap if we had one previously.
+            if (_crate->_debugPageMap) {
+                int64_t length = ArchGetFileMappingLength(_crate->_mapStart);
+                int64_t npages = (length + PAGESIZE-1) / PAGESIZE;
+                _crate->_debugPageMap.reset(new char[npages]);
+                memset(_crate->_debugPageMap.get(), 0, npages);
+            }
         } else {
             // Must adopt the file handle if we don't already have one.
             _crate->_inputFile = std::move(file);
@@ -1812,8 +1812,7 @@ CrateFile::_GetTimeSampleValueImpl(TimeSamples const &ts, size_t i) const
     // Need to read the rep from the file for index i.
     auto offset = ts.valuesFileOffset + i * sizeof(ValueRep);
     if (_useMmap) {
-        auto reader = _MakeReader(
-            _MmapStream(_mapStart.get(), _debugPageMap.get()));
+        auto reader = _MakeReader(_MmapStream(_mapStart, _debugPageMap.get()));
         reader.Seek(offset);
         return VtValue(reader.Read<ValueRep>());
     } else {
@@ -1829,8 +1828,7 @@ CrateFile::_MakeTimeSampleValuesMutableImpl(TimeSamples &ts) const
     // Read out the reps into the vector.
     ts.values.resize(ts.times.Get().size());
     if (_useMmap) {
-        auto reader = _MakeReader(
-            _MmapStream(_mapStart.get(), _debugPageMap.get()));
+        auto reader = _MakeReader(_MmapStream(_mapStart, _debugPageMap.get()));
         reader.Seek(ts.valuesFileOffset);
         for (size_t i = 0, n = ts.times.Get().size(); i != n; ++i)
             ts.values[i] = reader.Read<ValueRep>();
@@ -2263,8 +2261,7 @@ void
 CrateFile::_ReadRawBytes(int64_t start, int64_t size, char *buf) const
 {
     if (_useMmap) {
-        auto reader = _MakeReader(
-            _MmapStream(_mapStart.get(), _debugPageMap.get()));
+        auto reader = _MakeReader(_MmapStream(_mapStart, _debugPageMap.get()));
         reader.Seek(start);
         reader.template ReadContiguous<char>(buf, size);
     } else {
@@ -2426,7 +2423,7 @@ CrateFile::_UnpackValue(ValueRep rep, T *out) const
 {
     auto const &h = _GetValueHandler<T>();
     if (_useMmap) {
-        h.Unpack(_MakeReader(_MmapStream(_mapStart.get(),
+        h.Unpack(_MakeReader(_MmapStream(_mapStart,
                                          _debugPageMap.get())), rep, out);
     } else {
         h.Unpack(_MakeReader(_PreadStream(_inputFile.get())), rep, out);
@@ -2438,7 +2435,7 @@ void
 CrateFile::_UnpackValue(ValueRep rep, VtArray<T> *out) const {
     auto const &h = _GetValueHandler<T>();
     if (_useMmap) {
-        h.UnpackArray(_MakeReader(_MmapStream(_mapStart.get(),
+        h.UnpackArray(_MakeReader(_MmapStream(_mapStart,
                                               _debugPageMap.get())), rep, out);
     } else {
         h.UnpackArray(_MakeReader(_PreadStream(_inputFile.get())), rep, out);
@@ -2511,7 +2508,7 @@ void CrateFile::_DoTypeRegistration() {
     _unpackValueFunctionsMmap[typeEnumIndex] =
         [this, valueHandler](ValueRep rep, VtValue *out) {
             valueHandler->UnpackVtValue(
-                _MakeReader(_MmapStream(_mapStart.get(),
+                _MakeReader(_MmapStream(_mapStart,
                                         _debugPageMap.get())), rep, out);
         };
 
