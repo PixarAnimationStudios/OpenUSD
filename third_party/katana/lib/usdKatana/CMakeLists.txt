@@ -62,7 +62,7 @@ pxr_shared_library(${PXR_PACKAGE}
         wrapLookAPI.cpp
         module.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES

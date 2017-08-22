@@ -10,7 +10,7 @@ pxr_library(cameraUtil
         conformWindow
         screenWindowParameters
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
         
     PUBLIC_HEADERS
@@ -21,7 +21,7 @@ pxr_library(cameraUtil
         wrapConformWindow.cpp
         wrapScreenWindowParameters.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 )
 

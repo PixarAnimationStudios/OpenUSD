@@ -23,10 +23,10 @@ pxr_library(usdSkel
     PUBLIC_HEADERS
         api.h
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp    
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     PYMODULE_CPPFILES

@@ -55,7 +55,7 @@ pxr_library(usdGeom
     PUBLIC_HEADERS
         api.h
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
@@ -93,7 +93,7 @@ pxr_library(usdGeom
         wrapXformOp.cpp
         wrapXformCommonAPI.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES

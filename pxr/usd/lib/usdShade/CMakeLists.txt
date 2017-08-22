@@ -24,7 +24,7 @@ pxr_library(usdShade
     PUBLIC_HEADERS
         api.h
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
@@ -39,7 +39,7 @@ pxr_library(usdShade
         wrapTokens.cpp
         wrapUtils.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES

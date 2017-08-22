@@ -33,6 +33,8 @@ pxr_library(plug
 
     CPPFILES
         initConfig.cpp
+
+    PYTHON_CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
@@ -42,7 +44,7 @@ pxr_library(plug
         wrapRegistry.cpp
         wrapTestPlugBase.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 )
 

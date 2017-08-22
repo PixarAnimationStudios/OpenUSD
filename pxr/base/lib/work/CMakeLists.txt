@@ -22,14 +22,14 @@ pxr_library(work
     PUBLIC_HEADERS
         api.h
         
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
         wrapThreadLimits.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 )
 

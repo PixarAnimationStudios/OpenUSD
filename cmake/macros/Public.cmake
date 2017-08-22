@@ -184,8 +184,13 @@ function(pxr_library NAME)
         LIBRARIES
         INCLUDE_DIRS
         RESOURCE_FILES
+        PYTHON_PUBLIC_CLASSES
+        PYTHON_PRIVATE_CLASSES
+        PYTHON_PUBLIC_HEADERS
+        PYTHON_PRIVATE_HEADERS
+        PYTHON_CPPFILES
         PYMODULE_CPPFILES
-        PYTHON_FILES
+        PYMODULE_FILES
         PYSIDE_UI_FILES
     )
 
@@ -195,6 +200,26 @@ function(pxr_library NAME)
         "${multiValueArgs}"
         ${ARGN}
     )
+
+    # If python support is enabled, merge the python specific categories
+    # with the more general before setting up compilation.
+    if(PXR_ENABLE_PYTHON_SUPPORT)
+        if(args_PYTHON_PUBLIC_CLASSES)
+            list(APPEND args_PUBLIC_CLASSES ${args_PYTHON_PUBLIC_CLASSES})
+        endif()
+        if(args_PYTHON_PUBLIC_HEADERS)
+            list(APPEND args_PUBLIC_HEADERS ${args_PYTHON_PUBLIC_HEADERS})
+        endif()
+        if(args_PYTHON_PRIVATE_CLASSES)
+            list(APPEND args_PRIVATE_CLASSES ${args_PYTHON_PRIVATE_CLASSES})
+        endif()
+        if(args_PYTHON_PRIVATE_HEADERS)
+            list(APPEND args_PRIVATE_HEADERS ${args_PYTHON_PRIVATE_HEADERS})
+        endif()
+        if(args_PYTHON_CPPFILES)
+            list(APPEND args_CPPFILES ${args_PYTHON_CPPFILES})
+        endif()
+    endif()
 
     # Collect libraries.
     get_property(help CACHE PXR_ALL_LIBS PROPERTY HELPSTRING)
@@ -284,11 +309,11 @@ function(pxr_library NAME)
         LIB_INSTALL_PREFIX_RESULT libInstallPrefix
     )
 
-    if(args_PYMODULE_CPPFILES OR args_PYTHON_FILES OR args_PYSIDE_UI_FILES)
+    if(args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES)
         _pxr_python_module(
             ${NAME}
             WRAPPED_LIB_INSTALL_PREFIX "${libInstallPrefix}"
-            PYTHON_FILES ${args_PYTHON_FILES}
+            PYTHON_FILES ${args_PYMODULE_FILES}
             PYSIDE_UI_FILES ${args_PYSIDE_UI_FILES}
             CPPFILES ${args_PYMODULE_CPPFILES}
             INCLUDE_DIRS ${args_INCLUDE_DIRS}

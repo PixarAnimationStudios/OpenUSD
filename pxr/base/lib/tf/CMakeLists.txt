@@ -48,7 +48,6 @@ pxr_library(tf
         getenv
         hash
         iterator
-        makePyConstructor
         mallocTag
         move
         notice
@@ -58,6 +57,38 @@ pxr_library(tf
         patternMatcher
         pointerAndBits
         poolAllocator
+        refBase
+        refCount
+        refPtr
+        refPtrTracker
+        regTest
+        registryManager
+        scoped
+        scopeDescription
+        setenv
+        singleton
+        stackTrace
+        stacked
+        status
+        stl
+        stopwatch
+        stringUtils
+        templateString
+        tf
+        timeStamp
+        token
+        traits
+        type
+        typeFunctions
+        typeNotice
+        warning
+        weakBase
+        weakPtr
+        weakPtrFacade
+        wrapTypeHelpers
+
+    PYTHON_PUBLIC_CLASSES
+        makePyConstructor
         pyAnnotatedBoolResult
         pyArg
         pyCall
@@ -86,36 +117,7 @@ pxr_library(tf
         pyUtils
         pyWeakObject
         pyWrapContext
-        refBase
-        refCount
-        refPtr
-        refPtrTracker
-        regTest
-        registryManager
-        scoped
-        scopeDescription
         scriptModuleLoader
-        setenv
-        singleton
-        stackTrace
-        stacked
-        status
-        stl
-        stopwatch
-        stringUtils
-        templateString
-        tf
-        timeStamp
-        token
-        traits
-        type
-        typeFunctions
-        typeNotice
-        warning
-        weakBase
-        weakPtr
-        weakPtrFacade
-        wrapTypeHelpers
 
     PUBLIC_HEADERS
         api.h
@@ -129,7 +131,6 @@ pxr_library(tf
         instantiateStacked.h
         instantiateType.h
         preprocessorUtils.h
-        pyStaticTokens.h
         preprocessorUtilsLite.h
         safeTypeCompare.h
         staticData.h
@@ -137,9 +138,14 @@ pxr_library(tf
         typeInfoMap.h
         type_Impl.h
 
+    PYTHON_PUBLIC_HEADERS
+        pyStaticTokens.h
+
     PRIVATE_CLASSES
         debugCodes
         noticeRegistry
+
+    PYTHON_PRIVATE_CLASSES
         pyErrorInternal
 
     PRIVATE_HEADERS 
@@ -156,7 +162,6 @@ pxr_library(tf
 
     CPPFILES
         initConfig.cpp
-        moduleDeps.cpp
         preprocessorUtils.cpp
         pxrDoubleConversion/double-conversion.cc
         pxrDoubleConversion/bignum-dtoa.cc
@@ -166,6 +171,9 @@ pxr_library(tf
         pxrDoubleConversion/fast-dtoa.cc
         pxrDoubleConversion/fixed-dtoa.cc
         pxrDoubleConversion/strtod.cc
+
+    PYTHON_CPPFILES
+        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -208,7 +216,7 @@ pxr_library(tf
         wrapWarning.cpp
 
 
-    PYTHON_FILES
+    PYMODULE_FILES 
         __init__.py
         testenv/__init__.py
         testenv/testTfScriptModuleLoader_AAA_RaisesError.py

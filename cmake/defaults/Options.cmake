@@ -100,3 +100,5 @@ set(PXR_MONOLITHIC_IMPORT ""
     STRING
     "Path to cmake file that imports a usd_ms target"
 )
+
+set(PXR_ENABLE_PYTHON_SUPPORT "ON")

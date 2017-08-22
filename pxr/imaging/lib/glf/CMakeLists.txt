@@ -85,8 +85,10 @@ pxr_library(glf
 
     CPPFILES
         dictionary.cpp
-        moduleDeps.cpp
         oiioImage.cpp
+
+    PYTHON_CPPFILES
+        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -101,7 +103,7 @@ pxr_library(glf
         wrapUVTexture.cpp
         wrapUVTextureStorage.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES

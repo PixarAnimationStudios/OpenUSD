@@ -22,7 +22,7 @@ pxr_library(usdviewq
     PUBLIC_CLASSES
         utils
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
         
     PUBLIC_HEADERS
@@ -32,7 +32,7 @@ pxr_library(usdviewq
         module.cpp
         wrapUtils.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
         arrayAttributeView.py
         customAttributes.py

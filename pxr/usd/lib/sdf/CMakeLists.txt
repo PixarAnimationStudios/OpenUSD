@@ -58,15 +58,6 @@ pxr_library(sdf
         proxyPolicies
         proxyTypes
         pseudoRootSpec
-        pyChildrenProxy
-        pyChildrenView
-        pyListEditorProxy
-        pyListOp
-        pyListProxy
-        pyMapEditProxy
-        pyMarkerProxy
-        pySpec
-        pyUtils
         reference
         relationshipSpec
         schema
@@ -86,6 +77,17 @@ pxr_library(sdf
         layerIdentifier.tab
         path.tab
         textFileFormat.tab
+   
+    PYTHON_PUBLIC_CLASSES
+        pyChildrenProxy
+        pyChildrenView
+        pyListEditorProxy
+        pyListOp
+        pyListProxy
+        pyMapEditProxy
+        pyMarkerProxy
+        pySpec
+        pyUtils
 
     PUBLIC_HEADERS
         api.h
@@ -117,11 +119,13 @@ pxr_library(sdf
         valueTypePrivate.h
 
     CPPFILES
-        moduleDeps.cpp
         # Flex/Bison generated code
         layerIdentifier.lex.cpp
         path.lex.cpp
         textFileFormat.lex.cpp
+
+    PYTHON_CPPFILES
+        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -153,7 +157,7 @@ pxr_library(sdf
         wrapVariantSpec.cpp
         wrapVariantSetSpec.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES 
         __init__.py
 
     RESOURCE_FILES

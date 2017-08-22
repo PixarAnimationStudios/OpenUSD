@@ -20,10 +20,10 @@ pxr_plugin(${PXR_PACKAGE}
         paramsAPI
         tokens
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp    
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     PYMODULE_CPPFILES
