@@ -258,28 +258,13 @@ private:
         HdDirtyBits requestBits;
     };
     std::vector<_Task> _tasks;
-
-    boost::optional<HdDirtyBits> _requestBits;
-
 public:
     _Worker()
     {
     }
 
-    void SetRequestBits(int flags) {
-        _requestBits = flags;
-    }
-
-    HdDirtyBits GetRequestBits(_Task const& task) {
-         if (_requestBits) {
-            return *_requestBits; 
-         } else {
-            return task.requestBits;
-         }
-    }
-
     void AddTask(UsdImagingDelegate* delegate, SdfPath const& usdPath, 
-                 HdDirtyBits requestBits=0) {
+                 HdDirtyBits requestBits) {
         _tasks.push_back(_Task(delegate, usdPath, requestBits));
     }
 
@@ -312,9 +297,7 @@ public:
             _AdapterSharedPtr const& adapter = 
                                         delegate->_AdapterLookupByPath(usdPath);
             if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
-                adapter->TrackVariabilityPrep(prim, 
-                                              usdPath, 
-                                              GetRequestBits(*it));
+                adapter->TrackVariabilityPrep(prim, usdPath);
             }
         }
     }
@@ -326,22 +309,12 @@ public:
             UsdImagingDelegate* delegate = _tasks[i].delegate;
             SdfPath const& usdPath = _tasks[i].path;
             UsdPrim const& prim = delegate->_GetPrim(usdPath);
-            HdDirtyBits* requestBits = NULL;
             HdDirtyBits* dirtyBits = delegate->_GetDirtyBits(usdPath);
-            if (_requestBits) {
-                requestBits = &(*_requestBits);
-            } else {
-                if (!dirtyBits) {
-                    // Should never get here; _GetDirtyBits will hit a failed
-                    // verify when we do.
-                    continue;
-                }
-                requestBits = dirtyBits;
-            }
+
             _AdapterSharedPtr const& adapter = 
                                         delegate->_AdapterLookupByPath(usdPath);
             if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
-                adapter->TrackVariability(prim,usdPath,*requestBits,dirtyBits);
+                adapter->TrackVariability(prim, usdPath, dirtyBits);
             }
         }
     }
@@ -354,16 +327,8 @@ public:
             UsdTimeCode const& time = delegate->_time;
             SdfPath const& usdPath = _tasks[i].path;
             UsdPrim const& prim = delegate->_GetPrim(usdPath);
-            HdDirtyBits requestBits = GetRequestBits(_tasks[i]);
-            if (!requestBits) {
-                if (HdDirtyBits* bits = delegate->_GetDirtyBits(usdPath)) {
-                    requestBits = *bits;
-                } else {
-                    // Should never get here; _GetDirtyBits will hit a failed
-                    // verify when we do.
-                    continue;
-                }
-            }
+            HdDirtyBits requestBits = _tasks[i].requestBits;
+
             _AdapterSharedPtr adapter = delegate->_AdapterLookupByPath(usdPath);
             if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
                 adapter->UpdateForTime(prim, usdPath, time, requestBits);
@@ -427,7 +392,7 @@ void
 UsdImagingIndexProxy::_AddTask(SdfPath const& usdPath) 
 {
     _delegate->_dirtyMap[usdPath] = 0;
-    _worker->AddTask(_delegate, usdPath);
+    _worker->AddTask(_delegate, usdPath, 0);
 }
 
 SdfPath
@@ -697,13 +662,8 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
 {
     UsdImagingDelegate::_Worker worker;
 
-    int allDirty = HdChangeTracker::AllDirty;
-    if (includeUnvarying) {
-        worker.SetRequestBits(HdChangeTracker::AllDirty);
-    }
-
     TF_FOR_ALL(it, _dirtyMap) {
-        int dirtyFlags = includeUnvarying ? allDirty 
+        int dirtyFlags = includeUnvarying ? HdChangeTracker::AllDirty
                                            : it->second;
 
         if (dirtyFlags == HdChangeTracker::Clean)
@@ -723,7 +683,7 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
                       HdChangeTracker::StringifyDirtyBits(dirtyFlags).c_str());
 
             adapter->UpdateForTimePrep(prim, usdPath, _time, dirtyFlags);
-            worker.AddTask(this, usdPath);
+            worker.AddTask(this, usdPath, dirtyFlags);
         }
     }
 
@@ -733,7 +693,7 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
         // not prefixed with the delegate ID.
         SdfPath usdPath = *it;
         UsdPrim prim = _GetPrim(usdPath);
-        int dirtyFlags = includeUnvarying ? allDirty 
+        int dirtyFlags = includeUnvarying ? HdChangeTracker::AllDirty
                                           : *_GetDirtyBits(usdPath);
         _AdapterSharedPtr adapter = _AdapterLookupByPath(usdPath);
         if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
@@ -743,7 +703,7 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
                     dirtyFlags,
                     HdChangeTracker::StringifyDirtyBits(dirtyFlags).c_str());
             adapter->UpdateForTimePrep(prim, usdPath, _time, dirtyFlags);
-            worker.AddTask(this, usdPath);
+            worker.AddTask(this, usdPath, dirtyFlags);
         }
     }
 
@@ -808,7 +768,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
                     dirtyFlags,
                     HdChangeTracker::StringifyDirtyBits(dirtyFlags).c_str());
             adapter->UpdateForTimePrep(prim, usdPath, _time, dirtyFlags);
-            worker.AddTask(this, usdPath);
+            worker.AddTask(this, usdPath, dirtyFlags);
         }
     }
 
@@ -917,14 +877,6 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
     // Force initialization of SchemaRegistry (doing this in parallel causes all
     // threads to block).
     UsdSchemaRegistry::GetInstance();
-
-    UsdImagingDelegate::_Worker* worker = proxy->_GetWorker();
-
-    // TODO: When we get to request-based data fetch, we will no longer need to
-    // explicity exclude SubdivTags.
-    int requestedBits = HdChangeTracker::AllDirty 
-                      & ~HdChangeTracker::DirtySubdivTags;
-    worker->SetRequestBits(requestedBits);
 
     // Build a TfHashSet of excluded prims for fast rejection.
     TfHashSet<SdfPath, SdfPath::Hash> excludedSet;
@@ -1543,8 +1495,8 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
                 if (!TF_VERIFY(dirtyBits)) {
                     continue;
                 }
-                adapter->TrackVariabilityPrep(prim, usdPath, requestBits);
-                adapter->TrackVariability(prim, usdPath, requestBits,dirtyBits);
+                adapter->TrackVariabilityPrep(prim, usdPath);
+                adapter->TrackVariability(prim, usdPath, dirtyBits);
 
                 // Propagate the request bits back out to the change tracker.
                 //

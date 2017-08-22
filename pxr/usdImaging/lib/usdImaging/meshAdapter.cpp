@@ -71,67 +71,51 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
     return prim.GetPath();
 }
 
-void
-UsdImagingMeshAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                            SdfPath const& cachePath,
-                                            HdDirtyBits requestedBits,
-                                            UsdImagingInstancerContext const* 
-                                                instancerContext)
-{
-    // Let the base class track what it needs.
-    BaseAdapter::TrackVariabilityPrep(
-        prim, cachePath, requestedBits, instancerContext);
-}
 
 void
 UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
-                                        HdDirtyBits requestedBits,
-                                        HdDirtyBits* dirtyBits,
+                                        HdDirtyBits* timeVaryingBits,
                                         UsdImagingInstancerContext const* 
                                             instancerContext)
 {
     BaseAdapter::TrackVariability(
-        prim, cachePath, requestedBits, dirtyBits, instancerContext);
+        prim, cachePath, timeVaryingBits, instancerContext);
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
     // container during update.
 
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        // Discover time-varying points.
-        _IsVarying(prim,
-                   UsdGeomTokens->points,
-                   HdChangeTracker::DirtyPoints,
-                   UsdImagingTokens->usdVaryingPrimVar,
-                   dirtyBits,
-                   /*isInherited*/false);
-    }
+    // Discover time-varying points.
+    _IsVarying(prim,
+               UsdGeomTokens->points,
+               HdChangeTracker::DirtyPoints,
+               UsdImagingTokens->usdVaryingPrimVar,
+               timeVaryingBits,
+               /*isInherited*/false);
 
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        // Discover time-varying topology.
+    // Discover time-varying topology.
+    if (!_IsVarying(prim,
+                       UsdGeomTokens->faceVertexCounts,
+                       HdChangeTracker::DirtyTopology,
+                       UsdImagingTokens->usdVaryingTopology,
+                       timeVaryingBits,
+                       /*isInherited*/false)) {
+        // Only do this check if the faceVertexCounts is not already known
+        // to be varying.
         if (!_IsVarying(prim,
-                           UsdGeomTokens->faceVertexCounts,
+                           UsdGeomTokens->faceVertexIndices,
                            HdChangeTracker::DirtyTopology,
                            UsdImagingTokens->usdVaryingTopology,
-                           dirtyBits,
+                           timeVaryingBits,
                            /*isInherited*/false)) {
-            // Only do this check if the faceVertexCounts is not already known
-            // to be varying.
-            if (!_IsVarying(prim,
-                               UsdGeomTokens->faceVertexIndices,
-                               HdChangeTracker::DirtyTopology,
-                               UsdImagingTokens->usdVaryingTopology,
-                               dirtyBits,
-                               /*isInherited*/false)) {
-                // Only do this check if both faceVertexCounts and
-                // faceVertexIndices are not known to be varying.
-                _IsVarying(prim,
-                           UsdGeomTokens->holeIndices,
-                           HdChangeTracker::DirtyTopology,
-                           UsdImagingTokens->usdVaryingTopology,
-                           dirtyBits,
-                           /*isInherited*/false);
-            }
+            // Only do this check if both faceVertexCounts and
+            // faceVertexIndices are not known to be varying.
+            _IsVarying(prim,
+                       UsdGeomTokens->holeIndices,
+                       HdChangeTracker::DirtyTopology,
+                       UsdImagingTokens->usdVaryingTopology,
+                       timeVaryingBits,
+                       /*isInherited*/false);
         }
     }
 }

@@ -67,44 +67,28 @@ UsdImagingPointsAdapter::Populate(UsdPrim const& prim,
 }
 
 void 
-UsdImagingPointsAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                              SdfPath const& cachePath,
-                                              HdDirtyBits requestedBits,
-                                              UsdImagingInstancerContext const* 
-                                                  instancerContext)
-{
-    // Let the base class track what it needs.
-    BaseAdapter::TrackVariabilityPrep(
-        prim, cachePath, requestedBits, instancerContext);
-}
-
-void 
 UsdImagingPointsAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
-                                          HdDirtyBits requestedBits,
-                                          HdDirtyBits* dirtyBits,
+                                          HdDirtyBits* timeVaryingBits,
                                           UsdImagingInstancerContext const* 
                                               instancerContext)
 {
     BaseAdapter::TrackVariability(
-        prim, cachePath, requestedBits, dirtyBits, instancerContext);
+        prim, cachePath, timeVaryingBits, instancerContext);
 
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        // Discover time-varying points.
-        _IsVarying(prim, 
-                   UsdGeomTokens->points, 
-                   HdChangeTracker::DirtyPoints,
-                   UsdImagingTokens->usdVaryingPrimVar,
-                   dirtyBits,
-                   /*isInherited*/false);
-    }
-    if (requestedBits & HdChangeTracker::DirtyWidths) {
-        _IsVarying(prim, UsdGeomTokens->widths,
-                           HdChangeTracker::DirtyWidths,
-                           UsdImagingTokens->usdVaryingWidths,
-                           dirtyBits, 
-                           /*isInherited*/false);
-    }
+    // Discover time-varying points.
+    _IsVarying(prim,
+               UsdGeomTokens->points,
+               HdChangeTracker::DirtyPoints,
+               UsdImagingTokens->usdVaryingPrimVar,
+               timeVaryingBits,
+               /*isInherited*/false);
+
+    _IsVarying(prim, UsdGeomTokens->widths,
+                       HdChangeTracker::DirtyWidths,
+                       UsdImagingTokens->usdVaryingWidths,
+                       timeVaryingBits,
+                       /*isInherited*/false);
 }
 
 void 

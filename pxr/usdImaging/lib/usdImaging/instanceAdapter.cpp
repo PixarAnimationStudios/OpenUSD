@@ -366,50 +366,9 @@ UsdImagingInstanceAdapter::_IsChildPrim(UsdPrim const& prim,
 }
 
 void 
-UsdImagingInstanceAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                      SdfPath const& cachePath,
-                                      HdDirtyBits requestedBits,
-                                      UsdImagingInstancerContext const* 
-                                          instancerContext)
-{
-    UsdImagingValueCache* valueCache = _GetValueCache();
-    // We will always cache purpose.
-    // XXX: this is an indicator of a problem, we should have some flag to
-    // drive purpose, just as all other values.
-    valueCache->GetPurpose(cachePath);
-
-    if (_IsChildPrim(prim, cachePath)) {
-        UsdImagingInstancerContext instancerContext;
-        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
-                                                    cachePath,
-                                                    &instancerContext);
-        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
-            return;
-        }
-
-        // We must ensure InstanceIndices gets populated with some value;
-        // perhaps we should reconsider the way the instancing code works in
-        // Hydra.
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex)
-            valueCache->GetInstanceIndices(cachePath);
-
-        rproto.adapter->TrackVariabilityPrep(
-            _GetPrim(rproto.path), cachePath, requestedBits, 
-            &instancerContext);
-    } 
-    else {
-        if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-            valueCache->GetPrimvar(cachePath, HdTokens->instanceTransform);
-            valueCache->GetPrimvars(cachePath);
-        }
-    }
-}
-
-void 
 UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  HdDirtyBits requestedBits,
-                                  HdDirtyBits* dirtyBits,
+                                  HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext)
 {
@@ -438,20 +397,18 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
 
         // If requested, we will always mark indices dirty and update them
         // lazily.
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
-            *dirtyBits |= HdChangeTracker::DirtyInstanceIndex;
-            // Initializing to an empty value is OK here because either this
-            // prototype will be invisible or it will be visible and the indices
-            // will be updated.
-            VtIntArray a;
-            valueCache->GetInstanceIndices(cachePath) = a;
-        }
+        *timeVaryingBits |= HdChangeTracker::DirtyInstanceIndex;
+        // Initializing to an empty value is OK here because either this
+        // prototype will be invisible or it will be visible and the indices
+        // will be updated.
+        VtIntArray a;
+        valueCache->GetInstanceIndices(cachePath) = a;
         
         UsdPrim protoPrim = _GetPrim(rproto.path);
         rproto.adapter->TrackVariability(
-            protoPrim, cachePath, requestedBits, &rproto.variabilityBits,
+            protoPrim, cachePath, &rproto.variabilityBits,
             &instancerContext);
-        *dirtyBits |= rproto.variabilityBits;
+        *timeVaryingBits |= rproto.variabilityBits;
 
         if (!(rproto.variabilityBits & HdChangeTracker::DirtyVisibility)) {
             // Pre-cache visibility, because we now know that it is static for
@@ -464,37 +421,32 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         // instancer data associated with the Rprim gets updated.
         int instancerBits = _UpdateDirtyBits(prim.GetStage()->
                                  GetPrimAtPath(instancerContext.instancerId));
-        *dirtyBits |=  (instancerBits & HdChangeTracker::DirtyInstancer);
-
-        if (requestedBits & HdChangeTracker::DirtyVisibility) {
-            *dirtyBits |= HdChangeTracker::DirtyVisibility;
-        }
+        *timeVaryingBits |=  (instancerBits & HdChangeTracker::DirtyInstancer);
+        *timeVaryingBits |= HdChangeTracker::DirtyVisibility;
 
     } else {
         // In this case, prim is an instance master. Master prims provide
         // no data of their own, so we fall back to the default purpose.
         valueCache->GetPurpose(cachePath) = UsdGeomTokens->default_;
 
-        if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-            int instancerBits = _UpdateDirtyBits(prim);
+        int instancerBits = _UpdateDirtyBits(prim);
 
-            // If any of the instance transforms vary over time, the
-            // instancer will have the DirtyInstancer bit set. Translate
-            // that to DirtyPrimVar so that Hd will note that the 
-            // instance transform primvar is varying over time.
-            if (instancerBits & HdChangeTracker::DirtyInstancer) {
-                *dirtyBits |= HdChangeTracker::DirtyPrimVar;
-            }
+        // If any of the instance transforms vary over time, the
+        // instancer will have the DirtyInstancer bit set. Translate
+        // that to DirtyPrimVar so that Hd will note that the
+        // instance transform primvar is varying over time.
+        if (instancerBits & HdChangeTracker::DirtyInstancer) {
+            *timeVaryingBits |= HdChangeTracker::DirtyPrimVar;
+        }
 
-            VtMatrix4dArray instanceXforms;
-            if (_ComputeInstanceTransform(prim, &instanceXforms, time)) {
-                valueCache->GetPrimvar(
-                    cachePath, HdTokens->instanceTransform) = instanceXforms;
-                UsdImagingValueCache::PrimvarInfo primvar;
-                primvar.name = HdTokens->instanceTransform;
-                primvar.interpolation = _tokens->instance;
-                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-            }
+        VtMatrix4dArray instanceXforms;
+        if (_ComputeInstanceTransform(prim, &instanceXforms, time)) {
+            valueCache->GetPrimvar(
+                cachePath, HdTokens->instanceTransform) = instanceXforms;
+            UsdImagingValueCache::PrimvarInfo primvar;
+            primvar.name = HdTokens->instanceTransform;
+            primvar.interpolation = _tokens->instance;
+            _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
         }
     }
 }

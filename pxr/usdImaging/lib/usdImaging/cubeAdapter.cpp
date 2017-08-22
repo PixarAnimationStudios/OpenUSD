@@ -72,39 +72,26 @@ UsdImagingCubeAdapter::Populate(UsdPrim const& prim,
 }
 
 void 
-UsdImagingCubeAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                            SdfPath const& cachePath,
-                                            HdDirtyBits requestedBits,
-                                            UsdImagingInstancerContext const* 
-                                                instancerContext)
-{
-    // Let the base class track what it needs.
-    BaseAdapter::TrackVariabilityPrep(
-        prim, cachePath, requestedBits, instancerContext);
-}
-
-void 
 UsdImagingCubeAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
-                                        HdDirtyBits requestedBits,
-                                        HdDirtyBits* dirtyBits,
+                                        HdDirtyBits* timeVaryingBits,
                                         UsdImagingInstancerContext const* 
                                             instancerContext)
 {
     BaseAdapter::TrackVariability(
-        prim, cachePath, requestedBits, dirtyBits, instancerContext);
+        prim, cachePath, timeVaryingBits, instancerContext);
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
     // container during update.
     
-    UsdTimeCode time(1.0);
-    if (requestedBits & HdChangeTracker::DirtyTransform) {
-        if (!(*dirtyBits & HdChangeTracker::DirtyTransform)) {
-            _IsVarying(prim, UsdGeomTokens->size,
-                          HdChangeTracker::DirtyTransform,
-                          UsdImagingTokens->usdVaryingXform,
-                          dirtyBits, /*inherited*/false);
-        }
+    // The base adapter may already be setting that transform dirty bit.
+    // _IsVarying will clear it, so check it isn't already marked as
+    // varying before checking for additional set cases.
+     if ((*timeVaryingBits & HdChangeTracker::DirtyTransform) == 0) {
+        _IsVarying(prim, UsdGeomTokens->size,
+                      HdChangeTracker::DirtyTransform,
+                      UsdImagingTokens->usdVaryingXform,
+                      timeVaryingBits, /*inherited*/false);
     }
 }
 

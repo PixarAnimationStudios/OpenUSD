@@ -59,30 +59,9 @@ UsdImagingGprimAdapter::~UsdImagingGprimAdapter()
 }
 
 void 
-UsdImagingGprimAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                             SdfPath const& cachePath,
-                                             HdDirtyBits requestedBits,
-                                             UsdImagingInstancerContext const* 
-                                                 instancerContext)
-{
-    // Prepopulate cache entries to avoid mutation during multi-threaded data
-    // fetch.
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    if (requestedBits & HdChangeTracker::DirtyVisibility) {
-        valueCache->GetVisible(cachePath);
-        valueCache->GetPurpose(cachePath);
-    }
-    if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-        valueCache->GetPrimvars(cachePath);
-    }
-}
-
-void 
 UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                                          SdfPath const& cachePath,
-                                         HdDirtyBits requestedBits,
-                                         HdDirtyBits* dirtyBits,
+                                         HdDirtyBits* timeVaryingBits,
                                          UsdImagingInstancerContext const* 
                                              instancerContext)
 {
@@ -98,58 +77,50 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
 
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-        if (!_IsVarying(prim, 
-                   UsdGeomTokens->primvarsDisplayColor, 
-                   HdChangeTracker::DirtyPrimVar,
-                   UsdImagingTokens->usdVaryingPrimVar,
-                   dirtyBits,
-                   false)) {
-            // Only do this second check if the displayColor isn't already known
-            // to be varying.
-            _IsVarying(prim, 
-                   UsdGeomTokens->primvarsDisplayOpacity, 
-                   HdChangeTracker::DirtyPrimVar,
-                   UsdImagingTokens->usdVaryingPrimVar,
-                   dirtyBits,
-                   false);
-        }
+    if (!_IsVarying(prim,
+               UsdGeomTokens->primvarsDisplayColor,
+               HdChangeTracker::DirtyPrimVar,
+               UsdImagingTokens->usdVaryingPrimVar,
+               timeVaryingBits,
+               false)) {
+        // Only do this second check if the displayColor isn't already known
+        // to be varying.
+        _IsVarying(prim,
+               UsdGeomTokens->primvarsDisplayOpacity,
+               HdChangeTracker::DirtyPrimVar,
+               UsdImagingTokens->usdVaryingPrimVar,
+               timeVaryingBits,
+               false);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyExtent) {
-        // Discover time-varying extent.
-        _IsVarying(prim, 
-                   UsdGeomTokens->extent, 
-                   HdChangeTracker::DirtyExtent,
-                   UsdImagingTokens->usdVaryingExtent,
-                   dirtyBits,
-                   false);
-    }
+    // Discover time-varying extent.
+    _IsVarying(prim,
+               UsdGeomTokens->extent,
+               HdChangeTracker::DirtyExtent,
+               UsdImagingTokens->usdVaryingExtent,
+               timeVaryingBits,
+               false);
 
-    if (requestedBits & HdChangeTracker::DirtyTransform) {
-        // Discover time-varying transforms.
-        _IsTransformVarying(prim, 
-                   HdChangeTracker::DirtyTransform,
-                   UsdImagingTokens->usdVaryingXform,
-                   dirtyBits);
-    } 
+    // Discover time-varying transforms.
+    _IsTransformVarying(prim,
+               HdChangeTracker::DirtyTransform,
+               UsdImagingTokens->usdVaryingXform,
+               timeVaryingBits);
 
-    if (requestedBits & HdChangeTracker::DirtyVisibility) {
-        valueCache->GetVisible(cachePath) = GetVisible(prim, time);
-        // Discover time-varying visibility.
-        _IsVarying(prim, 
-                   UsdGeomTokens->visibility, 
-                   HdChangeTracker::DirtyVisibility,
-                   UsdImagingTokens->usdVaryingVisibility,
-                   dirtyBits,
-                   true);
+    valueCache->GetVisible(cachePath) = GetVisible(prim, time);
+    // Discover time-varying visibility.
+    _IsVarying(prim,
+               UsdGeomTokens->visibility,
+               HdChangeTracker::DirtyVisibility,
+               UsdImagingTokens->usdVaryingVisibility,
+               timeVaryingBits,
+               true);
 
-        TfToken purpose = _GetPurpose(prim, time);
-        // Empty purpose means there is no opinion, fall back to geom.
-        if (purpose.IsEmpty())
-            purpose = UsdGeomTokens->default_;
-        valueCache->GetPurpose(cachePath) = purpose;
-    }
+    TfToken purpose = _GetPurpose(prim, time);
+    // Empty purpose means there is no opinion, fall back to geom.
+    if (purpose.IsEmpty())
+        purpose = UsdGeomTokens->default_;
+    valueCache->GetPurpose(cachePath) = purpose;
 }
 
 void

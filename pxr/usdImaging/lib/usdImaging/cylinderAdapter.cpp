@@ -74,45 +74,30 @@ UsdImagingCylinderAdapter::Populate(UsdPrim const& prim,
 }
 
 void 
-UsdImagingCylinderAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                              SdfPath const& cachePath,
-                                              HdDirtyBits requestedBits,
-                                              UsdImagingInstancerContext const* 
-                                                  instancerContext)
-{
-    // Let the base class track what it needs.
-    BaseAdapter::TrackVariabilityPrep(
-        prim, cachePath, requestedBits, instancerContext);
-}
-
-void 
 UsdImagingCylinderAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
-                                          HdDirtyBits requestedBits,
-                                          HdDirtyBits* dirtyBits,
+                                          HdDirtyBits* timeVaryingBits,
                                           UsdImagingInstancerContext const* 
                                               instancerContext)
 {
     BaseAdapter::TrackVariability(
-        prim, cachePath, requestedBits, dirtyBits, instancerContext);
+        prim, cachePath, timeVaryingBits, instancerContext);
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
     // container during update.
     
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        if (!_IsVarying(prim, 
-                           UsdGeomTokens->radius,
-                           HdChangeTracker::DirtyPoints,
-                           UsdImagingTokens->usdVaryingPrimVar,
-                           dirtyBits, 
-                           /*isInherited*/false)) {
-            _IsVarying(prim, 
-                       UsdGeomTokens->height,
+    if (!_IsVarying(prim,
+                       UsdGeomTokens->radius,
                        HdChangeTracker::DirtyPoints,
                        UsdImagingTokens->usdVaryingPrimVar,
-                       dirtyBits,
-                       /*isInherited*/false);
-        }
+                       timeVaryingBits,
+                       /*isInherited*/false)) {
+        _IsVarying(prim,
+                   UsdGeomTokens->height,
+                   HdChangeTracker::DirtyPoints,
+                   UsdImagingTokens->usdVaryingPrimVar,
+                   timeVaryingBits,
+                   /*isInherited*/false);
     }
 }
 
