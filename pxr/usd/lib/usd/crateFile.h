@@ -708,6 +708,10 @@ private:
     _UniqueFILE _inputFile; // NULL if this wasn't populated from file.
 
     std::string _fileName; // Empty if this file data is in-memory only.
+    int64_t _fileLength; // Cached file length
+
+    std::unique_ptr<char []> _debugPageMap; // Debug page access map, see
+                                            // USDC_DUMP_PAGE_MAPS.
 
     const bool _useMmap; // If true, use mmap for reads, otherwise use pread.
 };
