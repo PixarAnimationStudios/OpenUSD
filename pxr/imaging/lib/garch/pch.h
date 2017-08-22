@@ -42,6 +42,7 @@
 #include <Windows.h>
 #include <intrin.h>
 #include <boost/preprocessor/variadic/size.hpp>
+#include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
 #endif
 #include <atomic>
@@ -99,12 +100,14 @@
 #include <boost/preprocessor/control/expr_iif.hpp>
 #include <boost/preprocessor/facilities/expand.hpp>
 #include <boost/preprocessor/punctuation/comma.hpp>
+#include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/punctuation/paren.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/eat.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/python/class.hpp>
 #include <boost/python/converter/from_python.hpp>
 #include <boost/python/converter/registered.hpp>
@@ -133,6 +136,7 @@
 #undef tolower
 #undef toupper
 #endif
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_abstract.hpp>
@@ -143,10 +147,10 @@
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_reference.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <tbb/atomic.h>
 #include <tbb/enumerable_thread_specific.h>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
+#endif // PXR_PYTHON_SUPPORT_ENABLED

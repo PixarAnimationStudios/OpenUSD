@@ -40,6 +40,7 @@
 #include <Windows.h>
 #include <intrin.h>
 #include <boost/preprocessor/variadic/size.hpp>
+#include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
 #endif
 #include <algorithm>
@@ -144,18 +145,19 @@
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/python/dict.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
-#include <boost/python/pointee.hpp>
 #include <boost/python/type_id.hpp>
 #if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
 #undef tolower
 #undef toupper
 #endif
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/range/iterator.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -179,7 +181,6 @@
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/utility/value_init.hpp>
@@ -195,5 +196,8 @@
 #include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/task.h>
+#include <tbb/task_arena.h>
 #include <tbb/tbb.h>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
+#endif // PXR_PYTHON_SUPPORT_ENABLED

@@ -32,6 +32,7 @@
 #endif
 
 #include <boost/preprocessor/variadic/size.hpp>
+#include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
 #endif
 #include <algorithm>
@@ -46,6 +47,7 @@
 #include <inttypes.h>
 #include <iosfwd>
 #include <list>
+#include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
@@ -104,6 +106,7 @@
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/python.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/converter/from_python.hpp>
@@ -132,6 +135,7 @@
 #undef tolower
 #undef toupper
 #endif
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits/add_reference.hpp>
@@ -143,8 +147,8 @@
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_reference.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
+#endif // PXR_PYTHON_SUPPORT_ENABLED
