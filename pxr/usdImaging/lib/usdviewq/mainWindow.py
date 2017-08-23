@@ -663,19 +663,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Arc path is the most likely to need stretch.
         twh = self._ui.compositionTreeWidget.header()
-        twh.setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
-        twh.setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
-        twh.setResizeMode(2, QtGui.QHeaderView.Stretch)
-        twh.setResizeMode(3, QtGui.QHeaderView.ResizeToContents)
+        twh.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        twh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        twh.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        twh.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
 
         # Set the node view header to have a fixed size type and vis columns
         nvh = self._ui.nodeView.header()
-        nvh.setResizeMode(0, QtGui.QHeaderView.Stretch)
-        nvh.setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
-        nvh.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
+        nvh.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        nvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        nvh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
 
         avh = self._ui.propertyView.horizontalHeader()
-        avh.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
+        avh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
 
         # XXX: 
         # To avoid QTBUG-12850 (https://bugreports.qt.io/browse/QTBUG-12850),
@@ -690,7 +690,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.layerStackView.setHorizontalScrollBarPolicy(
             QtCore.Qt.ScrollBarAlwaysOn)
 
-        self._ui.attributeValueEditor.setMainWindow(self)
+        self._ui.attributeValueEditor.setMainWindow(self, self.editComplete)
 
         QtCore.QObject.connect(self._ui.currentPathWidget,
                                QtCore.SIGNAL('editingFinished()'),
@@ -1080,10 +1080,6 @@ class MainWindow(QtWidgets.QMainWindow):
         QtCore.QObject.connect(self._ui.actionDecrementComplexity,
                                QtCore.SIGNAL('triggered()'),
                                self._decrementComplexity)
-
-        QtCore.QObject.connect(self._ui.attributeValueEditor,
-                               QtCore.SIGNAL('editComplete(QString)'),
-                               self.editComplete)
 
         # Edit Prim menu
         QtCore.QObject.connect(self._ui.menuEdit_Node,
@@ -2677,14 +2673,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 targetLayer = Sdf.Layer.FindOrOpen(saveName)
                 UsdUtils.CopyLayerMetadata(rootLayer, targetLayer,
                                            skipSublayers=True)
-
+                
                 # We don't ever store self.realStartTimeCode or 
                 # self.realEndTimeCode in a layer, so we need to author them
                 # here explicitly.
-                if self.realStartTimeCode:
-                    targetLayer.startTimeCode = self.realStartTimeCode
-                if self.realEndTimeCode:
-                    targetLayer.endTimeCode = self.realEndTimeCode
+                targetLayer.startTimeCode = self.realStartTimeCode
+                targetLayer.endTimeCode = self.realEndTimeCode
 
                 targetLayer.subLayerPaths.append(self._stage.GetRootLayer().realPath)
                 targetLayer.RemoveInertSceneDescription()

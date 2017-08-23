@@ -1970,10 +1970,17 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             return None
 
+    def computeSize(self):
+        size = self.size() * QtWidgets.qApp.devicePixelRatio()
+        return (int(size.width()), int(size.height()))
+
+    def computeViewport(self):
+        return (0, 0) + self.computeSize()
+
     def computeGfCameraAndViewport(self):
+        size = self.size()
         windowPolicy = CameraUtil.MatchVertically
-        targetAspect = (
-          float(self.size().width()) / max(1.0, self.size().height()))
+        targetAspect = float(size.width()) / max(1.0, size.height())
         conformCameraWindow = True
 
         camera = self.computeGfCameraForCurrentPrim()
@@ -1990,8 +1997,7 @@ class StageView(QtOpenGL.QGLWidget):
             CameraUtil.ConformWindow(camera, windowPolicy, targetAspect)
 
         viewport = Gf.Range2d(Gf.Vec2d(0, 0),
-                              Gf.Vec2d(self.size().width(),
-                                       self.size().height()))
+                              Gf.Vec2d(self.computeSize()))
         viewport = CameraUtil.ConformedWindow(viewport, windowPolicy, camera.aspectRatio)
 
         frustumChanged = ((not self._lastComputedGfCamera) or
@@ -2116,7 +2122,7 @@ class StageView(QtOpenGL.QGLWidget):
         (gfCamera, cameraViewport) = self.computeGfCameraAndViewport()
         frustum = gfCamera.frustum
 
-        viewport = (0, 0, self.size().width(), self.size().height())
+        viewport = self.computeViewport()
         cameraViewport = ViewportMakeCenteredIntegral(cameraViewport)
         if self._fitCameraInViewport:
             if self._cropViewportToCameraViewport:
@@ -2137,8 +2143,11 @@ class StageView(QtOpenGL.QGLWidget):
         viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
                                            * frustum.ComputeProjectionMatrix())
 
+        GL.glViewport(*viewport)
 
-        GL.glViewport(0, 0, self.size().width(), self.size().height())
+        # OS X is giving an error in the first call of paintGL that the
+        # framebuffer is not fully complete.
+        #if GL.GL_FRAMEBUFFER_COMPLETE == GL.glCheckFramebufferStatus(0):
         GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
         # ensure viewport is right for the camera framing
@@ -2258,7 +2267,7 @@ class StageView(QtOpenGL.QGLWidget):
             self._glTimeElapsedQuery.End()
 
         # reset the viewport for 2D and HUD drawing
-        uiTasks = [ Prim2DSetupTask((0, 0, self.size().width(), self.size().height())) ]
+        uiTasks = [ Prim2DSetupTask(self.computeViewport()) ]
         if self.showMask:
             color = self._dataModel.cameraMaskColor
             if self.showMask_Opaque:
@@ -2565,7 +2574,7 @@ class StageView(QtOpenGL.QGLWidget):
     def computePickFrustum(self, x, y):
 
         # normalize position and pick size by the viewport size
-        width, height = self.size().width(), self.size().height()
+        width, height = self.computeSize()
         size = Gf.Vec2d(1.0 / width, 1.0 / height)
         
         # compute pick frustum

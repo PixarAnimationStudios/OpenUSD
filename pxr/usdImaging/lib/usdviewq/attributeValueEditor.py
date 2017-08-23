@@ -30,6 +30,9 @@ from common import GetAttributeColor, TimeSampleTextColor
 # opening the "Value" tab.
 
 class AttributeValueEditor(QtWidgets.QWidget):
+    kEditCompelte = QtCore.SIGNAL('editComplete(QString)')
+    kClicked = QtCore.SIGNAL('clicked()')
+
     def __init__(self, parent):
         QtWidgets.QWidget.__init__(self, parent)
         self._ui = Ui_AttributeValueEditor()
@@ -47,23 +50,28 @@ class AttributeValueEditor(QtWidgets.QWidget):
 
         self.clear()
 
+    def setMainWindow(self, mainWindow, editComplete):
+        # pass the mainWindow instance from which to retrieve 
+        # variable data.
+        # assert getattr(self, '_mainWindow', None) == None
+        self._mainWindow = mainWindow
+        self._propertyView = mainWindow._ui.propertyView
+
+        QtCore.QObject.connect(self,
+                               AttributeValueEditor.kEditCompelte,
+                               editComplete)
+
         QtCore.QObject.connect(self._ui.editButton,
-                               QtCore.SIGNAL('clicked()'),
+                               AttributeValueEditor.kClicked,
                                self._edit)
 
         QtCore.QObject.connect(self._ui.revertButton,
-                               QtCore.SIGNAL('clicked()'),
+                               AttributeValueEditor.kClicked,
                                self._revert)
 
         QtCore.QObject.connect(self._ui.revertAllButton,
-                               QtCore.SIGNAL('clicked()'),
+                               AttributeValueEditor.kClicked,
                                self._revertAll)
-
-    def setMainWindow(self, mainWindow):
-        # pass the mainWindow instance from which to retrieve 
-        # variable data.
-        self._mainWindow = mainWindow
-        self._propertyView = mainWindow._ui.propertyView
 
     def populate(self, name, node):
         # called when the selected attribute has changed
@@ -150,7 +158,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
             # send a signal to the mainWindow confirming the edit
             msg = 'Successfully edited %s "%s" at frame %s.' \
                     %(type, self._name, frame)
-            self.emit(QtCore.SIGNAL('editComplete(QString)'), msg)
+            self.emit(AttributeValueEditor.kEditCompelte, msg)
 
         except Exception as e:
             # if an error occurs, reopen the interpreter and display it
