@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtCore
 from attributeValueEditorUI import Ui_AttributeValueEditor
 from pythonExpressionPrompt import PythonExpressionPrompt
 from common import GetAttributeColor, TimeSampleTextColor
@@ -29,9 +29,9 @@ from common import GetAttributeColor, TimeSampleTextColor
 # This is the widget that appears when selecting an attribute and
 # opening the "Value" tab.
 
-class AttributeValueEditor(QtGui.QWidget):
+class AttributeValueEditor(QtWidgets.QWidget):
     def __init__(self, parent):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self._ui = Ui_AttributeValueEditor()
         self._ui.setupUi(self)
 
@@ -169,15 +169,15 @@ class AttributeValueEditor(QtGui.QWidget):
                   Usd.USD_SECTION_INVALID
 
         # ask for confirmation before reverting overrides
-        reply = QtGui.QMessageBox.question(self, "Confirm Revert",
+        reply = QtWidgets.QMessageBox.question(self, "Confirm Revert",
                     "Are you sure you want to revert the %s "
                     "<font color='%s'><b>%s</b></font> at %s?"
                         %(type, TimeSampleTextColor.color().name(), self._name, frameStr),
-                    QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Yes,
-                    QtGui.QMessageBox.Cancel)
+                    QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Yes,
+                    QtWidgets.QMessageBox.Cancel)
     
         msg = ""
-        if reply == QtGui.QMessageBox.Yes and self._node is not None:
+        if reply == QtWidgets.QMessageBox.Yes and self._node is not None:
             # we got 'yes' as an answer
             try:
                 # this removes only the value written in the top level stage

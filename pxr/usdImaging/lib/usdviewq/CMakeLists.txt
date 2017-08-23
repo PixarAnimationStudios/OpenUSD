@@ -34,6 +34,7 @@ pxr_library(usdviewq
 
     PYTHON_FILES
         __init__.py
+        pyside.py
         arrayAttributeView.py
         customAttributes.py
         mainWindow.py

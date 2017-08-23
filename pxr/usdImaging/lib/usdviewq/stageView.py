@@ -29,7 +29,7 @@ from math import tan, atan, floor, ceil, radians as rad
 import os
 from time import time
 
-from PySide import QtGui, QtCore, QtOpenGL
+from pyside import QtWidgets, QtCore, QtGui, QtOpenGL
 
 from pxr import Tf
 from pxr import Gf

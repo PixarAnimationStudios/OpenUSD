@@ -21,17 +21,17 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtCore
 
 # simple class to have a "clear" button on a line edit when the line edit
 # contains an override. Clicking the clear button returns to the default value.
 
-class OverridableLineEdit(QtGui.QLineEdit):
+class OverridableLineEdit(QtWidgets.QLineEdit):
     def __init__(self, parent):
-        QtGui.QLineEdit.__init__(self, parent)
+        QtWidgets.QLineEdit.__init__(self, parent)
 
         # create the clear button.
-        self._clearButton = QtGui.QToolButton(self)
+        self._clearButton = QtWidgets.QToolButton(self)
         self._clearButton.setText('x')
         self._clearButton.setCursor(QtCore.Qt.ArrowCursor)
         self._clearButton.setFixedSize(16, 16)
@@ -46,7 +46,7 @@ class OverridableLineEdit(QtGui.QLineEdit):
     # properly place the button
     def resizeEvent(self, event):
         sz = QtCore.QSize(self._clearButton.size())
-        frameWidth = self.style().pixelMetric(QtGui.QStyle.PM_DefaultFrameWidth)
+        frameWidth = self.style().pixelMetric(QtWidgets.QStyle.PM_DefaultFrameWidth)
         self._clearButton.move(self.rect().right() - frameWidth - sz.width(),
                                (self.rect().bottom() + 1 - sz.height())/2)
 
@@ -56,7 +56,7 @@ class OverridableLineEdit(QtGui.QLineEdit):
 
     # called programatically to reset the default text
     def setText(self, text):
-        QtGui.QLineEdit.setText(self, text)
+        QtWidgets.QLineEdit.setText(self, text)
         self._defaultText = text
 
         self._clearButton.setVisible(False)

@@ -21,17 +21,17 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtGui, QtCore
 from usdviewContextMenuItem import UsdviewContextMenuItem
 import os
 
 #
 # Specialized context menu for running commands in the layer stack view.
 #
-class LayerStackContextMenu(QtGui.QMenu):
+class LayerStackContextMenu(QtWidgets.QMenu):
 
     def __init__(self, parent, item):
-        QtGui.QMenu.__init__(self, parent)
+        QtWidgets.QMenu.__init__(self, parent)
         self._menuItems = _GetContextMenuItems(parent, item)
 
         for menuItem in self._menuItems:
@@ -137,7 +137,7 @@ class CopyLayerPathMenuItem(LayerStackContextMenuItem):
         if not layerPath or not os.path.exists(layerPath):
             return
     
-        cb = QtGui.QApplication.clipboard()
+        cb = QtWidgets.QApplication.clipboard()
         cb.setText(layerPath, QtGui.QClipboard.Selection )
         cb.setText(layerPath, QtGui.QClipboard.Clipboard )
 
@@ -157,7 +157,7 @@ class CopyPathMenuItem(LayerStackContextMenuItem):
             return
         
         path = str(path)
-        cb = QtGui.QApplication.clipboard()
+        cb = QtWidgets.QApplication.clipboard()
         cb.setText(path, QtGui.QClipboard.Selection )
         cb.setText(path, QtGui.QClipboard.Clipboard )
 

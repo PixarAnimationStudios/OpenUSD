@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui,QtCore
+from pyside import QtWidgets, QtGui, QtCore
 from pxr import Usd
 from customAttributes import CustomAttribute
 
@@ -212,10 +212,10 @@ class BusyContext(object):
     will set Qt's busy cursor upon entry and pop it on exit.
     """
     def __enter__(self):
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
     def __exit__(self, *args):
-        QtGui.QApplication.restoreOverrideCursor()
+        QtWidgets.QApplication.restoreOverrideCursor()
 
 
 def InvisRootPrims(stage):
