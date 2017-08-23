@@ -28,7 +28,6 @@
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/interpolators.h"
-#include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
