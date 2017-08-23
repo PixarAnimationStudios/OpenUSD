@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtGui, QtCore
 import stageView
 from stageView import StageView
 from mainWindowUI import Ui_MainWindow
@@ -144,9 +144,9 @@ def _settingsWarning(filePath):
     print >> msg, "Attempting to continue... "
     print >> msg, "------------------------------------------------------------"
 
-class VariantComboBox(QtGui.QComboBox):
+class VariantComboBox(QtWidgets.QComboBox):
     def __init__(self, parent, prim, variantSetName, mainWindow):
-        QtGui.QComboBox.__init__(self, parent)
+        QtWidgets.QComboBox.__init__(self, parent)
         self.prim = prim
         self.variantSetName = variantSetName
         self.mainWindow = mainWindow
@@ -204,7 +204,7 @@ def _GetShortString(prop, frame):
     return result[:500]
 
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
 
     ###########
     # Signals #
@@ -249,7 +249,7 @@ class MainWindow(QtGui.QMainWindow):
         self._nodeToItemMap.clear()
 
     def __init__(self, parent, parserData):
-        QtGui.QMainWindow.__init__(self, parent)
+        QtWidgets.QMainWindow.__init__(self, parent)
         self._nodeToItemMap = {}
         self._itemsToPush = []
         self._currentNodes = []
@@ -307,7 +307,7 @@ class MainWindow(QtGui.QMainWindow):
             self._startingPrimCameraPath = None
 
         self.setWindowTitle(parserData.usdFile)
-        self._statusBar = QtGui.QStatusBar(self)
+        self._statusBar = QtWidgets.QStatusBar(self)
         self.setStatusBar(self._statusBar)
 
         settingsPathDir = self._outputBaseDirectory()
@@ -347,7 +347,7 @@ class MainWindow(QtGui.QMainWindow):
             except:
                 _settingsWarning(settingsPath)
 
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
         self._timer = QtCore.QTimer(self)
         # Timeout interval in ms. We set it to 0 so it runs as fast as
@@ -391,8 +391,8 @@ class MainWindow(QtGui.QMainWindow):
         self._startTime = self._endTime = time()
         
         # Create action groups
-        self._ui.threePointLights = QtGui.QActionGroup(self)
-        self._ui.colorGroup = QtGui.QActionGroup(self)
+        self._ui.threePointLights = QtWidgets.QActionGroup(self)
+        self._ui.colorGroup = QtWidgets.QActionGroup(self)
         
         self._nodeViewResetTimer = QtCore.QTimer(self)
         self._nodeViewResetTimer.setInterval(250)
@@ -428,15 +428,15 @@ class MainWindow(QtGui.QMainWindow):
         self._ui.propertyView.horizontalHeader().setStretchLastSection(True)
 
         self._ui.propertyView.setSelectionBehavior(
-            QtGui.QAbstractItemView.SelectRows)
+            QtWidgets.QAbstractItemView.SelectRows)
         self._ui.nodeView.setSelectionBehavior(
-            QtGui.QAbstractItemView.SelectRows)
+            QtWidgets.QAbstractItemView.SelectRows)
         # This allows ctrl and shift clicking for multi-selecting
         self._ui.propertyView.setSelectionMode(
-            QtGui.QAbstractItemView.ExtendedSelection)
+            QtWidgets.QAbstractItemView.ExtendedSelection)
 
         self._ui.propertyView.setHorizontalScrollMode(
-            QtGui.QAbstractItemView.ScrollPerPixel)
+            QtWidgets.QAbstractItemView.ScrollPerPixel)
 
         self._ui.frameSlider.setTracking(self._ui.redrawOnScrub.isChecked())
         
@@ -454,7 +454,7 @@ class MainWindow(QtGui.QMainWindow):
             self._ui.threePointLights.addAction(action)
         self._ui.threePointLights.setExclusive(False)
 
-        self._ui.renderModeActionGroup = QtGui.QActionGroup(self)
+        self._ui.renderModeActionGroup = QtWidgets.QActionGroup(self)
         for action in (self._ui.actionWireframe,
                        self._ui.actionWireframeOnSurface,
                        self._ui.actionSmooth_Shaded,
@@ -477,7 +477,7 @@ class MainWindow(QtGui.QMainWindow):
             self._ui.renderModeActionGroup.actions()[0].setChecked(True)
             self._changeRenderMode(self._ui.renderModeActionGroup.actions()[0])
 
-        self._ui.pickModeActionGroup = QtGui.QActionGroup(self)
+        self._ui.pickModeActionGroup = QtWidgets.QActionGroup(self)
         for action in (self._ui.actionPick_Prims,
                        self._ui.actionPick_Models,
                        self._ui.actionPick_Instances):
@@ -497,7 +497,7 @@ class MainWindow(QtGui.QMainWindow):
         # The error-checking pattern here seems wrong?  Error checking
         # should happen in the changeXXX methods. All we're checking here
         # is the values we hardcoded ourselves in the init function!
-        self._ui.selHighlightModeActionGroup = QtGui.QActionGroup(self)
+        self._ui.selHighlightModeActionGroup = QtWidgets.QActionGroup(self)
         for action in (self._ui.actionNever,
                        self._ui.actionOnly_when_paused,
                        self._ui.actionAlways):
@@ -505,7 +505,7 @@ class MainWindow(QtGui.QMainWindow):
             action.setChecked(str(action.text()) == self._selHighlightMode)
         self._ui.selHighlightModeActionGroup.setExclusive(True)
             
-        self._ui.highlightColorActionGroup = QtGui.QActionGroup(self)
+        self._ui.highlightColorActionGroup = QtWidgets.QActionGroup(self)
         for action in (self._ui.actionSelYellow,
                        self._ui.actionSelCyan,
                        self._ui.actionSelWhite):
@@ -513,7 +513,7 @@ class MainWindow(QtGui.QMainWindow):
             action.setChecked(str(action.text()) == self._highlightColorName)
         self._ui.highlightColorActionGroup.setExclusive(True)
             
-        self._ui.interpolationActionGroup = QtGui.QActionGroup(self)
+        self._ui.interpolationActionGroup = QtWidgets.QActionGroup(self)
         self._ui.interpolationActionGroup.setExclusive(True)
         for interpolationType in Usd.InterpolationType.allValues:
             action = self._ui.menuInterpolation.addAction(interpolationType.displayName)
@@ -521,7 +521,7 @@ class MainWindow(QtGui.QMainWindow):
             action.setChecked(self._stage.GetInterpolationType() == interpolationType)
             self._ui.interpolationActionGroup.addAction(action)
 
-        self._ui.nodeViewDepthGroup = QtGui.QActionGroup(self)
+        self._ui.nodeViewDepthGroup = QtWidgets.QActionGroup(self)
         for i in range(1,9):
             action = getattr(self._ui,"actionLevel_" + str(i))
             self._ui.nodeViewDepthGroup.addAction(action)
@@ -539,7 +539,7 @@ class MainWindow(QtGui.QMainWindow):
         self._ui.nodeLegendContainer.setContentsMargins(5,0,5,0)
 
         # needed to set color of boxes
-        graphicsScene = QtGui.QGraphicsScene()
+        graphicsScene = QtWidgets.QGraphicsScene()
         self._ui.propertyLegendColorFallback.setScene(graphicsScene)
         self._ui.propertyLegendColorDefault.setScene(graphicsScene)
         self._ui.propertyLegendColorTimeSample.setScene(graphicsScene)
@@ -663,19 +663,19 @@ class MainWindow(QtGui.QMainWindow):
 
         # Arc path is the most likely to need stretch.
         twh = self._ui.compositionTreeWidget.header()
-        twh.setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
-        twh.setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
-        twh.setResizeMode(2, QtGui.QHeaderView.Stretch)
-        twh.setResizeMode(3, QtGui.QHeaderView.ResizeToContents)
+        twh.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        twh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        twh.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        twh.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
 
         # Set the node view header to have a fixed size type and vis columns
         nvh = self._ui.nodeView.header()
-        nvh.setResizeMode(0, QtGui.QHeaderView.Stretch)
-        nvh.setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
-        nvh.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
+        nvh.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        nvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        nvh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
 
         avh = self._ui.propertyView.horizontalHeader()
-        avh.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
+        avh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
 
         # XXX: 
         # To avoid QTBUG-12850 (https://bugreports.qt.io/browse/QTBUG-12850),
@@ -690,7 +690,7 @@ class MainWindow(QtGui.QMainWindow):
         self._ui.layerStackView.setHorizontalScrollBarPolicy(
             QtCore.Qt.ScrollBarAlwaysOn)
 
-        self._ui.attributeValueEditor.setMainWindow(self)
+        self._ui.attributeValueEditor.setMainWindow(self, self.editComplete)
 
         QtCore.QObject.connect(self._ui.currentPathWidget,
                                QtCore.SIGNAL('editingFinished()'),
@@ -1081,10 +1081,6 @@ class MainWindow(QtGui.QMainWindow):
                                QtCore.SIGNAL('triggered()'),
                                self._decrementComplexity)
 
-        QtCore.QObject.connect(self._ui.attributeValueEditor,
-                               QtCore.SIGNAL('editComplete(QString)'),
-                               self.editComplete)
-
         # Edit Prim menu
         QtCore.QObject.connect(self._ui.menuEdit_Node,
                                QtCore.SIGNAL('aboutToShow()'),
@@ -1185,11 +1181,11 @@ class MainWindow(QtGui.QMainWindow):
 
         self.update()
 
-        QtGui.qApp.processEvents()
+        QtWidgets.qApp.processEvents()
 
         self._drawFirstImage()
 
-        QtGui.QApplication.restoreOverrideCursor()
+        QtWidgets.QApplication.restoreOverrideCursor()
 
     def _drawFirstImage(self):
 
@@ -1216,7 +1212,7 @@ class MainWindow(QtGui.QMainWindow):
             if key == QtCore.Qt.Key_Escape:
                 self.setFocus()
                 return True
-        return QtGui.QMainWindow.eventFilter(self, widget, event)
+        return QtWidgets.QMainWindow.eventFilter(self, widget, event)
 
     def statusMessage(self, msg, timeout = 0):
         self._statusBar.showMessage(msg, timeout * 1000)
@@ -1420,7 +1416,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def _configureRendererPlugins(self):
         if self._stageView:
-            self._ui.rendererPluginActionGroup = QtGui.QActionGroup(self)
+            self._ui.rendererPluginActionGroup = QtWidgets.QActionGroup(self)
             self._ui.rendererPluginActionGroup.setExclusive(True)
 
             pluginTypes = self._stageView.GetRendererPlugins()
@@ -1505,7 +1501,7 @@ class MainWindow(QtGui.QMainWindow):
                 self._ui.nodeStageSplitter.addWidget(self._ui.attributeBrowserFrame)
 
             else:
-                layout = QtGui.QVBoxLayout()
+                layout = QtWidgets.QVBoxLayout()
                 layout.setContentsMargins(0, 0, 0, 0)
                 self._ui.glFrame.setLayout(layout)
                 layout.addWidget(self._stageView)
@@ -1600,7 +1596,7 @@ class MainWindow(QtGui.QMainWindow):
         self._stageView.update()
 
     def _adjustComplexity(self):
-        complexity= QtGui.QInputDialog.getDouble(self, 
+        complexity= QtWidgets.QInputDialog.getDouble(self, 
             "Adjust complexity", "Enter a value between 1 and 2.\n\n" 
             "You can also use ctrl+ or ctrl- to adjust the\n"
             "complexity without invoking this dialog.\n", 
@@ -1610,7 +1606,7 @@ class MainWindow(QtGui.QMainWindow):
             self._stageView.update()
 
     def _adjustFOV(self):
-        fov = QtGui.QInputDialog.getDouble(self, "Adjust FOV", 
+        fov = QtWidgets.QInputDialog.getDouble(self, "Adjust FOV", 
             "Enter a value between 0 and 180", self._stageView.freeCamera.fov, 0, 180)
         if (fov[1]):
             self._stageView.freeCamera.fov = fov[0]
@@ -1720,7 +1716,7 @@ class MainWindow(QtGui.QMainWindow):
                 self._watchWindow._ui.unvaryingEdit.verticalScrollBar().value()
 
             self._watchWindow.clearContents()
-            QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
             for i in self._ui.propertyView.selectedItems():
                 if i.column() == 0:        # make sure first column is selected
@@ -1791,7 +1787,7 @@ class MainWindow(QtGui.QMainWindow):
                     # tell the watch window to print a "====" separator
                     self._watchWindow.appendSeparator()
 
-            QtGui.QApplication.restoreOverrideCursor()
+            QtWidgets.QApplication.restoreOverrideCursor()
             self._watchWindow._ui.varyingEdit.verticalScrollBar().setValue(
                 varyScrollPos)
             self._watchWindow._ui.unvaryingEdit.verticalScrollBar().setValue(
@@ -2061,7 +2057,7 @@ class MainWindow(QtGui.QMainWindow):
 
             self._attrSearchResults = \
                 uniquify_tablewidgetitems(self._attrSearchResults)
-            self._attrSearchResults.sort(cmp, QtGui.QTableWidgetItem.row)
+            self._attrSearchResults.sort(cmp, QtWidgets.QTableWidgetItem.row)
             self._attrSearchResults = deque(self._attrSearchResults)
 
             self._lastNodeSearched = self._currentNodes[0]
@@ -2542,9 +2538,9 @@ class MainWindow(QtGui.QMainWindow):
         from pythonExpressionPrompt import Myconsole
             
         if self._interpreter is None:
-            self._interpreter = QtGui.QDialog(self)
+            self._interpreter = QtWidgets.QDialog(self)
             self._console = Myconsole(self._interpreter)
-            lay = QtGui.QVBoxLayout()
+            lay = QtWidgets.QVBoxLayout()
             lay.addWidget(self._console)
             self._interpreter.setLayout(lay)
 
@@ -2642,7 +2638,7 @@ class MainWindow(QtGui.QMainWindow):
             t.PrintTime('tear down the UI')
 
     def _openFile(self):
-        (filename, _) = QtGui.QFileDialog.getOpenFileName(self, "Select file",".")
+        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(self, "Select file",".")
         if len(filename) > 0:
 
             self._parserData.usdFile = str(filename)
@@ -2653,7 +2649,7 @@ class MainWindow(QtGui.QMainWindow):
     def _saveOverridesAs(self):
         recommendedFilename = self._parserData.usdFile.rsplit('.', 1)[0]
         recommendedFilename += '_overrides.usd'
-        (saveName, _) = QtGui.QFileDialog.getSaveFileName(self,
+        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(self,
                                                      "Save file (*.usd)",
                                                      "./" + recommendedFilename,
                                                      'Usd Files (*.usd)')
@@ -2677,14 +2673,12 @@ class MainWindow(QtGui.QMainWindow):
                 targetLayer = Sdf.Layer.FindOrOpen(saveName)
                 UsdUtils.CopyLayerMetadata(rootLayer, targetLayer,
                                            skipSublayers=True)
-
+                
                 # We don't ever store self.realStartTimeCode or 
                 # self.realEndTimeCode in a layer, so we need to author them
                 # here explicitly.
-                if self.realStartTimeCode:
-                    targetLayer.startTimeCode = self.realStartTimeCode
-                if self.realEndTimeCode:
-                    targetLayer.endTimeCode = self.realEndTimeCode
+                targetLayer.startTimeCode = self.realStartTimeCode
+                targetLayer.endTimeCode = self.realEndTimeCode
 
                 targetLayer.subLayerPaths.append(self._stage.GetRootLayer().realPath)
                 targetLayer.RemoveInertSceneDescription()
@@ -2693,7 +2687,7 @@ class MainWindow(QtGui.QMainWindow):
                 self._stage.GetRootLayer().Export(saveName, 'Created by UsdView')
 
     def _reopenStage(self):
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
         try:
             # Clear out any Usd objects that may become invalid. We will pick
@@ -2722,12 +2716,12 @@ class MainWindow(QtGui.QMainWindow):
             import traceback
             traceback.print_exc()
         finally:
-            QtGui.QApplication.restoreOverrideCursor()
+            QtWidgets.QApplication.restoreOverrideCursor()
 
         self.statusMessage('Stage Reopened')
 
     def _reloadStage(self):
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
         try:
             self._stage.Reload()
@@ -2736,7 +2730,7 @@ class MainWindow(QtGui.QMainWindow):
         except Exception as err:
             self.statusMessage('Error occurred rereading all layers for Stage: %s' % err)
         finally:
-            QtGui.QApplication.restoreOverrideCursor()
+            QtWidgets.QApplication.restoreOverrideCursor()
 
         self.statusMessage('All Layers Reloaded.')
 
@@ -3402,7 +3396,7 @@ class MainWindow(QtGui.QMainWindow):
         self._ui.actionHUD.setChecked(False)
 
     def saveFrame(self, fileName):
-        pm =  QtGui.QPixmap.grabWindow(self._stageView.winId())
+        pm =  QtWidgets.QPixmap.grabWindow(self._stageView.winId())
         pm.save(fileName, 'TIFF')
 
     def _getAttributeDict(self):
@@ -3449,13 +3443,13 @@ class MainWindow(QtGui.QMainWindow):
             # Get the attribute's value and display color
             fgColor = GetAttributeColor(attribute, frame)
 
-            attrName = QtGui.QTableWidgetItem(str(key))
+            attrName = QtWidgets.QTableWidgetItem(str(key))
             attrName.setFont(BoldFont)
             attrName.setForeground(fgColor)
             tableWidget.setItem(attributeCount, 0, attrName)
 
             attrText = _GetShortString(attribute, frame)
-            attrVal = QtGui.QTableWidgetItem(attrText)
+            attrVal = QtWidgets.QTableWidgetItem(attrText)
             valTextFont = GetAttributeTextFont(attribute, frame)
             if valTextFont:
                 attrVal.setFont(valTextFont)
@@ -3476,14 +3470,14 @@ class MainWindow(QtGui.QMainWindow):
         """ Sets the contents of the attribute value viewer """
         cursorOverride = not self._timer.isActive()
         if cursorOverride:
-            QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
         try:
             self._updateAttributeViewInternal()
         except Exception as err:
             print "Problem encountered updating attribute view: %s" % err
         finally:
             if cursorOverride:
-                QtGui.QApplication.restoreOverrideCursor()
+                QtWidgets.QApplication.restoreOverrideCursor()
 
     def _getSelectedObject(self, selectedAttribute=None):
         if selectedAttribute is None:
@@ -3695,7 +3689,7 @@ class MainWindow(QtGui.QMainWindow):
         tableWidget.setRowCount(len(m) + len(variantSets))
 
         for i,key in enumerate(sorted(m.keys())):
-            attrName = QtGui.QTableWidgetItem(str(key))
+            attrName = QtWidgets.QTableWidgetItem(str(key))
             tableWidget.setItem(i, 0, attrName)
 
             # Get metadata value
@@ -3705,14 +3699,14 @@ class MainWindow(QtGui.QMainWindow):
                 val = m[key]
 
             valStr, ttStr = self._formatMetadataValueView(val) 
-            attrVal = QtGui.QTableWidgetItem(valStr)
+            attrVal = QtWidgets.QTableWidgetItem(valStr)
             attrVal.setToolTip(ttStr)
 
             tableWidget.setItem(i, 1, attrVal)
 
         rowIndex = len(m)
         for variantSetName, combo in variantSets.iteritems():
-            attrName = QtGui.QTableWidgetItem(str(variantSetName+ ' variant'))
+            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
             tableWidget.setItem(rowIndex, 0, attrName)
             tableWidget.setCellWidget(rowIndex, 1, combo)
             combo.currentIndexChanged.connect(combo.updateVariantSelection)
@@ -3743,7 +3737,7 @@ class MainWindow(QtGui.QMainWindow):
         def WalkSublayers(parent, node, layerTree, sublayer=False):
             layer = layerTree.layer
             spec = layer.GetObjectAtPath(node.path)
-            item = QtGui.QTreeWidgetItem(
+            item = QtWidgets.QTreeWidgetItem(
                 parent,
                 [
                     LabelForLayer(layer),
@@ -3817,7 +3811,7 @@ class MainWindow(QtGui.QMainWindow):
             tableWidget.setRowCount(len(layers))
             
             for i, layer in enumerate(layers):
-                layerItem = QtGui.QTableWidgetItem(layer.GetHierarchicalDisplayString())
+                layerItem = QtWidgets.QTableWidgetItem(layer.GetHierarchicalDisplayString())
                 layerItem.layerPath = layer.layer.realPath
                 toolTip = "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
                     (layer.layer.identifier, layerItem.layerPath)
@@ -3825,7 +3819,7 @@ class MainWindow(QtGui.QMainWindow):
                 layerItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 0, layerItem)
 
-                offsetItem = QtGui.QTableWidgetItem(layer.GetOffsetString())
+                offsetItem = QtWidgets.QTableWidgetItem(layer.GetOffsetString())
                 offsetItem.layerPath = layer.layer.realPath
                 toolTip = self._limitToolTipSize(str(layer.offset)) 
                 offsetItem.setToolTip(toolTip)
@@ -3836,9 +3830,9 @@ class MainWindow(QtGui.QMainWindow):
             specs = []
             tableWidget.setColumnCount(3)
             header = tableWidget.horizontalHeader()
-            header.setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
-            header.setResizeMode(1, QtGui.QHeaderView.Stretch)
-            header.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+            header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
             tableWidget.horizontalHeaderItem(1).setText('Path')
 
             if path.IsPropertyPath():
@@ -3849,27 +3843,27 @@ class MainWindow(QtGui.QMainWindow):
                 c3 = "Value" if (len(specs) == 0 or 
                                  isinstance(specs[0], Sdf.AttributeSpec)) else "Target Paths"
                 tableWidget.setHorizontalHeaderItem(2,
-                                                    QtGui.QTableWidgetItem(c3))
+                                                    QtWidgets.QTableWidgetItem(c3))
             else:
                 specs = obj.GetPrim().GetPrimStack()
                 tableWidget.setHorizontalHeaderItem(2,
-                    QtGui.QTableWidgetItem('Metadata'))
+                    QtWidgets.QTableWidgetItem('Metadata'))
 
             tableWidget.setRowCount(len(specs))
 
             for i, spec in enumerate(specs):
-                layerItem = QtGui.QTableWidgetItem(spec.layer.GetDisplayName())
+                layerItem = QtWidgets.QTableWidgetItem(spec.layer.GetDisplayName())
                 layerItem.setToolTip(self._limitToolTipSize(spec.layer.realPath))
                 tableWidget.setItem(i, 0, layerItem)
 
-                pathItem = QtGui.QTableWidgetItem(spec.path.pathString)
+                pathItem = QtWidgets.QTableWidgetItem(spec.path.pathString)
                 pathItem.setToolTip(self._limitToolTipSize(spec.path.pathString))
                 tableWidget.setItem(i, 1, pathItem)
 
                 if path.IsPropertyPath():
                     valStr = _GetShortString(spec, self._currentFrame)
                     ttStr = valStr
-                    valueItem = QtGui.QTableWidgetItem(valStr)
+                    valueItem = QtWidgets.QTableWidgetItem(valStr)
                     sampleBased = (spec.HasInfo('timeSamples') and
                         spec.layer.GetNumTimeSamplesForPath(path) != -1)
                     valueItemColor = (TimeSampleTextColor if 
@@ -3884,7 +3878,7 @@ class MainWindow(QtGui.QMainWindow):
                         if spec.HasInfo(mykey):
                             metadataDict[mykey] = spec.GetInfo(mykey)
                     valStr, ttStr = self._formatMetadataValueView(metadataDict)
-                    valueItem = QtGui.QTableWidgetItem(valStr)
+                    valueItem = QtWidgets.QTableWidgetItem(valStr)
                     valueItem.setToolTip(ttStr)
 
                 tableWidget.setItem(i, 2, valueItem)
@@ -4064,7 +4058,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # This is expensive enough that we should give the user feedback 
         # that something is happening...
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
         try:
             thisDict = {CV: 0, VERT: 0, FACE: 0}
 
@@ -4095,7 +4089,7 @@ class MainWindow(QtGui.QMainWindow):
         except Exception as err:
             print "Error encountered while computing prim subtree HUD info: %s" % err
         finally:
-            QtGui.QApplication.restoreOverrideCursor()
+            QtWidgets.QApplication.restoreOverrideCursor()
 
 
     def _setupDebugMenu(self):
@@ -4329,12 +4323,12 @@ class MainWindow(QtGui.QMainWindow):
                 # context menu steals mouse release event from the StageView.
                 # We need to give it one so it can track its interaction
                 # mode properly
-                mrEvent = QtGui.QMouseEvent(QtCore.QEvent.MouseButtonRelease,
+                mrEvent = QtWidgets.QMouseEvent(QtCore.QEvent.MouseButtonRelease,
                                             QtGui.QCursor.pos(),
                                             QtCore.Qt.RightButton, 
                                             QtCore.Qt.MouseButtons(QtCore.Qt.RightButton),
                                             QtCore.Qt.KeyboardModifiers())
-                QtGui.QApplication.sendEvent(self._stageView, mrEvent)
+                QtWidgets.QApplication.sendEvent(self._stageView, mrEvent)
 
     def onRollover(self, path, instanceIndex, modifiers):
         from common import GetEnclosingModelPrim, GetClosestBoundMaterial
@@ -4484,4 +4478,4 @@ class MainWindow(QtGui.QMainWindow):
             
         else:
             tip = ""
-        QtGui.QToolTip.showText(QtGui.QCursor.pos(), tip, self._stageView)
+        QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), tip, self._stageView)

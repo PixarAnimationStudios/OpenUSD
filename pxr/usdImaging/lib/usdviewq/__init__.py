@@ -24,7 +24,7 @@
 import sys
 import os
 
-from PySide.QtGui import QApplication
+from pyside import QtWidgets
 
 import argparse
 
@@ -210,7 +210,7 @@ class Launcher(object):
         resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
 
         # Create the Qt application
-        app = QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
 
         # Apply the style sheet to it
         sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')

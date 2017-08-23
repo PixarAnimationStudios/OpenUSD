@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtCore
 from pythonExpressionPromptUI import Ui_PythonExpressionPrompt
 from prettyPrint import prettyPrint
 
@@ -32,10 +32,10 @@ import sys, copy, pythonInterpreter
 # python prompt and returning the last value or "_" upon confirmation.
 # The widget can be invoked using 'getValueFromPython' which will return
 # the value of "_"
-class PythonExpressionPrompt(QtGui.QDialog):
+class PythonExpressionPrompt(QtWidgets.QDialog):
 
     def __init__(self, parent, exception = None, val = None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self._ui = Ui_PythonExpressionPrompt()
         self._ui.setupUi(self)
         self._mainWindow = parent._mainWindow     # get mainWindow instance
@@ -49,7 +49,7 @@ class PythonExpressionPrompt(QtGui.QDialog):
             print >> sys.stderr, exception
 
         QtCore.QObject.connect(self._ui.buttonBox.button(
-                               QtGui.QDialogButtonBox.Apply),
+                               QtWidgets.QDialogButtonBox.Apply),
                                QtCore.SIGNAL('clicked()'),
                                self,
                                QtCore.SLOT('accept()'))
@@ -91,18 +91,18 @@ class PythonExpressionPrompt(QtGui.QDialog):
         # called when clicking the Save button
         # grab the value of "_" and save it in self._val
         self._val = self._console.getLastValue()
-        QtGui.QDialog.accept(self)
+        QtWidgets.QDialog.accept(self)
 
     def reject(self):
         # called when clicking the Close Without Saving button
         self._val = None
-        QtGui.QDialog.reject(self)
+        QtWidgets.QDialog.reject(self)
 
     def exec_(self):
         # called to "execute" the dialog process
         # we override this function to make sure to return I/O to stdin and
         # stdout, and make exec_ return the last value of "_"
-        QtGui.QDialog.exec_(self)
+        QtWidgets.QDialog.exec_(self)
         return self._val
     
     def __del__(self):

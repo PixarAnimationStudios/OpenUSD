@@ -21,16 +21,16 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui
+from pyside import QtWidgets, QtGui
 from usdviewContextMenuItem import UsdviewContextMenuItem  
 
 #
 # Specialized context menu for running commands in the attribute viewer.
 #
-class AttributeViewContextMenu(QtGui.QMenu):
+class AttributeViewContextMenu(QtWidgets.QMenu):
 
     def __init__(self, parent, item):
-        QtGui.QMenu.__init__(self, parent)
+        QtWidgets.QMenu.__init__(self, parent)
         self._menuItems = _GetContextMenuItems(parent, item)
 
         for menuItem in self._menuItems:
@@ -81,7 +81,7 @@ class CopyAttributeNameMenuItem(AttributeViewContextMenuItem):
 
         # Copy item text
         txt = self._item.text()
-        cb = QtGui.QApplication.clipboard()
+        cb = QtWidgets.QApplication.clipboard()
         cb.setText(txt, QtGui.QClipboard.Selection)
         cb.setText(txt, QtGui.QClipboard.Clipboard)
 

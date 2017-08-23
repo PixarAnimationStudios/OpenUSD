@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtGui, QtCore
 from watchWindowUI import Ui_WatchWindow
 import re
 import os
@@ -31,9 +31,9 @@ import os
 separatorColor = QtGui.QColor(255, 255, 255)
 separatorString = "\n==================================\n"
 
-class WatchWindow(QtGui.QDialog):
+class WatchWindow(QtWidgets.QDialog):
     def __init__(self, parent):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self._ui = Ui_WatchWindow()
         self._ui.setupUi(self)
 
@@ -105,7 +105,7 @@ class WatchWindow(QtGui.QDialog):
         self._boxWithFocus = self._ui.unvaryingEdit
 
     def _find(self):
-        searchString = QtGui.QInputDialog.getText(self, "Find", 
+        searchString = QtWidgets.QInputDialog.getText(self, "Find", 
             "Enter search string\nUse Ctrl+G to \"Find Next\"\n" + \
             "Use Ctrl+Shift+G to \"Find Previous\"")
         if searchString[1]:
@@ -125,10 +125,10 @@ class WatchWindow(QtGui.QDialog):
         if (self._searchString == ""):
             return
         if (not self._boxWithFocus.find(self._searchString,
-            QtGui.QTextDocument.FindBackward)):
+            QtWidgets.QTextDocument.FindBackward)):
             self._boxWithFocus.moveCursor(QtGui.QTextCursor.End)
             self._boxWithFocus.find(self._searchString, 
-                                      QtGui.QTextDocument.FindBackward)
+                                      QtWidgets.QTextDocument.FindBackward)
 
     def _diff(self):
         import tempfile

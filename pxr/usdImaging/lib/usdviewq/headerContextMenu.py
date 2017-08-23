@@ -21,17 +21,17 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtCore
 from usdviewContextMenuItem import UsdviewContextMenuItem
 
 #
 # Specialized context menu for adding and removing columns
 # in the node browser and attribute inspector.
 #
-class HeaderContextMenu(QtGui.QMenu):
+class HeaderContextMenu(QtWidgets.QMenu):
 
     def __init__(self, parent):
-        QtGui.QMenu.__init__(self, parent)
+        QtWidgets.QMenu.__init__(self, parent)
         self._menuItems = _GetContextMenuItems(parent)
 
         for menuItem in self._menuItems:
@@ -59,7 +59,7 @@ class HeaderContextMenuItem(UsdviewContextMenuItem):
         self._parent = parent
         self._column = column
         
-        if parent.__class__ == QtGui.QTreeWidget:
+        if parent.__class__ == QtWidgets.QTreeWidget:
             self._text = parent.headerItem().text(column)
         else:
             self._text = parent.horizontalHeaderItem(column).text()

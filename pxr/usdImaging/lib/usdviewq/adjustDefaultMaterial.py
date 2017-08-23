@@ -21,10 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtCore
 from adjustDefaultMaterialUI import Ui_AdjustDefaultMaterial
 
-class AdjustDefaultMaterial(QtGui.QDialog):
+class AdjustDefaultMaterial(QtWidgets.QDialog):
     """The dataModel provided to this VC must conform to the following
     interface:
     
@@ -40,7 +40,7 @@ class AdjustDefaultMaterial(QtGui.QDialog):
                                         set in the dataModel.
     """
     def __init__(self, parent, dataModel):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self._ui = Ui_AdjustDefaultMaterial()
         self._ui.setupUi(self)
 

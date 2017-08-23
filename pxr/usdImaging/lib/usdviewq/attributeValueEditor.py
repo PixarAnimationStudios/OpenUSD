@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtCore
 from attributeValueEditorUI import Ui_AttributeValueEditor
 from pythonExpressionPrompt import PythonExpressionPrompt
 from common import GetAttributeColor, TimeSampleTextColor
@@ -29,9 +29,12 @@ from common import GetAttributeColor, TimeSampleTextColor
 # This is the widget that appears when selecting an attribute and
 # opening the "Value" tab.
 
-class AttributeValueEditor(QtGui.QWidget):
+class AttributeValueEditor(QtWidgets.QWidget):
+    kEditCompelte = QtCore.SIGNAL('editComplete(QString)')
+    kClicked = QtCore.SIGNAL('clicked()')
+
     def __init__(self, parent):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self._ui = Ui_AttributeValueEditor()
         self._ui.setupUi(self)
 
@@ -47,23 +50,28 @@ class AttributeValueEditor(QtGui.QWidget):
 
         self.clear()
 
+    def setMainWindow(self, mainWindow, editComplete):
+        # pass the mainWindow instance from which to retrieve 
+        # variable data.
+        # assert getattr(self, '_mainWindow', None) == None
+        self._mainWindow = mainWindow
+        self._propertyView = mainWindow._ui.propertyView
+
+        QtCore.QObject.connect(self,
+                               AttributeValueEditor.kEditCompelte,
+                               editComplete)
+
         QtCore.QObject.connect(self._ui.editButton,
-                               QtCore.SIGNAL('clicked()'),
+                               AttributeValueEditor.kClicked,
                                self._edit)
 
         QtCore.QObject.connect(self._ui.revertButton,
-                               QtCore.SIGNAL('clicked()'),
+                               AttributeValueEditor.kClicked,
                                self._revert)
 
         QtCore.QObject.connect(self._ui.revertAllButton,
-                               QtCore.SIGNAL('clicked()'),
+                               AttributeValueEditor.kClicked,
                                self._revertAll)
-
-    def setMainWindow(self, mainWindow):
-        # pass the mainWindow instance from which to retrieve 
-        # variable data.
-        self._mainWindow = mainWindow
-        self._propertyView = mainWindow._ui.propertyView
 
     def populate(self, name, node):
         # called when the selected attribute has changed
@@ -150,7 +158,7 @@ class AttributeValueEditor(QtGui.QWidget):
             # send a signal to the mainWindow confirming the edit
             msg = 'Successfully edited %s "%s" at frame %s.' \
                     %(type, self._name, frame)
-            self.emit(QtCore.SIGNAL('editComplete(QString)'), msg)
+            self.emit(AttributeValueEditor.kEditCompelte, msg)
 
         except Exception as e:
             # if an error occurs, reopen the interpreter and display it
@@ -169,15 +177,15 @@ class AttributeValueEditor(QtGui.QWidget):
                   Usd.USD_SECTION_INVALID
 
         # ask for confirmation before reverting overrides
-        reply = QtGui.QMessageBox.question(self, "Confirm Revert",
+        reply = QtWidgets.QMessageBox.question(self, "Confirm Revert",
                     "Are you sure you want to revert the %s "
                     "<font color='%s'><b>%s</b></font> at %s?"
                         %(type, TimeSampleTextColor.color().name(), self._name, frameStr),
-                    QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Yes,
-                    QtGui.QMessageBox.Cancel)
+                    QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Yes,
+                    QtWidgets.QMessageBox.Cancel)
     
         msg = ""
-        if reply == QtGui.QMessageBox.Yes and self._node is not None:
+        if reply == QtWidgets.QMessageBox.Yes and self._node is not None:
             # we got 'yes' as an answer
             try:
                 # this removes only the value written in the top level stage

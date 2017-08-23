@@ -23,7 +23,7 @@
 #
 from pxr import Tf
 
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtGui, QtCore
 
 from code import InteractiveInterpreter
 import os, sys, keyword
@@ -268,7 +268,7 @@ class Controller(QtCore.QObject):
         self.connect(self.textEdit, QtCore.SIGNAL("requestPrev()"),
                      self._PrevSlot)
 
-        appInstance = QtGui.QApplication.instance()
+        appInstance = QtWidgets.QApplication.instance()
         self.connect(appInstance,
                      QtCore.SIGNAL("appControllerQuit()"),
                      self._QuitSlot)
@@ -469,10 +469,10 @@ class Controller(QtCore.QObject):
             # how many rows do we need to fit our data
             numRows = (len(completions) / numCols) + 1
 
-            columnWidth = QtGui.QTextLength(QtGui.QTextLength.FixedLength,
+            columnWidth = QtWidgets.QTextLength(QtWidgets.QTextLength.FixedLength,
                                             maxLength)
 
-            tableFormat = QtGui.QTextTableFormat()
+            tableFormat = QtWidgets.QTextTableFormat()
             tableFormat.setAlignment(QtCore.Qt.AlignLeft)          
             tableFormat.setCellPadding(0)
             tableFormat.setCellSpacing(0)
@@ -627,7 +627,7 @@ class Controller(QtCore.QObject):
         self._ClearLine()
         self.write(self.history[self.historyPointer])
 
-class View(QtGui.QTextEdit):
+class View(QtWidgets.QTextEdit):
     """View is a QTextEdit which provides some extra
     facilities to help implement an interpreter console.  In particular,
     QTextEdit does not provide for complete control over the buffer being
@@ -696,7 +696,7 @@ class View(QtGui.QTextEdit):
         return (self._PositionInInputArea(self.textCursor().position()) > 0)
 
     def mousePressEvent(self, e):
-        app = QtGui.QApplication.instance()        
+        app = QtWidgets.QApplication.instance()        
 
         # is this a triple click?        
         if ((e.button() & QtCore.Qt.LeftButton) and
@@ -724,7 +724,7 @@ class View(QtGui.QTextEdit):
         
     def mouseDoubleClickEvent(self, e):
         super(View, self).mouseDoubleClickEvent(e)
-        app = QtGui.QApplication.instance()
+        app = QtWidgets.QApplication.instance()
         self.tripleClickTimer.start(app.doubleClickInterval(), self)
         # make a copy here, otherwise tripleClickPoint will always = globalPos
         self.tripleClickPoint = QtCore.QPoint(e.globalPos())

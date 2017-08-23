@@ -21,10 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from pyside import QtWidgets, QtCore
 from adjustClippingUI import Ui_AdjustClipping
 
-class AdjustClipping(QtGui.QDialog):
+class AdjustClipping(QtWidgets.QDialog):
     """The dataModel provided to this VC must conform to the following
     interface:
     
@@ -40,7 +40,7 @@ class AdjustClipping(QtGui.QDialog):
                                 may have changed.
     """
     def __init__(self, parent, dataModel):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self._ui = Ui_AdjustClipping()
         self._ui.setupUi(self)
 
