@@ -120,7 +120,7 @@ static int _GetMMapPrefetchKB()
 }
 
 // Write nbytes bytes to fd at pos.
-static inline ssize_t
+static inline int64_t
 WriteToFd(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
     int64_t nwritten = ArchPWrite(file, bytes, nbytes, pos);
     if (ARCH_UNLIKELY(nwritten < 0)) {

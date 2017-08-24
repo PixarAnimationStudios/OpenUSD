@@ -271,7 +271,7 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
         allTimes.push_back(UsdTimeCode(*it));
     }
 
-    ssize_t prevNumFaceCounts = -1;
+    size_t prevNumFaceCounts = std::numeric_limits<size_t>::max();
     TF_FOR_ALL(timeIt, allTimes) {
         const UsdTimeCode &time = *timeIt;
 
@@ -297,8 +297,8 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
             }
         } else {
 
-            if (prevNumFaceCounts != -1 && 
-                faceCounts.size() != static_cast<size_t>(prevNumFaceCounts)) 
+            if (prevNumFaceCounts != std::numeric_limits<size_t>::max() && 
+                faceCounts.size() != prevNumFaceCounts) 
             {
                 isValid = false;
                 if (reason) {
