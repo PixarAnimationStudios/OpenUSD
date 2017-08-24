@@ -1618,8 +1618,9 @@ PcpChanges::_LoadSublayerForChange(
                 layer, &resolvedAssetPath, sublayerArgs);
         }
         else {
-            sublayer = SdfLayer::FindRelativeToLayer(
-                layer, sublayerPath, sublayerArgs);
+            resolvedAssetPath = SdfComputeAssetPathRelativeToLayer(
+                layer, sublayerPath);
+            sublayer = SdfLayer::Find(resolvedAssetPath, sublayerArgs);
         }
     }
     
