@@ -82,6 +82,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static int PAGESIZE = ArchGetPageSize();
+
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
 }
@@ -94,6 +96,29 @@ TF_DEFINE_ENV_SETTING(
     "equal minor and patch versions.  This is only for new files; saving "
     "edits to an existing file preserves its version.");
 
+TF_DEFINE_ENV_SETTING(
+    USDC_MMAP_PREFETCH_KB, 0,
+    "If set to a nonzero value, attempt to disable the OS's prefetching "
+    "behavior for memory-mapped files and instead do simple aligned block "
+    "fetches of the given size instead.  If necessary the setting value is "
+    "rounded up to the next whole multiple of the system's page size "
+    "(typically 4 KB).");
+
+static int _GetMMapPrefetchKB()
+{
+    auto getKB = []() {
+        int setting = TfGetEnvSetting(USDC_MMAP_PREFETCH_KB);
+        int kb = ((setting * 1024 + PAGESIZE - 1) & ~(PAGESIZE - 1)) / 1024;
+        if (setting != kb) {
+            fprintf(stderr, "Rounded USDC_MMAP_PREFETCH_KB value %d to %d",
+                    setting, kb);
+        }
+        return kb;
+    };
+    static int kb = getKB();
+    return kb;
+}
+
 // Write nbytes bytes to fd at pos.
 static inline ssize_t
 WriteToFd(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
@@ -105,8 +130,6 @@ WriteToFd(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
     }
     return nwritten;
 }
-
-static int PAGESIZE = ArchGetPageSize();
 
 namespace Usd_CrateFile
 {
@@ -385,7 +408,14 @@ struct _MmapStream {
                          char *debugPageMap)
         : _cur(mapStart.get())
         , _mapStart(mapStart.get())
-        , _debugPageMap(debugPageMap) {}
+        , _length(ArchGetFileMappingLength(mapStart))
+        , _debugPageMap(debugPageMap)
+        , _prefetchKB(_GetMMapPrefetchKB()) {}
+
+    _MmapStream &DisablePrefetch() {
+        _prefetchKB = 0;
+        return *this;
+    }
     
     inline void Read(void *dest, size_t nBytes) {
         if (ARCH_UNLIKELY(_debugPageMap)) {
@@ -393,7 +423,24 @@ struct _MmapStream {
             int64_t pageEnd = ((_cur + nBytes - 1 - _mapStart) / PAGESIZE) + 1;
             memset(_debugPageMap + pageStart, 1, pageEnd-pageStart);
         }
+
+        if (_prefetchKB) {
+            // Custom aligned chunk "prefetch".
+            const auto chunkBytes = _prefetchKB * 1024;
+            auto firstChunk = (_cur-_mapStart) / chunkBytes;
+            auto lastChunk = ((_cur-_mapStart) + nBytes) / chunkBytes;
+            
+            char const *beginAddr = _mapStart + firstChunk * chunkBytes;
+            char const *endAddr =
+                _mapStart + std::min(_length, (lastChunk + 1) * chunkBytes);
+            
+            ArchMemAdvise(reinterpret_cast<void *>(
+                              const_cast<char *>(beginAddr)),
+                          endAddr-beginAddr, ArchMemAdviceWillNeed);
+        }
+
         memcpy(dest, _cur, nBytes);
+        
         _cur += nBytes;
     }
     inline int64_t Tell() const { return _cur - _mapStart; }
@@ -405,7 +452,9 @@ struct _MmapStream {
 private:
     char const *_cur;
     char const *_mapStart;
+    size_t _length;
     char *_debugPageMap;
+    int _prefetchKB;
 };
 
 struct _PreadStream {
@@ -761,6 +810,13 @@ class CrateFile::_Reader : public _ReaderBase
         src.Seek(start + offset);
     }
 
+    void _RecursiveReadAndPrefetch() {
+        auto start = src.Tell();
+        auto offset = Read<int64_t>();
+        src.Prefetch(start, offset);
+        src.Seek(start + offset);
+    }
+
 public:
     _Reader(CrateFile const *crate, ByteStream &src)
         : _ReaderBase(crate)
@@ -877,7 +933,7 @@ public:
         return listOp;
     }
     VtValue Read(VtValue *) {
-        _RecursiveRead();
+        _RecursiveReadAndPrefetch();
         auto rep = Read<ValueRep>();
         return crate->UnpackValue(rep);
     }
@@ -1363,13 +1419,12 @@ CrateFile::Open(string const &fileName)
         return result;
     }
 
-    auto fileSize = ArchGetFileLength(inputFile.get());
     if (!TfGetenvBool("USDC_USE_PREAD", false)) {
         // Map the file.
         auto mapStart = _MmapFile(fileName.c_str(), inputFile.get());
-        result.reset(new CrateFile(fileName, std::move(mapStart), fileSize));
+        result.reset(new CrateFile(fileName, std::move(mapStart)));
     } else {
-        result.reset(new CrateFile(fileName, std::move(inputFile), fileSize));
+        result.reset(new CrateFile(fileName, std::move(inputFile)));
     }
 
     // If the resulting CrateFile has no filename, reading failed.
@@ -1402,15 +1457,20 @@ CrateFile::CrateFile(bool useMmap)
     _DoAllTypeRegistrations();
 }
 
-CrateFile::CrateFile(
-    string const &fileName, ArchConstFileMapping mapStart, int64_t fileSize)
+CrateFile::CrateFile(string const &fileName, ArchConstFileMapping mapStart)
     : _mapStart(std::move(mapStart))
     , _fileName(fileName)
     , _useMmap(true)
 {
     _DoAllTypeRegistrations();
+    _InitMMap();
+}
 
+void
+CrateFile::_InitMMap() {
     if (_mapStart) {
+        int64_t fileSize = ArchGetFileMappingLength(_mapStart);
+        
         // Mark the whole file as random access to start to avoid large NFS
         // prefetch.  We explicitly prefetch the structural sections later.
         ArchMemAdvise(_mapStart.get(), fileSize, ArchMemAdviceRandomAccess);
@@ -1420,34 +1480,44 @@ CrateFile::CrateFile(
         // If it's just '1' or '*' do everything, otherwise match.
         if (!debugPageMapPattern.empty() &&
             (debugPageMapPattern == "*" || debugPageMapPattern == "1" ||
-             ArchRegex(debugPageMapPattern, ArchRegex::GLOB).Match(fileName))) {
+             ArchRegex(debugPageMapPattern, ArchRegex::GLOB).Match(_fileName))) {
             int64_t npages = (fileSize + PAGESIZE-1) / PAGESIZE;
             _debugPageMap.reset(new char[npages]);
             memset(_debugPageMap.get(), 0, npages);
         } 
 
-        auto reader = _MakeReader(_MmapStream(_mapStart, _debugPageMap.get()));
+        // Make an mmap stream but disable auto prefetching -- the
+        // _ReadStructuralSections() call manages prefetching itself using
+        // higher-level knowledge.
+        auto reader = _MakeReader(
+            _MmapStream(_mapStart, _debugPageMap.get()).DisablePrefetch());
         TfErrorMark m;
         _ReadStructuralSections(reader, fileSize);
         if (!m.IsClean())
             _fileName.clear();
-        // Restore default prefetch behavior.
-        ArchMemAdvise(_mapStart.get(), fileSize, ArchMemAdviceNormal);
+
+        // Restore default prefetch behavior if we're not doing custom prefetch.
+        if (!_GetMMapPrefetchKB())
+            ArchMemAdvise(_mapStart.get(), fileSize, ArchMemAdviceNormal);
     } else {
         _fileName.clear();
     }
 }
 
-CrateFile::CrateFile(
-    string const &fileName, _UniqueFILE inputFile, int64_t fileSize)
+CrateFile::CrateFile(string const &fileName, _UniqueFILE inputFile)
     : _inputFile(std::move(inputFile))
     , _fileName(fileName)
     , _useMmap(false)
 {
     _DoAllTypeRegistrations();
+}
 
+void
+CrateFile::_InitPread()
+{
     // Mark the whole file as random access to start to avoid large NFS
     // prefetch.  We explicitly prefetch the structural sections later.
+    int64_t fileSize = ArchGetFileLength(_inputFile.get());
     ArchFileAdvise(_inputFile.get(), 0, fileSize, ArchFileAdviceRandomAccess);
     auto reader = _MakeReader(_PreadStream(_inputFile.get()));
     TfErrorMark m;
@@ -1577,16 +1647,11 @@ CrateFile::Packer::Close()
                 _MmapFile(_crate->_fileName.c_str(), file.get());
             if (!_crate->_mapStart)
                 return false;
-            // Create a new debugPageMap if we had one previously.
-            if (_crate->_debugPageMap) {
-                int64_t length = ArchGetFileMappingLength(_crate->_mapStart);
-                int64_t npages = (length + PAGESIZE-1) / PAGESIZE;
-                _crate->_debugPageMap.reset(new char[npages]);
-                memset(_crate->_debugPageMap.get(), 0, npages);
-            }
+            _crate->_InitMMap();
         } else {
             // Must adopt the file handle if we don't already have one.
             _crate->_inputFile = std::move(file);
+            _crate->_InitPread();
         }
 
         return true;

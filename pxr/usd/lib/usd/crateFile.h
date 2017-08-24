@@ -521,12 +521,14 @@ public:
 
 private:
     explicit CrateFile(bool useMmap);
-    CrateFile(string const &fileName,
-              ArchConstFileMapping mapStart, int64_t fileSize);
-    CrateFile(string const &fileName, _UniqueFILE inputFile, int64_t fileSize);
+    CrateFile(string const &fileName, ArchConstFileMapping mapStart);
+    CrateFile(string const &fileName, _UniqueFILE inputFile);
 
     CrateFile(CrateFile const &) = delete;
     CrateFile &operator=(CrateFile const &) = delete;
+
+    void _InitMMap();
+    void _InitPread();
 
     static ArchConstFileMapping _MmapFile(char const *fileName, FILE *file);
 
