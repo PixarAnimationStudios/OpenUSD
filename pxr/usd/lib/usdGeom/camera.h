@@ -481,13 +481,8 @@ public:
 
     /// Creates a GfCamera object from the attribute values at \p time.
     ///
-    /// Outside of Pixar, never touch \p isZup, it is deprecated !
-    ///
-    /// Set \p isZup to UsdUtilsGetCamerasAreZup(prim.GetStage()). Eventually,
-    /// z-Up encoding of cameras will be dropped and this parameter will go
-    /// away.
     USDGEOM_API
-    GfCamera GetCamera(const UsdTimeCode &time, const bool isZup = false) const;
+    GfCamera GetCamera(const UsdTimeCode &time) const;
 
     /// Write attribute values from \p camera for \p time.
     ///

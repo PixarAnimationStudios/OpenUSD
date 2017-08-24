@@ -45,9 +45,8 @@ class TestUsdGeomCamera(unittest.TestCase):
                          float(i[2]),
                          float(i[3])) for i in val]
 
-    def _CheckValues(self, camera, schema, time, skipTransformAndClippingPlanes = False):
-        if not skipTransformAndClippingPlanes:
-            self.assertEqual(camera.transform, schema.GetLocalTransformation(Usd.TimeCode(time)))
+    def _CheckValues(self, camera, schema, time):
+        self.assertEqual(camera.transform, schema.GetLocalTransformation(Usd.TimeCode(time)))
         self.assertEqual(camera.projection, self._GetSchemaProjection(schema, time))
         self.assertEqual(camera.horizontalAperture, schema.GetHorizontalApertureAttr().Get(time))
         self.assertEqual(camera.verticalAperture, schema.GetVerticalApertureAttr().Get(time))
@@ -57,8 +56,7 @@ class TestUsdGeomCamera(unittest.TestCase):
                          schema.GetVerticalApertureOffsetAttr().Get(time))
         self.assertEqual(camera.focalLength, schema.GetFocalLengthAttr().Get(time))
         self.assertEqual(camera.clippingRange, self._GetSchemaClippingRange(schema, time))
-        if not skipTransformAndClippingPlanes:
-            self.assertEqual(camera.clippingPlanes, self._GetSchemaClippingPlanes(schema, time))
+        self.assertEqual(camera.clippingPlanes, self._GetSchemaClippingPlanes(schema, time))
         self.assertTrue(Gf.IsClose(camera.fStop, schema.GetFStopAttr().Get(time), 1e-6))
         self.assertEqual(camera.focusDistance, schema.GetFocusDistanceAttr().Get(time))
 
@@ -85,16 +83,6 @@ class TestUsdGeomCamera(unittest.TestCase):
 
         # test assigned values
         self._CheckValues(camera, usdCamera, 1.0)
-
-        camera = usdCamera.GetCamera(1.0, Gf.Camera.ZUp)
-        self._CheckValues(camera, usdCamera, 1.0, skipTransformAndClippingPlanes = True)
-
-        self.assertEqual(camera.transform, Gf.Matrix4d( 3, 0, 0, 0,
-                                                   0, 0, 3, 0,
-                                                   0,-3, 0, 0,
-                                                   0, 0, 0, 3))
-        self.assertEqual(camera.clippingPlanes, [Gf.Vec4f(1.0, 3.0, -2.0, 4.0),
-                                            Gf.Vec4f(8.0, 6.0, -7.0, 5.0)])
 
     def test_SetFromCamera(self):
         camera = Gf.Camera()

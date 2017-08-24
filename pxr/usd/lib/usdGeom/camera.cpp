@@ -456,38 +456,12 @@ _VectorVec4fToVtArray(const std::vector<GfVec4f> &vec)
     return result;
 }
 
-static
-std::vector<GfVec4f>
-_TransformClippingPlanes(const std::vector<GfVec4f> &clippingPlanes,
-                         const GfMatrix4d &inverseMatrix)
-{
-    std::vector<GfVec4f> result(clippingPlanes);
-
-    for (size_t i = 0; i < clippingPlanes.size(); i++) {
-        // Apply matrix to normal vectors of clipping planes
-        const GfVec3f normal = inverseMatrix.TransformDir(
-            GfVec3f(clippingPlanes[i][0],
-                    clippingPlanes[i][1],
-                    clippingPlanes[i][2]));
-
-        result[i][0] = normal[0];
-        result[i][1] = normal[1];
-        result[i][2] = normal[2];
-    }
-
-    return result;
-}
-
 GfCamera
-UsdGeomCamera::GetCamera(const UsdTimeCode &time, const bool isZup) const
+UsdGeomCamera::GetCamera(const UsdTimeCode &time) const
 {
     GfCamera camera;
 
-    // If USD has legacy z-Up encoded cameras, convert to y-Up encoded
-    // cameras.
     camera.SetTransform(
-        isZup ?
-        GfCamera::Z_UP_TO_Y_UP_MATRIX * ComputeLocalToWorldTransform(time) :
         ComputeLocalToWorldTransform(time));
 
     if (const boost::optional<TfToken> projection = _GetValue<TfToken>(
@@ -530,18 +504,7 @@ UsdGeomCamera::GetCamera(const UsdTimeCode &time, const bool isZup) const
         _GetValue<VtArray<GfVec4f> >(
             GetPrim(), UsdGeomTokens->clippingPlanes, time)) {
 
-        // If we have the clipping planes for a z-Up camera, we already
-        // applied a rotation by 90 degrees to the camera matrix. For the
-        // clipping planes to stay the same, we need to apply the inverse
-        // matrix to their normals.
-        if (isZup) {
-            camera.SetClippingPlanes(
-                _TransformClippingPlanes(
-                    _VtArrayVec4fToVector(*clippingPlanes),
-                    GfCamera::Y_UP_TO_Z_UP_MATRIX));
-        } else {
-            camera.SetClippingPlanes(_VtArrayVec4fToVector(*clippingPlanes));
-        }
+        camera.SetClippingPlanes(_VtArrayVec4fToVector(*clippingPlanes));
     }
 
     if (const boost::optional<float> fStop = _GetValue<float>(
