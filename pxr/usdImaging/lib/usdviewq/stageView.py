@@ -824,8 +824,17 @@ class StageView(QtOpenGL.QGLWidget):
         if msaa == "1":
             glFormat.setSampleBuffers(True)
             glFormat.setSamples(4)
-        # XXX: for OSX (QT5 required)
-        # glFormat.setProfile(QtOpenGL.QGLFormat.CoreProfile)
+
+        # Qt 4.8 required for OpenGL 3/4 but still not 4.3!
+        if sys.platform == 'darwin':
+            self._appleGL4 = True
+            qtVers = QtCore.qVersion()
+            glFormat.setProfile(QtOpenGL.QGLFormat.CoreProfile)
+            glVers = (4, 1) if qtVers[0] >= 5 else (3, 3)
+            glFormat.setVersion(*glVers)
+        else:
+            self._appleGL4 = False
+
         super(StageView, self).__init__(glFormat, parent)
 
         self._dataModel = dataModel or StageView.DefaultDataModel()
@@ -1369,7 +1378,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.gammaCorrectColors = False
         self._renderParams.enableIdRender = self._dataModel.viewSettings.displayPrimId
         self._renderParams.enableSampleAlphaToCoverage = not self._dataModel.viewSettings.displayPrimId
-        self._renderParams.highlight = renderSelHighlights
+        self._renderParams.highlight = renderSelHighlights if not self._appleGL4 else False
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
         self._renderParams.colorCorrectionMode = self._dataModel.viewSettings.colorCorrectionMode
         self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
@@ -1586,8 +1595,10 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glEnableVertexAttribArray(0)
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
 
-        GL.glEnable(GL.GL_LINE_STIPPLE)
-        GL.glLineStipple(2,0xAAAA)
+        # Fixed pipeline is deprecated and unavailable on OS X
+        if not self._appleGL4:
+          GL.glEnable(GL.GL_LINE_STIPPLE)
+          GL.glLineStipple(2,0xAAAA)
 
         GL.glUseProgram(glslProgram.program)
         matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
@@ -1602,7 +1613,8 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glUseProgram(0)
 
-        GL.glDisable(GL.GL_LINE_STIPPLE)
+        if not self._appleGL4:
+          GL.glDisable(GL.GL_LINE_STIPPLE)
         if (self._vao != 0):
             GL.glBindVertexArray(0)
 
@@ -1628,6 +1640,15 @@ class StageView(QtOpenGL.QGLWidget):
             if not UsdImagingGL.Engine.IsColorCorrectionCapable():
                 from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
                 GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
+
+            # Not really sure if this is OS X only, but first 3 calls to
+            # paintGL will fail with GL_FRAMEBUFFER_UNDEFINED.
+            # Just print a tidy warning and hope it goes away!
+            if (self._appleGL4 and
+                GL.glCheckFramebufferStatus(GL.GL_DRAW_FRAMEBUFFER)
+                != GL.GL_FRAMEBUFFER_COMPLETE):
+                print "Framebuffer status: ", GL.glCheckFramebufferStatus(GL.GL_DRAW_FRAMEBUFFER), GL.GL_FRAMEBUFFER_UNDEFINED
+                return
 
             self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
             GL.glClearColor(*self._renderParams.clearColor)
