@@ -32,6 +32,7 @@ option(PXR_BUILD_MAYA_PLUGIN "Build usd maya plugin" OFF)
 option(PXR_BUILD_ALEMBIC_PLUGIN "Build the Alembic plugin for USD" OFF)
 option(PXR_BUILD_HOUDINI_PLUGIN "Build the Houdini plugin for USD" OFF)
 option(PXR_BUILD_DOCUMENTATION "Generate doxygen documentation" OFF)
+option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
 option(PXR_ENABLE_MULTIVERSE_SUPPORT "Enable Multiverse backend in the Alembic plugin for USD" OFF)
 option(PXR_ENABLE_HDF5_SUPPORT "Enable HDF5 backend in the Alembic plugin for USD" ON)
 option(PXR_ENABLE_PTEX_SUPPORT "Enable Ptex support" ON)
@@ -101,4 +102,3 @@ set(PXR_MONOLITHIC_IMPORT ""
     "Path to cmake file that imports a usd_ms target"
 )
 
-set(PXR_ENABLE_PYTHON_SUPPORT "ON")

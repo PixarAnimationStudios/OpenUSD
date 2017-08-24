@@ -758,6 +758,11 @@ def InstallUSD(context):
     with CurrentWorkingDirectory(context.usdSrcDir):
         extraArgs = []
 
+        if context.buildPython:
+            extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
+        else:
+            extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
+
         if context.buildShared:
             extraArgs.append('-DBUILD_SHARED_LIBS=ON')
         elif context.buildMonolithic:
@@ -907,6 +912,12 @@ subgroup.add_argument("--docs", dest="build_docs", action="store_true",
                       default=False, help="Build documentation")
 subgroup.add_argument("--no-docs", dest="build_docs", action="store_false",
                       help="Do not build documentation (default)")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--python", dest="build_python", action="store_true",
+                      default=True, help="Build python based components "
+                                         "(default)")
+subgroup.add_argument("--no-python", dest="build_python", action="store_false",
+                      help="Do not build python based components")
 
 (NO_IMAGING, IMAGING, USD_IMAGING) = (0, 1, 2)
 
@@ -1021,6 +1032,7 @@ class InstallContext:
         # Optional components
         self.buildTests = args.build_tests
         self.buildDocs = args.build_docs
+        self.buildPython = args.build_python
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
@@ -1053,7 +1065,7 @@ class InstallContext:
         self.buildHoudini = args.build_houdini
         self.houdiniLocation = (os.path.abspath(args.houdini_location)
                                 if args.houdini_location else None)
-        
+       
     def MustBuildDependency(self, dep):
         return self.forceBuildAll or dep.name.lower() in self.forceBuild
 
@@ -1092,7 +1104,7 @@ if context.buildImaging:
     requiredDependencies += [JPEG, TIFF, PNG, OPENEXR, GLEW, 
                              OPENIMAGEIO, OPENSUBDIV]
                              
-    if context.buildUsdImaging:
+    if context.buildUsdImaging and context.buildPython:
         requiredDependencies += [PYOPENGL, PYSIDE]
 
 # Assume zlib already exists on Linux platforms and don't build
@@ -1101,6 +1113,21 @@ if context.buildImaging:
 # our libraries against.
 if Linux():
     requiredDependencies.remove(ZLIB)
+
+
+# Error out if we try to build any third party plugins with python disabled.
+if not context.buildPython:
+    pythonPluginErrorMsg = (
+        "%s plugin cannot be built when python support is disabled")
+    if context.buildMaya:
+        PrintError(pythonPluginErrorMsg % "Maya")
+        sys.exit(1)
+    if context.buildHoudini:
+        PrintError(pythonPluginErrorMsg % "Houdini")
+        sys.exit(1)
+    if context.buildKatana:
+        PrintError(pythonPluginErrorMsg % "Katana")
+        sys.exit(1)
 
 # Error out if we're building the Maya plugin and have enabled Ptex support
 # in imaging. Maya includes its own copy of Ptex, which we believe is 
@@ -1182,6 +1209,7 @@ Building with settings:
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
     UsdImaging                  {buildUsdImaging}
+    Python support              {buildPython}
     Documentation               {buildDocs}
     Tests                       {buildTests}
     Alembic Plugin              {buildAlembic}
@@ -1205,6 +1233,7 @@ Building with settings:
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
+    buildPython=("On" if context.buildPython else "Off"),
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
@@ -1273,16 +1302,18 @@ if Windows():
     ])
 
 Print("""
-Success! To use USD, please ensure that you have:
-  The following in your PYTHONPATH environment variable:
-    {requiredInPythonPath}
-    
-  The following in your PATH environment variable:
+Success! To use USD, please ensure that you have:""")
+
+if context.buildPython:
+    Print("""
+    The following in your PYTHONPATH environment variable:
+    {requiredInPythonPath}""".format(
+        requiredInPythonPath="\n    ".join(sorted(requiredInPythonPath))))
+
+Print("""
+    The following in your PATH environment variable:
     {requiredInPath}
-"""
-    .format(
-        requiredInPythonPath="\n    ".join(sorted(requiredInPythonPath)),
-        requiredInPath="\n    ".join(sorted(requiredInPath))))
+""".format(requiredInPath="\n    ".join(sorted(requiredInPath))))
 
 if context.buildMaya:
     Print("See documentation at http://openusd.org/docs/Maya-USD-Plugins.html "
