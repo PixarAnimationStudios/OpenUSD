@@ -293,6 +293,11 @@ public:
                     .set("masterMapping", masterMapping)
                     .set("masterParentPath", masterParentPath)
                     .build();
+            } else {
+                opArgs = FnKat::GroupBuilder()
+                    .update(opArgs)
+                    .del("masterMapping")
+                    .build();
             }
         }
 
@@ -962,10 +967,11 @@ public:
             {
                 UsdPrim prim = usdInArgs->GetStage()->GetPrimAtPath(
                         SdfPath(childPrimName));
+
+                // The child may introduce a payload, which may not be
+                // loaded, so we do  not check that the child is defined.
                 TF_FOR_ALL(childIter, prim.GetFilteredChildren(
-                        UsdPrimIsDefined
-                        && UsdPrimIsActive
-                        && !UsdPrimIsAbstract))
+                        UsdPrimIsActive && !UsdPrimIsAbstract))
                 {
                     const UsdPrim& child = *childIter;
                     const std::string& childName = child.GetName();
