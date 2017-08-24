@@ -33,7 +33,9 @@
 
 #include <tbb/concurrent_vector.h>
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <string>
 #include <vector>
@@ -150,7 +152,9 @@ main(int, char const *[])
 {
     TestParallelAuthoring();
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     TF_AXIOM(!Py_IsInitialized());
+#endif // PXR_PYTHON_SUPPORT_ENABLED
     
     return 0;
 }

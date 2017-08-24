@@ -37,7 +37,9 @@
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <string>
 #include <vector>
@@ -2024,7 +2026,9 @@ int main(int argc, char** argv)
         TestInterpolationWithModelClips(ident);
     }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     TF_AXIOM(!Py_IsInitialized());
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     printf("Passed!\n");
     return EXIT_SUCCESS;

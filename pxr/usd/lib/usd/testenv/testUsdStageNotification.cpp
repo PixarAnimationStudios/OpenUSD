@@ -40,7 +40,9 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <cstdio>
 #include <vector>
@@ -292,5 +294,7 @@ int main()
 
     TF_AXIOM(m.IsClean());
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     TF_AXIOM(!Py_IsInitialized());
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 }

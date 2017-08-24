@@ -28,9 +28,6 @@
 
 #include "pxr/base/tf/ostreamMethods.h"
 
-#include <boost/python/extract.hpp>
-#include <boost/python/object.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
