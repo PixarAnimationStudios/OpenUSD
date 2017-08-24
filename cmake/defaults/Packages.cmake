@@ -37,21 +37,38 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
-# --Python.  We are generally but not completely 2.6 compliant.
-add_definitions(-DPXR_PYTHON_SUPPORT_ENABLED)
-find_package(PythonInterp 2.7 REQUIRED)
-find_package(PythonLibs 2.7 REQUIRED)
+if(PXR_ENABLE_PYTHON_SUPPORT)
+    # --Python.  We are generally but not completely 2.6 compliant.
+    add_definitions(-DPXR_PYTHON_SUPPORT_ENABLED)
+    find_package(PythonInterp 2.7 REQUIRED)
+    find_package(PythonLibs 2.7 REQUIRED)
 
-# --Boost
-find_package(Boost
-    COMPONENTS
-        date_time
-        program_options
-        python
-        regex
-        system
-    REQUIRED
-)
+    # --Boost
+    find_package(Boost
+        COMPONENTS
+            date_time
+            program_options
+            python
+            regex
+            system
+        REQUIRED
+    )
+
+    # --Jinja2
+    find_package(Jinja2)
+else()
+    find_package(PythonInterp 2.7 REQUIRED)
+ 
+    # --Boost
+    find_package(Boost
+        COMPONENTS
+            date_time
+            program_options
+            regex
+            system
+        REQUIRED
+    )
+endif()
 
 # --TBB
 find_package(TBB REQUIRED COMPONENTS tbb)
@@ -64,9 +81,6 @@ if(WIN32)
 else()
     find_library(M_LIB m)
 endif()
-
-# --Jinja2
-find_package(Jinja2)
 
 if (NOT PXR_MALLOC_LIBRARY)
     if (NOT WIN32)
@@ -107,10 +121,12 @@ if (PXR_BUILD_IMAGING)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         find_package(X11)
     endif()
-    # --PySide
-    find_package(PySide)
-    # --PyOpenGL
-    find_package(PyOpenGL)
+    if (PXR_ENABLE_PYTHON_SUPPORT)
+        # --PySide
+        find_package(PySide)
+        # --PyOpenGL
+        find_package(PyOpenGL)
+    endif()
     # --Embree
     if (PXR_BUILD_EMBREE_PLUGIN)
         find_package(Embree REQUIRED)
