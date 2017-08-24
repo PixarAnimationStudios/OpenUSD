@@ -1,7 +1,10 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdviewq)
 
-if (NOT PYSIDE_FOUND)
+if (NOT PXR_ENABLE_PYTHON_SUPPORT)    
+    message(STATUS "Not building ${PXR_PACKAGE} because PXR_ENABLE_PYTHON_SUPPORT=OFF")   
+    return()
+elseif (NOT PYSIDE_FOUND)
     message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: PySide")
     return()
 elseif(NOT PYOPENGL_FOUND)

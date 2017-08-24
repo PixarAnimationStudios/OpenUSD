@@ -309,7 +309,7 @@ function(pxr_library NAME)
         LIB_INSTALL_PREFIX_RESULT libInstallPrefix
     )
 
-    if(args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES)
+    if(PXR_ENABLE_PYTHON_SUPPORT AND (args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
         _pxr_python_module(
             ${NAME}
             WRAPPED_LIB_INSTALL_PREFIX "${libInstallPrefix}"
@@ -857,7 +857,7 @@ function(pxr_toplevel_prologue)
 
     # Create a target for targets that require Python.  Each should add
     # itself as a dependency to the "python" target.
-    if(TARGET shared_libs)
+    if(TARGET shared_libs AND PXR_ENABLE_PYTHON_SUPPORT)
         add_custom_target(python ALL)
     endif()
 endfunction() # pxr_toplevel_prologue
@@ -1043,7 +1043,9 @@ function(pxr_core_epilogue)
             pxr_monolithic_epilogue()
             set(_building_monolithic FALSE PARENT_SCOPE)
         endif()
-        pxr_setup_python()
+        if(PXR_ENABLE_PYTHON_SUPPORT)
+            pxr_setup_python()
+        endif()
         pxr_setup_plugins()
         set(_building_core FALSE PARENT_SCOPE)
     endif()
