@@ -29,6 +29,8 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/base/tracelite/trace.h"
 
+#include <boost/iterator/transform_iterator.hpp>
+
 #include <algorithm>
 #include <utility>
 #include <vector>
@@ -208,9 +210,19 @@ _TranslatePathsAndEditRelocates(
     // relocations.
     const SdfRelocatesMap& relocates = layerStack->GetRelocatesTargetToSource();
 
-    // Find the relocation.
-    SdfRelocatesMap::const_iterator i = relocates.lower_bound(oldParentPath);
-    if (i != relocates.end() && oldParentPath.HasPrefix(i->first)) {
+    // Find the relocation, which should be the entry whose key is the 
+    // longest prefix of oldParentPath.
+    struct _Adapter {
+        const SdfPath& operator()(SdfRelocatesMap::const_reference v) const
+        { return v.first; }
+    };
+
+    SdfRelocatesMap::const_iterator i = SdfPathFindLongestPrefix(
+        boost::make_transform_iterator(relocates.begin(), _Adapter()),
+        boost::make_transform_iterator(relocates.end(), _Adapter()),
+        oldParentPath).base();
+
+    if (i != relocates.end()) {
         const SdfPath & reloTargetPath = i->first;
         const SdfPath & reloSourcePath = i->second;
 
@@ -227,69 +239,64 @@ _TranslatePathsAndEditRelocates(
         // Old path is relocated in this layer stack.  We might need to
         // change the relocation as part of the namespace edit.  If so
         // we'll relocate the new path differently from the old path.
-        if (oldParentPath == reloTargetPath) {
-            // Relocating the new parent path depends on various stuff.
-            if (newParentPath.IsEmpty()) {
-                // Removing the object or can't map across the arc.
-                // Nothing to translate, but need to add a relocation edit
-                // to indicate that relocations that involve prims at and
-                // below oldParentPath need to be fixed.
+        // Relocating the new parent path depends on various stuff.
+        if (newParentPath.IsEmpty()) {
+            // Removing the object or can't map across the arc.
+            // Nothing to translate, but need to add a relocation edit
+            // to indicate that relocations that involve prims at and
+            // below oldParentPath need to be fixed.
+            _AddRelocateEditsForLayerStack(
+                result, layerStack, cacheIndex,
+                reloTargetPath, newParentPath);
+        }
+        else if (oldNodePath->GetParentPath() !=
+                 newNodePath->GetParentPath()) {
+            // Reparenting within the arc's root.  We'll fix the
+            // relocation source but not the target.
+            _AddRelocateEditsForLayerStack(
+                result, layerStack, cacheIndex, 
+                unrelocatedOldParentPath, unrelocatedNewParentPath);
+
+            reloTargetNeedsEdit = false;
+        }
+        else {
+            // Renaming.  We must fix the relocation source path,
+            // and potentially also the relocation target path
+            // (if the relocation keeps the prim name).
+            _AddRelocateEditsForLayerStack(
+                result, layerStack, cacheIndex,
+                unrelocatedOldParentPath, unrelocatedNewParentPath);
+
+            // If the relocation keeps the prim name then
+            // we'll fix the relocation by changing the final prim
+            // name in both the source and target.  So the new parent
+            // path is the old parent path with the name changed.
+            if (reloSourcePath.GetNameToken()
+                == reloTargetPath.GetNameToken()) {
+                // Relocate the new path.
+                newParentPath = reloTargetPath
+                    .ReplaceName(newNodePath->GetNameToken());
+
                 _AddRelocateEditsForLayerStack(
                     result, layerStack, cacheIndex,
                     reloTargetPath, newParentPath);
             }
-            else if (oldNodePath->GetParentPath() !=
-                     newNodePath->GetParentPath()) {
-                // Reparenting within the arc's root.  We'll fix the
-                // relocation source but not the target.
-                _AddRelocateEditsForLayerStack(
-                    result, layerStack, cacheIndex, 
-                    unrelocatedOldParentPath, unrelocatedNewParentPath);
-
+            else {
+                // The relocation changes the prim name.  We've no
+                // reason to try to adjust the target's name but we
+                // should change the source name.
                 reloTargetNeedsEdit = false;
             }
-            else {
-                // Renaming.  We must fix the relocation source path,
-                // and potentially also the relocation target path
-                // (if the relocation keeps the prim name).
-                _AddRelocateEditsForLayerStack(
-                    result, layerStack, cacheIndex,
-                    unrelocatedOldParentPath, unrelocatedNewParentPath);
-
-                // If the relocation keeps the prim name then
-                // we'll fix the relocation by changing the final prim
-                // name in both the source and target.  So the new parent
-                // path is the old parent path with the name changed.
-                if (reloSourcePath.GetNameToken()
-                    == reloTargetPath.GetNameToken()) {
-                    // Relocate the new path.
-                    newParentPath = reloTargetPath
-                        .ReplaceName(newNodePath->GetNameToken());
-
-                    _AddRelocateEditsForLayerStack(
-                        result, layerStack, cacheIndex,
-                        reloTargetPath, newParentPath);
-                }
-                else {
-                    // The relocation changes the prim name.  We've no
-                    // reason to try to adjust the target's name but we
-                    // should change the source name.
-                    reloTargetNeedsEdit = false;
-                }
-            }
-
-            if (!reloTargetNeedsEdit) {
-                // Since the relocation target isn't changing, this node
-                // 'absorbs' the namespace edit -- no layer stacks that 
-                // reference this layer stack need to be updated.  So, 
-                // we can stop traversing the graph looking for things
-                // that need to be fixed.  Indicate that to consumers by 
-                // setting newParentPath = oldParentPath.
-                newParentPath = oldParentPath;
-            }
         }
-        else {
-            // We don't need to fix the relocation.
+
+        if (!reloTargetNeedsEdit) {
+            // Since the relocation target isn't changing, this node
+            // 'absorbs' the namespace edit -- no layer stacks that 
+            // reference this layer stack need to be updated.  So, 
+            // we can stop traversing the graph looking for things
+            // that need to be fixed.  Indicate that to consumers by 
+            // setting newParentPath = oldParentPath.
+            newParentPath = oldParentPath;
         }
     }
     else {
