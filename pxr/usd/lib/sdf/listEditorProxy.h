@@ -268,9 +268,13 @@ public:
     }
 
     /// Returns the added or explicitly set items.
-    ListProxy GetAddedOrExplicitItems() const
+    value_vector_type GetAddedOrExplicitItems() const
     {
-        return IsExplicit() ? GetExplicitItems() : GetAddedItems();
+        value_vector_type result;
+        if (_Validate()) {
+            _listEditor->ApplyEdits(&result);
+        }
+        return result;
     }
 
     //

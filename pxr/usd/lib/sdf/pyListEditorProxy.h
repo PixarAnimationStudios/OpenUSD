@@ -149,8 +149,8 @@ private:
             .add_property("orderedItems",
                 &Type::GetOrderedItems,
                 &This::_SetOrderedProxy)
-            .add_property("addedOrExplicitItems",
-                &Type::GetAddedOrExplicitItems)
+            .def("GetAddedOrExplicitItems", &Type::GetAddedOrExplicitItems,
+                return_value_policy<TfPySequenceToTuple>())
             .add_property("isExplicit", &Type::IsExplicit)
             .add_property("isOrderedOnly", &Type::IsOrderedOnly)
             .def("ApplyEditsToList",

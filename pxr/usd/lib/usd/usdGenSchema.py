@@ -62,13 +62,8 @@ def _SanitizeDoc(doc, leader):
 
 
 def _ListOpToList(listOp):
-    """Return either the explicitItems or the addedItems if listOp
-    """
-    if not listOp:
-        return [] 
-
-    return listOp.explicitItems if listOp.explicitItems else listOp.addedItems
-
+    """Apply listOp to an empty list, yielding a list."""
+    return listOp.ApplyOperations([]) if listOp else []
 
 def _GetDefiningLayerAndPrim(stage, schemaName):
     """ Searches the stage LayerStack for a prim whose name is equal to
@@ -296,7 +291,7 @@ class ClassInfo(object):
 
         # Do not to inherit the type name of parent classes.
         if inherits:
-            for path in inherits.addedOrExplicitItems:
+            for path in inherits.GetAddedOrExplicitItems():
                 parentTypeName = parentLayer.GetPrimAtPath(path).typeName
                 if parentTypeName == self.typeName:
                     self.typeName = ''

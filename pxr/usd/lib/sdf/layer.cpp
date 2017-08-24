@@ -2690,11 +2690,8 @@ _GatherPrimAssetReferences(const SdfPrimSpecHandle &prim,
 {
     if (prim != prim->GetLayer()->GetPseudoRoot()) {
         // Prim references
-        SdfReferencesProxy refList = prim->GetReferenceList();
-        SdfReferencesProxy::ListProxy refs =
-            refList.GetAddedOrExplicitItems();
-        TF_FOR_ALL(refIt, refs) {
-            const SdfReference &ref = *refIt;
+        for (const SdfReference &ref:
+             prim->GetReferenceList().GetAddedOrExplicitItems()) {
             assetReferences->insert(ref.GetAssetPath());
         }
 

@@ -40,21 +40,21 @@ class TestUsdReferences(unittest.TestCase):
 
             # Identifier only.
             srcPrim.GetReferences().AppendReference(s2.GetRootLayer().identifier)
-            self.assertEqual(srcPrimSpec.referenceList.addedOrExplicitItems[0],
+            self.assertEqual(srcPrimSpec.referenceList.GetAddedOrExplicitItems()[0],
                         Sdf.Reference(s2.GetRootLayer().identifier))
             srcPrim.GetReferences().ClearReferences()
 
             # Identifier and layerOffset.
             srcPrim.GetReferences().AppendReference(s2.GetRootLayer().identifier,
                                         Sdf.LayerOffset(1.25, 2.0))
-            self.assertEqual(srcPrimSpec.referenceList.addedOrExplicitItems[0],
+            self.assertEqual(srcPrimSpec.referenceList.GetAddedOrExplicitItems()[0],
                         Sdf.Reference(s2.GetRootLayer().identifier,
                                       layerOffset=Sdf.LayerOffset(1.25, 2.0)))
             srcPrim.GetReferences().ClearReferences()
 
             # Identifier and primPath.
             srcPrim.GetReferences().AppendReference(s2.GetRootLayer().identifier, '/trg')
-            self.assertEqual(srcPrimSpec.referenceList.addedOrExplicitItems[0],
+            self.assertEqual(srcPrimSpec.referenceList.GetAddedOrExplicitItems()[0],
                         Sdf.Reference(s2.GetRootLayer().identifier,
                                       primPath='/trg'))
             srcPrim.GetReferences().ClearReferences()
@@ -62,21 +62,21 @@ class TestUsdReferences(unittest.TestCase):
             # Identifier and primPath and layerOffset.
             srcPrim.GetReferences().AppendReference(s2.GetRootLayer().identifier, '/trg',
                                         Sdf.LayerOffset(1.25, 2.0))
-            self.assertEqual(srcPrimSpec.referenceList.addedOrExplicitItems[0],
+            self.assertEqual(srcPrimSpec.referenceList.GetAddedOrExplicitItems()[0],
                         Sdf.Reference(s2.GetRootLayer().identifier, primPath='/trg',
                                       layerOffset=Sdf.LayerOffset(1.25, 2.0)))
             srcPrim.GetReferences().ClearReferences()
 
             # primPath only.
             srcPrim.GetReferences().AppendInternalReference('/trg_internal')
-            self.assertEqual(srcPrimSpec.referenceList.addedOrExplicitItems[0],
+            self.assertEqual(srcPrimSpec.referenceList.GetAddedOrExplicitItems()[0],
                         Sdf.Reference('', primPath='/trg_internal'))
             srcPrim.GetReferences().ClearReferences()
 
             # primPath and layer offset.
             srcPrim.GetReferences().AppendInternalReference(
                 '/trg_internal', layerOffset=Sdf.LayerOffset(1.25, 2.0))
-            self.assertEqual(srcPrimSpec.referenceList.addedOrExplicitItems[0],
+            self.assertEqual(srcPrimSpec.referenceList.GetAddedOrExplicitItems()[0],
                         Sdf.Reference('', primPath='/trg_internal',
                                       layerOffset=Sdf.LayerOffset(1.25, 2.0)))
             srcPrim.GetReferences().ClearReferences()

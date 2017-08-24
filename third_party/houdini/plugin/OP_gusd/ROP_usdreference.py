@@ -85,7 +85,7 @@ def findMatchingReference( sdfPrim, fileName ):
     found in.
     '''
 
-    for ref in sdfPrim.referenceList.addedOrExplicitItems:
+    for ref in sdfPrim.referenceList.GetAddedOrExplicitItems():
         if ref.assetPath == fileName:
             return sdfPrim.path
 

@@ -53,6 +53,12 @@ public:
     }
  
 private:
+    static ItemVector _ApplyOperations(const T& listOp, ItemVector input) {
+        ItemVector result = input;
+        listOp.ApplyOperations(&result);
+        return result;
+    }
+
     static void _Wrap(const std::string& name)
     {
         using namespace boost::python;
@@ -65,6 +71,7 @@ private:
 
             .def("Clear", &T::Clear)
             .def("ClearAndMakeExplicit", &T::ClearAndMakeExplicit)
+            .def("ApplyOperations", &This::_ApplyOperations)
 
             .add_property("explicitItems",
                 make_function(&T::GetExplicitItems,
@@ -82,9 +89,8 @@ private:
                 make_function(&T::GetOrderedItems,
                               return_value_policy<return_by_value>()),
                 &T::SetOrderedItems)
-            .add_property("addedOrExplicitItems",
-                &This::_GetAddedOrExplicitItems,
-                &This::_SetAddedOrExplicitItems)
+            .def("GetAddedOrExplicitItems",
+                &This::_GetAddedOrExplicitItems)
 
             .add_property("isExplicit", &T::IsExplicit)
 
@@ -100,15 +106,9 @@ private:
     static 
     ItemVector _GetAddedOrExplicitItems(const T& listOp)
     {
-        return (listOp.IsExplicit() ? 
-                listOp.GetExplicitItems() : listOp.GetAddedItems());
-    }
-
-    static 
-    void _SetAddedOrExplicitItems(T& listOp, ItemVector& v)
-    {
-        listOp.IsExplicit() ? 
-            listOp.SetExplicitItems(v) : listOp.SetAddedItems(v);
+        ItemVector result;
+        listOp.ApplyOperations(&result);
+        return result;
     }
 
 };
