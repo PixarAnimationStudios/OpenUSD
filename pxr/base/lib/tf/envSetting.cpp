@@ -29,13 +29,16 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/fileSystem.h"
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include "pxr/base/tf/pyUtils.h"
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <boost/variant.hpp>
 
