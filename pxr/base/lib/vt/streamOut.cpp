@@ -24,10 +24,13 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/demangle.h"
-#include "pxr/base/tf/pyObjWrapper.h"
-#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/streamOut.h"
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include "pxr/base/tf/pyObjWrapper.h"
+#include "pxr/base/tf/pyUtils.h"
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <iostream>
 
