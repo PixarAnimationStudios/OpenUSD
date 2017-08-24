@@ -191,6 +191,7 @@ pxr_test_scripts(
     testenv/testSdfAttributeBlocking.py
     testenv/testSdfBatchNamespaceEdit.py
     testenv/testSdfCustomLayerData.py
+    testenv/testSdfListOp.py
     testenv/testSdfParsing.py
     testenv/testSdfPath.py
     testenv/testSdfPath2.py
@@ -331,6 +332,11 @@ pxr_register_test(testSdfParsingOld
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
     ENV
         SDF_WRITE_OLD_TYPENAMES=1
+)
+
+pxr_register_test(testSdfListOp
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfListOp"
 )
 
 pxr_register_test(testSdfPath
