@@ -585,6 +585,12 @@ public:
         if (!verbose) {
             interface.deleteAttr("__UsdIn");
         }
+        
+        
+        PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
+                interface, opArgs, privateData);
+        
+        
     }
 
     

@@ -340,22 +340,6 @@ PxrUsdKatanaReadMesh(
         "viewer.default.drawOptions.windingOrder",
             PxrUsdKatanaGeomGetWindingOrderAttr(mesh, data));
 
-    // This value will be one of 'catmullClark', 'loop', 'bilinear',
-    // or 'none'.  'none' means this is a polymesh, and not
-    // a subdiv, so don't set this.
-    if (mesh.GetSubdivisionSchemeAttr().Get(&scheme) && 
-            scheme != UsdGeomTokens->none)
-    {
-        // USD deviates from Katana only in the 'catmullClark' token.
-        static char const *catclark("catmull-clark");
-        char const *katScheme = 
-            (scheme == UsdGeomTokens->catmullClark ? catclark : scheme.GetText());
-
-        attrs.set(
-            "prmanStatements.subdivisionMesh.scheme",
-                 FnKat::StringAttribute(katScheme));
-    }
-
     attrs.set("tabs.scenegraph.stopExpand", FnKat::IntAttribute(1));
 }
 

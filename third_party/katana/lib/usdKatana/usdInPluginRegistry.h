@@ -121,6 +121,40 @@ public:
             const TfToken& kind,
             std::string* opName);
 
+
+    /// \brief The signature for a plug-in "location decorator" function.
+    /// These can be registered to run at every location after other ops have
+    /// executed.
+    typedef void (*LocationDecoratorFnc)(
+            FnKat::GeolibCookInterface& interface,
+            FnKat::GroupAttribute opArgs,
+            PxrUsdKatanaUsdInPrivateData* privateData);
+    
+    /// \brief Register a plug-in function which will be called for every
+    /// katana location created from a UsdPrim. This allows for specialization
+    /// beyond specific types and kinds 
+    static void RegisterLocationDecoratorFnc(LocationDecoratorFnc fnc);
+    
+    /// \brief Run the registered plug-in functions at a katana location
+    /// and UsdPrim.
+    static void ExecuteLocationDecoratorFncs(
+            FnKat::GeolibCookInterface& interface,
+            FnKat::GroupAttribute opArgs,
+            PxrUsdKatanaUsdInPrivateData* privateData);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
 private:
     static void _RegisterUsdType(
             const std::string& tfTypeName, 
