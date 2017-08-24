@@ -13,12 +13,18 @@ Prim Stack:
     root.sdf             /A
     sub1.sdf             /A
     sub2.sdf             /A
+    root.sdf             /root_prepend
+    sub1.sdf             /sub1_prepend
+    sub2.sdf             /sub2_prepend
+    sub2.sdf             /sub2_append
+    sub1.sdf             /sub1_append
+    root.sdf             /root_append
 
 Child names:
      ['z', 'a', 'x', 'f', 'y', 'b', 'c']
 
 Property names:
-     ['z', 'a', 'x', 'f', 'y', 'b', 'c']
+     ['targets', 'z', 'a', 'x', 'f', 'y', 'b', 'c']
 
 Property stacks:
 /A.a:
@@ -29,12 +35,29 @@ Property stacks:
     sub1.sdf             /A.c
 /A.f:
     root.sdf             /A.f
+/A.targets:
+    root.sdf             /A.targets
+    root.sdf             /root_prepend.targets
+    sub1.sdf             /sub1_prepend.targets
+    sub2.sdf             /sub2_prepend.targets
+    sub2.sdf             /sub2_append.targets
+    sub1.sdf             /sub1_append.targets
+    root.sdf             /root_append.targets
 /A.x:
     sub2.sdf             /A.x
 /A.y:
     sub2.sdf             /A.y
 /A.z:
     sub2.sdf             /A.z
+
+Relationship targets:
+/A.targets:
+    /A/root_prepend
+    /A/sub1_prepend
+    /A/sub2_prepend
+    /A/sub2_append
+    /A/sub1_append
+    /A/root_append
 
 ------------------------------------------------------------------------
 Results for composing </A/z>
@@ -77,4 +100,106 @@ Results for composing </A/c>
 
 Prim Stack:
     sub1.sdf             /A/c
+
+------------------------------------------------------------------------
+Results for composing </sub2_prepend>
+
+Prim Stack:
+    sub2.sdf             /sub2_prepend
+
+Property names:
+     ['targets']
+
+Property stacks:
+/sub2_prepend.targets:
+    sub2.sdf             /sub2_prepend.targets
+
+Relationship targets:
+/sub2_prepend.targets:
+    /sub2_prepend/sub2_prepend
+
+------------------------------------------------------------------------
+Results for composing </sub2_append>
+
+Prim Stack:
+    sub2.sdf             /sub2_append
+
+Property names:
+     ['targets']
+
+Property stacks:
+/sub2_append.targets:
+    sub2.sdf             /sub2_append.targets
+
+Relationship targets:
+/sub2_append.targets:
+    /sub2_append/sub2_append
+
+------------------------------------------------------------------------
+Results for composing </sub1_prepend>
+
+Prim Stack:
+    sub1.sdf             /sub1_prepend
+
+Property names:
+     ['targets']
+
+Property stacks:
+/sub1_prepend.targets:
+    sub1.sdf             /sub1_prepend.targets
+
+Relationship targets:
+/sub1_prepend.targets:
+    /sub1_prepend/sub1_prepend
+
+------------------------------------------------------------------------
+Results for composing </sub1_append>
+
+Prim Stack:
+    sub1.sdf             /sub1_append
+
+Property names:
+     ['targets']
+
+Property stacks:
+/sub1_append.targets:
+    sub1.sdf             /sub1_append.targets
+
+Relationship targets:
+/sub1_append.targets:
+    /sub1_append/sub1_append
+
+------------------------------------------------------------------------
+Results for composing </root_prepend>
+
+Prim Stack:
+    root.sdf             /root_prepend
+
+Property names:
+     ['targets']
+
+Property stacks:
+/root_prepend.targets:
+    root.sdf             /root_prepend.targets
+
+Relationship targets:
+/root_prepend.targets:
+    /root_prepend/root_prepend
+
+------------------------------------------------------------------------
+Results for composing </root_append>
+
+Prim Stack:
+    root.sdf             /root_append
+
+Property names:
+     ['targets']
+
+Property stacks:
+/root_append.targets:
+    root.sdf             /root_append.targets
+
+Relationship targets:
+/root_append.targets:
+    /root_append/root_append
 

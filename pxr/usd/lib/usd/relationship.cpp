@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/prim.h"
@@ -121,7 +122,11 @@ UsdRelationship::AppendTarget(const SdfPath& target) const
     if (!relSpec)
         return false;
 
+    if (UsdAuthorAppendAsAdd()) {
     relSpec->GetTargetPathList().Add(targetToAuthor);
+    } else {
+        relSpec->GetTargetPathList().Append(targetToAuthor);
+    }
     return true;
 }
 
@@ -200,8 +205,14 @@ UsdRelationship::SetTargets(const SdfPathVector& targets) const
         return false;
 
     relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
+    if (UsdAuthorAppendAsAdd()) {
     for (const SdfPath &path: mappedPaths) {
         relSpec->GetTargetPathList().Add(path);
+        }
+    } else {
+        for (const SdfPath &path: mappedPaths) {
+            relSpec->GetTargetPathList().Append(path);
+        }
     }
 
     return true;

@@ -1192,6 +1192,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 // them to the 'keyword' production rule below.
 %token TOK_ABSTRACT
 %token TOK_ADD
+%token TOK_APPEND
 %token TOK_ATTRIBUTES
 %token TOK_CLASS
 %token TOK_CONFIG
@@ -1215,6 +1216,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 %token TOK_PAYLOAD
 %token TOK_PREFIX_SUBSTITUTIONS
 %token TOK_SUFFIX_SUBSTITUTIONS
+%token TOK_PREPEND
 %token TOK_PROPERTIES
 %token TOK_REFERENCES
 %token TOK_RELOCATES
@@ -1243,6 +1245,7 @@ menva_file:
 keyword:
       TOK_ABSTRACT
     | TOK_ADD
+    | TOK_APPEND
     | TOK_ATTRIBUTES
     | TOK_CLASS
     | TOK_CONFIG
@@ -1266,6 +1269,7 @@ keyword:
     | TOK_PERMISSION
     | TOK_PREFIX_SUBSTITUTIONS
     | TOK_SUFFIX_SUBSTITUTIONS
+    | TOK_PREPEND
     | TOK_PROPERTIES
     | TOK_REFERENCES
     | TOK_RELOCATES
@@ -1365,6 +1369,18 @@ layer_metadata:
     | TOK_ADD identifier {
             _GenericMetadataStart($2, SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypeAdded;
+        } '=' metadata_listop_list {
+            _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
+        }
+    | TOK_PREPEND identifier {
+            _GenericMetadataStart($2, SdfSpecTypePseudoRoot, context);
+            context->listOpType = SdfListOpTypePrepended;
+        } '=' metadata_listop_list {
+            _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
+        }
+    | TOK_APPEND identifier {
+            _GenericMetadataStart($2, SdfSpecTypePseudoRoot, context);
+            context->listOpType = SdfListOpTypeAppended;
         } '=' metadata_listop_list {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
         }
@@ -1602,6 +1618,18 @@ prim_metadata:
         } '=' metadata_listop_list {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
         }
+    | TOK_PREPEND identifier {
+            _GenericMetadataStart($2, SdfSpecTypePrim, context);
+            context->listOpType = SdfListOpTypePrepended;
+        } '=' metadata_listop_list {
+            _GenericMetadataEnd(SdfSpecTypePrim, context);
+        }
+    | TOK_APPEND identifier {
+            _GenericMetadataStart($2, SdfSpecTypePrim, context);
+            context->listOpType = SdfListOpTypeAppended;
+        } '=' metadata_listop_list {
+            _GenericMetadataEnd(SdfSpecTypePrim, context);
+        }
     | TOK_REORDER identifier {
             _GenericMetadataStart($2, SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypeOrdered;
@@ -1656,6 +1684,16 @@ prim_metadata:
         } '=' inherit_list {
             _PrimSetInheritListItems(SdfListOpTypeAdded, context);
         }
+    | TOK_PREPEND TOK_INHERITS {
+            context->inheritParsingTargetPaths.clear();
+        } '=' inherit_list {
+            _PrimSetInheritListItems(SdfListOpTypePrepended, context);
+        }
+    | TOK_APPEND TOK_INHERITS {
+            context->inheritParsingTargetPaths.clear();
+        } '=' inherit_list {
+            _PrimSetInheritListItems(SdfListOpTypeAppended, context);
+        }
     | TOK_REORDER TOK_INHERITS {
             context->inheritParsingTargetPaths.clear();
         } '=' inherit_list {
@@ -1676,6 +1714,16 @@ prim_metadata:
             context->specializesParsingTargetPaths.clear();
         } '=' specializes_list {
             _PrimSetSpecializesListItems(SdfListOpTypeAdded, context);
+        }
+    | TOK_PREPEND TOK_SPECIALIZES {
+            context->specializesParsingTargetPaths.clear();
+        } '=' specializes_list {
+            _PrimSetSpecializesListItems(SdfListOpTypePrepended, context);
+        }
+    | TOK_APPEND TOK_SPECIALIZES {
+            context->specializesParsingTargetPaths.clear();
+        } '=' specializes_list {
+            _PrimSetSpecializesListItems(SdfListOpTypeAppended, context);
         }
     | TOK_REORDER TOK_SPECIALIZES {
             context->specializesParsingTargetPaths.clear();
@@ -1703,6 +1751,20 @@ prim_metadata:
             context->referenceParsingRefs.clear();
         } '=' reference_list {
             _PrimSetReferenceListItems(SdfListOpTypeAdded, context);
+        }
+    | TOK_PREPEND TOK_REFERENCES {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->referenceParsingRefs.clear();
+        } '=' reference_list {
+            _PrimSetReferenceListItems(SdfListOpTypePrepended, context);
+        }
+    | TOK_APPEND TOK_REFERENCES {
+            context->layerRefPath = std::string();
+            context->savedPath = SdfPath();
+            context->referenceParsingRefs.clear();
+        } '=' reference_list {
+            _PrimSetReferenceListItems(SdfListOpTypeAppended, context);
         }
     | TOK_REORDER TOK_REFERENCES {
             context->layerRefPath = std::string();
@@ -1735,6 +1797,14 @@ prim_metadata:
         }
     | TOK_ADD TOK_VARIANTSETS '=' name_list {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeAdded, context);
+            context->nameVector.clear();
+        }
+    | TOK_PREPEND TOK_VARIANTSETS '=' name_list {
+            _PrimSetVariantSetNamesListItems(SdfListOpTypePrepended, context);
+            context->nameVector.clear();
+        }
+    | TOK_APPEND TOK_VARIANTSETS '=' name_list {
+            _PrimSetVariantSetNamesListItems(SdfListOpTypeAppended, context);
             context->nameVector.clear();
         }
     | TOK_REORDER TOK_VARIANTSETS '=' name_list {
@@ -2135,6 +2205,22 @@ prim_attribute_connect :
         _AttributeSetConnectionTargetsList(SdfListOpTypeAdded, context);
         context->path = context->path.GetParentPath();
     }
+    | TOK_PREPEND prim_attribute_full_type namespaced_name '.' TOK_CONNECT '=' {
+        _PrimInitAttribute($3, context);
+        context->connParsingTargetPaths.clear();
+        context->connParsingAllowConnectionData = true;
+    }  connect_rhs {
+        _AttributeSetConnectionTargetsList(SdfListOpTypePrepended, context);
+        context->path = context->path.GetParentPath();
+    }
+    | TOK_APPEND prim_attribute_full_type namespaced_name '.' TOK_CONNECT '=' {
+        _PrimInitAttribute($3, context);
+        context->connParsingTargetPaths.clear();
+        context->connParsingAllowConnectionData = true;
+    }  connect_rhs {
+        _AttributeSetConnectionTargetsList(SdfListOpTypeAppended, context);
+        context->path = context->path.GetParentPath();
+    }
     | TOK_DELETE prim_attribute_full_type namespaced_name '.' TOK_CONNECT '=' {
         _PrimInitAttribute($3, context);
         context->connParsingTargetPaths.clear();
@@ -2390,6 +2476,18 @@ attribute_metadata:
     | TOK_ADD identifier {
             _GenericMetadataStart($2, SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypeAdded;
+        } '=' metadata_listop_list {
+            _GenericMetadataEnd(SdfSpecTypeAttribute, context);
+        }
+    | TOK_PREPEND identifier {
+            _GenericMetadataStart($2, SdfSpecTypeAttribute, context);
+            context->listOpType = SdfListOpTypePrepended;
+        } '=' metadata_listop_list {
+            _GenericMetadataEnd(SdfSpecTypeAttribute, context);
+        }
+    | TOK_APPEND identifier {
+            _GenericMetadataStart($2, SdfSpecTypeAttribute, context);
+            context->listOpType = SdfListOpTypeAppended;
         } '=' metadata_listop_list {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
         }
@@ -2755,6 +2853,22 @@ prim_relationship:
             _RelationshipSetTargetsList(SdfListOpTypeAdded, context);
             _PrimEndRelationship(context);
         }
+    | TOK_PREPEND prim_relationship_type namespaced_name {
+            _PrimInitRelationship($3, context);
+            context->relParsingAllowTargetData = true;
+        }
+        relationship_assignment_opt {
+            _RelationshipSetTargetsList(SdfListOpTypePrepended, context);
+            _PrimEndRelationship(context);
+        }
+    | TOK_APPEND prim_relationship_type namespaced_name {
+            _PrimInitRelationship($3, context);
+            context->relParsingAllowTargetData = true;
+        }
+        relationship_assignment_opt {
+            _RelationshipSetTargetsList(SdfListOpTypeAppended, context);
+            _PrimEndRelationship(context);
+        }
 
     | TOK_REORDER prim_relationship_type namespaced_name {
             _PrimInitRelationship($3, context);
@@ -2823,6 +2937,18 @@ relationship_metadata:
     | TOK_ADD identifier {
             _GenericMetadataStart($2, SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypeAdded;
+        } '=' metadata_listop_list {
+            _GenericMetadataEnd(SdfSpecTypeRelationship, context);
+        }
+    | TOK_PREPEND identifier {
+            _GenericMetadataStart($2, SdfSpecTypeRelationship, context);
+            context->listOpType = SdfListOpTypePrepended;
+        } '=' metadata_listop_list {
+            _GenericMetadataEnd(SdfSpecTypeRelationship, context);
+        }
+    | TOK_APPEND identifier {
+            _GenericMetadataStart($2, SdfSpecTypeRelationship, context);
+            context->listOpType = SdfListOpTypeAppended;
         } '=' metadata_listop_list {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
         }

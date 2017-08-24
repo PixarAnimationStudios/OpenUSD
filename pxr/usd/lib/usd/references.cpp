@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -61,7 +62,11 @@ UsdReferences::AppendReference(const SdfReference& ref)
     
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfReferencesProxy refs = spec->GetReferenceList();
-        refs.Add(ref);
+        if (UsdAuthorAppendAsAdd()) {
+            refs.Add(ref);
+        } else {
+            refs.Append(ref);
+        }
         success = mark.IsClean();
     }
     // mark *should* contain only errors from adding the reference, NOT

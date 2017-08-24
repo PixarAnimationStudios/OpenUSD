@@ -92,6 +92,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
     /* literal keywords.  we return the yytext so that the yacc grammar
        can make use of it. */
 "add"                 { (*yylval_param) = std::string(yytext, yyleng); return TOK_ADD; }
+"append"              { (*yylval_param) = std::string(yytext, yyleng); return TOK_APPEND; }
 "attributes"          { (*yylval_param) = std::string(yytext, yyleng); return TOK_ATTRIBUTES; }
 "class"               { (*yylval_param) = std::string(yytext, yyleng); return TOK_CLASS; }
 "config"              { (*yylval_param) = std::string(yytext, yyleng); return TOK_CONFIG; }
@@ -114,6 +115,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 "payload"             { (*yylval_param) = std::string(yytext, yyleng); return TOK_PAYLOAD; }
 "permission"          { (*yylval_param) = std::string(yytext, yyleng); return TOK_PERMISSION; }
 "prefixSubstitutions" { (*yylval_param) = std::string(yytext, yyleng); return TOK_PREFIX_SUBSTITUTIONS; }
+"prepend"             { (*yylval_param) = std::string(yytext, yyleng); return TOK_PREPEND; }
 "properties"          { (*yylval_param) = std::string(yytext, yyleng); return TOK_PROPERTIES; }
 "references"          { (*yylval_param) = std::string(yytext, yyleng); return TOK_REFERENCES; }
 "relocates"           { (*yylval_param) = std::string(yytext, yyleng); return TOK_RELOCATES; }

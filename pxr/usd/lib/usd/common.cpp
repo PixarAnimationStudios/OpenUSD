@@ -38,11 +38,20 @@ TF_DEFINE_ENV_SETTING(
     USD_SHADING_MODEL, "usdRi",
     "Set to usdRi when models can interchange UsdShade prims.");
 
+TF_DEFINE_ENV_SETTING(
+    USD_AUTHOR_APPEND_AS_ADD, true,
+    "Set true if USD Append() API's should author Add operations instead of "
+    "Append, to mimic their historical behavior.");
+
 bool UsdIsRetireLumosEnabled()
 {
     return TfGetEnvSetting(USD_RETIRE_LUMOS);
 }
 
+bool UsdAuthorAppendAsAdd()
+{
+    return TfGetEnvSetting(USD_AUTHOR_APPEND_AS_ADD);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

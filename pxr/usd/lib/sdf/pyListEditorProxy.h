@@ -143,6 +143,12 @@ private:
             .add_property("addedItems",
                 &Type::GetAddedItems,
                 &This::_SetAddedProxy)
+            .add_property("prependedItems",
+                &Type::GetPrependedItems,
+                &This::_SetPrependedProxy)
+            .add_property("appendedItems",
+                &Type::GetAppendedItems,
+                &This::_SetAppendedProxy)
             .add_property("deletedItems",
                 &Type::GetDeletedItems,
                 &This::_SetDeletedProxy)
@@ -202,6 +208,16 @@ private:
     static void _SetAddedProxy(Type& x, const value_vector_type& v)
     {
         x.GetAddedItems() = v;
+    }
+
+    static void _SetPrependedProxy(Type& x, const value_vector_type& v)
+    {
+        x.GetPrependedItems() = v;
+    }
+
+    static void _SetAppendedProxy(Type& x, const value_vector_type& v)
+    {
+        x.GetAppendedItems() = v;
     }
 
     static void _SetDeletedProxy(Type& x, const value_vector_type& v)

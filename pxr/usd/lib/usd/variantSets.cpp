@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/variantSets.h"
 
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -205,7 +206,11 @@ UsdVariantSet::_AppendVariantSet()
                 result = TfDynamic_cast<SdfVariantSetSpecHandle>(spec);
             } else {
                 result = SdfVariantSetSpec::New(primSpec, _variantSetName);
-                primSpec->GetVariantSetNameList().Add(_variantSetName);
+                if (UsdAuthorAppendAsAdd()) {
+                    primSpec->GetVariantSetNameList().Add(_variantSetName);
+                } else {
+                    primSpec->GetVariantSetNameList().Append(_variantSetName);
+                }
             }
         }
     }

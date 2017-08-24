@@ -69,15 +69,17 @@ TF_REGISTRY_FUNCTION(TfEnum)
 {
     TF_ADD_ENUM_NAME(SdfListOpTypeExplicit);
     TF_ADD_ENUM_NAME(SdfListOpTypeAdded);
+    TF_ADD_ENUM_NAME(SdfListOpTypePrepended);
+    TF_ADD_ENUM_NAME(SdfListOpTypeAppended);
     TF_ADD_ENUM_NAME(SdfListOpTypeDeleted);
     TF_ADD_ENUM_NAME(SdfListOpTypeOrdered);
 }
+
 
 template <typename T>
 SdfListOp<T>::SdfListOp() :
     _isExplicit(false)
 {
-    // do nothing
 }
 
 template <typename T>
@@ -87,6 +89,8 @@ SdfListOp<T>::Swap(SdfListOp<T>& rhs)
     std::swap(_isExplicit, rhs._isExplicit);
     _explicitItems.swap(rhs._explicitItems);
     _addedItems.swap(rhs._addedItems);
+    _prependedItems.swap(rhs._prependedItems);
+    _appendedItems.swap(rhs._appendedItems);
     _deletedItems.swap(rhs._deletedItems);
     _orderedItems.swap(rhs._orderedItems);
 }
@@ -100,6 +104,10 @@ SdfListOp<T>::GetItems(SdfListOpType type) const
         return _explicitItems;
     case SdfListOpTypeAdded:
         return _addedItems;
+    case SdfListOpTypePrepended:
+        return _prependedItems;
+    case SdfListOpTypeAppended:
+        return _appendedItems;
     case SdfListOpTypeDeleted:
         return _deletedItems;
     case SdfListOpTypeOrdered:
@@ -124,6 +132,22 @@ SdfListOp<T>::SetAddedItems(const ItemVector &items)
 {
     _SetExplicit(false);
     _addedItems = items;
+}
+
+template <typename T>
+void 
+SdfListOp<T>::SetPrependedItems(const ItemVector &items)
+{
+    _SetExplicit(false);
+    _prependedItems = items;
+}
+
+template <typename T>
+void 
+SdfListOp<T>::SetAppendedItems(const ItemVector &items)
+{
+    _SetExplicit(false);
+    _appendedItems = items;
 }
 
 template <typename T>
@@ -153,6 +177,12 @@ SdfListOp<T>::SetItems(const ItemVector &items, SdfListOpType type)
     case SdfListOpTypeAdded:
         SetAddedItems(items);
         break;
+    case SdfListOpTypePrepended:
+        SetPrependedItems(items);
+        break;
+    case SdfListOpTypeAppended:
+        SetAppendedItems(items);
+        break;
     case SdfListOpTypeDeleted:
         SetDeletedItems(items);
         break;
@@ -170,6 +200,8 @@ SdfListOp<T>::_SetExplicit(bool isExplicit)
         _isExplicit = isExplicit;
         _explicitItems.clear();
         _addedItems.clear();
+        _prependedItems.clear();
+        _appendedItems.clear();
         _deletedItems.clear();
         _orderedItems.clear();
     }
@@ -211,14 +243,17 @@ SdfListOp<T>::ApplyOperations(ItemVector* vec, const ApplyCallback& cb) const
     _ApplyList result;
     if (IsExplicit()) {
         _ApplyMap search;
-        _AppendKeys(SdfListOpTypeExplicit, cb, &result, &search);
+        _AddKeys(SdfListOpTypeExplicit, cb, &result, &search);
     }
     else {
         size_t numToDelete = _deletedItems.size();
-        size_t numToAppend = _addedItems.size();
+        size_t numToAdd = _addedItems.size();
+        size_t numToPrepend = _prependedItems.size();
+        size_t numToAppend = _appendedItems.size();
         size_t numToOrder = _orderedItems.size();
 
-        if (!cb &&  ((numToDelete+numToAppend+numToOrder) == 0)) {
+        if (!cb &&
+            ((numToDelete+numToAdd+numToPrepend+numToAppend+numToOrder) == 0)) {
             // nothing to do, so avoid copying vectors
             return;
         }
@@ -236,7 +271,9 @@ SdfListOp<T>::ApplyOperations(ItemVector* vec, const ApplyCallback& cb) const
         }
 
         _DeleteKeys (SdfListOpTypeDeleted, cb, &result, &search);
-        _AppendKeys (SdfListOpTypeAdded,   cb, &result, &search);
+        _AddKeys(SdfListOpTypeAdded, cb, &result, &search);
+        _PrependKeys(SdfListOpTypePrepended, cb, &result, &search);
+        _AppendKeys(SdfListOpTypeAppended, cb, &result, &search);
         _ReorderKeys(SdfListOpTypeOrdered, cb, &result, &search);
     }
 
@@ -256,6 +293,19 @@ void _InsertIfUnique(const ItemType& item, ListType* result, MapType* search)
 
 template <class ItemType, class ListType, class MapType>
 static inline
+void _InsertOrMove(const ItemType& item, typename ListType::iterator pos,
+                   ListType* result, MapType* search)
+{
+    typename MapType::iterator entry = search->find(item);
+    if (entry == search->end()) {
+        (*search)[item] = result->insert(pos, item);
+    } else {
+        result->splice(pos, *result, entry->second, std::next(entry->second));
+    }
+}
+
+template <class ItemType, class ListType, class MapType>
+static inline
 void _RemoveIfPresent(const ItemType& item, ListType* result, MapType* search)
 {
     typename MapType::iterator j = search->find(item);
@@ -267,7 +317,7 @@ void _RemoveIfPresent(const ItemType& item, ListType* result, MapType* search)
 
 template <class T>
 void
-SdfListOp<T>::_AppendKeys(
+SdfListOp<T>::_AddKeys(
     SdfListOpType op,
     const ApplyCallback& callback,
     _ApplyList* result,
@@ -282,6 +332,51 @@ SdfListOp<T>::_AppendKeys(
         }
         else {
             _InsertIfUnique(*i, result, search);
+        }
+    }
+}
+
+template <class T>
+void
+SdfListOp<T>::_PrependKeys(
+    SdfListOpType op,
+    const ApplyCallback& callback,
+    _ApplyList* result,
+    _ApplyMap* search) const
+{
+    const ItemVector& items = GetItems(op);
+    if (callback) {
+        for (auto i = items.rbegin(), iEnd = items.rend(); i != iEnd; ++i) {
+            if (boost::optional<T> mappedItem = callback(op, *i)) {
+                _InsertOrMove(*mappedItem, result->begin(), result, search);
+            }
+        }
+    } else {
+        for (auto i = items.rbegin(), iEnd = items.rend(); i != iEnd; ++i) {
+            _InsertOrMove(*i, result->begin(), result, search);
+        }
+    }
+}
+
+template <class T>
+void
+SdfListOp<T>::_AppendKeys(
+    SdfListOpType op,
+    const ApplyCallback& callback,
+    _ApplyList* result,
+    _ApplyMap* search) const
+{
+    const ItemVector& items = GetItems(op);
+    typename _ApplyList::iterator insertPos = result->begin();
+    if (callback) {
+        for (const T& item: items) {
+            if (boost::optional<T> mappedItem = callback(op, item)) {
+                _InsertOrMove(*mappedItem, result->end(), result, search);
+            }
+        }
+    } else {
+        for (const T& item: items) {
+            _InsertOrMove(item, result->end(), result, search);
         }
     }
 }
@@ -401,6 +496,8 @@ SdfListOp<T>::ModifyOperations(const ModifyCallback& callback)
     if (callback) {
         didModify |= _ModifyCallbackHelper(callback, &_explicitItems);
         didModify |= _ModifyCallbackHelper(callback, &_addedItems);
+        didModify |= _ModifyCallbackHelper(callback, &_prependedItems);
+        didModify |= _ModifyCallbackHelper(callback, &_appendedItems);
         didModify |= _ModifyCallbackHelper(callback, &_deletedItems);
         didModify |= _ModifyCallbackHelper(callback, &_orderedItems);
     }
@@ -476,16 +573,26 @@ SdfListOp<T>::ComposeOperations(const SdfListOp<T>& stronger, SdfListOpType op)
         }
 
         if (op == SdfListOpTypeOrdered) {
-            stronger._AppendKeys(op, ApplyCallback(), 
+            stronger._AddKeys(op, ApplyCallback(), 
                                  &weakerList, &weakerSearch);
             stronger._ReorderKeys(op, ApplyCallback(), 
                                   &weakerList, &weakerSearch);
         } else if (op == SdfListOpTypeAdded) {
-            stronger._AppendKeys(op,
+            stronger._AddKeys(op,
                                  ApplyCallback(),
                                  &weakerList,
                                  &weakerSearch);
         } else if (op == SdfListOpTypeDeleted) {
+            stronger._AddKeys(op,
+                                 ApplyCallback(),
+                                 &weakerList,
+                                 &weakerSearch);
+        } else if (op == SdfListOpTypePrepended) {
+            stronger._PrependKeys(op,
+                                 ApplyCallback(),
+                                 &weakerList,
+                                 &weakerSearch);
+        } else if (op == SdfListOpTypeAppended) {
             stronger._AppendKeys(op,
                                  ApplyCallback(),
                                  &weakerList,
@@ -536,22 +643,18 @@ template <typename T>
 static std::ostream &
 _StreamOut(std::ostream &out, const SdfListOp<T> &op)
 {
-    //out << _GetListopName(op) << "(";
     out << "SdfListOp" << "(";
-
-    // print out the explicit, deleted, added, and ordered items
     bool firstItems = true;
     _StreamOutItems(out, "Explicit", op.GetExplicitItems(), &firstItems);
     _StreamOutItems(out, "Deleted", op.GetDeletedItems(), &firstItems);
     _StreamOutItems(out, "Added", op.GetAddedItems(), &firstItems);
+    _StreamOutItems(out, "Prepended", op.GetPrependedItems(), &firstItems);
+    _StreamOutItems(out, "Appended", op.GetAppendedItems(), &firstItems);
     _StreamOutItems(out, "Ordered", op.GetOrderedItems(), &firstItems);
     out << ")";
-
     return out;
 }
 
-// Stream method for list ops.
-//
 template <typename ITEM_TYPE>
 std::ostream & operator<<( std::ostream &out, const SdfListOp<ITEM_TYPE> &op)
 {

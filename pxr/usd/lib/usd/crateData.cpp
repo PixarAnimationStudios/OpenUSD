@@ -213,9 +213,15 @@ public:
                     return std::find(
                         items.begin(), items.end(), path) != items.end();
                 } else {
-                    auto const &items = listOp.GetAddedItems();
-                    return std::find(
-                        items.begin(), items.end(), path) != items.end();
+                    auto const &added = listOp.GetAddedItems();
+                    auto const &prepended = listOp.GetPrependedItems();
+                    auto const &appended = listOp.GetAppendedItems();
+                    return std::find(added.begin(), added.end(), path)
+                        != added.end() ||
+                        std::find(prepended.begin(), prepended.end(), path)
+                        != prepended.end() ||
+                        std::find(appended.begin(), appended.end(), path)
+                        != appended.end();
                 }
             }
         }

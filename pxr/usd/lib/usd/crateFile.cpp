@@ -213,8 +213,13 @@ using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
 
+// Version history:
+// 0.2.0: Added support for prepend and append fields of SdfListOp.
+// 0.1.0: Fixed structure layout issue encountered in Windows port.
+//        See _PathItemHeader_0_0_1.
+// 0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 1;
+constexpr uint8_t USDC_MINOR = 2;
 constexpr uint8_t USDC_PATCH = 0;
 
 struct CrateFile::Version
@@ -344,7 +349,9 @@ struct _ListOpHeader {
                  HasExplicitItemsBit = 1 << 1,
                  HasAddedItemsBit = 1 << 2,
                  HasDeletedItemsBit = 1 << 3,
-                 HasOrderedItemsBit = 1 << 4 };
+                 HasOrderedItemsBit = 1 << 4,
+                 HasPrependedItemsBit = 1 << 5,
+                 HasAppendedItemsBit = 1 << 6 };
 
     _ListOpHeader() : bits(0) {}
 
@@ -353,6 +360,8 @@ struct _ListOpHeader {
         bits |= op.IsExplicit() ? IsExplicitBit : 0;
         bits |= op.GetExplicitItems().size() ? HasExplicitItemsBit : 0;
         bits |= op.GetAddedItems().size() ? HasAddedItemsBit : 0;
+        bits |= op.GetPrependedItems().size() ? HasPrependedItemsBit : 0;
+        bits |= op.GetAppendedItems().size() ? HasAppendedItemsBit : 0;
         bits |= op.GetDeletedItems().size() ? HasDeletedItemsBit : 0;
         bits |= op.GetOrderedItems().size() ? HasOrderedItemsBit : 0;
     }
@@ -361,6 +370,8 @@ struct _ListOpHeader {
 
     bool HasExplicitItems() const { return bits & HasExplicitItemsBit; }
     bool HasAddedItems() const { return bits & HasAddedItemsBit; }
+    bool HasPrependedItems() const { return bits & HasPrependedItemsBit; }
+    bool HasAppendedItems() const { return bits & HasAppendedItemsBit; }
     bool HasDeletedItems() const { return bits & HasDeletedItemsBit; }
     bool HasOrderedItems() const { return bits & HasOrderedItemsBit; }
 
@@ -659,6 +670,23 @@ struct CrateFile::_PackingContext
 
     inline FILE *GetFile() const { return bufferedOutput.GetFile(); }
 
+    // Inform the writer that the output stream requires the given version
+    // (or newer) to be read back.  This allows the writer to start with
+    // a conservative version assumption and promote to newer versions
+    // only as required by the data stream contents.
+    bool _RequestWriteVersionUpgrade(Version ver, std::string reason) {
+        if (!writeVersion.CanRead(ver)) {
+            TF_WARN("Upgrading crate file from version %s to %s because: %s",
+                    writeVersion.AsString().c_str(), ver.AsString().c_str(),
+                    reason.c_str());
+            writeVersion = ver;
+        }
+        // For now, this always returns true, indicating success.  In
+        // the future, we anticipate a mechanism to confirm the upgrade
+        // is desired -- in which case this could return true or false.
+        return true;
+    }
+
     // Read the bytes of some unknown section into memory so we can rewrite them
     // out later (to preserve it).
     RawDataPtr
@@ -840,6 +868,10 @@ public:
         if (h.HasExplicitItems()) {
             listOp.SetExplicitItems(Read<vector<T>>()); }
         if (h.HasAddedItems()) { listOp.SetAddedItems(Read<vector<T>>()); }
+        if (h.HasPrependedItems()) {
+            listOp.SetPrependedItems(Read<vector<T>>()); }
+        if (h.HasAppendedItems()) {
+            listOp.SetAppendedItems(Read<vector<T>>()); }
         if (h.HasDeletedItems()) { listOp.SetDeletedItems(Read<vector<T>>()); }
         if (h.HasOrderedItems()) { listOp.SetOrderedItems(Read<vector<T>>()); }
         return listOp;
@@ -1034,9 +1066,17 @@ public:
     template <class T>
     void Write(SdfListOp<T> const &listOp) {
         _ListOpHeader h(listOp);
+        if (h.HasPrependedItems() || h.HasAppendedItems()) {
+            crate->_packCtx->_RequestWriteVersionUpgrade(
+                Version(0, 2, 0),
+                "A SdfListOp value using a prepended or appended value "
+                "was detected, which requires crate version 0.2.0.");
+        }
         Write(h);
         if (h.HasExplicitItems()) { Write(listOp.GetExplicitItems()); }
         if (h.HasAddedItems()) { Write(listOp.GetAddedItems()); }
+        if (h.HasPrependedItems()) { Write(listOp.GetPrependedItems()); }
+        if (h.HasAppendedItems()) { Write(listOp.GetAppendedItems()); }
         if (h.HasDeletedItems()) { Write(listOp.GetDeletedItems()); }
         if (h.HasOrderedItems()) { Write(listOp.GetOrderedItems()); }
     }

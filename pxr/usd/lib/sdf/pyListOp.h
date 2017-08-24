@@ -81,6 +81,14 @@ private:
                 make_function(&T::GetAddedItems,
                               return_value_policy<return_by_value>()),
                 &T::SetAddedItems)
+            .add_property("prependedItems",
+                make_function(&T::GetPrependedItems,
+                              return_value_policy<return_by_value>()),
+                &T::SetPrependedItems)
+            .add_property("appendedItems",
+                make_function(&T::GetAppendedItems,
+                              return_value_policy<return_by_value>()),
+                &T::SetAppendedItems)
             .add_property("deletedItems",
                 make_function(&T::GetDeletedItems,
                               return_value_policy<return_by_value>()),

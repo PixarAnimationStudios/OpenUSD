@@ -48,7 +48,9 @@ enum SdfListOpType {
     SdfListOpTypeExplicit,
     SdfListOpTypeAdded,
     SdfListOpTypeDeleted,
-    SdfListOpTypeOrdered
+    SdfListOpTypeOrdered,
+    SdfListOpTypePrepended,
+    SdfListOpTypeAppended
 };
 
 /// \struct Sdf_ListOpTraits
@@ -82,13 +84,16 @@ public:
     SDF_API void Swap(SdfListOp<T>& rhs);
 
     /// Returns \c true if the editor has an explicit list (even if it's
-    /// empty) or it has any added, deleted, or ordered keys.
+    /// empty) or it has any added, prepended, appended, deleted,
+    /// or ordered keys.
     bool HasKeys() const
     {
         if (IsExplicit()) {
             return true;
         }
         if (_addedItems.size() != 0 ||
+            _prependedItems.size() != 0 ||
+            _appendedItems.size() != 0 ||
             _deletedItems.size() != 0) {
             return true;
         }
@@ -113,6 +118,18 @@ public:
         return _addedItems;
     }
 
+    /// Returns the explicit items.
+    const ItemVector& GetPrependedItems() const
+    {
+        return _prependedItems;
+    }
+
+    /// Returns the explicit items.
+    const ItemVector& GetAppendedItems() const
+    {
+        return _appendedItems;
+    }
+
     /// Returns the deleted items.
     const ItemVector& GetDeletedItems() const
     {
@@ -130,6 +147,8 @@ public:
 
     SDF_API void SetExplicitItems(const ItemVector &items);
     SDF_API void SetAddedItems(const ItemVector &items);
+    SDF_API void SetPrependedItems(const ItemVector &items);
+    SDF_API void SetAppendedItems(const ItemVector &items);
     SDF_API void SetDeletedItems(const ItemVector &items);
     SDF_API void SetOrderedItems(const ItemVector &items);
 
@@ -186,6 +205,8 @@ public:
         boost::hash_combine(h, op._isExplicit);
         boost::hash_combine(h, op._explicitItems);
         boost::hash_combine(h, op._addedItems);
+        boost::hash_combine(h, op._prependedItems);
+        boost::hash_combine(h, op._appendedItems);
         boost::hash_combine(h, op._deletedItems);
         boost::hash_combine(h, op._orderedItems);
         return h;
@@ -195,6 +216,8 @@ public:
         return _isExplicit == rhs._isExplicit &&
                _explicitItems == rhs._explicitItems &&
                _addedItems == rhs._addedItems &&
+               _prependedItems == rhs._prependedItems &&
+               _appendedItems == rhs._appendedItems &&
                _deletedItems == rhs._deletedItems &&
                _orderedItems == rhs._orderedItems;
     };
@@ -211,6 +234,10 @@ private:
     typedef std::map<ItemType, typename _ApplyList::iterator, _ItemComparator>
         _ApplyMap;
 
+    void _AddKeys(SdfListOpType, const ApplyCallback& cb,
+                  _ApplyList* result, _ApplyMap* search) const;
+    void _PrependKeys(SdfListOpType, const ApplyCallback& cb,
+                      _ApplyList* result, _ApplyMap* search) const;
     void _AppendKeys(SdfListOpType, const ApplyCallback& cb,
                      _ApplyList* result, _ApplyMap* search) const;
     void _DeleteKeys(SdfListOpType, const ApplyCallback& cb,
@@ -222,6 +249,8 @@ private:
     bool _isExplicit;
     ItemVector _explicitItems;
     ItemVector _addedItems;
+    ItemVector _prependedItems;
+    ItemVector _appendedItems;
     ItemVector _deletedItems;
     ItemVector _orderedItems;
 };

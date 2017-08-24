@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/attributeQuery.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/instanceCache.h"
 
 #include "pxr/usd/usd/stage.h"
@@ -394,7 +395,11 @@ UsdAttribute::AppendConnection(const SdfPath& source) const
     if (!attrSpec)
         return false;
 
-    attrSpec->GetConnectionPathList().Add(pathToAuthor);
+    if (UsdAuthorAppendAsAdd()) {
+        attrSpec->GetConnectionPathList().Add(pathToAuthor);
+    } else {
+        attrSpec->GetConnectionPathList().Append(pathToAuthor);
+    }
     return true;
 }
 
@@ -474,8 +479,14 @@ UsdAttribute::SetConnections(const SdfPathVector& sources) const
 
     attrSpec->GetConnectionPathList().ClearEditsAndMakeExplicit();
     auto connectionPathList = attrSpec->GetConnectionPathList();
-    for (const SdfPath &path: mappedPaths) {
-        connectionPathList.Add(path);
+    if (UsdAuthorAppendAsAdd()) {
+        for (const SdfPath &path: mappedPaths) {
+            connectionPathList.Add(path);
+        }
+    } else {
+        for (const SdfPath &path: mappedPaths) {
+            connectionPathList.Append(path);
+        }
     }
 
     return true;

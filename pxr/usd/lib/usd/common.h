@@ -83,6 +83,12 @@ typedef std::map<class TfToken, VtValue,
 USD_API
 bool UsdIsRetireLumosEnabled();
 
+/// Returns true if Append() methods in the USD API should author
+/// "add" operations in SdfListOp values instead of appends.
+/// Used for backwards compatibility.
+USD_API
+bool UsdAuthorAppendAsAdd();
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
