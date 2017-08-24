@@ -54,6 +54,7 @@ struct GfIsGfMatrix<class GfMatrix4f> { static const bool value = true; };
 
 class GfMatrix4d;
 class GfMatrix4f;
+class GfRotation;
 class GfMatrix3f;
 
 /// \class GfMatrix4f
@@ -166,6 +167,12 @@ public:
                         const std::vector<float>& r1,
                         const std::vector<float>& r2,
                         const std::vector<float>& r3);
+
+    /// Constructor. Initializes a transformation matrix to perform the
+    /// indicated rotation and translation.
+    GF_API
+    GfMatrix4f(const GfRotation& rotate,
+               const GfVec3f& translate);
 
     /// Constructor. Initializes a transformation matrix to perform the
     /// indicated rotation and translation.
@@ -484,12 +491,205 @@ public:
     GF_API
     GfMatrix4f RemoveScaleShear() const;
 
+    /// \name 3D Transformation Utilities
+    /// @{
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// and clears the translation.
+    GF_API
+    GfMatrix4f& SetRotate(const GfRotation &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// without clearing the translation.
+    GF_API
+    GfMatrix4f& SetRotateOnly(const GfRotation &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e mx,
+    /// and clears the translation.
+    GF_API
+    GfMatrix4f& SetRotate(const GfMatrix3f &mx);
+
+    /// Sets the matrix to specify a rotation equivalent to \e mx,
+    /// without clearing the translation.
+    GF_API
+    GfMatrix4f& SetRotateOnly(const GfMatrix3f &mx);
+
+    /// Sets the matrix to specify a nonuniform scaling in x, y, and z by
+    /// the factors in vector \e scaleFactors.
+    GF_API
+    GfMatrix4f& SetScale(const GfVec3f &scaleFactors);
+
+    /// Sets matrix to specify a translation by the vector \e trans,
+    /// and clears the rotation.
+    GF_API
+    GfMatrix4f& SetTranslate(const GfVec3f &trans);
+
+    /// Sets matrix to specify a translation by the vector \e trans,
+    /// without clearing the rotation.
+    GF_API
+    GfMatrix4f& SetTranslateOnly(const GfVec3f &t);
+
+    /// Sets matrix to specify a rotation by \e rotate and a
+    /// translation by \e translate.
+    GF_API
+    GfMatrix4f& SetTransform(const GfRotation& rotate,
+                             const GfVec3f& translate);
+
+    /// Sets matrix to specify a rotation by \e rotmx and a
+    /// translation by \e translate.
+    GF_API
+    GfMatrix4f& SetTransform(const GfMatrix3f& rotmx,
+                             const GfVec3f& translate);
+
+    /// Sets the matrix to specify a viewing matrix from parameters
+    /// similar to those used by <c>gluLookAt(3G)</c>. \e eyePoint
+    /// represents the eye point in world space. \e centerPoint
+    /// represents the world-space center of attention. \e upDirection
+    /// is a vector indicating which way is up.
+    GF_API
+    GfMatrix4f& SetLookAt(const GfVec3f &eyePoint,
+                          const GfVec3f &centerPoint,
+                          const GfVec3f &upDirection);
+
+    /// Sets the matrix to specify a viewing matrix from a world-space
+    /// \e eyePoint and a world-space rotation that rigidly rotates the
+    /// orientation from its canonical frame, which is defined to be
+    /// looking along the <c>-z</c> axis with the <c>+y</c> axis as the up
+    /// direction.
+    GF_API
+    GfMatrix4f& SetLookAt(const GfVec3f &eyePoint,
+                          const GfRotation &orientation);
+
+    /// Factors the matrix into 5 components:
+    /// \li <c>\e M = r * s * -r * u * t</c>
+    /// where
+    /// \li \e t is a translation.
+    /// \li \e u and \e r are rotations, and \e -r is the transpose
+    ///     (inverse) of \e r. The \e u matrix may contain shear
+    ///     information.
+    /// \li \e s is a scale.
+    /// Any projection information could be returned in matrix \e p,
+    /// but currently p is never modified.
+    ///
+    /// Returns \c false if the matrix is singular (as determined by \e eps).
+    /// In that case, any zero scales in \e s are clamped to \e eps
+    /// to allow computation of \e u.
+    GF_API
+    bool Factor(GfMatrix4f* r, GfVec3f* s, GfMatrix4f* u,
+                GfVec3f* t, GfMatrix4f* p,
+                float eps = 1e-5) const;
+
+    /// Returns the translation part of the matrix, defined as the first three
+    /// elements of the last row.
+    GfVec3f ExtractTranslation() const {
+        return GfVec3f(_mtx[3][0], _mtx[3][1], _mtx[3][2]);
+    }
+
+    /// Returns the rotation corresponding to this matrix. This works well
+    /// only if the matrix represents a rotation.
+    ///
+    /// For good results, consider calling Orthonormalize() before calling
+    /// this method.
+    GF_API
+    GfRotation ExtractRotation() const;
+
+    /// Decompose the rotation corresponding to this matrix about 3 orthogonal
+    /// axes.  If the axes are not orthogonal, warnings will be spewed.
+    ///
+    /// This is a convenience method that is equivalent to calling
+    /// ExtractRotation().Decompose().
+    GF_API
+    GfVec3f DecomposeRotation(const GfVec3f &axis0,
+                              const GfVec3f &axis1,
+                              const GfVec3f &axis2) const;
+
+    /// Returns the rotation corresponding to this matrix. This works well
+    /// only if the matrix represents a rotation.
+    ///
+    /// For good results, consider calling Orthonormalize() before calling
+    /// this method.
+    GF_API
+    GfMatrix3f ExtractRotationMatrix() const;
+
+    /// Transforms the row vector \e vec by the matrix, returning the result.
+    /// This treats the vector as a 4-component vector whose fourth component
+    /// is 1.
+    GfVec3d Transform(const GfVec3d &vec) const {
+        return GfProject(GfVec4d(
+            vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0] + _mtx[3][0],
+            vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1] + _mtx[3][1],
+            vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2] + _mtx[3][2],
+            vec[0] * _mtx[0][3] + vec[1] * _mtx[1][3] + vec[2] * _mtx[2][3] + _mtx[3][3]));
+    }
+
+    /// Transforms the row vector \e vec by the matrix, returning the result.
+    /// This treats the vector as a 4-component vector whose fourth component
+    /// is 1. This is an overloaded method; it differs from the other version
+    /// in that it returns a different value type.
+    GfVec3f Transform(const GfVec3f &vec) const {
+        return (GfProject(GfVec4f(
+            vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0] + _mtx[3][0],
+            vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1] + _mtx[3][1],
+            vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2] + _mtx[3][2],
+            vec[0] * _mtx[0][3] + vec[1] * _mtx[1][3] + vec[2] * _mtx[2][3] + _mtx[3][3])));
+    }
+
+    /// Transforms row vector \e vec by the matrix, returning the result. This
+    /// treats the vector as a direction vector, so the translation
+    /// information in the matrix is ignored. That is, it treats the vector as
+    /// a 4-component vector whose fourth component is 0.
+    GfVec3d TransformDir(const GfVec3d &vec) const {
+        return GfVec3d(
+            vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0],
+            vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1],
+            vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2]);
+    }
+
+    /// Transforms row vector \e vec by the matrix, returning the result. This
+    /// treats the vector as a direction vector, so the translation
+    /// information in the matrix is ignored. That is, it treats the vector as
+    /// a 4-component vector whose fourth component is 0.  This is an
+    /// overloaded method; it differs from the other version in that it
+    /// returns a different value type.
+    GfVec3f TransformDir(const GfVec3f &vec) const {
+        return GfVec3f(
+            vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0],
+            vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1],
+            vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2]);
+    }
+
+    /// Transforms the row vector \e vec by the matrix, returning the result.
+    /// This treats the vector as a 4-component vector whose fourth component
+    /// is 1 and ignores the fourth column of the matrix (i.e. assumes it is
+    /// (0, 0, 0, 1)).
+    GfVec3d TransformAffine(const GfVec3d &vec) const {
+        return GfVec3d(
+            vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0] + _mtx[3][0],
+            vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1] + _mtx[3][1],
+            vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2] + _mtx[3][2]);
+    }
+
+    /// Transforms the row vector \e vec by the matrix, returning the result.
+    /// This treats the vector as a 4-component vector whose fourth component
+    /// is 1 and ignores the fourth column of the matrix (i.e. assumes it is
+    /// (0, 0, 0, 1)).
+    GfVec3f TransformAffine(const GfVec3f &vec) const {
+        return GfVec3f(
+            vec[0] * _mtx[0][0] + vec[1] * _mtx[1][0] + vec[2] * _mtx[2][0] + _mtx[3][0],
+            vec[0] * _mtx[0][1] + vec[1] * _mtx[1][1] + vec[2] * _mtx[2][1] + _mtx[3][1],
+            vec[0] * _mtx[0][2] + vec[1] * _mtx[1][2] + vec[2] * _mtx[2][2] + _mtx[3][2]);
+    }
+    /// @}
+
 private:
     /// Returns the determinant of the 3x3 submatrix specified by the three
     /// given row and column indices (0-3 for each).
     GF_API
     double _GetDeterminant3(size_t row1, size_t row2, size_t row3,
        size_t col1, size_t col2, size_t col3) const;
+
+    /// Diagonalizes the upper 3x3 matrix of a matrix known to be symmetric.
+    void _Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const;
 
 private:
     /// Matrix storage, in row-major order.

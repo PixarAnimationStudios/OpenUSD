@@ -63,7 +63,6 @@
 }
 
 {% endfor %}
-{% if SCL == 'double' %}
 {{ MAT }}::{{ MAT }}(const GfRotation& rotate,
                        const GfVec3{{ SCL[0] }}& translate)
 {
@@ -75,11 +74,9 @@
 {
     SetTransform(rotmx, translate);
 }
-{% endif %}
 {% endblock customConstructors %}
 
 {% block customFunctions %}
-{% if SCL == 'double' %}
 {{ MAT }} &
 {{ MAT }}::SetTransform(const GfRotation& rotate,
 			const GfVec3{{ SCL[0] }}& translate)
@@ -95,7 +92,6 @@
     SetRotate(rotate);
     return SetTranslateOnly(translate);
 }   
-{% endif %}
 
 {{ MAT }}
 {{ MAT }}::GetInverse(double *detPtr, double eps) const
@@ -344,7 +340,6 @@ bool
 
     return *this;
 }
-{% if SCL == 'double' %}
 
 {{ MAT }} &
 {{ MAT }}::SetRotate(const GfRotation &rot)
@@ -447,7 +442,7 @@ bool
 }
 
 {{ MAT }} &
-{{ MAT }}::SetScale(const GfVec3d &s)
+{{ MAT }}::SetScale(const GfVec3{{ SCL[0] }} &s)
 {
     _mtx[0][0] = s[0]; _mtx[0][1] = 0.0;  _mtx[0][2] = 0.0;  _mtx[0][3] = 0.0;
     _mtx[1][0] = 0.0;  _mtx[1][1] = s[1]; _mtx[1][2] = 0.0;  _mtx[1][3] = 0.0;
@@ -458,7 +453,7 @@ bool
 }
 
 {{ MAT }} &
-{{ MAT }}::SetTranslate(const GfVec3d &t)
+{{ MAT }}::SetTranslate(const GfVec3{{ SCL[0] }} &t)
 {
     _mtx[0][0] = 1.0;  _mtx[0][1] = 0.0;  _mtx[0][2] = 0.0;  _mtx[0][3] = 0.0;
     _mtx[1][0] = 0.0;  _mtx[1][1] = 1.0;  _mtx[1][2] = 0.0;  _mtx[1][3] = 0.0;
@@ -469,7 +464,7 @@ bool
 }
 
 {{ MAT }} &
-{{ MAT }}::SetTranslateOnly(const GfVec3d &t)
+{{ MAT }}::SetTranslateOnly(const GfVec3{{ SCL[0] }} &t)
 {
     _mtx[3][0] = t[0]; _mtx[3][1] = t[1]; _mtx[3][2] = t[2]; _mtx[3][3] = 1.0;
 
@@ -477,18 +472,18 @@ bool
 }
 
 {{ MAT }} &
-{{ MAT }}::SetLookAt(const GfVec3d &eyePoint,
-		     const GfVec3d &centerPoint,
-		     const GfVec3d &upDirection)
+{{ MAT }}::SetLookAt(const GfVec3{{ SCL[0] }} &eyePoint,
+		     const GfVec3{{ SCL[0] }} &centerPoint,
+		     const GfVec3{{ SCL[0] }} &upDirection)
 {
     // Get the normalized view vector
-    GfVec3d view = (centerPoint - eyePoint).GetNormalized();
+    GfVec3{{ SCL[0] }} view = (centerPoint - eyePoint).GetNormalized();
 
     // Compute vector orthogonal to view and up
-    GfVec3d right = GfCross(view, upDirection).GetNormalized();
+    GfVec3{{ SCL[0] }} right = GfCross(view, upDirection).GetNormalized();
 
     // Compute the "real" up vector orthogonal to both view and right
-    GfVec3d realUp = GfCross(right, view);
+    GfVec3{{ SCL[0] }} realUp = GfCross(right, view);
 
     // Set matrix to rotate from world-space coordinate system,
     // translating eye position to origin.
@@ -522,7 +517,7 @@ bool
 }
 
 {{ MAT }} &
-{{ MAT }}::SetLookAt(const GfVec3d &eyePoint, const GfRotation &orientation)
+{{ MAT }}::SetLookAt(const GfVec3{{ SCL[0] }} &eyePoint, const GfRotation &orientation)
 {
     // To go from world space to eye space, first translate the
     // world-space eye point to the origin, then rotate by the inverse
@@ -534,8 +529,8 @@ bool
 }
 
 bool
-{{ MAT }}::Factor({{ MAT }}* r, GfVec3d* s, {{ MAT }}* u,
-		  GfVec3d* t, {{ MAT }}* p, double eps) const
+{{ MAT }}::Factor({{ MAT }}* r, GfVec3{{ SCL[0] }}* s, {{ MAT }}* u,
+		  GfVec3{{ SCL[0] }}* t, {{ MAT }}* p, {{ SCL }} eps) const
 {
     // This was adapted from the (open source) Open Inventor
     // SbMatrix::Factor().
@@ -544,7 +539,7 @@ bool
 
     // Set A to the upper 3x3 and set t to the translation part of
     // this matrix
-    {{ MAT }} a;
+    GfMatrix4d a;
     for (int i = 0; i < 3; i++) {
 	for (int j = 0; j < 3; j++)
 	    a._mtx[i][j] = _mtx[i][j];
@@ -561,19 +556,27 @@ bool
 
     // Compute B = A * A-transpose and find its eigenvalues and
     // eigenvectors. Use the eigenvectors as the rotation matrix R.
-    {{ MAT }} b = a * a.GetTranspose();
+    GfMatrix4d b = a * a.GetTranspose();
     GfVec3d	eigenvalues;
     GfVec3d	eigenvectors[3];
     b._Jacobi3(&eigenvalues, eigenvectors);
+{% if SCL == 'double' %}
     r->Set(eigenvectors[0][0], eigenvectors[0][1], eigenvectors[0][2], 0.0, 
 	   eigenvectors[1][0], eigenvectors[1][1], eigenvectors[1][2], 0.0, 
 	   eigenvectors[2][0], eigenvectors[2][1], eigenvectors[2][2], 0.0, 
 	   0.0, 0.0, 0.0, 1.0);
+{% else %}
+    GfMatrix4d rTmp(
+        eigenvectors[0][0], eigenvectors[0][1], eigenvectors[0][2], 0.0, 
+        eigenvectors[1][0], eigenvectors[1][1], eigenvectors[1][2], 0.0, 
+        eigenvectors[2][0], eigenvectors[2][1], eigenvectors[2][2], 0.0, 
+        0.0, 0.0, 0.0, 1.0);
+{% endif %}
 
     // Compute s = sqrt(eigenvalues), with sign. Set sInv to the
     // inverse of s, or if eigenvalue < eps, let s = eps.  This allows
     // us to compute factors for singular matrices.
-    {{ MAT }} sInv;
+    GfMatrix4d sInv;
     sInv.SetIdentity();
     for (int i = 0; i < 3; i++) {
         if (eigenvalues[i] < eps) {
@@ -585,7 +588,12 @@ bool
     }
 
     // Compute U = R S-inverse R-transpose A
+{% if SCL == 'double' %}
     *u = *r * sInv * r->GetTranspose() * a;
+{% else %}
+    *u = {{ MAT }}(rTmp * sInv * rTmp.GetTranspose() * a);
+    *r = {{ MAT }}(rTmp);
+{% endif %}
     
     return !isSingular;
 }
@@ -692,12 +700,11 @@ void
     }
 }
 
-
 {{ MAT }}
 {{ MAT }}::RemoveScaleShear() const
 {
     {{ MAT }} scaleOrientMat, factoredRotMat, perspMat;
-    GfVec3d scale, translation;
+    GfVec3{{ SCL[0] }} scale, translation;
     if (!{{ MAT }}::Factor(&scaleOrientMat, &scale, &factoredRotMat,
                   &translation, &perspMat)) {
         // unable to decompose, so return the matrix
@@ -749,12 +756,13 @@ GfRotation
     return GfRotation(GfQuaternion(GfClamp(r, -1.0, 1.0), im));
 }
 
-GfVec3d
-{{ MAT }}::DecomposeRotation(const GfVec3d &axis0,
-                             const GfVec3d &axis1,
-                             const GfVec3d &axis2) const
+GfVec3{{ SCL[0] }}
+{{ MAT }}::DecomposeRotation(const GfVec3{{ SCL[0] }} &axis0,
+                             const GfVec3{{ SCL[0] }} &axis1,
+                             const GfVec3{{ SCL[0] }} &axis2) const
 {
-    return ExtractRotation().Decompose(axis0, axis1, axis2);
+    return {% if SCL != 'double' %}GfVec3{{ SCL[0] }}{% endif -%}
+    (ExtractRotation().Decompose(axis0, axis1, axis2));
 }
 
 GfMatrix3{{ SCL[0] }}
@@ -773,5 +781,4 @@ GfMatrix3{{ SCL[0] }}
 	_mtx[2][1],
 	_mtx[2][2]);
 }
-{% endif -%}
 {% endblock customXformFunctions %}

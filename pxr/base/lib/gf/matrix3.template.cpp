@@ -32,12 +32,10 @@
 {% endblock customIncludes %}
 
 {% block customConstructors %}
-{% if SCL == 'double' %}
 {{ MAT }}::{{ MAT }}(const GfRotation &rot)
 {
     SetRotate(rot);
 }
-{% endif %}
 {% endblock customConstructors %}
 
 {% block customFunctions %}
@@ -160,7 +158,6 @@ bool
 
     return *this;
 }
-{% if SCL == 'double' %}
 
 {{ MAT }} &
 {{ MAT }}::SetRotate(const GfRotation &rot)
@@ -187,7 +184,7 @@ bool
 }
 
 {{ MAT }} &
-{{ MAT }}::SetScale(const GfVec3d &s)
+{{ MAT }}::SetScale(const GfVec3{{ SCL[0] }} &s)
 {
     _mtx[0][0] = s[0]; _mtx[0][1] = 0.0;  _mtx[0][2] = 0.0;
     _mtx[1][0] = 0.0;  _mtx[1][1] = s[1]; _mtx[1][2] = 0.0;
@@ -241,12 +238,12 @@ GfRotation
     return GfRotation( ExtractRotationQuaternion() );
 }
 
-GfVec3d
-{{ MAT }}::DecomposeRotation(const GfVec3d &axis0,
-                             const GfVec3d &axis1,
-                             const GfVec3d &axis2) const
+GfVec3{{ SCL[0] }}
+{{ MAT }}::DecomposeRotation(const GfVec3{{ SCL[0] }} &axis0,
+                             const GfVec3{{ SCL[0] }} &axis1,
+                             const GfVec3{{ SCL[0] }} &axis2) const
 {
-    return ExtractRotation().Decompose(axis0, axis1, axis2);
+    return {% if SCL != 'double' %}GfVec3{{ SCL[0] }}{% endif -%}
+    (ExtractRotation().Decompose(axis0, axis1, axis2));
 }
-{% endif %}
 {% endblock customXformFunctions %}

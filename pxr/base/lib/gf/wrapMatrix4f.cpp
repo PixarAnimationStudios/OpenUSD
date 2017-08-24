@@ -248,6 +248,23 @@ static GfMatrix4f *__init__() {
     return new GfMatrix4f(1);
 }
 
+static tuple FactorWithEpsilon(GfMatrix4f &self, double eps) {
+    GfMatrix4f r, u, p;
+    GfVec3f s, t;
+    bool result = self.Factor(&r, &s, &u, &t, &p, eps);
+    return boost::python::make_tuple(result, r, s, u, t, p);
+}    
+
+static tuple Factor(GfMatrix4f &self) {
+    GfMatrix4f r, u, p;
+    GfVec3f s, t;
+    bool result = self.Factor(&r, &s, &u, &t, &p);
+    return boost::python::make_tuple(result, r, s, u, t, p);
+}
+
+static GfMatrix4f RemoveScaleShearWrapper( const GfMatrix4f &self ) {
+    return self.RemoveScaleShear();
+}
 
 // This adds support for python's builtin pickling library
 // This is used by our Shake plugins which need to pickle entire classes
@@ -299,6 +316,8 @@ void wrapMatrix4f()
                    const vector<double>&,
                    const vector<double>&,
                    const vector<double>& >())
+        .def(init< const GfMatrix3f &, const GfVec3f >())
+        .def(init< const GfRotation &, const GfVec3f >())
 
         .def( TfTypePythonClass() )
 
@@ -370,6 +389,67 @@ void wrapMatrix4f()
         .def( self * GfVec4f() )
         .def( GfVec4f() * self )
 
+        .def("SetTransform",
+	     (This & (This::*)( const GfRotation &,
+				const GfVec3f & ))&This::SetTransform,
+	     return_self<>())	
+        .def("SetTransform",
+	     (This & (This::*)( const GfMatrix3f&,
+				const GfVec3f & ))&This::SetTransform,
+	     return_self<>())
+
+        .def("SetScale", (This & (This::*)( const GfVec3f& ))&This::SetScale,
+	     return_self<>())
+
+        .def("SetTranslate", &This::SetTranslate, return_self<>())
+        .def("SetTranslateOnly", &This::SetTranslateOnly, return_self<>())
+
+        .def("SetRotate",
+	     (This & (This::*)( const GfRotation & )) &This::SetRotate,
+	     return_self<>())
+        .def("SetRotateOnly",
+	     (This & (This::*)( const GfRotation & )) &This::SetRotateOnly,
+	     return_self<>())
+
+        .def("SetRotate",
+	     (This & (This::*)( const GfMatrix3f& )) &This::SetRotate,
+	     return_self<>())
+        .def("SetRotateOnly",
+	     (This & (This::*)( const GfMatrix3f& )) &This::SetRotateOnly,
+	     return_self<>())
+
+        .def("SetLookAt", (This & (This::*)( const GfVec3f &,
+                                             const GfVec3f &,
+                                             const GfVec3f & ))&This::SetLookAt,
+	     return_self<>())
+
+        .def("SetLookAt",
+             (This & (This::*)( const GfVec3f &,
+                                const GfRotation & ))&This::SetLookAt,
+             return_self<>())
+
+        .def("ExtractTranslation", &This::ExtractTranslation)
+        .def("ExtractRotation", &This::ExtractRotation)
+        .def("ExtractRotationMatrix", &This::ExtractRotationMatrix)
+
+        .def("Factor", FactorWithEpsilon)
+        .def("Factor", Factor)
+        .def("RemoveScaleShear", RemoveScaleShearWrapper)
+        
+        .def("Transform",
+	     (GfVec3f (This::*)(const GfVec3f &) const)&This::Transform)
+        .def("Transform",
+	     (GfVec3d (This::*)(const GfVec3d &) const)&This::Transform)
+
+        .def("TransformDir",
+	     (GfVec3f (This::*)(const GfVec3f &) const)&This::TransformDir)
+        .def("TransformDir",
+	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformDir)
+
+        .def("TransformAffine",
+	     (GfVec3f (This::*)(const GfVec3f &) const)&This::TransformAffine)
+        .def("TransformAffine",
+	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformAffine)
         .def("SetScale", (This & (This::*)( float ))&This::SetScale,
 	     return_self<>())
 

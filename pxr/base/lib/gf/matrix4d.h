@@ -587,7 +587,7 @@ public:
     GF_API
     bool Factor(GfMatrix4d* r, GfVec3d* s, GfMatrix4d* u,
                 GfVec3d* t, GfMatrix4d* p,
-                double eps = GF_MIN_VECTOR_LENGTH) const;
+                double eps = 1e-10) const;
 
     /// Returns the translation part of the matrix, defined as the first three
     /// elements of the last row.

@@ -35,9 +35,7 @@
 {% endblock %}
 
 {% block forwardDeclarations %}
-{% if SCL == 'double' -%}
 class GfRotation;
-{% endif %}
 class GfMatrix3{{ SCL[0] }};
 {% endblock %}
 
@@ -78,14 +76,12 @@ class GfMatrix3{{ SCL[0] }};
                         const std::vector<{{ S }}>& r3);
 
 {% endfor %}
-{% if SCL == 'double' %}
     /// Constructor. Initializes a transformation matrix to perform the
     /// indicated rotation and translation.
     GF_API
     {{ MAT }}(const GfRotation& rotate,
                const GfVec3{{ SCL[0] }}& translate);
 
-{% endif %}
     /// Constructor. Initializes a transformation matrix to perform the
     /// indicated rotation and translation.
     GF_API
@@ -170,7 +166,6 @@ class GfMatrix3{{ SCL[0] }};
     /// If the matrix cannot be decomposed, returns the original matrix.
     GF_API
     {{ MAT }} RemoveScaleShear() const;
-{% if SCL == 'double' %}
 
     /// \name 3D Transformation Utilities
     /// @{
@@ -188,39 +183,39 @@ class GfMatrix3{{ SCL[0] }};
     /// Sets the matrix to specify a rotation equivalent to \e mx,
     /// and clears the translation.
     GF_API
-    {{ MAT }}& SetRotate(const GfMatrix3d &mx);
+    {{ MAT }}& SetRotate(const GfMatrix3{{ SCL[0] }} &mx);
 
     /// Sets the matrix to specify a rotation equivalent to \e mx,
     /// without clearing the translation.
     GF_API
-    {{ MAT }}& SetRotateOnly(const GfMatrix3d &mx);
+    {{ MAT }}& SetRotateOnly(const GfMatrix3{{ SCL[0] }} &mx);
 
     /// Sets the matrix to specify a nonuniform scaling in x, y, and z by
     /// the factors in vector \e scaleFactors.
     GF_API
-    {{ MAT }}& SetScale(const GfVec3d &scaleFactors);
+    {{ MAT }}& SetScale(const GfVec3{{ SCL[0] }} &scaleFactors);
 
     /// Sets matrix to specify a translation by the vector \e trans,
     /// and clears the rotation.
     GF_API
-    {{ MAT }}& SetTranslate(const GfVec3d &trans);
+    {{ MAT }}& SetTranslate(const GfVec3{{ SCL[0] }} &trans);
 
     /// Sets matrix to specify a translation by the vector \e trans,
     /// without clearing the rotation.
     GF_API
-    {{ MAT }}& SetTranslateOnly(const GfVec3d &t);
+    {{ MAT }}& SetTranslateOnly(const GfVec3{{ SCL[0] }} &t);
 
     /// Sets matrix to specify a rotation by \e rotate and a
     /// translation by \e translate.
     GF_API
     {{ MAT }}& SetTransform(const GfRotation& rotate,
-                             const GfVec3d& translate);
+                             const GfVec3{{ SCL[0] }}& translate);
 
     /// Sets matrix to specify a rotation by \e rotmx and a
     /// translation by \e translate.
     GF_API
-    {{ MAT }}& SetTransform(const GfMatrix3d& rotmx,
-                             const GfVec3d& translate);
+    {{ MAT }}& SetTransform(const GfMatrix3{{ SCL[0] }}& rotmx,
+                             const GfVec3{{ SCL[0] }}& translate);
 
     /// Sets the matrix to specify a viewing matrix from parameters
     /// similar to those used by <c>gluLookAt(3G)</c>. \e eyePoint
@@ -228,9 +223,9 @@ class GfMatrix3{{ SCL[0] }};
     /// represents the world-space center of attention. \e upDirection
     /// is a vector indicating which way is up.
     GF_API
-    {{ MAT }}& SetLookAt(const GfVec3d &eyePoint,
-                          const GfVec3d &centerPoint,
-                          const GfVec3d &upDirection);
+    {{ MAT }}& SetLookAt(const GfVec3{{ SCL[0] }} &eyePoint,
+                          const GfVec3{{ SCL[0] }} &centerPoint,
+                          const GfVec3{{ SCL[0] }} &upDirection);
 
     /// Sets the matrix to specify a viewing matrix from a world-space
     /// \e eyePoint and a world-space rotation that rigidly rotates the
@@ -238,7 +233,7 @@ class GfMatrix3{{ SCL[0] }};
     /// looking along the <c>-z</c> axis with the <c>+y</c> axis as the up
     /// direction.
     GF_API
-    {{ MAT }}& SetLookAt(const GfVec3d &eyePoint,
+    {{ MAT }}& SetLookAt(const GfVec3{{ SCL[0] }} &eyePoint,
                           const GfRotation &orientation);
 
     /// Factors the matrix into 5 components:
@@ -256,14 +251,18 @@ class GfMatrix3{{ SCL[0] }};
     /// In that case, any zero scales in \e s are clamped to \e eps
     /// to allow computation of \e u.
     GF_API
-    bool Factor({{ MAT }}* r, GfVec3d* s, {{ MAT }}* u,
-                GfVec3d* t, {{ MAT }}* p,
-                double eps = GF_MIN_VECTOR_LENGTH) const;
+    bool Factor({{ MAT }}* r, GfVec3{{ SCL[0] }}* s, {{ MAT }}* u,
+                GfVec3{{ SCL[0] }}* t, {{ MAT }}* p,
+{% if SCL == 'double' %}
+                {{ SCL }} eps = 1e-10) const;
+{% else %}
+                {{ SCL }} eps = 1e-5) const;
+{% endif %}
 
     /// Returns the translation part of the matrix, defined as the first three
     /// elements of the last row.
-    GfVec3d ExtractTranslation() const {
-        return GfVec3d(_mtx[3][0], _mtx[3][1], _mtx[3][2]);
+    GfVec3{{ SCL[0] }} ExtractTranslation() const {
+        return GfVec3{{ SCL[0] }}(_mtx[3][0], _mtx[3][1], _mtx[3][2]);
     }
 
     /// Returns the rotation corresponding to this matrix. This works well
@@ -280,9 +279,9 @@ class GfMatrix3{{ SCL[0] }};
     /// This is a convenience method that is equivalent to calling
     /// ExtractRotation().Decompose().
     GF_API
-    GfVec3d DecomposeRotation(const GfVec3d &axis0,
-                              const GfVec3d &axis1,
-                              const GfVec3d &axis2) const;
+    GfVec3{{ SCL[0] }} DecomposeRotation(const GfVec3{{ SCL[0] }} &axis0,
+                              const GfVec3{{ SCL[0] }} &axis1,
+                              const GfVec3{{ SCL[0] }} &axis2) const;
 
     /// Returns the rotation corresponding to this matrix. This works well
     /// only if the matrix represents a rotation.
@@ -290,7 +289,7 @@ class GfMatrix3{{ SCL[0] }};
     /// For good results, consider calling Orthonormalize() before calling
     /// this method.
     GF_API
-    GfMatrix3d ExtractRotationMatrix() const;
+    GfMatrix3{{ SCL[0] }} ExtractRotationMatrix() const;
 
     /// Transforms the row vector \e vec by the matrix, returning the result.
     /// This treats the vector as a 4-component vector whose fourth component
@@ -308,7 +307,11 @@ class GfMatrix3{{ SCL[0] }};
     /// is 1. This is an overloaded method; it differs from the other version
     /// in that it returns a different value type.
     GfVec3f Transform(const GfVec3f &vec) const {
+{% if SCL == 'float' %}
+        return (GfProject(GfVec4f(
+{% else %}
         return GfVec3f(GfProject(GfVec4d(
+{% endif %}
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][0]", sep=" + ", num=3) }} + _mtx[3][0],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][1]", sep=" + ", num=3) }} + _mtx[3][1],
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }} + _mtx[3][2],
@@ -361,7 +364,6 @@ class GfMatrix3{{ SCL[0] }};
             {{ LIST("vec[%(i)s] * _mtx[%(i)s][2]", sep=" + ", num=3) }} + _mtx[3][2]);
     }
     /// @}
-{% endif %}
 
 private:
     /// Returns the determinant of the 3x3 submatrix specified by the three
@@ -369,9 +371,7 @@ private:
     GF_API
     double _GetDeterminant3(size_t row1, size_t row2, size_t row3,
        size_t col1, size_t col2, size_t col3) const;
-{% if SCL == 'double' %}
 
     /// Diagonalizes the upper 3x3 matrix of a matrix known to be symmetric.
     void _Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const;
-{% endif %}
 {% endblock customXformFunctions %}

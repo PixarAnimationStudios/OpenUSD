@@ -96,6 +96,10 @@ GfMatrix3f::GfMatrix3f(const std::vector< std::vector<float> >& v)
     Set(m);
 }
 
+GfMatrix3f::GfMatrix3f(const GfRotation &rot)
+{
+    SetRotate(rot);
+}
 
 GfMatrix3f &
 GfMatrix3f::SetDiagonal(float s)
@@ -393,6 +397,93 @@ GfMatrix3f::SetScale(float s)
     _mtx[2][0] = 0.0; _mtx[2][1] = 0.0; _mtx[2][2] = s;
 
     return *this;
+}
+
+GfMatrix3f &
+GfMatrix3f::SetRotate(const GfRotation &rot)
+{
+    GfQuaternion quat = rot.GetQuaternion();
+
+    double  r = quat.GetReal();
+    GfVec3d i = quat.GetImaginary();
+
+
+    _mtx[0][0] = 1.0 - 2.0 * (i[1] * i[1] + i[2] * i[2]);
+    _mtx[0][1] =       2.0 * (i[0] * i[1] + i[2] *    r);
+    _mtx[0][2] =       2.0 * (i[2] * i[0] - i[1] *    r);
+
+    _mtx[1][0] =       2.0 * (i[0] * i[1] - i[2] *    r);
+    _mtx[1][1] = 1.0 - 2.0 * (i[2] * i[2] + i[0] * i[0]);
+    _mtx[1][2] =       2.0 * (i[1] * i[2] + i[0] *    r);
+
+    _mtx[2][0] =       2.0 * (i[2] * i[0] + i[1] *    r);
+    _mtx[2][1] =       2.0 * (i[1] * i[2] - i[0] *    r);
+    _mtx[2][2] = 1.0 - 2.0 * (i[1] * i[1] + i[0] * i[0]);
+
+    return *this;
+}
+
+GfMatrix3f &
+GfMatrix3f::SetScale(const GfVec3f &s)
+{
+    _mtx[0][0] = s[0]; _mtx[0][1] = 0.0;  _mtx[0][2] = 0.0;
+    _mtx[1][0] = 0.0;  _mtx[1][1] = s[1]; _mtx[1][2] = 0.0;
+    _mtx[2][0] = 0.0;  _mtx[2][1] = 0.0;  _mtx[2][2] = s[2];
+
+    return *this;
+}
+
+GfQuaternion
+GfMatrix3f::ExtractRotationQuaternion() const
+{
+    // This was adapted from the (open source) Open Inventor
+    // SbRotation::SetValue(const SbMatrix &m)
+
+    int i;
+
+    // First, find largest diagonal in matrix:
+    if (_mtx[0][0] > _mtx[1][1])
+	i = (_mtx[0][0] > _mtx[2][2] ? 0 : 2);
+    else
+	i = (_mtx[1][1] > _mtx[2][2] ? 1 : 2);
+
+    GfVec3d im;
+    double  r;
+
+    if (_mtx[0][0] + _mtx[1][1] + _mtx[2][2] > _mtx[i][i]) {
+	r = 0.5 * sqrt(_mtx[0][0] + _mtx[1][1] +
+		       _mtx[2][2] + 1);
+	im.Set((_mtx[1][2] - _mtx[2][1]) / (4.0 * r),
+	       (_mtx[2][0] - _mtx[0][2]) / (4.0 * r),
+	       (_mtx[0][1] - _mtx[1][0]) / (4.0 * r));
+    }
+    else {
+	int j = (i + 1) % 3;
+	int k = (i + 2) % 3;
+	double q = 0.5 * sqrt(_mtx[i][i] - _mtx[j][j] -
+			      _mtx[k][k] + 1); 
+
+	im[i] = q;
+	im[j] = (_mtx[i][j] + _mtx[j][i]) / (4 * q);
+	im[k] = (_mtx[k][i] + _mtx[i][k]) / (4 * q);
+	r     = (_mtx[j][k] - _mtx[k][j]) / (4 * q);
+    }
+
+    return GfQuaternion(GfClamp(r, -1.0, 1.0), im);
+}
+
+GfRotation
+GfMatrix3f::ExtractRotation() const
+{
+    return GfRotation( ExtractRotationQuaternion() );
+}
+
+GfVec3f
+GfMatrix3f::DecomposeRotation(const GfVec3f &axis0,
+                             const GfVec3f &axis1,
+                             const GfVec3f &axis2) const
+{
+    return GfVec3f(ExtractRotation().Decompose(axis0, axis1, axis2));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

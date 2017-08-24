@@ -36,17 +36,16 @@
 {% endblock customIncludes %}
 
 {% block customFunctions %}
-{% if SCL == 'double' %}
 static tuple FactorWithEpsilon({{ MAT }} &self, double eps) {
     {{ MAT }} r, u, p;
-    GfVec3d s, t;
+    GfVec3{{ SCL[0] }} s, t;
     bool result = self.Factor(&r, &s, &u, &t, &p, eps);
     return boost::python::make_tuple(result, r, s, u, t, p);
 }    
 
 static tuple Factor({{ MAT }} &self) {
     {{ MAT }} r, u, p;
-    GfVec3d s, t;
+    GfVec3{{ SCL[0] }} s, t;
     bool result = self.Factor(&r, &s, &u, &t, &p);
     return boost::python::make_tuple(result, r, s, u, t, p);
 }
@@ -54,7 +53,6 @@ static tuple Factor({{ MAT }} &self) {
 static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
     return self.RemoveScaleShear();
 }
-{% endif %}
 {% endblock customFunctions %}
 
 {% block customInit %}
@@ -66,10 +64,8 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
                    const vector<double>&,
                    const vector<double>&,
                    const vector<double>& >())
-{% if SCL == 'double' %}
-        .def(init< const GfMatrix3{{ SCL[0] }} &, const GfVec3d >())
-        .def(init< const GfRotation &, const GfVec3d >())
-{% endif %}
+        .def(init< const GfMatrix3{{ SCL[0] }} &, const GfVec3{{ SCL[0] }} >())
+        .def(init< const GfRotation &, const GfVec3{{ SCL[0] }} >())
 {% endblock customInit %}
 
 {% block customDefs %}
@@ -89,14 +85,13 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
 {% endblock customDefs %}
 
 {% block customXformDefs %}
-{% if SCL == 'double' %}
         .def("SetTransform",
 	     (This & (This::*)( const GfRotation &,
-				const GfVec3d & ))&This::SetTransform,
+				const GfVec3{{ SCL[0] }} & ))&This::SetTransform,
 	     return_self<>())	
         .def("SetTransform",
 	     (This & (This::*)( const GfMatrix3{{ SCL[0] }}&,
-				const GfVec3d & ))&This::SetTransform,
+				const GfVec3{{ SCL[0] }} & ))&This::SetTransform,
 	     return_self<>())
 
         .def("SetScale", (This & (This::*)( const GfVec3{{ SCL[0] }}& ))&This::SetScale,
@@ -119,13 +114,13 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
 	     (This & (This::*)( const GfMatrix3{{ SCL[0] }}& )) &This::SetRotateOnly,
 	     return_self<>())
 
-        .def("SetLookAt", (This & (This::*)( const GfVec3d &,
-                                             const GfVec3d &,
-                                             const GfVec3d & ))&This::SetLookAt,
+        .def("SetLookAt", (This & (This::*)( const GfVec3{{ SCL[0] }} &,
+                                             const GfVec3{{ SCL[0] }} &,
+                                             const GfVec3{{ SCL[0] }} & ))&This::SetLookAt,
 	     return_self<>())
 
         .def("SetLookAt",
-             (This & (This::*)( const GfVec3d &,
+             (This & (This::*)( const GfVec3{{ SCL[0] }} &,
                                 const GfRotation & ))&This::SetLookAt,
              return_self<>())
 
@@ -151,7 +146,6 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
 	     (GfVec3f (This::*)(const GfVec3f &) const)&This::TransformAffine)
         .def("TransformAffine",
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformAffine)
-{% endif %}
         .def("SetScale", (This & (This::*)( {{ SCL }} ))&This::SetScale,
 	     return_self<>())
 

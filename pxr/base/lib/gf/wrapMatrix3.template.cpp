@@ -32,9 +32,7 @@
 {% endblock customIncludes %}
 
 {% block customInit %}
-{% if SCL == 'double' %}
         .def(init< const GfRotation& >())
-{% endif %}
 {% endblock customInit %}
 
 {% block customDefs %}
@@ -49,11 +47,9 @@
 {% endblock customDefs %}
 
 {% block customXformDefs %}
-{% if SCL == 'double' %}
         .def("SetScale", (This & (This::*)( const GfVec3{{ SCL[0] }} & ))&This::SetScale, return_self<>())
         .def("SetRotate", &This::SetRotate, return_self<>())
         .def("ExtractRotation", &This::ExtractRotation)
-{% endif %}
         .def("SetScale", (This & (This::*)( {{ SCL }} ))&This::SetScale, return_self<>())
 
 {% endblock customXformDefs %}

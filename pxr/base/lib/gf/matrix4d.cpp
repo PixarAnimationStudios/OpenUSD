@@ -1086,7 +1086,6 @@ GfMatrix4d::_Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const
     }
 }
 
-
 GfMatrix4d
 GfMatrix4d::RemoveScaleShear() const
 {
@@ -1148,7 +1147,7 @@ GfMatrix4d::DecomposeRotation(const GfVec3d &axis0,
                              const GfVec3d &axis1,
                              const GfVec3d &axis2) const
 {
-    return ExtractRotation().Decompose(axis0, axis1, axis2);
+    return (ExtractRotation().Decompose(axis0, axis1, axis2));
 }
 
 GfMatrix3d
