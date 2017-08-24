@@ -27,19 +27,26 @@
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+#include "pxr/base/tf/pyUtils.h"
+
 #include <boost/python/handle.hpp>
 #include <boost/python/extract.hpp>
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <mutex>
 #include <string>
 #include <cstdio>
 
 using std::string;
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 using namespace boost::python;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 static unsigned int
@@ -57,6 +64,7 @@ _CheckResultInEnv(const string & envName, const string & envVal)
     return 0;
 }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 static unsigned int
 _CheckResultInOsEnviron(const string & envName, const string & envVal)
 {
@@ -203,6 +211,8 @@ _TestPySetenvInit()
     return numErrors;
 }
 
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+
 static unsigned int
 _TestSetenvNoInit()
 {
@@ -214,11 +224,13 @@ _TestSetenvNoInit()
     const string envName = "TEST_ENV_NAME";
     const string envVal = "TestSetenvNoInit";
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     if (TfPyIsInitialized()) {
         numErrors += 1;
         printf("ERROR: Python should not yet be initialized.\n");
         return numErrors;
     }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     {
         TfErrorMark m;
@@ -236,10 +248,12 @@ _TestSetenvNoInit()
         m.Clear();
     }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     if (TfPyIsInitialized()) {
         numErrors += 1;
         printf("ERROR: Python should not yet be initialized.\n");
     }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     numErrors += _CheckResultInEnv(envName, envVal);
 
@@ -264,17 +278,23 @@ _TestSetenvInit()
     const string envName = "TEST_ENV_NAME";
     const string envVal = "TestSetenvInit";
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     TfPyInitialize();
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     TfSetenv(envName, envVal);
 
     numErrors += _CheckResultInEnv(envName, envVal);
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     numErrors += _CheckResultInOsEnviron(envName, envVal);
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     TfUnsetenv(envName);
 
     numErrors += _CheckResultInEnv(envName, "");
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     numErrors += _CheckResultNotInOsEnviron(envName);
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     return numErrors;
 }
@@ -285,9 +305,13 @@ Test_TfSetenv(int argc, char **argv)
     unsigned int numErrors = 0;
 
     numErrors += _TestSetenvNoInit();
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     numErrors += _TestPySetenvNoInit();
+#endif // PXR_PYTHON_SUPPORT_ENABLED
     numErrors += _TestSetenvInit();
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     numErrors += _TestPySetenvInit();
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     bool success = (numErrors == 0);
 

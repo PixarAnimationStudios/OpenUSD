@@ -27,8 +27,10 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/notice.h"
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyUtils.h"
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -559,10 +561,12 @@ Test_TfType()
     ////////////////////////////////////////////////////////////////////////
     // We should only have C++ types in this test
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     // Start up Python.
     TfPyInitialize();
     TF_FOR_ALL(it, allTypeSet)
         TF_AXIOM( TfPyIsNone( it->GetPythonClass().Get() ) );
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     ////////////////////////////////////////////////////////////////////////
     // Test looking up types via aliases
