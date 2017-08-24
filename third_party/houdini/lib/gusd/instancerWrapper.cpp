@@ -406,8 +406,10 @@ defineForWrite(
             VtIntArray intArray;
             instancePrim->m_usdPointInstancerForWrite.GetProtoIndicesAttr().Set(intArray, UsdTimeCode::Default());
             VtVec3fArray vec3fArray;
+            VtQuathArray quathArray;
             instancePrim->m_usdPointInstancerForWrite.GetPositionsAttr().Set(vec3fArray, UsdTimeCode::Default());
             instancePrim->m_usdPointInstancerForWrite.GetScalesAttr().Set(vec3fArray, UsdTimeCode::Default());
+            instancePrim->m_usdPointInstancerForWrite.GetOrientationsAttr().Set(quathArray, UsdTimeCode::Default());
         }
 
     }
@@ -463,10 +465,14 @@ redefine( const UsdStagePtr& stage,
             m_usdPointInstancerForWrite.GetProtoIndicesAttr().Set(
                     intArray, UsdTimeCode::Default());
             VtVec3fArray vec3fArray;
+            VtQuathArray quathArray;
             m_usdPointInstancerForWrite.GetPositionsAttr().Set(
                     vec3fArray, UsdTimeCode::Default());
             m_usdPointInstancerForWrite.GetScalesAttr().Set(
                     vec3fArray, UsdTimeCode::Default());
+            m_usdPointInstancerForWrite.GetOrientationsAttr().Set(
+                quathArray, UsdTimeCode::Default());
+       
         }
     }
     stage->OverridePrim( path.AppendPath( kReferenceProtoPath ) );
@@ -554,13 +560,18 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         return;
     }
 
+    // Check to make sure we have a valid source prim (NULL when 0 points)
+    if (sourcePrim == NULL) {
+        return;
+    }
+
     // Get prorotypes path from context in case it was set as a parameter.
     string usdPrototypesPath = ctxt.usdPrototypesPath;
     GT_Owner owner;
     GT_DataArrayHandle prototypesPathAttr;
     // If an attribute exists for usdprototypespath, set that as our path.
     prototypesPathAttr = sourcePrim->findAttribute("usdprototypespath", owner, 0);
-    if(prototypesPathAttr != NULL ) {
+    if(prototypesPathAttr != NULL && prototypesPathAttr->entries() > 0) {
         usdPrototypesPath = prototypesPathAttr->getS(0);
     }
     // If the refiner found just points with an instancepath attribute, we need
@@ -787,15 +798,10 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
     }
     UsdRelationship prototypesRel = m_usdPointInstancerForWrite.GetPrototypesRel();
     
-    // When overlaying all we are writing a new prototypes array so we want
-    // the index to start at 0.
-    SdfPathVector previousTargets;
-    if (ctxt.overlayAll) {
-        prototypesRel.ClearTargets(true);
-    } else {
-        prototypesRel.GetForwardedTargets(&previousTargets);
-    }
-    int relIdx = previousTargets.size();
+    // Always clear the prortypes relationship array as we either don't touch it
+    // or write it from scrath (rather than trying to add on top of old protos).
+    prototypesRel.ClearTargets(true);
+    int relIdx = 0;
 
     // When overlaying all, we want to set the prototypes relationship array
     // rather then add targets to it, so we collect all paths into a vector.
