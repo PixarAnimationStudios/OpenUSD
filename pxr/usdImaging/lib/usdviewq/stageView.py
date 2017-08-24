@@ -82,13 +82,28 @@ def ViewportMakeCenteredIntegral(viewport):
         width -= 2
     return (left, bottom, width, height)
 
+class GLSLShader():
+    def __init__(self, type):
+        from OpenGL import GL
+        self.shader = GL.glCreateShader(type)
+    
+    def attach(self, source, program):
+        from OpenGL import GL
+        GL.glShaderSource(self.shader, source)
+        GL.glCompileShader(self.shader)
+        GL.glAttachShader(program, self.shader)
+
+    def __del__(self):
+        from OpenGL import GL
+        GL.glDeleteShader(self.shader)
+
 class GLSLProgram():
     def __init__(self, VS3, FS3, VS2, FS2, uniformDict):
         from OpenGL import GL
 
         self.program   = GL.glCreateProgram()
-        vertexShader   = GL.glCreateShader(GL.GL_VERTEX_SHADER)
-        fragmentShader = GL.glCreateShader(GL.GL_FRAGMENT_SHADER)
+        vertexShader   = GLSLShader(GL.GL_VERTEX_SHADER)
+        fragmentShader = GLSLShader(GL.GL_FRAGMENT_SHADER)
 
         if (kGLMajorVersion >= 3):
             vsSource = VS3
@@ -97,25 +112,17 @@ class GLSLProgram():
             vsSource = VS2
             fsSource = FS2
 
-        GL.glShaderSource(vertexShader, vsSource)
-        GL.glCompileShader(vertexShader)
-        GL.glShaderSource(fragmentShader, fsSource)
-        GL.glCompileShader(fragmentShader)
-        GL.glAttachShader(self.program, vertexShader)
-        GL.glAttachShader(self.program, fragmentShader)
+        vertexShader.attach(vsSource, self.program)
+        fragmentShader.attach(fsSource, self.program)
+
         GL.glLinkProgram(self.program)
 
         if GL.glGetProgramiv(self.program, GL.GL_LINK_STATUS) == GL.GL_FALSE:
-            print GL.glGetShaderInfoLog(vertexShader)
-            print GL.glGetShaderInfoLog(fragmentShader)
+            print GL.glGetShaderInfoLog(vertexShader.shader)
+            print GL.glGetShaderInfoLog(fragmentShader.shader)
             print GL.glGetProgramInfoLog(self.program)
-            GL.glDeleteShader(vertexShader)
-            GL.glDeleteShader(fragmentShader)
             GL.glDeleteProgram(self.program)
-            self.program = 0
-
-        GL.glDeleteShader(vertexShader)
-        GL.glDeleteShader(fragmentShader)
+            self.program = None
 
         self.uniformLocations = {}
         for param in uniformDict:
@@ -124,6 +131,12 @@ class GLSLProgram():
     def uniform4f(self, param, x, y, z, w):
         from OpenGL import GL
         GL.glUniform4f(self.uniformLocations[param], x, y, z, w)
+
+    def __del__(self):
+        prog = getattr(self, 'program', None)
+        if prog != None:
+            from OpenGL import GL
+            GL.glDeleteProgram(prog)
 
 class Rect():
     def __init__(self):
