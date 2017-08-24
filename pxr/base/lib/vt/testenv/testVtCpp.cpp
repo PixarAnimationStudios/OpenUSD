@@ -25,7 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
-#include "pxr/base/vt/pyDictionaryUtils.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/functions.h"
