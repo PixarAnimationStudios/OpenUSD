@@ -31,6 +31,7 @@ from maya import standalone
 
 import os
 import unittest
+import pprint
 
 
 class testUsdImportXforms(unittest.TestCase):
@@ -79,6 +80,115 @@ class testUsdImportXforms(unittest.TestCase):
         actualScale = list(transformationMatrix.scale(OM.MSpace.kTransform))
         self.assertTrue(
             Gf.IsClose(expectedScale, actualScale, self.EPSILON))
+        
+    def testImportMayaXformVariations(self):
+        """
+        Tests that all combinations of the various maya xform pieces will
+        import correctly
+        """
+        
+        # create a bunch of transforms with varying transform attrs set
+        from random import Random
+        import itertools
+        import os
+        import pprint
+        
+        ATTRS = {
+            'translate': (.01, 5),
+            # we do rotates separately, so we can see "rotateY" and "rotateXYZ" ops
+            'rotateX': (.01, 359.99),
+            'rotateY': (.01, 359.99),
+            'rotateZ': (.01, 359.99),
+            'scale': (1.01, 2.0),
+            'shear': (1.01, 2.0),
+            'rotateOrder': (1, 5), 
+            # it seems that internally rotateAxis is stored as a quaternion...
+            # so to ensure proper roundtripping, keep values 0 < x < 90
+            'rotateAxis': (.01, 89.99),
+            'rotatePivot': (.01, 5),
+            'scalePivot': (.01, 5),
+            'rotatePivotTranslate': (.01, 5),
+            'scalePivotTranslate': (.01, 5),
+        }
+        
+        rand = Random(3)
+        
+        cmds.file(new=1, f=1)
+        
+        allNodes = []
+        allExpected = {}
+        
+        topPrim = cmds.createNode('transform', name='topPrim')
+        
+        # Iterate through all combinations of whether each attr in ATTRS is set or not
+        for i, enabledArray in enumerate(itertools.product((False, True), repeat=len(ATTRS))):
+            # name will be like: mayaXform_000111010001
+            node = 'mayaXform_{}'.format(''.join(str(int(x)) for x in enabledArray))
+            node = cmds.createNode('transform', name=node, parent=topPrim)
+            attrVals = {}
+            allNodes.append(node)
+            allExpected[node] = attrVals
+            for enabled, (attr, (valMin, valMax)) in itertools.izip(enabledArray,
+                                                                    ATTRS.iteritems()):
+                if not enabled:
+                    if attr in ('rotateOrder', 'rotateX', 'rotateY', 'rotateZ'):
+                        attrVals[attr] = 0
+                    elif attr == 'scale':
+                        attrVals[attr] = (1, 1, 1)
+                    else:
+                        attrVals[attr] = (0, 0, 0)
+                else:
+                    if attr == 'rotateOrder':
+                        # 1 - 5 because 0 (xyz) would correspond to "not enabled"
+                        val = rand.randint(1, 5)
+                    elif attr in ('rotateX', 'rotateY', 'rotateZ'):
+                        val = rand.uniform(valMin, valMax)
+                    else:
+                        val = (rand.uniform(valMin, valMax),
+                            rand.uniform(valMin, valMax),
+                            rand.uniform(valMin, valMax))
+                    attrVals[attr] = val
+                    #node.setAttr(attr, val)
+                    if isinstance(val, tuple):
+                        cmds.setAttr("{}.{}".format(node, attr), *val)
+                    else:
+                        cmds.setAttr("{}.{}".format(node, attr), val)
+        
+        # Now write out a usd file with all our xforms...
+        cmds.select(allNodes)
+        usdPath = os.path.abspath('UsdImportMayaXformVariationsTest.usdc')
+        cmds.usdExport(selection=1, file=usdPath)
+        
+        # Now import, and make sure it round-trips as expected
+        cmds.file(new=1, f=1)
+        cmds.usdImport(file=usdPath)
+        for node, attrVals in allExpected.iteritems():
+            # if only one (or less) of the three rotates is non-zero, then
+            # the rotate order doesn't matter...
+            nonZeroRotates = [attrVals['rotate' + dir] != 0 for dir in 'XYZ']
+            skipRotateOrder = sum(int(x) for x in nonZeroRotates) <= 1 
+            
+            for attr, expectedVal in attrVals.iteritems():
+                if attr == 'rotateOrder' and skipRotateOrder:
+                    continue
+                attrName = "{}.{}".format(node, attr)
+                actualVal = cmds.getAttr(attrName)
+                if not isinstance(expectedVal, tuple):
+                    expectedVal = (expectedVal,)
+                    actualVal = (actualVal,)
+                else:
+                    # cmds.getAttr('persp.scale') returns [(0, 0, 0)]... weird
+                    actualVal = actualVal[0]
+                for expected, actual in zip(expectedVal, actualVal):
+                    try:
+                        self.assertAlmostEqual(expected, actual,
+                            msg="{} - expected {}, got {} (diff: {}".format(
+                                attrName, expected, actual, abs(expected - actual)),
+                            delta=1e-4)
+                    except Exception:
+                        print "full failed xform:"
+                        pprint.pprint(attrVals)
+                        raise
 
 
 if __name__ == '__main__':
