@@ -400,6 +400,23 @@ class TreeItemDelegate(QStyledItemDelegate):
         editor.SetData(index)
 
     def setModelData(self, editor, model, index):
+        # When an 'Import' checkbox is being toggled, find out if it is part
+        # of the current selection, and apply the same operation to all other
+        # selected rows.
+        if index.column() == COL_IMPORT:
+            # Get all selected indexes that are in the 'Import' column.
+            selected = [i for i in model.GetSelectionModel().selectedIndexes()\
+                        if i.column() == COL_IMPORT]
+
+            # If the provided index is one of the selected indexes, set the
+            # 'Import' value of all selected indexes to match this one, thus
+            # applying the same operation to all of them.
+            if index in selected:
+                value = editor.GetData(index)
+                for i in selected:
+                    model.setData(i, value)
+                return
+        # Get data from the editor and set it in the model.
         model.setData(index, editor.GetData(index))
 
     def sizeHint(self, option, index):
