@@ -39,9 +39,6 @@ from treemodel import *
 #
 NodeTypeLowerCase = 'usdimport'
 
-# This initial default will be updated by ExtracColorsFromStyleSheet()
-EditingBaseColor = QColor(19, 19, 19)
-
 #
 # Return a list of hou.NodeType that are considered the only
 # compatible node types that this plugin will work with.
@@ -82,8 +79,9 @@ def ExtractColorsFromStyleSheet():
     grpBG = '([\s]+background(-color)?: )'
     grpRgb = '(?P<rgb>rgb(a)?\(\d{1,3}(, \d{1,3}){2,3}\))'
 
-    # For the checkbox 'base' color (the color inside the box), extract
-    # the background color of the QTextEdit widget.
+    # For the TreeView's "editing" base color (the color inside
+    # checkboxes, inside text editing fields, etc) extract the
+    # background color of the QTextEdit widget.
     grpQTextEdit = '(QTextEdit\n\{[\s\S]*?)'
     matchBG = re.search(grpQTextEdit + grpBG + grpRgb, qtStyleSheet)
     if matchBG:
@@ -91,9 +89,9 @@ def ExtractColorsFromStyleSheet():
         baseColor = matchBG.groupdict()['rgb'].strip('rgba()')
         c = [int(channel) for channel in baseColor.split(',')]
         if len(c) == 3:
-            EditingBaseColor = QColor(c[0], c[1], c[2])
+            TreeView.editingBaseColor = QColor(c[0], c[1], c[2])
         elif len(c) == 4:
-            EditingBaseColor = QColor(c[0], c[1], c[2], c[3])
+            TreeView.editingBaseColor = QColor(c[0], c[1], c[2], c[3])
 
 class CheckBoxStyled(QCheckBox):
     def paintEvent(self, event):
@@ -104,7 +102,7 @@ class CheckBoxStyled(QCheckBox):
         opt.rect = style.subElementRect(QStyle.SE_CheckBoxClickRect, opt, self)
 
         # Set 'base' color (the color inside the box).
-        opt.palette.setColor(QPalette.Base, EditingBaseColor)
+        opt.palette.setColor(QPalette.Base, TreeView.editingBaseColor)
 
         painter = QStylePainter(self)
         painter.drawControl(QStyle.CE_CheckBox, opt)
@@ -133,10 +131,7 @@ class FilterMenu(ComboBoxStyled):
 
     def __init__(self, parent):
         super(FilterMenu, self).__init__(parent)
-        
-        rgb = ','.join([str(c) for c in EditingBaseColor.getRgb()[:3]])
-        self.setStyleSheet('QComboBox { padding: 2px;\
-                                        background: rgb(%s); }' % rgb)
+
         self.setEditable(True)
 
         self.addItem("Clear Filter")
@@ -155,6 +150,16 @@ class FilterMenu(ComboBoxStyled):
         if index == 0:
             self.clearEditText()
         self.EnterText()
+
+    def OnStyleChanged(self):
+        styleSheet = 'QComboBox { padding: 2px;'
+        channels = [str(c) for c in TreeView.editingBaseColor.getRgb()]
+        if len(channels) == 3:
+            styleSheet += ' background: rgb(%s);' % ','.join(channels)
+        elif len(channels) == 4:
+            styleSheet += ' background: rgba(%s);' % ','.join(channels)
+        styleSheet += '}'
+        self.setStyleSheet(styleSheet)
 
 class ActiveNodeMenu(ComboBoxStyled):
     # Signals
@@ -406,11 +411,17 @@ class TreeItemDelegate(QStyledItemDelegate):
         self.closeEditor.emit(editor, QAbstractItemDelegate.NoHint)
 
 class TreeView(QFrame):
+    # Signals
+    styleChanged = Signal()
+
     # Declare nodeTypes as a static member of TreeView.
     nodeTypes = CompatibleNodeTypes()
 
     # Static model to use for views with no "Active Node".
     emptyModel = TreeModel(COL_HEADERS)
+
+    # This initial default will be updated by ExtractColorsFromStyleSheet()
+    editingBaseColor = QColor(19, 19, 19)
 
     def __init__(self):
         QFrame.__init__(self)
@@ -422,6 +433,7 @@ class TreeView(QFrame):
 
         self.filterMenu = FilterMenu(self)
         self.filterMenu.textEntered['QString'].connect(self.OnFilterApplied)
+        self.styleChanged.connect(self.filterMenu.OnStyleChanged)
 
         self.switchShowVariants = CheckBoxStyled()
         self.switchShowVariants.stateChanged.connect(self.ShowVariants)
@@ -452,6 +464,11 @@ class TreeView(QFrame):
         self.view.setColumnWidth(COL_VARIANT, 340)
         self.view.resizeColumnToContents(COL_END)
 
+        self.view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.view.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.view.customContextMenuRequested.connect(self.PopupRightClickMenu)
+        self.view.installEventFilter(self)
+
         self.view.setAlternatingRowColors(True)
         self.view.verticalScrollBar().valueChanged.connect(\
             self.view.updateGeometries)
@@ -475,6 +492,7 @@ class TreeView(QFrame):
     def changeEvent(self, event):
         if event.type() == QEvent.StyleChange:
             ExtractColorsFromStyleSheet()
+            self.styleChanged.emit()
         super(TreeView, self).changeEvent(event)
 
     def closeEvent(self, event):
@@ -490,6 +508,13 @@ class TreeView(QFrame):
             self.view.selectionModel() is not None:
             self.view.selectionModel().clearSelection()
         super(TreeView, self).keyPressEvent(event)
+
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.KeyPress and\
+            event.matches(QKeySequence.Copy):
+            self.OnSelectionCopied()
+            return True
+        return super(TreeView, self).eventFilter(source, event)
 
     @staticmethod
     def IsNodeCompatible(node, ignoreNodeType = True):
@@ -677,6 +702,46 @@ class TreeView(QFrame):
             rowCount = self.view.model().rowCount(index)
             for row in range(rowCount):
                 self.UpdateSizeHints(index.child(row, 0))
+
+    def PopupRightClickMenu(self, pos):
+        if self.focusWidget() == self.view:
+            menu = QMenu(self)
+            importAction = menu.addAction("Import")
+            unimportAction = menu.addAction("Unimport")
+            action = menu.exec_(self.view.mapToGlobal(pos))
+            if action is not None:
+                state = Qt.Checked if action == importAction else Qt.Unchecked
+                for index in self.view.selectedIndexes():
+                    # Skip items from every column except the import column.
+                    if index.column() == COL_IMPORT:
+                        self.view.model().setData(index, state, Qt.EditRole)
+
+    def OnSelectionCopied(self):
+        indexes = self.view.selectionModel().selectedRows()
+        if len(indexes) == 0:
+            return
+
+        # If there is more than one selected index, sort them.
+        if len(indexes) > 1:
+            profiles = []
+            for index in indexes:
+                profile = ''
+                while index.isValid():
+                    profile = str(index.row()) + profile
+                    index = index.parent()
+                profiles.append(profile)
+            zipped = zip(profiles, indexes)
+            zipped.sort()
+            profiles, indexes = zip(*zipped)
+
+        selection = ''
+        for i, index in enumerate(indexes):
+            item = index.internalPointer()
+            if i > 0:
+                selection += '\n'
+            selection += self.view.model().VariantPrimPathFromItem(item)
+
+        qApp.clipboard().setText(selection)
 
     def OnFilterApplied(self, filterString):
         filterString = filterString.lower()
