@@ -113,6 +113,7 @@ class FreeCamera(QtCore.QObject):
         self._rotPsi = 0
         self._center = Gf.Vec3d(0,0,0)
         self._dist = 100
+        self._camera.focusDistance = self._dist
         self._closestVisibleDist = None
         self._lastFramedDist = None
         self._lastFramedClosestDist = None
@@ -180,6 +181,8 @@ class FreeCamera(QtCore.QObject):
             RotMatrix(Gf.Vec3d.YAxis(), -self._rotTheta) *
             self._YZUpInvMatrix *
             Gf.Matrix4d().SetTranslate(self.center))
+        self._camera.focusDistance = self.dist
+        
         self._cameraTransformDirty = False
 
     def _rangeOfBoxAlongRay(self, camRay, bbox, debugClipping=False):
@@ -2649,8 +2652,14 @@ class StageView(QtOpenGL.QGLWidget):
     def ExportFreeCameraToStage(self, stage, defcamName='usdviewCam', 
                                 imgWidth=None, imgHeight=None):
         '''
-        Export the free camera to the specified USD stage.
+        Export the free camera to the specified USD stage, if it is
+        currently defined. If it is not active (i.e. we are viewing through
+        a stage camera), raise a ValueError.
         '''
+        if not self.freeCamera:
+            raise ValueError("StageView's Free Camera is not defined, so cannot"
+                             " be exported")
+
         imgWidth = imgWidth if imgWidth is not None else self.width()
         imgHeight = imgHeight if imgHeight is not None else self.height()
         
@@ -2667,10 +2676,6 @@ class StageView(QtOpenGL.QGLWidget):
             else Usd.TimeCode.Default()
             
         defcam.SetFromCamera(gfCamera, when)
-
-        # Pixar only: The sublayered file might have zUp=1 opinions, so
-        # explicitly write out zUp=0 for the camera.
-        defcam.GetPrim().SetCustomDataByKey('zUp', False)
         
     def ExportSession(self, stagePath, defcamName='usdviewCam',
                       imgWidth=None, imgHeight=None):
