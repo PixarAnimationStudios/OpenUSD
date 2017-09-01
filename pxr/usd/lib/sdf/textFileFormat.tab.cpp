@@ -6506,7 +6506,6 @@ private:
     yy_buffer_state *_flexBuffer;
 
     std::unique_ptr<char[]> _fileBuffer;
-    size_t _fileBufferSize;
 
     yyscan_t _scanner;
 };
