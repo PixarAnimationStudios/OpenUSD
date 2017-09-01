@@ -616,6 +616,16 @@ HdVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
     }
 #else
     if (_capacity != numElements) {
+        const size_t numMaxElements = GetMaxNumElements();
+
+        if (static_cast<size_t>(numElements) > numMaxElements) {
+            TF_WARN("Attempting to resize the BAR with 0x%x elements when the "
+                    "max number of elements in the buffer array is 0x%lx. "
+                    "Clamping BAR size to the latter.",
+                     numElements, numMaxElements);
+
+            numElements = numMaxElements;
+        }
         _stripedBufferArray->SetNeedsReallocation();
         needsReallocation = true;
     }

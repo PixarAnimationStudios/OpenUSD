@@ -138,11 +138,18 @@ HdBufferArrayRegistry::ReallocateAll(HdAggregationStrategy *strategy)
 
                 size_t numElements = range->GetNumElements();
 
-                // numElements in each range should not exceed maxTotalElements
-                if (!TF_VERIFY(numElements < maxTotalElements,
-                                  "%lu >= %lu", numElements, maxTotalElements))
-                    continue;
+                if (numElements > maxTotalElements) {
+                    // Issue a warning and reset number of elements in the BAR.
+                    TF_WARN("Number of elements in the buffer array range "
+                            "(0x%lx) is _larger_ than the maximum number of "
+                            "elements in the buffer array (0x%lx). 0x%lx bytes "
+                            "of data will be skipped.",
+                            numElements, maxTotalElements,
+                            numElements - maxTotalElements);
 
+                    range->Resize(maxTotalElements);
+                }
+                
                 // over aggregation check of non-uniform buffer
                 if (numTotalElements + numElements > maxTotalElements) {
                     // create new BufferArray with same specification
