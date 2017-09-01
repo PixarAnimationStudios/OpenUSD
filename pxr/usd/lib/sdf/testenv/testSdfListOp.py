@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 from pxr import Sdf
-import unittest
+import unittest, itertools
 
 def _ExplicitItems(l):
     r = Sdf.IntListOp()
@@ -149,6 +149,51 @@ class TestSdfListOp(unittest.TestCase):
             _OrderedItems([1,2,3])
             .ApplyOperations([0,2,4,1,5,3]),
             [0,1,5,2,4,3])
+
+    def test_Compose(self):
+        # Confirm that listops using add or reorder are not composable.
+        self.assertEqual(
+            _OrderedItems([1,2,3]).ApplyOperations(_ExplicitItems([1,2])),
+            None)
+        self.assertEqual(
+            _AddedItems([1,2,3]).ApplyOperations(_ExplicitItems([1,2])),
+            None)
+        # Explicit ops are composable over anything.
+        self.assertEqual(
+            _ExplicitItems([1,2,3]).ApplyOperations(_OrderedItems([1])),
+            _ExplicitItems([1,2,3]))
+        self.assertEqual(
+            _ExplicitItems([1,2,3]).ApplyOperations(_AddedItems([1])),
+            _ExplicitItems([1,2,3]))
+
+        #
+        # Exhaustive check of A(B(x)) == C(x), where C = A(B).
+        #
+        def powerset(s):
+            return itertools.chain.from_iterable(
+                    itertools.combinations(s, r) for r in range(len(s)+1))
+        def generate_lists(num=3):
+            lists = []
+            for subset in powerset(tuple(range(num))):
+                for perm in itertools.permutations(subset):
+                    lists.append(perm)
+            return lists
+        def generate_composable_listops(num=3):
+            lists = generate_lists(num)
+            for explicit in lists:
+                yield _ExplicitItems(explicit)
+            for (a,b,c) in itertools.combinations_with_replacement(lists, 3):
+                op = Sdf.IntListOp()
+                (op.appendedItems, op.prependedItems, op.deletedItems) = (a,b,c)
+                yield op
+        ops = generate_composable_listops(3)
+        lists = generate_lists(2)
+        for (a,b) in itertools.combinations_with_replacement(ops, 2):
+            c = a.ApplyOperations(b)
+            for l in lists:
+                self.assertEqual(
+                    a.ApplyOperations(b.ApplyOperations(l)),
+                    c.ApplyOperations(l))
 
 if __name__ == "__main__":
     unittest.main()

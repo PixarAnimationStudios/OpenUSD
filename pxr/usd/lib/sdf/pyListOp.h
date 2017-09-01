@@ -53,10 +53,18 @@ public:
     }
  
 private:
-    static ItemVector _ApplyOperations(const T& listOp, ItemVector input) {
+    static ItemVector _ApplyOperations1(const T& listOp, ItemVector input) {
         ItemVector result = input;
         listOp.ApplyOperations(&result);
         return result;
+    }
+    static boost::python::object
+    _ApplyOperations2(const T& outer, const T& inner) {
+        if (boost::optional<T> r = outer.ApplyOperations(inner)) {
+            return boost::python::object(*r);
+        } else {
+            return boost::python::object();
+        }
     }
 
     static void _Wrap(const std::string& name)
@@ -71,7 +79,8 @@ private:
 
             .def("Clear", &T::Clear)
             .def("ClearAndMakeExplicit", &T::ClearAndMakeExplicit)
-            .def("ApplyOperations", &This::_ApplyOperations)
+            .def("ApplyOperations", &This::_ApplyOperations1)
+            .def("ApplyOperations", &This::_ApplyOperations2)
 
             .add_property("explicitItems",
                 make_function(&T::GetExplicitItems,

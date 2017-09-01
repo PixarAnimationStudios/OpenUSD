@@ -282,6 +282,88 @@ SdfListOp<T>::ApplyOperations(ItemVector* vec, const ApplyCallback& cb) const
     vec->insert(vec->end(), result.begin(), result.end());
 }
 
+template <typename T>
+boost::optional<SdfListOp<T>>
+SdfListOp<T>::ApplyOperations(const SdfListOp<T> &inner) const
+{
+    if (IsExplicit()) {
+        // Explicit list-op replaces the result entirely.
+        return *this;
+    }
+    if (GetAddedItems().empty() && GetOrderedItems().empty()) {
+        if (inner.IsExplicit()) {
+            ItemVector items = inner.GetExplicitItems();
+            ApplyOperations(&items);
+            SdfListOp<T> r;
+            r.SetExplicitItems(items);
+            return r;
+        }
+        if (inner.GetAddedItems().empty() &&
+            inner.GetOrderedItems().empty()) {
+
+             ItemVector del = inner.GetDeletedItems();
+             ItemVector pre = inner.GetPrependedItems();
+             ItemVector app = inner.GetAppendedItems();
+
+             // Apply deletes
+             for (const auto &x: GetDeletedItems()) {
+                pre.erase(std::remove(pre.begin(), pre.end(), x), pre.end());
+                app.erase(std::remove(app.begin(), app.end(), x), app.end());
+                if (std::find(del.begin(), del.end(), x) == del.end()) {
+                    del.push_back(x);
+                }
+             }
+             // Apply prepends
+             for (const auto &x: GetPrependedItems()) {
+                del.erase(std::remove(del.begin(), del.end(), x), del.end());
+                pre.erase(std::remove(pre.begin(), pre.end(), x), pre.end());
+                app.erase(std::remove(app.begin(), app.end(), x), app.end());
+             }
+             pre.insert(pre.begin(),
+                        GetPrependedItems().begin(),
+                        GetPrependedItems().end());
+             // Apply appends
+             for (const auto &x: GetAppendedItems()) {
+                del.erase(std::remove(del.begin(), del.end(), x), del.end());
+                pre.erase(std::remove(pre.begin(), pre.end(), x), pre.end());
+                app.erase(std::remove(app.begin(), app.end(), x), app.end());
+             }
+             app.insert(app.end(),
+                        GetAppendedItems().begin(),
+                        GetAppendedItems().end());
+
+            SdfListOp<T> r;
+            r.SetDeletedItems(del);
+            r.SetPrependedItems(pre);
+            r.SetAppendedItems(app);
+            return r;
+        }
+    }
+
+    // The result is not well-defined, in general.  There is no way
+    // to express the combined result as a single SdfListOp.
+    //
+    // Example for ordered items:
+    // - let A have ordered items [2,0]
+    // - let B have ordered items [0,1,2]
+    // then
+    // - A over B over [2,1  ] -> [1,2  ]
+    // - A over B over [2,1,0] -> [2,0,1]
+    // and there is no way to express the relative order dependency
+    // between 1 and 2.
+    //
+    // Example for added items:
+    // - let A have added items [0]
+    // - let B have appended items [1] 
+    // then
+    // - A over B over [   ] -> [1,0]
+    // - A over B over [0,1] -> [0,1]
+    // and there is no way to express the relative order dependency
+    // between 0 and 1.
+    //
+    return boost::optional<SdfListOp<T>>();
+}
+
 template <class ItemType, class ListType, class MapType>
 static inline
 void _InsertIfUnique(const ItemType& item, ListType* result, MapType* search)
@@ -299,7 +381,7 @@ void _InsertOrMove(const ItemType& item, typename ListType::iterator pos,
     typename MapType::iterator entry = search->find(item);
     if (entry == search->end()) {
         (*search)[item] = result->insert(pos, item);
-    } else {
+    } else if (entry->second != pos) {
         result->splice(pos, *result, entry->second, std::next(entry->second));
     }
 }

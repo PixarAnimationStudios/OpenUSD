@@ -175,6 +175,20 @@ public:
     void ApplyOperations(ItemVector* vec, 
                          const ApplyCallback& cb = ApplyCallback()) const;
 
+    /// Applies edit operations to the given ListOp.
+    ///
+    /// The result is a ListOp that, when applied to a list, has the same
+    /// effect as applying \p inner and then \p this in sequence.
+    ///
+    /// The result will be empty if the result is not well defined.
+    /// The result is well-defined when \p inner and \p this do not
+    /// use the 'ordered' or 'added' item lists.  In other words, only
+    /// the explicit, prepended, appended, and deleted portions of
+    /// SdfListOp are closed under composition with ApplyOperations().
+    SDF_API 
+    boost::optional<SdfListOp<T>>
+    ApplyOperations(const SdfListOp<T> &inner) const;
+
     /// Callback type for ModifyOperations.
     typedef boost::function<
         boost::optional<ItemType>(const ItemType&)
