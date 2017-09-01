@@ -404,9 +404,20 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             return;
         }
 
-        // If requested, we will always mark indices dirty and update them
-        // lazily.
-        *timeVaryingBits |= HdChangeTracker::DirtyInstanceIndex;
+        // Mark instance indices as time varying if any of the following is 
+        // time varying : protoIndices, invisibleIds
+        _IsVarying(prim,
+            UsdGeomTokens->invisibleIds,
+            HdChangeTracker::DirtyInstanceIndex,
+            _tokens->instancer,
+            timeVaryingBits,
+            true) || _IsVarying(prim,
+                UsdGeomTokens->protoIndices,
+                HdChangeTracker::DirtyInstanceIndex,
+                _tokens->instancer,
+                timeVaryingBits,
+                true);
+
         // Initializing to an empty value is OK here because either this
         // prototype will be invisible or it will be visible and the indices
         // will be updated.
@@ -469,7 +480,12 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         // associated with the Rprim gets updated.
         int instancerBits = _UpdateDirtyBits(prim);
         *timeVaryingBits |=  (instancerBits & HdChangeTracker::DirtyInstancer);
-        *timeVaryingBits |= HdChangeTracker::DirtyVisibility;
+        _IsVarying(prim,
+            UsdGeomTokens->visibility,
+            HdChangeTracker::DirtyVisibility,
+            UsdImagingTokens->usdVaryingVisibility,
+            timeVaryingBits,
+            true);
 
         return;
     } else {
@@ -479,28 +495,37 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             purpose = UsdGeomTokens->default_;
         valueCache->GetPurpose(cachePath) = purpose;
 
-        // Check to see if this instancer is also being instanced, if so, we
-        // need to set dirty bits on the instance index. For instancers, we
-        // could probably update the instance index only once, since
+        // Check to see if this point instancer is also being instanced, 
+        // if so, we need to set dirty bits on the instance index. 
+        // For instancers, we could probably update the 
+        // instance index only once, since
         // currently subsequent updates are redundant.
         _InstancerDataMap::const_iterator instr =
             _instancerData.find(cachePath);
         if (instr != _instancerData.end()) {
             SdfPath parentInstancerPath = instr->second.parentInstancerPath;
             if (!parentInstancerPath.IsEmpty()) {
-                *timeVaryingBits |= HdChangeTracker::DirtyInstanceIndex;
+                // Mark instance indices as time varying if any of the following
+                // is time varying : protoIndices, invisibleIds
+                _IsVarying(prim,
+                    UsdGeomTokens->invisibleIds,
+                    HdChangeTracker::DirtyInstanceIndex,
+                    _tokens->instancer,
+                    timeVaryingBits,
+                    true) || _IsVarying(prim,
+                        UsdGeomTokens->protoIndices,
+                        HdChangeTracker::DirtyInstanceIndex,
+                        _tokens->instancer,
+                        timeVaryingBits,
+                        true);
             }
         }
 
         // this is for instancer transform.
-        // _IsTransformVarying(prim,
-        //                     HdChangeTracker::DirtyTransform,
-        //                     UsdImagingTokens->usdVaryingXform,
-        //                     dirtyBits);
-
-        // XXX: hack to support nested instancer and multi-threaded sync;
-        //      we always populate instancer transform into value cache
-        *timeVaryingBits |=  HdChangeTracker::DirtyTransform;
+        _IsTransformVarying(prim,
+                            HdChangeTracker::DirtyTransform,
+                            UsdImagingTokens->usdVaryingXform,
+                            timeVaryingBits);
 
         // to update visibility
         _UpdateDirtyBits(prim);
@@ -636,6 +661,15 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                           cachePath,
                                           time, requestedBits);
     } else {
+        // Check if it is an instancer, if it is the first time then
+        // we want to initialize the bits.
+        _InstancerDataMap::iterator inst = _instancerData.find(cachePath);
+        if (inst != _instancerData.end()) {
+            if (inst->second.initialized == false) {
+                requestedBits |= HdChangeTracker::DirtyInstanceIndex;
+            }
+        }
+
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             // If this is a nested instancer, we need to prime the
             // InstanceIndices in the value cache and make sure the parent
@@ -756,6 +790,22 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                               cachePath, rproto.paths, time);
         }
     } else {
+        // Check if it is an instancer, if it is the first time then
+        // we want to initialize the bits.
+        _InstancerDataMap::iterator inst = _instancerData.find(cachePath);
+        if (inst != _instancerData.end()) {
+            if (inst->second.initialized == false) {
+                SdfPath parentInstancerPath = inst->second.parentInstancerPath;
+                if (!parentInstancerPath.IsEmpty()) {
+                    requestedBits |= HdChangeTracker::DirtyInstanceIndex;
+                }
+                requestedBits |= HdChangeTracker::DirtyTransform;
+                requestedBits |= HdChangeTracker::DirtyPrimVar;
+                
+                inst->second.initialized = true;
+            }
+        }
+ 
         // Nested Instancer (instancer has instanceIndex)
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             // For nested instancers, we must update the instance index.
@@ -1191,8 +1241,7 @@ UsdImagingPointInstancerAdapter::_UpdateInstanceMap(
 }
 
 int
-UsdImagingPointInstancerAdapter::_UpdateDirtyBits(
-                    UsdPrim const& instancerPrim)
+UsdImagingPointInstancerAdapter::_UpdateDirtyBits(UsdPrim const& instancerPrim)
 {
     // We expect the instancerData entry for this instancer to be established
     // before this method is called. This map should also never be accessed and
@@ -1221,8 +1270,10 @@ UsdImagingPointInstancerAdapter::_UpdateDirtyBits(
     }
 
     // If another thread already initialized the dirty bits, we can bail.
-    if (instrData.dirtyBits != static_cast<HdDirtyBits>(HdChangeTracker::AllDirty))
+    if (instrData.dirtyBits != 
+            static_cast<HdDirtyBits>(HdChangeTracker::AllDirty)) {
         return instrData.dirtyBits;
+    }
 
     instrData.dirtyBits = HdChangeTracker::Clean;
     HdDirtyBits* dirtyBits = &instrData.dirtyBits;
