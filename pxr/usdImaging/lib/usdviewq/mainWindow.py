@@ -2645,7 +2645,7 @@ class MainWindow(QtGui.QMainWindow):
         with Timer() as t:
             self._stage.Close()
         if self._printTiming:
-            t.PrintTime('close UsdStage')
+            t.PrintTime('close stage')
 
         # Tear down the UI window.
         with Timer() as t:

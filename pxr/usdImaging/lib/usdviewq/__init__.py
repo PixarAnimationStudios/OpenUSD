@@ -21,12 +21,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import sys
-import os
-
+import sys, argparse, os
 from PySide.QtGui import QApplication
-
-import argparse
+from common import Timer
 
 class Launcher(object):
     '''
@@ -48,13 +45,18 @@ class Launcher(object):
         
         parser = argparse.ArgumentParser(prog=sys.argv[0],
                                          description=self.GetHelpDescription())
-        self.RegisterPositionals(parser)
-        self.RegisterOptions(parser)
-        arg_parse_result = self.ParseOptions(parser)
-        valid = self.ValidateOptions(arg_parse_result)
-        if valid:
-            self.__LaunchProcess(arg_parse_result)
-            
+
+        with Timer() as totalTimer:
+            self.RegisterPositionals(parser)
+            self.RegisterOptions(parser)
+            arg_parse_result = self.ParseOptions(parser)
+            valid = self.ValidateOptions(arg_parse_result)
+            if valid:
+                self.__LaunchProcess(arg_parse_result)
+
+        if arg_parse_result.timing and arg_parse_result.quitAfterStartup:
+            totalTimer.PrintTime('open and close usdview')
+
     def GetHelpDescription(self):
         '''return the help description'''       
         return 'View a usd file'
@@ -228,7 +230,7 @@ class Launcher(object):
             # we'd want).
             app.processEvents()
             app.closeAllWindows()
-            sys.exit(0)
+            return 
 
         app.exec_()
 
