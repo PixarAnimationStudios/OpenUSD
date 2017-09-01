@@ -127,80 +127,89 @@ TF_REGISTRY_FUNCTION(TfEnum)
 }
 
 // Register all units with the TfEnum registry.
-static map<string, map<int, double> *> *_UnitsMap;
-static map<string, TfEnum> *_DefaultUnitsMap;
-static map<string, TfEnum> *_UnitCategoryToDefaultUnitMap;
-static map<string, string> *_UnitTypeNameToUnitCategoryMap;
-static TfEnum (*_UnitIndicesTable)[_SDF_UNIT_MAX_UNITS];
-static string (*_UnitNameTable)[_SDF_UNIT_MAX_UNITS];
-static map<string, TfEnum> *_UnitNameToUnitMap;
-static map<string, uint32_t> *_UnitTypeIndicesTable;
+struct _UnitsInfo {
+    map<string, map<int, double> *> _UnitsMap;
+    map<string, TfEnum> _DefaultUnitsMap;
+    map<string, TfEnum> _UnitCategoryToDefaultUnitMap;
+    map<string, string> _UnitTypeNameToUnitCategoryMap;
+    TfEnum _UnitIndicesTable[_SDF_UNIT_NUM_TYPES][_SDF_UNIT_MAX_UNITS];
+    string _UnitNameTable[_SDF_UNIT_NUM_TYPES][_SDF_UNIT_MAX_UNITS];
+    map<string, TfEnum> _UnitNameToUnitMap;
+    map<string, uint32_t> _UnitTypeIndicesTable;
+};
 
-static void _AddToUnitsMaps(const TfEnum &unit, 
+static void _AddToUnitsMaps(_UnitsInfo &info,
+                            const TfEnum &unit, 
                             const string &unitName,
                             double scale,
                             const string &category)
 {
-    if (!_UnitsMap) {
-        _UnitsMap = new map<string, map<int, double> *>;
-        _DefaultUnitsMap = new map<string, TfEnum>;
-        _UnitCategoryToDefaultUnitMap = new map<string, TfEnum>;
-        _UnitTypeNameToUnitCategoryMap = new map<string, string>;
-        _UnitIndicesTable = 
-            (TfEnum (*)[_SDF_UNIT_MAX_UNITS])new TfEnum[_SDF_UNIT_NUM_TYPES *
-                                                        _SDF_UNIT_MAX_UNITS];
-        _UnitNameTable = 
-            (std::string (*)[_SDF_UNIT_MAX_UNITS])new std::string[_SDF_UNIT_NUM_TYPES *
-                                                                  _SDF_UNIT_MAX_UNITS];
-        _UnitNameToUnitMap = new map<string, TfEnum>;
-        _UnitTypeIndicesTable = new map<string, uint32_t>;
-    }
     const char *enumTypeName = unit.GetType().name();
-    map<int, double> *scalesMap = (*_UnitsMap)[enumTypeName];
+    map<int, double> *scalesMap = info._UnitsMap[enumTypeName];
 
     if (!scalesMap) {
-        scalesMap = (*_UnitsMap)[enumTypeName] = new map<int, double>;
+        scalesMap = info._UnitsMap[enumTypeName] = new map<int, double>;
     }
     (*scalesMap)[unit.GetValueAsInt()] = scale;
     if (scale == 1.0) {
-        (*_DefaultUnitsMap)[enumTypeName] = unit;
-        (*_UnitCategoryToDefaultUnitMap)[category] = unit;
-        (*_UnitTypeNameToUnitCategoryMap)[unit.GetType().name()] = category;
+        info._DefaultUnitsMap[enumTypeName] = unit;
+        info._UnitCategoryToDefaultUnitMap[category] = unit;
+        info._UnitTypeNameToUnitCategoryMap[unit.GetType().name()] = category;
     }
 
     uint32_t typeIndex;
     map<string, uint32_t>::iterator i =
-        _UnitTypeIndicesTable->find(unit.GetType().name());
-    if (i == _UnitTypeIndicesTable->end()) {
-        typeIndex = (uint32_t)_UnitTypeIndicesTable->size();
-        (*_UnitTypeIndicesTable)[unit.GetType().name()] = typeIndex;
+        info._UnitTypeIndicesTable.find(unit.GetType().name());
+    if (i == info._UnitTypeIndicesTable.end()) {
+        typeIndex = (uint32_t)info._UnitTypeIndicesTable.size();
+        info._UnitTypeIndicesTable[unit.GetType().name()] = typeIndex;
     }
     else {
         typeIndex = i->second;
     }
-    _UnitIndicesTable[typeIndex][unit.GetValueAsInt()] = unit;
-    _UnitNameTable[typeIndex][unit.GetValueAsInt()] = unitName;
-    (*_UnitNameToUnitMap)[unitName] = unit;
+    info._UnitIndicesTable[typeIndex][unit.GetValueAsInt()] = unit;
+    info._UnitNameTable[typeIndex][unit.GetValueAsInt()] = unitName;
+    info._UnitNameToUnitMap[unitName] = unit;
 }
 
-#define _PROCESS_ENUMERANT(r, category, elem) {                         \
+#define _ADD_UNIT_ENUM(r, category, elem)                               \
     TF_ADD_ENUM_NAME(                                                   \
         BOOST_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),     \
-        _SDF_UNIT_NAME(elem));                                          \
-    _AddToUnitsMaps(                                                    \
-        BOOST_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),     \
-        _SDF_UNIT_NAME(elem),                                           \
-        _SDF_UNIT_SCALE(elem), #category);                              \
-    }
+        _SDF_UNIT_NAME(elem));
 
 #define _REGISTRY_FUNCTION(r, unused, elem)                          \
 TF_REGISTRY_FUNCTION_WITH_TAG(TfEnum, _SDF_UNITSLIST_CATEGORY(elem)) \
 {                                                                    \
-    BOOST_PP_SEQ_FOR_EACH(_PROCESS_ENUMERANT,                        \
+    BOOST_PP_SEQ_FOR_EACH(_ADD_UNIT_ENUM,                            \
                           _SDF_UNITSLIST_CATEGORY(elem),             \
-                          _SDF_UNITSLIST_TUPLES(elem))               \
+                          _SDF_UNITSLIST_TUPLES(elem));              \
 }
+
 BOOST_PP_LIST_FOR_EACH(_REGISTRY_FUNCTION, ~, _SDF_UNITS)
+
+#define _ADD_UNIT_TO_MAPS(r, category, elem)                            \
+    _AddToUnitsMaps(                                                    \
+        *info,                                                          \
+        BOOST_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),     \
+        _SDF_UNIT_NAME(elem),                                           \
+        _SDF_UNIT_SCALE(elem), #category);
+
+#define _POPULATE_UNIT_MAPS(r, unused, elem)                          \
+    BOOST_PP_SEQ_FOR_EACH(_ADD_UNIT_TO_MAPS,                          \
+                          _SDF_UNITSLIST_CATEGORY(elem),              \
+                          _SDF_UNITSLIST_TUPLES(elem))                \
+
+static _UnitsInfo *_MakeUnitsMaps() {
+    _UnitsInfo *info = new _UnitsInfo;
+    BOOST_PP_LIST_FOR_EACH(_POPULATE_UNIT_MAPS, ~, _SDF_UNITS);
+    return info;
+}
+
+static _UnitsInfo &_GetUnitsInfo() {
+    static _UnitsInfo *unitsInfo = _MakeUnitsMaps();
+    return *unitsInfo;
+}
+
 #undef _REGISTRY_FUNCTION
 #undef _PROCESS_ENUMERANT
 
@@ -226,19 +235,11 @@ const TfEnum &
 SdfDefaultUnit( const TfEnum &unit )
 {
     static TfEnum empty;
-
-    if (!_DefaultUnitsMap) {
-        // CODE_COVERAGE_OFF
-        // This can only happen if someone calls this function from a
-        // registry function, and that does not happen.
-        TF_CODING_ERROR("_DefaultUnitsMap not initialized.");
-        return empty;
-        // CODE_COVERAGE_ON
-    }
+    _UnitsInfo &info = _GetUnitsInfo();
     map<string, TfEnum>::const_iterator it =
-        _DefaultUnitsMap->find(unit.GetType().name());
+        info._DefaultUnitsMap.find(unit.GetType().name());
 
-    if ( it == _DefaultUnitsMap->end() ) {
+    if ( it == info._DefaultUnitsMap.end() ) {
         TF_WARN("Unsupported unit '%s'.",
                 ArchGetDemangled(unit.GetType()).c_str());
         return empty;
@@ -250,19 +251,11 @@ const string &
 SdfUnitCategory( const TfEnum &unit )
 {
     static string empty;
-
-    if (!_UnitTypeNameToUnitCategoryMap) {
-        // CODE_COVERAGE_OFF
-        // This can only happen if someone calls this function from a
-        // registry function, and that does not happen.
-        TF_CODING_ERROR("_UnitTypeNameToUnitCategoryMap not initialized.");
-        return empty;
-        // CODE_COVERAGE_ON
-    }
+    _UnitsInfo &info = _GetUnitsInfo();
     map<string, string>::const_iterator it =
-        _UnitTypeNameToUnitCategoryMap->find(unit.GetType().name());
+        info._UnitTypeNameToUnitCategoryMap.find(unit.GetType().name());
 
-    if ( it == _UnitTypeNameToUnitCategoryMap->end() ) {
+    if (it == info._UnitTypeNameToUnitCategoryMap.end()) {
         TF_WARN("Unsupported unit '%s'.",
                 ArchGetDemangled(unit.GetType()).c_str());
         return empty;
@@ -273,20 +266,14 @@ SdfUnitCategory( const TfEnum &unit )
 std::pair<uint32_t, uint32_t>
 Sdf_GetUnitIndices( const TfEnum &unit )
 {
-    return std::make_pair((*_UnitTypeIndicesTable)[unit.GetType().name()],
+    _UnitsInfo &info = _GetUnitsInfo();
+    return std::make_pair(info._UnitTypeIndicesTable[unit.GetType().name()],
                           unit.GetValueAsInt());
 }
 
 double SdfConvertUnit( const TfEnum &fromUnit, const TfEnum &toUnit )
 {
-    if (!_UnitsMap) {
-        // CODE_COVERAGE_OFF
-        // This can only happen if someone calls this function from a
-        // registry function, and that does not happen.
-        TF_CODING_ERROR("_UnitsMap not initialized.");
-        return 0.0;
-        // CODE_COVERAGE_ON
-    }
+    _UnitsInfo &info = _GetUnitsInfo();
     if (!toUnit.IsA(fromUnit.GetType()) ) {
         TF_WARN("Can not convert from '%s' to '%s'.",
                 TfEnum::GetFullName(fromUnit).c_str(),
@@ -294,9 +281,9 @@ double SdfConvertUnit( const TfEnum &fromUnit, const TfEnum &toUnit )
         return 0.0;
     }
     map<string, map<int, double> *>::const_iterator it =
-        _UnitsMap->find(fromUnit.GetType().name());
+        info._UnitsMap.find(fromUnit.GetType().name());
 
-    if ( it == _UnitsMap->end() ) {
+    if ( it == info._UnitsMap.end() ) {
         TF_WARN("Unsupported unit '%s'.",
                 ArchGetDemangled(fromUnit.GetType()).c_str());
         return 0.0;
@@ -309,21 +296,12 @@ const string &
 SdfGetNameForUnit( const TfEnum &unit )
 {
     static std::string empty;
-
-    if (!_UnitTypeIndicesTable ||
-        !_UnitNameTable) {
-        // CODE_COVERAGE_OFF
-        // This can only happen if someone calls this function from a
-        // registry function, and that does not happen.
-        TF_CODING_ERROR("_UnitTypeIndicesTable or _UnitNameTable not initialized.");
-        return empty;
-        // CODE_COVERAGE_ON
-    }
+    _UnitsInfo &info = _GetUnitsInfo();
 
     // first check if this is a known type
     map<string, uint32_t>::const_iterator it =
-        _UnitTypeIndicesTable->find(unit.GetType().name());
-    if (it == _UnitTypeIndicesTable->end()) {
+        info._UnitTypeIndicesTable.find(unit.GetType().name());
+    if (it == info._UnitTypeIndicesTable.end()) {
         TF_WARN("Unsupported unit '%s'.",
                 ArchGetDemangled(unit.GetType()).c_str());
         return empty;
@@ -332,26 +310,17 @@ SdfGetNameForUnit( const TfEnum &unit )
     // get indices
     std::pair<uint32_t, uint32_t> indices = Sdf_GetUnitIndices(unit);
     // look up menva name in our table
-    return _UnitNameTable[indices.first][indices.second];
+    return info._UnitNameTable[indices.first][indices.second];
 }
 
 const TfEnum &
 SdfGetUnitFromName( const std::string &name )
 {
     static TfEnum empty;
+    _UnitsInfo &info = _GetUnitsInfo();
+    map<string, TfEnum>::const_iterator it = info._UnitNameToUnitMap.find(name);
 
-    if (!_UnitNameToUnitMap) {
-        // CODE_COVERAGE_OFF
-        // This can only happen if someone calls this function from a
-        // registry function, and that does not happen.
-        TF_CODING_ERROR("_UnitNameToUnitMap not initialized.");
-        return empty;
-        // CODE_COVERAGE_ON
-    }
-    map<string, TfEnum>::const_iterator it =
-        _UnitNameToUnitMap->find(name);
-
-    if ( it == _UnitNameToUnitMap->end() ) {
+    if ( it == info._UnitNameToUnitMap.end() ) {
         TF_WARN("Unknown unit name '%s'.", name.c_str());
         return empty;
     }
