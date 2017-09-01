@@ -2643,9 +2643,8 @@ struct _CopyCameraClippingRange : _CopyCameraBase {
     {
         const CameraSample sample = object.getSchema().getValue(iss);
 
-        const float near = sample.getNearClippingPlane();
-        const float far = sample.getFarClippingPlane();
-        return dst.Set(GfVec2f(near, far));
+        return dst.Set(GfVec2f(sample.getNearClippingPlane(), 
+                               sample.getFarClippingPlane()));
     }
 };
 
