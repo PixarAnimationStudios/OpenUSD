@@ -234,15 +234,23 @@ class MainWindow(QtGui.QMainWindow):
         print 'INFO: Settings restored to default.'
 
     def _configurePlugins(self):
+        pluginsLoaded = False
+        
         from plugContext import PlugContext
         plugCtx = PlugContext(self)
-        try:
-            from pixar import UsdviewPlug
-            UsdviewPlug.ConfigureView(plugCtx)
+        with Timer() as t:
+            try:
+                from pixar import UsdviewPlug
+                UsdviewPlug.ConfigureView(plugCtx)
+                pluginsLoaded = True
+        
+            except ImportError:
+                pass
 
-        except ImportError:
-            pass
+        if self._printTiming and pluginsLoaded:
+            t.PrintTime("configure and load plugins.")
 
+        
     def __del__(self):
         # This is needed to free Qt items before exit; Qt hits failed GTK
         # assertions without it.
@@ -1192,7 +1200,6 @@ class MainWindow(QtGui.QMainWindow):
         QtGui.QApplication.restoreOverrideCursor()
 
     def _drawFirstImage(self):
-
         # _resetView is what triggers the first image to be drawn, so time it
         if self._stageView:
             self._stageView.setUpdatesEnabled(True)
@@ -1448,6 +1455,7 @@ class MainWindow(QtGui.QMainWindow):
                 action.setCheckable(True)
                 action.setChecked(True)
                 self._ui.rendererPluginActionGroup.addAction(action)
+
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):
