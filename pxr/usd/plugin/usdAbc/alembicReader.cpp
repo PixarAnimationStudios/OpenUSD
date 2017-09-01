@@ -45,13 +45,13 @@
 #include <Alembic/Abc/ITypedScalarProperty.h>
 #include <Alembic/AbcCoreAbstract/Foundation.h>
 
-#ifdef USDABC_MULTIVERSE_SUPPORT
+#ifdef PXR_MULTIVERSE_SUPPORT_ENABLED
 #include <Alembic/AbcCoreGit/All.h>
-#endif // USDABC_MULTIVERSE_SUPPORT
+#endif // PXR_MULTIVERSE_SUPPORT_ENABLED
 
-#ifdef USDABC_HDF5_SUPPORT
+#ifdef PXR_HDF5_SUPPORT_ENABLED
 #include <Alembic/AbcCoreHDF5/All.h>
-#endif // USDABC_HD5_SUPPORT
+#endif // PXR_HDF5_SUPPORT_ENABLED
 
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/GeometryScope.h>
@@ -97,12 +97,12 @@ _GetNumOgawaStreams()
                     static_cast<int>(WorkGetConcurrencyLimit()));
 }
 
-#ifdef USDABC_HDF5_SUPPORT
+#ifdef PXR_HDF5_SUPPORT_ENABLED
 // A global mutex until our HDF5 library is thread safe.  It has to be
 // recursive to handle the case where we write an Alembic file using an
 // UsdAbc_AlembicData as the source.
 static TfStaticData<std::recursive_mutex> _hdf5;
-#endif // USDABC_HDF5_SUPPORT
+#endif // PXR_HDF5_SUPPORT_ENABLED
 
 // The SdfAbstractData time samples type.
 // XXX: SdfAbstractData should typedef this.
@@ -1318,7 +1318,7 @@ _ReaderContext::_OpenHDF5(
     std::string* format,
     std::recursive_mutex** mutex) const
 {
-#ifdef USDABC_HDF5_SUPPORT
+#ifdef PXR_HDF5_SUPPORT_ENABLED
     // HDF5 may not be thread-safe.
     std::lock_guard<std::recursive_mutex> lock(*_hdf5);
 
@@ -1333,7 +1333,7 @@ _ReaderContext::_OpenHDF5(
     return false;
 #else
     return false;
-#endif // USDABC_HDF5_SUPPORT
+#endif // PXR_HDF5_SUPPORT_ENABLED
 }
 
 bool
@@ -1356,14 +1356,14 @@ _ReaderContext::_OpenGit(
     std::string* format,
     std::recursive_mutex** mutex) const
 {
-#ifdef USDABC_MULTIVERSE_SUPPORT
+#ifdef PXR_MULTIVERSE_SUPPORT_ENABLED
     *format = "Git";
     *result = IArchive(Alembic::AbcCoreGit::ReadArchive(),
                        filePath, ErrorHandler::kQuietNoopPolicy);
     return *result;
 #else
     return false;
-#endif // USDABC_MULTIVERSE_SUPPORT
+#endif // PXR_MULTIVERSE_SUPPORT_ENABLED
 }
 
 void

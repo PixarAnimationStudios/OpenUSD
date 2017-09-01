@@ -105,7 +105,9 @@
 #include <Alembic/Abc/OArchive.h>
 #include <Alembic/Abc/OObject.h>
 #include <Alembic/AbcCoreAbstract/Foundation.h>
+#ifdef PXR_HDF5_SUPPORT_ENABLED
 #include <Alembic/AbcCoreHDF5/All.h>
+#endif // PXR_HDF5_SUPPORT_ENABLED
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/GeometryScope.h>
 #include <Alembic/AbcGeom/ICamera.h>

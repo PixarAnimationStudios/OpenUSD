@@ -10,11 +10,11 @@ set(optionalLibs "")
 set(optionalIncludeDirs "")
 
 if (PXR_ENABLE_MULTIVERSE_SUPPORT)
-    add_definitions(-DUSDABC_MULTIVERSE_SUPPORT)
+    add_definitions(-DPXR_MULTIVERSE_SUPPORT_ENABLED)
 endif()
 
 if (PXR_ENABLE_HDF5_SUPPORT)
-   add_definitions(-DUSDABC_HDF5_SUPPORT)
+   add_definitions(-DPXR_HDF5_SUPPORT_ENABLED)
    list(APPEND optionalLibs ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
    list(APPEND optionalIncludeDirs ${HDF5_INCLUDE_DIRS})
 endif()
