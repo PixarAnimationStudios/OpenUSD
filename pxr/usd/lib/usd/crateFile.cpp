@@ -2305,60 +2305,56 @@ CrateFile::_ReadPaths(Reader reader)
 template <class Reader, class Header>
 void
 CrateFile::_ReadPathsRecursively(Reader reader,
-                                const SdfPath &parentPath,
-                                const Header &h,
-                                WorkArenaDispatcher &dispatcher)
+                                 SdfPath parentPath,
+                                 Header h,
+                                 WorkArenaDispatcher &dispatcher)
 {
     // XXX Won't need ANY of these tags when bug #132031 is addressed
     TfAutoMallocTag2 tag("Usd", "Usd_CrateDataImpl::Open");
     TfAutoMallocTag2 tag2("Usd_CrateFile::CrateFile::Open", "_ReadPaths");
 
-    bool hasChild = h.bits & _PathItemHeader::HasChildBit;
-    bool hasSibling = h.bits & _PathItemHeader::HasSiblingBit;
-    bool isPrimPropertyPath = h.bits & _PathItemHeader::IsPrimPropertyPathBit;
+    while (true) {
+        bool hasChild = h.bits & _PathItemHeader::HasChildBit;
+        bool hasSibling = h.bits & _PathItemHeader::HasSiblingBit;
+        bool isPrimPropertyPath =
+            h.bits & _PathItemHeader::IsPrimPropertyPathBit;
+        
+        auto const &elemToken = _tokens[h.elementTokenIndex.value];
 
-    auto const &elemToken = _tokens[h.elementTokenIndex.value];
+        // Create this path.
+        _paths[h.index.value] = isPrimPropertyPath ?
+            parentPath.AppendProperty(elemToken) :
+            parentPath.AppendElementToken(elemToken);
 
-    // Create this path.
-    _paths[h.index.value] = isPrimPropertyPath ?
-        parentPath.AppendProperty(elemToken) :
-        parentPath.AppendElementToken(elemToken);
+        // If we have either a child or a sibling but not both, then just
+        // continue to the neighbor.  If we have both then spawn a task for the
+        // sibling and do the child ourself.  We think that our path trees tend
+        // to be broader more often than deep.
 
-    // If this one has a sibling, read out the pointer.
-    auto siblingOffset =
-        (hasSibling && hasChild) ? reader.template Read<int64_t>() : 0;
-
-    // If we have either a child or a sibling but not both, then just continue
-    // to the neighbor.  If we have both then spawn a task for the sibling and
-    // do the child ourself.  We think that our path trees tend to be broader
-    // than deep.
-
-    // If this header item has a child, recurse to it.
-    auto childHeader = hasChild ? reader.template Read<Header>() : Header();
-    auto childReader = reader;
-    auto siblingHeader = Header();
-
-    if (hasSibling) {
-        if (hasChild)
-            reader.Seek(siblingOffset);
-        siblingHeader = reader.template Read<Header>();
-    }
-
-    if (hasSibling) {
-        if (hasChild) {
+        if (hasSibling && hasChild) {
+            // branch off a parallel task for the sibling subtree.
+            auto siblingOffset = reader.template Read<int64_t>();
+            auto siblingReader = reader;
+            siblingReader.Seek(siblingOffset);
             dispatcher.Run(
-                [this, reader, parentPath, siblingHeader, &dispatcher]() {
+                [this, siblingReader, parentPath, &dispatcher]() mutable {
+                    auto siblingHeader = siblingReader.template Read<Header>();
                     _ReadPathsRecursively(
-                        reader, parentPath, siblingHeader, dispatcher);
+                        siblingReader, parentPath, siblingHeader, dispatcher);
                 });
-        } else {
-            _ReadPathsRecursively(
-                reader, parentPath, siblingHeader, dispatcher);
+        } else if (hasSibling) {
+            // only a sibling -- read its header and continue.
+            h = reader.template Read<Header>();
+            continue;
         }
-    }
-    if (hasChild) {
-        _ReadPathsRecursively(
-            childReader, _paths[h.index.value], childHeader, dispatcher);
+        if (hasChild) {
+            // have a child (may have also had a sibling) -- reset the parent
+            // path, read the child's header, and continue.
+            parentPath = _paths[h.index.value];
+            h = reader.template Read<Header>();
+            continue;
+        }
+        break;
     }
 }
 

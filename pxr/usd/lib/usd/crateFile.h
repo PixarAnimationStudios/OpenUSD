@@ -579,8 +579,7 @@ private:
     template <class Reader> void _ReadPaths(Reader src);
     template <class Reader, class Header>
     void _ReadPathsRecursively(
-        Reader src, const SdfPath &parentPath,
-        const Header &h,
+        Reader src, SdfPath parentPath, Header h,
         WorkArenaDispatcher &dispatcher);
 
     void _ReadRawBytes(int64_t start, int64_t size, char *buf) const;
