@@ -128,13 +128,13 @@ public:
     // --------------------------------------------------------------------- //
     // GEOMBINDTRANSFORM 
     // --------------------------------------------------------------------- //
-    /// Encodes the **inverse** of the transform that positions 
-    /// gprims in the space in which it is bound to a Skeleton.  If the 
-    /// transform is identical for a group of gprims that share a common
-    /// ancestor, the transform may be authored on the ancestor, to "inherit"
-    /// down to all the leaf gprims.  The *geomBindTransform* is defined as
-    /// moving a gprim from its own object space (untransformed by its own 
-    /// transform) out into Skeleton space.
+    /// Encodes the transform that positions gprims in the space in
+    /// which it is bound to a Skeleton.  If the transform is identical for a
+    /// group of gprims that share a common ancestor, the transform may be
+    /// authored on the ancestor, to "inherit" down to all the leaf gprims.
+    /// The *geomBindTransform* is defined as moving a gprim from its own
+    /// object space (untransformed by the gprim's own transform) out into
+    /// Skeleton space.
     ///
     /// \n  C++ Type: GfMatrix4d
     /// \n  Usd Type: SdfValueTypeNames->Matrix4d
