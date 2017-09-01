@@ -59,7 +59,11 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
-
+    
+    virtual void TrackVariabilityPrep(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingInstancerContext const* 
+                                          instancerContext = NULL);
 
     /// Thread Safe.
     virtual void TrackVariability(UsdPrim const& prim,
@@ -67,6 +71,13 @@ public:
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL);
+
+    virtual void UpdateForTimePrep(UsdPrim const& prim,
+                                   SdfPath const& cachePath, 
+                                   UsdTimeCode time,
+                                   HdDirtyBits requestedBits,
+                                   UsdImagingInstancerContext const* 
+                                       instancerContext = NULL);
 
     /// Thread Safe.
     virtual void UpdateForTime(UsdPrim const& prim,

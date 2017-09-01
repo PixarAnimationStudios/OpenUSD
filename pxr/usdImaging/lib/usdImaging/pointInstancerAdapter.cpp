@@ -352,6 +352,26 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
 }
 
 void 
+UsdImagingPointInstancerAdapter::TrackVariabilityPrep(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingInstancerContext const* 
+                                          instancerContext)
+{
+    if (IsChildPath(cachePath)) {
+        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(), cachePath);
+        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            return;
+        }
+        if (!TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
+            return;
+        }
+
+        rproto.adapter->TrackVariabilityPrep(_GetPrim(rproto.paths.front()),
+                                             cachePath);
+    }
+}
+
+void 
 UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,

@@ -58,6 +58,11 @@ public:
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
     
+    virtual void TrackVariabilityPrep(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingInstancerContext const* 
+                                          instancerContext = NULL);
+
     /// Thread Safe.
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
