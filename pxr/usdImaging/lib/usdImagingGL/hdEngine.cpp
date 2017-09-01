@@ -68,6 +68,8 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
     , _delegate(nullptr)
     , _renderPlugin(nullptr)
     , _taskController(nullptr)
+    , _lastViewMatrix(0.0)
+    , _lastViewport(0.0)
     , _lastRefineLevel(0)
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
     , _rootPath(rootPath)
