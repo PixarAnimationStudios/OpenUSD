@@ -305,9 +305,9 @@ class Dependency(object):
                     for f in self.filesToCheck])
 
 class PythonDependency(object):
-    def __init__(self, name, installer, moduleName):
+    def __init__(self, name, getInstructions, moduleName):
         self.name = name
-        self.installer = installer
+        self.getInstructions = getInstructions
         self.moduleName = moduleName
 
     def Exists(self, context):
@@ -319,11 +319,6 @@ class PythonDependency(object):
             return True
         except subprocess.CalledProcessError:
             return False
-
-class ManualPythonDependency(PythonDependency):
-    def __init__(self, name, getInstructions, moduleName):
-        super(ManualPythonDependency, self).__init__(name, None, moduleName)
-        self.getInstructions = getInstructions
 
 def AnyPythonDependencies(deps):
     return any([type(d) is PythonDependency for d in deps])
@@ -679,11 +674,16 @@ OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv,
 ############################################################
 # PyOpenGL
 
-def InstallPyOpenGL(context, force):
-    PrintStatus("Installing PyOpenGL...")
-    Run("pip install PyOpenGL")
+def GetPyOpenGLInstructions():
+    return ('PyOpenGL is not installed. If you have pip '
+            'installed, run "pip install PyOpenGL" to '
+            'install it, then re-run this script.\n'
+            'If PyOpenGL is already installed, you may need to '
+            'update your PYTHONPATH to indicate where it is '
+            'located.')
 
-PYOPENGL = PythonDependency("PyOpenGL", InstallPyOpenGL, moduleName="OpenGL")
+PYOPENGL = PythonDependency("PyOpenGL", GetPyOpenGLInstructions, 
+                            moduleName="OpenGL")
 
 ############################################################
 # PySide
@@ -693,19 +693,20 @@ def GetPySideInstructions():
     if MacOS():
         return ('PySide is not installed. If you have MacPorts '
                 'installed, run "port install py27-pyside-tools" '
-                'to install it, then re-run this installer.\n'
+                'to install it, then re-run this script.\n'
                 'If PySide is already installed, you may need to '
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
     else:                       
-        return ('PySide is not installed. Run "pip install PySide" '
-                'to install it, then re-run this installer.\n'
+        return ('PySide is not installed. If you have pip '
+                'installed, run "pip install PySide" '
+                'to install it, then re-run this script.\n'
                 'If PySide is already installed, you may need to '
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
 
-PYSIDE = ManualPythonDependency("PySide", GetPySideInstructions, 
-                                moduleName="PySide")
+PYSIDE = PythonDependency("PySide", GetPySideInstructions, 
+                          moduleName="PySide")
 
 ############################################################
 # HDF5
@@ -1066,7 +1067,11 @@ class InstallContext:
         self.houdiniLocation = (os.path.abspath(args.houdini_location)
                                 if args.houdini_location else None)
        
-    def MustBuildDependency(self, dep):
+    def ForceBuildDependency(self, dep):
+        # Never force building a Python dependency, since users are required
+        # to build these dependencies themselves.
+        if type(dep) is PythonDependency:
+            return False
         return self.forceBuildAll or dep.name.lower() in self.forceBuild
 
 context = InstallContext(args)
@@ -1144,7 +1149,7 @@ if context.buildMaya and PTEX in requiredDependencies:
 
 dependenciesToBuild = []
 for dep in requiredDependencies:
-    if context.MustBuildDependency(dep) or not dep.Exists(context):
+    if context.ForceBuildDependency(dep) or not dep.Exists(context):
         if dep not in dependenciesToBuild:
             dependenciesToBuild.append(dep)
 
@@ -1182,18 +1187,15 @@ if context.buildUsdImaging:
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
     if not any([find_executable(p) for p in pysideUic]):
         PrintError("pyside-uic not found -- please install PySide and adjust "
-                   "your PATH")
+                   "your PATH. (Note that this program may be named {0} "
+                   "depending on your platform)"
+                   .format(" or ".join(pysideUic)))
         sys.exit(1)
 
 if JPEG in requiredDependencies:
     # NASM is required to build libjpeg-turbo
     if (Windows() and not find_executable("nasm")):
         PrintError("nasm not found -- please install it and adjust your PATH")
-        sys.exit(1)
-
-if AnyPythonDependencies(dependenciesToBuild):
-    if not find_executable("pip"):
-        PrintError("pip not found -- please install it and adjust your PATH")
         sys.exit(1)
 
 # Summarize
@@ -1247,10 +1249,10 @@ if args.dry_run:
 
 # Scan for any dependencies that the user is required to install themselves
 # and print those instructions first.
-manualPythonDependencies = \
-    [dep for dep in dependenciesToBuild if type(dep) is ManualPythonDependency]
-if manualPythonDependencies:
-    for dep in manualPythonDependencies:
+pythonDependencies = \
+    [dep for dep in dependenciesToBuild if type(dep) is PythonDependency]
+if pythonDependencies:
+    for dep in pythonDependencies:
         Print(dep.getInstructions())
     sys.exit(1)
 
@@ -1274,7 +1276,7 @@ try:
     # Download and install 3rd-party dependencies
     for dep in dependenciesToBuild:
         PrintStatus("Installing {dep}...".format(dep=dep.name))
-        dep.installer(context, force=context.MustBuildDependency(dep))
+        dep.installer(context, force=context.ForceBuildDependency(dep))
 
     # Build USD
     PrintStatus("Installing USD...")

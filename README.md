@@ -95,6 +95,7 @@ additional documentation for running cmake directly.
 - NASM (required for Imaging on Windows)
 - CMake
 - Python
+- PyOpenGL (required for USD Imaging)
 - PySide (required for USD Imaging)
 
 #### 2. Download the USD source code
