@@ -192,7 +192,9 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveBasis = HdTokens->catmullRom;
     }
     else {
-        TF_CODING_ERROR("Unknown curve basis '%s'", curveBasis.GetText());
+        topoCurveBasis = HdTokens->bezier;
+        TF_WARN("Unknown curve basis '%s', using '%s'", 
+                curveBasis.GetText(), topoCurveBasis.GetText());
     }
 
     if(curveType == UsdGeomTokens->linear) {
@@ -202,7 +204,9 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveType = HdTokens->cubic;
     }
     else {
-        TF_CODING_ERROR("Unknown curve type '%s'", curveType.GetText());
+        topoCurveType = HdTokens->cubic;
+        TF_WARN("Unknown curve type '%s', using '%s'", 
+                curveType.GetText(), topoCurveType.GetText());
     }
 
     if(curveWrap == UsdGeomTokens->periodic) {
@@ -212,7 +216,9 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveWrap = HdTokens->nonperiodic;
     }
     else {
-        TF_CODING_ERROR("Unknown curve wrap '%s'", curveWrap.GetText());
+        topoCurveWrap = HdTokens->nonperiodic;
+        TF_WARN("Unknown curve wrap '%s', using '%s'", 
+                curveWrap.GetText(), topoCurveWrap.GetText());
     }
 
     HdBasisCurvesTopology topology(
