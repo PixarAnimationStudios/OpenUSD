@@ -64,8 +64,6 @@ class TreeItem(object):
         if parent:
             parent._children.append(self)
 
-        self._rowAlternator = 0
-
     def children(self):
         return self._children
 
@@ -111,12 +109,6 @@ class TreeItem(object):
     def setHasUnloadedPayload(self, hasUnloadedPayload):
         self._hasUnloadedPayload = hasUnloadedPayload
 
-    def setRowAlternator(self, rowAlternator):
-        self._rowAlternator = rowAlternator
-
-    def rowAlternator(self):
-        return self._rowAlternator
-
 class TreeModel(QAbstractItemModel):
     # Signals
     expandedPrimPathAdded = Signal(QModelIndex)
@@ -156,6 +148,10 @@ class TreeModel(QAbstractItemModel):
         # Flag that determines whether views connected to
         # this model are showing the variants column or not.
         self._showingVariants = Qt.Unchecked
+
+        # This model will own a QItemSelectionModel so it can
+        # be shared by all views that operate on this model.
+        self._selectionModel = QItemSelectionModel(self)
 
         self.BuildAll(node)
 
@@ -202,6 +198,7 @@ class TreeModel(QAbstractItemModel):
         self._nameUsdFile = ''
         self._namePrimPaths = ''
         self._showingVariants = Qt.Unchecked
+        self._selectionModel.reset()
         self.endResetModel()
 
     def IsPrimBoundable(self, prim, predicate):
@@ -310,7 +307,7 @@ class TreeModel(QAbstractItemModel):
         if not index.isValid():
             return Qt.NoItemFlags
 
-        return Qt.ItemIsEnabled
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
@@ -704,3 +701,6 @@ class TreeModel(QAbstractItemModel):
             self.dataChanged.emit(index, index, [])
         else:
             self.dataChanged.emit(index, index)
+
+    def GetSelectionModel(self):
+        return self._selectionModel
