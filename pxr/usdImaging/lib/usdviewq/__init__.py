@@ -227,6 +227,7 @@ class Launcher(object):
             # UI is fully populated (and to capture all the timing information
             # we'd want).
             app.processEvents()
+            app.closeAllWindows()
             sys.exit(0)
 
         app.exec_()
