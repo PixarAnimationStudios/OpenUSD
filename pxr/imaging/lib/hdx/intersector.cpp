@@ -616,11 +616,7 @@ HdxIntersector::Hit::HitSetHash::operator()(Hit const& hit) const
     boost::hash_combine(hash, hit.objectId.GetHash());
     boost::hash_combine(hash, hit.instancerId.GetHash());
     boost::hash_combine(hash, hit.instanceIndex);
-
-    // XXX: a workaround of a performance issue
-    // of getting unnecessary detailed selection in ResolveUnique
-    //
-    // boost::hash_combine(hash, hit.elementIndex);
+    boost::hash_combine(hash, hit.elementIndex);
 
     return hash;
 }
@@ -631,11 +627,8 @@ HdxIntersector::Hit::HitSetEq::operator()(Hit const& a, Hit const& b) const
     return a.delegateId == b.delegateId
        && a.objectId == b.objectId
        && a.instancerId == b.instancerId
-       && a.instanceIndex == b.instanceIndex;
-    // XXX: a workaround of a performance issue
-    // of getting unnecessary detailed selection in ResolveUnique
-    //
-    // && a.elementIndex == b.elementIndex;
+       && a.instanceIndex == b.instanceIndex
+       && a.elementIndex == b.elementIndex;
 }
 
 bool
@@ -663,7 +656,7 @@ operator<<(std::ostream& out, HdxIntersector::Hit const & h)
         << "Object: <" << h.objectId << "> "
         << "Instancer: <" << h.instancerId << "> "
         << "Instance: [" << h.instanceIndex << "] "
-        << "Element: [" << h.instanceIndex << "] "
+        << "Element: [" << h.elementIndex << "] "
         << "HitPoint: (" << h.worldSpaceHitPoint << ") "
         << "Depth: (" << h.ndcDepth << ") ";
     return out;

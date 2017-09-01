@@ -50,6 +50,7 @@
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
+#include <unordered_set>
 #include <boost/scoped_ptr.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -107,6 +108,33 @@ _GetTranslate(float tx, float ty, float tz)
     m.SetRow(3, GfVec4f(tx, ty, tz, 1.0));
     return m;
 }
+
+namespace {
+    struct HitHash {
+        // make a partial hash excluding elementId, ndcDepth, wsHitPoint,
+        // allowing us to group hits to different elements of the same object
+        // instance
+        size_t operator()(HdxIntersector::Hit const& hit) const {
+            size_t hash = 0;
+            boost::hash_combine(hash, hit.delegateId.GetHash());
+            boost::hash_combine(hash, hit.objectId.GetHash());
+            boost::hash_combine(hash, hit.instancerId.GetHash());
+            boost::hash_combine(hash, hit.instanceIndex);
+            return hash;
+        }
+    };
+
+    struct HitEq {
+        bool operator()(HdxIntersector::Hit const& a, 
+                        HdxIntersector::Hit const& b) const {
+            return a.delegateId    == b.delegateId    &&
+                   a.objectId      == b.objectId      &&
+                   a.instancerId   == b.instancerId   &&
+                   a.instanceIndex == b.instanceIndex;
+        }
+    };
+}
+
 
 My_TestGLDrawing::~My_TestGLDrawing()
 {
@@ -463,7 +491,11 @@ My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos)
     HdxIntersector::HitSet hits;
     HdxSelectionSharedPtr selection(new HdxSelection);
     if (result.ResolveUnique(&hits)) {
+        std::unordered_set<HdxIntersector::Hit, HitHash, HitEq> aggregatedHits;
+
+        // Aggregate hits to the same object instance (see HitHash)
         TF_FOR_ALL(it, hits) {
+            aggregatedHits.insert(*it);
             std::cout << "object: " << it->objectId << " "
                       << "instancer: " << it->instancerId << " "
                       << "instanceIndex: " << it->instanceIndex << " "
@@ -471,16 +503,19 @@ My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos)
                       << "hit: " << it->worldSpaceHitPoint << " "
                       << "ndcDepth: " << it->ndcDepth << "\n";
 
-            if (!it->instancerId.IsEmpty()) {
+        }
+
+        for(const auto& hit : aggregatedHits) {
+            if (!hit.instancerId.IsEmpty()) {
                 // XXX :this doesn't work for nested instancing.
                 VtIntArray instanceIndex;
-                instanceIndex.push_back(it->instanceIndex);
-                selection->AddInstance(it->objectId, instanceIndex);
+                instanceIndex.push_back(hit.instanceIndex);
+                selection->AddInstance(hit.objectId, instanceIndex);
                 // we should use GetPathForInstanceIndex instead of it->objectId
                 //SdfPath path = _delegate->GetPathForInstanceIndex(it->objectId, it->instanceIndex);
                 // and also need to add some APIs to compute VtIntArray instanceIndex.
             } else {
-                selection->AddRprim(it->objectId);
+                selection->AddRprim(hit.objectId);
             }
         }
     }
