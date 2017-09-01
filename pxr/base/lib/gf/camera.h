@@ -72,15 +72,6 @@ public:
     GF_API static const bool ZUp;
     GF_API static const bool YUp;
 
-    /// Left-multiply the transform of a "Y-up, -Z-facing" camera by this matrix
-    /// to get a "Z-up, Y-facing" camera
-    /// \deprecated
-    GF_API static const GfMatrix4d Y_UP_TO_Z_UP_MATRIX;
-    /// Left-multiply the transform of a "Z-up, Y-facing" camera by this matrix
-    /// to get a "Y-up, -Z-facing" camera
-    /// \deprecated
-    GF_API static const GfMatrix4d Z_UP_TO_Y_UP_MATRIX;
-
     /// Default horizontal and vertical aperture, based on a 35mm
     /// (non-anamorphic) projector aperture (0.825 x 0602 inches, converted to
     /// mm).
