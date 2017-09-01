@@ -72,6 +72,21 @@ class LayerStackContextMenuItem(UsdviewContextMenuItem):
 # Opens the layer using usdedit.
 #
 class OpenLayerMenuItem(LayerStackContextMenuItem):
+    # XXX: Note that this logic is duplicated from usddiff
+    # see bug 150247 for centralizing this API.
+    def _FindUsdEdit(self):
+        import platform
+        from distutils.spawn import find_executable 
+        usdedit = find_executable('usdedit')
+
+        if not usdedit and (platform.system() == 'Windows'):
+            for path in os.environ['PATH'].split(os.pathsep):
+                base = os.path.join(path, 'usdedit')
+                for ext in ['.cmd', '']:
+                    if os.access(base + ext, os.X_OK):
+                        usdedit = base + ext
+
+        return usdedit
 
     def GetText(self):
         from common import PrettyFormatSize
@@ -96,8 +111,13 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
         if not layerPath or not os.path.exists(layerPath):
             return
 
+        usdeditExe = self._FindUsdEdit()
+        if not usdeditExe:
+            print "Warning: Could not find 'usdedit', expected it to be in PATH."
+            return
+
         print "Opening file: %s" % layerPath
-        os.system("usdedit -n %s &" % layerPath)
+        os.system("%s -n %s &" % (usdeditExe, layerPath))
 
 #
 # Opens the layer using usdview.
