@@ -2495,6 +2495,10 @@ _WriteCameraParameters(_PrimWriterContext* context)
         context->ExtractSamples(UsdGeomTokens->verticalApertureOffset,
                                 SdfValueTypeNames->Float);
 
+    UsdSamples clippingRange =
+        context->ExtractSamples(UsdGeomTokens->clippingRange,
+                                SdfValueTypeNames->Float2);
+
     // Copy all the samples to set up alembic camera frustum.
     typedef CameraSample SampleT;
     for (double time : context->GetSampleTimesUnion()) {
@@ -2563,6 +2567,19 @@ _WriteCameraParameters(_PrimWriterContext* context)
             }
         }
     
+        {
+            const VtValue value = clippingRange.Get(time);
+            if (value.IsHolding<GfVec2f>()) {
+                sample.setNearClippingPlane(
+                    value.UncheckedGet<GfVec2f>()[0]);
+                sample.setFarClippingPlane(
+                    value.UncheckedGet<GfVec2f>()[1]);
+            } else {
+                TF_WARN("Expected type 'Vec2f', '%s' for clipping range",
+                        ArchGetDemangled(value.GetTypeName()).c_str());
+            }
+        }
+
         // Write the sample.
         object->getSchema().set(sample);
     }
