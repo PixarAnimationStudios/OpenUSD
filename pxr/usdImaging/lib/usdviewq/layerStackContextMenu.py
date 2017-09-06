@@ -48,6 +48,7 @@ def _GetContextMenuItems(mainWindow, item):
     return [OpenLayerMenuItem(mainWindow, item), 
             UsdviewLayerMenuItem(mainWindow, item),
             CopyLayerPathMenuItem(mainWindow, item),
+            CopyLayerIdentifierMenuItem(mainWindow, item),
             CopyPathMenuItem(mainWindow, item)]
 
 #
@@ -160,6 +161,25 @@ class CopyLayerPathMenuItem(LayerStackContextMenuItem):
         cb = QtGui.QApplication.clipboard()
         cb.setText(layerPath, QtGui.QClipboard.Selection )
         cb.setText(layerPath, QtGui.QClipboard.Clipboard )
+
+#
+# Copy the layer identifier to clipboard
+# 
+class CopyLayerIdentifierMenuItem(LayerStackContextMenuItem):
+    def GetText(self):
+        return "Copy Layer Identifier"
+
+    def RunCommand(self):
+        if not self._item:
+            return 
+
+        identifier = getattr(self._item, "identifier")
+        if not identifier:
+            return
+    
+        cb = QtGui.QApplication.clipboard()
+        cb.setText(identifier, QtGui.QClipboard.Selection )
+        cb.setText(identifier, QtGui.QClipboard.Clipboard )
 
 #
 # Copy the prim path to clipboard, if there is one

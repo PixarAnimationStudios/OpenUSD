@@ -3767,6 +3767,7 @@ class MainWindow(QtGui.QMainWindow):
             # attributes for selection:
             item.layer = layer
             item.spec = spec
+            item.identifier = layer.identifier
 
             # attributes for LayerStackContextMenu:
             if layer.realPath:
@@ -3831,6 +3832,7 @@ class MainWindow(QtGui.QMainWindow):
             for i, layer in enumerate(layers):
                 layerItem = QtGui.QTableWidgetItem(layer.GetHierarchicalDisplayString())
                 layerItem.layerPath = layer.layer.realPath
+                layerItem.identifier = layer.layer.identifier
                 toolTip = "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
                     (layer.layer.identifier, layerItem.layerPath)
                 toolTip = self._limitToolTipSize(toolTip)
@@ -3839,6 +3841,7 @@ class MainWindow(QtGui.QMainWindow):
 
                 offsetItem = QtGui.QTableWidgetItem(layer.GetOffsetString())
                 offsetItem.layerPath = layer.layer.realPath
+                offsetItem.identifier = layer.layer.identifier
                 toolTip = self._limitToolTipSize(str(layer.offset)) 
                 offsetItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 1, offsetItem)
@@ -3905,6 +3908,7 @@ class MainWindow(QtGui.QMainWindow):
                     item = tableWidget.item(i, j)
                     item.layerPath = spec.layer.realPath
                     item.path = spec.path.pathString
+                    item.identifier = spec.layer.identifier
 
     def _isHUDVisible(self):
         """Checks if the upper HUD is visible by looking at the global HUD
