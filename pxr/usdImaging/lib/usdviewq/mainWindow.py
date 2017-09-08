@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from qt import QtCore, QtGui, QtWidgets
 import stageView
 from stageView import StageView
 from mainWindowUI import Ui_MainWindow
@@ -144,9 +144,9 @@ def _settingsWarning(filePath):
     print >> msg, "Attempting to continue... "
     print >> msg, "------------------------------------------------------------"
 
-class VariantComboBox(QtGui.QComboBox):
+class VariantComboBox(QtWidgets.QComboBox):
     def __init__(self, parent, prim, variantSetName, mainWindow):
-        QtGui.QComboBox.__init__(self, parent)
+        QtWidgets.QComboBox.__init__(self, parent)
         self.prim = prim
         self.variantSetName = variantSetName
         self.mainWindow = mainWindow
@@ -204,7 +204,7 @@ def _GetShortString(prop, frame):
     return result[:500]
 
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
 
     ###########
     # Signals #
@@ -258,7 +258,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def __init__(self, parent, parserData):
         with Timer() as uiOpenTimer:
-            QtGui.QMainWindow.__init__(self, parent)
+            QtWidgets.QMainWindow.__init__(self, parent)
             self._nodeToItemMap = {}
             self._itemsToPush = []
             self._currentNodes = []
@@ -283,7 +283,7 @@ class MainWindow(QtGui.QMainWindow):
             MainWindow._renderer = parserData.renderer
             if MainWindow._renderer == 'simple':
                 os.environ['HD_ENABLED'] = '0'
- 
+
             self.show()
             self._ui = Ui_MainWindow()
             self._ui.setupUi(self)
@@ -316,7 +316,7 @@ class MainWindow(QtGui.QMainWindow):
                 self._startingPrimCameraPath = None
 
             self.setWindowTitle(parserData.usdFile)
-            self._statusBar = QtGui.QStatusBar(self)
+            self._statusBar = QtWidgets.QStatusBar(self)
             self.setStatusBar(self._statusBar)
 
             settingsPathDir = self._outputBaseDirectory()
@@ -356,7 +356,7 @@ class MainWindow(QtGui.QMainWindow):
                 except:
                     _settingsWarning(settingsPath)
 
-            QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
             self._timer = QtCore.QTimer(self)
             # Timeout interval in ms. We set it to 0 so it runs as fast as
@@ -400,21 +400,17 @@ class MainWindow(QtGui.QMainWindow):
             self._startTime = self._endTime = time()
             
             # Create action groups
-            self._ui.threePointLights = QtGui.QActionGroup(self)
-            self._ui.colorGroup = QtGui.QActionGroup(self)
+            self._ui.threePointLights = QtWidgets.QActionGroup(self)
+            self._ui.colorGroup = QtWidgets.QActionGroup(self)
             
             self._nodeViewResetTimer = QtCore.QTimer(self)
             self._nodeViewResetTimer.setInterval(250)
-            QtCore.QObject.connect(self._nodeViewResetTimer, 
-                                   QtCore.SIGNAL('timeout()'),
-                                   self._resetNodeView)
+            self._nodeViewResetTimer.timeout.connect(self._resetNodeView)
 
             # Idle timer to push off-screen data to the UI.
             self._nodeViewUpdateTimer = QtCore.QTimer(self)
             self._nodeViewUpdateTimer.setInterval(0)
-            QtCore.QObject.connect(self._nodeViewUpdateTimer, 
-                                   QtCore.SIGNAL('timeout()'),
-                                   self._updateNodeView)
+            self._nodeViewUpdateTimer.timeout.connect(self._updateNodeView)
 
             # This creates the _stageView and restores state from settings file
             self._resetSettings()
@@ -437,15 +433,15 @@ class MainWindow(QtGui.QMainWindow):
             self._ui.propertyView.horizontalHeader().setStretchLastSection(True)
 
             self._ui.propertyView.setSelectionBehavior(
-                QtGui.QAbstractItemView.SelectRows)
+                QtWidgets.QAbstractItemView.SelectRows)
             self._ui.nodeView.setSelectionBehavior(
-                QtGui.QAbstractItemView.SelectRows)
+                QtWidgets.QAbstractItemView.SelectRows)
             # This allows ctrl and shift clicking for multi-selecting
             self._ui.propertyView.setSelectionMode(
-                QtGui.QAbstractItemView.ExtendedSelection)
+                QtWidgets.QAbstractItemView.ExtendedSelection)
 
             self._ui.propertyView.setHorizontalScrollMode(
-                QtGui.QAbstractItemView.ScrollPerPixel)
+                QtWidgets.QAbstractItemView.ScrollPerPixel)
 
             self._ui.frameSlider.setTracking(self._ui.redrawOnScrub.isChecked())
             
@@ -463,7 +459,7 @@ class MainWindow(QtGui.QMainWindow):
                 self._ui.threePointLights.addAction(action)
             self._ui.threePointLights.setExclusive(False)
 
-            self._ui.renderModeActionGroup = QtGui.QActionGroup(self)
+            self._ui.renderModeActionGroup = QtWidgets.QActionGroup(self)
             for action in (self._ui.actionWireframe,
                            self._ui.actionWireframeOnSurface,
                            self._ui.actionSmooth_Shaded,
@@ -486,7 +482,7 @@ class MainWindow(QtGui.QMainWindow):
                 self._ui.renderModeActionGroup.actions()[0].setChecked(True)
                 self._changeRenderMode(self._ui.renderModeActionGroup.actions()[0])
 
-            self._ui.pickModeActionGroup = QtGui.QActionGroup(self)
+            self._ui.pickModeActionGroup = QtWidgets.QActionGroup(self)
             for action in (self._ui.actionPick_Prims,
                            self._ui.actionPick_Models,
                            self._ui.actionPick_Instances):
@@ -506,7 +502,7 @@ class MainWindow(QtGui.QMainWindow):
             # The error-checking pattern here seems wrong?  Error checking
             # should happen in the changeXXX methods. All we're checking here
             # is the values we hardcoded ourselves in the init function!
-            self._ui.selHighlightModeActionGroup = QtGui.QActionGroup(self)
+            self._ui.selHighlightModeActionGroup = QtWidgets.QActionGroup(self)
             for action in (self._ui.actionNever,
                            self._ui.actionOnly_when_paused,
                            self._ui.actionAlways):
@@ -514,7 +510,7 @@ class MainWindow(QtGui.QMainWindow):
                 action.setChecked(str(action.text()) == self._selHighlightMode)
             self._ui.selHighlightModeActionGroup.setExclusive(True)
                 
-            self._ui.highlightColorActionGroup = QtGui.QActionGroup(self)
+            self._ui.highlightColorActionGroup = QtWidgets.QActionGroup(self)
             for action in (self._ui.actionSelYellow,
                            self._ui.actionSelCyan,
                            self._ui.actionSelWhite):
@@ -522,7 +518,7 @@ class MainWindow(QtGui.QMainWindow):
                 action.setChecked(str(action.text()) == self._highlightColorName)
             self._ui.highlightColorActionGroup.setExclusive(True)
                 
-            self._ui.interpolationActionGroup = QtGui.QActionGroup(self)
+            self._ui.interpolationActionGroup = QtWidgets.QActionGroup(self)
             self._ui.interpolationActionGroup.setExclusive(True)
             for interpolationType in Usd.InterpolationType.allValues:
                 action = self._ui.menuInterpolation.addAction(interpolationType.displayName)
@@ -530,7 +526,7 @@ class MainWindow(QtGui.QMainWindow):
                 action.setChecked(self._stage.GetInterpolationType() == interpolationType)
                 self._ui.interpolationActionGroup.addAction(action)
 
-            self._ui.nodeViewDepthGroup = QtGui.QActionGroup(self)
+            self._ui.nodeViewDepthGroup = QtWidgets.QActionGroup(self)
             for i in range(1,9):
                 action = getattr(self._ui,"actionLevel_" + str(i))
                 self._ui.nodeViewDepthGroup.addAction(action)
@@ -548,7 +544,7 @@ class MainWindow(QtGui.QMainWindow):
             self._ui.nodeLegendContainer.setContentsMargins(5,0,5,0)
 
             # needed to set color of boxes
-            graphicsScene = QtGui.QGraphicsScene()
+            graphicsScene = QtWidgets.QGraphicsScene()
             self._ui.propertyLegendColorFallback.setScene(graphicsScene)
             self._ui.propertyLegendColorDefault.setScene(graphicsScene)
             self._ui.propertyLegendColorTimeSample.setScene(graphicsScene)
@@ -607,7 +603,7 @@ class MainWindow(QtGui.QMainWindow):
             hasArcsLegend = self._ui.nodeLegendLabelHasArcs
             hasArcsLegend.setText(legendTextUpdate(hasArcsLegend, HasArcsColor))
 
-       
+
             # Format partial strings in the maps for nodeView and propertyView
             # t indicates the whole (t)ext
             # s indicates the desired (s)ubstring
@@ -672,19 +668,16 @@ class MainWindow(QtGui.QMainWindow):
 
             # Arc path is the most likely to need stretch.
             twh = self._ui.compositionTreeWidget.header()
-            twh.setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
-            twh.setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
-            twh.setResizeMode(2, QtGui.QHeaderView.Stretch)
-            twh.setResizeMode(3, QtGui.QHeaderView.ResizeToContents)
+            twh.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+            twh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+            twh.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+            twh.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
 
             # Set the node view header to have a fixed size type and vis columns
             nvh = self._ui.nodeView.header()
-            nvh.setResizeMode(0, QtGui.QHeaderView.Stretch)
-            nvh.setResizeMode(1, QtGui.QHeaderView.ResizeToContents)
-            nvh.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
-
-            avh = self._ui.propertyView.horizontalHeader()
-            avh.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
+            nvh.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+            nvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+            nvh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
 
             # XXX: 
             # To avoid QTBUG-12850 (https://bugreports.qt.io/browse/QTBUG-12850),
@@ -701,457 +694,284 @@ class MainWindow(QtGui.QMainWindow):
 
             self._ui.attributeValueEditor.setMainWindow(self)
 
-            QtCore.QObject.connect(self._ui.currentPathWidget,
-                                   QtCore.SIGNAL('editingFinished()'),
-                                   self._currentPathChanged)
+            self._ui.currentPathWidget.editingFinished.connect(
+                self._currentPathChanged)
 
-            QtCore.QObject.connect(self._ui.nodeView,
-                                   QtCore.SIGNAL('itemSelectionChanged()'),
-                                   self._itemSelectionChanged)
+            self._ui.nodeView.itemSelectionChanged.connect(
+                self._itemSelectionChanged)
 
-            QtCore.QObject.connect(self._ui.nodeView,
-                                   QtCore.SIGNAL('itemClicked(QTreeWidgetItem *, int)'),
-                                   self._itemClicked)
+            self._ui.nodeView.itemClicked.connect(self._itemClicked)
 
-            QtCore.QObject.connect(self._ui.nodeView.header(),
-                                   QtCore.SIGNAL('customContextMenuRequested(QPoint)'),
-                                   self._nodeViewHeaderContextMenu)
+            self._ui.nodeView.header().customContextMenuRequested.connect(
+                self._nodeViewHeaderContextMenu)
 
-            QtCore.QObject.connect(self._timer, QtCore.SIGNAL('timeout()'),
-                                   self._advanceFrameForPlayback)
+            self._timer.timeout.connect(self._advanceFrameForPlayback)
 
-            QtCore.QObject.connect(self._ui.nodeView, QtCore.SIGNAL(
-                'customContextMenuRequested(QPoint)'),
-                                   self._nodeViewContextMenu)
+            self._ui.nodeView.customContextMenuRequested.connect(
+                self._nodeViewContextMenu)
 
-            QtCore.QObject.connect(self._ui.nodeView, QtCore.SIGNAL(
-                'expanded(QModelIndex)'),
-                                   self._nodeViewExpanded)
+            self._ui.nodeView.expanded.connect(self._nodeViewExpanded)
 
-            QtCore.QObject.connect(self._ui.frameSlider,
-                                   QtCore.SIGNAL('valueChanged(int)'),
-                                   self.setFrame)
+            self._ui.frameSlider.valueChanged.connect(self.setFrame)
 
-            QtCore.QObject.connect(self._ui.frameSlider,
-                                   QtCore.SIGNAL('sliderMoved(int)'),
-                                   self._sliderMoved)
+            self._ui.frameSlider.sliderMoved.connect(self._sliderMoved)
 
-            QtCore.QObject.connect(self._ui.frameSlider,
-                                   QtCore.SIGNAL('sliderReleased()'),
-                                   self._updateOnFrameChange)
+            self._ui.frameSlider.sliderReleased.connect(self._updateOnFrameChange)
 
-            QtCore.QObject.connect(self._ui.frameField,
-                                   QtCore.SIGNAL('editingFinished()'),
-                                   self._frameStringChanged)
+            self._ui.frameField.editingFinished.connect(self._frameStringChanged)
 
-            QtCore.QObject.connect(self._ui.rangeBegin,
-                                   QtCore.SIGNAL('editingFinished()'),
-                                   self._rangeBeginChanged)
+            self._ui.rangeBegin.editingFinished.connect(self._rangeBeginChanged)
 
-            QtCore.QObject.connect(self._ui.stepSize,
-                                   QtCore.SIGNAL('editingFinished()'),
-                                   self._stepSizeChanged)
+            self._ui.stepSize.editingFinished.connect(self._stepSizeChanged)
 
-            QtCore.QObject.connect(self._ui.rangeEnd,
-                                   QtCore.SIGNAL('editingFinished()'),
-                                   self._rangeEndChanged)
+            self._ui.rangeEnd.editingFinished.connect(self._rangeEndChanged)
 
-            QtCore.QObject.connect(self._ui.actionFrame_Forward,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._advanceFrame)
+            self._ui.actionFrame_Forward.triggered.connect(self._advanceFrame)
 
-            QtCore.QObject.connect(self._ui.actionFrame_Backwards,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._retreatFrame)
+            self._ui.actionFrame_Backwards.triggered.connect(self._retreatFrame)
 
-            QtCore.QObject.connect(self._ui.actionReset_View,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._resetView)
+            self._ui.actionReset_View.triggered.connect(self._resetView)
 
-            QtCore.QObject.connect(self._ui.actionToggle_Viewer_Mode,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._toggleViewerMode)
+            self._ui.actionToggle_Viewer_Mode.triggered.connect(
+                self._toggleViewerMode)
 
-            QtCore.QObject.connect(self._ui.showBBoxes,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._showBBoxes)
+            self._ui.showBBoxes.toggled.connect(self._showBBoxes)
 
-            QtCore.QObject.connect(self._ui.showAABBox,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._showAABBox)
+            self._ui.showAABBox.toggled.connect(self._showAABBox)
 
-            QtCore.QObject.connect(self._ui.showOBBox,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._showOBBox)
+            self._ui.showOBBox.toggled.connect(self._showOBBox)
 
-            QtCore.QObject.connect(self._ui.showBBoxPlayback,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._showBBoxPlayback)
+            self._ui.showBBoxPlayback.toggled.connect(self._showBBoxPlayback)
 
-            QtCore.QObject.connect(self._ui.useExtentsHint,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._setUseExtentsHint)
+            self._ui.useExtentsHint.toggled.connect(self._setUseExtentsHint)
 
-            QtCore.QObject.connect(self._ui.showInterpreter,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._showInterpreter)
+            self._ui.showInterpreter.triggered.connect(self._showInterpreter)
 
-            QtCore.QObject.connect(self._ui.redrawOnScrub,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._redrawOptionToggled)
+            self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
-            QtCore.QObject.connect(self._ui.actionWatch_Window,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._watchWindowToggled)
+            self._ui.actionWatch_Window.toggled.connect(self._watchWindowToggled)
             
-            QtCore.QObject.connect(self._ui.actionRecompute_Clipping_Planes,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._stageView.detachAndReClipFromCurrentCamera)
+            self._ui.actionRecompute_Clipping_Planes.triggered.connect(
+                self._stageView.detachAndReClipFromCurrentCamera)
 
-            QtCore.QObject.connect(self._ui.actionAdjust_Clipping,
-                                   QtCore.SIGNAL('triggered(bool)'),
-                                   self._adjustClippingPlanes)
+            self._ui.actionAdjust_Clipping.triggered[bool].connect(
+                self._adjustClippingPlanes)
 
+            self._ui.actionAdjust_Default_Material.triggered[bool].connect(
+                self._adjustDefaultMaterial)
 
-            QtCore.QObject.connect(self._ui.actionAdjust_Default_Material,
-                                   QtCore.SIGNAL('triggered(bool)'),
-                                   self._adjustDefaultMaterial)
+            self._ui.actionOpen.triggered.connect(self._openFile)
 
+            self._ui.actionSave_Overrides_As.triggered.connect(
+                self._saveOverridesAs)
 
-            QtCore.QObject.connect(self._ui.actionOpen,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._openFile)
+            self._ui.actionQuit.triggered.connect(self._cleanAndClose)
 
-            QtCore.QObject.connect(self._ui.actionSave_Overrides_As,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._saveOverridesAs)
+            self._ui.actionReopen_Stage.triggered.connect(self._reopenStage)
 
-            QtCore.QObject.connect(self._ui.actionQuit,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._cleanAndClose)
+            self._ui.actionReload_All_Layers.triggered.connect(self._reloadStage)
 
-            QtCore.QObject.connect(self._ui.actionReopen_Stage,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._reopenStage)
+            self._ui.actionFrame_Selection.triggered.connect(self._frameSelection)
 
-            QtCore.QObject.connect(self._ui.actionReload_All_Layers,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._reloadStage)
+            self._ui.actionToggle_Framed_View.triggered.connect(self._toggleFramedView)
 
-            QtCore.QObject.connect(self._ui.actionFrame_Selection,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._frameSelection)
+            self._ui.actionAdjust_FOV.triggered.connect(self._adjustFOV)
 
-            QtCore.QObject.connect(self._ui.actionToggle_Framed_View,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._toggleFramedView)
-
-            QtCore.QObject.connect(self._ui.actionAdjust_FOV,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._adjustFOV)
-
-            QtCore.QObject.connect(self._ui.actionComplexity,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._adjustComplexity)
+            self._ui.actionComplexity.triggered.connect(self._adjustComplexity)
             
-            QtCore.QObject.connect(self._ui.actionDisplay_Guide,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._toggleDisplayGuide)
+            self._ui.actionDisplay_Guide.toggled.connect(self._toggleDisplayGuide)
 
-            QtCore.QObject.connect(self._ui.actionDisplay_Proxy,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._toggleDisplayProxy)
+            self._ui.actionDisplay_Proxy.toggled.connect(self._toggleDisplayProxy)
 
-            QtCore.QObject.connect(self._ui.actionDisplay_Render,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._toggleDisplayRender)
+            self._ui.actionDisplay_Render.toggled.connect(self._toggleDisplayRender)
 
-            QtCore.QObject.connect(self._ui.actionDisplay_Camera_Oracles,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._toggleDisplayCameraOracles)
+            self._ui.actionDisplay_Camera_Oracles.toggled.connect(
+                self._toggleDisplayCameraOracles)
 
-            QtCore.QObject.connect(self._ui.actionDisplay_PrimId,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._toggleDisplayPrimId)
+            self._ui.actionDisplay_PrimId.toggled.connect(self._toggleDisplayPrimId)
 
-            QtCore.QObject.connect(self._ui.actionEnable_Hardware_Shading,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._toggleEnableHardwareShading)        
+            self._ui.actionEnable_Hardware_Shading.toggled.connect(
+                self._toggleEnableHardwareShading)
 
-            QtCore.QObject.connect(self._ui.actionCull_Backfaces,
-                                   QtCore.SIGNAL('toggled(bool)'),
-                                   self._toggleCullBackfaces)
+            self._ui.actionCull_Backfaces.toggled.connect(self._toggleCullBackfaces)
 
-            QtCore.QObject.connect(self._ui.attributeInspector,
-                                   QtCore.SIGNAL('currentChanged(int)'),
-                                   self._updateAttributeInspector)
+            self._ui.attributeInspector.currentChanged.connect(
+                self._updateAttributeInspector)
 
-            QtCore.QObject.connect(self._ui.propertyView,
-                                   QtCore.SIGNAL('itemSelectionChanged()'),
-                                   self._refreshWatchWindow)
+            self._ui.propertyView.itemSelectionChanged.connect(self._refreshWatchWindow)
 
-            QtCore.QObject.connect(self._ui.propertyView,
-                                   QtCore.SIGNAL('cellClicked(int,int)'),
-                                   self._propertyViewItemClicked)
+            self._ui.propertyView.cellClicked.connect(self._propertyViewItemClicked)
 
-            QtCore.QObject.connect(self._ui.propertyView, QtCore.SIGNAL(
-                'currentItemChanged(QTableWidgetItem *, QTableWidgetItem *)'),
-                                   self._populateAttributeInspector)
+            self._ui.propertyView.currentItemChanged.connect(
+                self._populateAttributeInspector)
 
-            QtCore.QObject.connect(self._ui.propertyView.horizontalHeader(),
-                                   QtCore.SIGNAL('customContextMenuRequested(QPoint)'),
-                                   self._propertyViewHeaderContextMenu)
+            self._ui.propertyView.horizontalHeader().customContextMenuRequested.\
+                connect(self._propertyViewHeaderContextMenu)
 
-            QtCore.QObject.connect(self._ui.propertyView,
-                                   QtCore.SIGNAL('customContextMenuRequested(QPoint)'),
-                                   self._propertyViewContextMenu)
+            self._ui.propertyView.customContextMenuRequested.connect(
+                self._propertyViewContextMenu)
 
-            QtCore.QObject.connect(self._ui.layerStackView,
-                                   QtCore.SIGNAL('customContextMenuRequested(QPoint)'),
-                                   self._layerStackContextMenu)
+            self._ui.layerStackView.customContextMenuRequested.connect(
+                self._layerStackContextMenu)
 
-            QtCore.QObject.connect(self._ui.compositionTreeWidget,
-                                   QtCore.SIGNAL('customContextMenuRequested(QPoint)'),
-                                   self._compositionTreeContextMenu)
+            self._ui.compositionTreeWidget.customContextMenuRequested.connect(
+                self._compositionTreeContextMenu)
 
-            QtCore.QObject.connect(self._ui.compositionTreeWidget, QtCore.SIGNAL(
-                'currentItemChanged(QTreeWidgetItem *, QTreeWidgetItem *)'),
-                                   self._onCompositionSelectionChanged)
+            self._ui.compositionTreeWidget.currentItemChanged.connect(
+                self._onCompositionSelectionChanged)
 
-            QtCore.QObject.connect(self._ui.renderModeActionGroup,
-                                   QtCore.SIGNAL('triggered(QAction *)'),
-                                   self._changeRenderMode)
+            self._ui.renderModeActionGroup.triggered.connect(self._changeRenderMode)
 
-            QtCore.QObject.connect(self._ui.pickModeActionGroup,
-                                   QtCore.SIGNAL('triggered(QAction *)'),
-                                   self._changePickMode)
+            self._ui.pickModeActionGroup.triggered.connect(self._changePickMode)
 
-            QtCore.QObject.connect(self._ui.selHighlightModeActionGroup,
-                                   QtCore.SIGNAL('triggered(QAction *)'),
-                                   self._changeSelHighlightMode)
+            self._ui.selHighlightModeActionGroup.triggered.connect(
+                self._changeSelHighlightMode)
 
-            QtCore.QObject.connect(self._ui.highlightColorActionGroup,
-                                   QtCore.SIGNAL('triggered(QAction *)'),
-                                   self._changeHighlightColor)
+            self._ui.highlightColorActionGroup.triggered.connect(
+                self._changeHighlightColor)
 
-            QtCore.QObject.connect(self._ui.interpolationActionGroup,
-                                   QtCore.SIGNAL('triggered(QAction *)'),
-                                   self._changeInterpolationType)
+            self._ui.interpolationActionGroup.triggered.connect(
+                self._changeInterpolationType)
 
-            QtCore.QObject.connect(self._ui.actionAmbient_Only,
-                                   QtCore.SIGNAL('triggered(bool)'),
-                                   self._ambientOnlyClicked)
-                                   
-            QtCore.QObject.connect(self._ui.actionKey,
-                                   QtCore.SIGNAL('triggered(bool)'),
-                                   self._onKeyLightClicked)
-                                   
-            QtCore.QObject.connect(self._ui.actionFill,
-                                   QtCore.SIGNAL('triggered(bool)'),
-                                   self._onFillLightClicked)
-                                   
-            QtCore.QObject.connect(self._ui.actionBack,
-                                   QtCore.SIGNAL('triggered(bool)'),
-                                   self._onBackLightClicked)
+            self._ui.actionAmbient_Only.triggered[bool].connect(
+                self._ambientOnlyClicked)
 
-            QtCore.QObject.connect(self._ui.colorGroup,
-                                   QtCore.SIGNAL('triggered(QAction *)'),
-                                   self._changeBgColor)
+            self._ui.actionKey.triggered[bool].connect(self._onKeyLightClicked)
 
-            QtCore.QObject.connect(self._ui.threePointLights,
-                                   QtCore.SIGNAL('triggered(QAction *)'),
-                                   self._stageView.update)
+            self._ui.actionFill.triggered[bool].connect(self._onFillLightClicked)
 
-            QtCore.QObject.connect(self._ui.nodeViewDepthGroup,
-                                   QtCore.SIGNAL('triggered(QAction *)'),
-                                   self._changeNodeViewDepth)
+            self._ui.actionBack.triggered[bool].connect(self._onBackLightClicked)
 
-            QtCore.QObject.connect(self._ui.actionExpand_All,
-                                   QtCore.SIGNAL('triggered()'),
-                                   lambda: self._expandToDepth(1000000))
+            self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
-            QtCore.QObject.connect(self._ui.actionCollapse_All,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._ui.nodeView.collapseAll)
+            self._ui.threePointLights.triggered.connect(self._stageView.update)
 
-            QtCore.QObject.connect(self._ui.actionShow_Inactive_Nodes,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._toggleShowInactiveNodes)
+            self._ui.nodeViewDepthGroup.triggered.connect(self._changeNodeViewDepth)
 
-            QtCore.QObject.connect(self._ui.actionShow_All_Master_Prims,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._toggleShowMasterPrims)
+            self._ui.actionExpand_All.triggered.connect(
+                lambda: self._expandToDepth(1000000))
 
-            QtCore.QObject.connect(self._ui.actionShow_Undefined_Prims,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._toggleShowUndefinedPrims)
+            self._ui.actionCollapse_All.triggered.connect(
+                self._ui.nodeView.collapseAll)
 
-            QtCore.QObject.connect(self._ui.actionShow_Abstract_Prims,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._toggleShowAbstractPrims)
+            self._ui.actionShow_Inactive_Nodes.triggered.connect(
+                self._toggleShowInactiveNodes)
 
-            QtCore.QObject.connect(self._ui.actionRollover_Prim_Info,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._toggleRolloverPrimInfo)
+            self._ui.actionShow_All_Master_Prims.triggered.connect(
+                self._toggleShowMasterPrims)
 
-            QtCore.QObject.connect(self._ui.nodeViewLineEdit,
-                                   QtCore.SIGNAL('returnPressed()'),
-                                   self._ui.nodeViewFindNext.click)
+            self._ui.actionShow_Undefined_Prims.triggered.connect(
+                self._toggleShowUndefinedPrims)
 
-            QtCore.QObject.connect(self._ui.nodeViewFindNext,
-                                   QtCore.SIGNAL('clicked()'),
-                                   self._nodeViewFindNext)
+            self._ui.actionShow_Abstract_Prims.triggered.connect(
+                self._toggleShowAbstractPrims)
 
-            QtCore.QObject.connect(self._ui.attrViewLineEdit,
-                                   QtCore.SIGNAL('returnPressed()'),
-                                   self._ui.attrViewFindNext.click)
+            self._ui.actionRollover_Prim_Info.triggered.connect(
+                self._toggleRolloverPrimInfo)
 
-            QtCore.QObject.connect(self._ui.attrViewFindNext,
-                                   QtCore.SIGNAL('clicked()'),
-                                   self._attrViewFindNext)
+            self._ui.nodeViewLineEdit.returnPressed.connect(
+                self._ui.nodeViewFindNext.click)
 
-            QtCore.QObject.connect(self._ui.nodeLegendQButton,
-                                   QtCore.SIGNAL('clicked()'),
-                                   self._nodeLegendToggleCollapse)
+            self._ui.nodeViewFindNext.clicked.connect(self._nodeViewFindNext)
 
-            QtCore.QObject.connect(self._ui.propertyLegendQButton,
-                                   QtCore.SIGNAL('clicked()'),
-                                   self._propertyLegendToggleCollapse)
+            self._ui.attrViewLineEdit.returnPressed.connect(
+                self._ui.attrViewFindNext.click)
 
-            QtCore.QObject.connect(self._ui.playButton,
-                                   QtCore.SIGNAL('clicked()'),
-                                   self._playClicked)
+            self._ui.attrViewFindNext.clicked.connect(self._attrViewFindNext)
 
-            QtCore.QObject.connect(self._ui.actionCameraMask_Full,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._updateCameraMaskMenu)
+            self._ui.nodeLegendQButton.clicked.connect(
+                self._nodeLegendToggleCollapse)
 
-            QtCore.QObject.connect(self._ui.actionCameraMask_Partial,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._updateCameraMaskMenu)
+            self._ui.propertyLegendQButton.clicked.connect(
+                self._propertyLegendToggleCollapse)
+
+            self._ui.playButton.clicked.connect(self._playClicked)
+
+            self._ui.actionCameraMask_Full.triggered.connect(
+                self._updateCameraMaskMenu)
+
+            self._ui.actionCameraMask_Partial.triggered.connect(
+                self._updateCameraMaskMenu)
             
-            QtCore.QObject.connect(self._ui.actionCameraMask_None,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._updateCameraMaskMenu)
+            self._ui.actionCameraMask_None.triggered.connect(
+                self._updateCameraMaskMenu)
 
-            QtCore.QObject.connect(self._ui.actionCameraMask_Outline,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._updateCameraMaskMenu)
+            self._ui.actionCameraMask_Outline.triggered.connect(
+                self._updateCameraMaskMenu)
             
-            QtCore.QObject.connect(self._ui.actionCameraMask_Color,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._pickCameraMaskColor)
+            self._ui.actionCameraMask_Color.triggered.connect(
+                self._pickCameraMaskColor)
 
-            QtCore.QObject.connect(self._ui.actionCameraReticles_Inside,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._updateCameraReticlesMenu)
+            self._ui.actionCameraReticles_Inside.triggered.connect(
+                self._updateCameraReticlesMenu)
 
-            QtCore.QObject.connect(self._ui.actionCameraReticles_Outside,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._updateCameraReticlesMenu)
+            self._ui.actionCameraReticles_Outside.triggered.connect(
+                self._updateCameraReticlesMenu)
 
-            QtCore.QObject.connect(self._ui.actionCameraReticles_Color,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._pickCameraReticlesColor)
+            self._ui.actionCameraReticles_Color.triggered.connect(
+                self._pickCameraReticlesColor)
 
-            QtCore.QObject.connect(self._ui.actionHUD,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._updateHUDMenu)
+            self._ui.actionHUD.triggered.connect(self._updateHUDMenu)
 
-            QtCore.QObject.connect(self._ui.actionHUD_Info,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._updateHUDMenu)
+            self._ui.actionHUD_Info.triggered.connect(self._updateHUDMenu)
 
-            QtCore.QObject.connect(self._ui.actionHUD_Complexity,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._HUDMenuChanged)
+            self._ui.actionHUD_Complexity.triggered.connect(self._HUDMenuChanged)
 
-            QtCore.QObject.connect(self._ui.actionHUD_Performance,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._HUDMenuChanged)
+            self._ui.actionHUD_Performance.triggered.connect(self._HUDMenuChanged)
 
-            QtCore.QObject.connect(self._ui.actionHUD_GPUstats,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._HUDMenuChanged)
+            self._ui.actionHUD_GPUstats.triggered.connect(self._HUDMenuChanged)
 
             self.addAction(self._ui.actionIncrementComplexity1)
             self.addAction(self._ui.actionIncrementComplexity2)
             self.addAction(self._ui.actionDecrementComplexity)
 
-            QtCore.QObject.connect(self._ui.actionIncrementComplexity1,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._incrementComplexity)
+            self._ui.actionIncrementComplexity1.triggered.connect(
+                self._incrementComplexity)
 
-            QtCore.QObject.connect(self._ui.actionIncrementComplexity2,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._incrementComplexity)
+            self._ui.actionIncrementComplexity2.triggered.connect(
+                self._incrementComplexity)
 
-            QtCore.QObject.connect(self._ui.actionDecrementComplexity,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._decrementComplexity)
+            self._ui.actionDecrementComplexity.triggered.connect(
+                self._decrementComplexity)
 
-            QtCore.QObject.connect(self._ui.attributeValueEditor,
-                                   QtCore.SIGNAL('editComplete(QString)'),
-                                   self.editComplete)
+            self._ui.attributeValueEditor.editComplete.connect(self.editComplete)
 
             # Edit Prim menu
-            QtCore.QObject.connect(self._ui.menuEdit_Node,
-                                   QtCore.SIGNAL('aboutToShow()'),
-                                   self._updateEditNodeMenu)
+            self._ui.menuEdit_Node.aboutToShow.connect(self._updateEditNodeMenu)
 
-            QtCore.QObject.connect(self._ui.actionFind_Prims,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self._ui.nodeViewLineEdit.setFocus)
+            self._ui.actionFind_Prims.triggered.connect(
+                self._ui.nodeViewLineEdit.setFocus)
 
-            QtCore.QObject.connect(self._ui.actionJump_to_Stage_Root,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.resetSelectionToPseudoroot)
+            self._ui.actionJump_to_Stage_Root.triggered.connect(
+                self.resetSelectionToPseudoroot)
 
-            QtCore.QObject.connect(self._ui.actionJump_to_Model_Root,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.jumpToEnclosingModelSelectedPrims)
+            self._ui.actionJump_to_Model_Root.triggered.connect(
+                self.jumpToEnclosingModelSelectedPrims)
 
-            QtCore.QObject.connect(self._ui.actionJump_to_Bound_Material,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.jumpToBoundMaterialSelectedPrims)
+            self._ui.actionJump_to_Bound_Material.triggered.connect(
+                self.jumpToBoundMaterialSelectedPrims)
 
-            QtCore.QObject.connect(self._ui.actionMake_Visible,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.visSelectedPrims)
+            self._ui.actionMake_Visible.triggered.connect(self.visSelectedPrims)
             # Add extra, Presto-inspired shortcut for Make Visible
             self._ui.actionMake_Visible.setShortcuts(["Shift+H", "Ctrl+Shift+H"])
 
-            QtCore.QObject.connect(self._ui.actionMake_Invisible,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.invisSelectedPrims)
+            self._ui.actionMake_Invisible.triggered.connect(self.invisSelectedPrims)
 
-            QtCore.QObject.connect(self._ui.actionVis_Only,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.visOnlySelectedPrims)
+            self._ui.actionVis_Only.triggered.connect(self.visOnlySelectedPrims)
 
-            QtCore.QObject.connect(self._ui.actionRemove_Session_Visibility,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.removeVisSelectedPrims)
+            self._ui.actionRemove_Session_Visibility.triggered.connect(
+                self.removeVisSelectedPrims)
 
-            QtCore.QObject.connect(self._ui.actionReset_All_Session_Visibility,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.resetSessionVisibility)
+            self._ui.actionReset_All_Session_Visibility.triggered.connect(
+                self.resetSessionVisibility)
 
-            QtCore.QObject.connect(self._ui.actionLoad,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.loadSelectedPrims)
+            self._ui.actionLoad.triggered.connect(self.loadSelectedPrims)
 
-            QtCore.QObject.connect(self._ui.actionUnload,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.unloadSelectedPrims) 
+            self._ui.actionUnload.triggered.connect(self.unloadSelectedPrims)
 
-            QtCore.QObject.connect(self._ui.actionActivate,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.activateSelectedPrims)
+            self._ui.actionActivate.triggered.connect(self.activateSelectedPrims)
 
-            QtCore.QObject.connect(self._ui.actionDeactivate,
-                                   QtCore.SIGNAL('triggered()'),
-                                   self.deactivateSelectedPrims) 
+            self._ui.actionDeactivate.triggered.connect(self.deactivateSelectedPrims)
 
             self._setupDebugMenu()
 
@@ -1160,22 +980,15 @@ class MainWindow(QtGui.QMainWindow):
             self._configurePlugins()
 
             # save splitter states
-            QtCore.QObject.connect(self._ui.nodeStageSplitter,
-                                   QtCore.SIGNAL('splitterMoved(int, int)'),
-                                   self._splitterMoved)
-            QtCore.QObject.connect(self._ui.topBottomSplitter,
-                                   QtCore.SIGNAL('splitterMoved(int, int)'),
-                                   self._splitterMoved)
-            QtCore.QObject.connect(self._ui.attribBrowserInspectorSplitter,
-                                   QtCore.SIGNAL('splitterMoved(int, int)'),
-                                   self._splitterMoved)
+            self._ui.nodeStageSplitter.splitterMoved.connect(self._splitterMoved)
+            self._ui.topBottomSplitter.splitterMoved.connect(self._splitterMoved)
+            self._ui.attribBrowserInspectorSplitter.splitterMoved.connect(self._splitterMoved)
 
             #create a timer for saving splitter states only when they stop moving
             self._splitterTimer = QtCore.QTimer(self)
             self._splitterTimer.setInterval(500)
 
-            QtCore.QObject.connect(self._splitterTimer, QtCore.SIGNAL('timeout()'),
-                                   self._saveSplitterStates)
+            self._splitterTimer.timeout.connect(self._saveSplitterStates)
 
             # timer for slider. when user stops scrubbing for 0.5s, update stuff.
             self._sliderTimer = QtCore.QTimer(self)
@@ -1183,8 +996,7 @@ class MainWindow(QtGui.QMainWindow):
 
             # Connect the update timer to _frameStringChanged, which will ensure
             # we update _currentTime prior to updating UI
-            QtCore.QObject.connect(self._sliderTimer, QtCore.SIGNAL('timeout()'),
-                                   self._frameStringChanged)
+            self._sliderTimer.timeout.connect(self._frameStringChanged)
 
             # We manually call processEvents() here to make sure that the prim
             # browser and other widgetry get drawn before we draw the first image in
@@ -1194,14 +1006,14 @@ class MainWindow(QtGui.QMainWindow):
 
             self.update()
 
-            QtGui.qApp.processEvents()
+            QtWidgets.QApplication.processEvents()
 
         if self._printTiming:
             uiOpenTimer.PrintTime('bring up the UI')
 
         self._drawFirstImage()
 
-        QtGui.QApplication.restoreOverrideCursor()
+        QtWidgets.QApplication.restoreOverrideCursor()
 
     def _drawFirstImage(self):
         # _resetView is what triggers the first image to be drawn, so time it
@@ -1227,7 +1039,7 @@ class MainWindow(QtGui.QMainWindow):
             if key == QtCore.Qt.Key_Escape:
                 self.setFocus()
                 return True
-        return QtGui.QMainWindow.eventFilter(self, widget, event)
+        return QtWidgets.QMainWindow.eventFilter(self, widget, event)
 
     def statusMessage(self, msg, timeout = 0):
         self._statusBar.showMessage(msg, timeout * 1000)
@@ -1431,7 +1243,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def _configureRendererPlugins(self):
         if self._stageView:
-            self._ui.rendererPluginActionGroup = QtGui.QActionGroup(self)
+            self._ui.rendererPluginActionGroup = QtWidgets.QActionGroup(self)
             self._ui.rendererPluginActionGroup.setExclusive(True)
 
             pluginTypes = self._stageView.GetRendererPlugins()
@@ -1442,10 +1254,7 @@ class MainWindow(QtGui.QMainWindow):
                 action.pluginType = pluginType
                 self._ui.rendererPluginActionGroup.addAction(action)
 
-                QtCore.QObject.connect(
-                    action,
-                    QtCore.SIGNAL('triggered()'),
-                    lambda pluginType = pluginType:
+                action.triggered.connect(lambda pluginType = pluginType:
                         self._rendererPluginChanged(pluginType))
 
             # If any plugins exist, the first render plugin is the default one.
@@ -1517,7 +1326,7 @@ class MainWindow(QtGui.QMainWindow):
                 self._ui.nodeStageSplitter.addWidget(self._ui.attributeBrowserFrame)
 
             else:
-                layout = QtGui.QVBoxLayout()
+                layout = QtWidgets.QVBoxLayout()
                 layout.setContentsMargins(0, 0, 0, 0)
                 self._ui.glFrame.setLayout(layout)
                 layout.addWidget(self._stageView)
@@ -1612,7 +1421,7 @@ class MainWindow(QtGui.QMainWindow):
         self._stageView.update()
 
     def _adjustComplexity(self):
-        complexity= QtGui.QInputDialog.getDouble(self, 
+        complexity= QtWidgets.QInputDialog.getDouble(self, 
             "Adjust complexity", "Enter a value between 1 and 2.\n\n" 
             "You can also use ctrl+ or ctrl- to adjust the\n"
             "complexity without invoking this dialog.\n", 
@@ -1622,7 +1431,7 @@ class MainWindow(QtGui.QMainWindow):
             self._stageView.update()
 
     def _adjustFOV(self):
-        fov = QtGui.QInputDialog.getDouble(self, "Adjust FOV", 
+        fov = QtWidgets.QInputDialog.getDouble(self, "Adjust FOV", 
             "Enter a value between 0 and 180", self._stageView.freeCamera.fov, 0, 180)
         if (fov[1]):
             self._stageView.freeCamera.fov = fov[0]
@@ -1632,9 +1441,8 @@ class MainWindow(QtGui.QMainWindow):
         if (checked):
             self._adjustClippingDlg = adjustClipping.AdjustClipping(self, 
                                                                  self._stageView)
-            QtCore.QObject.connect(self._adjustClippingDlg,
-                                   QtCore.SIGNAL('finished(int)'),
-                                   lambda status : self._ui.actionAdjust_Clipping.setChecked(False))
+            self._adjustClippingDlg.finished.connect(
+                lambda status : self._ui.actionAdjust_Clipping.setChecked(False))
 
             self._adjustClippingDlg.show()
         else:
@@ -1699,9 +1507,8 @@ class MainWindow(QtGui.QMainWindow):
     def _adjustDefaultMaterial(self, checked):
         if (checked):
             self._adjustDefaultMaterialDlg = adjustDefaultMaterial.AdjustDefaultMaterial(self, self)
-            QtCore.QObject.connect(self._adjustDefaultMaterialDlg,
-                                   QtCore.SIGNAL('finished(int)'),
-                                   lambda status : self._ui.actionAdjust_Default_Material.setChecked(False))
+            self._adjustDefaultMaterialDlg.finished.connect(lambda status : 
+                self._ui.actionAdjust_Default_Material.setChecked(False))
 
             self._adjustDefaultMaterialDlg.show()
         else:
@@ -1732,7 +1539,7 @@ class MainWindow(QtGui.QMainWindow):
                 self._watchWindow._ui.unvaryingEdit.verticalScrollBar().value()
 
             self._watchWindow.clearContents()
-            QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
             for i in self._ui.propertyView.selectedItems():
                 if i.column() == 0:        # make sure first column is selected
@@ -1803,7 +1610,7 @@ class MainWindow(QtGui.QMainWindow):
                     # tell the watch window to print a "====" separator
                     self._watchWindow.appendSeparator()
 
-            QtGui.QApplication.restoreOverrideCursor()
+            QtWidgets.QApplication.restoreOverrideCursor()
             self._watchWindow._ui.varyingEdit.verticalScrollBar().setValue(
                 varyScrollPos)
             self._watchWindow._ui.unvaryingEdit.verticalScrollBar().setValue(
@@ -2073,7 +1880,7 @@ class MainWindow(QtGui.QMainWindow):
 
             self._attrSearchResults = \
                 uniquify_tablewidgetitems(self._attrSearchResults)
-            self._attrSearchResults.sort(cmp, QtGui.QTableWidgetItem.row)
+            self._attrSearchResults.sort(cmp, QtWidgets.QTableWidgetItem.row)
             self._attrSearchResults = deque(self._attrSearchResults)
 
             self._lastNodeSearched = self._currentNodes[0]
@@ -2273,13 +2080,9 @@ class MainWindow(QtGui.QMainWindow):
                                                                       'Geom Smooth'))
 
         self._ui.actionFreeCam._node = None
-        QtCore.QObject.connect(
-            self._ui.actionFreeCam,
-            QtCore.SIGNAL('triggered()'),
+        self._ui.actionFreeCam.triggered.connect(
             lambda : self._cameraSelectionChanged(None))
-        QtCore.QObject.connect(
-            self._stageView,
-            QtCore.SIGNAL('signalSwitchedToFreeCam()'),
+        self._stageView.signalSwitchedToFreeCam.connect(
             lambda : self._cameraSelectionChanged(None))
 
         self._refreshCameraListAndMenu(preserveCurrCamera = False)
@@ -2554,9 +2357,9 @@ class MainWindow(QtGui.QMainWindow):
         from pythonExpressionPrompt import Myconsole
             
         if self._interpreter is None:
-            self._interpreter = QtGui.QDialog(self)
+            self._interpreter = QtWidgets.QDialog(self)
             self._console = Myconsole(self._interpreter)
-            lay = QtGui.QVBoxLayout()
+            lay = QtWidgets.QVBoxLayout()
             lay.addWidget(self._console)
             self._interpreter.setLayout(lay)
 
@@ -2621,9 +2424,15 @@ class MainWindow(QtGui.QMainWindow):
         # If the current path widget is focused when closing usdview, it can
         # trigger an "editingFinished()" signal, which will look for a prim in
         # the scene (which is already deleted). This prevents that.
-        QtCore.QObject.disconnect(self._ui.currentPathWidget,
-                                  QtCore.SIGNAL('editingFinished()'),
-                                  self._currentPathChanged)
+        
+        # XXX:
+        # This method is reentrant and calling disconnect twice on a signal 
+        # causes an exception to be thrown.
+        try:
+            self._ui.currentPathWidget.editingFinished.disconnect(
+                self._currentPathChanged)
+        except RuntimeError:
+            pass
 
         # Shut down some timers.
         self._nodeViewUpdateTimer.stop()
@@ -2654,7 +2463,7 @@ class MainWindow(QtGui.QMainWindow):
             t.PrintTime('tear down the UI')
 
     def _openFile(self):
-        (filename, _) = QtGui.QFileDialog.getOpenFileName(self, "Select file",".")
+        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(self, "Select file",".")
         if len(filename) > 0:
 
             self._parserData.usdFile = str(filename)
@@ -2665,7 +2474,7 @@ class MainWindow(QtGui.QMainWindow):
     def _saveOverridesAs(self):
         recommendedFilename = self._parserData.usdFile.rsplit('.', 1)[0]
         recommendedFilename += '_overrides.usd'
-        (saveName, _) = QtGui.QFileDialog.getSaveFileName(self,
+        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(self,
                                                      "Save file (*.usd)",
                                                      "./" + recommendedFilename,
                                                      'Usd Files (*.usd)')
@@ -2705,7 +2514,7 @@ class MainWindow(QtGui.QMainWindow):
                 self._stage.GetRootLayer().Export(saveName, 'Created by UsdView')
 
     def _reopenStage(self):
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
         try:
             # Clear out any Usd objects that may become invalid. We will pick
@@ -2734,12 +2543,12 @@ class MainWindow(QtGui.QMainWindow):
             import traceback
             traceback.print_exc()
         finally:
-            QtGui.QApplication.restoreOverrideCursor()
+            QtWidgets.QApplication.restoreOverrideCursor()
 
         self.statusMessage('Stage Reopened')
 
     def _reloadStage(self):
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
         try:
             self._stage.Reload()
@@ -2748,7 +2557,7 @@ class MainWindow(QtGui.QMainWindow):
         except Exception as err:
             self.statusMessage('Error occurred rereading all layers for Stage: %s' % err)
         finally:
-            QtGui.QApplication.restoreOverrideCursor()
+            QtWidgets.QApplication.restoreOverrideCursor()
 
         self.statusMessage('All Layers Reloaded.')
 
@@ -2818,9 +2627,7 @@ class MainWindow(QtGui.QMainWindow):
             action.setToolTip(str(camera.GetPath()))
             action.setCheckable(True)
             
-            QtCore.QObject.connect(
-                action,
-                QtCore.SIGNAL('triggered()'),
+            action.triggered.connect(
                 lambda camera = camera: self._cameraSelectionChanged(camera))
             action.setChecked(action.data() == currCameraPath)
 
@@ -3461,13 +3268,13 @@ class MainWindow(QtGui.QMainWindow):
             # Get the attribute's value and display color
             fgColor = GetAttributeColor(attribute, frame)
 
-            attrName = QtGui.QTableWidgetItem(str(key))
+            attrName = QtWidgets.QTableWidgetItem(str(key))
             attrName.setFont(BoldFont)
             attrName.setForeground(fgColor)
             tableWidget.setItem(attributeCount, 0, attrName)
 
             attrText = _GetShortString(attribute, frame)
-            attrVal = QtGui.QTableWidgetItem(attrText)
+            attrVal = QtWidgets.QTableWidgetItem(attrText)
             valTextFont = GetAttributeTextFont(attribute, frame)
             if valTextFont:
                 attrVal.setFont(valTextFont)
@@ -3488,14 +3295,14 @@ class MainWindow(QtGui.QMainWindow):
         """ Sets the contents of the attribute value viewer """
         cursorOverride = not self._timer.isActive()
         if cursorOverride:
-            QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
         try:
             self._updateAttributeViewInternal()
         except Exception as err:
             print "Problem encountered updating attribute view: %s" % err
         finally:
             if cursorOverride:
-                QtGui.QApplication.restoreOverrideCursor()
+                QtWidgets.QApplication.restoreOverrideCursor()
 
     def _getSelectedObject(self, selectedAttribute=None):
         if selectedAttribute is None:
@@ -3707,7 +3514,7 @@ class MainWindow(QtGui.QMainWindow):
         tableWidget.setRowCount(len(m) + len(variantSets))
 
         for i,key in enumerate(sorted(m.keys())):
-            attrName = QtGui.QTableWidgetItem(str(key))
+            attrName = QtWidgets.QTableWidgetItem(str(key))
             tableWidget.setItem(i, 0, attrName)
 
             # Get metadata value
@@ -3717,14 +3524,14 @@ class MainWindow(QtGui.QMainWindow):
                 val = m[key]
 
             valStr, ttStr = self._formatMetadataValueView(val) 
-            attrVal = QtGui.QTableWidgetItem(valStr)
+            attrVal = QtWidgets.QTableWidgetItem(valStr)
             attrVal.setToolTip(ttStr)
 
             tableWidget.setItem(i, 1, attrVal)
 
         rowIndex = len(m)
         for variantSetName, combo in variantSets.iteritems():
-            attrName = QtGui.QTableWidgetItem(str(variantSetName+ ' variant'))
+            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
             tableWidget.setItem(rowIndex, 0, attrName)
             tableWidget.setCellWidget(rowIndex, 1, combo)
             combo.currentIndexChanged.connect(combo.updateVariantSelection)
@@ -3755,7 +3562,7 @@ class MainWindow(QtGui.QMainWindow):
         def WalkSublayers(parent, node, layerTree, sublayer=False):
             layer = layerTree.layer
             spec = layer.GetObjectAtPath(node.path)
-            item = QtGui.QTreeWidgetItem(
+            item = QtWidgets.QTreeWidgetItem(
                 parent,
                 [
                     LabelForLayer(layer),
@@ -3829,7 +3636,7 @@ class MainWindow(QtGui.QMainWindow):
             tableWidget.setRowCount(len(layers))
             
             for i, layer in enumerate(layers):
-                layerItem = QtGui.QTableWidgetItem(layer.GetHierarchicalDisplayString())
+                layerItem = QtWidgets.QTableWidgetItem(layer.GetHierarchicalDisplayString())
                 layerItem.layerPath = layer.layer.realPath
                 toolTip = "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
                     (layer.layer.identifier, layerItem.layerPath)
@@ -3837,7 +3644,7 @@ class MainWindow(QtGui.QMainWindow):
                 layerItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 0, layerItem)
 
-                offsetItem = QtGui.QTableWidgetItem(layer.GetOffsetString())
+                offsetItem = QtWidgets.QTableWidgetItem(layer.GetOffsetString())
                 offsetItem.layerPath = layer.layer.realPath
                 toolTip = self._limitToolTipSize(str(layer.offset)) 
                 offsetItem.setToolTip(toolTip)
@@ -3848,9 +3655,9 @@ class MainWindow(QtGui.QMainWindow):
             specs = []
             tableWidget.setColumnCount(3)
             header = tableWidget.horizontalHeader()
-            header.setResizeMode(0, QtGui.QHeaderView.ResizeToContents)
-            header.setResizeMode(1, QtGui.QHeaderView.Stretch)
-            header.setResizeMode(2, QtGui.QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+            header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
             tableWidget.horizontalHeaderItem(1).setText('Path')
 
             if path.IsPropertyPath():
@@ -3861,27 +3668,27 @@ class MainWindow(QtGui.QMainWindow):
                 c3 = "Value" if (len(specs) == 0 or 
                                  isinstance(specs[0], Sdf.AttributeSpec)) else "Target Paths"
                 tableWidget.setHorizontalHeaderItem(2,
-                                                    QtGui.QTableWidgetItem(c3))
+                                                    QtWidgets.QTableWidgetItem(c3))
             else:
                 specs = obj.GetPrim().GetPrimStack()
                 tableWidget.setHorizontalHeaderItem(2,
-                    QtGui.QTableWidgetItem('Metadata'))
+                    QtWidgets.QTableWidgetItem('Metadata'))
 
             tableWidget.setRowCount(len(specs))
 
             for i, spec in enumerate(specs):
-                layerItem = QtGui.QTableWidgetItem(spec.layer.GetDisplayName())
+                layerItem = QtWidgets.QTableWidgetItem(spec.layer.GetDisplayName())
                 layerItem.setToolTip(self._limitToolTipSize(spec.layer.realPath))
                 tableWidget.setItem(i, 0, layerItem)
 
-                pathItem = QtGui.QTableWidgetItem(spec.path.pathString)
+                pathItem = QtWidgets.QTableWidgetItem(spec.path.pathString)
                 pathItem.setToolTip(self._limitToolTipSize(spec.path.pathString))
                 tableWidget.setItem(i, 1, pathItem)
 
                 if path.IsPropertyPath():
                     valStr = _GetShortString(spec, self._currentFrame)
                     ttStr = valStr
-                    valueItem = QtGui.QTableWidgetItem(valStr)
+                    valueItem = QtWidgets.QTableWidgetItem(valStr)
                     sampleBased = (spec.HasInfo('timeSamples') and
                         spec.layer.GetNumTimeSamplesForPath(path) != -1)
                     valueItemColor = (TimeSampleTextColor if 
@@ -3896,7 +3703,7 @@ class MainWindow(QtGui.QMainWindow):
                         if spec.HasInfo(mykey):
                             metadataDict[mykey] = spec.GetInfo(mykey)
                     valStr, ttStr = self._formatMetadataValueView(metadataDict)
-                    valueItem = QtGui.QTableWidgetItem(valStr)
+                    valueItem = QtWidgets.QTableWidgetItem(valStr)
                     valueItem.setToolTip(ttStr)
 
                 tableWidget.setItem(i, 2, valueItem)
@@ -3915,9 +3722,9 @@ class MainWindow(QtGui.QMainWindow):
         self._CameraMaskMenuChanged()
 
     def _pickCameraMaskColor(self):
-        QtGui.QColorDialog.setCustomColor(0, 0xFF000000)
-        QtGui.QColorDialog.setCustomColor(1, 0xFF808080)
-        color = QtGui.QColorDialog.getColor()
+        QtWidgets.QColorDialog.setCustomColor(0, 0xFF000000)
+        QtWidgets.QColorDialog.setCustomColor(1, 0xFF808080)
+        color = QtWidgets.QColorDialog.getColor()
         color = (
                 color.redF(),
                 color.greenF(),
@@ -3946,9 +3753,9 @@ class MainWindow(QtGui.QMainWindow):
         self._CameraReticlesMenuChanged()
 
     def _pickCameraReticlesColor(self):
-        QtGui.QColorDialog.setCustomColor(0, 0xFF000000)
-        QtGui.QColorDialog.setCustomColor(1, 0xFF0080FF)
-        color = QtGui.QColorDialog.getColor()
+        QtWidgets.QColorDialog.setCustomColor(0, 0xFF000000)
+        QtWidgets.QColorDialog.setCustomColor(1, 0xFF0080FF)
+        color = QtWidgets.QColorDialog.getColor()
         color = (
                 color.redF(),
                 color.greenF(),
@@ -4076,7 +3883,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # This is expensive enough that we should give the user feedback 
         # that something is happening...
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
         try:
             thisDict = {CV: 0, VERT: 0, FACE: 0}
 
@@ -4107,7 +3914,7 @@ class MainWindow(QtGui.QMainWindow):
         except Exception as err:
             print "Error encountered while computing prim subtree HUD info: %s" % err
         finally:
-            QtGui.QApplication.restoreOverrideCursor()
+            QtWidgets.QApplication.restoreOverrideCursor()
 
 
     def _setupDebugMenu(self):
@@ -4116,9 +3923,7 @@ class MainWindow(QtGui.QMainWindow):
 
         for debugType in TF_DEBUG_MENU_ENTRIES:
             menu = self._ui.menuDebug.addMenu('{0} Flags'.format(debugType))
-            QtCore.QObject.connect(menu,
-                                   QtCore.SIGNAL('aboutToShow()'),
-                                   __helper(debugType, menu))
+            menu.aboutToShow.connect(__helper(debugType, menu))
 
     def _createTfDebugMenu(self, menu, flagFilter):
         def __createTriggerLambda(flagToSet, value):
@@ -4132,9 +3937,7 @@ class MainWindow(QtGui.QMainWindow):
             action.setCheckable(True)
             action.setChecked(isEnabled)
             action.setStatusTip(Tf.Debug.GetDebugSymbolDescription(flag))
-            menu.connect(action,
-                         QtCore.SIGNAL('triggered(bool)'),
-                         __createTriggerLambda(flag, not isEnabled))
+            action.triggered[bool].connect(__createTriggerLambda(flag, not isEnabled))
 
     def _updateEditNodeMenu(self):
         """Make the Edit Prim menu items enabled or disabled depending on the
@@ -4346,7 +4149,7 @@ class MainWindow(QtGui.QMainWindow):
                                             QtCore.Qt.RightButton, 
                                             QtCore.Qt.MouseButtons(QtCore.Qt.RightButton),
                                             QtCore.Qt.KeyboardModifiers())
-                QtGui.QApplication.sendEvent(self._stageView, mrEvent)
+                QtWidgets.QApplication.sendEvent(self._stageView, mrEvent)
 
     def onRollover(self, path, instanceIndex, modifiers):
         from common import GetEnclosingModelPrim, GetClosestBoundMaterial
@@ -4496,4 +4299,4 @@ class MainWindow(QtGui.QMainWindow):
             
         else:
             tip = ""
-        QtGui.QToolTip.showText(QtGui.QCursor.pos(), tip, self._stageView)
+        QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), tip, self._stageView)

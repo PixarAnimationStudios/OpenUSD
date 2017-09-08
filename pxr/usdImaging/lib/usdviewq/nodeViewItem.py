@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from qt import QtCore, QtWidgets
 from pxr import Usd, UsdGeom
 from ._usdviewq import Utils
 
@@ -36,7 +36,7 @@ def _GetPrimInfo(prim, time):
 # This class extends QTreeWidgetItem to also contain all the stage 
 # node data associated with it and populate itself with that data.
 
-class NodeViewItem(QtGui.QTreeWidgetItem):
+class NodeViewItem(QtWidgets.QTreeWidgetItem):
     def __init__(self, node, mainWindow, nodeHasChildren):
         # Do *not* pass a parent.  The client must build the hierarchy.
         # This can dramatically improve performance when building a
@@ -56,9 +56,9 @@ class NodeViewItem(QtGui.QTreeWidgetItem):
 
         # If we know we'll have children show a norgie, otherwise don't.
         if nodeHasChildren:
-            self.setChildIndicatorPolicy(QtGui.QTreeWidgetItem.ShowIndicator)
+            self.setChildIndicatorPolicy(QtWidgets.QTreeWidgetItem.ShowIndicator)
         else:
-            self.setChildIndicatorPolicy(QtGui.QTreeWidgetItem.DontShowIndicator)
+            self.setChildIndicatorPolicy(QtWidgets.QTreeWidgetItem.DontShowIndicator)
 
     def push(self):
         """Pushes prim data to the UI."""

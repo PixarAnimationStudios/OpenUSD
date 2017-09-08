@@ -23,7 +23,7 @@
 #
 from pxr import Tf
 
-from PySide import QtGui, QtCore
+from qt import QtCore, QtGui, QtWidgets
 
 from code import InteractiveInterpreter
 import os, sys, keyword
@@ -253,25 +253,18 @@ class Controller(QtCore.QObject):
             sys.ps2 = "... "
             
         self.textEdit = textEdit
-        self.connect(self.textEdit, QtCore.SIGNAL('destroyed()'),
-                     self._TextEditDestroyedSlot)
+        self.textEdit.destroyed.connect(self._TextEditDestroyedSlot)
 
-        self.connect(self.textEdit, QtCore.SIGNAL("returnPressed()"),
-                     self._ReturnPressedSlot)
+        self.textEdit.returnPressed.connect(self._ReturnPressedSlot)
 
-        self.connect(self.textEdit, QtCore.SIGNAL("requestComplete()"),
-                     self._CompleteSlot)
+        self.textEdit.requestComplete.connect(self._CompleteSlot)
 
-        self.connect(self.textEdit, QtCore.SIGNAL("requestNext()"),
-                     self._NextSlot)
+        self.textEdit.requestNext.connect(self._NextSlot)
 
-        self.connect(self.textEdit, QtCore.SIGNAL("requestPrev()"),
-                     self._PrevSlot)
+        self.textEdit.requestPrev.connect(self._PrevSlot)
 
-        appInstance = QtGui.QApplication.instance()
-        self.connect(appInstance,
-                     QtCore.SIGNAL("appControllerQuit()"),
-                     self._QuitSlot)
+        appInstance = QtWidgets.QApplication.instance()
+        appInstance.aboutToQuit.connect(self._QuitSlot)
         
         self.textEdit.setTabChangesFocus(False)
 
@@ -627,7 +620,7 @@ class Controller(QtCore.QObject):
         self._ClearLine()
         self.write(self.history[self.historyPointer])
 
-class View(QtGui.QTextEdit):
+class View(QtWidgets.QTextEdit):
     """View is a QTextEdit which provides some extra
     facilities to help implement an interpreter console.  In particular,
     QTextEdit does not provide for complete control over the buffer being
@@ -635,6 +628,11 @@ class View(QtGui.QTextEdit):
     taken, disallowing controller classes from really controlling the widget.
     This widget fixes that.
     """
+    
+    returnPressed = QtCore.Signal()
+    requestPrev = QtCore.Signal()
+    requestNext = QtCore.Signal()
+    requestComplete = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(View, self).__init__(parent)
@@ -696,7 +694,7 @@ class View(QtGui.QTextEdit):
         return (self._PositionInInputArea(self.textCursor().position()) > 0)
 
     def mousePressEvent(self, e):
-        app = QtGui.QApplication.instance()        
+        app = QtWidgets.QApplication.instance()        
 
         # is this a triple click?        
         if ((e.button() & QtCore.Qt.LeftButton) and
@@ -724,7 +722,7 @@ class View(QtGui.QTextEdit):
         
     def mouseDoubleClickEvent(self, e):
         super(View, self).mouseDoubleClickEvent(e)
-        app = QtGui.QApplication.instance()
+        app = QtWidgets.QApplication.instance()
         self.tripleClickTimer.start(app.doubleClickInterval(), self)
         # make a copy here, otherwise tripleClickPoint will always = globalPos
         self.tripleClickPoint = QtCore.QPoint(e.globalPos())
@@ -793,7 +791,7 @@ class View(QtGui.QTextEdit):
             cursor.movePosition(QtGui.QTextCursor.EndOfBlock)
             self.setTextCursor(cursor)
             # emit returnPressed
-            self.emit(QtCore.SIGNAL("returnPressed()"))
+            self.returnPressed.emit()
 
         elif (key == QtCore.Qt.Key_Up 
                 or key == QtCore.Qt.Key_Down
@@ -807,9 +805,9 @@ class View(QtGui.QTextEdit):
                               or key == QtCore.Qt.Key_E))):
             if cursorInInput:
                 if (key == QtCore.Qt.Key_Up or key == QtCore.Qt.Key_P):
-                    self.emit(QtCore.SIGNAL("requestPrev()"))
+                    self.requestPrev.emit()
                 if (key == QtCore.Qt.Key_Down or key == QtCore.Qt.Key_N):
-                    self.emit(QtCore.SIGNAL("requestNext()"))
+                    self.requestNext.emit()
                 if (key == QtCore.Qt.Key_A):
                     self._MoveCursorToStartOfInput(False)
                 if (key == QtCore.Qt.Key_E):
@@ -840,7 +838,7 @@ class View(QtGui.QTextEdit):
 
     def AutoComplete(self):
         if self._CursorIsInInputArea():
-            self.emit(QtCore.SIGNAL("requestComplete()"))
+            self.requestComplete.emit()
 
     def _MoveCursorToBeginning(self, select=False):
         if self._CursorIsInInputArea():

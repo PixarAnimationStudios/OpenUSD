@@ -22,7 +22,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 import sys, argparse, os
-from PySide.QtGui import QApplication
+
+from qt import QtWidgets
 from common import Timer
 
 class Launcher(object):
@@ -212,7 +213,7 @@ class Launcher(object):
         resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
 
         # Create the Qt application
-        app = QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
 
         # Apply the style sheet to it
         sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')

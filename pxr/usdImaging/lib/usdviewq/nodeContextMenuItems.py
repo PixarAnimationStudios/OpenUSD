@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui
+from qt import QtGui, QtWidgets
 from usdviewContextMenuItem import UsdviewContextMenuItem
 import os
 import sys
@@ -258,7 +258,7 @@ class CopyPrimPathMenuItem(NodeContextMenuItem):
         pathlist = [str(p.GetPath()) for p in self._currentNodes]
         pathStrings = '\n'.join(pathlist)
 
-        cb = QtGui.QApplication.clipboard()
+        cb = QtWidgets.QApplication.clipboard()
         cb.setText(pathStrings, QtGui.QClipboard.Selection )
         cb.setText(pathStrings, QtGui.QClipboard.Clipboard )
 
@@ -284,7 +284,7 @@ class CopyModelPathMenuItem(NodeContextMenuItem):
 
     def RunCommand(self):
         modelPath = str(self._modelPrim.GetPath())
-        cb = QtGui.QApplication.clipboard()
+        cb = QtWidgets.QApplication.clipboard()
         cb.setText(modelPath, QtGui.QClipboard.Selection )
         cb.setText(modelPath, QtGui.QClipboard.Clipboard )
 
@@ -304,7 +304,7 @@ class IsolateCopyNodeMenuItem(NodeContextMenuItem):
         inFile = self._currentNodes[0].GetScene().GetUsdFile()
 
         guessOutFile = os.getcwd() + "/" + self._currentNodes[0].GetName() + "_copy.usd"
-        (outFile, _) = QtGui.QFileDialog.getSaveFileName(None,
+        (outFile, _) = QtWidgets.QFileDialog.getSaveFileName(None,
                                                          "Specify the Usd file to create",
                                                          guessOutFile,
                                                          'Usd files (*.usd)')

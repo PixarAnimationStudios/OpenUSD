@@ -61,6 +61,7 @@ pxr_library(usdviewq
         pythonExpressionPrompt.py
         referenceEditor.py
         overridableLineEdit.py
+        qt.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES

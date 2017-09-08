@@ -305,20 +305,24 @@ class Dependency(object):
                     for f in self.filesToCheck])
 
 class PythonDependency(object):
-    def __init__(self, name, getInstructions, moduleName):
+    def __init__(self, name, getInstructions, moduleNames):
         self.name = name
         self.getInstructions = getInstructions
-        self.moduleName = moduleName
+        self.moduleNames = moduleNames
 
     def Exists(self, context):
-        try:
-            # Eat all output; we just care if the import succeeded or not.
-            subprocess.check_output(shlex.split(
-                'python -c "import {module}"'.format(module=self.moduleName)),
-                stderr=subprocess.STDOUT)
-            return True
-        except subprocess.CalledProcessError:
-            return False
+        # If one of the modules in our list exists we are good
+        for moduleName in self.moduleNames:
+            try:
+                # Eat all output; we just care if the import succeeded or not.
+                subprocess.check_output(shlex.split(
+                    'python -c "import {module}"'.format(module=moduleName)),
+                    stderr=subprocess.STDOUT)
+                return True
+            except subprocess.CalledProcessError:
+                pass
+        return False
+
 
 def AnyPythonDependencies(deps):
     return any([type(d) is PythonDependency for d in deps])
@@ -683,7 +687,7 @@ def GetPyOpenGLInstructions():
             'located.')
 
 PYOPENGL = PythonDependency("PyOpenGL", GetPyOpenGLInstructions, 
-                            moduleName="OpenGL")
+                            moduleNames=["OpenGL"])
 
 ############################################################
 # PySide
@@ -705,8 +709,8 @@ def GetPySideInstructions():
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
 
-PYSIDE = PythonDependency("PySide", GetPySideInstructions, 
-                          moduleName="PySide")
+PYSIDE = PythonDependency("PySide", GetPySideInstructions,
+                          moduleNames=["PySide", "PySide2"])
 
 ############################################################
 # HDF5
@@ -1181,11 +1185,14 @@ if context.buildDocs:
         sys.exit(1)
 
 if context.buildUsdImaging:
-    # The USD build will skip building usdview if pyside-uic is not found, 
-    # so check for it here to avoid confusing users. This list of PySide
-    # executable names comes from cmake/modules/FindPySide.cmake
+    # The USD build will skip building usdview if pyside-uic or pyside2-uic is 
+    # not found, so check for it here to avoid confusing users. This list of 
+    # PySide executable names comes from cmake/modules/FindPySide.cmake
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
-    if not any([find_executable(p) for p in pysideUic]):
+    found_pysideUic = any([find_executable(p) for p in pysideUic])
+    pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7"]
+    found_pyside2Uic = any([find_executable(p) for p in pyside2Uic])
+    if not found_pysideUic and not found_pyside2Uic:
         PrintError("pyside-uic not found -- please install PySide and adjust "
                    "your PATH. (Note that this program may be named {0} "
                    "depending on your platform)"

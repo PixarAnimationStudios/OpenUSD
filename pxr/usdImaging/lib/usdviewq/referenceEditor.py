@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from qt import QtCore, QtWidgets
 from referenceEditorUI import Ui_ReferenceEditor
 
 import mainWindow
@@ -29,9 +29,9 @@ import mainWindow
 # XXX USD REFERENCE EDITOR DISABLED
 # Dialog window to edit reference asset path, reference path and offset/scale
 
-class ReferenceEditor(QtGui.QDialog):
+class ReferenceEditor(QtWidgets.QDialog):
     def __init__(self, parent, stage, node):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self._ui = Ui_ReferenceEditor()
         self._ui.setupUi(self)
 
@@ -42,9 +42,7 @@ class ReferenceEditor(QtGui.QDialog):
             self._references = self._references[1:]
 
         # when users change the drop-down menu, update the fields
-        QtCore.QObject.connect(self._ui.multirefList,
-                               QtCore.SIGNAL('currentIndexChanged(int)'),
-                               self._multirefChanged)
+        self._ui.multirefList.currentIndexChanged[int].connect(self._multirefChanged)
 
         self.populateMultirefList()
         
@@ -89,19 +87,19 @@ class ReferenceEditor(QtGui.QDialog):
         if self._writable:  # dont save if not writable!
             # generate a backup directory, offer a backup option to the user
             backupfile = mainWindow.getBackupFile(self._refSrc)
-            question = QtGui.QMessageBox("Confirm Reference Edit",
+            question = QtWidgets.QMessageBox("Confirm Reference Edit",
                 "Your changes will be permanently committed to the reference "
                 "source stage %s\n\n"\
                 "Do you want to save a backup of that stage at %s "\
                 "before continuing?" %(self._refSrc, backupfile),
-                QtGui.QMessageBox.Question,
-                QtGui.QMessageBox.Yes,
-                QtGui.QMessageBox.No,
-                QtGui.QMessageBox.Cancel)
+                QtWidgets.QMessageBox.Question,
+                QtWidgets.QMessageBox.Yes,
+                QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.Cancel)
             
-            yesButton = question.button(QtGui.QMessageBox.Yes)
-            noButton =  question.button(QtGui.QMessageBox.No)
-            cancelButton = question.button(QtGui.QMessageBox.Cancel)
+            yesButton = question.button(QtWidgets.QMessageBox.Yes)
+            noButton =  question.button(QtWidgets.QMessageBox.No)
+            cancelButton = question.button(QtWidgets.QMessageBox.Cancel)
 
             yesButton.setText("Save With Backup")
             noButton.setText("Save Without Backup")
@@ -138,7 +136,7 @@ class ReferenceEditor(QtGui.QDialog):
 
             # alert user if the reference could not be found
             if not refNode:
-                QtGui.QMessageBox.critical(self, 'Failed To Edit Reference',
+                QtWidgets.QMessageBox.critical(self, 'Failed To Edit Reference',
                         'The reference with assetPath "%s", reference path "%s", '
                         'and offset/scale "(%f,%f)" could not be found in stage "%s".'
                         %(self._assetPath.Get(), self._referencePath,\
@@ -163,5 +161,5 @@ class ReferenceEditor(QtGui.QDialog):
 
             refSrcScene.Flush()
 
-        QtGui.QDialog.accept(self)
+        QtWidgets.QDialog.accept(self)
 
