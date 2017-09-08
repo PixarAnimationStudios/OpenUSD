@@ -483,7 +483,7 @@ class TreeView(QFrame):
         self.view.horizontalScrollBar().valueChanged.connect(\
             self.view.updateGeometries)
 
-        self.view.expanded.connect(self.OpenPersistentEditors)
+        self.view.expanded.connect(self.OnExpanded)
 
         mainLayout = QVBoxLayout()
         mainLayout.setSpacing(0)
@@ -680,6 +680,14 @@ class TreeView(QFrame):
             node = kwargs['node']
             model.CopyImportedPrimPathsFromNode(node)
 
+    def OnExpanded(self, index):
+        model = self.view.model()
+        item = model.itemFromIndex(index)
+        if item.childCount() == 0 and item.hasUnloadedPayload():
+            model.LoadPrimAndBuildTree(model.GetPrim(item), item)
+        # Also open persistent editors for this index.
+        self.OpenPersistentEditors(index)
+
     def OpenPersistentEditors(self, index):
         row = index.row()
         self.view.openPersistentEditor(index.sibling(row, COL_IMPORT))
@@ -691,7 +699,6 @@ class TreeView(QFrame):
             rowCount = self.view.model().rowCount(index)
             for row in range(rowCount):
                 self.OpenPersistentEditors(index.child(row, 0))
-        
 
     def ShowVariants(self, state):
         if state == Qt.Checked:

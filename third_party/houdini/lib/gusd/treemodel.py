@@ -360,15 +360,7 @@ class TreeModel(QAbstractItemModel):
         if parent.column() > 0:
             return 0
 
-        if not parent.isValid():
-            parentItem = self._rootItem
-        else:
-            parentItem = parent.internalPointer()
-            if parentItem.childCount() == 0 and\
-                parentItem.hasUnloadedPayload():
-                self.LoadPrimAndBuildTree(self.GetPrim(parentItem), parentItem)
-
-        return parentItem.childCount()
+        return self.itemFromIndex(parent).childCount()
 
     def setData(self, index, value, role=Qt.EditRole):
         if role != Qt.EditRole:
