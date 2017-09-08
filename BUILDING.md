@@ -81,10 +81,10 @@ removes the need for their dependencies when building USD.
 ##### Python
 
 Python support in USD refers to: 
-    - [The Usd Toolset](https://graphics.pixar.com/usd/docs/USD-Toolset.html)
-    - [Third Party Plugins](https://graphics.pixar.com/usd/docs/USD-3rd-Party-Plugins.html)
-    - Python language bindings for the USD C++ API
-    - Unit tests using Python
+- [The USD Toolset](https://graphics.pixar.com/usd/docs/USD-Toolset.html)
+- [Third Party Plugins](https://graphics.pixar.com/usd/docs/USD-3rd-Party-Plugins.html)
+- Python language bindings for the USD C++ API
+- Unit tests using Python
 
 Support for Python can optionally be disabled by specifying the cmake flag 
 ```PXR_ENABLE_PYTHON_SUPPORT=FALSE```.
