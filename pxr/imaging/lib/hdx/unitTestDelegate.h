@@ -96,10 +96,11 @@ public:
                                 VtVec3fArray const &translate);
 
     /// Shader
-    void AddSurfaceShader(SdfPath const &id,
-                    std::string const &source,
-                    HdShaderParamVector const &params);
-    void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId);
+    void AddShader(SdfPath const &id,
+                   std::string const &sourceSurface,
+                   std::string const &sourceDisplacement,
+                   HdShaderParamVector const &params);
+    void BindShader(SdfPath const &rprimId, SdfPath const &shaderId);
 
     // prims    
     void AddMesh(SdfPath const &id,
@@ -161,6 +162,7 @@ public:
     virtual int GetRefineLevel(SdfPath const& id);
 
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
+    virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &shaderId);
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId,
                                                TfToken const &paramName);
@@ -219,27 +221,31 @@ private:
 
         std::vector<SdfPath> prototypes;
     };
-    struct _SurfaceShader {
-        _SurfaceShader() { }
-        _SurfaceShader(std::string const &src, HdShaderParamVector const &pms)
-            : source(src)
+    struct _Shader {
+        _Shader() { }
+        _Shader(std::string const &srcSurface,
+                std::string const &srcDisplacement, 
+                HdShaderParamVector const &pms)
+            : sourceSurface(srcSurface)
+            , sourceDisplacement(srcDisplacement)
             , params(pms) {
         }
 
-        std::string source;
+        std::string sourceSurface;
+        std::string sourceDisplacement;
         HdShaderParamVector params;
     };
     struct _DrawTarget {
     };
     std::map<SdfPath, _Mesh> _meshes;
     std::map<SdfPath, _Instancer> _instancers;
-    std::map<SdfPath, _SurfaceShader> _surfaceShaders;
+    std::map<SdfPath, _Shader> _shaders;
     std::map<SdfPath, int> _refineLevels;
     std::map<SdfPath, _DrawTarget> _drawTargets;
     int _refineLevel;
 
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
-    SdfPathMap _surfaceShaderBindings;
+    SdfPathMap _shaderBindings;
 
     typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
     typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;

@@ -94,10 +94,18 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
 {
     TF_UNUSED(renderParam);
 
+    // Store the dirty bits because the rprim Sync() might clean
+    // the DirtySurfaceShader bits which are useful later in 
+    // _GetRepr() to detech if the GeometricShader needs to be updated.
+    // Example : An rprim has a binding to a shader without displacement,
+    //           later on, we update that binding to point to a shader 
+    //           with displacement. We want the Geometric Shader to be updated.
+    HdDirtyBits originalDirtyBits = *dirtyBits;
+
     HdRprim::_Sync(delegate,
                   reprName,
                   forcedRepr,
-                  dirtyBits);
+                  &originalDirtyBits);
 
     TfToken calcReprName = _GetReprName(delegate, reprName,
                                         forcedRepr, dirtyBits);
@@ -1161,11 +1169,13 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
+HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                          HdDrawItem *drawItem,
                                          HdMeshReprDesc desc)
 {
     if (drawItem->GetGeometricShader()) return;
+
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     bool hasFaceVaryingPrimVars =
         (bool)drawItem->GetFaceVaryingPrimVarRange();
@@ -1218,9 +1228,24 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
 
     bool blendWireframeColor = desc.blendWireframeColor;
 
+    // check if the shader bound to this mesh has a custom displacement shader, 
+    // if so, we want to make sure the geometric shader does not optimize the
+    // geometry shader out of the code.
+    bool hasCustomDisplacementTerminal = false;
+    const HdShader *shader = static_cast<const HdShader *>(
+        renderIndex.GetSprim(HdPrimTypeTokens->shader, GetSurfaceShaderId()));
+    if (shader) {
+        const std::string & displacementShader = 
+            shader->GetDisplacementShaderSource(sceneDelegate);
+        if (!displacementShader.empty()) {
+            hasCustomDisplacementTerminal = true;
+        }
+    }
+
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
                                  desc.shadingTerminal,
+                                 hasCustomDisplacementTerminal,
                                  smoothNormals,
                                  _doubleSided,
                                  hasFaceVaryingPrimVars,
@@ -1380,7 +1405,8 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     // the geometric shader again
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
                       HdChangeTracker::DirtyCullStyle|
-                      HdChangeTracker::DirtyDoubleSided)) {
+                      HdChangeTracker::DirtyDoubleSided|
+                      HdChangeTracker::DirtySurfaceShader)) {
         _ResetGeometricShaders();
         needsSetGeometricShader = true;
     } else {
@@ -1418,8 +1444,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
             HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);
             _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
                             requireSmoothNormals);
-            _UpdateDrawItemGeometricShader(sceneDelegate->GetRenderIndex(),
-                                           drawItem, desc);
+            _UpdateDrawItemGeometricShader(sceneDelegate, drawItem, desc);
         }
         ++drawItemIndex;
     }
@@ -1427,7 +1452,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     // if we need to rebuild geometric shader, make sure all reprs to have
     // their geometric shader up-to-date.
     if (needsSetGeometricShader) {
-        _SetGeometricShaders(sceneDelegate->GetRenderIndex());
+        _SetGeometricShaders(sceneDelegate);
     }
 
     *dirtyBits &= ~DirtyNewRepr;
@@ -1447,7 +1472,7 @@ HdStMesh::_ResetGeometricShaders()
 }
 
 void
-HdStMesh::_SetGeometricShaders(HdRenderIndex &renderIndex)
+HdStMesh::_SetGeometricShaders(HdSceneDelegate *sceneDelegate)
 {
     TF_FOR_ALL (it, _reprs) {
         _MeshReprConfig::DescArray descs = _GetReprDesc(it->first);
@@ -1457,7 +1482,7 @@ HdStMesh::_SetGeometricShaders(HdRenderIndex &renderIndex)
             if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
 
             HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);
-            _UpdateDrawItemGeometricShader(renderIndex, drawItem, desc);
+            _UpdateDrawItemGeometricShader(sceneDelegate, drawItem, desc);
             ++drawItemIndex;
         }
     }

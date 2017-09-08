@@ -219,12 +219,7 @@ HdSceneDelegate::GetSurfaceShaderSource(SdfPath const &shaderId)
 std::string
 HdSceneDelegate::GetDisplacementShaderSource(SdfPath const &shaderId)
 {
-    std::string shaderSource(
-        "vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord) {\n"
-        "    return Peye;\n"
-        "}\n"
-        );
-    return shaderSource;
+    return std::string("");
 }
 
 std::string

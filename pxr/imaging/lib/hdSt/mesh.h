@@ -93,11 +93,11 @@ protected:
                          HdMeshReprDesc desc,
                          bool requireSmoothNormals);
 
-    void _UpdateDrawItemGeometricShader(HdRenderIndex &renderIndex,
+    void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdDrawItem *drawItem,
                                         HdMeshReprDesc desc);
 
-    void _SetGeometricShaders(HdRenderIndex &renderIndex);
+    void _SetGeometricShaders(HdSceneDelegate *sceneDelegate);
 
     void _ResetGeometricShaders();
 

@@ -37,6 +37,7 @@ struct HdSt_MeshShaderKey
 {
     HdSt_MeshShaderKey(Hd_GeometricShader::PrimitiveType primType,
                        TfToken shadingTerminal,
+                       bool hasCustomDisplacementTerminal,
                        bool smoothNormals,
                        bool doubleSided,
                        bool faceVarying,
@@ -63,15 +64,17 @@ struct HdSt_MeshShaderKey
     Hd_GeometricShader::PrimitiveType GetPrimitiveType() const {
         return primType; 
     }
+    bool IsFaceVarying() const {return isFaceVarying;}
 
     Hd_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
     HdPolygonMode polygonMode;
+    bool isFaceVarying;
     TfToken glslfx;
     TfToken VS[4];
     TfToken TCS[3];
     TfToken TES[3];
-    TfToken GS[5];
+    TfToken GS[6];
     TfToken FS[7];
 };
 

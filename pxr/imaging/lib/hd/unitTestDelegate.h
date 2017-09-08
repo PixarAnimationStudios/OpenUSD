@@ -190,9 +190,10 @@ public:
 
     /// Shader
     HD_API
-    void AddSurfaceShader(SdfPath const &id,
-                    std::string const &source,
-                    HdShaderParamVector const &params);
+    void AddShader(SdfPath const &id,
+                   std::string const &sourceSurface,
+                   std::string const &sourceDisplacement,
+                   HdShaderParamVector const &params);
 
     HD_API
     void AddTexture(SdfPath const& id, GlfTextureRefPtr const& texture);
@@ -251,10 +252,25 @@ public:
     HD_API
     void UpdateCurvePrimVarsInterpMode(float time);
 
-
-    void BindSurfaceShader(SdfPath const &rprimId, SdfPath const &shaderId)
+    /// Set an initial binding for a prim
+    HD_API
+    void BindShader(SdfPath const &rprimId, SdfPath const &shaderId)
     {
-        _surfaceShaderBindings[rprimId] = shaderId;
+        _shaderBindings[rprimId] = shaderId;
+    }
+
+    /// Example to update a shader binding on the fly
+    HD_API
+    void RebindShader(SdfPath const &rprimId, SdfPath const &shaderId)
+    {
+        BindShader(rprimId, shaderId);
+    
+        // Mark the rprim shader binding as dirty so sync gets
+        // called on that rprim and also increase 
+        // the version of the global bindings so batches get rebuild (if needed)
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtySurfaceShader);
+        tracker.MarkShaderBindingsDirty();
     }
 
     // ---------------------------------------------------------------------- //
@@ -313,6 +329,8 @@ public:
 
     HD_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
+    HD_API
+    virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);    
     HD_API
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &shaderId);
     HD_API
@@ -416,14 +434,18 @@ private:
 
         std::vector<SdfPath> prototypes;
     };
-    struct _SurfaceShader {
-        _SurfaceShader() { }
-        _SurfaceShader(std::string const &src, HdShaderParamVector const &pms)
-            : source(src)
+    struct _Shader {
+        _Shader() { }
+        _Shader(std::string const &srcSurface, 
+                std::string const &srcDisplacement,
+                HdShaderParamVector const &pms)
+            : sourceSurface(srcSurface)
+            , sourceDisplacement(srcDisplacement)
             , params(pms) {
         }
 
-        std::string source;
+        std::string sourceSurface;
+        std::string sourceDisplacement;
         HdShaderParamVector params;
     };
     struct _Texture {
@@ -447,7 +469,7 @@ private:
     std::map<SdfPath, _Curves> _curves;
     std::map<SdfPath, _Points> _points;
     std::map<SdfPath, _Instancer> _instancers;
-    std::map<SdfPath, _SurfaceShader> _surfaceShaders;
+    std::map<SdfPath, _Shader> _shaders;
     std::map<SdfPath, _Texture> _textures;
     std::map<SdfPath, _Camera> _cameras;
     std::map<SdfPath, _Light> _lights;
@@ -455,7 +477,7 @@ private:
     TfHashSet<SdfPath, SdfPath::Hash> _hiddenRprims;
 
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
-    SdfPathMap _surfaceShaderBindings;
+    SdfPathMap _shaderBindings;
 
     bool _hasInstancePrimVars;
     int _refineLevel;

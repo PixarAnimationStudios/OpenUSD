@@ -68,7 +68,8 @@ HdShaderKey::ComputeHash(TfToken const &glslfxFile,
                          int16_t primType,                         
                          HdCullStyle cullStyle,
                          HdPolygonMode polygonMode,
-                         bool cullingPass)
+                         bool cullingPass,
+                         bool faceVarying)
 {
     ID hash = glslfxFile.Hash();
 
@@ -96,6 +97,7 @@ HdShaderKey::ComputeHash(TfToken const &glslfxFile,
     boost::hash_combine(hash, cullStyle);
     boost::hash_combine(hash, polygonMode);
     boost::hash_combine(hash, cullingPass);
+    boost::hash_combine(hash, faceVarying);
     return hash;
 }
 

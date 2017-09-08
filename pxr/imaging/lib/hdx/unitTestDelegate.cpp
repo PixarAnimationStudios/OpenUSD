@@ -725,7 +725,7 @@ Hdx_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         }
     } else if (key == HdShaderTokens->surfaceShader) {
         SdfPath shaderId;
-        TfMapLookup(_surfaceShaderBindings, id, &shaderId);
+        TfMapLookup(_shaderBindings, id, &shaderId);
 
         return VtValue(shaderId);
     }
@@ -843,28 +843,40 @@ Hdx_UnitTestDelegate::GetPrimVarInstanceNames(SdfPath const &id)
 }
 
 void
-Hdx_UnitTestDelegate::AddSurfaceShader(SdfPath const &id,
-                                       std::string const &source,
-                                       HdShaderParamVector const &params)
+Hdx_UnitTestDelegate::AddShader(SdfPath const &id,
+                                std::string const &sourceSurface,
+                                std::string const &sourceDisplacement,
+                                HdShaderParamVector const &params)
 {
     HdRenderIndex& index = GetRenderIndex();
     index.InsertSprim(HdPrimTypeTokens->shader, this, id);
-    _surfaceShaders[id] = _SurfaceShader(source, params);
+    _shaders[id] = _Shader(sourceSurface, sourceDisplacement, params);
 }
 
 void
-Hdx_UnitTestDelegate::BindSurfaceShader(SdfPath const &rprimId,
-                                        SdfPath const &shaderId)
+Hdx_UnitTestDelegate::BindShader(SdfPath const &rprimId,
+                                 SdfPath const &shaderId)
 {
-    _surfaceShaderBindings[rprimId] = shaderId;
+    _shaderBindings[rprimId] = shaderId;
 }
 
 /*virtual*/
 std::string
 Hdx_UnitTestDelegate::GetSurfaceShaderSource(SdfPath const &shaderId)
 {
-    if (_SurfaceShader *shader = TfMapLookupPtr(_surfaceShaders, shaderId)) {
-        return shader->source;
+    if (_Shader *shader = TfMapLookupPtr(_shaders, shaderId)) {
+        return shader->sourceSurface;
+    } else {
+        return TfToken();
+    }
+}
+
+/*virtual*/
+std::string
+Hdx_UnitTestDelegate::GetDisplacementShaderSource(SdfPath const &shaderId)
+{
+    if (_Shader *shader = TfMapLookupPtr(_shaders, shaderId)) {
+        return shader->sourceDisplacement;
     } else {
         return TfToken();
     }
@@ -874,7 +886,7 @@ Hdx_UnitTestDelegate::GetSurfaceShaderSource(SdfPath const &shaderId)
 HdShaderParamVector
 Hdx_UnitTestDelegate::GetSurfaceShaderParams(SdfPath const &shaderId)
 {
-    if (_SurfaceShader *shader = TfMapLookupPtr(_surfaceShaders, shaderId)) {
+    if (_Shader *shader = TfMapLookupPtr(_shaders, shaderId)) {
         return shader->params;
     }
     return HdShaderParamVector();
@@ -885,7 +897,7 @@ VtValue
 Hdx_UnitTestDelegate::GetSurfaceShaderParamValue(SdfPath const &shaderId, 
                               TfToken const &paramName)
 {
-    if (_SurfaceShader *shader = TfMapLookupPtr(_surfaceShaders, shaderId)) {
+    if (_Shader *shader = TfMapLookupPtr(_shaders, shaderId)) {
         TF_FOR_ALL(paramIt, shader->params) {
             if (paramIt->GetName() == paramName)
                 return paramIt->GetFallbackValue();

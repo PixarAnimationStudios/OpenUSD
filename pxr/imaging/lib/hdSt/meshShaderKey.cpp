@@ -58,11 +58,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((constantColorFS,         "Fragment.ConstantColor"))
     ((mainFS,                  "Mesh.Fragment"))
     ((instancing,              "Instancing.Transform"))
+    ((displacementGS,          "Geometry.Displacement"))
 );
 
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     Hd_GeometricShader::PrimitiveType primitiveType,
     TfToken shadingTerminal,
+    bool hasCustomDisplacementTerminal,
     bool smoothNormals,
     bool doubleSided,
     bool faceVarying,
@@ -72,6 +74,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , polygonMode(HdPolygonModeFill)
+    , isFaceVarying(faceVarying)
     , glslfx(_tokens->baseGLSLFX)
 {
     if (geomStyle == HdMeshGeomStyleEdgeOnly ||
@@ -113,14 +116,28 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                 _tokens->mainQuadGS : _tokens->mainTriangleGS;
     GS[4] = TfToken();
 
-    // mesh special optimization:
-    //    there are some cases that we can skip the geometry shader.
-    if (smoothNormals
-        && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
-        && Hd_GeometricShader::IsPrimTypeTriangles(primType)
-        && (!faceVarying)) {
-        GS[0] = TfToken();
+    // Optimization : If the mesh does not provide a custom displacement shader
+    //                we have an opportunity to fully disable the geometry
+    //                stage.
+    if (!hasCustomDisplacementTerminal) {
+        // Geometry shader (along with the displacement shader) 
+        // can be fully disabled in the folowing condition.
+        if (smoothNormals
+            && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
+            && Hd_GeometricShader::IsPrimTypeTriangles(primType)
+            && (!isFaceVarying)) {
+            
+            GS[0] = TfToken();
+        } else {
+            // If we were not able to disable the geometry stage
+            // then we will add a very simple displacement shader.
+            GS[4] = _tokens->displacementGS;
+            GS[5] = TfToken();
+        }
     }
+
+    // Optimization : Points don't need any sort of geometry shader so
+    //                we ignore it here.
     if (Hd_GeometricShader::IsPrimTypePoints(primType)) {
         GS[0] = TfToken();
     }

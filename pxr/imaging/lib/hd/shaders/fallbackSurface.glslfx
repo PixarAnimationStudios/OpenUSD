@@ -31,24 +31,12 @@
 {
     "techniques": {
         "default": {
-            "displacementShader": {
-                "source": [ "Fallback.Displacement" ]
-            },
             "surfaceShader": {
                 "source": [ "Fallback.Surface" ]
             }
         }
     }
 }
-
-
--- glsl Fallback.Displacement
-
-vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
-{
-    return Peye;
-}
-
 
 -- glsl Fallback.Surface
 
