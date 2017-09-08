@@ -132,9 +132,11 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
-    virtual bool PopulateSelection(SdfPath const &path,
-                                   VtIntArray const &instanceIndices,
-                                   HdxSelectionSharedPtr const &result);
+    virtual bool PopulateSelection(
+                                HdxSelectionHighlightMode const& highlightMode,
+                                SdfPath const &path,
+                                VtIntArray const &instanceIndices,
+                                HdxSelectionSharedPtr const &result);
 
     // ---------------------------------------------------------------------- //
     /// \name Utilities 

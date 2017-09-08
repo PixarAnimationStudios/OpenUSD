@@ -848,8 +848,12 @@ UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
 {
     // populate new selection
     HdxSelectionSharedPtr selection(new HdxSelection);
+    // XXX: Usdview currently supports selection on click. If we extend to
+    // rollover (locate) selection, we need to pass that mode here.
+    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
     for (SdfPath const& path : paths) {
-        _delegate->PopulateSelection(path,
+        _delegate->PopulateSelection(mode,
+                                     path,
                                      UsdImagingDelegate::ALL_INSTANCES,
                                      selection);
     }
@@ -874,8 +878,10 @@ UsdImagingGLHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
     if (!selection) {
         selection.reset(new HdxSelection);
     }
-
-    _delegate->PopulateSelection(path, instanceIndex, selection);
+    // XXX: Usdview currently supports selection on click. If we extend to
+    // rollover (locate) selection, we need to pass that mode here.
+    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
+    _delegate->PopulateSelection(mode, path, instanceIndex, selection);
 
     // set the result back to selection tracker
     _selTracker->SetSelection(selection);

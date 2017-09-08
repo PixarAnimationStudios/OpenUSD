@@ -2163,9 +2163,11 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
 }
 
 bool
-UsdImagingDelegate::PopulateSelection(SdfPath const &path,
-                                      int instanceIndex,
-                                      HdxSelectionSharedPtr const &result)
+UsdImagingDelegate::PopulateSelection(
+              HdxSelectionHighlightMode const& highlightMode,
+              SdfPath const &path,
+              int instanceIndex,
+              HdxSelectionSharedPtr const &result)
 {
     HD_TRACE_FUNCTION();
 
@@ -2212,7 +2214,8 @@ UsdImagingDelegate::PopulateSelection(SdfPath const &path,
 
     if (adapter) {
         // Prim, or instancer
-        return adapter->PopulateSelection(usdPath, instanceIndices, result);
+        return adapter->PopulateSelection(highlightMode, usdPath,
+                                          instanceIndices, result);
     } else {
         // Select rprims that are part of the path subtree. Exclude proto paths 
         // since they will be added later in this function when iterating 
@@ -2222,7 +2225,7 @@ UsdImagingDelegate::PopulateSelection(SdfPath const &path,
             if ((*rprimPath).IsPropertyPath()) {
                 continue;
             }
-            result->AddRprim(*rprimPath);
+            result->AddRprim(highlightMode, *rprimPath);
             added = true;
         }
 
@@ -2248,9 +2251,10 @@ UsdImagingDelegate::PopulateSelection(SdfPath const &path,
             if (!instancerPath.IsEmpty()) {                
                 // We don't need to take into account specific indices when 
                 // doing subtree selections.
-                added |= adapter->PopulateSelection(usdPath,
-                                                  VtIntArray(), 
-                                                  result);
+                added |= adapter->PopulateSelection(highlightMode,
+                                                    usdPath,
+                                                    VtIntArray(), 
+                                                    result);
                 break;
             }
         }

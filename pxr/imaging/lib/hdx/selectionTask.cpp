@@ -42,14 +42,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 
 HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
-                                                   SdfPath const& id)
+                                   SdfPath const& id)
     : HdSceneTask(delegate, id)
     , _lastVersion(-1)
     , _offsetMin(0)
     , _offsetMax(-1)
     , _hasSelection(false)
-    , _selOffsetBar(nullptr)
-    , _selValueBar(nullptr)
+    , _selUniformBar(nullptr)
 {
     _params = {false, GfVec4f(), GfVec4f(), GfVec4f()};
 }
@@ -92,7 +91,7 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
         VtIntArray offsets;
         VtIntArray values;
         
-        _hasSelection = sel->GetBuffers(&index, &offsets);
+        _hasSelection = sel->GetSelectionOffsetBuffer(&index, &offsets);
         if (!_selOffsetBar) {
 
             HdBufferSpecVector offsetSpecs;
@@ -101,7 +100,9 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
             _selOffsetBar = resourceRegistry->AllocateSingleBufferArrayRange(
                                                 /*role*/HdxTokens->selection,
                                                 offsetSpecs);
+        }
 
+        if (!_selUniformBar) {
             HdBufferSpecVector uniformSpecs;
             uniformSpecs.push_back(
                         HdBufferSpec(HdxTokens->selColor, GL_FLOAT, 4));

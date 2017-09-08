@@ -433,7 +433,8 @@ public:
     /// XXX: subtree highlighting with native instancing is not working
     /// correctly right now. Path needs to be a leaf prim or instancer.
     USDIMAGING_API
-    bool PopulateSelection(const SdfPath &path,
+    bool PopulateSelection(HdxSelectionHighlightMode const& highlightMode,
+                           const SdfPath &path,
                            int instanceIndex,
                            HdxSelectionSharedPtr const &result);
 

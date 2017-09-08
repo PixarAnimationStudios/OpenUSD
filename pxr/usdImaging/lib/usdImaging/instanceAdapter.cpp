@@ -1378,11 +1378,13 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
         SdfPath const &instancerPath_,
         SdfPath const &instancePath_,
         VtIntArray const &instanceIndices_,
+        HdxSelectionHighlightMode const& highlightMode_,
         HdxSelectionSharedPtr const &result_)
         : adapter(adapter_)
         , instancerPath(instancerPath_)
         , instancePath(instancePath_)
         , instanceIndices(instanceIndices_)
+        , highlightMode(highlightMode_)
         , result(result_)
         , found(false)
     {}
@@ -1435,7 +1437,7 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
             SdfPathVector const &ids
                 = adapter->_delegate->GetRenderIndex().GetRprimSubtree(indexPath);
             TF_FOR_ALL (protoIt, ids) {
-                result->AddInstance(*protoIt, niInstanceIndices);
+                result->AddInstance(highlightMode, *protoIt, niInstanceIndices);
 
                 TF_DEBUG(USDIMAGING_SELECTION).Msg(
                     "PopulateSelection: (instance) %s - %s : %ld\n",
@@ -1452,6 +1454,7 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
     SdfPath instancerPath;
     SdfPath instancePath;
     VtIntArray instanceIndices;
+    HdxSelectionHighlightMode highlightMode;
     HdxSelectionSharedPtr result;
     bool found;
 };
@@ -1459,6 +1462,7 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
 /*virtual*/
 bool
 UsdImagingInstanceAdapter::PopulateSelection(
+    HdxSelectionHighlightMode const& highlightMode,
     SdfPath const &instancePath,
     VtIntArray const &instanceIndices,
     HdxSelectionSharedPtr const &result)
@@ -1475,7 +1479,8 @@ UsdImagingInstanceAdapter::PopulateSelection(
     bool found = false;
     TF_FOR_ALL (it, _instancerData) {
         _PopulateInstanceSelectionFn populateFn(
-            this, it->first, instancePath, instanceIndices, result);
+            this, it->first, instancePath, instanceIndices,
+            highlightMode, result);
 
         _RunForAllInstancesToDraw(_GetPrim(it->first), &populateFn);
 

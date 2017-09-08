@@ -67,77 +67,124 @@ void RenderColor(vec4 color)
 
 -- glsl HdxRenderPass.RenderColorOutputWithSelection
 
+#if defined(HD_HAS_hdxSelectionBuffer)
+// helper methods to decode hdxSelectionBuffer
+bool HighlightModeHasSelection(int offset)
+{
+    return (offset != 0);
+}
+
+int GetIndexOffsetForHighlightMode(int mode)
+{
+    return hdxSelectionBuffer[mode + 1/*[0] holds #modes*/];
+}
+
+int GetNumSelectionHighlightModes()
+{
+    return hdxSelectionBuffer[0];
+}
+#endif
+
 vec4 ApplySelectionColor(vec4 color)
 {
-#if defined(HD_HAS_selOffset)
-    int primId = HdGet_primID();
-    ivec2 minmax = HdGet_selOffsetMinMax();
-    if (primId >= minmax.x && primId <= minmax.y) {
-        if (bool(selValue[selOffset[primId - minmax.x]])) {
-            vec4 s = HdGet_selColor();
-            color.rgb = mix(color.rgb, s.rgb, s.a);
-        }
-    }
-#endif
 #if defined(HD_HAS_hdxSelectionBuffer)
-    int primId = HdGet_primID();
-    int smin = hdxSelectionBuffer[0];
-    int smax = hdxSelectionBuffer[1];
-    bool sel = false;
-    if (primId >= smin && primId < smax) {
-        int v = hdxSelectionBuffer[2 + primId - smin];
-        if (v == 1) {
-            sel = true;
-        } else if (v == 0) {
-            sel = false;
-        } else {
-            #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
-            for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
-                smin = hdxSelectionBuffer[v];
-                smax = hdxSelectionBuffer[v+1];
-                // allow to highlight in a top-down manner, by flipping level
-                // during iteration.
-                // note: instanceIndex[0] is instanceID.
-                //       instanceIndex for level n is stored at instanceIndex[n+1]
-                primId = GetDrawingCoord().instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
-                if (primId >= smin && primId < smax) {
-                    v = hdxSelectionBuffer[v+primId-smin+2];
-                    if (v == 1) {
-                       sel = true;
-                       break;
-                    } else if (v == 0) {
-                       sel = false;
-                       break;
-                    } else {
-                        smin = hdxSelectionBuffer[v];
-                        smax = hdxSelectionBuffer[v+1];
-                        primId = GetElementID();
-                        sel = bool(primId >= smin && primId < smax);
-                        if (sel) {
-                            sel = hdxSelectionBuffer[v+primId-smin+2] != 0;
+    const int primId = HdGet_primID();
+    const int numSelectionModes = GetNumSelectionHighlightModes();
+    // The hdxSelectionBuffer layout is:
+    // [# highlight modes] [per-mode offsets] [seloffsets mode0] ... [seloffsets modeM]
+    // [-------------  header --------------]
+    // See HdxSelectionTracker::GetSelectionOffsetBuffer for an example.
+    for (int mode = 0; mode < numSelectionModes; mode++) {
+        int modeOffset = GetIndexOffsetForHighlightMode(mode);
+        if (!HighlightModeHasSelection(modeOffset)) {
+            // highlight mode has no objects (prims/instances/elements)
+            continue;
+        }
+
+        int smin = hdxSelectionBuffer[modeOffset];
+        int smax = hdxSelectionBuffer[modeOffset + 1];
+        bool sel = false;
+        if (primId >= smin && primId < smax) {
+            int v = hdxSelectionBuffer[modeOffset + 2 + primId - smin];
+            if (v == 1) {
+                sel = true;
+            } else if (v == 0) {
+                sel = false;
+            } else {
+                // current prim isn't fully selected. check if any of its
+                // instances (or) elements are.
+
+                // offsets stored in the buffer are per-selection mode, so
+                // account for the additional level of indirection.
+                v = v + modeOffset;
+
+                #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
+                for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
+                    smin = hdxSelectionBuffer[v];
+                    smax = hdxSelectionBuffer[v+1];
+                    // allow to highlight in a top-down manner, by flipping level
+                    // during iteration.
+                    // note: instanceIndex[0] is instanceID.
+                    //       instanceIndex for level n is stored at instanceIndex[n+1]
+                    int instanceId = GetDrawingCoord().instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
+                    if (instanceId >= smin && instanceId < smax) {
+                        v = hdxSelectionBuffer[2+v+instanceId-smin];
+                        if (v == 1) {
+                           sel = true;
+                           break;
+                        } else if (v == 0) {
+                           sel = false;
+                           break;
+                        } else {
+                            // instance isn't selected. check if the current
+                            // element (face/curve) is.
+                            // Account for the mode offset when using 'v' since
+                            // it was reset above
+                            v = v + modeOffset;
+                            smin = hdxSelectionBuffer[v];
+                            smax = hdxSelectionBuffer[v+1];
+                            int elementId = GetElementID();
+                            sel = bool(elementId >= smin && elementId < smax);
+                            if (sel) {
+                                sel = hdxSelectionBuffer[2+v+elementId-smin] != 0;
+                            }
                         }
+                    } else {
+                        sel = false;
+                        break;
                     }
-                } else {
-                    sel = false;
-                    break;
                 }
+                #else
+                    // We have no instances, but we may still have faces selected.
+                    smin = hdxSelectionBuffer[v];
+                    smax = hdxSelectionBuffer[v+1];
+                    int elementId = GetElementID();
+                    sel = bool(elementId >= smin && elementId < smax);
+                    if (sel) {
+                        sel = hdxSelectionBuffer[2+v+elementId-smin] != 0;
+                    }
+                #endif
             }
-            #else
-                // We have no instances, but we may still have faces selected.
-                smin = hdxSelectionBuffer[v];
-                smax = hdxSelectionBuffer[v+1];
-                primId = GetElementID();
-                sel = bool(primId >= smin && primId < smax);
-                if (sel) {
-                    sel = hdxSelectionBuffer[2+v+primId-smin] != 0;
-                }
-            #endif
+
+            if (sel) {
+                vec4 s = vec4(0, 0, 0, 0);
+
+                // XXX: Make selection colors an array so we can avoid the
+                // branching.
+                if (mode == 0)
+                    s = HdGet_selColor();
+                else if (mode == 1)
+                    s = HdGet_selLocateColor();
+                else if (mode == 2)
+                    s = HdGet_selMaskColor();
+
+                // Note: We blend mask (over) locate (over) select when an
+                // object is in all three highlight modes.
+                color.rgb = mix(color.rgb, s.rgb, s.a);
+            }
         }
-        if (sel) {
-            vec4 s = HdGet_selColor();
-            color.rgb = mix(color.rgb, s.rgb, s.a);
-        }
-    }
+    } // for each highlight mode
+    
 #endif
     return color;
 }

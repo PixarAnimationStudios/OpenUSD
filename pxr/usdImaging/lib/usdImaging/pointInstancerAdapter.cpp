@@ -1585,6 +1585,7 @@ UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
 /*virtual*/
 bool
 UsdImagingPointInstancerAdapter::PopulateSelection(
+    HdxSelectionHighlightMode const& highlightMode,
     SdfPath const &path,
     VtIntArray const &instanceIndices,
     HdxSelectionSharedPtr const &result)
@@ -1595,7 +1596,7 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
 
     bool added = false;
     TF_FOR_ALL (it, ids){
-        result->AddInstance(*it, instanceIndices);
+        result->AddInstance(highlightMode, *it, instanceIndices);
         added = true;
     }
     return added;
