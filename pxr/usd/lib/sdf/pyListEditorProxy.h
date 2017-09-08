@@ -177,6 +177,8 @@ private:
 
             // New API (see bug 8710)
             .def("Add", &Type::Add)
+            .def("Prepend", &Type::Prepend)
+            .def("Append", &Type::Append)
             .def("Remove", &Type::Remove)
             .def("Erase", &Type::Erase)
             ;

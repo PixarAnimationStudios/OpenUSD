@@ -465,7 +465,7 @@ private:
     {
         ListProxy proxy(_listEditor, op);
         size_t index = proxy.Find(value);
-        if (index != proxy.size()-1) {
+        if (proxy.empty() || (index != proxy.size()-1)) {
             if (index != size_t(-1)) {
                 proxy.Erase(index);
             }
