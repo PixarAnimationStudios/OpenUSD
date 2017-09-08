@@ -107,6 +107,14 @@ class CheckBoxStyled(QCheckBox):
         painter = QStylePainter(self)
         painter.drawControl(QStyle.CE_CheckBox, opt)
 
+    def nextCheckState(self):
+        if self.checkState() == Qt.Checked:
+            self.setCheckState(Qt.Unchecked)
+        else:
+            # Not Checked, which means either Unchecked or PartiallyChecked.
+            # The next state for either of these is Checked.
+            self.setCheckState(Qt.Checked)
+
 class ComboBoxStyled(QComboBox):
     def __init__(self, parent = None):
         super(ComboBoxStyled, self).__init__(parent)
@@ -400,23 +408,6 @@ class TreeItemDelegate(QStyledItemDelegate):
         editor.SetData(index)
 
     def setModelData(self, editor, model, index):
-        # When an 'Import' checkbox is being toggled, find out if it is part
-        # of the current selection, and apply the same operation to all other
-        # selected rows.
-        if index.column() == COL_IMPORT:
-            # Get all selected indexes that are in the 'Import' column.
-            selected = [i for i in model.GetSelectionModel().selectedIndexes()\
-                        if i.column() == COL_IMPORT]
-
-            # If the provided index is one of the selected indexes, set the
-            # 'Import' value of all selected indexes to match this one, thus
-            # applying the same operation to all of them.
-            if index in selected:
-                value = editor.GetData(index)
-                for i in selected:
-                    model.setData(i, value)
-                return
-        # Get data from the editor and set it in the model.
         model.setData(index, editor.GetData(index))
 
     def sizeHint(self, option, index):
@@ -581,7 +572,6 @@ class TreeView(QFrame):
         else:
             model = TreeModel(COL_HEADERS, node)
             self.SyncViewWithModel(model)
-            self.view.expandToDepth(2)
 
             hou.session.UsdImportDict[key] = model
 
@@ -621,13 +611,6 @@ class TreeView(QFrame):
         self.view.setModel(model)
         self.view.setSelectionModel(model.GetSelectionModel())
 
-        # Get the index of each item that should be expanded in
-        # this view and expand it.
-        for i in range(model.ExpandedPrimPathsCount()):
-            index = model.GetIndexOfExpandedPrimPath(i)
-            if index:
-                self.view.expand(index)
-
         # Set up connections between the model and the view.
         model.treeTopologyChanged.connect(self.OnTreeTopologyChanged)
         model.expandedPrimPathAdded.connect(self.view.expand)
@@ -642,6 +625,19 @@ class TreeView(QFrame):
 
         # Emit the model's ShowingVariants state to update this view.
         model.EmitShowingVariants()
+
+        # Get the index of each item that should be expanded in
+        # this view and expand it.
+        count = model.ExpandedPrimPathsCount()
+        if count > 0:
+            for i in range(count):
+                index = model.GetIndexOfExpandedPrimPath(i)
+                if index:
+                    self.view.expand(index)
+        else:
+            # If there are no paths specified to be expanded, the
+            # default is to expand the first 2 levels of the tree.
+            self.view.expandToDepth(2)
 
         # Update the new model's items as they're just becoming visible.
         topIndex = model.index(0, 0, QModelIndex())
