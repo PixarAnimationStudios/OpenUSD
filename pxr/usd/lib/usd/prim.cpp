@@ -702,6 +702,12 @@ UsdPrim::GetFilteredNextSibling(const Usd_PrimFlagsPredicate &inPred) const
     return UsdPrim(sibling, siblingPath);
 }
 
+bool
+UsdPrim::IsPseudoRoot() const
+{
+    return GetPath() == SdfPath::AbsoluteRootPath();
+}
+
 UsdPrim
 UsdPrim::GetMaster() const
 {

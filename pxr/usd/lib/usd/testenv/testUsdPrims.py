@@ -721,6 +721,17 @@ class TestUsdPrim(unittest.TestCase):
             # Note this prim index may change from run to run depending on
             # which is selected as the source for the master.
             _ValidatePrimIndexes(master.GetChild('Child'))
+            
+    def test_PseudoRoot(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('PseudoRoot.%s' % fmt)
+            w = s.DefinePrim('/World')
+            p = s.GetPrimAtPath('/')
+            self.assertTrue(p.IsPseudoRoot())
+            self.assertFalse(Usd.Prim().IsPseudoRoot())
+            self.assertFalse(w.IsPseudoRoot())
+            self.assertTrue(w.GetParent().IsPseudoRoot())
+            self.assertFalse(p.GetParent().IsPseudoRoot())
 
 if __name__ == "__main__":
     unittest.main()

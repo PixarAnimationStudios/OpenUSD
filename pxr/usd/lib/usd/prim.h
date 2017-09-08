@@ -532,6 +532,15 @@ public:
     USD_API
     UsdPrim GetFilteredNextSibling(
         const Usd_PrimFlagsPredicate &predicate) const;
+        
+    /// Returns true if the prim is the pseudo root.  
+    ///
+    /// Equivalent to 
+    /// \code
+    /// prim.GetPath() == SdfPath::AbsoluteRootPath()
+    /// \endcode
+    USD_API
+    bool IsPseudoRoot() const;
 
     // --------------------------------------------------------------------- //
     /// \name Variants 
