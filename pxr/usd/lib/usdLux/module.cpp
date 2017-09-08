@@ -40,6 +40,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdLuxLight);
     {
         TF_WRAP(UsdLuxDiskLight);
+        TF_WRAP(UsdLuxDistantLight);
         TF_WRAP(UsdLuxRectLight);
         TF_WRAP(UsdLuxSphereLight);
         TF_WRAP(UsdLuxDomeLight);

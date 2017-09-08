@@ -177,7 +177,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 5000.0
+    /// \n  Fallback Value: 50000.0
     USDLUX_API
     UsdAttribute GetIntensityAttr() const;
 

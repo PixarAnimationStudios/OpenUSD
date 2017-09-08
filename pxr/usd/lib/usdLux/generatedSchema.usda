@@ -485,7 +485,7 @@ class DistantLight "DistantLight" (
     rel filters (
         doc = "Relationship to the light filters that apply to this light."
     )
-    float intensity = 5000 (
+    float intensity = 50000 (
         doc = """Scales the emission of the light linearly.
         The DistantLight has a high default intensity to approximate the Sun."""
     )
