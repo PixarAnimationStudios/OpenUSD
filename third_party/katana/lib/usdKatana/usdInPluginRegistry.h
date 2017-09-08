@@ -136,8 +136,9 @@ public:
     static void RegisterLocationDecoratorFnc(LocationDecoratorFnc fnc);
     
     /// \brief Run the registered plug-in functions at a katana location
-    /// and UsdPrim.
-    static void ExecuteLocationDecoratorFncs(
+    /// and UsdPrim. It returns opArgs -- which may be altered by the executed
+    /// functions.
+    static FnKat::GroupAttribute ExecuteLocationDecoratorFncs(
             FnKat::GeolibCookInterface& interface,
             FnKat::GroupAttribute opArgs,
             PxrUsdKatanaUsdInPrivateData* privateData);

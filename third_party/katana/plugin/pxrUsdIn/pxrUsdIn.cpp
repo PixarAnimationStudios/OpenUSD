@@ -346,6 +346,12 @@ public:
                         prim.GetTypeName(), &opName)) {
                     if (!opName.empty()) {
                         interface.execOp(opName, opArgs);
+                        
+                        if (privateData)
+                        {
+                            opArgs = privateData->updateExtensionOpArgs(opArgs);
+                        }
+                        
                     }
                 }
             }
@@ -360,6 +366,11 @@ public:
                         prim.GetTypeName(), &opName)) {
                     if (!opName.empty()) {
                         interface.execOp(opName, opArgs);
+                        
+                        if (privateData)
+                        {
+                            opArgs = privateData->updateExtensionOpArgs(opArgs);
+                        }
                     }
                 }
             }
@@ -379,6 +390,11 @@ public:
                     if (PxrUsdKatanaUsdInPluginRegistry::FindKind(kind, &opName)) {
                         if (!opName.empty()) {
                             interface.execOp(opName, opArgs);
+                            
+                            if (privateData)
+                            {
+                                opArgs = privateData->updateExtensionOpArgs(opArgs);
+                            }
                         }
                     }
                 }
@@ -397,6 +413,11 @@ public:
                             kind, &opName)) {
                         if (!opName.empty()) {
                             interface.execOp(opName, opArgs);
+                            
+                            if (privateData)
+                            {
+                                opArgs = privateData->updateExtensionOpArgs(opArgs);
+                            }
                         }
                     }
                 }
@@ -528,6 +549,10 @@ public:
             }
         }
 
+        opArgs = PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
+                interface, opArgs, privateData);
+        
+
         if (!skipAllChildren) {
 
             std::set<std::string> childrenToSkip;
@@ -591,8 +616,6 @@ public:
         }
         
         
-        PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
-                interface, opArgs, privateData);
         
         
     }

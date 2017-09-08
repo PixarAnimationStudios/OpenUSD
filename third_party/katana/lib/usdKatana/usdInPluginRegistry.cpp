@@ -177,7 +177,8 @@ void PxrUsdKatanaUsdInPluginRegistry::RegisterLocationDecoratorFnc(
     _locationDecoratorFncList.push_back(fnc);
 }
 
-void PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
+FnKat::GroupAttribute
+PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
         FnKat::GeolibCookInterface& interface,
         FnKat::GroupAttribute opArgs,
         PxrUsdKatanaUsdInPrivateData* privateData)
@@ -185,7 +186,14 @@ void PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
     for (auto i : _locationDecoratorFncList)
     {
         (*i)(interface, opArgs, privateData);
+        
+        if (privateData)
+        {
+            opArgs = privateData->updateExtensionOpArgs(opArgs);
+        }
     }
+    
+    return opArgs;
 }
 
 
