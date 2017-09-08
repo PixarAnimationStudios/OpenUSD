@@ -2629,6 +2629,21 @@ UsdImagingDelegate::GetSurfaceShaderSource(SdfPath const &shaderId)
 }
 
 /*virtual*/
+std::string
+UsdImagingDelegate::GetDisplacementShaderSource(SdfPath const &shaderId)
+{
+    // PERFORMANCE: We should schedule this to be updated during Sync, rather
+    // than pulling values on demand.
+
+    if (_ShaderAdapterSharedPtr adapter = _ShaderAdapterLookup(shaderId)) {
+        return adapter->GetDisplacementShaderSource(GetPathForUsd(shaderId));
+    }
+
+    TF_CODING_ERROR("Unable to find a shader adapter.");
+    return "";   
+}
+
+/*virtual*/
 VtValue
 UsdImagingDelegate::GetSurfaceShaderParamValue(SdfPath const &shaderId, 
                                                TfToken const &paramName)

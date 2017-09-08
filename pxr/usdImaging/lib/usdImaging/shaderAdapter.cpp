@@ -40,6 +40,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (surfaceShader)
+    (displacementShader)
+);
 
 UsdImagingShaderAdapter::UsdImagingShaderAdapter(UsdImagingDelegate* delegate)
     : _delegate(delegate)
@@ -62,7 +67,8 @@ UsdImagingShaderAdapter::GetSurfaceShaderIsTimeVarying(SdfPath const& usdPath) c
 }
 
 std::string
-UsdImagingShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) const
+UsdImagingShaderAdapter::_GetShaderSource(SdfPath const &usdPath, 
+                                         TfToken const &shaderType) const
 {
     std::string const EMPTY;
     if (!TF_VERIFY(usdPath != SdfPath()))
@@ -98,21 +104,42 @@ UsdImagingShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) const
     // like to share this in some sort of registry in the future.
     SdfAssetPath asset;
     std::string filePath;
-    if (!srcAttr.Get(&asset))
+    if (!srcAttr.Get(&asset)){
         return EMPTY;
+    }
 
     filePath = asset.GetResolvedPath();
 
     // Fallback to the literal path if it couldn't be resolved.
-    if (filePath.empty())
+    if (filePath.empty()){
         filePath = asset.GetAssetPath();
+    }
 
     GlfGLSLFX gfx(filePath);
-
-    if (!gfx.IsValid())
+    if (!gfx.IsValid()){
         return EMPTY;
+    }
 
-    return gfx.GetSurfaceSource();
+    if (shaderType == _tokens->surfaceShader){
+        return gfx.GetSurfaceSource();
+    } else if (shaderType == _tokens->displacementShader){
+        return gfx.GetDisplacementSource();
+    }
+
+    TF_CODING_ERROR("Unsupported shader type: <%s>\n", shaderType.GetText());
+    return EMPTY;
+}
+
+std::string
+UsdImagingShaderAdapter::GetSurfaceShaderSource(SdfPath const &usdPath) const
+{
+    return _GetShaderSource(usdPath, _tokens->surfaceShader);
+}
+
+std::string
+UsdImagingShaderAdapter::GetDisplacementShaderSource(SdfPath const &usdPath) const
+{
+    return _GetShaderSource(usdPath, _tokens->displacementShader);
 }
 
 static bool
