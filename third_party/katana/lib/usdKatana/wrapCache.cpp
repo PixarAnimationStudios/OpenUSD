@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,14 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+
+#include <boost/python.hpp>
+#include <FnAttribute/suite/FnAttributeSuite.h>  // UsdKatana import crashes without this include
+
+#include "pxr/base/tf/pyStaticTokens.h"
+
+#include "cache.h"
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
-{
-    TF_WRAP(UsdKatanaBlindDataObject);
-    TF_WRAP(UsdKatanaCache);
-    TF_WRAP(UsdKatanaLookAPI);
+void wrapUsdKatanaCache() {
+    typedef UsdKatanaCache This;
+    SdfLayerRefPtr (This::*ThisFindSessionLayer)(const std::string& cacheKey)=
+            &This::FindSessionLayer;
+    class_<This>("Cache", no_init)
+        .def("GetInstance", &UsdKatanaCache::GetInstance,
+             return_value_policy<reference_existing_object>())
+        .staticmethod("GetInstance")
+        .def("FindSessionLayer", ThisFindSessionLayer);
 }

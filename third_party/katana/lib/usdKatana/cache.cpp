@@ -105,19 +105,16 @@ namespace
     }
 }
 
-
-SdfLayerRefPtr&
+SdfLayerRefPtr& 
 UsdKatanaCache::_FindOrCreateSessionLayer(
-        FnAttribute::GroupAttribute sessionAttr, std::string rootLocation)
-{
+    FnAttribute::GroupAttribute sessionAttr,
+    const std::string& rootLocation) {
     // Grab a reader lock for reading the _sessionKeyCache
     boost::upgrade_lock<boost::upgrade_mutex>
                 readerLock(UsdKatanaGetSessionCacheLock());
     
     
-    std::string cacheKey = FnAttribute::GroupAttribute("s", sessionAttr,
-            "r", FnAttribute::StringAttribute(rootLocation),
-                    true).getHash().str();
+    std::string cacheKey = _ComputeCacheKey(sessionAttr, rootLocation);
     
     // Open the usd stage
     SdfLayerRefPtr sessionLayer;
@@ -312,6 +309,33 @@ UsdKatanaCache::_FindOrCreateSessionLayer(
                 };
             }
         }
+
+        FnAttribute::StringAttribute dynamicSublayersAttr =
+                sessionAttr.getChildByName("subLayers");
+
+        if (dynamicSublayersAttr.getNumberOfValues() > 0){
+
+            FnAttribute::StringAttribute::array_type dynamicSublayers = dynamicSublayersAttr.getNearestSample(0);
+            if (dynamicSublayersAttr.getTupleSize() != 2 || 
+                dynamicSublayers.size() % 2 != 0){
+                TF_CODING_ERROR("sublayers must contain a list of two-tuples [(rootLocation, sublayerIdentifier)]");
+            }
+
+            std::set<std::string> subLayersSet;
+            std::vector<std::string> subLayers;
+            for (size_t i = 0; i<dynamicSublayers.size(); i+=2){
+                std::string sublayerRootLocation = dynamicSublayers[i];
+                if (sublayerRootLocation == rootLocation && strlen(dynamicSublayers[i+1]) > 0){
+                    if (subLayersSet.find(dynamicSublayers[i+1]) == subLayersSet.end()){
+                        subLayers.push_back(dynamicSublayers[i+1]);
+                        subLayersSet.insert(dynamicSublayers[i+1]);
+                    }
+                    else
+                        TF_CODING_ERROR("Cannot add same sublayer twice.");
+                }
+            }
+            sessionLayer->SetSubLayerPaths(subLayers);
+        }
     }
     
     return _sessionKeyCache[cacheKey];
@@ -503,10 +527,6 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
     
 }
 
-
-
-
-
 UsdImagingGLSharedPtr const& 
 UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
                             UsdPrim const& root,
@@ -571,6 +591,30 @@ UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
     return res.first->second;
 }
 
+std::string UsdKatanaCache::_ComputeCacheKey(
+    FnAttribute::GroupAttribute sessionAttr,
+    const std::string& rootLocation) {
+    return FnAttribute::GroupAttribute(
+        "s", sessionAttr, "r", FnAttribute::StringAttribute(rootLocation), true)
+        .getHash()
+        .str();
+}
+
+SdfLayerRefPtr UsdKatanaCache::FindSessionLayer(
+    FnAttribute::GroupAttribute sessionAttr,
+    const std::string& rootLocation) {
+    std::string cacheKey = _ComputeCacheKey(sessionAttr, rootLocation);
+    return FindSessionLayer(cacheKey);
+}
+
+SdfLayerRefPtr UsdKatanaCache::FindSessionLayer(
+    const std::string& cacheKey) {
+    const auto& it = _sessionKeyCache.find(cacheKey);
+    if (it != _sessionKeyCache.end()) {
+        return it->second;
+    }
+    return NULL;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
