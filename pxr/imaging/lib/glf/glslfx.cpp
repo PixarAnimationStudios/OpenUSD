@@ -238,7 +238,8 @@ bool
 GlfGLSLFX::_ProcessFile(string const & filePath, _ParseContext & context)
 {
     if (!TfPathExists(filePath)) {
-        TF_RUNTIME_ERROR("GlfGLSLFX::_ProcessFile. File doesn't exist: \"%s\"\n", filePath.c_str());
+        // XXX:validation
+        TF_WARN("File doesn't exist: \"%s\"\n", filePath.c_str());
         return false;
     }
 
