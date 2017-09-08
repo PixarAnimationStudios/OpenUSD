@@ -36,10 +36,10 @@ class TestUsdRiUtilities(unittest.TestCase):
       # since we don't currently express the propogateCorners argument through
       # the system.
       faceVaryingConversionTable = [  
-        (["bilinear",      "all"], 0),
-        (["edgeAndCorner", "cornersPlus1", "cornersPlus2", "cornersOnly"], 1),
-        (["edgeOnly",      "none"], 2),
-        (["alwaysSharp",   "boundaries"], 3)]
+        (["all"], 0),
+        (["cornersPlus1", "cornersPlus2", "cornersOnly"], 1),
+        (["none"], 2),
+        (["boundaries"], 3)]
 
       for tokens, rmanValue in faceVaryingConversionTable:
         # Check all tokens, old and new
@@ -51,7 +51,7 @@ class TestUsdRiUtilities(unittest.TestCase):
         # Convert from renderman values
         # Note that we only map to the new tokens.
         self.assertEqual(
-          ConvertFromRManFaceVaryingLinearInterpolation(rmanValue), tokens[1])
+          ConvertFromRManFaceVaryingLinearInterpolation(rmanValue), tokens[0])
 
 if __name__ == "__main__":
   unittest.main()

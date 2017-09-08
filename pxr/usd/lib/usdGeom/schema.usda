@@ -78,30 +78,6 @@ over "GLOBAL" (
                 the PointInstancer ids that should be masked (unrenderable)
                 over all time."""
             }
-            dictionary edgeOnly = {
-                string doc = """Legacy token representing a deprecated 
-                faceVaryingInterpolateBoundary state. The modern equivalent
-                is UsdGeomTokens->none."""
-            }
-            dictionary edgeAndCorner = {
-                string doc = """Legacy token representing a deprecated 
-                faceVaryingInterpolateBoundary state. The modern equivalent
-                is UsdGeomTokens->cornersPlus1"""
-            }
-            dictionary alwaysSharp = {
-                string doc = """Legacy token representing a deprecated 
-                faceVaryingInterpolateBoundary state. The modern equivalent
-                is UsdGeomTokens->boundaries."""
-            }
-            dictionary bilinear = {
-                string doc = """Legacy token representing a deprecated 
-                faceVaryingInterpolateBoundary state. The modern equivalent
-                is UsdGeomTokens->all."""
-            }
-            dictionary faceVaryingInterpolateBoundary = {
-                string doc = """Legacy token. The modern equivalent
-                is faceVaryingLinearInterpolation."""
-            }
         }
     }
 )

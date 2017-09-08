@@ -485,14 +485,6 @@ public:
     /// indicates that the crease or corner is perfectly sharp.
     USDGEOM_API
     static const float SHARPNESS_INFINITE;
-
-    // A transition API which can read both the new (faceVaryingLinearInterpolation)
-    // and old(faceVaryingInterpolateBoundary) attributes, but only returns values
-    // in the new form. This aims to limit the number of consumers which need to 
-    // handle both sets of values.
-    USDGEOM_API
-    TfToken GetFaceVaryingLinearInterpolation(
-        UsdTimeCode time=UsdTimeCode::Default()) const; 
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

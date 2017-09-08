@@ -224,7 +224,9 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
     tags->SetVertexInterpolationRule(token);
 
     auto meshPrim = UsdGeomMesh(prim);
-    token = meshPrim.GetFaceVaryingLinearInterpolation(time);
+    auto fvLinearInterpAttr = meshPrim.GetFaceVaryingLinearInterpolationAttr();
+    fvLinearInterpAttr.Get(&token, time); 
+
     tags->SetFaceVaryingInterpolationRule(token);
 
     // XXX uncomment after fixing USD schema

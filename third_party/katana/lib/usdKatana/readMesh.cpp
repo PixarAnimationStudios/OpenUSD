@@ -101,24 +101,25 @@ _SetSubdivTagsGroup(PxrUsdKatanaAttrMap& attrs,
             Msg("\tinterpolateBoundary SKIPPED because we failed to read it!\n");
     }
 
-    TfToken fvInterpolateBoundary;
+    TfToken fvLinearInterpolationTk;
     // Fun prman facts: the "default behavior when no 
     // facevaryinginterpolateboundary tag is emitted" can be customized in
     // your site's rendermn.ini, so the usd fallback is unreliable.  Therefore
     // we will emit whenever the attribute has been authored.
     // Performance Note: once we have resolveInfo available, that will be more
     // efficient than doing IsAuthored() followed by Get()
-    fvInterpolateBoundary = mesh.GetFaceVaryingLinearInterpolation(time);
-    if (mesh.GetPrim().GetAttribute(UsdGeomTokens->faceVaryingLinearInterpolation).IsAuthored()
-        || mesh.GetPrim().GetAttribute(UsdGeomTokens->faceVaryingInterpolateBoundary).IsAuthored()){
+    auto fvLinearInterpolationAttr = mesh.GetFaceVaryingLinearInterpolationAttr(); 
+    fvLinearInterpolationAttr.Get(&fvLinearInterpolationTk);
+
+    if (fvLinearInterpolationAttr.IsAuthored()){
         TF_DEBUG(USDKATANA_MESH_IMPORT).
             Msg("\tfacevaryinginterpolateboundary = %s (%d)\n",
-                fvInterpolateBoundary.GetText(),
-                UsdRiConvertToRManFaceVaryingLinearInterpolation(fvInterpolateBoundary));
+                fvLinearInterpolationTk.GetText(),
+                UsdRiConvertToRManFaceVaryingLinearInterpolation(fvLinearInterpolationTk));
         
         attrs.set("geometry.facevaryinginterpolateboundary",
             FnKat::IntAttribute(
-                UsdRiConvertToRManFaceVaryingLinearInterpolation(fvInterpolateBoundary)));
+                UsdRiConvertToRManFaceVaryingLinearInterpolation(fvLinearInterpolationTk)));
     }
     else{
         TF_DEBUG(USDKATANA_MESH_IMPORT).
