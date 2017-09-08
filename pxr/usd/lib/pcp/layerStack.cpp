@@ -741,6 +741,7 @@ PcpLayerStack::_BuildLayerStack(
 
         // Resolve and open sublayer.
         string sublayerPath(sublayers[i]);
+        TfErrorMark m;
         SdfLayerRefPtr sublayer = SdfFindOrOpenRelativeToLayer(
             layer, &sublayerPath, layerArgs);
 
@@ -752,9 +753,19 @@ PcpLayerStack::_BuildLayerStack(
             err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
             err->layer           = layer;
             err->sublayerPath    = sublayerPath;
+            if (!m.IsClean()) {
+                vector<string> commentary;
+                for (auto const &err: m) {
+                    commentary.push_back(err.GetCommentary());
+                }
+                m.Clear();
+                err->messages = TfStringJoin(commentary.begin(),
+                                             commentary.end(), "; ");
+            }
             errors->push_back(err);
             continue;
         }
+        m.Clear();
 
         // Check for cycles.
         if (seenLayers->count(sublayer)) {

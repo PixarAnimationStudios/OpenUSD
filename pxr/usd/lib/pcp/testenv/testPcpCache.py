@@ -46,18 +46,10 @@ class TestPcpCache(unittest.TestCase):
         self.assertTrue(pi.IsValid())
         self.assertEqual(len(pi.localErrors), 0)
 
-        # XXX: Sdf currently emits coding errors when it cannot find a file format
-        #      for the given target. I'm not sure this should be the case; it
-        #      probably should treat it as though the file didn't exist, which
-        #      does not emit errors.
-        pcpCache = Pcp.Cache(lsi, targetSchema='Presto')
-
-        with self.assertRaises(Tf.ErrorException):
-            pcpCache.ComputePrimIndex('/PrimWithReferences')
-
         # Should be two local errors corresponding to invalid asset paths,
         # since this prim has two references to layers with a different target
         # schema.
+        pcpCache = Pcp.Cache(lsi, targetSchema='Presto')
         (pi, _) = pcpCache.ComputePrimIndex('/PrimWithReferences')
         self.assertTrue(pi.IsValid())
         self.assertEqual(len(pi.localErrors), 2)

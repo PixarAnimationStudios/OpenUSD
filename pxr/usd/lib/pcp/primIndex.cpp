@@ -1702,6 +1702,7 @@ _EvalNodeReferences(
             }
 
             std::string resolvedAssetPath(ref.GetAssetPath());
+            TfErrorMark m;
             refLayer = SdfFindOrOpenRelativeToLayer(
                 srcLayer, &resolvedAssetPath, 
                 Pcp_GetArgumentsForTargetSchema(indexer->inputs.targetSchema));
@@ -1716,9 +1717,19 @@ _EvalNodeReferences(
                 err->resolvedAssetPath = resolvedAssetPath;
                 err->arcType = PcpArcTypeReference;
                 err->layer = srcLayer;
+                if (!m.IsClean()) {
+                    vector<string> commentary;
+                    for (auto const &err: m) {
+                        commentary.push_back(err.GetCommentary());
+                    }
+                    m.Clear();
+                    err->messages = TfStringJoin(commentary.begin(),
+                                                 commentary.end(), "; ");
+                }
                 indexer->RecordError(err);
                 continue;
             }
+            m.Clear();
 
             const ArResolverContext& pathResolverContext =
                 node.GetLayerStack()->GetIdentifier().pathResolverContext;
@@ -3584,6 +3595,7 @@ _EvalNodePayload(
     // Resolve asset path
     // See Pcp_NeedToRecomputeDueToAssetPathChange
     std::string resolvedAssetPath(payload.GetAssetPath());
+    TfErrorMark m;
     SdfLayerRefPtr payloadLayer = SdfFindOrOpenRelativeToLayer(
         payloadSpecLayer, &resolvedAssetPath, args);
 
@@ -3596,9 +3608,19 @@ _EvalNodePayload(
         err->resolvedAssetPath = resolvedAssetPath;
         err->arcType = PcpArcTypePayload;
         err->layer = payloadSpecLayer;
+        if (!m.IsClean()) {
+            vector<string> commentary;
+            for (auto const &err: m) {
+                commentary.push_back(err.GetCommentary());
+            }
+            m.Clear();
+            err->messages = TfStringJoin(commentary.begin(),
+                                         commentary.end(), "; ");
+        }
         indexer->RecordError(err);
         return;
     }
+    m.Clear();
 
     // Check if the payload layer is in the root node's layer stack. 
     // If so, we report an error. (Internal payloads are disallowed.)
