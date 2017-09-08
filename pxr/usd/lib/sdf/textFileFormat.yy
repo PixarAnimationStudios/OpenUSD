@@ -3290,10 +3290,26 @@ Sdf_MemoryFlexBuffer::Sdf_MemoryFlexBuffer(FILE* file,
     std::unique_ptr<char[]> buffer(new char[fileSize + paddingBytesRequired]);
 
     fseek(file, 0, SEEK_SET);
-    if (fread(buffer.get(), fileSize, 1, file) == 0) {
-        TF_RUNTIME_ERROR("Failed to read file contents @%s@: %s",
-                         name.c_str(), feof(file) ?
-                         "premature end-of-file" : ArchStrerror().c_str());
+    clearerr(file);
+    if (fread(buffer.get(), 1, fileSize, file) !=
+        static_cast<size_t>(fileSize)) {
+        if (feof(file)) {
+            TF_RUNTIME_ERROR("Failed to read file contents @%s@: "
+                             "premature end-of-file",
+                             name.c_str());
+        }
+        else if (ferror(file)) {
+            TF_RUNTIME_ERROR("Failed to read file contents @%s@: "
+                             "an error occurred while reading",
+                             name.c_str());
+        }
+        else {
+            TF_RUNTIME_ERROR("Failed to read file contents @%s@: "
+                             "fread() reported incomplete read but "
+                             "neither feof() nor ferror() returned "
+                             "nonzero",
+                             name.c_str());
+        }
         return;
     }
 
