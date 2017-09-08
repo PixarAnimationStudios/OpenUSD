@@ -198,7 +198,7 @@ UsdShadeLook::GetEditContextForVariant(const TfToken &lookVariation,
     
     UsdVariantSet lookVariant = prim.GetVariantSet(_tokens->lookVariantName);
     UsdEditTarget target = stage->GetEditTarget();
-    if (lookVariant.AppendVariant(lookVariation) && 
+    if (lookVariant.AddVariant(lookVariation) && 
         lookVariant.SetVariantSelection(lookVariation)) {
         target = lookVariant.GetVariantEditTarget(layer);
     }
@@ -288,7 +288,7 @@ UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
 
     UsdVariantSet masterSet = masterPrim.GetVariantSet(masterSetName);
     TF_FOR_ALL(varName, allLookVariants){
-        if (!masterSet.AppendVariant(*varName)){
+        if (!masterSet.AddVariant(*varName)){
             TF_RUNTIME_ERROR("Unable to create Look variant %s on prim %s. "
                              "Aborting master lookVariant creation.",
                              varName->c_str(),

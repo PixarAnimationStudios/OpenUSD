@@ -68,7 +68,7 @@ _GenerateStage(const string& fmt) {
     }
 
     auto localRefPrim = stage->OverridePrim(localRefPrimPath);
-    localRefPrim.GetReferences().AppendInternalReference(primPath);
+    localRefPrim.GetReferences().AddInternalReference(primPath);
     auto localRefAttr = 
         localRefPrim.CreateAttribute(defAttrTk, SdfValueTypeNames->Double);
     localRefAttr.Block();

@@ -874,7 +874,7 @@ PxrUsdMayaWriteUtil::WriteClassInherits(
         const SdfPath inheritPath = SdfPath::AbsoluteRootPath().AppendChild(
                 TfToken(className));
         UsdPrim classPrim = stage->CreateClassPrim(inheritPath);
-        inherits.AppendInherit(classPrim.GetPath());
+        inherits.AddInherit(classPrim.GetPath());
     }
     return true;
 }

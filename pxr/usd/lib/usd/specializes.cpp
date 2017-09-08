@@ -38,15 +38,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdSpecializes
 // ------------------------------------------------------------------------- //
 bool
-UsdSpecializes::AppendSpecialize(const SdfPath &primPath)
+UsdSpecializes::AddSpecialize(const SdfPath &primPath, UsdListPosition position)
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfSpecializesProxy paths = spec->GetSpecializesList();
-        if (UsdAuthorAppendAsAdd()) {
-            paths.Add(primPath);
-        } else {
+        switch (position) {
+        case UsdListPositionFront:
+            paths.Prepend(primPath);
+            break;
+        case UsdListPositionBack:
             paths.Append(primPath);
+            break;
+        case UsdListPositionTempDefault:
+            if (UsdAuthorOldStyleAdd()) {
+                paths.Add(primPath);
+            } else {
+                paths.Append(primPath);
+            }
+            break;
         }
         return true;
     }

@@ -829,7 +829,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         if(ctxt.overlayAll) {
             relationshipPaths.push_back(relationshipPath);
         } else {
-            prototypesRel.AppendTarget(relationshipPath);
+            prototypesRel.AddTarget(relationshipPath);
         }
         m_relationshipIndexMap[TfToken(mapKey)] = relIdx++;
     }

@@ -917,7 +917,7 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
             SdfReference ref = SdfReference();
             ref.SetPrimPath(SdfPath("/" + m_assetName ));
             UsdReferences refs = m_modelPrim.GetReferences();
-            refs.AppendReference( ref );
+            refs.AddReference( ref );
 
             // Get the model's prim index (contains all opinions on this node)
             const PcpPrimIndex idx = m_modelPrim.ComputeExpandedPrimIndex();
@@ -1836,7 +1836,7 @@ bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
             }
             else {
                 SdfPathVector prefixes = shaderPrim.GetPath().GetPrefixes();
-                refs.AppendReference(shaderFile, prefixes[0]);
+                refs.AddReference(shaderFile, prefixes[0]);
             }
         }
         if (shaderPrim) {

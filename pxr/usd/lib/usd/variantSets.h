@@ -56,14 +56,15 @@ class SdfPath;
 class UsdVariantSet {
 public:
     /// Author a variant spec for \a variantName in this VariantSet at the
-    /// stage's current EditTarget.  Return true if the spec was successfully
-    /// authored, false otherwise.
+    /// stage's current EditTarget, in the position specified by
+    /// \p position.  Return true if the spec was successfully authored,
+    /// false otherwise.
     ///
     /// This will create the VariantSet itself, if necessary, so as long as
     /// UsdPrim "prim" is valid, the following should always work:
     /// \code
     /// UsdVariantSet vs = prim.GetVariantSet("myVariantSet");
-    /// vs.AppendVariant("myFirstVariation");
+    /// vs.AddVariant("myFirstVariation");
     /// vs.SetVariantSelection("myFirstVariation");
     /// {
     ///     UsdEditContext ctx(vs.GetVariantEditContext());
@@ -72,7 +73,8 @@ public:
     /// }
     /// \endcode
     USD_API
-    bool AppendVariant(const std::string& variantName);
+    bool AddVariant(const std::string& variantName,
+                    UsdListPosition position=UsdListPositionTempDefault);
 
     /// Return the composed variant names for this VariantSet, ordered
     /// lexicographically.
@@ -181,7 +183,7 @@ private:
     }
 
     SdfPrimSpecHandle _CreatePrimSpecForEditing();
-    SdfVariantSetSpecHandle _AppendVariantSet();
+    SdfVariantSetSpecHandle _AddVariantSet(UsdListPosition position);
 
     UsdPrim _prim;
     std::string _variantSetName;
@@ -215,13 +217,14 @@ public:
     /// This step is not always necessary, because if this UsdVariantSets
     /// object is valid, then 
     /// \code
-    /// varSetsObj.GetVariantSet(variantSetName).AppendVariant(variantName);
+    /// varSetsObj.GetVariantSet(variantSetName).AddVariant(variantName);
     /// \endcode
     /// will always succeed, creating the VariantSet first, if necessary.  This
     /// method exists for situations in which you want to create a VariantSet
     /// without necessarily populating it with variants.
     USD_API
-    UsdVariantSet AppendVariantSet(const std::string& variantSetName);
+    UsdVariantSet AddVariantSet(const std::string& variantSetName,
+                                UsdListPosition position=UsdListPositionTempDefault);
 
     // TODO: don't we want remove and reorder, clear, etc. also?
 

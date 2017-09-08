@@ -126,7 +126,7 @@ TestIsDefined()
     //
     stage = UsdStage::Open(strongLayer->GetIdentifier());
     p = stage->OverridePrim(SdfPath("/Parent"));
-    p.GetReferences().AppendReference(
+    p.GetReferences().AddReference(
         SdfReference(weakLayer->GetIdentifier(), SdfPath("/Parent")));
 
     //

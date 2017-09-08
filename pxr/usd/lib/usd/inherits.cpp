@@ -38,15 +38,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdInherits
 // ------------------------------------------------------------------------- //
 bool
-UsdInherits::AppendInherit(const SdfPath &primPath)
+UsdInherits::AddInherit(const SdfPath &primPath, UsdListPosition position)
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfInheritsProxy inhs = spec->GetInheritPathList();
-        if (UsdAuthorAppendAsAdd()) {
-            inhs.Add(primPath);
-        } else {
+        switch (position) {
+        case UsdListPositionFront:
+            inhs.Prepend(primPath);
+            break;
+        case UsdListPositionBack:
             inhs.Append(primPath);
+            break;
+        case UsdListPositionTempDefault:
+            if (UsdAuthorOldStyleAdd()) {
+                inhs.Add(primPath);
+            } else {
+                inhs.Append(primPath);
+            }
+            break;
         }
         return true;
     }

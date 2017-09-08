@@ -46,7 +46,7 @@ def TestBug141491():
     # Now make a scene description edit that would affect
     # the instance. Here, we just add an inherit arc to the
     # 'Set' prim that the instance was referencing.
-    stage.GetPrimAtPath('/Set').GetInherits().AppendInherit('/Class')
+    stage.GetPrimAtPath('/Set').GetInherits().AddInherit('/Class')
 
     # Prior to the bug fix, the above would cause a new master prim
     # to be registered internally. However, since the parent of

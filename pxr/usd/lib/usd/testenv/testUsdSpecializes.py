@@ -36,7 +36,7 @@ class TestUsdSpecializes(unittest.TestCase):
             items = None
 
             assert not concrete.HasAuthoredSpecializes()
-            assert concrete.GetSpecializes().AppendSpecialize(specA.GetPath())
+            assert concrete.GetSpecializes().AddSpecialize(specA.GetPath())
             assert concrete.HasAuthoredSpecializes()
             self.assertEqual(len(concrete.GetMetadata("specializes").addedItems), 1)
             self.assertEqual(concrete.GetMetadata("specializes").addedItems[0],
@@ -71,7 +71,7 @@ class TestUsdSpecializes(unittest.TestCase):
             concrete = stage.DefinePrim("/Concrete")
 
             assert not concrete.GetChildren() 
-            assert concrete.GetSpecializes().AppendSpecialize(specA.GetPath())
+            assert concrete.GetSpecializes().AddSpecialize(specA.GetPath())
 
             self.assertEqual(concrete.GetChildren()[0].GetPath(),
                         concrete.GetPath().AppendChild("Child"))

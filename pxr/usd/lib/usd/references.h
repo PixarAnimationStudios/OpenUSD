@@ -112,11 +112,11 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// References may omit the identifier specifying the referenced layer.  This
 /// creates an "internal" reference. During composition, the referenced layer 
 /// will be resolved to the root layer of the LayerStack containing the 
-/// layer where the reference was authored.  See AppendInternalReference().
+/// layer where the reference was authored.  See AddInternalReference().
 ///
 /// \subsection Usd_Failing_References Reasons why adding a reference may fail, why adding a reference may succeed but still generate errors, and what it all means
 ///
-/// AppendReference() and SetReferences() can each fail for a number of
+/// AddReference() and SetReferences() can each fail for a number of
 /// reasons.  If one of the specified prim targets for one of the references
 /// is not a root prim, we will generate an error, fail to author any scene
 /// description, and return \c false.  If anything goes wrong in attempting
@@ -133,7 +133,7 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// reference.</b>
 ///
 /// Immediately upon successful authoring of the reference (before returning
-/// from AppendReference(), RemoveReference(), ClearReferences(), or
+/// from AddReference(), RemoveReference(), ClearReferences(), or
 /// SetReferences()), the UsdStage on which the reference was authored will
 /// recompose the subtree rooted at the prim hosting the reference.  If the
 /// provided identifer does not resolve to a layer that is already opened or
@@ -151,31 +151,36 @@ public:
     // XXX: should we hide SdfReference here? it seems helpful for
     // Sd/Mf compatibility
 
-    /// Appends a reference to the reference listOp at the current EditTarget.
+    /// Adds a reference to the reference listOp at the current EditTarget,
+    /// in the position specified by \p position.
     /// \sa \ref Usd_Failing_References "Why adding references may fail" for
     /// explanation of expectations on \p ref and what return values and errors
     /// to expect, and \ref Usd_OM_ListOps for details on list editing and
     /// composition of listOps.
     USD_API
-    bool AppendReference(const SdfReference& ref);
+    bool AddReference(const SdfReference& ref,
+                      UsdListPosition position=UsdListPositionTempDefault);
 
     /// \overload 
     USD_API
-    bool AppendReference(const std::string &identifier,
+    bool AddReference(const std::string &identifier,
                          const SdfPath &primPath,
-                         const SdfLayerOffset &layerOffset = SdfLayerOffset());
+                         const SdfLayerOffset &layerOffset = SdfLayerOffset(),
+                         UsdListPosition position=UsdListPositionTempDefault);
 
     /// \overload
     /// \sa \ref Usd_DefaultPrim_References "References Without Prim Paths"
     USD_API
-    bool AppendReference(const std::string &identifier,
-                         const SdfLayerOffset &layerOffset = SdfLayerOffset());
+    bool AddReference(const std::string &identifier,
+                      const SdfLayerOffset &layerOffset = SdfLayerOffset(),
+                      UsdListPosition position=UsdListPositionTempDefault);
 
     /// Add an internal reference to the specified prim.
     /// \sa \ref Usd_Internal_References "Internal References"
     USD_API
-    bool AppendInternalReference(const SdfPath &primPath,
-                         const SdfLayerOffset &layerOffset = SdfLayerOffset());
+    bool AddInternalReference(const SdfPath &primPath,
+                      const SdfLayerOffset &layerOffset = SdfLayerOffset(),
+                      UsdListPosition position=UsdListPositionTempDefault);
 
     /// Removes the specified reference from the references listOp at the
     /// current EditTarget.  This does not necessarily eliminate the 

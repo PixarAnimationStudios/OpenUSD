@@ -50,12 +50,12 @@ class TestUsdStage(unittest.TestCase):
             sVar.SetDefaultPrim(varPrim)
             p = sMain.DefinePrim('/World')
             fooSet = p.GetVariantSet('fooSet')
-            fooSet.AppendVariant('default')
-            fooSet.AppendVariant('varied')
+            fooSet.AddVariant('default')
+            fooSet.AddVariant('varied')
             fooSet.SetVariantSelection('varied')
             with fooSet.GetVariantEditContext():
                 refs = p.GetReferences()
-                refs.AppendReference(lVar.identifier)
+                refs.AddReference(lVar.identifier)
             usedLayers = sMain.GetUsedLayers()
             assert len(usedLayers) == 4
             assert lVar in usedLayers

@@ -29,7 +29,7 @@ class TestUsdGeomPointInstancer(unittest.TestCase):
     def _AddCubeModel(self, stage, primPath):
         cubeRefPrim = stage.DefinePrim(primPath)
         refs = cubeRefPrim.GetReferences()
-        refs.AppendReference("CubeModel.usda")
+        refs.AddReference("CubeModel.usda")
         return cubeRefPrim
 
     def _SetTransformComponentsAndIndices(self, instancer,

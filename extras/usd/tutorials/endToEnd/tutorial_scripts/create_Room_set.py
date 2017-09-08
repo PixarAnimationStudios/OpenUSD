@@ -127,7 +127,7 @@ def _AddModel(stage, path, refPath):
     # typeless def here because we'll be getting the type from the prim that
     # we're referencing.
     m = stage.DefinePrim(path)
-    m.GetReferences().AppendReference(os.path.join(ASSET_BASE, refPath))
+    m.GetReferences().AddReference(os.path.join(ASSET_BASE, refPath))
     return m
 
 if __name__ == '__main__':

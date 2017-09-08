@@ -56,10 +56,10 @@ class TestUsdVariants(unittest.TestCase):
             p = s.OverridePrim("/Foo")
             vss = p.GetVariantSets()
             self.assertFalse(p.HasVariantSets())
-            vs = vss.AppendVariantSet("LOD")
+            vs = vss.AddVariantSet("LOD")
             self.assertTrue(p.HasVariantSets())
             self.assertTrue(vs)
-            self.assertTrue(vs.AppendVariant("High"))
+            self.assertTrue(vs.AddVariant("High"))
             self.assertTrue(p.HasVariantSets())
 
             # This call triggers the bug. This happens because it triggers the
@@ -97,13 +97,13 @@ class TestUsdVariants(unittest.TestCase):
             s = Usd.Stage.CreateInMemory('TestNestedVariantSets.'+fmt)
             p = s.DefinePrim('/Foo', 'Scope')
             vss = p.GetVariantSets()
-            vs_lod = vss.AppendVariantSet("LOD")
-            vs_lod.AppendVariant("High")
+            vs_lod = vss.AddVariantSet("LOD")
+            vs_lod.AddVariant("High")
             vs_lod.SetVariantSelection('High')
             with vs_lod.GetVariantEditContext():
                 # Create a directly nested variant set.
-                vs_costume = vss.AppendVariantSet("Costume")
-                vs_costume.AppendVariant("Spooky")
+                vs_costume = vss.AddVariantSet("Costume")
+                vs_costume.AddVariant("Spooky")
                 vs_costume.SetVariantSelection('Spooky')
                 with vs_costume.GetVariantEditContext():
                     s.DefinePrim(p.GetPath().AppendChild('SpookyHat'), 'Cone')
@@ -111,8 +111,8 @@ class TestUsdVariants(unittest.TestCase):
                 # Create a child prim with its own variant set.
                 p2 = s.DefinePrim(p.GetPath().AppendChild('DetailedStuff'), 'Scope')
                 vss_p2 = p2.GetVariantSets()
-                vs_p2 = vss_p2.AppendVariantSet("StuffVariant")
-                vs_p2.AppendVariant("A")
+                vs_p2 = vss_p2.AddVariantSet("StuffVariant")
+                vs_p2.AddVariant("A")
                 vs_p2.SetVariantSelection('A')
                 with vs_p2.GetVariantEditContext():
                     s.DefinePrim(p2.GetPath().AppendChild('StuffA'), 'Sphere')

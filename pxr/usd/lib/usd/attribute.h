@@ -419,7 +419,8 @@ public:
     /// \name Querying and Editing Connections
     /// @{
 
-    /// Appends \p source to the list of connections.
+    /// Adds \p source to the list of connections, in the position
+    /// specified by \p position.
     ///
     /// Issue an error if \p source identifies a master prim or an object
     /// descendant to a master prim.  It is not valid to author connections to
@@ -429,7 +430,8 @@ public:
     /// authored in the authoring layer, with respect to list-editing
     /// semantics, which we will document soon 
     USD_API
-    bool AppendConnection(const SdfPath& source) const;
+    bool AddConnection(const SdfPath& source,
+                   UsdListPosition position=UsdListPositionTempDefault) const;
 
     /// Removes \p target from the list of targets.
     ///

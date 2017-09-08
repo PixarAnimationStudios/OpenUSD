@@ -505,7 +505,7 @@ MayaTransformWriter::MayaTransformWriter(
             if (isInstance) {
                 const auto masterPath = mWriteJobCtx.getMasterPath(getDagPath());
                 if (!masterPath.IsEmpty()){
-                    mUsdPrim.GetInherits().AppendInherit(masterPath);
+                    mUsdPrim.GetInherits().AddInherit(masterPath);
                     mUsdPrim.SetInstanceable(true);
                 }
             }

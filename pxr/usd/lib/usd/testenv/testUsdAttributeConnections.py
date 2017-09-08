@@ -309,7 +309,7 @@ class TestUsdAttributeConnections(unittest.TestCase):
             # Connections to objects in masters cannot be authored.
             primInMasterPath = master.GetPath().AppendChild("A")
             with self.assertRaises(Tf.ErrorException):
-                self.assertFalse(attr.AppendConnection(primInMasterPath))
+                self.assertFalse(attr.AddConnection(primInMasterPath))
             with self.assertRaises(Tf.ErrorException):
                 self.assertFalse(attr.RemoveConnection(primInMasterPath))
             with self.assertRaises(Tf.ErrorException):

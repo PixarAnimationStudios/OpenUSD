@@ -50,9 +50,10 @@ using std::vector;
 // ---------------------------------------------------------------------- //
 
 bool
-UsdVariantSet::AppendVariant(const std::string& variantName)
+UsdVariantSet::AddVariant(const std::string& variantName,
+                          UsdListPosition position)
 {
-    if (SdfVariantSetSpecHandle varSet = _AppendVariantSet()){
+    if (SdfVariantSetSpecHandle varSet = _AddVariantSet(position)) {
         // If the variant spec already exists, we don't need to create it
         for (const auto& variant : varSet->GetVariants()) {
             if (variant->GetName() == variantName){
@@ -189,7 +190,7 @@ UsdVariantSet::_CreatePrimSpecForEditing()
 }
 
 SdfVariantSetSpecHandle
-UsdVariantSet::_AppendVariantSet()
+UsdVariantSet::_AddVariantSet(UsdListPosition position)
 {
     SdfVariantSetSpecHandle result;
     SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(); 
@@ -206,10 +207,20 @@ UsdVariantSet::_AppendVariantSet()
                 result = TfDynamic_cast<SdfVariantSetSpecHandle>(spec);
             } else {
                 result = SdfVariantSetSpec::New(primSpec, _variantSetName);
-                if (UsdAuthorAppendAsAdd()) {
-                    primSpec->GetVariantSetNameList().Add(_variantSetName);
-                } else {
+                switch (position) {
+                case UsdListPositionFront:
+                    primSpec->GetVariantSetNameList().Prepend(_variantSetName);
+                    break;
+                case UsdListPositionBack:
                     primSpec->GetVariantSetNameList().Append(_variantSetName);
+                    break;
+                case UsdListPositionTempDefault:
+                    if (UsdAuthorOldStyleAdd()) {
+                        primSpec->GetVariantSetNameList().Add(_variantSetName);
+                    } else {
+                        primSpec->GetVariantSetNameList().Append(_variantSetName);
+                    }
+                    break;
                 }
             }
         }
@@ -235,11 +246,12 @@ UsdVariantSets::GetVariantSet(const std::string& variantSetName) const
 }
 
 UsdVariantSet
-UsdVariantSets::AppendVariantSet(const std::string& variantSetName)
+UsdVariantSets::AddVariantSet(const std::string& variantSetName,
+                              UsdListPosition position)
 {
     UsdVariantSet varSet = GetVariantSet(variantSetName);
 
-    varSet._AppendVariantSet();
+    varSet._AddVariantSet(position);
 
     // If everything went well, this will return a valid VariantSet.  If not,
     // you'll get an error when you try to use it, which seems good.

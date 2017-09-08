@@ -143,7 +143,8 @@ public:
     // validate those objects since it is easy to create a UsdAttribute
     // or UsdRelationship object not backed by scene description).
 
-    /// Appends \p target to the list of targets.
+    /// Adds \p target to the list of targets, in the position specified
+    /// by \p position.
     ///
     /// Passing paths to master prims or any other objects in masters will 
     /// cause an error to be issued. It is not valid to author targets to
@@ -153,7 +154,8 @@ public:
     /// authored in the authoring layer, with respect to list-editing
     /// semantics, which we will document soon 
     USD_API
-    bool AppendTarget(const SdfPath& target) const;
+    bool AddTarget(const SdfPath& target,
+                   UsdListPosition position=UsdListPositionTempDefault) const;
 
     /// Removes \p target from the list of targets.
     ///

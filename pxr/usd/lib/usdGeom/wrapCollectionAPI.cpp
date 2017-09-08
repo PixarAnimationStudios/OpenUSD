@@ -125,12 +125,12 @@ _CreateTargetFaceIndicesAttr(const UsdGeomCollectionAPI &self,
 }
 
 static bool 
-_AppendTarget(const UsdGeomCollectionAPI &self, 
+_AddTarget(const UsdGeomCollectionAPI &self, 
               const SdfPath &target, 
               object faceIndices,
               const UsdTimeCode &time=UsdTimeCode::Default())
 {
-    return self.AppendTarget(target, UsdPythonToSdfType(faceIndices, 
+    return self.AddTarget(target, UsdPythonToSdfType(faceIndices, 
         SdfValueTypeNames->IntArray).Get<VtIntArray>(), time);
 }
 
@@ -169,7 +169,7 @@ void wrapUsdGeomCollectionAPI()
         .def("SetTargets", &This::SetTargets)
         .def("GetTargets", &_GetTargets)
 
-        .def("AppendTarget", &_AppendTarget,
+        .def("AddTarget", &_AddTarget,
             (arg("target"),
              arg("targetFaceIndices")=VtIntArray(),
              arg("time")=UsdTimeCode::Default()))

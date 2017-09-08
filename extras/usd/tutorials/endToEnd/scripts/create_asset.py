@@ -110,7 +110,7 @@ def _CreateAndReferenceLayers(assetPrim, assetDir, refs):
         referencedStage.SetDefaultPrim(referencedAssetPrim)
         referencedStage.GetRootLayer().Save()
 
-        assetPrim.GetReferences().AppendReference(refLayerPath)
+        assetPrim.GetReferences().AddReference(refLayerPath)
 
     # If you want to print things out, you can do:
     #print rootLayer.ExportToString()

@@ -51,7 +51,7 @@ _ValidateNoSubRootReferences(const SdfReference &ref)
 // UsdReferences
 // ------------------------------------------------------------------------- //
 bool
-UsdReferences::AppendReference(const SdfReference& ref)
+UsdReferences::AddReference(const SdfReference& ref, UsdListPosition position)
 {
     if (!_ValidateNoSubRootReferences(ref))
         return false;
@@ -62,10 +62,20 @@ UsdReferences::AppendReference(const SdfReference& ref)
     
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfReferencesProxy refs = spec->GetReferenceList();
-        if (UsdAuthorAppendAsAdd()) {
-            refs.Add(ref);
-        } else {
+        switch (position) {
+        case UsdListPositionFront:
+            refs.Prepend(ref);
+            break;
+        case UsdListPositionBack:
             refs.Append(ref);
+            break;
+        case UsdListPositionTempDefault:
+            if (UsdAuthorOldStyleAdd()) {
+                refs.Add(ref);
+            } else {
+                refs.Append(ref);
+            }
+            break;
         }
         success = mark.IsClean();
     }
@@ -77,25 +87,28 @@ UsdReferences::AppendReference(const SdfReference& ref)
 }
 
 bool
-UsdReferences::AppendReference(const std::string &assetPath,
+UsdReferences::AddReference(const std::string &assetPath,
                                const SdfPath &primPath,
-                               const SdfLayerOffset &layerOffset)
+                               const SdfLayerOffset &layerOffset,
+                               UsdListPosition position)
 {
-    return AppendReference(SdfReference(assetPath, primPath, layerOffset));
+    return AddReference(SdfReference(assetPath, primPath, layerOffset), position);
 }
 
 bool
-UsdReferences::AppendReference(const std::string &assetPath,
-                               const SdfLayerOffset &layerOffset)
+UsdReferences::AddReference(const std::string &assetPath,
+                            const SdfLayerOffset &layerOffset,
+                            UsdListPosition position)
 {
-    return AppendReference(assetPath, SdfPath(), layerOffset);
+    return AddReference(assetPath, SdfPath(), layerOffset, position);
 }
 
 bool 
-UsdReferences::AppendInternalReference(const SdfPath &primPath,
-                                       const SdfLayerOffset &layerOffset)
+UsdReferences::AddInternalReference(const SdfPath &primPath,
+                                    const SdfLayerOffset &layerOffset,
+                                    UsdListPosition position)
 {
-    return AppendReference(std::string(), primPath, layerOffset);
+    return AddReference(std::string(), primPath, layerOffset, position);
 }
 
 bool

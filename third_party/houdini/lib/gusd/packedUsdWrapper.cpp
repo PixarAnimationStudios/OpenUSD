@@ -230,7 +230,7 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         SdfLayerOffset layerOffset = SdfLayerOffset(usdTimeOffset, usdTimeScale);
 
         // Add the reference. Layer offset will only appear if not default values.
-        m_primRefForWrite.GetReferences().AppendReference(fileName, rootPath, layerOffset );
+        m_primRefForWrite.GetReferences().AddReference(fileName, rootPath, layerOffset );
 
         // Set variant selections.
         if(ctxt.authorVariantSelections &&

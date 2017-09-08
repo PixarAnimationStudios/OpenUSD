@@ -374,7 +374,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
     //   This is done for reasons as described above under mArgs.usdModelRootOverridePath
     UsdPrim usdVariantRootPrim = mJobCtx.mStage->DefinePrim(usdVariantRootPrimPath);
     TfToken defaultPrim = usdVariantRootPrim.GetName();
-    usdVariantRootPrim.GetReferences().AppendInternalReference(usdRootPrim.GetPath());
+    usdVariantRootPrim.GetReferences().AddInternalReference(usdRootPrim.GetPath());
     usdVariantRootPrim.SetActive(true);
     usdRootPrim.SetActive(false);
 
@@ -423,8 +423,8 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
         if (!tableOfActivePaths.empty()) {
             { // == BEG: Scope for Variant EditContext
                 // Create the variantSet and variant
-                UsdVariantSet modelingVariantSet = usdVariantRootPrim.GetVariantSets().AppendVariantSet("modelingVariant");
-                modelingVariantSet.AppendVariant(variantName);
+                UsdVariantSet modelingVariantSet = usdVariantRootPrim.GetVariantSets().AddVariantSet("modelingVariant");
+                modelingVariantSet.AddVariant(variantName);
                 modelingVariantSet.SetVariantSelection(variantName);
                 // Set the Edit Context
                 UsdEditTarget editTarget = modelingVariantSet.GetVariantEditTarget();

@@ -100,7 +100,8 @@ UsdRelationship::_GetTargetForAuthoring(const SdfPath &target,
 }
 
 bool
-UsdRelationship::AppendTarget(const SdfPath& target) const
+UsdRelationship::AddTarget(const SdfPath& target,
+                           UsdListPosition position) const
 {
     std::string errMsg;
     const SdfPath targetToAuthor = _GetTargetForAuthoring(target, &errMsg);
@@ -122,11 +123,22 @@ UsdRelationship::AppendTarget(const SdfPath& target) const
     if (!relSpec)
         return false;
 
-    if (UsdAuthorAppendAsAdd()) {
-    relSpec->GetTargetPathList().Add(targetToAuthor);
-    } else {
+    switch (position) {
+    case UsdListPositionFront:
+        relSpec->GetTargetPathList().Prepend(targetToAuthor);
+        break;
+    case UsdListPositionBack:
         relSpec->GetTargetPathList().Append(targetToAuthor);
+        break;
+    case UsdListPositionTempDefault:
+        if (UsdAuthorOldStyleAdd()) {
+            relSpec->GetTargetPathList().Add(targetToAuthor);
+        } else {
+            relSpec->GetTargetPathList().Append(targetToAuthor);
+        }
+        break;
     }
+
     return true;
 }
 
@@ -205,15 +217,7 @@ UsdRelationship::SetTargets(const SdfPathVector& targets) const
         return false;
 
     relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
-    if (UsdAuthorAppendAsAdd()) {
-    for (const SdfPath &path: mappedPaths) {
-        relSpec->GetTargetPathList().Add(path);
-        }
-    } else {
-        for (const SdfPath &path: mappedPaths) {
-            relSpec->GetTargetPathList().Append(path);
-        }
-    }
+    relSpec->GetTargetPathList().GetExplicitItems() = mappedPaths;
 
     return true;
 }

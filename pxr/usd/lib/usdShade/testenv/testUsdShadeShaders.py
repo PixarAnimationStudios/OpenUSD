@@ -48,7 +48,7 @@ class TestUsdShadeShaders(unittest.TestCase):
         # Make a class for pale so we can test that disconnecting/blocking works
         classPale = stage.CreateClassPrim(classPalePath)
         self.assertTrue(classPale)
-        pale.GetPrim().GetInherits().AppendInherit(classPalePath)
+        pale.GetPrim().GetInherits().AddInherit(classPalePath)
         shaderClass = UsdShade.Shader(classPale)
         # it's not valid because it's not defined, but we can still author using it
         self.assertTrue(not shaderClass)

@@ -80,10 +80,10 @@ def _AddShadingToBall(stage):
 
 
     # create the shadingVariant variantSet
-    shadingVariant = model.GetVariantSets().AppendVariantSet('shadingVariant')
+    shadingVariant = model.GetVariantSets().AddVariantSet('shadingVariant')
     for variantName, decoration, color in shadingVariantsInfo:
         # creates a variant inside 'shadingVariant'
-        shadingVariant.AppendVariant(variantName)
+        shadingVariant.AddVariant(variantName)
 
         # switch to that variant
         shadingVariant.SetVariantSelection(variantName)

@@ -157,11 +157,11 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         d = stage.DefinePrim('/World/D')
         e = stage.DefinePrim('/World/E')
 
-        a.CreateRelationship('r').AppendTarget(b.GetPath())
-        b.CreateRelationship('r').AppendTarget(c.GetPath())
-        c.CreateRelationship('r').AppendTarget(d.GetPath())
+        a.CreateRelationship('r').AddTarget(b.GetPath())
+        b.CreateRelationship('r').AddTarget(c.GetPath())
+        c.CreateRelationship('r').AddTarget(d.GetPath())
 
-        a.CreateRelationship('pred').AppendTarget(e.GetPath())
+        a.CreateRelationship('pred').AddTarget(e.GetPath())
         
         mask = Usd.StagePopulationMask().Add(a.GetPath())
         masked = Usd.Stage.OpenMasked(stage.GetRootLayer(), mask)
@@ -204,7 +204,7 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         foo, bar, i1, i2 = [
             stage.DefinePrim(p) for p in ('/foo', '/bar', '/i1', '/i2')]
         foo.SetInstanceable(True)
-        [p.GetReferences().AppendInternalReference(foo.GetPath()) for p in (i1, i2)]
+        [p.GetReferences().AddInternalReference(foo.GetPath()) for p in (i1, i2)]
         assert len(stage.GetMasters())
         stage2 = Usd.Stage.OpenMasked(
             stage.GetRootLayer(), Usd.StagePopulationMask(['/i1']))

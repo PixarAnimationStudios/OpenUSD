@@ -47,9 +47,11 @@ class UsdInherits {
     explicit UsdInherits(const UsdPrim& prim) : _prim(prim) {}
 
 public:
-    /// Appends a path to the inheritPaths listOp at the current EditTarget.
+    /// Adds a path to the inheritPaths listOp at the current EditTarget,
+    /// in the position specified by \p position.
     USD_API
-    bool AppendInherit(const SdfPath &primPath);
+    bool AddInherit(const SdfPath &primPath,
+                    UsdListPosition position=UsdListPositionTempDefault);
 
     /// Removes the specified path from the inheritPaths listOp at the
     /// current EditTarget.

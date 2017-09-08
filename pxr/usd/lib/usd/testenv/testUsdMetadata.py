@@ -211,7 +211,7 @@ class TestUsdMetadata(unittest.TestCase):
             apex = stage.OverridePrim("/apex")
             apexChild = stage.OverridePrim("/apex/apexChild")
 
-            apex.GetReferences().AppendReference(stage.GetRootLayer().identifier, "/base")
+            apex.GetReferences().AddReference(stage.GetRootLayer().identifier, "/base")
 
             self.assertEqual(len(apex.GetAllChildren()), 2)
             self.assertEqual(len(apex.GetMetadata('primChildren')), 1)
@@ -389,7 +389,7 @@ class TestUsdMetadata(unittest.TestCase):
             b = s.DefinePrim('/B')
             b.SetCustomData({ 'sub': { 'newStr' : 'definedInB' ,
                                        'willCollide' : 'definedInB' } })
-            b.GetReferences().AppendInternalReference(a.GetPath())
+            b.GetReferences().AddInternalReference(a.GetPath())
 
             expectedCustomData = {'sub': {'newStr': 'definedInB', 
                                           'willCollide': 'definedInB',
@@ -405,7 +405,7 @@ class TestUsdMetadata(unittest.TestCase):
             # 'weaker'.
             weaker = s.OverridePrim('/weaker')
             stronger = s.OverridePrim('/stronger')
-            stronger.GetReferences().AppendReference(
+            stronger.GetReferences().AddReference(
                 s.GetRootLayer().identifier, weaker.GetPath())
 
             # Values set in weaker should shine through to stronger.
@@ -510,7 +510,7 @@ class TestUsdMetadata(unittest.TestCase):
             # 'weaker'.
             weaker = s.OverridePrim('/weaker')
             stronger = s.OverridePrim('/stronger')
-            stronger.GetReferences().AppendReference(
+            stronger.GetReferences().AddReference(
                 s.GetRootLayer().identifier, weaker.GetPath())
 
             # Values set in weaker should shine through to stronger.
@@ -672,7 +672,7 @@ class TestUsdMetadata(unittest.TestCase):
 
                 root = s.OverridePrim('/Root')
                 root.SetMetadata(fieldName, strongListOp)
-                root.GetReferences().AppendInternalReference('/Ref')
+                root.GetReferences().AddInternalReference('/Ref')
 
                 self.assertEqual(root.GetMetadata(fieldName), expectedListOp)
                 s.Close()
