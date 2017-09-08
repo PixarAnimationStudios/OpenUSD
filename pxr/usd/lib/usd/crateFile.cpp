@@ -2237,125 +2237,68 @@ CrateFile::_ReadPaths(Reader reader)
     // Read # of paths.
     _paths.resize(reader.template Read<uint64_t>());
 
+    WorkArenaDispatcher dispatcher;
     // VERSIONING: PathItemHeader changes size from 0.0.1 to 0.1.0.
     Version fileVer(_boot);
-    _PathItemHeader root;
     if (fileVer == Version(0,0,1)) {
-        auto old = reader.template Read<_PathItemHeader_0_0_1>();
-        root.index = old.index;
-        root.elementTokenIndex = old.elementTokenIndex;
-        root.bits = old.bits;
+        _ReadPathsImpl<_PathItemHeader_0_0_1>(reader, dispatcher);
     } else {
-        root = reader.template Read<_PathItemHeader>();
-    }
-
-    _paths[root.index.value] = SdfPath::AbsoluteRootPath();
-
-    bool hasChild = root.bits & _PathItemHeader::HasChildBit;
-    bool hasSibling = root.bits & _PathItemHeader::HasSiblingBit;
-
-    // Should never have a sibling on the root.  XXX: probably not true with
-    // relative paths.
-    auto siblingOffset =
-        (hasChild && hasSibling) ? reader.template Read<int64_t>() : 0;
-
-    WorkArenaDispatcher dispatcher;
-
-    if (root.bits & _PathItemHeader::HasChildBit) {
-        if (fileVer == Version(0,0,1)) {
-            auto firstChild = reader.template Read<_PathItemHeader_0_0_1>();
-            dispatcher.Run(
-                [this, reader, firstChild, &dispatcher]() {
-                    _ReadPathsRecursively(reader, SdfPath::AbsoluteRootPath(),
-                                          firstChild, dispatcher);
-                });
-        } else {
-            auto firstChild = reader.template Read<_PathItemHeader>();
-            dispatcher.Run(
-                [this, reader, firstChild, &dispatcher]() {
-                    _ReadPathsRecursively(reader, SdfPath::AbsoluteRootPath(),
-                                          firstChild, dispatcher);
-                });
-        }
-    }
-
-    if (root.bits & _PathItemHeader::HasSiblingBit) {
-        if (hasChild && hasSibling)
-            reader.Seek(siblingOffset);
-        if (fileVer == Version(0,0,1)) {
-            auto siblingHeader = reader.template Read<_PathItemHeader_0_0_1>();
-            dispatcher.Run(
-                [this, reader, siblingHeader, &dispatcher]() {
-                    _ReadPathsRecursively(
-                        reader, SdfPath(), siblingHeader, dispatcher);
-                });
-        } else {
-            auto siblingHeader = reader.template Read<_PathItemHeader>();
-            dispatcher.Run(
-                [this, reader, siblingHeader, &dispatcher]() {
-                    _ReadPathsRecursively(
-                        reader, SdfPath(), siblingHeader, dispatcher);
-                });
-        }
+        _ReadPathsImpl<_PathItemHeader>(reader, dispatcher);
     }
 
     dispatcher.Wait();
 }
 
-template <class Reader, class Header>
+template <class Header, class Reader>
 void
-CrateFile::_ReadPathsRecursively(Reader reader,
-                                 SdfPath parentPath,
-                                 Header h,
-                                 WorkArenaDispatcher &dispatcher)
+CrateFile::_ReadPathsImpl(Reader reader,
+                          WorkArenaDispatcher &dispatcher,
+                          SdfPath parentPath)
 {
-    // XXX Won't need ANY of these tags when bug #132031 is addressed
-    TfAutoMallocTag2 tag("Usd", "Usd_CrateDataImpl::Open");
-    TfAutoMallocTag2 tag2("Usd_CrateFile::CrateFile::Open", "_ReadPaths");
-
-    while (true) {
-        bool hasChild = h.bits & _PathItemHeader::HasChildBit;
-        bool hasSibling = h.bits & _PathItemHeader::HasSiblingBit;
-        bool isPrimPropertyPath =
-            h.bits & _PathItemHeader::IsPrimPropertyPathBit;
-        
-        auto const &elemToken = _tokens[h.elementTokenIndex.value];
-
-        // Create this path.
-        _paths[h.index.value] = isPrimPropertyPath ?
-            parentPath.AppendProperty(elemToken) :
-            parentPath.AppendElementToken(elemToken);
+    bool hasChild = false, hasSibling = false;
+    do {
+        auto h = reader.template Read<Header>();
+        if (parentPath.IsEmpty()) {
+            parentPath = SdfPath::AbsoluteRootPath();
+            _paths[h.index.value] = parentPath;
+        } else {
+            auto const &elemToken = _tokens[h.elementTokenIndex.value];
+            _paths[h.index.value] =
+                h.bits & _PathItemHeader::IsPrimPropertyPathBit ?
+                parentPath.AppendProperty(elemToken) :
+                parentPath.AppendElementToken(elemToken);
+        }
 
         // If we have either a child or a sibling but not both, then just
         // continue to the neighbor.  If we have both then spawn a task for the
         // sibling and do the child ourself.  We think that our path trees tend
         // to be broader more often than deep.
 
-        if (hasSibling && hasChild) {
-            // branch off a parallel task for the sibling subtree.
-            auto siblingOffset = reader.template Read<int64_t>();
-            auto siblingReader = reader;
-            siblingReader.Seek(siblingOffset);
-            dispatcher.Run(
-                [this, siblingReader, parentPath, &dispatcher]() mutable {
-                    auto siblingHeader = siblingReader.template Read<Header>();
-                    _ReadPathsRecursively(
-                        siblingReader, parentPath, siblingHeader, dispatcher);
-                });
-        } else if (hasSibling) {
-            // only a sibling -- read its header and continue.
-            h = reader.template Read<Header>();
-            continue;
-        }
+        hasChild = h.bits & _PathItemHeader::HasChildBit;
+        hasSibling = h.bits & _PathItemHeader::HasSiblingBit;
+
         if (hasChild) {
-            // have a child (may have also had a sibling) -- reset the parent
-            // path, read the child's header, and continue.
+            if (hasSibling) {
+                // Branch off a parallel task for the sibling subtree.
+                auto siblingOffset = reader.template Read<int64_t>();
+                dispatcher.Run(
+                    [this, reader,
+                     siblingOffset, &dispatcher, parentPath]() mutable {
+                        // XXX Remove these tags when bug #132031 is addressed
+                        TfAutoMallocTag2 tag("Usd", "Usd_CrateDataImpl::Open");
+                        TfAutoMallocTag2 tag2("Usd_CrateFile::CrateFile::Open",
+                                              "_ReadPaths");
+                        reader.Seek(siblingOffset);
+                        _ReadPathsImpl<Header>(reader, dispatcher, parentPath);
+                    });
+            }
+            // Have a child (may have also had a sibling). Reset parent path.
             parentPath = _paths[h.index.value];
-            h = reader.template Read<Header>();
-            continue;
         }
-        break;
-    }
+        // If we had only a sibling, we just continue since the parent path is
+        // unchanged and the next thing in the reader stream is the sibling's
+        // header.
+    } while (hasChild || hasSibling);
 }
 
 void
