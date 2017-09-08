@@ -161,6 +161,9 @@ SdfTextFileFormat::Read(
     // Quick check to see if the file has the magic cookie before spinning up
     // the parser.
     if (!_CanReadImpl(*fp)) {
+        TF_RUNTIME_ERROR("File <%s> is not a valid %s file",
+                         resolvedPath.c_str(),
+                         GetFormatId().GetText());
         return false;
     }
     fseek(*fp, 0, SEEK_SET);
