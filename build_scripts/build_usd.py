@@ -950,8 +950,7 @@ subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--embree", dest="build_embree", action="store_true",
                       default=False,
                       help="Build Embree sample imaging plugin")
-subgroup.add_argument("--no-embree", dest="build_embree", action="store_true",
-                      default=False,
+subgroup.add_argument("--no-embree", dest="build_embree", action="store_false",
                       help="Do not build Embree sample imaging plugin (default)")
 group.add_argument("--embree-location", type=str,
                    help="Directory where Embree is installed.")
