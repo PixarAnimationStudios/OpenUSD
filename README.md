@@ -48,8 +48,8 @@ Dependencies
 The Core USD libraries (located in pxr/base and pxr/usd respectively) 
 have the following dependencies.
 
-| Name | Version |
-| ---- | --------- |
+| Name | Version | Optional |
+| ---- | ------- | :------: |
 | C++ compiler                                                      | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |   |
 | C compiler                                                        | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |   |
 | [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux/OS X), 3.1.1 (Windows)    |   |
@@ -62,7 +62,7 @@ respectively) have the following additional dependencies. These components can
 be disabled at build-time, for further details see [Advanced Build Configuration](BUILDING.md).
 
 | Name | Version | Optional |
-| ---- | --------- | ---------- |
+| ---- | ------- | :------: |
 | [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5 (Linux/OS X), 3.2.0 (Windows)    |   |
 | [GLEW](http://glew.sourceforge.net/)                              | 1.10.0                                 |   |
 | [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                  |   |
