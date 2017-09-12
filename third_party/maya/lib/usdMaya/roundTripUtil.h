@@ -60,6 +60,17 @@ struct PxrUsdMayaRoundTripUtil
     static bool IsPrimvarClamped(const UsdGeomPrimvar& primvar);
     PXRUSDMAYA_API
     static void MarkPrimvarAsClamped(const UsdGeomPrimvar& primvar);
+
+    /// If maya attribute arrays are used, we may need to store this encoding.
+    /// This is especially true for shading where connections are made between
+    /// attributes inside the array.  Returns true if this was marked as an
+    /// array attribute and will set \p index.  Returns false otherwise.
+    PXRUSDMAYA_API
+    static bool GetAttributeArray(const UsdAttribute& attr,
+            unsigned int* index);
+    PXRUSDMAYA_API
+    static void MarkAttributeAsArray(const UsdAttribute& attr,
+            const unsigned int index);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

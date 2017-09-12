@@ -25,6 +25,7 @@
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
+#include "usdMaya/roundTripUtil.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeExporterContext.h"
@@ -75,7 +76,7 @@ private:
     }
 
     UsdPrim
-    _ExportShadingNode(const UsdPrim& materialPrim,
+    _ExportShadingNodeHelper(const UsdPrim& materialPrim,
                        const MFnDependencyNode& depNode,
                        const PxrUsdMayaShadingModeExportContext& context,
                        SdfPathSet *processedPaths,
@@ -90,7 +91,7 @@ private:
 
         TfToken shaderPrimName(PxrUsdMayaUtil::SanitizeName(depNode.name().asChar()));
         SdfPath shaderPath = materialPrim.GetPath().AppendChild(shaderPrimName);
-        if (processedPaths->count(shaderPath) == 1){
+        if (processedPaths->count(shaderPath) == 1) {
             return stage->GetPrimAtPath(shaderPath);
         }
 
@@ -101,7 +102,7 @@ private:
 
         if (!TfStringStartsWith(risShaderType, "Pxr")) {
             MGlobal::displayError(TfStringPrintf(
-                "_ExportShadingNode: skipping '%s' because it's type '%s' is not Pxr.\n",
+                "_ExportShadingNodeHelper: skipping '%s' because it's type '%s' is not Pxr.\n",
                 depNode.name().asChar(),
                 risShaderType.c_str()).c_str());
             return UsdPrim();
@@ -118,6 +119,9 @@ private:
 
         MStatus status = MS::kFailure;
 
+        std::vector<MPlug> attrPlugs;
+        
+        // gather all the attrPlugs we want to process. 
         for (unsigned int i = 0; i < depNode.attributeCount(); i++) {
             MPlug attrPlug = depNode.findPlug(depNode.attribute(i), true);
             if (attrPlug.isProcedural()) {
@@ -130,19 +134,48 @@ private:
                 continue;
             }
 
+            // For now, we only support arrays of length 1.  if we encounter
+            // such an array, we emit it's 0-th element.
+            if (attrPlug.isArray()) {
+                unsigned int numElements = attrPlug.evaluateNumElements();
+                if (numElements) {
+                    attrPlugs.push_back(attrPlug[0]);
+                    if (numElements > 1) {
+                        MGlobal::displayWarning(TfStringPrintf(
+                                "Array with multiple elements encountered at '%s'"
+                                "Currently, only arrays with a single element are supported.",
+                                attrPlug.name().asChar()).c_str());
+                    }
+                }
+            }
+            else {
+                attrPlugs.push_back(attrPlug);
+            }
+        }
+
+        for (const auto& attrPlug: attrPlugs) {
             // this is writing out things that live on the MFnDependencyNode.
             // maybe that's OK?  nothing downstream cares about it.
 
-            TfToken attrName = TfToken(context.GetStandardAttrName(attrPlug));
-            SdfValueTypeName attrTypeName = PxrUsdMayaWriteUtil::GetUsdTypeName(attrPlug);
-            if (!attrTypeName) {
-                // unsupported type
+            bool isArrayElement = attrPlug.isElement();
+
+            TfToken attrName = TfToken(context.GetStandardAttrName(attrPlug, false));
+            if (attrName.IsEmpty()) {
                 continue;
             }
 
-            UsdShadeInput input= risObj.CreateInput(attrName, attrTypeName);
+            SdfValueTypeName attrTypeName = PxrUsdMayaWriteUtil::GetUsdTypeName(attrPlug);
+            if (!attrTypeName) {
+                continue;
+            }
+
+            UsdShadeInput input = risObj.CreateInput(attrName, attrTypeName);
             if (!input) {
                 continue;
+            }
+
+            if (isArrayElement) {
+                PxrUsdMayaRoundTripUtil::MarkAttributeAsArray(input.GetAttr(), 0);
             }
 
             PxrUsdMayaWriteUtil::SetUsdAttr(
@@ -154,20 +187,29 @@ private:
                 MPlug connected(PxrUsdMayaUtil::GetConnected(attrPlug));
                 MFnDependencyNode c(connected.node(), &status);
                 if (status) {
-                    if (UsdPrim cPrim = _ExportShadingNode(materialPrim,
+                    if (UsdPrim cPrim = _ExportShadingNodeHelper(materialPrim,
                                                            c,
                                                            context,
                                                            processedPaths,
                                                            false)) {
                         UsdShadeConnectableAPI::ConnectToSource(input,
                             UsdShadeShader(cPrim),
-                            TfToken(context.GetStandardAttrName(connected)));
+                            TfToken(context.GetStandardAttrName(connected, false)));
                     }
                 }
             }
         }
 
         return risObj.GetPrim();
+    }
+
+    UsdPrim
+    _ExportShadingNode(const UsdPrim& materialPrim,
+                       const MFnDependencyNode& depNode,
+                       const PxrUsdMayaShadingModeExportContext& context)
+    {
+        SdfPathSet processedNodes;
+        return _ExportShadingNodeHelper(materialPrim, depNode, context, &processedNodes, true);
     }
 
     void Export(const PxrUsdMayaShadingModeExportContext& context) override {
@@ -187,11 +229,9 @@ private:
         if (!status) {
             return;
         }
-        SdfPathSet  processedShaders;
         if (UsdPrim shaderPrim = _ExportShadingNode(materialPrim,
                                                     ssDepNode,
-                                                    context,
-                                                    &processedShaders, true)) {
+                                                    context)) {
             UsdRiMaterialAPI(materialPrim).SetBxdfSource(shaderPrim.GetPath());
         }
     }
@@ -239,6 +279,14 @@ _ImportAttr(
     MPlug mayaAttrPlug = fnDep.findPlug(mayaAttrName.c_str(), &status);
     if (!status) {
         return MPlug();
+    }
+
+    unsigned int index = 0;
+    if (PxrUsdMayaRoundTripUtil::GetAttributeArray(usdAttr, &index)) {
+        mayaAttrPlug = mayaAttrPlug.elementByLogicalIndex(index, &status);
+        if (!status) {
+            return MPlug();
+        }
     }
 
     PxrUsdMayaUtil::setPlugValue(usdAttr, mayaAttrPlug);

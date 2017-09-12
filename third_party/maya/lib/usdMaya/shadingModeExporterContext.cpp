@@ -231,7 +231,7 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 
         UsdPrim materialPrim = material.GetPrim();
 
-        // could use this to determine where we want to export.  whatever.
+        // could use this to determine where we want to export.
         TF_FOR_ALL(iter, assignmentsToBind) {
             const SdfPath &boundPrimPath = iter->first;
             const VtIntArray &faceIndices = iter->second;
@@ -253,10 +253,27 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 }
 
 std::string
-PxrUsdMayaShadingModeExportContext::GetStandardAttrName(const MPlug& attrPlug) const
+PxrUsdMayaShadingModeExportContext::GetStandardAttrName(
+        const MPlug& plug,
+        bool allowMultiElementArrays) const
 {
-    MString mayaPlgName = attrPlug.partialName(false, false, false, false, false, true);
-    return mayaPlgName.asChar();
+    if (plug.isElement()) {
+        MString mayaPlgName = plug.array().partialName(false, false, false, false, false, true);
+        unsigned int logicalIdx = plug.logicalIndex();
+        if (allowMultiElementArrays) {
+            return TfStringPrintf("%s_%d", mayaPlgName.asChar(), logicalIdx);
+        }
+        else if (logicalIdx == 0) {
+            return mayaPlgName.asChar();
+        }
+        else {
+            return TfToken();
+        }
+    }
+    else {
+        MString mayaPlgName = plug.partialName(false, false, false, false, false, true);
+        return mayaPlgName.asChar();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
