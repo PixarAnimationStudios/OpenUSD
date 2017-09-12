@@ -28,14 +28,12 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
-#include <maya/MFnMesh.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
-#include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

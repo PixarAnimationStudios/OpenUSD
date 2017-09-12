@@ -32,8 +32,8 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
-class MFnMesh;
-class MString;
+#include <maya/MFnMesh.h>
+#include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
