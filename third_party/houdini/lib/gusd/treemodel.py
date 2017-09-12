@@ -110,12 +110,6 @@ class TreeItem(object):
         self._hasUnloadedPayload = hasUnloadedPayload
 
 class TreeModel(QAbstractItemModel):
-    # Signals
-    expandedPrimPathAdded = Signal(QModelIndex)
-    expandedPrimPathRemoved = Signal(QModelIndex)
-    treeTopologyChanged = Signal(QModelIndex)
-    showingVariantsSwitched = Signal(Qt.CheckState)
-
     # Static members
     parmNameUsdFile = '_parmname_usdfile'
     parmNamePrimPaths = '_parmname_primpaths'
@@ -131,23 +125,14 @@ class TreeModel(QAbstractItemModel):
         self._stage = None
         self._primPathToItemMap = {}
 
-        # Maintain 2 lists of prim paths:
-        # 1. _importedPrimPaths is the list of prim paths that are switched on
-        #    in the tree view's import column, and matches the import node's
-        #    _namePrimPaths parameter.
-        # 2. _expandedPrimPaths is the list of prim paths that are expanded in
-        #    the tree view, and matches the import node's _parm_uiexpandstate
-        #    parameter.
+        # _importedPrimPaths is the list of prim paths that are switched on
+        # in the tree view's import column, and matches the import node's
+        # _namePrimPaths parameter.
         self._importedPrimPaths = []
-        self._expandedPrimPaths = []
 
         self._sessionId = -1
         self._nameUsdFile = ''
         self._namePrimPaths = ''
-
-        # Flag that determines whether views connected to
-        # this model are showing the variants column or not.
-        self._showingVariants = Qt.Unchecked
 
         # This model will own a QItemSelectionModel so it can
         # be shared by all views that operate on this model.
@@ -178,10 +163,8 @@ class TreeModel(QAbstractItemModel):
             self._primPathToItemMap[primPath] = self._rootItem
             self.BuildTree(rootPrim)
 
-            # Copy the import state and the expansion state
-            # from the node and apply it to the new tree.
+            # Copy the import state from the node and apply it to the new tree.
             self.CopyImportedPrimPathsFromNode(node)
-            self.CopyExpandedPrimPathsFromNode(node)
 
     def ClearAll(self, node):
         if node:
@@ -193,11 +176,9 @@ class TreeModel(QAbstractItemModel):
         self._stage = None
         self._primPathToItemMap.clear()
         self._importedPrimPaths = []
-        self._expandedPrimPaths = []
         self._sessionId = -1
         self._nameUsdFile = ''
         self._namePrimPaths = ''
-        self._showingVariants = Qt.Unchecked
         self._selectionModel.reset()
         self.endResetModel()
 
@@ -418,6 +399,12 @@ class TreeModel(QAbstractItemModel):
             return None
         return self._stage.GetPrimAtPath(item.primPath())
 
+    def GetNode(self):
+        if self._sessionId != -1:
+            return hou.nodeBySessionId(self._sessionId)
+        else:
+            return None
+
     def LoadPrimAndBuildTree(self, prim, item):
         if prim:
             if not prim.IsLoaded():
@@ -523,7 +510,6 @@ class TreeModel(QAbstractItemModel):
         if variantSelectionsChanged and prim.IsLoaded():
             self.ClearTree(item)
             self.BuildTree(prim)
-            self.treeTopologyChanged.emit(self.indexFromItem(item))
 
         # If any variants have been enabled or changed, iterate through the
         # paths in _importedPrimPaths to update their variant selections.
@@ -610,11 +596,9 @@ class TreeModel(QAbstractItemModel):
             if variantsChanged:
                 self.ClearTree(item)
                 self.LoadPrimAndBuildTree(prim, item)
-                index = self.indexFromItem(item)
-                self.treeTopologyChanged.emit(index)
 
                 item.setData(COL_VARIANT, newVariants)
-                self.EmitDataChanged(index)
+                self.EmitDataChanged(self.indexFromItem(item))
 
             elif item.hasUnloadedPayload():
                 self.LoadPrimAndBuildTree(prim, item)
@@ -657,8 +641,8 @@ class TreeModel(QAbstractItemModel):
             self.CopyImportedPrimPathsToNode()
 
     def CopyImportedPrimPathsToNode(self, node=None):
-        if not node and self._sessionId != -1:
-            node = hou.nodeBySessionId(self._sessionId)
+        if not node:
+            node = self.GetNode()
 
         if node:
             parm = node.parm(self._namePrimPaths)
@@ -670,8 +654,8 @@ class TreeModel(QAbstractItemModel):
                 parm.set(src)
 
     def CopyImportedPrimPathsFromNode(self, node=None):
-        if not node and self._sessionId != -1:
-            node = hou.nodeBySessionId(self._sessionId)
+        if not node:
+            node = self.GetNode()
 
         if node:
             parm = node.parm(self._namePrimPaths)
@@ -702,67 +686,11 @@ class TreeModel(QAbstractItemModel):
                     if item:
                         self.SetImportState(item, Qt.Checked)
 
-    def ExpandedPrimPathsCount(self):
-        return len(self._expandedPrimPaths)
-
-    def GetIndexOfExpandedPrimPath(self, index):
-        primPath = self._expandedPrimPaths[index]
+    def GetIndexFromPrimPath(self, primPath):
         item = self._primPathToItemMap.get(Sdf.Path(primPath), None)
         if item:
             return self.indexFromItem(item)
         return QModelIndex()
-
-    def AddExpandedPrimPath(self, index):
-        if not index.isValid():
-            return
-
-        item = index.internalPointer()
-        primPath = item.primPath().pathString
-
-        if primPath not in self._expandedPrimPaths:
-            self._expandedPrimPaths.append(primPath)
-            self._expandedPrimPaths.sort(cmp=ComparePaths)
-            self.expandedPrimPathAdded.emit(index)
-            self.CopyExpandedPrimPathsToNode()
-
-    def RemoveExpandedPrimPath(self, index):
-        if not index.isValid():
-            return
-
-        item = index.internalPointer()
-        primPath = item.primPath().pathString
-
-        if primPath in self._expandedPrimPaths:
-            self._expandedPrimPaths.remove(primPath)
-            self.expandedPrimPathRemoved.emit(index)
-            self.CopyExpandedPrimPathsToNode()
-
-    def CopyExpandedPrimPathsToNode(self, node=None):
-        if not node and self._sessionId != -1:
-            node = hou.nodeBySessionId(self._sessionId)
-
-        if node:
-            parm = node.parm(TreeModel.parmUiExpandState)
-            parm.set('\n'.join(self._expandedPrimPaths))
-
-    def CopyExpandedPrimPathsFromNode(self, node=None):
-        if not node and self._sessionId != -1:
-            node = hou.nodeBySessionId(self._sessionId)
-
-        if node:
-            parm = node.parm(TreeModel.parmUiExpandState)
-            src = parm.eval()
-            if src != '':
-                self._expandedPrimPaths = src.split('\n')
-
-    def SetShowingVariants(self, show):
-        if self._showingVariants != show:
-            self._showingVariants = show
-            self.EmitShowingVariants()
-
-    def EmitShowingVariants(self):
-        self.showingVariantsSwitched.emit(\
-            Qt.CheckState(self._showingVariants))
 
     def EmitDataChanged(self, index):
         # The PySide2 version of the dataChanged signal requires a

@@ -439,6 +439,9 @@ class TreeView(QFrame):
         # so it matches the style of other houdini widgets.
         self.setProperty("houdiniStyle", True)
 
+        # Keep a list of prim paths that are expanded in this tree view.
+        self.expandedPrimPaths = []
+
         self.filterMenu = FilterMenu(self)
         self.filterMenu.textEntered['QString'].connect(self.OnFilterApplied)
         self.styleChanged.connect(self.filterMenu.OnStyleChanged)
@@ -484,6 +487,7 @@ class TreeView(QFrame):
             self.view.updateGeometries)
 
         self.view.expanded.connect(self.OnExpanded)
+        self.view.collapsed.connect(self.OnCollapsed)
 
         mainLayout = QVBoxLayout()
         mainLayout.setSpacing(0)
@@ -575,33 +579,23 @@ class TreeView(QFrame):
 
             hou.session.UsdImportDict[key] = model
 
-            node.addEventCallback(\
-                (hou.nodeEventType.BeingDeleted,), self.OnNodeDeleted)
-            node.addEventCallback(\
-                (hou.nodeEventType.NameChanged,), self.OnNodeRenamed)
-            node.addEventCallback(\
-                (hou.nodeEventType.ParmTupleChanged,), self.OnParmChanged)
-
     def UnsyncViewWithModel(self):
         # Attempt to disconnect the current model.
         model = self.view.model()
         try:
-            model.treeTopologyChanged.disconnect(self.OnTreeTopologyChanged)
-            model.expandedPrimPathAdded.disconnect(self.view.expand)
-            model.expandedPrimPathRemoved.disconnect(self.view.collapse)
-            model.showingVariantsSwitched.disconnect(\
-                self.switchShowVariants.setCheckState)
-
-            self.view.expanded.disconnect(model.AddExpandedPrimPath)
-            self.view.collapsed.disconnect(model.RemoveExpandedPrimPath)
-            self.switchShowVariants.stateChanged.disconnect(\
-                model.SetShowingVariants)
+            node = model.GetNode()
+            if node is not None:
+                node.removeEventCallback(\
+                    (hou.nodeEventType.BeingDeleted,), self.OnNodeDeleted)
+                node.removeEventCallback(\
+                    (hou.nodeEventType.NameChanged,), self.OnNodeRenamed)
+                node.removeEventCallback(\
+                    (hou.nodeEventType.ParmTupleChanged,), self.OnParmChanged)
 
         except RuntimeError:
             # This error happens the first time this method is called
             # because none of these connections have been made yet.
             pass
-
 
     def SyncViewWithModel(self, model):
         # First unsync from the existing model.
@@ -611,42 +605,38 @@ class TreeView(QFrame):
         self.view.setModel(model)
         self.view.setSelectionModel(model.GetSelectionModel())
 
-        # Set up connections between the model and the view.
-        model.treeTopologyChanged.connect(self.OnTreeTopologyChanged)
-        model.expandedPrimPathAdded.connect(self.view.expand)
-        model.expandedPrimPathRemoved.connect(self.view.collapse)
-        model.showingVariantsSwitched.connect(\
-            self.switchShowVariants.setCheckState)
+        # Open persistent editors for the top index.
+        topIndex = model.index(0, 0, QModelIndex())
+        if topIndex.isValid():
+            self.OpenPersistentEditors(topIndex)
 
-        self.view.expanded.connect(model.AddExpandedPrimPath)
-        self.view.collapsed.connect(model.RemoveExpandedPrimPath)
-        self.switchShowVariants.stateChanged.connect(\
-            model.SetShowingVariants)
+        expandState = ''
+        node = model.GetNode()
+        if node is not None:
+            node.addEventCallback(\
+                (hou.nodeEventType.BeingDeleted,), self.OnNodeDeleted)
+            node.addEventCallback(\
+                (hou.nodeEventType.NameChanged,), self.OnNodeRenamed)
+            node.addEventCallback(\
+                (hou.nodeEventType.ParmTupleChanged,), self.OnParmChanged)
 
-        # Emit the model's ShowingVariants state to update this view.
-        model.EmitShowingVariants()
+            expandState = node.parm(TreeModel.parmUiExpandState).eval()
 
-        # Get the index of each item that should be expanded in
-        # this view and expand it.
-        count = model.ExpandedPrimPathsCount()
-        if count > 0:
-            for i in range(count):
-                index = model.GetIndexOfExpandedPrimPath(i)
+        # Get the list of indexes that should be expanded
+        # from expandState, then expand each of them.
+        if expandState != '':
+            self.expandedPrimPaths = expandState.split('\n')
+            # Sort the expandedPrimPaths using the ComparePaths
+            # method (which is defined in the treemodel module).
+            self.expandedPrimPaths.sort(cmp=ComparePaths)
+            for primPath in self.expandedPrimPaths:
+                index = model.GetIndexFromPrimPath(primPath)
                 if index:
                     self.view.expand(index)
         else:
             # If there are no paths specified to be expanded, the
             # default is to expand the first 2 levels of the tree.
             self.view.expandToDepth(2)
-
-        # Update the new model's items as they're just becoming visible.
-        topIndex = model.index(0, 0, QModelIndex())
-        if topIndex.isValid():
-            self.OpenPersistentEditors(topIndex)
-
-    def OnTreeTopologyChanged(self, index):
-        if self.view.isExpanded(index):
-            self.OpenPersistentEditors(index)
 
     def OnNodeDeleted(self, **kwargs):
         node = kwargs['node']
@@ -683,22 +673,41 @@ class TreeView(QFrame):
     def OnExpanded(self, index):
         model = self.view.model()
         item = model.itemFromIndex(index)
+
+        primPath = item.primPath().pathString
+        if primPath not in self.expandedPrimPaths:
+            self.expandedPrimPaths.append(primPath)
+            self.CopyExpandedPrimPathsToNode()
+
+        # If the item being expanded has no children AND
+        # has an unloaded payload, load that payload now.
         if item.childCount() == 0 and item.hasUnloadedPayload():
             model.LoadPrimAndBuildTree(model.GetPrim(item), item)
-        # Also open persistent editors for this index.
-        self.OpenPersistentEditors(index)
+
+        # Now that this item is expanded, open
+        # persistent editors for its children.
+        for row in range(model.rowCount(index)):
+            self.OpenPersistentEditors(index.child(row, 0))
+
+    def OnCollapsed(self, index):
+        model = self.view.model()
+        item = model.itemFromIndex(index)
+
+        primPath = item.primPath().pathString
+        if primPath in self.expandedPrimPaths:
+            self.expandedPrimPaths.remove(primPath)
+            self.CopyExpandedPrimPathsToNode()
+
+    def CopyExpandedPrimPathsToNode(self):
+        node = self.view.model().GetNode()
+        if node is not None:
+            parm = node.parm(TreeModel.parmUiExpandState)
+            parm.set('\n'.join(self.expandedPrimPaths))
 
     def OpenPersistentEditors(self, index):
         row = index.row()
         self.view.openPersistentEditor(index.sibling(row, COL_IMPORT))
         self.view.openPersistentEditor(index.sibling(row, COL_VARIANT))
-
-        # If this item is expanded, recursively open
-        # persistent editors for its children.
-        if self.view.isExpanded(index):
-            rowCount = self.view.model().rowCount(index)
-            for row in range(rowCount):
-                self.OpenPersistentEditors(index.child(row, 0))
 
     def ShowVariants(self, state):
         if state == Qt.Checked:
@@ -831,6 +840,10 @@ class TreeView(QFrame):
                     HideOrUnhide(item.child(i))
 
         topIndex = self.view.model().index(0, 0, QModelIndex())
+        # topIndex will be invalid when model is the emptyModel.
+        if not topIndex.isValid():
+            return
+
         topItem = topIndex.internalPointer()
 
         # If filterString is empty, unhide all items.
