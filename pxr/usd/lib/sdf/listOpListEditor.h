@@ -255,7 +255,9 @@ Sdf_ListOpListEditor<TP>::ModifyItemEdits(const ModifyCallback& cb)
 {
     ListOpType modifiedListOp = _listOp;
     modifiedListOp.ModifyOperations(
-        boost::bind(_ModifyCallbackHelper, cb, _GetTypePolicy(), _1));
+        [this, &cb](const value_type &t) {
+            return _ModifyCallbackHelper(cb, _GetTypePolicy(), t);
+        });
 
     _UpdateListOp(modifiedListOp);
 }

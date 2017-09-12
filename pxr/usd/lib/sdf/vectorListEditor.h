@@ -270,7 +270,9 @@ Sdf_VectorListEditor<TP, FST>::ModifyItemEdits(const ModifyCallback& cb)
     SdfListOp<value_type> valueListOp;
     valueListOp.SetItems(_data, _op);
     valueListOp.ModifyOperations(
-        boost::bind(_ModifyCallbackHelper, cb, _GetTypePolicy(), _1));
+        [this, &cb](const value_type &t) {
+            return _ModifyCallbackHelper(cb, _GetTypePolicy(), t);
+        });
 
     _UpdateFieldData(valueListOp.GetItems(_op));
 }
