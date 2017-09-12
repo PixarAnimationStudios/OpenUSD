@@ -32,7 +32,6 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/operators.hpp>
 #include "pxr/base/tf/hashmap.h"
@@ -736,7 +735,6 @@ template <class ForwardIterator>
 std::pair<ForwardIterator, ForwardIterator>
 SdfPathFindPrefixedRange(ForwardIterator begin, ForwardIterator end,
                          SdfPath const &prefix) {
-    using boost::bind;
     std::pair<ForwardIterator, ForwardIterator> result;
 
     // First, use lower_bound to find where \a prefix would go.
@@ -745,7 +743,9 @@ SdfPathFindPrefixedRange(ForwardIterator begin, ForwardIterator end,
     // Next, find end of range starting from the lower bound, using the
     // prefixing condition to define the boundary.
     result.second = TfFindBoundary(result.first, end,
-                                   bind(&SdfPath::HasPrefix, _1, prefix));
+                                   [&prefix](SdfPath const &path) {
+                                       return path.HasPrefix(prefix);
+                                   });
 
     return result;
 }
