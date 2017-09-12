@@ -458,12 +458,16 @@ class TreeItemDelegate(QStyledItemDelegate):
             if metrics.width(text) > rect.width():
                 text = metrics.elidedText(text, opt.textElideMode, rect.width())
 
+            # The position of the text should be at the vertical center
+            # of the rectangle, adjusted for the height of the font.
+            pos = QPoint(rect.left(), rect.center().y() - (metrics.height()/2))
+
             # Draw the text (with the section that matches filter highlighted).
             textLayout = QTextLayout(text, opt.font)
             textLayout.beginLayout()
             textLayout.createLine()
             textLayout.endLayout()
-            textLayout.draw(painter, rect.topLeft(), [formatRange], rect)
+            textLayout.draw(painter, pos, [formatRange], rect)
         else:
             super(TreeItemDelegate, self).paint(painter, option, index)
 
