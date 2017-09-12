@@ -109,6 +109,32 @@ class TreeItem(object):
     def setHasUnloadedPayload(self, hasUnloadedPayload):
         self._hasUnloadedPayload = hasUnloadedPayload
 
+    def matchesFilter(self, filterString):
+        if len(filterString) == 0:
+            return None
+        #
+        # In order for primPath to be considered a match with filterString,
+        # filterString has to match at least part of the actual name shown
+        # on the row in the treeview. In other words, the match can't be
+        # completetly from the ancestor part of primPath; it has to overlap
+        # the piece that follows the final '/'.
+        #
+        filterHead, slash, filterTail =\
+            filterString.lower().rpartition('/')
+
+        ancestorPath, slash, name =\
+            self._primPath.pathString.lower().rpartition('/')
+
+        start = name.find(filterTail)
+        if start == -1 or\
+            (start == 0 and not ancestorPath.endswith(filterHead)) or\
+            (start > 0 and len(filterTail) < len(filterString)):
+            return None
+
+        # Return the position in name where the match begins,
+        # and also the length of the matching section.
+        return (start, len(filterTail))
+
 class TreeModel(QAbstractItemModel):
     # Static members
     parmNameUsdFile = '_parmname_usdfile'
@@ -685,6 +711,13 @@ class TreeModel(QAbstractItemModel):
                     item = self.MakeTreeIncludePrimPath(Sdf.Path(primPath))
                     if item:
                         self.SetImportState(item, Qt.Checked)
+
+    def GetImportedIndexes(self):
+        indexes = []
+        for primPath in self._importedPrimPaths:
+            item = self.ItemFromVariantPrimPath(primPath)
+            indexes.append(self.indexFromItem(item))
+        return indexes
 
     def GetIndexFromPrimPath(self, primPath):
         item = self._primPathToItemMap.get(Sdf.Path(primPath), None)

@@ -152,7 +152,7 @@ class FilterMenu(ComboBoxStyled):
     def EnterText(self):
         if self.text != self.currentText():
             self.text = self.currentText()
-            self.textEntered.emit(self.text)
+        self.textEntered.emit(self.text)
 
     def OnActivated(self, index):
         if index == 0:
@@ -176,8 +176,8 @@ class ActiveNodeMenu(ComboBoxStyled):
     def __init__(self, parent):
         super(ActiveNodeMenu, self).__init__(parent)
 
-        # Set minimum contents length to 20 characters.
-        self.setMinimumContentsLength(20)
+        # Set minimum contents length to 16 characters.
+        self.setMinimumContentsLength(16)
         self.setDuplicatesEnabled(False)
 
         self.ResetMenu()
@@ -411,12 +411,68 @@ class TreeItemDelegate(QStyledItemDelegate):
         model.setData(index, editor.GetData(index))
 
     def sizeHint(self, option, index):
-        return QSize(0, TreeItemEditor.ItemHeight(index))
+        width = 0
+        if index.column() == COL_NAME:
+            (style, opt) = self.SetupStyleOption(option, index)
+            margin = style.pixelMetric(QStyle.PM_FocusFrameHMargin,\
+                                       opt, opt.widget) + 1
+            width = QFontMetrics(opt.font).width(opt.text) + margin
+        return QSize(width, TreeItemEditor.ItemHeight(index))
 
     def commitAndCloseEditor(self):
         editor = self.sender()
         self.commitData.emit(editor)
         self.closeEditor.emit(editor, QAbstractItemDelegate.NoHint)
+
+    def paint(self, painter, option, index):
+        if index.column() == COL_NAME:
+            (style, opt) = self.SetupStyleOption(option, index)
+            (widget, text) = opt.widget, opt.text
+
+            # Draw the expand/collapse control for this item. Clear the opt's
+            # text so that no text will be drawn yet. Text will be drawn next.
+            opt.text = ''
+            style.drawControl(QStyle.CE_ItemViewItem, opt, painter, widget)
+
+            # Prepare an empty FormatRange, and grab the filterString from
+            # the TreeView widget.
+            formatRange = QTextLayout.FormatRange()
+            filterString = '' if widget is None\
+                            else widget.parent().filterMenu.currentText()
+            # If filterString matches this item, set up the formatRange
+            # to draw the matching section as highlighted text.
+            if len(filterString) > 1:
+                match = index.internalPointer().matchesFilter(filterString)
+                if match is not None:
+                    formatRange.start, formatRange.length = match
+
+                    # Make highlight color a bit more opaque than the default.
+                    highlight = opt.palette.color(QPalette.Highlight)
+                    highlight.setAlphaF(0.7)
+                    opt.palette.setColor(QPalette.Highlight, highlight)
+                    formatRange.format.setBackground(opt.palette.highlight())
+
+            # Make the text elided (replace end with '...') if it is too wide.
+            rect = style.subElementRect(QStyle.SE_ItemViewItemText, opt, widget)
+            metrics = QFontMetrics(opt.font)
+            if metrics.width(text) > rect.width():
+                text = metrics.elidedText(text, opt.textElideMode, rect.width())
+
+            # Draw the text (with the section that matches filter highlighted).
+            textLayout = QTextLayout(text, opt.font)
+            textLayout.beginLayout()
+            textLayout.createLine()
+            textLayout.endLayout()
+            textLayout.draw(painter, rect.topLeft(), [formatRange], rect)
+        else:
+            super(TreeItemDelegate, self).paint(painter, option, index)
+
+    # Helper function for setting up a QStyle and QStyleOptionViewItem.
+    def SetupStyleOption(self, option, index):
+        opt = QStyleOptionViewItem(option)
+        self.initStyleOption(opt, index)
+        style = qApp.style() if opt.widget is None else opt.widget.style()
+        return (style, opt)
 
 class TreeView(QFrame):
     # Signals
@@ -442,6 +498,11 @@ class TreeView(QFrame):
         # Keep a list of prim paths that are expanded in this tree view.
         self.expandedPrimPaths = []
 
+        expandToImported = QPushButton("+", self)
+        expandToImported.setMaximumSize(QSize(20,20))
+        expandToImported.setToolTip("Expand tree to show all imported prims.")
+        expandToImported.clicked.connect(self.OnExpandToImported)
+
         self.filterMenu = FilterMenu(self)
         self.filterMenu.textEntered['QString'].connect(self.OnFilterApplied)
         self.styleChanged.connect(self.filterMenu.OnStyleChanged)
@@ -455,6 +516,8 @@ class TreeView(QFrame):
 
         toolbarLayout = QHBoxLayout()
         toolbarLayout.setSpacing(4)
+        toolbarLayout.addWidget(expandToImported)
+        toolbarLayout.addSpacing(8)
         toolbarLayout.addWidget(QLabel("Filter"))
         toolbarLayout.addWidget(self.filterMenu, 1)
         toolbarLayout.addSpacing(20)
@@ -597,6 +660,9 @@ class TreeView(QFrame):
             # because none of these connections have been made yet.
             pass
 
+        # Clear the expandedPrimPaths stored in the view
+        self.expandedPrimPaths = []
+
     def SyncViewWithModel(self, model):
         # First unsync from the existing model.
         self.UnsyncViewWithModel()
@@ -625,18 +691,21 @@ class TreeView(QFrame):
         # Get the list of indexes that should be expanded
         # from expandState, then expand each of them.
         if expandState != '':
-            self.expandedPrimPaths = expandState.split('\n')
+            self.expandedPrimPaths = expandState.split()
             # Sort the expandedPrimPaths using the ComparePaths
             # method (which is defined in the treemodel module).
             self.expandedPrimPaths.sort(cmp=ComparePaths)
             for primPath in self.expandedPrimPaths:
                 index = model.GetIndexFromPrimPath(primPath)
-                if index:
+                if index.isValid():
                     self.view.expand(index)
         else:
             # If there are no paths specified to be expanded, the
             # default is to expand the first 2 levels of the tree.
             self.view.expandToDepth(2)
+
+        # Apply the current filter to this tree view.
+        self.OnFilterApplied(self.filterMenu.currentText())
 
     def OnNodeDeleted(self, **kwargs):
         node = kwargs['node']
@@ -689,6 +758,11 @@ class TreeView(QFrame):
         for row in range(model.rowCount(index)):
             self.OpenPersistentEditors(index.child(row, 0))
 
+        # Increase the columnWidth, if needed.
+        columnWidth = self.view.sizeHintForColumn(COL_NAME)
+        if self.view.columnWidth(COL_NAME) < columnWidth:
+            self.view.setColumnWidth(COL_NAME, columnWidth)
+
     def OnCollapsed(self, index):
         model = self.view.model()
         item = model.itemFromIndex(index)
@@ -702,7 +776,12 @@ class TreeView(QFrame):
         node = self.view.model().GetNode()
         if node is not None:
             parm = node.parm(TreeModel.parmUiExpandState)
-            parm.set('\n'.join(self.expandedPrimPaths))
+            # Note this parm never gets set to the empty string by this
+            # function. There will always be at least one '\n'. This is to
+            # help differentiate between cases when the parm is still set to
+            # its initial empty value and cases when all former entries have
+            # been removed (collapsed).
+            parm.set('\n'.join(self.expandedPrimPaths) + '\n')
 
     def OpenPersistentEditors(self, index):
         row = index.row()
@@ -772,93 +851,79 @@ class TreeView(QFrame):
 
         qApp.clipboard().setText(selection)
 
+    def OnExpandToImported(self):
+        for index in self.view.model().GetImportedIndexes():
+            parent = index.parent()
+            while parent.isValid():
+                if self.view.isRowHidden(index.row(), parent):
+                    self.view.setRowHidden(index.row(), parent, False)
+                self.view.expand(parent)
+                index = parent
+                parent = index.parent()
+
     def OnFilterApplied(self, filterString):
-        filterString = filterString.lower()
+        # Helper method to traverse the tree and hide all rows that don't
+        # match filterString.
+        def Hide(index):
+            rowHidden = []
+            rowCount = self.view.model().rowCount(index)
+            for row in range(rowCount):
+                rowHidden.append(Hide(index.child(row, 0)))
+
+            if False in rowHidden:
+                # This index has at least one row to be unhidden, so expand
+                # the index to make sure its unhidden row(s) will be showing.
+                self.view.expand(index)
+
+                # Now go through each row to actually hide or unhide it. (Note
+                # that only siblings of unhidden rows are ever truly hidden.
+                # Rows without unhidden siblings are just collapsed instead).
+                for row in range(rowCount):
+                    self.view.setRowHidden(row, index, rowHidden[row])
+
+                # Return False to indicate this index will NOT be hidden.
+                return False
+            else:
+                # This index has only hidden rows. Instead of hiding them
+                # (which essentially removes them), just collapse this index
+                # so the rows aren't immediately visible.
+                self.view.collapse(index)
+
+                # Now go through each row and actually *unhide* any that may
+                # be currently hidden. This may seem counter-intuitive, but
+                # this is done to have as few removed rows as possible. Having
+                # them collapsed is enough to hide them.
+                for row in range(rowCount):
+                    if self.view.isRowHidden(row, index):
+                        self.view.setRowHidden(row, index, False)
+
+                # Check if this index itself matches filterString so its parent
+                # can be notified whether to hide or unhide it.
+                match = index.internalPointer().matchesFilter(filterString)
+                return (match == None)
+
+        # Helper method to traverse the tree and unhide all items.
+        def Unhide(index):
+            if self.view.isRowHidden(index.row(), index.parent()):
+                self.view.setRowHidden(index.row(), index.parent(), False)
+            for row in range(self.view.model().rowCount(index)):
+                Unhide(index.child(row, 0))
 
         # If filterString is only 1 char, do nothing. (A single char would
         # match far too many paths to be useful and it could get pretty slow.)
         if len(filterString) == 1:
             return
 
-        # Helper method to test if an item matches filterString.
-        def MatchesFilter(item):
-            primPath = item.primPath().pathString.lower()
-            #
-            # In order for primPath to be considered a match with filterString,
-            # filterString has to match at least part of the actual name shown
-            # on the row of the treeview. In other words, the match cant't be
-            # completely from the ancestor part of primPath; it has to overlap
-            # the piece that follows the final '/'.
-            #
-            lastMatch = primPath.rfind(filterString)
-            if lastMatch >= 0:
-                if primPath.rfind('/') < lastMatch + len(filterString):
-                    return True
-            return False
-
-        # Helper method to traverse the tree and expand all items (and the
-        # ancestors of those items) that match filterString, and collapse all
-        # other non-matching items.
-        def ExpandOrCollapse(item):
-            childMatch = False
-            for i in range(item.childCount()):
-                childMatch |= ExpandOrCollapse(item.child(i))
-
-            if childMatch:
-                # This item has a child (or deeper descendant) that matches
-                # filterString, so this item needs to be expanded.
-                self.view.expand(self.view.model().indexFromItem(item))
-                return True
-            else:
-                # No descendants of this item match filterString, so go ahead
-                # and collapse it. However, check if this item itself matches
-                # so the parent can be notified whether to expand or collapse.
-                self.view.collapse(self.view.model().indexFromItem(item))
-                return MatchesFilter(item)
-
-        # Helper method to traverse the tree and unhide all items.
-        def Unhide(item):
-            index = self.view.model().indexFromItem(item)
-            self.view.setRowHidden(item.row(), index.parent(), False)
-            for i in range(item.childCount()):
-                Unhide(item.child(i))
-
-        # Helper method to traverse the tree and hide every item that is
-        # collapsed (or a leaf) which also doesn't match filterString.
-        def HideOrUnhide(item):
-            index = self.view.model().indexFromItem(item)
-            # If item is either collapsed or is a leaf (no children), only
-            # keep it visible if it matches filterString.
-            if not self.view.isExpanded(index) or item.childCount() == 0:
-                hidden = not MatchesFilter(item)
-                self.view.setRowHidden(item.row(), index.parent(), hidden)
-            else:
-                # Unhide this item, then recurse on its children.
-                self.view.setRowHidden(item.row(), index.parent(), False)
-
-                for i in range(item.childCount()):
-                    HideOrUnhide(item.child(i))
-
         topIndex = self.view.model().index(0, 0, QModelIndex())
         # topIndex will be invalid when model is the emptyModel.
         if not topIndex.isValid():
             return
 
-        topItem = topIndex.internalPointer()
-
         # If filterString is empty, unhide all items.
         if filterString == '':
-            Unhide(topItem)
+            Unhide(topIndex)
             return
 
-        # Make a 1st pass through the tree, expanding all items with a child
-        # (or deeper descendant) that matches filterString, and collapsing all
-        # items that don't match.
-        ExpandOrCollapse(topItem)
-
-        # The actual hiding of items is done in a 2nd pass. If it had been done
-        # in the ExpandOrCollapse pass, then all descendants of collapsed items
-        # would be hidden, or essentially removed. This way, items that are
-        # under a matching item are collapsed (thus technically not "visible"),
-        # and only items that aren't under a matching item get removed.
-        HideOrUnhide(topItem)
+        # Recursively hide items that don't match filterString.
+        hide = Hide(topIndex)
+        self.view.setRowHidden(topIndex.row(), topIndex.parent(), hide)
