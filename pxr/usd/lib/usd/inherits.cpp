@@ -54,7 +54,7 @@ UsdInherits::AddInherit(const SdfPath &primPath, UsdListPosition position)
             if (UsdAuthorOldStyleAdd()) {
                 inhs.Add(primPath);
             } else {
-                inhs.Append(primPath);
+                inhs.Prepend(primPath);
             }
             break;
         }

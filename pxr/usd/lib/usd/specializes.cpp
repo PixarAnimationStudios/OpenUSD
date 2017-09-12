@@ -54,7 +54,7 @@ UsdSpecializes::AddSpecialize(const SdfPath &primPath, UsdListPosition position)
             if (UsdAuthorOldStyleAdd()) {
                 paths.Add(primPath);
             } else {
-                paths.Append(primPath);
+                paths.Prepend(primPath);
             }
             break;
         }

@@ -73,7 +73,7 @@ UsdReferences::AddReference(const SdfReference& ref, UsdListPosition position)
             if (UsdAuthorOldStyleAdd()) {
                 refs.Add(ref);
             } else {
-                refs.Append(ref);
+                refs.Prepend(ref);
             }
             break;
         }

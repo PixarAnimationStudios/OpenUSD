@@ -218,7 +218,8 @@ UsdVariantSet::_AddVariantSet(UsdListPosition position)
                     if (UsdAuthorOldStyleAdd()) {
                         primSpec->GetVariantSetNameList().Add(_variantSetName);
                     } else {
-                        primSpec->GetVariantSetNameList().Append(_variantSetName);
+                        primSpec->GetVariantSetNameList()
+                            .Prepend(_variantSetName);
                     }
                     break;
                 }

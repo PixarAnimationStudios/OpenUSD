@@ -134,7 +134,7 @@ UsdRelationship::AddTarget(const SdfPath& target,
         if (UsdAuthorOldStyleAdd()) {
             relSpec->GetTargetPathList().Add(targetToAuthor);
         } else {
-            relSpec->GetTargetPathList().Append(targetToAuthor);
+            relSpec->GetTargetPathList().Prepend(targetToAuthor);
         }
         break;
     }

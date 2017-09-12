@@ -407,7 +407,7 @@ UsdAttribute::AddConnection(const SdfPath& source,
         if (UsdAuthorOldStyleAdd()) {
             attrSpec->GetConnectionPathList().Add(pathToAuthor);
         } else {
-            attrSpec->GetConnectionPathList().Append(pathToAuthor);
+            attrSpec->GetConnectionPathList().Prepend(pathToAuthor);
         }
         break;
     }
@@ -490,16 +490,7 @@ UsdAttribute::SetConnections(const SdfPathVector& sources) const
         return false;
 
     attrSpec->GetConnectionPathList().ClearEditsAndMakeExplicit();
-    auto connectionPathList = attrSpec->GetConnectionPathList();
-    if (UsdAuthorOldStyleAdd()) {
-        for (const SdfPath &path: mappedPaths) {
-            connectionPathList.Add(path);
-        }
-    } else {
-        for (const SdfPath &path: mappedPaths) {
-            connectionPathList.Append(path);
-        }
-    }
+    attrSpec->GetConnectionPathList().GetExplicitItems() = mappedPaths;
 
     return true;
 }
