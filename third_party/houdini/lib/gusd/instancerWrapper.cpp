@@ -51,6 +51,7 @@
 #include <UT/UT_StringArray.h>
 
 #include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/sdf/cleanupEnabler.h"
 
 #include <pxr/base/gf/quatf.h>
 #include <pxr/base/gf/transform.h>
@@ -265,7 +266,9 @@ void setTransformAttrsFromMatrices(const UT_Matrix4D &worldToLocal,
                                    UsdAttribute& usdRotationAttr,
                                    UsdAttribute& usdScaleAttr,
                                    const GT_AttributeListHandle& gtAttrs,
-                                   UsdTimeCode time)
+                                   UsdTimeCode time,
+                                   const UsdGeomPointInstancer& pointInstancer,
+                                   std::vector<UT_Matrix4D> prototypeTransforms)
 {
     if (!usdPositionAttr.IsValid() 
      || !usdRotationAttr.IsValid()
@@ -294,6 +297,16 @@ void setTransformAttrsFromMatrices(const UT_Matrix4D &worldToLocal,
     GT_Real32Array* houScales = new GT_Real32Array(numXforms, 3);
     GT_DataArrayHandle houScalesHandle(houScales);
 
+
+    VtArray<int> indices;
+    pointInstancer.GetProtoIndicesAttr().Get( &indices, time);
+
+    // If we have transforms on prototypes, we have to remove them from our
+    // final instance transformation, as the potin instancer schema accounts
+    // for prototype transforms.
+    bool removeProtoTransforms = (indices.size() == numXforms) &&
+                                 (prototypeTransforms.size() > 0);
+
     for(GA_Size i=0; i<numXforms; ++i) {
         
         // Build a 4x4 that represents this instance transformation.
@@ -305,6 +318,14 @@ void setTransformAttrsFromMatrices(const UT_Matrix4D &worldToLocal,
             houXformArray[i*16+12], houXformArray[i*16+13], houXformArray[i*16+14], houXformArray[i*16+15] );
 
         UT_Matrix4D localInstXform = instXform * worldToLocal;
+
+        // Multiply by the prototype inverse to "subtract" its transformation
+        if (removeProtoTransforms) {
+            int protoIdx = indices[i];
+            UT_Matrix4D protoXform = prototypeTransforms[protoIdx];
+            protoXform.invert();
+            localInstXform =  protoXform * localInstXform;
+        }
 
         UT_Vector3 position;
         localInstXform.getTranslates( position );
@@ -574,12 +595,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
     if(prototypesPathAttr != NULL && prototypesPathAttr->entries() > 0) {
         usdPrototypesPath = prototypesPathAttr->getS(0);
     }
-    // If the refiner found just points with an instancepath attribute, we need
-    // to write out the transforms on the prototypes.
-    bool writePrototypeTransforms = false;
-    if(!sourcePrim->findAttribute("__instancetransform", owner, 0)) {
-        writePrototypeTransforms = true;
-    }
+
     if (usdPrototypesPath.empty() && !ctxt.writeOverlay) {
         TF_WARN("No usdprototypespath attribute found. Specify where all the packed prototypes are to build a point instancer.");
         return;
@@ -731,9 +747,6 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         // Set the refiner to build prototypes (so we don't recurse and create
         // another point instancer)
         refiner.m_buildPrototypes = true;
-        if(writePrototypeTransforms) { // Only use for points, otherwise transform double counted
-            refiner.m_writePrototypeTransforms = true;
-        }
 
         // Refine the detail handle
         refiner.refineDetail( pair.second, refineParms );
@@ -779,6 +792,10 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
                                           gtPrim.xform,
                                           newContext,
                                           xformCache );
+
+                // Create an array of prototype transforms for subtracting from
+                // instance transforms later
+                m_prototypeTransforms.push_back(gtPrim.xform);
             }
         }
 
@@ -817,6 +834,10 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         // to use.
         UsdPrim protoRootPrim( stage->DefinePrim( pair.second, TfToken("Xform") ));
         protoRootPrim.Load();
+        // TODO Enable cleanup to remove empty tokens left after moving
+        // transforms in the case of prototype transforms where the prototype
+        // is not the referenced root.
+        //SdfCleanupEnabler();
         for(auto protoPrim : protoRootPrim.GetAllChildren()) {
             UsdAttribute pathAttr
                 = protoPrim.GetAttribute(TfToken("ReferencedPath"));
@@ -824,6 +845,43 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
                 string subPath;
                 pathAttr.Get(&subPath);
                 relationshipPath = protoPrim.GetPath().AppendPath(SdfPath(subPath));
+
+                // Get the prototype scope referenced by the relationship array
+                UsdPrim protoTarget = stage->GetPrimAtPath(relationshipPath);
+                if (!protoTarget.IsValid()) {
+                    TF_WARN( "Prototype does not exist at '%s'",
+                                relationshipPath.GetString().c_str() );
+                    continue;
+                }
+
+                // Get the Xformables at the prototype scope and the referenced
+                // prototype scope (where we actually retrieve geometry)
+                UsdGeomXformable protoXformable( protoPrim );
+                UsdGeomXformable protoTargetXformable( protoTarget );
+
+                // Get the xforms we wrote out on the prototype scope
+                bool resetXformStack = false;
+                std::vector<UsdGeomXformOp> xformOps = protoXformable.GetOrderedXformOps(&resetXformStack);
+                if (xformOps.size()==0)
+                    continue;
+
+                // Set the transform on the referenced scope to be the same
+                // we wrote onto the prototype scope. First clear previous
+                // xformOps.
+                protoTargetXformable.SetXformOpOrder(std::vector<UsdGeomXformOp>());
+                for (auto xformOp : xformOps) {
+                    // Add an equivalent xformOp to the target prototype scope
+                    // that was in the original protoype scope.
+                    const UsdGeomXformOp xformOpTarget =
+                        protoTargetXformable.AddXformOp(xformOp.GetOpType(),
+                                                        xformOp.GetPrecision());
+                    xformOpTarget.Set( xformOp.GetOpTransform(ctxt.time),
+                                       ctxt.time);
+
+                    // Clear each xformOp from the original scope.
+                    xformOp.GetAttr().Clear();
+                }
+                protoXformable.GetXformOpOrderAttr().Clear();
             }
         }
         if(ctxt.overlayAll) {
@@ -999,7 +1057,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             // USD is degrees per second
             const GT_Size numVals = houAttr->entries() * houAttr->getTupleSize();
             std::vector<fpreal32> wArray(numVals);
-            houAttr->fillArray(wArray.data(), 0, numVals, 1); 
+            houAttr->fillArray(wArray.data(), 0, numVals, houAttr->getTupleSize()); 
 
             std::transform(
                 wArray.begin(),
@@ -1027,10 +1085,12 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                                   usdPositionAttr,
                                   usdRotationAttr,
                                   usdScalesAttr,
-                                  gtPointAttrs, ctxt.time);
+                                  gtPointAttrs,
+                                  ctxt.time,
+                                  m_usdPointInstancerForWrite,
+                                  m_prototypeTransforms);
             }
             else {
-
                 setTransformAttrsFromComponents(
                                   usdPositionAttr,
                                   usdRotationAttr,

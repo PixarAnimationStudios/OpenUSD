@@ -128,6 +128,10 @@ private:
     RelationshipIndexMap    m_relationshipIndexMap;
 
     GusdUSD_StageProxyHandle  m_stageProxy;
+
+    // List of prototype transforms for "subtracting" from final instance
+    // transforms.
+    std::vector<UT_Matrix4D> m_prototypeTransforms;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

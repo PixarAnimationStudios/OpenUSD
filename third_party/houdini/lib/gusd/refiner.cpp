@@ -77,7 +77,6 @@ GusdRefiner::GusdRefiner(
     , m_isTopLevel( true )
     , m_buildPointInstancer( false )
     , m_buildPrototypes( false )
-    , m_writePrototypeTransforms( false )
 {
 }
 
@@ -430,11 +429,8 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
                 inst->transforms()->get(i)->getMatrix(m);
 
                 UT_Matrix4D newCtm = m_localToWorldXform;
+                newCtm = m* m_localToWorldXform;
 
-                // Don't include the transform of prototypes when it's already
-                // factored into the instance
-                if (!m_buildPrototypes || m_writePrototypeTransforms)
-                    newCtm = m* m_localToWorldXform;
                 SdfPath newPath = m_pathPrefix;
                 bool recurse = true;
 
@@ -496,11 +492,8 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
         }
 
         UT_Matrix4D newCtm = m_localToWorldXform;
-
-        // Don't include the transform of prototypes when it's already
-        // factored into the instance
-        if (!m_buildPrototypes || m_writePrototypeTransforms)
-            newCtm = m* m_localToWorldXform;
+        newCtm = m* m_localToWorldXform;
+        
         m_collector.add( SdfPath(primPath),
                          addNumericSuffix,
                          gtPrim,
@@ -607,15 +600,6 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                             n, 
                             newDataArray( storage, nprims, tupleSize ), 
                             true );
-            }
-            // If "w" (angular velocity) has been exported but not "motionpivot"
-            // (center of mass), we'll use the PackedUSD prim's vertex position
-            // as a center of mass to compute angular velocity. The vertex position
-            // will often differ from the final point position we get from
-            // GU_PackedUSD->instanceXform() because of the "pivot" intrinsic. 
-            if( instPtAttrs->hasName("w") && !instPtAttrs->hasName("motionpivot") ) {
-                pivotArray = new GT_Real32Array(nprims, 3);
-                pAttrs = pAttrs->addAttribute( "motionpivot", pivotArray, true );
             }
         }
 

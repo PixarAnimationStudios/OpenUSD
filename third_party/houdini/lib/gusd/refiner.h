@@ -151,11 +151,6 @@ public:
     // prototypes scope.
     bool                    m_buildPrototypes;
 
-    // If true, we write out the prototypes' transforms. For now, only use when
-    // making point instancers with points, as otherwise the the prototypes'
-    // transformations are already taken into account in the instancer. 
-    bool                    m_writePrototypeTransforms;
-
     // If we are overlaying a point instancer, this is set to the type of
     // of point instancer we need to overlay (old - "PxPointInstancer" or new
     // "PointInstancer").
