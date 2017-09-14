@@ -470,31 +470,7 @@ TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
 
 bool usdWriteJob::needToTraverse(const MDagPath& curDag)
 {
-    MObject ob = curDag.node();
-    // NOTE: Already skipping all intermediate objects
-    // skip all intermediate nodes (and their children)
-    if (PxrUsdMayaUtil::isIntermediate(ob)) {
-        return false;
-    }
-
-    // skip nodes that aren't renderable (and their children)
-
-    if (mJobCtx.mArgs.excludeInvisible && !PxrUsdMayaUtil::isRenderable(ob)) {
-        return false;
-    }
-
-    if (!mJobCtx.mArgs.exportDefaultCameras && ob.hasFn(MFn::kTransform)) {
-        // Ignore transforms of default cameras 
-        MString fullPathName = curDag.fullPathName();
-        if (fullPathName == "|persp" ||
-            fullPathName == "|top" ||
-            fullPathName == "|front" ||
-            fullPathName == "|side") {
-            return false;
-        }
-    }
-
-    return true;
+    return mJobCtx.needToTraverse(curDag);
 }
 
 void usdWriteJob::perFrameCallback(double iFrame)

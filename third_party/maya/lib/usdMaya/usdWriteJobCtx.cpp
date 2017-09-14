@@ -94,6 +94,35 @@ SdfPath usdWriteJobCtx::getMasterPath(const MDagPath& dg)
     }
 }
 
+bool usdWriteJobCtx::needToTraverse(const MDagPath& curDag)
+{
+    MObject ob = curDag.node();
+    // NOTE: Already skipping all intermediate objects
+    // skip all intermediate nodes (and their children)
+    if (PxrUsdMayaUtil::isIntermediate(ob)) {
+        return false;
+    }
+
+    // skip nodes that aren't renderable (and their children)
+
+    if (mArgs.excludeInvisible && !PxrUsdMayaUtil::isRenderable(ob)) {
+        return false;
+    }
+
+    if (!mArgs.exportDefaultCameras && ob.hasFn(MFn::kTransform) && curDag.length() == 1) {
+        // Ignore transforms of default cameras
+        MString fullPathName = curDag.fullPathName();
+        if (fullPathName == "|persp" ||
+            fullPathName == "|top" ||
+            fullPathName == "|front" ||
+            fullPathName == "|side") {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 SdfPath usdWriteJobCtx::getUsdPathFromDagPath(const MDagPath& dagPath, bool instanceSource /* = false */)
 {
     SdfPath path;
