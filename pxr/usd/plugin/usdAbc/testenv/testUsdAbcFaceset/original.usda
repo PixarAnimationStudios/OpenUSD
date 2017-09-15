@@ -1,0 +1,36 @@
+#usda 1.0
+(
+    defaultPrim = "cube1"
+    upAxis = "Y"
+)
+
+def Mesh "cube1"
+{
+    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+    int[] faceSet:part1:faceCounts.timeSamples = {
+        0: [3],
+        1: [2],
+    }
+    int[] faceSet:part1:faceIndices.timeSamples = {
+        0: [0, 1, 4],
+        1: [0, 1]
+    }
+    uniform bool faceSet:part1:isPartition = 1
+    int[] faceSet:part2:faceCounts = [3]
+    int[] faceSet:part2:faceIndices = [2, 3, 5]
+    uniform bool faceSet:part2:isPartition = 1
+    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+    int[] faceVertexIndices = [2, 3, 1, 0, 6, 7, 3, 2, 4, 5, 7, 6, 0, 1, 5, 4, 3, 7, 5, 1, 6, 2, 0, 4]
+    normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+        interpolation = "faceVarying"
+    )
+    uniform token orientation = "leftHanded"
+    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5)] (
+        interpolation = "vertex"
+    )
+    float2[] primvars:uv = [(0, 1), (1, 1), (1, 0), (0, 0), (0, 2), (1, 2), (1, 1), (0, 1), (0, 3), (1, 3), (1, 2), (0, 2), (0, 4), (1, 4), (1, 3), (0, 3), (1, 1), (2, 1), (2, 0), (1, 0), (-1, 1), (0, 1), (0, 0), (-1, 0)] (
+        interpolation = "faceVarying"
+    )
+    uniform token subdivisionScheme = "none"
+}
+

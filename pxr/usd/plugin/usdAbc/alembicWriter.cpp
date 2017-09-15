@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -2803,6 +2803,127 @@ _WritePolyMesh(_PrimWriterContext* context)
         context->AddTimeSampling(context->GetSampleTimesUnion()));
 }
 
+static
+void
+_WriteFaceSets(_PrimWriterContext* context)
+{
+    typedef OFaceSet Type;
+
+    // Because we don't have access to the UsdGeomFaceSetAPI (since we don't
+    // have a UsdPrim to use), we'll have to replicate some functionality
+    // here for dealing with Usd facesets.
+    std::set<std::string> faceSetNames;
+    for (const auto& token : context->GetUnextractedNames()) {
+        const auto nameTokens =
+            SdfPath::TokenizeIdentifierAsTokens(token.GetString());
+        if (nameTokens.size() < 3 || nameTokens[0] != UsdGeomTokens->faceSet)
+            continue;
+
+        faceSetNames.insert(nameTokens[1].GetString());
+    }
+
+    for (const auto& faceSetName : faceSetNames) {
+        const std::string baseFaceSetName =
+            SdfPath::JoinIdentifier(
+                UsdGeomTokens->faceSet.GetString(),
+                faceSetName);
+        const TfToken faceIndicesName(
+            SdfPath::JoinIdentifier(baseFaceSetName, "faceIndices"));
+        const TfToken faceCountsName(
+            SdfPath::JoinIdentifier(baseFaceSetName, "faceCounts"));
+
+        // Because isPartition is a per-FaceSet thing in Usd and exclusivity
+        // is a global thing among all FaceSets in Alembic, we'll just
+        // simplify and leave the Alembic default (which doesn't guarantee
+        // exclusivity among FaceSets).
+        const TfToken isPartitionName(
+            SdfPath::JoinIdentifier(baseFaceSetName, "isPartition"));
+        context->ExtractSamples(isPartitionName);
+
+        UsdSamples faceCounts =
+            context->ExtractSamples(faceCountsName,
+                                    SdfValueTypeNames->IntArray);
+        UsdSamples faceIndices =
+            context->ExtractSamples(faceIndicesName,
+                                    SdfValueTypeNames->IntArray);
+
+        // If there are missing faceCounts or faceIndices properties, or there
+        // is a variable number of faceCounts, simply skip this faceset, as
+        // it is invalid.
+        if (faceCounts.IsEmpty() || faceIndices.IsEmpty())
+            continue;
+
+        bool isInvalid = false;
+        const size_t numGroups =
+            faceCounts.GetSamples().begin()->second.GetArraySize();
+        for (const auto& sample : faceCounts.GetSamples()) {
+            if (sample.second.GetArraySize() != numGroups) {
+                isInvalid = true;
+                break;
+            }
+        }
+
+        if (isInvalid)
+            continue;
+
+        // Copy all the samples, splitting apart the faceIndices based on the
+        // number of groups and faceCounts.
+        typedef Type::schema_type::Sample SampleT;
+
+        std::vector<shared_ptr<Type> > objects(numGroups);
+        for (double time : context->GetSampleTimesUnion()) {
+
+            const VtValue faceIndexValue = faceIndices.Get(time);
+            const VtValue faceCountValue = faceCounts.Get(time);
+            if (!faceIndexValue.IsHolding<VtIntArray>())
+                continue;
+            if (!faceCountValue.IsHolding<VtIntArray>())
+                continue;
+
+            const VtIntArray& faceIndexArray = 
+                faceIndexValue.UncheckedGet<VtIntArray>();
+            const VtIntArray& faceCountArray =
+                faceCountValue.UncheckedGet<VtIntArray>();
+
+            // For each sample, iterate over the groups (creating the
+            // necessary Alembic objects) and break faceIndices into the
+            // appropriate bits per group.
+            VtIntArray::const_iterator fii = faceIndexArray.cbegin();
+            for (size_t i = 0; i < numGroups; ++i) {
+                const int fc = faceCountArray[i];
+
+                std::vector<int32_t> faces;
+                std::copy_n(fii, fc, std::back_inserter(faces));
+                fii += fc;
+                Int32ArraySample alembicFaces(faces);
+                SampleT sample(alembicFaces);
+
+                // Create an Alembic object for the face group, if it does
+                // not yet exist.
+                if (!objects[i]) {
+                    std::string faceGroupName = faceSetName;
+                    if (numGroups > 1)
+                        faceGroupName = TfStringPrintf("%s_%zu", faceGroupName.c_str(), i);
+                    objects[i].reset(new Type(
+                        context->GetParent(),
+                        faceGroupName,
+                        _GetPrimMetadata(*context)));
+                }
+
+                // Write the sample.
+                objects[i]->getSchema().set(sample);
+            }
+        }
+
+        // Set the time sampling.
+        for (const auto& object : objects)
+        {
+            object->getSchema().setTimeSampling(
+                context->AddTimeSampling(context->GetSampleTimesUnion()));
+        }
+    }
+}
+
 // As of Alembic-1.5.1, OSubD::schema_type::Sample has a bug:
 // setHoles() actually sets cornerIndices.  The member, m_holes, is
 // protected so we subclass and fix setHoles().
@@ -3317,6 +3438,7 @@ _WriterSchemaBuilder::_WriterSchemaBuilder()
         .AppendWriter(_WriteImageable)
         .AppendWriter(_WriteArbGeomParams)
         .AppendWriter(_WriteUserProperties)
+        .AppendWriter(_WriteFaceSets)
         .AppendWriter(_WriteOther)
         ;
     schema.AddType(UsdAbcPrimTypeNames->PolyMesh)
@@ -3327,6 +3449,7 @@ _WriterSchemaBuilder::_WriterSchemaBuilder()
         .AppendWriter(_WriteImageable)
         .AppendWriter(_WriteArbGeomParams)
         .AppendWriter(_WriteUserProperties)
+        .AppendWriter(_WriteFaceSets)
         .AppendWriter(_WriteOther)
         ;
     schema.AddType(UsdAbcPrimTypeNames->NurbsCurves)
