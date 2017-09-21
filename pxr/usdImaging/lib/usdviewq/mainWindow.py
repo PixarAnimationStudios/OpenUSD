@@ -1132,6 +1132,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return stage
 
+    def _closeStage(self):
+        # Turn off the imager before killing the stage
+        if self._stageView:
+            with Timer() as t:
+                self._stageView.SetStage(None)
+            if self._printTiming:
+                t.PrintTime('shut down Hydra')
+
+        # Close the USD stage.
+        with Timer() as t:
+            self._stage = None
+        if self._printTiming:
+            t.PrintTime('close stage')
+
     def _setPlayShortcut(self):
         self._ui.playButton.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Space))
 
@@ -2454,18 +2468,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._timer.isActive():
             self._timer.stop()
 
-        # Turn off the imager before killing the stage
-        if self._stageView:
-            with Timer() as t:
-                self._stageView.SetStage(None)
-            if self._printTiming:
-                t.PrintTime('shut down Hydra')
-
-        # Close the USD stage.
-        with Timer() as t:
-            self._stage.Close()
-        if self._printTiming:
-            t.PrintTime('close stage')
+        # Close the stage.
+        self._closeStage()
 
         # Tear down the UI window.
         with Timer() as t:
@@ -2535,7 +2539,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._currentSpec = None
             self._currentLayer = None
 
-            self._stage.Close()
+            # Close the current stage so that we don't keep it in memory
+            # while trying to open another stage.
+            self._closeStage()
             self._stage = self._openStage(self._parserData.usdFile,
                                           self._parserData.populationMask)
             # We need this for layers which were cached in memory but changed on
