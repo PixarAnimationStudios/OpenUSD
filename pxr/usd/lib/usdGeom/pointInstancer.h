@@ -925,6 +925,16 @@ UsdGeomPointInstancer::ApplyMaskToArray(std::vector<bool> const &mask,
     return true;
 }
 
+/// Applies a list operation of type \p op using \p items
+/// over the existing list operation on \p prim with the name
+/// \p metadataName.
+USDGEOM_API 
+bool 
+UsdGeomPointInstancerSetOrMergeOverOp(std::vector<int64_t> const &items, 
+                                      SdfListOpType op,
+                                      UsdPrim const &prim,
+                                      TfToken const &metadataName);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -327,10 +327,11 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(UsdGeomPointInstancer::IgnoreMask);
 }
 
-static
 bool 
-_SetOrMergeOverOp(std::vector<int64_t> const &items, SdfListOpType op,
-                  UsdPrim const &prim)
+UsdGeomPointInstancerSetOrMergeOverOp(std::vector<int64_t> const &items, 
+                                      SdfListOpType op,
+                                      UsdPrim const &prim,
+                                      TfToken const &metadataName)
 {
     SdfInt64ListOp  proposed, current;
     UsdStagePtr stage = prim.GetStage();
@@ -339,7 +340,7 @@ _SetOrMergeOverOp(std::vector<int64_t> const &items, SdfListOpType op,
         editTarget.GetPrimSpecForScenePath(prim.GetPath());
     
     if (primSpec){
-        VtValue  existingOp = primSpec->GetInfo(UsdGeomTokens->inactiveIds);
+        VtValue  existingOp = primSpec->GetInfo(metadataName);
         if (existingOp.IsHolding<SdfInt64ListOp>()){
             current = existingOp.UncheckedGet<SdfInt64ListOp>();
         }
@@ -390,21 +391,23 @@ _SetOrMergeOverOp(std::vector<int64_t> const &items, SdfListOpType op,
             }
         }
     }
-    return prim.SetMetadata(UsdGeomTokens->inactiveIds, current);
+    return prim.SetMetadata(metadataName, current);
 }
 
 bool
 UsdGeomPointInstancer::ActivateId(int64_t id) const
 {
     std::vector<int64_t> toRemove(1, id);
-    return _SetOrMergeOverOp(toRemove, SdfListOpTypeDeleted, GetPrim());
+    return UsdGeomPointInstancerSetOrMergeOverOp(toRemove, SdfListOpTypeDeleted, 
+                                                 GetPrim(), UsdGeomTokens->inactiveIds);
 }
 
 bool
 UsdGeomPointInstancer::ActivateIds(VtInt64Array const &ids) const
 {
     std::vector<int64_t> toRemove(ids.begin(), ids.end());
-    return _SetOrMergeOverOp(toRemove, SdfListOpTypeDeleted, GetPrim());
+    return UsdGeomPointInstancerSetOrMergeOverOp(toRemove, SdfListOpTypeDeleted, 
+                                                 GetPrim(), UsdGeomTokens->inactiveIds);
 }
 
 bool
@@ -420,14 +423,16 @@ bool
 UsdGeomPointInstancer::DeactivateId(int64_t id) const
 {
     std::vector<int64_t> toAdd(1, id);
-    return _SetOrMergeOverOp(toAdd, SdfListOpTypeAdded, GetPrim());
+    return UsdGeomPointInstancerSetOrMergeOverOp(toAdd, SdfListOpTypeAdded, 
+                                                 GetPrim(), UsdGeomTokens->inactiveIds);
 }
 
 bool
 UsdGeomPointInstancer::DeactivateIds(VtInt64Array const &ids) const
 {
     std::vector<int64_t> toAdd(ids.begin(), ids.end());
-    return _SetOrMergeOverOp(toAdd, SdfListOpTypeAdded, GetPrim());
+    return UsdGeomPointInstancerSetOrMergeOverOp(toAdd, SdfListOpTypeAdded, 
+                                                 GetPrim(), UsdGeomTokens->inactiveIds);
 }
 
 bool
