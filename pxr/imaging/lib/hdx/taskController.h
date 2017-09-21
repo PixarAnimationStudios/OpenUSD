@@ -192,7 +192,7 @@ private:
     SdfPath const _controllerId;
 
     HdTaskSharedPtrVector _tasks;
-    HdxIntersector       *_intersector;
+    std::unique_ptr<HdxIntersector> _intersector;
 
     // Create taskController objects. Since the camera is a parameter
     // to the tasks, _CreateCamera() should be called first.
