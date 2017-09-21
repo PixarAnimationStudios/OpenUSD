@@ -355,6 +355,12 @@ _CanonicalizeListOp(const SdfListOp<T> &op) {
     }
 }
 
+bool
+UsdGeomPointInstancerApplyNewStyleListOps()
+{
+    return TfGetEnvSetting(USDGEOM_POINTINSTANCER_NEW_APPLYOPS);
+}
+
 bool 
 UsdGeomPointInstancerSetOrMergeOverOp(std::vector<int64_t> const &items, 
                                       SdfListOpType op,

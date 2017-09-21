@@ -925,6 +925,12 @@ UsdGeomPointInstancer::ApplyMaskToArray(std::vector<bool> const &mask,
     return true;
 }
 
+/// Returns true if list ops should be composed with SdfListOp::ApplyOperations()
+/// Returns false if list ops should be composed with SdfListOp::ComposeOperations().
+USDGEOM_API
+bool
+UsdGeomPointInstancerApplyNewStyleListOps();
+
 /// Applies a list operation of type \p op using \p items
 /// over the existing list operation on \p prim with the name
 /// \p metadataName.
