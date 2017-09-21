@@ -161,7 +161,7 @@ class VariantComboBox(QtWidgets.QComboBox):
                 # We need to completely re-generate the prim tree because
                 # changing a prim's variant set can change the namespace
                 # hierarchy.
-                self.mainWindow._updatePrimTreeForVariantSwitch()
+                self.mainWindow._updateForStageChanges()
             if self.mainWindow._printTiming:
                 t.PrintTime("change variantSet %s to %s" % 
                             (variantSet.GetName(), newVariantSelection))
@@ -279,6 +279,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._statusFileName = 'state'
             self._deprecatedStatusFileName = '.usdviewrc'
             self._mallocTags  = parserData.mallocTagStats
+            self._bboxCache = None
 
             MainWindow._renderer = parserData.renderer
             if MainWindow._renderer == 'simple':
@@ -1135,7 +1136,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.playButton.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Space))
 
     # Non-topology dependent UI changes
-    def _reloadFixedUI(self):
+    def _reloadFixedUI(self, resetStageDataOnly=False):
         # If animation is playing, stop it.
         if self._ui.playButton.isChecked():
             self._ui.playButton.click()
@@ -1154,8 +1155,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.framesPerSecond = self._stage.GetFramesPerSecond()
 
-        self.step = self._stage.GetTimeCodesPerSecond() / self.framesPerSecond
-        self._ui.stepSize.setText(str(self.step))
+        if not resetStageDataOnly:
+            self.step = self._stage.GetTimeCodesPerSecond() / self.framesPerSecond
+            self._ui.stepSize.setText(str(self.step))
 
         # if one option is provided(lastframe or firstframe), we utilize it
         if ff is not None and lf is not None: 
@@ -1174,9 +1176,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.stageBegin.setText(str(stageStartTimeCode))
         self._ui.stageEnd.setText(str(stageEndTimeCode))
 
-        self._UpdateTimeSamples()
+        self._UpdateTimeSamples(resetStageDataOnly)
 
-    def _UpdateTimeSamples(self):
+    def _UpdateTimeSamples(self, resetStageDataOnly=False):
         if self.realStartTimeCode is not None and self.realEndTimeCode is not None:
             if self.realStartTimeCode > self.realEndTimeCode:
                 sys.stderr.write('Warning: Invalid frame range (%s, %s)\n'  
@@ -1189,52 +1191,55 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self._timeSamples = []
 
-        if self._stageView:
-            self._stageView.timeSamples = self._timeSamples
-            
         self._geomCounts = dict()
         self._hasTimeSamples = (len(self._timeSamples) > 0)
         self._setPlaybackAvailability() # this sets self._playbackAvailable
 
         if self._hasTimeSamples:
-            self._currentFrame = self._timeSamples[0]
-            self._ui.frameField.setText(str(self._currentFrame))
             self._ui.rangeBegin.setText(str(self._timeSamples[0]))
             self._ui.rangeEnd.setText(str(self._timeSamples[-1]))
+        
+        if not resetStageDataOnly:
+            self._currentFrame = self._timeSamples[0] if self._hasTimeSamples else 0.0
+            self._ui.frameField.setText(str(self._currentFrame))
 
         if self._playbackAvailable:
-            self._ui.frameSlider.setRange(0, len(self._timeSamples)-1)
-            self._ui.frameSlider.setValue(self._ui.frameSlider.minimum())
+            if not resetStageDataOnly:
+                self._ui.frameSlider.setRange(0, len(self._timeSamples)-1)
+                self._ui.frameSlider.setValue(self._ui.frameSlider.minimum())
             self._setPlayShortcut()
             self._ui.playButton.setCheckable(True)
             self._ui.playButton.setChecked(False)
-        elif not self._hasTimeSamples: 
-            # There are no time samples in the stage. Set the effective query 
-            # time that usdview uses to 0.0 in this case.
-            # This way, we get the following desirable behavior: 
-            # * the frame slider will be inactive, 
-            # * non-animatd attributes with default values will be read correctly.
-            # * animated attributes (in some cases with a single time sample) 
-            #   with no default value will also have the expected value in 
-            #   the attribute browser.
-            #   
-            self._currentFrame = 0.0
-            self._ui.frameField.setText("0.0")
 
     # Vars that need updating during a stage reget/refresh
     def _refreshVars(self):
         # Need to refresh selected items to refresh nodes/view to new stage
         self._itemSelectionChanged()
 
-    def _clearCaches(self):
+    def _refreshBBoxCache(self, useExtentsHint):
+        # Unfortunate that we must blow the entire BBoxCache, but we have no
+        # other alternative, currently.
+        if self._bboxCache and self._bboxCache.GetUseExtentsHint() == useExtentsHint:
+            self._bboxCache.Clear()
+        else:
+            self._bboxCache = UsdGeom.BBoxCache(self._currentFrame, 
+                                                stageView.StageView.DefaultDataModel.BBOXPURPOSES, 
+                                                useExtentsHint)
+            
+
+    def _clearCaches(self, preserveCamera=False):
+        """Clears value and computation caches maintained by the controller.
+        Does NOT initiate any GUI updates"""
+        
         self._valueCache = dict()
+        self._geomCounts = dict()
 
         # create new xform, bounding box, and camera caches. If there was an
         # instance of the cache before, this will effectively clear the
         # cache.
         self._xformCache = UsdGeom.XformCache(self._currentFrame)
-        self._setUseExtentsHint(self._ui.useExtentsHint.isChecked())
-        self._refreshCameraListAndMenu(preserveCurrCamera = False)
+        self._refreshBBoxCache(self._ui.useExtentsHint.isChecked())
+        self._refreshCameraListAndMenu(preserveCurrCamera = preserveCamera)
 
 
     # Render plugin support
@@ -1273,15 +1278,10 @@ class MainWindow(QtWidgets.QMainWindow):
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):
 
-        # We must call ReloadStage() before _clearCaches() to avoid a crash in
-        # the case when we have reopened the stage. The problem is when the
-        # stage is being reopened, its internal state is inconsistent, but as a
-        # result of calling _clearCaches(), we will attempt to update bounding
-        # boxes via _setUseExtentHints.
+        self._clearCaches()
+
         if self._stageView:
             self._stageView.ReloadStage(self._stage)
-
-        self._clearCaches()
 
         # The difference between these two is related to multi-selection: 
         # - currentNodes contains all nodes selected
@@ -1300,9 +1300,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._ui.frameSlider.setValue(self._ui.frameSlider.minimum())
 
-        # Make sure to clear the texture registry, as its contents depend
-        # on the GL state established by the StageView (bug 56866).
-        Glf.TextureRegistry.Reset()
         if not self._stageView:
             self._stageView = StageView(parent=self, dataModel=self)
             self._stageView.SetStage(self._stage)
@@ -1715,16 +1712,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _rangeBeginChanged(self):
         self.realStartTimeCode = float(self._ui.rangeBegin.text())
-        self._UpdateTimeSamples()
+        self._UpdateTimeSamples(resetStageDataOnly=True)
 
     def _stepSizeChanged(self):
         stepStr = self._ui.stepSize.text()
         self.step = float(stepStr)
-        self._UpdateTimeSamples()
+        self._UpdateTimeSamples(resetStageDataOnly=True)
     
     def _rangeEndChanged(self):
         self.realEndTimeCode = float(self._ui.rangeEnd.text())
-        self._UpdateTimeSamples()
+        self._UpdateTimeSamples(resetStageDataOnly=True)
 
     def _frameStringChanged(self):
         indexOfFrame = self._findIndexOfFieldContents(self._ui.frameField)
@@ -1933,6 +1930,9 @@ class MainWindow(QtWidgets.QMainWindow):
                         self._settings.get("actionShow_Abstract_Prims", False))
         self._ui.redrawOnScrub.setChecked(self._settings.get("RedrawOnScrub", True))
 
+        # Seems like a good time to clear the texture registry
+        Glf.TextureRegistry.Reset()
+
         # RELOAD fixed and varying UI
         self._reloadFixedUI()
         self._reloadVaryingUI()
@@ -2086,6 +2086,19 @@ class MainWindow(QtWidgets.QMainWindow):
             lambda : self._cameraSelectionChanged(None))
 
         self._refreshCameraListAndMenu(preserveCurrCamera = False)
+
+    def _updateForStageChanges(self):
+        """Assuming there have been authoring changes to the already-loaded
+        stage, make the minimal updates to the UI required to maintain a
+        consistent state.  This may still be over-zealous until we know
+        what actually changed, but we should be able to preserve camera and
+        playback positions (unless viewing through a stage camera that no
+        longer exists"""
+        
+        self._clearCaches(preserveCamera=True)
+
+        # Update the UIs (it gets all of them) and StageView on a timer
+        self.UpdateNodeViewContents()
 
     def _saveSplitterStates(self):
         # we dont want any of the splitter positions to be saved when using
@@ -2271,9 +2284,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._settings.setAndSave(ShowBBoxPlayback=state)
 
     def _setUseExtentsHint(self, state):
-        self._bboxCache = UsdGeom.BBoxCache(self._currentFrame, 
-                                            stageView.StageView.DefaultDataModel.BBOXPURPOSES, 
-                                            useExtentsHint=state)
+        self._refreshBBoxCache(state)
 
         self._updateAttributeView()
 
@@ -2552,8 +2563,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         try:
             self._stage.Reload()
-            self._resetSettings() # reload topology, attributes, GL view
-            self._resetView()
+            # Seems like a good time to clear the texture registry
+            Glf.TextureRegistry.Reset()
+            # reset timeline, and playback settings from stage metadata
+            self._reloadFixedUI(resetStageDataOnly=True)
+            self._updateForStageChanges()
         except Exception as err:
             self.statusMessage('Error occurred rereading all layers for Stage: %s' % err)
         finally:
@@ -2995,17 +3009,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return item
 
-    def _updatePrimTreeForVariantSwitch(self):
-        self._clearCaches()
-
-        for prim in self._currentNodes:
-            if prim:
-                self._clearGeomCountsForPrimPath(prim.GetPath())
-
-        self._resetNodeView()
-
-        # Finally redraw the bbox and transitively the scene.
-        self._refreshBBox()
 
     def _getCommonNodes(self, pathsList):
         import os

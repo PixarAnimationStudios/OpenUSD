@@ -1756,9 +1756,6 @@
    <property name="text">
     <string>Reset View</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+R</string>
-   </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
    </property>
@@ -2554,6 +2551,9 @@
   <action name="actionReload_All_Layers">
    <property name="text">
     <string>Reload All Layers</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actionHD_Flags">

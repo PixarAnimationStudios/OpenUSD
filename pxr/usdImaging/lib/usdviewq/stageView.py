@@ -1161,14 +1161,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams = params
         
     @property
-    def timeSamples(self):
-        return self._timeSamples
-        
-    @timeSamples.setter
-    def timeSamples(self, samples):
-        self._timeSamples = samples
-        
-    @property
     def showBBoxes(self):
         return self._showBBoxes
         
@@ -1488,8 +1480,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._showAABBox = True	# Show axis-aligned BBox
         self._showOBBox = False	# Show oriented BBox
         
-        self._timeSamples = []
-
         self._clearColor = (0.0, 0.0, 0.0, 0.0)
         self._highlightColor = (1.0, 1.0, 0.0, 0.8)
         self._drawSelHighlights = True
