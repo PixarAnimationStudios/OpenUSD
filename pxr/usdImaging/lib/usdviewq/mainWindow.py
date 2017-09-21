@@ -55,7 +55,8 @@ from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor,
                     RedColor, BoldFont, ItalicFont, GetAttributeColor,
                     GetAttributeTextFont, HasArcsColor, InstanceColor,
                     NormalColor, MasterColor, Timer, 
-                    BusyContext, DumpMallocTags, GetInstanceIdForIndex)
+                    BusyContext, DumpMallocTags, GetInstanceIdForIndex,
+                    ItalicizeLabelText, BoldenLabelText, ColorizeLabelText)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -604,42 +605,30 @@ class MainWindow(QtWidgets.QMainWindow):
             hasArcsLegend = self._ui.nodeLegendLabelHasArcs
             hasArcsLegend.setText(legendTextUpdate(hasArcsLegend, HasArcsColor))
 
-
-            # Format partial strings in the maps for nodeView and propertyView
-            # t indicates the whole (t)ext
-            # s indicates the desired (s)ubstring
-            # m indicates a text (m)ode
-            labelUpdate = lambda t, s, m: t.replace(s,'<'+m+'>'+s+'</'+m+'>')
-            italicize = lambda t, s: labelUpdate(t, s, 'i') 
-            bolden = lambda t, s: labelUpdate(t, s, 'b')
-
-            spanStr = lambda r,g,b: "span style=\"color:rgb(%d, %d, %d);\"" % (r,g,b)
-            colorize = lambda t, s, r, g, b: labelUpdate(t, s, spanStr(r,g,b))
-
             undefinedFontLegend = self._ui.nodeLegendLabelFontsUndefined
-            undefinedFontLegend.setText(italicize(undefinedFontLegend.text(), 
-                                                  undefinedFontLegend.text()))
+            undefinedFontLegend.setText(ItalicizeLabelText(undefinedFontLegend.text(), 
+                                                           undefinedFontLegend.text()))
 
             definedFontLegend = self._ui.nodeLegendLabelFontsDefined
-            definedFontLegend.setText(bolden(definedFontLegend.text(), 
-                                             definedFontLegend.text()))
+            definedFontLegend.setText(BoldenLabelText(definedFontLegend.text(), 
+                                                      definedFontLegend.text()))
 
 
             # Set three individual colors in the text line to indicate
             # the dimmed version of each primary node color
             dimmedLegend = self._ui.nodeLegendLabelDimmed
             dimmedLegendText = dimmedLegend.text()
-            dimmedLegendText = colorize(dimmedLegendText, "Dimmed colors", 148, 105, 30)
-            dimmedLegendText = colorize(dimmedLegendText, "denote", 78,91,145)
-            dimmedLegendText = colorize(dimmedLegendText, "inactive prims", 151,151,151)
+            dimmedLegendText = ColorizeLabelText(dimmedLegendText, "Dimmed colors", 148, 105, 30)
+            dimmedLegendText = ColorizeLabelText(dimmedLegendText, "denote", 78,91,145)
+            dimmedLegendText = ColorizeLabelText(dimmedLegendText, "inactive prims", 151,151,151)
             dimmedLegend.setText(dimmedLegendText)
 
             interpolatedStr = 'Interpolated'
             tsLabel = self._ui.propertyLegendLabelTimeSample
-            tsLabel.setText(italicize(tsLabel.text(), interpolatedStr))
+            tsLabel.setText(ItalicizeLabelText(tsLabel.text(), interpolatedStr))
 
             vcLabel = self._ui.propertyLegendLabelValueClips
-            vcLabel.setText(italicize(vcLabel.text(), interpolatedStr))
+            vcLabel.setText(ItalicizeLabelText(vcLabel.text(), interpolatedStr))
 
             # setup animation objects for the primView and propertyView
             self._propertyLegendAnim = QtCore.QPropertyAnimation(

@@ -60,6 +60,19 @@ NormalFont = QtGui.QFont()
 NormalFont.setWeight(35)
 AbstractPrimFont = NormalFont
 
+def _UpdateLabelText(text, substring, mode):
+    return text.replace(substring,'<'+mode+'>'+substring+'</'+mode+'>')
+
+def ItalicizeLabelText(text, substring):
+    return _UpdateLabelText(text, substring, 'i')
+
+def BoldenLabelText(text, substring):
+    return _UpdateLabelText(text, substring, 'b')
+
+def ColorizeLabelText(text, substring, r, g, b):
+    return _UpdateLabelText(text, substring, 
+                            "span style=\"color:rgb(%d, %d, %d);\"" % (r,g,b))
+
 def PrintWarning(title, description):
     import sys
     msg = sys.stderr
