@@ -35,6 +35,10 @@ class GU_Detail;
 
 
 /**
+   \deprecated This is being replaced with the more performant GusdUSD_Traverse.
+   See GusdUSD_CustomTraverse for GusdUSD_Traverse implementation that roughly
+   approximates the same configurations supported by this class.
+
    Class for performing controlled recursion through usd prims.
    This includes the ability to exclude/include by visibility state,
    purpose, prim type, etc.
