@@ -1,14 +1,15 @@
 #sdf 1.4.32
-(
-    """
-    This example has four payloads, only one of which is valid.
-    """
-)
 
 def "Root"
 {
     def "SimplePayload" (
         payload = @./payload.sdf@</SimplePayload>
+    )
+    {
+    }
+
+    def "SimpleSubrootPayload" (
+        payload = @./payload.sdf@</SimplePayload/Child>
     )
     {
     }

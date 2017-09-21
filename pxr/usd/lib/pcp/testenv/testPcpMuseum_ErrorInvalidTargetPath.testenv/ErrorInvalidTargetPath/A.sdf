@@ -11,3 +11,15 @@ def "PrimOutsideReferenceRoot"
 {
     double A
 }
+
+def "B"
+{
+    def "C"
+    {
+        rel testRel = </B/D>
+    }
+
+    def "D"
+    {
+    }
+}

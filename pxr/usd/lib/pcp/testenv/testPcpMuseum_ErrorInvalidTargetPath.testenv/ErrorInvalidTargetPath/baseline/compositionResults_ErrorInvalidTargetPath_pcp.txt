@@ -26,6 +26,20 @@ Property stacks:
     root.sdf             /Root.x
 
 ------------------------------------------------------------------------
+Results for composing </SubrootRef>
+
+Prim Stack:
+    root.sdf             /SubrootRef
+    A.sdf                /B/C
+
+Property names:
+     ['testRel']
+
+Property stacks:
+/SubrootRef.testRel:
+    A.sdf                /B/C.testRel
+
+------------------------------------------------------------------------
 Results for composing </RootWithReferenceUnderVariant>
 
 Prim Stack:

@@ -382,6 +382,16 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SubrootReferenceAndClasses.testenv
+    DEST testPcpMuseum_SubrootReferenceAndClasses
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SubrootReferenceAndVariants.testenv
+    DEST testPcpMuseum_SubrootReferenceAndVariants
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TypicalReferenceToRiggedModel.testenv
     DEST testPcpMuseum_TypicalReferenceToRiggedModel
 )
@@ -875,6 +885,20 @@ pxr_register_test(testPcpMuseum_BasicSpecializesAndVariants
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicSpecializesAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicSpecializesAndVariants.txt
     DIFF_COMPARE compositionResults_BasicSpecializesAndVariants.txt 
+)
+
+pxr_register_test(testPcpMuseum_SubrootReferenceAndClasses
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndClasses/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SubrootReferenceAndClasses.txt
+    DIFF_COMPARE compositionResults_SubrootReferenceAndClasses.txt 
+)
+
+pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndVariants/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SubrootReferenceAndVariants.txt
+    DIFF_COMPARE compositionResults_SubrootReferenceAndVariants.txt 
 )
 
 pxr_register_test(testPcpMuseum_TypicalReferenceToRiggedModel

@@ -1,0 +1,25 @@
+#sdf 1.4.32
+
+class "Inherit"
+{
+    over "Model"
+    {
+    }
+}
+
+class "Specializes"
+{
+    over "Model"
+    {
+    }
+}
+  
+def "Set" (
+    inherits = </Inherit>
+    specializes = </Specializes>
+)
+{
+    def "Model"
+    {
+    }
+}

@@ -1,0 +1,21 @@
+#sdf 1.4.32
+
+over "Inherit"
+{
+    over "Model"
+    {
+    }
+}
+
+over "Specializes"
+{
+    over "Model"
+    {
+    }
+}
+  
+def "SubrootRef" (
+    references = @./set.sdf@</Set/Model>
+)
+{
+}
