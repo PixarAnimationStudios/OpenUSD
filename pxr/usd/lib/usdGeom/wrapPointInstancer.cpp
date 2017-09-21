@@ -327,6 +327,7 @@ WRAP_CUSTOM {
         // costs, so let's not worry about the 'ids' optional arg
         .def("ComputeMaskAtTime",
              &_ComputeMaskAtTime,
+             boost::python::return_value_policy<TfPySequenceToList>(),
              (arg("time")))
 
         .def("ComputeInstanceTransformsAtTime",
