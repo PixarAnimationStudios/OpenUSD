@@ -78,7 +78,7 @@ UsdImagingLightAdapter::ProcessPrimResync(SdfPath const& usdPath,
 {
     // XXX : This will become RemoveSprims when we standarize shaders/lights.
     index->RemoveLight(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    index->RemovePrimInfo(/*usdPrimPath*/usdPath);
 
     if (_GetPrim(usdPath)) {
         // The prim still exists, so repopulate it.
@@ -92,7 +92,7 @@ UsdImagingLightAdapter::ProcessPrimRemoval(SdfPath const& usdPath,
 {
     // XXX : This will become RemoveSprims when we standarize shaders/lights.
     index->RemoveLight(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    index->RemovePrimInfo(/*usdPrimPath*/usdPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

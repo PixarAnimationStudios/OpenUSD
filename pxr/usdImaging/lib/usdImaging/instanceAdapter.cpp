@@ -218,7 +218,9 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
                 adapter.get());
         }
         if (primCount > 0) {
-            index->InsertInstancer(instancerPath, &ctx); 
+            index->InsertInstancer(instancerPath,
+                                   _GetPrim(instancerPath),
+                                   &ctx);
         } else if (nestedInstances.empty()) {
             // if this instance path ends up to have no prims in subtree
             // and not an instance itself , we don't need to track this path
@@ -250,7 +252,9 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 
             // Make sure we add a dependency for this instance on this adapter,
             // so that changes to the instance are handled properly.
-            index->AddDependency(instancePath, instancerAdapter);
+            index->AddPrimInfo(instancePath,
+                               _GetPrim(instancePath),
+                               instancerAdapter);
 
             // If we're adding an instance to an instancer that had already
             // been drawn, we need to ensure it and its rprims are marked
@@ -406,6 +410,10 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
     // ensure the correct image is produced for final render.
     UsdTimeCode time(1.0);
 
+    TF_DEBUG(USDIMAGING_INSTANCER).Msg(
+        "TrackVariability(%s), child = %s",
+        cachePath.GetText(), _IsChildPrim(prim, cachePath) ? "y" : "n");
+
     if (_IsChildPrim(prim, cachePath)) {
         UsdImagingInstancerContext instancerContext;
         _ProtoRprim & rproto = const_cast<_ProtoRprim&>(
@@ -470,6 +478,10 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
             _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
         }
     }
+
+    TF_DEBUG(USDIMAGING_INSTANCER).Msg(
+        "TrackVariability(%s), bits = %s",
+        cachePath.GetText(), HdChangeTracker::StringifyDirtyBits(*timeVaryingBits).c_str());
 }
 
 template <typename Functor>
@@ -969,7 +981,7 @@ UsdImagingInstanceAdapter::_ReloadInstancer(SdfPath const& instancerPath,
     // copy of them around so we can repopulate them below.
     const SdfPathVector instancePaths = instIt->second.instancePaths;
     TF_FOR_ALL(instanceIt, instancePaths) {
-        index->RemoveDependency(*instanceIt);
+        index->RemovePrimInfo(*instanceIt);
     }
 
     // Remove this instancer's entry from the master -> instancer map.
@@ -989,7 +1001,7 @@ UsdImagingInstanceAdapter::_ReloadInstancer(SdfPath const& instancerPath,
 
     // Blow away the instancer and the associated local data.
     index->RemoveInstancer(instancerPath);
-    index->RemoveDependency(instancerPath);
+    index->RemovePrimInfo(instancerPath);
     _instancerData.erase(instIt);
 
     // Repopulate the instancer's previous instances. Those that don't exist

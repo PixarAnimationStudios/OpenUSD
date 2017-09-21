@@ -58,7 +58,7 @@ UsdImagingPointsAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertPoints(prim.GetPath(),
+    index->InsertPoints(prim,
                         GetShaderBinding(prim),
                         instancerContext);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);

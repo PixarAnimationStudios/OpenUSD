@@ -167,7 +167,11 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     instrData.parentInstancerPath = parentInstancerPath;
 
     TF_DEBUG(USDIMAGING_INSTANCER).Msg("[Add PI] %s\n", instancerPath.GetText());
-    index->InsertInstancer(instancerPath, instancerContext);
+    // Need to use GetAbsoluteRootOrPrimPath() on instancerPath to drop
+    // {instancer=X} from the path, so usd can find the prim.
+    index->InsertInstancer(instancerPath,
+                           _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath()),
+                           instancerContext);
 
     // ---------------------------------------------------------------------- //
     // Main Prototype allocation loop.
@@ -1101,12 +1105,12 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
     TF_FOR_ALL(protoRprimIt, instIt->second.protoRprimMap) {
         SdfPath const& cachePath = protoRprimIt->first;
         index->RemoveRprim(cachePath);
-        index->RemoveDependency(cachePath);
+        index->RemovePrimInfo(cachePath);
     }
 
     // Blow away the instancer and the associated local data.
     index->RemoveInstancer(instancerPath);
-    index->RemoveDependency(instancerPath);
+    index->RemovePrimInfo(instancerPath);
     _instancerData.erase(instIt);
 }
 

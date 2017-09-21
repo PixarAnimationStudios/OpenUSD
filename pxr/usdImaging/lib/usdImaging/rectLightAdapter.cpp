@@ -53,7 +53,7 @@ UsdImagingRectLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertLight(prim.GetPath(), HdPrimTypeTokens->rectLight);
+    index->InsertLight(prim, HdPrimTypeTokens->rectLight);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return prim.GetPath();

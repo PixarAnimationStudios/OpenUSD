@@ -53,7 +53,7 @@ UsdImagingDomeLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertLight(prim.GetPath(), HdPrimTypeTokens->domeLight);
+    index->InsertLight(prim, HdPrimTypeTokens->domeLight);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return prim.GetPath();

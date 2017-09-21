@@ -541,9 +541,8 @@ private:
     // any object changes that have occurred in the interim.
     bool _ProcessChangesForTimeUpdate(UsdTimeCode time);
 
-    // Add tasks to update prims with time-varying attributes to the
-    // given worker.
-    void _PrepareWorkerForTimeUpdate(_Worker* worker);
+    // Set dirty bits based off those previous been designated as time varying.
+    void _ApplyTimeVaryingState();
 
     // Execute all time update tasks that have been added to the given worker.
     static void _ExecuteWorkForTimeUpdate(_Worker* worker);
@@ -551,30 +550,37 @@ private:
     // ---------------------------------------------------------------------- //
     // Core Delegate state
     // ---------------------------------------------------------------------- //
+
+    // Usd Prim Type to Adapter lookup table.
     typedef boost::shared_ptr<UsdImagingPrimAdapter> _AdapterSharedPtr;
     typedef TfHashMap<TfToken, 
                          _AdapterSharedPtr, TfToken::HashFunctor> _AdapterMap;
     _AdapterMap _adapterMap;
+
+    // Per-Primitive tracking data.
+    struct _PrimInfo {
+        _AdapterSharedPtr adapter;          // The adapter to use for the prim
+        UsdPrim           usdPrim;          // Reference to the Usd prim
+        HdDirtyBits       timeVaryingBits;  // Dirty Bits to set when
+                                            // time changes
+        HdDirtyBits       dirtyBits;        // Current dirty state of the prim.
+    };
+
+    typedef TfHashMap<SdfPath, _PrimInfo, SdfPath::Hash> _PrimInfoMap;
+
+    _PrimInfoMap _primInfoMap;       // Indexed by "Cache Path"
+
+    // List of all prim Id's for sub-tree analysis
+    Hd_SortedIds _usdIds;
 
     // Only use this method when we think no existing adapter has been
     // established. For example, during initial Population.
     _AdapterSharedPtr const& _AdapterLookup(UsdPrim const& prim, 
                                             bool ignoreInstancing = false);
 
-    // This method should be used for all cases in which we expect an adapter to
-    // have been registered for a prim. Note that usdPath here should always
-    // match some "cachePath" from the adapters perspective. This also allows
-    // for a fan-out of multiple adapters to handle a single underlying UsdPrim.
-    _AdapterSharedPtr const& _AdapterLookupByPath(SdfPath const& usdPath);
+    // Obtain the prim tracking data for the given cache path.
+    _PrimInfo *GetPrimInfo(const SdfPath &cachePath);
 
-    // A mapping from usd scene graph path to prim adapter. Note that this path
-    // can be different from the path in the dirty map, which is intentionally
-    // the same as the render index. This map facillitates usd-to-adapter
-    // lookups, which are required during change processing (usd reports a usd
-    // path, which may not match the render index path, particularly for child
-    // rprims). 
-    typedef SdfPathTable<_AdapterSharedPtr> _PathAdapterMap;
-    _PathAdapterMap _pathAdapterMap;
 
     typedef UsdImagingShaderAdapterSharedPtr _ShaderAdapterSharedPtr;
 
@@ -592,12 +598,6 @@ private:
     tbb::spin_rw_mutex _usdToIndexPathMapMutex;
     _PathToPathMap _usdToIndexPathMap;
 
-    /// Tracks a set of dirty flags for each prim, these flags get sent to the
-    /// render index as time changes to trigger invalidation. All prims exist in
-    /// this map, but some will have flags set to HdChangeTracker::Clean.
-    typedef TfHashMap<SdfPath, HdDirtyBits, SdfPath::Hash> _DirtyMap;
-    _DirtyMap _dirtyMap;
-
     typedef TfHashMap<SdfPath, bool, SdfPath::Hash> _ShaderMap;
     _ShaderMap _shaderMap;
 
@@ -610,15 +610,13 @@ private:
     typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
     _InstancerSet _instancerPrimPaths;
 
-    // Retrieves the dirty bits for a given usdPath and allows mutation of the
-    // held value, but requires that the entry already exists in the map.
-    HdDirtyBits* _GetDirtyBits(SdfPath const& usdPath);
+    typedef TfHashSet<SdfPath, SdfPath::Hash> _RprimSet;
+    _RprimSet _rprimPaths;
 
-    // Marks usdPath dirty in hydra, with dirtyFlags. If addToDirtyMap
-    // is true, the bits are cached in _dirtyMap.
+    // Updates the prim tracking info with the specified dirty flags
+    // and forwards these bits onto Hydra's change tracker.
     void _MarkRprimOrInstancerDirty(SdfPath const& usdPath,
-                                    HdDirtyBits dirtyFlags,
-                                    bool cacheDirtyFlags);
+                                    HdDirtyBits dirtyFlags);
 
     void _MarkSubtreeDirty(SdfPath const &subtreeRoot,
                            HdDirtyBits rprimDirtyFlag,
@@ -688,40 +686,53 @@ private:
 ///
 class UsdImagingIndexProxy {
 public: 
-    // Create a dependency on usdPath for the specified prim adapter. When no
-    // prim adapter is specified, the Usd prim will be fetched from the current
-    // stage and the typename will be used to find the associated adapter. If no
-    // adapter exists for the type name, an error will be issued.
+    /// Adds a new prim to be tracked to the delegate.
+    /// "cachePath" is the index path minus the delegate prefix (i.e. the result
+    /// of GetPathForUsd()).
+    /// usdPrim reference the prim to track in usd.
+    /// If adapter is null, AddPrimInfo will assign an appropriate adapter based
+    /// off the type of the UsdPrim.  However, this can be overridden
+    /// (for instancing), by specifying a specific adapter.
+    ///
+    /// While the cachePath could be obtain from the usdPrim, in the case of
+    /// instancing these may differ, so their in an option to specify a specific
+    /// cachePath.
+    ///
+    /// Also for instancing, the function allows the same cachePath to be added
+    /// twice without causing an error.  However, the UsdPrim and Adpater have
+    /// to be the same as what is already inserted in the tracking.
     USDIMAGING_API
-    void AddDependency(SdfPath const& usdPath, 
-                        UsdImagingPrimAdapterSharedPtr const& adapter =
-                                    UsdImagingPrimAdapterSharedPtr());
+    void AddPrimInfo(SdfPath const &cachePath,
+                     UsdPrim const& usdPrim,
+                     UsdImagingPrimAdapterSharedPtr const& adapter);
+
 
     USDIMAGING_API
-    SdfPath InsertMesh(SdfPath const& usdPath,
+    SdfPath InsertMesh(UsdPrim const& usdPrim,
                        SdfPath const& shaderBinding,
                        UsdImagingInstancerContext const* instancerContext);
 
     USDIMAGING_API
-    SdfPath InsertBasisCurves(SdfPath const& usdPath,
+    SdfPath InsertBasisCurves(UsdPrim const& usdPrim,
                        SdfPath const& shaderBinding,
                        UsdImagingInstancerContext const* instancerContext);
 
     USDIMAGING_API
-    SdfPath InsertPoints(SdfPath const& usdPath,
+    SdfPath InsertPoints(UsdPrim const& usdPrim,
                        SdfPath const& shaderBinding,
                        UsdImagingInstancerContext const* instancerContext);
 
     // Insert a light into the HdRenderIndex and schedules it for updates
     // from the delegate.
     USDIMAGING_API
-    SdfPath InsertLight(SdfPath const& usdPath, TfToken const& lightType);
+    void InsertLight(UsdPrim const& usdPrim, TfToken const& lightType);
 
     // Inserts an instancer into the HdRenderIndex and schedules it for updates
     // from the delegate.
     USDIMAGING_API
-    void InsertInstancer(SdfPath const& usdPath,
-                UsdImagingInstancerContext const* instancerContext);
+    void InsertInstancer(SdfPath const& cachePath,
+                         UsdPrim const& usdPrim,
+                         UsdImagingInstancerContext const* instancerContext);
 
     // Refresh the HdRprim at the specified render index path.
     USDIMAGING_API
@@ -735,10 +746,10 @@ public:
     // All removals are deferred to avoid surprises during change processing.
     //
     
-    // Removes the dependency on the specified Usd path. Notice that this is the
-    // path in the Usd scene graph, not the path in the RenderIndex.
-    void RemoveDependency(SdfPath const& usdPath) {
-        _depsToRemove.push_back(usdPath);
+    // Designates that the given prim should no longer be tracked and thus
+    // removed from the tracking structure.
+    void RemovePrimInfo(SdfPath const& cachePath) {
+        _primInfoToRemove.push_back(cachePath);
     }
 
     // Removes the HdRprim at the specified render index path. 
@@ -779,7 +790,7 @@ private:
     // Note that this method does not implicitly add a dependency because the
     // child is likely to represent a different prim in the Usd scene graph.
     SdfPath _InsertRprim(TfToken const& primType,
-                         SdfPath const& usdPath,
+                         UsdPrim const& usdPrim,
                          SdfPath const& shaderBinding,
                          UsdImagingInstancerContext const* instancerContext);
 
@@ -791,7 +802,7 @@ private:
     SdfPathVector _rprimsToRemove;
     SdfPathVector _lightsToRemove;
     SdfPathVector _instancersToRemove;
-    SdfPathVector _depsToRemove;
+    SdfPathVector _primInfoToRemove;
 };
 
 

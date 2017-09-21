@@ -83,7 +83,7 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath,
     // remove the adapter dependency and the rprim and repopulate as the default
     // behavior.
     index->RemoveRprim(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    index->RemovePrimInfo(/*usdPrimPath*/usdPath);
 
     if (_GetPrim(usdPath)) {
         // The prim still exists, so repopulate it.
@@ -100,7 +100,7 @@ UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& usdPath,
     // remove the adapter dependency and the rprim and repopulate as the default
     // behavior.
     index->RemoveRprim(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    index->RemovePrimInfo(/*usdPrimPath*/usdPath);
 }
 
 /*virtual*/

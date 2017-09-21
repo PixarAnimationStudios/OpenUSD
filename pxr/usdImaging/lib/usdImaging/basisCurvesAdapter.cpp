@@ -60,7 +60,7 @@ UsdImagingBasisCurvesAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertBasisCurves(prim.GetPath(),
+    index->InsertBasisCurves(prim,
                              GetShaderBinding(prim),
                              instancerContext);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);

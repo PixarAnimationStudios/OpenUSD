@@ -65,7 +65,7 @@ UsdImagingCapsuleAdapter::Populate(UsdPrim const& prim,
                             UsdImagingInstancerContext const* instancerContext)
 
 {
-    index->InsertMesh(prim.GetPath(),
+    index->InsertMesh(prim,
                       GetShaderBinding(prim),
                       instancerContext);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
