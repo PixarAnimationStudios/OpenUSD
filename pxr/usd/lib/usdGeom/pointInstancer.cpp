@@ -25,10 +25,18 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// XXX Bug 139215: When we enable this, we can remove
+// SdfListOp::ComposeOperations().
+TF_DEFINE_ENV_SETTING(
+    USDGEOM_POINTINSTANCER_NEW_APPLYOPS, false,
+    "Set to true to use SdfListOp::ApplyOperations() instead of "
+    "ComposeOperations().");
 
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
@@ -327,6 +335,26 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(UsdGeomPointInstancer::IgnoreMask);
 }
 
+// Convert a list-op to a canonical order, treating it as an
+// operation on a set rather than a list.  A side effect is
+// ensuring that it does not use added or ordered items,
+// and can therefore be used with ApplyOperations().
+template <typename T>
+static SdfListOp<T>
+_CanonicalizeListOp(const SdfListOp<T> &op) {
+    if (op.IsExplicit()) {
+        return op;
+    } else {
+        std::vector<T> items;
+        op.ApplyOperations(&items);
+        std::sort(items.begin(), items.end());
+        SdfListOp<T> r;
+        r.SetPrependedItems(std::vector<T>(items.begin(), items.end()));
+        r.SetDeletedItems(op.GetDeletedItems());
+        return r;
+    }
+}
+
 bool 
 UsdGeomPointInstancerSetOrMergeOverOp(std::vector<int64_t> const &items, 
                                       SdfListOpType op,
@@ -347,6 +375,13 @@ UsdGeomPointInstancerSetOrMergeOverOp(std::vector<int64_t> const &items,
     }
 
     proposed.SetItems(items, op);
+
+    if (TfGetEnvSetting(USDGEOM_POINTINSTANCER_NEW_APPLYOPS)) {
+        current = _CanonicalizeListOp(current);
+        return prim.SetMetadata(UsdGeomTokens->inactiveIds,
+                                *proposed.ApplyOperations(current));
+    }
+
     if (current.IsExplicit()){
         std::vector<int64_t> explicitItems = current.GetExplicitItems();
         proposed.ApplyOperations(&explicitItems);
@@ -398,16 +433,16 @@ bool
 UsdGeomPointInstancer::ActivateId(int64_t id) const
 {
     std::vector<int64_t> toRemove(1, id);
-    return UsdGeomPointInstancerSetOrMergeOverOp(toRemove, SdfListOpTypeDeleted, 
-                                                 GetPrim(), UsdGeomTokens->inactiveIds);
+    return UsdGeomPointInstancerSetOrMergeOverOp(
+        toRemove, SdfListOpTypeDeleted, GetPrim(), UsdGeomTokens->inactiveIds);
 }
 
 bool
 UsdGeomPointInstancer::ActivateIds(VtInt64Array const &ids) const
 {
     std::vector<int64_t> toRemove(ids.begin(), ids.end());
-    return UsdGeomPointInstancerSetOrMergeOverOp(toRemove, SdfListOpTypeDeleted, 
-                                                 GetPrim(), UsdGeomTokens->inactiveIds);
+    return UsdGeomPointInstancerSetOrMergeOverOp(
+        toRemove, SdfListOpTypeDeleted, GetPrim(), UsdGeomTokens->inactiveIds);
 }
 
 bool
@@ -423,16 +458,20 @@ bool
 UsdGeomPointInstancer::DeactivateId(int64_t id) const
 {
     std::vector<int64_t> toAdd(1, id);
-    return UsdGeomPointInstancerSetOrMergeOverOp(toAdd, SdfListOpTypeAdded, 
-                                                 GetPrim(), UsdGeomTokens->inactiveIds);
+    return UsdGeomPointInstancerSetOrMergeOverOp(toAdd,
+        TfGetEnvSetting(USDGEOM_POINTINSTANCER_NEW_APPLYOPS) ?
+        SdfListOpTypeAppended : SdfListOpTypeAdded, GetPrim(),
+        UsdGeomTokens->inactiveIds);
 }
 
 bool
 UsdGeomPointInstancer::DeactivateIds(VtInt64Array const &ids) const
 {
     std::vector<int64_t> toAdd(ids.begin(), ids.end());
-    return UsdGeomPointInstancerSetOrMergeOverOp(toAdd, SdfListOpTypeAdded, 
-                                                 GetPrim(), UsdGeomTokens->inactiveIds);
+    return UsdGeomPointInstancerSetOrMergeOverOp(toAdd,
+        TfGetEnvSetting(USDGEOM_POINTINSTANCER_NEW_APPLYOPS) ?
+        SdfListOpTypeAppended : SdfListOpTypeAdded, GetPrim(),
+        UsdGeomTokens->inactiveIds);
 }
 
 bool
