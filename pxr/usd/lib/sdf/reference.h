@@ -50,8 +50,8 @@ typedef std::vector<SdfReference> SdfReferenceVector;
 /// Represents a reference and all its meta data.
 ///
 /// A reference is expressed on a prim in a given layer and it identifies a
-/// root prim in a layer.  All opinions in the namespace hierarchy
-/// under the referenced root prim will be composed with the opinions in the
+/// prim in a layer stack.  All opinions in the namespace hierarchy
+/// under the referenced prim will be composed with the opinions in the
 /// namespace hierarchy under the referencing prim.
 ///
 /// The asset path specifies the layer stack being referenced.  If this
@@ -189,7 +189,7 @@ private:
     // The asset path to the external layer.
     std::string _assetPath;
 
-    // The root prim path to the referenced prim in the external layer.
+    // The path to the referenced prim in the external layer.
     SdfPath _primPath;
 
     // The layer offset to transform time.
