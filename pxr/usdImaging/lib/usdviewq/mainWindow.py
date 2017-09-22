@@ -21,8 +21,19 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+# Qt Components
 from qt import QtCore, QtGui, QtWidgets
-import stageView
+
+# Stdlib components
+import re, sys, os
+from time import time, sleep
+from collections import deque, OrderedDict
+
+# Usd Library Components
+from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL, Glf, Sdf, Tf
+
+# UI Components
+from ._usdviewq import Utils
 from stageView import StageView
 from mainWindowUI import Ui_MainWindow
 from nodeContextMenu import NodeContextMenu
@@ -31,32 +42,14 @@ from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import _GetCustomAttributes
 from nodeViewItem import NodeViewItem
-from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL
-from pxr import Glf
-from pxr import Sdf
-from pxr import Tf
+import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, referenceEditor, settings
 
-from ._usdviewq import Utils
-
-from collections import deque
-from collections import OrderedDict
-from time import time, sleep
-import re, sys, os
-
-import prettyPrint
-import watchWindow
-import adjustClipping
-import adjustDefaultMaterial
-import referenceEditor
-from settings import Settings
-
-from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor,
-                    ValueClipsTextColor, DefaultTextColor, HeaderColor, 
-                    RedColor, BoldFont, ItalicFont, GetAttributeColor,
-                    GetAttributeTextFont, HasArcsColor, InstanceColor,
-                    NormalColor, MasterColor, Timer, 
-                    BusyContext, DumpMallocTags, GetInstanceIdForIndex,
-                    ItalicizeLabelText, BoldenLabelText, ColorizeLabelText)
+# UI Utilities
+from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor, ValueClipsTextColor, 
+                    DefaultTextColor, HeaderColor, RedColor, BoldFont, ItalicFont, 
+                    GetAttributeColor, GetAttributeTextFont, HasArcsColor, InstanceColor, 
+                    NormalColor, MasterColor, Timer, BusyContext, DumpMallocTags, 
+                    GetInstanceIdForIndex, ItalicizeLabelText, BoldenLabelText, ColorizeLabelText)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -324,7 +317,7 @@ class MainWindow(QtWidgets.QMainWindow):
             settingsPathDir = self._outputBaseDirectory()
             if settingsPathDir is None:
                 # Create an ephemeral settings object with a non existent filepath
-                self._settings = Settings('', seq=None, ephemeral=True) 
+                self._settings = settings.Settings('', seq=None, ephemeral=True) 
             else:
                 settingsPath = os.path.join(settingsPathDir, self._statusFileName)
                 deprecatedSettingsPath = \
@@ -338,7 +331,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                + str(settingsPath) + '.\n')
                     print warning
 
-                self._settings = Settings(settingsPath)
+                self._settings = settings.Settings(settingsPath)
 
                 try:
                     self._settings.load()
@@ -1226,9 +1219,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._bboxCache.Clear()
         else:
             self._bboxCache = UsdGeom.BBoxCache(self._currentFrame, 
-                                                stageView.StageView.DefaultDataModel.BBOXPURPOSES, 
+                                                StageView.DefaultDataModel.BBOXPURPOSES, 
                                                 useExtentsHint)
-            
 
     def _clearCaches(self, preserveCamera=False):
         """Clears value and computation caches maintained by the controller.
