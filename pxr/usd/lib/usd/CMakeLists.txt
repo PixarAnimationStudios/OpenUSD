@@ -70,6 +70,7 @@ pxr_library(usd
         crateFile
         instanceCache
         instanceKey
+        integerCoding
         interpolators
 
     PUBLIC_HEADERS
@@ -205,6 +206,13 @@ pxr_build_test(testUsdCreateAttributeCpp
         usd
     CPPFILES
         testenv/testUsdCreateAttributeCpp.cpp
+)
+
+pxr_build_test(testUsdIntegerCoding
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdIntegerCoding.cpp
 )
 
 pxr_build_test(testUsdMetadataCpp
