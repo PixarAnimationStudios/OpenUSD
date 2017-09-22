@@ -28,6 +28,7 @@
 #include "GU_USD.h"
 #include "GT_VtArray.h"
 #include "GT_VtStringArray.h"
+#include "tokens.h"
 #include "USD_XformCache.h"
 
 #include <GT/GT_DAConstantValue.h>
@@ -104,12 +105,11 @@ GusdMeshWrapper::GusdMeshWrapper(
 }
 
 GusdMeshWrapper::GusdMeshWrapper( 
-        const GusdUSD_StageProxyHandle& stage, 
         const UsdGeomMesh& mesh,
-        const UsdTimeCode& time,
-        const GusdPurposeSet& purposes )
+        UsdTimeCode time,
+        GusdPurposeSet purposes )
     : GusdPrimWrapper( time, purposes )
-    , m_usdMeshForRead( mesh, stage->GetLock() )
+    , m_usdMeshForRead( mesh )
     , m_forceCreateNewGeo( false )
 {
 }    
@@ -173,13 +173,11 @@ defineForWrite(
 }
 
 GT_PrimitiveHandle GusdMeshWrapper::
-defineForRead( const GusdUSD_StageProxyHandle&  stage,
-               const UsdGeomImageable&          sourcePrim, 
-               const UsdTimeCode&               time,
-               const GusdPurposeSet&            purposes )
+defineForRead( const UsdGeomImageable&  sourcePrim, 
+               UsdTimeCode              time,
+               GusdPurposeSet           purposes )
 {
     return new GusdMeshWrapper( 
-                    stage, 
                     UsdGeomMesh( sourcePrim.GetPrim() ),
                     time,
                     purposes );
@@ -237,21 +235,6 @@ initialize( const GusdContext& ctxt,
     }
 }
 
-const UsdGeomImageable 
-GusdMeshWrapper::getUsdPrimForRead(
-    GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomMesh.
-    GusdUSD_MeshHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdMeshForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdMeshForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
-}
-
 bool 
 GusdMeshWrapper::refine(
     GT_Refine& refiner, 
@@ -264,9 +247,7 @@ GusdMeshWrapper::refine(
 
     bool refineForViewport = GT_GEOPrimPacked::useViewportLOD(parms);
 
-    GusdUSD_MeshHolder::ScopedReadLock lock;
-    lock.Acquire(m_usdMeshForRead);
-    UsdGeomMesh usdMesh = *lock;
+    const UsdGeomMesh& usdMesh = m_usdMeshForRead;
 
     DBG(cerr << "GusdMeshWrapper::refine, " << usdMesh.GetPrim().GetPath() << endl);
     VtFloatArray vtFloatArray;
@@ -402,9 +383,9 @@ GusdMeshWrapper::refine(
         // the same attribute owner for the attribute in all meshes. So promote 
         // to vertex.
 
-        UsdGeomPrimvar colorPrimvar = usdMesh.GetPrimvar(TfToken("Cd"));
+        UsdGeomPrimvar colorPrimvar = usdMesh.GetPrimvar(GusdTokens->Cd);
         if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            colorPrimvar = usdMesh.GetDisplayColorPrimvar();
+            colorPrimvar = usdMesh.GetPrimvar(GusdTokens->displayColor);
         }
 
         if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
@@ -414,7 +395,7 @@ GusdMeshWrapper::refine(
 
                 _validateAttrData(
                     "Cd",
-                    colorPrimvar.GetPrimvarName().GetText(),
+                    colorPrimvar.GetBaseName().GetText(),
                     usdMesh.GetPrim().GetPath().GetText(),
                     gtData,
                     colorPrimvar.GetInterpolation(),
@@ -427,9 +408,9 @@ GusdMeshWrapper::refine(
                     &gtDetailAttrs );
             }
         }
-        UsdGeomPrimvar alphaPrimvar = usdMesh.GetPrimvar(TfToken("Alpha"));
+        UsdGeomPrimvar alphaPrimvar = usdMesh.GetPrimvar(GusdTokens->Alpha);
         if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            alphaPrimvar = usdMesh.GetDisplayOpacityPrimvar();
+            alphaPrimvar = usdMesh.GetPrimvar(GusdTokens->displayOpacity);
         }
 
         if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValueOpinion()) {
@@ -439,7 +420,7 @@ GusdMeshWrapper::refine(
 
                 _validateAttrData(
                     "Alpha",
-                    alphaPrimvar.GetPrimvarName().GetText(),
+                    alphaPrimvar.GetBaseName().GetText(),
                     usdMesh.GetPrim().GetPath().GetText(),
                     gtData,
                     alphaPrimvar.GetInterpolation(),
@@ -653,19 +634,15 @@ _validateAttrData(
         if( data->entries() < numFaces ) {
             TF_WARN( "Not enough values found for attribute: %s:%s",
                     primName, srcName );  
-        }
-        else {                
-            *uniformAttrs = (*uniformAttrs)->addAttribute( destName, data, true );
-        }
+        }                    
+        *uniformAttrs = (*uniformAttrs)->addAttribute( destName, data, true );
     }
     else if( interpolation == UsdGeomTokens->constant ) {
-        if( data->entries() < 1 ) {
+       if( data->entries() < 1 ) {
             TF_WARN( "Not enough values found for attribute: %s:%s",
                     primName, srcName );  
         } 
-        else {
-            *detailAttrs = (*detailAttrs)->addAttribute( destName, data, true );
-        }
+        *detailAttrs = (*detailAttrs)->addAttribute( destName, data, true );
     }
 }
 }
@@ -1072,7 +1049,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                 }
             }
 
-            updatePrimvarFromGTPrim( TfToken("displayColor"), GT_OWNER_UNIFORM, 
+            updatePrimvarFromGTPrim( GusdTokens->displayColor, GT_OWNER_UNIFORM, 
                                      interpolation, primvarTime, Cd );
         }
         // If we have a "Alpha" attribute, write it as both "Alpha" and "displayOpacity".
@@ -1087,7 +1064,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                 }
             }
 
-            updatePrimvarFromGTPrim( TfToken("displayOpacity"), GT_OWNER_UNIFORM, 
+            updatePrimvarFromGTPrim( GusdTokens->displayOpacity, GT_OWNER_UNIFORM, 
                                      interpolation, primvarTime, Alpha );
         }
     }

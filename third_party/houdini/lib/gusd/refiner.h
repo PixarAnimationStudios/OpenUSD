@@ -154,7 +154,7 @@ public:
     // If we are overlaying a point instancer, this is set to the type of
     // of point instancer we need to overlay (old - "PxPointInstancer" or new
     // "PointInstancer").
-    std::string             m_pointInstancerType;  
+    TfToken                 m_pointInstancerType;  
 
     GusdWriteCtrlFlags      m_writeCtrlFlags;
 

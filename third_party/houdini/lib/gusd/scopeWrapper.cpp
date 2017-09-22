@@ -25,8 +25,6 @@
 
 #include "context.h"
 #include "UT_Gf.h"
-#include "USD_Proxy.h"
-
 
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_GEOPrimPacked.h>
@@ -61,13 +59,11 @@ GusdScopeWrapper::GusdScopeWrapper(
 }
 
 GusdScopeWrapper::GusdScopeWrapper( 
-        const GusdUSD_StageProxyHandle& stage, 
-        const UsdGeomScope&             scope, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomScope& scope, 
+        UsdTimeCode         time,
+        GusdPurposeSet      purposes )
     : GusdGroupBaseWrapper( time, purposes )
-    , m_usdScopeForRead( scope, stage->GetLock() )
-    , m_stageProxy( stage )
+    , m_usdScopeForRead( scope )
 {
 }
 
@@ -75,7 +71,6 @@ GusdScopeWrapper::GusdScopeWrapper( const GusdScopeWrapper &in )
     : GusdGroupBaseWrapper( in )
     , m_usdScopeForRead( in.m_usdScopeForRead )
     , m_usdScopeForWrite( in.m_usdScopeForWrite )
-    , m_stageProxy( in.m_stageProxy )
 {
 }
 
@@ -123,13 +118,11 @@ defineForWrite(
 
 GT_PrimitiveHandle GusdScopeWrapper::
 defineForRead(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomImageable&         sourcePrim, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomImageable& sourcePrim, 
+        UsdTimeCode             time,
+        GusdPurposeSet          purposes )
 {
     return new GusdScopeWrapper( 
-                    stage, 
                     UsdGeomScope( sourcePrim.GetPrim() ),
                     time,
                     purposes );
@@ -197,20 +190,6 @@ isValid() const
     return m_usdScopeForWrite || m_usdScopeForRead;
 }
 
-const UsdGeomImageable 
-GusdScopeWrapper::getUsdPrimForRead( GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomScope.
-    GusdUSD_ScopeHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdScopeForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdScopeForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
-}
-
 bool GusdScopeWrapper::
 refine(
     GT_Refine& refiner,
@@ -218,12 +197,7 @@ refine(
 {
     //cerr << "GusdScopeWrapper::refine, enter: " << m_usdScope.GetPath() << endl;
 
-    GusdUSD_ScopeHolder::ScopedReadLock lock;
-    lock.Acquire( m_usdScopeForRead );
-
-    UsdGeomScope scope = *lock;
-
-    return refineGroup( m_stageProxy, (*lock).GetPrim(), refiner, parms );
+    return refineGroup( m_usdScopeForRead.GetPrim(), refiner, parms );
 }
 
 

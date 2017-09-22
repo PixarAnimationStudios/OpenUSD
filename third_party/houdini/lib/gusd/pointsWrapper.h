@@ -31,7 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef GusdUSD_HolderT<UsdGeomPoints> GusdUSD_PointsHolder;
 
 class GusdPointsWrapper : public GusdPrimWrapper
 {
@@ -41,11 +40,10 @@ public:
             const SdfPath& path,
             bool isOverride = false );
 
-    GusdPointsWrapper( 
-            const GusdUSD_StageProxyHandle& stage,
+    GusdPointsWrapper(
             const UsdGeomPoints&    usdPoints, 
-            const UsdTimeCode&      t,
-            const GusdPurposeSet&   purposes );  
+            UsdTimeCode             t,
+            GusdPurposeSet          purposes );  
 
     virtual ~GusdPointsWrapper();
 
@@ -53,8 +51,7 @@ public:
     
     virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdPointsForWrite; }
 
-    virtual const UsdGeomImageable 
-        getUsdPrimForRead(GusdUSD_ImageableHolder::ScopedLock &lock) const override;
+    virtual const UsdGeomImageable getUsdPrimForRead() const override { return m_usdPointsForRead; }
 
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -96,17 +93,16 @@ public:
                      const GusdContext& ctxt);
 
     static GT_PrimitiveHandle
-    defineForRead( const GusdUSD_StageProxyHandle&  stage,
-                   const UsdGeomImageable&          sourcePrim, 
-                   const UsdTimeCode&               time,
-                   const GusdPurposeSet&            purposes );
+    defineForRead( const UsdGeomImageable&  sourcePrim, 
+                   UsdTimeCode              time,
+                   GusdPurposeSet           purposes );
 
 private:
     bool initUsdPrim(const UsdStagePtr& stage,
                      const SdfPath& path,
                      bool asOverride);
 
-    GusdUSD_PointsHolder        m_usdPointsForRead;
+    UsdGeomPoints               m_usdPointsForRead;
     UsdGeomPoints               m_usdPointsForWrite;
 };
 

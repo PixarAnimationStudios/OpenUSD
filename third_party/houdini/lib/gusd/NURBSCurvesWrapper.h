@@ -31,7 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef GusdUSD_HolderT<UsdGeomNurbsCurves> GusdUSD_NURBSCurvesHolder;
 
 class GusdNURBSCurvesWrapper : public GusdPrimWrapper
 {
@@ -42,16 +41,14 @@ public:
             const SdfPath& path,
             bool isOverride = false );
     GusdNURBSCurvesWrapper( 
-            const GusdUSD_StageProxyHandle& stage,
-            const UsdGeomNurbsCurves&       usdCurves, 
-            const UsdTimeCode&              time,
-            const GusdPurposeSet&           purposes );  
+            const UsdGeomNurbsCurves&   usdCurves, 
+            UsdTimeCode                 time,
+            GusdPurposeSet              purposes );  
 
     virtual ~GusdNURBSCurvesWrapper();
 
     virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdCurvesForWrite; }
-    virtual const UsdGeomImageable 
-        getUsdPrimForRead(GusdUSD_ImageableHolder::ScopedLock &lock) const override;
+    virtual const UsdGeomImageable getUsdPrimForRead() const override { return m_usdCurvesForRead; }
 
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -90,18 +87,16 @@ public:
                     const GusdContext& ctxt);
 
     static GT_PrimitiveHandle
-    defineForRead( const GusdUSD_StageProxyHandle&  stage,
-                   const UsdGeomImageable&          sourcePrim, 
-                   const UsdTimeCode&               time,
-                   const GusdPurposeSet&            purposes );
+    defineForRead( const UsdGeomImageable&  sourcePrim, 
+                   UsdTimeCode              time,
+                   GusdPurposeSet           purposes );
 
 private:
     bool initUsdPrim( const UsdStagePtr& stage,
                      const SdfPath& path,
                      bool asOverride);
 
-    GusdUSD_NURBSCurvesHolder m_usdCurvesForRead;
-    UsdGeomNurbsCurves        m_usdCurvesForWrite;
+    UsdGeomNurbsCurves  m_usdCurvesForRead, m_usdCurvesForWrite;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

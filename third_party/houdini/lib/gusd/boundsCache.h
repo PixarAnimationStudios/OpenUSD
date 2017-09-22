@@ -65,8 +65,8 @@ public:
             const TfTokenVector &includedPurposes,
             UT_BoundingBox &bounds );
 
-    virtual void Clear();
-    virtual int64 Clear(const UT_Set<std::string>& stageNames) override;
+    virtual void Clear() override;
+    virtual int64 Clear(const UT_StringSet& stageNames) override;
 
 private:
 
@@ -108,7 +108,7 @@ private:
 
     struct Item : public UT_IntrusiveRefCounter<Item>
     {
-        Item( UsdTimeCode time, TfTokenVector includedPurposes ) 
+        Item( UsdTimeCode time, const TfTokenVector& includedPurposes ) 
             : bboxCache( time, includedPurposes )
         {
         }

@@ -21,47 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "gusd/USD_DataCache.h"
-#include "gusd/USD_PropertyMap.h"
-#include "gusd/UT_Gf.h"
-
-#include "pxr/usd/usdGeom/xformable.h"
-
-#include <UT/UT_Matrix4.h>
-
+#include "gusd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-GusdUSD_DataCache::GusdUSD_DataCache(GusdStageCache& cache)
-    : _stageCache(cache)
-{
-    cache.AddDataCache(*this);
-}
-
-
-GusdUSD_DataCache::GusdUSD_DataCache()
-    : GusdUSD_DataCache(GusdStageCache::GetInstance())
-{}
-
-
-GusdUSD_DataCache::~GusdUSD_DataCache()
-{
-    _stageCache.RemoveDataCache(*this);
-}
-
-bool
-GusdUSD_DataCache::ShouldClearPrim(
-    const UsdPrim& prim,
-    const UT_StringSet& stagesToClear)
-{
-    if(!prim) {
-        // Always clear expired prims.
-        return true;
-    }
-    const std::string& path = prim.GetStage()->GetRootLayer()->GetRealPath();
-    return stagesToClear.contains(path);
-}
+TF_DEFINE_PUBLIC_TOKENS(GusdTokens, GUSD_TOKENS);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

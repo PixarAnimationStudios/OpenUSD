@@ -24,6 +24,7 @@
 #include "packedUsdWrapper.h"
 
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include "gusd/context.h"
 
@@ -36,6 +37,11 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (ReferencedPath)
+);
 
 GusdPackedUsdWrapper::GusdPackedUsdWrapper(
         const UsdStagePtr& stage,
@@ -104,21 +110,6 @@ redefine(const UsdStagePtr& stage,
     m_primRefForWrite = stage->DefinePrim( path );
     clearCaches();
     return true;
-}
-
-const UsdGeomImageable 
-GusdPackedUsdWrapper::getUsdPrimForRead(
-    GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomMesh.
-    GusdUSD_PrimHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_primRefForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_primRefForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
 }
 
 bool GusdPackedUsdWrapper::
@@ -263,7 +254,7 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         // for building point instancers.
         if( relPath != SdfPath::ReflexiveRelativePath() ) {
             m_primRefForWrite.CreateAttribute(
-                                TfToken("ReferencedPath"),
+                                _tokens->ReferencedPath,
                                 SdfValueTypeNames->String,
                                 SdfVariabilityUniform)
                                     .Set(relPath.GetString());

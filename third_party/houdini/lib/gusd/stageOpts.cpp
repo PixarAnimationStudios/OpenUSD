@@ -21,47 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "gusd/USD_DataCache.h"
-#include "gusd/USD_PropertyMap.h"
-#include "gusd/UT_Gf.h"
+#include "gusd/stageOpts.h"
 
-#include "pxr/usd/usdGeom/xformable.h"
-
-#include <UT/UT_Matrix4.h>
+#include <SYS/SYS_Hash.h>
 
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
-GusdUSD_DataCache::GusdUSD_DataCache(GusdStageCache& cache)
-    : _stageCache(cache)
-{
-    cache.AddDataCache(*this);
-}
-
-
-GusdUSD_DataCache::GusdUSD_DataCache()
-    : GusdUSD_DataCache(GusdStageCache::GetInstance())
+GusdStageOpts::GusdStageOpts(UsdStage::LoadSet loadSet)
+    : _loadSet(loadSet)
 {}
 
 
-GusdUSD_DataCache::~GusdUSD_DataCache()
+size_t
+GusdStageOpts::GetHash() const
 {
-    _stageCache.RemoveDataCache(*this);
+    return SYShash(_loadSet);
 }
-
-bool
-GusdUSD_DataCache::ShouldClearPrim(
-    const UsdPrim& prim,
-    const UT_StringSet& stagesToClear)
-{
-    if(!prim) {
-        // Always clear expired prims.
-        return true;
-    }
-    const std::string& path = prim.GetStage()->GetRootLayer()->GetRealPath();
-    return stagesToClear.contains(path);
-}
-
-
-PXR_NAMESPACE_CLOSE_SCOPE

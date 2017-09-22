@@ -39,26 +39,24 @@ PXR_NAMESPACE_OPEN_SCOPE
     This does not cache varying visiblity state; only unvarying visibility
     values and information about whether or not visibility might vary
     with time is cached.*/
-class GusdUSD_VisCache : public GusdUSD_DataCache
+class GusdUSD_VisCache final : public GusdUSD_DataCache
 {
 public:
     static GusdUSD_VisCache&    GetInstance();
 
-    GusdUSD_VisCache(GusdUSD_StageCache& cache);
+    GusdUSD_VisCache(GusdStageCache& cache);
     GusdUSD_VisCache();
 
     virtual ~GusdUSD_VisCache() {}
 
     // Not cached.
-    bool    GetVisibility(const UsdPrim& prim,
-                          UsdTimeCode time);
+    bool    GetVisibility(const UsdPrim& prim, UsdTimeCode time);
     
     // Cached.
-    bool    GetResolvedVisibility(const UsdPrim& prim,
-                                  UsdTimeCode time);
+    bool    GetResolvedVisibility(const UsdPrim& prim, UsdTimeCode time);
 
     virtual void    Clear() override;
-    virtual int64   Clear(const UT_Set<std::string>& paths) override;
+    virtual int64   Clear(const UT_StringSet& paths) override;
 
 private:
     struct VisInfo : public UT_CappedItem

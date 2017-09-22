@@ -27,7 +27,6 @@
 #include "gusd/USD_Utils.h"
 #include "gusd/UT_Assert.h"
 #include "gusd/UT_Error.h"
-#include "gusd/UT_Usd.h"
 
 #include <GA/GA_AIFSharedStringTuple.h>
 #include <GA/GA_AIFCopyData.h>
@@ -118,15 +117,6 @@ GusdGU_USD::ComputeRangeIndexMap(const GA_Range& r,
         indexMap(*it) = i;
     return true;
 }
-
-
-GusdGU_USD::BindOptions::BindOptions()
-    : pathAttr(GUSD_PATH_ATTR),
-      primPathAttr(GUSD_PRIMPATH_ATTR),
-      variantsAttr(GUSD_VARIANTS_ATTR),
-      frameAttr(GUSD_FRAME_ATTR),
-      packedPrims(true)
-{}
 
 
 namespace {
@@ -255,7 +245,7 @@ struct _StringToPrimPathFn
     bool    operator()(const UT_StringRef& str, SdfPath& path,
                        GusdUT_ErrorContext* err) const
             {
-                return GusdUT_CreateSdfPath(str, path, err);
+                return GusdUSD_Utils::CreateSdfPath(str, path, err);
             }
 };
 
@@ -334,186 +324,51 @@ GusdGU_USD::GetTokensFromStringAttr(const GA_Attribute& attr,
 }
 
 
-namespace {
-
-
-struct _StringPathToProxyFn
-{
-    _StringPathToProxyFn(GusdUSD_StageCacheContext& cache,
-                         GusdUT_ErrorContext* err)
-        : _cache(cache), _err(err) {}
-
-    static const bool lightItems = true;
-
-    bool    operator()(const UT_StringRef& str,
-                       GusdUSD_StageProxyHandle& proxy,
-                       GusdUT_ErrorContext* err) const
-            {
-                TfToken path(str.toStdString());
-                if(proxy = _cache.FindOrCreateProxy(path))
-                    return true;
-                return false;
-            }
-
-private:
-    GusdUSD_StageCacheContext&  _cache;
-    GusdUT_ErrorContext*        _err;
-};
-
-
-struct _GetProxiesFn
-{
-    _GetProxiesFn(UT_Array<GusdUSD_StageProxyHandle>& proxies,
-                  const UT_Array<TfToken>& paths,
-                  const UT_Array<SdfPath>* variants,
-                  GusdUSD_StageCacheContext& cache)
-        : _proxies(proxies), _paths(paths),
-          _variants(variants), _cache(cache) {}
-    
-    void    operator()(const UT_BlockedRange<size_t>& r) const
-            {
-                auto* boss = UTgetInterrupt();  
-                char bcnt = 0;
-
-                GusdUSD_StageProxyHandle proxy;
-                TfToken lastPath;
-                SdfPath lastVariants;
-
-                for(size_t i = r.begin(); i < r.end(); ++i) {
-                    if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
-                        return;
-
-                    const auto& path = _paths(i);
-                    if(!path.IsEmpty()) {
-                        SdfPath variants;
-                        if(_variants)
-                            variants = (*_variants)(i);
-
-                        /* Trivial proxy reuse.
-                           (usually the keys repeat) */
-                        if(path != lastPath || variants != lastVariants)
-                        {
-                            lastPath = path;
-                            lastVariants = variants;
-
-                            proxy = _cache.FindOrCreateProxy(path, variants);
-                        }
-                        if(proxy)
-                            _proxies(i) = proxy;
-                    }
-                }
-            }
-private:
-    UT_Array<GusdUSD_StageProxyHandle>& _proxies;
-    const UT_Array<TfToken>&            _paths;
-    const UT_Array<SdfPath>*            _variants;
-    GusdUSD_StageCacheContext&          _cache;
-};
-
-} /*namespace*/
-
-
 bool
-GusdGU_USD::GetStageProxiesFromAttrs(
-    const GA_Range& rng,
-    const GA_Attribute& pathAttr,
-    const GA_Attribute* variantsAttr,
-    UT_Array<GusdUSD_StageProxyHandle>& proxies,
-    GusdUSD_StageCacheContext& cache,
-    UT_Array<SdfPath>* variants,
-    GusdUT_ErrorContext* err)
-{
-    proxies.setSize(rng.getEntries());
-
-    if(!variantsAttr) {
-        /* The proxy only depends on the path attr, so we can
-           take a shortcut using the shared string tuple to reduce lookups.*/
-        _StringPathToProxyFn pathToProxyFn(cache, err);
-        return _GetObjsFromStringAttrT<
-        GusdUSD_StageProxyHandle,_StringPathToProxyFn>(
-            pathAttr, rng, pathToProxyFn, proxies, err);
-    }
-
-    UT_Array<SdfPath> variantsTmp;
-    auto& variantsArray = variants ? *variants : variantsTmp;
-    if(variantsAttr &&
-       !GetPrimPathsFromStringAttr(*variantsAttr, rng, variantsArray, err))
-        return false;
-
-    UT_Array<TfToken> paths;
-    if(!GetTokensFromStringAttr(pathAttr, rng, paths, /*namespace*/ NULL, err))
-        return false;
-
-    UTparallelFor(UT_BlockedRange<size_t>(0, rng.getEntries()),
-                  _GetProxiesFn(proxies, paths,
-                                variantsAttr ? &variantsArray : NULL, cache));
-    return !UTgetInterrupt()->opInterrupt();
-}
-
-
-bool
-GusdGU_USD::PrimHandle::Bind(const BindOptions& opts,
-                             const GA_Detail& gd,
-                             const GA_Range& rng,
-                             UT_Array<SdfPath>* variants,
-                             UT_Array<GusdPurposeSet>* purposes,
-                             GusdUSD_Utils::PrimTimeMap* timeMap,
-                             GusdUT_ErrorContext* err)
-{
-    packedPrims = opts.packedPrims;
-    return BindPrims(opts, gd, accessor, prims, rng,
-                     cache, variants, purposes, timeMap, err);
-}
-
-
-bool
-GusdGU_USD::BindPrims(const BindOptions& opts,
-                      const GA_Detail& gd,
-                      GusdUSD_StageProxy::MultiAccessor& accessor,
+GusdGU_USD::BindPrims(GusdStageCacheReader& cache,
                       UT_Array<UsdPrim>& prims,
+                      const GA_Detail& gd,
                       const GA_Range& rng,
-                      GusdUSD_StageCacheContext& cache,
                       UT_Array<SdfPath>* variants,
-                      UT_Array<GusdPurposeSet>* purposes,
-                      GusdUSD_Utils::PrimTimeMap* timeMap,
+                      GusdDefaultArray<GusdPurposeSet>* purposes,
+                      GusdDefaultArray<UsdTimeCode>* times,
                       GusdUT_ErrorContext* err)
 {
     // Bind prims.
-    if(opts.packedPrims) {
-        if(!BindPrimsFromPackedPrims(accessor, prims, rng,
-                                     cache, variants, purposes, err))
+    if(rng.getOwner() == GA_ATTRIB_PRIMITIVE) {
+        if(!BindPrimsFromPackedPrims(prims, rng, variants,
+                                     purposes ? &purposes->GetArray() : nullptr,
+                                     err))
             return false;
-        
-        if(timeMap && !GetTimeCodesFromPackedPrims(rng, timeMap->times, err))
+
+        if(times && !GetTimeCodesFromPackedPrims(rng, times->GetArray(), err))
             return false;
     } else {
         auto owner = rng.getOwner();
         // Path and prim path are required.
-        GA_ROHandleS path(&gd, owner, opts.pathAttr);
-        if(!_AttrBindSuccess(path, opts.pathAttr, err))
+        GA_ROHandleS path(&gd, owner, GUSD_PATH_ATTR);
+        if(!_AttrBindSuccess(path, GUSD_PATH_ATTR, err))
             return false;
-        GA_ROHandleS primPath(&gd, owner, opts.primPathAttr);
-        if(!_AttrBindSuccess(primPath, opts.primPathAttr, err))
+        GA_ROHandleS primPath(&gd, owner, GUSD_PRIMPATH_ATTR);
+        if(!_AttrBindSuccess(primPath, GUSD_PRIMPATH_ATTR, err))
             return false;
 
-        if(!BindPrimsFromAttrs(accessor, prims, rng, *path.getAttribute(),
+        if(!BindPrimsFromAttrs(cache, prims, rng, *path.getAttribute(), 
                                *primPath.getAttribute(),
-                               gd.findAttribute(owner, opts.variantsAttr),
-                               cache, variants, err))
+                               gd.findAttribute(owner, GUSD_VARIANTS_ATTR),
+                               variants, err))
             return false;
 
-        // XXX: No attribute schema for purpose yet.
-        // Just use default purpose.
         if(purposes) {
-            purposes->setSize(prims.size());
-            purposes->constant(GUSD_PURPOSE_DEFAULT);
+            // TODO: add proper attr support.
+            purposes->SetConstant(GUSD_PURPOSE_DEFAULT);
         }
-        
-        if(timeMap) {
-            GA_ROHandleF times(&gd, owner, opts.frameAttr);
-            if(times.isValid()) {
-                if(!GetTimeCodesFromAttr(rng, *times.getAttribute(),
-                                         timeMap->times, err))
+
+        if(times) {
+            GA_ROHandleF timesHnd(&gd, owner, GUSD_FRAME_ATTR);
+            if(timesHnd.isValid()) {
+                if(!GetTimeCodesFromAttr(rng, *timesHnd.getAttribute(),
+                                         times->GetArray(), err))
                     return false;
             }
         }
@@ -522,15 +377,52 @@ GusdGU_USD::BindPrims(const BindOptions& opts,
 }
 
 
+namespace {
+
+
+bool
+_GetStringsFromAttr(const GA_Attribute& attr,
+                    const GA_Range& rng,
+                    GusdDefaultArray<UT_StringHolder>& strings)
+{
+    const GA_AIFSharedStringTuple* tuple = attr.getAIFSharedStringTuple();
+    if(!tuple)
+        return false;
+
+    exint tableEntries = tuple->getTableEntries(&attr);
+    if(tableEntries == 0) {
+        strings.SetConstant(UT_StringHolder()); 
+        return true;
+    }
+
+    // Get the unique strings from the table, so we can share holder refs.
+    UT_StringArray uniqueStrings;
+    uniqueStrings.setSize(tableEntries);
+
+    for(exint i = 0; i < tableEntries; ++i)
+        uniqueStrings(i) = tuple->getTableString(&attr, i); 
+    
+    exint idx = 0;
+    for(GA_Offset o : rng) {
+        auto handle = tuple->getHandle(&attr, o);
+        if(handle != GA_INVALID_STRING_INDEX)
+            strings(idx) = uniqueStrings(handle);
+    }
+    return true;
+}
+
+
+} /*namespace*/
+
+
 bool
 GusdGU_USD::BindPrimsFromAttrs(
-    GusdUSD_StageProxy::MultiAccessor& accessor,
+    GusdStageCacheReader& cache,
     UT_Array<UsdPrim>& prims,
     const GA_Range& rng,
     const GA_Attribute& pathAttr,
     const GA_Attribute& primPathAttr,
     const GA_Attribute* variantsAttr,
-    GusdUSD_StageCacheContext& cache,
     UT_Array<SdfPath>* variants,
     GusdUT_ErrorContext* err)
 {
@@ -540,33 +432,66 @@ GusdGU_USD::BindPrimsFromAttrs(
     if(!GetPrimPathsFromStringAttr(primPathAttr, rng, primPaths, err))
         return false;
 
-    UT_Array<GusdUSD_StageProxyHandle> proxies;
-    if(!GetStageProxiesFromAttrs(rng, pathAttr, variantsAttr,
-                                 proxies, cache, variants, err))
+    UT_ASSERT(primPaths.size() == rng.getEntries());
+
+    GusdDefaultArray<UT_StringHolder> filePaths;
+    if(!_GetStringsFromAttr(pathAttr, rng, filePaths))
         return false;
 
-    UT_ASSERT(proxies.size() == primPaths.size());
+    GusdDefaultArray<GusdStageEditPtr> edits;
+    if(variantsAttr) {
+        // Get the unique set of variants on the table.
+        UT_Array<SdfPath> uniqueVariants;
+        if(!GetPrimPathsFromStringAttr(*variantsAttr, uniqueVariants, err))
+            return false;
+        
+        // Create edits for the variants.
+        UT_Array<GusdStageEditPtr> uniqueEdits;
+        uniqueEdits.setSize(uniqueVariants.size());
+        for(exint i = 0; i < uniqueVariants.size(); ++i) {
+            GusdStageBasicEdit* edit = new GusdStageBasicEdit;
+            edit->GetVariants().append(uniqueVariants(i));
+            uniqueEdits(i).reset(edit);
+        }
 
-    return accessor.Bind(proxies, primPaths, prims,
-                         cache.GetLoadSet(), err);
+        // Expand out the edit array.    
+        GA_ROHandleS hnd(variantsAttr);
+        UT_ASSERT(hnd.isValid());
+
+        auto& editArray = edits.GetArray();
+        editArray.setSize(rng.getEntries());
+
+        if(variants)
+            variants->setSize(rng.getEntries());
+
+        exint idx = 0;
+        for(GA_Offset o : rng) {
+            auto handle = hnd.getIndex(o);
+            if(handle != GA_INVALID_STRING_INDEX) {
+                editArray(idx) = uniqueEdits(handle);
+                if(variants)
+                    (*variants)(idx) = uniqueVariants(handle);
+            }
+            ++idx;
+        }
+    }
+
+    prims.setSize(rng.getEntries());
+    return cache.GetPrims(filePaths, primPaths, edits,
+                          prims.data(), GusdStageOpts::LoadAll(), err);
 }
 
 
 bool
 GusdGU_USD::BindPrimsFromPackedPrims(
-    GusdUSD_StageProxy::MultiAccessor& accessor,
     UT_Array<UsdPrim>& prims,
     const GA_Range& rng,
-    GusdUSD_StageCacheContext& cache,
     UT_Array<SdfPath>* variants,
     UT_Array<GusdPurposeSet>* purposes,
     GusdUT_ErrorContext* err)
 {
     const exint size = rng.getEntries();
-
-    // Create arrays for proxies and primPaths.
-    UT_Array<GusdUSD_StageProxyHandle> proxies(size, size);
-    UT_Array<SdfPath> primPaths(size, size);
+    prims.setSize(size);
 
     // If variants array was provided,
     // match array size to other arrays.
@@ -582,6 +507,7 @@ GusdGU_USD::BindPrimsFromPackedPrims(
         UTverify_cast<GEO_Detail*>(&rng.getRTI()->getIndexMap().getDetail());
     UT_ASSERT_P(gdp);
 
+    // TODO: Would be better to thread this.
     exint i = 0;
     for (GA_Iterator it(rng); !it.atEnd(); ++it, ++i) {
 
@@ -598,26 +524,20 @@ GusdGU_USD::BindPrimsFromPackedPrims(
             continue;
         }
 
-        if(auto proxy = prim->getProxy())
-        {
-            proxies(i) = proxy;
+        prims(i) = prim->getUsdPrim(err);
 
-            SdfPath primPath, variantPath;
-            GusdUSD_Utils::ExtractPathComponents(prim->primPath(),
-                                                 primPath, variantPath);
-            primPaths(i) = primPath;
-            if (variants) {
-                (*variants)(i) = variantPath;
-            }
+        SdfPath primPath, variantPath;
+        GusdUSD_Utils::ExtractPrimPathAndVariants(prim->primPath(),
+                                                  primPath, variantPath);
+        if (variants) {
+            (*variants)(i) = variantPath;
         }
 
         if( purposes ) {
             (*purposes)(i) = prim->getPurposes();
         }
     }
-
-    return accessor.Bind(proxies, primPaths, prims,
-                         cache.GetLoadSet(), err);
+    return true;
 }
 
 
@@ -715,7 +635,7 @@ GusdGU_USD::AppendRefPoints(GU_Detail& gd,
         if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
             return GA_INVALID_OFFSET;
 
-        if(UsdPrim prim = prims(i)) {
+        if(const UsdPrim& prim = prims(i)) {
             UsdStageWeakPtr stage = prim.GetStage();
             if(stage != lastStage) {
                 lastStage = stage;
@@ -744,15 +664,18 @@ GusdGU_USD::AppendPackedPrims(
     GU_Detail& gd,
     const UT_Array<UsdPrim>& prims,
     const UT_Array<SdfPath>& variants,
-    const GusdUSD_Utils::PrimTimeMap& timeMap,
-    const UT_StringArray& viewportLOD,
-    const UT_Array<GusdPurposeSet>& purposes,
+    const GusdDefaultArray<UsdTimeCode>& times,
+    const GusdDefaultArray<UT_StringHolder>& lods,
+    const GusdDefaultArray<GusdPurposeSet>& purposes,
     GusdUT_ErrorContext* err)
 {
-    UT_ASSERT(prims.size() == variants.size());
+    UT_ASSERT(variants.size() == prims.size());
+    UT_ASSERT(times.IsConstant() || times.size() == prims.size());
+    UT_ASSERT(lods.IsConstant() || lods.size() == prims.size());
+    UT_ASSERT(purposes.IsConstant() || purposes.size() == prims.size());
 
     for (exint i = 0; i < prims.size(); ++i) {
-        if (UsdPrim prim = prims(i)) {
+        if (const UsdPrim& prim = prims(i)) {
 
             const std::string& usdFileName =
                 prim.GetStage()->GetRootLayer()->GetIdentifier();
@@ -766,17 +689,15 @@ GusdGU_USD::AppendPackedPrims(
                 usdPrimPath = usdPrimPath.ReplacePrefix(strippedPath, variants(i));
             }
 
-
             auto it = packedPrimBuildFuncRegistry.find( prim.GetTypeName() );
             if( it != packedPrimBuildFuncRegistry.end() ) {
 
                 (*it->second)( gd, usdFileName, usdPrimPath,
-                               timeMap(i), viewportLOD(i), purposes(i) );
+                               times(i), lods(i), purposes(i) );
             }
             else {
                 GusdGU_PackedUSD::Build( gd, usdFileName, usdPrimPath,
-                                         timeMap(i), viewportLOD(i),
-                                         purposes(i) );
+                                         times(i), lods(i), purposes(i), prim );
             }
         }
     }
@@ -851,7 +772,7 @@ GusdGU_USD::AppendExpandedPackedPrims(
     const GA_Range& srcRng,
     const UT_Array<PrimIndexPair>& primIndexPairs,
     const UT_Array<SdfPath>& variants,
-    const GusdUSD_Utils::PrimTimeMap& timeMap,
+    const GusdDefaultArray<UsdTimeCode>& times,
     const GA_AttributeFilter& filter,
     bool unpackToPolygons,
     const UT_String& primvarPattern,
@@ -887,15 +808,16 @@ GusdGU_USD::AppendExpandedPackedPrims(
 
     // Now remap these arrays to align with the destination packed prims.
     UT_Array<UT_Matrix4D> dstXforms(dstSize, dstSize);
-    UT_StringArray dstVpLOD;
-    dstVpLOD.setSize(dstSize);
-    UT_Array<GusdPurposeSet> dstPurposes;
-    dstPurposes.setSize(dstSize);    
+    GusdDefaultArray<UT_StringHolder> dstVpLOD;
+    dstVpLOD.GetArray().setSize(dstSize);
+
+    GusdDefaultArray<GusdPurposeSet> dstPurposes;
+    dstPurposes.GetArray().setSize(dstSize);    
 
     for (exint i = 0; i < dstSize; ++i) {
         dstXforms(i) = srcXforms(primIndexPairs(i).second);
-        dstVpLOD(i) = srcVpLOD(primIndexPairs(i).second);
-        dstPurposes(i) = srcPurposes(primIndexPairs(i).second);
+        dstVpLOD.GetArray()(i) = srcVpLOD(primIndexPairs(i).second);
+        dstPurposes.GetArray()(i) = srcPurposes(primIndexPairs(i).second);
     }
 
     // Make a GU_Detail pointer to help handle 2 cases:
@@ -906,7 +828,7 @@ GusdGU_USD::AppendExpandedPackedPrims(
     GU_Detail* gdPtr = unpackToPolygons ? new GU_Detail : &gd;
 
     GA_Size start = gdPtr->getNumPrimitives();
-    AppendPackedPrims(*gdPtr, prims, variants, timeMap, dstVpLOD, dstPurposes, err);
+    AppendPackedPrims(*gdPtr, prims, variants, times, dstVpLOD, dstPurposes, err);
 
     // Now set transforms on those appended packed prims.
     GA_Range dstRng(gdPtr->getPrimitiveRangeSlice(start));

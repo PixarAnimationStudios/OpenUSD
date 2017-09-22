@@ -31,7 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef GusdUSD_HolderT<UsdGeomScope> GusdUSD_ScopeHolder;
 
 class GusdScopeWrapper : public GusdGroupBaseWrapper
 {
@@ -40,10 +39,9 @@ public:
                       const SdfPath& path,
                       bool isOverride = false );
     GusdScopeWrapper( const GusdScopeWrapper &in );
-    GusdScopeWrapper( const GusdUSD_StageProxyHandle& stage, 
-                      const UsdGeomScope&   scope, 
-                      const UsdTimeCode&    t,
-                      const GusdPurposeSet& purposes );
+    GusdScopeWrapper( const UsdGeomScope&   scope, 
+                      UsdTimeCode           t,
+                      GusdPurposeSet        purposes );
     virtual ~GusdScopeWrapper();
 
     // GusdPrimWrapper interface -----------------------------------------------
@@ -52,8 +50,7 @@ public:
 
     virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdScopeForWrite; }
 
-    virtual const UsdGeomImageable 
-        getUsdPrimForRead(GusdUSD_ImageableHolder::ScopedLock &lock) const override;
+    virtual const UsdGeomImageable getUsdPrimForRead() const override { return m_usdScopeForRead; }
         
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -95,10 +92,9 @@ public:
                      const GusdContext& ctxt);
 
     static GT_PrimitiveHandle
-    defineForRead( const GusdUSD_StageProxyHandle& stage,
-                   const UsdGeomImageable& sourcePrim, 
-                   const UsdTimeCode& time,
-                   const GusdPurposeSet& purposes );
+    defineForRead( const UsdGeomImageable& sourcePrim, 
+                   UsdTimeCode time,
+                   GusdPurposeSet purposes );
 
 private:
 
@@ -106,9 +102,7 @@ private:
                      const SdfPath& path,
                      bool asOverride);
 
-    GusdUSD_StageProxyHandle  m_stageProxy;
-    GusdUSD_ScopeHolder       m_usdScopeForRead;
-    UsdGeomScope              m_usdScopeForWrite;
+    UsdGeomScope    m_usdScopeForRead, m_usdScopeForWrite;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

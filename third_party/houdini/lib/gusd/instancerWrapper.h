@@ -34,7 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef GusdUSD_HolderT<UsdGeomPointInstancer> GusdUSD_InstancerHolder;
 
 class GusdInstancerWrapper : public GusdPrimWrapper
 {
@@ -46,16 +45,16 @@ public:
                           const SdfPath& path,
                           const GusdContext &ctxt,
                           bool isOverride = false );
-    GusdInstancerWrapper( const GusdUSD_StageProxyHandle&   stage,
-                         UsdGeomPointInstancer            usdInstancer, 
-                         const UsdTimeCode&                 t,
-                         const GusdPurposeSet&              purposes );  
+    GusdInstancerWrapper( const UsdGeomPointInstancer&  usdInstancer, 
+                          UsdTimeCode                   t,
+                          GusdPurposeSet                purposes );  
     virtual ~GusdInstancerWrapper();
 
     virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdPointInstancerForWrite; }
 
-    virtual const UsdGeomImageable 
-        getUsdPrimForRead(GusdUSD_ImageableHolder::ScopedLock &lock) const override;
+    virtual const UsdGeomImageable getUsdPrimForRead() const override {
+        return m_usdPointInstancerForRead;
+    }
 
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -88,12 +87,12 @@ public:
 
     virtual bool unpack(
         GU_Detail&              gdr,
-        const TfToken&          fileName,
+        const UT_StringRef&     fileName,
         const SdfPath&          primPath,
         const UT_Matrix4D&      xform,
         fpreal                  frame,
         const char *            viewportLod,
-        const GusdPurposeSet&   purposes ) override;
+        GusdPurposeSet          purposes ) override;
 
 public:
 
@@ -104,10 +103,9 @@ public:
                     const GusdContext& ctxt);
 
     static GT_PrimitiveHandle
-    defineForRead( const GusdUSD_StageProxyHandle&  stage,
-                   const UsdGeomImageable&          sourcePrim, 
-                   const UsdTimeCode&               time,
-                   const GusdPurposeSet&            purposes );
+    defineForRead( const UsdGeomImageable&  sourcePrim, 
+                   UsdTimeCode              time,
+                   GusdPurposeSet           purposes );
 
 private:
     bool initUsdPrim(const UsdStagePtr& stage,
@@ -119,15 +117,13 @@ private:
                           const GT_PrimitiveHandle& sourcePrim);
 
 private:
-    GusdUSD_InstancerHolder m_usdPointInstancerForRead;
-    UsdGeomPointInstancer m_usdPointInstancerForWrite; 
+    UsdGeomPointInstancer m_usdPointInstancerForRead,
+                          m_usdPointInstancerForWrite;
 
     // A map of tokens to indexes in the point instancer's relationship array.
     // The tokens could be unique ids built from USD packed prims or
     // paths to SOP nodes (as in instancepath attributes).
     RelationshipIndexMap    m_relationshipIndexMap;
-
-    GusdUSD_StageProxyHandle  m_stageProxy;
 
     // List of prototype transforms for "subtracting" from final instance
     // transforms.

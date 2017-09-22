@@ -25,7 +25,6 @@
 
 #include "context.h"
 #include "UT_Gf.h"
-#include "USD_Proxy.h"
 #include "GU_PackedUSD.h"
 #include "USD_XformCache.h"
 #include "GU_USD.h"
@@ -63,8 +62,8 @@ GusdGroupBaseWrapper::GusdGroupBaseWrapper()
 }
 
 GusdGroupBaseWrapper::GusdGroupBaseWrapper( 
-        const UsdTimeCode&      time, 
-        const GusdPurposeSet&   purposes  ) 
+        UsdTimeCode     time, 
+        GusdPurposeSet  purposes  ) 
     : GusdPrimWrapper( time, purposes )
 {
 }
@@ -79,7 +78,7 @@ GusdGroupBaseWrapper::~GusdGroupBaseWrapper()
 
 namespace {
 bool
-containsBoundable( UsdPrim p, const GusdPurposeSet& purposes )
+containsBoundable( const UsdPrim& p, GusdPurposeSet purposes )
 {
     // Return true if this prim has a boundable geom descendant.
     // Boundables are gprims and the point instancers.
@@ -89,6 +88,8 @@ containsBoundable( UsdPrim p, const GusdPurposeSet& purposes )
         return containsBoundable( p.GetMaster(), purposes );
 
     UsdGeomImageable ip( p );
+    if(not ip)
+        return false;
 
     TfToken purpose;
     ip.GetPurposeAttr().Get(&purpose);
@@ -98,7 +99,7 @@ containsBoundable( UsdPrim p, const GusdPurposeSet& purposes )
     if( p.IsA<UsdGeomBoundable>() )
         return true;
 
-    for( auto child : p.GetChildren() )
+    for( const auto& child : p.GetChildren() )
     {
         if( containsBoundable( child, purposes ))
             return true;
@@ -109,23 +110,20 @@ containsBoundable( UsdPrim p, const GusdPurposeSet& purposes )
 
 bool
 GusdGroupBaseWrapper::unpack( 
-    GU_Detail&              gdr,
-    const TfToken&          fileName,
-    const SdfPath&          primPath,
-    const UT_Matrix4D&      xform,
-    fpreal                  frame,
-    const char*             viewportLod,
-    const GusdPurposeSet&   purposes )
+    GU_Detail&          gdr,
+    const UT_StringRef& fileName,
+    const SdfPath&      primPath,
+    const UT_Matrix4D&  xform,
+    fpreal              frame,
+    const char*         viewportLod,
+    GusdPurposeSet      purposes )
 {
-    GusdUSD_ImageableHolder::ScopedLock lock;
-
-    UsdGeomImageable imagable = getUsdPrimForRead( lock );
-    UsdPrim usdPrim = imagable.GetPrim();
+    UsdPrim usdPrim = getUsdPrimForRead().GetPrim();
 
     // To unpack a xform or a group, create a packed prim for
     // each child
     vector<UsdPrim> usefulChildren;
-    for( auto child : usdPrim.GetChildren() )
+    for( const auto& child : usdPrim.GetChildren() )
     {
         if( containsBoundable( child, purposes ))
             usefulChildren.push_back( child );
@@ -133,14 +131,14 @@ GusdGroupBaseWrapper::unpack(
 
     SdfPath strippedPathHead(primPath.StripAllVariantSelections());
 
-    for( auto &child : usefulChildren )
+    for( const auto &child : usefulChildren )
     {
         // Replace the head of the path to perserve variant specs.
         SdfPath path = child.GetPath().ReplacePrefix(strippedPathHead,
                                                       primPath );
 
         GU_PrimPacked *guPrim = 
-            GusdGU_PackedUSD::Build( gdr, fileName.GetText(), path, 
+            GusdGU_PackedUSD::Build( gdr, fileName, path, 
                                      frame, viewportLod, purposes );
 
         UT_Matrix4D m;
@@ -159,7 +157,6 @@ GusdGroupBaseWrapper::unpack(
 
 bool
 GusdGroupBaseWrapper::refineGroup( 
-    const GusdUSD_StageProxyHandle& stage,
     const UsdPrim& prim,
     GT_Refine& refiner,
     const GT_RefineParms* parms ) const
@@ -168,11 +165,10 @@ GusdGroupBaseWrapper::refineGroup(
             prim.GetMaster().GetChildren() : prim.GetChildren();
 
     GT_PrimCollect* collection = NULL;
-    for( UsdPrim child : children )
+    for( const UsdPrim& child : children )
     {
         GT_PrimitiveHandle gtPrim = 
             GusdPrimWrapper::defineForRead( 
-                    stage, 
                     UsdGeomImageable(child), 
                     m_time,
                     m_purposes );

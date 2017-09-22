@@ -26,8 +26,10 @@
 
 #include <pxr/pxr.h>
 
+#include "gusd/defaultArray.h"
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_ThreadedTraverse.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -45,14 +47,14 @@ public:
 
     virtual bool    FindPrims(const UsdPrim& root,
                               UsdTimeCode time,
-                              const GusdPurposeSet& purposes,
+                              GusdPurposeSet purposes,
                               UT_Array<UsdPrim>& prims,
                               bool skipRoot=true,
                               const Opts* opts=NULL) const;
 
     virtual bool    FindPrims(const UT_Array<UsdPrim>& roots,
-                              const GusdUSD_Utils::PrimTimeMap& timeMap,
-                              const UT_Array<GusdPurposeSet>& purposes,
+                              const GusdDefaultArray<UsdTimeCode>& times,
+                              const GusdDefaultArray<GusdPurposeSet>& purposes,
                               UT_Array<PrimIndexPair>& prims,
                               bool skipRoot=true,
                               const Opts* opts=NULL) const;
@@ -66,7 +68,7 @@ template <class Visitor>
 bool
 GusdUSD_TraverseSimpleT<Visitor>::FindPrims(const UsdPrim& root,
                                             UsdTimeCode time,
-                                            const GusdPurposeSet& purposes,
+                                            GusdPurposeSet purposes,
                                             UT_Array<UsdPrim>& prims,
                                             bool skipRoot,
                                             const Opts* opts) const
@@ -80,14 +82,14 @@ template <class Visitor>
 bool
 GusdUSD_TraverseSimpleT<Visitor>::FindPrims(
     const UT_Array<UsdPrim>& roots,
-    const GusdUSD_Utils::PrimTimeMap& timeMap,
-    const UT_Array<GusdPurposeSet>& purposes,
+    const GusdDefaultArray<UsdTimeCode>& times,
+    const GusdDefaultArray<GusdPurposeSet>& purposes,
     UT_Array<PrimIndexPair>& prims,
     bool skipRoot,
     const Opts* opts) const
 {
     return GusdUSD_ThreadedTraverse::ParallelFindPrims(
-        roots, timeMap, purposes, prims, _visitor, skipRoot);
+        roots, times, purposes, prims, _visitor, skipRoot);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -28,6 +28,7 @@
 #include "GT_PointInstancer.h"
 #include "GT_OldPointInstancer.h"
 #include "GU_USD.h"
+#include "stageCache.h"
 
 #include <GEO/GEO_Primitive.h>
 #include <GT/GT_PrimInstance.h>
@@ -54,6 +55,14 @@ using std::vector;
 #else
 #define DBG(x)
 #endif
+
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (PointInstancer)
+    (PxPointInstancer)
+);
+
 
 namespace {
 
@@ -199,33 +208,19 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
     if (!m_buildPrototypes) {
         // If we have imported USD geometry and haven't determined it's type,
         // get the type to see if it is a point instancer we need to overlay.
-        if( m_pointInstancerType.empty()) {
+        if( m_pointInstancerType.IsEmpty()) {
             if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( gtPrim.get() )) {
-                std::string usdFile(packedUSD->getFileName());
-                if (!usdFile.empty()) {
-                    // To open the usd stage and retrieve the original instancer
-                    // type, we borrow the usd locking code from 
-                    // GusdGU_PackedUSD::intrinsicType 
-                    GusdUSD_PrimHolder m_usdPrim = GusdUSD_PrimHolder();
-                    GusdUSD_PrimHolder::ScopedLock lock;
-                    GusdUSD_StageCacheContext cache;
 
-                    GusdUSD_StageProxy::Accessor accessor;
+                if(packedUSD->getFileName()) {
+                
+                    const SdfPath& instancerPrimPath =
+                        packedUSD->getSrcPrimPath();
 
-                    const TfToken filePath(usdFile);
-                    GusdUSD_Utils::PrimIdentifier identifier;
-                    const SdfPath instancerPrimPath = packedUSD->getSrcPrimPath();
-                    identifier.SetFromVariantPath(instancerPrimPath);
-                    if (cache.Bind(accessor, filePath, identifier, NULL)) {
-                        m_usdPrim = accessor.GetPrimHolderAtPath(identifier.GetPrimPath(), NULL);
-                        lock.Acquire(m_usdPrim, /*write*/false);
-
-                        if( *lock == NULL ) {
-                            return;
-                        }
-
+                    GusdStageCacheReader cache;
+                    if(UsdPrim prim = cache.GetPrimWithVariants(
+                           packedUSD->getFileName(), instancerPrimPath).first) {
                         // Get the type name of the usd file to overlay
-                        m_pointInstancerType = (*lock).GetTypeName().GetText();
+                        m_pointInstancerType = prim.GetTypeName();
                     }
                 }
             }
@@ -233,9 +228,8 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
         
         // Make sure to set buildPointInstancer to true if we are overlaying a
         // point instancer
-        if (!m_pointInstancerType.empty() &&
-                (m_pointInstancerType == "PointInstancer" ||
-                    m_pointInstancerType == "PxPointInstancer")) {
+        if (m_pointInstancerType == _tokens->PointInstancer ||
+            m_pointInstancerType == _tokens->PxPointInstancer) {
             m_buildPointInstancer = true;
         }
         if (m_buildPointInstancer) {
@@ -737,8 +731,7 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
 
         // Add the refined point instancer. If we are overlaying an old point
         // instancer make sure to use the old type (temporary).
-        if (!refiner.m_pointInstancerType.empty() && 
-                refiner.m_pointInstancerType == "PxPointInstancer") {
+        if (refiner.m_pointInstancerType == _tokens->PxPointInstancer) {
             refiner.addPrimitive( new GusdGT_OldPointInstancer( pAttrs, uniformAttrs ) );
         } else {
             refiner.addPrimitive( new GusdGT_PointInstancer( pAttrs, uniformAttrs ) );

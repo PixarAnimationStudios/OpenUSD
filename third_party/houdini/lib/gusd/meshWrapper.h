@@ -31,7 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef GusdUSD_HolderT<UsdGeomMesh> GusdUSD_MeshHolder;
 
 class GusdMeshWrapper : public GusdPrimWrapper
 {
@@ -44,10 +43,9 @@ public:
             bool isOverride = false );
 
     GusdMeshWrapper( 
-            const GusdUSD_StageProxyHandle& stage, 
             const UsdGeomMesh& mesh,
-            const UsdTimeCode& t,
-            const GusdPurposeSet& purposes );
+            UsdTimeCode t,
+            GusdPurposeSet purposes );
 
 //    GusdMeshWrapper( UsdGeomMesh usdMesh, const UsdTimeCode &t );    
     GusdMeshWrapper( const GusdMeshWrapper &in );
@@ -60,8 +58,7 @@ public:
 
     virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdMeshForWrite; }
 
-    virtual const UsdGeomImageable 
-        getUsdPrimForRead(GusdUSD_ImageableHolder::ScopedLock &lock) const override;
+    virtual const UsdGeomImageable getUsdPrimForRead() const override { return m_usdMeshForRead; }
 
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -107,10 +104,9 @@ public:
                      const GusdContext& ctxt);
 
     static GT_PrimitiveHandle
-    defineForRead( const GusdUSD_StageProxyHandle&  stage,
-                   const UsdGeomImageable&          sourcePrim, 
-                   const UsdTimeCode&               time,
-                   const GusdPurposeSet&            purposes );
+    defineForRead( const UsdGeomImageable&  sourcePrim, 
+                   UsdTimeCode              time,
+                   GusdPurposeSet           purposes );
 
 private:
 
@@ -120,9 +116,8 @@ private:
 
     void initialize( const GusdContext& ctxt, const GT_PrimitiveHandle& refPrim );
 
-    GusdUSD_MeshHolder          m_usdMeshForRead;
-    UsdGeomMesh                 m_usdMeshForWrite;
-    bool                        m_forceCreateNewGeo;
+    UsdGeomMesh     m_usdMeshForRead, m_usdMeshForWrite;
+    bool            m_forceCreateNewGeo;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

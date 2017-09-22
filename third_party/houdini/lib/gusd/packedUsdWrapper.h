@@ -47,8 +47,9 @@ public:
         return UsdGeomImageable(m_primRefForWrite);
     }
 
-    virtual const UsdGeomImageable 
-        getUsdPrimForRead(GusdUSD_ImageableHolder::ScopedLock &lock) const override;
+    virtual const UsdGeomImageable getUsdPrimForRead() const override {
+        return UsdGeomImageable(m_primRefForRead);
+    }
 
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -92,8 +93,7 @@ private:
                       const SdfPath& path, 
                       bool asOverride );
 
-    GusdUSD_PrimHolder          m_primRefForRead;
-    UsdPrim                     m_primRefForWrite;
+    UsdPrim     m_primRefForRead, m_primRefForWrite;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

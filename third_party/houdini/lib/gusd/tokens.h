@@ -21,47 +21,26 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "gusd/USD_DataCache.h"
-#include "gusd/USD_PropertyMap.h"
-#include "gusd/UT_Gf.h"
+#ifndef _GUSD_TOKENS_H_
+#define _GUSD_TOKENS_H_
 
-#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/base/tf/staticTokens.h"
 
-#include <UT/UT_Matrix4.h>
+#include <pxr/pxr.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-GusdUSD_DataCache::GusdUSD_DataCache(GusdStageCache& cache)
-    : _stageCache(cache)
-{
-    cache.AddDataCache(*this);
-}
+#define GUSD_TOKENS                             \
+    (Alpha)                                     \
+    (Cd)                                        \
+    (displayColor)                              \
+    (displayOpacity)
 
-
-GusdUSD_DataCache::GusdUSD_DataCache()
-    : GusdUSD_DataCache(GusdStageCache::GetInstance())
-{}
-
-
-GusdUSD_DataCache::~GusdUSD_DataCache()
-{
-    _stageCache.RemoveDataCache(*this);
-}
-
-bool
-GusdUSD_DataCache::ShouldClearPrim(
-    const UsdPrim& prim,
-    const UT_StringSet& stagesToClear)
-{
-    if(!prim) {
-        // Always clear expired prims.
-        return true;
-    }
-    const std::string& path = prim.GetStage()->GetRootLayer()->GetRealPath();
-    return stagesToClear.contains(path);
-}
+TF_DECLARE_PUBLIC_TOKENS(GusdTokens, GUSD_TOKENS);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif /*_GUSD_TOKENS_H_*/

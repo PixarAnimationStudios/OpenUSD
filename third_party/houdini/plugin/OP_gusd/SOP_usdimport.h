@@ -28,7 +28,6 @@
 #include <SOP/SOP_Node.h>
 
 #include <pxr/pxr.h>
-#include "gusd/GU_USD.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,15 +38,13 @@ class GusdUT_ErrorContext;
 class GusdSOP_usdimport : public SOP_Node
 {
 public:
-    static OP_Node*         Create(OP_Network* net,
-                                   const char* name,
-                                   OP_Operator* op);
+    static OP_Node*     Create(OP_Network* net,
+                               const char* name,
+                               OP_Operator* op);
 
-    void                    UpdateTraversalParms();
+    void                UpdateTraversalParms();
     
-    GusdGU_USD::BindOptions GetBindOpts(OP_Context& ctx);
-
-    void Reload();
+    void                Reload();
 
 protected:
     GusdSOP_usdimport(OP_Network* net, const char* name, OP_Operator* op);

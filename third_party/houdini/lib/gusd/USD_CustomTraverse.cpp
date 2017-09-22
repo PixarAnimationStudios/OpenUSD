@@ -272,7 +272,7 @@ struct _Visitor
 
     bool                    AcceptPrim(const UsdPrim& prim,
                                        UsdTimeCode time,
-                                       const GusdPurposeSet& purposes,
+                                       GusdPurposeSet purposes,
                                        GusdUSD_TraverseControl& ctl) const;
     
     bool                    AcceptType(const UsdPrim& prim) const;
@@ -297,7 +297,7 @@ private:
 bool
 _Visitor::AcceptPrim(const UsdPrim& prim,
                      UsdTimeCode time,
-                     const GusdPurposeSet& purposes,
+                     GusdPurposeSet purposes,
                      GusdUSD_TraverseControl& ctl) const
 {
     UsdGeomImageable ip(prim);
@@ -432,7 +432,7 @@ static GusdUSD_CustomTraverse::Opts _defaultOpts;
 bool
 GusdUSD_CustomTraverse::FindPrims(const UsdPrim& root,
                                   UsdTimeCode time,
-                                  const GusdPurposeSet& purposes,
+                                  GusdPurposeSet purposes,
                                   UT_Array<UsdPrim>& prims,
                                   bool skipRoot,
                                   const GusdUSD_Traverse::Opts* opts) const
@@ -446,18 +446,19 @@ GusdUSD_CustomTraverse::FindPrims(const UsdPrim& root,
 
 
 bool
-GusdUSD_CustomTraverse::FindPrims(const UT_Array<UsdPrim>& roots,
-                                  const GusdUSD_Utils::PrimTimeMap& timeMap,
-                                  const UT_Array<GusdPurposeSet>& purposes,
-                                  UT_Array<PrimIndexPair>& prims,
-                                  bool skipRoot,
-                                  const GusdUSD_Traverse::Opts* opts) const
+GusdUSD_CustomTraverse::FindPrims(
+    const UT_Array<UsdPrim>& roots,
+    const GusdDefaultArray<UsdTimeCode>& times,
+    const GusdDefaultArray<GusdPurposeSet>& purposes,
+    UT_Array<PrimIndexPair>& prims,
+    bool skipRoot,
+    const GusdUSD_Traverse::Opts* opts) const
 {
     const auto* customOpts = UTverify_cast<const Opts*>(opts);
     _Visitor visitor(customOpts ? *customOpts : _defaultOpts);
 
     return GusdUSD_ThreadedTraverse::ParallelFindPrims(
-        roots, timeMap, purposes, prims, visitor, skipRoot);
+        roots, times, purposes, prims, visitor, skipRoot);
 }
 
 

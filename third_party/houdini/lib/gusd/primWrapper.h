@@ -34,8 +34,6 @@
 #include "pxr/usd/usdGeom/imageable.h"
 
 #include "GT_Utils.h"
-#include "USD_Holder.h"
-#include "USD_Proxy.h"
 #include "purpose.h"
 
 class GU_PackedImpl;
@@ -82,7 +80,6 @@ class GusdContext;
 /// which in turn calls the "defineForRead" to create a GusdPrimWrapper. These 
 /// prims can be refined into native GT_Primitives that the viewport can draw.
 
-typedef GusdUSD_HolderT<UsdGeomImageable> GusdUSD_ImageableHolder;
 
 typedef std::map<SdfPath,UT_Matrix4D> GusdSimpleXformCache;
 
@@ -98,10 +95,9 @@ public:
         DefinitionForWriteFunction;
 
     typedef boost::function<GT_PrimitiveHandle
-            (const GusdUSD_StageProxyHandle&,
-             const UsdGeomImageable&,
-             const UsdTimeCode&,
-             const GusdPurposeSet&)>
+             (const UsdGeomImageable&,
+              UsdTimeCode,
+              GusdPurposeSet)>
         DefinitionForReadFunction;
 
     typedef boost::function<bool
@@ -152,10 +148,9 @@ public:
     /// used in a detail.
     GUSD_API
     static GT_PrimitiveHandle
-    defineForRead( const GusdUSD_StageProxyHandle&  stage, 
-                   const UsdGeomImageable&          sourcePrim, 
-                   const UsdTimeCode&               time,
-                   const GusdPurposeSet&            purposes );
+    defineForRead( const UsdGeomImageable&  sourcePrim, 
+                   UsdTimeCode              time,
+                   GusdPurposeSet           purposes );
 
     /// \brief Is this gt prim a point instancer?
     ///
@@ -199,18 +194,17 @@ public:
 
     virtual const UsdGeomImageable getUsdPrimForWrite() const = 0;
 
-    virtual const UsdGeomImageable 
-        getUsdPrimForRead(GusdUSD_ImageableHolder::ScopedLock &lock) const = 0; 
+    virtual const UsdGeomImageable getUsdPrimForRead() const = 0; 
 
     GUSD_API
     virtual bool unpack(
-        GU_Detail&              gdr,
-        const TfToken&          fileName,
-        const SdfPath&          primPath,
-        const UT_Matrix4D&      xform,
-        fpreal                  frame,
-        const char *            viewportLod,
-        const GusdPurposeSet&   purposes );
+        GU_Detail&          gdr,
+        const UT_StringRef& fileName,
+        const SdfPath&      primPath,
+        const UT_Matrix4D&  xform,
+        fpreal              frame,
+        const char *        viewportLod,
+        GusdPurposeSet      purposes );
 
     /// \brief Create a new USD prim to match GT primitive.
     ///
@@ -263,7 +257,7 @@ public:
     // needed.
     GUSD_API
     void loadPrimvars( 
-                    const UsdTimeCode&        time,
+                    UsdTimeCode               time,
                     const GT_RefineParms*     rparms,
                     int                       minUniform,
                     int                       minPoint,
@@ -298,20 +292,20 @@ protected:
                                     const std::string& name,
                                     const GT_DataArrayHandle& houAttr, 
                                     UsdAttribute& usdAttr, 
-                                    const UsdTimeCode& time );
+                                    UsdTimeCode time );
 
     bool updatePrimvarFromGTPrim( 
                 const TfToken&              name,
                 const GT_Owner&             owner,
                 const TfToken&              interpolation,
-                const UsdTimeCode&          time,
+                UsdTimeCode                 time,
                 const GT_DataArrayHandle&   data );
 
     // Write primvar values from a GT attribute list to USD.
     bool updatePrimvarFromGTPrim( const GT_AttributeListHandle& gtAttrs,
                                   const GusdGT_AttrFilter&      primvarFilter,
                                   const TfToken&                interpolation,
-                                  const UsdTimeCode&            time );
+                                  UsdTimeCode                   time );
 
     void clearCaches();
 
@@ -326,7 +320,7 @@ protected:
     
     static GfMatrix4d computeTransform( 
                 const UsdPrim&              prim,
-                const UsdTimeCode&          time,
+                UsdTimeCode                 time,
                 const UT_Matrix4D&          houXform,
                 const GusdSimpleXformCache& xformCache );
     

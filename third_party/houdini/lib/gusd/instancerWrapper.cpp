@@ -31,7 +31,6 @@
 
 #include "gusd/GT_PrimCache.h"
 #include "gusd/USD_XformCache.h"
-#include "gusd/GU_USD.h"
 
 #include <GT/GT_DAConstantValue.h>
 #include <GT/GT_DAIndexedString.h>
@@ -70,6 +69,13 @@ using std::map;
 #else
 #define DBG(x)
 #endif
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((prunable, "pruning:prunable"))
+    (ReferencedPath)
+    (Xform)
+);     
 
 namespace {
 
@@ -366,13 +372,11 @@ GusdInstancerWrapper(
 
 GusdInstancerWrapper::
 GusdInstancerWrapper(
-        const GusdUSD_StageProxyHandle& stage,
-        UsdGeomPointInstancer           usdInstancer, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+    const UsdGeomPointInstancer& usdInstancer, 
+    UsdTimeCode                  time,
+    GusdPurposeSet               purposes )
     : GusdPrimWrapper( time, purposes )
-    , m_usdPointInstancerForRead( usdInstancer, stage->GetLock() )
-    , m_stageProxy( stage )
+    , m_usdPointInstancerForRead( usdInstancer )
 {
 }
 
@@ -445,7 +449,7 @@ defineForWrite(
         // We may have shuffled the instance index order. 
         if( UsdAttribute attr = 
                 instancePrim->m_usdPointInstancerForWrite.GetPrim().CreateAttribute( 
-                                        TfToken("pruning:prunable"), SdfValueTypeNames->Bool, 
+                                        _tokens->prunable, SdfValueTypeNames->Bool, 
                                         false, SdfVariabilityUniform )) {
             attr.Set( false );
         }
@@ -456,13 +460,11 @@ defineForWrite(
 }
 
 GT_PrimitiveHandle GusdInstancerWrapper::
-defineForRead( const GusdUSD_StageProxyHandle&  stage,
-               const UsdGeomImageable&          sourcePrim, 
-               const UsdTimeCode&               time,
-               const GusdPurposeSet&            purposes )
+defineForRead( const UsdGeomImageable&  sourcePrim, 
+               UsdTimeCode              time,
+               GusdPurposeSet           purposes )
 {
     return new GusdInstancerWrapper( 
-                    stage, 
                     UsdGeomPointInstancer( sourcePrim.GetPrim() ),
                     time,
                     purposes );
@@ -611,7 +613,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
     std::vector<SOP_Node*> protoNodes;
     OBJ_Node* objNode;
     UT_Matrix4D localToWorldMatrix;
-    double time = ctxt.time.GetValue();
+    double time = GusdUSD_Utils::GetNumericTime(ctxt.time);
     OP_Context houdiniContext(time);
     if (!usdPrototypesPath.empty()) {
         objNode = OPgetDirector()->findOBJNode(usdPrototypesPath.c_str());
@@ -832,7 +834,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         // but point the relationship to point to a descendant. When we wrote
         // the prototype file, we added an attribute to tell us what descendant
         // to use.
-        UsdPrim protoRootPrim( stage->DefinePrim( pair.second, TfToken("Xform") ));
+        UsdPrim protoRootPrim( stage->DefinePrim( pair.second, _tokens->Xform ));
         protoRootPrim.Load();
         // TODO Enable cleanup to remove empty tokens left after moving
         // transforms in the case of prototype transforms where the prototype
@@ -840,7 +842,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         //SdfCleanupEnabler();
         for(auto protoPrim : protoRootPrim.GetAllChildren()) {
             UsdAttribute pathAttr
-                = protoPrim.GetAttribute(TfToken("ReferencedPath"));
+                = protoPrim.GetAttribute(_tokens->ReferencedPath);
             if( pathAttr ) {
                 string subPath;
                 pathAttr.Get(&subPath);
@@ -1143,32 +1145,13 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     return GusdPrimWrapper::updateFromGTPrim(sourcePrim, houXform, ctxt, xformCache);
 }
 
-const UsdGeomImageable 
-GusdInstancerWrapper::getUsdPrimForRead(
-    GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomMesh.
-    GusdUSD_InstancerHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdPointInstancerForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdPointInstancerForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
-}
-
 bool GusdInstancerWrapper::
 refine( GT_Refine& refiner,
         const GT_RefineParms* parms ) const
 {
-    GusdUSD_InstancerHolder::ScopedReadLock lock;
-    lock.Acquire(m_usdPointInstancerForRead);
-    UsdGeomPointInstancer pointInstancer = *lock;
+    const UsdGeomPointInstancer& pointInstancer = m_usdPointInstancerForRead;
 
-    GusdUSD_StageProxy::Accessor accessor( m_stageProxy, UsdStage::LoadNone,
-                                           SdfPath() );
-    UsdStageRefPtr stage = accessor.GetStage();
+    UsdStagePtr stage = pointInstancer.GetPrim().GetStage();
 
     DBG(cerr << "GusdInstancerWrapper::refine, " << pointInstancer.GetPrim().GetPath() << endl);
     
@@ -1212,10 +1195,8 @@ refine( GT_Refine& refiner,
             continue;
         }
 
-        GusdUSD_PrimHolder holder( p, m_stageProxy->GetLock() );
         GT_PrimitiveHandle gtPrim = GusdGT_PrimCache::GetInstance().GetPrim( 
-                                        m_stageProxy,
-                                        holder, m_time, m_purposes );
+                                        p, m_time, m_purposes );
 
 
         auto transforms = new GT_TransformArray();
@@ -1245,19 +1226,16 @@ refine( GT_Refine& refiner,
 bool
 GusdInstancerWrapper::unpack( 
     GU_Detail&              gdr,
-    const TfToken&          fileName,
+    const UT_StringRef&     fileName,
     const SdfPath&          primPath,
     const UT_Matrix4D&      xform,
     fpreal                  frame,
     const char*             viewportLod,
-    const GusdPurposeSet&   purposes )
+    GusdPurposeSet          purposes )
 {
 
-    GusdUSD_ImageableHolder::ScopedLock lock;
-
-    UsdGeomImageable imagable = getUsdPrimForRead( lock );
-    UsdPrim usdPrim = imagable.GetPrim();
-    UsdGeomPointInstancer instancerPrim( usdPrim );
+    const UsdGeomPointInstancer& instancerPrim = m_usdPointInstancerForRead;
+    UsdPrim usdPrim = instancerPrim.GetPrim();
 
     UsdRelationship relationship = instancerPrim.GetPrototypesRel();
     SdfPathVector targets;
@@ -1313,7 +1291,7 @@ GusdInstancerWrapper::unpack(
         }
 
         GU_PrimPacked *guPrim = 
-            GusdGU_PackedUSD::Build( gdr, fileName.GetText(), 
+            GusdGU_PackedUSD::Build( gdr, fileName,
                                      targets[idx], 
                                      primPath,
                                      i,

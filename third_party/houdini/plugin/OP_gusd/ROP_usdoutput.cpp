@@ -39,7 +39,6 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdUtils/pipeline.h"
-#include "pxr/usd/usdUtils/stageCache.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -70,12 +69,12 @@
 #include "gusd/gusd.h"
 #include "gusd/primWrapper.h"
 #include "gusd/refiner.h"
+#include "gusd/stageCache.h"
 #include "gusd/shaderWrapper.h"
+#include "gusd/UT_Error.h"
 #include "gusd/UT_Gf.h"
 #include "gusd/UT_Version.h"
 #include "gusd/context.h"
-#include "gusd/UT_Usd.h"
-#include "gusd/USD_StageCache.h"
 
 #include "boost/foreach.hpp"
 
@@ -840,12 +839,25 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         // place, via its SessionLayer. This SessionLayer will
         // later be saved to disk (writing out all overlay edits)
         // and once saved, will then be cleared back out.
+
         std::string err;
-        m_usdStage = GusdUT_GetStage(refFile.buffer(), &err);
+        {
+            GusdUT_StrErrorScope scope(&err);
+            GusdUT_ErrorContext errCtx(scope);
+
+            GusdStageCacheReader cache;
+            m_usdStage = cache.FindOrOpen(refFile, GusdStageOpts::LoadAll(),
+                                          GusdStageEditPtr(), &errCtx);
+        }
         if (!m_usdStage) {
             return abort(err);
         }
 
+        // BUG: Mutating stages returned from the cache is not safe!
+        // Crashes, non-deterministic cooks, cats and dogs living together...
+        // The only safe way to mutate a stage is to make a new stage,
+        // and put locks around it if there's any possibility of other
+        // threads trying to access it at the same time.
         if (m_usdStage->GetSessionLayer()) {
             m_usdStage->GetSessionLayer()->Clear();
         } else {
@@ -1088,12 +1100,12 @@ closeStage(fpreal tend)
                 return abort("Failed to replace file: " + usdFile.toStdString());
             }
 
-            // Now clear stages with this rootLayer from the stage cache.
-            GusdUSD_StageCache& cache = GusdUSD_StageCache::GetInstance();
-            cache.Unload(TfToken(targetPath));
-            if (SdfLayerHandle rootLayer = SdfLayer::Find(targetPath)) {
-                UsdUtilsStageCache::Get().EraseAll(rootLayer);
-            }
+            // Reload any stages on the cache matching this path.
+            // Note that this is deferred til the main event queue
+            GusdStageCacheWriter cache;
+            UT_StringSet paths;
+            paths.insert(targetPath);
+            cache.ReloadStages(paths);
         }
     }
 

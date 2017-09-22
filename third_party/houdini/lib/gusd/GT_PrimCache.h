@@ -28,7 +28,6 @@
 #include "purpose.h"
 #include "USD_DataCache.h"
 #include "UT_CappedCache.h"
-#include "USD_Holder.h"
 
 #include <GT/GT_Primitive.h>
 
@@ -53,14 +52,13 @@ public:
     GusdGT_PrimCache();
     virtual ~GusdGT_PrimCache();
 
-    GT_PrimitiveHandle GetPrim( const GusdUSD_StageProxyHandle& stageProxy,
-                                GusdUSD_PrimHolder &usdPrim, 
+    GT_PrimitiveHandle GetPrim( const UsdPrim &usdPrim, 
                                 UsdTimeCode time, 
-                                const GusdPurposeSet& purposes,
+                                GusdPurposeSet purposes,
                                 bool skipRoot = false );
 
     virtual void    Clear() override;
-    virtual int64   Clear(const UT_Set<std::string>& paths) override;
+    virtual int64   Clear(const UT_StringSet& paths) override;
 
 private:
 

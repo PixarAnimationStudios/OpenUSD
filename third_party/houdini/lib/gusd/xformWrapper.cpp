@@ -25,7 +25,6 @@
 
 #include "context.h"
 #include "UT_Gf.h"
-#include "USD_Proxy.h"
 
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_GEOPrimPacked.h>
@@ -61,13 +60,11 @@ GusdXformWrapper::GusdXformWrapper(
 }
 
 GusdXformWrapper::GusdXformWrapper( 
-            const GusdUSD_StageProxyHandle& stage, 
-            const UsdGeomXform&             usdXform,
-            const UsdTimeCode&              time,
-            const GusdPurposeSet&           purposes )
+            const UsdGeomXform& usdXform,
+            UsdTimeCode         time,
+            GusdPurposeSet      purposes )
     : GusdGroupBaseWrapper( time, purposes )
-    , m_usdXformForRead( usdXform, stage->GetLock() )
-    , m_stageProxy( stage )
+    , m_usdXformForRead( usdXform )
 {
 }
 
@@ -75,7 +72,6 @@ GusdXformWrapper::GusdXformWrapper( const GusdXformWrapper &in )
     : GusdGroupBaseWrapper( in )
     , m_usdXformForWrite( in.m_usdXformForWrite )
     , m_usdXformForRead( in.m_usdXformForRead )
-    , m_stageProxy( in.m_stageProxy )
 {
 }
 
@@ -133,13 +129,11 @@ defineForWrite(
 
 GT_PrimitiveHandle GusdXformWrapper::
 defineForRead(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomImageable&         sourcePrim, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomImageable& sourcePrim, 
+        UsdTimeCode             time,
+        GusdPurposeSet          purposes )
 {
     return new GusdXformWrapper( 
-                    stage,
                     UsdGeomXform( sourcePrim.GetPrim() ),
                     time,
                     purposes );
@@ -207,31 +201,12 @@ isValid() const
     return m_usdXformForWrite || m_usdXformForWrite;
 }
 
-const UsdGeomImageable 
-GusdXformWrapper::getUsdPrimForRead(
-    GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomCurves.
-    GusdUSD_XformHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdXformForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdXformForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
-}
-
 bool GusdXformWrapper::
 refine(
     GT_Refine& refiner,
     const GT_RefineParms* parms) const
 {
-    
-    GusdUSD_XformHolder::ScopedReadLock lock;
-    lock.Acquire(m_usdXformForRead);
-
-    return refineGroup( m_stageProxy, (*lock).GetPrim(), refiner, parms );
+    return refineGroup( m_usdXformForRead.GetPrim(), refiner, parms );
 }
 
 
