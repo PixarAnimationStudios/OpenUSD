@@ -919,13 +919,24 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             }
 
             const _RprimInfo &rprimInfo = it->second;
-
+            const SdfPath &rprimId = rprimInfo.rprim->GetId();
             int dirtyBits =
-                           _tracker.GetRprimDirtyBits(rprimInfo.rprim->GetId());
+                           _tracker.GetRprimDirtyBits(rprimId);
             size_t reprsMask = idIt->second;
 
             if (HdChangeTracker::IsClean(dirtyBits)) {
                 numSkipped++;
+                continue;
+            }
+
+            // PERFORMANCE: don't sync rprims that are not visible.
+            // XXX This change makes invisible prims bypass PropagateDirtyBits.
+            if (!HdChangeTracker::IsVisibilityDirty(dirtyBits, rprimId) &&
+                !rprimInfo.rprim->IsVisible()) {
+                // When/if the HdDirtyList is updated to ignore dirty bits on
+                // invisible prims we need to mark this as skipped.
+                // XXX test to determine if this needs skipping or not
+                //numSkipped++;
                 continue;
             }
 
