@@ -60,6 +60,7 @@ pxr_library(usdviewq
         attributeValueEditor.py
         pythonExpressionPrompt.py
         overridableLineEdit.py
+        variantComboBox.py
         qt.py
         usdviewstyle.qss
 

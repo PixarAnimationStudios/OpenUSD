@@ -42,6 +42,7 @@ from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import _GetCustomAttributes
 from nodeViewItem import NodeViewItem
+from variantComboBox import VariantComboBox
 import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, settings
 
 # Common Utilities
@@ -70,28 +71,6 @@ INDEX_VALUE, INDEX_METADATA, INDEX_LAYERSTACK, INDEX_COMPOSITION = range(4)
 
 # Tf Debug entries to include in debug menu
 TF_DEBUG_MENU_ENTRIES = ["HD", "HDX", "USD", "USDIMAGING", "USDVIEWQ"]
-
-class VariantComboBox(QtWidgets.QComboBox):
-    def __init__(self, parent, prim, variantSetName, mainWindow):
-        QtWidgets.QComboBox.__init__(self, parent)
-        self.prim = prim
-        self.variantSetName = variantSetName
-        self.mainWindow = mainWindow
-
-    def updateVariantSelection(self, index):
-        variantSet = self.prim.GetVariantSet(self.variantSetName)
-        currentVariantSelection = variantSet.GetVariantSelection()
-        newVariantSelection = str(self.currentText())
-        if currentVariantSelection != newVariantSelection:
-            with Timer() as t:
-                variantSet.SetVariantSelection(newVariantSelection)
-                # We need to completely re-generate the prim tree because
-                # changing a prim's variant set can change the namespace
-                # hierarchy.
-                self.mainWindow._updateForStageChanges()
-            if self.mainWindow._printTiming:
-                t.PrintTime("change variantSet %s to %s" % 
-                            (variantSet.GetName(), newVariantSelection))
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -3151,12 +3130,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for key, attribute in self._attributeDict.iteritems():
             # Get the attribute's value and display color
             fgColor = GetAttributeColor(attribute, frame)
-
             attrName = QtWidgets.QTableWidgetItem(str(key))
             attrName.setFont(BoldFont)
             attrName.setForeground(fgColor)
             tableWidget.setItem(attributeCount, 0, attrName)
-
             attrText = GetShortString(attribute, frame)
             attrVal = QtWidgets.QTableWidgetItem(attrText)
             valTextFont = GetAttributeTextFont(attribute, frame)
@@ -3172,7 +3149,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 tableWidget.setCurrentItem(tableWidget.item(attributeCount, 0))
 
             attributeCount += 1
-
+    
         tableWidget.resizeColumnToContents(0)
 
     def _updateAttributeView(self):
@@ -3418,7 +3395,9 @@ class MainWindow(QtWidgets.QMainWindow):
             attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
             tableWidget.setItem(rowIndex, 0, attrName)
             tableWidget.setCellWidget(rowIndex, 1, combo)
-            combo.currentIndexChanged.connect(combo.updateVariantSelection)
+            combo.currentIndexChanged.connect(
+                lambda i: combo.updateVariantSelection(i, self._updateForStageChanges, 
+                                                       self._printTiming))
             rowIndex += 1 
 
         tableWidget.resizeColumnToContents(0)

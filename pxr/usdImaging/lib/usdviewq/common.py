@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 from qt import QtCore, QtGui, QtWidgets
-from pxr import Usd
+from pxr import Usd, Sdf
 from customAttributes import CustomAttribute
 
 # Color constants.  
