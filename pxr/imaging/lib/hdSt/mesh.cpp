@@ -1052,19 +1052,19 @@ HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate, HdShader const *shader)
 {
     VtValue mixinValue = _shadingStyle;
     if (!mixinValue.IsEmpty()) {
-        // If the scene delegate is inefficiently fetching the mixin
-        // source it will show up in this trace location.
-        // See GetMixinShaderSource
-        HD_TRACE_FUNCTION();
-
         TfToken mixin = mixinValue.GetWithDefault<TfToken>();
         /// XXX In the future this could be a place to pull on a surface entry
         /// to get a custom terminal.
         if (!mixin.IsEmpty()) {
-            return HdShaderCodeSharedPtr(
-                new HdStMixinShaderCode(
-                    sceneDelegate->GetMixinShaderSource(mixin),
-                    shader->GetShaderCode()));
+            std::string mixinSource = 
+                sceneDelegate->GetMixinShaderSource(mixin);
+            // Don't create code if the delegate returned an empty mixin source
+            // from the given mixin.
+            if (!mixinSource.empty()) {
+                return HdShaderCodeSharedPtr(
+                    new HdStMixinShaderCode(
+                        mixinSource, shader->GetShaderCode()));
+            }
         }
     }
     return shader->GetShaderCode();
