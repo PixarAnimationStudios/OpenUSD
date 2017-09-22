@@ -20,8 +20,6 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-//
-#if !BOOST_PP_IS_ITERATING
 
 #ifndef SDF_PYSPEC_H
 #define SDF_PYSPEC_H
@@ -85,9 +83,8 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/demangle.h"
 
-#include <boost/preprocessor.hpp>
-
 #include <string>
+#include <type_traits>
 
 namespace boost{
 namespace python {
@@ -194,15 +191,7 @@ public:
 
 template <typename SIG> SIG *CtorBase<SIG>::_func = 0;
 
-// The following preprocessor code repeatedly includes this file to generate
-// specializations of Ctor taking 0 through TF_MAX_ARITY parameters.
 template <typename SIG> struct NewCtor;
-#define BOOST_PP_ITERATION_LIMITS (0, TF_MAX_ARITY)
-#define BOOST_PP_FILENAME_1 "pxr/usd/sdf/pySpec.h"
-#include BOOST_PP_ITERATE()
-/* comment needed for scons dependency scanner
-#include "pxr/usd/sdf/pySpec.h"
-*/
 
 } // namespace Sdf_PySpecDetail
 
@@ -480,33 +469,23 @@ SdfPyAbstractSpecNoRepr()
     return Sdf_PySpecDetail::SpecVisitor<true>(false);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // SDF_PYSPEC_H
+namespace Sdf_PySpecDetail
+{
 
-#else // BOOST_PP_IS_ITERATING
+// This generates multi-argument specializations for NewCtor.
 
-#define N BOOST_PP_ITERATION()
-
-#define SIGNATURE R (BOOST_PP_ENUM_PARAMS(N, A))
-#define PARAMLIST BOOST_PP_ENUM_TRAILING_BINARY_PARAMS(N, A, a)
-#define ARGLIST BOOST_PP_ENUM_PARAMS(N, a)
-
-// This generates multi-argument specializations for NewCtor.  One nice
-// thing about this style of PP repetition is that the debugger will
-// actually step you over these lines for any instantiation of Ctor.
-
-template <typename R BOOST_PP_ENUM_TRAILING_PARAMS(N, typename A)>
-struct NewCtor<SIGNATURE> : CtorBase<SIGNATURE> {
-    typedef CtorBase<SIGNATURE> Base;
+template <typename R, typename... Args>
+struct NewCtor<R(Args...)> : CtorBase<R(Args...)> {
+    typedef CtorBase<R(Args...)> Base;
     typedef typename Base::Sig Sig;
     NewCtor(Sig *func) { Base::SetFunc(func); }
 
     template <class CLS>
-    static bp::object __new__(bp::object &cls PARAMLIST) {
+    static bp::object __new__(bp::object &cls, Args... args) {
         typedef typename CLS::metadata::held_type HeldType;
         TfErrorMark m;
-        HeldType specHandle(Base::_func(ARGLIST));
+        HeldType specHandle(Base::_func(args...));
         if (TfPyConvertTfErrorsToPythonException(m))
             bp::throw_error_already_set();
         bp::object result = TfPyObject(specHandle);
@@ -522,9 +501,8 @@ struct NewCtor<SIGNATURE> : CtorBase<SIGNATURE> {
     }
 };
 
-#undef N
-#undef SIGNATURE
-#undef PARAMLIST
-#undef ARGLIST
+} // namespace Sdf_PySpecDetail
 
-#endif // BOOST_PP_IS_ITERATING
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // SDF_PYSPEC_H
