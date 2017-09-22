@@ -598,9 +598,11 @@ GusdStageCache::_Impl::FindOrOpenLayer(const UT_StringRef& path,
     if(SdfLayerRefPtr layer = SdfLayer::FindOrOpen(path.toStdString()))
         return layer;
 
-    UT_WorkBuffer buf;
-    buf.sprintf("Failed opening layer @%s@", path.c_str());
-    err->AddError(buf.buffer());
+    if(err) {
+        UT_WorkBuffer buf;
+        buf.sprintf("Failed opening layer @%s@", path.c_str());
+        err->AddError(buf.buffer());
+    }
     return TfNullPtr;
 }
 
