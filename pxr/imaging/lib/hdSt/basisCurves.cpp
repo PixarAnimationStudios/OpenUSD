@@ -141,13 +141,14 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdStBasisCurves::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                        const HdBasisCurvesReprDesc &desc,
-                        HdResourceRegistrySharedPtr const& resourceRegistry)
+HdStBasisCurves::_UpdateDrawItemGeometricShader(
+        HdSceneDelegate *sceneDelegate,
+        HdDrawItem *drawItem,
+        const HdBasisCurvesReprDesc &desc)
 {
-    if (drawItem->GetGeometricShader()) return;
-
     if (!TF_VERIFY(_topology)) return;
+
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     // Check for authored normals, we could leverage dirtyBits here as an
     // optimization, however the BAR is the ground truth, so until there is a
@@ -189,8 +190,15 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
                                         (_SupportsSmoothCurves(desc,
                                                                _refineLevel)));
 
-    drawItem->SetGeometricShader(
-        Hd_GeometricShader::Create(shaderKey, resourceRegistry));
+    Hd_GeometricShaderSharedPtr geomShader = Hd_GeometricShader::Create(
+            shaderKey, renderIndex.GetResourceRegistry());
+
+    TF_VERIFY(geomShader);
+
+    drawItem->SetGeometricShader(geomShader);
+
+    // The batches need to be validated and rebuilt if necessary.
+    renderIndex.GetChangeTracker().MarkShaderBindingsDirty();
 }
 
 HdDirtyBits
@@ -257,8 +265,6 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     _BasisCurvesReprConfig::DescArray const &descs = _GetReprDesc(reprName);
-    HdResourceRegistrySharedPtr const& resourceRegistry =
-                          sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprName));
@@ -282,59 +288,37 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
+    bool needsSetGeometricShader = false;
     // for the bits geometric shader depends on, reset all geometric shaders.
     // they are populated again at the end of _GetRepr.
-    if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel)) {
-        _ResetGeometricShaders();
+    if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
+                      HdChangeTracker::DirtySurfaceShader)) {
+        needsSetGeometricShader = true;
     }
 
-    // curves don't have multiple draw items (for now)
-    if (HdChangeTracker::IsDirty(*dirtyBits)) {
-        if (descs[0].geomStyle != HdBasisCurvesGeomStyleInvalid) {
-            HdDrawItem *drawItem = it->second->GetDrawItem(0);
-            _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, descs[0]);
-            _UpdateDrawItemGeometricShader(drawItem, 
-                                           descs[0], 
-                                           resourceRegistry);
+    // iterate and update all draw items
+    int drawItemIndex = 0;
+    for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+        // curves don't have multiple draw items (for now)
+        const HdBasisCurvesReprDesc &desc = descs[descIdx];
+
+        if (desc.geomStyle != HdBasisCurvesGeomStyleInvalid) {
+            HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex++);
+
+            if (HdChangeTracker::IsDirty(*dirtyBits)) {
+                _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc);
+            } 
+            
+            if (!drawItem->GetGeometricShader() || needsSetGeometricShader) {
+                // Make sure all of the draw items have a geometric shader
+                _UpdateDrawItemGeometricShader(sceneDelegate, drawItem, desc);
+            }
         }
-    }
-
-    // if we need to rebuild geometric shader, make sure all reprs to have
-    // their geometric shader up-to-date.
-    if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel)) {
-        _SetGeometricShaders(resourceRegistry);
     }
 
     *dirtyBits &= ~DirtyNewRepr;
 
     return it->second;
-}
-
-void
-HdStBasisCurves::_ResetGeometricShaders()
-{
-    TF_FOR_ALL (it, _reprs) {
-        TF_FOR_ALL (drawItem, *(it->second->GetDrawItems())) {
-            drawItem->SetGeometricShader(Hd_GeometricShaderSharedPtr());
-        }
-    }
-}
-
-void
-HdStBasisCurves::_SetGeometricShaders(
-    HdResourceRegistrySharedPtr const& resourceRegistry)
-{
-    TF_FOR_ALL (it, _reprs) {
-        _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(it->first);
-        int drawItemIndex = 0;
-        for (auto desc : descs) {
-            if (desc.geomStyle == HdBasisCurvesGeomStyleInvalid) continue;
-
-            HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);
-            _UpdateDrawItemGeometricShader(drawItem, desc, resourceRegistry);
-            ++drawItemIndex;
-        }
-    }
 }
 
 void

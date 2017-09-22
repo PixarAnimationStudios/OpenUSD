@@ -113,13 +113,9 @@ private:
                          HdDirtyBits *dirtyBits,
                          const HdBasisCurvesReprDesc &desc);
 
-    void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                                const HdBasisCurvesReprDesc &desc,
-                                HdResourceRegistrySharedPtr const& resourceRegistry);
-
-    void _SetGeometricShaders(HdResourceRegistrySharedPtr const& resourceRegistry);
-
-    void _ResetGeometricShaders();
+    void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
+                                        HdDrawItem *drawItem,
+                                        const HdBasisCurvesReprDesc &desc);
 
     HdSt_BasisCurvesTopologySharedPtr _topology;
     HdTopology::ID _topologyId;

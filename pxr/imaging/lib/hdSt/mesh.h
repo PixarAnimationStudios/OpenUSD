@@ -95,11 +95,7 @@ protected:
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdDrawItem *drawItem,
-                                        HdMeshReprDesc desc);
-
-    void _SetGeometricShaders(HdSceneDelegate *sceneDelegate);
-
-    void _ResetGeometricShaders();
+                                        const HdMeshReprDesc &desc);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdDrawItem *drawItem,

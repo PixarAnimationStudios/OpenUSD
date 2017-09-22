@@ -1171,10 +1171,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 void
 HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                          HdDrawItem *drawItem,
-                                         HdMeshReprDesc desc)
+                                         const HdMeshReprDesc &desc)
 {
-    if (drawItem->GetGeometricShader()) return;
-
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     bool hasFaceVaryingPrimVars =
@@ -1253,10 +1251,12 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  cullStyle,
                                  geomStyle);
 
-    drawItem->SetGeometricShader(
-        Hd_GeometricShader::Create(
-            shaderKey,
-            renderIndex.GetResourceRegistry()));
+    Hd_GeometricShaderSharedPtr geomShader = Hd_GeometricShader::Create(
+            shaderKey, renderIndex.GetResourceRegistry());
+
+    TF_VERIFY(geomShader);
+
+    drawItem->SetGeometricShader(geomShader);
 
     // The batches need to be validated and rebuilt if necessary.
     renderIndex.GetChangeTracker().MarkShaderBindingsDirty();
@@ -1407,17 +1407,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided|
                       HdChangeTracker::DirtySurfaceShader)) {
-        _ResetGeometricShaders();
         needsSetGeometricShader = true;
-    } else {
-        // Make sure none of the draw items have an unset geometric shader
-        // Can be the case after a collection rebuild of the draw items.
-        TF_FOR_ALL (drawItem, *(it->second->GetDrawItems())) {
-            if (!drawItem->GetGeometricShader()) {
-                needsSetGeometricShader = true;
-                break;
-            }
-        }
     }
 
     // iterate through all reprs to figure out if any requires smoothnormals
@@ -1438,54 +1428,26 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = descs[descIdx];
 
-        if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
+        if (desc.geomStyle != HdMeshGeomStyleInvalid) {
+            HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex++);
 
-        if (HdChangeTracker::IsDirty(*dirtyBits)) {
-            HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);
-            _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
-                            requireSmoothNormals);
-            _UpdateDrawItemGeometricShader(sceneDelegate, drawItem, desc);
+            if (HdChangeTracker::IsDirty(*dirtyBits)) {
+                _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
+                        requireSmoothNormals);
+            } 
+            
+            if (!drawItem->GetGeometricShader() || needsSetGeometricShader) {
+                // None of the draw items should have an unset geometric shader
+                // Can be the case after a collection rebuild of the draw items.
+                _UpdateDrawItemGeometricShader(sceneDelegate, drawItem, desc);
+            }
         }
-        ++drawItemIndex;
-    }
-
-    // if we need to rebuild geometric shader, make sure all reprs to have
-    // their geometric shader up-to-date.
-    if (needsSetGeometricShader) {
-        _SetGeometricShaders(sceneDelegate);
     }
 
     *dirtyBits &= ~DirtyNewRepr;
 
 
     return it->second;
-}
-
-void
-HdStMesh::_ResetGeometricShaders()
-{
-    TF_FOR_ALL (it, _reprs) {
-        TF_FOR_ALL (drawItem, *(it->second->GetDrawItems())) {
-            drawItem->SetGeometricShader(Hd_GeometricShaderSharedPtr());
-        }
-    }
-}
-
-void
-HdStMesh::_SetGeometricShaders(HdSceneDelegate *sceneDelegate)
-{
-    TF_FOR_ALL (it, _reprs) {
-        _MeshReprConfig::DescArray descs = _GetReprDesc(it->first);
-        int drawItemIndex = 0;
-        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-            const HdMeshReprDesc &desc = descs[descIdx];
-            if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
-
-            HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex);
-            _UpdateDrawItemGeometricShader(sceneDelegate, drawItem, desc);
-            ++drawItemIndex;
-        }
-    }
 }
 
 HdDirtyBits
