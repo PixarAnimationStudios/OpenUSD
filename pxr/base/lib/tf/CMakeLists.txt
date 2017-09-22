@@ -43,6 +43,7 @@ pxr_library(tf
         errorMark
         errorTransport
         expiryNotifier
+        fastCompression
         fileUtils
         flyweight
         getenv
@@ -159,6 +160,7 @@ pxr_library(tf
         pxrDoubleConversion/fast-dtoa.h
         pxrDoubleConversion/fixed-dtoa.h
         pxrDoubleConversion/strtod.h
+        pxrLZ4/lz4.h
 
     CPPFILES
         initConfig.cpp
@@ -171,6 +173,7 @@ pxr_library(tf
         pxrDoubleConversion/fast-dtoa.cc
         pxrDoubleConversion/fixed-dtoa.cc
         pxrDoubleConversion/strtod.cc
+        pxrLZ4/lz4.c
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -300,6 +303,7 @@ pxr_build_test(testTf
         testenv/enum.cpp
         testenv/error.cpp
         testenv/envSetting.cpp
+        testenv/fastCompression.cpp
         testenv/fileUtils.cpp
         testenv/getenv.cpp
         testenv/hash.cpp
