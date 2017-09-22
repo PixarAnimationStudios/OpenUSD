@@ -30,22 +30,8 @@
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/schema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-bool
-_ValidateNoSubRootReferences(const SdfReference &ref)
-{
-    if (!ref.GetPrimPath().IsEmpty() &&
-        !ref.GetPrimPath().IsRootPrimPath()) {
-        TF_CODING_ERROR("Cannot make a reference to a non-root prim: "
-                        "@%s@<%s>",
-                        ref.GetAssetPath().c_str(), ref.GetPrimPath().GetText());
-        return false;
-    }
-    return true;
-}
 
 // ------------------------------------------------------------------------- //
 // UsdReferences
@@ -53,36 +39,33 @@ _ValidateNoSubRootReferences(const SdfReference &ref)
 bool
 UsdReferences::AddReference(const SdfReference& ref, UsdListPosition position)
 {
-    if (!_ValidateNoSubRootReferences(ref))
-        return false;
-    
     SdfChangeBlock block;
-    TfErrorMark mark;
     bool success = false;
-    
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfReferencesProxy refs = spec->GetReferenceList();
-        switch (position) {
-        case UsdListPositionFront:
-            refs.Prepend(ref);
-            break;
-        case UsdListPositionBack:
-            refs.Append(ref);
-            break;
-        case UsdListPositionTempDefault:
-            if (UsdAuthorOldStyleAdd()) {
-                refs.Add(ref);
-            } else {
+    {
+        TfErrorMark mark;
+        if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
+            SdfReferencesProxy refs = spec->GetReferenceList();
+            switch (position) {
+            case UsdListPositionFront:
                 refs.Prepend(ref);
+                break;
+            case UsdListPositionBack:
+                refs.Append(ref);
+                break;
+            case UsdListPositionTempDefault:
+                if (UsdAuthorOldStyleAdd()) {
+                    refs.Add(ref);
+                } else {
+                    refs.Prepend(ref);
+                }
+                break;
             }
-            break;
+            // mark *should* contain only errors from adding the reference, NOT
+            // any recomposition errors, because the SdfChangeBlock handily
+            // defers composition till after we leave this scope.
+            success = mark.IsClean();
         }
-        success = mark.IsClean();
     }
-    // mark *should* contain only errors from adding the reference, NOT
-    // any recomposition errors, because the SdfChangeBlock handily defers
-    // composition till after we leave this scope.
-    mark.Clear();
     return success;
 }
 

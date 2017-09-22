@@ -448,14 +448,13 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_GoodAndBadReferences(self):
         for fmt in allFormats:
-            # Sub-root references not allowed
-            s1 = Usd.Stage.CreateInMemory('GoodAndBadReferences.'+fmt)
+            # Sub-root references are allowed
+            s1 = Usd.Stage.CreateInMemory('References.'+fmt)
             s1.DefinePrim("/Foo", "Mesh")
             s1.DefinePrim("/Bar/Bazzle", "Mesh")
             baz = s1.DefinePrim("/Foo/Baz", "Mesh")
             bazRefs = baz.GetReferences()
-            with self.assertRaises(Tf.ErrorException):
-                bazRefs.AddReference(s1.GetRootLayer().identifier, "/Bar/Bazzle")
+            bazRefs.AddReference(s1.GetRootLayer().identifier, "/Bar/Bazzle")
 
             # Test that both in-memory identifiers, relative paths, and absolute
             # paths all resolve properly

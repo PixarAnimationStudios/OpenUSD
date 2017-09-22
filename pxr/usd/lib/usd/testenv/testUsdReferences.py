@@ -186,6 +186,38 @@ class TestUsdReferences(unittest.TestCase):
             self.assertTrue(prim)
             self.assertEqual(prim.GetAttribute('attr').Get(), 1.234)
 
+    def test_SubrootReferences(self):
+        for fmt in allFormats:
+            refLayer = Sdf.Layer.CreateAnonymous('SubrootReferences.'+fmt)
+            
+            def makePrim(name, attrDefault):
+                primSpec = Sdf.CreatePrimInLayer(refLayer, name)
+                primSpec.specifier = Sdf.SpecifierDef
+                attr = Sdf.AttributeSpec(
+                    primSpec, 'attr', Sdf.ValueTypeNames.Double)
+                attr.default = attrDefault
+
+            makePrim('/target1/child', 1.234)
+
+            stage = Usd.Stage.CreateInMemory()
+            prim = stage.DefinePrim('/subroot_ref1')
+            prim.GetReferences().AddReference(
+                refLayer.identifier, '/target1/child')
+            self.assertTrue(prim)
+            self.assertEqual(prim.GetAttribute('attr').Get(), 1.234)
+
+            prim = stage.DefinePrim('/subroot_ref2')
+            prim.GetReferences().AddReference(
+                Sdf.Reference(refLayer.identifier, '/target1/child'))
+            self.assertTrue(prim)
+            self.assertEqual(prim.GetAttribute('attr').Get(), 1.234)
+
+            stage = Usd.Stage.Open(refLayer)
+            prim = stage.DefinePrim('/subroot_ref3')
+            prim.GetReferences().AddInternalReference('/target1/child')
+            self.assertTrue(prim)
+            self.assertEqual(prim.GetAttribute('attr').Get(), 1.234)
+
     def test_PrependVsAppend(self):
         for fmt in allFormats:
             layer = Sdf.Layer.CreateAnonymous('PrependVsAppend.'+fmt)

@@ -799,6 +799,24 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedInstances(s,
             { '/__Master_2': ['/Set/SetB/Model'],
               '/__Master_3': ['/Set/SetA/Model'] })
+    
+    def test_SubrootReferences(self):
+        """Test expected instancing behavior for prims with subroot
+        references"""
+        nl = NoticeListener()
+
+        s = OpenStage('subroot_refs/root.usda')
+
+        # The SubrootRef_1 and SubrootRef_2 prims should share the 
+        # same master, as they both have the same sub-root reference. 
+        # However, note that they do *not* share the same master as 
+        # the nested instance /__Master_1/Ref1_Child, even though
+        # they ultimately have the same child prims. This is something
+        # that could be examined for further optimization in the future.
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Ref_1'],
+              '/__Master_2': ['/__Master_1/Ref1_Child'],
+              '/__Master_3': ['/SubrootRef_1', '/SubrootRef_2'] })
 
     def test_Editing(self):
         """Test that edits cannot be made on objects in masters"""
