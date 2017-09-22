@@ -73,6 +73,26 @@ def ColorizeLabelText(text, substring, r, g, b):
     return _UpdateLabelText(text, substring, 
                             "span style=\"color:rgb(%d, %d, %d);\"" % (r,g,b))
 
+def UniquifyTableWidgetItems(a):
+    """ Eliminates duplicate list entries in a list
+        of TableWidgetItems. It relies on the row property
+        being available for comparison.
+    """
+    if (len(a) == 0):
+        tmp = []
+    else:
+        tmp = [a[0]]
+        # XXX: we need to compare row #s because
+        # PySide doesn't allow equality comparison for QTableWidgetItems
+        tmp_rows = set() 
+        tmp_rows.add(a[0].row())
+
+        for i in range(1,len(a)):
+            if (a[i].row() not in tmp_rows):
+                tmp.append(a[i])
+                tmp_rows.add(a[i].row())
+    return tmp
+
 def PrintWarning(title, description):
     import sys
     msg = sys.stderr
@@ -80,6 +100,43 @@ def PrintWarning(title, description):
     print >> msg, "WARNING: %s" % title
     print >> msg, description
     print >> msg, "------------------------------------------------------------"
+
+def GetShortString(prop, frame):
+    from customAttributes import CustomAttribute
+    if isinstance(prop, (Usd.Attribute, CustomAttribute)):
+        val = prop.Get(frame)
+    elif isinstance(prop, Sdf.AttributeSpec):
+        if frame == Usd.TimeCode.Default():
+            val = prop.default
+        else:
+            numTimeSamples = -1
+            if prop.HasInfo('timeSamples'):
+                numTimeSamples = prop.layer.GetNumTimeSamplesForPath(prop.path)
+            if numTimeSamples == -1:
+                val = prop.default
+            elif numTimeSamples == 1:
+                return "1 time sample"
+            else:
+                return str(numTimeSamples) + " time samples"
+    elif isinstance(prop, Sdf.RelationshipSpec):
+        return str(prop.targetPathList)
+
+    from scalarTypes import GetScalarTypeFromAttr
+    scalarType, isArray = GetScalarTypeFromAttr(prop)
+    result = ''
+    if isArray and not isinstance(val, Sdf.ValueBlock):
+        def arrayToStr(a):
+            from itertools import chain
+            elems = a if len(a) <= 6 else chain(a[:3], ['...'], a[-3:])
+            return '[' + ', '.join(map(str, elems)) + ']'
+        if val is not None and len(val):
+            result = "%s[%d]: %s" % (scalarType, len(val), arrayToStr(val))
+        else:
+            result = "%s[]" % scalarType
+    else:
+        result = str(val)
+
+    return result[:500]
 
 # Return attribute status at a certian frame (is it using the default, or the
 # fallback? Is it authored at this frame? etc.
@@ -412,8 +469,6 @@ def DumpMallocTags(stage, contextStr):
     else:
         print "Unable to accumulate memory usage since the Pxr MallocTag system was not initialized"
 
-        
-
 def GetInstanceIdForIndex(prim, instanceIndex, time):
     '''Attempt to find an authored Id value for the instance at index
     'instanceIndex' at time 'time', on the given prim 'prim', which we access
@@ -428,3 +483,15 @@ def GetInstanceIdForIndex(prim, instanceIndex, time):
     if not ids or instanceIndex >= len(ids):
         return None
     return ids[instanceIndex]
+
+def Drange(start, stop, step):
+    """Like builtin range() but allows decimals and is a closed interval 
+        that is, it's inclusive of stop"""
+    r = start
+    lst = []
+    epsilon = 1e-3 * step
+    while r <= stop+epsilon:
+        lst.append(r)
+        r += step
+    return lst
+

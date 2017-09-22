@@ -26,6 +26,24 @@
 
 from cPickle import dump, load
 
+def EmitWarning(filePath):
+    """Send a warning because the settings file should never fail to load
+    """
+    import traceback
+    import sys
+    msg = sys.stderr
+    print >> msg, "------------------------------------------------------------"
+    print >> msg, "WARNING: Unknown problem while trying to access settings:"
+    print >> msg, "------------------------------------------------------------"
+    print >> msg, "This message is being sent because the settings file (%s) " \
+                  "could not be read" % filePath
+    print >> msg, "--"
+    traceback.print_exc(file=msg)
+    print >> msg, "--"
+    print >> msg, "Please file a bug if this warning persists"
+    print >> msg, "Attempting to continue... "
+    print >> msg, "------------------------------------------------------------"
+
 class Settings(dict):
     """A small wrapper around the standard Python dictionary.
     

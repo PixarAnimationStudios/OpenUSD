@@ -44,12 +44,13 @@ from customAttributes import _GetCustomAttributes
 from nodeViewItem import NodeViewItem
 import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, referenceEditor, settings
 
-# UI Utilities
+# Common Utilities
 from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor, ValueClipsTextColor, 
-                    DefaultTextColor, HeaderColor, RedColor, BoldFont, ItalicFont, 
-                    GetAttributeColor, GetAttributeTextFont, HasArcsColor, InstanceColor, 
-                    NormalColor, MasterColor, Timer, BusyContext, DumpMallocTags, 
-                    GetInstanceIdForIndex, ItalicizeLabelText, BoldenLabelText, ColorizeLabelText)
+                    DefaultTextColor, HeaderColor, RedColor, BoldFont, ItalicFont,
+                    UniquifyTableWidgetItems, GetAttributeColor, GetAttributeTextFont, 
+                    HasArcsColor, InstanceColor, NormalColor, MasterColor, Timer, Drange,
+                    BusyContext, DumpMallocTags, GetShortString, GetInstanceIdForIndex, 
+                    ItalicizeLabelText, BoldenLabelText, ColorizeLabelText)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -69,55 +70,6 @@ INDEX_VALUE, INDEX_METADATA, INDEX_LAYERSTACK, INDEX_COMPOSITION = range(4)
 
 # Tf Debug entries to include in debug menu
 TF_DEBUG_MENU_ENTRIES = ["HD", "HDX", "USD", "USDIMAGING", "USDVIEWQ"]
-
-def uniquify_tablewidgetitems(a):
-    """ Eliminates duplicate list entries in a list
-        of TableWidgetItems. It relies on the row property
-        being available for comparison.
-    """
-    if (len(a) == 0):
-        tmp = []
-    else:
-        tmp = [a[0]]
-        # XXX: we need to compare row #s because
-        # PySide doesn't allow equality comparison for QTableWidgetItems
-        tmp_rows = set() 
-        tmp_rows.add(a[0].row())
-
-        for i in range(1,len(a)):
-            if (a[i].row() not in tmp_rows):
-                tmp.append(a[i])
-                tmp_rows.add(a[i].row())
-    return tmp
-
-def drange(start, stop, step):
-    """Like builtin range() but allows decimals and is a closed interval 
-        that is, it's inclusive of stop"""
-    r = start
-    lst = []
-    epsilon = 1e-3 * step
-    while r <= stop+epsilon:
-        lst.append(r)
-        r += step
-    return lst
-
-def _settingsWarning(filePath):
-    """Send a warning because the settings file should never fail to load
-    """
-    import traceback
-    import sys
-    msg = sys.stderr
-    print >> msg, "------------------------------------------------------------"
-    print >> msg, "WARNING: Unknown problem while trying to access settings:"
-    print >> msg, "------------------------------------------------------------"
-    print >> msg, "This message is being sent because the settings file (%s) " \
-                  "could not be read" % filePath
-    print >> msg, "--"
-    traceback.print_exc(file=msg)
-    print >> msg, "--"
-    print >> msg, "Please file a bug if this warning persists"
-    print >> msg, "Attempting to continue... "
-    print >> msg, "------------------------------------------------------------"
 
 class VariantComboBox(QtWidgets.QComboBox):
     def __init__(self, parent, prim, variantSetName, mainWindow):
@@ -140,44 +92,6 @@ class VariantComboBox(QtWidgets.QComboBox):
             if self.mainWindow._printTiming:
                 t.PrintTime("change variantSet %s to %s" % 
                             (variantSet.GetName(), newVariantSelection))
-
-def _GetShortString(prop, frame):
-    from customAttributes import CustomAttribute
-    if isinstance(prop, (Usd.Attribute, CustomAttribute)):
-        val = prop.Get(frame)
-    elif isinstance(prop, Sdf.AttributeSpec):
-        if frame == Usd.TimeCode.Default():
-            val = prop.default
-        else:
-            numTimeSamples = -1
-            if prop.HasInfo('timeSamples'):
-                numTimeSamples = prop.layer.GetNumTimeSamplesForPath(prop.path)
-            if numTimeSamples == -1:
-                val = prop.default
-            elif numTimeSamples == 1:
-                return "1 time sample"
-            else:
-                return str(numTimeSamples) + " time samples"
-    elif isinstance(prop, Sdf.RelationshipSpec):
-        return str(prop.targetPathList)
-
-    from scalarTypes import GetScalarTypeFromAttr
-    scalarType, isArray = GetScalarTypeFromAttr(prop)
-    result = ''
-    if isArray and not isinstance(val, Sdf.ValueBlock):
-        def arrayToStr(a):
-            from itertools import chain
-            elems = a if len(a) <= 6 else chain(a[:3], ['...'], a[-3:])
-            return '[' + ', '.join(map(str, elems)) + ']'
-        if val is not None and len(val):
-            result = "%s[%d]: %s" % (scalarType, len(val), arrayToStr(val))
-        else:
-            result = "%s[]" % scalarType
-    else:
-        result = str(val)
-
-    return result[:500]
-
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -321,16 +235,16 @@ class MainWindow(QtWidgets.QMainWindow):
                     try:
                         self._settings.save()
                     except:
-                        _settingsWarning(settingsPath)
+                        settings.EmitWarning(settingsPath)
 
                 except EOFError:
                     # try to force out a new settings file
                     try:
                         self._settings.save()
                     except:
-                        _settingsWarning(settingsPath)
+                        settings.EmitWarning(settingsPath)
                 except:
-                    _settingsWarning(settingsPath)
+                    settings.EmitWarning(settingsPath)
 
             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
@@ -1162,7 +1076,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 % (self.realStartTimeCode, self.realEndTimeCode))
                 self._timeSamples = []
             else:
-                self._timeSamples = drange(self.realStartTimeCode, 
+                self._timeSamples = Drange(self.realStartTimeCode, 
                                            self.realEndTimeCode, 
                                            self.step)
         else:
@@ -1851,8 +1765,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtCore.Qt.MatchContains)
             self._attrSearchResults += otherSearch
 
-            self._attrSearchResults = \
-                uniquify_tablewidgetitems(self._attrSearchResults)
+            self._attrSearchResults = UniquifyTableWidgetItems(self._attrSearchResults)
             self._attrSearchResults.sort(cmp, QtWidgets.QTableWidgetItem.row)
             self._attrSearchResults = deque(self._attrSearchResults)
 
@@ -3244,7 +3157,7 @@ class MainWindow(QtWidgets.QMainWindow):
             attrName.setForeground(fgColor)
             tableWidget.setItem(attributeCount, 0, attrName)
 
-            attrText = _GetShortString(attribute, frame)
+            attrText = GetShortString(attribute, frame)
             attrVal = QtWidgets.QTableWidgetItem(attrText)
             valTextFont = GetAttributeTextFont(attribute, frame)
             if valTextFont:
@@ -3660,7 +3573,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 tableWidget.setItem(i, 1, pathItem)
 
                 if path.IsPropertyPath():
-                    valStr = _GetShortString(spec, self._currentFrame)
+                    valStr = GetShortString(spec, self._currentFrame)
                     ttStr = valStr
                     valueItem = QtWidgets.QTableWidgetItem(valStr)
                     sampleBased = (spec.HasInfo('timeSamples') and
