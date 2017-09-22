@@ -180,162 +180,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QWidget" name="nodeLegendContainer" native="true">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>400</width>
-             <height>0</height>
-            </size>
-           </property>
-           <layout class="QVBoxLayout" name="nodeLegendLayoutContainer">
-            <item>
-             <layout class="QGridLayout" name="nodeLegendLayout">
-              <item row="0" column="0">
-               <widget class="QGraphicsView" name="nodeLegendColorHasArcs">
-                <property name="maximumSize">
-                 <size>
-                  <width>20</width>
-                  <height>15</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLabel" name="nodeLegendLabelHasArcs">
-                <property name="font">
-                 <font>
-                  <family>Gotham Rounded</family>
-                  <pointsize>9</pointsize>
-                  <weight>50</weight>
-                  <italic>false</italic>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>HasArcs</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="2">
-               <widget class="QGraphicsView" name="nodeLegendColorInstance">
-                <property name="maximumSize">
-                 <size>
-                  <width>20</width>
-                  <height>15</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="3">
-               <widget class="QLabel" name="nodeLegendLabelInstance">
-                <property name="font">
-                 <font>
-                  <family>Gotham Rounded</family>
-                  <pointsize>9</pointsize>
-                  <weight>50</weight>
-                  <italic>false</italic>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Instance</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="4">
-               <widget class="QGraphicsView" name="nodeLegendColorMaster">
-                <property name="maximumSize">
-                 <size>
-                  <width>20</width>
-                  <height>15</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="5">
-               <widget class="QLabel" name="nodeLegendLabelMaster">
-                <property name="font">
-                 <font>
-                  <family>Gotham Rounded</family>
-                  <pointsize>9</pointsize>
-                  <weight>50</weight>
-                  <italic>false</italic>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Master</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="6">
-               <widget class="QGraphicsView" name="nodeLegendColorNormal">
-                <property name="maximumSize">
-                 <size>
-                  <width>20</width>
-                  <height>15</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="7">
-               <widget class="QLabel" name="nodeLegendLabelNormal">
-                <property name="font">
-                 <font>
-                  <family>Gotham Rounded</family>
-                  <pointsize>9</pointsize>
-                  <weight>50</weight>
-                  <italic>false</italic>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Normal</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="nodeLegendLabelContainer">
-              <item>
-               <widget class="QLabel" name="nodeLegendLabelDimmed">
-                <property name="text">
-                 <string>Dimmed colors denote inactive prims</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="nodeLegendLabelFontsAbstract">
-                <property name="text">
-                 <string>Normal font indicates abstract prims(class and children)</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="nodeLegendLabelFontsUndefined">
-                <property name="text">
-                 <string>Italic font indicates undefined prims(declared with over)</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="nodeLegendLabelFontsDefined">
-                <property name="text">
-                 <string>Bold font indicates defined prims(declared with def)</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
+           <widget class="NodeLegend" name="nodeLegendContainer" native="true"/>
          </item>
          <item>
           <layout class="QHBoxLayout" name="nodeFindContainer">
@@ -2884,6 +2729,12 @@
    <class>AttributeValueEditor</class>
    <extends>QWidget</extends>
    <header>attributeValueEditor</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>NodeLegend</class>
+   <extends>QWidget</extends>
+   <header>nodeLegend</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -57,6 +57,7 @@ pxr_library(usdviewq
         adjustDefaultMaterial.py
         nodeViewItem.py
         common.py
+        nodeLegend.py
         attributeValueEditor.py
         pythonExpressionPrompt.py
         overridableLineEdit.py
@@ -70,6 +71,7 @@ pxr_library(usdviewq
         adjustClippingUI.ui
         adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui
+        nodeLegendUI.ui
         pythonExpressionPromptUI.ui
 )
 

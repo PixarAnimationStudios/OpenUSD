@@ -404,7 +404,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._propertyLegendCollapsed = True
             self._nodeLegendCollapsed = True
             self._propertyLegendHeightOffset = 50
-            self._nodeLegendHeightOffset = 100
+            self._nodeLegendHeightOffset = 120
             self._legendButtonSelectedStyle = ('background: rgb(189, 155, 84); '
                                                'color: rgb(227, 227, 227);')
 
@@ -421,11 +421,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.propertyLegendColorValueClips.setScene(graphicsScene)
             self._ui.propertyLegendColorCustom.setScene(graphicsScene)
             
-            self._ui.nodeLegendColorHasArcs.setScene(graphicsScene)
-            self._ui.nodeLegendColorNormal.setScene(graphicsScene)
-            self._ui.nodeLegendColorInstance.setScene(graphicsScene)
-            self._ui.nodeLegendColorMaster.setScene(graphicsScene)
-
             # set color of attribute viewer legend boxes
             self._ui.propertyLegendColorFallback.setForegroundBrush(FallbackTextColor)
             self._ui.propertyLegendColorDefault.setForegroundBrush(DefaultTextColor)
@@ -433,11 +428,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.propertyLegendColorNoValue.setForegroundBrush(NoValueTextColor)
             self._ui.propertyLegendColorValueClips.setForegroundBrush(ValueClipsTextColor)
             self._ui.propertyLegendColorCustom.setForegroundBrush(RedColor)
-
-            self._ui.nodeLegendColorHasArcs.setForegroundBrush(HasArcsColor)
-            self._ui.nodeLegendColorNormal.setForegroundBrush(NormalColor)
-            self._ui.nodeLegendColorInstance.setForegroundBrush(InstanceColor)
-            self._ui.nodeLegendColorMaster.setForegroundBrush(MasterColor)
 
             # set color of attribute viewer text items
             legendTextUpdate = lambda t, c: (('<font color=\"%s\">' % c.color().name())
@@ -459,36 +449,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
             customLegend = self._ui.propertyLegendLabelCustom 
             customLegend.setText(legendTextUpdate(customLegend, RedColor))
-
-            normalLegend = self._ui.nodeLegendLabelNormal
-            normalLegend.setText(legendTextUpdate(normalLegend, NormalColor))
-
-            masterLegend = self._ui.nodeLegendLabelMaster
-            masterLegend.setText(legendTextUpdate(masterLegend, MasterColor))
-
-            instanceLegend = self._ui.nodeLegendLabelInstance
-            instanceLegend.setText(legendTextUpdate(instanceLegend, InstanceColor))
-
-            hasArcsLegend = self._ui.nodeLegendLabelHasArcs
-            hasArcsLegend.setText(legendTextUpdate(hasArcsLegend, HasArcsColor))
-
-            undefinedFontLegend = self._ui.nodeLegendLabelFontsUndefined
-            undefinedFontLegend.setText(ItalicizeLabelText(undefinedFontLegend.text(), 
-                                                           undefinedFontLegend.text()))
-
-            definedFontLegend = self._ui.nodeLegendLabelFontsDefined
-            definedFontLegend.setText(BoldenLabelText(definedFontLegend.text(), 
-                                                      definedFontLegend.text()))
-
-
-            # Set three individual colors in the text line to indicate
-            # the dimmed version of each primary node color
-            dimmedLegend = self._ui.nodeLegendLabelDimmed
-            dimmedLegendText = dimmedLegend.text()
-            dimmedLegendText = ColorizeLabelText(dimmedLegendText, "Dimmed colors", 148, 105, 30)
-            dimmedLegendText = ColorizeLabelText(dimmedLegendText, "denote", 78,91,145)
-            dimmedLegendText = ColorizeLabelText(dimmedLegendText, "inactive prims", 151,151,151)
-            dimmedLegend.setText(dimmedLegendText)
 
             interpolatedStr = 'Interpolated'
             tsLabel = self._ui.propertyLegendLabelTimeSample
