@@ -24,10 +24,29 @@
 from qt import QtCore, QtWidgets
 from referenceEditorUI import Ui_ReferenceEditor
 
-import mainWindow
-
 # XXX USD REFERENCE EDITOR DISABLED
 # Dialog window to edit reference asset path, reference path and offset/scale
+
+def isWritableUsdPath(path):
+    if not os.access(path, os.W_OK):
+        return (False, 'Path is not a writable file.')
+
+    return (True, '')
+
+def getBackupFile(path):
+    # get a backup file name like myfile.0.usd
+    number = 0
+
+    extindex = path.rfind('.')
+    if extindex == -1:
+        exindex = len(path)
+
+    while os.access(path[:extindex] + '.' + str(number) + path[extindex:], os.F_OK):
+        number = number + 1
+
+    return path[:extindex] + '.' + str(number) + path[extindex:]
+
+
 
 class ReferenceEditor(QtWidgets.QDialog):
     def __init__(self, parent, stage, node):
@@ -59,7 +78,7 @@ class ReferenceEditor(QtWidgets.QDialog):
 
         # get the ref src stage file, check if it is writable
         self._refSrc = self._ref.GetRefSrcScene().GetUsdFile()
-        self._writable, msg = mainWindow.isWritableUsdPath(self._refSrc)
+        self._writable, msg = isWritableUsdPath(self._refSrc)
 
         # disable the form (prevents editing) if not writable, also show explanation msg
         self._ui.groupBox.setEnabled(self._writable)
@@ -86,7 +105,7 @@ class ReferenceEditor(QtWidgets.QDialog):
         # when the user clicks "Save"
         if self._writable:  # dont save if not writable!
             # generate a backup directory, offer a backup option to the user
-            backupfile = mainWindow.getBackupFile(self._refSrc)
+            backupfile = getBackupFile(self._refSrc)
             question = QtWidgets.QMessageBox("Confirm Reference Edit",
                 "Your changes will be permanently committed to the reference "
                 "source stage %s\n\n"\

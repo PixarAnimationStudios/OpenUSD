@@ -70,25 +70,6 @@ INDEX_VALUE, INDEX_METADATA, INDEX_LAYERSTACK, INDEX_COMPOSITION = range(4)
 # Tf Debug entries to include in debug menu
 TF_DEBUG_MENU_ENTRIES = ["HD", "HDX", "USD", "USDIMAGING", "USDVIEWQ"]
 
-def isWritableUsdPath(path):
-    if not os.access(path, os.W_OK):
-        return (False, 'Path is not a writable file.')
-
-    return (True, '')
-
-def getBackupFile(path):
-    # get a backup file name like myfile.0.usd
-    number = 0
-
-    extindex = path.rfind('.')
-    if extindex == -1:
-        exindex = len(path)
-
-    while os.access(path[:extindex] + '.' + str(number) + path[extindex:], os.F_OK):
-        number = number + 1
-
-    return path[:extindex] + '.' + str(number) + path[extindex:]
-
 def uniquify_tablewidgetitems(a):
     """ Eliminates duplicate list entries in a list
         of TableWidgetItems. It relies on the row property
