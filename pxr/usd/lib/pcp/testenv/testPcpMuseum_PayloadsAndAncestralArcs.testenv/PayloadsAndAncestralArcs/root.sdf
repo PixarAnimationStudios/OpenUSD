@@ -1,0 +1,56 @@
+#sdf 1.4.32
+(
+    """
+    This museum case tests the interaction between ancestral
+    arcs and payloads.
+    """
+)
+
+def "Root"
+{
+    def "LocalClass" (
+        payload = @./payload2.sdf@</Payload2>
+    )
+    {
+    }
+
+    def "UnloadedInheritedPayload" (
+        """
+        This prim has a local inherit to the LocalClass prim, which has a
+        payload. Loading the payload on the LocalClass prim should not
+        cause the payload on this prim to be loaded as well.
+        """
+        inherits = </Root/LocalClass>
+    )
+    {
+    }
+
+    def "LoadedInheritedPayload2" (
+        """
+        Similar to above, but this prim's payload will be loaded in the test
+        so we can see the difference in the composition results.
+        """
+        inherits = </Root/LocalClass>
+    )
+    {
+    }
+
+    def "Payload" (
+        payload = @./payload2.sdf@</Payload2>
+    )
+    {
+    }
+
+    def "SubrootPayload" (
+        """
+        This prim uses a sub-root payload to /Root/Payload in a different 
+        layer stack. That prim also happens to have a payload. 
+        Another prim with a payload happens to exist at the same path in 
+        this layer stack. Loading that prim in the local layer stack shouldn't 
+        affect or interfere with composing this prim.
+        """
+        payload = @./payload.sdf@</Root/Payload>
+    )
+    {
+    }
+}

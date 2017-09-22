@@ -932,13 +932,13 @@ struct Pcp_PrimIndexer
                     AddTask(Task(Task::Type::EvalNodeInherits, n));
                     AddTask(Task(Task::Type::EvalNodeSpecializes, n));
                     AddTask(Task(Task::Type::EvalNodeReferences, n));
+                    AddTask(Task(Task::Type::EvalNodePayload, n));
                 }
                 if (!isUsd) {
                     AddTask(Task(Task::Type::EvalNodeRelocations, n));
                 }
             }
             if (contributesSpecs) {
-                AddTask(Task(Task::Type::EvalNodePayload, n));
                 if (evaluateVariants) {
                     AddTask(Task(Task::Type::EvalNodeVariantSets, n));
                 }
@@ -1459,6 +1459,10 @@ _AddArc(
             indexer, newNode, 
             "Added subtree for site %s to graph",
             TfStringify(site).c_str());
+
+        if (childOutputs.primIndex.GetGraph()->HasPayload()) {
+            parent.GetOwningGraph()->SetHasPayload(true);
+        }
 
         // Pass along the other outputs from the nested computation. 
         indexer->outputs->allErrors.insert(
@@ -3553,7 +3557,7 @@ _EvalNodePayload(
         PCP_INDEXING_MSG(indexer, node, "Payload was not included, skipping");
         return;
     }
-    SdfPath const &path = node.GetRootNode().GetPath();
+    SdfPath const &path = indexer->rootSite.path;
     tbb::spin_rw_mutex::scoped_lock lock;
     auto *mutex = indexer->inputs.includedPayloadsMutex;
     if (mutex) { lock.acquire(*mutex, /*write=*/false); }
@@ -3565,7 +3569,8 @@ _EvalNodePayload(
             indexer->outputs->includedDiscoveredPayload = true;
         } else {
             PCP_INDEXING_MSG(indexer, node,
-                             "Payload was not included, skipping");
+                "Payload <%s> was not included, skipping",
+                path.GetText());
             return;
         }
     }
