@@ -554,11 +554,24 @@ private:
     VtValue _GetTimeSampleValueImpl(TimeSamples const &ts, size_t i) const;
     void _MakeTimeSampleValuesMutableImpl(TimeSamples &ts) const;
 
+    void _WriteFields(_Writer &w);
+    void _WriteFieldSets(_Writer &w);
     void _WritePaths(_Writer &w);
+    void _WriteSpecs(_Writer &w);
 
     template <class Iter>
     Iter _WritePathTree(_Writer &w, Iter cur, Iter end);
+
+    template <class Container>
+    void _WriteCompressedPathData(_Writer &w, Container const &pathData);
     
+    template <class Iter>
+    Iter _BuildCompressedPathDataRecursive(
+        size_t &curIndex, Iter cur, Iter end,
+        vector<uint32_t> &pathIndexes,
+        vector<int32_t> &elementTokenIndexes,
+        vector<int32_t> &jumps);
+
     inline void _WriteTokens(_Writer &w);
 
     template <class Reader>
@@ -581,6 +594,16 @@ private:
     void _ReadPathsImpl(Reader reader,
                         WorkArenaDispatcher &dispatcher,
                         SdfPath parentPath=SdfPath());
+    template <class Reader>
+    void _ReadCompressedPaths(Reader reader,
+                              WorkArenaDispatcher &dispatcher);
+    void _BuildDecompressedPathsImpl(
+        std::vector<uint32_t> const &pathIndexes,
+        std::vector<int32_t> const &elementTokenIndexes,
+        std::vector<int32_t> const &jumps,
+        size_t curIndex,
+        SdfPath parentPath,
+        WorkArenaDispatcher &dispatcher);
 
     void _ReadRawBytes(int64_t start, int64_t size, char *buf) const;
 

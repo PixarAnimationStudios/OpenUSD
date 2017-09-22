@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "crateFile.h"
+#include "integerCoding.h"
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/errno.h"
@@ -51,6 +52,7 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/fastCompression.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -237,12 +239,13 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.3.0: Compressed structural sections.
 // 0.2.0: Added support for prepend and append fields of SdfListOp.
 // 0.1.0: Fixed structure layout issue encountered in Windows port.
 //        See _PathItemHeader_0_0_1.
 // 0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 2;
+constexpr uint8_t USDC_MINOR = 3;
 constexpr uint8_t USDC_PATCH = 0;
 
 struct CrateFile::Version
@@ -520,8 +523,7 @@ public:
         : _filePos(0)
         , _file(file)
         , _bufferPos(0)
-        , _writeTask(
-            _dispatcher, std::bind(&_BufferedOutput::_DoWrites, this)) {
+        , _writeTask(_dispatcher, [this]() { _DoWrites(); }) {
         // Create NumBuffers buffers.  One is _buffer, the remainder live in
         // _freeBuffers.
         constexpr const int NumBuffers = 8;
@@ -1837,22 +1839,11 @@ CrateFile::_Write()
     _WriteSection(w, _TokensSectionName, toc, [this, &w]() {_WriteTokens(w);});
     _WriteSection(
         w, _StringsSectionName, toc, [this, &w]() {w.Write(_strings);});
-    _WriteSection(w, _FieldsSectionName, toc, [this, &w]() {w.Write(_fields);});
+    _WriteSection(w, _FieldsSectionName, toc, [this, &w]() {_WriteFields(w);});
     _WriteSection(
-        w, _FieldSetsSectionName, toc, [this, &w]() {w.Write(_fieldSets);});
+        w, _FieldSetsSectionName, toc, [this, &w]() {_WriteFieldSets(w);});
     _WriteSection(w, _PathsSectionName, toc, [this, &w]() {_WritePaths(w);});
-
-    // VERSIONING: If we're writing version 0.0.1, we need to convert to the old
-    // form.
-    if (_packCtx->writeVersion == Version(0,0,1)) {
-        // Copy and write old-structure specs.
-        vector<Spec_0_0_1> old(_specs.begin(), _specs.end());
-        _WriteSection(
-            w, _SpecsSectionName, toc, [this, &w, &old]() {w.Write(old);});
-    } else {
-        _WriteSection(
-            w, _SpecsSectionName, toc, [this, &w]() {w.Write(_specs);});
-    }
+    _WriteSection(w, _SpecsSectionName, toc, [this, &w]() {_WriteSpecs(w);});
 
     _BootStrap boot(_packCtx->writeVersion);
 
@@ -1948,18 +1939,148 @@ CrateFile::_MakeTimeSampleValuesMutableImpl(TimeSamples &ts) const
 }
 
 void
+CrateFile::_WriteFields(_Writer &w)
+{
+    if (_packCtx->writeVersion < Version(0,3,0)) {
+        // Old-style uncompressed fields.
+        w.Write(_fields);
+    } else {
+        // Compressed fields in 0.3.0.
+
+        // Total # of fields.
+        w.WriteAs<uint64_t>(_fields.size());
+
+        // Token index values.
+        vector<uint32_t> tokenIndexVals(_fields.size());
+        std::transform(_fields.begin(), _fields.end(),
+                       tokenIndexVals.begin(),
+                       [](Field const &f) { return f.tokenIndex.value; });
+        std::unique_ptr<char[]> compBuffer(
+            new char[Usd_IntegerCompression::
+                     GetCompressedBufferSize(tokenIndexVals.size())]);
+
+        size_t tokenIndexesSize = Usd_IntegerCompression::CompressToBuffer(
+            tokenIndexVals.data(), tokenIndexVals.size(), compBuffer.get());
+        w.WriteAs<uint64_t>(tokenIndexesSize);
+        w.WriteContiguous(compBuffer.get(), tokenIndexesSize);
+
+        // ValueReps.
+        vector<uint64_t> reps(_fields.size());
+        std::transform(_fields.begin(), _fields.end(),
+                       reps.begin(),
+                       [](Field const &f) { return f.valueRep.data; });
+
+        std::unique_ptr<char[]> compBuffer2(
+            new char[TfFastCompression::
+                     GetCompressedBufferSize(reps.size() * sizeof(reps[0]))]);
+        uint64_t repsSize = TfFastCompression::CompressToBuffer(
+            reinterpret_cast<char *>(reps.data()),
+            compBuffer2.get(), reps.size() * sizeof(reps[0]));
+        w.WriteAs<uint64_t>(repsSize);
+        w.WriteContiguous(compBuffer2.get(), repsSize);
+    }
+}
+
+void
+CrateFile::_WriteFieldSets(_Writer &w)
+{
+    if (_packCtx->writeVersion < Version(0,3,0)) {
+        // Old-style uncompressed fieldSets.
+        w.Write(_fieldSets);
+    } else {
+        // Compressed fieldSets.
+        vector<uint32_t> fieldSetsVals(_fieldSets.size());
+        std::transform(_fieldSets.begin(), _fieldSets.end(),
+                       fieldSetsVals.begin(),
+                       [](FieldIndex fi) { return fi.value; });
+        std::unique_ptr<char[]> compBuffer(
+            new char[Usd_IntegerCompression::
+                     GetCompressedBufferSize(fieldSetsVals.size())]);
+        // Total # of fieldSetVals.
+        w.WriteAs<uint64_t>(fieldSetsVals.size());
+
+        size_t fsetsSize = Usd_IntegerCompression::CompressToBuffer(
+            fieldSetsVals.data(), fieldSetsVals.size(), compBuffer.get());
+        w.WriteAs<uint64_t>(fsetsSize);
+        w.WriteContiguous(compBuffer.get(), fsetsSize);
+    }
+}
+
+void
 CrateFile::_WritePaths(_Writer &w)
 {
-    SdfPathTable<PathIndex> pathToIndexTable;
-
-    for (auto const &item: _packCtx->pathToPathIndex)
-        pathToIndexTable[item.first] = item.second;
-
     // Write the total # of paths.
     w.WriteAs<uint64_t>(_paths.size());
-    _WritePathTree(w, pathToIndexTable.begin(), pathToIndexTable.end());
 
-    WorkSwapDestroyAsync(pathToIndexTable);
+    if (_packCtx->writeVersion < Version(0,3,0)) {
+        // Old-style uncompressed paths.
+        SdfPathTable<PathIndex> pathToIndexTable;
+        for (auto const &item: _packCtx->pathToPathIndex)
+            pathToIndexTable[item.first] = item.second;
+        _WritePathTree(w, pathToIndexTable.begin(), pathToIndexTable.end());
+        WorkSwapDestroyAsync(pathToIndexTable);
+    } else {
+        // Write compressed paths.
+        vector<pair<SdfPath, PathIndex>> ppaths;
+        ppaths.reserve(_paths.size());
+        for (auto const &p: _paths) {
+            ppaths.emplace_back(p, _packCtx->pathToPathIndex[p]);
+        }
+        std::sort(ppaths.begin(), ppaths.end(),
+                  [](pair<SdfPath, PathIndex> const &l,
+                     pair<SdfPath, PathIndex> const &r) {
+                      return l.first < r.first;
+                  });
+        _WriteCompressedPathData(w, ppaths);
+    }
+}
+
+void
+CrateFile::_WriteSpecs(_Writer &w)
+{
+    // VERSIONING: If we're writing version 0.0.1, we need to convert to the old
+    // form.
+    if (_packCtx->writeVersion == Version(0,0,1)) {
+        // Copy and write old-structure specs.
+        vector<Spec_0_0_1> old(_specs.begin(), _specs.end());
+        w.Write(old);
+    } else if (_packCtx->writeVersion < Version(0,3,0)) {
+        w.Write(_specs);
+    } else {
+        // Version 0.3.0 introduces compressed specs.  We write three lists of
+        // integers here, pathIndexes, fieldSetIndexes, specTypes.
+        std::unique_ptr<char[]> compBuffer(
+            new char[Usd_IntegerCompression::
+                     GetCompressedBufferSize(_specs.size())]);
+        vector<uint32_t> tmp(_specs.size());
+        
+        // Total # of specs.
+        w.WriteAs<uint64_t>(_specs.size());
+        
+        // pathIndexes.
+        std::transform(_specs.begin(), _specs.end(), tmp.begin(),
+                       [](Spec const &s) { return s.pathIndex.value; });
+        size_t pathIndexesSize = Usd_IntegerCompression::CompressToBuffer(
+            tmp.data(), tmp.size(), compBuffer.get());
+        w.WriteAs<uint64_t>(pathIndexesSize);
+        w.WriteContiguous(compBuffer.get(), pathIndexesSize);
+        
+        // fieldSetIndexes.
+        std::transform(_specs.begin(), _specs.end(), tmp.begin(),
+                       [](Spec const &s) { return s.fieldSetIndex.value; });
+        size_t fsetIndexesSize = Usd_IntegerCompression::CompressToBuffer(
+            tmp.data(), tmp.size(), compBuffer.get());
+        w.WriteAs<uint64_t>(fsetIndexesSize);
+        w.WriteContiguous(compBuffer.get(), fsetIndexesSize);
+        
+        // specTypes.
+        std::transform(_specs.begin(), _specs.end(), tmp.begin(),
+                       [](Spec const &s) { return s.specType; });
+        size_t specTypesSize = Usd_IntegerCompression::CompressToBuffer(
+            tmp.data(), tmp.size(), compBuffer.get());
+        w.WriteAs<uint64_t>(specTypesSize);
+        w.WriteContiguous(compBuffer.get(), specTypesSize);
+    }
 }
 
 template <class Iter>
@@ -2042,19 +2163,154 @@ CrateFile::_WritePathTree(_Writer &w, Iter cur, Iter end)
     return end;
 }
 
+template <class Iter>
+Iter
+CrateFile::_BuildCompressedPathDataRecursive(
+    size_t &curIndex, Iter cur, Iter end,
+    vector<uint32_t> &pathIndexes,
+    vector<int32_t> &elementTokenIndexes,
+    vector<int32_t> &jumps)
+{
+    auto getNextSubtree = [](Iter cur, Iter end) {
+        Iter start = cur;
+        while (cur != end && cur->first.HasPrefix(start->first)) {
+            ++cur;
+        }
+        return cur;
+    };
+    
+    for (Iter next = cur; cur != end; cur = next) {
+
+        Iter nextSubtree = getNextSubtree(cur, end);
+        ++next;
+
+        bool hasChild = next != nextSubtree &&
+            next->first.GetParentPath() == cur->first;
+
+        bool hasSibling = nextSubtree != end &&
+            nextSubtree->first.GetParentPath() == cur->first.GetParentPath();
+
+        bool isPrimPropertyPath = cur->first.IsPrimPropertyPath();
+
+        auto elementToken = isPrimPropertyPath ?
+            cur->first.GetNameToken() : cur->first.GetElementToken();
+
+        size_t thisIndex = curIndex++;
+        pathIndexes[thisIndex] = cur->second.value;
+        elementTokenIndexes[thisIndex] = _GetIndexForToken(elementToken).value;
+        if (isPrimPropertyPath) {
+            elementTokenIndexes[thisIndex] = -elementTokenIndexes[thisIndex];
+        }
+
+        // If there is a child, recurse.
+        if (hasChild) {
+            next = _BuildCompressedPathDataRecursive(
+                curIndex, next, end, pathIndexes, elementTokenIndexes, jumps);
+        }
+
+        // If we have a sibling, then fill in the offset that it will be
+        // written at (it will be written next).
+        if (hasSibling && hasChild) {
+            jumps[thisIndex] = curIndex-thisIndex;
+        } else if (hasSibling) {
+            jumps[thisIndex] = 0;
+        } else if (hasChild) {
+            jumps[thisIndex] = -1;
+        } else {
+            jumps[thisIndex] = -2;
+        }
+
+        if (!hasSibling)
+            return next;
+    }
+    return end;
+}
+
+template <class Container>
+void
+CrateFile::_WriteCompressedPathData(_Writer &w, Container const &pathVec)
+{
+    // We build up three integer arrays representing the paths:
+    // - pathIndexes[] :
+    //     the index in _paths corresponding to this item.
+    // - elementTokenIndexes[] :
+    //     the element to append to the parent to get this path -- negative
+    //     elements are prim property path elements.
+    // - jumps[] :
+    //     0=only a sibling, -1=only a child, -2=leaf, else has both, positive
+    //     sibling index offset.
+    //
+    // This is vaguely similar to the _PathItemHeader struct used in prior
+    // versions.
+
+    vector<uint32_t> pathIndexes;
+    vector<int32_t> elementTokenIndexes;
+    vector<int32_t> jumps;
+
+    pathIndexes.resize(pathVec.size());
+    elementTokenIndexes.resize(pathVec.size());
+    jumps.resize(pathVec.size());
+
+    size_t index = 0;
+    _BuildCompressedPathDataRecursive(
+        index, pathVec.begin(), pathVec.end(),
+        pathIndexes, elementTokenIndexes, jumps);
+
+    // Compress and store the arrays.
+    std::unique_ptr<char[]> compBuffer(
+        new char[Usd_IntegerCompression::
+                 GetCompressedBufferSize(pathVec.size())]);
+
+    // pathIndexes.
+    uint64_t pathIndexesSize = Usd_IntegerCompression::CompressToBuffer(
+        pathIndexes.data(), pathIndexes.size(), compBuffer.get());
+    w.WriteAs<uint64_t>(pathIndexesSize);
+    w.WriteContiguous(compBuffer.get(), pathIndexesSize);
+
+    // elementTokenIndexes.
+    uint64_t elemToksSize = Usd_IntegerCompression::CompressToBuffer(
+        elementTokenIndexes.data(), elementTokenIndexes.size(),
+        compBuffer.get());
+    w.WriteAs<uint64_t>(elemToksSize);
+    w.WriteContiguous(compBuffer.get(), elemToksSize);
+
+    // jumps.
+    uint64_t jumpsSize = Usd_IntegerCompression::CompressToBuffer(
+        jumps.data(), jumps.size(), compBuffer.get());
+    w.WriteAs<uint64_t>(jumpsSize);
+    w.WriteContiguous(compBuffer.get(), jumpsSize);
+}
+
 void
 CrateFile::_WriteTokens(_Writer &w) {
     // # of strings.
     w.WriteAs<uint64_t>(_tokens.size());
-    // Count total bytes.
-    uint64_t totalBytes = 0;
-    for (auto const &t: _tokens)
-        totalBytes += t.GetString().size() + 1;
-    w.WriteAs<uint64_t>(totalBytes);
-    // Token data.
-    for (auto const &t: _tokens) {
-        auto const &str = t.GetString();
-        w.WriteContiguous(str.c_str(), str.size() + 1);
+    if (_packCtx->writeVersion < Version(0,3,0)) {
+        // Count total bytes.
+        uint64_t totalBytes = 0;
+        for (auto const &t: _tokens)
+            totalBytes += t.GetString().size() + 1;
+        w.WriteAs<uint64_t>(totalBytes);
+        // Token data.
+        for (auto const &t: _tokens) {
+            auto const &str = t.GetString();
+            w.WriteContiguous(str.c_str(), str.size() + 1);
+        }
+    } else {
+        // Version 0.3.0 compresses tokens.
+        vector<char> tokenData;
+        for (auto const &t: _tokens) {
+            auto const &str = t.GetString();
+            char const *cstr = str.c_str();
+            tokenData.insert(tokenData.end(), cstr, cstr + str.size() + 1);
+        }
+        w.WriteAs<uint64_t>(tokenData.size());
+        std::unique_ptr<char[]> compressed(
+            new char[TfFastCompression::GetCompressedBufferSize(tokenData.size())]);
+        uint64_t compressedSize = TfFastCompression::CompressToBuffer(
+            tokenData.data(), compressed.get(), tokenData.size());
+        w.WriteAs<uint64_t>(compressedSize);
+        w.WriteContiguous(compressed.get(), compressedSize);
     }
 }
 
@@ -2133,7 +2389,32 @@ CrateFile::_ReadFieldSets(Reader reader)
     TfAutoMallocTag tag("_ReadFieldSets");
     if (auto fieldSetsSection = _toc.GetSection(_FieldSetsSectionName)) {
         reader.Seek(fieldSetsSection->start);
-        _fieldSets = reader.template Read<decltype(_fieldSets)>();
+
+        if (Version(_boot) < Version(0,3,0)) {
+            _fieldSets = reader.template Read<decltype(_fieldSets)>();
+        } else {
+            // Compressed fieldSets in 0.3.0.
+            auto numFieldSets = reader.template Read<uint64_t>();
+            _fieldSets.resize(numFieldSets);
+
+            // Create temporary space for decompressing.
+            std::unique_ptr<char[]> compBuffer(
+                new char[Usd_IntegerCompression::
+                         GetCompressedBufferSize(numFieldSets)]);
+            vector<uint32_t> tmp(numFieldSets);
+            std::unique_ptr<char[]> workingSpace(
+                new char[Usd_IntegerCompression::
+                         GetDecompressionWorkingSpaceSize(numFieldSets)]);
+
+            auto fsetsSize = reader.template Read<uint64_t>();
+            reader.ReadContiguous(compBuffer.get(), fsetsSize);
+            Usd_IntegerCompression::DecompressFromBuffer(
+                compBuffer.get(), fsetsSize, tmp.data(), numFieldSets,
+                workingSpace.get());
+            for (size_t i = 0; i != numFieldSets; ++i) {
+                _fieldSets[i].value = tmp[i];
+            }
+        }
     }
 }
 
@@ -2144,7 +2425,40 @@ CrateFile::_ReadFields(Reader reader)
     TfAutoMallocTag tag("_ReadFields");
     if (auto fieldsSection = _toc.GetSection(_FieldsSectionName)) {
         reader.Seek(fieldsSection->start);
-        _fields = reader.template Read<decltype(_fields)>();
+        if (Version(_boot) < Version(0,3,0)) {
+            _fields = reader.template Read<decltype(_fields)>();
+        } else {
+            // Compressed fields in 0.3.0.
+            auto numFields = reader.template Read<uint64_t>();
+            _fields.resize(numFields);
+
+            // Create temporary space for decompressing.
+            std::unique_ptr<char[]> compBuffer(
+                new char[Usd_IntegerCompression::
+                         GetCompressedBufferSize(numFields)]);
+            vector<uint32_t> tmp(numFields);
+            auto fieldsSize = reader.template Read<uint64_t>();
+            reader.ReadContiguous(compBuffer.get(), fieldsSize);
+            Usd_IntegerCompression::DecompressFromBuffer(
+                compBuffer.get(), fieldsSize, tmp.data(), numFields);
+            for (size_t i = 0; i != numFields; ++i) {
+                _fields[i].tokenIndex.value = tmp[i];
+            }
+
+            // Value reps
+            uint64_t repsSize = reader.template Read<uint64_t>();
+            compBuffer.reset(new char[repsSize]);
+            reader.ReadContiguous(compBuffer.get(), repsSize);
+            vector<uint64_t> repsData;
+            repsData.resize(numFields);
+            TfFastCompression::DecompressFromBuffer(
+                compBuffer.get(), reinterpret_cast<char *>(repsData.data()),
+                repsSize, repsData.size() * sizeof(repsData[0]));
+
+            for (size_t i = 0; i != numFields; ++i) {
+                _fields[i].valueRep.data = repsData[i];
+            }            
+        }
     }
 }
 
@@ -2160,8 +2474,51 @@ CrateFile::_ReadSpecs(Reader reader)
             vector<Spec_0_0_1> old = reader.template Read<decltype(old)>();
             _specs.resize(old.size());
             copy(old.begin(), old.end(), _specs.begin());
-        } else {
+        } else if (Version(_boot) < Version(0,3,0)) {
             _specs = reader.template Read<decltype(_specs)>();
+        } else {
+            // Version 0.3.0 specs are compressed
+            auto numSpecs = reader.template Read<uint64_t>();
+            _specs.resize(numSpecs);
+
+            // Create temporary space for decompressing.
+            std::unique_ptr<char[]> compBuffer(
+                new char[Usd_IntegerCompression::
+                         GetCompressedBufferSize(numSpecs)]);
+            vector<uint32_t> tmp(_specs.size());
+            std::unique_ptr<char[]> workingSpace(
+                new char[Usd_IntegerCompression::
+                         GetDecompressionWorkingSpaceSize(numSpecs)]);
+
+            // pathIndexes.
+            auto pathIndexesSize = reader.template Read<uint64_t>();
+            reader.ReadContiguous(compBuffer.get(), pathIndexesSize);
+            Usd_IntegerCompression::DecompressFromBuffer(
+                compBuffer.get(), pathIndexesSize, tmp.data(), numSpecs,
+                workingSpace.get());
+            for (size_t i = 0; i != numSpecs; ++i) {
+                _specs[i].pathIndex.value = tmp[i];
+            }
+
+            // fieldSetIndexes.
+            auto fsetIndexesSize = reader.template Read<uint64_t>();
+            reader.ReadContiguous(compBuffer.get(), fsetIndexesSize);
+            Usd_IntegerCompression::DecompressFromBuffer(
+                compBuffer.get(), fsetIndexesSize, tmp.data(), numSpecs,
+                workingSpace.get());
+            for (size_t i = 0; i != numSpecs; ++i) {
+                _specs[i].fieldSetIndex.value = tmp[i];
+            }
+            
+            // specTypes.
+            auto specTypesSize = reader.template Read<uint64_t>();
+            reader.ReadContiguous(compBuffer.get(), specTypesSize);
+            Usd_IntegerCompression::DecompressFromBuffer(
+                compBuffer.get(), specTypesSize, tmp.data(), numSpecs,
+                workingSpace.get());
+            for (size_t i = 0; i != numSpecs; ++i) {
+                _specs[i].specType = static_cast<SdfSpecType>(tmp[i]);
+            }
         }
     }
 }
@@ -2192,13 +2549,26 @@ CrateFile::_ReadTokens(Reader reader)
     // Read number of tokens.
     auto numTokens = reader.template Read<uint64_t>();
 
-    // XXX: To support pread(), we need to read the whole thing into memory to
-    // make tokens out of it.  This is a pessimization vs mmap, from which we
-    // can just construct from the chars directly.
-    auto tokensNumBytes = reader.template Read<uint64_t>();
-
-    RawDataPtr chars(new char[tokensNumBytes]);
-    reader.ReadContiguous(chars.get(), tokensNumBytes);
+    RawDataPtr chars;
+    
+    Version fileVer(_boot);
+    if (fileVer < Version(0,3,0)) {
+        // XXX: To support pread(), we need to read the whole thing into memory to
+        // make tokens out of it.  This is a pessimization vs mmap, from which we
+        // can just construct from the chars directly.
+        auto tokensNumBytes = reader.template Read<uint64_t>();
+        chars.reset(new char[tokensNumBytes]);
+        reader.ReadContiguous(chars.get(), tokensNumBytes);
+    } else {
+        // Compressed token data.
+        uint64_t uncompressedSize = reader.template Read<uint64_t>();
+        uint64_t compressedSize = reader.template Read<uint64_t>();
+        chars.reset(new char[uncompressedSize]);
+        RawDataPtr compressed(new char[compressedSize]);
+        reader.ReadContiguous(compressed.get(), compressedSize);
+        TfFastCompression::DecompressFromBuffer(
+            compressed.get(), chars.get(), compressedSize, uncompressedSize);
+    }
 
     // Now we read that many null-terminated strings into _tokens.
     char const *p = chars.get();
@@ -2242,8 +2612,11 @@ CrateFile::_ReadPaths(Reader reader)
     Version fileVer(_boot);
     if (fileVer == Version(0,0,1)) {
         _ReadPathsImpl<_PathItemHeader_0_0_1>(reader, dispatcher);
-    } else {
+    } else if (fileVer < Version(0,3,0)) {
         _ReadPathsImpl<_PathItemHeader>(reader, dispatcher);
+    } else {
+        // 0.3.0 has compressed paths.
+        _ReadCompressedPaths(reader, dispatcher);
     }
 
     dispatcher.Wait();
@@ -2294,6 +2667,116 @@ CrateFile::_ReadPathsImpl(Reader reader,
             }
             // Have a child (may have also had a sibling). Reset parent path.
             parentPath = _paths[h.index.value];
+        }
+        // If we had only a sibling, we just continue since the parent path is
+        // unchanged and the next thing in the reader stream is the sibling's
+        // header.
+    } while (hasChild || hasSibling);
+}
+
+template <class Reader>
+void
+CrateFile::_ReadCompressedPaths(Reader reader,
+                                WorkArenaDispatcher &dispatcher)
+{
+    // Read compressed data first.
+    vector<uint32_t> pathIndexes;
+    vector<int32_t> elementTokenIndexes;
+    vector<int32_t> jumps;
+
+    size_t numPaths = _paths.size();
+    
+    pathIndexes.resize(numPaths);
+    elementTokenIndexes.resize(numPaths);
+    jumps.resize(numPaths);
+
+    // Create temporary space for decompressing.
+    std::unique_ptr<char[]> compBuffer(
+        new char[Usd_IntegerCompression::GetCompressedBufferSize(numPaths)]);
+    std::unique_ptr<char[]> workingSpace(
+        new char[Usd_IntegerCompression::
+                 GetDecompressionWorkingSpaceSize(numPaths)]);
+
+    // pathIndexes.
+    auto pathIndexesSize = reader.template Read<uint64_t>();
+    reader.ReadContiguous(compBuffer.get(), pathIndexesSize);
+    Usd_IntegerCompression::DecompressFromBuffer(
+        compBuffer.get(), pathIndexesSize, pathIndexes.data(), numPaths,
+        workingSpace.get());
+
+    // elementTokenIndexes.
+    auto elementTokenIndexesSize = reader.template Read<uint64_t>();
+    reader.ReadContiguous(compBuffer.get(), elementTokenIndexesSize);
+    Usd_IntegerCompression::DecompressFromBuffer(
+        compBuffer.get(), elementTokenIndexesSize,
+        elementTokenIndexes.data(), numPaths, workingSpace.get());
+
+    // jumps.
+    auto jumpsSize = reader.template Read<uint64_t>();
+    reader.ReadContiguous(compBuffer.get(), jumpsSize);
+    Usd_IntegerCompression::DecompressFromBuffer(
+        compBuffer.get(), jumpsSize, jumps.data(), numPaths,
+        workingSpace.get());
+
+    // Now build the paths.
+    _BuildDecompressedPathsImpl(pathIndexes, elementTokenIndexes, jumps, 0,
+                                SdfPath(), dispatcher);
+
+    dispatcher.Wait();
+}
+
+void
+CrateFile::_BuildDecompressedPathsImpl(
+    vector<uint32_t> const &pathIndexes,
+    vector<int32_t> const &elementTokenIndexes,
+    vector<int32_t> const &jumps,
+    size_t curIndex,
+    SdfPath parentPath,
+    WorkArenaDispatcher &dispatcher)
+{
+    bool hasChild = false, hasSibling = false;
+    do {
+        auto thisIndex = curIndex++;
+        if (parentPath.IsEmpty()) {
+            parentPath = SdfPath::AbsoluteRootPath();
+            _paths[pathIndexes[thisIndex]] = parentPath;
+        } else {
+            int32_t tokenIndex = elementTokenIndexes[thisIndex];
+            bool isPrimPropertyPath = tokenIndex < 0;
+            tokenIndex = std::abs(tokenIndex);
+            auto const &elemToken = _tokens[tokenIndex];
+            _paths[pathIndexes[thisIndex]] =
+                isPrimPropertyPath ?
+                parentPath.AppendProperty(elemToken) :
+                parentPath.AppendElementToken(elemToken);
+        }
+
+        // If we have either a child or a sibling but not both, then just
+        // continue to the neighbor.  If we have both then spawn a task for the
+        // sibling and do the child ourself.  We think that our path trees tend
+        // to be broader more often than deep.
+
+        hasChild = (jumps[thisIndex] > 0) || (jumps[thisIndex] == -1);
+        hasSibling = (jumps[thisIndex] >= 0);
+
+        if (hasChild) {
+            if (hasSibling) {
+                // Branch off a parallel task for the sibling subtree.
+                auto siblingIndex = thisIndex + jumps[thisIndex];
+                dispatcher.Run(
+                    [this, &pathIndexes, &elementTokenIndexes, &jumps,
+                     siblingIndex, &dispatcher, parentPath]() mutable {
+                        // XXX Remove these tags when bug #132031 is addressed
+                        TfAutoMallocTag2 tag("Usd", "Usd_CrateDataImpl::Open");
+                        TfAutoMallocTag2 tag2("Usd_CrateFile::CrateFile::Open",
+                                              "_ReadPaths");
+                        _BuildDecompressedPathsImpl(
+                            pathIndexes, elementTokenIndexes, jumps,
+                            siblingIndex, parentPath, dispatcher);
+                    });
+            }
+            // Have a child (may have also had a sibling). Reset parent path.
+            parentPath = _paths[pathIndexes[thisIndex]];
         }
         // If we had only a sibling, we just continue since the parent path is
         // unchanged and the next thing in the reader stream is the sibling's
