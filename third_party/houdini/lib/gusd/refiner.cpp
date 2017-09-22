@@ -194,45 +194,49 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
     GT_PrimitiveHandle gtPrim = gtPrimIn;     // copy to a non-const handle
     int primType = gtPrim->getPrimitiveType();
     DBG( cerr << "GusdRefiner::addPrimitive, " << gtPrim->className() << endl );
-    GT_Owner owner;
-
-    // If we find either an instancepath or usdinstancepath attribute, build a
-    // point instancer.
-    if(gtPrim->findAttribute("instancepath", owner, 0) ||
-        gtPrim->findAttribute("usdinstancepath", owner, 0) ) {
-        m_buildPointInstancer = true;
-    }
 
     // The following is only necessary for point instancers. Prototypes 
     // can't be point instancers.
     if (!m_buildPrototypes) {
-        // If we have imported USD geometry and haven't determined it's type,
-        // get the type to see if it is a point instancer we need to overlay.
-        if( m_pointInstancerType.IsEmpty()) {
-            if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( gtPrim.get() )) {
 
-                if(packedUSD->getFileName()) {
-                
-                    const SdfPath& instancerPrimPath =
-                        packedUSD->getSrcPrimPath();
+        // Check per prim if we are building a point instancer. This may cause
+        // problems for point instancers with discontiguous packed prims.
+        bool localBuildPointInstancer = false;
+        // If we have imported USD geometry get the type to see if it is a
+        // point instancer we need to overlay.
+        if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( gtPrim.get() )) {
+            
+            if(packedUSD->getFileName()) {
 
-                    GusdStageCacheReader cache;
-                    if(UsdPrim prim = cache.GetPrimWithVariants(
-                           packedUSD->getFileName(), instancerPrimPath).first) {
-                        // Get the type name of the usd file to overlay
-                        m_pointInstancerType = prim.GetTypeName();
+                // Get the usd src prim path used for point instancers
+                const SdfPath& instancerPrimPath =
+                    packedUSD->getSrcPrimPath();
+
+                GusdStageCacheReader cache;
+                if(UsdPrim prim = cache.GetPrimWithVariants(
+                    packedUSD->getFileName(), instancerPrimPath).first) {
+                    // Get the type name of the usd file to overlay
+                    m_pointInstancerType = prim.GetTypeName();
+            
+                    // Make sure to set buildPointInstancer to true if we are overlaying a
+                    // point instancer
+                    if (m_pointInstancerType == _tokens->PointInstancer ||
+                        m_pointInstancerType == _tokens->PxPointInstancer) {
+                        localBuildPointInstancer = true;
                     }
                 }
             }
         }
         
-        // Make sure to set buildPointInstancer to true if we are overlaying a
-        // point instancer
-        if (m_pointInstancerType == _tokens->PointInstancer ||
-            m_pointInstancerType == _tokens->PxPointInstancer) {
-            m_buildPointInstancer = true;
+        // If we find either an instancepath or usdinstancepath attribute, build a
+        // point instancer.
+        GT_Owner owner;
+        if(gtPrim->findAttribute("instancepath", owner, 0) ||
+            gtPrim->findAttribute("usdinstancepath", owner, 0) ) {
+            localBuildPointInstancer = true;
         }
-        if (m_buildPointInstancer) {
+
+        if (m_buildPointInstancer || localBuildPointInstancer) {
             // If we are building point instancer, stash prims that can be 
             // point instanced. Build the point instancer in the finish method.
 
@@ -487,7 +491,7 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
 
         UT_Matrix4D newCtm = m_localToWorldXform;
         newCtm = m* m_localToWorldXform;
-        
+
         m_collector.add( SdfPath(primPath),
                          addNumericSuffix,
                          gtPrim,
