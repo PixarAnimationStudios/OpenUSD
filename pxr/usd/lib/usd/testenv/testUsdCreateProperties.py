@@ -204,7 +204,6 @@ class TestUsdCreateProperties(unittest.TestCase):
                         "Expected to be able to create an override relationship at <"
                         + str(prim.GetPath()) + "> but failed")
 
-            stage.Close()
             strongLayer._WriteDataFile("strong.txt")
 
             # print "============================================================="

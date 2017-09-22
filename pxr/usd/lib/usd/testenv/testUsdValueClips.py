@@ -915,7 +915,7 @@ class TestUsdValueClips(unittest.TestCase):
 
         # Close and reopen the stage to ensure the clip layers are closed
         # before we do the test below.
-        stage.Close()
+        del stage
         self.assertFalse(Sdf.Layer.Find('manifest/clip_1.usda'))
         self.assertFalse(Sdf.Layer.Find('manifest/clip_2.usda'))
 

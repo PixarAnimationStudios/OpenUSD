@@ -360,7 +360,6 @@ class TestUsdLoadUnload(unittest.TestCase):
             # Test the layer expiration behavior. Because we only have a weak ptr,
             # we expect it to expire when the stage goes away.
             assert lyr
-            s.Close()
             del s
             assert not lyr
 
@@ -372,7 +371,6 @@ class TestUsdLoadUnload(unittest.TestCase):
             with self.assertRaises(Tf.ErrorException):
                 Usd.Stage.CreateNew(layerName)
             assert s1.GetRootLayer()
-            s1.Close()
             del s1
 
             # Make sure session layers work
@@ -380,8 +378,6 @@ class TestUsdLoadUnload(unittest.TestCase):
             session.OverridePrim("/Foo")
             s = Usd.Stage.CreateNew(layerName, session.GetRootLayer())
             assert s.GetPrimAtPath("/Foo")
-            session.Close()
-            s.Close()
             del s, session
 
             assert os.path.exists(layerName)

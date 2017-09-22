@@ -445,14 +445,14 @@ UsdStage::~UsdStage()
         "UsdStage::~UsdStage(rootLayer=@%s@, sessionLayer=@%s@)\n",
         _rootLayer ? _rootLayer->GetIdentifier().c_str() : "<null>",
         _sessionLayer ? _sessionLayer->GetIdentifier().c_str() : "<null>");
-    Close();
+    _Close();
     if (_mallocTagID != _dormantMallocTagID){
         free(const_cast<char*>(_mallocTagID));
     }
 }
 
 void
-UsdStage::Close()
+UsdStage::_Close()
 {
     TfScopedVar<bool> resetIsClosing(_isClosingStage, true);
 

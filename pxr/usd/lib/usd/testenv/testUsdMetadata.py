@@ -594,8 +594,6 @@ class TestUsdMetadata(unittest.TestCase):
                 assert not prim.HasAuthoredMetadata(fieldName)
                 self.assertEqual(prim.GetMetadata(fieldName), None)
 
-                s.Close()
-
         # List ops are applied into a single explicit list op during
         # value resolution, so the expected list op isn't the same
         # as the given list op.
@@ -675,7 +673,6 @@ class TestUsdMetadata(unittest.TestCase):
                 root.GetReferences().AddInternalReference('/Ref')
 
                 self.assertEqual(root.GetMetadata(fieldName), expectedListOp)
-                s.Close()
 
         # Sdf.IntListOp
         weakListOp = Sdf.IntListOp()
