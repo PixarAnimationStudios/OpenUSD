@@ -410,10 +410,6 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
     // ensure the correct image is produced for final render.
     UsdTimeCode time(1.0);
 
-    TF_DEBUG(USDIMAGING_INSTANCER).Msg(
-        "TrackVariability(%s), child = %s",
-        cachePath.GetText(), _IsChildPrim(prim, cachePath) ? "y" : "n");
-
     if (_IsChildPrim(prim, cachePath)) {
         UsdImagingInstancerContext instancerContext;
         _ProtoRprim & rproto = const_cast<_ProtoRprim&>(
@@ -478,10 +474,6 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
             _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
         }
     }
-
-    TF_DEBUG(USDIMAGING_INSTANCER).Msg(
-        "TrackVariability(%s), bits = %s",
-        cachePath.GetText(), HdChangeTracker::StringifyDirtyBits(*timeVaryingBits).c_str());
 }
 
 template <typename Functor>
