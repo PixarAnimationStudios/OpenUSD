@@ -84,9 +84,6 @@ containsBoundable( const UsdPrim& p, GusdPurposeSet purposes )
     // Boundables are gprims and the point instancers.
     // Used when unpacking so we don't create empty GU prims.
 
-    if( p.IsInstance() )
-        return containsBoundable( p.GetMaster(), purposes );
-
     UsdGeomImageable ip( p );
     if(not ip)
         return false;
@@ -99,7 +96,8 @@ containsBoundable( const UsdPrim& p, GusdPurposeSet purposes )
     if( p.IsA<UsdGeomBoundable>() )
         return true;
 
-    for( const auto& child : p.GetChildren() )
+    for( const auto& child : p.GetFilteredChildren(
+                        UsdTraverseInstanceProxies(UsdPrimDefaultPredicate)) )
     {
         if( containsBoundable( child, purposes ))
             return true;
@@ -122,15 +120,18 @@ GusdGroupBaseWrapper::unpack(
 
     // To unpack a xform or a group, create a packed prim for
     // each child
-    vector<UsdPrim> usefulChildren;
-    for( const auto& child : usdPrim.GetChildren() )
+    UT_Array<UsdPrim> usefulChildren;
+    for( const auto& child : usdPrim.GetFilteredChildren(
+                        UsdTraverseInstanceProxies(UsdPrimDefaultPredicate)) )
     {
         if( containsBoundable( child, purposes ))
-            usefulChildren.push_back( child );
+            usefulChildren.append( child );
     }
 
-    SdfPath strippedPathHead(primPath.StripAllVariantSelections());
+    // Sort the children to maintain consistency in unpacking.
+    GusdUSD_Utils::SortPrims(usefulChildren);
 
+    SdfPath strippedPathHead(primPath.StripAllVariantSelections());
     for( const auto &child : usefulChildren )
     {
         // Replace the head of the path to perserve variant specs.
@@ -161,8 +162,8 @@ GusdGroupBaseWrapper::refineGroup(
     GT_Refine& refiner,
     const GT_RefineParms* parms ) const
 {
-    UsdPrimSiblingRange children = prim.IsInstance() ? 
-            prim.GetMaster().GetChildren() : prim.GetChildren();
+    UsdPrimSiblingRange children =  prim.GetFilteredChildren(
+                        UsdTraverseInstanceProxies(UsdPrimDefaultPredicate));
 
     GT_PrimCollect* collection = NULL;
     for( const UsdPrim& child : children )

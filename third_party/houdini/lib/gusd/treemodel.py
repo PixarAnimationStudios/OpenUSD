@@ -216,9 +216,6 @@ class TreeModel(QAbstractItemModel):
         if prim.HasPayload():
             return True
 
-        if prim.IsInstance():
-            return self.IsPrimBoundable(prim.GetMaster(), predicate)
-
         for child in prim.GetFilteredChildren(predicate):
             if self.IsPrimBoundable(child, predicate):
                 return True

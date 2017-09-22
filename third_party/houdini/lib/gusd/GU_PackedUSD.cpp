@@ -702,36 +702,9 @@ GusdGU_PackedUSD::unpackGeometry(GU_Detail &destgdp,
     GT_PrimitiveHandle gtPrim;
 
     DBG( cerr << "GusdGU_PackedUSD::unpackGeometry: " << usdPrim.GetTypeName() << ", " << usdPrim.GetPath() << endl; )
+    
+    unpackPrim( destgdp, UsdGeomImageable( usdPrim ), m_primPath, xform, rparms, true );
 
-    if( usdPrim.IsInstance() )
-    {
-        // We can't refine instances into other usd packed prims. This may be fixed
-        // soon but right now you can't have a prim path that refers to the 
-        // contents of an instance. 
-        // So unpack instances all the way to houdini geometry.
-        // Also, note that we don't create primpath attributes for the houdini
-        // geometry. There is no valid primpath for instanced geometry.
-
-        UT_Array<UsdPrim> gprims;
-        GusdUSD_StdTraverse::GetBoundableAndInstanceTraversal().FindPrims( 
-                usdPrim.GetMaster(),
-                m_frame,
-                m_purposes,
-                gprims,
-                true );
-
-        for( const auto &prim : gprims ) {
-
-            UT_Matrix4D m;
-        GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                    prim, m_frame, m );            
-
-            unpackPrim( destgdp, UsdGeomImageable(prim), SdfPath(), m, rparms, false );
-        }
-    }
-    else {
-        unpackPrim( destgdp, UsdGeomImageable( usdPrim ), m_primPath, xform, rparms, true );
-    }
     return true;
 }
 
@@ -756,13 +729,16 @@ GusdGU_PackedUSD::getInstanceKey(UT_Options& key) const
     key.setOptionS("n", m_primPath.GetString());
     key.setOptionF("t", GusdUSD_Utils::GetNumericTime(m_frame));
     key.setOptionI("p", m_purposes );
-
+    
     if( !m_masterPathCacheValid ) {
         UsdPrim usdPrim = getUsdPrim();
         if( usdPrim.IsValid() && usdPrim.IsInstance() ) {
             m_masterPathCache = usdPrim.GetMaster().GetPrimPath().GetString();
         } 
-        else {
+        else if( usdPrim.IsValid() && usdPrim.IsInstanceProxy() ) {
+            m_masterPathCache = usdPrim.GetPrimInMaster().GetPrimPath().GetString();
+        } 
+        else{
             m_masterPathCache = "";
         }
         m_masterPathCacheValid = true;

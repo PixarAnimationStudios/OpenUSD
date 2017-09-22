@@ -275,9 +275,9 @@ CreateEntryFn::operator()(
     //
     // USD gprims (leaves in the hierarchy) are just converted to GT_Primitives. 
     //
-    // For USD native instances, find the instance master, and return a GT_Primitive 
-    // that represents that. Note that this is likely to be a GT_PrimCollect (a 
-    // collection of primitives). 
+    // For USD native instances, find the instance's master or the prim in
+    // master corresponding to an instance proxy, and recurse on that. This way
+    // each instance should share a cache with its master.
     //
     // Any other USD primitive represents a branch of the USD hierarchy. Find 
     // all the instances and leaves in this branch and build a GT_PrimCollect 
@@ -293,13 +293,15 @@ CreateEntryFn::operator()(
     GT_RefineParms refineParms;
     refineParms.setPackedViewportLOD( true );
 
-    if( prim.IsInstance() )
+    bool isInstance = prim.IsInstance();
+    bool isInstanceProxy = prim.IsInstanceProxy();
+    if( isInstance || isInstanceProxy)
     {
         DBG( cerr << "Create prim cache for instance " << prim.GetPath() << " at " << time << endl; )
-
         // Look for a cache entry from the instance master
+        UsdPrim masterPrim = isInstance ? prim.GetMaster() : prim.GetPrimInMaster();
         GT_PrimitiveHandle instancePrim = 
-                m_cache.GetPrim( prim.GetMaster(),
+                m_cache.GetPrim( masterPrim,
                                  time, 
                                  purposes,
                                  true );
@@ -327,10 +329,10 @@ CreateEntryFn::operator()(
     else {
 
         DBG( cerr << "Create prim cache for group " << prim.GetPath() << " at " << time << endl; )
-
-        // Find all the gprims and USD native instances in the group.
+        
+        // Find all the gprims in the group.
         UT_Array<UsdPrim> gprims;
-        GusdUSD_StdTraverse::GetBoundableAndInstanceTraversal().FindPrims( 
+        GusdUSD_StdTraverse::GetBoundableTraversal().FindPrims( 
             prim, 
             time,
             purposes,

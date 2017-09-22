@@ -143,14 +143,15 @@ struct _VisitGroups
 
 typedef DefaultImageablePrimVisitorT<_VisitGroups>   _VisitImageableGroups;
 
-struct _VisitComponentsBoundablesAndInstances
+
+struct _VisitComponentsAndBoundables
 {
     bool    operator()(const UsdPrim& prim,
                        UsdTimeCode time,
                        GusdUSD_TraverseControl& ctl)
             {
 
-                if(BOOST_UNLIKELY(prim.IsInstance() || prim.IsA<UsdGeomBoundable>())) {
+                if(BOOST_UNLIKELY(prim.IsA<UsdGeomBoundable>())) {
                     ctl.PruneChildren();
                     return true;
                 }                    
@@ -169,8 +170,10 @@ struct _VisitComponentsBoundablesAndInstances
             }
 };
 
+
 typedef DefaultImageablePrimVisitorT<
-    _VisitComponentsBoundablesAndInstances > _VisitImageableComponentsBoundablesAndInstances;
+    _VisitComponentsAndBoundables > _VisitImageableComponentsAndBoundables;
+
 
 template <class MatchKind>
 struct _VisitByKindT
@@ -232,13 +235,12 @@ typedef DefaultImageablePrimVisitorT<
     
 
 _DECLARE_STATIC_TRAVERSAL(GetComponentTraversal,            _VisitImageableComponents);
-_DECLARE_STATIC_TRAVERSAL(GetComponentsBoundablesAndInstancesTraversal, _VisitImageableComponentsBoundablesAndInstances);
+_DECLARE_STATIC_TRAVERSAL(GetComponentAndBoundableTraversal,_VisitImageableComponentsAndBoundables);
 _DECLARE_STATIC_TRAVERSAL(GetAssemblyTraversal,             _VisitImageableAssemblies);
 _DECLARE_STATIC_TRAVERSAL(GetModelTraversal,                _VisitImageableModels);
 _DECLARE_STATIC_TRAVERSAL(GetGroupTraversal,                _VisitImageableGroups);
 _DECLARE_STATIC_TRAVERSAL(GetBoundableTraversal,            _VisitImageableBoundables);
 _DECLARE_STATIC_TRAVERSAL(GetGprimTraversal,                _VisitImageableGprims);
-_DECLARE_STATIC_TRAVERSAL(GetBoundableAndInstanceTraversal, _VisitImageableBoundablesAndInstances);
 _DECLARE_STATIC_TRAVERSAL(GetMeshTraversal,                 _VisitImageableMeshes);
 
 _DECLARE_STATIC_TRAVERSAL(GetRecursiveModelTraversal,       _RecursiveVisitImageableModels);
@@ -246,14 +248,14 @@ _DECLARE_STATIC_TRAVERSAL(GetRecursiveModelTraversal,       _RecursiveVisitImage
 namespace {
 
 GusdUSD_TraverseType stdTypes[] = {
-    GusdUSD_TraverseType(&GetComponentsBoundablesAndInstancesTraversal(), "std:components",
+    GusdUSD_TraverseType(&GetComponentAndBoundableTraversal(), "std:components",
                          "Components", NULL,
                          "Returns default-imageable models with a "
                          "component-derived kind."),    
     GusdUSD_TraverseType(&GetGroupTraversal(), "std:groups",
                          "Groups", NULL,
                          "Returns default-imageable groups (of any kind)."),
-    GusdUSD_TraverseType(&GetBoundableAndInstanceTraversal(), "std:boundables",
+    GusdUSD_TraverseType(&GetBoundableTraversal(), "std:boundables",
                          "Gprims", NULL,
                          "Return leaf geometry primitives, instances, and procedurals."),
 };

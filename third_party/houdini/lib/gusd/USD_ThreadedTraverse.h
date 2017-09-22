@@ -73,8 +73,8 @@ struct DefaultImageablePrimVisitorT
                                        GusdUSD_TraverseControl& ctl) const;
     
     Usd_PrimFlagsPredicate  TraversalPredicate() const
-                            { return UsdPrimIsActive && UsdPrimIsDefined &&
-                                     UsdPrimIsLoaded && !UsdPrimIsAbstract; }
+                            { return UsdTraverseInstanceProxies(UsdPrimIsActive && UsdPrimIsDefined &&
+                                     UsdPrimIsLoaded && !UsdPrimIsAbstract); }
 };
 
 

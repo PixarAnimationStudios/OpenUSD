@@ -1469,6 +1469,42 @@ renderFrame(fpreal time,
 
         gprimsProcessedThisFrame.insert(primPath);
 
+        // If we're attempting to overlay instanced geometry, set the root
+        // of the instance to 'instanceable = false'. Recurse on the parent
+        // in case it itself is an instance.
+        SdfPath currPath = primPath;
+        UsdPrim currPrim = m_usdStage->GetPrimAtPath( currPath );
+        std::vector<SdfPath> instancePrimPaths;
+        while ( currPrim.IsInstanceProxy() ) {
+            // Get the master prim which corresponds to each instance
+            UsdPrim masterPrim = currPrim.GetPrimInMaster(); 
+            const SdfPath& masterPath = masterPrim.GetPath();
+            // Removing common suffices results in just the path that was
+            // instance for our prim (and /__master_* for the master path)
+            const pair<SdfPath, SdfPath> pathsPair = currPath.RemoveCommonSuffix(masterPath);
+            currPath = pathsPair.first;
+            if ( currPath.IsEmpty() ) {
+                // We shouldn't get here
+                break;
+            }
+            // Get the prim on the stage (not on the master)
+            UsdPrim instancePrim = m_usdStage->GetPrimAtPath( currPath );
+            // Check to make sure we're deinstancing an instance
+            if ( instancePrim.IsInstance() ) {
+                instancePrimPaths.push_back(currPath);
+            }
+            // Recurse on the parent prim in case it's nested as another instance
+            currPrim = instancePrim;
+        }
+
+        // Reverse the order to actually deinstance, as we can't edit nested
+        // instance proxies without first deinstancing their parent instances.
+        for (int i = instancePrimPaths.size()-1; i >=0; i--) {
+            UsdPrim instancePrim = m_usdStage->GetPrimAtPath( instancePrimPaths[i] );
+            instancePrim.SetInstanceable(false);
+            DBG(cerr << "Deinstanced prim at: " << instancePrimPaths[i].GetText() << endl);
+        }
+
         GT_PrimitiveHandle usdPrim;
 
         // Have we seen this prim on a previous frame?
@@ -1555,34 +1591,6 @@ renderFrame(fpreal time,
                 addShaderToMap(primMaterialPath,
                                SdfPath(gtPrim.path.GetString()),
                                houMaterialMap);
-            }
-            // If we're attempting to overlay instanced geometry, set the root
-            // of the instance to 'instanceable = false'. Recurse on the parent
-            // in case it itself is an instance.
-            SdfPath currPath = primPath;
-            UsdPrim currPrim = m_usdStage->GetPrimAtPath( currPath );
-            while ( currPrim.IsInstanceProxy() ) {
-                // Get the master prim which corresponds to each instance
-                UsdPrim masterPrim = currPrim.GetPrimInMaster(); 
-                const SdfPath& masterPath = masterPrim.GetPath();
-                // Removing common suffices results in just the path that was
-                // instance for our prim (and /__master_* for the master path)
-                const pair<SdfPath, SdfPath> pathsPair = currPath.RemoveCommonSuffix(masterPath);
-                currPath = pathsPair.first;
-                if ( currPath.IsEmpty() ) {
-                    // We shouldn't get here
-                    break;
-                }
-                // Get the prim on the stage (not on the master)
-                UsdPrim instancePrim = m_usdStage->GetPrimAtPath( currPath );
-                // Check to make sure we're deinstancing an instance
-                if ( instancePrim.IsInstance() ) {
-                    DBG(cerr << "Deinstanced prim at: " << currPath.GetText() << endl);
-                    instancePrim.SetInstanceable(false);
-                }
-                // Recurse on the parent prim in case it's nested as another instance
-                currPrim = instancePrim;
-
             }
 
             // Check for a hero prim to operate on.
