@@ -63,13 +63,13 @@ be disabled at build-time, for further details see [Advanced Build Configuration
 
 | Name | Version | Optional |
 | ---- | ------- | :------: |
-| [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5 (Linux/OS X), 3.2.0 (Windows)    |   |
-| [GLEW](http://glew.sourceforge.net/)                              | 1.10.0                                 |   |
-| [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                  |   |
-| [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11                                 |   |
-| [Ptex](http://ptex.us/)                                           | 2.0.30                                 | x |
-| [PySide](http://wiki.qt.io/PySide) or [PySide2](http://wiki.qt.io/PySide2) (experimental) | 1.2.2, 2.0.0~alpha0 |   |
-| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0                                  |   |
+| [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5 (Linux/OS X), 3.2.0 (Windows)         |   |
+| [GLEW](http://glew.sourceforge.net/)                              | 1.10.0                                      |   |
+| [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                       |   |
+| [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11                                      |   |
+| [Ptex](http://ptex.us/)                                           | 2.0.30                                      | x |
+| [PySide](http://wiki.qt.io/PySide) or [PySide2](http://wiki.qt.io/PySide2) (experimental) | 1.2.2, 2.0.0~alpha0 | x |
+| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0                                       | x |
 
 Getting and Building the Code
 -----------------------------
@@ -88,15 +88,18 @@ additional documentation for running cmake directly.
 
 #### 1. Install prerequisites (see [Dependencies](#dependencies) for required versions)
 
-- C++ compiler:
-   - gcc
-   - Xcode
-   - Microsoft Visual Studio
-- NASM (required for Imaging on Windows)
-- CMake
-- Python
-- PyOpenGL (required for USD Imaging)
-- PySide or PySide2 (experimental) (required for USD Imaging)
+- Required:
+    - C++ compiler:
+        - gcc
+        - Xcode
+        - Microsoft Visual Studio
+    - NASM (required for Imaging on Windows)
+    - CMake
+- Optional (Can be ignored by passing `--no-python` as an argument to `build_usd.py`)
+    - Python (required for [bindings and tests](BUILDING.md#python)) 
+    - PyOpenGL (required for some [UsdImaging components](BUILDING.md#python))
+    - PySide or PySide2 (experimental) (required for some [UsdImaging components](BUILDING.md#python))
+
 
 #### 2. Download the USD source code
 
