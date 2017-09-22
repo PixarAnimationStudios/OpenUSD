@@ -154,7 +154,7 @@
             <number>150</number>
            </attribute>
            <attribute name="headerMinimumSectionSize">
-            <number>28</number>
+            <number>20</number>
            </attribute>
            <attribute name="headerStretchLastSection">
             <bool>false</bool>
@@ -415,7 +415,12 @@
            </attribute>
            <column>
             <property name="text">
-             <string>Attribute</string>
+             <string>Type</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Name</string>
             </property>
            </column>
            <column>

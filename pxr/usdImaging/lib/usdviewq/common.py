@@ -60,6 +60,16 @@ NormalFont = QtGui.QFont()
 NormalFont.setWeight(35)
 AbstractPrimFont = NormalFont
 
+# Property viewer constants
+INDEX_PROPTYPE, INDEX_PROPNAME, INDEX_PROPVAL = range(3)
+
+# RichText Items used to distinguish property types
+TYPE_COLUMN_PAD = "margin-left: 14px"
+ATTR_TYPE_RT = "<p style=\"%s; %s; \">A</p>" % (TYPE_COLUMN_PAD, "color: " + HeaderColor.color().name())
+REL_TYPE_RT  = "<p style=\"%s; %s;\">R</p>" % (TYPE_COLUMN_PAD, "color: " + HeaderColor.color().name())
+COMP_TYPE_RT = "<p style=\"%s; %s;\">C</p>" % (TYPE_COLUMN_PAD, "color: " + HeaderColor.color().name())
+CONN_TYPE_RT = "<p style=\"%s; %s;\">A<sub>c</sub></p>" % (TYPE_COLUMN_PAD, "color: " + HeaderColor.color().name())
+
 def _UpdateLabelText(text, substring, mode):
     return text.replace(substring,'<'+mode+'>'+substring+'</'+mode+'>')
 

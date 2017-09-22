@@ -82,6 +82,8 @@ class PropertyLegend(QtWidgets.QWidget):
         vcLabel = self._ui.propertyLegendLabelValueClips
         vcLabel.setText(ItalicizeLabelText(vcLabel.text(), interpolatedStr))
 
+        connAttrLabel = self._ui.propertyLegendConnId
+        connAttrLabel.setText(connAttrLabel.text() + '<sub>c</sub>:') 
     
     def IsMinimized(self):
         return self._isMinimized
@@ -95,4 +97,4 @@ class PropertyLegend(QtWidgets.QWidget):
     def GetResetHeight(self):
         # This predefined height is determined by the elements that exist in
         # the propertyLegend. For more information see propertyLegendUI.ui
-        return 60
+        return 120 

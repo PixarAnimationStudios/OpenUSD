@@ -23,6 +23,7 @@
 #
 from qt import QtGui, QtWidgets
 from usdviewContextMenuItem import UsdviewContextMenuItem
+from common import INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL
 
 #
 # Specialized context menu for running commands in the attribute viewer.
@@ -70,9 +71,9 @@ class AttributeViewContextMenuItem(UsdviewContextMenuItem):
 class CopyAttributeNameMenuItem(AttributeViewContextMenuItem):
 
     def GetText(self):
-        if self._item.column() == 0:
+        if self._item.column() == INDEX_PROPNAME:
             return "Copy Property Name"
-        elif self._item.column() == 1:
+        elif self._item.column() == INDEX_PROPVAL:
             return "Copy Property Value"
 
     def RunCommand(self):

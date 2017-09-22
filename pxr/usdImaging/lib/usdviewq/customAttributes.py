@@ -111,7 +111,7 @@ class RelationshipAttribute(CustomAttribute):
         self._relationship = relationship
 
     def GetName(self):
-        return "[Relationship] " + self._relationship.GetName()
+        return self._relationship.GetName()
 
     def Get(self, frame):
         return self._relationship.GetTargets()

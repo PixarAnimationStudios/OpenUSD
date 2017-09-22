@@ -40,7 +40,7 @@ from nodeContextMenu import NodeContextMenu
 from headerContextMenu import HeaderContextMenu
 from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
-from customAttributes import _GetCustomAttributes
+from customAttributes import _GetCustomAttributes, BoundingBoxAttribute, LocalToWorldXformAttribute
 from nodeViewItem import NodeViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
@@ -52,7 +52,9 @@ from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor, Va
                     UniquifyTableWidgetItems, GetAttributeColor, GetAttributeTextFont, 
                     HasArcsColor, InstanceColor, NormalColor, MasterColor, Timer, Drange,
                     BusyContext, DumpMallocTags, GetShortString, GetInstanceIdForIndex, 
-                    ItalicizeLabelText, BoldenLabelText, ColorizeLabelText)
+                    ItalicizeLabelText, BoldenLabelText, ColorizeLabelText,
+                    INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL, 
+                    ATTR_TYPE_RT, REL_TYPE_RT, COMP_TYPE_RT, CONN_TYPE_RT)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -1590,15 +1592,19 @@ class MainWindow(QtWidgets.QMainWindow):
         if (self._attrSearchString == self._ui.attrViewLineEdit.text() and
             len(self._attrSearchResults) > 0 and
             self._lastNodeSearched == self._currentNodes[0]):
+            
             # Go to the next result of the currently ongoing search
-
             nextResult = self._attrSearchResults.popleft()
 
-            # the 0 stands for column 0, so it selects the first column.
-            self._ui.propertyView.item(nextResult.row(), 0).setSelected(True)
+            self._ui.propertyView.selectRow(nextResult.row())
             self._ui.propertyView.scrollToItem(nextResult)
             self._attrSearchResults.append(nextResult)
             self._lastNodeSearched = self._currentNodes[0]
+
+            itemName = str(self._ui.propertyView.item(nextResult.row(), INDEX_PROPNAME).text())
+            self._ui.attributeValueEditor.populate(itemName, self._currentNodes[0])
+            self._updateMetadataView(self._getSelectedObject())
+            self._updateLayerStackView(self._getSelectedObject())
         else:
             # Begin a new search
             self._attrSearchString = self._ui.attrViewLineEdit.text()
@@ -2383,7 +2389,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._console.reloadConsole(self)
 
         if currentItem is not None:
-            itemName = str(self._ui.propertyView.item(currentItem.row(), 0).text())
+            itemName = str(self._ui.propertyView.item(currentItem.row(), INDEX_PROPNAME).text())
 
             # inform the value editor that we selected a new attribute
             self._ui.attributeValueEditor.populate(itemName, self._currentNodes[0])
@@ -2983,7 +2989,7 @@ class MainWindow(QtWidgets.QMainWindow):
         prevSelectedAttributeNames = set()
         for i in previousSelection:
             prevSelectedAttributeNames.add(
-                str(tableWidget.item(i.row(),0).text()))
+                str(tableWidget.item(i.row(),INDEX_PROPNAME).text()))
 
         # get a dictionary of prim attribs/members and store it in self._attributeDict
         self._attributeDict = self._getAttributeDict()
@@ -2996,12 +3002,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
         attributeCount = 0
         for key, attribute in self._attributeDict.iteritems():
-            # Get the attribute's value and display color
+            # Get the attribute's kind, value and display color
+            if (isinstance(attribute, BoundingBoxAttribute) or 
+                isinstance(attribute, LocalToWorldXformAttribute)):
+                typeContent = QtGui.QLabel(COMP_TYPE_RT)
+            elif type(attribute) == Usd.Attribute:
+                if attribute.HasAuthoredConnections():
+                    typeContent = QtGui.QLabel(CONN_TYPE_RT)
+                else:
+                    typeContent = QtGui.QLabel(ATTR_TYPE_RT)
+            else:
+                typeContent = QtGui.QLabel(REL_TYPE_RT)
+
+            tableWidget.setCellWidget(attributeCount, INDEX_PROPTYPE, typeContent)
+
             fgColor = GetAttributeColor(attribute, frame)
             attrName = QtWidgets.QTableWidgetItem(str(key))
             attrName.setFont(BoldFont)
             attrName.setForeground(fgColor)
-            tableWidget.setItem(attributeCount, 0, attrName)
+            tableWidget.setItem(attributeCount, INDEX_PROPNAME, attrName)
             attrText = GetShortString(attribute, frame)
             attrVal = QtWidgets.QTableWidgetItem(attrText)
             valTextFont = GetAttributeTextFont(attribute, frame)
@@ -3009,12 +3028,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 attrVal.setFont(valTextFont)
                 attrName.setFont(valTextFont)
             attrVal.setForeground(fgColor)
-            tableWidget.setItem(attributeCount, 1, attrVal)
+            tableWidget.setItem(attributeCount, INDEX_PROPVAL, attrVal)
 
             # Need reference to original value for pretty-print on double-click
             if (key in prevSelectedAttributeNames):
-                tableWidget.item(attributeCount,0).setSelected(True)
-                tableWidget.setCurrentItem(tableWidget.item(attributeCount, 0))
+                tableWidget.item(attributeCount,INDEX_PROPNAME).setSelected(True)
+                tableWidget.setCurrentItem(tableWidget.item(attributeCount, INDEX_PROPNAME))
 
             attributeCount += 1
     
@@ -3040,9 +3059,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 selectedAttribute = attrs[0]
 
         if selectedAttribute:
-            attrName = str(self._ui.propertyView.item(selectedAttribute.row(),0).text())
-            if attrName.startswith("[Relationship]"):
-                attrName = attrName[len("[Relationship] "):]
+            attrType = str(self._ui.propertyView.cellWidget(selectedAttribute.row(), INDEX_PROPTYPE).text())
+            attrName = str(self._ui.propertyView.item(selectedAttribute.row(), INDEX_PROPNAME).text())
+            if attrType == REL_TYPE_RT:
                 obj = self._currentNodes[0].GetRelationship(attrName)
             else:
                 obj = self._currentNodes[0].GetAttribute(attrName)
