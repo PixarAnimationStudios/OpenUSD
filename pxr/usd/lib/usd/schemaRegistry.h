@@ -172,6 +172,7 @@ private:
     // Helper for looking up the prim definition path for a given primType.
     const SdfPath& _GetSchemaPrimPath(const TfType &primType) const;
 
+    USD_API
     const SdfAbstractDataSpecId *_GetSpecId(const TfToken &primType,
                                             const TfToken &propName) const;
 

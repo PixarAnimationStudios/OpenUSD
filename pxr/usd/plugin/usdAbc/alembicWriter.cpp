@@ -29,6 +29,7 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformOp.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/base/tracelite/trace.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -2003,9 +2004,11 @@ _GetPropertyMetadata(
         metadata.set(_AmdName(SdfFieldKeys->TypeName), typeNameToken);
     }
 
-    // Note a single time sample (as opposed to a default value).
-    if (samples.IsTimeSampled() && samples.GetNumSamples() == 1) {
-        metadata.set(_AmdName(SdfFieldKeys->TimeSamples), "true");
+    // Note a "winning" Default as a single alembic sample that should come
+    // back into USD as a Default
+    if (!samples.IsTimeSampled() && samples.GetNumSamples() == 1) {
+        metadata.set(_AmdName(UsdAbcCustomMetadata->singleSampleAsDefault), 
+                     "true");
     }
 
     // Set the interpretation if there is one.
@@ -2465,6 +2468,31 @@ _WriteRoot(_PrimWriterContext* context)
     OCompoundProperty prop(root->getProperties(), "Usd", metadata);
 }
 
+template <class T>
+static 
+bool _ExtractWithFallback(UsdSamples const &samples, double time,
+                          TfToken const &primType, TfToken const &propertyName,
+                          T *val)
+{
+    if (samples.IsEmpty()){
+        return UsdSchemaRegistry::HasField(primType, propertyName,
+                                           SdfFieldKeys->Default, val);
+    }
+    
+    const VtValue value = samples.Get(time);
+    
+    if (value.IsHolding<T>()) {
+        *val = value.UncheckedGet<T>();
+        return true;
+    } else {
+        TF_WARN("Expected type '%s', but found '%s' for %s",
+                ArchGetDemangled(typeid(T)).c_str(),
+                ArchGetDemangled(value.GetTypeName()).c_str(),
+                propertyName.GetText());
+        return false;
+    }
+}
+
 static
 void
 _WriteCameraParameters(_PrimWriterContext* context)
@@ -2477,6 +2505,10 @@ _WriteCameraParameters(_PrimWriterContext* context)
                                      _GetPrimMetadata(*context)));
     context->SetParent(object);
 
+    // Should be OK doing a VtValue::Get here, as the only way we should have
+    // been able to get here is by dispatching on prim typeName.
+    TfToken primType = context->GetField(SdfFieldKeys->TypeName).Get<TfToken>();
+    
     // Collect the properties we need to compute the frustum.
     context->SetSampleTimesUnion(UsdAbc_TimeSamples());
     UsdSamples focalLength =
@@ -2507,76 +2539,64 @@ _WriteCameraParameters(_PrimWriterContext* context)
 
         {
             // Horizontal aperture is in cm in ABC, but mm in USD
-            const VtValue value = horizontalAperture.Get(time);
-            if (value.IsHolding<float>()) {
-                sample.setHorizontalAperture(
-                    value.UncheckedGet<float>() / 10.0);
-            } else {
-                TF_WARN("Expected type 'float', '%s' for horizontal aperture",
-                        ArchGetDemangled(value.GetTypeName()).c_str());
+            float value;
+            if (_ExtractWithFallback(horizontalAperture, time, 
+                                     primType, 
+                                     UsdGeomTokens->horizontalAperture,
+                                     &value)){
+                sample.setHorizontalAperture(value / 10.0);
             }
         }
 
         {
             // Vertical aperture is in cm in ABC, but mm in USD
-            const VtValue value = verticalAperture.Get(time);
-            if (value.IsHolding<float>()) {
-                sample.setVerticalAperture(
-                    value.UncheckedGet<float>() / 10.0);
-            } else {
-                TF_WARN("Expected type 'float', '%s' for vertical aperture",
-                        ArchGetDemangled(value.GetTypeName()).c_str());
+            float value;
+            if (_ExtractWithFallback(verticalAperture, time, 
+                                     primType, UsdGeomTokens->verticalAperture,
+                                     &value)){
+                sample.setVerticalAperture(value / 10.0);
             }
         }
 
         {
             // Horizontal aperture is in cm in ABC, but mm in USD
-            const VtValue value = horizontalApertureOffset.Get(time);
-            if (value.IsHolding<float>()) {
-                sample.setHorizontalFilmOffset(
-                    value.UncheckedGet<float>() / 10.0);
-            } else {
-                TF_WARN("Expected type 'float', '%s' for horizontal aperture "
-                        "offset",
-                        ArchGetDemangled(value.GetTypeName()).c_str());
+            float value;
+            if (_ExtractWithFallback(horizontalApertureOffset, time, 
+                                     primType, 
+                                     UsdGeomTokens->horizontalApertureOffset,
+                                     &value)){
+                sample.setHorizontalFilmOffset(value / 10.0);
             }
         }
 
         {
             // Vertical aperture is in cm in ABC, but mm in USD
-            const VtValue value = verticalApertureOffset.Get(time);
-            if (value.IsHolding<float>()) {
-                sample.setVerticalFilmOffset(
-                    value.UncheckedGet<float>() / 10.0);
-            } else {
-                TF_WARN("Expected type 'float', '%s' for vertical aperture "
-                        "offset",
-                        ArchGetDemangled(value.GetTypeName()).c_str());
+            float value;
+            if (_ExtractWithFallback(verticalApertureOffset, time, 
+                                     primType, 
+                                     UsdGeomTokens->verticalApertureOffset,
+                                     &value)){
+                sample.setVerticalFilmOffset(value / 10.0);
             }
         }
 
         {
             // Focal length in USD and ABC is both in mm
-            const VtValue value = focalLength.Get(time);
-            if (value.IsHolding<float>()) {
-                sample.setFocalLength(
-                    value.UncheckedGet<float>());
-            } else {
-                TF_WARN("Expected type 'float', '%s' for focal length",
-                        ArchGetDemangled(value.GetTypeName()).c_str());
+            float value;
+            if (_ExtractWithFallback(focalLength, time, 
+                                     primType, UsdGeomTokens->focalLength,
+                                     &value)){
+                sample.setFocalLength(value);
             }
         }
     
         {
-            const VtValue value = clippingRange.Get(time);
-            if (value.IsHolding<GfVec2f>()) {
-                sample.setNearClippingPlane(
-                    value.UncheckedGet<GfVec2f>()[0]);
-                sample.setFarClippingPlane(
-                    value.UncheckedGet<GfVec2f>()[1]);
-            } else {
-                TF_WARN("Expected type 'Vec2f', '%s' for clipping range",
-                        ArchGetDemangled(value.GetTypeName()).c_str());
+            GfVec2f value;
+            if (_ExtractWithFallback(clippingRange, time, 
+                                     primType, UsdGeomTokens->clippingRange,
+                                     &value)){
+                sample.setNearClippingPlane(value[0]);
+                sample.setFarClippingPlane(value[1]);
             }
         }
 
