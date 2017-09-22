@@ -58,6 +58,7 @@ pxr_library(usdviewq
         nodeViewItem.py
         common.py
         nodeLegend.py
+        propertyLegend.py
         attributeValueEditor.py
         pythonExpressionPrompt.py
         overridableLineEdit.py
@@ -72,6 +73,7 @@ pxr_library(usdviewq
         adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui
         nodeLegendUI.ui
+        propertyLegendUI.ui
         pythonExpressionPromptUI.ui
 )
 

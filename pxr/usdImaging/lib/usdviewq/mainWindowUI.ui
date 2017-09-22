@@ -426,169 +426,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QWidget" name="propertyLegendContainer" native="true">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>500</width>
-             <height>0</height>
-            </size>
-           </property>
-           <layout class="QGridLayout" name="propertyLegendLayout">
-            <item row="0" column="0">
-             <widget class="QGraphicsView" name="propertyLegendColorFallback">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QLabel" name="propertyLegendLabelFallback">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Fallback</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QGraphicsView" name="propertyLegendColorDefault">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="3">
-             <widget class="QLabel" name="propertyLegendLabelDefault">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Default</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="4">
-             <widget class="QGraphicsView" name="propertyLegendColorTimeSample">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="5">
-             <widget class="QLabel" name="propertyLegendLabelTimeSample">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Time Samples (Interpolated) </string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QGraphicsView" name="propertyLegendColorNoValue">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLabel" name="propertyLegendLabelNoValue">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>No Value</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QGraphicsView" name="propertyLegendColorCustom">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="3">
-             <widget class="QLabel" name="propertyLegendLabelCustom">
-              <property name="text">
-               <string>Custom</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="4">
-             <widget class="QGraphicsView" name="propertyLegendColorValueClips">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="5">
-             <widget class="QLabel" name="propertyLegendLabelValueClips">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Value Clips (Interpolated)</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
+          <widget class="PropertyLegend" name="propertyLegendContainer" native="true"/>
          </item>
          <item>
           <layout class="QHBoxLayout" name="propertyFindContainer">
@@ -2735,6 +2573,12 @@
    <class>NodeLegend</class>
    <extends>QWidget</extends>
    <header>nodeLegend</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PropertyLegend</class>
+   <extends>QWidget</extends>
+   <header>propertyLegend</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

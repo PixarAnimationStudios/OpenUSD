@@ -403,7 +403,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Start the help menus in collapsed position.
             self._propertyLegendCollapsed = True
             self._nodeLegendCollapsed = True
-            self._propertyLegendHeightOffset = 50
+            self._propertyLegendHeightOffset = 60
             self._nodeLegendHeightOffset = 120
             self._legendButtonSelectedStyle = ('background: rgb(189, 155, 84); '
                                                'color: rgb(227, 227, 227);')
@@ -414,49 +414,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # needed to set color of boxes
             graphicsScene = QtWidgets.QGraphicsScene()
-            self._ui.propertyLegendColorFallback.setScene(graphicsScene)
-            self._ui.propertyLegendColorDefault.setScene(graphicsScene)
-            self._ui.propertyLegendColorTimeSample.setScene(graphicsScene)
-            self._ui.propertyLegendColorNoValue.setScene(graphicsScene)
-            self._ui.propertyLegendColorValueClips.setScene(graphicsScene)
-            self._ui.propertyLegendColorCustom.setScene(graphicsScene)
             
-            # set color of attribute viewer legend boxes
-            self._ui.propertyLegendColorFallback.setForegroundBrush(FallbackTextColor)
-            self._ui.propertyLegendColorDefault.setForegroundBrush(DefaultTextColor)
-            self._ui.propertyLegendColorTimeSample.setForegroundBrush(TimeSampleTextColor)
-            self._ui.propertyLegendColorNoValue.setForegroundBrush(NoValueTextColor)
-            self._ui.propertyLegendColorValueClips.setForegroundBrush(ValueClipsTextColor)
-            self._ui.propertyLegendColorCustom.setForegroundBrush(RedColor)
-
-            # set color of attribute viewer text items
-            legendTextUpdate = lambda t, c: (('<font color=\"%s\">' % c.color().name())
-                                             + t.text() + '</font>') 
-            timeSampleLegend = self._ui.propertyLegendLabelTimeSample
-            timeSampleLegend.setText(legendTextUpdate(timeSampleLegend, TimeSampleTextColor))
-            
-            fallbackLegend = self._ui.propertyLegendLabelFallback
-            fallbackLegend.setText(legendTextUpdate(fallbackLegend, FallbackTextColor))
-
-            valueClipLegend = self._ui.propertyLegendLabelValueClips
-            valueClipLegend.setText(legendTextUpdate(valueClipLegend, ValueClipsTextColor))
-
-            noValueLegend = self._ui.propertyLegendLabelNoValue
-            noValueLegend.setText(legendTextUpdate(noValueLegend, NoValueTextColor))
-
-            defaultLegend = self._ui.propertyLegendLabelDefault
-            defaultLegend.setText(legendTextUpdate(defaultLegend, DefaultTextColor))
-
-            customLegend = self._ui.propertyLegendLabelCustom 
-            customLegend.setText(legendTextUpdate(customLegend, RedColor))
-
-            interpolatedStr = 'Interpolated'
-            tsLabel = self._ui.propertyLegendLabelTimeSample
-            tsLabel.setText(ItalicizeLabelText(tsLabel.text(), interpolatedStr))
-
-            vcLabel = self._ui.propertyLegendLabelValueClips
-            vcLabel.setText(ItalicizeLabelText(vcLabel.text(), interpolatedStr))
-
             # setup animation objects for the primView and propertyView
             self._propertyLegendAnim = QtCore.QPropertyAnimation(
                 self._ui.propertyLegendContainer, "maximumHeight")
