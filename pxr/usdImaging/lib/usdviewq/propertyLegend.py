@@ -35,6 +35,8 @@ class PropertyLegend(QtWidgets.QWidget):
         self._ui = Ui_PropertyLegend()
         self._ui.setupUi(self)
 
+        self._isMinimized = True
+
         graphicsScene = QtWidgets.QGraphicsScene()
 
         self._ui.propertyLegendColorFallback.setScene(graphicsScene)
@@ -80,3 +82,17 @@ class PropertyLegend(QtWidgets.QWidget):
         vcLabel = self._ui.propertyLegendLabelValueClips
         vcLabel.setText(ItalicizeLabelText(vcLabel.text(), interpolatedStr))
 
+    
+    def IsMinimized(self):
+        return self._isMinimized
+
+    def ToggleMinimized(self):
+        self._isMinimized = not self._isMinimized
+
+    def GetHeight(self):
+        return self.height()
+
+    def GetResetHeight(self):
+        # This predefined height is determined by the elements that exist in
+        # the propertyLegend. For more information see propertyLegendUI.ui
+        return 60

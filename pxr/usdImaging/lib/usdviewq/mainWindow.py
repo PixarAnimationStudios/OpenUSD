@@ -43,6 +43,7 @@ from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import _GetCustomAttributes
 from nodeViewItem import NodeViewItem
 from variantComboBox import VariantComboBox
+from legendUtil import ToggleLegendWithBrowser
 import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, settings
 
 # Common Utilities
@@ -399,18 +400,6 @@ class MainWindow(QtWidgets.QMainWindow):
             for i in range(1,9):
                 action = getattr(self._ui,"actionLevel_" + str(i))
                 self._ui.nodeViewDepthGroup.addAction(action)
-
-            # Start the help menus in collapsed position.
-            self._propertyLegendCollapsed = True
-            self._nodeLegendCollapsed = True
-            self._propertyLegendHeightOffset = 60
-            self._nodeLegendHeightOffset = 120
-            self._legendButtonSelectedStyle = ('background: rgb(189, 155, 84); '
-                                               'color: rgb(227, 227, 227);')
-
-            # Configure stretch behavior for node and property panes
-            self._ui.propertyLegendContainer.setContentsMargins(5,0,5,0)
-            self._ui.nodeLegendContainer.setContentsMargins(5,0,5,0)
 
             # needed to set color of boxes
             graphicsScene = QtWidgets.QGraphicsScene()
@@ -1586,54 +1575,15 @@ class MainWindow(QtWidgets.QMainWindow):
                             (self._nodeSearchString, 
                              len(self._nodeSearchResults)))
 
-    def _setAnimValues(self, anim, a1, a2):
-        anim.setStartValue(a1)
-        anim.setEndValue(a2)
-
-    # A function which takes a two-pane area and transforms it to
-    # open or close the bottom pane.
-    #
-    #    legendHeight       
-    #    |   separator height
-    #    |   |  browser height
-    #    |   |  |->     ___________                ___________
-    #    |   |  |      |           |              |           |
-    #    |   |  |      |           |              |           |
-    #    |   |  |->    |           |    <--->     |           |
-    #    |---|-------> +++++++++++++              |           |
-    #    |             |           |    <--->     |           |
-    #    |             |           |              |           |
-    #    |----------->  -----------                +++++++++++
-    def _toggleLegendWithBrowser(self, button, legendMinimized, 
-                                 legendHeight, legendResetHeight, legendAnim):
-        # We are dragging downward, so collapse the legend and expand the
-        # attribute viewer panel to take up the remaining space.
-        if legendMinimized:
-            button.setStyleSheet('')
-            self._setAnimValues(legendAnim, legendHeight, 0)
-        # We are expanding, so do the opposite.
-        else:
-            button.setStyleSheet(self._legendButtonSelectedStyle)
-            self._setAnimValues(legendAnim, legendHeight, legendResetHeight)
-
-        legendAnim.start()
-
     def _nodeLegendToggleCollapse(self):
-        # Toggle status and update the button text accordingly
-        self._nodeLegendCollapsed = not self._nodeLegendCollapsed
-        self._toggleLegendWithBrowser(self._ui.nodeLegendQButton,
-                                      self._nodeLegendCollapsed,
-                                      self._ui.nodeLegendContainer.height(),
-                                      self._nodeLegendHeightOffset,
-                                      self._nodeLegendAnim)
+        ToggleLegendWithBrowser(self._ui.nodeLegendContainer,
+                                self._ui.nodeLegendQButton,
+                                self._nodeLegendAnim)
 
     def _propertyLegendToggleCollapse(self):
-        self._propertyLegendCollapsed = not self._propertyLegendCollapsed
-        self._toggleLegendWithBrowser(self._ui.propertyLegendQButton,
-                                      self._propertyLegendCollapsed,
-                                      self._ui.propertyLegendContainer.height(), 
-                                      self._propertyLegendHeightOffset,
-                                      self._propertyLegendAnim)
+        ToggleLegendWithBrowser(self._ui.propertyLegendContainer,
+                                self._ui.propertyLegendQButton,
+                                self._propertyLegendAnim)
 
     def _attrViewFindNext(self):
         self._ui.propertyView.clearSelection()

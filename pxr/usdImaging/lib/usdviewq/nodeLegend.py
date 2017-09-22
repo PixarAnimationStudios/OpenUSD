@@ -34,6 +34,8 @@ class NodeLegend(QtWidgets.QWidget):
         self._ui = Ui_NodeLegend()
         self._ui.setupUi(self)
 
+        self._isMinimized = True
+
         graphicsScene = QtWidgets.QGraphicsScene()
 
         # Set colors
@@ -79,3 +81,16 @@ class NodeLegend(QtWidgets.QWidget):
         dimmedLegendText = ColorizeLabelText(dimmedLegendText, "inactive prims", 151,151,151)
         dimmedLegend.setText(dimmedLegendText)
 
+    def IsMinimized(self):
+        return self._isMinimized
+
+    def ToggleMinimized(self):
+        self._isMinimized = not self._isMinimized
+
+    def GetHeight(self):
+        return self.height()
+
+    def GetResetHeight(self):
+        # This predefined height is determined by the elements that exist in
+        # the nodeLegend. For more information see nodeLegendUI.ui
+        return 120

@@ -57,6 +57,7 @@ pxr_library(usdviewq
         adjustDefaultMaterial.py
         nodeViewItem.py
         common.py
+        legendUtil.py
         nodeLegend.py
         propertyLegend.py
         attributeValueEditor.py
