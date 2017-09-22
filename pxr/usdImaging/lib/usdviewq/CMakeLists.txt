@@ -59,7 +59,6 @@ pxr_library(usdviewq
         common.py
         attributeValueEditor.py
         pythonExpressionPrompt.py
-        referenceEditor.py
         overridableLineEdit.py
         qt.py
         usdviewstyle.qss
@@ -71,7 +70,6 @@ pxr_library(usdviewq
         adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui
         pythonExpressionPromptUI.ui
-        referenceEditorUI.ui
 )
 
 install(DIRECTORY

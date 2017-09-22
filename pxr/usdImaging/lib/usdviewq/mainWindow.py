@@ -42,7 +42,7 @@ from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import _GetCustomAttributes
 from nodeViewItem import NodeViewItem
-import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, referenceEditor, settings
+import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, settings
 
 # Common Utilities
 from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor, ValueClipsTextColor, 
@@ -3871,15 +3871,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def getSelectedItems(self):
         return [self._nodeToItemMap[n] for n in self._currentNodes
                     if n in self._nodeToItemMap]
-
-    def editSelectedReference(self):
-        """ Invoke the reference editing dialog """
-        prim = self._currentNodes[0]
-        if not prim.IsReference():
-            return
-
-        editor = referenceEditor.ReferenceEditor(self, self._stage, prim)
-        editor.exec_()
 
     def jumpToEnclosingModelSelectedPrims(self):
         from common import GetEnclosingModelPrim
