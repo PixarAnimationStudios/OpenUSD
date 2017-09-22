@@ -61,8 +61,9 @@ public:
         FOVVertical
     };
 
-    /// The unit for horizontal and vertical aperture. The horizontal and
-    /// vertical aperture are in mm (if world units are assumed to be cm).
+    /// The unit for horizontal and vertical aperture is one tenth of the
+    /// world unit. Thus, if the world unit is assumed to be cm, the horizontal
+    /// and vertical aperture unit is mm.
     GF_API static const double APERTURE_UNIT;
     /// The unit for focal length. Similar to APERTURE_UNIT.
     GF_API static const double FOCAL_LENGTH_UNIT;
@@ -106,19 +107,24 @@ public:
 
     /// @{
     
-    /// Sets the focal length, cm.
+    /// Sets the focal length in tenths of a world unit (e.g., mm if the world
+    /// unit is assumed to be cm).
     GF_API void SetFocalLength(const float val);
 
-    /// Sets the width of the projector aperture, mm.
+    /// Sets the width of the projector aperture in tenths of a world unit
+    /// (e.g., mm if the world unit is assumed to be cm).
     GF_API void SetHorizontalAperture(const float val);
 
-    /// Sets the height of the projector aperture, mm.
+    /// Sets the height of the projector aperture in tenths of a world unit
+    /// (e.g., mm if the world unit is assumed to be cm).
     GF_API void SetVerticalAperture(const float val);
 
-    /// Sets the horizontal offset of the projector aperture, mm.
+    /// Sets the horizontal offset of the projector aperture in tenths of a
+    /// world unit (e.g., mm if the world unit is assumed to be cm).
     GF_API void SetHorizontalApertureOffset(const float val);
 
-    /// Sets the vertical offset of the projector aperture, mm.
+    /// Sets the vertical offset of the projector aperture in tenths of a
+    /// world unit (e.g., mm if the world unit is assumed to be cm).
     GF_API void SetVerticalApertureOffset(const float val);
     /// @}
 
@@ -148,7 +154,7 @@ public:
 
     /// @}
 
-    /// Sets the clipping range, cm.
+    /// Sets the clipping range in world units.
     GF_API void SetClippingRange(const GfRange1f &val);
 
     /// Sets additional arbitrarily oriented clipping planes.
@@ -163,7 +169,7 @@ public:
     /// Sets the lens aperture, unitless.
     GF_API void SetFStop(const float val);
 
-    /// Sets the focus distance, cm.
+    /// Sets the focus distance in world units.
     GF_API void SetFocusDistance(const float val);
 
     /// Returns the transform of the filmback in world space.  This is
@@ -173,30 +179,35 @@ public:
     /// Returns the projection type.
     GF_API Projection GetProjection() const;
 
-    /// Returns the width of the projector aperture.
+    /// Returns the width of the projector aperture in tenths of a world unit
+    /// (e.g., mm if the world unit is assumed to be cm).
     GF_API float GetHorizontalAperture() const;
 
-    /// Returns the height of the projector aperture.
+    /// Returns the height of the projector aperture in tenths of a world unit
+    /// (e.g., mm if the world unit is assumed to be cm).
     GF_API float GetVerticalAperture() const;
 
-    /// Returns the horizontal offset of the projector aperture, mm.
+    /// Returns the horizontal offset of the projector aperture in tenths of a
+    /// world unit (e.g., mm if the world unit is assumed to be cm).
     /// In particular, an offset is necessary when writing out a stereo camera
     /// with finite convergence distance as two cameras.
     GF_API float GetHorizontalApertureOffset() const;
 
-    /// Returns the vertical offset of the projector aperture, mm.
+    /// Returns the vertical offset of the projector aperture in tenths of a
+    /// world unit (e.g., mm if the world unit is assumed to be cm).
     GF_API float GetVerticalApertureOffset() const;
 
     /// Returns the projector aperture aspect ratio.
     GF_API float GetAspectRatio() const;
 
-    /// Returns the focal length.
+    /// Returns the focal length in tenths of a world unit (e.g., mm if the
+    /// world unit is assumed to be cm).
     GF_API float GetFocalLength() const;
 
     /// Returns the horizontal or vertical field of view in degrees.
     GF_API float GetFieldOfView(FOVDirection direction) const;
 
-    /// Returns the clipping range.
+    /// Returns the clipping range in world units.
     GF_API GfRange1f GetClippingRange() const;
 
     /// Returns additional clipping planes.
@@ -209,7 +220,7 @@ public:
     /// Returns the lens aperture.
     GF_API float GetFStop() const;
 
-    /// Returns the focus distance.
+    /// Returns the focus distance in world units.
     GF_API float GetFocusDistance() const;
 
     /// Equality operator. true iff all parts match.
