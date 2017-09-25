@@ -157,25 +157,15 @@ TF_DEFINE_ENV_SETTING(
 
 static 
 UsdRelationship
-_CreateBindingRel(UsdPrim& prim)
+_CreateBindingRel(const UsdPrim& prim)
 {
     return prim.CreateRelationship(UsdShadeTokens->materialBinding,
                                    /* custom = */ false);
 }
 
 bool 
-UsdShadeMaterial::Bind(UsdPrim& prim) const
+UsdShadeMaterial::Bind(const UsdPrim& prim) const
 {
-    // We cannot enforce this test because we do not always know at authoring
-    // time what we are binding to.
-    
-    // if (!prim.IsA<UsdGeomImageable>()) {
-    //     TF_CODING_ERROR("Trying to bind a prim that is not Imageable: %s",
-    //         prim.GetPath().GetString().c_str());
-    //     return;
-    // }
-    ;
-
     // delete old relationship, if any
     UsdRelationship oldRel = 
         prim.GetRelationship(UsdShadeTokens->lookBinding);
@@ -192,7 +182,7 @@ UsdShadeMaterial::Bind(UsdPrim& prim) const
 }
 
 bool 
-UsdShadeMaterial::Unbind(UsdPrim& prim)
+UsdShadeMaterial::Unbind(const UsdPrim& prim)
 {
     // delete old relationship too, if any
     UsdRelationship oldRel = 
@@ -532,6 +522,44 @@ UsdShadeMaterial::HasBaseMaterial() const
     return !GetBaseMaterialPath().IsEmpty();
 }
 
+/* static */
+UsdGeomSubset 
+UsdShadeMaterial::CreateMaterialBindFaceSubset(
+    const UsdGeomImageable &geom,
+    const TfToken &subsetName,
+    const VtIntArray &indices)
+{
+    return UsdGeomSubset::CreateGeomSubset(geom, subsetName, 
+        UsdGeomTokens->face, indices, UsdShadeTokens->materialBind);
+}
+
+
+/* static */
+std::vector<UsdGeomSubset> 
+UsdShadeMaterial::GetMaterialBindFaceSubsets(
+    const UsdGeomImageable &geom)
+{
+    return UsdGeomSubset::GetGeomSubsets(geom, UsdGeomTokens->face, 
+        UsdShadeTokens->materialBind);
+}
+
+/* static */
+bool UsdShadeMaterial::SetMaterialBindFaceSubsetsFamilyType(
+        const UsdGeomImageable &geom,
+        const UsdGeomSubset::FamilyType familyType)
+{
+    return UsdGeomSubset::SetFamilyType(geom, UsdShadeTokens->materialBind,
+        familyType);
+}
+
+/* static */
+UsdGeomSubset::FamilyType 
+UsdShadeMaterial::GetMaterialBindFaceSubsetsFamilyType(
+        const UsdGeomImageable &geom)
+{
+    return UsdGeomSubset::GetFamilyType(geom, UsdShadeTokens->materialBind);
+}
+   
 // --------------------------------------------------------------------- //
 
 /* static */

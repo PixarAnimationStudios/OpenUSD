@@ -53,6 +53,7 @@ pxr_test_scripts(
     testenv/testUsdShadeConnectability.py
     testenv/testUsdShadeInterfaceInputConsumers.py
     testenv/testUsdShadeMaterialFaceSet.py
+    testenv/testUsdShadeMaterialBindFaceSubset.py
     testenv/testUsdShadeMaterialAuthoring.py
     testenv/testUsdShadeMaterialBaseMaterial.py
     testenv/testUsdShadeMaterialSpecializesBaseComposition.py
@@ -65,6 +66,10 @@ pxr_install_test_dir(
     DEST testUsdShadeMaterialFaceSet
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeMaterialBindFaceSubset
+    DEST testUsdShadeMaterialBindFaceSubset
+)
 pxr_install_test_dir(
     SRC testenv/testUsdShadeMaterialAuthoring
     DEST testUsdShadeMaterialAuthoring
@@ -101,6 +106,13 @@ pxr_register_test(testUsdShadeMaterialFaceSet
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialFaceSet"
     DIFF_COMPARE SphereWithFaceSets.usda
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdShadeMaterialBindFaceSubset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialBindFaceSubset"
+    DIFF_COMPARE SphereWithMaterialBind.usda
     EXPECTED_RETURN_CODE 0
 )
 

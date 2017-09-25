@@ -145,15 +145,6 @@ _CreateBindingRel(UsdPrim& prim)
 bool 
 UsdShadeLook::Bind(UsdPrim& prim) const
 {
-    // We cannot enforce this test because we do not always know at authoring
-    // time what we are binding to.
-    
-    // if (!prim.IsA<UsdGeomImageable>()) {
-    //     TF_CODING_ERROR("Trying to bind a prim that is not Imageable: %s",
-    //         prim.GetPath().GetString().c_str());
-    //     return;
-    // }
-    ;
     if (UsdRelationship rel = _CreateBindingRel(prim)){
         SdfPathVector  targets(1, GetPath());
         return rel.SetTargets(targets);

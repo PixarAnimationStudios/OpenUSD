@@ -33,6 +33,7 @@
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/faceSetAPI.h"
 
 
@@ -220,7 +221,7 @@ public:
     /// Any UsdPrim can have a binding to at most a \em single UsdShadeMaterial .
     /// \return true on success
     USDSHADE_API
-    bool Bind(UsdPrim& prim) const;
+    bool Bind(const UsdPrim& prim) const;
 
     /// Ensure that, when resolved up to and including the current UsdEditTarget
     /// in composition strength, the given prim has no binding to a UsdShadeMaterial
@@ -231,7 +232,7 @@ public:
     /// use GetBindingRel().ClearTargets()
     /// \return true on success
     USDSHADE_API
-    static bool Unbind(UsdPrim& prim);
+    static bool Unbind(const UsdPrim& prim);
 
     /// Direct access to the binding relationship for \p prim, if it has
     /// already been created.
@@ -422,9 +423,89 @@ public:
 
     /// @}
 
+
+    // --------------------------------------------------------------------- //
+    /// \anchor UsdShadeMaterial_FaceSubsets
+    /// \name Face-Subsets
+    /// 
+    /// API to create, access and query the presence of GeomSubsets below an 
+    /// imageable prim, created for the purpose of binding materials to 
+    /// subsets of faces.
+    /// 
+    /// \note Material bindings authored on GeomSubsets with elementType="face"
+    /// are honored by renderers only if its familyName is 
+    /// <b>UsdShadeTokens->materialBind</b>.
+    /// 
+    /// Here's some sample code that shows how to create a "face" subset and 
+    /// and bind a material to it.
+    /// \code
+    /// UsdGeomImageable mesh = UsdGeomImageable::Get(stage,
+    ///         SdfPath("/path/to/meshPrim");
+    /// UsdShadeMaterial mat1 = UsdShadeMaterial::Get(stage, 
+    ///         SdfPath("/path/to/Material1");
+    /// UsdShadeMaterial mat2 = UsdShadeMaterial::Get(stage, 
+    ///         SdfPath("/path/to/Material2");    
+    ///
+    /// VtIntArray faceIndices1, faceIndices2;
+    /// //.. populate faceIndices here.
+    /// //.. 
+    /// 
+    /// UsdGeomSubset subset1 = 
+    ///         UsdShaderMaterial::CreateMaterialBindFaceSubset(mesh, "subset1",
+    ///                                                         faceIndices1);
+    /// UsdGeomSubset subset2 = 
+    ///         UsdShaderMaterial::CreateMaterialBindFaceSubset(mesh, "subset2",
+    ///                                                         faceIndices2);
+    /// mat1.Bind(subset1.GetPrim())
+    /// mat2.Bind(subset2.GetPrim())
+    /// 
+    /// \endcode
+    /// @{
+
+    /// Creates a GeomSubset named \p subsetName with elementType 'face' and 
+    /// familyName <b>materialBind<b> below the given imageable prim, \p geom. 
+    /// If a GeomSubset named \p subsetName already exists, then its 
+    /// "familyName" is updated to be UsdShadeTokens->materialBind and its 
+    /// "default" indices are updated with the provided \p indices value before 
+    /// returning. 
+    ///
+    USDSHADE_API
+    static UsdGeomSubset CreateMaterialBindFaceSubset(
+        const UsdGeomImageable &geom,
+        const TfToken &subsetName,
+        const VtIntArray &indices);
+
+    /// Returns all the existing GeomSubsets with elementType 'face' and 
+    /// familyName UsdShadeTokens->materialBind below the given imageable prim, 
+    /// \p geom.
+    USDSHADE_API
+    static std::vector<UsdGeomSubset> GetMaterialBindFaceSubsets(
+        const UsdGeomImageable &geom);
+    
+    /// Encodes whether the family of "materialBind" subsets form a valid 
+    /// partition of the set of all faces on the imageable prim, \p geom.
+    USDSHADE_API
+    static bool SetMaterialBindFaceSubsetsFamilyType(
+        const UsdGeomImageable &geom,
+        const UsdGeomSubset::FamilyType familyType);
+
+    /// Returns whether the family of "materialBind" subsets are expected to 
+    /// form a valid partition of the set of all faces on the imageable prim, 
+    /// \p geom.
+    USDSHADE_API
+    static UsdGeomSubset::FamilyType GetMaterialBindFaceSubsetsFamilyType(
+        const UsdGeomImageable &geom);
+
+    /// @}
+
     // --------------------------------------------------------------------- //
     /// \anchor UsdShadeMaterial_FaceSet
     /// \name FaceSet
+    /// 
+    /// \deprecated 
+    /// \note This API is now deprecated as the has-A schema UsdGeomFaceSetAPI 
+    /// has been deprecated in favor of the new concrete (typed) 
+    /// <b>UsdGeomSubset</b> schema.
     /// 
     /// API to create and query the existence of a "Material" face-set on a mesh 
     /// prim. 
@@ -450,6 +531,7 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
+    /// \deprecated 
     /// Creates a "Material" face-set on the given prim. The Material face-set is a 
     /// partition of faces, since no face can be bound to more than one Material.
     /// 
@@ -459,12 +541,14 @@ public:
     USDSHADE_API
     static UsdGeomFaceSetAPI CreateMaterialFaceSet(const UsdPrim &prim);
 
+    /// \deprecated 
     /// Returns the "Material" face-set if it exists on the given prim. If not, 
     /// returns an invalid UsdGeomFaceSetAPI object.
     /// 
     USDSHADE_API
     static UsdGeomFaceSetAPI GetMaterialFaceSet(const UsdPrim &prim);
 
+    /// \deprecated 
     /// Returns true if the given prim has a "Material" face-set. A "Material" 
     /// face-set must be a partition for it to be considered valid.
     /// 
