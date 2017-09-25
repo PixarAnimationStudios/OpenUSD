@@ -25,18 +25,10 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
-#include "pxr/base/tf/envSetting.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// XXX Bug 139215: When we enable this, we can remove
-// SdfListOp::ComposeOperations().
-TF_DEFINE_ENV_SETTING(
-    USDGEOM_POINTINSTANCER_NEW_APPLYOPS, false,
-    "Set to true to use SdfListOp::ApplyOperations() instead of "
-    "ComposeOperations().");
 
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
@@ -321,11 +313,19 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/gf/transform.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// XXX Bug 139215: When we enable this, we can remove
+// SdfListOp::ComposeOperations().
+TF_DEFINE_ENV_SETTING(
+    USDGEOM_POINTINSTANCER_NEW_APPLYOPS, false,
+    "Set to true to use SdfListOp::ApplyOperations() instead of "
+    "ComposeOperations().");
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
