@@ -26,8 +26,11 @@
 
 #include "usdMaya/util.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/scope.h"
+#include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/shader.h"
 
@@ -40,7 +43,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+TF_DEFINE_ENV_SETTING(PIXMAYA_EXPORT_OLD_STYLE_FACESETS, true, 
+    "Whether maya/usdExport should create face-set bindings encoded in the "
+    "old-style, using UsdGeomFaceSetAPI.");
 
 PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
         const MObject& shadingEngine,
@@ -239,10 +244,23 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             UsdPrim boundPrim = stage->OverridePrim(boundPrimPath);
             if (faceIndices.empty()) {
                 material.Bind(boundPrim);
-            } else {
+            } else if (TfGetEnvSetting(PIXMAYA_EXPORT_OLD_STYLE_FACESETS)) {
                 UsdGeomFaceSetAPI faceSet = material.CreateMaterialFaceSet(
                         boundPrim);
                 faceSet.AppendFaceGroup(faceIndices, materialPath);
+            } else {
+                // It might be worth adding a utility method for the following 
+                // block of code in core.
+                UsdGeomSubset faceSubset = 
+                    UsdShadeMaterial::CreateMaterialBindFaceSubset(
+                        UsdGeomImageable(boundPrim), 
+                        /* subsetName */ TfToken(materialName),
+                        faceIndices);
+                material.Bind(faceSubset.GetPrim());
+
+                UsdShadeMaterial::SetMaterialBindFaceSubsetsFamilyType(
+                    UsdGeomImageable(boundPrim), 
+                    UsdGeomSubset::FamilyType::Partition);
             }
         }
 
