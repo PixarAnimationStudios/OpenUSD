@@ -43,6 +43,7 @@ pxr_shared_library(${PXR_PACKAGE}
         readCamera
         readConstraintTarget
         readGprim
+        readGeomSubset
         readLight
         readLightFilter
         readMaterial

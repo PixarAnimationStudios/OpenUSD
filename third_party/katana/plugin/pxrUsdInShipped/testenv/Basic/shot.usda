@@ -146,13 +146,8 @@ def Xform "World" (
         def Mesh "Plane"
         {
             Vec3f[] extent = [(-10, -10, 0), (10, 10, 0)]
-            rel faceSet:material:binding = [
-                </World/FaceSet/Looks/initialShadingGroup>,
-                </World/FaceSet/Looks/lambert2SG>,
-            ]
-            int[] faceSet:material:faceCounts = [12, 4]
-            int[] faceSet:material:faceIndices = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 0, 3, 12, 15]
-            uniform bool faceSet:material:isPartition = 1
+            uniform bool subsetFamily:materialBind:isPartition = 1
+
             int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
             int[] faceVertexIndices = [0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 8, 7, 3, 4, 9, 8, 5, 6, 11, 10, 6, 7, 12, 11, 7, 8, 13, 12, 8, 9, 14, 13, 10, 11, 16, 15, 11, 12, 17, 16, 12, 13, 18, 17, 13, 14, 19, 18, 15, 16, 21, 20, 16, 17, 22, 21, 17, 18, 23, 22, 18, 19, 24, 23]
             PointFloat[] points = [(-10, -10, 0), (-5, -10, 0), (0, -10, 0), (5, -10, 0), (10, -10, 0), (-10, -5, 0), (-5, -5, 0), (0, -5, 0), (5, -5, 0), (10, -5, 0), (-10, 0, 0), (-5, 0, 0), (0, 0, 0), (5, 0, 0), (10, 0, 0), (-10, 5, 0), (-5, 5, 0), (0, 5, 0), (5, 5, 0), (10, 5, 0), (-10, 10, 0), (-5, 10, 0), (0, 10, 0), (5, 10, 0), (10, 10, 0)]
@@ -162,6 +157,20 @@ def Xform "World" (
             Vec2f[] primvars:st = [(0, 0), (0.25, 0), (0.5, 0), (0.75, 0), (1, 0), (0, 0.25), (0.25, 0.25), (0.5, 0.25), (0.75, 0.25), (1, 0.25), (0, 0.5), (0.25, 0.5), (0.5, 0.5), (0.75, 0.5), (1, 0.5), (0, 0.75), (0.25, 0.75), (0.5, 0.75), (0.75, 0.75), (1, 0.75), (0, 1), (0.25, 1), (0.5, 1), (0.75, 1), (1, 1)] (
                 interpolation = "vertex"
             )
+            def GeomSubset "faceset_0"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "materialBind"
+                int[] indices = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14]
+                rel material:binding =  </World/FaceSet/Looks/initialShadingGroup>
+            }
+            def GeomSubset "faceset_1"
+            {
+                uniform token elementType = "face"
+                uniform token familyName = "materialBind"
+                int[] indices = [0, 3, 12, 15]
+                rel material:binding =  </World/FaceSet/Looks/lambert2SG>
+            }
         }
 
         def Scope "Looks"
