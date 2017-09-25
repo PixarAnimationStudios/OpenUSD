@@ -72,13 +72,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (edgeAndCorner) \
     (edgeOnly) \
     (elementSize) \
+    (elementType) \
     (extent) \
     (extentsHint) \
+    (face) \
     (faceSet) \
     (faceVarying) \
     (faceVaryingLinearInterpolation) \
     (faceVertexCounts) \
     (faceVertexIndices) \
+    (familyName) \
     (focalLength) \
     (focusDistance) \
     (fStop) \
@@ -91,6 +94,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (horizontalApertureOffset) \
     (ids) \
     (inactiveIds) \
+    (indices) \
     (inherited) \
     (interpolateBoundary) \
     (interpolation) \
@@ -224,13 +228,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>edgeAndCorner</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Default value for UsdGeomMesh::GetInterpolateBoundaryAttr()
 /// \li <b>edgeOnly</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr()
 /// \li <b>elementSize</b> - UsdGeomPrimvar - The number of values in the value array that must be aggregated for each element on the  primitive.
+/// \li <b>elementType</b> - UsdGeomSubset
 /// \li <b>extent</b> - UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder, UsdGeomSphere, UsdGeomCube, UsdGeomBoundable
 /// \li <b>extentsHint</b> - Name of the attribute used to author extents hints at the root of leaf models. Extents hints are stored by purpose as a vector of GfVec3f values. They are ordered based on the order of purpose tokens returned by  UsdGeomImageable::GetOrderedPurposeTokens.
-/// \li <b>faceSet</b> - This is the namespace prefix used by  UsdGeomFaceSetAPI for authoring faceSet attributes.
+/// \li <b>face</b> - Possible value for UsdGeomSubset::GetElementTypeAttr(), Default value for UsdGeomSubset::GetElementTypeAttr()
+/// \li <b>faceSet</b> - <Deprecated> This is the namespace prefix used by  UsdGeomFaceSetAPI for authoring faceSet attributes.
 /// \li <b>faceVarying</b> - Possible value for UsdGeomPrimVar::SetInterpolation. For polygons and subdivision surfaces, four values are interpolated over each face of the mesh. Bilinear interpolation  is used for interpolation between the four values.
 /// \li <b>faceVaryingLinearInterpolation</b> - UsdGeomMesh
 /// \li <b>faceVertexCounts</b> - UsdGeomMesh
 /// \li <b>faceVertexIndices</b> - UsdGeomMesh
+/// \li <b>familyName</b> - UsdGeomSubset
 /// \li <b>focalLength</b> - UsdGeomCamera
 /// \li <b>focusDistance</b> - UsdGeomCamera
 /// \li <b>fStop</b> - UsdGeomCamera
@@ -243,6 +250,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>horizontalApertureOffset</b> - UsdGeomCamera
 /// \li <b>ids</b> - UsdGeomPointInstancer, UsdGeomPoints
 /// \li <b>inactiveIds</b> - int64listop prim metadata that specifies the PointInstancer ids that should be masked (unrenderable) over all time.
+/// \li <b>indices</b> - UsdGeomSubset
 /// \li <b>inherited</b> - Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
 /// \li <b>interpolateBoundary</b> - UsdGeomMesh
 /// \li <b>interpolation</b> - UsdGeomPrimvar - How a Primvar interpolates across a primitive; equivalent to RenderMan's \ref Usd_InterpolationVals "class specifier" 

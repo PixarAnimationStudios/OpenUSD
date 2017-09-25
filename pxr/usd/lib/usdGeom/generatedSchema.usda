@@ -1958,6 +1958,52 @@ class Mesh "Mesh" (
     )
 }
 
+class GeomSubset "GeomSubset" (
+    doc = """Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 
+    as a set of indices. Currently only supports encoding of face-subsets, but 
+    could be extended in the future to support subsets representing edges, 
+    segments, points etc.
+
+    To apply to a geometric prim, a GeomSubset prim must be defined as a 
+    child of it in namespace. This restriction makes it easy and efficient 
+    to discover subsets of a prim. We might want to relax this restriction if 
+    it's common to have multiple <b>families</b> of subsets on a gprim and if 
+    it's useful to be able to organize subsets belonging to a </b>family</b> 
+    under a common scope. See 'familyName' attribute for more info on defining 
+    a family of subsets.
+
+    Note that a GeomSubset isn't an imageable (i.e. doesn't derive from
+    UsdGeomImageable). So, you can't author <b>visibility</b> for it or 
+    override its <b>purpose</b>.
+
+    Materials are bound to GeomSubsets just as they are for regular 
+    geometry using API available in UsdShade (UsdShadeMaterial::Bind).
+"""
+)
+{
+    uniform token elementType = "face" (
+        allowedTokens = ["face"]
+        doc = '''The type of element that the indices target. Currently only 
+        allows "face" and defaults to it.'''
+    )
+    uniform token familyName = "" (
+        doc = """The name of the family of subsets that this subset belongs to. 
+        This is optional is only useful when there are multiple families of 
+        subsets under a geometric prim.
+        When multiple subsets belonging to a prim have the same familyName, it 
+        is possible to encode whether the subsets in the family form a partition 
+        (i.e. every element of the whole geometry appears exactly once in only 
+        one of the subsets belonging to the family) using the static method
+        UsdGeomSubset::SetFamilyType(). The validity of the partition 
+        can be checked using ValidatePartition(). However, mutual exclusivity 
+        and inclusiveness are not enforced by the authoring APIs."""
+    )
+    int[] indices = [] (
+        doc = """The set of indices included in this subset. The indices need not 
+        be sorted, but the same index should not appear more than once."""
+    )
+}
+
 class NurbsPatch "NurbsPatch" (
     doc = """Encodes a rational or polynomial non-uniform B-spline
     surface, with optional trim curves.
