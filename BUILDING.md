@@ -180,11 +180,11 @@ For further information see the documentation on the Maya plugin [here](http://o
 ##### Katana Plugin
 
 Enable the Katana plugin in the build by specifying the cmake flag ```PXR_BUILD_KATANA_PLUGIN=TRUE``` 
-when invoking cmake. This plugin is compatible with Katana 2.0v5. The additional dependencies that must be supplied when invoking cmake are:
+when invoking cmake. This plugin is compatible with Katana 2.5v1. The additional dependencies that must be supplied when invoking cmake are:
 
 | Dependency Name       | Description                           | Version   |
 | --------------        | -----------------------------------   | -------   |
-| KATANA_API_LOCATION   | The root path to a Katana SDK install.| 2.0v5     |
+| KATANA_API_LOCATION   | The root path to a Katana SDK install.| 2.5v1     |
 
 For further information see our additional documentation on the Katana plugins [here](http://openusd.org/docs/Katana-USD-Plugins.html).
 
