@@ -80,9 +80,36 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    virtual int ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath, 
-                                      TfToken const& property);
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& property);
+
+
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index);
+
+    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index);
+
+    virtual void MarkReprDirty(UsdPrim const& prim,
+                               SdfPath const& cachePath,
+                               UsdImagingIndexProxy* index);
+
+    virtual void MarkCullStyleDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkTransformDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkVisibilityDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index);
+
 
     /// Returns the color and opacity for a given prim, taking into account
     /// surface shader colors and explicitly authored color on the prim.
@@ -103,6 +130,9 @@ protected:
             UsdTimeCode time,
             UsdImagingValueCache* valueCache);
 
+    USDIMAGING_API
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) final;
 private:
 
     /// Discover required primvars by searching for primvar inputs connected to

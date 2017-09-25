@@ -80,9 +80,9 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath,
                                          UsdImagingIndexProxy* index) 
 {
     // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the rprim and repopulate as the default
+    // remove the adapter dependency and the prim and repopulate as the default
     // behavior.
-    index->RemoveRprim(/*cachePath*/usdPath);
+    _RemovePrim(/*cachePath*/usdPath, index);
     index->RemovePrimInfo(/*usdPrimPath*/usdPath);
 
     if (_GetPrim(usdPath)) {
@@ -93,14 +93,53 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath,
 
 /*virtual*/
 void
-UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& usdPath, 
-                                          UsdImagingIndexProxy* index) 
+UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& primPath,
+                                          UsdImagingIndexProxy* index)
 {
     // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the rprim and repopulate as the default
-    // behavior.
-    index->RemoveRprim(/*cachePath*/usdPath);
-    index->RemovePrimInfo(/*usdPrimPath*/usdPath);
+    // remove the adapter dependency and the prim. We don't repopulate.
+    _RemovePrim(/*cachePath*/primPath, index);
+    index->RemovePrimInfo(/*usdPrimPath*/primPath);
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
+                                            SdfPath const& usdPath,
+                                            UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
+                                     SdfPath const& usdPath,
+                                     UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
+                                          SdfPath const& usdPath,
+                                          UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                          SdfPath const& usdPath,
+                                          UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
+                                           SdfPath const& usdPath,
+                                           UsdImagingIndexProxy* index)
+{
 }
 
 /*virtual*/

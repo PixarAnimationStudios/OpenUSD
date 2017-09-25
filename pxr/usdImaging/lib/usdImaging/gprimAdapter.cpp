@@ -145,6 +145,14 @@ UsdImagingGprimAdapter::_DiscoverPrimvars(
     }
 }
 
+void
+UsdImagingGprimAdapter::_RemovePrim(SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index)
+{
+    index->RemoveRprim(cachePath);
+}
+
+
 static bool
 _IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
 {
@@ -357,7 +365,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         valueCache->GetSurfaceShader(cachePath) = _GetSurfaceShader(prim);
 }
 
-int
+HdDirtyBits
 UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
@@ -380,6 +388,54 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
     return HdChangeTracker::AllDirty;
 }
 
+void
+UsdImagingGprimAdapter::MarkDirty(UsdPrim const& prim,
+                                  SdfPath const& cachePath,
+                                  HdDirtyBits dirty,
+                                  UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, dirty);
+}
+
+void
+UsdImagingGprimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyRefineLevel);
+}
+
+void
+UsdImagingGprimAdapter::MarkReprDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyRepr);
+}
+
+void
+UsdImagingGprimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyCullStyle);
+}
+
+void
+UsdImagingGprimAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyTransform);
+}
+
+void
+UsdImagingGprimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyVisibility);
+}
 
 // -------------------------------------------------------------------------- //
 

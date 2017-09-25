@@ -63,9 +63,10 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertMesh(prim,
-                      GetShaderBinding(prim),
-                      instancerContext);
+    index->InsertRprim(HdPrimTypeTokens->mesh,
+                       prim,
+                       GetShaderBinding(prim),
+                       instancerContext);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return prim.GetPath();
@@ -158,7 +159,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
-int
+HdDirtyBits
 UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       TfToken const& propertyName)

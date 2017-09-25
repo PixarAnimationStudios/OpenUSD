@@ -89,15 +89,42 @@ public:
     /// \name Change Processing 
     // ---------------------------------------------------------------------- //
 
-    virtual int ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath, 
-                                      TfToken const& propertyName);
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& propertyName);
 
     virtual void ProcessPrimResync(SdfPath const& usdPath,
                                    UsdImagingIndexProxy* index);
 
     virtual void ProcessPrimRemoval(SdfPath const& usdPath,
                                     UsdImagingIndexProxy* index);
+
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index);
+
+    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index);
+
+    virtual void MarkReprDirty(UsdPrim const& prim,
+                               SdfPath const& cachePath,
+                               UsdImagingIndexProxy* index);
+
+    virtual void MarkCullStyleDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkTransformDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkVisibilityDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index);
+
+
 
     // ---------------------------------------------------------------------- //
     /// \name Instancing
@@ -143,6 +170,10 @@ public:
     // ---------------------------------------------------------------------- //
 
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
+
+protected:
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) final;
 
 private:
     struct _ProtoRprim;

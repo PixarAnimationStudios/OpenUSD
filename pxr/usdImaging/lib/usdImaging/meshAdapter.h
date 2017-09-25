@@ -86,9 +86,9 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    virtual int ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath,
-                                      TfToken const& propertyName);
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& propertyName);
 
 private:
     void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);

@@ -357,16 +357,18 @@ UsdImagingInstanceAdapter::_IsChildPrim(UsdPrim const& prim,
 {
     // Child paths are the instancer path with a property appended. For leaf
     // gprims (mesh, points, etc) we use child paths, but for adapters which
-    // prune childern (and therefor likely want to manage their namespace), we
+    // prune children (and therefore likely want to manage their namespace), we
     // use the prim path of the original prim, thus IsChildPath fails.
+    //
+    // We can distinguish between child prims (e.g. children in primMap, from
+    // recursive populate calls) and instances (in _instanceToInstancerMap
+    // and the primInfo table) by checking whether the prim shows up in
+    // _instanceToInstancerMap.  If it's not there, it must be a child
+    // prim which we did not relocate during population.
     return IsChildPath(cachePath) 
-        // When we have a non-child path that is not in the instancer data, it
-        // must be an instanced prim which we did not relocate during
-        // population.
-        //
         // We could make this less ad-hoc by storing a list of valid non-child
         // paths, in exchange for the overhead of maintaining that list.
-        || nullptr == TfMapLookupPtr(_instancerData, prim.GetPath());
+        || nullptr == TfMapLookupPtr(_instanceToInstancerMap, prim.GetPath());
 }
 
 void 
@@ -449,7 +451,7 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         *timeVaryingBits |=  (instancerBits & HdChangeTracker::DirtyInstancer);
         *timeVaryingBits |= HdChangeTracker::DirtyVisibility;
 
-    } else {
+    } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
         // In this case, prim is an instance master. Master prims provide
         // no data of their own, so we fall back to the default purpose.
         valueCache->GetPurpose(cachePath) = UsdGeomTokens->default_;
@@ -836,7 +838,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             valueCache->GetSurfaceShader(cachePath) = p;
         }
 
-    } else {
+    } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
         // For the instancer itself, we only send the instance transforms
         // back as primvars, which falls into the DirtyPrimVar bucket
         // currently.
@@ -860,7 +862,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
-int
+HdDirtyBits
 UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
@@ -870,14 +872,15 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
 }
 
 void
-UsdImagingInstanceAdapter::ProcessPrimResync(SdfPath const& usdPath,
-                                             UsdImagingIndexProxy* index)
+UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& usdPath,
+                                       UsdImagingIndexProxy* index,
+                                       bool reload)
 {
     // If prim data exists at this path, we'll drop it now.
     _InstancerDataMap::iterator instIt = _instancerData.find(usdPath);
     if (instIt != _instancerData.end()) {
         // Nuke the entire instancer.
-        _ReloadInstancer(usdPath, index);
+        _ResyncInstancer(usdPath, index, reload);
         return;
     }
 
@@ -931,9 +934,146 @@ UsdImagingInstanceAdapter::ProcessPrimResync(SdfPath const& usdPath,
     }
 
     TF_FOR_ALL(pathIt, instancersToUnload) {
-        _ReloadInstancer(*pathIt, index);
+        _ResyncInstancer(*pathIt, index, reload);
     }
 }
+
+void UsdImagingInstanceAdapter::ProcessPrimResync(SdfPath const& primPath,
+                                                  UsdImagingIndexProxy* index)
+{
+    _ResyncPath(primPath, index, /*reload=*/true);
+}
+
+void UsdImagingInstanceAdapter::ProcessPrimRemoval(SdfPath const& primPath,
+                                                   UsdImagingIndexProxy* index)
+{
+    _ResyncPath(primPath, index, /*reload=*/false);
+}
+
+void
+UsdImagingInstanceAdapter::MarkDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     HdDirtyBits dirty,
+                                     UsdImagingIndexProxy* index)
+{
+    if (_IsChildPrim(prim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
+                                                    cachePath,
+                                                    &instancerContext);
+        if (TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            rproto.adapter->MarkDirty(prim, cachePath, dirty, index);
+        }
+    } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
+        index->MarkInstancerDirty(cachePath, dirty);
+    }
+}
+
+void
+UsdImagingInstanceAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
+                                         SdfPath const& cachePath,
+                                         UsdImagingIndexProxy* index)
+{
+    // The instancer isn't interested in this, but it's children maybe
+    // so make sure the message gets forwarded
+    if (_IsChildPrim(prim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
+                                                    cachePath,
+                                                    &instancerContext);
+
+        if (TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            rproto.adapter->MarkRefineLevelDirty(prim, cachePath, index);
+        }
+    }
+}
+
+void
+UsdImagingInstanceAdapter::MarkReprDirty(UsdPrim const& prim,
+                                  SdfPath const& cachePath,
+                                  UsdImagingIndexProxy* index)
+{
+    // The instancer isn't interested in this, but it's children maybe
+    // so make sure the message gets forwarded
+    if (_IsChildPrim(prim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
+                                                    cachePath,
+                                                    &instancerContext);
+
+        if (TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            rproto.adapter->MarkReprDirty(prim, cachePath, index);
+        }
+    }
+}
+
+void
+UsdImagingInstanceAdapter::MarkCullStyleDirty(UsdPrim const& prim,
+                                       SdfPath const& cachePath,
+                                       UsdImagingIndexProxy* index)
+{
+    // The instancer isn't interested in this, but it's children maybe
+    // so make sure the message gets forwarded
+    if (_IsChildPrim(prim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
+                                                    cachePath,
+                                                    &instancerContext);
+
+        if (TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            rproto.adapter->MarkCullStyleDirty(prim, cachePath, index);
+        }
+    }
+}
+
+void
+UsdImagingInstanceAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              UsdImagingIndexProxy* index)
+{
+    if (_IsChildPrim(prim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
+                                                    cachePath,
+                                                    &instancerContext);
+
+        if (TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            rproto.adapter->MarkTransformDirty(prim, cachePath, index);
+        }
+    } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
+        // For the instancer itself, the instance transforms are sent back
+        // as primvars, so we need to augment the DirtyTransform bit with
+        // DirtyPrimVar.
+        static const HdDirtyBits transformDirty =
+                                                HdChangeTracker::DirtyPrimVar  |
+                                                HdChangeTracker::DirtyTransform;
+
+        index->MarkInstancerDirty(cachePath, transformDirty);
+    }
+}
+
+void
+UsdImagingInstanceAdapter::MarkVisibilityDirty(UsdPrim const& prim,
+                                               SdfPath const& cachePath,
+                                               UsdImagingIndexProxy* index)
+{
+    if (_IsChildPrim(prim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
+                                                    cachePath,
+                                                    &instancerContext);
+
+        if (TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            rproto.adapter->MarkVisibilityDirty(prim, cachePath, index);
+        }
+    } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
+        static const HdDirtyBits visibilityDirty =
+                                               HdChangeTracker::DirtyVisibility;
+
+        index->MarkInstancerDirty(cachePath, visibilityDirty);
+    }
+}
+
 
 /*virtual*/
 SdfPath
@@ -954,8 +1094,9 @@ UsdImagingInstanceAdapter::ShouldCullChildren(UsdPrim const& prim)
 }
 
 void
-UsdImagingInstanceAdapter::_ReloadInstancer(SdfPath const& instancerPath,
-                                            UsdImagingIndexProxy* index)
+UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
+                                            UsdImagingIndexProxy* index,
+                                            bool repopulate)
 {
     _InstancerDataMap::iterator instIt = _instancerData.find(instancerPath);
     if (!TF_VERIFY(instIt != _instancerData.end())) {
@@ -999,9 +1140,11 @@ UsdImagingInstanceAdapter::_ReloadInstancer(SdfPath const& instancerPath,
     // Repopulate the instancer's previous instances. Those that don't exist
     // anymore will be ignored, while those that still exist will be
     // pushed back into this adapter and refreshed.
-    TF_FOR_ALL(pathIt, instancePaths) {
-        if (_GetPrim(*pathIt) && _GetPrim(*pathIt).IsActive()) {
-            index->Repopulate(*pathIt);
+    if (repopulate) {
+        TF_FOR_ALL(pathIt, instancePaths) {
+            if (_GetPrim(*pathIt) && _GetPrim(*pathIt).IsActive()) {
+                index->Repopulate(*pathIt);
+            }
         }
     }
 }
@@ -1518,6 +1661,15 @@ UsdImagingInstanceAdapter::GetDependPaths(SdfPath const &instancerPath) const
     // XXX: we may want to cache this result in _instancerData.
     return result;
 }
+
+/*virtual*/
+void
+UsdImagingInstanceAdapter::_RemovePrim(SdfPath const& cachePath,
+                                       UsdImagingIndexProxy* index)
+{
+    TF_CODING_ERROR("Should use overidden ProcessPrimResync/ProcessPrimRemoval");
+}
+
 
 /*virtual*/
 VtIntArray

@@ -601,26 +601,14 @@ private:
     typedef TfHashMap<SdfPath, bool, SdfPath::Hash> _ShaderMap;
     _ShaderMap _shaderMap;
 
-    typedef TfHashMap<SdfPath, TfToken, SdfPath::Hash> _LightMap;
-    _LightMap _lightMap;
-
     typedef TfHashSet<SdfPath, SdfPath::Hash> _TextureSet;
     _TextureSet _texturePaths;
 
     typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
     _InstancerSet _instancerPrimPaths;
 
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _RprimSet;
-    _RprimSet _rprimPaths;
-
-    // Updates the prim tracking info with the specified dirty flags
-    // and forwards these bits onto Hydra's change tracker.
-    void _MarkRprimOrInstancerDirty(SdfPath const& usdPath,
-                                    HdDirtyBits dirtyFlags);
-
-    void _MarkSubtreeDirty(SdfPath const &subtreeRoot,
-                           HdDirtyBits rprimDirtyFlag,
-                           HdDirtyBits instancerDirtyFlag);
+    void _MarkSubtreeTransformDirty(SdfPath const &subtreeRoot);
+    void _MarkSubtreeVisibilityDirty(SdfPath const &subtreeRoot);
 
     bool _IsChildPath(SdfPath const& path) const {
         return path.IsPropertyPath();
@@ -708,24 +696,18 @@ public:
 
 
     USDIMAGING_API
-    SdfPath InsertMesh(UsdPrim const& usdPrim,
-                       SdfPath const& shaderBinding,
-                       UsdImagingInstancerContext const* instancerContext);
+    void InsertRprim(TfToken const& primType,
+                     UsdPrim const& usdPrim,
+                     SdfPath const& shaderBinding,
+                     UsdImagingInstancerContext const* instancerContext);
 
     USDIMAGING_API
-    SdfPath InsertBasisCurves(UsdPrim const& usdPrim,
-                       SdfPath const& shaderBinding,
-                       UsdImagingInstancerContext const* instancerContext);
+    void InsertSprim(TfToken const& primType,
+                     UsdPrim const& usdPrim);
 
     USDIMAGING_API
-    SdfPath InsertPoints(UsdPrim const& usdPrim,
-                       SdfPath const& shaderBinding,
-                       UsdImagingInstancerContext const* instancerContext);
-
-    // Insert a light into the HdRenderIndex and schedules it for updates
-    // from the delegate.
-    USDIMAGING_API
-    void InsertLight(UsdPrim const& usdPrim, TfToken const& lightType);
+    void InsertBprim(TfToken const& primType,
+                     UsdPrim const& usdPrim);
 
     // Inserts an instancer into the HdRenderIndex and schedules it for updates
     // from the delegate.
@@ -734,7 +716,7 @@ public:
                          UsdPrim const& usdPrim,
                          UsdImagingInstancerContext const* instancerContext);
 
-    // Refresh the HdRprim at the specified render index path.
+    // Refresh the prim at the specified render index path.
     USDIMAGING_API
     void Refresh(SdfPath const& cachePath);
 
@@ -752,21 +734,34 @@ public:
         _primInfoToRemove.push_back(cachePath);
     }
 
-    // Removes the HdRprim at the specified render index path. 
+    // Removes the Rprim at the specified cache path.
     void RemoveRprim(SdfPath const& cachePath) { 
         _rprimsToRemove.push_back(cachePath);
     }
+
+     // Removes the Sprim at the specified cache path.
+     void RemoveSprim(TfToken const& primType, SdfPath const& cachePath) {
+         _TypeAndPath primToRemove = {primType, cachePath};
+         _sprimsToRemove.push_back(primToRemove);
+     }
+
+     // Removes the Bprim at the specified render index path.
+     void RemoveBprim(TfToken const& primType, SdfPath const& cachePath) {
+         _TypeAndPath primToRemove = {primType, cachePath};
+         _bprimsToRemove.push_back(primToRemove);
+     }
+
 
     // Removes the HdInstancer at the specified render index path.
     void RemoveInstancer(SdfPath const& instancerPath) { 
         _instancersToRemove.push_back(instancerPath);
     }
 
-    // Removes a light HdSprim at the specified render index path.
-    // XXX : This will become RemoveSprims when we standarize shaders/lights.
-    void RemoveLight(SdfPath const& cachePath) { 
-        _lightsToRemove.push_back(cachePath);
-    }    
+    void MarkRprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+    void MarkSprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+    void MarkBprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+    void MarkInstancerDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+
 
     // Recursively repopulate the specified usdPath into the render index.
     USDIMAGING_API
@@ -784,23 +779,21 @@ private:
     UsdImagingDelegate::_Worker* _GetWorker() { return _worker; }
     void _ProcessRemovals();
 
-    // Insert a child of the given path; the full child path is returned if
-    // successful, the empty path is returned on failure.
-    //
-    // Note that this method does not implicitly add a dependency because the
-    // child is likely to represent a different prim in the Usd scene graph.
-    SdfPath _InsertRprim(TfToken const& primType,
-                         UsdPrim const& usdPrim,
-                         SdfPath const& shaderBinding,
-                         UsdImagingInstancerContext const* instancerContext);
-
     void _AddTask(SdfPath const& usdPath);   
+
+    struct _TypeAndPath {
+        TfToken primType;
+        SdfPath cachePath;
+    };
+
+    typedef std::vector<_TypeAndPath> _TypeAndPathVector;
 
     UsdImagingDelegate* _delegate;
     UsdImagingDelegate::_Worker* _worker;
     SdfPathVector _pathsToRepopulate;
     SdfPathVector _rprimsToRemove;
-    SdfPathVector _lightsToRemove;
+    _TypeAndPathVector _sprimsToRemove;
+    _TypeAndPathVector _bprimsToRemove;
     SdfPathVector _instancersToRemove;
     SdfPathVector _primInfoToRemove;
 };

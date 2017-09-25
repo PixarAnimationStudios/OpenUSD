@@ -53,10 +53,17 @@ UsdImagingSphereLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertLight(prim, HdPrimTypeTokens->sphereLight);
+    index->InsertSprim(HdPrimTypeTokens->sphereLight, prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return prim.GetPath();
+}
+
+void
+UsdImagingSphereLightAdapter::_RemovePrim(SdfPath const& cachePath,
+                                         UsdImagingIndexProxy* index)
+{
+    index->RemoveSprim(HdPrimTypeTokens->sphereLight, cachePath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
