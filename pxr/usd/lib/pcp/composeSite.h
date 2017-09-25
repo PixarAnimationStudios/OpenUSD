@@ -76,6 +76,7 @@ class PcpLayerStackSite;
 struct PcpSourceReferenceInfo {
     SdfLayerHandle layer;
     SdfLayerOffset layerOffset;
+    std::string authoredAssetPath;
 };
 
 /// A vector of reference arc information.

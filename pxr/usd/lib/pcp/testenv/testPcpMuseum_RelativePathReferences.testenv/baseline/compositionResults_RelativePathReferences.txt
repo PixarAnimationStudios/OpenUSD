@@ -1,0 +1,19 @@
+Loading @RelativePathReferences/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+     sub1/sub1.sdf
+     sub2/sub2.sdf
+     sub3.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    sub1/sub1.sdf        /Model
+    sub2/sub2.sdf        /Model
+    sub3.sdf             /Model
+    sub1/ref.sdf         /Ref
+    sub2/ref.sdf         /Ref
+

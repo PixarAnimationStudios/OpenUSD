@@ -1639,7 +1639,7 @@ _EvalNodeReferences(
 
         PCP_INDEXING_MSG(
             indexer, node, "Found reference to @%s@<%s>", 
-            ref.GetAssetPath().c_str(), ref.GetPrimPath().GetText());
+            info.authoredAssetPath.c_str(), ref.GetPrimPath().GetText());
 
         bool fail = false;
 
@@ -1666,7 +1666,7 @@ _EvalNodeReferences(
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
             err->layer      = srcLayer;
             err->sourcePath = srcPath;
-            err->assetPath  = ref.GetAssetPath();
+            err->assetPath  = info.authoredAssetPath;
             err->targetPath = ref.GetPrimPath();
             err->offset     = srcLayerOffset;
             indexer->RecordError(err);
@@ -1693,12 +1693,12 @@ _EvalNodeReferences(
         else {
             std::string canonicalMutedLayerId;
             if (indexer->inputs.cache->IsLayerMuted(
-                    srcLayer, ref.GetAssetPath(), &canonicalMutedLayerId)) {
+                    srcLayer, info.authoredAssetPath, &canonicalMutedLayerId)) {
                 PcpErrorMutedAssetPathPtr err = PcpErrorMutedAssetPath::New();
                 err->rootSite = PcpSite(node.GetRootNode().GetSite());
                 err->site = PcpSite(node.GetSite());
                 err->targetPath = ref.GetPrimPath();
-                err->assetPath = ref.GetAssetPath();
+                err->assetPath = info.authoredAssetPath;
                 err->resolvedAssetPath = canonicalMutedLayerId;
                 err->arcType = PcpArcTypeReference;
                 err->layer = srcLayer;
@@ -1706,10 +1706,13 @@ _EvalNodeReferences(
                 continue;
             }
 
-            std::string resolvedAssetPath(ref.GetAssetPath());
             TfErrorMark m;
-            refLayer = SdfFindOrOpenRelativeToLayer(
-                srcLayer, &resolvedAssetPath, 
+
+            // Relative asset paths will already have been anchored to their 
+            // source layers in PcpComposeSiteReferences, so we can just call
+            // SdfLayer::FindOrOpen instead of SdfFindOrOpenRelativeToLayer.
+            refLayer = SdfLayer::FindOrOpen(
+                ref.GetAssetPath(),
                 Pcp_GetArgumentsForTargetSchema(indexer->inputs.targetSchema));
 
             if (!refLayer) {
@@ -1718,8 +1721,8 @@ _EvalNodeReferences(
                 err->rootSite = PcpSite(node.GetRootNode().GetSite());
                 err->site = PcpSite(node.GetSite());
                 err->targetPath = ref.GetPrimPath();
-                err->assetPath = ref.GetAssetPath();
-                err->resolvedAssetPath = resolvedAssetPath;
+                err->assetPath = info.authoredAssetPath;
+                err->resolvedAssetPath = ref.GetAssetPath();
                 err->arcType = PcpArcTypeReference;
                 err->layer = srcLayer;
                 if (!m.IsClean()) {
@@ -3883,14 +3886,8 @@ _GetDirectChildRange(const PcpNodeRef& node, PcpArcType arcType)
 
 static bool
 _ComputedAssetPathWouldCreateDifferentNode(
-    const PcpNodeRef& node, 
-    const SdfLayerHandle& anchorLayer, const std::string& authoredAssetPath)
+    const PcpNodeRef& node, const std::string& newAssetPath)
 {
-    // Compute the same asset path that would be used during composition
-    // to open layers via SdfFindOrOpenRelativeToLayer.
-    const std::string newAssetPath = 
-        SdfComputeAssetPathRelativeToLayer(anchorLayer, authoredAssetPath);
-
     // Get any file format arguments that were originally used to open the
     // layer so we can apply them to the new asset path.
     const SdfLayerRefPtr& nodeRootLayer = 
@@ -3954,9 +3951,13 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
                     continue;
                 }
 
+                // PcpComposeSiteReferences will have filled in each
+                // SdfReference with the same asset path that would be used
+                // during composition to open layers.
+                const std::string& anchoredAssetPath = refs[i].GetAssetPath();
+
                 if (_ComputedAssetPathWouldCreateDifferentNode(
-                        *refNodeRange.first, 
-                        sourceInfo[i].layer, refs[i].GetAssetPath())) {
+                        *refNodeRange.first, anchoredAssetPath)) {
                     return true;
                 }
             }
@@ -3976,9 +3977,14 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
                 return true;
             }
 
+            // Compute the same asset path that would be used during 
+            // composition to open layers via SdfFindOrOpenRelativeToLayer.
+            const std::string& anchoredAssetPath = 
+                SdfComputeAssetPathRelativeToLayer(
+                    sourceLayer, payload.GetAssetPath());
+
             if (_ComputedAssetPathWouldCreateDifferentNode(
-                    *payloadNodeRange.first, 
-                    sourceLayer, payload.GetAssetPath())) {
+                    *payloadNodeRange.first, anchoredAssetPath)) {
                 return true;
             }
         }
