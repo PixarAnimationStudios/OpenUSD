@@ -32,6 +32,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using namespace pxr_lz4;
+
 size_t
 TfFastCompression::GetMaxInputSize()
 {

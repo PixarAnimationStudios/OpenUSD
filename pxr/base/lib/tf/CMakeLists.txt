@@ -173,7 +173,7 @@ pxr_library(tf
         pxrDoubleConversion/fast-dtoa.cc
         pxrDoubleConversion/fixed-dtoa.cc
         pxrDoubleConversion/strtod.cc
-        pxrLZ4/lz4.c
+        pxrLZ4/lz4.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp

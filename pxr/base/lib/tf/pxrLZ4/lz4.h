@@ -32,9 +32,12 @@
     - LZ4 homepage : http://www.lz4.org
     - LZ4 source repository : https://github.com/lz4/lz4
 */
+
+/* PXR - modification; remove C linkage.
 #if defined (__cplusplus)
 extern "C" {
 #endif
+*/
 
 #ifndef LZ4_H_2983827168210
 #define LZ4_H_2983827168210
@@ -42,6 +45,15 @@ extern "C" {
 /* --- Dependency --- */
 #include <stddef.h>   /* size_t */
 
+/* PXR - modification; hoist this include out of namespace scope. */
+#if defined(__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
+#include <stdint.h>
+#endif
+
+/* PXR - modification; add namespace. */
+#include "pxr/pxr.h"
+PXR_NAMESPACE_OPEN_SCOPE
+namespace pxr_lz4 {
 
 /**
   Introduction
@@ -335,7 +347,6 @@ LZ4LIB_API int LZ4_decompress_fast_usingDict (const char* source, char* dest, in
 #define LZ4_HASH_SIZE_U32 (1 << LZ4_HASHLOG)       /* required as macro for static allocation */
 
 #if defined(__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
-#include <stdint.h>
 
 typedef struct {
     uint32_t hashTable[LZ4_HASH_SIZE_U32];
@@ -455,9 +466,15 @@ LZ4LIB_API LZ4_DEPRECATED("use LZ4_saveDict() instead")     char* LZ4_slideInput
 LZ4LIB_API LZ4_DEPRECATED("use LZ4_decompress_safe_usingDict() instead") int LZ4_decompress_safe_withPrefix64k (const char* src, char* dst, int compressedSize, int maxDstSize);
 LZ4LIB_API LZ4_DEPRECATED("use LZ4_decompress_fast_usingDict() instead") int LZ4_decompress_fast_withPrefix64k (const char* src, char* dst, int originalSize);
 
+/* PXR - modification, add namespace. */
+} // pxr_lz4
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif /* LZ4_H_2983827168210 */
 
 
+/* PXR - modification; remove C linkage.
 #if defined (__cplusplus)
 }
 #endif
+*/

@@ -32,7 +32,6 @@
     - LZ4 source repository : https://github.com/lz4/lz4
 */
 
-
 /*-************************************
 *  Tuning parameters
 **************************************/
@@ -163,6 +162,31 @@
   typedef size_t reg_t;   /* 32-bits in x32 mode */
 #endif
 
+/* PXR - modification; hoist LZ4_STATIC_ASSERT and DEBUGLOG out of namespace
+ * scope since DEBUGLOG #includes <stdio.h> */
+
+/*-************************************
+*  Error detection
+**************************************/
+#define LZ4_STATIC_ASSERT(c)    { enum { LZ4_static_assert = 1/(int)(!!(c)) }; }   /* use only *after* variable declarations */
+
+#if defined(LZ4_DEBUG) && (LZ4_DEBUG>=2)
+#  include <stdio.h>
+#  define DEBUGLOG(l, ...) {                          \
+                if (l<=LZ4_DEBUG) {                   \
+                    fprintf(stderr, __FILE__ ": ");   \
+                    fprintf(stderr, __VA_ARGS__);     \
+                    fprintf(stderr, " \n");           \
+            }   }
+#else
+#  define DEBUGLOG(l, ...)      {}    /* disabled */
+#endif
+
+/* PXR - modification; add namespace. */
+#include "pxr/pxr.h"
+PXR_NAMESPACE_OPEN_SCOPE
+namespace pxr_lz4 {
+
 /*-************************************
 *  Reading and writing into memory
 **************************************/
@@ -284,24 +308,6 @@ static const int LZ4_minLength = (MFLIMIT+1);
 #define ML_MASK  ((1U<<ML_BITS)-1)
 #define RUN_BITS (8-ML_BITS)
 #define RUN_MASK ((1U<<RUN_BITS)-1)
-
-
-/*-************************************
-*  Error detection
-**************************************/
-#define LZ4_STATIC_ASSERT(c)    { enum { LZ4_static_assert = 1/(int)(!!(c)) }; }   /* use only *after* variable declarations */
-
-#if defined(LZ4_DEBUG) && (LZ4_DEBUG>=2)
-#  include <stdio.h>
-#  define DEBUGLOG(l, ...) {                          \
-                if (l<=LZ4_DEBUG) {                   \
-                    fprintf(stderr, __FILE__ ": ");   \
-                    fprintf(stderr, __VA_ARGS__);     \
-                    fprintf(stderr, " \n");           \
-            }   }
-#else
-#  define DEBUGLOG(l, ...)      {}    /* disabled */
-#endif
 
 
 /*-************************************
@@ -1476,3 +1482,7 @@ int LZ4_decompress_fast_withPrefix64k(const char* source, char* dest, int origin
 }
 
 #endif   /* LZ4_COMMONDEFS_ONLY */
+
+/* PXR - modification, add namespace. */
+} // pxr_lz4
+PXR_NAMESPACE_CLOSE_SCOPE
