@@ -64,7 +64,12 @@ class AttributeValueEditor(QtWidgets.QWidget):
     def populate(self, name, node):
         # called when the selected attribute has changed
         # gets the attribute object and the source node
-        self._attribute = self._mainWindow._attributeDict[name]
+        try: 
+            self._attribute = self._mainWindow._attributeDict[name]
+        except KeyError:
+            self._mainWindow._attributeDict[name] = ''
+            self._attribute = self._mainWindow._attributeDict[name]
+
         self._isSet = True  # an attribute is selected
         self._node = node
 
@@ -88,8 +93,16 @@ class AttributeValueEditor(QtWidgets.QWidget):
         return None
 
     def refresh(self):
+        #XXX USD Determine whether the revert button should be on
+        self._ui.revertButton.setEnabled(False)
+
         # usually called upon frame change or selected attribute change
         if not self._isSet:
+            return
+
+        # attribute connections and relationship targets have no value to display
+        # in the value viewer.
+        if self._attribute == '':
             return
 
         frame = self._mainWindow._currentFrame
@@ -111,9 +124,6 @@ class AttributeValueEditor(QtWidgets.QWidget):
             from scalarTypes import ToString
             rowText = ToString(self._val, self._attribute.GetTypeName())
             self._ui.valueViewer.setText(rowText)
-
-        #XXX USD Determine whether the revert button should be on
-        self._ui.revertButton.setEnabled(False)
 
     def clear(self):
         # set the value editor to 'no attribute selected' mode

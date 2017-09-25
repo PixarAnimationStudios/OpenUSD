@@ -22,6 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 from qt import QtCore, QtGui, QtWidgets
+import os
 from pxr import Usd, Sdf
 from customAttributes import CustomAttribute
 
@@ -63,12 +64,42 @@ AbstractPrimFont = NormalFont
 # Property viewer constants
 INDEX_PROPTYPE, INDEX_PROPNAME, INDEX_PROPVAL = range(3)
 
-# RichText Items used to distinguish property types
-TYPE_COLUMN_PAD = "margin-left: 14px"
-ATTR_TYPE_RT = "<p style=\"%s; %s; \">A</p>" % (TYPE_COLUMN_PAD, "color: " + HeaderColor.color().name())
-REL_TYPE_RT  = "<p style=\"%s; %s;\">R</p>" % (TYPE_COLUMN_PAD, "color: " + HeaderColor.color().name())
-COMP_TYPE_RT = "<p style=\"%s; %s;\">C</p>" % (TYPE_COLUMN_PAD, "color: " + HeaderColor.color().name())
-CONN_TYPE_RT = "<p style=\"%s; %s;\">A<sub>c</sub></p>" % (TYPE_COLUMN_PAD, "color: " + HeaderColor.color().name())
+ICON_DIR_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
+
+# We use deferred loading because icons can't be constructed before
+# application initialization time.
+_icons = {}
+def _DeferredIconLoad(path):
+    fullPath = os.path.join(ICON_DIR_ROOT, path)
+    try:
+        icon = _icons[fullPath] 
+    except KeyError:
+        icon = QtGui.QIcon(fullPath)
+        _icons[fullPath] = icon
+    return icon
+
+ATTR_PLAIN_TYPE_ICON        = lambda: _DeferredIconLoad('usd-attr-plain-icon.png')
+ATTR_WITH_CONN_TYPE_ICON    = lambda: _DeferredIconLoad('usd-attr-with-conn-icon.png')
+REL_PLAIN_TYPE_ICON         = lambda: _DeferredIconLoad('usd-rel-plain-icon.png')
+REL_WITH_TARGET_TYPE_ICON   = lambda: _DeferredIconLoad('usd-rel-with-target-icon.png')
+TARGET_TYPE_ICON            = lambda: _DeferredIconLoad('usd-target-icon.png')
+CONN_TYPE_ICON              = lambda: _DeferredIconLoad('usd-conn-icon.png')
+CMP_TYPE_ICON               = lambda: _DeferredIconLoad('usd-cmp-icon.png')
+
+ATTR_PLAIN_TYPE_ROLE = "Attr"
+REL_PLAIN_TYPE_ROLE = "Rel"
+ATTR_WITH_CONN_TYPE_ROLE = "Attr_"
+REL_WITH_TARGET_TYPE_ROLE = "Rel_"
+TARGET_TYPE_ROLE = "Tgt"
+CONN_TYPE_ROLE = "Conn"
+CMP_TYPE_ROLE = "Cmp"
+
+def _PropTreeWidgetGetRole(tw):
+    return tw.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+
+def PropTreeWidgetTypeIsRel(tw):
+    role = _PropTreeWidgetGetRole(tw) 
+    return (role == REL_PLAIN_TYPE_ROLE or role == REL_WITH_TARGET_TYPE_ROLE) 
 
 def _UpdateLabelText(text, substring, mode):
     return text.replace(substring,'<'+mode+'>'+substring+'</'+mode+'>')
@@ -82,26 +113,6 @@ def BoldenLabelText(text, substring):
 def ColorizeLabelText(text, substring, r, g, b):
     return _UpdateLabelText(text, substring, 
                             "span style=\"color:rgb(%d, %d, %d);\"" % (r,g,b))
-
-def UniquifyTableWidgetItems(a):
-    """ Eliminates duplicate list entries in a list
-        of TableWidgetItems. It relies on the row property
-        being available for comparison.
-    """
-    if (len(a) == 0):
-        tmp = []
-    else:
-        tmp = [a[0]]
-        # XXX: we need to compare row #s because
-        # PySide doesn't allow equality comparison for QTableWidgetItems
-        tmp_rows = set() 
-        tmp_rows.add(a[0].row())
-
-        for i in range(1,len(a)):
-            if (a[i].row() not in tmp_rows):
-                tmp.append(a[i])
-                tmp_rows.add(a[i].row())
-    return tmp
 
 def PrintWarning(title, description):
     import sys

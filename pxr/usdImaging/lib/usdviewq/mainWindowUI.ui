@@ -352,54 +352,39 @@
           <number>5</number>
          </property>
          <item>
-          <widget class="QTableWidget" name="propertyView">
+          <widget class="QTreeWidget" name="propertyView">
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Plain</enum>
+          </property>
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
            <property name="toolTip">
             <string/>
            </property>
            <property name="styleSheet">
             <string notr="true"/>
            </property>
-           <property name="frameShape">
-            <enum>QFrame::NoFrame</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Plain</enum>
-           </property>
-           <property name="editTriggers">
-            <set>QAbstractItemView::NoEditTriggers</set>
-           </property>
-           <property name="alternatingRowColors">
-            <bool>true</bool>
-           </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SingleSelection</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <property name="showGrid">
-            <bool>false</bool>
-           </property>
-           <property name="gridStyle">
-            <enum>Qt::SolidLine</enum>
-           </property>
            <property name="columnCount">
-            <number>2</number>
+            <number>3</number>
            </property>
            <attribute name="horizontalHeaderCascadingSectionResizes">
             <bool>true</bool>
            </attribute>
            <attribute name="horizontalHeaderDefaultSectionSize">
-            <number>220</number>
+            <number>200</number>
            </attribute>
            <attribute name="horizontalHeaderMinimumSectionSize">
-            <number>30</number>
+            <number>8</number>
            </attribute>
            <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
             <bool>false</bool>
            </attribute>
            <attribute name="horizontalHeaderStretchLastSection">
-            <bool>false</bool>
+            <bool>true</bool>
            </attribute>
            <attribute name="verticalHeaderVisible">
             <bool>false</bool>
@@ -420,7 +405,7 @@
            </column>
            <column>
             <property name="text">
-             <string>Name</string>
+             <string>Property Name</string>
             </property>
            </column>
            <column>
@@ -515,7 +500,7 @@
               <enum>Qt::NoFocus</enum>
              </property>
              <property name="text">
-              <string>Find Attr</string>
+              <string>Find Prop</string>
              </property>
              <property name="iconSize">
               <size>

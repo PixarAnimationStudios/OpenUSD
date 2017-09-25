@@ -27,7 +27,10 @@ from propertyLegendUI import Ui_PropertyLegend
 
 from common import (HasArcsColor, NormalColor, MasterColor, InstanceColor, DefaultTextColor,
                     TimeSampleTextColor, NoValueTextColor, ValueClipsTextColor, RedColor,
-                    FallbackTextColor, ColorizeLabelText, BoldenLabelText, ItalicizeLabelText)
+                    FallbackTextColor, ColorizeLabelText, BoldenLabelText, ItalicizeLabelText,
+                    ATTR_PLAIN_TYPE_ICON, ATTR_WITH_CONN_TYPE_ICON, REL_PLAIN_TYPE_ICON, 
+                    REL_WITH_TARGET_TYPE_ICON, TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON)
+
 
 class PropertyLegend(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -36,6 +39,7 @@ class PropertyLegend(QtWidgets.QWidget):
         self._ui.setupUi(self)
 
         self._isMinimized = True
+        self._iconDisplaySize = (16,16)
 
         graphicsScene = QtWidgets.QGraphicsScene()
 
@@ -82,8 +86,21 @@ class PropertyLegend(QtWidgets.QWidget):
         vcLabel = self._ui.propertyLegendLabelValueClips
         vcLabel.setText(ItalicizeLabelText(vcLabel.text(), interpolatedStr))
 
-        connAttrLabel = self._ui.propertyLegendConnId
-        connAttrLabel.setText(connAttrLabel.text() + '<sub>c</sub>:') 
+        # Load up and set the icons for the property legend
+        self._ui.propertyLegendTargetIcon.setPixmap(
+            TARGET_TYPE_ICON().pixmap(*self._iconDisplaySize)) 
+        self._ui.propertyLegendConnIcon.setPixmap(
+            CONN_TYPE_ICON().pixmap(*self._iconDisplaySize))
+        self._ui.propertyLegendAttrPlainIcon.setPixmap(
+            ATTR_PLAIN_TYPE_ICON().pixmap(*self._iconDisplaySize))
+        self._ui.propertyLegendRelPlainIcon.setPixmap(
+            REL_PLAIN_TYPE_ICON().pixmap(*self._iconDisplaySize))
+        self._ui.propertyLegendAttrWithConnIcon.setPixmap(
+            ATTR_WITH_CONN_TYPE_ICON().pixmap(*self._iconDisplaySize))
+        self._ui.propertyLegendRelWithTargetIcon.setPixmap(
+            REL_WITH_TARGET_TYPE_ICON().pixmap(*self._iconDisplaySize))
+        self._ui.propertyLegendCompIcon.setPixmap(
+            CMP_TYPE_ICON().pixmap(*self._iconDisplaySize))
     
     def IsMinimized(self):
         return self._isMinimized

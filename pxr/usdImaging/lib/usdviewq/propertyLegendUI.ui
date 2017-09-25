@@ -35,7 +35,7 @@
    </property>
    <property name="maximumSize">
     <size>
-     <width>500</width>
+     <width>650</width>
      <height>0</height>
     </size>
    </property>
@@ -188,23 +188,11 @@
      </widget>
     </item>
     <item row="2" column="0">
-     <widget class="QLabel" name="propertyLegendAttrId">
-      <property name="font">
-       <font>
-        <family>Gotham Rounded</family>
-        <pointsize>9</pointsize>
-        <weight>50</weight>
-        <italic>false</italic>
-        <bold>false</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>A:</string>
-      </property>
+     <widget class="QLabel" name="propertyLegendAttrPlainIcon">
      </widget>
     </item>
     <item row="2" column="1">
-     <widget class="QLabel" name="propertyLegendAttrDesc">
+     <widget class="QLabel" name="propertyLegendAttrPlainDesc">
       <property name="font">
        <font>
         <family>Gotham Rounded</family>
@@ -220,54 +208,10 @@
      </widget>
     </item>
     <item row="2" column="2">
-     <widget class="QLabel" name="propertyLegendRelId">
-      <property name="font">
-       <font>
-        <family>Gotham Rounded</family>
-        <pointsize>9</pointsize>
-        <weight>50</weight>
-        <italic>false</italic>
-        <bold>false</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>R:</string>
-      </property>
+     <widget class="QLabel" name="propertyLegendConnIcon">
      </widget>
     </item>
     <item row="2" column="3">
-     <widget class="QLabel" name="propertyLegendRelDesc">
-      <property name="font">
-       <font>
-        <family>Gotham Rounded</family>
-        <pointsize>9</pointsize>
-        <weight>50</weight>
-        <italic>false</italic>
-        <bold>false</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Relationship</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="4">
-     <widget class="QLabel" name="propertyLegendConnId">
-      <property name="font">
-       <font>
-        <family>Gotham Rounded</family>
-        <pointsize>9</pointsize>
-        <weight>50</weight>
-        <italic>false</italic>
-        <bold>false</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>A</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="5">
      <widget class="QLabel" name="propertyLegendConnDesc">
       <property name="font">
        <font>
@@ -279,12 +223,16 @@
        </font>
       </property>
       <property name="text">
-       <string>Attribute with connections</string>
+      <string>Connection</string>
       </property>
      </widget>
     </item>
-    <item row="3" column="0">
-     <widget class="QLabel" name="propertyLegendCompId">
+    <item row="2" column="4">
+     <widget class="QLabel" name="propertyLegendAttrWithConnIcon">
+     </widget>
+    </item>
+    <item row="2" column="5">
+     <widget class="QLabel" name="propertyLegendAttrWithConnDesc">
       <property name="font">
        <font>
         <family>Gotham Rounded</family>
@@ -295,11 +243,76 @@
        </font>
       </property>
       <property name="text">
-       <string>C:</string>
+       <string>Attribute w/Connection(s)</string>
       </property>
+    </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="propertyLegendRelPlainIcon">
      </widget>
     </item>
     <item row="3" column="1">
+     <widget class="QLabel" name="propertyLegendRelPlainDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+          <string>Relationship</string>
+      </property>
+    </widget>
+    </item>
+    <item row="3" column="2">
+     <widget class="QLabel" name="propertyLegendTargetIcon">
+     </widget>
+    </item>
+    <item row="3" column="3">
+     <widget class="QLabel" name="propertyLegendTargetDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+          <string>Target</string>
+      </property>
+    </widget>
+    </item>
+    <item row="3" column="4">
+     <widget class="QLabel" name="propertyLegendRelWithTargetIcon">
+     </widget>
+    </item>
+    <item row="3" column="5">
+     <widget class="QLabel" name="propertyLegendRelWithTargetDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+      <string>Relationship w/Target(s)</string>
+      </property>
+     </widget>
+    </item>
+
+    <item row="4" column="0">
+     <widget class="QLabel" name="propertyLegendCompIcon">
+     </widget>
+    </item>
+    <item row="4" column="1" colspan="5">
      <widget class="QLabel" name="propertyLegendCompDesc">
       <property name="font">
        <font>
@@ -311,10 +324,11 @@
        </font>
       </property>
       <property name="text">
-       <string>Computed</string>
+       <string>Computed Value Provided by Usdview</string>
       </property>
     </widget>
     </item>
+
    </layout>
   </widget>
 </ui>

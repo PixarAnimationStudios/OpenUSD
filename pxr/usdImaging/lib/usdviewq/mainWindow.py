@@ -40,7 +40,8 @@ from nodeContextMenu import NodeContextMenu
 from headerContextMenu import HeaderContextMenu
 from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
-from customAttributes import _GetCustomAttributes, BoundingBoxAttribute, LocalToWorldXformAttribute
+from customAttributes import (_GetCustomAttributes, BoundingBoxAttribute, 
+                              LocalToWorldXformAttribute, RelationshipAttribute)
 from nodeViewItem import NodeViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
@@ -49,12 +50,16 @@ import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, settings
 # Common Utilities
 from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor, ValueClipsTextColor, 
                     DefaultTextColor, HeaderColor, RedColor, BoldFont, ItalicFont,
-                    UniquifyTableWidgetItems, GetAttributeColor, GetAttributeTextFont, 
-                    HasArcsColor, InstanceColor, NormalColor, MasterColor, Timer, Drange,
+                    GetAttributeColor, GetAttributeTextFont, HasArcsColor, 
+                    InstanceColor, NormalColor, MasterColor, Timer, Drange,
                     BusyContext, DumpMallocTags, GetShortString, GetInstanceIdForIndex, 
                     ItalicizeLabelText, BoldenLabelText, ColorizeLabelText,
-                    INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL, 
-                    ATTR_TYPE_RT, REL_TYPE_RT, COMP_TYPE_RT, CONN_TYPE_RT)
+                    INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL,
+                    ATTR_PLAIN_TYPE_ICON, ATTR_WITH_CONN_TYPE_ICON, REL_PLAIN_TYPE_ICON, 
+                    REL_WITH_TARGET_TYPE_ICON, TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON,            
+                    ATTR_PLAIN_TYPE_ROLE, REL_PLAIN_TYPE_ROLE, ATTR_WITH_CONN_TYPE_ROLE,
+                    REL_WITH_TARGET_TYPE_ROLE, CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE,
+                    PropTreeWidgetTypeIsRel)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -301,8 +306,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.stepSize.setValidator(stepValidator)
 
             # This causes the last column of the attribute view (the value)
-            #  to be stretched to fill the available space
-            self._ui.propertyView.horizontalHeader().setStretchLastSection(True)
+            # to be stretched to fill the available space
+            self._ui.propertyView.header().setStretchLastSection(True)
 
             self._ui.propertyView.setSelectionBehavior(
                 QtWidgets.QAbstractItemView.SelectRows)
@@ -415,7 +420,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # set the context menu policy for the node browser and attribute
             # inspector headers. This is so we can have a context menu on the 
             # headers that allows you to select which columns are visible.
-            self._ui.propertyView.horizontalHeader()\
+            self._ui.propertyView.header()\
                     .setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             self._ui.nodeView.header()\
                     .setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -444,6 +449,12 @@ class MainWindow(QtWidgets.QMainWindow):
             nvh.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
             nvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
             nvh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+
+            pvh = self._ui.propertyView.header()             
+            pvh.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+            pvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+            pvh.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+            pvh.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
 
             # XXX: 
             # To avoid QTBUG-12850 (https://bugreports.qt.io/browse/QTBUG-12850),
@@ -566,12 +577,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._ui.propertyView.itemSelectionChanged.connect(self._refreshWatchWindow)
 
-            self._ui.propertyView.cellClicked.connect(self._propertyViewItemClicked)
+            self._ui.propertyView.itemClicked.connect(self._propertyViewItemClicked)
 
             self._ui.propertyView.currentItemChanged.connect(
                 self._populateAttributeInspector)
 
-            self._ui.propertyView.horizontalHeader().customContextMenuRequested.\
+            self._ui.propertyView.header().customContextMenuRequested.\
                 connect(self._propertyViewHeaderContextMenu)
 
             self._ui.propertyView.customContextMenuRequested.connect(
@@ -1596,12 +1607,12 @@ class MainWindow(QtWidgets.QMainWindow):
             # Go to the next result of the currently ongoing search
             nextResult = self._attrSearchResults.popleft()
 
-            self._ui.propertyView.selectRow(nextResult.row())
+            nextResult.setSelected(True)
             self._ui.propertyView.scrollToItem(nextResult)
             self._attrSearchResults.append(nextResult)
             self._lastNodeSearched = self._currentNodes[0]
 
-            itemName = str(self._ui.propertyView.item(nextResult.row(), INDEX_PROPNAME).text())
+            itemName = str(nextResult.text(INDEX_PROPNAME))
             self._ui.attributeValueEditor.populate(itemName, self._currentNodes[0])
             self._updateMetadataView(self._getSelectedObject())
             self._updateLayerStackView(self._getSelectedObject())
@@ -1610,16 +1621,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self._attrSearchString = self._ui.attrViewLineEdit.text()
             self._attrSearchResults = self._ui.propertyView.findItems(
                 self._ui.attrViewLineEdit.text(),
-                QtCore.Qt.MatchRegExp)
+                QtCore.Qt.MatchRegExp,
+                INDEX_PROPNAME)
 
             # Now just search for the string itself
             otherSearch = self._ui.propertyView.findItems(
                 self._ui.attrViewLineEdit.text(), 
-                QtCore.Qt.MatchContains)
+                QtCore.Qt.MatchContains,
+                INDEX_PROPNAME)
+
             self._attrSearchResults += otherSearch
 
-            self._attrSearchResults = UniquifyTableWidgetItems(self._attrSearchResults)
-            self._attrSearchResults.sort(cmp, QtWidgets.QTableWidgetItem.row)
+            # We find properties first, then connections/targets
+            # Based on the default recursive match finding in Qt.
+            self._attrSearchResults.sort()
             self._attrSearchResults = deque(self._attrSearchResults)
 
             self._lastNodeSearched = self._currentNodes[0]
@@ -2382,14 +2397,25 @@ class MainWindow(QtWidgets.QMainWindow):
     # ===================================================================
     # ==================== Attribute Inspector ==========================
     def _populateAttributeInspector(self, currentItem = None, previtem = None):
+        # We define data 'roles' in the property viewer to distinguish between things
+        # like attributes and attributes with connections, relationships and relationships 
+        # with targets etc etc.
         self._currentProp = self._getSelectedObject(currentItem)
+
+        # In the case of connections and targets, we keep their parent as the selected property
+        if currentItem:
+            role = currentItem.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+            if role == CONN_TYPE_ROLE or role == TARGET_TYPE_ROLE:
+                parent = currentItem.parent()
+                self._currentProp = self._getSelectedObject(parent) 
+
         if isinstance(self._currentProp, Usd.Prim):
             self._currentProp = None
         if self._console:
             self._console.reloadConsole(self)
 
         if currentItem is not None:
-            itemName = str(self._ui.propertyView.item(currentItem.row(), INDEX_PROPNAME).text())
+            itemName = str(currentItem.text(INDEX_PROPNAME))
 
             # inform the value editor that we selected a new attribute
             self._ui.attributeValueEditor.populate(itemName, self._currentNodes[0])
@@ -2862,8 +2888,10 @@ class MainWindow(QtWidgets.QMainWindow):
                                        updateAttributeView=False)
 
     def _propertyViewItemClicked(self, item, col):
-        self._updateAttributeInspector(obj=self._getSelectedObject(),
-                                       updateAttributeView=False)
+        role = item.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+        if role == CONN_TYPE_ROLE or role == TARGET_TYPE_ROLE:
+            self._ui.propertyView.setCurrentItem(item.parent())
+            item.setSelected(True)
 
     def _getPathsFromItems(self, items, prune = False):
         # this function returns a list of paths given a list of items if
@@ -2970,11 +2998,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         prim = self._currentNodes[0]
 
-        customAttrs = _GetCustomAttributes(prim, self._bboxCache, self._xformCache)
-        attrs = prim.GetAttributes()
-                        
-        for cAttr in customAttrs:
-            attributeDict[cAttr.GetName()] = cAttr
+        composed, rels = _GetCustomAttributes(prim, self._bboxCache, self._xformCache)
+
+        attrs = prim.GetAttributes() + rels
+        def cmpFunc(attrA, attrB):
+            aName = attrA.GetName()
+            bName = attrB.GetName()
+            return cmp(aName.lower(), bName.lower())
+
+        attrs.sort(cmp=cmpFunc)
+
+        # Add the special composed attributes usdview generates
+        # at the top of our property list.
+        for attr in composed:
+            attributeDict[attr.GetName()] = attr
 
         for attr in attrs:
             attributeDict[attr.GetName()] = attr
@@ -2983,61 +3020,95 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _updateAttributeViewInternal(self):
         frame = self._currentFrame
-        tableWidget = self._ui.propertyView
+        treeWidget = self._ui.propertyView
 
-        previousSelection = tableWidget.selectedItems()
+        previousSelection = treeWidget.selectedItems()
         prevSelectedAttributeNames = set()
         for i in previousSelection:
-            prevSelectedAttributeNames.add(
-                str(tableWidget.item(i.row(),INDEX_PROPNAME).text()))
+            prevSelectedAttributeNames.add(str(i.text(INDEX_PROPNAME)))
 
         # get a dictionary of prim attribs/members and store it in self._attributeDict
         self._attributeDict = self._getAttributeDict()
-
-        # Setup table widget
-        tableWidget.clearContents()
-        tableWidget.setRowCount(len(self._attributeDict))
-
+        treeWidget.clear()
         self._populateAttributeInspector()
 
-        attributeCount = 0
+        currRow = 0
         for key, attribute in self._attributeDict.iteritems():
-            # Get the attribute's kind, value and display color
+            targets = None 
+
             if (isinstance(attribute, BoundingBoxAttribute) or 
                 isinstance(attribute, LocalToWorldXformAttribute)):
-                typeContent = QtGui.QLabel(COMP_TYPE_RT)
+                typeContent = CMP_TYPE_ICON() 
+                typeRole = CMP_TYPE_ROLE
             elif type(attribute) == Usd.Attribute:
                 if attribute.HasAuthoredConnections():
-                    typeContent = QtGui.QLabel(CONN_TYPE_RT)
+                    typeContent = ATTR_WITH_CONN_TYPE_ICON()
+                    typeRole = ATTR_WITH_CONN_TYPE_ROLE
+                    targets = attribute.GetConnections()
                 else:
-                    typeContent = QtGui.QLabel(ATTR_TYPE_RT)
+                    typeContent = ATTR_PLAIN_TYPE_ICON()
+                    typeRole = ATTR_PLAIN_TYPE_ROLE
             else:
-                typeContent = QtGui.QLabel(REL_TYPE_RT)
+                # Otherwise we have a RelationshipAttribute
+                targets = attribute._relationship.GetTargets() 
 
-            tableWidget.setCellWidget(attributeCount, INDEX_PROPTYPE, typeContent)
+                if targets:
+                    typeContent = REL_WITH_TARGET_TYPE_ICON()
+                    typeRole = REL_WITH_TARGET_TYPE_ROLE
+                else:
+                    typeContent = REL_PLAIN_TYPE_ICON()
+                    typeRole = REL_PLAIN_TYPE_ROLE
 
-            fgColor = GetAttributeColor(attribute, frame)
-            attrName = QtWidgets.QTableWidgetItem(str(key))
-            attrName.setFont(BoldFont)
-            attrName.setForeground(fgColor)
-            tableWidget.setItem(attributeCount, INDEX_PROPNAME, attrName)
-            attrText = GetShortString(attribute, frame)
-            attrVal = QtWidgets.QTableWidgetItem(attrText)
-            valTextFont = GetAttributeTextFont(attribute, frame)
-            if valTextFont:
-                attrVal.setFont(valTextFont)
-                attrName.setFont(valTextFont)
-            attrVal.setForeground(fgColor)
-            tableWidget.setItem(attributeCount, INDEX_PROPVAL, attrVal)
+            attrText = GetShortString(attribute, frame) or ""
+            treeWidget.addTopLevelItem(
+                QtGui.QTreeWidgetItem(["", str(key), attrText]))
+            treeWidget.topLevelItem(currRow).setIcon(INDEX_PROPTYPE, typeContent)
+            treeWidget.topLevelItem(currRow).setData(INDEX_PROPTYPE,
+                                                     QtCore.Qt.ItemDataRole.WhatsThisRole,
+                                                     typeRole)
+
+            currItem = treeWidget.topLevelItem(currRow)
 
             # Need reference to original value for pretty-print on double-click
             if (key in prevSelectedAttributeNames):
-                tableWidget.item(attributeCount,INDEX_PROPNAME).setSelected(True)
-                tableWidget.setCurrentItem(tableWidget.item(attributeCount, INDEX_PROPNAME))
+                currItem.setSelected(True)
+                treeWidget.setCurrentItem(currItem)
+            
+            valTextFont = GetAttributeTextFont(attribute, frame)
+            if valTextFont:
+                currItem.setFont(INDEX_PROPVAL, valTextFont)
+                currItem.setFont(INDEX_PROPNAME, valTextFont) 
+            else:
+                currItem.setFont(INDEX_PROPNAME, BoldFont)
 
-            attributeCount += 1
-    
-        tableWidget.resizeColumnToContents(0)
+            fgColor = GetAttributeColor(attribute, frame)
+            currItem.setForeground(INDEX_PROPNAME, fgColor)
+            currItem.setForeground(INDEX_PROPVAL, fgColor)
+
+            if targets:
+                childRow = 0
+                for t in targets:
+                    valTextFont = GetAttributeTextFont(attribute, frame) or BoldFont
+                    # USD does not provide or infer values for relationship or
+                    # connection targets, so we don't display them here.
+                    currItem.addChild(QtGui.QTreeWidgetItem(["", str(t), ""]))
+                    currItem.setFont(INDEX_PROPVAL, valTextFont)
+                    child = currItem.child(childRow)
+
+                    if typeRole == REL_WITH_TARGET_TYPE_ROLE:
+                        child.setIcon(INDEX_PROPTYPE, TARGET_TYPE_ICON())
+                        child.setData(INDEX_PROPTYPE, 
+                                      QtCore.Qt.ItemDataRole.WhatsThisRole, 
+                                      TARGET_TYPE_ROLE)
+                    else:
+                        child.setIcon(INDEX_PROPTYPE, CONN_TYPE_ICON())
+                        child.setData(INDEX_PROPTYPE, 
+                                      QtCore.Qt.ItemDataRole.WhatsThisRole, 
+                                      CONN_TYPE_ROLE)
+
+                    childRow += 1
+
+            currRow += 1
 
     def _updateAttributeView(self):
         """ Sets the contents of the attribute value viewer """
@@ -3059,9 +3130,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 selectedAttribute = attrs[0]
 
         if selectedAttribute:
-            attrType = str(self._ui.propertyView.cellWidget(selectedAttribute.row(), INDEX_PROPTYPE).text())
-            attrName = str(self._ui.propertyView.item(selectedAttribute.row(), INDEX_PROPNAME).text())
-            if attrType == REL_TYPE_RT:
+            attrName = str(selectedAttribute.text(INDEX_PROPNAME))
+
+            if PropTreeWidgetTypeIsRel(selectedAttribute):
                 obj = self._currentNodes[0].GetRelationship(attrName)
             else:
                 obj = self._currentNodes[0].GetAttribute(attrName)
@@ -3737,6 +3808,34 @@ class MainWindow(QtWidgets.QMainWindow):
     def getSelectedItems(self):
         return [self._nodeToItemMap[n] for n in self._currentNodes
                     if n in self._nodeToItemMap]
+
+    def _getPrimFromPropString(self, p):
+        return self._stage.GetPrimAtPath(p.split('.')[0])
+
+    def jumpToTargetPaths(self, paths):
+        self._setSelectionFromPrimList([self._stage.GetPrimAtPath(Sdf.Path(p).GetPrimPath()) for p in paths])                     
+                                                                                 
+        if len(paths) == 1:                                                      
+            path = Sdf.Path(paths[0])
+
+            # If there is no property component
+            if not path.IsPropertyPath():
+                return
+
+            primName = path.GetPrimPath()
+            propName = path.name
+
+            lookup = self._ui.propertyView.findItems(                            
+                propName,                                                        
+                QtCore.Qt.MatchRegExp | QtCore.Qt.MatchRecursive,                
+                INDEX_PROPNAME)                                                  
+
+            if not lookup:                                                       
+                return                                                           
+                                                                                 
+            item = lookup[0]                                                     
+            item.setSelected(True)                                               
+            self._ui.propertyView.setCurrentItem(item)                           
 
     def jumpToEnclosingModelSelectedPrims(self):
         from common import GetEnclosingModelPrim
