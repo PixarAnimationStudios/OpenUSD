@@ -151,6 +151,10 @@ WRAP_CUSTOM {
         .def("SetLinkMap", &_SetLinkMap)
         .def("DoesLinkPath", &_DoesLinkPath)
         .staticmethod("DoesLinkPath")
+
+        // The following face-set related methods have been deprecated and will
+        // be removed in a future release. Please use a UsdGeomSubset to encode
+        // a face-subset instead of UsdGeomFaceSetAPI.
         .def("DoesLinkFaceSet", &_DoesLinkFaceSet)
         .staticmethod("DoesLinkFaceSet")
         .def("GetLinkPathForFaceSet", &UsdLuxLinkingAPI::GetLinkPathForFaceSet)
