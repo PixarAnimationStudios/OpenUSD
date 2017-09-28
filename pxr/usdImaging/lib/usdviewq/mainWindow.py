@@ -542,7 +542,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.actionSave_Overrides_As.triggered.connect(
                 self._saveOverridesAs)
 
-            self._ui.actionQuit.triggered.connect(self._cleanAndClose)
+            # Setup quit actions to ensure _cleanAndClose is only invoked once.
+            self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().quit)
+
+            QtWidgets.QApplication.instance().aboutToQuit.connect(self._cleanAndClose)
 
             self._ui.actionReopen_Stage.triggered.connect(self._reopenStage)
 
@@ -2173,12 +2176,6 @@ class MainWindow(QtWidgets.QMainWindow):
         return self._stageView.grabFrameBuffer() 
         
     # File handling functionality =============================================
-
-    def closeEvent(self, event):
-        """The window is closing, either by clicking exit or by clicking the "x" 
-        provided by the window manager.
-        """
-        self._cleanAndClose()
 
     def _cleanAndClose(self):
         self._settings.setAndSave(nodeViewHeader = \
