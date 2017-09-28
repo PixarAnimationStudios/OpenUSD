@@ -246,10 +246,18 @@ def DownloadURL(url, context, force):
             # succeed in downloading the file.
             maxRetries = 5
             lastError = None
+
+            # Download to a temporary file and rename it to the expected
+            # filename when complete. This ensures that incomplete downloads
+            # will be retried if the script is run again.
+            tmpFilename = filename + ".tmp"
+            if os.path.exists(tmpFilename):
+                os.remove(tmpFilename)
+
             for i in xrange(maxRetries):
                 try:
                     r = urllib2.urlopen(url)
-                    with open(filename, "wb") as outfile:
+                    with open(tmpFilename, "wb") as outfile:
                         outfile.write(r.read())
                     break
                 except Exception as e:
@@ -259,6 +267,8 @@ def DownloadURL(url, context, force):
             else:
                 raise RuntimeError("Failed to download {url}: {err}"
                                    .format(url=url, err=lastError))
+
+            shutil.move(tmpFilename, filename)
 
         # Open the archive and retrieve the name of the top-most directory.
         # This assumes the archive contains a single directory with all
@@ -284,10 +294,26 @@ def DownloadURL(url, context, force):
                           .format(extractedPath))
             else:
                 PrintInfo("Extracting archive to {0}".format(extractedPath))
-                archive.extractall()
 
+                # Extract to a temporary directory then move the contents
+                # to the expected location when complete. This ensures that
+                # incomplete extracts will be retried if the script is run
+                # again.
+                tmpExtractedPath = os.path.abspath("extract_dir")
+                if os.path.isdir(tmpExtractedPath):
+                    shutil.rmtree(tmpExtractedPath)
+
+                archive.extractall(tmpExtractedPath)
+                shutil.move(os.path.join(tmpExtractedPath, rootDir),
+                            extractedPath)
+                shutil.rmtree(tmpExtractedPath)
+                
             return extractedPath
         except Exception as e:
+            # If extraction failed for whatever reason, assume the
+            # archive file was bad and move it aside so that re-running
+            # the script will try downloading and extracting again.
+            shutil.move(filename, filename + ".bad")
             raise RuntimeError("Failed to extract archive {filename}: {err}"
                                .format(filename=filename, err=e))
 
