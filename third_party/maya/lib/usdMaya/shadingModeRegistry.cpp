@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "usdMaya/shadingModeRegistry.h"
+#include "usdMaya/registryHelper.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
@@ -47,8 +48,10 @@ PxrUsdMayaShadingModeRegistry::RegisterExporter(
 PxrUsdMayaShadingModeExporterCreator
 PxrUsdMayaShadingModeRegistry::_GetExporter(const TfToken& name)
 {
+    PxrUsdMaya_RegistryHelper::LoadShadingModePlugins();
     TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaShadingModeExportContext>();
-    return _exportReg[name];
+    const auto it = _exportReg.find(name);
+    return it == _exportReg.end() ? nullptr : it->second;
 }
 
 typedef std::map<TfToken, PxrUsdMayaShadingModeImporter> _ImportRegistry;
@@ -72,6 +75,7 @@ PxrUsdMayaShadingModeRegistry::_GetImporter(const TfToken& name)
 
 TfTokenVector
 PxrUsdMayaShadingModeRegistry::_ListExporters() {
+    PxrUsdMaya_RegistryHelper::LoadShadingModePlugins();
     TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaShadingModeExportContext>();
     TfTokenVector ret;
     ret.reserve(_exportReg.size());
