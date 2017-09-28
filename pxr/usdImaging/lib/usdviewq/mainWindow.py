@@ -454,7 +454,6 @@ class MainWindow(QtWidgets.QMainWindow):
             pvh.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
             pvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
             pvh.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
-            pvh.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
 
             # XXX: 
             # To avoid QTBUG-12850 (https://bugreports.qt.io/browse/QTBUG-12850),
@@ -3071,7 +3070,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             attrText = GetShortString(attribute, frame) or ""
             treeWidget.addTopLevelItem(
-                QtGui.QTreeWidgetItem(["", str(key), attrText]))
+                QtWidgets.QTreeWidgetItem(["", str(key), attrText]))
             treeWidget.topLevelItem(currRow).setIcon(INDEX_PROPTYPE, typeContent)
             treeWidget.topLevelItem(currRow).setData(INDEX_PROPTYPE,
                                                      QtCore.Qt.ItemDataRole.WhatsThisRole,
@@ -3101,7 +3100,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     valTextFont = GetAttributeTextFont(attribute, frame) or BoldFont
                     # USD does not provide or infer values for relationship or
                     # connection targets, so we don't display them here.
-                    currItem.addChild(QtGui.QTreeWidgetItem(["", str(t), ""]))
+                    currItem.addChild(QtWidgets.QTreeWidgetItem(["", str(t), ""]))
                     currItem.setFont(INDEX_PROPVAL, valTextFont)
                     child = currItem.child(childRow)
 

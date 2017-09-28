@@ -177,7 +177,7 @@ class CopyLayerIdentifierMenuItem(LayerStackContextMenuItem):
         if not identifier:
             return
     
-        cb = QtGui.QApplication.clipboard()
+        cb = QtWidgets.QApplication.clipboard()
         cb.setText(identifier, QtGui.QClipboard.Selection )
         cb.setText(identifier, QtGui.QClipboard.Clipboard )
 
