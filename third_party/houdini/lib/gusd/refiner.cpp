@@ -68,7 +68,7 @@ namespace {
 
 GT_DataArrayHandle newDataArray( GT_Storage storage, GT_Size size, int tupleSize );
 void copyDataArrayItem( GT_DataArrayHandle dstData, GT_DataArrayHandle srcData, 
-                        GT_Offset offset );
+                        GT_Offset dstOffset, GT_Offset srcOffset );
 }  
 
 GusdRefiner::GusdRefiner(
@@ -649,7 +649,7 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                     
                     auto srcData = instPtAttrs->get( attrIndex );
                     if( auto dstData = pAttrs->get( n ) ) {
-                        copyDataArrayItem( dstData, srcData, primIndex );
+                        copyDataArrayItem( dstData, srcData, primIndex, primArray[primIndex].index );
                     }
                 }
                 if( pivotArray ) {
@@ -675,7 +675,7 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                     
                     auto srcData = instUniAttrs->get( attrIndex );
                     if( auto dstData = pAttrs->get( n ) ) {
-                        copyDataArrayItem( dstData, srcData, primIndex );
+                        copyDataArrayItem( dstData, srcData, primIndex, primArray[primIndex].index );
                     }
                 }
             }
@@ -790,38 +790,38 @@ newDataArray( GT_Storage storage, GT_Size size, int tupleSize )
 
 void
 copyDataArrayItem( GT_DataArrayHandle dstData, GT_DataArrayHandle srcData, 
-                   GT_Offset offset )
+                   GT_Offset dstOffset, GT_Offset srcOffset )
 {
     // copy a scalar data item into the destination array at the given offset.
     GT_Storage storage = dstData->getStorage();
     if( storage == GT_STORE_REAL32 ) {
         for( int i = 0; i < dstData->getTupleSize(); ++i ) {
             auto dst = UTverify_cast<GT_Real32Array*>(dstData.get());
-            dst->set( srcData->getF32( 0, i ), offset, i );
+            dst->set( srcData->getF32( srcOffset, i ), dstOffset, i );
         }
     }
     else if( storage == GT_STORE_REAL64 ) {
         for( int i = 0; i < dstData->getTupleSize(); ++i ) {
             auto dst = UTverify_cast<GT_Real64Array*>(dstData.get());
-            dst->set( srcData->getF64( 0, i ), offset, i );
+            dst->set( srcData->getF64( srcOffset, i ), dstOffset, i );
         }
     }
     else if( storage == GT_STORE_INT32 ) {
         for( int i = 0; i < dstData->getTupleSize(); ++i ) {
             auto dst = UTverify_cast<GT_Int32Array*>(dstData.get());
-            dst->set( srcData->getI32( 0, i ), offset, i );
+            dst->set( srcData->getI32( srcOffset, i ), dstOffset, i );
         }
     }
     else if( storage == GT_STORE_INT64 ) {
         for( int i = 0; i < dstData->getTupleSize(); ++i ) {
             auto dst = UTverify_cast<GT_Int64Array*>(dstData.get());
-            dst->set( srcData->getI64( 0, i ), offset, i );
+            dst->set( srcData->getI64( srcOffset, i ), dstOffset, i );
         }
     }
     else if( storage == GT_STORE_STRING ) {
         for( int i = 0; i < dstData->getTupleSize(); ++i ) {
             auto dst = UTverify_cast<GT_DAIndexedString*>(dstData.get());
-            dst->setString( offset, i, srcData->getS( 0, i ) );
+            dst->setString( dstOffset, i, srcData->getS( srcOffset, i ) );
         }
     }
 }
