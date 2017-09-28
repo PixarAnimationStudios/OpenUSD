@@ -104,6 +104,7 @@ public:
     /// called to respond to errors and diagnostics.
     class Delegate : public TfWeakBase {
       public:
+        TF_API 
         virtual ~Delegate() = 0;
 
         /// Called when a \c TfError is posted.
