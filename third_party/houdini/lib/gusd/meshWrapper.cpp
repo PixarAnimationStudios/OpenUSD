@@ -635,14 +635,18 @@ _validateAttrData(
             TF_WARN( "Not enough values found for attribute: %s:%s",
                     primName, srcName );  
         }                    
-        *uniformAttrs = (*uniformAttrs)->addAttribute( destName, data, true );
+        else {
+            *uniformAttrs = (*uniformAttrs)->addAttribute( destName, data, true );
+        }
     }
     else if( interpolation == UsdGeomTokens->constant ) {
-       if( data->entries() < 1 ) {
+        if( data->entries() < 1 ) {
             TF_WARN( "Not enough values found for attribute: %s:%s",
                     primName, srcName );  
         } 
-        *detailAttrs = (*detailAttrs)->addAttribute( destName, data, true );
+        else {
+            *detailAttrs = (*detailAttrs)->addAttribute( destName, data, true );
+        }
     }
 }
 }
