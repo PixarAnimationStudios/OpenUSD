@@ -2895,6 +2895,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.propertyView.setCurrentItem(item.parent())
             item.setSelected(True)
 
+        currIndex = self._ui.attributeInspector.currentIndex()
+        
+        # The INDEX_VALUE tab is updated through a separate callback.
+        if currIndex != INDEX_VALUE:
+            self._updateAttributeInspector(index=currIndex,
+                                           obj=self._getSelectedObject(),
+                                           updateAttributeView=False)
+
     def _getPathsFromItems(self, items, prune = False):
         # this function returns a list of paths given a list of items if
         # prune=True, it excludes certain paths if a parent path is already
