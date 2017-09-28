@@ -43,6 +43,7 @@ using std::endl;
 using std::string;
 using std::map;
 using std::set;
+using std::vector;
 
 #ifdef DEBUG
 #define DBG(x) x
@@ -51,8 +52,16 @@ using std::set;
 #endif
 
 namespace {
-    // XXX Temporary until UsdTimeCode::NextTime implemented
-    const double TIME_SAMPLE_DELTA = 0.001;
+
+// XXX Temporary until UsdTimeCode::NextTime implemented
+const double TIME_SAMPLE_DELTA = 0.001;
+
+GT_PrimitiveHandle _nullPrimReadFunc(
+        const UsdGeomImageable&, UsdTimeCode, GusdPurposeSet)
+{
+    return GT_PrimitiveHandle();
+}
+        
 } // anon namespace
 
 GusdPrimWrapper::GTTypeInfoMap GusdPrimWrapper::s_gtTypeInfoMap;
@@ -155,10 +164,48 @@ defineForRead( const UsdGeomImageable&  sourcePrim,
     // Find the function registered for the source prim's type
     // to define the prim from read and call that function.
     if(sourcePrim) {
-        USDTypeToDefineFuncMap::const_iterator mapIt
-            = s_usdTypeToFuncMap.find(sourcePrim.GetPrim().GetTypeName());
-        if(mapIt != s_usdTypeToFuncMap.end()) {
-            gtUsdPrimHandle = mapIt->second(sourcePrim,time,purposes);
+        const TfToken& typeName = sourcePrim.GetPrim().GetTypeName();
+        USDTypeToDefineFuncMap::const_accessor caccessor;
+        if(s_usdTypeToFuncMap.find(caccessor, typeName)) {
+            gtUsdPrimHandle = caccessor->second(sourcePrim,time,purposes);
+        }
+        else {
+            // If no function is registered for the prim's type, try to
+            // find a supported base type.
+            const TfType& baseType = TfType::Find<UsdSchemaBase>();
+            const TfType& derivedType
+                = baseType.FindDerivedByName(typeName.GetText());
+
+            vector<TfType> ancestorTypes;
+            derivedType.GetAllAncestorTypes(&ancestorTypes);
+
+            for(size_t i=1; i<ancestorTypes.size(); ++i) {
+                const TfType& ancestorType = ancestorTypes[i];
+                vector<string> typeAliases = baseType.GetAliases(ancestorType);
+                typeAliases.push_back(ancestorType.GetTypeName());
+
+                for(auto const& typeAlias : typeAliases) {
+                    if(s_usdTypeToFuncMap.find(caccessor, TfToken(typeAlias))) {
+                        gtUsdPrimHandle = caccessor->second(sourcePrim,time,purposes);
+                        USDTypeToDefineFuncMap::accessor accessor;
+                        s_usdTypeToFuncMap.insert(accessor, typeName);
+                        accessor->second = caccessor->second;
+                        TF_WARN("Type \"%s\" not registered, using base type \"%s\".",
+                                typeName.GetText(), typeAlias.c_str());
+                        break;
+                    }
+                }
+                if(gtUsdPrimHandle) break;
+            }
+
+            if(!gtUsdPrimHandle) {
+                // If we couldn't find a function for the prim's type or any 
+                // of it's base types, register a function which returns an
+                // empty prim handle.
+                registerPrimDefinitionFuncForRead(typeName, _nullPrimReadFunc);
+                TF_WARN("Couldn't read unsupported USD prim type \"%s\".",
+                        typeName.GetText());
+            }
         }
     }
     return gtUsdPrimHandle;
@@ -188,11 +235,12 @@ bool GusdPrimWrapper::
 registerPrimDefinitionFuncForRead(const TfToken& usdTypeName,
                                   DefinitionForReadFunction func)
 {
-    if(s_usdTypeToFuncMap.find(usdTypeName) != s_usdTypeToFuncMap.end()) {
+    USDTypeToDefineFuncMap::accessor accessor;
+    if(! s_usdTypeToFuncMap.insert(accessor, usdTypeName)) {
         return false;
     }
 
-    s_usdTypeToFuncMap[usdTypeName] = func;
+    accessor->second = func;
 
     return true;
 }

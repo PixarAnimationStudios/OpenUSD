@@ -25,6 +25,7 @@
 #define __GUSD_PRIMWRAPPER_H__
 
 #include <GT/GT_Primitive.h>
+#include <UT/UT_ConcurrentHashMap.h>
 
 #include "gusd/api.h"
 
@@ -385,9 +386,19 @@ private:
                 templateName( templateName_ ) {}
     };
 
+    struct TfTokenHashCmp {
+        static bool equal(const TfToken& a, const TfToken& b)
+        { return a == b; }
+
+        static size_t hash(const TfToken& key)
+        { return key.Hash(); }
+    };
+
     typedef UT_Map<int64,   GTTypeInfo>                 GTTypeInfoMap;
-    typedef UT_Map<TfToken, DefinitionForReadFunction>  USDTypeToDefineFuncMap;
     typedef UT_Set<int64>                               GTTypeSet;
+    typedef UT_ConcurrentHashMap<
+        TfToken, DefinitionForReadFunction, TfTokenHashCmp>
+        USDTypeToDefineFuncMap;
 
     static GTTypeInfoMap                s_gtTypeInfoMap;
     static USDTypeToDefineFuncMap       s_usdTypeToFuncMap; 
