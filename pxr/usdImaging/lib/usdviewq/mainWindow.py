@@ -3363,8 +3363,8 @@ class MainWindow(QtWidgets.QMainWindow):
             tableWidget.setItem(rowIndex, 0, attrName)
             tableWidget.setCellWidget(rowIndex, 1, combo)
             combo.currentIndexChanged.connect(
-                lambda i: combo.updateVariantSelection(i, self._updateForStageChanges, 
-                                                       self._printTiming))
+                lambda i, combo=combo: combo.updateVariantSelection(
+                    i, self._updateForStageChanges, self._printTiming))
             rowIndex += 1 
 
         tableWidget.resizeColumnToContents(0)
