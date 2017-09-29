@@ -475,7 +475,7 @@
               </font>
              </property>
              <property name="placeholderText">
-              <string>Search for attribute by name</string>
+              <string>Search for property by name</string>
              </property>
             </widget>
            </item>
