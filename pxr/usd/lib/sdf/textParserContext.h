@@ -91,7 +91,7 @@ public:
     // relationship target paths that will be saved in a list op
     // (use a boost::optional to track whether we have seen an opinion at all.)
     boost::optional<SdfPathVector> relParsingTargetPaths;
-    // relationship target paths that will be appended to the relatioship's
+    // relationship target paths that will be appended to the relationship's
     // list of target children.
     SdfPathVector relParsingNewTargetChildren;
 

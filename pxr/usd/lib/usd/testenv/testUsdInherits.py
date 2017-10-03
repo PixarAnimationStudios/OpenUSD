@@ -36,7 +36,7 @@ class TestUsdInherits(unittest.TestCase):
             items = None
 
             assert not concrete.HasAuthoredInherits()
-            assert concrete.GetInherits().AppendInherit(classA.GetPath())
+            assert concrete.GetInherits().AddInherit(classA.GetPath())
             assert concrete.HasAuthoredInherits()
             self.assertEqual(len(concrete.GetMetadata("inheritPaths").addedItems), 1)
             self.assertEqual(concrete.GetMetadata("inheritPaths").addedItems[0],
@@ -72,7 +72,7 @@ class TestUsdInherits(unittest.TestCase):
             concrete = stage.DefinePrim("/Concrete")
 
             assert not concrete.GetChildren() 
-            assert concrete.GetInherits().AppendInherit(classA.GetPath())
+            assert concrete.GetInherits().AddInherit(classA.GetPath())
 
             self.assertEqual(concrete.GetChildren()[0].GetPath(),
                         concrete.GetPath().AppendChild("Child"))

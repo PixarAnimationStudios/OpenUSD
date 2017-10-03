@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "visitor.h"
-#include "UT_Usd.h"
 
 #include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include <boost/foreach.hpp>
@@ -83,13 +83,30 @@ GusdVisitor::SetVisitGeometryPrims(bool state)
     SetVisitPrimType(TfToken("Sphere"), state);
 }
 
+
+namespace {
+
+
+void
+_GetInheritedPrimInfo(const UsdPrim& prim,
+                      bool& active,
+                      TfToken& purpose)
+{
+    active = prim.IsActive();
+    purpose = UsdGeomImageable(prim).ComputePurpose();
+}
+
+
+} /*namespace*/
+
+
 bool
 GusdVisitor::VisitPrims( const UsdPrim& prim,
                            vector<UsdPrim>* results ) const
 {
     bool active = true;
     TfToken purpose;
-    GusdUT_GetInheritedPrimInfo(prim, active, purpose);
+    _GetInheritedPrimInfo(prim, active, purpose);
     int depth = 0;
     return recursePrims( prim, active, purpose, depth, results);
 }
@@ -169,8 +186,7 @@ GusdVisitor::recursePrims(const UsdPrim& prim,
     // Prune recursion at m_maxDepth.
     if(depth < m_maxDepth)
     {
-        BOOST_FOREACH( UsdPrim child, prim.GetChildren())
-        {
+        for(const auto& child : prim.GetChildren()) {
             if(!recursePrims( child, active,
                               purpose, depth+1, results ))
                 return false;

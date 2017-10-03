@@ -4,7 +4,7 @@
         usdGenSchema.
     """
     subLayers = [
-        @../../../../pxr/usd/lib/usd/schema.usda@
+        @usd/schema.usda@
     ]
 ) 
 

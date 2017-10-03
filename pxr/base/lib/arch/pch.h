@@ -26,6 +26,7 @@
 
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
+#include <crt_externs.h>
 #include <dlfcn.h>
 #include <execinfo.h>
 #include <glob.h>
@@ -43,13 +44,16 @@
 #include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
+#include <csignal>
 #include <dlfcn.h>
 #include <glob.h>
 #include <limits.h>
 #include <sys/param.h>
+#include <sys/ptrace.h>
 #include <sys/resource.h>
 #include <sys/statfs.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include <ucontext.h>
 #include <unistd.h>
 #include <unwind.h>
@@ -70,7 +74,6 @@
 #include <intrin.h>
 #include <io.h>
 #include <process.h>
-#include <thread>
 #endif
 #include <algorithm>
 #include <atomic>
@@ -106,6 +109,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <thread>
 #include <time.h>
 #include <typeindex>
 #include <typeinfo>

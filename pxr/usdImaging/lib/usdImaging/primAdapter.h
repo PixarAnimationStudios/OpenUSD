@@ -90,18 +90,17 @@ public:
     /// TrackVariability().
     virtual void TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
-                                          instancerContext = NULL) = 0;
+                                          instancerContext = NULL) {};
 
-    /// For the given \p prim and \p requestedBits, variability is detected and
-    /// stored in \p dirtyBits. Initial values are cached into the value cache.
+    /// For the given \p prim, variability is detected and
+    /// stored in \p timeVaryingBits. Initial values are cached into the value
+    /// cache.
     ///
     /// This method is expected to be called from multiple threads.
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  HdDirtyBits requestedBits,
-                                  HdDirtyBits* dirtyBits,
+                                  HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL) = 0;
 
@@ -111,7 +110,7 @@ public:
                                    UsdTimeCode time,
                                    HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const* 
-                                       instancerContext = NULL) = 0;
+                                       instancerContext = NULL) {};
 
     /// Populates the \p cache for the given \p prim, \p time and \p
     /// requestedBits.
@@ -121,7 +120,6 @@ public:
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL) = 0;
 
@@ -131,9 +129,9 @@ public:
 
     /// Returns a bit mask of attributes to be udpated, or
     /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
-    virtual int ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath, 
-                                      TfToken const& propertyName) = 0;
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& propertyName) = 0;
 
     /// When a PrimResync event occurs, the prim may have been deleted entirely,
     /// adapter plug-ins should override this method to free any per-prim state
@@ -145,6 +143,33 @@ public:
     /// without scheduling them for repopulation. 
     virtual void ProcessPrimRemoval(SdfPath const& primPath,
                                    UsdImagingIndexProxy* index);
+
+
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index) = 0;
+
+    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index);
+
+    virtual void MarkReprDirty(UsdPrim const& prim,
+                               SdfPath const& cachePath,
+                               UsdImagingIndexProxy* index);
+
+    virtual void MarkCullStyleDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkTransformDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkVisibilityDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index);
+
 
     // ---------------------------------------------------------------------- //
     /// \name Instancing
@@ -201,7 +226,8 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
-    virtual bool PopulateSelection(SdfPath const &usdPath,
+    virtual bool PopulateSelection(HdxSelectionHighlightMode const& highlightMode,
+                                   SdfPath const &usdPath,
                                    VtIntArray const &instanceIndices,
                                    HdxSelectionSharedPtr const &result);
 
@@ -291,6 +317,9 @@ protected:
 
     void _MergePrimvar(UsdImagingValueCache::PrimvarInfo const& primvar, 
                        PrimvarInfoVector* vec);
+
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) = 0;
 
     UsdImagingDelegate* _delegate;
 };

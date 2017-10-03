@@ -131,6 +131,8 @@ void wrapUsdGeomPrimvar()
         .def("IsDefined", &Primvar::IsDefined)
         .def("GetName", &Primvar::GetName,
              return_value_policy<return_by_value>())
+        .def("GetPrimvarName", &Primvar::GetPrimvarName)
+        .def("NameContainsNamespaces", &Primvar::NameContainsNamespaces)
         .def("GetBaseName", &Primvar::GetBaseName)
         .def("GetNamespace", &Primvar::GetNamespace)
         .def("SplitName", &Primvar::SplitName,

@@ -193,11 +193,11 @@ class TestUsdPrimRange(unittest.TestCase):
             root = stage.DefinePrim("/Root")
 
             i = stage.DefinePrim("/Root/Instance")
-            i.GetReferences().AppendReference(refStage.GetRootLayer().identifier, "/Ref")
+            i.GetReferences().AddReference(refStage.GetRootLayer().identifier, "/Ref")
             i.SetMetadata("instanceable", True)
 
             n = stage.DefinePrim("/Root/NonInstance")
-            n.GetReferences().AppendReference(refStage.GetRootLayer().identifier, "/Ref")
+            n.GetReferences().AddReference(refStage.GetRootLayer().identifier, "/Ref")
             nChild = stage.GetPrimAtPath('/Root/NonInstance/Child')
 
             # Test Usd.PrimIsInstance
@@ -269,11 +269,11 @@ class TestUsdPrimRange(unittest.TestCase):
             root = stage.DefinePrim("/Root")
 
             i = stage.DefinePrim("/Root/Instance")
-            i.GetReferences().AppendReference(refStage.GetRootLayer().identifier, "/Ref")
+            i.GetReferences().AddReference(refStage.GetRootLayer().identifier, "/Ref")
             i.SetMetadata("instanceable", True)
 
             n = stage.DefinePrim("/Root/NonInstance")
-            n.GetReferences().AppendReference(refStage.GetRootLayer().identifier, "/Ref")
+            n.GetReferences().AddReference(refStage.GetRootLayer().identifier, "/Ref")
             nChild = stage.GetPrimAtPath('/Root/NonInstance/Child')
 
             master = stage.GetMasters()[0]

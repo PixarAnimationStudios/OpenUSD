@@ -42,6 +42,8 @@
 #include <set>
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 

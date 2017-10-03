@@ -160,7 +160,7 @@ WRAP_CUSTOM {
     _class
         .def("CreatePrimvar", &UsdGeomImageable::CreatePrimvar,
              (arg("attrName"), arg("typeName"), arg("interpolation")=TfToken(),
-              arg("elementSize")=-1, arg("custom")=false))
+              arg("elementSize")=-1))
         .def("GetPrimvar", &UsdGeomImageable::GetPrimvar, arg("name"))
         .def("GetPrimvars", &UsdGeomImageable::GetPrimvars,
              return_value_policy<TfPySequenceToList>())

@@ -69,11 +69,13 @@ TfAnyWeakPtr::_EmptyHolder::_IsConst() const
     return true;
 }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 boost::python::api::object
 TfAnyWeakPtr::_EmptyHolder::GetPythonObject() const
 {
     return boost::python::api::object();
 }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 const std::type_info &
 TfAnyWeakPtr::_EmptyHolder::GetTypeInfo() const
@@ -157,12 +159,14 @@ TfAnyWeakPtr::GetType() const
     return _Get()->GetType();
 }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 boost::python::api::object
 TfAnyWeakPtr::_GetPythonObject() const
 {
     TfPyLock pyLock;
     return _Get()->GetPythonObject();
 }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 TfAnyWeakPtr::_PointerHolderBase::~_PointerHolderBase() {
 }

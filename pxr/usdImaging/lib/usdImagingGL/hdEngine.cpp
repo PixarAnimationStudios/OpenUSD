@@ -68,6 +68,8 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
     , _delegate(nullptr)
     , _renderPlugin(nullptr)
     , _taskController(nullptr)
+    , _lastViewMatrix(0.0)
+    , _lastViewport(0.0)
     , _lastRefineLevel(0)
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
     , _rootPath(rootPath)
@@ -846,8 +848,12 @@ UsdImagingGLHdEngine::SetSelected(SdfPathVector const& paths)
 {
     // populate new selection
     HdxSelectionSharedPtr selection(new HdxSelection);
+    // XXX: Usdview currently supports selection on click. If we extend to
+    // rollover (locate) selection, we need to pass that mode here.
+    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
     for (SdfPath const& path : paths) {
-        _delegate->PopulateSelection(path,
+        _delegate->PopulateSelection(mode,
+                                     path,
                                      UsdImagingDelegate::ALL_INSTANCES,
                                      selection);
     }
@@ -872,8 +878,10 @@ UsdImagingGLHdEngine::AddSelected(SdfPath const &path, int instanceIndex)
     if (!selection) {
         selection.reset(new HdxSelection);
     }
-
-    _delegate->PopulateSelection(path, instanceIndex, selection);
+    // XXX: Usdview currently supports selection on click. If we extend to
+    // rollover (locate) selection, we need to pass that mode here.
+    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
+    _delegate->PopulateSelection(mode, path, instanceIndex, selection);
 
     // set the result back to selection tracker
     _selTracker->SetSelection(selection);
@@ -948,6 +956,10 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfType const &type)
         TF_CODING_ERROR("Couldn't find plugin named %s",
             type.GetTypeName().c_str());
         return false;
+    } else if (plugin == _renderPlugin) {
+        // It's a no-op to load the same plugin twice.
+        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+        return true;
     }
 
     // Pull old delegate/task controller state.

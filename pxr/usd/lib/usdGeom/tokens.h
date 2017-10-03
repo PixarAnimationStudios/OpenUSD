@@ -42,7 +42,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \hideinitializer
 #define USDGEOM_TOKENS \
     (all) \
-    (alwaysSharp) \
     (angularVelocities) \
     (axis) \
     (basis) \
@@ -73,14 +72,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (edgeAndCorner) \
     (edgeOnly) \
     (elementSize) \
+    (elementType) \
     (extent) \
     (extentsHint) \
+    (face) \
     (faceSet) \
     (faceVarying) \
-    (faceVaryingInterpolateBoundary) \
     (faceVaryingLinearInterpolation) \
     (faceVertexCounts) \
     (faceVertexIndices) \
+    (familyName) \
     (focalLength) \
     (focusDistance) \
     (fStop) \
@@ -93,6 +94,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (horizontalApertureOffset) \
     (ids) \
     (inactiveIds) \
+    (indices) \
     (inherited) \
     (interpolateBoundary) \
     (interpolation) \
@@ -104,6 +106,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (linear) \
     (loop) \
     (mono) \
+    ((motionVelocityScale, "motion:velocityScale")) \
     (none) \
     (nonperiodic) \
     (normals) \
@@ -195,12 +198,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// The tokens are:
 /// \li <b>all</b> - Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr()
-/// \li <b>alwaysSharp</b> - Legacy token representing a deprecated  faceVaryingInterpolateBoundary state. The modern equivalent is UsdGeomTokens->boundaries.
 /// \li <b>angularVelocities</b> - UsdGeomPointInstancer
 /// \li <b>axis</b> - UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder
 /// \li <b>basis</b> - UsdGeomBasisCurves
 /// \li <b>bezier</b> - Possible value for UsdGeomBasisCurves::GetBasisAttr(), Default value for UsdGeomBasisCurves::GetBasisAttr()
-/// \li <b>bilinear</b> - Legacy token representing a deprecated  faceVaryingInterpolateBoundary state. The modern equivalent is UsdGeomTokens->all., Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
+/// \li <b>bilinear</b> - Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
 /// \li <b>boundaries</b> - Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr()
 /// \li <b>bspline</b> - Possible value for UsdGeomBasisCurves::GetBasisAttr()
 /// \li <b>card</b> - Possible value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr()
@@ -223,17 +225,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>curveVertexCounts</b> - UsdGeomCurves
 /// \li <b>default_</b> - Possible value for UsdGeomImageable::GetPurposeAttr(), Default value for UsdGeomImageable::GetPurposeAttr()
 /// \li <b>doubleSided</b> - UsdGeomGprim
-/// \li <b>edgeAndCorner</b> - Legacy token representing a deprecated  faceVaryingInterpolateBoundary state. The modern equivalent is UsdGeomTokens->cornersPlus1, Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Default value for UsdGeomMesh::GetInterpolateBoundaryAttr()
-/// \li <b>edgeOnly</b> - Legacy token representing a deprecated  faceVaryingInterpolateBoundary state. The modern equivalent is UsdGeomTokens->none., Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr()
+/// \li <b>edgeAndCorner</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Default value for UsdGeomMesh::GetInterpolateBoundaryAttr()
+/// \li <b>edgeOnly</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr()
 /// \li <b>elementSize</b> - UsdGeomPrimvar - The number of values in the value array that must be aggregated for each element on the  primitive.
+/// \li <b>elementType</b> - UsdGeomSubset
 /// \li <b>extent</b> - UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder, UsdGeomSphere, UsdGeomCube, UsdGeomBoundable
 /// \li <b>extentsHint</b> - Name of the attribute used to author extents hints at the root of leaf models. Extents hints are stored by purpose as a vector of GfVec3f values. They are ordered based on the order of purpose tokens returned by  UsdGeomImageable::GetOrderedPurposeTokens.
-/// \li <b>faceSet</b> - This is the namespace prefix used by  UsdGeomFaceSetAPI for authoring faceSet attributes.
+/// \li <b>face</b> - Possible value for UsdGeomSubset::GetElementTypeAttr(), Default value for UsdGeomSubset::GetElementTypeAttr()
+/// \li <b>faceSet</b> - <Deprecated> This is the namespace prefix used by  UsdGeomFaceSetAPI for authoring faceSet attributes.
 /// \li <b>faceVarying</b> - Possible value for UsdGeomPrimVar::SetInterpolation. For polygons and subdivision surfaces, four values are interpolated over each face of the mesh. Bilinear interpolation  is used for interpolation between the four values.
-/// \li <b>faceVaryingInterpolateBoundary</b> - Legacy token. The modern equivalent is faceVaryingLinearInterpolation.
 /// \li <b>faceVaryingLinearInterpolation</b> - UsdGeomMesh
 /// \li <b>faceVertexCounts</b> - UsdGeomMesh
 /// \li <b>faceVertexIndices</b> - UsdGeomMesh
+/// \li <b>familyName</b> - UsdGeomSubset
 /// \li <b>focalLength</b> - UsdGeomCamera
 /// \li <b>focusDistance</b> - UsdGeomCamera
 /// \li <b>fStop</b> - UsdGeomCamera
@@ -246,6 +250,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>horizontalApertureOffset</b> - UsdGeomCamera
 /// \li <b>ids</b> - UsdGeomPointInstancer, UsdGeomPoints
 /// \li <b>inactiveIds</b> - int64listop prim metadata that specifies the PointInstancer ids that should be masked (unrenderable) over all time.
+/// \li <b>indices</b> - UsdGeomSubset
 /// \li <b>inherited</b> - Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
 /// \li <b>interpolateBoundary</b> - UsdGeomMesh
 /// \li <b>interpolation</b> - UsdGeomPrimvar - How a Primvar interpolates across a primitive; equivalent to RenderMan's \ref Usd_InterpolationVals "class specifier" 
@@ -257,6 +262,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>linear</b> - Possible value for UsdGeomBasisCurves::GetTypeAttr()
 /// \li <b>loop</b> - Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
 /// \li <b>mono</b> - Possible value for UsdGeomCamera::GetStereoRoleAttr(), Default value for UsdGeomCamera::GetStereoRoleAttr()
+/// \li <b>motionVelocityScale</b> - UsdGeomMotionAPI
 /// \li <b>none</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr(), Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
 /// \li <b>nonperiodic</b> - Possible value for UsdGeomBasisCurves::GetWrapAttr(), Default value for UsdGeomBasisCurves::GetWrapAttr()
 /// \li <b>normals</b> - UsdGeomPointBased

@@ -54,7 +54,7 @@ def MakePrim(stage, refLyr, path, offset, scale, matchPath=False):
         refPath = path
 
     ref = Sdf.Reference(refLyr.identifier, refPath, p.layerOffset)
-    assert p.prim.GetReferences().AppendReference(ref)
+    assert p.prim.GetReferences().AddReference(ref)
     return p
 
 

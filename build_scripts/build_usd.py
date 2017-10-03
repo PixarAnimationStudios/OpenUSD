@@ -246,10 +246,18 @@ def DownloadURL(url, context, force):
             # succeed in downloading the file.
             maxRetries = 5
             lastError = None
+
+            # Download to a temporary file and rename it to the expected
+            # filename when complete. This ensures that incomplete downloads
+            # will be retried if the script is run again.
+            tmpFilename = filename + ".tmp"
+            if os.path.exists(tmpFilename):
+                os.remove(tmpFilename)
+
             for i in xrange(maxRetries):
                 try:
                     r = urllib2.urlopen(url)
-                    with open(filename, "wb") as outfile:
+                    with open(tmpFilename, "wb") as outfile:
                         outfile.write(r.read())
                     break
                 except Exception as e:
@@ -259,6 +267,8 @@ def DownloadURL(url, context, force):
             else:
                 raise RuntimeError("Failed to download {url}: {err}"
                                    .format(url=url, err=lastError))
+
+            shutil.move(tmpFilename, filename)
 
         # Open the archive and retrieve the name of the top-most directory.
         # This assumes the archive contains a single directory with all
@@ -284,10 +294,26 @@ def DownloadURL(url, context, force):
                           .format(extractedPath))
             else:
                 PrintInfo("Extracting archive to {0}".format(extractedPath))
-                archive.extractall()
 
+                # Extract to a temporary directory then move the contents
+                # to the expected location when complete. This ensures that
+                # incomplete extracts will be retried if the script is run
+                # again.
+                tmpExtractedPath = os.path.abspath("extract_dir")
+                if os.path.isdir(tmpExtractedPath):
+                    shutil.rmtree(tmpExtractedPath)
+
+                archive.extractall(tmpExtractedPath)
+                shutil.move(os.path.join(tmpExtractedPath, rootDir),
+                            extractedPath)
+                shutil.rmtree(tmpExtractedPath)
+                
             return extractedPath
         except Exception as e:
+            # If extraction failed for whatever reason, assume the
+            # archive file was bad and move it aside so that re-running
+            # the script will try downloading and extracting again.
+            shutil.move(filename, filename + ".bad")
             raise RuntimeError("Failed to extract archive {filename}: {err}"
                                .format(filename=filename, err=e))
 
@@ -305,25 +331,24 @@ class Dependency(object):
                     for f in self.filesToCheck])
 
 class PythonDependency(object):
-    def __init__(self, name, installer, moduleName):
+    def __init__(self, name, getInstructions, moduleNames):
         self.name = name
-        self.installer = installer
-        self.moduleName = moduleName
+        self.getInstructions = getInstructions
+        self.moduleNames = moduleNames
 
     def Exists(self, context):
-        try:
-            # Eat all output; we just care if the import succeeded or not.
-            subprocess.check_output(shlex.split(
-                'python -c "import {module}"'.format(module=self.moduleName)),
-                stderr=subprocess.STDOUT)
-            return True
-        except subprocess.CalledProcessError:
-            return False
+        # If one of the modules in our list exists we are good
+        for moduleName in self.moduleNames:
+            try:
+                # Eat all output; we just care if the import succeeded or not.
+                subprocess.check_output(shlex.split(
+                    'python -c "import {module}"'.format(module=moduleName)),
+                    stderr=subprocess.STDOUT)
+                return True
+            except subprocess.CalledProcessError:
+                pass
+        return False
 
-class ManualPythonDependency(PythonDependency):
-    def __init__(self, name, getInstructions, moduleName):
-        super(ManualPythonDependency, self).__init__(name, None, moduleName)
-        self.getInstructions = getInstructions
 
 def AnyPythonDependencies(deps):
     return any([type(d) is PythonDependency for d in deps])
@@ -620,7 +645,8 @@ OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-1.7.14.zip"
 def InstallOpenImageIO(context, force):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
         extraArgs = ['-DOIIO_BUILD_TOOLS=OFF',
-                     '-DOIIO_BUILD_TESTS=OFF']
+                     '-DOIIO_BUILD_TESTS=OFF',
+                     '-DSTOP_ON_WARNING=OFF']
 
         # If Ptex support is disabled in USD, disable support in OpenImageIO
         # as well. This ensures OIIO doesn't accidentally pick up a Ptex
@@ -679,11 +705,16 @@ OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv,
 ############################################################
 # PyOpenGL
 
-def InstallPyOpenGL(context, force):
-    PrintStatus("Installing PyOpenGL...")
-    Run("pip install PyOpenGL")
+def GetPyOpenGLInstructions():
+    return ('PyOpenGL is not installed. If you have pip '
+            'installed, run "pip install PyOpenGL" to '
+            'install it, then re-run this script.\n'
+            'If PyOpenGL is already installed, you may need to '
+            'update your PYTHONPATH to indicate where it is '
+            'located.')
 
-PYOPENGL = PythonDependency("PyOpenGL", InstallPyOpenGL, moduleName="OpenGL")
+PYOPENGL = PythonDependency("PyOpenGL", GetPyOpenGLInstructions, 
+                            moduleNames=["OpenGL"])
 
 ############################################################
 # PySide
@@ -693,19 +724,20 @@ def GetPySideInstructions():
     if MacOS():
         return ('PySide is not installed. If you have MacPorts '
                 'installed, run "port install py27-pyside-tools" '
-                'to install it, then re-run this installer.\n'
+                'to install it, then re-run this script.\n'
                 'If PySide is already installed, you may need to '
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
     else:                       
-        return ('PySide is not installed. Run "pip install PySide" '
-                'to install it, then re-run this installer.\n'
+        return ('PySide is not installed. If you have pip '
+                'installed, run "pip install PySide" '
+                'to install it, then re-run this script.\n'
                 'If PySide is already installed, you may need to '
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
 
-PYSIDE = ManualPythonDependency("PySide", GetPySideInstructions, 
-                                moduleName="PySide")
+PYSIDE = PythonDependency("PySide", GetPySideInstructions,
+                          moduleNames=["PySide", "PySide2"])
 
 ############################################################
 # HDF5
@@ -757,6 +789,11 @@ ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 def InstallUSD(context):
     with CurrentWorkingDirectory(context.usdSrcDir):
         extraArgs = []
+
+        if context.buildPython:
+            extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
+        else:
+            extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
         if context.buildShared:
             extraArgs.append('-DBUILD_SHARED_LIBS=ON')
@@ -907,6 +944,12 @@ subgroup.add_argument("--docs", dest="build_docs", action="store_true",
                       default=False, help="Build documentation")
 subgroup.add_argument("--no-docs", dest="build_docs", action="store_false",
                       help="Do not build documentation (default)")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--python", dest="build_python", action="store_true",
+                      default=True, help="Build python based components "
+                                         "(default)")
+subgroup.add_argument("--no-python", dest="build_python", action="store_false",
+                      help="Do not build python based components")
 
 (NO_IMAGING, IMAGING, USD_IMAGING) = (0, 1, 2)
 
@@ -934,8 +977,7 @@ subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--embree", dest="build_embree", action="store_true",
                       default=False,
                       help="Build Embree sample imaging plugin")
-subgroup.add_argument("--no-embree", dest="build_embree", action="store_true",
-                      default=False,
+subgroup.add_argument("--no-embree", dest="build_embree", action="store_false",
                       help="Do not build Embree sample imaging plugin (default)")
 group.add_argument("--embree-location", type=str,
                    help="Directory where Embree is installed.")
@@ -1021,6 +1063,7 @@ class InstallContext:
         # Optional components
         self.buildTests = args.build_tests
         self.buildDocs = args.build_docs
+        self.buildPython = args.build_python
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
@@ -1053,8 +1096,12 @@ class InstallContext:
         self.buildHoudini = args.build_houdini
         self.houdiniLocation = (os.path.abspath(args.houdini_location)
                                 if args.houdini_location else None)
-        
-    def MustBuildDependency(self, dep):
+       
+    def ForceBuildDependency(self, dep):
+        # Never force building a Python dependency, since users are required
+        # to build these dependencies themselves.
+        if type(dep) is PythonDependency:
+            return False
         return self.forceBuildAll or dep.name.lower() in self.forceBuild
 
 context = InstallContext(args)
@@ -1092,7 +1139,7 @@ if context.buildImaging:
     requiredDependencies += [JPEG, TIFF, PNG, OPENEXR, GLEW, 
                              OPENIMAGEIO, OPENSUBDIV]
                              
-    if context.buildUsdImaging:
+    if context.buildUsdImaging and context.buildPython:
         requiredDependencies += [PYOPENGL, PYSIDE]
 
 # Assume zlib already exists on Linux platforms and don't build
@@ -1101,6 +1148,21 @@ if context.buildImaging:
 # our libraries against.
 if Linux():
     requiredDependencies.remove(ZLIB)
+
+
+# Error out if we try to build any third party plugins with python disabled.
+if not context.buildPython:
+    pythonPluginErrorMsg = (
+        "%s plugin cannot be built when python support is disabled")
+    if context.buildMaya:
+        PrintError(pythonPluginErrorMsg % "Maya")
+        sys.exit(1)
+    if context.buildHoudini:
+        PrintError(pythonPluginErrorMsg % "Houdini")
+        sys.exit(1)
+    if context.buildKatana:
+        PrintError(pythonPluginErrorMsg % "Katana")
+        sys.exit(1)
 
 # Error out if we're building the Maya plugin and have enabled Ptex support
 # in imaging. Maya includes its own copy of Ptex, which we believe is 
@@ -1117,7 +1179,7 @@ if context.buildMaya and PTEX in requiredDependencies:
 
 dependenciesToBuild = []
 for dep in requiredDependencies:
-    if context.MustBuildDependency(dep) or not dep.Exists(context):
+    if context.ForceBuildDependency(dep) or not dep.Exists(context):
         if dep not in dependenciesToBuild:
             dependenciesToBuild.append(dep)
 
@@ -1149,24 +1211,24 @@ if context.buildDocs:
         sys.exit(1)
 
 if context.buildUsdImaging:
-    # The USD build will skip building usdview if pyside-uic is not found, 
-    # so check for it here to avoid confusing users. This list of PySide
-    # executable names comes from cmake/modules/FindPySide.cmake
+    # The USD build will skip building usdview if pyside-uic or pyside2-uic is 
+    # not found, so check for it here to avoid confusing users. This list of 
+    # PySide executable names comes from cmake/modules/FindPySide.cmake
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
-    if not any([find_executable(p) for p in pysideUic]):
+    found_pysideUic = any([find_executable(p) for p in pysideUic])
+    pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7"]
+    found_pyside2Uic = any([find_executable(p) for p in pyside2Uic])
+    if not found_pysideUic and not found_pyside2Uic:
         PrintError("pyside-uic not found -- please install PySide and adjust "
-                   "your PATH")
+                   "your PATH. (Note that this program may be named {0} "
+                   "depending on your platform)"
+                   .format(" or ".join(pysideUic)))
         sys.exit(1)
 
 if JPEG in requiredDependencies:
     # NASM is required to build libjpeg-turbo
     if (Windows() and not find_executable("nasm")):
         PrintError("nasm not found -- please install it and adjust your PATH")
-        sys.exit(1)
-
-if AnyPythonDependencies(dependenciesToBuild):
-    if not find_executable("pip"):
-        PrintError("pip not found -- please install it and adjust your PATH")
         sys.exit(1)
 
 # Summarize
@@ -1182,6 +1244,7 @@ Building with settings:
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
     UsdImaging                  {buildUsdImaging}
+    Python support              {buildPython}
     Documentation               {buildDocs}
     Tests                       {buildTests}
     Alembic Plugin              {buildAlembic}
@@ -1205,6 +1268,7 @@ Building with settings:
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
+    buildPython=("On" if context.buildPython else "Off"),
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
@@ -1218,10 +1282,10 @@ if args.dry_run:
 
 # Scan for any dependencies that the user is required to install themselves
 # and print those instructions first.
-manualPythonDependencies = \
-    [dep for dep in dependenciesToBuild if type(dep) is ManualPythonDependency]
-if manualPythonDependencies:
-    for dep in manualPythonDependencies:
+pythonDependencies = \
+    [dep for dep in dependenciesToBuild if type(dep) is PythonDependency]
+if pythonDependencies:
+    for dep in pythonDependencies:
         Print(dep.getInstructions())
     sys.exit(1)
 
@@ -1245,7 +1309,7 @@ try:
     # Download and install 3rd-party dependencies
     for dep in dependenciesToBuild:
         PrintStatus("Installing {dep}...".format(dep=dep.name))
-        dep.installer(context, force=context.MustBuildDependency(dep))
+        dep.installer(context, force=context.ForceBuildDependency(dep))
 
     # Build USD
     PrintStatus("Installing USD...")
@@ -1273,16 +1337,18 @@ if Windows():
     ])
 
 Print("""
-Success! To use USD, please ensure that you have:
-  The following in your PYTHONPATH environment variable:
-    {requiredInPythonPath}
-    
-  The following in your PATH environment variable:
+Success! To use USD, please ensure that you have:""")
+
+if context.buildPython:
+    Print("""
+    The following in your PYTHONPATH environment variable:
+    {requiredInPythonPath}""".format(
+        requiredInPythonPath="\n    ".join(sorted(requiredInPythonPath))))
+
+Print("""
+    The following in your PATH environment variable:
     {requiredInPath}
-"""
-    .format(
-        requiredInPythonPath="\n    ".join(sorted(requiredInPythonPath)),
-        requiredInPath="\n    ".join(sorted(requiredInPath))))
+""".format(requiredInPath="\n    ".join(sorted(requiredInPath))))
 
 if context.buildMaya:
     Print("See documentation at http://openusd.org/docs/Maya-USD-Plugins.html "

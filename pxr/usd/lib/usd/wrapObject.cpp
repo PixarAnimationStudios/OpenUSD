@@ -158,7 +158,8 @@ __getattribute__(object selfObj, const char *name) {
         strcmp(name, "GetDescription") == 0 ||
         strcmp(name, "GetPrim") == 0 ||
         strcmp(name, "GetPath") == 0 ||
-        strcmp(name, "GetPrimPath") == 0) {
+        strcmp(name, "GetPrimPath") == 0 ||
+        strcmp(name, "IsPseudoRoot") == 0){
         // Dispatch to object's __getattribute__.
         return (*_object__getattribute__)(selfObj, name);
     } else {

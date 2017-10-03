@@ -60,96 +60,54 @@ UsdImagingBasisCurvesAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertBasisCurves(prim.GetPath(),
-                             GetShaderBinding(prim),
-                             instancerContext);
+    index->InsertRprim(HdPrimTypeTokens->basisCurves,
+                       prim,
+                       GetShaderBinding(prim),
+                       instancerContext);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return prim.GetPath();
 }
 
 void 
-UsdImagingBasisCurvesAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                             SdfPath const& cachePath,
-                                             HdDirtyBits requestedBits,
-                                             UsdImagingInstancerContext const* 
-                                                 instancerContext)
-{
-    // Let the base class track what it needs.
-    BaseAdapter::TrackVariabilityPrep(
-        prim, cachePath, requestedBits, instancerContext);
-}
-
-void 
 UsdImagingBasisCurvesAdapter::TrackVariability(UsdPrim const& prim,
                                                SdfPath const& cachePath,
-                                               HdDirtyBits requestedBits,
-                                               HdDirtyBits* dirtyBits,
+                                               HdDirtyBits* timeVaryingBits,
                                                UsdImagingInstancerContext const* 
                                                    instancerContext)
 {
     BaseAdapter::TrackVariability(
-        prim, cachePath, requestedBits, dirtyBits, instancerContext);
+        prim, cachePath, timeVaryingBits, instancerContext);
 
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        // Discover time-varying points.
-        _IsVarying(prim, 
-                   UsdGeomTokens->points, 
-                   HdChangeTracker::DirtyPoints,
-                   UsdImagingTokens->usdVaryingPrimVar,
-                   dirtyBits,
-                   /*isInherited*/false);
-    }
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        // Discover time-varying topology.
-        //
-        // Note that basis, wrap and type are all uniform attributes, so they can't
-        // vary over time.
-        _IsVarying(prim, UsdGeomTokens->curveVertexCounts,
-                           HdChangeTracker::DirtyTopology,
-                           UsdImagingTokens->usdVaryingTopology,
-                           dirtyBits, 
-                           /*isInherited*/false);
-    }
-    if (requestedBits & HdChangeTracker::DirtyWidths) {
-        _IsVarying(prim, UsdGeomTokens->widths,
-                           HdChangeTracker::DirtyWidths,
-                           UsdImagingTokens->usdVaryingWidths,
-                           dirtyBits, 
-                           /*isInherited*/false);
-    }
-    if (requestedBits & HdChangeTracker::DirtyNormals) {
-        _IsVarying(prim, UsdGeomTokens->normals,
-                           HdChangeTracker::DirtyNormals,
-                           UsdImagingTokens->usdVaryingNormals,
-                           dirtyBits, 
-                           /*isInherited*/false);
-    }
-}
+    // Discover time-varying points.
+    _IsVarying(prim,
+               UsdGeomTokens->points,
+               HdChangeTracker::DirtyPoints,
+               UsdImagingTokens->usdVaryingPrimVar,
+               timeVaryingBits,
+               /*isInherited*/false);
 
-void 
-UsdImagingBasisCurvesAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath, 
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext)
-{
-    BaseAdapter::UpdateForTimePrep(
-        prim, cachePath, time, requestedBits, instancerContext);
-    UsdImagingValueCache* valueCache = _GetValueCache();
+    // Discover time-varying topology.
+    //
+    // Note that basis, wrap and type are all uniform attributes, so they can't
+    // vary over time.
+    _IsVarying(prim, UsdGeomTokens->curveVertexCounts,
+                       HdChangeTracker::DirtyTopology,
+                       UsdImagingTokens->usdVaryingTopology,
+                       timeVaryingBits,
+                       /*isInherited*/false);
 
-    if (requestedBits & HdChangeTracker::DirtyPoints)
-        valueCache->GetPoints(cachePath);
+    _IsVarying(prim, UsdGeomTokens->widths,
+                       HdChangeTracker::DirtyWidths,
+                       UsdImagingTokens->usdVaryingWidths,
+                       timeVaryingBits,
+                       /*isInherited*/false);
 
-    if (requestedBits & HdChangeTracker::DirtyTopology)
-        valueCache->GetTopology(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyWidths)
-        valueCache->GetWidths(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyNormals)
-        valueCache->GetNormals(cachePath);
+    _IsVarying(prim, UsdGeomTokens->normals,
+                       HdChangeTracker::DirtyNormals,
+                       UsdImagingTokens->usdVaryingNormals,
+                       timeVaryingBits,
+                       /*isInherited*/false);
 }
 
 void 
@@ -157,12 +115,11 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext)
 {
     BaseAdapter::UpdateForTime(
-        prim, cachePath, time, requestedBits, resultBits, instancerContext);
+        prim, cachePath, time, requestedBits, instancerContext);
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
@@ -204,8 +161,6 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
             primvar.interpolation = UsdGeomTokens->vertex;
             _MergePrimvar(primvar, &primvars);
             valueCache->GetNormals(cachePath) = VtValue(normals);
-        } else {
-            *resultBits &= ~HdChangeTracker::DirtyNormals;
         }
     }
 }
@@ -238,7 +193,9 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveBasis = HdTokens->catmullRom;
     }
     else {
-        TF_CODING_ERROR("Unknown curve basis '%s'", curveBasis.GetText());
+        topoCurveBasis = HdTokens->bezier;
+        TF_WARN("Unknown curve basis '%s', using '%s'", 
+                curveBasis.GetText(), topoCurveBasis.GetText());
     }
 
     if(curveType == UsdGeomTokens->linear) {
@@ -248,7 +205,9 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveType = HdTokens->cubic;
     }
     else {
-        TF_CODING_ERROR("Unknown curve type '%s'", curveType.GetText());
+        topoCurveType = HdTokens->cubic;
+        TF_WARN("Unknown curve type '%s', using '%s'", 
+                curveType.GetText(), topoCurveType.GetText());
     }
 
     if(curveWrap == UsdGeomTokens->periodic) {
@@ -258,7 +217,9 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         topoCurveWrap = HdTokens->nonperiodic;
     }
     else {
-        TF_CODING_ERROR("Unknown curve wrap '%s'", curveWrap.GetText());
+        topoCurveWrap = HdTokens->nonperiodic;
+        TF_WARN("Unknown curve wrap '%s', using '%s'", 
+                curveWrap.GetText(), topoCurveWrap.GetText());
     }
 
     HdBasisCurvesTopology topology(

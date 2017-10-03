@@ -27,7 +27,7 @@ pxr_library(usdUtils
     PUBLIC_HEADERS
         api.h
         
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
@@ -41,7 +41,7 @@ pxr_library(usdUtils
         wrapStitch.cpp
         wrapStitchClips.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 )
 

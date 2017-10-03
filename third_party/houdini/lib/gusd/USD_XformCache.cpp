@@ -207,7 +207,7 @@ GusdUSD_XformCache::GetLocalToWorldTransform(const UsdPrim& prim,
 
 
 
-GusdUSD_XformCache::GusdUSD_XformCache(GusdUSD_StageCache& cache)
+GusdUSD_XformCache::GusdUSD_XformCache(GusdStageCache& cache)
     : GusdUSD_DataCache(cache),
       _xforms(GUSDUT_USDCACHE_NAME, 512),
       _worldXforms(GUSDUT_USDCACHE_NAME, 512),
@@ -215,7 +215,7 @@ GusdUSD_XformCache::GusdUSD_XformCache(GusdUSD_StageCache& cache)
 
     
 GusdUSD_XformCache::GusdUSD_XformCache()
-    : GusdUSD_XformCache(GusdUSD_StageCache::GetInstance())
+    : GusdUSD_XformCache(GusdStageCache::GetInstance())
 {}
 
 
@@ -227,12 +227,11 @@ template <typename XformFn>
 struct _ComputeXformsT
 {
     _ComputeXformsT(const XformFn& xformFn,
-                    const GusdUSD_StageProxy::MultiAccessor& accessor,
                     const UT_Array<UsdPrim>& prims,
-                    const GusdUSD_Utils::PrimTimeMap& timeMap,
+                    const GusdDefaultArray<UsdTimeCode>& times,
                     UT_Matrix4D* xforms)
-        : _xformFn(xformFn), _accessor(accessor),
-          _prims(prims), _timeMap(timeMap), _xforms(xforms) {}
+        : _xformFn(xformFn), _prims(prims),
+          _times(times), _xforms(xforms) {}
 
     void    operator()(const UT_BlockedRange<size_t>& r) const
             {
@@ -242,22 +241,19 @@ struct _ComputeXformsT
                 for(size_t i = r.begin(); i < r.end(); ++i) {
                     if(!++bcnt && boss->opInterrupt())
                         return;
-                    if(const auto* accessor = _accessor(i)) {
-                        if(UsdPrim prim = _prims(i)) {
-                            _xformFn(_xforms[i],  prim, _timeMap(i), i);
-                            continue;
-                        }
+                    if(UsdPrim prim = _prims(i)) {
+                        _xformFn(_xforms[i],  prim, _times(i), i);
+                        continue;
                     }
                     _xforms[i].identity();
                 }
             }
 
 private:
-    const XformFn&                              _xformFn;
-    const GusdUSD_StageProxy::MultiAccessor&    _accessor;
-    const UT_Array<UsdPrim>&                    _prims;
-    const GusdUSD_Utils::PrimTimeMap&           _timeMap;
-    UT_Matrix4D* const                          _xforms;
+    const XformFn&                          _xformFn;
+    const UT_Array<UsdPrim>&                _prims;
+    const GusdDefaultArray<UsdTimeCode>&    _times;
+    UT_Matrix4D* const                      _xforms;
 };
 
 
@@ -298,15 +294,12 @@ private:
 template <typename XformFn>
 bool
 _ComputeXforms(const XformFn& xformFn,
-               const GusdUSD_StageProxy::MultiAccessor& accessor,
                const UT_Array<UsdPrim>& prims,
-               const GusdUSD_Utils::PrimTimeMap& timeMap,
+               const GusdDefaultArray<UsdTimeCode>& times,
                UT_Matrix4D* xforms)
 {
-    UT_ASSERT(accessor.size() == prims.size());
     UTparallelFor(UT_BlockedRange<size_t>(0, prims.size()),
-                  _ComputeXformsT<XformFn>(xformFn, accessor, prims,
-                                           timeMap, xforms));
+                  _ComputeXformsT<XformFn>(xformFn, prims, times, xforms));
     return !UTgetInterrupt()->opInterrupt();
 }
 
@@ -316,25 +309,23 @@ _ComputeXforms(const XformFn& xformFn,
 
 bool
 GusdUSD_XformCache::GetLocalTransformations(
-    const GusdUSD_StageProxy::MultiAccessor& accessor,
     const UT_Array<UsdPrim>& prims,
-    const GusdUSD_Utils::PrimTimeMap& timeMap,
+    const GusdDefaultArray<UsdTimeCode>& times,
     UT_Matrix4D* xforms)
 {
-    return _ComputeXforms<_LocalXformFn>(_LocalXformFn(*this), accessor,
-                                         prims, timeMap, xforms);
+    return _ComputeXforms<_LocalXformFn>(_LocalXformFn(*this),
+                                         prims, times, xforms);
 }
 
 
 bool
 GusdUSD_XformCache::GetLocalToWorldTransforms(
-    const GusdUSD_StageProxy::MultiAccessor& accessor,
     const UT_Array<UsdPrim>& prims,
-    const GusdUSD_Utils::PrimTimeMap& timeMap,
+    const GusdDefaultArray<UsdTimeCode>& times,
     UT_Matrix4D* xforms)
 {
-    return _ComputeXforms<_WorldXformFn>(_WorldXformFn(*this), accessor,
-                                         prims, timeMap, xforms);
+    return _ComputeXforms<_WorldXformFn>(_WorldXformFn(*this),
+                                         prims, times, xforms);
 }
 
 
@@ -345,12 +336,10 @@ template <typename NameFn>
 struct _QueryConstraintsT
 {
     _QueryConstraintsT(const NameFn& nameFn,
-                       const GusdUSD_StageProxy::MultiAccessor& accessor,
                        const UT_Array<UsdPrim>& prims,
-                       const GusdUSD_Utils::PrimTimeMap& timeMap,
+                       const GusdDefaultArray<UsdTimeCode>& times,
                        UT_Matrix4D* xforms)
-        : _nameFn(nameFn), _accessor(accessor), _prims(prims),
-          _timeMap(timeMap), _xforms(xforms) {}
+        : _nameFn(nameFn), _prims(prims), _times(times), _xforms(xforms) {}
 
     void    operator()(const UT_BlockedRange<size_t>& r) const
             {
@@ -364,7 +353,7 @@ struct _QueryConstraintsT
                         const TfToken& name = _nameFn(i);
                         if(!name.IsEmpty()) {
                             if(prim.GetAttribute(name).Get(
-                                   GusdUT_Gf::Cast(_xforms + i), _timeMap(i)))
+                                   GusdUT_Gf::Cast(_xforms + i), _times(i)))
                                 continue;
                         }
                     }
@@ -374,11 +363,10 @@ struct _QueryConstraintsT
 
 
 private:
-    const NameFn&                               _nameFn;
-    const GusdUSD_StageProxy::MultiAccessor&    _accessor;
-    const UT_Array<UsdPrim>&                    _prims;
-    const GusdUSD_Utils::PrimTimeMap&           _timeMap;
-    UT_Matrix4D* const                          _xforms;
+    const NameFn&                           _nameFn;
+    const UT_Array<UsdPrim>&                _prims;
+    const GusdDefaultArray<UsdTimeCode>&    _times;
+    UT_Matrix4D* const                      _xforms;
 };
 
 
@@ -405,14 +393,12 @@ private:
 template <typename NameFn>
 bool
 _QueryConstraints(const NameFn& nameFn,
-                  const GusdUSD_StageProxy::MultiAccessor& accessor,
                   const UT_Array<UsdPrim>& prims,
-                  const GusdUSD_Utils::PrimTimeMap& timeMap,
+                  const GusdDefaultArray<UsdTimeCode>& times,
                   UT_Matrix4D* xforms)
 {
     UTparallelFor(UT_BlockedRange<size_t>(0, prims.size()),
-                  _QueryConstraintsT<NameFn>(nameFn, accessor, prims,
-                                             timeMap, xforms));
+                  _QueryConstraintsT<NameFn>(nameFn, prims, times, xforms));
     return !UTgetInterrupt()->opInterrupt();
 }
 
@@ -423,26 +409,24 @@ _QueryConstraints(const NameFn& nameFn,
 bool
 GusdUSD_XformCache::GetConstraintTransforms(
     const TfToken& constraint,
-    const GusdUSD_StageProxy::MultiAccessor& accessor,
     const UT_Array<UsdPrim>& prims,
-    const GusdUSD_Utils::PrimTimeMap& timeMap,
+    const GusdDefaultArray<UsdTimeCode>& times,
     UT_Matrix4D* xforms)
 {
     return _QueryConstraints<_SingleNameFn>(_SingleNameFn(constraint),
-                                            accessor, prims, timeMap, xforms);
+                                            prims, times, xforms);
 }
 
 
 bool
 GusdUSD_XformCache::GetConstraintTransforms(
     const UT_Array<TfToken>& constraints,
-    const GusdUSD_StageProxy::MultiAccessor& accessor,
     const UT_Array<UsdPrim>& prims,
-    const GusdUSD_Utils::PrimTimeMap& timeMap,
+    const GusdDefaultArray<UsdTimeCode>& times,
     UT_Matrix4D* xforms)
 {
     return _QueryConstraints<_ArrayOfNamesFn>(_ArrayOfNamesFn(constraints),
-                                              accessor, prims, timeMap, xforms);
+                                              prims, times, xforms);
 }
 
 
@@ -460,8 +444,7 @@ namespace {
 
 template <typename KeyT>
 int64
-_RemoveKeysT(const UT_Set<std::string>& paths,
-             GusdUT_CappedCache& cache)
+_RemoveKeysT(const UT_StringSet& paths, GusdUT_CappedCache& cache)
 {
     return cache.ClearEntries(
         [&](const UT_CappedKeyHandle& key,
@@ -478,7 +461,7 @@ _RemoveKeysT(const UT_Set<std::string>& paths,
 
 
 int64
-GusdUSD_XformCache::Clear(const UT_Set<std::string>& paths)
+GusdUSD_XformCache::Clear(const UT_StringSet& paths)
 {   
     return _RemoveKeysT<_VaryingKey>(paths, _xforms) +
            _RemoveKeysT<_VaryingKey>(paths, _worldXforms ) +

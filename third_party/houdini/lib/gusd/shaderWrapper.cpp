@@ -34,6 +34,7 @@
 
 #include <DEP/DEP_MicroNode.h>
 #include <PRM/PRM_ParmList.h>
+#include <PRM/PRM_SpareData.h>
 #include <UT/UT_Map.h>
 #include <UT/UT_Set.h>
 #include <VOP/VOP_Node.h>
@@ -85,7 +86,9 @@ _buildCustomOslNode(const VOP_Node* vopNode,
     }
 
     const string shaderNameOsl = shaderName.toStdString() + ".osl";
-    const string shaderNameOso = shaderName.toStdString() + ".oso";
+
+    // Update shaderName to include the .oso extension.
+    shaderName.append(".oso");
 
     std::ofstream oslFile;
     oslFile.open(shaderNameOsl, std::ios::out);
@@ -102,7 +105,7 @@ _buildCustomOslNode(const VOP_Node* vopNode,
 
     string oslcCmd = houRoot + "/bin/hrmanshader -e " + houErr +
                      " -cc oslc -I" + houInclude + " -o " +
-                     shaderNameOso + " " + shaderNameOsl;
+                     shaderName.toStdString() + " " + shaderNameOsl;
     std::shared_ptr<FILE> pipe(popen(oslcCmd.c_str(), "r"), pclose);
     if (!pipe) {
         TF_CODING_ERROR("Failed to run command '%s'", oslcCmd.c_str());
@@ -167,11 +170,10 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
     }
 
     //
-    // Create UsdShadeInputs for input connections, inputs which are set
-    // to a non-default value, and inputs which have channel dependencies.
+    // Iterate through each parameter in vopNode's parm list.
     //
     const PRM_ParmList* nodeParams = vopNode->getParmList();         
-    for(int i=0; i<nodeParams->getEntries(); ++i) {
+    for (int i=0; i<nodeParams->getEntries(); ++i) {
 
         const PRM_Parm* parm = nodeParams->getParmPtr(i);
 
@@ -179,11 +181,25 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
         bool isConnected = inIdx >= 0
                            && const_cast<VOP_Node*>(vopNode)->isConnected(inIdx, true);
 
-        //bool isDependent = parm->hasMicroNodes();
+        //
+        // Create a UsdShadeInput for each connected input, and
+        // for each parameter that is set to a non-default value.
+        //
+        if (isConnected || !parm->isTrueFactoryDefault()) {
+            const char* type = NULL;
 
-        if(isConnected || !parm->isTrueFactoryDefault()) {
-            const PRM_Type& parmType = parm->getType();
-            if(parmType.isStringType()) {
+            // Figure out if this parm has spare data named "script_ritype".
+            // (This would have been added to this parm when the otl/hda for
+            // this vopNode was generated.)
+            if (auto* spare = parm->getSparePtr()) {
+                type = spare->getValue("script_ritype");
+            }
+
+            if (type == NULL) {
+                continue;
+            }
+
+            if (strcmp(type, "string") == 0) {
 
                 UsdShadeInput shadeInput; 
 
@@ -205,9 +221,7 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                                                     SdfValueTypeNames->String);
                 }
 
-                //if(isDependent) {
-                    parmDeps[parm] = shadeInput;
-                //}
+                parmDeps[parm] = shadeInput;
 
                 if(!isConnected) {
                     if(isInteger) {
@@ -218,15 +232,12 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     }
                 }
             }
-            else if(parmType.isFloatType() &&
-                    parmType.getFloatType() == PRM_Type::PRM_FLOAT_NONE) {
+            else if (strcmp(type, "float") == 0) {
 
                 UsdShadeInput shadeInput 
                     = risObject.CreateInput(TfToken(parm->getToken()),
                                             SdfValueTypeNames->Float);
-                //if(isDependent) {
-                    parmDeps[parm] = shadeInput;
-                //}
+                parmDeps[parm] = shadeInput;
 
                 if(!isConnected) {
                     double val;   
@@ -234,15 +245,12 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     shadeInput.Set((float)val);
                 }
             }
-            else if(parmType.hasFloatType(PRM_Type::PRM_FLOAT_INTEGER) ||
-                    parmType.hasOrdinalType(PRM_Type::PRM_ORD_TOGGLE)) {
+            else if (strcmp(type, "int") == 0) {
 
                 UsdShadeInput shadeInput 
                     = risObject.CreateInput(TfToken(parm->getToken()),
                                             SdfValueTypeNames->Int);
-                //if(isDependent) {
-                    parmDeps[parm] = shadeInput;
-                //}
+                parmDeps[parm] = shadeInput;
 
                 if(!isConnected) {
                     int val;   
@@ -250,14 +258,12 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     shadeInput.Set(val);
                 }
             }
-            else if(parmType.hasFloatType(PRM_Type::PRM_FLOAT_RGBA)) {
+            else if (strcmp(type, "color") == 0) {
 
                 UsdShadeInput shadeInput 
                     = risObject.CreateInput(TfToken(parm->getToken()),
                                             SdfValueTypeNames->Color3d);
-                //if(isDependent) {
-                    parmDeps[parm] = shadeInput;
-                //}
+                parmDeps[parm] = shadeInput;
 
                 if(!isConnected) {
                     double color[3];   
@@ -265,9 +271,44 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     shadeInput.Set(GfVec3d(color));
                 }
             }
-            else if(PRM_XYZ == parmType) {
-                // TODO Does parm need additional metadata to distinguish
-                //      vector/point/normal ?
+            else if (strcmp(type, "normal") == 0) {
+
+                UsdShadeInput shadeInput 
+                    = risObject.CreateInput(TfToken(parm->getToken()),
+                                            SdfValueTypeNames->Normal3d);
+                parmDeps[parm] = shadeInput;
+
+                if(!isConnected) {
+                    double normal[3];   
+                    parm->getValues(0, normal, SYSgetSTID());
+                    shadeInput.Set(GfVec3d(normal));
+                }
+            }
+            else if (strcmp(type, "point") == 0) {
+
+                UsdShadeInput shadeInput 
+                    = risObject.CreateInput(TfToken(parm->getToken()),
+                                            SdfValueTypeNames->Point3d);
+                parmDeps[parm] = shadeInput;
+
+                if(!isConnected) {
+                    double point[3];   
+                    parm->getValues(0, point, SYSgetSTID());
+                    shadeInput.Set(GfVec3d(point));
+                }
+            }
+            else if (strcmp(type, "vector") == 0) {
+
+                UsdShadeInput shadeInput 
+                    = risObject.CreateInput(TfToken(parm->getToken()),
+                                            SdfValueTypeNames->Vector3d);
+                parmDeps[parm] = shadeInput;
+
+                if(!isConnected) {
+                    double vector[3];   
+                    parm->getValues(0, vector, SYSgetSTID());
+                    shadeInput.Set(GfVec3d(vector));
+                }
             }
         }
     }

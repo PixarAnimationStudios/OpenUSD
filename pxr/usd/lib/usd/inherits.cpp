@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -37,12 +38,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdInherits
 // ------------------------------------------------------------------------- //
 bool
-UsdInherits::AppendInherit(const SdfPath &primPath)
+UsdInherits::AddInherit(const SdfPath &primPath, UsdListPosition position)
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfInheritsProxy inhs = spec->GetInheritPathList();
-        inhs.Add(primPath);
+        switch (position) {
+        case UsdListPositionFront:
+            inhs.Prepend(primPath);
+            break;
+        case UsdListPositionBack:
+            inhs.Append(primPath);
+            break;
+        case UsdListPositionTempDefault:
+            if (UsdAuthorOldStyleAdd()) {
+                inhs.Add(primPath);
+            } else {
+                inhs.Prepend(primPath);
+            }
+            break;
+        }
         return true;
     }
     return false;

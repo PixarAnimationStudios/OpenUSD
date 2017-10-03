@@ -1,0 +1,10 @@
+#sdf 1.4.32
+
+def "Root"
+{
+    def "Payload" (
+        payload = @./payload2.sdf@</Payload2>
+    )    
+    {
+    }
+}

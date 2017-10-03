@@ -65,6 +65,7 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
     HdPrimTypeTokens->texture
 };
 
+std::mutex HdStRenderDelegate::_mutexResourceRegistry;
 std::atomic_int HdStRenderDelegate::_counterResourceRegistry;
 HdResourceRegistrySharedPtr HdStRenderDelegate::_resourceRegistry;
 
@@ -73,6 +74,8 @@ HdStRenderDelegate::HdStRenderDelegate()
     // Initialize one resource registry for all St plugins
     // It will also add the resource to the logging object so we
     // can query the resources used by all St plugins later
+    std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
+    
     if (_counterResourceRegistry.fetch_add(1) == 0) {
         _resourceRegistry.reset( new HdResourceRegistry() );
         HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry);

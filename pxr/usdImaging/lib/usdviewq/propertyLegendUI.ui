@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PropertyLegend</class>
+ <widget class="QWidget" name="PropertyLegend">
+ <property name="comment" stdset="0">
+   <string>
+     Copyright 2017 Pixar                                                                   
+                                                                                            
+     Licensed under the Apache License, Version 2.0 (the &quot;Apache License&quot;)      
+     with the following modification; you may not use this file except in                   
+     compliance with the Apache License and the following modification to it:               
+     Section 6. Trademarks. is deleted and replaced with:                                   
+                                                                                            
+     6. Trademarks. This License does not grant permission to use the trade                 
+        names, trademarks, service marks, or product names of the Licensor                  
+        and its affiliates, except as required to comply with Section 4(c) of               
+        the License and to reproduce the content of the NOTICE file.                        
+                                                                                            
+     You may obtain a copy of the Apache License at                                         
+                                                                                            
+         http://www.apache.org/licenses/LICENSE-2.0                                         
+                                                                                            
+     Unless required by applicable law or agreed to in writing, software                    
+     distributed under the Apache License with the above modification is                    
+     distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY   
+     KIND, either express or implied. See the Apache License for the specific               
+     language governing permissions and limitations under the Apache License.               
+  </string>
+  </property>
+  <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>650</width>
+     <height>0</height>
+    </size>
+   </property>
+   <layout class="QGridLayout" name="propertyLegendLayout">
+    <item row="0" column="0">
+     <widget class="QGraphicsView" name="propertyLegendColorFallback">
+      <property name="maximumSize">
+       <size>
+        <width>20</width>
+        <height>15</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLabel" name="propertyLegendLabelFallback">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Fallback</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2">
+     <widget class="QGraphicsView" name="propertyLegendColorDefault">
+      <property name="maximumSize">
+       <size>
+        <width>20</width>
+        <height>15</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3">
+     <widget class="QLabel" name="propertyLegendLabelDefault">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Default</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="4">
+     <widget class="QGraphicsView" name="propertyLegendColorTimeSample">
+      <property name="maximumSize">
+       <size>
+        <width>20</width>
+        <height>15</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="5">
+     <widget class="QLabel" name="propertyLegendLabelTimeSample">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Time Samples (Interpolated) </string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QGraphicsView" name="propertyLegendColorNoValue">
+      <property name="maximumSize">
+       <size>
+        <width>20</width>
+        <height>15</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLabel" name="propertyLegendLabelNoValue">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>No Value</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="2">
+     <widget class="QGraphicsView" name="propertyLegendColorCustom">
+      <property name="maximumSize">
+       <size>
+        <width>20</width>
+        <height>15</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="3">
+     <widget class="QLabel" name="propertyLegendLabelCustom">
+      <property name="text">
+       <string>Custom</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="4">
+     <widget class="QGraphicsView" name="propertyLegendColorValueClips">
+      <property name="maximumSize">
+       <size>
+        <width>20</width>
+        <height>15</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="5">
+     <widget class="QLabel" name="propertyLegendLabelValueClips">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Value Clips (Interpolated)</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="propertyLegendAttrPlainIcon">
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <widget class="QLabel" name="propertyLegendAttrPlainDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Attribute</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="2">
+     <widget class="QLabel" name="propertyLegendConnIcon">
+     </widget>
+    </item>
+    <item row="2" column="3">
+     <widget class="QLabel" name="propertyLegendConnDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+      <string>Connection</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="4">
+     <widget class="QLabel" name="propertyLegendAttrWithConnIcon">
+     </widget>
+    </item>
+    <item row="2" column="5">
+     <widget class="QLabel" name="propertyLegendAttrWithConnDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Attribute w/Connection(s)</string>
+      </property>
+    </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="propertyLegendRelPlainIcon">
+     </widget>
+    </item>
+    <item row="3" column="1">
+     <widget class="QLabel" name="propertyLegendRelPlainDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+          <string>Relationship</string>
+      </property>
+    </widget>
+    </item>
+    <item row="3" column="2">
+     <widget class="QLabel" name="propertyLegendTargetIcon">
+     </widget>
+    </item>
+    <item row="3" column="3">
+     <widget class="QLabel" name="propertyLegendTargetDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+          <string>Target</string>
+      </property>
+    </widget>
+    </item>
+    <item row="3" column="4">
+     <widget class="QLabel" name="propertyLegendRelWithTargetIcon">
+     </widget>
+    </item>
+    <item row="3" column="5">
+     <widget class="QLabel" name="propertyLegendRelWithTargetDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+      <string>Relationship w/Target(s)</string>
+      </property>
+     </widget>
+    </item>
+
+    <item row="4" column="0">
+     <widget class="QLabel" name="propertyLegendCompIcon">
+     </widget>
+    </item>
+    <item row="4" column="1" colspan="5">
+     <widget class="QLabel" name="propertyLegendCompDesc">
+      <property name="font">
+       <font>
+        <family>Gotham Rounded</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Computed Value Provided by Usdview</string>
+      </property>
+    </widget>
+    </item>
+
+   </layout>
+  </widget>
+</ui>

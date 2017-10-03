@@ -53,10 +53,18 @@ UsdImagingDomeLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertLight(prim.GetPath(), HdPrimTypeTokens->domeLight);
+    index->InsertSprim(HdPrimTypeTokens->domeLight, prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return prim.GetPath();
 }
+
+void
+UsdImagingDomeLightAdapter::_RemovePrim(SdfPath const& cachePath,
+                                         UsdImagingIndexProxy* index)
+{
+    index->RemoveSprim(HdPrimTypeTokens->domeLight, cachePath);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

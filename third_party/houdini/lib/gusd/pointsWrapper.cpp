@@ -25,7 +25,6 @@
 
 #include "context.h"
 #include "UT_Gf.h"
-#include "USD_Proxy.h"
 #include "GT_VtArray.h"
 
 #include <GT/GT_DANumeric.h>
@@ -50,12 +49,11 @@ GusdPointsWrapper(
 
 GusdPointsWrapper::
 GusdPointsWrapper(
-        const GusdUSD_StageProxyHandle& stage, 
         const UsdGeomPoints& usdPoints, 
-        const UsdTimeCode& time,
-        const GusdPurposeSet& purposes )
+        UsdTimeCode time,
+        GusdPurposeSet purposes )
     : GusdPrimWrapper( time, purposes )
-    , m_usdPointsForRead( usdPoints, stage->GetLock() )
+    , m_usdPointsForRead( usdPoints )
 {
 }
 
@@ -89,13 +87,11 @@ defineForWrite(
 
 GT_PrimitiveHandle GusdPointsWrapper::
 defineForRead(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomImageable&         sourcePrim, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomImageable& sourcePrim, 
+        UsdTimeCode             time,
+        GusdPurposeSet          purposes )
 {
     return new GusdPointsWrapper( 
-                        stage, 
                         UsdGeomPoints( sourcePrim.GetPrim() ),
                         time,
                         purposes );
@@ -112,21 +108,6 @@ redefine( const UsdStagePtr& stage,
     return true;
 }
 
-const UsdGeomImageable 
-GusdPointsWrapper::getUsdPrimForRead(
-    GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomPoint.
-    GusdUSD_PointsHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdPointsForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdPointsForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
-}
-
 bool GusdPointsWrapper::
 refine(GT_Refine& refiner, const GT_RefineParms* parms) const
 {
@@ -134,9 +115,7 @@ refine(GT_Refine& refiner, const GT_RefineParms* parms) const
 
     bool refineForViewport = GT_GEOPrimPacked::useViewportLOD(parms);
 
-    GusdUSD_PointsHolder::ScopedReadLock lock;
-    lock.Acquire( m_usdPointsForRead );
-    UsdGeomPoints points = *lock;   
+    const UsdGeomPoints& points = m_usdPointsForRead;
 
     VtFloatArray vtFloatArray;
     VtIntArray   vtIntArray;

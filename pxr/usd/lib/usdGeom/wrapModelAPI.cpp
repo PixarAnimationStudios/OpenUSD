@@ -21,16 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
-#include "pxr/usd/usdGeom/constraintTarget.h"
-
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/types.h"
-
-#include "pxr/base/vt/value.h"
 
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -39,6 +33,8 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/python.hpp>
+
+#include <string>
 
 using namespace boost::python;
 
@@ -52,26 +48,37 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-} // anonymous namespace 
+
+} // anonymous namespace
 
 void wrapUsdGeomModelAPI()
 {
     typedef UsdGeomModelAPI This;
 
-    class_<
-        This, bases<UsdModelAPI>
-        > cls("ModelAPI", init<UsdPrim>(arg("prim")));
+    class_<This, bases<UsdModelAPI> >
+        cls("ModelAPI");
 
     cls
+        .def(init<UsdPrim>(arg("prim")))
         .def(init<UsdSchemaBase const&>(arg("schemaObj")))
         .def(TfTypePythonClass())
+
+        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .staticmethod("Get")
+
+
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
+        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             return_value_policy<return_by_value>())
+        .staticmethod("_GetStaticTfType")
+
         .def(!self)
+
 
     ;
 

@@ -117,10 +117,11 @@ class SdfAssetPath;
 /// 2. If *scales* is authored, next apply the scaling matrix from *scales[i]*
 /// 3. If *orientations* is authored: **if *angularVelocities* is authored**, 
 /// first multiply *orientations[i]* by the unit quaternion derived by scaling 
-/// *angularVelocities[i]* by the time differential from the left-bracketing 
-/// timeSample for *orientation* to the requested evaluation time *t*, 
-/// storing the result in *R*, **else** assign *R* directly from 
-/// *orientations[i]*.  Apply the rotation matrix derived from *R*.
+/// *angularVelocities[i]* by the \ref UsdGeom_PITimeScaling "time differential" 
+/// from the left-bracketing timeSample for *orientation* to the requested 
+/// evaluation time *t*, storing the result in *R*, **else** assign *R* 
+/// directly from *orientations[i]*.  Apply the rotation matrix derived 
+/// from *R*.
 /// 4. Apply the translation derived from *positions[i]*. If *velocities* is 
 /// authored, apply the translation deriving from *velocities[i]* scaled by 
 /// the time differential from the left-bracketing timeSample for *positions* 
@@ -129,6 +130,13 @@ class SdfAssetPath;
 /// prim itself (or the UsdGeomImageable::ComputeLocalToWorldTransform() of the 
 /// PointInstancer to put the instance directly into world space)
 /// 
+/// \anchor UsdGeom_PITimeScaling
+/// <b>Scaling Velocities for Interpolation</b>
+/// 
+/// When computing time-differentials by which to apply velocity or
+/// angularVelocity to positions or orientations, we must scale by
+/// ( 1.0 / UsdStage::GetTimeCodesPerSecond() ), because velocities are recorded
+/// in units/second, while we are interpolating in UsdTimeCode ordinates.
 /// 
 /// We provide both high and low-level API's for dealing with the
 /// transformation as a matrix, both will compute the instance matrices using
@@ -475,14 +483,17 @@ public:
     // --------------------------------------------------------------------- //
     // VELOCITIES 
     // --------------------------------------------------------------------- //
-    /// If authored, per-instance velocity vector to be used for
-    /// interpolating position.  Velocities should be considered mandatory if
-    /// both \em protoIndices and \em positions are animated.  Magnitude of
-    /// the velocity is measured in position units per UsdTimeCode . To convert to
-    /// position units per second, multiply by
+    /// If provided, per-instance 'velocities' will be used to 
+    /// compute positions between samples for the 'positions' attribute,
+    /// rather than interpolating between neighboring 'positions' samples.
+    /// Velocities should be considered mandatory if both \em protoIndices
+    /// and \em positions are animated.  Velocity is measured in position
+    /// units per second, as per most simulation software. To convert to
+    /// position units per UsdTimeCode, divide by
     /// UsdStage::GetTimeCodesPerSecond().
     /// 
-    /// See also \ref UsdGeomPointInstancer_transform .
+    /// See also \ref UsdGeomPointInstancer_transform, 
+    /// \ref UsdGeom_VelocityInterpolation .
     ///
     /// \n  C++ Type: VtArray<GfVec3f>
     /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
@@ -506,8 +517,8 @@ public:
     /// If authored, per-instance angular velocity vector to be used for
     /// interoplating orientations.  Angular velocities should be considered
     /// mandatory if both \em protoIndices and \em orientations are animated.
-    /// Magnitude of the angular velocity is measured in <b>degrees</b> per
-    /// UsdTimeCode . To convert to degrees per second, multiply by
+    /// Angular velocity is measured in <b>degrees</b> per second. To convert
+    /// to degrees per UsdTimeCode, divide by
     /// UsdStage::GetTimeCodesPerSecond().
     /// 
     /// See also \ref UsdGeomPointInstancer_transform .
@@ -913,6 +924,22 @@ UsdGeomPointInstancer::ApplyMaskToArray(std::vector<bool> const &mask,
     }
     return true;
 }
+
+/// Returns true if list ops should be composed with SdfListOp::ApplyOperations()
+/// Returns false if list ops should be composed with SdfListOp::ComposeOperations().
+USDGEOM_API
+bool
+UsdGeomPointInstancerApplyNewStyleListOps();
+
+/// Applies a list operation of type \p op using \p items
+/// over the existing list operation on \p prim with the name
+/// \p metadataName.
+USDGEOM_API 
+bool 
+UsdGeomPointInstancerSetOrMergeOverOp(std::vector<int64_t> const &items, 
+                                      SdfListOpType op,
+                                      UsdPrim const &prim,
+                                      TfToken const &metadataName);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

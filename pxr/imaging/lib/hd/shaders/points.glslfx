@@ -28,6 +28,7 @@
 --- #import $TOOLS/hd/shaders/points.glslfx
 
 #import $TOOLS/hd/shaders/instancing.glslfx
+#import $TOOLS/hd/shaders/terminals.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Point.Vertex
@@ -69,8 +70,6 @@ in VertexData
     vec4 Peye;
 } inData;
 
-vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
-
 void main(void)
 {
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
@@ -86,7 +85,8 @@ void main(void)
     color.rgb = ApplyColorOverrides(color).rgb;
 
     vec4 patchCoord = vec4(0);
-    color.rgb = mix(color.rgb, surfaceShader(vec4(Peye, 1), Neye, color, patchCoord).rgb,
+    color.rgb = mix(color.rgb, 
+                    ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb,
                     GetLightingBlendAmount());
 
     if (ShouldDiscardByAlpha(color)) {

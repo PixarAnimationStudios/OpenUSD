@@ -219,7 +219,7 @@ class NoticeTester(unittest.TestCase):
 
             objectsChanged = Tf.Notice.Register(
                 Usd.Notice.ObjectsChanged, OnRelationshipTargetChange, s)
-            rel.AppendTarget("/Bar")
+            rel.AddTarget("/Bar")
 
             del objectsChanged
 

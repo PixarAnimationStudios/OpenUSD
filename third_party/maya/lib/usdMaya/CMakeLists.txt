@@ -123,7 +123,7 @@ pxr_shared_library(${PXR_PACKAGE}
         wrapStageCache.cpp
         wrapUserTaggedAttribute.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
         AEpxrUsdReferenceAssemblyTemplate.py
         userExportedAttributesUI.py
@@ -145,6 +145,7 @@ pxr_test_scripts(
         testenv/testUsdExportColorSets.py
         testenv/testUsdExportDisplayColor.py
         testenv/testUsdExportFrameOffset.py
+        testenv/testUsdExportInstances.py
         testenv/testUsdExportMesh.py
         testenv/testUsdExportNurbsCurve.py
         testenv/testUsdExportRenderLayerMode.py
@@ -237,6 +238,21 @@ pxr_register_test(testUsdExportFrameOffset
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
 )
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportInstancesTest
+    DEST testUsdExportInstances
+)
+pxr_register_test(testUsdExportInstances
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportInstances"
+    TESTENV testUsdExportInstances
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+)
+
 
 pxr_install_test_dir(
     SRC testenv/UsdExportMeshTest

@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/diagnostic.h"
-#include <boost/utility/enable_if.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

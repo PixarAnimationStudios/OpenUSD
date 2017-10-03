@@ -285,6 +285,14 @@ _WriteListOp(
             _WriteListOpList(out, indent, name, 
                              listOp.GetAddedItems(), "add"); 
         }
+        if (!listOp.GetPrependedItems().empty()) {
+            _WriteListOpList(out, indent, name, 
+                             listOp.GetPrependedItems(), "prepend"); 
+        }
+        if (!listOp.GetAppendedItems().empty()) {
+            _WriteListOpList(out, indent, name, 
+                             listOp.GetAppendedItems(), "append"); 
+        }
         if (!listOp.GetOrderedItems().empty()) {
             _WriteListOpList(out, indent, name, 
                              listOp.GetOrderedItems(), "reorder");

@@ -28,6 +28,7 @@ pxr_library(hdSt
         instancer
         light      
         mesh
+        mixinShaderCode
         points
         renderDelegate
         renderPass

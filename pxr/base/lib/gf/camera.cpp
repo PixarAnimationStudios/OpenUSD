@@ -49,22 +49,6 @@ GfCamera::FOCAL_LENGTH_UNIT = 0.1;
 const bool GfCamera::ZUp = true;
 const bool GfCamera::YUp = false;
 
-// Matrix corresponding to Gf.Rotation(Gf.Vec3d.XAxis(), -90)
-const GfMatrix4d
-GfCamera::Y_UP_TO_Z_UP_MATRIX =
-    GfMatrix4d( 1,  0 , 0,  0,
-                0,  0, -1,  0,
-                0,  1,  0,  0,
-                0,  0,  0,  1);
-
-// Matrix corresponding to Gf.Rotation(Gf.Vec3d.XAxis(), 90)
-const GfMatrix4d
-GfCamera::Z_UP_TO_Y_UP_MATRIX =
-    GfMatrix4d( 1,  0 , 0,  0,
-                0,  0,  1,  0,
-                0, -1,  0,  0,
-                0,  0,  0,  1);
-
 // The default filmback size is based on a 35mm spherical
 // projector aperture (0.825 x 0.602 inches, converted to
 // mm). Note this is slightly different than SMPTE195-2000,

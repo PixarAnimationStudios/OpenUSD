@@ -202,6 +202,7 @@ void wrapUsdPrim()
         .def("GetFilteredNextSibling",
              (UsdPrim (UsdPrim::*)(const Usd_PrimFlagsPredicate &) const)
              &UsdPrim::GetFilteredNextSibling)
+        .def("IsPseudoRoot", &UsdPrim::IsPseudoRoot)
 
         .def("HasVariantSets", &UsdPrim::HasVariantSets)
         .def("GetVariantSets", &UsdPrim::GetVariantSets)

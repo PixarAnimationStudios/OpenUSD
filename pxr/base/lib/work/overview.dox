@@ -23,7 +23,7 @@ need to interact with each other in managing system resources, it is not
 generally practical for each client to use whatever threading system they like 
 (e.g., TBB for one client, OpenMP for another).
 
-\section work_Initialiation Initializing and Limiting Mulithreading
+\section work_Initialization Initializing and Limiting Multithreading
 
 The library defaults to maximum concurrency, i.e. it will attempt to use as
 many threads as available on the system.  The default concurrency limit is
@@ -55,7 +55,7 @@ or
 
 \endcode
 
-It is preferrable to use WorkSetMaximumConcurrencyLimit() when the desire to use
+It is preferable to use WorkSetMaximumConcurrencyLimit() when the desire to use
 the hardware to its fullest rather than specify the maximum concurrency limit
 manually.
 

@@ -76,62 +76,48 @@ See \ref Usd_ExampleSchema for examples of each type of schema class.
 
 \section Usd_SchemaCodeGeneration Schema Code Generation
 
-Simply run the usdGenSchema command (you may need to precede it with "mc run " 
-at Pixar) to generate code in the current directory for the schema classes 
-defined in the file named 'schema.usda'. Various command-line options are 
-available for customizing the code generation process.
+Simply run the ```usdGenSchema``` command to generate code in the current 
+directory for the schema classes defined in the file named 'schema.usda'. 
 
-\code
-usage: usdGenSchema [-h] [-t TEMPLATEPATH] [schemaPath] [codeGenPath]
+The code generator uses \c jinja2 templates that are installed with USD.
+build.  The default schema class templates that ship with USD include the 
+following files:
 
-Generate C++ schema class code from a USD file.
-
-positional arguments:
-  schemaPath            The source USD file where schema classes are defined.
-                        [Default: ./schema.usda]
-  codeGenPath           The target directory where the code should be
-                        generated. [Default: .]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -t TEMPLATEPATH, --templates TEMPLATEPATH
-                        The directory of the schema class templates. 
-                        [Default: .../pxr/bin/codegenTemplates]
-\endcode
-
-The code generator uses \c jinja2 templates that are found in the template path 
-specified on the command line.  The list of files generated or modified by 
-usdGenSchema depends on the schema class templates in the template path. 
-The default schema class templates that ship with USD include the following 
-files:
-
-  - {schemaClass.h, schemaClass.cpp, wrapSchemaClass.cpp}  
+  - <b>schemaClass.h, schemaClass.cpp, wrapSchemaClass.cpp</b>:
     One set for each class found in schema.usda
 
-  - {tokens.h, tokens.cpp, wrapTokens.cpp}  
+  - <b>%tokens.h, tokens.cpp, wrapTokens.cpp</b>:
     Contains static TfTokens for use with all schema in the library.
 
-In addition to the files in schemata and tokens related files, the following 
-files are edited by the script:
-
-  - generatedSchema.usda 
-    Processed form of schema definitions that will be consumed at runtime by 
-    USD core.
-
-  - plugInfo.json 
+  - <b>plugInfo.json</b>: 
     Every Pxr module that contains plugins has one of these.  We add a 
     declaration for every generated schema class into this file so that 
     USD core can discover all plugin prim types cheaply and robustly.
 
-Note: Before you can successfully run usdGenSchema, you must make editable the 
-files you want to update! 
+  - <b>%api.h</b>: 
+    Boilerplate macro definitions for exporting symbols on various platforms.
 
-Finally, note that usdGenSchema does not update the SConscript (or CMakeLists.txt
-for external clients) and module.cpp files, even if they are editable.  If you 
-have added a new class(es), you must add them to the the SConscript and 
-module.cpp files yourself, and make sure to add them to your changelist. If 
-you are creating a brand new schema library, you'll need to add all the newly 
-generated files to your revision control system.
+In addition to the files in schemata and tokens related files, the following 
+files are edited by the script:
+
+  - <b>generatedSchema.usda</b>: 
+    Processed form of schema definitions that will be consumed at runtime by 
+    USD core.
+
+\parblock
+\note usdGenSchema will update existing files in the current directory 
+if it detects any differences with the code it generates. Make sure these 
+files are editable before running usdGenSchema
+\endparblock
+
+\parblock
+\note usdGenSchema does not update the CMakeLists.txt and module.cpp files, 
+even if they are editable.  If you have added a new class(es), you must 
+add them to these files yourself.  
+\endparblock
+
+Various command-line options are available for customizing the code generation 
+process. Run ```usdGenSchema --help``` for more details.
 
 \section Usd_NameSpacedPropertiesInCodeGen Namespaced Properties in Code Generation
 
@@ -213,6 +199,14 @@ class PxHairman "PxHairman" (
         string extraIncludes = """
 #include "pxr/usd/usdGeom/primvar.h"
 """
+        dictionary extraPlugInfo = {
+            string customString = "metadata"
+            bool customBool = true
+            int customInt = 0
+            dictionary customDict = {
+                string customNestedString = "nested"
+            }
+        }
     }
 )
 {
@@ -234,6 +228,11 @@ Here's a short description of each datum in the per-class customData dictionary:
     are only needed in the generated implementation file(.cpp), 
     one can instead add the header includes to the custom 
     section of the cpp file specifically.
+
+  - \b extraPlugInfo - if specified, the (key, value) pairs in this dictionary 
+    will be added as additional metadata for this class in the library's 
+    plugInfo.json file. The values in this dictionary must be numeric types,
+    strings, booleans, or dictionaries containing these types.
 
 \section Usd_CustomizingPerProperty Customizing Per-Property 
 
@@ -266,7 +265,7 @@ dictionary:
     """
     subLayers = [
         # This is mainly needed for definition of UsdTyped.
-        @/path/to/core/usd/schema.usda@
+        @usd/schema.usda@
     ]
 )
 

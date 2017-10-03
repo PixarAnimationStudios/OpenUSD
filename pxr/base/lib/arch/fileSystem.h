@@ -278,21 +278,15 @@ std::string ArchMakeTmpSubdir(const std::string& tmpdir,
                               const std::string& prefix);
 
 // Helper 'deleter' for use with std::unique_ptr for file mappings.
-#if defined(ARCH_OS_WINDOWS)
-struct Arch_Unmapper {
-    ARCH_API void operator()(char *mapStart) const;
-    ARCH_API void operator()(char const *mapStart) const;
-};
-#else // assume POSIX
 struct Arch_Unmapper {
     Arch_Unmapper() : _length(~0) {}
     explicit Arch_Unmapper(size_t length) : _length(length) {}
     ARCH_API void operator()(char *mapStart) const;
     ARCH_API void operator()(char const *mapStart) const;
+    size_t GetLength() const { return _length; }
 private:
     size_t _length;
 };
-#endif
 
 /// ArchConstFileMapping and ArchMutableFileMapping are std::unique_ptr<char
 /// const *, ...> and std::unique_ptr<char *, ...> respectively.  The functions
@@ -301,17 +295,35 @@ private:
 using ArchConstFileMapping = std::unique_ptr<char const, Arch_Unmapper>;
 using ArchMutableFileMapping = std::unique_ptr<char, Arch_Unmapper>;
 
+/// Return the length of an ArchConstFileMapping.
+inline size_t
+ArchGetFileMappingLength(ArchConstFileMapping const &m) {
+    return m.get_deleter().GetLength();
+}
+
+/// Return the length of an ArchMutableFileMapping.
+inline size_t
+ArchGetFileMappingLength(ArchMutableFileMapping const &m) {
+    return m.get_deleter().GetLength();
+}
+
 /// Privately map the passed \p file into memory and return a unique_ptr to the
-/// read-only mapped contents.  The contents may not be modified.
+/// read-only mapped contents.  The contents may not be modified.  If mapping
+/// fails, return a null unique_ptr and if errMsg is not null fill it with
+/// information about the failure.
 ARCH_API
-ArchConstFileMapping ArchMapFileReadOnly(FILE *file);
+ArchConstFileMapping
+ArchMapFileReadOnly(FILE *file, std::string *errMsg=nullptr);
 
 /// Privately map the passed \p file into memory and return a unique_ptr to the
 /// copy-on-write mapped contents.  If modified, the affected pages are
 /// dissociated from the underlying file and become backed by the system's swap
 /// or page-file storage.  Edits are not carried through to the underlying file.
+/// If mapping fails, return a null unique_ptr and if errMsg is not null fill it
+/// with information about the failure.
 ARCH_API
-ArchMutableFileMapping ArchMapFileReadWrite(FILE *file);
+ArchMutableFileMapping
+ArchMapFileReadWrite(FILE *file, std::string *errMsg=nullptr);
 
 enum ArchMemAdvice {
     ArchMemAdviceNormal,       // Treat range with default behavior.
@@ -326,6 +338,23 @@ enum ArchMemAdvice {
 /// optimization hint to the OS, and may be a no-op on some systems.
 ARCH_API
 void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv);
+
+/// Report whether or not the mapped virtual memory pages starting at \p addr
+/// for \p len bytes are resident in RAM.  Pages that are resident will not,
+/// when accessed, cause a page fault while those that are not will.  Return
+/// true on success and false in case of an error.  The \p addr argument must be
+/// a multiple of ArchGetPageSize().  The \p len argument need not be a multiple
+/// of the page size; it will be rounded up to the next page boundary.  Fill
+/// \p pageMap with 0s for pages not resident in memory and 1s for pages that
+/// are. The \p pageMap argument must therefore point to at least (\p len +
+/// ArchGetPageSize()-1)/ArchGetPageSize() bytes.
+///
+/// Note that currently this function is only implemented on Linux and Darwin.
+/// On Windows it currently always returns false.
+ARCH_API
+bool
+ArchQueryMappedMemoryResidency(
+    void const *addr, size_t len, unsigned char *pageMap);
 
 /// Read up to \p count bytes from \p offset in \p file into \p buffer.  The
 /// file position indicator for \p file is not changed.  Return the number of

@@ -1087,9 +1087,11 @@ PcpChanges::DidMaybeFixAsset(
 
     // Load the layer.
     std::string resolvedAssetPath(assetPath);
+    TfErrorMark m;
     SdfLayerRefPtr layer = SdfFindOrOpenRelativeToLayer(
         srcLayer, &resolvedAssetPath);
-
+    m.Clear();
+    
     PCP_APPEND_DEBUG("  Asset @%s@ %s\n",
                      assetPath.c_str(),
                      layer ? (layer->IsEmpty() ? "insignificant"
@@ -1614,12 +1616,15 @@ PcpChanges::_LoadSublayerForChange(
         // either it's already opened in the system and we'll find it, or
         // it's invalid, which we'll deal with below.
         if (sublayerChange == _SublayerAdded) {
+            TfErrorMark m;
             sublayer = SdfFindOrOpenRelativeToLayer(
                 layer, &resolvedAssetPath, sublayerArgs);
+            m.Clear();
         }
         else {
-            sublayer = SdfLayer::FindRelativeToLayer(
-                layer, sublayerPath, sublayerArgs);
+            resolvedAssetPath = SdfComputeAssetPathRelativeToLayer(
+                layer, sublayerPath);
+            sublayer = SdfLayer::Find(resolvedAssetPath, sublayerArgs);
         }
     }
     

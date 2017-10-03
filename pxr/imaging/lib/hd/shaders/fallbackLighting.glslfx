@@ -28,9 +28,48 @@
 --- #import $TOOLS/hd/shaders/fallbackLighting.glslfx
 
 --- --------------------------------------------------------------------------
+-- glsl Fallback.LightIntegrator
+#ifndef HD_HAS_integrateLights
+#define HD_HAS_integrateLights
+#endif
+
+struct LightingContribution {
+    vec3 diffuse;
+};
+
+struct LightingInterfaceProperties {
+    float unused;
+};
+
+LightingContribution
+integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
+{
+    vec3 n = normalize(Neye);
+
+    LightingContribution result;
+    result.diffuse = vec3(dot(n, vec3(0,0,1)));
+
+    return result;
+}
+
+LightingContribution
+integrateLightsConstant(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
+{
+    LightingContribution result;
+    //pefectly diffuse white hemisphere contribution
+    result.diffuse = vec3(1);
+
+    return result;
+}
+
 -- glsl Fallback.Lighting
+
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props);
 
 vec3 FallbackLighting(in vec3 Peye, in vec3 Neye, in vec3 color)
 {
-    return (color * dot(normalize(Neye), vec3(0,0,1)));
+    LightingInterfaceProperties props;
+    LightingContribution light = integrateLights(vec4(Peye, 1), Neye, props);
+    return color * light.diffuse;
 }

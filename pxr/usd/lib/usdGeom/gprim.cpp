@@ -199,9 +199,29 @@ UsdGeomGprim::GetDisplayColorPrimvar() const
 }
 
 UsdGeomPrimvar
+UsdGeomGprim::CreateDisplayColorPrimvar(const TfToken& interpolation,
+                                        int elementSize) const
+{
+    return CreatePrimvar(UsdGeomTokens->primvarsDisplayColor,
+                         SdfValueTypeNames->Color3fArray,
+                         interpolation,
+                         elementSize);
+}
+
+UsdGeomPrimvar
 UsdGeomGprim::GetDisplayOpacityPrimvar() const
 {
     return UsdGeomPrimvar(GetDisplayOpacityAttr());
+}
+
+UsdGeomPrimvar
+UsdGeomGprim::CreateDisplayOpacityPrimvar(const TfToken& interpolation,
+                                          int elementSize) const
+{
+    return CreatePrimvar(UsdGeomTokens->primvarsDisplayOpacity,
+                         SdfValueTypeNames->FloatArray,
+                         interpolation,
+                         elementSize);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

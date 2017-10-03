@@ -62,15 +62,13 @@ public:
     
     virtual void TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
                                           instancerContext = NULL);
 
     /// Thread Safe.
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  HdDirtyBits requestedBits,
-                                  HdDirtyBits* dirtyBits,
+                                  HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL);
 
@@ -86,7 +84,6 @@ public:
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL);
 
@@ -94,12 +91,47 @@ public:
     /// \name Change Processing 
     // ---------------------------------------------------------------------- //
 
-    virtual int ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath, 
-                                      TfToken const& propertyName);
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& propertyName);
 
     virtual void ProcessPrimResync(SdfPath const& usdPath,
                                    UsdImagingIndexProxy* index);
+
+    virtual void ProcessPrimRemoval(SdfPath const& primPath,
+                                   UsdImagingIndexProxy* index);
+
+
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index);
+
+    // As this adapter hijacks the adapter for the child prim
+    // We need to forward these messages on, in case the child
+    // adapter needs them
+    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index);
+
+    virtual void MarkReprDirty(UsdPrim const& prim,
+                               SdfPath const& cachePath,
+                               UsdImagingIndexProxy* index);
+
+    virtual void MarkCullStyleDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+
+    virtual void MarkTransformDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkVisibilityDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index);
+
+
 
     // ---------------------------------------------------------------------- //
     /// \name Instancing
@@ -129,9 +161,11 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
-    virtual bool PopulateSelection(SdfPath const &path,
-                                   VtIntArray const &instanceIndices,
-                                   HdxSelectionSharedPtr const &result);
+    virtual bool PopulateSelection( 
+                                HdxSelectionHighlightMode const& highlightMode,
+                                SdfPath const &path,
+                                VtIntArray const &instanceIndices,
+                                HdxSelectionSharedPtr const &result);
 
     // ---------------------------------------------------------------------- //
     /// \name Utilities
@@ -140,6 +174,10 @@ public:
     /// Returns the depending rprim paths which don't exist in descendants.
     /// Used for change tracking over subtree boundary (e.g. instancing)
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
+
+protected:
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) final;
 
 private:
 
@@ -166,10 +204,14 @@ private:
                       UsdImagingIndexProxy* index,
                       bool *isLeafInstancer);
 
-    // Removes and reloads all instancer data, both locally and from the 
-    // render index.
-    void _ReloadInstancer(SdfPath const& instancerPath,
-                          UsdImagingIndexProxy* index);
+    // For a usd path, collects the instancers to resync.
+    void _ResyncPath(SdfPath const& usdPath,
+                     UsdImagingIndexProxy* index,
+                     bool reload);
+    // Removes and optionally reloads all instancer data, both locally and
+    // from the render index.
+    void _ResyncInstancer(SdfPath const& instancerPath,
+                          UsdImagingIndexProxy* index, bool reload);
 
     // Updates per-frame data in the instancer map. This is primarily used
     // during update to send new instance indices out to Hydra.

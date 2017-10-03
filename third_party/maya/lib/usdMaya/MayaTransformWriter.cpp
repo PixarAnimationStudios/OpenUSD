@@ -420,12 +420,38 @@ MayaTransformWriter::MayaTransformWriter(
 {
     auto isInstance = false;
     auto hasTransform = iDag.hasFn(MFn::kTransform);
-    auto setup_merged_shape = [this, &isInstance, &iDag, &hasTransform] () {
+    auto hasOnlyOneShapeBelow = [&jobCtx] (const MDagPath& path) {
+        auto numberOfShapesDirectlyBelow = 0u;
+        path.numberOfShapesDirectlyBelow(numberOfShapesDirectlyBelow);
+        if (numberOfShapesDirectlyBelow != 1) {
+            return false;
+        }
+        const auto childCount = path.childCount();
+        if (childCount == 1) {
+            return true;
+        }
+        // Make sure that the other objects are exportable - ie, still want
+        // to collapse if it has two shapes below, but one of them is an
+        // intermediateObject shape
+        MDagPath childDag(path);
+        auto numExportableChildren = 0u;
+        for (auto i = 0u; i < childCount; ++i) {
+            childDag.push(path.child(i));
+            if (jobCtx.needToTraverse(childDag)) {
+                ++numExportableChildren;
+                if (numExportableChildren > 1) {
+                    return false;
+                }
+            }
+            childDag.pop();
+        }
+        return (numExportableChildren == 1);
+    };
+
+    auto setup_merged_shape = [this, &isInstance, &iDag, &hasTransform, &hasOnlyOneShapeBelow] () {
         // Use the parent transform if there is only a single shape under the shape's xform
         this->mXformDagPath.pop();
-        auto numberOfShapesDirectlyBelow = 0u;
-        this->mXformDagPath.numberOfShapesDirectlyBelow(numberOfShapesDirectlyBelow);
-        if (numberOfShapesDirectlyBelow == 1) {
+        if (hasOnlyOneShapeBelow(mXformDagPath)) {
             // Use the parent path (xform) instead of the shape path
             this->setUsdPath( getUsdPath().GetParentPath() );
             hasTransform = true;
@@ -448,9 +474,7 @@ MayaTransformWriter::MayaTransformWriter(
         }
     } else if (getArgs().exportInstances) {
         if (hasTransform) {
-            auto numberOfShapesDirectlyBelow = 0u;
-            iDag.numberOfShapesDirectlyBelow(numberOfShapesDirectlyBelow);
-            if (numberOfShapesDirectlyBelow == 1) {
+            if (hasOnlyOneShapeBelow(iDag)) {
                 auto copyDag = iDag;
                 copyDag.extendToShapeDirectlyBelow(0);
                 if (copyDag.isInstanced()) {
@@ -475,9 +499,7 @@ MayaTransformWriter::MayaTransformWriter(
         // Return if has a single shape directly below xform
         if (getArgs().mergeTransformAndShape) {
             if (hasTransform) { // if is an actual transform
-                unsigned int numberOfShapesDirectlyBelow = 0;
-                iDag.numberOfShapesDirectlyBelow(numberOfShapesDirectlyBelow);
-                if (numberOfShapesDirectlyBelow == 1) {
+                if (hasOnlyOneShapeBelow(iDag)) {
                     invalidate_transform();
                 }
             } else { // must be a shape then
@@ -494,6 +516,10 @@ MayaTransformWriter::MayaTransformWriter(
     if (mXformDagPath.isValid()) {
         UsdGeomXform primSchema = UsdGeomXform::Define(getUsdStage(), getUsdPath());
         mUsdPrim = primSchema.GetPrim();
+        if (!mUsdPrim.IsValid()) {
+            setValid(false);
+            return;
+        }
         if (!mIsInstanceSource) {
             if (hasTransform) {
                 MFnTransform transFn(mXformDagPath);
@@ -505,7 +531,7 @@ MayaTransformWriter::MayaTransformWriter(
             if (isInstance) {
                 const auto masterPath = mWriteJobCtx.getMasterPath(getDagPath());
                 if (!masterPath.IsEmpty()){
-                    mUsdPrim.GetInherits().AppendInherit(masterPath);
+                    mUsdPrim.GetInherits().AddInherit(masterPath);
                     mUsdPrim.SetInstanceable(true);
                 }
             }

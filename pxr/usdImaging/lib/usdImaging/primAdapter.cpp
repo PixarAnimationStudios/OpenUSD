@@ -80,10 +80,10 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath,
                                          UsdImagingIndexProxy* index) 
 {
     // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the rprim and repopulate as the default
+    // remove the adapter dependency and the prim and repopulate as the default
     // behavior.
-    index->RemoveRprim(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    _RemovePrim(/*cachePath*/usdPath, index);
+    index->RemovePrimInfo(/*usdPrimPath*/usdPath);
 
     if (_GetPrim(usdPath)) {
         // The prim still exists, so repopulate it.
@@ -93,14 +93,53 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath,
 
 /*virtual*/
 void
-UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& usdPath, 
-                                          UsdImagingIndexProxy* index) 
+UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& primPath,
+                                          UsdImagingIndexProxy* index)
 {
     // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the rprim and repopulate as the default
-    // behavior.
-    index->RemoveRprim(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    // remove the adapter dependency and the prim. We don't repopulate.
+    _RemovePrim(/*cachePath*/primPath, index);
+    index->RemovePrimInfo(/*usdPrimPath*/primPath);
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
+                                            SdfPath const& usdPath,
+                                            UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
+                                     SdfPath const& usdPath,
+                                     UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
+                                          SdfPath const& usdPath,
+                                          UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                          SdfPath const& usdPath,
+                                          UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
+                                           SdfPath const& usdPath,
+                                           UsdImagingIndexProxy* index)
+{
 }
 
 /*virtual*/
@@ -142,7 +181,8 @@ UsdImagingPrimAdapter::GetPathForInstanceIndex(
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::PopulateSelection(SdfPath const &usdPath,
+UsdImagingPrimAdapter::PopulateSelection(HdxSelectionHighlightMode const& mode,
+                                         SdfPath const &usdPath,
                                          VtIntArray const &instanceIndices,
                                          HdxSelectionSharedPtr const &result)
 {
@@ -150,7 +190,7 @@ UsdImagingPrimAdapter::PopulateSelection(SdfPath const &usdPath,
 
     // insert itself into the selection map.
     // XXX: should check the existence of the path
-    result->AddInstance(indexPath, instanceIndices);
+    result->AddInstance(mode, indexPath, instanceIndices);
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg("PopulateSelection: (prim) %s\n",
                                        indexPath.GetText());

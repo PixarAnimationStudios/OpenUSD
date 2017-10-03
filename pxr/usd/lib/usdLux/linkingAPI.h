@@ -149,14 +149,24 @@ public:
     USDLUX_API
     static bool DoesLinkPath(const LinkMap &linkMap, const SdfPath &path);
 
+    /// \deprecated
     /// Return true if the given UsdGeomFaceSetAPI (or ancestor) is linked
     /// by the linkMap.  Linking to faceSets is expressed as a target
     /// path to the faceSet's faceIndices property.
+    /// 
+    /// This method has been deprecated as the new schema for encoding 
+    /// face-(sub)sets as a concrete prim does not require any special API for 
+    /// linking or unlinking a face-set. See \ref UsdGeomSubset.
     USDLUX_API
     static bool DoesLinkFaceSet(const LinkMap &linkMap,
                                 const UsdGeomFaceSetAPI &faceSet );
 
+    /// \deprecated
     /// Return the path used to refer to the given faceset in a LinkMap.
+    /// 
+    /// This method has been deprecated as the new schema for encoding 
+    /// face-(sub)sets as a concrete prim does not require any special API for 
+    /// linking or unlinking a face-set. See \ref UsdGeomSubset.
     USDLUX_API
     static SdfPath GetLinkPathForFaceSet(const UsdGeomFaceSetAPI &faceSet);
 

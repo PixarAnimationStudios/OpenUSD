@@ -120,18 +120,20 @@ private:
             return;
         }
 
-        const boost::array<SdfListOpType, 4> opTypes = {
+        const boost::array<SdfListOpType, 6> opTypes = {
             SdfListOpTypeExplicit,
             SdfListOpTypeAdded,
             SdfListOpTypeDeleted,
-            SdfListOpTypeOrdered
+            SdfListOpTypeOrdered,
+            SdfListOpTypePrepended,
+            SdfListOpTypeAppended
         };
 
         // Check if any of the list operation vectors have changed and validate
         // their new contents.
         bool anyChanged = false;
-        boost::array<bool, 4> opListChanged = { 
-            false, false, false, false 
+        boost::array<bool, 6> opListChanged = { 
+            false, false, false, false, false, false 
         };
 
         for (int i = 0; i < opTypes.size(); ++i) {
@@ -253,7 +255,9 @@ Sdf_ListOpListEditor<TP>::ModifyItemEdits(const ModifyCallback& cb)
 {
     ListOpType modifiedListOp = _listOp;
     modifiedListOp.ModifyOperations(
-        boost::bind(_ModifyCallbackHelper, cb, _GetTypePolicy(), _1));
+        [this, &cb](const value_type &t) {
+            return _ModifyCallbackHelper(cb, _GetTypePolicy(), t);
+        });
 
     _UpdateListOp(modifiedListOp);
 }

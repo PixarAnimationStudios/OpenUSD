@@ -62,6 +62,7 @@ void registerPxrUsdInShippedUiUtils();
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_XformOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_ScopeOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_MeshOp)
+DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_GeomSubsetOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_NurbsPatchOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_PointInstancerOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_PointsOp)
@@ -84,6 +85,7 @@ void registerPlugins()
     REGISTER_PLUGIN(PxrUsdInCore_XformOp, "PxrUsdInCore_XformOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_ScopeOp, "PxrUsdInCore_ScopeOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_MeshOp, "PxrUsdInCore_MeshOp", 0, 1);
+    REGISTER_PLUGIN(PxrUsdInCore_GeomSubsetOp, "PxrUsdInCore_GeomSubsetOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_NurbsPatchOp, "PxrUsdInCore_NurbsPatchOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_PointInstancerOp, "PxrUsdInCore_PointInstancerOp", 0, 1);
     REGISTER_PLUGIN(PxrUsdInCore_PointsOp, "PxrUsdInCore_PointsOp", 0, 1);
@@ -101,6 +103,7 @@ void registerPlugins()
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomXform>("PxrUsdInCore_XformOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomScope>("PxrUsdInCore_ScopeOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomMesh>("PxrUsdInCore_MeshOp");
+    PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomSubset>("PxrUsdInCore_GeomSubsetOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomNurbsPatch>("PxrUsdInCore_NurbsPatchOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomPointInstancer>("PxrUsdInCore_PointInstancerOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdGeomPoints>("PxrUsdInCore_PointsOp");

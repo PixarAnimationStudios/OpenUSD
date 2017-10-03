@@ -23,10 +23,10 @@ pxr_library(usdSkel
     PUBLIC_HEADERS
         api.h
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp    
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     PYMODULE_CPPFILES
@@ -40,5 +40,6 @@ pxr_library(usdSkel
     RESOURCE_FILES
         generatedSchema.usda
         plugInfo.json
+        schema.usda:usdSkel/schema.usda
 )
    

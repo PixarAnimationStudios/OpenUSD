@@ -85,13 +85,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     "geometry");
 /// 
 /// // This adds the entire sphere as a target of the collection.
-/// geomCollection.AppendTarget(sphere.GetPath());
+/// geomCollection.AddTarget(sphere.GetPath());
 /// 
 /// VtIntArray cubeFaceIndices;
 /// // ... populate faceIndices here.
 /// // This adds the specified set of faceIndices belonging to the cube as a 
 /// // target of the collection.
-/// geomCollection.AppendTarget(cube.GetPath(), cubeFaceIndices);
+/// geomCollection.AddTarget(cube.GetPath(), cubeFaceIndices);
 /// \endcode
 /// 
 /// An alternate way to author a collection is by setting the individual 
@@ -242,7 +242,7 @@ public:
     bool GetTargetFaceIndices(VtIntArray *targetFaceIndices, 
                               const UsdTimeCode &time=UsdTimeCode::Default()) const;
 
-    /// Appends a new target, \p target to the collection. The list of 
+    /// Adds a new target, \p target to the collection. The list of 
     /// face indices in the array, \p faceIndices is used to specify a 
     /// face-restriction on the target at the given time, \p time. 
     /// 
@@ -263,7 +263,7 @@ public:
     /// in this case.
     /// 
     USDGEOM_API
-    bool AppendTarget(const SdfPath &target, 
+    bool AddTarget(const SdfPath &target, 
                       const VtIntArray &faceIndices=VtIntArray(),
                       const UsdTimeCode &time=UsdTimeCode::Default()) const;
 

@@ -59,7 +59,8 @@ struct HdShaderKey {
                            static_cast<int16_t> (key.GetPrimitiveType()), // class enum type
                            key.GetCullStyle(),
                            key.GetPolygonMode(),
-                           key.IsCullingPass());
+                           key.IsCullingPass(),
+                           key.IsFaceVarying());
     }
 
     HD_API
@@ -72,7 +73,8 @@ struct HdShaderKey {
                           int16_t primType,
                           HdCullStyle cullStyle,
                           HdPolygonMode polygonMode,
-                          bool isCullingPass);
+                          bool isCullingPass,
+                          bool IsFaceVarying);
 
     template <typename KEY>
     static std::string GetGLSLFXString(KEY const &key) {

@@ -11,7 +11,7 @@ Prim Stack:
     root.sdf             /Root
 
 Child names:
-     ['SimplePayload']
+     ['SimplePayload', 'SimpleSubrootPayload']
 
 ------------------------------------------------------------------------
 Results for composing </Root/SimplePayload>
@@ -27,5 +27,12 @@ Child names:
 Results for composing </Root/SimplePayload/Child>
 
 Prim Stack:
+    payload.sdf          /SimplePayload/Child
+
+------------------------------------------------------------------------
+Results for composing </Root/SimpleSubrootPayload>
+
+Prim Stack:
+    root.sdf             /Root/SimpleSubrootPayload
     payload.sdf          /SimplePayload/Child
 

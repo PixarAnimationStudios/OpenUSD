@@ -32,7 +32,6 @@
 #include <UT/UT_ThreadSpecificValue.h>
 
 #include "gusd/UT_Assert.h"
-#include "gusd/UT_Usd.h"
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_Utils.h"
 
@@ -55,8 +54,8 @@ bool    ParallelFindPrims(const UsdPrim& root,
 
 template <class Visitor>
 bool    ParallelFindPrims(const UT_Array<UsdPrim>& roots,
-                          const GusdUSD_Utils::PrimTimeMap& timeMap,
-                          const UT_Array<GusdPurposeSet>& purposes,
+                          const GusdDefaultArray<UsdTimeCode>& times,
+                          const GusdDefaultArray<GusdPurposeSet>& purposes,
                           UT_Array<GusdUSD_Traverse::PrimIndexPair>& prims,
                           const Visitor& visitor,
                           bool skipRoot=true);
@@ -74,8 +73,8 @@ struct DefaultImageablePrimVisitorT
                                        GusdUSD_TraverseControl& ctl) const;
     
     Usd_PrimFlagsPredicate  TraversalPredicate() const
-                            { return UsdPrimIsActive && UsdPrimIsDefined &&
-                                     UsdPrimIsLoaded && !UsdPrimIsAbstract; }
+                            { return UsdTraverseInstanceProxies(UsdPrimIsActive && UsdPrimIsDefined &&
+                                     UsdPrimIsLoaded && !UsdPrimIsAbstract); }
 };
 
 
@@ -240,10 +239,10 @@ template <class Visitor>
 struct RunTasksT
 {
     RunTasksT(const UT_Array<UsdPrim>& roots,
-              const GusdUSD_Utils::PrimTimeMap& timeMap,
-              const UT_Array<GusdPurposeSet>& purposes,
+              const GusdDefaultArray<UsdTimeCode>& times,
+              const GusdDefaultArray<GusdPurposeSet>& purposes,
               const Visitor& visitor, TaskData& data, bool skipRoot)
-        : _roots(roots), _timeMap(timeMap), _purposes(purposes),
+        : _roots(roots), _times(times), _purposes(purposes),
           _visitor(visitor), _data(data), _skipRoot(skipRoot) {}
     
     void    operator()(const UT_BlockedRange<std::size_t>& r) const
@@ -261,7 +260,8 @@ struct RunTasksT
 
                         auto& task =
                             *new(UT_Task::allocate_root())
-                            TraverseTaskT<Visitor>(prim, i, _timeMap(i), _purposes(i), _data,
+                            TraverseTaskT<Visitor>(prim, i, _times(i),
+                                                   _purposes(i), _data,
                                                    _visitor, skipPrim);
                         UT_Task::spawnRootAndWait(task);
                     }
@@ -269,12 +269,12 @@ struct RunTasksT
             }
 
 private:
-    const UT_Array<UsdPrim>&            _roots;
-    const GusdUSD_Utils::PrimTimeMap&   _timeMap;
-    const UT_Array<GusdPurposeSet>&     _purposes;
-    const Visitor&                      _visitor;
-    TaskData&                           _data;
-    const bool                          _skipRoot;
+    const UT_Array<UsdPrim>&                _roots;
+    const GusdDefaultArray<UsdTimeCode>&    _times;
+    const GusdDefaultArray<GusdPurposeSet>& _purposes;
+    const Visitor&                          _visitor;
+    TaskData&                               _data;
+    const bool                              _skipRoot;
 };
 
 
@@ -283,15 +283,16 @@ private:
 template <class Visitor>
 bool
 ParallelFindPrims(const UT_Array<UsdPrim>& roots,
-                  const GusdUSD_Utils::PrimTimeMap& timeMap,
-                  const UT_Array<GusdPurposeSet>& purposes,
+                  const GusdDefaultArray<UsdTimeCode>& times,
+                  const GusdDefaultArray<GusdPurposeSet>& purposes,
                   UT_Array<GusdUSD_Traverse::PrimIndexPair>& prims,
                   const Visitor& visitor,
                   bool skipRoot)
 {
     TaskData data;
     UTparallelFor(UT_BlockedRange<std::size_t>(0, roots.size()),
-                  RunTasksT<Visitor>(roots, timeMap, purposes, visitor, data, skipRoot));
+                  RunTasksT<Visitor>(roots, times, purposes,
+                                     visitor, data, skipRoot));
     if(UTgetInterrupt()->opInterrupt())
         return false;
 

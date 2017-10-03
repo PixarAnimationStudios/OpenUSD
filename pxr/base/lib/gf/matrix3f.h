@@ -140,6 +140,10 @@ public:
     GF_API
     explicit GfMatrix3f(const std::vector< std::vector<float> >& v);
 
+    /// Constructor. Initialize matrix from rotation.
+    GF_API
+    GfMatrix3f(const GfRotation& rot);
+
     /// This explicit constructor converts a "double" matrix to a "float" matrix.
     GF_API
     explicit GfMatrix3f(const class GfMatrix3d& m);
@@ -400,6 +404,47 @@ public:
     /// Sets matrix to specify a uniform scaling by \e scaleFactor.
     GF_API
     GfMatrix3f& SetScale(float scaleFactor);
+
+    /// \name 3D Transformation Utilities
+    /// @{
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot.
+    GF_API
+    GfMatrix3f& SetRotate(const GfRotation &rot);
+
+    /// Sets the matrix to specify a nonuniform scaling in x, y, and z by
+    /// the factors in vector \e scaleFactors.
+    GF_API
+    GfMatrix3f& SetScale(const GfVec3f &scaleFactors);
+
+    /// Returns the rotation corresponding to this matrix. This works
+    /// well only if the matrix represents a rotation.
+    ///
+    /// For good results, consider calling Orthonormalize() before calling
+    /// this method.
+    GF_API
+    GfRotation ExtractRotation() const;
+
+    /// Decompose the rotation corresponding to this matrix about 3
+    /// orthogonal axes.  If the axes are not orthogonal, warnings
+    /// will be spewed.
+    ///
+    /// This is a convenience method that is equivalent to calling
+    /// ExtractRotation().Decompose().
+    GF_API
+    GfVec3f DecomposeRotation(const GfVec3f &axis0,
+                              const GfVec3f &axis1,
+                              const GfVec3f &axis2 ) const;
+
+    /// Returns the quaternion corresponding to this matrix. This works
+    /// well only if the matrix represents a rotation.
+    ///
+    /// For good results, consider calling Orthonormalize() before calling
+    /// this method.
+    GF_API
+    GfQuaternion ExtractRotationQuaternion() const;
+
+    /// @}
 
 private:
     /// Matrix storage, in row-major order.

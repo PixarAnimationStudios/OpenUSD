@@ -75,13 +75,17 @@ computeShadowFilterWidth(vec4 Peye)
 
 #endif  // NUM_LIGHTS == 0
 
--- glsl SimpleLighting.SimpleLighting
+-- glsl SimpleLighting.LightIntegrator
 
 // ---------------------------------------------------------------------------
 // struct definitions
 // ---------------------------------------------------------------------------
 #ifndef NUM_LIGHTS
 #define NUM_LIGHTS 0
+#endif
+
+#ifndef HD_HAS_integrateLights
+#define HD_HAS_integrateLights
 #endif
 
 struct LightSource {
@@ -107,6 +111,16 @@ struct ShadowMatrix {
     float padding0;
     float padding1;
     float padding2;
+};
+
+struct LightingContribution {
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
+struct LightingInterfaceProperties {
+    float shininess;
 };
 
 // ---------------------------------------------------------------------------
@@ -142,15 +156,6 @@ computeShadowFilterWidth(int index, vec4 Peye)
 
 #endif  // NUM_LIGHTS == 0
 
-layout(std140) uniform Material {
-    vec4 ambient;
-    vec4 diffuse;
-    vec4 specular;
-    vec4 emission;
-    vec4 sceneColor;
-    float shininess;
-} material;
-
 // ---------------------------------------------------------------------------
 // textures
 // ---------------------------------------------------------------------------
@@ -163,26 +168,25 @@ uniform sampler2DArrayShadow shadowCompareTexture;
 
 #if NUM_LIGHTS == 0
 
-vec4
-simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
-               vec4 matDiffuse, vec4 matAmbient, vec4 matSpecular, float matShininess)
+LightingContribution
+integrateLightsConstant(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 {
-    return color;
+    LightingContribution result;
+    result.ambient = vec3(0.0);
+    //pefectly diffuse white hemisphere contribution
+    result.diffuse = vec3(1.0);
+    result.specular = vec3(0.0);
+
+    return result;
 }
 
-vec4
-simpleLightingMaterial(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
+LightingContribution
+integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 {
-    return material.emission + (material.sceneColor * material.ambient);
+    return integrateLightsConstant(Peye, Neye, props);
 }
 
-vec4
-simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
-{
-    return simpleLightingMaterial(color, Peye, Neye, Ctint);
-}
-
-#else // NUM_LIGHT == 0
+#else // NUM_LIGHTS == 0
 
 float
 shadowCompare(int index, vec4 coord)
@@ -244,10 +248,19 @@ lightSpotAttenuation(vec3 l, int index)
 #define USE_SHADOWS 1
 #endif
 
-vec4
-simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
-               vec4 matDiffuse, vec4 matAmbient, vec4 matSpecular, float matShininess)
+LightingContribution
+integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 {
+    LightingContribution result;
+    result.ambient = vec3(0);
+    result.diffuse = vec3(0);
+    result.specular = vec3(0);
+    
+    vec3 n = normalize(Neye);
+    vec3 e = normalize(-Peye.xyz);
+
+    float shininess = props.shininess;
+    
     for (int i = 0; i < NUM_LIGHTS; ++i) {
 
         vec4 Plight = lightSource[i].position;
@@ -256,26 +269,116 @@ simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
                     ? normalize(Plight.xyz)
                     : normalize(Plight - Peye).xyz;
 
-        vec3 n = normalize(Neye);
         vec3 h = normalize(l + vec3(0,0,1));    // directional viewer
 
-        float d = max(0.0, dot(n, l));
-        // note: result of pow(0, 0) is undefined in GLSL.
-        float s = pow(max(0.0, dot(n, h)), matShininess);
+        //cosine of incident angle of lightn
+        float NdotL = max(0.0, dot(n, l));
+        
+        //cosine of incident angle from halfway vector between the eye and the light
+        float NdotH = max(0.0, dot(n, h));
+
+        //Lambert
+        float d = NdotL;
+        
+        //Blinn-Phong
+        float s = pow(NdotH, shininess);
 
         float atten = lightDistanceAttenuation(Peye, i);
-        float spot = lightSpotAttenuation(l, i);
+        atten *= lightSpotAttenuation(l, i);
+
 #if USE_SHADOWS
         float shadow = (lightSource[i].hasShadow) ?
             shadowing(lightSource[i].shadowIndex, Peye) : 1.0;
 #else
         float shadow = 1.0;
 #endif
-        color += atten * spot *
-                 ((lightSource[i].ambient * matAmbient) +
-                  shadow * (d * Ctint * lightSource[i].diffuse * matDiffuse +
-                            s * lightSource[i].specular * matSpecular));
+        result.ambient += atten * lightSource[i].ambient.rgb;
+        result.diffuse += atten * shadow * d * lightSource[i].diffuse.rgb;
+        result.specular += atten * shadow * s * lightSource[i].specular.rgb;
     }
+
+    return result;
+}
+
+LightingContribution
+integrateLightsConstant(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
+{
+    LightingContribution result;
+    result.ambient = vec3(0);
+    result.specular = vec3(0);
+    result.diffuse = vec3(1);
+
+    return result;
+}
+
+#endif // NUM_LIGHTS == 0
+
+-- glsl SimpleLighting.SimpleLighting
+
+// ---------------------------------------------------------------------------
+// struct definitions
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// uniform blocks
+// ---------------------------------------------------------------------------
+
+layout(std140) uniform Material {
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+    vec4 emission;
+    vec4 sceneColor;
+    float shininess;
+} material;
+
+// ---------------------------------------------------------------------------
+// textures
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// lighting functions
+// ---------------------------------------------------------------------------
+
+#if NUM_LIGHTS == 0
+
+vec4
+simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
+               vec4 matDiffuse, vec4 matAmbient, vec4 matSpecular, float matShininess)
+{
+    return color;
+}
+
+vec4
+simpleLightingMaterial(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
+{
+    return material.emission + (material.sceneColor * material.ambient);
+}
+
+vec4
+simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
+{
+    return simpleLightingMaterial(color, Peye, Neye, Ctint);
+}
+
+#else // NUM_LIGHTS == 0
+
+
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props);
+
+vec4
+simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
+               vec4 matDiffuse, vec4 matAmbient, vec4 matSpecular, float matShininess)
+{
+    LightingInterfaceProperties props;
+    props.shininess = matShininess;
+
+    LightingContribution light = integrateLights(Peye, Neye, props);
+
+    color.rgb += light.ambient * matAmbient.rgb;
+    color.rgb += Ctint.rgb * light.diffuse * matDiffuse.rgb;
+    color.rgb += light.specular * matSpecular.rgb;
 
     color.a = matDiffuse.a;
 
@@ -285,10 +388,6 @@ simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
 vec4
 simpleLightingMaterial(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
 {
-    if (!useLighting) {
-        return color;
-    }
-
     // XXX todo: useColorMaterialDiffuse
 
     vec4 diffuse = color;

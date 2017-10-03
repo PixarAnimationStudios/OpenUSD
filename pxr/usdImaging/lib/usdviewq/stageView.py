@@ -29,7 +29,7 @@ from math import tan, atan, floor, ceil, radians as rad
 import os
 from time import time
 
-from PySide import QtGui, QtCore, QtOpenGL
+from qt import QtCore, QtGui, QtWidgets, QtOpenGL
 
 from pxr import Tf
 from pxr import Gf
@@ -113,6 +113,7 @@ class FreeCamera(QtCore.QObject):
         self._rotPsi = 0
         self._center = Gf.Vec3d(0,0,0)
         self._dist = 100
+        self._camera.focusDistance = self._dist
         self._closestVisibleDist = None
         self._lastFramedDist = None
         self._lastFramedClosestDist = None
@@ -180,6 +181,8 @@ class FreeCamera(QtCore.QObject):
             RotMatrix(Gf.Vec3d.YAxis(), -self._rotTheta) *
             self._YZUpInvMatrix *
             Gf.Matrix4d().SetTranslate(self.center))
+        self._camera.focusDistance = self.dist
+        
         self._cameraTransformDirty = False
 
     def _rangeOfBoxAlongRay(self, camRay, bbox, debugClipping=False):
@@ -899,18 +902,22 @@ class Mask(Prim2DDrawTask):
 
 class HUD():
     class Group():
-        def __init__(self, name, w, h):
+        def __init__(self, name, w, h):            
             self.x = 0
             self.y = 0
             self.w = w
             self.h = h
-            self.qimage = QtGui.QImage(w, h, QtGui.QImage.Format_ARGB32)
+            pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
+            imageW = w * pixelRatio
+            imageH = h * pixelRatio
+            self.qimage = QtGui.QImage(imageW, imageH, QtGui.QImage.Format_ARGB32)
             self.qimage.fill(QtGui.QColor(0, 0, 0, 0))
             self.painter = QtGui.QPainter()
 
     def __init__(self):
+        self._pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
         self._HUDLineSpacing = 15
-        self._HUDFont = QtGui.QFont("Menv Mono Numeric", 9)
+        self._HUDFont = QtGui.QFont("Menv Mono Numeric", 9*self._pixelRatio)
         self._groups = {}
         self._glslProgram = None
         self._glMajorVersion = 0
@@ -982,7 +989,8 @@ class HUD():
 
         painter.setFont(self._HUDFont)
         color = QtGui.QColor()
-        yy = 10
+        yy = 10 * self._pixelRatio
+        lineSpacing = self._HUDLineSpacing * self._pixelRatio
         for key in keys:
             if not dic.has_key(key):
                 continue
@@ -998,10 +1006,10 @@ class HUD():
             painter.setPen(color)
             painter.drawText(0, yy, line)
 
-            yy += self._HUDLineSpacing
+            yy += lineSpacing
 
         painter.end()
-        return y + self._HUDLineSpacing
+        return y + lineSpacing
 
     def draw(self, qglwidget):
         from OpenGL import GL
@@ -1151,14 +1159,6 @@ class StageView(QtOpenGL.QGLWidget):
     @renderParams.setter
     def renderParams(self, params):
         self._renderParams = params
-        
-    @property
-    def timeSamples(self):
-        return self._timeSamples
-        
-    @timeSamples.setter
-    def timeSamples(self, samples):
-        self._timeSamples = samples
         
     @property
     def showBBoxes(self):
@@ -1396,9 +1396,7 @@ class StageView(QtOpenGL.QGLWidget):
     def __init__(self, parent=None, dataModel=None):
         self._dataModel = dataModel or StageView.DefaultDataModel()
 
-        QtCore.QObject.connect(self._dataModel,
-                               QtCore.SIGNAL('signalDefaultMaterialChanged()'),
-                               self.updateGL)
+        self._dataModel.signalDefaultMaterialChanged.connect(self.updateGL)
         
         glFormat = QtOpenGL.QGLFormat()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
@@ -1482,8 +1480,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._showAABBox = True	# Show axis-aligned BBox
         self._showOBBox = False	# Show oriented BBox
         
-        self._timeSamples = []
-
         self._clearColor = (0.0, 0.0, 0.0, 0.0)
         self._highlightColor = (1.0, 1.0, 0.0, 0.8)
         self._drawSelHighlights = True
@@ -1970,6 +1966,13 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             return None
 
+    def computeSize(self):
+         size = self.size() * QtWidgets.QApplication.instance().devicePixelRatio()
+         return (int(size.width()), int(size.height()))
+
+    def computeViewport(self):
+        return (0, 0) + self.computeSize()
+
     def computeGfCameraAndViewport(self):
         windowPolicy = CameraUtil.MatchVertically
         targetAspect = (
@@ -1990,8 +1993,7 @@ class StageView(QtOpenGL.QGLWidget):
             CameraUtil.ConformWindow(camera, windowPolicy, targetAspect)
 
         viewport = Gf.Range2d(Gf.Vec2d(0, 0),
-                              Gf.Vec2d(self.size().width(),
-                                       self.size().height()))
+                              Gf.Vec2d(self.computeSize()))
         viewport = CameraUtil.ConformedWindow(viewport, windowPolicy, camera.aspectRatio)
 
         frustumChanged = ((not self._lastComputedGfCamera) or
@@ -2116,7 +2118,7 @@ class StageView(QtOpenGL.QGLWidget):
         (gfCamera, cameraViewport) = self.computeGfCameraAndViewport()
         frustum = gfCamera.frustum
 
-        viewport = (0, 0, self.size().width(), self.size().height())
+        viewport = self.computeViewport()
         cameraViewport = ViewportMakeCenteredIntegral(cameraViewport)
         if self._fitCameraInViewport:
             if self._cropViewportToCameraViewport:
@@ -2138,7 +2140,7 @@ class StageView(QtOpenGL.QGLWidget):
                                            * frustum.ComputeProjectionMatrix())
 
 
-        GL.glViewport(0, 0, self.size().width(), self.size().height())
+        GL.glViewport(*viewport)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
         # ensure viewport is right for the camera framing
@@ -2149,6 +2151,9 @@ class StageView(QtOpenGL.QGLWidget):
                                          gfCamera.clippingPlanes]
 
         if self._nodes:
+            sceneAmbient = (0.01, 0.01, 0.01, 1.0)
+            material = Glf.SimpleMaterial()
+            lights = []
             # for renderModes that need lights 
             if self.renderMode in ("Flat Shaded",
                                    "Smooth Shaded",
@@ -2159,7 +2164,6 @@ class StageView(QtOpenGL.QGLWidget):
                 stagePos = Gf.Vec3d(self._bbcenter[0], self._bbcenter[1],
                                     self._bbcenter[2])
                 stageDir = (stagePos - cam_pos).GetNormalized()
-                lights = []
 
                 # ambient light located at the camera
                 if self.ambientLightOnly:
@@ -2213,15 +2217,14 @@ class StageView(QtOpenGL.QGLWidget):
                         l.position = (backPos[0], backPos[1], backPos[2], 1)
                         lights.append(l)
 
-                material = Glf.SimpleMaterial()
                 kA = self._dataModel.defaultMaterialAmbient
                 kS = self._dataModel.defaultMaterialSpecular
                 material.ambient = (kA, kA, kA, 1.0)
                 material.specular = (kS, kS, kS, 1.0)
                 material.shininess = 32.0
-                sceneAmbient = (0.01, 0.01, 0.01, 1.0)
 
-                self._renderer.SetLightingState(lights, material, sceneAmbient)
+            # modes that want no lighting simply leave lights as an empty list
+            self._renderer.SetLightingState(lights, material, sceneAmbient)
 
             if self.renderMode == "Hidden Surface Wireframe":
                 GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
@@ -2257,7 +2260,7 @@ class StageView(QtOpenGL.QGLWidget):
             self._glTimeElapsedQuery.End()
 
         # reset the viewport for 2D and HUD drawing
-        uiTasks = [ Prim2DSetupTask((0, 0, self.size().width(), self.size().height())) ]
+        uiTasks = [ Prim2DSetupTask(self.computeViewport()) ]
         if self.showMask:
             color = self._dataModel.cameraMaskColor
             if self.showMask_Opaque:
@@ -2475,7 +2478,7 @@ class StageView(QtOpenGL.QGLWidget):
     def wheelEvent(self, event):
         distBefore = self._dist
         self.switchToFreeCamera()
-        self._freeCamera.adjustDist(1-max(-0.5,min(0.5,(event.delta()/1000.))))
+        self._freeCamera.adjustDist(1-max(-0.5,min(0.5,(event.angleDelta().y()/1000.))))
         self.updateGL()
 
     def detachAndReClipFromCurrentCamera(self):
@@ -2564,7 +2567,7 @@ class StageView(QtOpenGL.QGLWidget):
     def computePickFrustum(self, x, y):
 
         # normalize position and pick size by the viewport size
-        width, height = self.size().width(), self.size().height()
+        width, height = self.computeSize()
         size = Gf.Vec2d(1.0 / width, 1.0 / height)
         
         # compute pick frustum
@@ -2648,8 +2651,14 @@ class StageView(QtOpenGL.QGLWidget):
     def ExportFreeCameraToStage(self, stage, defcamName='usdviewCam', 
                                 imgWidth=None, imgHeight=None):
         '''
-        Export the free camera to the specified USD stage.
+        Export the free camera to the specified USD stage, if it is
+        currently defined. If it is not active (i.e. we are viewing through
+        a stage camera), raise a ValueError.
         '''
+        if not self.freeCamera:
+            raise ValueError("StageView's Free Camera is not defined, so cannot"
+                             " be exported")
+
         imgWidth = imgWidth if imgWidth is not None else self.width()
         imgHeight = imgHeight if imgHeight is not None else self.height()
         
@@ -2666,10 +2675,6 @@ class StageView(QtOpenGL.QGLWidget):
             else Usd.TimeCode.Default()
             
         defcam.SetFromCamera(gfCamera, when)
-
-        # Pixar only: The sublayered file might have zUp=1 opinions, so
-        # explicitly write out zUp=0 for the camera.
-        defcam.GetPrim().SetCustomDataByKey('zUp', False)
         
     def ExportSession(self, stagePath, defcamName='usdviewCam',
                       imgWidth=None, imgHeight=None):

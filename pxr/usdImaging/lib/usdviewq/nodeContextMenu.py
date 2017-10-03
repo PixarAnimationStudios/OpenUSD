@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui
+from qt import QtWidgets
 from nodeContextMenuItems import _GetContextMenuItems
 
 #
@@ -31,10 +31,10 @@ from nodeContextMenuItems import _GetContextMenuItems
 # function in nodeContextMenuItems. To add a new context menu item,
 # see comments in that file.
 #
-class NodeContextMenu(QtGui.QMenu):
+class NodeContextMenu(QtWidgets.QMenu):
 
     def __init__(self, parent, item):
-        QtGui.QMenu.__init__(self, parent)
+        QtWidgets.QMenu.__init__(self, parent)
         self._menuItems = _GetContextMenuItems(parent, item)
         
         for menuItem in self._menuItems:

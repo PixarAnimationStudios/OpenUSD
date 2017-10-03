@@ -2,6 +2,8 @@
 
 over "A" (
     '''This layer results in the order z,a,x,y,b,c.'''
+    prepend inherits = </sub1_prepend>
+    append inherits = </sub1_append>
 )
 {
     reorder properties = ["z", "x", "b"]
@@ -17,4 +19,14 @@ over "A" (
     }
     over "c" {
     }
+}
+
+class "sub1_prepend"
+{
+    prepend rel targets = </sub1_prepend/sub1_prepend>
+}
+
+class "sub1_append"
+{
+    prepend rel targets = </sub1_append/sub1_append>
 }

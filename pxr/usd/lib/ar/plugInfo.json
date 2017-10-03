@@ -6,8 +6,11 @@
                     "ArResolver": {}
                 }
             },
-            "Name": "pxr.Ar",
-            "Type": "python"
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
+            "Name": "ar", 
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@", 
+            "Root": "@PLUG_INFO_ROOT@", 
+            "Type": "library"
         }
     ]
 }

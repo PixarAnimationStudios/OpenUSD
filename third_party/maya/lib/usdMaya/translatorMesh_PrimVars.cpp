@@ -95,7 +95,7 @@ PxrUsdMayaTranslatorMesh::_AssignUVSetPrimvarToMesh(
         const UsdGeomPrimvar& primvar,
         MFnMesh& meshFn)
 {
-    const TfToken& primvarName = primvar.GetBaseName();
+    const TfToken& primvarName = primvar.GetPrimvarName();
 
     // Get the raw data before applying any indexing.
     VtVec2fArray uvValues;
@@ -235,7 +235,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
         const UsdGeomPrimvar& primvar,
         MFnMesh& meshFn)
 {
-    const TfToken& primvarName = primvar.GetBaseName();
+    const TfToken& primvarName = primvar.GetPrimvarName();
     const SdfValueTypeName& typeName = primvar.GetTypeName();
 
     MString colorSetName(primvarName.GetText());

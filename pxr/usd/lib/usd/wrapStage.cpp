@@ -348,7 +348,6 @@ void wrapUsdStage()
              return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("OpenMasked")
         
-        .def("Close", &UsdStage::Close)
         .def("Reload", &UsdStage::Reload)
 
         .def("Save", &UsdStage::Save)

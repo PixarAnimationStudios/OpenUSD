@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/enum.h"
 
 #include "pxr/usd/usd/common.h"
 
@@ -38,11 +39,29 @@ TF_DEFINE_ENV_SETTING(
     USD_SHADING_MODEL, "usdRi",
     "Set to usdRi when models can interchange UsdShade prims.");
 
+TF_DEFINE_ENV_SETTING(
+    USD_AUTHOR_OLD_STYLE_ADD, true,
+    "Set true if USD Append() API's should author Add operations instead of "
+    "Append, to mimic their historical behavior.");
+
 bool UsdIsRetireLumosEnabled()
 {
     return TfGetEnvSetting(USD_RETIRE_LUMOS);
 }
 
+bool UsdAuthorOldStyleAdd()
+{
+    return TfGetEnvSetting(USD_AUTHOR_OLD_STYLE_ADD);
+}
+
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdListPositionFront, "The front of the list");
+    TF_ADD_ENUM_NAME(UsdListPositionBack, "The back of the list");
+    TF_ADD_ENUM_NAME(UsdListPositionTempDefault, "Temporary default; "
+                     "consults USD_AUTHOR_OLD_STYLE_ADD.  "
+                     "Used for staged rollout of this enum.");
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

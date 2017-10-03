@@ -360,6 +360,7 @@ public:
     std::string resolvedAssetPath;
     PcpArcType arcType;
     SdfLayerHandle layer;
+    std::string messages;
 
 protected:
     /// Constructor.
@@ -642,6 +643,7 @@ public:
     
     SdfLayerHandle layer;
     std::string sublayerPath;
+    std::string messages;
 
 private:
     /// Constructor is private. Use New() instead.

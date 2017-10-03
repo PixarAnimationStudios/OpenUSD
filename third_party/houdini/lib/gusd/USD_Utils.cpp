@@ -23,6 +23,9 @@
 //
 #include "gusd/USD_Utils.h"
 
+#include "gusd/UT_Error.h"
+
+#include <UT/UT_ConcurrentHashMap.h>
 #include <UT/UT_Interrupt.h>
 #include <UT/UT_ParallelUtil.h>
 #include <UT/UT_Set.h>
@@ -32,12 +35,12 @@
 #include <UT/UT_WorkArgs.h>
 #include <UT/UT_WorkBuffer.h>
 
-#include "gusd/UT_Usd.h"
-
 #include "pxr/base/tf/type.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,48 +48,78 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace GusdUSD_Utils {
 
 
-PrimIdentifier::PrimIdentifier(const UT_StringRef& primPath,
-                               const UT_StringRef& variants,
-                               GusdUT_ErrorContext* err)
+bool
+CreateSdfPath(const UT_StringRef& pathStr,
+              SdfPath& path, GusdUT_ErrorContext* err)
 {
-    /* Identifier should be invalid (invalid prim path) if parsing
-       either input fails, so handle the variants first.*/
-    if(SetVariants(variants, err))
-        SetPrimPath(primPath, err);
+    if(!pathStr)
+        return true;
+
+    /* XXX: Paths require parsing which, when dealing with many
+            thousands of prims, can be expensive to continually
+            recompute. To speed things up, cache the conversions.
+            We only cache valid conversions so that we don't have to
+            worry about also caching error messages.*/
+
+    typedef UT_ConcurrentHashMap<UT_StringHolder,SdfPath> PathMap;
+    static PathMap map;
+
+    {
+        PathMap::const_accessor a;
+        if(map.find(a, UTmakeUnsafeRef(pathStr))) {
+            path = a->second;
+            return true;
+        }
+    }
+    
+    std::string str(pathStr.toStdString());
+
+    /* TODO: using 'IsValidPathString()' requires us to parse the
+       path a second time. It would be better to parse a single 
+       time, and capture any warnings produced while parsing.
+       This is not currently possible because Tf warnings can't
+       be captured with TfMark. See BUG: 127366 */
+    if(err) {
+        std::string errStr;
+        if(!SdfPath::IsValidPathString(str, &errStr)) {
+            UT_WorkBuffer buf;
+            buf.sprintf("Failed parsing path <%s>: %s",
+                        pathStr.c_str(), errStr.c_str());
+            err->AddError(buf.buffer());
+        }
+    } else {
+        if(!SdfPath::IsValidPathString(str))
+            return false;
+    }
+
+    PathMap::accessor a;
+    if(map.insert(a, pathStr))
+        a->second = SdfPath(str);
+    path = a->second;
+    return true;
 }
 
 
-bool
-PrimIdentifier::SetFromVariantPath(const SdfPath& variants)
+UsdPrim
+GetPrimFromStage(const UsdStagePtr& stage,
+                 const SdfPath& path,
+                 GusdUT_ErrorContext* err)
 {
-    ExtractPathComponents(variants, _primPath, _variants);
-    return (bool)*this;
-}
+    UT_ASSERT_P(stage);
 
-
-bool
-PrimIdentifier::SetFromVariantPath(const UT_StringRef& variants,
-                                   GusdUT_ErrorContext* err)
-{
-    SdfPath sdfVariants;
-    if(GusdUT_CreateSdfPath(variants, sdfVariants, err))
-        return SetFromVariantPath(sdfVariants);
-    return false;
-}
-
-
-bool
-PrimIdentifier::SetPrimPath(const UT_StringRef& path, GusdUT_ErrorContext* err)
-{
-    return GusdUT_CreateSdfPath(path, _primPath, err);
-}
-
-
-bool
-PrimIdentifier::SetVariants(const UT_StringRef& variants,
-                            GusdUT_ErrorContext* err)
-{
-    return GusdUT_CreateSdfPath(variants, _variants, err);
+    if(!path.IsEmpty()) {
+        UsdPrim prim = stage->GetPrimAtPath(path);
+        if(!prim && err) {
+            UT_WorkBuffer buf;
+            buf.sprintf("Prim <%s> not found in stage @%s@.",
+                        path.GetText(),
+                        stage->GetRootLayer()->GetIdentifier().c_str());
+            err->AddError(buf.buffer());
+        }
+        return prim;
+    }
+    // Get an emptry prim for an empty path (not an error!)
+    return UsdPrim();
 }
 
 
@@ -107,9 +140,9 @@ GetPrimAndVariantPathsFromPathList(
         UT_String arg(args(i));
         if(arg.isstring()) {
             SdfPath path;
-            if(GusdUT_CreateSdfPath(arg, path, err)) {
+            if(CreateSdfPath(arg, path, err)) {
                 SdfPath primPath, variantsPath;
-                ExtractPathComponents(path, primPath, variantsPath);
+                ExtractPrimPathAndVariants(path, primPath, variantsPath);
                 primPaths.append(primPath);
                 variants.append(variantsPath);
             } else {
@@ -122,19 +155,30 @@ GetPrimAndVariantPathsFromPathList(
 
 
 void
-ExtractPathComponents(const SdfPath& path, SdfPath& primPath, SdfPath& variants)
+ExtractPrimPathAndVariants(const SdfPath& path,
+                           SdfPath& primPath, SdfPath& variants)
 {
-    if(path.ContainsPrimVariantSelection()) {
+    if(path.IsAbsolutePath()) {
         primPath = path.StripAllVariantSelections();
-        for(SdfPath p = path; !p.IsEmpty(); p = p.GetParentPath()) {
-            if (p.IsPrimVariantSelectionPath()) {
-                variants = p;
-                break;
+        if(primPath != path) {
+            // Path differs, so the input had variants.
+            // The variants path might be pointing at a sub-path
+            // like /some{a=b}path. Strip off the trailing elements
+            // so that the variants path doesn't include any unnecessary    
+            // trailing elements. This is done in part because, in some
+            /// contexts, the path will become a cache key.
+            for(variants = path; !variants.IsPrimVariantSelectionPath();
+                variants = variants.GetParentPath()) {
+
+                UT_ASSERT_P(!variants.IsEmpty());
+
+                variants = variants.GetParentPath();
             }
+        } else {
+            variants = SdfPath();
         }
     } else {
-        primPath = path;
-        variants = SdfPath();
+        primPath = variants = SdfPath();
     }
 }
 
@@ -238,10 +282,7 @@ GetPurposesMatchingPattern(const char* pattern,
         return;
 
     _Pattern pat(pattern, caseSensitive);
-    for(auto& purpose : {UsdGeomTokens->default_,
-                         UsdGeomTokens->render,
-                         UsdGeomTokens->proxy,
-                         UsdGeomTokens->guide}) {
+    for(const auto& purpose : UsdGeomImageable::GetOrderedPurposeTokens()) {
         if(pat.Match(purpose))
             purposes.append(purpose);
     }
@@ -665,6 +706,24 @@ ExpandVariantSetPaths(const UT_Array<UsdPrim>& prims,
     pathMap.GetOrderedPaths(orderedVariants);
     
     return _GatherIndexPairsFromThreads(indices, data.indicesTLS);
+}
+
+
+void
+SetVariantsFromPath(const SdfPath& path, const SdfLayerHandle& layer)
+{
+    if(path.IsPrimPath() || path.IsPrimVariantSelectionPath()) {
+        for(SdfPath p = path; p != SdfPath::AbsoluteRootPath();
+            p = p.GetParentPath()) {
+            
+            if(p.IsPrimVariantSelectionPath()) {
+                auto sel = p.GetVariantSelection();
+                SdfPrimSpecHandle spec =
+                    SdfCreatePrimInLayer(layer, p.GetPrimPath());
+                spec->SetVariantSelection(sel.first, sel.second);
+            }
+        }
+    }
 }
 
 

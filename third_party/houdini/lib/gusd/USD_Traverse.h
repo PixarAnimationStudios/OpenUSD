@@ -37,11 +37,13 @@
 #include <UT/UT_StringMap.h>
 
 #include "gusd/api.h"
+#include "gusd/defaultArray.h"
 #include "gusd/purpose.h"
 #include "gusd/USD_Utils.h"
 
 #include <pxr/pxr.h>
 #include "pxr/usd/usd/prim.h"
+
 
 class OP_Parameters;
 class PRM_Template;
@@ -60,35 +62,34 @@ public:
 
     virtual ~GusdUSD_Traverse() {}
 
-    virtual Opts*       CreateOpts() const      { return NULL; }
+    virtual Opts*   CreateOpts() const      { return nullptr; }
 
-    /** Find prims beneath the given root.*/
-        
-    virtual bool        FindPrims(const UsdPrim& root,
-                                  UsdTimeCode time,
-                                  const GusdPurposeSet& purposes,
-                                  UT_Array<UsdPrim>& prims,
-                                  bool skipRoot=true,
-                                  const Opts* opts=NULL) const = 0;
+    /** Find prims beneath the given root.*/        
+    virtual bool    FindPrims(const UsdPrim& root,
+                              UsdTimeCode time,
+                              GusdPurposeSet purposes,
+                              UT_Array<UsdPrim>& prims,
+                              bool skipRoot=true,
+                              const Opts* opts=nullptr) const = 0;
 
     /** Find prims beneath the given root prims.
         Note that the input array of prims may contain invalid prims.
         The returned @a prims array holds the new prims, and the index
         of their root prim from the @a roots array. The array is sorted
         by the index and the prim path.*/
-    virtual bool        FindPrims(const UT_Array<UsdPrim>& roots,
-                                  const GusdUSD_Utils::PrimTimeMap& timeMap,
-                                  const UT_Array<GusdPurposeSet>& purposes,
-                                  UT_Array<PrimIndexPair>& prims,
-                                  bool skipRoot=true,
-                                  const Opts* opts=NULL) const = 0;
+    virtual bool    FindPrims(const UT_Array<UsdPrim>& roots,
+                              const GusdDefaultArray<UsdTimeCode>& times,
+                              const GusdDefaultArray<GusdPurposeSet>& purposes,
+                              UT_Array<PrimIndexPair>& prims,
+                              bool skipRoot=true,
+                              const Opts* opts=nullptr) const = 0;
 
-    bool                FindPrims(const UT_Array<UsdPrim>& roots,
-                                  const GusdUSD_Utils::PrimTimeMap& timeMap,
-                                  const UT_Array<GusdPurposeSet>& purposes,
-                                  UT_Array<UsdPrim>& prims,
-                                  bool skipRoot=true,
-                                  const Opts* opts=NULL) const;
+    bool            FindPrims(const UT_Array<UsdPrim>& roots,
+                              const GusdDefaultArray<UsdTimeCode>& times,
+                              const GusdDefaultArray<GusdPurposeSet>& purposes,
+                              UT_Array<UsdPrim>& prims,
+                              bool skipRoot=true,
+                              const Opts* opts=nullptr) const;
 
     /** Base class that can be derived to provide
         configuration options to the traversal.*/
@@ -112,8 +113,8 @@ public:
     GusdUSD_TraverseType(const GusdUSD_Traverse* traversal,
                          const char* name,
                          const char* label,
-                         const PRM_Template* templates=NULL,
-                         const char* help=NULL);
+                         const PRM_Template* templates=nullptr,
+                         const char* help=nullptr);
 
     const PRM_Name&         GetName() const         { return _name; }
     const PRM_Template*     GetTemplates() const    { return _templates; }

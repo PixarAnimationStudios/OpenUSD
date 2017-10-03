@@ -59,6 +59,8 @@ public:
     // Querying the master path for instancing. This also creates the shape if it doesn't exists.
     PXRUSDMAYA_API
     SdfPath getMasterPath(const MDagPath& dg);
+    PXRUSDMAYA_API
+    bool needToTraverse(const MDagPath& curDag);
 protected:
     PXRUSDMAYA_API
     bool openFile(const std::string& filename, bool append);

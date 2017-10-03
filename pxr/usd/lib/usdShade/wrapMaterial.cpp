@@ -152,12 +152,29 @@ WRAP_CUSTOM {
         .def("HasBaseMaterial",
              &UsdShadeMaterial::HasBaseMaterial)
 
+
+        .def("CreateMaterialBindFaceSubset", 
+             &UsdShadeMaterial::CreateMaterialBindFaceSubset,
+             (arg("geom"), arg("subsetName"), arg("indices")))
+            .staticmethod("CreateMaterialBindFaceSubset")
+        .def("GetMaterialBindFaceSubsets", 
+             &UsdShadeMaterial::GetMaterialBindFaceSubsets, 
+             arg("geom"), return_value_policy<TfPySequenceToList>())
+             .staticmethod("GetMaterialBindFaceSubsets")
+        .def("SetMaterialBindFaceSubsetsFamilyType", 
+             &UsdShadeMaterial::SetMaterialBindFaceSubsetsFamilyType,
+             (arg("geom"), arg("familyType")))
+             .staticmethod("SetMaterialBindFaceSubsetsFamilyType")
+        .def("GetMaterialBindFaceSubsetsFamilyType",
+             &UsdShadeMaterial::GetMaterialBindFaceSubsetsFamilyType,
+             arg("geom"))
+             .staticmethod("GetMaterialBindFaceSubsetsFamilyType")
+        
+        // These are now deprecated.
         .def("CreateMaterialFaceSet", &UsdShadeMaterial::CreateMaterialFaceSet)
             .staticmethod("CreateMaterialFaceSet")
-
         .def("GetMaterialFaceSet", &UsdShadeMaterial::GetMaterialFaceSet)
             .staticmethod("GetMaterialFaceSet")
-
         .def("HasMaterialFaceSet", &UsdShadeMaterial::HasMaterialFaceSet)
             .staticmethod("HasMaterialFaceSet")
 

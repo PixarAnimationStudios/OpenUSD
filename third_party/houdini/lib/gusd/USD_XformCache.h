@@ -24,6 +24,7 @@
 #ifndef _GUSD_USD_XFORMCACHE_H_
 #define _GUSD_USD_XFORMCACHE_H_
 
+#include "gusd/defaultArray.h"
 #include "gusd/UT_CappedCache.h"
 #include "gusd/USD_DataCache.h"
 #include "gusd/USD_Utils.h"
@@ -34,13 +35,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /** Concurrent memory-capped cache for primitive transforms.*/
-class GusdUSD_XformCache : public GusdUSD_DataCache
+class GusdUSD_XformCache final : public GusdUSD_DataCache
 {
 public:
 
     static GusdUSD_XformCache&  GetInstance();
 
-    GusdUSD_XformCache(GusdUSD_StageCache& cache);
+    GusdUSD_XformCache(GusdStageCache& cache);
     GusdUSD_XformCache();
 
     virtual ~GusdUSD_XformCache() {}
@@ -55,25 +56,22 @@ public:
 
     /** Compute multiple local transforms in parallel. */
     bool    GetLocalTransformations(
-                const GusdUSD_StageProxy::MultiAccessor& accessor,
                 const UT_Array<UsdPrim>& prims,
-                const GusdUSD_Utils::PrimTimeMap& timeMap,
+                const GusdDefaultArray<UsdTimeCode>& times,
                 UT_Matrix4D* xfroms);
 
     /** Compute multiple world transforms in parallel.*/
     bool    GetLocalToWorldTransforms(
-                const GusdUSD_StageProxy::MultiAccessor& accessor,
                 const UT_Array<UsdPrim>& prims,
-                const GusdUSD_Utils::PrimTimeMap& timeMap,
+                const GusdDefaultArray<UsdTimeCode>& times,
                 UT_Matrix4D* xforms);
 
     /* Compute constraint transforms given a common constraint name
        for all prims. Constraint transforms not cached.*/
     bool    GetConstraintTransforms(
                 const TfToken& constraint,
-                const GusdUSD_StageProxy::MultiAccessor& accessor,
                 const UT_Array<UsdPrim>& prims,
-                const GusdUSD_Utils::PrimTimeMap& timeMap,
+                const GusdDefaultArray<UsdTimeCode>& times,
                 UT_Matrix4D* xforms);
 
     /* Given tokens representing *full* names of attributes
@@ -81,9 +79,8 @@ public:
        Constraint transforms not cached.*/
     bool    GetConstraintTransforms(
                 const UT_Array<TfToken>& constraints,
-                const GusdUSD_StageProxy::MultiAccessor& accessor,
                 const UT_Array<UsdPrim>& prims,
-                const GusdUSD_Utils::PrimTimeMap& timeMap,
+                const GusdDefaultArray<UsdTimeCode>& times,
                 UT_Matrix4D* xforms);
 
     struct XformInfo : public UT_CappedItem
@@ -125,7 +122,7 @@ public:
 
 
     virtual void    Clear() override;
-    virtual int64   Clear(const UT_Set<std::string>& paths) override;
+    virtual int64   Clear(const UT_StringSet& paths) override;
 
 private:
     bool    _GetLocalTransformation(const UsdPrim& prim,

@@ -506,7 +506,8 @@ void wrapLayer()
 
         .def("OpenAsAnonymous", This::OpenAsAnonymous,
              ( arg("filePath") = std::string(),
-               arg("metadataOnly") = false ),
+               arg("metadataOnly") = false,
+               arg("tag") = std::string() ),
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("OpenAsAnonymous")
 

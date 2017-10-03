@@ -30,10 +30,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((baseGLSLFX,    "points.glslfx"))
-    ((mainVS,        "Point.Vertex"))
-    ((mainFS,        "Point.Fragment"))
-    ((instancing,    "Instancing.Transform"))
+    ((baseGLSLFX,      "points.glslfx"))
+    ((mainVS,          "Point.Vertex"))
+    ((surfaceFS,       "Fragment.Surface"))
+    ((mainFS,          "Point.Fragment"))
+    ((instancing,      "Instancing.Transform"))
 );
 
 HdSt_PointsShaderKey::HdSt_PointsShaderKey()
@@ -43,8 +44,9 @@ HdSt_PointsShaderKey::HdSt_PointsShaderKey()
     VS[1] = _tokens->mainVS;
     VS[2] = TfToken();
 
-    FS[0] = _tokens->mainFS;
-    FS[1] = TfToken();
+    FS[0] = _tokens->surfaceFS;
+    FS[1] = _tokens->mainFS;
+    FS[2] = TfToken();
 }
 
 HdSt_PointsShaderKey::~HdSt_PointsShaderKey()

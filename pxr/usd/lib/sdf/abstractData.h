@@ -173,7 +173,7 @@ public:
     ///
     /// The default implementation does a spec-by-spec, field-by-field
     /// comparison.
-    // XXX: What are the right semmantics for this? 
+    // XXX: What are the right semantics for this?
     //      Does it matter if the underlying implementation matches?
     SDF_API
     virtual bool Equals(const SdfAbstractDataRefPtr &rhs) const;

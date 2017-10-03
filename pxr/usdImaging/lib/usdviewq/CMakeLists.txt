@@ -1,7 +1,10 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdviewq)
 
-if (NOT PYSIDE_FOUND)
+if (NOT PXR_ENABLE_PYTHON_SUPPORT)    
+    message(STATUS "Not building ${PXR_PACKAGE} because PXR_ENABLE_PYTHON_SUPPORT=OFF")   
+    return()
+elseif (NOT PYSIDE_FOUND)
     message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: PySide")
     return()
 elseif(NOT PYOPENGL_FOUND)
@@ -22,7 +25,7 @@ pxr_library(usdviewq
     PUBLIC_CLASSES
         utils
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
         
     PUBLIC_HEADERS
@@ -32,7 +35,7 @@ pxr_library(usdviewq
         module.cpp
         wrapUtils.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
         arrayAttributeView.py
         customAttributes.py
@@ -54,10 +57,14 @@ pxr_library(usdviewq
         adjustDefaultMaterial.py
         nodeViewItem.py
         common.py
+        legendUtil.py
+        nodeLegend.py
+        propertyLegend.py
         attributeValueEditor.py
         pythonExpressionPrompt.py
-        referenceEditor.py
         overridableLineEdit.py
+        variantComboBox.py
+        qt.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES
@@ -66,8 +73,9 @@ pxr_library(usdviewq
         adjustClippingUI.ui
         adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui
+        nodeLegendUI.ui
+        propertyLegendUI.ui
         pythonExpressionPromptUI.ui
-        referenceEditorUI.ui
 )
 
 install(DIRECTORY

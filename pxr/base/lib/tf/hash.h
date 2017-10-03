@@ -62,7 +62,7 @@ class TfWeakPtrFacade;
 ///   \li TfEnum
 ///   \li TfTimeStamp
 ///   \li const void*
-///   \li int
+///   \li size_t
 ///
 /// The \c TfHash class can be used to implement a
 /// \c TfHashMap with \c string keys as follows:
@@ -83,7 +83,7 @@ class TfWeakPtrFacade;
 ///     TfHashMap<TfEnum, T, TfHash> m3;
 ///     TfHashMap<TfTimeStamp, T, TfHash> m4;
 ///     TfHashMap<const void*, T, TfHash> m5;
-///     TfHashMap<int, T, TfHash> m6;
+///     TfHashMap<size_t, T, TfHash> m6;
 /// \endcode
 ///
 class TfHash {
@@ -141,7 +141,7 @@ public:
         return _Mix((size_t) ptr);
     }
 
-    size_t operator()(int i) const {
+    size_t operator()(size_t i) const {
         return _Mix(i);
     }
 

@@ -71,7 +71,7 @@ class TestUsdPrim(unittest.TestCase):
             stage = Usd.Stage.Open(strong.identifier)
 
             p = stage.OverridePrim("/Mesh")
-            p.GetReferences().AppendReference(Sdf.Reference(weak.identifier, "/Mesh"))
+            p.GetReferences().AddReference(Sdf.Reference(weak.identifier, "/Mesh"))
             p = stage.GetPrimAtPath("/Mesh/Child")
             assert p
             assert p.SetMetadata(
@@ -99,7 +99,7 @@ class TestUsdPrim(unittest.TestCase):
 
         stage = Usd.Stage.Open(payload)
         over = stage.OverridePrim(primPath)
-        over.GetReferences().AppendReference(Sdf.Reference(basicOver.identifier, primPath))
+        over.GetReferences().AddReference(Sdf.Reference(basicOver.identifier, primPath))
 
         stage = Usd.Stage.Open(base)
         prim = stage.DefinePrim(primPath)
@@ -416,7 +416,7 @@ class TestUsdPrim(unittest.TestCase):
             s1.DefinePrim("/Foo", "Mesh")
             s1.DefinePrim("/Bar", "Mesh")
             baz = s1.DefinePrim("/Foo/Baz", "Mesh")
-            assert baz.GetReferences().AppendReference(s1.GetRootLayer().identifier, "/Bar")
+            assert baz.GetReferences().AddReference(s1.GetRootLayer().identifier, "/Bar")
 
             s2 = Usd.Stage.CreateInMemory('HasAuthoredReferences.'+fmt)
             foo = s2.OverridePrim("/Foo")
@@ -424,7 +424,7 @@ class TestUsdPrim(unittest.TestCase):
 
             assert not baz
             assert not foo.HasAuthoredReferences()
-            assert foo.GetReferences().AppendReference(s1.GetRootLayer().identifier, "/Foo")
+            assert foo.GetReferences().AddReference(s1.GetRootLayer().identifier, "/Foo")
             items = foo.GetMetadata("references").addedItems
             assert foo.HasAuthoredReferences()
 
@@ -448,14 +448,13 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_GoodAndBadReferences(self):
         for fmt in allFormats:
-            # Sub-root references not allowed
-            s1 = Usd.Stage.CreateInMemory('GoodAndBadReferences.'+fmt)
+            # Sub-root references are allowed
+            s1 = Usd.Stage.CreateInMemory('References.'+fmt)
             s1.DefinePrim("/Foo", "Mesh")
             s1.DefinePrim("/Bar/Bazzle", "Mesh")
             baz = s1.DefinePrim("/Foo/Baz", "Mesh")
             bazRefs = baz.GetReferences()
-            with self.assertRaises(Tf.ErrorException):
-                bazRefs.AppendReference(s1.GetRootLayer().identifier, "/Bar/Bazzle")
+            bazRefs.AddReference(s1.GetRootLayer().identifier, "/Bar/Bazzle")
 
             # Test that both in-memory identifiers, relative paths, and absolute
             # paths all resolve properly
@@ -476,11 +475,11 @@ class TestUsdPrim(unittest.TestCase):
             assert s1.ResolveIdentifierToEditTarget("./refTest2."+fmt) == "" 
 
             # A good reference generates no errors or exceptions
-            assert bazRefs.AppendReference(s2.GetRootLayer().identifier, "/Sphere")
+            assert bazRefs.AddReference(s2.GetRootLayer().identifier, "/Sphere")
 
             # A bad reference succeeds, but generates warnings from compose errors.
             assert not sphere.HasAuthoredReferences()
-            assert sphereRefs.AppendReference("./refTest2."+fmt, "/noSuchPrim")
+            assert sphereRefs.AddReference("./refTest2."+fmt, "/noSuchPrim")
             assert sphere.HasAuthoredReferences()
 
     def test_PropertyOrder(self):
@@ -688,8 +687,8 @@ class TestUsdPrim(unittest.TestCase):
             s.DefinePrim('/Ref/Child')
 
             p = s.DefinePrim('/Instance')
-            p.GetInherits().AppendInherit('/Class')
-            p.GetReferences().AppendInternalReference('/Ref')
+            p.GetInherits().AddInherit('/Class')
+            p.GetReferences().AddInternalReference('/Ref')
             p.SetInstanceable(True)
             return s
 
@@ -721,6 +720,17 @@ class TestUsdPrim(unittest.TestCase):
             # Note this prim index may change from run to run depending on
             # which is selected as the source for the master.
             _ValidatePrimIndexes(master.GetChild('Child'))
+            
+    def test_PseudoRoot(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('PseudoRoot.%s' % fmt)
+            w = s.DefinePrim('/World')
+            p = s.GetPrimAtPath('/')
+            self.assertTrue(p.IsPseudoRoot())
+            self.assertFalse(Usd.Prim().IsPseudoRoot())
+            self.assertFalse(w.IsPseudoRoot())
+            self.assertTrue(w.GetParent().IsPseudoRoot())
+            self.assertFalse(p.GetParent().IsPseudoRoot())
 
 if __name__ == "__main__":
     unittest.main()

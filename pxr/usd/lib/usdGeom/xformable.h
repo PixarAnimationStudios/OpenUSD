@@ -58,23 +58,9 @@ class SdfAssetPath;
 /// Base class for all transformable prims, which allows arbitrary
 /// sequences of component affine transformations to be encoded.
 /// 
-/// \anchor usdGeom_linAlgBasics
-/// <b>A Note about UsdGeom Linear Algebra</b>
-/// 
-/// To ensure reliable interchange, we stipulate the following foundational
-/// mathematical assumptions:
-/// \li Matrices are laid out and indexed in row-major order, such that, given
-/// a \c GfMatrix4d datum \em mat, \em mat[3][1] denotes the second column
-/// of the fourth row.
-/// \li GfVec datatypes are row vectors that <b>pre-multiply</b> matrices to 
-/// effect transformations, which implies, for example, that it is the fourth 
-/// row of a GfMatrix4d that specifies the translation of the transformation.
-/// \li GfQuatf and GfQuatd quaternion objects are laid out with the first 
-/// element as the imaginary 3-vector, followed by the real component.
-/// \li All rotation angles are expressed in degrees, not radians.
-/// \li Vector cross-products and rotations intrinsically follow the
-/// <A HREF="https://en.wikipedia.org/wiki/Right-hand_rule">right hand rule.</A>
-/// 
+/// \note 
+/// You may find it useful to review \ref UsdGeom_LinAlgBasics while reading
+/// this class description.
 /// 
 /// <b>Supported Component Transformation Operations</b>
 /// 
@@ -125,10 +111,10 @@ class SdfAssetPath;
 /// 
 /// \sa \ref usdGeom_xformableExamples "Using the Authoring API"
 /// 
-/// <b>Data Encoding</b>
+/// <b>Data Encoding and Op Ordering</b>
 /// 
 /// Because there is no "fixed schema" of operations, all of the attributes
-/// that encode transform operations are \em custom, and are scoped in 
+/// that encode transform operations are dynamic, and are scoped in 
 /// the namespace "xformOp". The second component of an attribute's name provides
 /// the \em type of operation, as listed above.  An "xformOp" attribute can 
 /// have additional namespace components derived from the \em opSuffix argument 
@@ -138,41 +124,68 @@ class SdfAssetPath;
 /// "xformOp:translate:maya:pivot", "translate" is the type of operation and
 /// "maya:pivot" is the suffix.
 /// 
-/// For example, the following ordered list of attribute declarations in usda
+/// The following ordered list of attribute declarations in usda
 /// define a basic Scale-Rotate-Translate with XYZ Euler angles, wherein the
-/// translation is double-precision, and the remainder of the ops are single.
+/// translation is double-precision, and the remainder of the ops are single,
+/// in which we will:
+/// 
+/// <ol>
+/// <li> Scale by 2.0 in each dimension
+/// <li> Rotate about the X, Y, and Z axes by 30, 60, and 90 degrees, respectively
+/// <li> Translate by 100 units in the Y direction
+/// </ol>
+/// 
 /// \code
-/// double3 xformOp:translate
-/// float3 xformOp:rotateXYZ
-/// float3 xformOp:scale
+/// float3 xformOp:rotateXYZ = (30, 60, 90)
+/// float3 xformOp:scale = (2, 2, 2)
+/// double3 xformOp:translate = (0, 100, 0)
+/// uniform token xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale" ]
 /// \endcode
+/// 
+/// The attributes appear in the dictionary order in which USD, by default,
+/// sorts them.  To ensure the ops are recovered and evaluated in the correct
+/// order, the schema introduces the **xformOpOrder** attribute, which
+/// contains the names of the op attributes, in the precise sequence in which
+/// they should be pushed onto a transform stack. **Note** that the order is
+/// opposite to what you might expect, given the matrix algebra described in
+/// \ref UsdGeom_LinAlgBasics.  This also dictates order of op creation,
+/// since each call to AddXformOp() adds a new op to the end of the
+/// \b xformOpOrder array, as a new "most-local" operation.  See 
+/// \ref usdGeom_xformableExamples "Example 2 below" for C++ code that could
+/// have produced this USD.
 /// 
 /// If it were important for the prim's rotations to be independently 
 /// overridable, we could equivalently (at some performance cost) encode
 /// the transformation also like so:
 /// \code
-/// double3 xformOp:translate
-/// float xformOp:rotateZ
-/// float xformOp:rotateY
-/// float xformOp:rotateX
-/// float3 xformOp:scale
+/// float xformOp:rotateX = 30
+/// float xformOp:rotateY = 60
+/// float xformOp:rotateZ = 90
+/// float3 xformOp:scale = (2, 2, 2)
+/// double3 xformOp:translate = (0, 100, 0)
+/// uniform token xformOpOrder = [ "xformOp:translate", "xformOp:rotateZ", "xformOp:rotateY", "xformOp:rotateX", "xformOp:scale" ]
 /// \endcode
+/// 
+/// Again, note that although we are encoding an XYZ rotation, the three
+/// rotations appear in the **xformOpOrder** in the opposite order, with Z,
+/// followed, by Y, followed by X.
 /// 
 /// Were we to add a Maya-style scalePivot to the above example, it might 
 /// look like the following:
 /// \code
-/// double3 xformOp:translate
-/// float xformOp:rotateXYZ
+/// float3 xformOp:rotateXYZ = (30, 60, 90)
+/// float3 xformOp:scale = (2, 2, 2)
+/// double3 xformOp:translate = (0, 100, 0)
 /// double3 xformOp:translate:scalePivot
-/// float3 xformOp:scale
+/// uniform token xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:translate:scalePivot", "xformOp:scale" ]
 /// \endcode
 /// 
-/// <b>Paired "Inverted" Ops and Op Ordering</b>
+/// <b>Paired "Inverted" Ops</b>
 /// 
 /// We have been claiming that the ordered list of ops serves as a set
 /// of instructions to a transform stack, but you may have noticed in the last
 /// example that there is a missing operation - the pivot for the scale op
-/// needs to be applied in its inverse-form as a final op!  In the 
+/// needs to be applied in its inverse-form as a final (most local) op!  In the 
 /// AbcGeom::Xform schema, we would have encoded an actual "final" translation
 /// op whose value was authored by the exporter as the negation of the pivot's
 /// value.  However, doing so would be brittle in USD, given that each op can
@@ -180,18 +193,13 @@ class SdfAssetPath;
 /// maintained as the negation of the other in order for successful
 /// re-importation of the schema cannot be expressed in USD.
 /// 
-/// Our solution leverages the last component of the encoding: we already
-/// require a statement of the op ordering (since they are attributes, they
-/// will, in general be retrieved in dictionary order using the core API's).
-/// We express this as a uniform builtin VtTokenArray attribute
-/// \em xformOpOrder, whose elements contain the full attribute names, 
-/// in order, of the UsdGeomXformable transform operations.  It also may
-/// contain one of two special tokens that address the paired op and
-/// "stack resetting" behavior.
+/// Our solution leverages the **xformOpOrder** member of the schema, which,
+/// in addition to ordering the ops, may also contain one of two special
+/// tokens that address the paired op and "stack resetting" behavior.
 /// 
 /// The "paired op" behavior is encoded as an "!invert!" prefix in 
-/// \em xformOpOrder, as the result of an AddXformOp(isInverseOp=True) call.  
-/// The \em xformOpOrder for the last example would look like:
+/// \b xformOpOrder, as the result of an AddXformOp(isInverseOp=True) call.  
+/// The \b xformOpOrder for the last example would look like:
 /// \code
 /// uniform token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:translate:scalePivot", "xformOp:scale", "!invert!xformOp:translate:scalePivot" ]
 /// \endcode
@@ -226,13 +234,16 @@ class SdfAssetPath;
 /// \anchor usdGeom_xformableExamples
 /// <b>Using the C++ API</b>
 /// 
-/// #1. Writing out a simple transform matrix encoding
+/// #1. Creating a simple transform matrix encoding
 /// \snippet examples.cpp CreateMatrixWithDefault
 /// 
-/// #2. Writing out an SRT with pivot using UsdGeomXformCommonAPI
+/// #2. Creating the simple SRT from the example above
+/// \snippet examples.cpp CreateExampleSRT
+/// 
+/// #3. Creating a parameterized SRT with pivot using UsdGeomXformCommonAPI
 /// \snippet examples.cpp CreateSRTWithDefaults
 /// 
-/// #3. Writing out a rotate-only pivot transform with animated
+/// #4. Creating a rotate-only pivot transform with animated
 /// rotation and translation
 /// \snippet examples.cpp CreateAnimatedTransform
 /// 

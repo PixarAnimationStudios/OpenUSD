@@ -165,8 +165,14 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("GetDisplayColorPrimvar", &UsdGeomGprim::GetDisplayColorPrimvar)
+        .def("CreateDisplayColorPrimvar", 
+             &UsdGeomGprim::CreateDisplayColorPrimvar,
+             (arg("interpolation")=TfToken(), arg("elementSize")=-1))
         .def("GetDisplayOpacityPrimvar",
              &UsdGeomGprim::GetDisplayOpacityPrimvar)
+        .def("CreateDisplayOpacityPrimvar", 
+             &UsdGeomGprim::CreateDisplayOpacityPrimvar,
+             (arg("interpolation")=TfToken(), arg("elementSize")=-1))
         ;
 }
 

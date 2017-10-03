@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "gusd/USD_DataCache.h"
-
 #include "gusd/USD_PropertyMap.h"
 #include "gusd/UT_Gf.h"
 
@@ -30,29 +29,31 @@
 
 #include <UT/UT_Matrix4.h>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-GusdUSD_DataCache::GusdUSD_DataCache(GusdUSD_StageCache& cache)
-    : _stageCache(&cache)
+
+GusdUSD_DataCache::GusdUSD_DataCache(GusdStageCache& cache)
+    : _stageCache(cache)
 {
-    cache.AddDataCache(this);
+    cache.AddDataCache(*this);
 }
 
 
 GusdUSD_DataCache::GusdUSD_DataCache()
-    : GusdUSD_DataCache(GusdUSD_StageCache::GetInstance())
+    : GusdUSD_DataCache(GusdStageCache::GetInstance())
 {}
 
 
 GusdUSD_DataCache::~GusdUSD_DataCache()
 {
-    _stageCache->RemoveDataCache(this);
+    _stageCache.RemoveDataCache(*this);
 }
 
 bool
 GusdUSD_DataCache::ShouldClearPrim(
     const UsdPrim& prim,
-    const UT_Set<std::string>& stagesToClear)
+    const UT_StringSet& stagesToClear)
 {
     if(!prim) {
         // Always clear expired prims.
@@ -61,5 +62,6 @@ GusdUSD_DataCache::ShouldClearPrim(
     const std::string& path = prim.GetStage()->GetRootLayer()->GetRealPath();
     return stagesToClear.contains(path);
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

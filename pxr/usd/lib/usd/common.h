@@ -83,6 +83,30 @@ typedef std::map<class TfToken, VtValue,
 USD_API
 bool UsdIsRetireLumosEnabled();
 
+/// Returns true if Add() methods in the USD API, when given
+/// UsdListPositionTempDefault, should author "add" operations
+/// in SdfListOp values instead of prepends. Used for backwards
+/// compatibility.
+USD_API
+bool UsdAuthorOldStyleAdd();
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
+/// \enum UsdListPosition
+///
+/// Specifies a position to add items to lists.  Used by some Add()
+/// methods in the USD API that manipulate lists, such as AddReference().
+///
+enum UsdListPosition {
+    /// The front of the list
+    UsdListPositionFront,
+    /// The back of the list
+    UsdListPositionBack,
+    /// Default position.
+    /// XXX This value will be removed in the near future. This is
+    /// meant as a temporary value used for staged rollout of the
+    /// new behavior with a TfEnvSetting.
+    UsdListPositionTempDefault,
+};
 
 #endif

@@ -56,7 +56,7 @@ class TestUsdClasses(unittest.TestCase):
 
             # Author the inherits statement to make "fooDerived" an instance of
             # "foo"
-            self.assertTrue(fd.GetInherits().AppendInherit("/foo"))
+            self.assertTrue(fd.GetInherits().AddInherit("/foo"))
 
             # Verify that opinions from the class come through, but are overridden
             # by any opinions on the instance.

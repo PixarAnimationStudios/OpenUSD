@@ -54,6 +54,7 @@ const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
 };
 
+std::mutex HdEmbreeRenderDelegate::_mutexResourceRegistry;
 std::atomic_int HdEmbreeRenderDelegate::_counterResourceRegistry;
 HdResourceRegistrySharedPtr HdEmbreeRenderDelegate::_resourceRegistry;
 
@@ -119,6 +120,8 @@ HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
         std::make_shared<HdEmbreeRenderParam>(_rtcDevice, _rtcScene);
 
     // Initialize one resource registry for all embree plugins
+    std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
+
     if (_counterResourceRegistry.fetch_add(1) == 0) {
         _resourceRegistry.reset( new HdResourceRegistry() );
     }
@@ -127,6 +130,8 @@ HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
 HdEmbreeRenderDelegate::~HdEmbreeRenderDelegate()
 {
     // Clean the resource registry only when it is the last Embree delegate
+    std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
+
     if (_counterResourceRegistry.fetch_sub(1) == 1) {
         _resourceRegistry.reset();
     }

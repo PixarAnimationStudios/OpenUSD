@@ -724,6 +724,100 @@ class TestUsdInstancing(unittest.TestCase):
         assert s.GetPrimAtPath('/__Master_1/Child_1')
         assert s.GetPrimAtPath('/__Master_2/Child_2')
 
+    def test_Inherits(self):
+        """Test expected instancing behavior for prims with inherits"""
+        nl = NoticeListener()
+
+        s = OpenStage('inherits/root.usda')
+
+        # The Model prim being referenced into the stage inherits from
+        # _class_Model, but there are no oveerrides for that class in
+        # either SetA or SetB. Because of this, /Set/SetA/Model and
+        # /Set/SetB/Model can share the same master prim initially.
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+
+        # Overriding _class_Model in the local layer stack causes
+        # the instancing key to change, so a new master prim is
+        # generated. However, this override would affect both Model
+        # prims on the stage in the same way, so /Set/SetA/Model and
+        # /Set/SetB/Model still share the same master prim.
+        print "-" * 60
+        print "Overriding class in local layer stack"
+        s.OverridePrim('/_class_Model')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_2': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+
+        # Overriding _class_Model in SetA means that SetA/Model may
+        # have name children or other opinions that SetB/Model would
+        # not. So, /Set/SetA/Model and /Set/SetB/Model can no longer
+        # share the same master prim.
+        print "-" * 60
+        print "Overriding class in SetA only"
+        s2 = OpenStage('inherits/setA.usda')
+        s2.OverridePrim('/_class_Model')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_2': ['/Set/SetB/Model'],
+              '/__Master_3': ['/Set/SetA/Model'] })
+
+    def test_Specializes(self):
+        """Test expected instancing behavior for prims with specializes"""
+        nl = NoticeListener()
+
+        s = OpenStage('specializes/root.usda')
+
+        # The Model prim being referenced into the stage specializes
+        # _class_Model, but there are no oveerrides for that class in
+        # either SetA or SetB. Because of this, /Set/SetA/Model and
+        # /Set/SetB/Model can share the same master prim initially.
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+
+        # Overriding _class_Model in the local layer stack causes
+        # the instancing key to change, so a new master prim is
+        # generated. However, this override would affect both Model
+        # prims on the stage in the same way, so /Set/SetA/Model and
+        # /Set/SetB/Model still share the same master prim.
+        print "-" * 60
+        print "Overriding class in local layer stack"
+        s.OverridePrim('/_class_Model')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_2': ['/Set/SetA/Model', '/Set/SetB/Model'] })
+
+        # Overriding _class_Model in SetA means that SetA/Model may
+        # have name children or other opinions that SetB/Model would
+        # not. So, /Set/SetA/Model and /Set/SetB/Model can no longer
+        # share the same master prim.
+        print "-" * 60
+        print "Overriding class in SetA only"
+        s2 = OpenStage('specializes/setA.usda')
+        s2.OverridePrim('/_class_Model')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_2': ['/Set/SetB/Model'],
+              '/__Master_3': ['/Set/SetA/Model'] })
+    
+    def test_SubrootReferences(self):
+        """Test expected instancing behavior for prims with subroot
+        references"""
+        nl = NoticeListener()
+
+        s = OpenStage('subroot_refs/root.usda')
+
+        # The SubrootRef_1 and SubrootRef_2 prims should share the 
+        # same master, as they both have the same sub-root reference. 
+        # However, note that they do *not* share the same master as 
+        # the nested instance /__Master_1/Ref1_Child, even though
+        # they ultimately have the same child prims. This is something
+        # that could be examined for further optimization in the future.
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Ref_1'],
+              '/__Master_2': ['/__Master_1/Ref1_Child'],
+              '/__Master_3': ['/SubrootRef_1', '/SubrootRef_2'] })
+
     def test_Editing(self):
         """Test that edits cannot be made on objects in masters"""
 

@@ -357,37 +357,4 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 const float UsdGeomMesh::SHARPNESS_INFINITE = 1e38;
 
-#include "pxr/usd/usd/timeCode.h"
-
-TfToken UsdGeomMesh::GetFaceVaryingLinearInterpolation(UsdTimeCode time) const
-{
-    const auto prim = GetPrim();
-    const auto newFaceVaryingAttr = prim.GetAttribute(
-        UsdGeomTokens->faceVaryingLinearInterpolation);
-    if (newFaceVaryingAttr.HasAuthoredValueOpinion()) {
-        TfToken temp;
-        newFaceVaryingAttr.Get(&temp, time);
-        return temp;
-    }
-
-    const auto oldFaceVaryingAttr = prim.GetAttribute(
-        UsdGeomTokens->faceVaryingInterpolateBoundary);
-    if (oldFaceVaryingAttr.HasAuthoredValueOpinion()) {
-        TfToken temp;
-        oldFaceVaryingAttr.Get(&temp, time);
-
-        if (temp == UsdGeomTokens->bilinear) {
-            return UsdGeomTokens->all;
-        } else if (temp == UsdGeomTokens->edgeAndCorner) {
-            return UsdGeomTokens->cornersPlus1;
-        } else if (temp == UsdGeomTokens->alwaysSharp) {
-            return UsdGeomTokens->boundaries;
-        } else if (temp == UsdGeomTokens->edgeOnly) {
-            return UsdGeomTokens->none;
-        }
-    }
-
-    return UsdGeomTokens->cornersPlus1;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -37,12 +38,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdSpecializes
 // ------------------------------------------------------------------------- //
 bool
-UsdSpecializes::AppendSpecialize(const SdfPath &primPath)
+UsdSpecializes::AddSpecialize(const SdfPath &primPath, UsdListPosition position)
 {
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfSpecializesProxy paths = spec->GetSpecializesList();
-        paths.Add(primPath);
+        switch (position) {
+        case UsdListPositionFront:
+            paths.Prepend(primPath);
+            break;
+        case UsdListPositionBack:
+            paths.Append(primPath);
+            break;
+        case UsdListPositionTempDefault:
+            if (UsdAuthorOldStyleAdd()) {
+                paths.Add(primPath);
+            } else {
+                paths.Prepend(primPath);
+            }
+            break;
+        }
         return true;
     }
     return false;

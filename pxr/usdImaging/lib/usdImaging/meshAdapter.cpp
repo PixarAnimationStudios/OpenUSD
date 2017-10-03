@@ -63,119 +63,74 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertMesh(prim.GetPath(),
-                      GetShaderBinding(prim),
-                      instancerContext);
+    index->InsertRprim(HdPrimTypeTokens->mesh,
+                       prim,
+                       GetShaderBinding(prim),
+                       instancerContext);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return prim.GetPath();
 }
 
-void
-UsdImagingMeshAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                            SdfPath const& cachePath,
-                                            HdDirtyBits requestedBits,
-                                            UsdImagingInstancerContext const* 
-                                                instancerContext)
-{
-    // Let the base class track what it needs.
-    BaseAdapter::TrackVariabilityPrep(
-        prim, cachePath, requestedBits, instancerContext);
-}
 
 void
 UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
-                                        HdDirtyBits requestedBits,
-                                        HdDirtyBits* dirtyBits,
+                                        HdDirtyBits* timeVaryingBits,
                                         UsdImagingInstancerContext const* 
                                             instancerContext)
 {
     BaseAdapter::TrackVariability(
-        prim, cachePath, requestedBits, dirtyBits, instancerContext);
+        prim, cachePath, timeVaryingBits, instancerContext);
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
     // container during update.
 
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        // Discover time-varying points.
-        _IsVarying(prim,
-                   UsdGeomTokens->points,
-                   HdChangeTracker::DirtyPoints,
-                   UsdImagingTokens->usdVaryingPrimVar,
-                   dirtyBits,
-                   /*isInherited*/false);
-    }
+    // Discover time-varying points.
+    _IsVarying(prim,
+               UsdGeomTokens->points,
+               HdChangeTracker::DirtyPoints,
+               UsdImagingTokens->usdVaryingPrimVar,
+               timeVaryingBits,
+               /*isInherited*/false);
 
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        // Discover time-varying topology.
+    // Discover time-varying topology.
+    if (!_IsVarying(prim,
+                       UsdGeomTokens->faceVertexCounts,
+                       HdChangeTracker::DirtyTopology,
+                       UsdImagingTokens->usdVaryingTopology,
+                       timeVaryingBits,
+                       /*isInherited*/false)) {
+        // Only do this check if the faceVertexCounts is not already known
+        // to be varying.
         if (!_IsVarying(prim,
-                           UsdGeomTokens->faceVertexCounts,
+                           UsdGeomTokens->faceVertexIndices,
                            HdChangeTracker::DirtyTopology,
                            UsdImagingTokens->usdVaryingTopology,
-                           dirtyBits,
+                           timeVaryingBits,
                            /*isInherited*/false)) {
-            // Only do this check if the faceVertexCounts is not already known
-            // to be varying.
-            if (!_IsVarying(prim,
-                               UsdGeomTokens->faceVertexIndices,
-                               HdChangeTracker::DirtyTopology,
-                               UsdImagingTokens->usdVaryingTopology,
-                               dirtyBits,
-                               /*isInherited*/false)) {
-                // Only do this check if both faceVertexCounts and
-                // faceVertexIndices are not known to be varying.
-                _IsVarying(prim,
-                           UsdGeomTokens->holeIndices,
-                           HdChangeTracker::DirtyTopology,
-                           UsdImagingTokens->usdVaryingTopology,
-                           dirtyBits,
-                           /*isInherited*/false);
-            }
-        }
-    }
-}
-
-void
-UsdImagingMeshAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath,
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext)
-{
-    BaseAdapter::UpdateForTimePrep(
-        prim, cachePath, time, requestedBits, instancerContext);
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        valueCache->GetPoints(cachePath);
-    }
-
-    if (requestedBits & HdChangeTracker::DirtyTopology) {
-        valueCache->GetTopology(cachePath);
-    }
-
-    // Subdiv tags are only needed if the mesh is refined.  So
-    // there's no need to fetch the data if the prim isn't refined.
-    if (_delegate->IsRefined(cachePath)) {
-        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
-            valueCache->GetSubdivTags(cachePath);
+            // Only do this check if both faceVertexCounts and
+            // faceVertexIndices are not known to be varying.
+            _IsVarying(prim,
+                       UsdGeomTokens->holeIndices,
+                       HdChangeTracker::DirtyTopology,
+                       UsdImagingTokens->usdVaryingTopology,
+                       timeVaryingBits,
+                       /*isInherited*/false);
         }
     }
 }
 
 void
 UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath,
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
-                               UsdImagingInstancerContext const* 
-                                   instancerContext)
+                                     SdfPath const& cachePath,
+                                     UsdTimeCode time,
+                                     HdDirtyBits requestedBits,
+                                     UsdImagingInstancerContext const*
+                                         instancerContext)
 {
     BaseAdapter::UpdateForTime(
-        prim, cachePath, time, requestedBits, resultBits, instancerContext);
+        prim, cachePath, time, requestedBits, instancerContext);
 
     UsdImagingValueCache* valueCache = _GetValueCache();
     PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
@@ -204,7 +159,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
-int
+HdDirtyBits
 UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       TfToken const& propertyName)
@@ -270,7 +225,9 @@ UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
     tags->SetVertexInterpolationRule(token);
 
     auto meshPrim = UsdGeomMesh(prim);
-    token = meshPrim.GetFaceVaryingLinearInterpolation(time);
+    auto fvLinearInterpAttr = meshPrim.GetFaceVaryingLinearInterpolationAttr();
+    fvLinearInterpAttr.Get(&token, time); 
+
     tags->SetFaceVaryingInterpolationRule(token);
 
     // XXX uncomment after fixing USD schema

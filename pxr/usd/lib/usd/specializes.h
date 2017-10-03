@@ -49,9 +49,11 @@ class UsdSpecializes {
 
 public:
 
-    /// Appends a path to the specializes listOp at the current EditTarget.
+    /// Adds a path to the specializes listOp at the current EditTarget,
+    /// in the position specified by \p position.
     USD_API
-    bool AppendSpecialize(const SdfPath &primPath);
+    bool AddSpecialize(const SdfPath &primPath,
+                       UsdListPosition position=UsdListPositionTempDefault);
 
     /// Removes the specified path from the specializes listOp at the
     /// current EditTarget.

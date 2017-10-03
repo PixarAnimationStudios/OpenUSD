@@ -36,23 +36,30 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapUsdReferences()
 {
     class_<UsdReferences>("References", no_init)
-        .def("AppendReference", (bool (UsdReferences::*)(const SdfReference &))
-             &UsdReferences::AppendReference, arg("ref"))
-        .def("AppendReference",
+        .def("AddReference",
+             (bool (UsdReferences::*)(const SdfReference &, UsdListPosition))
+             &UsdReferences::AddReference,
+             (arg("ref"),
+              arg("position")=UsdListPositionTempDefault))
+        .def("AddReference",
              (bool (UsdReferences::*)(const string &, const SdfPath &,
-                                      const SdfLayerOffset &))
-             &UsdReferences::AppendReference,
+                                      const SdfLayerOffset &, UsdListPosition))
+             &UsdReferences::AddReference,
              (arg("assetPath"), arg("primPath"),
-              arg("layerOffset")=SdfLayerOffset()))
-        .def("AppendReference",(bool (UsdReferences::*)(const string &,
-                                                        const SdfLayerOffset &))
-             &UsdReferences::AppendReference,
+              arg("layerOffset")=SdfLayerOffset(),
+              arg("position")=UsdListPositionTempDefault))
+        .def("AddReference",(bool (UsdReferences::*)(const string &,
+                                                     const SdfLayerOffset &,
+                                                     UsdListPosition))
+             &UsdReferences::AddReference,
              (arg("assetPath"),
-              arg("layerOffset")=SdfLayerOffset()))
-        .def("AppendInternalReference",
-             &UsdReferences::AppendInternalReference, 
-                                  (arg("primPath"),
-                                   arg("layerOffset")=SdfLayerOffset()))
+              arg("layerOffset")=SdfLayerOffset(),
+              arg("position")=UsdListPositionTempDefault))
+        .def("AddInternalReference",
+             &UsdReferences::AddInternalReference, 
+             (arg("primPath"),
+              arg("layerOffset")=SdfLayerOffset(),
+              arg("position")=UsdListPositionTempDefault))
 
         .def("RemoveReference", &UsdReferences::RemoveReference, arg("ref"))
         .def("ClearReferences", &UsdReferences::ClearReferences)

@@ -145,15 +145,6 @@ _CreateBindingRel(UsdPrim& prim)
 bool 
 UsdShadeLook::Bind(UsdPrim& prim) const
 {
-    // We cannot enforce this test because we do not always know at authoring
-    // time what we are binding to.
-    
-    // if (!prim.IsA<UsdGeomImageable>()) {
-    //     TF_CODING_ERROR("Trying to bind a prim that is not Imageable: %s",
-    //         prim.GetPath().GetString().c_str());
-    //     return;
-    // }
-    ;
     if (UsdRelationship rel = _CreateBindingRel(prim)){
         SdfPathVector  targets(1, GetPath());
         return rel.SetTargets(targets);
@@ -198,7 +189,7 @@ UsdShadeLook::GetEditContextForVariant(const TfToken &lookVariation,
     
     UsdVariantSet lookVariant = prim.GetVariantSet(_tokens->lookVariantName);
     UsdEditTarget target = stage->GetEditTarget();
-    if (lookVariant.AppendVariant(lookVariation) && 
+    if (lookVariant.AddVariant(lookVariation) && 
         lookVariant.SetVariantSelection(lookVariation)) {
         target = lookVariant.GetVariantEditTarget(layer);
     }
@@ -288,7 +279,7 @@ UsdShadeLook::CreateMasterLookVariant(const UsdPrim &masterPrim,
 
     UsdVariantSet masterSet = masterPrim.GetVariantSet(masterSetName);
     TF_FOR_ALL(varName, allLookVariants){
-        if (!masterSet.AppendVariant(*varName)){
+        if (!masterSet.AddVariant(*varName)){
             TF_RUNTIME_ERROR("Unable to create Look variant %s on prim %s. "
                              "Aborting master lookVariant creation.",
                              varName->c_str(),

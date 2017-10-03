@@ -19,7 +19,7 @@ like these, instancing can provide significant performance benefits.
 With instancing, the hierarchy of prims from the referenced Car model is
 exposed beneath a single master prim, instead of having _n_ copies of that
 hierarchy beneath each of the Car prims in the scene.  This reduces the size
-of the scenegraph, which reduces the the time needed to load a UsdStage 
+of the scenegraph, which reduces the time needed to load a UsdStage
 as well as the memory it consumes.  
 
 Consumers can take advantage of the shared scenegraph to reduce the amount of 

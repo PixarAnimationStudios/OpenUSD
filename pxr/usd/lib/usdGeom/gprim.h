@@ -216,7 +216,11 @@ public:
     // --------------------------------------------------------------------- //
     // ORIENTATION 
     // --------------------------------------------------------------------- //
-    /// See: http://renderman.pixar.com/resources/current/rps/attributes.html#orientation-and-sides
+    /// Orientation specifies whether the gprim's surface normal 
+    /// should be computed using the right hand rule, or the left hand rule.
+    /// Please see \ref UsdGeom_WindingOrder for a deeper explanation and
+    /// generalization of orientation to composed scenes with transformation
+    /// hierarchies.
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
@@ -248,15 +252,34 @@ public:
 
     /// Convenience function to get the displayColor Attribute as a Primvar.
     ///
-    /// \sa GetDisplayColorAttr()
+    /// \sa GetDisplayColorAttr(), CreateDisplayColorPrimvar()
     USDGEOM_API
     UsdGeomPrimvar GetDisplayColorPrimvar() const;
 
+    /// Convenience function to create the displayColor primvar, optionally
+    /// specifying interpolation and elementSize
+    ///
+    /// \sa CreateDisplayColorAttr(), GetDisplayColorPrimvar()
+    USDGEOM_API
+    UsdGeomPrimvar CreateDisplayColorPrimvar(
+                                const TfToken& interpolation = TfToken(),
+                                int elementSize = -1) const;
+
     /// Convenience function to get the displayOpacity Attribute as a Primvar.
     ///
-    /// \sa GetDisplayOpacityAttr()
+    /// \sa GetDisplayOpacityAttr(), CreateDisplayOpacityPrimvar()
     USDGEOM_API
     UsdGeomPrimvar GetDisplayOpacityPrimvar() const;
+
+    /// Convenience function to create the displayOpacity primvar, optionally
+    /// specifying interpolation and elementSize
+    ///
+    /// \sa CreateDisplayOpacityAttr(), GetDisplayOpacityPrimvar()
+    USDGEOM_API
+    UsdGeomPrimvar CreateDisplayOpacityPrimvar(
+                                const TfToken& interpolation = TfToken(),
+                                int elementSize = -1) const;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

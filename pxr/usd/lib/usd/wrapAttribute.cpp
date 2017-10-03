@@ -152,7 +152,9 @@ void wrapUsdAttribute()
 
         .def("Block", &UsdAttribute::Block)
 
-        .def("AppendConnection", &UsdAttribute::AppendConnection, arg("source"))
+        .def("AddConnection", &UsdAttribute::AddConnection,
+             (arg("source"),
+              arg("position")=UsdListPositionTempDefault))
         .def("RemoveConnection", &UsdAttribute::RemoveConnection, arg("source"))
         .def("BlockConnections", &UsdAttribute::BlockConnections)
         .def("SetConnections", &UsdAttribute::SetConnections, arg("sources"))

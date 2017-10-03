@@ -143,14 +143,20 @@ private:
             .add_property("addedItems",
                 &Type::GetAddedItems,
                 &This::_SetAddedProxy)
+            .add_property("prependedItems",
+                &Type::GetPrependedItems,
+                &This::_SetPrependedProxy)
+            .add_property("appendedItems",
+                &Type::GetAppendedItems,
+                &This::_SetAppendedProxy)
             .add_property("deletedItems",
                 &Type::GetDeletedItems,
                 &This::_SetDeletedProxy)
             .add_property("orderedItems",
                 &Type::GetOrderedItems,
                 &This::_SetOrderedProxy)
-            .add_property("addedOrExplicitItems",
-                &Type::GetAddedOrExplicitItems)
+            .def("GetAddedOrExplicitItems", &Type::GetAddedOrExplicitItems,
+                return_value_policy<TfPySequenceToTuple>())
             .add_property("isExplicit", &Type::IsExplicit)
             .add_property("isOrderedOnly", &Type::IsOrderedOnly)
             .def("ApplyEditsToList",
@@ -171,6 +177,8 @@ private:
 
             // New API (see bug 8710)
             .def("Add", &Type::Add)
+            .def("Prepend", &Type::Prepend)
+            .def("Append", &Type::Append)
             .def("Remove", &Type::Remove)
             .def("Erase", &Type::Erase)
             ;
@@ -202,6 +210,16 @@ private:
     static void _SetAddedProxy(Type& x, const value_vector_type& v)
     {
         x.GetAddedItems() = v;
+    }
+
+    static void _SetPrependedProxy(Type& x, const value_vector_type& v)
+    {
+        x.GetPrependedItems() = v;
+    }
+
+    static void _SetAppendedProxy(Type& x, const value_vector_type& v)
+    {
+        x.GetAppendedItems() = v;
     }
 
     static void _SetDeletedProxy(Type& x, const value_vector_type& v)

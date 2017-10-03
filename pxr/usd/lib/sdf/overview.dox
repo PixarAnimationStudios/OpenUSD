@@ -19,7 +19,7 @@ You should primarily work with scene description using the classes in the Usd li
 
 An SdfPrimSpec object is named and forms a namespace hierarchy with other prims.  Each layer contains one or more root prims, each of which may have a hierarchy of children.  The SdfPath class provides methods to manipulate paths for all of the objects that comprise a layer's scene description.  For example, SdfPath assigns unique paths for each of the objects in a namespace hierarchy; this includes paths to scene description that "lives inside of" particular variants of a VariantSet.
 
-Layers can be combined in several ways.  An SdfLayer can have \e sublayers.  When layering, the SdfPrimSpec objects in an SdfLayer object merge over the prims at the same namespace path in the layer.  An SdfPrimSpec object can also reference another prim within its own layer or a root prim from another layer.  When referencing, a prim and its name children merge over the other prim that it references.
+Layers can be combined in several ways.  An SdfLayer can have \e sublayers.  When layering, the SdfPrimSpec objects in an SdfLayer object merge over the prims at the same namespace path in the layer.  An SdfPrimSpec object can also reference another prim within its own layer or a prim from another layer.  When referencing, a prim and its name children merge over the other prim that it references.
 
 Note that layering and referencing means that multiple SdfPrimSpec objects may contribute partial descriptions for the same logical prim.  The full description of the prim in a given scene comes only from combining or \em composing the contributions of each of the SdfPrimSpec objects. 
 

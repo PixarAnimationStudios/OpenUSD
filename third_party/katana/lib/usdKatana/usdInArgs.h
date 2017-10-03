@@ -117,7 +117,10 @@ public:
     }
 
     // bounds computation is kind of important, so we centralize it here.
-    std::vector<GfBBox3d> ComputeBounds(const UsdPrim& prim);
+    std::vector<GfBBox3d> ComputeBounds(
+        const UsdPrim& prim,
+        const std::vector<double>& motionSampleTimes,
+        bool applyLocalTransform = false);
 
     UsdPrim GetRootPrim() const;
 
@@ -177,7 +180,7 @@ public:
         return _verbose;
     }
 
-    std::vector<UsdGeomBBoxCache>& GetBBoxCache() {
+    std::map<double, UsdGeomBBoxCache>& GetBBoxCache() {
         return _bboxCaches.local();
     }
 
@@ -224,7 +227,7 @@ private:
     bool _prePopulate;
     bool _verbose;
 
-    typedef tbb::enumerable_thread_specific< std::vector<UsdGeomBBoxCache> > _ThreadLocalBBoxCaches;
+    typedef tbb::enumerable_thread_specific< std::map<double, UsdGeomBBoxCache> > _ThreadLocalBBoxCaches;
     _ThreadLocalBBoxCaches _bboxCaches;
     
     std::string _errorMessage;

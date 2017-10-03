@@ -51,6 +51,7 @@ struct HdSt_BasisCurvesShaderKey
     Hd_GeometricShader::PrimitiveType GetPrimitiveType() const { 
         return primType; 
     }
+    bool IsFaceVarying() const { return false; }
 
     Hd_GeometricShader::PrimitiveType primType;
     TfToken glslfx;

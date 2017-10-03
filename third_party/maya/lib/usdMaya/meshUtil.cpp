@@ -28,14 +28,12 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
-#include <maya/MFnMesh.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
-#include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -219,13 +217,13 @@ TfToken _getSubdivFVInterpBoundary(const MFnMesh& mesh)
         sdFVInterpBound = TfToken(plug.asString().asChar());
 
         // Translate OSD2 values to OSD3.
-        if (sdFVInterpBound == UsdGeomTokens->bilinear) {
+        if (sdFVInterpBound == TfToken("bilinear")) {
             sdFVInterpBound = UsdGeomTokens->all;
-        } else if (sdFVInterpBound == UsdGeomTokens->edgeAndCorner) {
+        } else if (sdFVInterpBound == TfToken("edgeAndCorner")) {
             sdFVInterpBound = UsdGeomTokens->cornersPlus1;
-        } else if (sdFVInterpBound == UsdGeomTokens->alwaysSharp) {
+        } else if (sdFVInterpBound == TfToken("alwaysSharp")) {
             sdFVInterpBound = UsdGeomTokens->boundaries;
-        } else if (sdFVInterpBound == UsdGeomTokens->edgeOnly) {
+        } else if (sdFVInterpBound == TfToken("edgeOnly")) {
             sdFVInterpBound = UsdGeomTokens->none;
         }
     } else {
@@ -355,8 +353,9 @@ TfToken PxrUsdMayaMeshUtil::setSubdivFVLinearInterpolation(const UsdGeomMesh &pr
 {
     MStatus status;
 
-    TfToken fvLinearInterpolation =
-        primSchema.GetFaceVaryingLinearInterpolation();
+    TfToken fvLinearInterpolation; 
+    auto fvLinearInterpolationAttr = primSchema.GetFaceVaryingLinearInterpolationAttr();
+    fvLinearInterpolationAttr.Get(&fvLinearInterpolation);
 
     if (fvLinearInterpolation != UsdGeomTokens->cornersPlus1) {
         MFnTypedAttribute stringAttr;

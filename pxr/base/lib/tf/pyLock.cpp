@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyLock.h"
@@ -151,3 +153,5 @@ TfPyEnsureGILUnlockedObj::TfPyEnsureGILUnlockedObj()
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_PYTHON_SUPPORT_ENABLED

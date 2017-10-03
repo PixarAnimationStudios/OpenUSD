@@ -62,7 +62,7 @@ def _SetupBilliards(stage):
     # Make sure the model-parents we need are well-specified
     Usd.ModelAPI(UsdGeom.Xform.Define(stage, '/World')).SetKind(Kind.Tokens.group)
     Usd.ModelAPI(UsdGeom.Xform.Define(stage, '/World/anim')).SetKind(Kind.Tokens.group)
-    # in previous examples, we've been using GetReferences().AppendReference(...).  The
+    # in previous examples, we've been using GetReferences().AddReference(...).  The
     # following uses .SetItems() instead which lets us explicitly set (replace)
     # the references at once instead of adding.
     cueBall = stage.DefinePrim('/World/anim/CueBall')

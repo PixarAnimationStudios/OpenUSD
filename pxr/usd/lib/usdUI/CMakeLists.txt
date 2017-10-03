@@ -17,7 +17,7 @@ pxr_library(usdUI
     PUBLIC_HEADERS
         api.h
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
@@ -26,13 +26,14 @@ pxr_library(usdUI
         wrapNodeGraphNodeAPI.cpp
         wrapSceneGraphPrimAPI.cpp
         wrapTokens.cpp
-
-    PYTHON_FILES
+    
+    PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+        schema.usda:usdUI/schema.usda
 )
 
 pxr_test_scripts(

@@ -504,7 +504,7 @@ GfMatrix3d::DecomposeRotation(const GfVec3d &axis0,
                              const GfVec3d &axis1,
                              const GfVec3d &axis2) const
 {
-    return ExtractRotation().Decompose(axis0, axis1, axis2);
+    return (ExtractRotation().Decompose(axis0, axis1, axis2));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

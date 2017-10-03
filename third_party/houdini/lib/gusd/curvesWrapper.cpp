@@ -25,9 +25,9 @@
 #include "NURBSCurvesWrapper.h"
 
 #include "context.h"
-#include "UT_Gf.h"
-#include "USD_Proxy.h"
 #include "GT_VtArray.h"
+#include "tokens.h"
+#include "UT_Gf.h"
 #include "USD_XformCache.h"
 
 #include <GT/GT_PrimCurveMesh.h>
@@ -91,12 +91,11 @@ GusdCurvesWrapper(
 
 GusdCurvesWrapper::
 GusdCurvesWrapper(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomBasisCurves&       usdCurves, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomBasisCurves&   usdCurves, 
+        UsdTimeCode                 time,
+        GusdPurposeSet              purposes )
     : GusdPrimWrapper( time, purposes )
-    , m_usdCurvesForRead( usdCurves, stage->GetLock() )
+    , m_usdCurvesForRead( usdCurves )
     , m_forceCreateNewGeo( false )
 {
 }
@@ -182,13 +181,11 @@ defineForWrite(
 
 GT_PrimitiveHandle GusdCurvesWrapper::
 defineForRead(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomImageable&         sourcePrim, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomImageable& sourcePrim, 
+        UsdTimeCode             time,
+        GusdPurposeSet          purposes )
 {
     return new GusdCurvesWrapper( 
-                    stage,
                     UsdGeomBasisCurves( sourcePrim.GetPrim() ),
                     time, 
                     purposes );
@@ -205,20 +202,6 @@ redefine( const UsdStagePtr& stage,
     return true;
 }
 
-const UsdGeomImageable 
-GusdCurvesWrapper::getUsdPrimForRead( GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomCurves.
-    GusdUSD_CurvesHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdCurvesForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdCurvesForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
-}
-
 bool 
 GusdCurvesWrapper::refine( 
     GT_Refine& refiner, 
@@ -229,9 +212,7 @@ GusdCurvesWrapper::refine(
 
     bool refineForViewport = GT_GEOPrimPacked::useViewportLOD(parms);
 
-    GusdUSD_CurvesHolder::ScopedReadLock lock;
-    lock.Acquire(m_usdCurvesForRead);
-    UsdGeomBasisCurves usdCurves = *lock;
+    const UsdGeomBasisCurves& usdCurves = m_usdCurvesForRead;
 
     GT_AttributeListHandle gtVertexAttrs = new GT_AttributeList( new GT_AttributeMap() );
     GT_AttributeListHandle gtUniformAttrs = new GT_AttributeList( new GT_AttributeMap() );
@@ -411,9 +392,9 @@ GusdCurvesWrapper::refine(
     } 
     else {
 
-        UsdGeomPrimvar colorPrimvar = usdCurves.GetPrimvar(TfToken("Cd"));
+        UsdGeomPrimvar colorPrimvar = usdCurves.GetPrimvar(GusdTokens->Cd);
         if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            colorPrimvar = usdCurves.GetPrimvar(TfToken("displayColor"));
+            colorPrimvar = usdCurves.GetPrimvar(GusdTokens->displayColor);
         }
 
         if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
@@ -474,9 +455,9 @@ GusdCurvesWrapper::refine(
             }
         }
 
-        UsdGeomPrimvar alphaPrimvar = usdCurves.GetPrimvar(TfToken("Alpha"));
+        UsdGeomPrimvar alphaPrimvar = usdCurves.GetPrimvar(GusdTokens->Alpha);
         if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            alphaPrimvar = usdCurves.GetPrimvar(TfToken("displayOpacity"));
+            alphaPrimvar = usdCurves.GetPrimvar(GusdTokens->displayOpacity);
         }
 
         if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValueOpinion()) {

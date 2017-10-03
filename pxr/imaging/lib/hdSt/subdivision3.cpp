@@ -123,7 +123,7 @@ public:
 
     virtual HdBufferSourceSharedPtr CreateIndexComputation(
         HdSt_MeshTopology *topology,
-        HdBufferSourceSharedPtr const &osdTopology);
+        HdBufferSourceSharedPtr const &osdTopology) override;
 
     virtual HdBufferSourceSharedPtr CreateRefineComputation(
         HdSt_MeshTopology *topology,

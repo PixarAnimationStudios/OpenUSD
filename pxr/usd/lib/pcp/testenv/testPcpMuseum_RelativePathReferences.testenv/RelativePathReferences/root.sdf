@@ -1,0 +1,19 @@
+#sdf 1.4.32
+(
+    """
+    This museum case tests that references using relative paths
+    don't get de-duplicated if the anchoring layers are in
+    different locations. Sublayers sub1.sdf and sub2.sdf
+    prepend a reference that uses the same relative asset path
+    and prim path. Because these sublayers are in different
+    directories, the references are actually pointing to two
+    different layers, both of which should contribute opinions
+    to the prim.
+    """
+
+    subLayers = [
+        @./sub1/sub1.sdf@,
+        @./sub2/sub2.sdf@,        
+        @./sub3.sdf@
+    ]
+)

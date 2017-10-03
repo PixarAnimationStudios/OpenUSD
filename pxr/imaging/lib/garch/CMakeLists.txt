@@ -40,8 +40,10 @@ pxr_library(garch
     PRIVATE_HEADERS
         ${GARCH_GLPLATFORMDEBUGWINDOW}.h
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
+
+    CPPFILES
         ${GARCH_GLPLATFORMCONTEXT}.${GARCH_SOURCE_EXTENSION}
         ${GARCH_GLPLATFORMDEBUGWINDOW}.${GARCH_SOURCE_EXTENSION}
 
@@ -49,6 +51,6 @@ pxr_library(garch
         module.cpp
         wrapPlatformDebugContext.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 )

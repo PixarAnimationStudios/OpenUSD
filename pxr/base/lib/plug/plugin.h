@@ -67,8 +67,10 @@ public:
     /// plugins always report as loaded.
     PLUG_API bool IsLoaded() const;
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     /// Returns \c true if the plugin is a python module.
     PLUG_API bool IsPythonModule() const;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     /// Returns \c true if the plugin is resource-only.
     PLUG_API bool IsResource() const;
@@ -113,7 +115,13 @@ public:
     PLUG_API std::string FindPluginResource(const std::string& path, bool verify = true) const;
 
 private:
-    enum _Type { LibraryType, PythonType, ResourceType };
+    enum _Type { 
+        LibraryType, 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED        
+        PythonType, 
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+        ResourceType 
+    };
 
     // Private ctor, plugins are constructed only by PlugRegistry.
     PLUG_LOCAL
@@ -141,12 +149,14 @@ private:
                              const std::string & resourcePath,
                              const JsObject & plugInfo);
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     PLUG_LOCAL
     static std::pair<PlugPluginPtr, bool> 
     _NewPythonModulePlugin(const std::string & path,
                            const std::string & name,
                            const std::string & resourcePath,
                            const JsObject & plugInfo);
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     PLUG_LOCAL
     static std::pair<PlugPluginPtr, bool> 

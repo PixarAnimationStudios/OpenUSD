@@ -419,7 +419,7 @@ class TestUsdRelationships(unittest.TestCase):
                 # Targets to objects in masters cannot be authored.
                 primInMasterPath = master.GetPath().AppendChild("A")
                 with self.assertRaises(Tf.ErrorException):
-                    self.assertFalse(rel.AppendTarget(primInMasterPath))
+                    self.assertFalse(rel.AddTarget(primInMasterPath))
                 with self.assertRaises(Tf.ErrorException):
                     self.assertFalse(rel.RemoveTarget(primInMasterPath))
                 with self.assertRaises(Tf.ErrorException):

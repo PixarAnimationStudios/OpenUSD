@@ -45,6 +45,10 @@ std::string ArchGetCwd();
 ARCH_API
 std::string ArchGetExecutablePath();
 
+/// Return the system's memory page size.  Safe to assume power-of-two.
+ARCH_API
+int ArchGetPageSize();
+
 ///@}
 
 PXR_NAMESPACE_CLOSE_SCOPE

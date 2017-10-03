@@ -129,6 +129,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdAbcPropertyNames, USD_ABC_PROPERTY_NAMES);
     (gprimDataRender) \
     (riName) \
     (riType) \
+    (singleSampleAsDefault) \
     /* end */
 TF_DECLARE_PUBLIC_TOKENS(UsdAbcCustomMetadata, USD_ABC_CUSTOM_METADATA);
 

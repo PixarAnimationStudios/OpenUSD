@@ -21,10 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from qt import QtCore, QtGui, QtWidgets
 from adjustClippingUI import Ui_AdjustClipping
 
-class AdjustClipping(QtGui.QDialog):
+class AdjustClipping(QtWidgets.QDialog):
     """The dataModel provided to this VC must conform to the following
     interface:
     
@@ -40,7 +40,7 @@ class AdjustClipping(QtGui.QDialog):
                                 may have changed.
     """
     def __init__(self, parent, dataModel):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self._ui = Ui_AdjustClipping()
         self._ui.setupUi(self)
 
@@ -49,27 +49,17 @@ class AdjustClipping(QtGui.QDialog):
         self._nearCache = self._dataModel.overrideNear or clipRange.min
         self._farCache = self._dataModel.overrideFar or clipRange.max
 
-        QtCore.QObject.connect(self._dataModel, 
-                               QtCore.SIGNAL('signalFrustumChanged()'),
-                               self.update)
+        self._dataModel.signalFrustumChanged.connect(self.update)
 
         # When the checkboxes change, we want to update instantly
-        QtCore.QObject.connect(self._ui.overrideNear,
-                               QtCore.SIGNAL('stateChanged(int)'),
-                               self._overrideNearToggled)
+        self._ui.overrideNear.stateChanged.connect(self._overrideNearToggled)
 
-        QtCore.QObject.connect(self._ui.overrideFar,
-                               QtCore.SIGNAL('stateChanged(int)'),
-                               self._overrideFarToggled)
+        self._ui.overrideFar.stateChanged.connect(self._overrideFarToggled)
 
         # we also want to update the clipping planes as the user is typing
-        QtCore.QObject.connect(self._ui.nearEdit,
-                               QtCore.SIGNAL('textChanged(QString)'),
-                               self._nearChanged)
+        self._ui.nearEdit.textChanged.connect(self._nearChanged)
 
-        QtCore.QObject.connect(self._ui.farEdit,
-                               QtCore.SIGNAL('textChanged(QString)'),
-                               self._farChanged)
+        self._ui.farEdit.textChanged.connect(self._farChanged)
 
         # Set the checkboxes to their initial state
         self._ui.overrideNear.setChecked(self._dataModel.overrideNear \
@@ -152,9 +142,7 @@ class AdjustClipping(QtGui.QDialog):
     def closeEvent(self, event):
         # Ensure that even if the dialog doesn't get destroyed right away,
         # we'll stop doing work.
-        QtCore.QObject.disconnect(self._dataModel, 
-                                  QtCore.SIGNAL('signalFrustumChanged()'),
-                                  self.update)
+        self._dataModel.signalFrustumChanged.disconnect(self.update)
 
         event.accept()
         # Since the dialog is the immediate-edit kind, we consider

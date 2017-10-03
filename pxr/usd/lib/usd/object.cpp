@@ -28,12 +28,6 @@
 
 #include "pxr/base/tf/ostreamMethods.h"
 
-#include "pxr/usd/usd/pyConversions.h"
-#include "pxr/base/tf/pyUtils.h"
-
-#include <boost/python/extract.hpp>
-#include <boost/python/object.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 

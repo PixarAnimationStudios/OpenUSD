@@ -242,12 +242,16 @@ void wrapUsdGeomPointInstancer()
 namespace {
 
 static
-std::vector<bool>
-_ComputeMaskAtTime(
-    const UsdGeomPointInstancer& self,
-    const UsdTimeCode time)
+boost::python::list
+_ComputeMaskAtTime(const UsdGeomPointInstancer& self,
+                   const UsdTimeCode time)
 {
-    return self.ComputeMaskAtTime(time);
+    boost::python::list items;
+    for (const auto& b : self.ComputeMaskAtTime(time)) {
+        items.append(static_cast<bool>(b));
+    }
+
+    return items;
 }
 
 static

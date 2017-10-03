@@ -34,7 +34,6 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 

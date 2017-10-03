@@ -25,11 +25,16 @@
 #define __GUSD_PURPOSE_H__
 
 #include <UT/UT_StringArray.h>
+#include <UT/UT_StringHolder.h>
 
 #include <pxr/pxr.h>
 #include "pxr/usd/usdGeom/tokens.h"
 
+#include "gusd/api.h"
+
+
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 enum GusdPurposeSet {
     GUSD_PURPOSE_NONE =    0x00,
@@ -39,19 +44,63 @@ enum GusdPurposeSet {
     GUSD_PURPOSE_GUIDE =   0x08,
 };
 
-inline bool 
-GusdPurposeInSet( const TfToken &name, GusdPurposeSet set ) 
+
+GUSD_API
+inline GusdPurposeSet
+GusdPurposeSetFromName(const UT_StringRef& name)
 {
     if(name == UsdGeomTokens->default_)
-        return set&GUSD_PURPOSE_DEFAULT;
+        return GUSD_PURPOSE_DEFAULT;
     else if(name == UsdGeomTokens->proxy)
-        return set&GUSD_PURPOSE_PROXY;
+        return GUSD_PURPOSE_PROXY;
     else if(name == UsdGeomTokens->render)
-        return set&GUSD_PURPOSE_RENDER;
+        return GUSD_PURPOSE_RENDER;
     else if(name == UsdGeomTokens->guide)
-        return set&GUSD_PURPOSE_GUIDE;
-    return false;
+        return GUSD_PURPOSE_GUIDE;
+    return GUSD_PURPOSE_NONE;
 }
+
+
+GUSD_API
+inline GusdPurposeSet
+GusdPurposeSetFromName(const TfToken& name)
+{
+    return GusdPurposeSetFromName(UTmakeUnsafeRef(name.GetString()));
+}
+
+
+GUSD_API
+inline bool 
+GusdPurposeInSet( const TfToken& name, GusdPurposeSet set ) 
+{
+    return set&GusdPurposeSetFromName(UTmakeUnsafeRef(name.GetString()));
+}
+
+
+/// Create a purpose set from an array of purpose strings.
+/// @{
+GUSD_API
+GusdPurposeSet GusdPurposeSetFromArray(const UT_StringArray& purposes);
+
+GUSD_API
+GusdPurposeSet GusdPurposeSetFromArray(const TfTokenVector& purposes);
+/// @}
+
+
+/// Extract an array of tokens for @a purposes.
+GUSD_API
+TfTokenVector GusdPurposeSetToTokens(GusdPurposeSet purposes);
+
+
+/// Extract an array of strings for @a purposes.
+GUSD_API
+UT_StringArray GusdPurposeSetToStrings(GusdPurposeSet purposes);
+
+
+/// Return a purpose set from a string providing a mask of purposes.
+GUSD_API
+GusdPurposeSet GusdPurposeSetFromMask(const char* mask);
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -100,6 +100,8 @@ public:
         }
         else {
             return (!_GetOperations(SdfListOpTypeAdded).empty()   ||
+                    !_GetOperations(SdfListOpTypePrepended).empty() ||
+                    !_GetOperations(SdfListOpTypeAppended).empty() ||
                     !_GetOperations(SdfListOpTypeDeleted).empty() ||
                     !_GetOperations(SdfListOpTypeOrdered).empty());
         }
@@ -326,6 +328,10 @@ operator<<(std::ostream& s, const Sdf_ListEditor<TypePolicy>& x)
         if (!x.IsOrderedOnly()) {
             s << "'added': ";
             Util::_Write(s, x.GetVector(SdfListOpTypeAdded));
+            s << "'prepended': ";
+            Util::_Write(s, x.GetVector(SdfListOpTypePrepended));
+            s << "'appended': ";
+            Util::_Write(s, x.GetVector(SdfListOpTypeAppended));
             s << ", 'deleted': ";
             Util::_Write(s, x.GetVector(SdfListOpTypeDeleted));
             s << ", ";

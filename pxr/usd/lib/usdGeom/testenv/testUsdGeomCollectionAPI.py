@@ -39,10 +39,10 @@ class TestUsdGeomCollectionAPI(unittest.TestCase):
         (valid, reason) = collection.Validate()
         self.assertTrue(valid)
 
-        collection.AppendTarget(sphere.GetPath())
-        collection.AppendTarget(cube.GetPath(), [1, 3, 5])
-        collection.AppendTarget(cylinder.GetPath())
-        collection.AppendTarget(cone.GetPath(), [2, 4, 6, 8])
+        collection.AddTarget(sphere.GetPath())
+        collection.AddTarget(cube.GetPath(), [1, 3, 5])
+        collection.AddTarget(cylinder.GetPath())
+        collection.AddTarget(cone.GetPath(), [2, 4, 6, 8])
         
         self.assertEqual(collection.GetTargets(), 
                     [Sdf.Path('/CollectionTest/Geom/pSphere1'), 
@@ -141,17 +141,17 @@ class TestUsdGeomCollectionAPI(unittest.TestCase):
         collections = UsdGeom.CollectionAPI.GetCollections(root)
         self.assertEqual(len(collections), 8)
 
-    def test_AppendTarget(self):
+    def test_AddTarget(self):
         appendTestCollection = UsdGeom.CollectionAPI.Create(root, "AppendTest")
 
         # Appending an empty target should result in a coding error.
         with self.assertRaises(RuntimeError):    
-            appendTestCollection.AppendTarget(Sdf.Path())
+            appendTestCollection.AddTarget(Sdf.Path())
         
-        appendTestCollection.AppendTarget(sphere.GetPath(), [], Usd.TimeCode(1))
-        appendTestCollection.AppendTarget(cube.GetPath(), [0, 1, 2, 3, 4 ], Usd.TimeCode(1))
-        appendTestCollection.AppendTarget(cone.GetPath(), [], Usd.TimeCode(1))
-        appendTestCollection.AppendTarget(cylinder.GetPath(), [5, 6, 7, 8], Usd.TimeCode(1))
+        appendTestCollection.AddTarget(sphere.GetPath(), [], Usd.TimeCode(1))
+        appendTestCollection.AddTarget(cube.GetPath(), [0, 1, 2, 3, 4 ], Usd.TimeCode(1))
+        appendTestCollection.AddTarget(cone.GetPath(), [], Usd.TimeCode(1))
+        appendTestCollection.AddTarget(cylinder.GetPath(), [5, 6, 7, 8], Usd.TimeCode(1))
 
         self.assertEqual(appendTestCollection.GetTargets(), [sphere.GetPath(), 
             cube.GetPath(), cone.GetPath(), cylinder.GetPath()])

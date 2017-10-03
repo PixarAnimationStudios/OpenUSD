@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "Set" 
+{
+   def "SetA" (references = @./setA.usda@</SetA>)
+   {
+   }
+
+   def "SetB" (references = @./setB.usda@</SetB>)
+   {
+   }
+}

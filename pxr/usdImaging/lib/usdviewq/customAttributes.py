@@ -29,13 +29,10 @@
 # defined below.
 #
 def _GetCustomAttributes(currentNode, bboxCache, xformCache):
-    attrList = [BoundingBoxAttribute(currentNode, bboxCache),
-                      LocalToWorldXformAttribute(currentNode, xformCache)]
-
-    attrList += [RelationshipAttribute(currentNode, relationship) \
-                    for relationship in currentNode.GetRelationships()]
-
-    return attrList
+    return ([BoundingBoxAttribute(currentNode, bboxCache),
+               LocalToWorldXformAttribute(currentNode, xformCache)],
+            [RelationshipAttribute(currentNode, relationship) \
+                    for relationship in currentNode.GetRelationships()])
 
 #
 # The base class for per-node custom attributes.
@@ -111,7 +108,7 @@ class RelationshipAttribute(CustomAttribute):
         self._relationship = relationship
 
     def GetName(self):
-        return "[Relationship] " + self._relationship.GetName()
+        return self._relationship.GetName()
 
     def Get(self, frame):
         return self._relationship.GetTargets()

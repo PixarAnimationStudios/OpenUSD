@@ -40,7 +40,9 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <cstdio>
 #include <vector>
@@ -144,7 +146,7 @@ TestObjectsChanged()
     UsdPrim
         target1 = stage->OverridePrim(SdfPath("/target1")),
         target2 = stage->OverridePrim(SdfPath("/target2"));
-    foo.GetReferences().AppendReference(rootLayer->GetIdentifier(),
+    foo.GetReferences().AddReference(rootLayer->GetIdentifier(),
                                         target1.GetPath());
     {
         printf("adding reference target1 -> target2 should resync target1 and "
@@ -155,14 +157,14 @@ TestObjectsChanged()
         tester.AddTest(bind(&Notice::ResyncedObject, _1, foo));
         tester.AddTest(bind(&Notice::ResyncedObject, _1, bar));
         // Now add the reference.
-        target1.GetReferences().AppendReference(rootLayer->GetIdentifier(),
+        target1.GetReferences().AddReference(rootLayer->GetIdentifier(),
                                                 target2.GetPath());
     }
 
     // Assert that changing an inherited value causes changes to instances.
     UsdPrim cls = stage->CreateClassPrim(SdfPath("/cls"));
-    foo.GetInherits().AppendInherit(cls.GetPath());
-    bar.GetInherits().AppendInherit(cls.GetPath());
+    foo.GetInherits().AddInherit(cls.GetPath());
+    bar.GetInherits().AddInherit(cls.GetPath());
     {
         printf("changing info in cls should cause info change in foo & bar\n");
         _NoticeTester tester(stage);
@@ -180,8 +182,8 @@ TestObjectsChanged()
 
     // Assert that changing specializes causes changes to instances.
     UsdPrim specialize = stage->DefinePrim(SdfPath("/spec"));
-    foo.GetSpecializes().AppendSpecialize(specialize.GetPath());
-    bar.GetSpecializes().AppendSpecialize(specialize.GetPath());
+    foo.GetSpecializes().AddSpecialize(specialize.GetPath());
+    bar.GetSpecializes().AddSpecialize(specialize.GetPath());
     {
         printf("changing info in spec should cause info change in foo & bar\n");
         _NoticeTester tester(stage);
@@ -280,7 +282,7 @@ TestObjectsChanged()
                     && n.GetChangedInfoOnlyPaths() == 
                         SdfPathVector{SdfPath("/foo.rel")});
         });
-        rel.AppendTarget(SdfPath("/bar"));
+        rel.AddTarget(SdfPath("/bar"));
     }
 }
 
@@ -292,5 +294,7 @@ int main()
 
     TF_AXIOM(m.IsClean());
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     TF_AXIOM(!Py_IsInitialized());
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 }

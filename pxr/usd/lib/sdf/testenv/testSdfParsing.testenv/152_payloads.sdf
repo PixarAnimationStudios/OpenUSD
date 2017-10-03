@@ -16,6 +16,12 @@ def MfScope "TestPrim2" (
 {
 }
 
+def MfScope "TestPrim3" (
+    payload = @///test/layer.sdf@</Prim/Child>
+)
+{
+}
+
 def MfScope "TestAsset" (
     payload = @///test/layer.sdf@
 )

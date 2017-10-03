@@ -375,7 +375,7 @@ std::string
 PcpErrorInvalidPrimPath::ToString() const
 {
     return TfStringPrintf("Invalid %s path <%s> on prim %s "
-                          "-- must be a root prim path.", 
+                          "-- must be an absolute prim path.", 
                           TfEnum::GetDisplayName(arcType).c_str(), 
                           primPath.GetText(),
                           TfStringify(site).c_str());
@@ -415,10 +415,12 @@ PcpErrorInvalidAssetPath::~PcpErrorInvalidAssetPath()
 std::string
 PcpErrorInvalidAssetPath::ToString() const
 {
-    return TfStringPrintf("Could not open asset @%s@ for %s on prim %s.",
+    return TfStringPrintf("Could not open asset @%s@ for %s on prim %s%s%s.",
                           resolvedAssetPath.c_str(), 
                           TfEnum::GetDisplayName(arcType).c_str(), 
-                          TfStringify(site).c_str());
+                          TfStringify(site).c_str(),
+                          messages.empty() ? "" : " -- ",
+                          messages.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -677,10 +679,12 @@ PcpErrorInvalidSublayerPath::~PcpErrorInvalidSublayerPath()
 std::string
 PcpErrorInvalidSublayerPath::ToString() const
 {
-    return TfStringPrintf("Could not load sublayer @%s@ of layer @%s@ -- "
+    return TfStringPrintf("Could not load sublayer @%s@ of layer @%s@%s%s; "
                           "skipping.", 
                           sublayerPath.c_str(), 
-                          layer->GetIdentifier().c_str());
+                          layer->GetIdentifier().c_str(),
+                          messages.empty() ? "" : " -- ",
+                          messages.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

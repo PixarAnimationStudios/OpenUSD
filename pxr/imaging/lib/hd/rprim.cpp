@@ -231,6 +231,12 @@ HdRprim::GetInitialDirtyBitsMask() const
     return _GetInitialDirtyBits();
 }
 
+HdShaderCodeSharedPtr
+HdRprim::_GetShaderCode(HdSceneDelegate *delegate, HdShader const *shader) const
+{
+    return shader->GetShaderCode();
+}
+
 void
 HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
                                    HdDrawItem *drawItem,
@@ -255,7 +261,7 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
                         renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
     }
 
-    _sharedData.surfaceShader = shader->GetShaderCode();
+    _sharedData.surfaceShader = _GetShaderCode(delegate, shader);
 
 
     // update uniforms

@@ -439,7 +439,7 @@ Arch_Unmapper::operator()(char *mapStart) const
 
 template <class Mapping>
 static inline Mapping
-Arch_MapFileImpl(FILE *file)
+Arch_MapFileImpl(FILE *file, std::string *errMsg)
 {
     using PtrType = typename Mapping::pointer;
     constexpr bool isConst =
@@ -464,25 +464,38 @@ Arch_MapFileImpl(FILE *file)
                       /*offsetHigh=*/ 0, /*offsetLow=*/0, unsignedLength));
     // Close the mapping handle, and return the view pointer.
     CloseHandle(hFileMap);
-    return Mapping(ptr, Arch_Unmapper());
+    return Mapping(ptr, Arch_Unmapper(length));
 #else // Assume POSIX
-    return Mapping(
-        static_cast<PtrType>(
-            mmap(nullptr, length, isConst ? PROT_READ : PROT_READ | PROT_WRITE,
-                 MAP_PRIVATE, fileno(file), 0)), Arch_Unmapper(length));
+    auto m = mmap(nullptr, length,
+                  isConst ? PROT_READ : PROT_READ | PROT_WRITE,
+                  MAP_PRIVATE, fileno(file), 0);
+    Mapping ret(m == MAP_FAILED ? nullptr : static_cast<PtrType>(m),
+                Arch_Unmapper(length));
+    if (!ret && errMsg) {
+        int err = errno;
+        if (err == EINVAL) {
+            *errMsg = "bad arguments to mmap()";
+        } else if (err == EMFILE || err == ENOMEM) {
+            *errMsg = "system limit on mapped regions exceeded, "
+                "or out of memory";
+        } else {
+            *errMsg = ArchStrerror();
+        }
+    }
+    return ret;
 #endif
 }
 
 ArchConstFileMapping
-ArchMapFileReadOnly(FILE *file)
+ArchMapFileReadOnly(FILE *file, std::string *errMsg)
 {
-    return Arch_MapFileImpl<ArchConstFileMapping>(file);
+    return Arch_MapFileImpl<ArchConstFileMapping>(file, errMsg);
 }
 
 ArchMutableFileMapping
-ArchMapFileReadWrite(FILE *file)
+ArchMapFileReadWrite(FILE *file, std::string *errMsg)
 {
-    return Arch_MapFileImpl<ArchMutableFileMapping>(file);
+    return Arch_MapFileImpl<ArchMutableFileMapping>(file, errMsg);
 }
 
 ARCH_API
@@ -504,10 +517,34 @@ void ArchMemAdvise(void const *addr, size_t len, ArchMemAdvice adv)
         /* ArchMemAdviceDontNeed     = */ POSIX_MADV_DONTNEED,
         /* ArchMemAdviceRandomAccess = */ POSIX_MADV_RANDOM
     };
-        
-    posix_madvise(reinterpret_cast<void *>(alignedAddrInt),
-                  len + (addrInt - alignedAddrInt), adviceMap[adv]);
+
+    int rval = posix_madvise(reinterpret_cast<void *>(alignedAddrInt),
+                             len + (addrInt - alignedAddrInt), adviceMap[adv]);
+    if (rval != 0) {
+        fprintf(stderr, "failed call to posix_madvise(%zd, %zd)"
+                "ret=%d, errno=%d '%s'\n",
+                alignedAddrInt, len + (addrInt-alignedAddrInt),
+                rval, errno, ArchStrerror().c_str());
+    }
 #endif
+}
+
+bool
+ArchQueryMappedMemoryResidency(
+    void const *addr, size_t len, unsigned char *pageMap)
+{
+#if defined(ARCH_OS_LINUX)
+    int ret = mincore(const_cast<void *>(addr), len, pageMap);
+    return ret == 0;
+#elif defined (ARCH_OS_DARWIN)
+    // On darwin the addr param is 'caddr_t' and the vec param is 'char *'.
+    int ret = mincore(
+        reinterpret_cast<caddr_t>(const_cast<void *>(addr)), len,
+        reinterpret_cast<char *>(pageMap));
+    return ret == 0;
+#endif
+    // XXX: Not implemented for other platforms yet.
+    return false;
 }
 
 int64_t
@@ -896,8 +933,14 @@ void ArchFileAdvise(
         /* ArchFileAdviceDontNeed     = */ POSIX_FADV_DONTNEED,
         /* ArchFileAdviceRandomAccess = */ POSIX_FADV_RANDOM
     };
-    posix_fadvise(fileno(file), offset, static_cast<off_t>(count),
-                  adviceMap[adv]);
+    int rval = posix_fadvise(fileno(file), offset, static_cast<off_t>(count),
+                             adviceMap[adv]);
+    if (rval != 0) {
+        fprintf(stderr, "failed call to posix_fadvise(%d, %zd, %zd)"
+                "ret=%d, errno=%d '%s'\n",
+                fileno(file), offset, static_cast<off_t>(count),
+                rval, errno, ArchStrerror().c_str());
+    }
 #endif
 }
 

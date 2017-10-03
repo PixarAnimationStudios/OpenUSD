@@ -104,5 +104,19 @@ class TestPcpInstanceKey(unittest.TestCase):
         # different instance keys.
         self.assertNotEqual(key5, key6)
 
+    def test_ImpliedArcsWithNoSpecs(self):
+        """Test instance key functionality with implied inherits and
+        specializes."""
+        cache = self._LoadPcpCache('implied_arcs/root.sdf')
+
+        # Both Model prims should share the same instance key even though
+        # they are referenced from two different assets. This is because
+        # there are no specs for the implied inherits or specializes in the 
+        # referencing assets, which means these prims should have the 
+        # exact same set of opinions.
+        key1 = self._GetInstanceKey(cache, '/Set/SetA/Model')
+        key2 = self._GetInstanceKey(cache, '/Set/SetB/Model')
+        self.assertEqual(key1, key2)
+
 if __name__ == "__main__":
     unittest.main()

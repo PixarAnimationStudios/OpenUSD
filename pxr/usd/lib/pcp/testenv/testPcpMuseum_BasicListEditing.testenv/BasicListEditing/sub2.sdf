@@ -2,6 +2,8 @@
 
 over "A" (
     '''This simply gives the order x,y,z.'''
+    prepend inherits = </sub2_prepend>
+    append inherits = </sub2_append>
 )
 {
     double x
@@ -14,4 +16,14 @@ over "A" (
     }
     over "z" {
     }
+}
+
+class "sub2_prepend"
+{
+    prepend rel targets = </sub2_prepend/sub2_prepend>
+}
+
+class "sub2_append"
+{
+    prepend rel targets = </sub2_append/sub2_append>
 }

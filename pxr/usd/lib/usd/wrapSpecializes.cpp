@@ -36,8 +36,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapUsdSpecializes()
 {
     class_<UsdSpecializes>("Specializes", no_init)
-        .def("AppendSpecialize", &UsdSpecializes::AppendSpecialize,
-             arg("primPath"))
+        .def("AddSpecialize", &UsdSpecializes::AddSpecialize,
+             (arg("primPath"),
+              arg("position")=UsdListPositionTempDefault))
         .def("RemoveSpecialize", &UsdSpecializes::RemoveSpecialize,
              arg("primPath"))
         .def("ClearSpecializes", &UsdSpecializes::ClearSpecializes)

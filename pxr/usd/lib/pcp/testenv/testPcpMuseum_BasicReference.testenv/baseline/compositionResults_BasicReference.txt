@@ -189,6 +189,21 @@ Prim Stack:
     root.sdf             /InternalReference/InternalReference_Child
 
 ------------------------------------------------------------------------
+Results for composing </PrimWithSubrootReference>
+
+Prim Stack:
+    root.sdf             /PrimWithSubrootReference
+    ref.sdf              /PrimA/PrimA_Child
+    ref2.sdf             /PrimC/PrimC_Child
+
+------------------------------------------------------------------------
+Results for composing </PrimWithInternalSubrootReference>
+
+Prim Stack:
+    root.sdf             /PrimWithInternalSubrootReference
+    root.sdf             /InternalReference/InternalReference_Child
+
+------------------------------------------------------------------------
 Results for composing </InternalReference2>
 
 Prim Stack:

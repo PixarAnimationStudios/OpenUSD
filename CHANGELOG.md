@@ -1,5 +1,121 @@
 # Change Log
 
+## [0.8.1] - 2017-10-02
+
+### Added
+- "append" and "prepend" operations for SdfListOp-valued fields.
+  Scene description layers that contain these new operations will not be
+  readable by earlier USD releases.
+- `--validate` argument to sdfdump for checking file validity.
+- Support for sub-root references and payloads.
+- Ability to specify amount of data to prefetch when reading a .usdc
+  file via the `USDC_MMAP_PREFETCH_KB` environment variable.
+- Debugging output that shows memory mapping information for .usdc files.
+  This can be enabled via the `USDC_DUMP_PAGE_MAPS` environment variable.
+- UsdGeomMotionAPI schema.
+- UsdGeomSubset schema for representing a subset of a geometric prim.
+- Hydra GL support for displacement shaders
+- Initial experimental support for PySide2 in usdview. By default, the 
+  build will search for PySide, then PySide2. Alternatively, users may specify 
+  `PYSIDE_USE_PYSIDE2=TRUE` to CMake to force the use of PySide2.
+- Ability to view connections and relationship targets in usdview.
+- Support for camera clipping range in Alembic plugin.
+- Support for array attributes with "RfM Shaders" shading mode in Maya exporter.
+- Support for angularVelocities attribute on point instancers in Katana plugin.
+- Filtered view and improved selection to Tree View panel in Houdini plugin.
+- Support for prototype offsets in point instancer exports in Houdini plugin.
+
+### Changed
+- Made Python dependency optional. Python support is enabled by default but
+  may be disabled by specifying `PXR_ENABLE_PYTHON_SUPPORT=FALSE` to CMake
+  or `--no-python` to build_usd.py.
+- build_usd.py now requires that users install PyOpenGL manually. (Issue #264)
+- Replaced addedOrExplicitItems attribute on Sdf.*ListOp in Python with
+  GetAddedOrExplicitItems method.
+- Renamed Append... methods on composition arc APIs (e.g. UsdReferences, 
+  UsdInherits) to Add... and added a position argument to support new
+  "append" and "prepend" operations. 
+
+  Calling these functions with the default UsdListPositionTempDefault argument
+  will author "add" operations, maintaining the previous behavior. We anticipate
+  removing UsdListPositionTempDefault and replacing it with UsdListPositionFront
+  so that "prepend" operations will be authored by default in 0.8.2. Users may 
+  enable this behavior now by setting the `USD_AUTHOR_OLD_STYLE_ADD` environment
+  variable to false.
+
+- UsdStage now issues warnings for invalid layers it encounters instead of
+  errors, which cause exceptions in Python.
+- Code generation templates and schema.usda files used by usdGenSchema are 
+  now installed as part of the build. Schemas can now use asset paths like
+  "usdGeom/schema.usda" or "usdShade/schema.usda" instead of absolute paths
+  to add installed schemas as sublayers. (Issue #158, #211)
+- Improved USD scenegraph instancing to allow more sharing of assets with
+  inherits or specializes arcs. In one large example, this decreased stage load
+  time by ~60%, stage memory usage by ~65%, and time to first image in usdview 
+  by ~20%.
+- Several optimizations to reduce I/O operations for .usda and .usdc files.
+- Add support for compressed structural sections in .usdc files. This can
+  significantly decrease file sizes for files that are dominated by prim and
+  property hierarchy; one production shading file decreased in size by ~94%,
+  from 21 MB to 1.3 MB.
+
+  Compressed files are marked as version 0.3.0 and are not readable by earlier 
+  USD releases. To help with transition, USD will not write these compressed 
+  files by default until a future release. Users may enable this feature now 
+  by setting the `USD_WRITE_NEW_USDC_FILES_AS_VERSION` environment variable 
+  to "0.3.0". We plan to add compression for geometry data and time samples
+  in a future release.
+
+- UsdUtilsExtractExternalReferences now checks for references to external files
+  in property values and metadata.
+- Increased precision for rotations attribute in UsdSkelPackedJointAnimation 
+  schema to 32-bit.
+- UsdGeomPrimvar now allows primvar names with arbitrarily-nested namespaces.
+- Sizeable refactor in Hydra to support sprims more like rprims in anticipation 
+  of future lights and material support.
+- Hydra no longer syncs rprims that are not visible.
+- Several performance and stability fixes to point instancer handling in Hydra.
+- "Reload All Layers" in usdview will try not to reset the camera or timeline.
+- Numerous other improvements to usdview.
+- The Alembic reader now converts single samples for properties in .abc files
+  to single time samples in USD, instead of default values.
+- Updated required Katana version to Katana 2.5v1.
+- Improved bounds computations for point instancers in Katana plugin
+- Account for motion sample time overrides when computing bounding boxes in
+  Katana plugin.
+- Improved stage cache in Houdini plugin, which can have significantly
+  better performance in some circumstances.
+- Improved handling of instanced USD primitives in Houdini plugin.
+
+### Deprecated
+- UsdGeomFaceSetAPI and related API in usdShade and usdLux in favor of new 
+  UsdGeomSubset schema.
+
+### Removed
+- UsdStage::Close.
+- Camera zUp-related functionality
+- Support for faceVaryingInterpolateBoundary in UsdGeomMesh schema.
+  See faceVaryingLinearInterpolation instead.
+
+### Fixed
+- Bug in build_usd.py where specifying `--no-embree` did the opposite.
+  (Issue #276)
+- Bug in build_usd.py where specifying `--force-all` or `--force` on a
+  Python dependency would cause the script to error out early. (Issue #263)
+- Race condition between TfType consumers and TfType registry initialization.
+- Composition bug where references with the same prim path and relative asset
+  path would be considered duplicates even when anchoring location differed.
+- Composition bug where payloads on arcs requiring ancestral opinions could
+  result in errors.
+- Change processing bug when removing sublayers specified by search path.
+- Stack overflow crash when reading .usdc files due to excessive recursion.
+- Possible crash in Hydra when using basis curves.
+- Memory leak in Hydra task controller.
+- Build issue for Alembic plugin with HDF5 support disabled when
+  precompiled headers are enabled (which is the default on Windows).
+- Several other bugs in Alembic reader.
+- Performance issue in Katana plugin due to inefficiency in UsdShadeNodeGraph.
+
 ## [0.8.0] - 2017-07-29
 
 ### Added

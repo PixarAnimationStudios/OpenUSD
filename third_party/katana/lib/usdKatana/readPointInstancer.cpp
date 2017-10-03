@@ -31,6 +31,7 @@
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdShade/material.h"
 
+#include "pxr/base/gf/transform.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
@@ -67,30 +68,206 @@ namespace
                       "[ERROR PxrUsdKatanaReadPointInstancer]: " + message));
     }
 
+    // XXX This is based on
+    // UsdGeomPointInstancer::ComputeInstanceTransformsAtTime. Ideally, we would
+    // just use UsdGeomPointInstancer, but it does not currently support
+    // multi-sampled transforms or velocity.
+    //
+    size_t
+    _ComputeInstanceTransformsAtTime(
+        std::vector<std::vector<GfMatrix4d>>& xforms,
+        const UsdGeomPointInstancer& instancer,
+        const std::vector<UsdTimeCode>& sampleTimes,
+        const UsdTimeCode baseTime,
+        const double timeCodesPerSecond,
+        const size_t numInstances,
+        const UsdAttribute& positionsAttr,
+        const float velocityScale = 1.0f)
+    {
+        constexpr double epsilonTest = 1e-5;
+        const auto sampleCount = sampleTimes.size();
+        if (sampleCount == 0 || xforms.size() < sampleCount ||
+            baseTime.IsDefault()) {
+            return 0;
+        }
+
+        double upperTimeSample = 0.0;
+
+        bool positionsHasSamples = false;
+        double positionsLowerTimeSample = 0.0;
+        if (!positionsAttr.GetBracketingTimeSamples(
+                baseTime.GetValue(), &positionsLowerTimeSample,
+                &upperTimeSample, &positionsHasSamples)) {
+            return 0;
+        }
+
+        const auto velocitiesAttr = instancer.GetVelocitiesAttr();
+        const auto scalesAttr = instancer.GetScalesAttr();
+        const auto orientationsAttr = instancer.GetOrientationsAttr();
+        const auto angularVelocitiesAttr = instancer.GetAngularVelocitiesAttr();
+
+        VtVec3fArray positions;
+        VtVec3fArray velocities;
+        VtVec3fArray scales;
+        VtQuathArray orientations;
+        VtVec3fArray angularVelocities;
+
+        // Use velocity if it has almost the same lower time sample as positions
+        // and the array lengths are equal to the number of instances.
+        //
+        bool useVelocity = false;
+
+        if (positionsHasSamples and
+            positionsAttr.Get(&positions, positionsLowerTimeSample)) {
+            bool velocitiesHasSamples = false;
+            double velocitiesLowerTimeSample = 0.0;
+            if (velocitiesAttr.HasValue() and
+                velocitiesAttr.GetBracketingTimeSamples(
+                    baseTime.GetValue(), &velocitiesLowerTimeSample,
+                    &upperTimeSample, &velocitiesHasSamples) and
+                velocitiesHasSamples and
+                GfIsClose(velocitiesLowerTimeSample, positionsLowerTimeSample,
+                          epsilonTest)) {
+                if (velocitiesAttr.Get(&velocities,
+                                       positionsLowerTimeSample) and
+                    positions.size() == numInstances and
+                    velocities.size() == numInstances) {
+                    useVelocity = true;
+                }
+            }
+        }
+
+        // Use angular velocity if it has almost the same lower time sample as
+        // orientations and the array lengths are equal to the number of
+        // instances.
+        //
+        bool useAngularVelocity = false;
+
+        bool orientationsHasSamples = false;
+        double orientationsLowerTimeSample = 0.0;
+        if (orientationsAttr.GetBracketingTimeSamples(
+                baseTime.GetValue(), &orientationsLowerTimeSample,
+                &upperTimeSample, &orientationsHasSamples)) {
+
+            if (orientationsHasSamples and
+                orientationsAttr.Get(&orientations,
+                                     orientationsLowerTimeSample)) {
+                bool angularVelocitiesHasSamples = false;
+                double angularVelocitiesLowerTimeSample = 0.0;
+                if (angularVelocitiesAttr.HasValue() and
+                    angularVelocitiesAttr.GetBracketingTimeSamples(
+                        baseTime.GetValue(), &angularVelocitiesLowerTimeSample,
+                        &upperTimeSample, &angularVelocitiesHasSamples) and
+                    angularVelocitiesHasSamples and
+                    GfIsClose(angularVelocitiesLowerTimeSample,
+                              orientationsLowerTimeSample, epsilonTest)) {
+                    if (angularVelocitiesAttr.Get(
+                            &angularVelocities, orientationsLowerTimeSample) and
+                        orientations.size() == numInstances and
+                        angularVelocities.size() == numInstances) {
+                        useAngularVelocity = true;
+                    }
+                }
+            }
+        }
+
+        size_t validSamples = 0;
+
+        for (auto a = decltype(sampleCount){0}; a < sampleCount; ++a) {
+            std::vector<GfMatrix4d> &curr = xforms[a];
+            curr.reserve(numInstances);
+
+            float velocityMultiplier = 1.0f;
+            if (useVelocity) {
+                velocityMultiplier =
+                    static_cast<float>(
+                        (sampleTimes[a].GetValue() - positionsLowerTimeSample) /
+                        timeCodesPerSecond) *
+                    velocityScale;
+            } else {
+                positionsAttr.Get(&positions, sampleTimes[a]);
+            }
+
+            float angularVelocityMultiplier = 1.0f;
+            if (useAngularVelocity) {
+                angularVelocityMultiplier =
+                    static_cast<float>((sampleTimes[a].GetValue() -
+                                        orientationsLowerTimeSample) /
+                                       timeCodesPerSecond) *
+                    velocityScale;
+            } else {
+                orientationsAttr.Get(&orientations, sampleTimes[a]);
+            }
+
+            if (useVelocity or useAngularVelocity) {
+                scalesAttr.Get(&scales, baseTime);
+            } else {
+                scalesAttr.Get(&scales, sampleTimes[a]);
+            }
+
+            // Abort if toplogy differs across samples. Note that we permit
+            // unspecified scales and orientations.
+            //
+            if (positions.size() != numInstances) {
+                break;
+            }
+            if (scales.size() > 0 and scales.size() != numInstances) {
+                break;
+            }
+            if (orientations.size() > 0 and
+                orientations.size() != numInstances) {
+                break;
+            }
+
+            for (auto i = decltype(numInstances){0}; i < numInstances; ++i) {
+                GfTransform transform;
+                if (useVelocity) {
+                    transform.SetTranslation(
+                        positions[i] + velocities[i] * velocityMultiplier);
+                } else {
+                    transform.SetTranslation(positions[i]);
+                }
+                if (scales.size() > 0) {
+                    transform.SetScale(scales[i]);
+                }
+                if (orientations.size() > 0) {
+                    if (useAngularVelocity) {
+                        transform.SetRotation(
+                            GfRotation(orientations[i]) *
+                            GfRotation(angularVelocities[i],
+                                       (angularVelocityMultiplier *
+                                        angularVelocities[i].GetLength())));
+                    } else {
+                        transform.SetRotation(GfRotation(orientations[i]));
+                    }
+                }
+                curr.push_back(transform.GetMatrix());
+            }
+
+            ++validSamples;
+        }
+
+        return validSamples;
+    }
+
     // XXX This is based on UsdGeomPointInstancer::ComputeExtentAtTime. Ideally,
-    // we would just use UsdGeomPointInstancer, however it will compute the
-    // bounds of its prototypes if it can't use their extentsHints, which is an
-    // expensive operation we want to avoid here (see bug 147526).
+    // we would just use UsdGeomPointInstancer, however it does not account for
+    // multi-sampled transforms (see bug 147526).
     //
     bool
     _ComputeExtentAtTime(
         VtVec3fArray& extent,
-        const UsdGeomPointInstancer& instancer,
-        const UsdTimeCode baseTime,
+        PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
+        const std::vector<std::vector<GfMatrix4d>>& xforms,
+        const std::vector<double>& motionSampleTimes,
         const VtIntArray& protoIndices,
         const SdfPathVector& protoPaths,
         const _PathToPrimMap& primCache,
-        const std::vector<bool> mask,
-        const FnKat::DoubleAttribute& instanceMatrixAttr)
+        const std::vector<bool> mask)
     {
-        const TfTokenVector purposes{UsdGeomTokens->default_,
-                                     UsdGeomTokens->proxy,
-                                     UsdGeomTokens->render};
-        _PathToRangeMap rangeCache;
         GfRange3d extentRange;
 
-        const size_t numSampleTimes =
-            instanceMatrixAttr.getNumberOfTimeSamples();
+        const size_t numSampleTimes = motionSampleTimes.size();
 
         for (size_t i = 0; i < protoIndices.size(); ++i) {
             if (!mask.empty() && !mask[i]) {
@@ -100,79 +277,32 @@ namespace
             const int protoIndex = protoIndices[i];
             const SdfPath &protoPath = protoPaths[protoIndex];
 
-            GfRange3d thisRange;
-
-            // Check to see if this prototype's range was already computed. If
-            // not, use its extents hint to compute one.
-            _PathToRangeMap::const_iterator rcIt = rangeCache.find(protoPath);
-            if (rcIt != rangeCache.end()) {
-                thisRange = rcIt->second;
-            } else {
-                _PathToPrimMap::const_iterator pcIt = primCache.find(protoPath);
-                const UsdPrim &protoPrim = pcIt->second;
-                if (!protoPrim) {
-                    continue;
-                }
-
-                VtVec3fArray extents;
-                UsdAttribute extentsAttr =
-                    protoPrim.GetAttribute(TfToken("extentsHint"));
-                if (extentsAttr and extentsAttr.Get(&extents, baseTime)) {
-
-                    // Get the ranges associated with each purpose.
-                    _PurposeToRangeMap ranges;
-                    for (size_t i = 0; i < purposes.size(); ++i) {
-                        size_t idx = i * 2;
-                        // If extents are not available for this purpose, it
-                        // implies that the rest of the bounds are empty. Hence,
-                        // we can break.
-                        if ((idx + 2) > extents.size()) {
-                            break;
-                        }
-                        ranges[purposes[i]] =
-                            GfRange3d(extents[idx], extents[idx + 1]);
-                    }
-
-                    // Combine ranges for each purpose in order to generate the
-                    // final range.
-                    for (auto purpose : purposes) {
-                        _PurposeToRangeMap::const_iterator rIt =
-                            ranges.find(purpose);
-                        if (rIt != ranges.end()) {
-                            const GfRange3d &rangeForPurpose = rIt->second;
-                            if (!rangeForPurpose.IsEmpty()) {
-                                thisRange = GfRange3d::GetUnion(
-                                    thisRange, rangeForPurpose);
-                            }
-                        }
-                    }
-                }
-
-                // Store the result so we don't have to compute it again.
-                rangeCache[protoPath] = thisRange;
-            }
-
-            // If a range could not be computed using extents, simply move on.
-            if (thisRange.IsEmpty()) {
+            _PathToPrimMap::const_iterator pcIt = primCache.find(protoPath);
+            const UsdPrim &protoPrim = pcIt->second;
+            if (!protoPrim) {
                 continue;
             }
 
+            // Leverage usdInArgs for calculating the proto prim's bound. Note
+            // that we apply the prototype's local transform to account for any
+            // offsets.
+            //
+            std::vector<GfBBox3d> sampledBounds = usdInArgs->ComputeBounds(
+                protoPrim, motionSampleTimes, /* applyLocalTransform */ true);
+
             for (size_t a = 0; a < numSampleTimes; ++a) {
-                // Get the prototype bounding box with the instance transform
-                // applied. We don't apply the parent transform here, as the
+                // Apply the instance transform to the bounding box for this
+                // time sample. We don't apply the parent transform here, as the
                 // bounds need to be in parent-local space.
-                float sampleTime = instanceMatrixAttr.getSampleTime(a);
-                FnKat::DoubleAttribute::array_type instanceXforms =
-                    instanceMatrixAttr.getNearestSample(sampleTime);
-                GfMatrix4d instanceXform;
-                double *matArray = instanceXform.GetArray();
-                for (int j = 0; j < 16; j++)
-                {
-                    matArray[j] = instanceXforms[i * 16 + j];
-                }
-                GfBBox3d thisBounds(thisRange, instanceXform);
+                //
+                GfBBox3d thisBounds(sampledBounds[a]);
+                thisBounds.Transform(xforms[a][i]);
                 extentRange.UnionWith(thisBounds.ComputeAlignedRange());
             }
+        }
+
+        if (extentRange.IsEmpty()) {
+            return false;
         }
 
         const GfVec3d extentMin = extentRange.GetMin();
@@ -287,17 +417,51 @@ PxrUsdKatanaReadPointInstancer(
         return;
     }
 
+    // Positions (required)
+    //
+    UsdAttribute positionsAttr = instancer.GetPositionsAttr();
+    if (!positionsAttr.HasValue())
+    {
+        _LogAndSetError(instancerAttrMap, "Instancer has no positions");
+        return;
+    }
+
     //
     // Compute instance transform matrices.
     //
 
-    // XXX At some point, we'll use
-    // UsdGeomPointInstancer::ComputeInstanceTransformsAtTime to compute the
-    // instance transform matrix; until then, extract this information from the
-    // input attrs.
+    const double timeCodesPerSecond = stage->GetTimeCodesPerSecond();
+
+    // Gather frame-relative sample times and add them to the current time to
+    // generate absolute sample times.
     //
-    FnKat::DoubleAttribute instanceMatrixAttr =
-            inputAttrs.getChildByName("instanceMatrix");
+    const std::vector<double> &motionSampleTimes =
+        data.GetMotionSampleTimes(positionsAttr);
+    const size_t sampleCount = motionSampleTimes.size();
+    std::vector<UsdTimeCode> sampleTimes(sampleCount);
+    for (size_t a = 0; a < sampleCount; ++a)
+    {
+        sampleTimes[a] = UsdTimeCode(currentTime + motionSampleTimes[a]);
+    }
+
+    // Get velocityScale from the opArgs.
+    //
+    float velocityScale = FnKat::FloatAttribute(
+        inputAttrs.getChildByName("opArgs.velocityScale")).getValue(1.0f, false);
+
+    // XXX Replace with UsdGeomPointInstancer::ComputeInstanceTransformsAtTime.
+    //
+    std::vector<std::vector<GfMatrix4d>> xformSamples(sampleCount);
+    const size_t numXformSamples =
+        _ComputeInstanceTransformsAtTime(xformSamples, instancer, sampleTimes,
+            UsdTimeCode(currentTime), timeCodesPerSecond, numInstances,
+            positionsAttr, velocityScale);
+    if (numXformSamples == 0) {
+        _LogAndSetError(instancerAttrMap, "Could not compute "
+                                          "sample/topology-invarying instance "
+                                          "transform matrix");
+        return;
+    }
 
     //
     // Compute prototype bounds.
@@ -310,8 +474,9 @@ PxrUsdKatanaReadPointInstancer(
     //
     VtVec3fArray aggregateExtent;
     if (_ComputeExtentAtTime(
-            aggregateExtent, instancer, UsdTimeCode(currentTime), protoIndices,
-            protoPaths, primCache, pruneMaskValues, instanceMatrixAttr)) {
+            aggregateExtent, data.GetUsdInArgs(), xformSamples,
+            motionSampleTimes, protoIndices, protoPaths, primCache,
+            pruneMaskValues)) {
         aggregateBoundsValid = true;
         aggregateBounds.resize(6);
         aggregateBounds[0] = aggregateExtent[0][0]; // min x
@@ -509,8 +674,31 @@ PxrUsdKatanaReadPointInstancer(
                     FnKat::IntAttribute(&instanceIndices[0],
                             instanceIndices.size(), 1));
 
+    FnKat::DoubleBuilder instanceMatrixBldr(16);
+    for (size_t a = 0; a < numXformSamples; ++a) {
+
+        double relSampleTime = motionSampleTimes[a];
+
+        // Shove samples into the builder at the frame-relative sample time. If
+        // motion is backwards, make sure to reverse time samples.
+        std::vector<double> &matVec = instanceMatrixBldr.get(
+            data.IsMotionBackward()
+                ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
+                : relSampleTime);
+
+        matVec.reserve(16 * numInstances);
+        for (size_t i = 0; i < numInstances; ++i) {
+
+            GfMatrix4d instanceXform = xformSamples[a][i];
+            const double *matArray = instanceXform.GetArray();
+
+            for (int j = 0; j < 16; ++j) {
+                matVec.push_back(matArray[j]);
+            }
+        }
+    }
     instancesBldr.setAttrAtLocation("instances",
-            "geometry.instanceMatrix", instanceMatrixAttr);
+            "geometry.instanceMatrix", instanceMatrixBldr.build());
 
     if (!omitList.empty())
     {

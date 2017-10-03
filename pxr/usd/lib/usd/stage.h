@@ -387,9 +387,6 @@ public:
     USD_API
     virtual ~UsdStage();
 
-    USD_API
-    void Close();
-
     /// Calls SdfLayer::Reload on all layers contributing to this stage,
     /// except session layers and sublayers of session layers.
     ///
@@ -1468,6 +1465,9 @@ private:
     // Helper for Open() overloads -- searches and publishes to bound caches.
     template <class... Args>
     static UsdStageRefPtr _OpenImpl(InitialLoadSet load, Args const &... args);
+
+    // Releases resources used by this stage.
+    void _Close();
 
     // Common ref ptr initialization, called by public, static constructors.
     //

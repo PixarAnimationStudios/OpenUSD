@@ -21,10 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from qt import QtCore, QtWidgets
 from adjustDefaultMaterialUI import Ui_AdjustDefaultMaterial
 
-class AdjustDefaultMaterial(QtGui.QDialog):
+class AdjustDefaultMaterial(QtWidgets.QDialog):
     """The dataModel provided to this VC must conform to the following
     interface:
     
@@ -40,7 +40,7 @@ class AdjustDefaultMaterial(QtGui.QDialog):
                                         set in the dataModel.
     """
     def __init__(self, parent, dataModel):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self._ui = Ui_AdjustDefaultMaterial()
         self._ui.setupUi(self)
 
@@ -48,25 +48,15 @@ class AdjustDefaultMaterial(QtGui.QDialog):
         self._ambientCache = None
         self._specularCache = None
 
-        QtCore.QObject.connect(self._ui.ambientIntSpinBox,
-                               QtCore.SIGNAL('valueChanged(double)'),
-                               self._ambientChanged)
+        self._ui.ambientIntSpinBox.valueChanged['double'].connect(self._ambientChanged)
 
-        QtCore.QObject.connect(self._ui.specularIntSpinBox,
-                               QtCore.SIGNAL('valueChanged(double)'),
-                               self._specularChanged)
+        self._ui.specularIntSpinBox.valueChanged['double'].connect(self._specularChanged)
 
-        QtCore.QObject.connect(dataModel,
-                               QtCore.SIGNAL('signalDefaultMaterialChanged()'),
-                               self._updateFromData)
+        dataModel.signalDefaultMaterialChanged.connect(self._updateFromData)
 
-        QtCore.QObject.connect(self._ui.resetButton,
-                               QtCore.SIGNAL('clicked(bool)'),
-                               self._reset)
+        self._ui.resetButton.clicked[bool].connect(self._reset)
 
-        QtCore.QObject.connect(self._ui.doneButton,
-                               QtCore.SIGNAL('clicked(bool)'),
-                               self._done)
+        self._ui.doneButton.clicked[bool].connect(self._done)
 
         self._updateFromData()
 

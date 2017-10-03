@@ -402,6 +402,18 @@ Sdf_WritePrimMetadata(
                     Sdf_FileIOUtility::WriteNameVector(out, indent+1, setNames);
                     Sdf_FileIOUtility::Puts(out, 0, "\n");
                 }
+                setNames = variantSetNameList.GetPrependedItems();
+                if (!setNames.empty()) {
+                    Sdf_FileIOUtility::Puts(out, indent+1, "prepend variantSets = ");
+                    Sdf_FileIOUtility::WriteNameVector(out, indent+1, setNames);
+                    Sdf_FileIOUtility::Puts(out, 0, "\n");
+                }
+                setNames = variantSetNameList.GetAppendedItems();
+                if (!setNames.empty()) {
+                    Sdf_FileIOUtility::Puts(out, indent+1, "append variantSets = ");
+                    Sdf_FileIOUtility::WriteNameVector(out, indent+1, setNames);
+                    Sdf_FileIOUtility::Puts(out, 0, "\n");
+                }
                 setNames = variantSetNameList.GetOrderedItems();
                 if (!setNames.empty()) {
                     Sdf_FileIOUtility::Puts(out, indent+1, "reorder variantSets = ");
@@ -652,6 +664,18 @@ Sdf_WriteConnectionList(
         vec = connList.GetAddedItems();
         if (!vec.empty()) {
             Sdf_WriteConnectionStatement(out, indent, vec, "add ",
+                                        variabilityStr, typeStr,
+                                        nameStr, attrOwner);
+        }
+        vec = connList.GetPrependedItems();
+        if (!vec.empty()) {
+            Sdf_WriteConnectionStatement(out, indent, vec, "prepend ",
+                                        variabilityStr, typeStr,
+                                        nameStr, attrOwner);
+        }
+        vec = connList.GetAppendedItems();
+        if (!vec.empty()) {
+            Sdf_WriteConnectionStatement(out, indent, vec, "append ",
                                         variabilityStr, typeStr,
                                         nameStr, attrOwner);
         }
@@ -1146,6 +1170,22 @@ Sdf_WriteRelationship(
         targetPaths = targetPathList.GetAddedItems();
         if (!targetPaths.empty()) {
             Sdf_FileIOUtility::Write( out, indent, "add %srel %s",
+                varyingStr.c_str(), rel.GetName().c_str());
+            Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagAttributes);
+            targetsWhoseAttrsAreWritten.insert(targetPaths.begin(),
+                        targetPaths.end());
+        }
+        targetPaths = targetPathList.GetPrependedItems();
+        if (!targetPaths.empty()) {
+            Sdf_FileIOUtility::Write( out, indent, "prepend %srel %s",
+                varyingStr.c_str(), rel.GetName().c_str());
+            Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagAttributes);
+            targetsWhoseAttrsAreWritten.insert(targetPaths.begin(),
+                        targetPaths.end());
+        }
+        targetPaths = targetPathList.GetAppendedItems();
+        if (!targetPaths.empty()) {
+            Sdf_FileIOUtility::Write( out, indent, "append %srel %s",
                 varyingStr.c_str(), rel.GetName().c_str());
             Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagAttributes);
             targetsWhoseAttrsAreWritten.insert(targetPaths.begin(),

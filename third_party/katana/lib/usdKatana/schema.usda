@@ -2,7 +2,7 @@
 (
     "This file describes the USD katana blind object schemata for code generation."
     subLayers = [
-        @../../../../pxr/usd/lib/usd/schema.usda@
+        @usd/schema.usda@
     ]
 
 )

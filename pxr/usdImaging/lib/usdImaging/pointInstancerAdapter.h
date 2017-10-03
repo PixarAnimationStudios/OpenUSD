@@ -60,15 +60,13 @@ public:
     
     virtual void TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
                                           instancerContext = NULL);
 
     /// Thread Safe.
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  HdDirtyBits requestedBits,
-                                  HdDirtyBits* dirtyBits,
+                                  HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL);
 
@@ -84,7 +82,6 @@ public:
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext = NULL);
 
@@ -92,15 +89,42 @@ public:
     /// \name Change Processing 
     // ---------------------------------------------------------------------- //
 
-    virtual int ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath, 
-                                      TfToken const& propertyName);
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& propertyName);
 
     virtual void ProcessPrimResync(SdfPath const& usdPath,
                                    UsdImagingIndexProxy* index);
 
     virtual void ProcessPrimRemoval(SdfPath const& usdPath,
                                     UsdImagingIndexProxy* index);
+
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index);
+
+    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index);
+
+    virtual void MarkReprDirty(UsdPrim const& prim,
+                               SdfPath const& cachePath,
+                               UsdImagingIndexProxy* index);
+
+    virtual void MarkCullStyleDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkTransformDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkVisibilityDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index);
+
+
 
     // ---------------------------------------------------------------------- //
     /// \name Instancing
@@ -135,15 +159,21 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
-    virtual bool PopulateSelection(SdfPath const &path,
-                                   VtIntArray const &instanceIndices,
-                                   HdxSelectionSharedPtr const &result);
+    virtual bool PopulateSelection(
+                                HdxSelectionHighlightMode const& highlightMode,
+                                SdfPath const &path,
+                                VtIntArray const &instanceIndices,
+                                HdxSelectionSharedPtr const &result);
 
     // ---------------------------------------------------------------------- //
     /// \name Utilities 
     // ---------------------------------------------------------------------- //
 
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
+
+protected:
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) final;
 
 private:
     struct _ProtoRprim;
@@ -287,6 +317,7 @@ private:
     // technically be split out to avoid two lookups, however it seems cleaner
     // to keep everything bundled up under the instancer path.
     struct _InstancerData {
+        _InstancerData() : initialized(false) {}
         SdfPath parentInstancerPath;
         _ProtoRPrimMap protoRprimMap;
         _UsdToCacheMap usdToCacheMap;
@@ -294,6 +325,7 @@ private:
         std::mutex mutex;
         HdDirtyBits dirtyBits;
         bool visible;
+        bool initialized;
     };
 
     // A map of instancer data, one entry per instancer prim that has been

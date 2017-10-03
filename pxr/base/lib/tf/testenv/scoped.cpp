@@ -25,7 +25,6 @@
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/scoped.h"
 #include <iostream>
-#include <boost/lambda/lambda.hpp>
 
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -86,36 +85,19 @@ Test_TfScoped()
     }
 
     if (x) {
-        cout << "boost::bind: unexpected state before scope" << endl;
+        cout << "std::bind: unexpected state before scope" << endl;
         ++errors;
     }
     {
         x = true;
-        TfScoped<> scope(boost::bind(&BoundFunc, &x, false));
+        TfScoped<> scope(std::bind(&BoundFunc, &x, false));
         if (!x) {
-            cout << "boost::bind: unexpected state in scope" << endl;
+            cout << "std::bind: unexpected state in scope" << endl;
             ++errors;
         }
     }
     if (x) {
-        cout << "boost::bind: unexpected state after scope" << endl;
-        ++errors;
-    }
-
-    if (x) {
-        cout << "boost lambda: unexpected state before scope" << endl;
-        ++errors;
-    }
-    {
-        x = true;
-        TfScoped<> scope(boost::lambda::var(x) = false);
-        if (!x) {
-            cout << "boost lambda: unexpected state in scope" << endl;
-            ++errors;
-        }
-    }
-    if (x) {
-        cout << "boost lambda: unexpected state after scope" << endl;
+        cout << "std::bind: unexpected state after scope" << endl;
         ++errors;
     }
 

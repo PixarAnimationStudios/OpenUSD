@@ -1,0 +1,52 @@
+Loading @PayloadsAndAncestralArcs/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+
+Child names:
+     ['LocalClass', 'UnloadedInheritedPayload', 'LoadedInheritedPayload2', 'Payload', 'SubrootPayload']
+
+------------------------------------------------------------------------
+Results for composing </Root/LocalClass>
+
+Prim Stack:
+    root.sdf             /Root/LocalClass
+    payload2.sdf         /Payload2
+
+------------------------------------------------------------------------
+Results for composing </Root/UnloadedInheritedPayload>
+
+Prim Stack:
+    root.sdf             /Root/UnloadedInheritedPayload
+    root.sdf             /Root/LocalClass
+
+------------------------------------------------------------------------
+Results for composing </Root/LoadedInheritedPayload2>
+
+Prim Stack:
+    root.sdf             /Root/LoadedInheritedPayload2
+    root.sdf             /Root/LocalClass
+    payload2.sdf         /Payload2
+
+------------------------------------------------------------------------
+Results for composing </Root/Payload>
+
+Prim Stack:
+    root.sdf             /Root/Payload
+    payload2.sdf         /Payload2
+
+------------------------------------------------------------------------
+Results for composing </Root/SubrootPayload>
+
+Prim Stack:
+    root.sdf             /Root/SubrootPayload
+    payload.sdf          /Root/Payload
+    payload2.sdf         /Payload2
+

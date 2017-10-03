@@ -73,46 +73,59 @@ PxrUsdKatanaUsdInArgs::~PxrUsdKatanaUsdInArgs()
 
 std::vector<GfBBox3d>
 PxrUsdKatanaUsdInArgs::ComputeBounds(
-        const UsdPrim& prim)
+        const UsdPrim& prim,
+        const std::vector<double>& motionSampleTimes,
+        bool applyLocalTransform)
 {
     std::vector<GfBBox3d> ret;
 
-    std::vector<UsdGeomBBoxCache>& bboxCaches = _bboxCaches.local();
+    std::map<double, UsdGeomBBoxCache>& bboxCaches = _bboxCaches.local();
 
-    // Initialize the bounding box cache if it hasn't yet been initialized.
-    //
-    bool needsInit = bboxCaches.size() != _motionSampleTimes.size();
-    if (needsInit)
+    TfTokenVector includedPurposes;
+
+    for (size_t i = 0; i < motionSampleTimes.size(); i++)
     {
-        // XXX: selected purposes should be driven by the UI. 
-        // See usdGeom/imageable.h GetPurposeAttr() for allowed values. 
-        TfTokenVector includedPurposes;  
-        includedPurposes.push_back(UsdGeomTokens->default_); 
-        includedPurposes.push_back(UsdGeomTokens->render); 
-    
-        bboxCaches.resize(_motionSampleTimes.size(),  
-            UsdGeomBBoxCache(
-                _currentTime, includedPurposes, /* useExtentsHint */ true)); 
-        
-        for (size_t index = 0; index < _motionSampleTimes.size(); ++index)
+        double relSampleTime = motionSampleTimes[i];
+
+        std::map<double, UsdGeomBBoxCache>::iterator it =
+            bboxCaches.find(relSampleTime);
+        if (it == bboxCaches.end())
         {
-            double relSampleTime = _motionSampleTimes[index];
-            double time = _currentTime + relSampleTime;
-            bboxCaches[index].SetTime(time);
+            if (includedPurposes.size() == 0)
+            {
+                // XXX: selected purposes should be driven by the UI.
+                // See usdGeom/imageable.h GetPurposeAttr() for allowed values.
+                includedPurposes.push_back(UsdGeomTokens->default_);
+                includedPurposes.push_back(UsdGeomTokens->render);
+            }
+
+            // Initialize the bounding box cache for this time sample if it
+            // hasn't yet been initialized.
+            UsdGeomBBoxCache bboxCache(_currentTime + relSampleTime,
+                                       includedPurposes,
+                                       /* useExtentsHint */ true);
+            bboxCaches.insert(
+                std::pair<double, UsdGeomBBoxCache>(relSampleTime, bboxCache));
+            if (applyLocalTransform)
+            {
+                ret.push_back(bboxCache.ComputeLocalBound(prim));
+            }
+            else
+            {
+                ret.push_back(bboxCache.ComputeUntransformedBound(prim));
+            }
         }
-    }
-
-    FnKat::DoubleBuilder boundBuilder(6);
-
-    // There must be one bboxCache per motion sample, for efficiency purposes.
-    if (!TF_VERIFY(bboxCaches.size() == _motionSampleTimes.size()))
-    {
-        return ret;
-    }
-
-    for (size_t i = 0; i < _motionSampleTimes.size(); i++)
-    {
-        ret.push_back(bboxCaches[i].ComputeUntransformedBound(prim));
+        else
+        {
+            if (applyLocalTransform)
+            {
+                ret.push_back(it->second.ComputeLocalBound(prim));
+            }
+            else
+            {
+                ret.push_back(it->second.ComputeUntransformedBound(prim));
+            }
+        }
     }
 
     return ret;

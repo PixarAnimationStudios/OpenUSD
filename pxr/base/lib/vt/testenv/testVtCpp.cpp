@@ -517,61 +517,6 @@ static void testDictionaryOverRecursive() {
     }
 }
 
-static void testDictionaryPyFormatting() {
-#if defined(PXR_PYTHON_MODULES_ENABLED)
-    VtDictionary vt0;
-    vt0["key"] = "value";
-    vt0["list"] = VtValue(vector<VtValue>(1, VtValue("single item")));
-
-    string stuff = VtDictionaryPrettyPrint(vt0);
-    if (stuff.empty())
-        die("VtDictionaryPrettyPrint - formatting failed!");
-
-    VtDictionary vt1 = VtDictionaryFromPythonString(stuff);
-    if (vt0 != vt1) {
-        die(TfStringPrintf("VtDictionaryFromPythonString - "
-                           "'''%s''' != '''%s'''!",
-                           TfStringify(vt0).c_str(),
-                           TfStringify(vt1).c_str()));
-    }
-
-    const char* fileName = "testDictionaryPyFormatting.txt";
-    if (!VtDictionaryPrettyPrintToFile(vt0, fileName))
-        die("VtDictionaryPrettyPrintToFile - failed to write to file!");
-
-    VtDictionary vt2 = VtDictionaryFromFile(fileName);
-    if (vt0 != vt2)
-        die("VtDictionaryFromFile - written and read dictionaries differ!");
-
-#if !defined(ARCH_OS_WINDOWS)
-    ArchUnlinkFile("link-to-dictionary");
-    TfSymlink(fileName, "link-to-dictionary");
-    VtDictionary vt3 = VtDictionaryFromFile("link-to-dictionary");
-    if (vt3 != vt2)
-        die("VtDictionaryFromFile - read from TfSymlink failed!");
-#endif
-
-    {
-        TfErrorMark m;
-        fprintf(stderr, "expected error:\n");
-        VtDictionary d = VtDictionaryFromPythonString("");
-        fprintf(stderr, "end expected error\n");
-        if (!d.empty() || m.IsClean())
-            die("VtDictionaryFromPythonString - empty string should fail!");
-    }
-
-    {
-        TfErrorMark m;
-        fprintf(stderr, "expected error:\n");
-        VtDictionary d = VtDictionaryFromPythonString("['notadict']");
-        fprintf(stderr, "end expected error\n");
-        if (!d.empty() || m.IsClean())
-            die("VtDictionaryFromPythonString - invalid dict");
-    }
-
-#endif
-}
-
 static void
 testDictionaryIterators()
 {
@@ -1201,7 +1146,6 @@ int main(int argc, char *argv[])
     testDictionaryIterators();
     testDictionaryInitializerList();
 
-    testDictionaryPyFormatting();
     testValue();
     testValueHash();
 

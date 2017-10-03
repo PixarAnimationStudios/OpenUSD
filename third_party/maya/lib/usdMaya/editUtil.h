@@ -26,12 +26,14 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include <maya/MObject.h>
 
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
+
+#include <maya/MObject.h>
+#include <maya/MFnAssembly.h>
 
 #include <string>
 #include <vector>

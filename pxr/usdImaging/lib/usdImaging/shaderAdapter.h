@@ -45,11 +45,17 @@ public:
     USDIMAGING_API
     bool GetSurfaceShaderIsTimeVarying(SdfPath const& usdPath) const;
 
-    /// \brief Returns the glsl source string for the shader at \p usdPath.
+    /// \brief Returns the surface source string for the shader at \p usdPath.
     /// 
     /// This obtains the shading source via the \c UsdHydraShader schema.
     USDIMAGING_API
     std::string GetSurfaceShaderSource(SdfPath const& usdPath) const;
+
+    /// \brief Returns the displacement source string for the shader at \p usdPath.
+    /// 
+    /// This obtains the shading source via the \c UsdHydraShader schema.
+    USDIMAGING_API
+    std::string GetDisplacementShaderSource(SdfPath const& usdPath) const;
 
     /// \brief Returns the value of param \p paramName for \p usdPath.
     USDIMAGING_API
@@ -67,6 +73,14 @@ public:
     /// usdPath users.
     USDIMAGING_API
     SdfPathVector GetSurfaceShaderTextures(SdfPath const& usdPath) const;
+
+private:
+    /// \brief Returns the source string for the specified shader
+    /// terminal at \p usdPath.
+    /// 
+    /// This obtains the shading source via the \c UsdHydraShader schema.
+    std::string _GetShaderSource(SdfPath const& usdPath,
+                                 TfToken const& shaderType) const;
 
 private:
     UsdImagingDelegate* _delegate;

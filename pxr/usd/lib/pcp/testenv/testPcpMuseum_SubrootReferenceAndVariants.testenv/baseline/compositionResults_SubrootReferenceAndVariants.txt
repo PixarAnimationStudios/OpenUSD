@@ -1,0 +1,26 @@
+Loading @SubrootReferenceAndVariants/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Group>
+
+Prim Stack:
+    root.sdf             /Group
+
+------------------------------------------------------------------------
+Results for composing </SubrootRef>
+
+Prim Stack:
+    root.sdf             /SubrootRef
+    group.sdf            /Group{v=y}Model
+
+Property names:
+     ['a']
+
+Property stacks:
+/SubrootRef.a:
+    group.sdf            /Group{v=y}Model.a
+

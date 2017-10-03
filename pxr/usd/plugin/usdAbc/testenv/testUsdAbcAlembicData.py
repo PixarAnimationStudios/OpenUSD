@@ -32,7 +32,7 @@ class TestUsdAbcAlembicData(unittest.TestCase):
         self.assertTrue(prim)
         attr = prim.GetAttribute('tester_i')
         self.assertTrue(attr)
-        self.assertEqual(attr.Get(Usd.TimeCode.Default()), 15)
+        self.assertEqual(attr.Get(Usd.TimeCode.EarliestTime()), 15)
 
     def test_Write(self):
         # Create a usda and abc temporary files.

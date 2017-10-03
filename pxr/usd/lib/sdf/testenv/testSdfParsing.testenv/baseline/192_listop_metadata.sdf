@@ -2,6 +2,8 @@
 (
     delete int64ListOpTest = [10, 20, 30]
     add int64ListOpTest = [1, 2, 3]
+    prepend int64ListOpTest = [-1, -2, -3]
+    append int64ListOpTest = [11, 22, 33]
     reorder int64ListOpTest = [3, 2, 1]
     intListOpTest = [10, 20, 30]
 )
@@ -23,11 +25,15 @@ def "IntListOp"
     double NonExplicitAttr (
         delete intListOpTest = [-2147483648, 10, 20, 30, 2147483647]
         add intListOpTest = [-2147483648, 1, 2, 3, 2147483647]
+        prepend intListOpTest = [-1, -2, -3]
+        append intListOpTest = [11, 22, 33]
         reorder intListOpTest = [2147483647, 3, 2, 1, -2147483648]
     )
     rel NonExplicitRel (
         delete intListOpTest = [-2147483648, 10, 20, 30, 2147483647]
         add intListOpTest = [-2147483648, 1, 2, 3, 2147483647]
+        prepend intListOpTest = [-1, -2, -3]
+        append intListOpTest = [11, 22, 33]
         reorder intListOpTest = [2147483647, 3, 2, 1, -2147483648]
     )
 
@@ -46,6 +52,8 @@ def "IntListOp"
     def "NonExplicit" (
         delete intListOpTest = [-2147483648, 10, 20, 30, 2147483647]
         add intListOpTest = [-2147483648, 1, 2, 3, 2147483647]
+        prepend intListOpTest = [-1, -2, -3]
+        append intListOpTest = [11, 22, 33]
         reorder intListOpTest = [2147483647, 3, 2, 1, -2147483648]
     )
     {
@@ -69,11 +77,15 @@ def "Int64ListOp"
     double NonExplicitAttr (
         delete int64ListOpTest = [-9223372036854775808, 10, 20, 30, 9223372036854775807]
         add int64ListOpTest = [-9223372036854775808, 1, 2, 3, 9223372036854775807]
+        prepend int64ListOpTest = [-9223372036854775808, 1, 2, 3, 9223372036854775807]
+        append int64ListOpTest = [-9223372036854775808, 1, 2, 3, 9223372036854775807]
         reorder int64ListOpTest = [9223372036854775807, 3, 2, 1, -9223372036854775808]
     )
     rel NonExplicitRel (
         delete int64ListOpTest = [-9223372036854775808, 10, 20, 30, 9223372036854775807]
         add int64ListOpTest = [-9223372036854775808, 1, 2, 3, 9223372036854775807]
+        prepend int64ListOpTest = [-9223372036854775808, 1, 2, 3, 9223372036854775807]
+        append int64ListOpTest = [-9223372036854775808, 1, 2, 3, 9223372036854775807]
         reorder int64ListOpTest = [9223372036854775807, 3, 2, 1, -9223372036854775808]
     )
 
@@ -92,6 +104,8 @@ def "Int64ListOp"
     def "NonExplicit" (
         delete int64ListOpTest = [-9223372036854775808, 10, 20, 30, 9223372036854775807]
         add int64ListOpTest = [-9223372036854775808, 1, 2, 3, 9223372036854775807]
+        prepend int64ListOpTest = [-9223372036854775808, 1, 2, 3, 9223372036854775807]
+        append int64ListOpTest = [-9223372036854775808, 1, 2, 3, 9223372036854775807]
         reorder int64ListOpTest = [9223372036854775807, 3, 2, 1, -9223372036854775808]
     )
     {
@@ -115,11 +129,15 @@ def "UIntListOp"
     double NonExplicitAttr (
         delete uintListOpTest = [10, 20, 30, 4294967295]
         add uintListOpTest = [1, 2, 3, 4294967295]
+        prepend uintListOpTest = [1, 2, 3, 4294967295]
+        append uintListOpTest = [1, 2, 3, 4294967295]
         reorder uintListOpTest = [4294967295, 3, 2, 1]
     )
     rel NonExplicitRel (
         delete uintListOpTest = [10, 20, 30, 4294967295]
         add uintListOpTest = [1, 2, 3, 4294967295]
+        prepend uintListOpTest = [1, 2, 3, 4294967295]
+        append uintListOpTest = [1, 2, 3, 4294967295]
         reorder uintListOpTest = [4294967295, 3, 2, 1]
     )
 
@@ -138,6 +156,8 @@ def "UIntListOp"
     def "NonExplicit" (
         delete uintListOpTest = [10, 20, 30, 4294967295]
         add uintListOpTest = [1, 2, 3, 4294967295]
+        prepend uintListOpTest = [1, 2, 3, 4294967295]
+        append uintListOpTest = [1, 2, 3, 4294967295]
         reorder uintListOpTest = [4294967295, 3, 2, 1]
     )
     {
@@ -161,11 +181,15 @@ def "UInt64ListOp"
     double NonExplicitAttr (
         delete uint64ListOpTest = [10, 20, 30, 18446744073709551615]
         add uint64ListOpTest = [1, 2, 3, 18446744073709551615]
+        prepend uint64ListOpTest = [1, 2, 3, 18446744073709551615]
+        append uint64ListOpTest = [1, 2, 3, 18446744073709551615]
         reorder uint64ListOpTest = [18446744073709551615, 3, 2, 1]
     )
     rel NonExplicitRel (
         delete uint64ListOpTest = [10, 20, 30, 18446744073709551615]
         add uint64ListOpTest = [1, 2, 3, 18446744073709551615]
+        prepend uint64ListOpTest = [1, 2, 3, 18446744073709551615]
+        append uint64ListOpTest = [1, 2, 3, 18446744073709551615]
         reorder uint64ListOpTest = [18446744073709551615, 3, 2, 1]
     )
 
@@ -184,6 +208,8 @@ def "UInt64ListOp"
     def "NonExplicit" (
         delete uint64ListOpTest = [10, 20, 30, 18446744073709551615]
         add uint64ListOpTest = [1, 2, 3, 18446744073709551615]
+        prepend uint64ListOpTest = [1, 2, 3, 18446744073709551615]
+        append uint64ListOpTest = [1, 2, 3, 18446744073709551615]
         reorder uint64ListOpTest = [18446744073709551615, 3, 2, 1]
     )
     {
@@ -207,11 +233,15 @@ def "StringListOp"
     double NonExplicitAttr (
         delete stringListOpTest = ["baz", "comma,separated", "qux quux"]
         add stringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend stringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append stringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder stringListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
     rel NonExplicitRel (
         delete stringListOpTest = ["baz", "comma,separated", "qux quux"]
         add stringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend stringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append stringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder stringListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
 
@@ -230,6 +260,8 @@ def "StringListOp"
     def "NonExplicit" (
         delete stringListOpTest = ["baz", "comma,separated", "qux quux"]
         add stringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend stringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append stringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder stringListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
     {
@@ -253,11 +285,15 @@ def "TokenListOp"
     double NonExplicitAttr (
         delete tokenListOpTest = ["baz", "comma,separated", "qux quux"]
         add tokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend tokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append tokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder tokenListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
     rel NonExplicitRel (
         delete tokenListOpTest = ["baz", "comma,separated", "qux quux"]
         add tokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend tokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append tokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder tokenListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
 
@@ -276,6 +312,8 @@ def "TokenListOp"
     def "NonExplicit" (
         delete tokenListOpTest = ["baz", "comma,separated", "qux quux"]
         add tokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend tokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append tokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder tokenListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
     {
@@ -299,11 +337,15 @@ def "UnregisteredIntListOp"
     double NonExplicitAttr (
         delete dummyIntListOpTest = [10, 20, 30]
         add dummyIntListOpTest = [1, 2, 3]
+        prepend dummyIntListOpTest = [1, 2, 3]
+        append dummyIntListOpTest = [1, 2, 3]
         reorder dummyIntListOpTest = [3, 2, 1]
     )
     rel NonExplicitRel (
         delete dummyIntListOpTest = [10, 20, 30]
         add dummyIntListOpTest = [1, 2, 3]
+        prepend dummyIntListOpTest = [1, 2, 3]
+        append dummyIntListOpTest = [1, 2, 3]
         reorder dummyIntListOpTest = [3, 2, 1]
     )
 
@@ -322,6 +364,8 @@ def "UnregisteredIntListOp"
     def "NonExplicit" (
         delete dummyIntListOpTest = [10, 20, 30]
         add dummyIntListOpTest = [1, 2, 3]
+        prepend dummyIntListOpTest = [1, 2, 3]
+        append dummyIntListOpTest = [1, 2, 3]
         reorder dummyIntListOpTest = [3, 2, 1]
     )
     {
@@ -345,11 +389,15 @@ def "UnregisteredInt64ListOp"
     double NonExplicitAttr (
         delete dummyInt64ListOpTest = [10, 20, 30]
         add dummyInt64ListOpTest = [1, 2, 3]
+        prepend dummyInt64ListOpTest = [1, 2, 3]
+        append dummyInt64ListOpTest = [1, 2, 3]
         reorder dummyInt64ListOpTest = [3, 2, 1]
     )
     rel NonExplicitRel (
         delete dummyInt64ListOpTest = [10, 20, 30]
         add dummyInt64ListOpTest = [1, 2, 3]
+        prepend dummyInt64ListOpTest = [1, 2, 3]
+        append dummyInt64ListOpTest = [1, 2, 3]
         reorder dummyInt64ListOpTest = [3, 2, 1]
     )
 
@@ -368,6 +416,8 @@ def "UnregisteredInt64ListOp"
     def "NonExplicit" (
         delete dummyInt64ListOpTest = [10, 20, 30]
         add dummyInt64ListOpTest = [1, 2, 3]
+        prepend dummyInt64ListOpTest = [1, 2, 3]
+        append dummyInt64ListOpTest = [1, 2, 3]
         reorder dummyInt64ListOpTest = [3, 2, 1]
     )
     {
@@ -391,11 +441,15 @@ def "UnregisteredUIntListOp"
     double NonExplicitAttr (
         delete dummyListOpTest = [10, 20, 30, 4294967295]
         add dummyListOpTest = [1, 2, 3, 4294967295]
+        prepend dummyListOpTest = [1, 2, 3, 4294967295]
+        append dummyListOpTest = [1, 2, 3, 4294967295]
         reorder dummyListOpTest = [4294967295, 3, 2, 1]
     )
     rel NonExplicitRel (
         delete dummyListOpTest = [10, 20, 30, 4294967295]
         add dummyListOpTest = [1, 2, 3, 4294967295]
+        prepend dummyListOpTest = [1, 2, 3, 4294967295]
+        append dummyListOpTest = [1, 2, 3, 4294967295]
         reorder dummyListOpTest = [4294967295, 3, 2, 1]
     )
 
@@ -414,6 +468,8 @@ def "UnregisteredUIntListOp"
     def "NonExplicit" (
         delete dummyListOpTest = [10, 20, 30, 4294967295]
         add dummyListOpTest = [1, 2, 3, 4294967295]
+        prepend dummyListOpTest = [1, 2, 3, 4294967295]
+        append dummyListOpTest = [1, 2, 3, 4294967295]
         reorder dummyListOpTest = [4294967295, 3, 2, 1]
     )
     {
@@ -437,11 +493,15 @@ def "UnregisteredUInt64ListOp"
     double NonExplicitAttr (
         delete dummy64ListOpTest = [10, 20, 30, 18446744073709551615]
         add dummy64ListOpTest = [1, 2, 3, 18446744073709551615]
+        prepend dummy64ListOpTest = [1, 2, 3, 18446744073709551615]
+        append dummy64ListOpTest = [1, 2, 3, 18446744073709551615]
         reorder dummy64ListOpTest = [18446744073709551615, 3, 2, 1]
     )
     rel NonExplicitRel (
         delete dummy64ListOpTest = [10, 20, 30, 18446744073709551615]
         add dummy64ListOpTest = [1, 2, 3, 18446744073709551615]
+        prepend dummy64ListOpTest = [1, 2, 3, 18446744073709551615]
+        append dummy64ListOpTest = [1, 2, 3, 18446744073709551615]
         reorder dummy64ListOpTest = [18446744073709551615, 3, 2, 1]
     )
 
@@ -460,6 +520,8 @@ def "UnregisteredUInt64ListOp"
     def "NonExplicit" (
         delete dummy64ListOpTest = [10, 20, 30, 18446744073709551615]
         add dummy64ListOpTest = [1, 2, 3, 18446744073709551615]
+        prepend dummy64ListOpTest = [1, 2, 3, 18446744073709551615]
+        append dummy64ListOpTest = [1, 2, 3, 18446744073709551615]
         reorder dummy64ListOpTest = [18446744073709551615, 3, 2, 1]
     )
     {
@@ -483,11 +545,15 @@ def "UnregisteredStringListOp"
     double NonExplicitAttr (
         delete dummyStringListOpTest = ["baz", "comma,separated", "qux quux"]
         add dummyStringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend dummyStringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append dummyStringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder dummyStringListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
     rel NonExplicitRel (
         delete dummyStringListOpTest = ["baz", "comma,separated", "qux quux"]
         add dummyStringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend dummyStringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append dummyStringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder dummyStringListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
 
@@ -506,6 +572,8 @@ def "UnregisteredStringListOp"
     def "NonExplicit" (
         delete dummyStringListOpTest = ["baz", "comma,separated", "qux quux"]
         add dummyStringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend dummyStringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append dummyStringListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder dummyStringListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
     {
@@ -529,11 +597,15 @@ def "UnregisteredTokenListOp"
     double NonExplicitAttr (
         delete dummyTokenListOpTest = ["baz", "comma,separated", "qux quux"]
         add dummyTokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend dummyTokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append dummyTokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder dummyTokenListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
     rel NonExplicitRel (
         delete dummyTokenListOpTest = ["baz", "comma,separated", "qux quux"]
         add dummyTokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend dummyTokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append dummyTokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder dummyTokenListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
 
@@ -552,6 +624,8 @@ def "UnregisteredTokenListOp"
     def "NonExplicit" (
         delete dummyTokenListOpTest = ["baz", "comma,separated", "qux quux"]
         add dummyTokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        prepend dummyTokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
+        append dummyTokenListOpTest = ["foo", "bar", "comma,separated", "qux quux"]
         reorder dummyTokenListOpTest = ["bar", "comma,separated", "qux quux", "foo"]
     )
     {

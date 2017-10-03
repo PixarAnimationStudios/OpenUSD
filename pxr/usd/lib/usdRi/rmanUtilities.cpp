@@ -64,22 +64,18 @@ UsdRiConvertFromRManInterpolateBoundary(int i)
 int
 UsdRiConvertToRManFaceVaryingLinearInterpolation(TfToken const& token)
 { 
-    if(token == UsdGeomTokens->bilinear 
-       || token == UsdGeomTokens->all) {
+    if(token == UsdGeomTokens->all) {
         return 0;
     }
-    else if(token == UsdGeomTokens->edgeAndCorner 
-            || token == UsdGeomTokens->cornersOnly
+    else if(token == UsdGeomTokens->cornersOnly
             || token == UsdGeomTokens->cornersPlus1
             || token == UsdGeomTokens->cornersPlus2) {
         return 1;
     }
-    else if(token == UsdGeomTokens->edgeOnly
-            || token == UsdGeomTokens->none) {
+    else if(token == UsdGeomTokens->none) {
         return 2;
     }
-    else if(token == UsdGeomTokens->alwaysSharp
-            || token == UsdGeomTokens->boundaries) {
+    else if(token == UsdGeomTokens->boundaries) {
         return 3;
     }
 

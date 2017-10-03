@@ -293,7 +293,7 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("GetCamera", &UsdGeomCamera::GetCamera,
-             (arg("time") = UsdTimeCode::Default(), arg("isZup") = false))
+             (arg("time") = UsdTimeCode::Default()))
         .def("SetFromCamera", &UsdGeomCamera::SetFromCamera,
              (arg("camera"),
               arg("time") = UsdTimeCode::Default()))

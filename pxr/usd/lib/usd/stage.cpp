@@ -33,7 +33,6 @@
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primRange.h"
-#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/resolver.h"
 #include "pxr/usd/usd/resolveInfo.h"
@@ -78,7 +77,6 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hashset.h"
-#include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/pyLock.h"
@@ -447,14 +445,14 @@ UsdStage::~UsdStage()
         "UsdStage::~UsdStage(rootLayer=@%s@, sessionLayer=@%s@)\n",
         _rootLayer ? _rootLayer->GetIdentifier().c_str() : "<null>",
         _sessionLayer ? _sessionLayer->GetIdentifier().c_str() : "<null>");
-    Close();
+    _Close();
     if (_mallocTagID != _dormantMallocTagID){
         free(const_cast<char*>(_mallocTagID));
     }
 }
 
 void
-UsdStage::Close()
+UsdStage::_Close()
 {
     TfScopedVar<bool> resetIsClosing(_isClosingStage, true);
 
@@ -5432,7 +5430,12 @@ public:
         }
         else {
             if (!TF_VERIFY(layer->GetBracketingTimeSamplesForPath(
-                        specId, localTime, &lower, &upper))) {
+                        specId, localTime, &lower, &upper),
+                TfStringPrintf("No bracketing time samples for "
+                               "%s on <%s> for time %g between %g and %g",
+                               layer->GetIdentifier().c_str(),
+                               specId.GetFullSpecPath().GetText(),
+                               localTime, lower, upper).c_str())) {
                 return false;
             }
         }
@@ -5579,7 +5582,7 @@ _HasTimeSamples(const SdfLayerRefPtr& source,
             specId, *time, lower, upper);
     }
 
-    return source->HasField(specId, SdfFieldKeys->TimeSamples);
+    return source->GetNumTimeSamplesForPath(specId) > 0;
 }
 
 bool
@@ -5594,7 +5597,9 @@ _HasTimeSamples(const Usd_ClipRefPtr& source,
                source->_GetNumTimeSamplesForPathInLayerForClip(specId) != 0;
     }
 
-    return source->HasField(specId, SdfFieldKeys->TimeSamples);
+    // Use this method to directly access authored time samples,
+    // disregarding 'fake' samples used by clips.
+    return source->_GetNumTimeSamplesForPathInLayerForClip(specId) > 0;
 }
 
 enum _DefaultValueResult {

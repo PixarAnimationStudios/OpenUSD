@@ -165,6 +165,12 @@ class TfErrorMark : boost::noncopyable
     Iterator GetEnd() const {
         return TfDiagnosticMgr::GetInstance().GetErrorEnd();
     }
+
+    /// Equivalent to GetBegin()
+    Iterator begin() const { return GetBegin(); }
+
+    /// Equivalent to GetEnd()
+    Iterator end() const { return GetEnd(); }
     
   private:
     friend class TfDiagnosticMgr;

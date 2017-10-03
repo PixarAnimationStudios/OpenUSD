@@ -58,15 +58,15 @@ public:
             @{ */
         bool                    SetKindsByPattern(const char* pattern,
                                                   bool caseSensitive=true,
-                                                  std::string* err=NULL);
+                                                  std::string* err=nullptr);
         
         bool                    SetPurposesByPattern(const char* pattern,
                                                      bool caseSensitive=true,
-                                                     std::string* err=NULL);
+                                                     std::string* err=nullptr);
 
         bool                    SetTypesByPattern(const char* pattern,
                                                   bool caseSensitive=true,
-                                                  std::string* err=NULL);
+                                                  std::string* err=nullptr);
 
         void                    SetNamePattern(const char* pattern,
                                                bool caseSensitive=true);
@@ -92,17 +92,17 @@ public:
 
     virtual bool    FindPrims(const UsdPrim& root,
                               UsdTimeCode time,
-                              const GusdPurposeSet& purposes,
+                              GusdPurposeSet purposes,
                               UT_Array<UsdPrim>& prims,
                               bool skipRoot=true,
-                              const GusdUSD_Traverse::Opts* opts=NULL) const;
+                              const GusdUSD_Traverse::Opts* opts=nullptr) const;
     
     virtual bool    FindPrims(const UT_Array<UsdPrim>& roots,
-                              const GusdUSD_Utils::PrimTimeMap& timeMap,
-                              const UT_Array<GusdPurposeSet>& purposes,
+                              const GusdDefaultArray<UsdTimeCode>& times,
+                              const GusdDefaultArray<GusdPurposeSet>& purposes,
                               UT_Array<PrimIndexPair>& prims,
                               bool skipRoot=true,
-                              const GusdUSD_Traverse::Opts* opts=NULL) const;
+                              const GusdUSD_Traverse::Opts* opts=nullptr) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

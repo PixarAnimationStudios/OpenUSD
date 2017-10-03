@@ -121,13 +121,13 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate,
         const std::string &fragmentSource =
                 GetSurfaceShaderSource(sceneDelegate);
 
-        const std::string &geometrySource =
-                                 GetDisplacementShaderSource(sceneDelegate);
-
         _surfaceShader->SetFragmentSource(fragmentSource);
+
+        const std::string &geometrySource = 
+                GetDisplacementShaderSource(sceneDelegate);
+
         _surfaceShader->SetGeometrySource(geometrySource);
-
-
+        
         // XXX Forcing collections to be dirty to reload everything
         //     Something more efficient can be done here
         HdChangeTracker& changeTracker =

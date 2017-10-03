@@ -164,6 +164,7 @@ enum HdComplexity
 ///     <li>\b HdWrapClamp               Clamp coordinate to range [1/(2N),1-1/(2N)] where N is the size of the texture in the direction of clamping</li>
 ///     <li>\b HdWrapRepeat              Creates a repeating pattern</li>
 ///     <li>\b HdWrapBlack</c></b>       Clamp coordinate to range [-1/(2N),1+1/(2N)] where N is the size of the texture in the direction of clamping</li>
+///     <li>\b HdWrapUseMetaDict</c></b> Texture can define its own wrap mode, if not defined by the texture it will use HdWrapRepeat</li>
 /// </ul>
 ///
 enum HdWrap 
@@ -171,6 +172,7 @@ enum HdWrap
     HdWrapClamp,
     HdWrapRepeat,
     HdWrapBlack,
+    HdWrapUseMetaDict,
 };
 
 /// \enum HdMinFilter

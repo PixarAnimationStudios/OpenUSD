@@ -120,7 +120,9 @@ int main(int argc, char** argv)
     
     printf("Passed!\n");
     
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     TF_AXIOM(!Py_IsInitialized());
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     return EXIT_SUCCESS;
 }

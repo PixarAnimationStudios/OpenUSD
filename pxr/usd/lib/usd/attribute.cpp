@@ -24,11 +24,11 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/attributeQuery.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/instanceCache.h"
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/interpolators.h"
-#include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
@@ -85,7 +85,7 @@ UsdAttribute::SetTypeName(const SdfValueTypeName& typeName) const
 }
 
 void 
-UsdAttribute::Block() 
+UsdAttribute::Block() const
 {
     Clear();
     Set(VtValue(SdfValueBlock()), UsdTimeCode::Default()); 
@@ -373,7 +373,8 @@ UsdAttribute::_GetPathForAuthoring(const SdfPath &path,
 
 
 bool
-UsdAttribute::AppendConnection(const SdfPath& source) const
+UsdAttribute::AddConnection(const SdfPath& source,
+                            UsdListPosition position) const
 {
     std::string errMsg;
     const SdfPath pathToAuthor = _GetPathForAuthoring(source, &errMsg);
@@ -395,7 +396,22 @@ UsdAttribute::AppendConnection(const SdfPath& source) const
     if (!attrSpec)
         return false;
 
-    attrSpec->GetConnectionPathList().Add(pathToAuthor);
+    switch (position) {
+    case UsdListPositionFront:
+        attrSpec->GetConnectionPathList().Prepend(pathToAuthor);
+        break;
+    case UsdListPositionBack:
+        attrSpec->GetConnectionPathList().Append(pathToAuthor);
+        break;
+    case UsdListPositionTempDefault:
+        if (UsdAuthorOldStyleAdd()) {
+            attrSpec->GetConnectionPathList().Add(pathToAuthor);
+        } else {
+            attrSpec->GetConnectionPathList().Prepend(pathToAuthor);
+        }
+        break;
+    }
+
     return true;
 }
 
@@ -474,10 +490,7 @@ UsdAttribute::SetConnections(const SdfPathVector& sources) const
         return false;
 
     attrSpec->GetConnectionPathList().ClearEditsAndMakeExplicit();
-    auto connectionPathList = attrSpec->GetConnectionPathList();
-    for (const SdfPath &path: mappedPaths) {
-        connectionPathList.Add(path);
-    }
+    attrSpec->GetConnectionPathList().GetExplicitItems() = mappedPaths;
 
     return true;
 }

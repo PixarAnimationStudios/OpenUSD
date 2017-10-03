@@ -28,14 +28,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 GusdUSD_Traverse::FindPrims(const UT_Array<UsdPrim>& roots,
-                            const GusdUSD_Utils::PrimTimeMap& timeMap,
-                            const UT_Array<GusdPurposeSet> &purposes,
+                            const GusdDefaultArray<UsdTimeCode>& times,
+                            const GusdDefaultArray<GusdPurposeSet>& purposes,
                             UT_Array<UsdPrim>& prims,
                             bool skipRoot,
                             const Opts* opts) const
 {
     UT_Array<PrimIndexPair> primIndexPairs;
-    if(!FindPrims(roots, timeMap, purposes, primIndexPairs, skipRoot, opts))
+    if(!FindPrims(roots, times, purposes, primIndexPairs, skipRoot, opts))
         return false;
     prims.setSize(primIndexPairs.size());
     for(exint i = 0; i < prims.size(); ++i)

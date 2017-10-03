@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -29,68 +30,68 @@
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/schema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-bool
-_ValidateNoSubRootReferences(const SdfReference &ref)
-{
-    if (!ref.GetPrimPath().IsEmpty() &&
-        !ref.GetPrimPath().IsRootPrimPath()) {
-        TF_CODING_ERROR("Cannot make a reference to a non-root prim: "
-                        "@%s@<%s>",
-                        ref.GetAssetPath().c_str(), ref.GetPrimPath().GetText());
-        return false;
-    }
-    return true;
-}
 
 // ------------------------------------------------------------------------- //
 // UsdReferences
 // ------------------------------------------------------------------------- //
 bool
-UsdReferences::AppendReference(const SdfReference& ref)
+UsdReferences::AddReference(const SdfReference& ref, UsdListPosition position)
 {
-    if (!_ValidateNoSubRootReferences(ref))
-        return false;
-    
     SdfChangeBlock block;
-    TfErrorMark mark;
     bool success = false;
-    
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfReferencesProxy refs = spec->GetReferenceList();
-        refs.Add(ref);
-        success = mark.IsClean();
+    {
+        TfErrorMark mark;
+        if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
+            SdfReferencesProxy refs = spec->GetReferenceList();
+            switch (position) {
+            case UsdListPositionFront:
+                refs.Prepend(ref);
+                break;
+            case UsdListPositionBack:
+                refs.Append(ref);
+                break;
+            case UsdListPositionTempDefault:
+                if (UsdAuthorOldStyleAdd()) {
+                    refs.Add(ref);
+                } else {
+                    refs.Prepend(ref);
+                }
+                break;
+            }
+            // mark *should* contain only errors from adding the reference, NOT
+            // any recomposition errors, because the SdfChangeBlock handily
+            // defers composition till after we leave this scope.
+            success = mark.IsClean();
+        }
     }
-    // mark *should* contain only errors from adding the reference, NOT
-    // any recomposition errors, because the SdfChangeBlock handily defers
-    // composition till after we leave this scope.
-    mark.Clear();
     return success;
 }
 
 bool
-UsdReferences::AppendReference(const std::string &assetPath,
+UsdReferences::AddReference(const std::string &assetPath,
                                const SdfPath &primPath,
-                               const SdfLayerOffset &layerOffset)
+                               const SdfLayerOffset &layerOffset,
+                               UsdListPosition position)
 {
-    return AppendReference(SdfReference(assetPath, primPath, layerOffset));
+    return AddReference(SdfReference(assetPath, primPath, layerOffset), position);
 }
 
 bool
-UsdReferences::AppendReference(const std::string &assetPath,
-                               const SdfLayerOffset &layerOffset)
+UsdReferences::AddReference(const std::string &assetPath,
+                            const SdfLayerOffset &layerOffset,
+                            UsdListPosition position)
 {
-    return AppendReference(assetPath, SdfPath(), layerOffset);
+    return AddReference(assetPath, SdfPath(), layerOffset, position);
 }
 
 bool 
-UsdReferences::AppendInternalReference(const SdfPath &primPath,
-                                       const SdfLayerOffset &layerOffset)
+UsdReferences::AddInternalReference(const SdfPath &primPath,
+                                    const SdfLayerOffset &layerOffset,
+                                    UsdListPosition position)
 {
-    return AppendReference(std::string(), primPath, layerOffset);
+    return AddReference(std::string(), primPath, layerOffset, position);
 }
 
 bool

@@ -1,0 +1,17 @@
+#sdf 1.4.32
+
+class "Inherit" 
+{
+}
+
+class "Specializes"
+{
+}
+
+def "Model" (
+    instanceable = True
+    inherits = </Inherit>
+    specializes = </Specializes>
+)
+{
+}

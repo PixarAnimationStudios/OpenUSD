@@ -20,10 +20,10 @@ pxr_plugin(${PXR_PACKAGE}
         paramsAPI
         tokens
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp    
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     PYMODULE_CPPFILES
@@ -36,5 +36,6 @@ pxr_plugin(${PXR_PACKAGE}
     RESOURCE_FILES
         generatedSchema.usda
         plugInfo.json
+        schema.usda:usdSchemaExamples/schema.usda
 )
    

@@ -92,7 +92,12 @@ Pcp_ChildNodeIsInstanceable(
     // composition arc to a portion of scenegraph that could be shared
     // with other prim indexes, as long as the other criteria laid out
     // in PcpInstanceKey are met. 
-    return !node.IsDueToAncestor();
+    //
+    // If a node has no specs, we do not consider it instanceable since 
+    // it has no opinions to contribute to the prim index. In particular,
+    // this allows prim indexes with implied arcs in different layer stacks
+    // that have no overrides to still be considered equivalent for sharing.
+    return !node.IsDueToAncestor() && node.HasSpecs();
 }
 
 template <class Visitor>

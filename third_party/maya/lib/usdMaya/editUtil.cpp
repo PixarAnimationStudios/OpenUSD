@@ -25,7 +25,6 @@
 #include "usdMaya/editUtil.h"
 #include "usdMaya/referenceAssembly.h"
 
-#include <maya/MFnAssembly.h>
 #include <maya/MGlobal.h>
 #include <maya/MItEdits.h>
 #include <maya/MEdit.h>

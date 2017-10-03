@@ -37,7 +37,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapPipeline()
 {
-    def("GetCamerasAreZup", UsdUtilsGetCamerasAreZup);
     def("GetAlphaAttributeNameForColor", UsdUtilsGetAlphaAttributeNameForColor, arg("colorAttrName"));
     def("GetModelNameFromRootLayer", UsdUtilsGetModelNameFromRootLayer);
     def("GetRegisteredVariantSets", 

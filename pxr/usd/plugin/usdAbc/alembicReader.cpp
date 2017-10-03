@@ -45,13 +45,13 @@
 #include <Alembic/Abc/ITypedScalarProperty.h>
 #include <Alembic/AbcCoreAbstract/Foundation.h>
 
-#ifdef USDABC_MULTIVERSE_SUPPORT
+#ifdef PXR_MULTIVERSE_SUPPORT_ENABLED
 #include <Alembic/AbcCoreGit/All.h>
-#endif // USDABC_MULTIVERSE_SUPPORT
+#endif // PXR_MULTIVERSE_SUPPORT_ENABLED
 
-#ifdef USDABC_HDF5_SUPPORT
+#ifdef PXR_HDF5_SUPPORT_ENABLED
 #include <Alembic/AbcCoreHDF5/All.h>
-#endif // USDABC_HD5_SUPPORT
+#endif // PXR_HDF5_SUPPORT_ENABLED
 
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/GeometryScope.h>
@@ -97,12 +97,12 @@ _GetNumOgawaStreams()
                     static_cast<int>(WorkGetConcurrencyLimit()));
 }
 
-#ifdef USDABC_HDF5_SUPPORT
+#ifdef PXR_HDF5_SUPPORT_ENABLED
 // A global mutex until our HDF5 library is thread safe.  It has to be
 // recursive to handle the case where we write an Alembic file using an
 // UsdAbc_AlembicData as the source.
 static TfStaticData<std::recursive_mutex> _hdf5;
-#endif // USDABC_HDF5_SUPPORT
+#endif // PXR_HDF5_SUPPORT_ENABLED
 
 // The SdfAbstractData time samples type.
 // XXX: SdfAbstractData should typedef this.
@@ -644,6 +644,7 @@ public:
         MetadataMap metadata;
         TimeSamples sampleTimes;
         bool timeSampled;
+        bool uniform;
         Converter converter;
     };
     typedef std::map<TfToken, Property> PropertyMap;
@@ -678,10 +679,10 @@ public:
     /// Close the archive.
     void Close();
 
-    /// Sets the writer schema.
+    /// Sets the reader schema.
     void SetSchema(const _ReaderSchema* schema) { _schema = schema; }
 
-    /// Returns the writer schema.
+    /// Returns the reader schema.
     const _ReaderSchema& GetSchema() const { return *_schema; }
 
     /// Sets or resets the flag named \p flagName.
@@ -1318,7 +1319,7 @@ _ReaderContext::_OpenHDF5(
     std::string* format,
     std::recursive_mutex** mutex) const
 {
-#ifdef USDABC_HDF5_SUPPORT
+#ifdef PXR_HDF5_SUPPORT_ENABLED
     // HDF5 may not be thread-safe.
     std::lock_guard<std::recursive_mutex> lock(*_hdf5);
 
@@ -1333,7 +1334,7 @@ _ReaderContext::_OpenHDF5(
     return false;
 #else
     return false;
-#endif // USDABC_HDF5_SUPPORT
+#endif // PXR_HDF5_SUPPORT_ENABLED
 }
 
 bool
@@ -1356,14 +1357,14 @@ _ReaderContext::_OpenGit(
     std::string* format,
     std::recursive_mutex** mutex) const
 {
-#ifdef USDABC_MULTIVERSE_SUPPORT
+#ifdef PXR_MULTIVERSE_SUPPORT_ENABLED
     *format = "Git";
     *result = IArchive(Alembic::AbcCoreGit::ReadArchive(),
                        filePath, ErrorHandler::kQuietNoopPolicy);
     return *result;
 #else
     return false;
-#endif // USDABC_MULTIVERSE_SUPPORT
+#endif // PXR_MULTIVERSE_SUPPORT_ENABLED
 }
 
 void
@@ -1619,7 +1620,11 @@ _ReaderContext::_HasField(
     else if (fieldName == SdfFieldKeys->TypeName) {
         return value.Set(property->typeName.GetAsToken());
     }
-
+    else if (fieldName == SdfFieldKeys->Variability) {
+        return value.Set(property->uniform ? 
+                         SdfVariabilityUniform : SdfVariabilityVarying);
+    }
+    
     TRACE_SCOPE("UsdAbc_AlembicDataReader::_HasField:OtherMetadata");
     MetadataMap::const_iterator j = property->metadata.find(fieldName);
     if (j != property->metadata.end()) {
@@ -1814,6 +1819,15 @@ public:
     template <class T>
     void AddProperty(const TfToken& name, const SdfValueTypeName& typeName,
                      const T& converter);
+
+    /// Adds a uniform property named \p name of type \p typeName with the
+    /// converter \p converter.  \p converter must be a functor object that
+    /// conforms to the \c IsValid, \c Converter, \c GetSampleTimes and
+    /// \c GetMetaData types.  If \p convert is invalid then this does nothing.
+    template <class T>
+    void AddUniformProperty(const TfToken& name, 
+                            const SdfValueTypeName& typeName,
+                            const T& converter);
 
     /// Add an out-of-schema property, which uses the default conversion
     /// for whatever Alembic type the property is.  If \p property is a
@@ -2031,6 +2045,21 @@ _PrimReaderContext::AddProperty(
     }
 }
 
+template <class T>
+void
+_PrimReaderContext::AddUniformProperty(
+    const TfToken& name,
+    const SdfValueTypeName& typeName,
+    const T& converter)
+{
+    if (converter(IsValidTag())) {
+        Property &prop = _AddProperty(name, typeName, converter, converter, false);
+        prop.converter=converter;
+        prop.uniform = true;
+        prop.timeSampled = false;
+    }
+}
+
 void
 _PrimReaderContext::AddOutOfSchemaProperty(
     const std::string& name,
@@ -2153,13 +2182,14 @@ _PrimReaderContext::_AddProperty(
 
     // Save the time sampling.
     property.sampleTimes = _context.ConvertSampleTimes(sampleTimes);
-    property.timeSampled = (property.sampleTimes.GetSize() > 1);
+    property.timeSampled = (property.sampleTimes.GetSize() > 0);
+
+    // Save metadata.  This may change the value of 'timeSampled'
+    _GetPropertyMetadata(metadata, &property, isOutOfSchemaProperty);
+
     if (property.timeSampled) {
         _context.AddSampleTimes(property.sampleTimes);
     }
-
-    // Save metadata.
-    _GetPropertyMetadata(metadata, &property, isOutOfSchemaProperty);
 
 #ifdef USDABC_ALEMBIC_DEBUG
     fprintf(stdout, "%*s%s%s %s\n",
@@ -2200,9 +2230,11 @@ _PrimReaderContext::_GetPropertyMetadata(
                 alembicMetadata.get(_AmdName(SdfFieldKeys->TypeName)));
     }
 
-    // Note if we're time sampled (regardless of the number of samples).
-    if (alembicMetadata.get(_AmdName(SdfFieldKeys->TimeSamples)) == "true") {
-        property->timeSampled = true;
+    // If there's only one timeSample and we've indicated it should be 
+    // converted into Default, disable timeSampling.
+    if (property->sampleTimes.GetSize() == 1 && 
+        alembicMetadata.get(_AmdName(UsdAbcCustomMetadata->singleSampleAsDefault)) == "true") {
+        property->timeSampled = false;
     }
 
     // Adjust the type name by the interpretation.
@@ -2631,6 +2663,23 @@ struct _CopyCameraVerticalApertureOffset : _CopyCameraBase {
     }
 };
 
+/// Class to copy clippingRange
+struct _CopyCameraClippingRange : _CopyCameraBase {
+    using _CopyCameraBase::operator();
+
+    _CopyCameraClippingRange(const ICamera& object_)
+        : _CopyCameraBase(object_) {};
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const
+    {
+        const CameraSample sample = object.getSchema().getValue(iss);
+
+        return dst.Set(GfVec2f(sample.getNearClippingPlane(), 
+                               sample.getFarClippingPlane()));
+    }
+};
+
 /// Copy a subdivision scheme from an IStringProperty.
 struct _CopySubdivisionScheme : _CopyGeneric<IStringProperty> {
     _CopySubdivisionScheme(const AlembicProperty& object_) :
@@ -2866,7 +2915,7 @@ _ReadOrientation(_PrimReaderContext* context)
         // Alembic is effectively hardcoded to a left-handed orientation.
         // UsdGeomGprim's fallback is right-handed, so we need to provide
         // a value if none is authored.
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->orientation,
             SdfValueTypeNames->Token,
             _CopySynthetic(UsdGeomTokens->leftHanded));
@@ -2953,7 +3002,7 @@ _ReadXform(_PrimReaderContext* context)
 
         VtTokenArray opOrderVec(1);
         opOrderVec[0] = _tokens->xformOpTransform;
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->xformOpOrder,
             SdfValueTypeNames->TokenArray,
             _CopySynthetic(opOrderVec));
@@ -3015,7 +3064,7 @@ _ReadPolyMesh(_PrimReaderContext* context)
 
     // Custom subdivisionScheme property.  Alembic doesn't have this since
     // the Alembic schema is PolyMesh.  Usd needs "none" as the scheme.
-    context->AddProperty(
+    context->AddUniformProperty(
         UsdGeomTokens->subdivisionScheme,
         SdfValueTypeNames->Token,
         _CopySynthetic(UsdGeomTokens->none));
@@ -3060,7 +3109,7 @@ _ReadSubD(_PrimReaderContext* context)
         SdfValueTypeNames->IntArray,
         _CopyGeneric<IInt32ArrayProperty, int>(
             context->ExtractSchema(".faceCounts")));
-    context->AddProperty(
+    context->AddUniformProperty(
         UsdGeomTokens->subdivisionScheme,
         SdfValueTypeNames->Token,
         _CopySubdivisionScheme(context->ExtractSchema(".scheme")));
@@ -3281,6 +3330,10 @@ _ReadCameraParameters(_PrimReaderContext* context)
         UsdGeomTokens->verticalApertureOffset,
         SdfValueTypeNames->Float,
         _CopyCameraVerticalApertureOffset(object));
+    context->AddProperty(
+        UsdGeomTokens->clippingRange,
+        SdfValueTypeNames->Float2,
+        _CopyCameraClippingRange(object));
 
     // Extract all other alembic camera properties so that they don't show up
     // in USD.
@@ -3671,7 +3724,6 @@ _ReaderSchemaBuilder::_ReaderSchemaBuilder()
 
     // This handles overs with no type and any unknown prim type.
     schema.AddFallbackType()
-        .AppendReader(_ReadOrientation)
         .AppendReader(_ReadGeomBase)        // Assume GeomBase.
         .AppendReader(_ReadMayaColor)
         .AppendReader(_ReadGprim)

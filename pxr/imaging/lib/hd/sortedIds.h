@@ -49,7 +49,7 @@ public:
     ~Hd_SortedIds() = default;
 
     HD_API
-    Hd_SortedIds(const Hd_SortedIds &&other);
+    Hd_SortedIds(Hd_SortedIds &&other);
 
     /// Sorts the ids if needed and returns the sorted list of ids.
     HD_API

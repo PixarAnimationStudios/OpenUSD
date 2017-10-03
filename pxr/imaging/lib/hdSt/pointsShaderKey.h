@@ -49,10 +49,11 @@ struct HdSt_PointsShaderKey
     Hd_GeometricShader::PrimitiveType GetPrimitiveType() const { 
         return Hd_GeometricShader::PrimitiveType::PRIM_POINTS; 
     }
-    
+    bool IsFaceVarying() const { return false; }
+
     TfToken glslfx;
     TfToken VS[3];
-    TfToken FS[2];
+    TfToken FS[3];
 };
 
 

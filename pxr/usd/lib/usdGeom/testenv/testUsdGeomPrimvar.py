@@ -27,6 +27,8 @@ from pxr import Gf, Usd, UsdGeom, Sdf, Tf, Vt
 
 class TestUsdGeomPrimvarAPI(unittest.TestCase):
     def test_PrimvarAPI(self):
+        IsPrimvar = UsdGeom.Primvar.IsPrimvar
+
         # We'll put all our Primvar on a single mesh gprim
         stage = Usd.Stage.CreateInMemory('myTest.usda')
         gp = UsdGeom.Mesh.Define(stage, '/myMesh')
@@ -35,29 +37,42 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
 
         # Add three Primvars
         u1 = gp.CreatePrimvar('u_1', Sdf.ValueTypeNames.FloatArray)
+        self.assertFalse( u1.NameContainsNamespaces() )
         # Make sure it's OK to manually specify the classifier namespace
         v1 = gp.CreatePrimvar('primvars:v_1', Sdf.ValueTypeNames.FloatArray)
+        self.assertFalse( v1.NameContainsNamespaces() )
         _3dpmats = gp.CreatePrimvar('projMats', Sdf.ValueTypeNames.Matrix4dArray,
                                     "constant", nPasses)
         
-        # ensure we can't create a primvar that contains namespaces.
+        # ensure we can create a primvar that contains namespaces!
+        primvarName = 'skel:jointWeights'
+        jointWeights = gp.CreatePrimvar(primvarName, Sdf.ValueTypeNames.FloatArray)
+        self.assertTrue( IsPrimvar(jointWeights) )
+        self.assertTrue( jointWeights.NameContainsNamespaces() )
+        self.assertEqual(primvarName, jointWeights.GetPrimvarName())
+
+        # Ensure we cannot create a primvar named indices or any namespace
+        # ending in indices
         with self.assertRaises(Tf.ErrorException):
-            gp.CreatePrimvar('no:can:do', Sdf.ValueTypeNames.FloatArray)
+            gp.CreatePrimvar("indices", Sdf.ValueTypeNames.IntArray)
+        with self.assertRaises(Tf.ErrorException):
+            gp.CreatePrimvar("multi:aggregate:indices", Sdf.ValueTypeNames.IntArray)
+
+        self.assertEqual(len( gp.GetAuthoredPrimvars() ), 4)
+        # displayColor and displayOpacity are builtins, not authored
+        self.assertEqual(len( gp.GetPrimvars() ), 6)
         
-        self.assertEqual(len( gp.GetAuthoredPrimvars() ), 3)
-        self.assertEqual(len( gp.GetPrimvars() ), 5)
-        
-        # Now add some random properties, and reverify
+        # Now add some random properties, plus a "manually" created, namespaced
+        # primvar, and reverify
         p = gp.GetPrim()
         p.CreateRelationship("myBinding")
         p.CreateAttribute("myColor", Sdf.ValueTypeNames.Color3f)
-        p.CreateAttribute("primvars:my:overly:namespaced:Color",
+        p.CreateAttribute("primvars:some:overly:namespaced:Color",
                           Sdf.ValueTypeNames.Color3f)
 
         datas = gp.GetAuthoredPrimvars()
-        IsPrimvar = UsdGeom.Primvar.IsPrimvar
 
-        self.assertEqual(len(datas), 3)
+        self.assertEqual(len(datas), 5)
         self.assertTrue( IsPrimvar(datas[0]) )
         self.assertTrue( IsPrimvar(datas[1]) )
         # For variety, test the explicit Attribute extractor
@@ -82,14 +97,15 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertTrue( gp.HasPrimvar('u_1') )
         self.assertTrue( gp.HasPrimvar('v_1') )
         self.assertTrue( gp.HasPrimvar('projMats') )
+        self.assertTrue( gp.HasPrimvar('skel:jointWeights') )
         self.assertFalse( gp.HasPrimvar('myColor') )
         self.assertFalse( gp.HasPrimvar('myBinding') )
 
         # Test that the gpv's returned by GetPrimvars are REALLY valid,
         # and that the UsdAttribute metadata wrappers work
         self.assertEqual( datas[0].GetTypeName(), Sdf.ValueTypeNames.Matrix4dArray )
-        self.assertEqual( datas[1].GetTypeName(), Sdf.ValueTypeNames.FloatArray )
-        self.assertEqual( datas[2].GetBaseName(), "v_1" )
+        self.assertEqual( datas[3].GetTypeName(), Sdf.ValueTypeNames.FloatArray )
+        self.assertEqual( datas[4].GetBaseName(), "v_1" )
         
         # Now we'll add some extra configuration and verify that the 
         # interrogative API works properly
@@ -231,6 +247,18 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertEqual(interpolation, UsdGeom.Tokens.constant)
         self.assertEqual(elementSize,   nPasses)
 
+        # Custom builtins for gprim display primvars
+        displayColor = gp.CreateDisplayColorPrimvar(UsdGeom.Tokens.vertex, 3)
+        self.assertTrue(displayColor)
+        declInfo = displayColor.GetDeclarationInfo()
+        self.assertEqual(declInfo, ('displayColor', Sdf.ValueTypeNames.Color3fArray, UsdGeom.Tokens.vertex, 3))
+
+        displayOpacity = gp.CreateDisplayOpacityPrimvar(UsdGeom.Tokens.constant)
+        self.assertTrue(displayOpacity)
+        declInfo = displayOpacity.GetDeclarationInfo()
+        self.assertEqual(declInfo, ('displayOpacity', Sdf.ValueTypeNames.FloatArray, UsdGeom.Tokens.constant, 1))
+
+
         # Id primvar
         notId = gp.CreatePrimvar('notId', Sdf.ValueTypeNames.FloatArray)
         self.assertFalse(notId.IsIdTarget())
@@ -249,7 +277,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         
         # This check below ensures that the "indices" attributes belonging to 
         # indexed primvars aren't considered to be primvars themselves.
-        self.assertEqual(numPrimvars, 7)
+        self.assertEqual(numPrimvars, 9)
 
         self.assertTrue(handleid.SetIdTarget(gp.GetPath()))
         # make sure we didn't increase the number of primvars (also that

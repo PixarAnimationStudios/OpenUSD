@@ -36,13 +36,13 @@ print stage.GetRootLayer().ExportToString()
 
 # Create variant set.
 rootPrim = stage.GetPrimAtPath('/hello')
-vset = rootPrim.GetVariantSets().AppendVariantSet('shadingVariant')
+vset = rootPrim.GetVariantSets().AddVariantSet('shadingVariant')
 print stage.GetRootLayer().ExportToString()
 
 # Create variant options.
-vset.AppendVariant('red')
-vset.AppendVariant('blue')
-vset.AppendVariant('green')
+vset.AddVariant('red')
+vset.AddVariant('blue')
+vset.AddVariant('green')
 print stage.GetRootLayer().ExportToString()
 
 # Author red color behind red variant.

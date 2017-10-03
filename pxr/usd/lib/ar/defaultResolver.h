@@ -48,10 +48,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// relative path to a series of directories and return the first absolute
 /// path where the asset exists.
 ///
-/// The first directory searched is always the current working directory.
-/// Consumers can specify additional directories by setting the 
-/// PXR_AR_DEFAULT_SEARCH_PATH environment variable to a list of
-/// directories delimited by the platform's standard path separator.
+/// The first directory will always be the current working directory. The
+/// resolver will then examine the directories specified via the following
+/// mechanisms (in order):
+///
+///    - ArDefaultResolver::SetDefaultSearchPath
+///    - The environment variable PXR_AR_DEFAULT_SEARCH_PATH. This is
+///      expected to be a list of directories delimited by the platform's 
+///      standard path separator.
 ///
 class ArDefaultResolver
     : public ArResolver
@@ -59,6 +63,13 @@ class ArDefaultResolver
 public:
     ArDefaultResolver();
     virtual ~ArDefaultResolver();
+
+    /// Set the default search path that will be used during asset
+    /// resolution. This must be called before the first call
+    /// to \ref ArGetResolver.
+    AR_API
+    static void SetDefaultSearchPath(
+        const std::vector<std::string>& searchPath);
 
     // ArResolver overrides
     virtual void ConfigureResolverForAsset(const std::string& path) override;

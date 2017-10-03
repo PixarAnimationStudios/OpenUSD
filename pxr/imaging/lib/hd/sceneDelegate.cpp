@@ -23,7 +23,10 @@
 //
 #include "pxr/imaging/hd/sceneDelegate.h"
 
+#include "pxr/imaging/glf/glslfx.h"
+
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/package.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
@@ -141,6 +144,13 @@ HdSceneDelegate::GetCullStyle(SdfPath const &id)
 }
 
 /*virtual*/
+VtValue
+HdSceneDelegate::GetShadingStyle(SdfPath const &id)
+{
+    return VtValue();
+}
+
+/*virtual*/
 int
 HdSceneDelegate::GetRefineLevel(SdfPath const& id)
 {
@@ -209,12 +219,27 @@ HdSceneDelegate::GetSurfaceShaderSource(SdfPath const &shaderId)
 std::string
 HdSceneDelegate::GetDisplacementShaderSource(SdfPath const &shaderId)
 {
-    std::string shaderSource(
-        "vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord) {\n"
-        "    return Peye;\n"
-        "}\n"
-        );
-    return shaderSource;
+    return std::string("");
+}
+
+std::string
+HdSceneDelegate::GetMixinShaderSource(TfToken const &shaderStageKey)
+{
+    if (shaderStageKey.IsEmpty()) {
+        return std::string("");
+    }
+
+    // TODO: each delegate should provide their own package of mixin shaders
+    // the lighting mixins are fallback only.
+    static std::once_flag firstUse;
+    static std::unique_ptr<GlfGLSLFX> mixinFX;
+   
+    std::call_once(firstUse, [](){
+        std::string filePath = HdPackageLightingIntegrationShader();
+        mixinFX.reset(new GlfGLSLFX(filePath));
+    });
+
+    return mixinFX->GetSource(shaderStageKey);
 }
 
 /*virtual*/

@@ -29,7 +29,7 @@ pxr_library(usdLux
     PUBLIC_HEADERS
         api.h
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
@@ -49,11 +49,12 @@ pxr_library(usdLux
         wrapSphereLight.cpp
         wrapTokens.cpp
 
-    PYTHON_FILES
+   PYMODULE_FILES 
         __init__.py
 
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+        schema.usda:usdLux/schema.usda
 )
 

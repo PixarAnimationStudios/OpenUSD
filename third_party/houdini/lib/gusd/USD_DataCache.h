@@ -24,25 +24,27 @@
 #ifndef _GUSD_USD_DATACACHE_H_
 #define _GUSD_USD_DATACACHE_H_
 
-#include "gusd/USD_StageCache.h"
+#include "gusd/api.h"
+#include "gusd/stageCache.h"
 
 #include <pxr/pxr.h>
 #include "pxr/base/tf/token.h"
 
-#include <UT/UT_Set.h>
+#include <UT/UT_StringSet.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 #define GUSDUT_USDCACHE_NAME "USD Cache"
 
-class GusdUSD_StageCache;
-class GusdUSD_StageProxy;
+class GusdStageCache;
 
-class GusdUSD_DataCache
+
+class GUSD_API GusdUSD_DataCache
 {
 public:
-    GusdUSD_DataCache(GusdUSD_StageCache& cache);
+    GusdUSD_DataCache(GusdStageCache& cache);
     GusdUSD_DataCache();
 
     virtual ~GusdUSD_DataCache();
@@ -50,20 +52,22 @@ public:
     /// Clear all caches.
     virtual void    Clear() {}
 
-    /// Clear a set of proxies by stage file name.
-    virtual int64   Clear(const UT_Set<std::string>& stagePaths) { return 0; }
+    /// Clear caches for a set of stages by path    
+    virtual int64   Clear(const UT_StringSet& stagePaths) { return 0; }
 
 
     /// Helper for implementations to decide if a cache entry
     /// corresponding to @a prim should be discarded.
     static bool     ShouldClearPrim(
                         const UsdPrim& prim,
-                        const UT_Set<std::string>& stagesToClear);
+                        const UT_StringSet& stagesToClear);
 
-private:
-    GusdUSD_StageCache* const   _stageCache;
+protected:
+    GusdStageCache& _stageCache;
 };
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif /*_GUSD_USD_DATACACHE_H_*/

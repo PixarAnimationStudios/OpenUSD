@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui, QtCore
+from qt import QtCore, QtGui, QtWidgets
 
 class _ArrayAttributeModel(QtCore.QAbstractListModel):
     def __init__(self, attr, frame):
@@ -49,13 +49,13 @@ class _ArrayAttributeModel(QtCore.QAbstractListModel):
 
         return None
 
-class ArrayAttributeView(QtGui.QListView):
+class ArrayAttributeView(QtWidgets.QListView):
     def __init__(self, parent):
         super(ArrayAttributeView, self).__init__(parent)
 
         # this line makes it so we don't have to query all of the data upfront.
         self.setUniformItemSizes(True)
-        self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 
         self._SetupContextMenu()
 
@@ -66,7 +66,7 @@ class ArrayAttributeView(QtGui.QListView):
         if e.matches(QtGui.QKeySequence.Copy):
             self.Copy()
         else:
-            QtGui.QListView.keyPressEvent(self, e)
+            QtWidgets.QListView.keyPressEvent(self, e)
     
     def SetAttribute(self, attr, frame):
         # XXX: probably don't need to reconstruct especially if all
@@ -76,12 +76,10 @@ class ArrayAttributeView(QtGui.QListView):
     # context menu stuff
     def _SetupContextMenu(self):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        QtCore.QObject.connect(self,
-                QtCore.SIGNAL('customContextMenuRequested(QPoint)'),
-                self._ShowContextMenu)
+        self.customContextMenuRequested.connect(self._ShowContextMenu)
 
     def _ShowContextMenu(self, point):
-        menu = QtGui.QMenu(self)
+        menu = QtWidgets.QMenu(self)
         menu.addAction("Copy", self.Copy)
         menu.addAction("Select All", self.SelectAll)
         menu.exec_(QtGui.QCursor.pos())
@@ -96,7 +94,7 @@ class ArrayAttributeView(QtGui.QListView):
         else:
             copyText = vals
 
-        QtGui.QApplication.clipboard().setText(copyText)
+        QtWidgets.QApplication.clipboard().setText(copyText)
 
     def SelectAll(self):
         self.selectAll()

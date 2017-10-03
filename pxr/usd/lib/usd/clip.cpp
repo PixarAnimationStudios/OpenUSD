@@ -570,7 +570,7 @@ _RecordAnchorInfo(
         const SdfPath& path = node.GetPath();
         const PcpLayerStackRefPtr& layerStack = node.GetLayerStack();
         const SdfLayerRefPtr& layer = layerStack->GetLayers()[layerIdx];
-        clipSet->anchorInfo = {
+        clipSet->anchorInfo = _ClipSet::_AnchorInfo{
             layerStack, path, layerIdx, 0, // This will get filled in later
             _GetLayerOffsetToRoot(node, layer)
         };

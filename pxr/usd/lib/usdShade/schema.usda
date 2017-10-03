@@ -2,7 +2,7 @@
 (
     "This file describes the USD Shader schemata for code generation."
     subLayers = [
-        @../usd/schema.usda@
+        @usd/schema.usda@
     ]
 )
 
@@ -28,6 +28,12 @@ over "GLOBAL" (
             dictionary materialVariant = {
                 string doc = """The variant name of material variation
                 described on a UsdShadeMaterial.
+                """
+            }
+            dictionary materialBind = {
+                string doc = """The name of the GeomSubset family used to 
+                identify face subsets defined for the purpose of binding 
+                materials to facesets.
                 """
             }
             dictionary derivesFrom  = {
@@ -184,6 +190,7 @@ class Material "Material" (
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/faceSetAPI.h"
 """
     }

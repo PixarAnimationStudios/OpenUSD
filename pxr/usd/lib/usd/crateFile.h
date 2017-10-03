@@ -521,12 +521,14 @@ public:
 
 private:
     explicit CrateFile(bool useMmap);
-    CrateFile(string const &fileName,
-              ArchConstFileMapping mapStart, int64_t fileSize);
-    CrateFile(string const &fileName, _UniqueFILE inputFile, int64_t fileSize);
+    CrateFile(string const &fileName, ArchConstFileMapping mapStart);
+    CrateFile(string const &fileName, _UniqueFILE inputFile);
 
     CrateFile(CrateFile const &) = delete;
     CrateFile &operator=(CrateFile const &) = delete;
+
+    void _InitMMap();
+    void _InitPread();
 
     static ArchConstFileMapping _MmapFile(char const *fileName, FILE *file);
 
@@ -552,11 +554,24 @@ private:
     VtValue _GetTimeSampleValueImpl(TimeSamples const &ts, size_t i) const;
     void _MakeTimeSampleValuesMutableImpl(TimeSamples &ts) const;
 
+    void _WriteFields(_Writer &w);
+    void _WriteFieldSets(_Writer &w);
     void _WritePaths(_Writer &w);
+    void _WriteSpecs(_Writer &w);
 
     template <class Iter>
     Iter _WritePathTree(_Writer &w, Iter cur, Iter end);
+
+    template <class Container>
+    void _WriteCompressedPathData(_Writer &w, Container const &pathData);
     
+    template <class Iter>
+    Iter _BuildCompressedPathDataRecursive(
+        size_t &curIndex, Iter cur, Iter end,
+        vector<uint32_t> &pathIndexes,
+        vector<int32_t> &elementTokenIndexes,
+        vector<int32_t> &jumps);
+
     inline void _WriteTokens(_Writer &w);
 
     template <class Reader>
@@ -575,10 +590,19 @@ private:
     template <class Reader> void _ReadStrings(Reader src);
     template <class Reader> void _ReadTokens(Reader src);
     template <class Reader> void _ReadPaths(Reader src);
-    template <class Reader, class Header>
-    void _ReadPathsRecursively(
-        Reader src, const SdfPath &parentPath,
-        const Header &h,
+    template <class Header, class Reader>
+    void _ReadPathsImpl(Reader reader,
+                        WorkArenaDispatcher &dispatcher,
+                        SdfPath parentPath=SdfPath());
+    template <class Reader>
+    void _ReadCompressedPaths(Reader reader,
+                              WorkArenaDispatcher &dispatcher);
+    void _BuildDecompressedPathsImpl(
+        std::vector<uint32_t> const &pathIndexes,
+        std::vector<int32_t> const &elementTokenIndexes,
+        std::vector<int32_t> const &jumps,
+        size_t curIndex,
+        SdfPath parentPath,
         WorkArenaDispatcher &dispatcher);
 
     void _ReadRawBytes(int64_t start, int64_t size, char *buf) const;
@@ -708,6 +732,9 @@ private:
     _UniqueFILE _inputFile; // NULL if this wasn't populated from file.
 
     std::string _fileName; // Empty if this file data is in-memory only.
+
+    std::unique_ptr<char []> _debugPageMap; // Debug page access map, see
+                                            // USDC_DUMP_PAGE_MAPS.
 
     const bool _useMmap; // If true, use mmap for reads, otherwise use pread.
 };

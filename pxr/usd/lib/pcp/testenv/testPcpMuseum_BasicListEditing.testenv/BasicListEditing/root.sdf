@@ -12,6 +12,8 @@
 
 def Prim "A" (
     '''This layer results in the order z,a,x,f,y,b,c.'''
+    prepend inherits = </root_prepend>
+    append inherits = </root_append>
 )
 {
     reorder properties = ["z", "f", "y"]
@@ -21,4 +23,18 @@ def Prim "A" (
 
     over "f" {
     }
+
+    custom rel targets (
+        '''This relationship is used to demonstrate list editing operations on targets.'''
+    )
+}
+
+class "root_prepend"
+{
+    prepend rel targets = </root_prepend/root_prepend>
+}
+
+class "root_append"
+{
+    prepend rel targets = </root_append/root_append>
 }

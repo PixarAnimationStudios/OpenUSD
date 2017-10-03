@@ -97,6 +97,15 @@ static void DoUnitTest()
         TF_AXIOM(table2.size() == 2);
         TF_AXIOM(table3.size() == 7);
 
+        // Move.
+        Table table4(std::move(table3));
+        table3 = Table();
+        TF_AXIOM(table2.size() == 2);
+        TF_AXIOM(table3.empty());
+        TF_AXIOM(table4.size() == 7);
+        table3 = std::move(table4);
+        TF_AXIOM(table3.size() == 7);
+
         // Clear.
         table2.clear();
         table3.clear();

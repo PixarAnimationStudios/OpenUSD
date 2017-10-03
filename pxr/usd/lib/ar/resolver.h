@@ -348,6 +348,20 @@ protected:
 AR_API
 ArResolver& ArGetResolver();
 
+/// Set the preferred ArResolver subclass used by ArGetResolver.
+///
+/// Consumers may override ArGetResolver's plugin resolver discovery and
+/// force the use of a specific resolver subclass by calling this 
+/// function with the typename of the implementation to use. 
+///
+/// If the subclass specified by \p resolverTypeName cannot be found, 
+/// ArGetResolver will issue a warning and fall back to using 
+/// ArDefaultResolver.
+///
+/// This must be called before the first call to ArGetResolver.
+AR_API
+void ArSetPreferredResolver(const std::string& resolverTypeName);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // AR_RESOLVER_H

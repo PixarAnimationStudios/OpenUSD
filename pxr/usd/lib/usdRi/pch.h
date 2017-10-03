@@ -39,11 +39,13 @@
 
 #include <intrin.h>
 #include <boost/preprocessor/variadic/size.hpp>
+#include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
 #endif
 #include <algorithm>
 #include <atomic>
 #include <bitset>
+#include <cfloat>
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>
@@ -61,6 +63,7 @@
 #include <iterator>
 #include <limits>
 #include <list>
+#include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
@@ -141,6 +144,7 @@
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/python.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
@@ -153,7 +157,6 @@
 #include <boost/python/object.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
-#include <boost/python/pointee.hpp>
 #include <boost/python/return_by_value.hpp>
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/scope.hpp>
@@ -164,6 +167,7 @@
 #undef tolower
 #undef toupper
 #endif
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/range/iterator_range.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -186,10 +190,10 @@
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/utility/value_init.hpp>
+#include <boost/variant.hpp>
 #include <tbb/atomic.h>
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_unordered_set.h>
@@ -198,4 +202,7 @@
 #include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/task.h>
+#include <tbb/task_arena.h>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
+#endif // PXR_PYTHON_SUPPORT_ENABLED

@@ -96,6 +96,9 @@ private:
     int                m_fdTmpFile;
     GusdGT_AttrFilter  m_primvarFilter;
     GprimMap           m_gprimMap;
+    std::string        m_defaultPrimPath;
+    UsdPrim            m_modelPrim;
+    std::string        m_assetName;
 
     Granularity m_granularity;
 };

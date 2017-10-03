@@ -164,5 +164,40 @@ PxrUsdKatanaUsdInPluginRegistry::FindKindForSite(
     return _DoFindKind(kind, opName, _kindExtReg);
 }
 
+
+
+typedef std::vector<PxrUsdKatanaUsdInPluginRegistry::LocationDecoratorFnc>
+        _LocationDecoratorFncList;
+static _LocationDecoratorFncList _locationDecoratorFncList;
+
+
+void PxrUsdKatanaUsdInPluginRegistry::RegisterLocationDecoratorFnc(
+        LocationDecoratorFnc fnc)
+{
+    _locationDecoratorFncList.push_back(fnc);
+}
+
+FnKat::GroupAttribute
+PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
+        FnKat::GeolibCookInterface& interface,
+        FnKat::GroupAttribute opArgs,
+        PxrUsdKatanaUsdInPrivateData* privateData)
+{
+    for (auto i : _locationDecoratorFncList)
+    {
+        (*i)(interface, opArgs, privateData);
+        
+        if (privateData)
+        {
+            opArgs = privateData->updateExtensionOpArgs(opArgs);
+        }
+    }
+    
+    return opArgs;
+}
+
+
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

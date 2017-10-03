@@ -194,10 +194,13 @@ public:
     /// to be read in, which can be much faster if that is all that is
     /// required.  Note that this is just a hint: some FileFormat readers
     /// may disregard this flag and still fully populate the layer contents.
+    ///
+    /// An optional \p tag may be specified.  See CreateAnonymous for details.
     SDF_API
     static SdfLayerRefPtr OpenAsAnonymous(
         const std::string &layerPath,
-        bool metadataOnly = false);
+        bool metadataOnly = false,
+        const std::string& tag = std::string());
 
     /// Returns the scene description schema for this layer.
     SDF_API
@@ -226,8 +229,9 @@ public:
     /// repository, overlay, real path, or other asset information fields.
     /// Anonymous layers may be tagged, which can be done to aid debugging
     /// subsystems that make use of anonymous layers.  The tag becomes the
-    /// display name of an anonymous layer. Untagged anonymous layers have an
-    /// empty display name.
+    /// display name of an anonymous layer, and is also included in the
+    /// generated identifier. Untagged anonymous layers have an empty display
+    /// name.
     SDF_API
     static SdfLayerRefPtr CreateAnonymous(
         const std::string& tag = std::string());

@@ -29,5 +29,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     TF_WRAP(UsdKatanaBlindDataObject);
+    TF_WRAP(UsdKatanaCache);
     TF_WRAP(UsdKatanaLookAPI);
 }

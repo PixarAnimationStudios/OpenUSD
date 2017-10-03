@@ -21,12 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import sys
-import os
+import sys, argparse, os
 
-from PySide.QtGui import QApplication
-
-import argparse
+from qt import QtWidgets
+from common import Timer
 
 class Launcher(object):
     '''
@@ -48,13 +46,18 @@ class Launcher(object):
         
         parser = argparse.ArgumentParser(prog=sys.argv[0],
                                          description=self.GetHelpDescription())
-        self.RegisterPositionals(parser)
-        self.RegisterOptions(parser)
-        arg_parse_result = self.ParseOptions(parser)
-        valid = self.ValidateOptions(arg_parse_result)
-        if valid:
-            self.__LaunchProcess(arg_parse_result)
-            
+
+        with Timer() as totalTimer:
+            self.RegisterPositionals(parser)
+            self.RegisterOptions(parser)
+            arg_parse_result = self.ParseOptions(parser)
+            valid = self.ValidateOptions(arg_parse_result)
+            if valid:
+                self.__LaunchProcess(arg_parse_result)
+
+        if arg_parse_result.timing and arg_parse_result.quitAfterStartup:
+            totalTimer.PrintTime('open and close usdview')
+
     def GetHelpDescription(self):
         '''return the help description'''       
         return 'View a usd file'
@@ -85,7 +88,7 @@ class Launcher(object):
                             "prim name (ie, just the last element in the prim "
                             "path), or as a full prim path.  Note that if only "
                             "the prim name is used, and more than one camera "
-                            "exists with the name, which is used will be"
+                            "exists with the name, which is used will be "
                             "effectively random")
 
         parser.add_argument('--mask', action='store',
@@ -210,7 +213,7 @@ class Launcher(object):
         resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
 
         # Create the Qt application
-        app = QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
 
         # Apply the style sheet to it
         sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')
@@ -227,7 +230,8 @@ class Launcher(object):
             # UI is fully populated (and to capture all the timing information
             # we'd want).
             app.processEvents()
-            sys.exit(0)
+            mainWindow._cleanAndClose()
+            return 
 
         app.exec_()
 

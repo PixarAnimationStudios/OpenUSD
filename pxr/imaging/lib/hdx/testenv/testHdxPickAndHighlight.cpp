@@ -50,6 +50,7 @@
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
+#include <unordered_set>
 #include <boost/scoped_ptr.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -66,7 +67,9 @@ public:
 
     void DrawScene();
     void DrawMarquee();
-    void Pick(GfVec2i const &startPos, GfVec2i const &endPos);
+    void Pick(GfVec2i const &startPos, 
+              GfVec2i const &endPos,
+              HdxSelectionHighlightMode const& mode);
 
     // Hdx_UnitTestGLDrawing overrides
     virtual void InitTest();
@@ -107,6 +110,33 @@ _GetTranslate(float tx, float ty, float tz)
     m.SetRow(3, GfVec4f(tx, ty, tz, 1.0));
     return m;
 }
+
+namespace {
+    struct HitHash {
+        // make a partial hash excluding elementId, ndcDepth, wsHitPoint,
+        // allowing us to group hits to different elements of the same object
+        // instance
+        size_t operator()(HdxIntersector::Hit const& hit) const {
+            size_t hash = 0;
+            boost::hash_combine(hash, hit.delegateId.GetHash());
+            boost::hash_combine(hash, hit.objectId.GetHash());
+            boost::hash_combine(hash, hit.instancerId.GetHash());
+            boost::hash_combine(hash, hit.instanceIndex);
+            return hash;
+        }
+    };
+
+    struct HitEq {
+        bool operator()(HdxIntersector::Hit const& a, 
+                        HdxIntersector::Hit const& b) const {
+            return a.delegateId    == b.delegateId    &&
+                   a.objectId      == b.objectId      &&
+                   a.instancerId   == b.instancerId   &&
+                   a.instanceIndex == b.instanceIndex;
+        }
+    };
+}
+
 
 My_TestGLDrawing::~My_TestGLDrawing()
 {
@@ -179,8 +209,8 @@ My_TestGLDrawing::InitTest()
     HdxSelectionTaskParams selParam;
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
-    selParam.locateColor = GfVec4f(1, 0, 0, 1);
-    selParam.maskColor = GfVec4f(0, 1, 0, 1);
+    selParam.locateColor = GfVec4f(1, 0, 1, 1);
+    selParam.maskColor = GfVec4f(0, 1, 1, 1);
     _delegate->SetTaskParam(selectionTask, HdTokens->params,
                             VtValue(selParam));
 
@@ -298,44 +328,96 @@ My_TestGLDrawing::OffscreenTest()
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
 
     DrawScene();
-    WriteToFile("color", "color1.png");
+    WriteToFile("color", "color1_unselected.png");
 
+    // --------------------- (active) selection high ---------------------------
     // select cube2
-    Pick(GfVec2i(180, 390), GfVec2i(181, 391));
+    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
+    Pick(GfVec2i(180, 390), GfVec2i(181, 391), mode);
     DrawScene();
-    WriteToFile("color", "color2.png");
+    WriteToFile("color", "color2_select.png");
     HdxSelectionSharedPtr selection = _selectionTracker->GetSelectionMap();
-
-    TF_VERIFY(selection->selectedPrims.size() == 1);
-    TF_VERIFY(selection->selectedPrims[0] == SdfPath("/cube2"));
+    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube2"));
 
     // select cube1, /protoTop:1, /protoTop:2, /protoBottom:1, /protoBottom:2
-    Pick(GfVec2i(105,62), GfVec2i(328,288));
+    Pick(GfVec2i(105,62), GfVec2i(328,288), mode);
     DrawScene();
-    WriteToFile("color", "color3.png");
+    WriteToFile("color", "color3_select.png");
     selection = _selectionTracker->GetSelectionMap();
 
-    TF_VERIFY(selection->selectedPrims.size() == 5);
-    TF_VERIFY(selection->selectedInstances.size() == 2);
+    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 5);
+    TF_VERIFY(selection->GetSelectedInstances(mode).size() == 2);
     {
-        std::vector<VtIntArray> indices
-            = selection->selectedInstances[SdfPath("/protoTop")];
+        std::vector<VtIntArray> const& indices
+            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
+                             SdfPath("/protoTop"));
         TF_VERIFY(indices.size() == 2);
         TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
         TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
     }
     {
-        std::vector<VtIntArray> indices
-            = selection->selectedInstances[SdfPath("/protoBottom")];
+        std::vector<VtIntArray> const& indices
+            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
+                              SdfPath("/protoBottom"));
         TF_VERIFY(indices.size() == 2);
         TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
         TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
     }
 
-    // deselect
-    Pick(GfVec2i(0,0), GfVec2i(0,0));
+    // --------------------- locate (rollover) selection -----------------------
+    mode = HdxSelectionHighlightModeLocate;
+    // select cube0
+    Pick(GfVec2i(472, 97), GfVec2i(473, 98), mode);
     DrawScene();
-    WriteToFile("color", "color4.png");
+    WriteToFile("color", "color4_locate.png");
+    selection = _selectionTracker->GetSelectionMap();
+    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube0"));
+
+    // select cube3, /protoBottom:0
+    Pick(GfVec2i(408,246), GfVec2i(546,420), mode);
+    DrawScene();
+    WriteToFile("color", "color5_locate.png");
+    selection = _selectionTracker->GetSelectionMap();
+
+    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 2);
+    TF_VERIFY(selection->GetSelectedInstances(mode).size() == 1);
+    {
+        std::vector<VtIntArray> const& indices
+            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
+                             SdfPath("/protoBottom"));
+        TF_VERIFY(indices.size() == 1);
+        TF_VERIFY(indices[0][0] == 0);
+    }
+
+    // ------------------------- mask  selection -------------------------------
+    mode = HdxSelectionHighlightModeMask;
+    // select cube2
+    Pick(GfVec2i(180, 390), GfVec2i(181, 391), mode);
+    DrawScene();
+    WriteToFile("color", "color6_mask.png");
+
+     // select cube3, /protoBottom:0
+    Pick(GfVec2i(408,246), GfVec2i(546,420), mode);
+    DrawScene();
+    WriteToFile("color", "color7_mask.png");
+    selection = _selectionTracker->GetSelectionMap();
+
+    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 2);
+    TF_VERIFY(selection->GetSelectedInstances(mode).size() == 1);
+    {
+        std::vector<VtIntArray> const& indices
+            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
+                             SdfPath("/protoBottom"));
+        TF_VERIFY(indices.size() == 1);
+        TF_VERIFY(indices[0][0] == 0);
+    }
+
+    // deselect    
+    Pick(GfVec2i(0,0), GfVec2i(0,0), mode);
+    DrawScene();
+    WriteToFile("color", "color8_unselected.png");
 }
 
 void
@@ -423,13 +505,15 @@ My_TestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
     Hdx_UnitTestGLDrawing::MouseRelease(button, x, y, modKeys);
 
     if (!(modKeys & GarchGLDebugWindow::Alt)) {
-        Pick(_startPos, _endPos);
+        Pick(_startPos, _endPos, HdxSelectionHighlightModeSelect);
     }
     _startPos = _endPos = GfVec2i(0);
 }
 
 void
-My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos)
+My_TestGLDrawing::Pick(GfVec2i const &startPos, 
+                       GfVec2i const &endPos,
+                       HdxSelectionHighlightMode const& mode)
 {
     int fwidth  = std::max(4, std::abs(startPos[0] - endPos[0]));
     int fheight = std::max(4, std::abs(startPos[1] - endPos[1]));
@@ -463,7 +547,11 @@ My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos)
     HdxIntersector::HitSet hits;
     HdxSelectionSharedPtr selection(new HdxSelection);
     if (result.ResolveUnique(&hits)) {
+        std::unordered_set<HdxIntersector::Hit, HitHash, HitEq> aggregatedHits;
+
+        // Aggregate hits to the same object instance (see HitHash)
         TF_FOR_ALL(it, hits) {
+            aggregatedHits.insert(*it);
             std::cout << "object: " << it->objectId << " "
                       << "instancer: " << it->instancerId << " "
                       << "instanceIndex: " << it->instanceIndex << " "
@@ -471,16 +559,19 @@ My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos)
                       << "hit: " << it->worldSpaceHitPoint << " "
                       << "ndcDepth: " << it->ndcDepth << "\n";
 
-            if (!it->instancerId.IsEmpty()) {
+        }
+
+        for(const auto& hit : aggregatedHits) {
+            if (!hit.instancerId.IsEmpty()) {
                 // XXX :this doesn't work for nested instancing.
                 VtIntArray instanceIndex;
-                instanceIndex.push_back(it->instanceIndex);
-                selection->AddInstance(it->objectId, instanceIndex);
+                instanceIndex.push_back(hit.instanceIndex);
+                selection->AddInstance(mode, hit.objectId, instanceIndex);
                 // we should use GetPathForInstanceIndex instead of it->objectId
                 //SdfPath path = _delegate->GetPathForInstanceIndex(it->objectId, it->instanceIndex);
                 // and also need to add some APIs to compute VtIntArray instanceIndex.
             } else {
-                selection->AddRprim(it->objectId);
+                selection->AddRprim(mode, hit.objectId);
             }
         }
     }

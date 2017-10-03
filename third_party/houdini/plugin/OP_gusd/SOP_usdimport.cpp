@@ -25,12 +25,13 @@
 
 #include "gusd/GU_USD.h"
 #include "gusd/PRM_Shared.h"
+#include "gusd/stageCache.h"
+#include "gusd/stageEdit.h"
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_Utils.h"
 #include "gusd/UT_Assert.h"
 #include "gusd/UT_Error.h"
 #include "gusd/UT_StaticInit.h"
-#include "gusd/UT_Usd.h"
 
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/fileUtils.h>
@@ -292,15 +293,6 @@ GusdSOP_usdimport::updateParmsFlags()
 }
 
 
-GusdGU_USD::BindOptions
-GusdSOP_usdimport::GetBindOpts(OP_Context& ctx)
-{
-    GusdGU_USD::BindOptions opts;
-    opts.packedPrims = !evalInt("import_class", 0, ctx.getTime());
-    return opts;
-}
-
-
 void
 GusdSOP_usdimport::UpdateTraversalParms()
 {
@@ -373,7 +365,11 @@ GusdSOP_usdimport::Reload()
         return;
     }
 
-    GusdUSD_StageCache::GetInstance().Unload( TfToken(file.buffer()) );
+    UT_StringSet paths;
+    paths.insert(file);
+    
+    GusdStageCacheWriter cache;
+    cache.ReloadStages(paths);
     forceRecook();
 }
 
@@ -423,8 +419,6 @@ GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
         return UT_ERROR_NONE;
     }
 
-    TfToken fileName( file.toStdString() );
-
     /* The prim path may be a list of prims.
        Additionally, those prim paths may include variants
        (eg., /some/model{variant=sel}/subscope ).
@@ -438,106 +432,99 @@ GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
            primPath, primPaths, variants, &err))
         return err();
 
-    // Only have one file, but FindOrCreateProxies() expects an array.
-    UT_Array<TfToken> paths;
-    paths.appendMultiple(fileName, primPaths.size());
+    GusdDefaultArray<UT_StringHolder> filePaths;
+    filePaths.SetConstant(file);
 
-    // Acquire proxies (they only vary if we have variants)
-    GusdUSD_StageCacheContext cache;
-    UT_Array<GusdUSD_StageProxyHandle> proxies;
-    if(!cache.FindOrCreateProxies(proxies, paths, variants))
-        return err();
+    // Get stage edits applying any of our variants.
+    GusdDefaultArray<GusdStageEditPtr> edits;
+    edits.GetArray().setSize(variants.size());
+    for(exint i = 0; i < variants.size(); ++i) {
+        if(!variants(i).IsEmpty()) {
+            GusdStageBasicEdit* edit = new GusdStageBasicEdit;
+            edit->GetVariants().append(variants(i));
+            edits.GetArray()(i).reset(edit);
+        }
+    }
+    
+    // Load the root prims.
+    UT_Array<UsdPrim> rootPrims;
+    {
+        rootPrims.setSize(primPaths.size());
 
-    for( auto& proxy : proxies ) {
-        proxy->MarkDirtyIfFileChanged();
+        GusdStageCacheReader cache;
+        if(!cache.GetPrims(filePaths, primPaths, edits,
+                           rootPrims.data(),
+                           GusdStageOpts::LoadAll(), &err))
+            return err();
     }
 
-    // Bind an accessor to all prims.
-    UT_Array<UsdPrim> rootPrims;
-    GusdUSD_StageProxy::MultiAccessor primAccessor;
-    if(cache.GetPrims(primAccessor, proxies, primPaths, rootPrims, &err)) {
+    GusdDefaultArray<UsdTimeCode> times;
+    times.SetConstant(evalFloat("import_time", 0, t));
 
-        fpreal time = evalFloat("import_time", 0, t);
+    UT_String purpose;
+    evalString(purpose, "purpose", 0, t);
 
-        GusdUSD_Utils::PrimTimeMap timeMap;
-        timeMap.defaultTime = time;
+    GusdDefaultArray<GusdPurposeSet> purposes;
+    purposes.SetConstant(GusdPurposeSet(
+                             GusdPurposeSetFromMask(purpose)|
+                             GUSD_PURPOSE_DEFAULT));
 
-        UT_String ptd;
-        evalString(ptd, "purpose", 0, t);
-        UT_WorkArgs wargs;
-        ptd.tokenize( wargs, " " );
+    UT_Array<UsdPrim> prims;
+    if(traverse) {
+        // Before traversal, make a copy of the variants list.
+        const UT_Array<SdfPath> variantsPreTraverse(variants);
 
-        int purposes = GUSD_PURPOSE_DEFAULT;
-        for( auto& arg : wargs ) {
-            if( strcmp(arg,"proxy") == 0 )
-                purposes |= GUSD_PURPOSE_PROXY;
-            else if( strcmp(arg,"render") == 0 ) 
-                purposes |= GUSD_PURPOSE_RENDER;
-            else if( strcmp(arg,"guide") == 0 )
-                purposes |= GUSD_PURPOSE_GUIDE;
-        }
+        UT_Array<GusdUSD_Traverse::PrimIndexPair> primIndexPairs;
 
-        UT_Array<UsdPrim> prims;
-        if(traverse) {
-            // Before traversal, make a copy of the variants list.
-            const UT_Array<SdfPath> variantsPreTraverse(variants);
-
-            UT_Array<GusdUSD_Traverse::PrimIndexPair> primIndexPairs;
-
-            UT_ScopedPtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
-            if(opts) {
-                if(!opts->Configure(*this, t))
-                    return err();
-            }
-
-            UT_Array<GusdPurposeSet> purposeArray;
-            purposeArray.appendMultiple( GusdPurposeSet(purposes), rootPrims.size() );
-
-            if(!traverse->FindPrims(rootPrims, timeMap, purposeArray, primIndexPairs,
-                                    /*skip root*/ false, opts.get())) {
+        UT_ScopedPtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
+        if(opts) {
+            if(!opts->Configure(*this, t))
                 return err();
-            }
-
-            // Resize the prims and variants lists to match the size of
-            // primIndexPairs.
-            exint size = primIndexPairs.size();
-            prims.setSize(size);
-            variants.setSize(size);
-
-            // Now iterate through primIndexPairs to populate the prims
-            // and variants lists.
-            for (exint i = 0; i < size; i++) {
-                prims(i) = primIndexPairs(i).first;
-                exint index = primIndexPairs(i).second;
-
-                variants(i) = index < variantsPreTraverse.size() ?
-                              variantsPreTraverse(index) :
-                              SdfPath::EmptyPath();
-            }
-
-        } else {
-            prims = rootPrims;
         }
 
-        /* Have the resolved set of USD prims.
-           Now create prims or points on the detail.*/
-
-        bool packedPrims = !evalInt("import_class", 0, t);
-        if(packedPrims) {
-            UT_String vpLOD;
-            evalString(vpLOD, "viewportlod", 0, t);
-            UT_StringArray viewportLOD;
-            viewportLOD.appendMultiple(UT_StringHolder(vpLOD), prims.size());
-            UT_Array<GusdPurposeSet> purposesArray;
-            purposesArray.appendMultiple(GusdPurposeSet(purposes), prims.size());
-
-            GusdGU_USD::AppendPackedPrims(*gdp, prims, variants,
-                                          timeMap, viewportLOD, purposesArray, &err);
-        } else {
-            GusdGU_USD::AppendRefPoints(*gdp, prims, GUSD_PATH_ATTR,
-                                        GUSD_PRIMPATH_ATTR, &err);
+        if(!traverse->FindPrims(rootPrims, times, purposes, primIndexPairs,
+                                /*skip root*/ false, opts.get())) {
+            return err();
         }
-    } 
+
+        // Resize the prims and variants lists to match the size of
+        // primIndexPairs.
+        exint size = primIndexPairs.size();
+        prims.setSize(size);
+        variants.setSize(size);
+
+        // Now iterate through primIndexPairs to populate the prims
+        // and variants lists.
+        for (exint i = 0; i < size; i++) {
+            prims(i) = primIndexPairs(i).first;
+            exint index = primIndexPairs(i).second;
+
+            variants(i) = index < variantsPreTraverse.size() ?
+                          variantsPreTraverse(index) : SdfPath();
+        }
+
+    } else {
+        std::swap(prims, rootPrims);
+    }
+
+    /* Have the resolved set of USD prims.
+       Now create prims or points on the detail.*/
+
+    bool packedPrims = !evalInt("import_class", 0, t);
+    if(packedPrims) {
+        UT_String vpLOD;
+        evalString(vpLOD, "viewportlod", 0, t);
+
+
+        GusdDefaultArray<UT_StringHolder> lods;
+        lods.SetConstant(vpLOD);
+
+        GusdGU_USD::AppendPackedPrims(*gdp, prims, variants,
+                                      times, lods, purposes, &err);
+    } else {
+        GusdGU_USD::AppendRefPoints(*gdp, prims, GUSD_PATH_ATTR,
+                                    GUSD_PRIMPATH_ATTR, &err);
+    }
     return err();
 }
 
@@ -549,33 +536,29 @@ GusdSOP_usdimport::_ExpandPrims(OP_Context& ctx,
     if(!traverse)
         return UT_ERROR_NONE; // Nothing to do!
 
-    auto opts = GetBindOpts(ctx);
-
     fpreal t = ctx.getTime();
 
     // Construt a range and bind prims.
-    GA_AttributeOwner owner = opts.packedPrims ?
+    bool packedPrims = !evalInt("import_class", 0, t);
+    GA_AttributeOwner owner = packedPrims ?
         GA_ATTRIB_PRIMITIVE : GA_ATTRIB_POINT;
     GA_Range rng(gdp->getIndexMap(owner),
                  UTverify_cast<const GA_ElementGroup*>(_group));
 
-    GusdUSD_Utils::PrimTimeMap timeMap;
-    GusdGU_USD::PrimHandle primHnd;
-    UT_Array<GusdPurposeSet> purposeArray;
-    if(!primHnd.Bind(opts, *gdp, rng, NULL, &purposeArray, &timeMap, &err))
-        return err();
-    if(!timeMap.HasPerPrimTimes())
-        timeMap.defaultTime = evalFloat("import_time", 0, t);
-
-    // Clamp times for cache entries.
-    if(!primHnd.accessor.ClampTimes(timeMap))
-        return err();
-    
-    if(primHnd.packedPrims) {
-        if(!GusdGU_USD::GetTimeCodesFromPackedPrims(rng, timeMap.times, &err))
+    UT_Array<UsdPrim> rootPrims;
+    GusdDefaultArray<UsdTimeCode> times;
+    GusdDefaultArray<GusdPurposeSet> purposes;
+    {
+        GusdStageCacheReader cache;
+        if(!GusdGU_USD::BindPrims(cache, rootPrims, *gdp, rng,
+                                  /*variants*/ nullptr,
+                                  &purposes, &times, &err)) {
             return err();
+        }
     }
-    
+    if(!times.IsVarying())
+        times.SetConstant(evalFloat("import_time", 0, t));
+
     // Traverse to find a new prim selection.
     UT_Array<GusdUSD_Traverse::PrimIndexPair> expandedPrims;
     {
@@ -585,7 +568,7 @@ GusdSOP_usdimport::_ExpandPrims(OP_Context& ctx,
                 return err();
         }
 
-        if(!traverse->FindPrims(primHnd.prims, timeMap, purposeArray, expandedPrims,
+        if(!traverse->FindPrims(rootPrims, times, purposes, expandedPrims,
                                 /*skip root*/ true, opts.get()))
             return err();
     }
@@ -596,7 +579,7 @@ GusdSOP_usdimport::_ExpandPrims(OP_Context& ctx,
         GUSD_PATH_ATTR, GUSD_PRIMPATH_ATTR, &err);
 
     if(evalInt("import_delold", 0, t)) {
-        if(primHnd.packedPrims)
+        if(packedPrims)
             gdp->destroyPrimitives(rng, /*and points*/ true);
         else
             gdp->destroyPoints(rng); // , GA_DESTROY_DEGENERATE);

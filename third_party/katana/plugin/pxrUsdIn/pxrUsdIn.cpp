@@ -35,6 +35,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/metrics.h"
+#include "pxr/usd/usdGeom/motionAPI.h"
 #include "pxr/usd/usdLux/light.h"
 #include "pxr/usd/usdLux/lightFilter.h"
 #include "pxr/usd/usdLux/linkingAPI.h"
@@ -261,129 +262,177 @@ public:
 
         bool verbose = usdInArgs->IsVerbose();
 
-        if (!prim.IsLoaded()) {
-            SdfPath pathToLoad = prim.GetPath();
-            readerLock.unlock();
-            prim = _LoadPrim(stage, pathToLoad, verbose);
-            if (!prim) {
-                ERROR("load prim %s failed", pathToLoad.GetText());
-                return;
-            }
-            readerLock.lock();
-        }
-
-        // When in "as sources and instances" mode, scan for instances
-        // and masters at each location that contains a payload.
-        if (prim.HasPayload() &&
-            !usdInArgs->GetPrePopulate() &&
-            FnAttribute::StringAttribute(
-                 interface.getOpArg("instanceMode")
-                 ).getValue("expanded", false) == 
-                "as sources and instances")
+        // The next section only makes sense to execute on non-pseudoroot prims
+        if (prim.GetPath() != SdfPath::AbsoluteRootPath())
         {
-            FnKat::GroupAttribute masterMapping =
-                PxrUsdKatanaUtils::BuildInstanceMasterMapping(
+            if (!prim.IsLoaded()) {
+                SdfPath pathToLoad = prim.GetPath();
+                readerLock.unlock();
+                prim = _LoadPrim(stage, pathToLoad, verbose);
+                if (!prim) {
+                    ERROR("load prim %s failed", pathToLoad.GetText());
+                    return;
+                }
+                readerLock.lock();
+            }
+
+            // When in "as sources and instances" mode, scan for instances
+            // and masters at each location that contains a payload.
+            if (prim.HasPayload() &&
+                !usdInArgs->GetPrePopulate() &&
+                FnAttribute::StringAttribute(
+                    interface.getOpArg("instanceMode")
+                    ).getValue("expanded", false) == 
+                "as sources and instances")
+            {
+                FnKat::GroupAttribute masterMapping =
+                    PxrUsdKatanaUtils::BuildInstanceMasterMapping(
                         prim.GetStage(), prim.GetPath());
-            FnKat::StringAttribute masterParentPath(prim.GetPath().GetString());
-            if (masterMapping.isValid() &&
-                masterMapping.getNumberOfChildren()) {
+                FnKat::StringAttribute masterParentPath(prim.GetPath().GetString());
+                if (masterMapping.isValid() &&
+                    masterMapping.getNumberOfChildren()) {
+                    opArgs = FnKat::GroupBuilder()
+                        .update(opArgs)
+                        .set("masterMapping", masterMapping)
+                        .set("masterParentPath", masterParentPath)
+                        .build();
+                } else {
+                    opArgs = FnKat::GroupBuilder()
+                        .update(opArgs)
+                        .del("masterMapping")
+                        .build();
+                }
+            }
+
+            //
+            // Pass along the prim's velocityScale; if it isn't authored, let the
+            // inherited value flow through.
+            //
+
+            float velocityScale = FnKat::FloatAttribute(
+                opArgs.getChildByName("velocityScale")).getValue(1.0f, false);
+            auto motionAPI = UsdGeomMotionAPI(prim);
+            UsdAttribute velocityScaleAttr = motionAPI.GetVelocityScaleAttr();
+            if (velocityScaleAttr and velocityScaleAttr.HasAuthoredValueOpinion() and
+                velocityScaleAttr.Get(&velocityScale, privateData->GetCurrentTime()))
+            {
                 opArgs = FnKat::GroupBuilder()
                     .update(opArgs)
-                    .set("masterMapping", masterMapping)
-                    .set("masterParentPath", masterParentPath)
+                    .set("velocityScale", FnKat::FloatAttribute(velocityScale))
                     .build();
             }
-        }
 
-        //
-        // Compute and set the 'bound' attribute.
-        //
-        // Note, bound computation is handled here because bounding
-        // box computation requires caching for optimal performance.
-        // Instead of passing around a bounding box cache everywhere
-        // it's needed, we use the usdInArgs data strucutre for caching.
-        //
+            //
+            // Compute and set the 'bound' attribute.
+            //
+            // Note, bound computation is handled here because bounding
+            // box computation requires caching for optimal performance.
+            // Instead of passing around a bounding box cache everywhere
+            // it's needed, we use the usdInArgs data strucutre for caching.
+            //
 
-        if (PxrUsdKatanaUtils::IsBoundable(prim)) {
-            interface.setAttr("bound",
-                _MakeBoundsAttribute(prim, usdInArgs));
-        }
-
-        //
-        // Find and execute the core op that handles the USD type.
-        //
-
-        {
-            std::string opName;
-            if (PxrUsdKatanaUsdInPluginRegistry::FindUsdType(
-                    prim.GetTypeName(), &opName)) {
-                if (!opName.empty()) {
-                    interface.execOp(opName, opArgs);
-                }
+            if (PxrUsdKatanaUtils::IsBoundable(prim)) {
+                interface.setAttr("bound",
+                                  _MakeBoundsAttribute(prim, *privateData));
             }
-        }
 
-        //
-        // Find and execute the site-specific op that handles the USD type.
-        //
+            //
+            // Find and execute the core op that handles the USD type.
+            //
 
-        {
-            std::string opName;
-            if (PxrUsdKatanaUsdInPluginRegistry::FindUsdTypeForSite(
-                    prim.GetTypeName(), &opName)) {
-                if (!opName.empty()) {
-                    interface.execOp(opName, opArgs);
-                }
-            }
-        }
-
-        //
-        // Find and execute the core kind op that handles the model kind.
-        //
-
-        bool execKindOp = FnKat::IntAttribute(
-            interface.getOutputAttr("__UsdIn.execKindOp")).getValue(1, false);
-
-        if (execKindOp)
-        {
-            TfToken kind;
-            if (UsdModelAPI(prim).GetKind(&kind)) {
+            {
                 std::string opName;
-                if (PxrUsdKatanaUsdInPluginRegistry::FindKind(kind, &opName)) {
+                if (PxrUsdKatanaUsdInPluginRegistry::FindUsdType(
+                        prim.GetTypeName(), &opName)) {
                     if (!opName.empty()) {
                         interface.execOp(opName, opArgs);
+                        
+                        if (privateData)
+                        {
+                            opArgs = privateData->updateExtensionOpArgs(opArgs);
+                        }
+                        
                     }
                 }
             }
-        }
 
-        //
-        // Find and execute the site-specific kind op that handles 
-        // the model kind.
-        //
+            //
+            // Find and execute the site-specific op that handles the USD type.
+            //
 
-        if (_hasSiteKinds) {
-            TfToken kind;
-            if (UsdModelAPI(prim).GetKind(&kind)) {
+            {
                 std::string opName;
-                if (PxrUsdKatanaUsdInPluginRegistry::FindKindForSite(
-                        kind, &opName)) {
+                if (PxrUsdKatanaUsdInPluginRegistry::FindUsdTypeForSite(
+                        prim.GetTypeName(), &opName)) {
                     if (!opName.empty()) {
                         interface.execOp(opName, opArgs);
+                        
+                        if (privateData)
+                        {
+                            opArgs = privateData->updateExtensionOpArgs(opArgs);
+                        }
                     }
                 }
             }
-        }
 
-        //
-        // Read blind data. This is last because blind data opinions 
-        // should always win.
-        //
+            //
+            // Find and execute the core kind op that handles the model kind.
+            //
 
-        PxrUsdKatanaAttrMap attrs;
-        PxrUsdKatanaReadBlindData(UsdKatanaBlindDataObject(prim), attrs);
-        attrs.toInterface(interface);
+            bool execKindOp = FnKat::IntAttribute(
+                interface.getOutputAttr("__UsdIn.execKindOp")).getValue(1, false);
 
+            if (execKindOp)
+            {
+                TfToken kind;
+                if (UsdModelAPI(prim).GetKind(&kind)) {
+                    std::string opName;
+                    if (PxrUsdKatanaUsdInPluginRegistry::FindKind(kind, &opName)) {
+                        if (!opName.empty()) {
+                            interface.execOp(opName, opArgs);
+                            
+                            if (privateData)
+                            {
+                                opArgs = privateData->updateExtensionOpArgs(opArgs);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //
+            // Find and execute the site-specific kind op that handles 
+            // the model kind.
+            //
+
+            if (_hasSiteKinds) {
+                TfToken kind;
+                if (UsdModelAPI(prim).GetKind(&kind)) {
+                    std::string opName;
+                    if (PxrUsdKatanaUsdInPluginRegistry::FindKindForSite(
+                            kind, &opName)) {
+                        if (!opName.empty()) {
+                            interface.execOp(opName, opArgs);
+                            
+                            if (privateData)
+                            {
+                                opArgs = privateData->updateExtensionOpArgs(opArgs);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //
+            // Read blind data. This is last because blind data opinions 
+            // should always win.
+            //
+
+            PxrUsdKatanaAttrMap attrs;
+            PxrUsdKatanaReadBlindData(UsdKatanaBlindDataObject(prim), attrs);
+            attrs.toInterface(interface);
+        }   // if (prim.GetPath() != SdfPath::AbsoluteRootPath())
+        
         bool skipAllChildren = FnKat::IntAttribute(
                 interface.getOutputAttr("__UsdIn.skipAllChildren")).getValue(
                 0, false);
@@ -500,6 +549,10 @@ public:
             }
         }
 
+        opArgs = PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
+                interface, opArgs, privateData);
+        
+
         if (!skipAllChildren) {
 
             std::set<std::string> childrenToSkip;
@@ -561,6 +614,10 @@ public:
         if (!verbose) {
             interface.deleteAttr("__UsdIn");
         }
+        
+        
+        
+        
     }
 
     
@@ -795,16 +852,16 @@ private:
     static FnKat::DoubleAttribute
     _MakeBoundsAttribute(
             const UsdPrim& prim,
-            PxrUsdKatanaUsdInArgsRefPtr usdInArgs)
+            const PxrUsdKatanaUsdInPrivateData& data)
     {
         if (prim.GetPath() == SdfPath::AbsoluteRootPath()) {
             // Special-case to pre-empt coding errors.
             return FnKat::DoubleAttribute();
         }
-        std::vector<GfBBox3d> bounds = usdInArgs->ComputeBounds(prim);
-        // TODO: apply motion sample time overrides stored in the session
-        const std::vector<double>& motionSampleTimes = 
-            usdInArgs->GetMotionSampleTimes();
+        const std::vector<double>& motionSampleTimes =
+            data.GetMotionSampleTimes();
+        std::vector<GfBBox3d> bounds =
+            data.GetUsdInArgs()->ComputeBounds(prim, motionSampleTimes);
 
         bool hasInfiniteBounds = false;
         bool isMotionBackward = motionSampleTimes.size() > 1 &&
@@ -943,10 +1000,11 @@ public:
             {
                 UsdPrim prim = usdInArgs->GetStage()->GetPrimAtPath(
                         SdfPath(childPrimName));
+
+                // The child may introduce a payload, which may not be
+                // loaded, so we do  not check that the child is defined.
                 TF_FOR_ALL(childIter, prim.GetFilteredChildren(
-                        UsdPrimIsDefined
-                        && UsdPrimIsActive
-                        && !UsdPrimIsAbstract))
+                        UsdPrimIsActive && !UsdPrimIsAbstract))
                 {
                     const UsdPrim& child = *childIter;
                     const std::string& childName = child.GetName();

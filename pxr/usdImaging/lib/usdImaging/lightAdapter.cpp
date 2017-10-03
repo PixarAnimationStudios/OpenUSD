@@ -28,6 +28,8 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hdSt/light.h" // XXX: Should be base light schema
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -43,33 +45,14 @@ UsdImagingLightAdapter::~UsdImagingLightAdapter()
 }
 
 void 
-UsdImagingLightAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                            SdfPath const& cachePath,
-                                            HdDirtyBits requestedBits,
-                                            UsdImagingInstancerContext const* 
-                                                instancerContext)
-{    
-}
-
-void 
 UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
-                                        HdDirtyBits requestedBits,
-                                        HdDirtyBits* dirtyBits,
+                                        HdDirtyBits* timeVaryingBits,
                                         UsdImagingInstancerContext const* 
                                             instancerContext)
 {
 }
 
-void 
-UsdImagingLightAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath, 
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext)
-{
-}
 
 // Thread safe.
 //  * Populate dirty bits for the given \p time.
@@ -78,13 +61,12 @@ UsdImagingLightAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext)
 {
 }
 
-int
+HdDirtyBits
 UsdImagingLightAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
@@ -93,26 +75,30 @@ UsdImagingLightAdapter::ProcessPropertyChange(UsdPrim const& prim,
 }
 
 void
-UsdImagingLightAdapter::ProcessPrimResync(SdfPath const& usdPath, 
-                                         UsdImagingIndexProxy* index) 
+UsdImagingLightAdapter::MarkDirty(UsdPrim const& prim,
+                                  SdfPath const& cachePath,
+                                  HdDirtyBits dirty,
+                                  UsdImagingIndexProxy* index)
 {
-    // XXX : This will become RemoveSprims when we standarize shaders/lights.
-    index->RemoveLight(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
-
-    if (_GetPrim(usdPath)) {
-        // The prim still exists, so repopulate it.
-        index->Repopulate(/*cachePath*/usdPath);
-    }
+    index->MarkSprimDirty(cachePath, dirty);
 }
 
 void
-UsdImagingLightAdapter::ProcessPrimRemoval(SdfPath const& usdPath, 
-                                          UsdImagingIndexProxy* index) 
+UsdImagingLightAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           UsdImagingIndexProxy* index)
 {
-    // XXX : This will become RemoveSprims when we standarize shaders/lights.
-    index->RemoveLight(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    // XXX: This should really look at a base light schema for the dirty bits
+    static const HdDirtyBits transformDirty = HdStLight::DirtyTransform;
+    index->MarkSprimDirty(cachePath, transformDirty);
+}
+
+void
+UsdImagingLightAdapter::MarkVisibilityDirty(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            UsdImagingIndexProxy* index)
+{
+    // TBD
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

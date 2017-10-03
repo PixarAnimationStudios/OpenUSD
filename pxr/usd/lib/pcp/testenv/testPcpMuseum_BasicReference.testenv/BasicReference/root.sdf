@@ -79,3 +79,18 @@ def Scope "PrimWithDefaultReferenceTarget2" (
 )
 {
 }
+
+def Scope "PrimWithSubrootReference" (
+    references = [
+        @./ref.sdf@</PrimA/PrimA_Child>,
+        @./ref.sdf@</PrimA/PrimC_Child>
+    ]
+)
+{
+}
+
+def Scope "PrimWithInternalSubrootReference" (
+    references = </InternalReference/InternalReference_Child>
+)
+{
+}

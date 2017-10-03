@@ -24,11 +24,14 @@
 #ifndef VT_VALUE_H
 #define VT_VALUE_H
 
+#include "pxr/pxr.h"
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 // XXX: Include pyLock.h after pyObjWrapper.h to work around
 // Python include ordering issues.
-
-#include "pxr/pxr.h"
 #include "pxr/base/tf/pyObjWrapper.h"
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+
 #include "pxr/base/tf/pyLock.h"
 
 #include "pxr/base/arch/demangle.h"
@@ -125,7 +128,10 @@ VtValue const *VtGetProxiedValue(T const &) { return NULL; }
 template <class T> struct Vt_ValueStoredType { typedef T Type; };
 VT_VALUE_SET_STORED_TYPE(char const *, std::string);
 VT_VALUE_SET_STORED_TYPE(char *, std::string);
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 VT_VALUE_SET_STORED_TYPE(boost::python::object, TfPyObjWrapper);
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #undef VT_VALUE_SET_STORED_TYPE
 
@@ -244,7 +250,9 @@ class VtValue
         virtual size_t Hash(_Storage const &) const = 0;
         virtual bool Equal(_Storage const &, _Storage const &) const = 0;
         virtual void MakeMutable(_Storage &) const = 0;
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
         virtual TfPyObjWrapper GetPyObj(_Storage const &) const = 0;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
         virtual std::ostream & StreamOut(_Storage const &,
                                          std::ostream &) const = 0;
         virtual const Vt_Reserved* GetReserved(_Storage const &) const = 0;
@@ -347,10 +355,12 @@ class VtValue
             GetMutableObj(storage);
         }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
         virtual TfPyObjWrapper GetPyObj(_Storage const &storage) const {
             TfPyLock lock;
             return boost::python::api::object(this->GetObj(storage));
         }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
         virtual std::ostream &StreamOut(
             _Storage const &storage, std::ostream &out) const {
@@ -1031,6 +1041,7 @@ private:
         return VtValue(To(val.UncheckedGet<From>()));
     }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     // This grants friend access to a function in the wrapper file for this
     // class.  This lets the wrapper reach down into a value to get a
     // boost::python wrapped object corresponding to the held type.  This
@@ -1039,6 +1050,7 @@ private:
     Vt_GetPythonObjectFromHeldValue(VtValue const &self);
 
     VT_API TfPyObjWrapper _GetPythonObject() const;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     _Storage _storage;
     TfPointerAndBits<const _TypeInfo> _info;

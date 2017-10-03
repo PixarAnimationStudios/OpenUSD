@@ -283,6 +283,7 @@ void wrapMatrix3f()
         .def(init< const GfVec3f & >())
         .def(init< const vector< vector<float> >& >())
         .def(init< const vector< vector<double> >& >())
+        .def(init< const GfRotation& >())
 
         .def( TfTypePythonClass() )
 
@@ -348,6 +349,9 @@ void wrapMatrix3f()
         .def( self * GfVec3f() )
         .def( GfVec3f() * self )
 
+        .def("SetScale", (This & (This::*)( const GfVec3f & ))&This::SetScale, return_self<>())
+        .def("SetRotate", &This::SetRotate, return_self<>())
+        .def("ExtractRotation", &This::ExtractRotation)
         .def("SetScale", (This & (This::*)( float ))&This::SetScale, return_self<>())
 
         .def("__repr__", _Repr)

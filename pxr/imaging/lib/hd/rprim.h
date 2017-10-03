@@ -48,6 +48,7 @@ class HdDrawItem;
 class HdRenderIndex;
 class HdRepr;
 class HdRenderParam;
+class HdShader;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
 typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
@@ -61,7 +62,7 @@ typedef std::vector<HdComputationSharedPtr> HdComputationVector;
 
 /// \class HdRprim
 ///
-/// The render engine state for a given rprim from the scene graph. All data 
+/// The render engine state for a given rprim from the scene graph. All data
 /// access (aside from local caches) is delegated to the HdSceneDelegate.
 ///
 class HdRprim {
@@ -71,14 +72,14 @@ public:
             SdfPath const& instancerId);
     HD_API
     virtual ~HdRprim();
-    
+
     /// Update objects representation based on dirty bits.
     /// @param[in, out]  dirtyBits: On input specifies which state is
     ///                             is dirty and can be pulled from the scene
     ///                             delegate.
     ///                             On output specifies which bits are still
-    ///                             dirty and were not cleaned by the sync. 
-    ///                             
+    ///                             dirty and were not cleaned by the sync.
+    ///
     virtual void Sync(HdSceneDelegate* delegate,
                       HdRenderParam*   renderParam,
                       HdDirtyBits*     dirtyBits,
@@ -113,7 +114,7 @@ public:
     /// Returns the ID of the SurfaceShader to which this Rprim is bound. The
     /// SurfaceShader object itself can be fetched from the RenderIndex using
     /// this identifier.
-    SdfPath const& GetSurfaceShaderId() const { 
+    SdfPath const& GetSurfaceShaderId() const {
         return _surfaceShaderID;
     }
 
@@ -127,6 +128,9 @@ public:
 
     /// Return the unique instance id
     int32_t GetPrimId() const { return _primId; };
+
+    /// Is the prim itself visible
+    bool IsVisible() const { return _sharedData.visible; }
 
     /// Returns the set of dirty bits that should be
     /// added to the change tracker for this prim, when this prim is inserted.
@@ -250,6 +254,10 @@ protected:
     TfToken _GetReprName(HdSceneDelegate* delegate,
                          TfToken const &defaultReprName, bool forced,
                          HdDirtyBits *dirtyBits);
+
+    HD_API
+    virtual HdShaderCodeSharedPtr _GetShaderCode(HdSceneDelegate *delegate,
+                                                 HdShader const *shader) const;
 
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;

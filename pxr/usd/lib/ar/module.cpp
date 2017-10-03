@@ -33,4 +33,6 @@ TF_WRAP_MODULE
     TF_WRAP(ResolverContext);
     TF_WRAP(ResolverContextBinder);
     TF_WRAP(ResolverScopedCache);
+
+    TF_WRAP(DefaultResolver);
 }

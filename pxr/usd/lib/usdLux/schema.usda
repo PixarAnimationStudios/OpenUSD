@@ -2,7 +2,7 @@
 (
     "This file describes the USD Lux light schemata for code generation."
     subLayers = [
-        @../usdGeom/schema.usda@
+        @usdGeom/schema.usda@
     ]
 )
 
@@ -313,7 +313,7 @@ class DistantLight "DistantLight" (
         Higher values broaden the light and therefore soften shadow edges.
         """
     )
-    float intensity = 5000 (
+    float intensity = 50000 (
         doc = """Scales the emission of the light linearly.
         The DistantLight has a high default intensity to approximate the Sun."""
     )

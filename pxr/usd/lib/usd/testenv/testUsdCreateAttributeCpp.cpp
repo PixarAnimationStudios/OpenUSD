@@ -35,8 +35,9 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/arch/fileSystem.h"
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
-
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -125,7 +126,7 @@ TestIsDefined()
     //
     stage = UsdStage::Open(strongLayer->GetIdentifier());
     p = stage->OverridePrim(SdfPath("/Parent"));
-    p.GetReferences().AppendReference(
+    p.GetReferences().AddReference(
         SdfReference(weakLayer->GetIdentifier(), SdfPath("/Parent")));
 
     //
@@ -537,5 +538,7 @@ int main()
     TestQueryTimeSample();
     TestVariability();
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     TF_AXIOM(!Py_IsInitialized());
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 }

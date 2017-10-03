@@ -85,7 +85,7 @@ def findMatchingReference( sdfPrim, fileName ):
     found in.
     '''
 
-    for ref in sdfPrim.referenceList.addedOrExplicitItems:
+    for ref in sdfPrim.referenceList.GetAddedOrExplicitItems():
         if ref.assetPath == fileName:
             return sdfPrim.path
 
@@ -122,9 +122,9 @@ def addReference( stage, path, fileName, targetPrim ):
 
     refList = prim.GetReferences()
     if targetPrim:
-        refList.AppendReference( Sdf.Reference( fileName, targetPrim ))
+        refList.AddReference( Sdf.Reference( fileName, targetPrim ))
     else:
-        refList.AppendReference( Sdf.Reference( fileName ))
+        refList.AddReference( Sdf.Reference( fileName ))
 
 def getMetaData( fileName ):
     ''' 

@@ -40,11 +40,15 @@
 #include <Windows.h>
 #include <intrin.h>
 #include <boost/preprocessor/variadic/size.hpp>
+#include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
 #endif
 #include <algorithm>
 #include <atomic>
+#include <bitset>
+#include <cfloat>
 #include <cmath>
+#include <condition_variable>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
@@ -62,6 +66,7 @@
 #include <math.h>
 #include <memory>
 #include <mutex>
+#include <random>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -126,12 +131,14 @@
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
 #if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
 #undef tolower
 #undef toupper
 #endif
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/range/iterator.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -150,12 +157,17 @@
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/utility/value_init.hpp>
 #include <boost/weak_ptr.hpp>
 #include <embree2/rtcore.h>
+#include <embree2/rtcore_geometry.h>
 #include <embree2/rtcore_ray.h>
 #include <tbb/atomic.h>
+#include <tbb/concurrent_unordered_map.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/enumerable_thread_specific.h>
 #include <tbb/tbb.h>
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
+#endif // PXR_PYTHON_SUPPORT_ENABLED

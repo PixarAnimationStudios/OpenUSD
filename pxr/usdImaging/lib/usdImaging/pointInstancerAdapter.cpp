@@ -167,7 +167,11 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     instrData.parentInstancerPath = parentInstancerPath;
 
     TF_DEBUG(USDIMAGING_INSTANCER).Msg("[Add PI] %s\n", instancerPath.GetText());
-    index->InsertInstancer(instancerPath, instancerContext);
+    // Need to use GetAbsoluteRootOrPrimPath() on instancerPath to drop
+    // {instancer=X} from the path, so usd can find the prim.
+    index->InsertInstancer(instancerPath,
+                           _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath()),
+                           instancerContext);
 
     // ---------------------------------------------------------------------- //
     // Main Prototype allocation loop.
@@ -354,24 +358,10 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
 void 
 UsdImagingPointInstancerAdapter::TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      HdDirtyBits requestedBits,
                                       UsdImagingInstancerContext const* 
                                           instancerContext)
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
-    // We will always cache purpose.
-    // XXX: this is an indicator of a problem, we should have some flag to
-    // drive purpose, just as all other values.
-    valueCache->GetPurpose(cachePath);
-
     if (IsChildPath(cachePath)) {
-        // We must ensure InstanceIndices gets populated with some value;
-        // perhaps we should reconsider the way the instancing code works in
-        // Hydra.
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
-            valueCache->GetInstanceIndices(cachePath);
-        }
-
         _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(), cachePath);
         if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
             return;
@@ -381,35 +371,14 @@ UsdImagingPointInstancerAdapter::TrackVariabilityPrep(UsdPrim const& prim,
         }
 
         rproto.adapter->TrackVariabilityPrep(_GetPrim(rproto.paths.front()),
-                                             cachePath,
-                                                requestedBits);
-        return;
-    } else {
-        // XXX: We must continue to fetch primvars here, see note in
-        // UpdateForTimePrep.
-        if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-            UsdGeomPointInstancer instancer(prim);
-            if (instancer.GetPositionsAttr().HasValue()) {
-                valueCache->GetPrimvar(cachePath, _tokens->translate);
-                valueCache->GetPrimvars(cachePath);
-            }
-            if (instancer.GetOrientationsAttr().HasValue()) {
-                valueCache->GetPrimvar(cachePath, _tokens->rotate);
-               valueCache->GetPrimvars(cachePath);
-            }
-            if (instancer.GetScalesAttr().HasValue()) {
-                valueCache->GetPrimvar(cachePath, _tokens->scale);
-                valueCache->GetPrimvars(cachePath);
-            }
-        }
+                                             cachePath);
     }
 }
 
 void 
 UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
-                                  HdDirtyBits requestedBits,
-                                  HdDirtyBits* dirtyBits,
+                                  HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext)
 {
@@ -439,16 +408,25 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             return;
         }
 
-        // If requested, we will always mark indices dirty and update them
-        // lazily.
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
-            *dirtyBits |= HdChangeTracker::DirtyInstanceIndex;
-            // Initializing to an empty value is OK here because either this
-            // prototype will be invisible or it will be visible and the indices
-            // will be updated.
-            VtIntArray a;
-            valueCache->GetInstanceIndices(cachePath) = a;
-        }
+        // Mark instance indices as time varying if any of the following is 
+        // time varying : protoIndices, invisibleIds
+        _IsVarying(prim,
+            UsdGeomTokens->invisibleIds,
+            HdChangeTracker::DirtyInstanceIndex,
+            _tokens->instancer,
+            timeVaryingBits,
+            true) || _IsVarying(prim,
+                UsdGeomTokens->protoIndices,
+                HdChangeTracker::DirtyInstanceIndex,
+                _tokens->instancer,
+                timeVaryingBits,
+                true);
+
+        // Initializing to an empty value is OK here because either this
+        // prototype will be invisible or it will be visible and the indices
+        // will be updated.
+        VtIntArray a;
+        valueCache->GetInstanceIndices(cachePath) = a;
 
         // XXX: We should never pull purpose directly from the prototype's
         // adapter, since we must compute purpose relative to the model root,
@@ -456,9 +434,8 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         UsdPrim protoRootPrim = _GetPrim(rproto.prototype->protoRootPath);
         UsdPrim protoPrim = _GetPrim(rproto.paths.front());
         rproto.adapter->TrackVariability(protoPrim, cachePath,
-                                        requestedBits,
                                         &rproto.variabilityBits);
-        *dirtyBits |= rproto.variabilityBits;
+        *timeVaryingBits |= rproto.variabilityBits;
 
         // XXX: We need to override the purpose computed by the adapter for the
         // same reason noted above.
@@ -506,11 +483,14 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         // bits on the Rprim on every frame, to be sure the instancer data
         // associated with the Rprim gets updated.
         int instancerBits = _UpdateDirtyBits(prim);
-        *dirtyBits |=  (instancerBits & HdChangeTracker::DirtyInstancer);
+        *timeVaryingBits |=  (instancerBits & HdChangeTracker::DirtyInstancer);
+        _IsVarying(prim,
+            UsdGeomTokens->visibility,
+            HdChangeTracker::DirtyVisibility,
+            UsdImagingTokens->usdVaryingVisibility,
+            timeVaryingBits,
+            true);
 
-        if (requestedBits & HdChangeTracker::DirtyVisibility) {
-            *dirtyBits |= HdChangeTracker::DirtyVisibility;
-        }
         return;
     } else {
         TfToken purpose = UsdGeomImageable(prim).ComputePurpose();
@@ -519,127 +499,122 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             purpose = UsdGeomTokens->default_;
         valueCache->GetPurpose(cachePath) = purpose;
 
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
-            // Check to see if this instancer is also being instanced, if so, we
-            // need to set dirty bits on the instance index. For instancers, we
-            // could probably update the instance index only once, since
-            // currently subsequent updates are redundant.
-            _InstancerDataMap::const_iterator instr =
-                                            _instancerData.find(prim.GetPath());
-            if (instr != _instancerData.end()) {
-                SdfPath parentInstancerPath = instr->second.parentInstancerPath;
-                if (!parentInstancerPath.IsEmpty()) {
-                    *dirtyBits |= HdChangeTracker::DirtyInstanceIndex;
-                }
+        // Check to see if this point instancer is also being instanced, 
+        // if so, we need to set dirty bits on the instance index. 
+        // For instancers, we could probably update the 
+        // instance index only once, since
+        // currently subsequent updates are redundant.
+        _InstancerDataMap::const_iterator instr =
+            _instancerData.find(cachePath);
+        if (instr != _instancerData.end()) {
+            SdfPath parentInstancerPath = instr->second.parentInstancerPath;
+            if (!parentInstancerPath.IsEmpty()) {
+                // Mark instance indices as time varying if any of the following
+                // is time varying : protoIndices, invisibleIds
+                _IsVarying(prim,
+                    UsdGeomTokens->invisibleIds,
+                    HdChangeTracker::DirtyInstanceIndex,
+                    _tokens->instancer,
+                    timeVaryingBits,
+                    true) || _IsVarying(prim,
+                        UsdGeomTokens->protoIndices,
+                        HdChangeTracker::DirtyInstanceIndex,
+                        _tokens->instancer,
+                        timeVaryingBits,
+                        true);
             }
         }
 
-        if (requestedBits & HdChangeTracker::DirtyTransform) {
-            // this is for instancer transform.
-            // _IsTransformVarying(prim, 
-            //                     HdChangeTracker::DirtyTransform,
-            //                     UsdImagingTokens->usdVaryingXform,
-            //                     dirtyBits);
-
-            // XXX: hack to support nested instancer and multi-threaded sync;
-            //      we always populate instancer transform into value cache
-            *dirtyBits |=  HdChangeTracker::DirtyTransform;
-        }
+        // this is for instancer transform.
+        _IsTransformVarying(prim,
+                            HdChangeTracker::DirtyTransform,
+                            UsdImagingTokens->usdVaryingXform,
+                            timeVaryingBits);
 
         // to update visibility
         _UpdateDirtyBits(prim);
 
-        if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-            UsdGeomPointInstancer instancer(prim);
+        UsdGeomPointInstancer instancer(prim);
 
-            // TODO: verify lengths of arrays vs. the actual instance count for
-            // this frame.
+        // TODO: verify lengths of arrays vs. the actual instance count for
+        // this frame.
 
-            bool anyVarying = false;
+        bool anyVarying = false;
 
-            VtVec3fArray positions;
-            if (instancer.GetPositionsAttr().Get(&positions, time)) {
-                if (!positions.empty()) {
-                    valueCache->GetPrimvar(cachePath, _tokens->translate) =
-                        positions;
-                    UsdImagingValueCache::PrimvarInfo primvar;
-                    primvar.name = _tokens->translate;
-                    primvar.interpolation = _tokens->instance;
-                    _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                }
-
-                anyVarying = _IsVarying(prim,
-                                        UsdGeomTokens->positions,
-                                        HdChangeTracker::DirtyPrimVar,
-                                        _tokens->instancer,
-                                        dirtyBits,
-                                        false);
+        VtVec3fArray positions;
+        if (instancer.GetPositionsAttr().Get(&positions, time)) {
+            if (!positions.empty()) {
+                valueCache->GetPrimvar(cachePath, _tokens->translate) =
+                    positions;
+                UsdImagingValueCache::PrimvarInfo primvar;
+                primvar.name = _tokens->translate;
+                primvar.interpolation = _tokens->instance;
+                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
             }
 
-            VtQuathArray orientations;
-            if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
-                if (!orientations.empty()) {
-                    // convert to Vec4Array that hydra instancer requires.
-                    // Also note that hydra's instancer takes GfQuaterion layout
-                    // (real, imaginary) which differs from GfQuath's
-                    // (imaginary, real)
-                    VtVec4fArray rotations;
-                    rotations.reserve(orientations.size());
-                    for (const GfQuath& orientation : orientations) {
-                        rotations.push_back(
-                            GfVec4f(orientation.GetReal(),
-                                    orientation.GetImaginary()[0],
-                                    orientation.GetImaginary()[1],
-                                    orientation.GetImaginary()[2]));
-                    }
+            anyVarying = _IsVarying(prim,
+                                    UsdGeomTokens->positions,
+                                    HdChangeTracker::DirtyPrimVar,
+                                    _tokens->instancer,
+                                    timeVaryingBits,
+                                    false);
+        }
 
-                    valueCache->GetPrimvar(cachePath, _tokens->rotate) =
-                        rotations;
-                    UsdImagingValueCache::PrimvarInfo primvar;
-                    primvar.name = _tokens->rotate;
-                    primvar.interpolation = _tokens->instance;
-                    _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+        VtQuathArray orientations;
+        if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
+            if (!orientations.empty()) {
+                // convert to Vec4Array that hydra instancer requires.
+                // Also note that hydra's instancer takes GfQuaterion layout
+                // (real, imaginary) which differs from GfQuath's
+                // (imaginary, real)
+                VtVec4fArray rotations;
+                rotations.reserve(orientations.size());
+                for (const GfQuath& orientation : orientations) {
+                    rotations.push_back(
+                        GfVec4f(orientation.GetReal(),
+                                orientation.GetImaginary()[0],
+                                orientation.GetImaginary()[1],
+                                orientation.GetImaginary()[2]));
                 }
 
-                anyVarying = anyVarying || 
-                    _IsVarying(prim,
-                               UsdGeomTokens->orientations,
-                               HdChangeTracker::DirtyPrimVar,
-                               _tokens->instancer,
-                               dirtyBits,
-                               false);
+                valueCache->GetPrimvar(cachePath, _tokens->rotate) =
+                    rotations;
+                UsdImagingValueCache::PrimvarInfo primvar;
+                primvar.name = _tokens->rotate;
+                primvar.interpolation = _tokens->instance;
+                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
             }
 
-            VtVec3fArray scales(1);
-            if (instancer.GetScalesAttr().Get(&scales, time)) {
-                if (!scales.empty()) {
-                    valueCache->GetPrimvar(cachePath, _tokens->scale) = scales;
-                    UsdImagingValueCache::PrimvarInfo primvar;
-                    primvar.name = _tokens->scale;
-                    primvar.interpolation = _tokens->instance;
-                    _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                }
+            anyVarying = anyVarying ||
+                _IsVarying(prim,
+                           UsdGeomTokens->orientations,
+                           HdChangeTracker::DirtyPrimVar,
+                           _tokens->instancer,
+                           timeVaryingBits,
+                           false);
+        }
 
-                anyVarying = anyVarying || 
-                    _IsVarying(prim,
-                               UsdGeomTokens->scales,
-                               HdChangeTracker::DirtyPrimVar,
-                               _tokens->instancer,
-                               dirtyBits,
-                               false);
+        VtVec3fArray scales(1);
+        if (instancer.GetScalesAttr().Get(&scales, time)) {
+            if (!scales.empty()) {
+                valueCache->GetPrimvar(cachePath, _tokens->scale) = scales;
+                UsdImagingValueCache::PrimvarInfo primvar;
+                primvar.name = _tokens->scale;
+                primvar.interpolation = _tokens->instance;
+                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
             }
+
+            anyVarying = anyVarying ||
+                _IsVarying(prim,
+                           UsdGeomTokens->scales,
+                           HdChangeTracker::DirtyPrimVar,
+                           _tokens->instancer,
+                           timeVaryingBits,
+                           false);
         }
     }
 }
 
-static
-bool
-_ShouldFetchAttr(UsdAttribute attr, UsdTimeCode time)
-{
-    return (!time.IsDefault() && attr.HasValue())
-            || (time.IsDefault() && attr.HasMetadata(SdfFieldKeys->Default));
-}
- 
 void
 UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath,
@@ -648,7 +623,24 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    UsdImagingInstancerContext const*
                                        instancerContext)
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
+    // XXX: There is some prim/adapter dependancy here when the instancer
+    // is a nested instancer.
+    //
+    // _UpdateInstanceMap() updates the instance indexes an instancer.
+    //
+    // In the case of nested instancer, the parent instancer manages the
+    // instance indexes on the child instancer behalf.  Therefore,
+    // _UpdateInstanceMap() must be called on the parent before the child.
+    //
+    // However, this leads to some challenges:
+    // Making sure _UpdateInstanceMap() is called on the parent at all.
+    // Ideally _UpdateInstanceMap() is only called once for the parent.
+    // Don't read the instance indexes while _UpdateInstanceMap() is updating.
+    //
+    // Therefore, currently _UpdateInstanceMap() is updated in a single
+    // threaded pass (this UpdateForTimePrep()) before the multi-threaded
+    // pass is run.  However, it does mean _UpdateInstanceMap() could be called
+    // multiple times for the same prim.
     if (IsChildPath(cachePath)) {
         // extract instancerPath from cachePath.
         //
@@ -657,16 +649,7 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
         //
         _UpdateInstanceMap(cachePath.GetParentPath(), time);
 
-        // All Update code paths will update visibility.
-        valueCache->GetVisible(cachePath);
         _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(), cachePath);
-
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
-            valueCache->GetInstanceIndices(cachePath);
-        }
-        if (requestedBits & HdChangeTracker::DirtyTransform) {
-            valueCache->GetInstancerTransform(cachePath);
-        }
 
         if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
             return;
@@ -682,12 +665,21 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                           cachePath,
                                           time, requestedBits);
     } else {
+        // Check if it is an instancer, if it is the first time then
+        // we want to initialize the bits.
+        _InstancerDataMap::iterator inst = _instancerData.find(cachePath);
+        if (inst != _instancerData.end()) {
+            if (inst->second.initialized == false) {
+                requestedBits |= HdChangeTracker::DirtyInstanceIndex;
+            }
+        }
+
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             // If this is a nested instancer, we need to prime the
             // InstanceIndices in the value cache and make sure the parent
             // instancer has been updated for the current time.
             _InstancerDataMap::const_iterator instr =
-                                            _instancerData.find(prim.GetPath());
+                _instancerData.find(cachePath);
             if (instr != _instancerData.end()) {
                 SdfPath parentInstancerPath = instr->second.parentInstancerPath;
                 if (!parentInstancerPath.IsEmpty()) {
@@ -707,51 +699,10 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                         cachePath.GetText());
                     }
                 }
-                // Update instancer data, prepare an entry in valueCache
-                valueCache->GetInstanceIndices(cachePath);
                 _UpdateInstanceMap(cachePath, time);
             } else {
                 TF_CODING_ERROR("PI: %s is not found in _instancerData\n",
                                 cachePath.GetText());
-            }
-        }
-
-        if (requestedBits & HdChangeTracker::DirtyTransform) {
-            valueCache->GetInstancerTransform(cachePath);
-        }
-
-        if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-            // TODO: Stop querying existance here.
-            // 
-            // The problem is all primvars are specified as a single dirty bit,
-            // so the render index can only ask for all or nothing. If any one
-            // primvar varies over time, we end up paying the cost to fetch all
-            // of them on every frame.
-            //
-            // Worse, if we stop reading these values on during track
-            // variability, the render index will never get any values for
-            // non-time-varying primvars, since we won't fetch them on the first
-            // pass and we wont fetch them here since _ShouldFetchAttr is
-            // designed to filter out all non-time-varying attributes.
-            //
-            // Solution: introduce named dirty bits for primvars (and shader
-            // parameters). Then we don't need to filter here and everything
-            // works as expected.
-            //
-            // Until then, we must filter here and fetch initial values in track
-            // variability.
-            UsdGeomPointInstancer instancer(prim);
-            if (_ShouldFetchAttr(instancer.GetPositionsAttr(), time)) {
-                valueCache->GetPrimvar(cachePath, _tokens->translate);
-                valueCache->GetPrimvars(cachePath);
-            }
-            if (_ShouldFetchAttr(instancer.GetOrientationsAttr(), time)) {
-                valueCache->GetPrimvar(cachePath, _tokens->rotate);
-                valueCache->GetPrimvars(cachePath);
-            }
-            if (_ShouldFetchAttr(instancer.GetScalesAttr(), time)) {
-                valueCache->GetPrimvar(cachePath, _tokens->scale);
-                valueCache->GetPrimvars(cachePath);
             }
         }
     }
@@ -762,7 +713,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               HdDirtyBits* resultBits,
                                UsdImagingInstancerContext const* 
                                    instancerContext)
 {
@@ -789,9 +739,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             rprotoRW.initialized = true;
         }
 
-        // Uphold the original precondition: result == requested bits.
-        *resultBits = requestedBits;
-
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             valueCache->GetInstanceIndices(cachePath) = 
                 rproto.prototype->indices;
@@ -807,50 +754,62 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         // Allow the prototype's adapter to update, if there's anything left
         // to do.
         if (protoReqBits != HdChangeTracker::Clean)
-            rproto.adapter->UpdateForTime(_GetPrim(rproto.paths.front()), cachePath,
-                                          time, protoReqBits, resultBits);
+            rproto.adapter->UpdateForTime(_GetPrim(rproto.paths.front()),
+                                          cachePath, time, protoReqBits);
 
         // Make sure we always query and return visibility. This is done
         // after the adapter update to ensure we get our specialized view of
         // visibility.
-        requestedBits |= HdChangeTracker::DirtyVisibility;
-        *resultBits |= HdChangeTracker::DirtyVisibility;
 
         // Apply the instancer visibility at the current time to the
         // instance. Notice that the instance will also pickup the instancer
         // visibility at the time offset.
-        if (requestedBits & HdChangeTracker::DirtyVisibility) {
-            bool& vis = valueCache->GetVisible(cachePath);
-            bool protoHasFixedVis = !(rproto.variabilityBits 
-                                      & HdChangeTracker::DirtyVisibility);
+        bool& vis = valueCache->GetVisible(cachePath);
+        bool protoHasFixedVis = !(rproto.variabilityBits
+                                  & HdChangeTracker::DirtyVisibility);
 
-            _InstancerDataMap::const_iterator it 
-                = _instancerData.find(instancerPath);
-            if (TF_VERIFY(it != _instancerData.end())) {
-                vis = it->second.visible;
-            }
-            if (protoHasFixedVis) { 
-                // The instancer is visible and the proto prim has fixed
-                // visibility (it does not vary over time), we can use the
-                // pre-cached visibility.
-                vis = vis && rproto.visible;
-            } else if (vis) {
-                // The instancer is visible and the prototype has varying
-                // visibility, we must compute visibility from the proto
-                // prim to the model instance root.
-                _ComputeProtoVisibility(
-                    _GetPrim(rproto.prototype->protoRootPath), 
-                    _GetPrim(rproto.paths.front()), 
-                    time,
-                    &vis); 
-            }
+        _InstancerDataMap::const_iterator it
+            = _instancerData.find(instancerPath);
+        if (TF_VERIFY(it != _instancerData.end())) {
+            vis = it->second.visible;
+        }
+        if (protoHasFixedVis) {
+            // The instancer is visible and the proto prim has fixed
+            // visibility (it does not vary over time), we can use the
+            // pre-cached visibility.
+            vis = vis && rproto.visible;
+        } else if (vis) {
+            // The instancer is visible and the prototype has varying
+            // visibility, we must compute visibility from the proto
+            // prim to the model instance root.
+            _ComputeProtoVisibility(
+                _GetPrim(rproto.prototype->protoRootPath),
+                _GetPrim(rproto.paths.front()),
+                time,
+                &vis);
         }
 
-        if (*resultBits & HdChangeTracker::DirtyTransform) {
+        if (requestedBits & HdChangeTracker::DirtyTransform) {
             _CorrectTransform(prim, _GetPrim(rproto.prototype->protoRootPath),
                               cachePath, rproto.paths, time);
         }
     } else {
+        // Check if it is an instancer, if it is the first time then
+        // we want to initialize the bits.
+        _InstancerDataMap::iterator inst = _instancerData.find(cachePath);
+        if (inst != _instancerData.end()) {
+            if (inst->second.initialized == false) {
+                SdfPath parentInstancerPath = inst->second.parentInstancerPath;
+                if (!parentInstancerPath.IsEmpty()) {
+                    requestedBits |= HdChangeTracker::DirtyInstanceIndex;
+                }
+                requestedBits |= HdChangeTracker::DirtyTransform;
+                requestedBits |= HdChangeTracker::DirtyPrimVar;
+                
+                inst->second.initialized = true;
+            }
+        }
+ 
         // Nested Instancer (instancer has instanceIndex)
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             // For nested instancers, we must update the instance index.
@@ -956,7 +915,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
-int
+HdDirtyBits
 UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
@@ -1131,6 +1090,111 @@ UsdImagingPointInstancerAdapter::ProcessPrimRemoval(SdfPath const& usdPath,
     _ProcessPrimRemoval(usdPath, index, /*instancersToRepopulate*/nullptr);
 }
 
+void
+UsdImagingPointInstancerAdapter::MarkDirty(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           HdDirtyBits dirty,
+                                           UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        // cachePath : /path/instancerPath.proto_*
+        // instancerPath : /path/instancerPath
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
+
+        rproto.adapter->MarkDirty(prim, cachePath, dirty, index);
+    } else {
+        index->MarkInstancerDirty(cachePath, dirty);
+    }
+}
+
+void
+UsdImagingPointInstancerAdapter::MarkRefineLevelDirty(
+                                                   UsdPrim const& prim,
+                                                   SdfPath const& cachePath,
+                                                   UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        // cachePath : /path/instancerPath.proto_*
+        // instancerPath : /path/instancerPath
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
+
+        rproto.adapter->MarkRefineLevelDirty(prim, cachePath, index);
+    }
+}
+
+void
+UsdImagingPointInstancerAdapter::MarkReprDirty(UsdPrim const& prim,
+                                               SdfPath const& cachePath,
+                                               UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        // cachePath : /path/instancerPath.proto_*
+        // instancerPath : /path/instancerPath
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
+
+        rproto.adapter->MarkReprDirty(prim, cachePath, index);
+    }
+}
+
+void
+UsdImagingPointInstancerAdapter::MarkCullStyleDirty(UsdPrim const& prim,
+                                                    SdfPath const& cachePath,
+                                                    UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        // cachePath : /path/instancerPath.proto_*
+        // instancerPath : /path/instancerPath
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
+
+        rproto.adapter->MarkCullStyleDirty(prim, cachePath, index);
+    }
+}
+
+void
+UsdImagingPointInstancerAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                                    SdfPath const& cachePath,
+                                                    UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        // cachePath : /path/instancerPath.proto_*
+        // instancerPath : /path/instancerPath
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
+
+        rproto.adapter->MarkTransformDirty(prim, cachePath, index);
+    } else {
+        static const HdDirtyBits transformDirty =
+                                                HdChangeTracker::DirtyTransform;
+
+        index->MarkInstancerDirty(cachePath, transformDirty);
+    }
+}
+
+void
+UsdImagingPointInstancerAdapter::MarkVisibilityDirty(
+                                                    UsdPrim const& prim,
+                                                    SdfPath const& cachePath,
+                                                    UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        // cachePath : /path/instancerPath.proto_*
+        // instancerPath : /path/instancerPath
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoRprim const& rproto = _GetProtoRprim(instancerPath, cachePath);
+
+        rproto.adapter->MarkVisibilityDirty(prim, cachePath, index);
+    } else {
+        static const HdDirtyBits visibilityDirty =
+                                               HdChangeTracker::DirtyVisibility;
+
+        index->MarkInstancerDirty(cachePath, visibilityDirty);
+    }
+}
+
 bool
 UsdImagingPointInstancerAdapter::ShouldCullChildren(UsdPrim const& prim)
 {
@@ -1146,12 +1210,12 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
     TF_FOR_ALL(protoRprimIt, instIt->second.protoRprimMap) {
         SdfPath const& cachePath = protoRprimIt->first;
         index->RemoveRprim(cachePath);
-        index->RemoveDependency(cachePath);
+        index->RemovePrimInfo(cachePath);
     }
 
     // Blow away the instancer and the associated local data.
     index->RemoveInstancer(instancerPath);
-    index->RemoveDependency(instancerPath);
+    index->RemovePrimInfo(instancerPath);
     _instancerData.erase(instIt);
 }
 
@@ -1286,8 +1350,7 @@ UsdImagingPointInstancerAdapter::_UpdateInstanceMap(
 }
 
 int
-UsdImagingPointInstancerAdapter::_UpdateDirtyBits(
-                    UsdPrim const& instancerPrim)
+UsdImagingPointInstancerAdapter::_UpdateDirtyBits(UsdPrim const& instancerPrim)
 {
     // We expect the instancerData entry for this instancer to be established
     // before this method is called. This map should also never be accessed and
@@ -1316,8 +1379,10 @@ UsdImagingPointInstancerAdapter::_UpdateDirtyBits(
     }
 
     // If another thread already initialized the dirty bits, we can bail.
-    if (instrData.dirtyBits != static_cast<HdDirtyBits>(HdChangeTracker::AllDirty))
+    if (instrData.dirtyBits != 
+            static_cast<HdDirtyBits>(HdChangeTracker::AllDirty)) {
         return instrData.dirtyBits;
+    }
 
     instrData.dirtyBits = HdChangeTracker::Clean;
     HdDirtyBits* dirtyBits = &instrData.dirtyBits;
@@ -1629,6 +1694,7 @@ UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
 /*virtual*/
 bool
 UsdImagingPointInstancerAdapter::PopulateSelection(
+    HdxSelectionHighlightMode const& highlightMode,
     SdfPath const &path,
     VtIntArray const &instanceIndices,
     HdxSelectionSharedPtr const &result)
@@ -1639,7 +1705,7 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
 
     bool added = false;
     TF_FOR_ALL (it, ids){
-        result->AddInstance(*it, instanceIndices);
+        result->AddInstance(highlightMode, *it, instanceIndices);
         added = true;
     }
     return added;
@@ -1668,6 +1734,14 @@ UsdImagingPointInstancerAdapter::GetDependPaths(SdfPath const &instancerPath) co
     }
     // XXX: we may want to cache this result in _instancerData.
     return result;
+}
+
+/*virtual*/
+void
+UsdImagingPointInstancerAdapter::_RemovePrim(SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
+{
+    TF_CODING_ERROR("Should use overidden ProcessPrimResync/ProcessPrimRemoval");
 }
 
 /*virtual*/

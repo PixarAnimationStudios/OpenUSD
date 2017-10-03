@@ -31,10 +31,13 @@
 
 #include <pxr/pxr.h>
 #include "pxr/usd/usd/prim.h"
-#include "gusd/USD_Proxy.h"
-#include "gusd/USD_DataCache.h"
+#include "pxr/usd/usdGeom/imageable.h"
 #include "gusd/purpose.h"
+#include "gusd/stageEdit.h"
+#include "gusd/USD_Utils.h"
+#include "gusd/UT_Error.h"
 
+class GusdPrimDef;
 class GU_PrimPacked;
 class GT_RefineParms;
 
@@ -70,18 +73,21 @@ public:
                             GU_Detail&              detail,
                             const UT_StringHolder&  fileName, 
                             const SdfPath&          primPath, 
-                            const UsdTimeCode&      frame, 
+                            UsdTimeCode             frame, 
                             const char*             lod = NULL,
-                            GusdPurposeSet          purposes = GUSD_PURPOSE_PROXY );
+                            GusdPurposeSet          purposes = GUSD_PURPOSE_PROXY,
+                            const UsdPrim&          prim = UsdPrim() );
+
     static GU_PrimPacked* Build( 
                             GU_Detail&              detail,
                             const UT_StringHolder&  fileName, 
                             const SdfPath&          primPath, 
                             const SdfPath&          srcPrimPath, 
                             int                     index,
-                            const UsdTimeCode&      frame, 
+                            UsdTimeCode             frame, 
                             const char*             lod = NULL,
-                            GusdPurposeSet          purposes = GUSD_PURPOSE_PROXY );
+                            GusdPurposeSet          purposes = GUSD_PURPOSE_PROXY,
+                            const UsdPrim&          prim = UsdPrim() );
 
     GusdGU_PackedUSD();
     GusdGU_PackedUSD(const GusdGU_PackedUSD &src );
@@ -124,9 +130,10 @@ public:
     GA_Size usdLocalToWorldTransformSize() const { return 16; }
     void usdLocalToWorldTransform(fpreal64* val, exint size) const;
 
-    const UsdTimeCode& frame() const { return m_frame; }
-    fpreal intrinsicFrame() const { return m_frame.GetValue(); }
-    void setFrame( const UsdTimeCode& frame );
+    UsdTimeCode frame() const { return m_frame; }
+    fpreal intrinsicFrame() const { return GusdUSD_Utils::GetNumericTime(m_frame); }
+    
+    void setFrame( UsdTimeCode frame );
     void setFrame( fpreal frame );
 
     GusdPurposeSet getPurposes() const { return m_purposes; }
@@ -168,10 +175,11 @@ public:
     /// shared memory correctly.
     virtual void countMemory(UT_MemoryCounter &counter, bool inclusive) const override;
 
-    UsdPrim getUsdPrim(GusdUSD_PrimHolder::ScopedLock &lock,
-                       GusdUT_ErrorContext* err = NULL) const;
+    UsdPrim getUsdPrim(GusdUT_ErrorContext* err = nullptr) const;
 
-    GusdUSD_StageProxyHandle getProxy() const;
+    /// Get a stage edit on this prim describing all edits that must
+    /// be made on a stage to provide this prim.
+    GusdStageEditPtr getStageEdit() const;
 
     bool unpackGeometry( GU_Detail &destgdp,
                          const char* primvarPattern ) const;
@@ -200,10 +208,9 @@ private:
     UsdTimeCode     m_frame;
     GusdPurposeSet  m_purposes;
 
-    mutable GusdUSD_PrimHolder  m_usdPrim;
-    mutable GusdUSD_StageProxyHandle    m_stageProxy;
 
     // caches    
+    mutable UsdPrim             m_usdPrim;
     mutable UT_BoundingBox      m_boundsCache;
     mutable bool                m_transformCacheValid;
     mutable UT_Matrix4D         m_transformCache;

@@ -121,10 +121,10 @@ def TestNewPayloadAutoLoading():
 
     stage = Usd.Stage.Open(rootLayer)
     main = stage.GetPrimAtPath('/main')
-    pvs = main.GetVariantSets().AppendVariantSet('payload_vset')
+    pvs = main.GetVariantSets().AddVariantSet('payload_vset')
 
-    withPayload = pvs.AppendVariant('with_payload')
-    withoutPayload = pvs.AppendVariant('without_payload')
+    withPayload = pvs.AddVariant('with_payload')
+    withoutPayload = pvs.AddVariant('without_payload')
 
     pvs.SetVariantSelection('with_payload')
     with pvs.GetVariantEditContext():

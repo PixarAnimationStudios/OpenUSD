@@ -30,7 +30,6 @@
 #include "gusd/UT_Assert.h"
 #include "gusd/UT_Error.h"
 #include "gusd/UT_StaticInit.h"
-#include "gusd/UT_Usd.h"
 
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/fileUtils.h>
@@ -213,15 +212,6 @@ GusdSOP_usdunpack::GusdSOP_usdunpack(
 {}
 
 
-GusdGU_USD::BindOptions
-GusdSOP_usdunpack::GetBindOpts(OP_Context& ctx)
-{
-    GusdGU_USD::BindOptions opts;
-    opts.packedPrims = !evalInt("unpack_class", 0, ctx.getTime());
-    return opts;
-}
-
-
 void
 GusdSOP_usdunpack::UpdateTraversalParms()
 {
@@ -312,6 +302,8 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
     evalString(geomType, "unpack_geomtype", 0, t);
     bool unpackToPolygons = (geomType == "polygons");
 
+    bool packedPrims = !evalInt("unpack_class", 0, ctx.getTime());
+
     // If there is no traversal AND geometry type is not
     // polygons, then the output prims would be the same as the inputs,
     // so nothing left to do.
@@ -324,8 +316,7 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
     GusdUT_ErrorManager errMgr(*lockedMgr);
     GusdUT_ErrorContext err(errMgr, UT_ERROR_ABORT);
 
-    auto opts = GetBindOpts(ctx);
-    GA_AttributeOwner owner = opts.packedPrims ?
+    GA_AttributeOwner owner = packedPrims ?
         GA_ATTRIB_PRIMITIVE : GA_ATTRIB_POINT;
 
     // Construct a range and bind prims.
@@ -333,21 +324,19 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
                  UTverify_cast<const GA_ElementGroup*>(_group));
 
     UT_Array<SdfPath> variants;
-    UT_Array<GusdPurposeSet> purposes;
-    GusdUSD_Utils::PrimTimeMap timeMap;
-    GusdGU_USD::PrimHandle primHnd;
-    if (!primHnd.Bind(opts, *gdp, rng, &variants, &purposes, &timeMap, &err)) {
-        return err();
+    GusdDefaultArray<GusdPurposeSet> purposes;
+    GusdDefaultArray<UsdTimeCode> times;
+    UT_Array<UsdPrim> rootPrims;
+    {
+        GusdStageCacheReader cache;
+        if(!GusdGU_USD::BindPrims(cache, rootPrims, *gdp, rng,
+                                  &variants, &purposes, &times, &err)) {
+            return err();
+        }
     }
 
-    if(!timeMap.HasPerPrimTimes() && !primHnd.packedPrims) {
-        timeMap.defaultTime = evalFloat("unpack_time", 0, t);        
-    }
-
-    // Clamp times for cache entries.
-    if(!primHnd.accessor.ClampTimes(timeMap)) {
-        return err();
-    }
+    if(!times.IsVarying())
+        times.SetConstant(evalFloat("unpack_time", 0, t));
 
     // Run the traversal and store the resulting prims in traversedPrims.
     // If unpacking to polygons, the traversedPrims will need to contain
@@ -359,7 +348,7 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
         // get the correct results. For gprim level traversals, skipRoot
         // should be false so the results won't be empty.
         bool skipRoot = (traversal != _GPRIMTRAVERSE_NAME);
-        if (!_Traverse(traversal, t, primHnd.prims, timeMap, purposes,
+        if (!_Traverse(traversal, t, rootPrims, times, purposes,
                        skipRoot, traversedPrims, err)) {
             return err();
         }
@@ -368,10 +357,10 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
         // A second traversal will be done upon traversedPrims to make
         // sure it contains gprim level prims, but for now, just copy the
         // original packed prims from primHnd into traversedPrims.
-        const exint size = primHnd.prims.size();
+        const exint size = rootPrims.size();
         traversedPrims.setSize(size);
         for (exint i = 0; i < size; ++i) {
-            traversedPrims(i) = std::make_pair(primHnd.prims(i), i);
+            traversedPrims(i) = std::make_pair(rootPrims(i), i);
         }
     }
 
@@ -389,18 +378,19 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
             indices(i) = traversedPrims(i).second;
         }
 
-        // Purposes must be remapped so that purposes
-        UT_Array<GusdPurposeSet> traversedPurposes;
-        RemapArray(traversedPrims, purposes,
-                   GUSD_PURPOSE_DEFAULT, traversedPurposes);
+        GusdDefaultArray<GusdPurposeSet>    
+            traversedPurposes(purposes.GetDefault());
+        if(purposes.IsVarying()) {
+            // Purposes must be remapped to align with traversedPrims.
+            RemapArray(traversedPrims, purposes.GetArray(),
+                       GUSD_PURPOSE_DEFAULT, traversedPurposes.GetArray());
+        }
 
-        // If timeMap has per-prim entries, it needs to be
-        // aligned with traversedPrims.
-        if (timeMap.HasPerPrimTimes()) {
-            UT_Array<UsdTimeCode> times;
-            RemapArray(traversedPrims, timeMap.times,
-                       timeMap.defaultTime, times);
-            timeMap.times = times;
+        GusdDefaultArray<UsdTimeCode> traversedTimes(times.GetDefault());
+        if(times.IsVarying()) {
+            // Times must be remapped to align with traversedPrims.
+            RemapArray(traversedPrims, times.GetArray(),
+                       times.GetDefault(), traversedTimes.GetArray());
         }
 
         // Clear out traversedPrims so it can be re-populated
@@ -410,7 +400,7 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
         // skipRoot should be false so the result won't be empty.
         bool skipRoot = false;
         if (!_Traverse(_GPRIMTRAVERSE_NAME, t, prims,
-                       timeMap, traversedPurposes,
+                       traversedTimes, traversedPurposes,
                        skipRoot, traversedPrims, err)) {
             return err();
         }
@@ -432,7 +422,7 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
             GA_AttributeFilter::selectByPattern(transferAttrs.c_str()),
             GA_AttributeFilter::selectPublic()));
 
-    if (!primHnd.packedPrims) {
+    if (!packedPrims) {
         GusdGU_USD::AppendExpandedRefPoints(
             *gdp, *gdp, rng, traversedPrims, filter,
             GUSD_PATH_ATTR, GUSD_PRIMPATH_ATTR, &err);
@@ -444,20 +434,18 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
         RemapArray(traversedPrims, variants,
                    SdfPath::EmptyPath(), expandedVariants);
 
-        // If timeMap has per-prim entries, it needs to be
-        // aligned with traversedPrims.
-        if (timeMap.HasPerPrimTimes()) {
-            UT_Array<UsdTimeCode> times;
-            RemapArray(traversedPrims, timeMap.times,
-                       timeMap.defaultTime, times);
-            timeMap.times = times;
+        GusdDefaultArray<UsdTimeCode> traversedTimes(times.GetDefault());
+        if(times.IsVarying()) {
+            // Times must be remapped to align with traversedPrims.
+            RemapArray(traversedPrims, times.GetArray(),
+                       times.GetDefault(), traversedTimes.GetArray());
         }
 
         UT_String importPrimvars;
         evalString(importPrimvars, "import_primvars", 0, t);
 
         GusdGU_USD::AppendExpandedPackedPrims(
-            *gdp, *gdp, rng, traversedPrims, expandedVariants, timeMap,
+            *gdp, *gdp, rng, traversedPrims, expandedVariants, traversedTimes,
             filter, unpackToPolygons, importPrimvars, &err);
     }
 
@@ -466,16 +454,16 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
         // Only delete prims or points that were successfully
         // binded to prims in primHnd.
         GA_OffsetList delOffsets;
-        delOffsets.reserve(primHnd.prims.size());
+        delOffsets.reserve(rootPrims.size());
         exint i = 0;
         for (GA_Iterator it(rng); !it.atEnd(); ++it, ++i) {
-            if (primHnd.prims(i).IsValid()) {
+            if (rootPrims(i).IsValid()) {
                 delOffsets.append(*it);
             }
         }
         GA_Range delRng(gdp->getIndexMap(owner), delOffsets);
 
-        if(primHnd.packedPrims)
+        if(packedPrims)
             gdp->destroyPrimitives(delRng, /*and points*/ true);
         else
             gdp->destroyPoints(delRng); // , GA_DESTROY_DEGENERATE);
@@ -488,8 +476,8 @@ bool
 GusdSOP_usdunpack::_Traverse(const UT_String& traversal,
                              const fpreal time,
                              const UT_Array<UsdPrim>& prims,
-                             const GusdUSD_Utils::PrimTimeMap& timeMap,
-                             const UT_Array<GusdPurposeSet>& purposes,
+                             const GusdDefaultArray<UsdTimeCode>& times,
+                             const GusdDefaultArray<GusdPurposeSet>& purposes,
                              bool skipRoot,
                              UT_Array<GusdUSD_Traverse::PrimIndexPair>& traversed,
                              GusdUT_ErrorContext& err)
@@ -511,7 +499,7 @@ GusdSOP_usdunpack::_Traverse(const UT_String& traversal,
         }
     }
 
-    if (!traverse->FindPrims(prims, timeMap, purposes, traversed,
+    if (!traverse->FindPrims(prims, times, purposes, traversed,
                              skipRoot, opts.get())) {
         return false;
     }

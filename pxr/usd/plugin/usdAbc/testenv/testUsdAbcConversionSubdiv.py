@@ -30,36 +30,38 @@ class TestUsdAbcConversionSubdiv(unittest.TestCase):
         usdFile = 'original.usda'
         abcFile = 'converted.abc'
 
+        time = Usd.TimeCode.EarliestTime()
+        
         self.assertTrue(UsdAbc._WriteAlembic(usdFile, abcFile))
 
         origStage = Usd.Stage.Open(usdFile)
         stage = Usd.Stage.Open(abcFile)
 
         prim = stage.GetPrimAtPath('/World/geom/CenterCross/UpLeft')
-        creaseIndices = prim.GetAttribute('creaseIndices').Get()
+        creaseIndices = prim.GetAttribute('creaseIndices').Get(time)
         expectedCreaseIndices = [0, 1, 3, 2, 0, 4, 5, 7, 
                                  6, 4, 1, 5, 0, 4, 2, 6, 3, 7]
         for c, e in zip(creaseIndices, expectedCreaseIndices):
             self.assertTrue(Gf.IsClose(c, e, 1e-5))
 
-        creaseLengths = prim.GetAttribute('creaseLengths').Get()
+        creaseLengths = prim.GetAttribute('creaseLengths').Get(time)
         expectedCreaseLengths = [5, 5, 2, 2, 2, 2]
         for c, e in zip(creaseLengths, expectedCreaseLengths):
             self.assertTrue(Gf.IsClose(c, e, 1e-5))
 
-        creaseSharpnesses = prim.GetAttribute('creaseSharpnesses').Get()
+        creaseSharpnesses = prim.GetAttribute('creaseSharpnesses').Get(time)
         expectedCreaseSharpness = [1000, 1000, 1000, 1000, 1000, 1000]
         for c, e in zip(creaseSharpnesses, expectedCreaseSharpness):
             self.assertTrue(Gf.IsClose(c, e, 1e-5))
 
-        faceVertexCounts = prim.GetAttribute('faceVertexCounts').Get()
+        faceVertexCounts = prim.GetAttribute('faceVertexCounts').Get(time)
         expectedFaceVertexCounts = [4, 4, 4, 4, 4, 4]
         for c, e in zip(faceVertexCounts, expectedFaceVertexCounts):
             self.assertTrue(Gf.IsClose(c, e, 1e-5))
 
         # The writer will revrse the orientation because alembic only supports
         # left handed winding order.
-        faceVertexIndices = prim.GetAttribute('faceVertexIndices').Get()
+        faceVertexIndices = prim.GetAttribute('faceVertexIndices').Get(time)
         expectedFaceVertexIndices = [2, 6, 4, 0, 4, 5, 1, 0, 6, 7, 5, 
                                      4, 1, 5, 7, 3, 2, 3, 7, 6, 0, 1, 3, 2]
         for c, e in zip(faceVertexIndices, expectedFaceVertexIndices):

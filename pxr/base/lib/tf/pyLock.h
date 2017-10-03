@@ -24,6 +24,8 @@
 #ifndef TF_PYLOCK_H
 #define TF_PYLOCK_H
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+
 #include <Python.h>
 
 #include "pxr/pxr.h"
@@ -189,5 +191,12 @@ private:
     TfPyEnsureGILUnlockedObj __py_lock_allow_threads__
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#else 
+
+// When python is disabled, we stub this macro out to nothing.
+#define TF_PY_ALLOW_THREADS_IN_SCOPE()
+
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #endif // TF_PYLOCK_H

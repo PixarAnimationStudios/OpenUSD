@@ -47,7 +47,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 class TfPyObjWrapper;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+
 class TfType;
 
 /// \class TfType
@@ -127,6 +130,7 @@ public:
         MANUFACTURABLE = 0x08,   ///< Manufacturable type (implies concrete)
     };
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     // This is a non-templated base class for the templated
     // polymorphic-to-Python infrastructure.
     struct PyPolymorphicBase
@@ -134,6 +138,7 @@ public:
     protected:
         TF_API virtual ~PyPolymorphicBase();
     };
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 private:
     // Sentinel placeholder for Bases<> typelist.
@@ -279,11 +284,13 @@ public:
         return TfType::Find<BASE>().FindDerivedByName(name);
     }
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     /// Retrieve the \c TfType corresponding to an obj with the
     /// given Python class \c classObj.
     ///
     TF_API
     static TfType const& FindByPythonClass(const TfPyObjWrapper & classObj);
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     /// @}
 
@@ -334,6 +341,7 @@ public:
     TF_API
     std::vector<std::string> GetAliases(TfType derivedType) const;
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     /// Return the Python class object for this type.
     ///
     /// If this type is unknown or has not yet had a Python class
@@ -344,6 +352,7 @@ public:
     ///
     TF_API
     TfPyObjWrapper GetPythonClass() const;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     /// Return a vector of types from which this type was derived.
     ///
@@ -506,10 +515,12 @@ public:
     template <typename T>
     static TfType const& Define();
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     /// Define the Python class object corresponding to this TfType.
     /// \see TfTypePythonClass
     TF_API
     void DefinePythonClass(const TfPyObjWrapper &classObj) const;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     /// Add an alias for DERIVED beneath BASE.
     ///
@@ -656,6 +667,7 @@ private:
     TF_API
     FactoryBase* _GetFactory() const;
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
     TF_API
     static TfType const &_FindImplPyPolymorphic(PyPolymorphicBase const *ptr);
     
@@ -685,6 +697,23 @@ private:
     _FindImpl(T const *rawPtr) {
         return Find(typeid(T));
     }
+
+#else
+    template <class T>
+    static typename std::enable_if<
+        std::is_polymorphic<T>::value, TfType const &>::type
+    _FindImpl(T const *rawPtr) {
+        return Find(typeid(*rawPtr));
+    }
+
+    template <class T>
+    static typename std::enable_if<
+        !std::is_polymorphic<T>::value, TfType const &>::type
+    _FindImpl(T const *rawPtr) {
+        return Find(typeid(T));
+    }
+
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
     bool _IsAImpl(TfType queryType) const;
 

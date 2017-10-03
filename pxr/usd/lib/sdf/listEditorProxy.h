@@ -109,7 +109,8 @@ public:
     }
 
     /// Returns \c true if the editor has an explicit list (even if it's
-    /// empty) or it has any added, deleted, or ordered keys.
+    /// empty) or it has any added, prepended, appended, deleted,
+    /// or ordered keys.
     bool HasKeys() const
     {
         return _Validate() ? _listEditor->HasKeys() : true;
@@ -180,9 +181,9 @@ public:
         }
     }
 
-    /// Check if the given item is explicit, added, deleted, or
-    /// ordered by this editor. If \p onlyAddOrExplicit is \c true we
-    /// only check the added or explicit items.
+    /// Check if the given item is explicit, added, prepended, appended,
+    /// deleted, or ordered by this editor. If \p onlyAddOrExplicit is
+    /// \c true we only check the added or explicit items.
     bool ContainsItemEdit(const value_type& item,
                           bool onlyAddOrExplicit = false) const
     {
@@ -195,6 +196,16 @@ public:
             }
 
             i = GetAddedItems().Find(item);
+            if (i != size_t(-1)) {
+                return true;
+            }
+
+            i = GetPrependedItems().Find(item);
+            if (i != size_t(-1)) {
+                return true;
+            }
+
+            i = GetAppendedItems().Find(item);
             if (i != size_t(-1)) {
                 return true;
             }
@@ -216,30 +227,35 @@ public:
     }
 
     /// Remove all occurances of the given item, regardless of whether
-    /// the item is explicit, added, deleted, or ordered.
+    /// the item is explicit, added, prepended, appended, deleted, or ordered.
     void RemoveItemEdits(const value_type& item)
     {
         if (_Validate()) {
             SdfChangeBlock block;
             
             GetExplicitItems().Remove(item);
-            GetAddedItems()   .Remove(item);
-            GetDeletedItems() .Remove(item);
-            GetOrderedItems() .Remove(item);
+            GetAddedItems().Remove(item);
+            GetPrependedItems().Remove(item);
+            GetAppendedItems().Remove(item);
+            GetDeletedItems().Remove(item);
+            GetOrderedItems().Remove(item);
         }
     }
 
     /// Replace all occurances of the given item, regardless of
-    /// whether the item is explicit, added, deleted or ordered.
+    /// whether the item is explicit, added, prepended, appended,
+    /// deleted or ordered.
     void ReplaceItemEdits(const value_type& oldItem, const value_type& newItem)
     {
         if (_Validate()) {
             SdfChangeBlock block;
             
             GetExplicitItems().Replace(oldItem, newItem);
-            GetAddedItems()   .Replace(oldItem, newItem);
-            GetDeletedItems() .Replace(oldItem, newItem);
-            GetOrderedItems() .Replace(oldItem, newItem);
+            GetAddedItems().Replace(oldItem, newItem);
+            GetPrependedItems().Replace(oldItem, newItem);
+            GetAppendedItems().Replace(oldItem, newItem);
+            GetDeletedItems().Replace(oldItem, newItem);
+            GetOrderedItems().Replace(oldItem, newItem);
         }
     }
 
@@ -255,6 +271,18 @@ public:
         return ListProxy(_listEditor, SdfListOpTypeAdded);
     }
 
+    /// Returns the items prepended by this list editor
+    ListProxy GetPrependedItems() const
+    {
+        return ListProxy(_listEditor, SdfListOpTypePrepended);
+    }
+
+    /// Returns the items appended by this list editor
+    ListProxy GetAppendedItems() const
+    {
+        return ListProxy(_listEditor, SdfListOpTypeAppended);
+    }
+
     /// Returns the items deleted by this list editor
     ListProxy GetDeletedItems() const
     {
@@ -268,14 +296,14 @@ public:
     }
 
     /// Returns the added or explicitly set items.
-    ListProxy GetAddedOrExplicitItems() const
+    value_vector_type GetAddedOrExplicitItems() const
     {
-        return IsExplicit() ? GetExplicitItems() : GetAddedItems();
+        value_vector_type result;
+        if (_Validate()) {
+            _listEditor->ApplyEdits(&result);
+        }
+        return result;
     }
-
-    //
-    // New API (see bug 8710)
-    //
 
     void Add(const value_type& value)
     {
@@ -292,6 +320,36 @@ public:
         }
     }
 
+    void Prepend(const value_type& value)
+    {
+        if (_Validate()) {
+            if (!_listEditor->IsOrderedOnly()) {
+                if (_listEditor->IsExplicit()) {
+                    _Prepend(SdfListOpTypeExplicit, value);
+                }
+                else {
+                    GetDeletedItems().Remove(value);
+                    _Prepend(SdfListOpTypePrepended, value);
+                }
+            }
+        }
+    }
+
+    void Append(const value_type& value)
+    {
+        if (_Validate()) {
+            if (!_listEditor->IsOrderedOnly()) {
+                if (_listEditor->IsExplicit()) {
+                    _Append(SdfListOpTypeExplicit, value);
+                }
+                else {
+                    GetDeletedItems().Remove(value);
+                    _Append(SdfListOpTypeAppended, value);
+                }
+            }
+        }
+    }
+
     void Remove(const value_type& value)
     {
         if (_Validate()) {
@@ -300,6 +358,8 @@ public:
             }
             else if (!_listEditor->IsOrderedOnly()) {
                 GetAddedItems().Remove(value);
+                GetPrependedItems().Remove(value);
+                GetAppendedItems().Remove(value);
                 _AddIfMissing(SdfListOpTypeDeleted, value);
             }
         }
@@ -314,6 +374,8 @@ public:
                 }
                 else {
                     GetAddedItems().Remove(value);
+                    GetPrependedItems().Remove(value);
+                    GetAppendedItems().Remove(value);
                 }
             }
         }
@@ -384,6 +446,30 @@ private:
         }
         else if (value != static_cast<value_type>(proxy[index])) {
             proxy[index] = value;
+        }
+    }
+
+    void _Prepend(SdfListOpType op, const value_type& value)
+    {
+        ListProxy proxy(_listEditor, op);
+        size_t index = proxy.Find(value);
+        if (index != 0) {
+            if (index != size_t(-1)) {
+                proxy.Erase(index);
+            }
+            proxy.insert(proxy.begin(), value);
+        }
+    }
+
+    void _Append(SdfListOpType op, const value_type& value)
+    {
+        ListProxy proxy(_listEditor, op);
+        size_t index = proxy.Find(value);
+        if (proxy.empty() || (index != proxy.size()-1)) {
+            if (index != size_t(-1)) {
+                proxy.Erase(index);
+            }
+            proxy.push_back(value);
         }
     }
 

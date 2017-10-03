@@ -280,8 +280,6 @@ WRAP_CUSTOM {
     typedef UsdGeomMesh This;
 
     _class.attr("SHARPNESS_INFINITE") = UsdGeomMesh::SHARPNESS_INFINITE;
-    _class.def("GetFaceVaryingLinearInterpolation",
-               &This::GetFaceVaryingLinearInterpolation)
     ;
 }
 

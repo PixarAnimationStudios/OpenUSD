@@ -53,6 +53,20 @@ public:
     }
  
 private:
+    static ItemVector _ApplyOperations1(const T& listOp, ItemVector input) {
+        ItemVector result = input;
+        listOp.ApplyOperations(&result);
+        return result;
+    }
+    static boost::python::object
+    _ApplyOperations2(const T& outer, const T& inner) {
+        if (boost::optional<T> r = outer.ApplyOperations(inner)) {
+            return boost::python::object(*r);
+        } else {
+            return boost::python::object();
+        }
+    }
+
     static void _Wrap(const std::string& name)
     {
         using namespace boost::python;
@@ -65,6 +79,8 @@ private:
 
             .def("Clear", &T::Clear)
             .def("ClearAndMakeExplicit", &T::ClearAndMakeExplicit)
+            .def("ApplyOperations", &This::_ApplyOperations1)
+            .def("ApplyOperations", &This::_ApplyOperations2)
 
             .add_property("explicitItems",
                 make_function(&T::GetExplicitItems,
@@ -74,6 +90,14 @@ private:
                 make_function(&T::GetAddedItems,
                               return_value_policy<return_by_value>()),
                 &T::SetAddedItems)
+            .add_property("prependedItems",
+                make_function(&T::GetPrependedItems,
+                              return_value_policy<return_by_value>()),
+                &T::SetPrependedItems)
+            .add_property("appendedItems",
+                make_function(&T::GetAppendedItems,
+                              return_value_policy<return_by_value>()),
+                &T::SetAppendedItems)
             .add_property("deletedItems",
                 make_function(&T::GetDeletedItems,
                               return_value_policy<return_by_value>()),
@@ -82,9 +106,8 @@ private:
                 make_function(&T::GetOrderedItems,
                               return_value_policy<return_by_value>()),
                 &T::SetOrderedItems)
-            .add_property("addedOrExplicitItems",
-                &This::_GetAddedOrExplicitItems,
-                &This::_SetAddedOrExplicitItems)
+            .def("GetAddedOrExplicitItems",
+                &This::_GetAddedOrExplicitItems)
 
             .add_property("isExplicit", &T::IsExplicit)
 
@@ -100,15 +123,9 @@ private:
     static 
     ItemVector _GetAddedOrExplicitItems(const T& listOp)
     {
-        return (listOp.IsExplicit() ? 
-                listOp.GetExplicitItems() : listOp.GetAddedItems());
-    }
-
-    static 
-    void _SetAddedOrExplicitItems(T& listOp, ItemVector& v)
-    {
-        listOp.IsExplicit() ? 
-            listOp.SetExplicitItems(v) : listOp.SetAddedItems(v);
+        ItemVector result;
+        listOp.ApplyOperations(&result);
+        return result;
     }
 
 };

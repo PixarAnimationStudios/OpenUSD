@@ -21,18 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hd/drawItem.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/indirectDrawBatch.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"
-#include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/gf/frustum.h"
@@ -107,7 +103,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(
     // We know what must be drawn and that the stream needs to be updated, 
     // so iterate over each prim, cull it and schedule it to be drawn.
 
-    HdChangeTracker& tracker = GetRenderIndex()->GetChangeTracker();
+    HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
     HdRprimCollection const &collection = GetRprimCollection();
 

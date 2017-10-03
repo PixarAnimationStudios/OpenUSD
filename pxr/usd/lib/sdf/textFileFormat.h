@@ -137,6 +137,9 @@ private:
     SDF_API virtual bool _ShouldSkipAnonymousReload() const;
 
     SDF_API virtual bool _IsStreamingLayer(const SdfLayerBase& layer) const;
+
+    bool _CanReadImpl(FILE *fp) const;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

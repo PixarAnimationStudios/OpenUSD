@@ -742,9 +742,9 @@ HdChangeTracker::MarkAllCollectionsDirty()
 }
 
 unsigned
-HdChangeTracker::GetCollectionVersion(TfToken const& collectionName)
+HdChangeTracker::GetCollectionVersion(TfToken const& collectionName) const
 {
-    _CollectionStateMap::iterator it = _collectionState.find(collectionName);
+    _CollectionStateMap::const_iterator it = _collectionState.find(collectionName);
     if (!(it != _collectionState.end())) {
         TF_CODING_ERROR("Change Tracker unable to find collection %s",
                         collectionName.GetText());
@@ -754,7 +754,7 @@ HdChangeTracker::GetCollectionVersion(TfToken const& collectionName)
 }
 
 unsigned
-HdChangeTracker::GetVisibilityChangeCount()
+HdChangeTracker::GetVisibilityChangeCount() const
 {
     return _visChangeCount;
 }

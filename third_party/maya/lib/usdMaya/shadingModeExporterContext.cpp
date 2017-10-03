@@ -26,8 +26,11 @@
 
 #include "usdMaya/util.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/scope.h"
+#include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/shader.h"
 
@@ -40,7 +43,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+TF_DEFINE_ENV_SETTING(PIXMAYA_EXPORT_OLD_STYLE_FACESETS, true, 
+    "Whether maya/usdExport should create face-set bindings encoded in the "
+    "old-style, using UsdGeomFaceSetAPI.");
 
 PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
         const MObject& shadingEngine,
@@ -231,7 +236,7 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 
         UsdPrim materialPrim = material.GetPrim();
 
-        // could use this to determine where we want to export.  whatever.
+        // could use this to determine where we want to export.
         TF_FOR_ALL(iter, assignmentsToBind) {
             const SdfPath &boundPrimPath = iter->first;
             const VtIntArray &faceIndices = iter->second;
@@ -239,10 +244,23 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             UsdPrim boundPrim = stage->OverridePrim(boundPrimPath);
             if (faceIndices.empty()) {
                 material.Bind(boundPrim);
-            } else {
+            } else if (TfGetEnvSetting(PIXMAYA_EXPORT_OLD_STYLE_FACESETS)) {
                 UsdGeomFaceSetAPI faceSet = material.CreateMaterialFaceSet(
                         boundPrim);
                 faceSet.AppendFaceGroup(faceIndices, materialPath);
+            } else {
+                // It might be worth adding a utility method for the following 
+                // block of code in core.
+                UsdGeomSubset faceSubset = 
+                    UsdShadeMaterial::CreateMaterialBindFaceSubset(
+                        UsdGeomImageable(boundPrim), 
+                        /* subsetName */ TfToken(materialName),
+                        faceIndices);
+                material.Bind(faceSubset.GetPrim());
+
+                UsdShadeMaterial::SetMaterialBindFaceSubsetsFamilyType(
+                    UsdGeomImageable(boundPrim), 
+                    UsdGeomSubset::FamilyType::Partition);
             }
         }
 
@@ -253,10 +271,27 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 }
 
 std::string
-PxrUsdMayaShadingModeExportContext::GetStandardAttrName(const MPlug& attrPlug) const
+PxrUsdMayaShadingModeExportContext::GetStandardAttrName(
+        const MPlug& plug,
+        bool allowMultiElementArrays) const
 {
-    MString mayaPlgName = attrPlug.partialName(false, false, false, false, false, true);
-    return mayaPlgName.asChar();
+    if (plug.isElement()) {
+        MString mayaPlgName = plug.array().partialName(false, false, false, false, false, true);
+        unsigned int logicalIdx = plug.logicalIndex();
+        if (allowMultiElementArrays) {
+            return TfStringPrintf("%s_%d", mayaPlgName.asChar(), logicalIdx);
+        }
+        else if (logicalIdx == 0) {
+            return mayaPlgName.asChar();
+        }
+        else {
+            return TfToken();
+        }
+    }
+    else {
+        MString mayaPlgName = plug.partialName(false, false, false, false, false, true);
+        return mayaPlgName.asChar();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

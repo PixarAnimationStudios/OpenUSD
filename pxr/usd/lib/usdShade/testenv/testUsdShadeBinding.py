@@ -49,8 +49,8 @@ class TestUsdShadeBinding(unittest.TestCase):
 
         cr = s.OverridePrim("/composed")
 
-        cr.GetReferences().AppendReference(rl.identifier, "/stronger")
-        cr.GetReferences().AppendReference(rl.identifier, "/weaker")
+        cr.GetReferences().AddReference(rl.identifier, "/stronger")
+        cr.GetReferences().AddReference(rl.identifier, "/weaker")
 
         gpc = s.GetPrimAtPath("/composed/gprim")
         lb = UsdShade.Material.GetBindingRel(gpc)
@@ -83,7 +83,7 @@ class TestUsdShadeBinding(unittest.TestCase):
 
         # Now add one more target to mess things up
         rel = UsdShade.Material.GetBindingRel(gprim)
-        rel.AppendTarget(Sdf.Path("/World"))
+        rel.AddTarget(Sdf.Path("/World"))
         self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
         self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
 
@@ -97,7 +97,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         UsdShade.Material.Unbind(over)
         look.Bind(gprim)
         # This will compose in gprim's binding, but should still be blocked
-        over.GetInherits().AppendInherit("/World/gprim")
+        over.GetInherits().AddInherit("/World/gprim")
         self.assertFalse(UsdShade.Material.GetBoundMaterial(over))
         self.assertFalse(UsdShade.Material.GetBoundMaterial(over))
 

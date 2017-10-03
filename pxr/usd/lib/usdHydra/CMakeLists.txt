@@ -20,7 +20,7 @@ pxr_library(usdHydra
     PUBLIC_HEADERS
         api.h
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
 
     PYMODULE_CPPFILES
@@ -33,10 +33,12 @@ pxr_library(usdHydra
         wrapPtexTexture.cpp
         wrapTokens.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES
+        generatedSchema.usda
         plugInfo.json
+        schema.usda:usdHydra/schema.usda
 )
 

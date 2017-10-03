@@ -153,7 +153,7 @@ UsdGeomCollectionAPI::GetTargetFaceIndices(
 }
 
 bool 
-UsdGeomCollectionAPI::AppendTarget(
+UsdGeomCollectionAPI::AddTarget(
     const SdfPath &target, 
     const VtIntArray &faceIndices /* =VtIntArray() */,
     const UsdTimeCode &time /* =UsdTimeCode::Default() */) const
@@ -192,7 +192,7 @@ UsdGeomCollectionAPI::AppendTarget(
     {
         // We can simply add the target here to the relationship here since 
         // there are no companion non-list-edited integer arrays.
-        return CreateTargetsRel().AppendTarget(target);
+        return CreateTargetsRel().AddTarget(target);
     }
 
     if (targetFaceCounts.empty() && !targetFaceIndices.empty()) {

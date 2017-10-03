@@ -488,6 +488,8 @@ class TestUsdValueClips(unittest.TestCase):
         # fall back to the default value and report that this attribute's values
         # are constant over time.
         self.assertFalse(attr.ValueMightBeTimeVarying())
+        self.assertEqual(attr.GetResolveInfo(0).GetSource(),
+            Usd.ResolveInfoSourceDefault)
 
         # Doing this check should have caused all clips to be opened, since
         # we need to check each one to see if any of them provide a time sample.
@@ -913,7 +915,7 @@ class TestUsdValueClips(unittest.TestCase):
 
         # Close and reopen the stage to ensure the clip layers are closed
         # before we do the test below.
-        stage.Close()
+        del stage
         self.assertFalse(Sdf.Layer.Find('manifest/clip_1.usda'))
         self.assertFalse(Sdf.Layer.Find('manifest/clip_2.usda'))
 

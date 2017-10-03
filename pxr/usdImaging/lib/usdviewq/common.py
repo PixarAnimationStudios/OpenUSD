@@ -21,8 +21,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from PySide import QtGui,QtCore
-from pxr import Usd
+from qt import QtCore, QtGui, QtWidgets
+import os
+from pxr import Usd, Sdf
 from customAttributes import CustomAttribute
 
 # Color constants.  
@@ -60,6 +61,59 @@ NormalFont = QtGui.QFont()
 NormalFont.setWeight(35)
 AbstractPrimFont = NormalFont
 
+# Property viewer constants
+INDEX_PROPTYPE, INDEX_PROPNAME, INDEX_PROPVAL = range(3)
+
+ICON_DIR_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
+
+# We use deferred loading because icons can't be constructed before
+# application initialization time.
+_icons = {}
+def _DeferredIconLoad(path):
+    fullPath = os.path.join(ICON_DIR_ROOT, path)
+    try:
+        icon = _icons[fullPath] 
+    except KeyError:
+        icon = QtGui.QIcon(fullPath)
+        _icons[fullPath] = icon
+    return icon
+
+ATTR_PLAIN_TYPE_ICON        = lambda: _DeferredIconLoad('usd-attr-plain-icon.png')
+ATTR_WITH_CONN_TYPE_ICON    = lambda: _DeferredIconLoad('usd-attr-with-conn-icon.png')
+REL_PLAIN_TYPE_ICON         = lambda: _DeferredIconLoad('usd-rel-plain-icon.png')
+REL_WITH_TARGET_TYPE_ICON   = lambda: _DeferredIconLoad('usd-rel-with-target-icon.png')
+TARGET_TYPE_ICON            = lambda: _DeferredIconLoad('usd-target-icon.png')
+CONN_TYPE_ICON              = lambda: _DeferredIconLoad('usd-conn-icon.png')
+CMP_TYPE_ICON               = lambda: _DeferredIconLoad('usd-cmp-icon.png')
+
+ATTR_PLAIN_TYPE_ROLE = "Attr"
+REL_PLAIN_TYPE_ROLE = "Rel"
+ATTR_WITH_CONN_TYPE_ROLE = "Attr_"
+REL_WITH_TARGET_TYPE_ROLE = "Rel_"
+TARGET_TYPE_ROLE = "Tgt"
+CONN_TYPE_ROLE = "Conn"
+CMP_TYPE_ROLE = "Cmp"
+
+def _PropTreeWidgetGetRole(tw):
+    return tw.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+
+def PropTreeWidgetTypeIsRel(tw):
+    role = _PropTreeWidgetGetRole(tw) 
+    return (role == REL_PLAIN_TYPE_ROLE or role == REL_WITH_TARGET_TYPE_ROLE) 
+
+def _UpdateLabelText(text, substring, mode):
+    return text.replace(substring,'<'+mode+'>'+substring+'</'+mode+'>')
+
+def ItalicizeLabelText(text, substring):
+    return _UpdateLabelText(text, substring, 'i')
+
+def BoldenLabelText(text, substring):
+    return _UpdateLabelText(text, substring, 'b')
+
+def ColorizeLabelText(text, substring, r, g, b):
+    return _UpdateLabelText(text, substring, 
+                            "span style=\"color:rgb(%d, %d, %d);\"" % (r,g,b))
+
 def PrintWarning(title, description):
     import sys
     msg = sys.stderr
@@ -67,6 +121,43 @@ def PrintWarning(title, description):
     print >> msg, "WARNING: %s" % title
     print >> msg, description
     print >> msg, "------------------------------------------------------------"
+
+def GetShortString(prop, frame):
+    from customAttributes import CustomAttribute
+    if isinstance(prop, (Usd.Attribute, CustomAttribute)):
+        val = prop.Get(frame)
+    elif isinstance(prop, Sdf.AttributeSpec):
+        if frame == Usd.TimeCode.Default():
+            val = prop.default
+        else:
+            numTimeSamples = -1
+            if prop.HasInfo('timeSamples'):
+                numTimeSamples = prop.layer.GetNumTimeSamplesForPath(prop.path)
+            if numTimeSamples == -1:
+                val = prop.default
+            elif numTimeSamples == 1:
+                return "1 time sample"
+            else:
+                return str(numTimeSamples) + " time samples"
+    elif isinstance(prop, Sdf.RelationshipSpec):
+        return str(prop.targetPathList)
+
+    from scalarTypes import GetScalarTypeFromAttr
+    scalarType, isArray = GetScalarTypeFromAttr(prop)
+    result = ''
+    if isArray and not isinstance(val, Sdf.ValueBlock):
+        def arrayToStr(a):
+            from itertools import chain
+            elems = a if len(a) <= 6 else chain(a[:3], ['...'], a[-3:])
+            return '[' + ', '.join(map(str, elems)) + ']'
+        if val is not None and len(val):
+            result = "%s[%d]: %s" % (scalarType, len(val), arrayToStr(val))
+        else:
+            result = "%s[]" % scalarType
+    else:
+        result = str(val)
+
+    return result[:500]
 
 # Return attribute status at a certian frame (is it using the default, or the
 # fallback? Is it authored at this frame? etc.
@@ -212,10 +303,10 @@ class BusyContext(object):
     will set Qt's busy cursor upon entry and pop it on exit.
     """
     def __enter__(self):
-        QtGui.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
     def __exit__(self, *args):
-        QtGui.QApplication.restoreOverrideCursor()
+        QtWidgets.QApplication.restoreOverrideCursor()
 
 
 def InvisRootPrims(stage):
@@ -399,8 +490,6 @@ def DumpMallocTags(stage, contextStr):
     else:
         print "Unable to accumulate memory usage since the Pxr MallocTag system was not initialized"
 
-        
-
 def GetInstanceIdForIndex(prim, instanceIndex, time):
     '''Attempt to find an authored Id value for the instance at index
     'instanceIndex' at time 'time', on the given prim 'prim', which we access
@@ -415,3 +504,15 @@ def GetInstanceIdForIndex(prim, instanceIndex, time):
     if not ids or instanceIndex >= len(ids):
         return None
     return ids[instanceIndex]
+
+def Drange(start, stop, step):
+    """Like builtin range() but allows decimals and is a closed interval 
+        that is, it's inclusive of stop"""
+    r = start
+    lst = []
+    epsilon = 1e-3 * step
+    while r <= stop+epsilon:
+        lst.append(r)
+        r += step
+    return lst
+

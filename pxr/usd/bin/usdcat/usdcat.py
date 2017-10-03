@@ -100,6 +100,12 @@ def main():
             _Err("%s: error: unknown output file extension '.%s'"
                  % (parser.prog, ext))
             return 1
+    # If --out was not specified, then --usdFormat must be unspecified or must
+    # be 'usda'.
+    elif args.usdFormat and args.usdFormat != 'usda':
+        _Err("%s: error: can only write 'usda' format to stdout; specify an "
+             "output file with -o/--out to write other formats" % parser.prog)
+        return 1
 
     # split args.populationMask into paths.
     if args.populationMask:
@@ -164,7 +170,7 @@ def main():
                 exitCode = 1
         else:
             try:
-                print usdData.ExportToString()
+                sys.stdout.write(usdData.ExportToString())
             except Exception as e:
                 _Err("Error writing '%s' to stdout; %s" % (inputFile, e))
                 exitCode = 1

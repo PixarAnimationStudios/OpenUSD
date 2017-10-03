@@ -169,11 +169,11 @@ public:
     // ROTATIONS 
     // --------------------------------------------------------------------- //
     /// Joint-local unit quaternion rotations of all affected joints, 
-    /// in 16-bit precision.  Array length should match the size of the 
+    /// in 32-bit precision.  Array length should match the size of the 
     /// *joints* relationship.
     ///
-    /// \n  C++ Type: VtArray<GfQuath>
-    /// \n  Usd Type: SdfValueTypeNames->QuathArray
+    /// \n  C++ Type: VtArray<GfQuatf>
+    /// \n  Usd Type: SdfValueTypeNames->QuatfArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
     USDSKEL_API

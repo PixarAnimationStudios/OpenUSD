@@ -43,11 +43,16 @@ TF_DEFINE_PRIVATE_TOKENS(
         (generated)
 
         (clamped)
+
+        // This annotates if the attribute used to be a maya array.  The index
+        // of the array is likely encoded in the attribute name though we could
+        // extend this to store the name and index.
+        (arrayIndex)
 );
 
 template <typename T>
 static 
-T _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, const T& defaultValue)
+bool _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* outVal)
 {
     VtValue data = attr.GetCustomDataByKey(_tokens->Maya);
     if (!data.IsEmpty()) {
@@ -55,7 +60,8 @@ T _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, const T& defau
             VtValue val;
             if (TfMapLookup(data.UncheckedGet<VtDictionary>(), key, &val)) {
                 if (val.IsHolding<T>()) {
-                    return val.UncheckedGet<T>();
+                    *outVal = val.UncheckedGet<T>();
+                    return true;
                 }
                 else {
                     TF_WARN("Unexpected type for %s[%s] on <%s>.",
@@ -71,7 +77,7 @@ T _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, const T& defau
                     attr.GetPath().GetText());
         }
     }
-    return defaultValue;
+    return false;
 }
 
 template <typename T>
@@ -103,7 +109,8 @@ bool PxrUsdMayaRoundTripUtil::IsAttributeUserAuthored(const UsdAttribute& attr)
 
 bool PxrUsdMayaRoundTripUtil::IsAttributeMayaGenerated(const UsdAttribute& attr)
 {
-    return _GetMayaDictValue(attr, _tokens->generated, false);
+    bool ret = false;
+    return _GetMayaDictValue(attr, _tokens->generated, &ret) && ret;
 }
 
 void PxrUsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(const UsdAttribute& attr)
@@ -113,12 +120,25 @@ void PxrUsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(const UsdAttribute& a
 
 bool PxrUsdMayaRoundTripUtil::IsPrimvarClamped(const UsdGeomPrimvar& primvar)
 {
-    return _GetMayaDictValue(primvar.GetAttr(), _tokens->clamped, false);
+    bool ret = false;
+    return _GetMayaDictValue(primvar.GetAttr(), _tokens->clamped, &ret) && ret;
 }
 
 void PxrUsdMayaRoundTripUtil::MarkPrimvarAsClamped(const UsdGeomPrimvar& primvar)
 {
     _SetMayaDictValue(primvar.GetAttr(), _tokens->clamped, true);
+}
+
+bool PxrUsdMayaRoundTripUtil::GetAttributeArray(const UsdAttribute& attr,
+        unsigned int* index)
+{
+    return _GetMayaDictValue(attr, _tokens->arrayIndex, index);
+}
+
+void PxrUsdMayaRoundTripUtil::MarkAttributeAsArray(const UsdAttribute& attr,
+        const unsigned int index)
+{
+    _SetMayaDictValue(attr, _tokens->arrayIndex, static_cast<int>(index));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

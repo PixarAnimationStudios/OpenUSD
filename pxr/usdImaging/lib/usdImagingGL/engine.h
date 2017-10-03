@@ -200,6 +200,9 @@ public:
     virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
     /// Set lighting state
+    /// Derived classes should ensure that passing an empty lights
+    /// vector disables lighting.
+    /// \param lights is the set of lights to use, or empty to disable lighting.
     USDIMAGINGGL_API
     virtual void SetLightingState(GlfSimpleLightVector const &lights,
                                   GlfSimpleMaterial const &material,

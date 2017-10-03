@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/prim.h"
@@ -99,7 +100,8 @@ UsdRelationship::_GetTargetForAuthoring(const SdfPath &target,
 }
 
 bool
-UsdRelationship::AppendTarget(const SdfPath& target) const
+UsdRelationship::AddTarget(const SdfPath& target,
+                           UsdListPosition position) const
 {
     std::string errMsg;
     const SdfPath targetToAuthor = _GetTargetForAuthoring(target, &errMsg);
@@ -121,7 +123,22 @@ UsdRelationship::AppendTarget(const SdfPath& target) const
     if (!relSpec)
         return false;
 
-    relSpec->GetTargetPathList().Add(targetToAuthor);
+    switch (position) {
+    case UsdListPositionFront:
+        relSpec->GetTargetPathList().Prepend(targetToAuthor);
+        break;
+    case UsdListPositionBack:
+        relSpec->GetTargetPathList().Append(targetToAuthor);
+        break;
+    case UsdListPositionTempDefault:
+        if (UsdAuthorOldStyleAdd()) {
+            relSpec->GetTargetPathList().Add(targetToAuthor);
+        } else {
+            relSpec->GetTargetPathList().Prepend(targetToAuthor);
+        }
+        break;
+    }
+
     return true;
 }
 
@@ -200,9 +217,7 @@ UsdRelationship::SetTargets(const SdfPathVector& targets) const
         return false;
 
     relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
-    for (const SdfPath &path: mappedPaths) {
-        relSpec->GetTargetPathList().Add(path);
-    }
+    relSpec->GetTargetPathList().GetExplicitItems() = mappedPaths;
 
     return true;
 }

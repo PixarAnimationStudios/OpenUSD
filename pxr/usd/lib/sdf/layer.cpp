@@ -715,7 +715,8 @@ SdfLayer::FindOrOpen(const string &identifier,
 SdfLayerRefPtr
 SdfLayer::OpenAsAnonymous(
     const std::string &layerPath,
-    bool metadataOnly)
+    bool metadataOnly,
+    const std::string &tag)
 {
     // Find a file format that can handle this extension.
     const SdfFileFormatConstPtr format = 
@@ -737,7 +738,7 @@ SdfLayer::OpenAsAnonymous(
     {
         tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
         layer = _CreateNewWithFormat(
-                format, Sdf_GetAnonLayerIdentifierTemplate(string()),
+                format, Sdf_GetAnonLayerIdentifierTemplate(tag),
                 string());
         // From this point, we must call _FinishInitialization() on
         // either success or failure in order to unblock other
@@ -2690,11 +2691,8 @@ _GatherPrimAssetReferences(const SdfPrimSpecHandle &prim,
 {
     if (prim != prim->GetLayer()->GetPseudoRoot()) {
         // Prim references
-        SdfReferencesProxy refList = prim->GetReferenceList();
-        SdfReferencesProxy::ListProxy refs =
-            refList.GetAddedOrExplicitItems();
-        TF_FOR_ALL(refIt, refs) {
-            const SdfReference &ref = *refIt;
+        for (const SdfReference &ref:
+             prim->GetReferenceList().GetAddedOrExplicitItems()) {
             assetReferences->insert(ref.GetAssetPath());
         }
 

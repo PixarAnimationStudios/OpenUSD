@@ -42,8 +42,10 @@ pxr_library(usdRi
     PUBLIC_HEADERS
         api.h
 
-    CPPFILES
+    PYTHON_CPPFILES
         moduleDeps.cpp
+
+    CPPFILES
         typeUtils
 
     PYMODULE_CPPFILES
@@ -71,12 +73,13 @@ pxr_library(usdRi
         wrapTextureAPI.cpp
         wrapTokens.cpp
 
-    PYTHON_FILES
+    PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES
         plugInfo.json
         generatedSchema.usda
+        schema.usda:usdRi/schema.usda
 )
 
 pxr_test_scripts(

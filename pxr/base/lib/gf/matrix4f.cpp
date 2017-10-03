@@ -167,6 +167,17 @@ GfMatrix4f::GfMatrix4f(const std::vector<float>& r0,
     Set(m);
 }
 
+GfMatrix4f::GfMatrix4f(const GfRotation& rotate,
+                       const GfVec3f& translate)
+{
+    SetTransform(rotate, translate);
+}
+
+GfMatrix4f::GfMatrix4f(const GfMatrix3f& rotmx,
+                       const GfVec3f& translate)
+{
+    SetTransform(rotmx, translate);
+}
 
 GfMatrix4f &
 GfMatrix4f::SetDiagonal(float s)
@@ -289,6 +300,21 @@ GfMatrix4f::GetTranspose() const
     return transpose;
 }
 
+GfMatrix4f &
+GfMatrix4f::SetTransform(const GfRotation& rotate,
+			const GfVec3f& translate)
+{
+    SetRotate(rotate);
+    return SetTranslateOnly(translate);
+}
+
+GfMatrix4f &
+GfMatrix4f::SetTransform(const GfMatrix3f& rotate,
+			const GfVec3f& translate)
+{
+    SetRotate(rotate);
+    return SetTranslateOnly(translate);
+}   
 
 GfMatrix4f
 GfMatrix4f::GetInverse(double *detPtr, double eps) const
@@ -689,6 +715,435 @@ GfMatrix4f::SetScale(float s)
     _mtx[3][0] = 0.0; _mtx[3][1] = 0.0; _mtx[3][2] = 0.0; _mtx[3][3] = 1.0;
 
     return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetRotate(const GfRotation &rot)
+{
+    GfQuaternion quat = rot.GetQuaternion();
+
+    double  r = quat.GetReal();
+    GfVec3d i = quat.GetImaginary();
+
+
+    _mtx[0][0] = 1.0 - 2.0 * (i[1] * i[1] + i[2] * i[2]);
+    _mtx[0][1] =       2.0 * (i[0] * i[1] + i[2] *    r);
+    _mtx[0][2] =       2.0 * (i[2] * i[0] - i[1] *    r);
+    _mtx[0][3] = 0.0;
+
+    _mtx[1][0] =       2.0 * (i[0] * i[1] - i[2] *    r);
+    _mtx[1][1] = 1.0 - 2.0 * (i[2] * i[2] + i[0] * i[0]);
+    _mtx[1][2] =       2.0 * (i[1] * i[2] + i[0] *    r);
+    _mtx[1][3] = 0.0;
+
+    _mtx[2][0] =       2.0 * (i[2] * i[0] + i[1] *    r);
+    _mtx[2][1] =       2.0 * (i[1] * i[2] - i[0] *    r);
+    _mtx[2][2] = 1.0 - 2.0 * (i[1] * i[1] + i[0] * i[0]);
+    _mtx[2][3] = 0.0;
+
+    _mtx[3][0] = 0.0;
+    _mtx[3][1] = 0.0;
+    _mtx[3][2] = 0.0;
+    _mtx[3][3] = 1.0;
+
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetRotateOnly(const GfRotation &rot)
+{
+    GfQuaternion quat = rot.GetQuaternion();
+
+    double  r = quat.GetReal();
+    GfVec3d i = quat.GetImaginary();
+
+
+    _mtx[0][0] = 1.0 - 2.0 * (i[1] * i[1] + i[2] * i[2]);
+    _mtx[0][1] =       2.0 * (i[0] * i[1] + i[2] *    r);
+    _mtx[0][2] =       2.0 * (i[2] * i[0] - i[1] *    r);
+
+    _mtx[1][0] =       2.0 * (i[0] * i[1] - i[2] *    r);
+    _mtx[1][1] = 1.0 - 2.0 * (i[2] * i[2] + i[0] * i[0]);
+    _mtx[1][2] =       2.0 * (i[1] * i[2] + i[0] *    r);
+
+    _mtx[2][0] =       2.0 * (i[2] * i[0] + i[1] *    r);
+    _mtx[2][1] =       2.0 * (i[1] * i[2] - i[0] *    r);
+    _mtx[2][2] = 1.0 - 2.0 * (i[1] * i[1] + i[0] * i[0]);
+
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetRotate(const GfMatrix3f &mx3)
+{
+    _mtx[0][0] = mx3[0][0];
+    _mtx[0][1] = mx3[0][1];
+    _mtx[0][2] = mx3[0][2];
+    _mtx[0][3] = 0.0;
+
+    _mtx[1][0] = mx3[1][0];
+    _mtx[1][1] = mx3[1][1];
+    _mtx[1][2] = mx3[1][2];
+    _mtx[1][3] = 0.0;
+
+    _mtx[2][0] = mx3[2][0];
+    _mtx[2][1] = mx3[2][1];
+    _mtx[2][2] = mx3[2][2];
+    _mtx[2][3] = 0.0;
+
+    _mtx[3][0] = 0.0;
+    _mtx[3][1] = 0.0;
+    _mtx[3][2] = 0.0;
+    _mtx[3][3] = 1.0;
+
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetRotateOnly(const GfMatrix3f &mx3)
+{
+    _mtx[0][0] = mx3[0][0];
+    _mtx[0][1] = mx3[0][1];
+    _mtx[0][2] = mx3[0][2];
+
+    _mtx[1][0] = mx3[1][0];
+    _mtx[1][1] = mx3[1][1];
+    _mtx[1][2] = mx3[1][2];
+
+    _mtx[2][0] = mx3[2][0];
+    _mtx[2][1] = mx3[2][1];
+    _mtx[2][2] = mx3[2][2];
+
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetScale(const GfVec3f &s)
+{
+    _mtx[0][0] = s[0]; _mtx[0][1] = 0.0;  _mtx[0][2] = 0.0;  _mtx[0][3] = 0.0;
+    _mtx[1][0] = 0.0;  _mtx[1][1] = s[1]; _mtx[1][2] = 0.0;  _mtx[1][3] = 0.0;
+    _mtx[2][0] = 0.0;  _mtx[2][1] = 0.0;  _mtx[2][2] = s[2]; _mtx[2][3] = 0.0;
+    _mtx[3][0] = 0.0;  _mtx[3][1] = 0.0;  _mtx[3][2] = 0.0;  _mtx[3][3] = 1.0;
+
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetTranslate(const GfVec3f &t)
+{
+    _mtx[0][0] = 1.0;  _mtx[0][1] = 0.0;  _mtx[0][2] = 0.0;  _mtx[0][3] = 0.0;
+    _mtx[1][0] = 0.0;  _mtx[1][1] = 1.0;  _mtx[1][2] = 0.0;  _mtx[1][3] = 0.0;
+    _mtx[2][0] = 0.0;  _mtx[2][1] = 0.0;  _mtx[2][2] = 1.0;  _mtx[2][3] = 0.0;
+    _mtx[3][0] = t[0]; _mtx[3][1] = t[1]; _mtx[3][2] = t[2]; _mtx[3][3] = 1.0;
+
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetTranslateOnly(const GfVec3f &t)
+{
+    _mtx[3][0] = t[0]; _mtx[3][1] = t[1]; _mtx[3][2] = t[2]; _mtx[3][3] = 1.0;
+
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetLookAt(const GfVec3f &eyePoint,
+		     const GfVec3f &centerPoint,
+		     const GfVec3f &upDirection)
+{
+    // Get the normalized view vector
+    GfVec3f view = (centerPoint - eyePoint).GetNormalized();
+
+    // Compute vector orthogonal to view and up
+    GfVec3f right = GfCross(view, upDirection).GetNormalized();
+
+    // Compute the "real" up vector orthogonal to both view and right
+    GfVec3f realUp = GfCross(right, view);
+
+    // Set matrix to rotate from world-space coordinate system,
+    // translating eye position to origin.
+    _mtx[0][0] = right[0];
+    _mtx[1][0] = right[1];
+    _mtx[2][0] = right[2];
+    _mtx[3][0] = -(right[0] * eyePoint[0] +
+		   right[1] * eyePoint[1] +
+		   right[2] * eyePoint[2]);
+
+    _mtx[0][1] = realUp[0];
+    _mtx[1][1] = realUp[1];
+    _mtx[2][1] = realUp[2];
+    _mtx[3][1] = -(realUp[0] * eyePoint[0] +
+		   realUp[1] * eyePoint[1] +
+		   realUp[2] * eyePoint[2]);
+
+    _mtx[0][2] = -view[0];
+    _mtx[1][2] = -view[1];
+    _mtx[2][2] = -view[2];
+    _mtx[3][2] = (view[0] * eyePoint[0] +
+		  view[1] * eyePoint[1] +
+		  view[2] * eyePoint[2]);
+
+    _mtx[0][3] = 0.0;
+    _mtx[1][3] = 0.0;
+    _mtx[2][3] = 0.0;
+    _mtx[3][3] = 1.0;
+
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetLookAt(const GfVec3f &eyePoint, const GfRotation &orientation)
+{
+    // To go from world space to eye space, first translate the
+    // world-space eye point to the origin, then rotate by the inverse
+    // of the orientation rotation to bring the world-space view
+    // direction to (0,0,-1);
+    GfMatrix4f m1, m2;
+    return *this = (m1.SetTranslate(-eyePoint) *
+		    m2.SetRotate(orientation.GetInverse()));
+}
+
+bool
+GfMatrix4f::Factor(GfMatrix4f* r, GfVec3f* s, GfMatrix4f* u,
+		  GfVec3f* t, GfMatrix4f* p, float eps) const
+{
+    // This was adapted from the (open source) Open Inventor
+    // SbMatrix::Factor().
+
+    p->SetDiagonal(1);
+
+    // Set A to the upper 3x3 and set t to the translation part of
+    // this matrix
+    GfMatrix4d a;
+    for (int i = 0; i < 3; i++) {
+	for (int j = 0; j < 3; j++)
+	    a._mtx[i][j] = _mtx[i][j];
+	a._mtx[3][i] = a._mtx[i][3] = 0.0;
+	(*t)[i] = _mtx[3][i];
+    }
+    a._mtx[3][3] = 1.0;
+    
+    // Compute the determinant of A. If its absolute value is real
+    // small, the matrix is singular.
+    double det     = a.GetDeterminant3();
+    double detSign = (det < 0.0 ? -1.0 : 1.0);
+    bool isSingular = det * detSign < eps;
+
+    // Compute B = A * A-transpose and find its eigenvalues and
+    // eigenvectors. Use the eigenvectors as the rotation matrix R.
+    GfMatrix4d b = a * a.GetTranspose();
+    GfVec3d	eigenvalues;
+    GfVec3d	eigenvectors[3];
+    b._Jacobi3(&eigenvalues, eigenvectors);
+    GfMatrix4d rTmp(
+        eigenvectors[0][0], eigenvectors[0][1], eigenvectors[0][2], 0.0, 
+        eigenvectors[1][0], eigenvectors[1][1], eigenvectors[1][2], 0.0, 
+        eigenvectors[2][0], eigenvectors[2][1], eigenvectors[2][2], 0.0, 
+        0.0, 0.0, 0.0, 1.0);
+
+    // Compute s = sqrt(eigenvalues), with sign. Set sInv to the
+    // inverse of s, or if eigenvalue < eps, let s = eps.  This allows
+    // us to compute factors for singular matrices.
+    GfMatrix4d sInv;
+    sInv.SetIdentity();
+    for (int i = 0; i < 3; i++) {
+        if (eigenvalues[i] < eps) {
+            (*s)[i] = detSign * eps;
+        } else {
+            (*s)[i] = detSign * sqrt(eigenvalues[i]);
+        }
+        sInv._mtx[i][i] = 1.0 / (*s)[i];
+    }
+
+    // Compute U = R S-inverse R-transpose A
+    *u = GfMatrix4f(rTmp * sInv * rTmp.GetTranspose() * a);
+    *r = GfMatrix4f(rTmp);
+    
+    return !isSingular;
+}
+
+void
+GfMatrix4f::_Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const
+{
+    // This was adapted from the (open source) Open Inventor
+    // SbMatrix::Jacobi3().
+
+    // Initialize eigenvalues to the diagonal of the 3x3 matrix and
+    // eigenvectors to the principal axes.
+    eigenvalues->Set(_mtx[0][0], _mtx[1][1], _mtx[2][2]);
+    eigenvectors[0] = GfVec3d::XAxis();
+    eigenvectors[1] = GfVec3d::YAxis();
+    eigenvectors[2] = GfVec3d::ZAxis();
+
+    GfMatrix4f a = (*this);
+    GfVec3d   b = *eigenvalues;
+    GfVec3d   z = GfVec3d(0);
+
+    for (int i = 0; i < 50; i++) {
+	double sm = 0.0;
+	for (int p = 0; p < 2; p++)
+	    for (int q = p+1; q < 3; q++)
+		sm += GfAbs(a._mtx[p][q]);
+	
+	if (sm == 0.0)
+	    return;
+	
+	double thresh = (i < 3 ? (.2 * sm / (3 * 3)) : 0.0);
+	
+	for (int p = 0; p < 3; p++) {
+	    for (int q = p+1; q < 3; q++) {
+		
+		double g = 100.0 * GfAbs(a._mtx[p][q]);
+		
+		if (i > 3 &&
+		    (GfAbs((*eigenvalues)[p]) + g ==
+		     GfAbs((*eigenvalues)[p])) && 
+		    (GfAbs((*eigenvalues)[q]) + g ==
+		     GfAbs((*eigenvalues)[q])))
+		    a._mtx[p][q] = 0.0;
+		
+		else if (GfAbs(a._mtx[p][q]) > thresh) {
+		    double h = (*eigenvalues)[q] - (*eigenvalues)[p];
+		    double t;
+
+		    if (GfAbs(h) + g == GfAbs(h)) {
+			t = a._mtx[p][q] / h;
+		    } else {
+			double theta = 0.5 * h / a._mtx[p][q];
+			t = 1.0 / (GfAbs(theta) + sqrt(1.0 + theta * theta));
+			if (theta < 0.0)
+			    t = -t;
+		    }
+
+		    // End of computing tangent of rotation angle
+		    
+		    double c = 1.0 / sqrt(1.0 + t*t);
+		    double s = t * c;
+		    double tau = s / (1.0 + c);
+		    h = t * a._mtx[p][q];
+		    z[p]    -= h;
+		    z[q]    += h;
+		    (*eigenvalues)[p] -= h;
+		    (*eigenvalues)[q] += h;
+		    a._mtx[p][q] = 0.0;
+		    
+		    for (int j = 0; j < p; j++) {
+			g = a._mtx[j][p];
+			h = a._mtx[j][q];
+			a._mtx[j][p] = g - s * (h + g * tau);
+			a._mtx[j][q] = h + s * (g - h * tau);
+		    }
+		    
+		    for (int j = p+1; j < q; j++) {
+			g = a._mtx[p][j];
+			h = a._mtx[j][q];
+			a._mtx[p][j] = g - s * (h + g * tau);
+			a._mtx[j][q] = h + s * (g - h * tau);
+		    }
+		    
+		    for (int j = q+1; j < 3; j++) {
+			g = a._mtx[p][j];
+			h = a._mtx[q][j];
+			a._mtx[p][j] = g - s * (h + g * tau);
+			a._mtx[q][j] = h + s * (g - h * tau);
+		    }
+		    
+		    for (int j = 0; j < 3; j++) {
+			g = eigenvectors[j][p];
+			h = eigenvectors[j][q];
+			eigenvectors[j][p] = g - s * (h + g * tau);
+			eigenvectors[j][q] = h + s * (g - h * tau);
+		    }
+		}
+	    }
+	}
+	for (int p = 0; p < 3; p++) {
+	    (*eigenvalues)[p] = b[p] += z[p];
+	    z[p] = 0;
+	}
+    }
+}
+
+GfMatrix4f
+GfMatrix4f::RemoveScaleShear() const
+{
+    GfMatrix4f scaleOrientMat, factoredRotMat, perspMat;
+    GfVec3f scale, translation;
+    if (!GfMatrix4f::Factor(&scaleOrientMat, &scale, &factoredRotMat,
+                  &translation, &perspMat)) {
+        // unable to decompose, so return the matrix
+        return *this;
+    }
+
+    // Remove shear
+    factoredRotMat.Orthonormalize();
+    // compose matrix with new rotation / translation (no scale/shear)
+    return factoredRotMat * GfMatrix4f(1.0).SetTranslate(translation);
+}
+
+GfRotation
+GfMatrix4f::ExtractRotation() const
+{
+    // This was adapted from the (open source) Open Inventor
+    // SbRotation::SetValue(const SbMatrix &m)
+
+    int i;
+
+    // First, find largest diagonal in matrix:
+    if (_mtx[0][0] > _mtx[1][1])
+	i = (_mtx[0][0] > _mtx[2][2] ? 0 : 2);
+    else
+	i = (_mtx[1][1] > _mtx[2][2] ? 1 : 2);
+
+    GfVec3d im;
+    double  r;
+
+    if (_mtx[0][0] + _mtx[1][1] + _mtx[2][2] > _mtx[i][i]) {
+	r = 0.5 * sqrt(_mtx[0][0] + _mtx[1][1] +
+		       _mtx[2][2] + _mtx[3][3]);
+	im.Set((_mtx[1][2] - _mtx[2][1]) / (4.0 * r),
+	       (_mtx[2][0] - _mtx[0][2]) / (4.0 * r),
+	       (_mtx[0][1] - _mtx[1][0]) / (4.0 * r));
+    }
+    else {
+	int j = (i + 1) % 3;
+	int k = (i + 2) % 3;
+	double q = 0.5 * sqrt(_mtx[i][i] - _mtx[j][j] -
+			      _mtx[k][k] + _mtx[3][3]); 
+
+	im[i] = q;
+	im[j] = (_mtx[i][j] + _mtx[j][i]) / (4 * q);
+	im[k] = (_mtx[k][i] + _mtx[i][k]) / (4 * q);
+	r     = (_mtx[j][k] - _mtx[k][j]) / (4 * q);
+    }
+
+    return GfRotation(GfQuaternion(GfClamp(r, -1.0, 1.0), im));
+}
+
+GfVec3f
+GfMatrix4f::DecomposeRotation(const GfVec3f &axis0,
+                             const GfVec3f &axis1,
+                             const GfVec3f &axis2) const
+{
+    return GfVec3f(ExtractRotation().Decompose(axis0, axis1, axis2));
+}
+
+GfMatrix3f
+GfMatrix4f::ExtractRotationMatrix() const
+{
+    return GfMatrix3f(
+	_mtx[0][0],
+	_mtx[0][1],
+	_mtx[0][2],
+
+	_mtx[1][0],
+	_mtx[1][1],
+	_mtx[1][2],
+
+	_mtx[2][0],
+	_mtx[2][1],
+	_mtx[2][2]);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -257,10 +257,21 @@ UsdUsdFileFormat::Read(
 {
     TRACE_FUNCTION();
 
-    auto underlyingFileFormat = _GetUnderlyingFileFormat(resolvedPath);
+    // Try binary usdc format first, since that's most common, then usda text,
+    // then deprecated usdb.
+    static auto formats = {
+        _GetFileFormat(UsdUsdcFileFormatTokens->Id),
+        _GetFileFormat(UsdUsdaFileFormatTokens->Id),
+        _GetFileFormat(UsdUsdbFileFormatTokens->Id)
+    };
 
-    return underlyingFileFormat && 
-        underlyingFileFormat->Read(layerBase, resolvedPath, metadataOnly);
+    for (auto const &fmt: formats) {
+        TfErrorMark m;
+        if (fmt && fmt->Read(layerBase, resolvedPath, metadataOnly))
+            return true;
+        m.Clear();
+    }
+    return false;
 }
 
 SdfFileFormatConstPtr 

@@ -576,44 +576,6 @@ struct VtDictionaryHash {
     }
 };
 
-/// Evaluates the specified \p content string as a python dictionary and
-/// returns it as a VtDictionary.
-VT_API VtDictionary VtDictionaryFromPythonString(
-    const std::string& content);
-
-/// Same as VtDictionaryFromPythonString but with more flexible failure
-/// policy.  Returns \c true if successful with the result in \p dict,
-/// otherwise returns \c false.
-/// 
-VT_API bool VtDictionaryFromPythonString(
-    const std::string& content, 
-    VtDictionary* dict);
-
-/// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
-/// and returns the formatted string. The pprint module is used to format the
-/// dictionary.
-VT_API std::string VtDictionaryPrettyPrint(
-    const VtDictionary& vtdict);
-
-/// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
-/// and inserts it into the stream. The pprint module is used to format the
-/// dictionary.
-VT_API std::ostream& VtDictionaryPrettyPrint(
-    const VtDictionary& vtdict,
-    std::ostream& ostream);
-
-/// Reads a text file at the specified \p fpath, evaluates its content string
-/// as a python dictionary and returns it as a VtDictionary.
-VT_API VtDictionary VtDictionaryFromFile(
-    const std::string& fpath);
-
-/// Pretty prints the specified VtDictionary \p vtdict as a python dictionary
-/// and saves the formatted string in a file at the specified \p fpath.
-/// The pprint module is used to format the dictionary.
-VT_API bool VtDictionaryPrettyPrintToFile(
-    const VtDictionary& vtdict,
-    const std::string& fpath);
-
 #define BOOST_PP_ITERATION_LIMITS (1, VT_DICTIONARY_MAX_ARITY)
 #define BOOST_PP_FILENAME_1 "pxr/base/vt/dictionary.h"
 #include BOOST_PP_ITERATE()

@@ -26,12 +26,8 @@
 #include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readPointInstancer.h"
-#include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/pointInstancer.h"
-#include "pxr/base/gf/matrix4d.h"
-
-#include "pxrUsdInShipped/pointInstancerUtils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -49,72 +45,9 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
     inputAttrMap.set("outputLocationPath",
             FnKat::StringAttribute(interface.getOutputLocationPath()));
 
-    //--------------------------------------------------------------------------
-    // XXX At some point, instance matrix computation will get folded into
-    // PxrUsdKatanaReadPointInstancer; until then, do the computation here and
-    // add the result to the input attr map for the reader to use.
+    // Pass along PxrUsdIn op args.
     //
-    {
-        const double currentTime = privateData.GetCurrentTime();
-
-        // Gather frame-relative sample times and add them to the current time
-        // to generate absolute sample times.
-        //
-        const std::vector<double> &motionSampleTimes =
-            privateData.GetMotionSampleTimes(instancer.GetPositionsAttr());
-        const size_t numSamples = motionSampleTimes.size();
-        std::vector<UsdTimeCode> sampleTimes(numSamples);
-        for (size_t a = 0; a < numSamples; ++a) {
-            sampleTimes[a] = UsdTimeCode(currentTime + motionSampleTimes[a]);
-        }
-
-        // Compute the instancer's instance transforms.
-        //
-        std::vector<std::vector<GfMatrix4d>> xformSamples(numSamples);
-        size_t numXformSamples = 0;
-        PxrUsdInShipped_PointInstancerUtils::
-            ComputeInstanceTransformsAtTime(
-                xformSamples, numXformSamples, instancer, sampleTimes,
-                UsdTimeCode(currentTime));
-        if (numXformSamples == 0) {
-            interface.setAttr("type", FnKat::StringAttribute("error"));
-            interface.setAttr("errorMessage", FnKat::StringAttribute(
-                                                  "Could not compute "
-                                                  "sample/topology-invarying "
-                                                  "instance transform matrix"));
-            return;
-        }
-
-        size_t numInstances = xformSamples[0].size();
-
-        // Add the result to the input attr map.
-        //
-        FnKat::DoubleBuilder instanceMatrixBldr(16);
-        for (size_t a = 0; a < numXformSamples; ++a) {
-
-            double relSampleTime = motionSampleTimes[a];
-
-            // Shove samples into the builder at the frame-relative sample time.
-            // If motion is backwards, make sure to reverse time samples.
-            std::vector<double> &matVec = instanceMatrixBldr.get(
-                privateData.IsMotionBackward()
-                    ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
-                    : relSampleTime);
-
-            matVec.reserve(16 * numInstances);
-            for (size_t i = 0; i < numInstances; ++i) {
-
-                GfMatrix4d instanceXform = xformSamples[a][i];
-                const double *matArray = instanceXform.GetArray();
-
-                for (int j = 0; j < 16; ++j) {
-                    matVec.push_back(matArray[j]);
-                }
-            }
-        }
-        inputAttrMap.set("instanceMatrix", instanceMatrixBldr.build());
-    }
-    //--------------------------------------------------------------------------
+    inputAttrMap.set("opArgs", interface.getOpArg());
 
     // Generate output attr maps.
     //
