@@ -56,9 +56,15 @@ typedef std::vector<UsdImagingGLHdEngineSharedPtr>
                                         UsdImagingGLHdEngineSharedPtrVector;
 typedef std::vector<UsdPrim> UsdPrimVector;
 
+typedef UsdImagingDelegate* (*UsdImagingDelegateCreatorFunc)(HdRenderIndex*, const SdfPath&);
+
 class UsdImagingGLHdEngine : public UsdImagingGLEngine
 {
 public:
+ 
+    USDIMAGINGGL_API
+    static UsdImagingDelegate* defaultUsdImagingDelegateCreator(HdRenderIndex* renderIndex, const SdfPath& delegateId);
+  
     // Important! Call UsdImagingGLHdEngine::IsDefaultPluginAvailable() before
     // construction; if no plugins are available, the class will only
     // get halfway constructed.
@@ -66,7 +72,8 @@ public:
     UsdImagingGLHdEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
                        const SdfPathVector& invisedPaths=SdfPathVector(),
-                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath());
+                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath(),
+                       UsdImagingDelegateCreatorFunc delegateCreatorFunc = defaultUsdImagingDelegateCreator);
 
     USDIMAGINGGL_API
     static bool IsDefaultPluginAvailable();
@@ -248,6 +255,7 @@ private:
     bool _isPopulated;
 
     TfTokenVector _renderTags;
+    UsdImagingDelegateCreatorFunc _delegateCreatorFunc;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

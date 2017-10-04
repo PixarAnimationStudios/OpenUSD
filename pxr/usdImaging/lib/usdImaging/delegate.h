@@ -434,6 +434,11 @@ public:
     USDIMAGING_API
     bool IsInInvisedPaths(const SdfPath &usdPath) const;
 
+protected:
+  
+    USDIMAGING_API
+    UsdStageRefPtr GetStage() { return _stage; }
+    
 private:
     // Internal friend class.
     class _Worker;
