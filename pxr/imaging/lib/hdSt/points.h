@@ -81,7 +81,7 @@ private:
         InstancePrimVar = HdDrawingCoord::CustomSlotsBegin
     };
 
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         DirtyNewRepr    = HdChangeTracker::CustomBitsBegin
     };
 

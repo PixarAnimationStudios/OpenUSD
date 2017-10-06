@@ -64,7 +64,7 @@ public:
     virtual ~HdStLight();
 
     // change tracking for HdStLight
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         DirtyTransform        = 1 << 0,
         DirtyParams           = 1 << 1,

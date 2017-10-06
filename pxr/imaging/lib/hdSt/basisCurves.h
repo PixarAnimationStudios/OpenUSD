@@ -96,7 +96,7 @@ private:
         InstancePrimVar  // has to be at the very end
     };
 
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         DirtyIndices        = HdChangeTracker::CustomBitsBegin,
         DirtyHullIndices    = (DirtyIndices       << 1),
         DirtyNewRepr        = (DirtyHullIndices   << 1),

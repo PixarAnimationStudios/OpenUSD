@@ -1507,8 +1507,7 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
                                                               usdPath,
                                                               attrName);
 
-            if (dirtyBits !=
-                static_cast<HdDirtyBits>(HdChangeTracker::AllDirty)) {
+            if (dirtyBits != HdChangeTracker::AllDirty) {
                 // Update Variability
                 adapter->TrackVariabilityPrep(primInfo->usdPrim, usdPath);
                 adapter->TrackVariability(primInfo->usdPrim,

@@ -369,7 +369,7 @@ private:
         _ProtoGroupPtr protoGroup;
 
         // Instancer dirty bits.
-        int dirtyBits;
+        HdDirtyBits dirtyBits;
 
         std::mutex mutex;
     };
