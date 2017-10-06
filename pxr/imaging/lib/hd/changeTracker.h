@@ -59,7 +59,7 @@ public:
 
     enum RprimDirtyBits {
         Clean                       = 0,
-        ForceSync                   = 1 << 0,
+        InitRepr                    = 1 << 0,
         Varying                     = 1 << 1,
         AllDirty                    = ~Varying,
         DirtyPrimID                 = 1 << 2,

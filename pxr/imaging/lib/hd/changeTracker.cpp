@@ -107,9 +107,9 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
     if (!TF_VERIFY(it != _rprimState.end(), "%s\n", id.GetText()))
         return;
 
-    // used for force-sync on new repr. don't touch changeCount
-    if (bits == HdChangeTracker::ForceSync) {
-        it->second |= HdChangeTracker::ForceSync;
+    // used ensure the repr has been created. don't touch changeCount
+    if (bits == HdChangeTracker::InitRepr) {
+        it->second |= HdChangeTracker::InitRepr;
         return;
     }
 
@@ -827,8 +827,8 @@ HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
     if (dirtyBits & Varying) {
         ss << "<Varying> ";
     }
-    if (dirtyBits & ForceSync) {
-        ss << "<ForceSync> ";
+    if (dirtyBits & InitRepr) {
+        ss << "<InitRepr> ";
     }
     if (dirtyBits & DirtyPrimID) {
         ss << " PrimID ";
