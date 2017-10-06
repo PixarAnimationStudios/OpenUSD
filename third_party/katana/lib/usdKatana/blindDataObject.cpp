@@ -131,6 +131,23 @@ UsdKatanaBlindDataObject::CreateVisibleAttr(VtValue const &defaultValue, bool wr
                        writeSparsely);
 }
 
+UsdAttribute
+UsdKatanaBlindDataObject::GetSuppressGroupToAssemblyPromotionAttr() const
+{
+    return GetPrim().GetAttribute(UsdKatanaTokens->katanaSuppressGroupToAssemblyPromotion);
+}
+
+UsdAttribute
+UsdKatanaBlindDataObject::CreateSuppressGroupToAssemblyPromotionAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdKatanaTokens->katanaSuppressGroupToAssemblyPromotion,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -150,6 +167,7 @@ UsdKatanaBlindDataObject::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdKatanaTokens->katanaType,
         UsdKatanaTokens->katanaVisible,
+        UsdKatanaTokens->katanaSuppressGroupToAssemblyPromotion,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

@@ -185,6 +185,27 @@ public:
     UsdAttribute CreateVisibleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
+    // --------------------------------------------------------------------- //
+    // SUPPRESSGROUPTOASSEMBLYPROMOTION 
+    // --------------------------------------------------------------------- //
+    /// If true don't promote a group to an assembly.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDKATANA_API
+    UsdAttribute GetSuppressGroupToAssemblyPromotionAttr() const;
+
+    /// See GetSuppressGroupToAssemblyPromotionAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDKATANA_API
+    UsdAttribute CreateSuppressGroupToAssemblyPromotionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 

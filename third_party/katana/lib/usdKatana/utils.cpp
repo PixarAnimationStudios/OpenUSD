@@ -50,6 +50,7 @@
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include "usdKatana/utils.h"
+#include "usdKatana/blindDataObject.h"
 #include "usdKatana/lookAPI.h"
 #include "usdKatana/baseMaterialHelpers.h"
 
@@ -1334,6 +1335,14 @@ PxrUsdKatanaUtils::PrimIsSubcomponent(const UsdPrim &prim)
 bool 
 PxrUsdKatanaUtils::ModelGroupNeedsProxy(const UsdPrim &prim)
 {
+    // No proxy if group-to-assembly promotion is explicitly suppressed.
+    bool suppressProxy;
+    if (UsdKatanaBlindDataObject(prim)
+            .GetSuppressGroupToAssemblyPromotionAttr()
+            .Get(&suppressProxy) && suppressProxy) {
+        return false;
+    }
+
     // Check to see if all children are not group models, if so, we'll make
     // this an assembly as a load/proxy optimization.
     TF_FOR_ALL(childIt, prim.GetChildren()) {

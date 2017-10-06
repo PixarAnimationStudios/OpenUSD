@@ -45,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((katanaLooksScopeName, "Looks")) \
     ((katanaLooksScopePathSubstring, "/Looks/")) \
     ((katanaPrimName, "katana:primName")) \
+    ((katanaSuppressGroupToAssemblyPromotion, "katana:suppressGroupToAssemblyPromotion")) \
     ((katanaType, "katana:type")) \
     ((katanaVisible, "katana:visible"))
 
@@ -72,6 +73,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>katanaLooksScopeName</b> - Special token for the usdKatana library.
 /// \li <b>katanaLooksScopePathSubstring</b> - Special token for the usdKatana library.
 /// \li <b>katanaPrimName</b> - UsdKatanaLookAPI
+/// \li <b>katanaSuppressGroupToAssemblyPromotion</b> - UsdKatanaBlindDataObject
 /// \li <b>katanaType</b> - UsdKatanaBlindDataObject
 /// \li <b>katanaVisible</b> - UsdKatanaBlindDataObject
 TF_DECLARE_PUBLIC_TOKENS(UsdKatanaTokens, USDKATANA_API, USDKATANA_TOKENS);
