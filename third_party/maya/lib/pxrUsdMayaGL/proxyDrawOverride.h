@@ -24,21 +24,10 @@
 #ifndef PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H
 #define PXRUSDMAYAGL_PROXYDRAWOVERRIDE_H
 
-#include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxrUsdMayaGL/batchRenderer.h"
-
+#include "pxrUsdMayaGL/usdShapeRenderer.h"
 #include "usdMaya/proxyShape.h"
 
-#include <maya/MBoundingBox.h>
-#include <maya/MDagPath.h>
-#include <maya/MDrawContext.h>
-#include <maya/MFrameContext.h>
-#include <maya/MObject.h>
 #include <maya/MPxDrawOverride.h>
-#include <maya/MString.h>
-#include <maya/MUserData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,42 +39,86 @@ public:
     PXRUSDMAYAGL_API
     static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
 
-    PXRUSDMAYAGL_API
+	PXRUSDMAYAGL_API
     virtual ~UsdMayaProxyDrawOverride();
 
-    PXRUSDMAYAGL_API
+	PXRUSDMAYAGL_API
+	virtual MHWRender::DrawAPI supportedDrawAPIs() const override;
+
+	PXRUSDMAYAGL_API
+	virtual MMatrix transform(
+		const MDagPath& objPath,
+		const MDagPath& cameraPath) const override;
+
+	PXRUSDMAYAGL_API
     virtual bool isBounded(
         const MDagPath& objPath,
-        const MDagPath& cameraPath) const;
+        const MDagPath& cameraPath) const override;
 
-    PXRUSDMAYAGL_API
+	PXRUSDMAYAGL_API
     virtual MBoundingBox boundingBox(
         const MDagPath& objPath,
-        const MDagPath& cameraPath) const;
+        const MDagPath& cameraPath) const override;
 
-    PXRUSDMAYAGL_API
+	PXRUSDMAYAGL_API
     virtual MUserData* prepareForDraw(
         const MDagPath& objPath,
         const MDagPath& cameraPath,
         const MHWRender::MFrameContext& frameContext,
-        MUserData* oldData);
+        MUserData* oldData) override;
 
-    PXRUSDMAYAGL_API
+#if MAYA_API_VERSION >= 20180000
+	PXRUSDMAYAGL_API
+	virtual bool wantUserSelection() const override;
+	PXRUSDMAYAGL_API
+	virtual bool userSelect(MHWRender::MSelectionInfo& selectInfo, const MHWRender::MDrawContext& context, MPoint& hitPoint, const MUserData* data) override;
+#endif
+
+	PXRUSDMAYAGL_API
     static MString sm_drawDbClassification;
-    PXRUSDMAYAGL_API
+	PXRUSDMAYAGL_API
     static MString sm_drawRegistrantId;
 
-    PXRUSDMAYAGL_API
+	PXRUSDMAYAGL_API
     static void draw(const MHWRender::MDrawContext& context, const MUserData* data);
 
-    PXRUSDMAYAGL_API
+	PXRUSDMAYAGL_API
     static UsdMayaProxyShape* getShape(const MDagPath& objPath);
 
 private:
     UsdMayaProxyDrawOverride(const MObject& obj);
+
+	/// \brief Setup lighting context in the lighting task.
+	static
+	void _SetupLighting(
+			const MHWRender::MDrawContext& context,
+			bool enableLighting,
+			bool enableShadow);
+
+	/// \brief Render the shapes in the render queue.
+	static
+	void _RenderShapes(
+		const MHWRender::MDrawContext& context,
+		TfToken drawRepr,
+		bool enableLighting,
+		HdCullStyle cullStyle);
+
+	/// \brief Render specific object's bounds.
+	static
+	void _RenderBounds(
+		const MBoundingBox& bounds,
+		const GfVec4f& wireframeColor,
+		const MMatrix& worldViewMat,
+		const MMatrix& projectionMat);
+
+	/// \brief Render the selects buffer in the render queue.
+	void _RenderSelects(
+		MHWRender::MSelectionInfo& selectInfo,
+		const MHWRender::MDrawContext& context);
+
+	/// \brief Cache the shape delegate for render.
+	UsdShapeRenderer _shapeRenderer;
 };
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
