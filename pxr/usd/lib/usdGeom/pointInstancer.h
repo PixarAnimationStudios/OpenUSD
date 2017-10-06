@@ -168,7 +168,7 @@ class SdfAssetPath;
 /// 
 /// The first masking feature encodes a list of IDs in a list-editable metadatum
 /// called \em inactiveIds, which, although it does not have any similar 
-/// impact to stage poopulation as \ref UsdPrim::SetActive() "prim activation",
+/// impact to stage population as \ref UsdPrim::SetActive() "prim activation",
 /// it shares with that feature that its application is uniform over all time.
 /// Because it is list-editable, we can \em sparsely add and remove instances
 /// from it in many layers.
@@ -548,7 +548,7 @@ public:
     /// \n  C++ Type: VtArray<long>
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: []
     USDGEOM_API
     UsdAttribute GetInvisibleIdsAttr() const;
 
