@@ -24,7 +24,7 @@
 from qt import QtCore, QtGui, QtWidgets
 import os
 from pxr import Usd, Sdf
-from customAttributes import CustomAttribute
+from customAttributes import CustomAttribute, RelationshipAttribute
 
 # Color constants.  
 
@@ -123,8 +123,9 @@ def PrintWarning(title, description):
     print >> msg, "------------------------------------------------------------"
 
 def GetShortString(prop, frame):
-    from customAttributes import CustomAttribute
-    if isinstance(prop, (Usd.Attribute, CustomAttribute)):
+    if isinstance(prop, RelationshipAttribute):
+        val = ", ".join(str(p) for p in prop.Get(frame))
+    elif isinstance(prop, (Usd.Attribute, CustomAttribute)):
         val = prop.Get(frame)
     elif isinstance(prop, Sdf.AttributeSpec):
         if frame == Usd.TimeCode.Default():

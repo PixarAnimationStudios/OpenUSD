@@ -22,6 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 from qt import QtGui, QtWidgets, QtCore
+from pxr import Sdf
 from usdviewContextMenuItem import UsdviewContextMenuItem
 from common import (INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL,
                     ATTR_PLAIN_TYPE_ROLE, REL_PLAIN_TYPE_ROLE, ATTR_WITH_CONN_TYPE_ROLE,
@@ -112,9 +113,20 @@ class CopyAttributeValueMenuItem(AttributeViewContextMenuItem):
         if self._value == "":
             return
 
+        # We display relationships targets as: 
+        #    /f, /g/a ...
+        # But when we ask to copy the value, we'd like to get back:
+        #    [Sdf.Path('/f'), Sdf.Path('/g/a')]
+        # Which is useful for pasting into a python interpreter.
+        if self._role == REL_WITH_TARGET_TYPE_ROLE:
+            value = str([Sdf.Path("".join(p.split())) \
+                          for p in self._value.split(",")])
+        else:
+            value = self._value
+
         cb = QtWidgets.QApplication.clipboard()
-        cb.setText(self._value, QtGui.QClipboard.Selection)
-        cb.setText(self._value, QtGui.QClipboard.Clipboard)
+        cb.setText(value, QtGui.QClipboard.Selection)
+        cb.setText(value, QtGui.QClipboard.Clipboard)
 
 # --------------------------------------------------------------------
 # Individual target selection menus
@@ -139,7 +151,7 @@ class CopyTargetPathMenuItem(AttributeViewContextMenuItem):
         if not self._item:
             return
 
-        value = ", ".join([s.text(INDEX_PROPNAME) for s in self.GetSelectedOfType()]) 
+        value = ", ".join([s.text(INDEX_PROPNAME) for s in self.GetSelectedOfType()])
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(value, QtGui.QClipboard.Selection)
         cb.setText(value, QtGui.QClipboard.Clipboard)
