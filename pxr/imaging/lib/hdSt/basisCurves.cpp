@@ -294,7 +294,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     // for the bits geometric shader depends on, reset all geometric shaders.
     // they are populated again at the end of _GetRepr.
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
-                      HdChangeTracker::DirtySurfaceShader)) {
+                      HdChangeTracker::DirtyMaterialId)) {
         needsSetGeometricShader = true;
     }
 
@@ -630,7 +630,7 @@ HdStBasisCurves::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyPrimVar
         | HdChangeTracker::DirtyRefineLevel
         | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTopology
         | HdChangeTracker::DirtyTransform 
         | HdChangeTracker::DirtyVisibility 

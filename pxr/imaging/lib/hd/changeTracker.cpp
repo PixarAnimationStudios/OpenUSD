@@ -845,8 +845,8 @@ HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
     if (dirtyBits & DirtyPrimVar) {
         ss << "PrimVar ";
     }
-    if (dirtyBits & DirtySurfaceShader) {
-        ss << "SurfaceShader ";
+    if (dirtyBits & DirtyMaterialId) {
+        ss << "MaterialId ";
     }
     if (dirtyBits & DirtyTopology) {
         ss << "Topology ";

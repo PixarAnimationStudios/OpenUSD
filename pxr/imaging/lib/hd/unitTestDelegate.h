@@ -265,11 +265,11 @@ public:
     {
         BindShader(rprimId, shaderId);
     
-        // Mark the rprim shader binding as dirty so sync gets
+        // Mark the rprim material binding as dirty so sync gets
         // called on that rprim and also increase 
         // the version of the global bindings so batches get rebuild (if needed)
         HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
-        tracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtySurfaceShader);
+        tracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
         tracker.MarkShaderBindingsDirty();
     }
 

@@ -254,9 +254,9 @@ public:
     GfMatrix4d GetTransform(UsdPrim const& prim, UsdTimeCode time,
                             bool ignoreRootTransform = false);
 
-    /// Gets the shader binding for the given prim, walking up namespace if
+    /// Gets the material path for the given prim, walking up namespace if
     /// necessary.  
-    SdfPath GetShaderBinding(UsdPrim const& prim);
+    SdfPath GetMaterialId(UsdPrim const& prim);
 
     /// Gets the instancer ID for the given prim and instancerContext.
     SdfPath GetInstancerBinding(UsdPrim const& prim,

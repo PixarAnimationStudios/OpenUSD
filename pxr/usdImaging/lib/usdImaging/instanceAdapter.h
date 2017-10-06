@@ -198,7 +198,7 @@ private:
     SdfPath 
     _InsertProtoRprim(UsdPrimRange::iterator *iter,
                       const TfToken& protoName,
-                      SdfPath instanceShaderBinding,
+                      SdfPath instanceMaterialId,
                       SdfPath instancerPath,
                       UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
                       UsdImagingIndexProxy* index,
@@ -335,8 +335,8 @@ private:
         // The master prim path associated with this instancer.
         SdfPath masterPath;
 
-        // The shader binding path associated with this instancer.
-        SdfPath shaderBindingPath;
+        // The material path associated with this instancer.
+        SdfPath materialId;
 
         // Paths to Usd instance prims. Note that this is not necessarily
         // equivalent to all the instances that will be drawn. See below.
@@ -390,23 +390,23 @@ private:
     //
     // For Usd scenegraph instancing, a master prim and its descendents
     // roughly correspond to the instancer and prototype prims. However,
-    // Hd requires a different instancer and rprims for different shader
+    // Hd requires a different instancer and rprims for different material
     // bindings. This means we cannot use the Usd master prim as the
     // instancer, because we can't represent this in the case where multiple
     // Usd instances share the same master but have different bindings.
     //
-    // Instead, we use the first instance of a master with a given shader
+    // Instead, we use the first instance of a master with a given material
     // binding as our instancers. For example, if /A and /B are both
-    // instances of /__Master_1 but /A and /B have different shader
+    // instances of /__Master_1 but /A and /B have different material
     // bindings authored on them, both /A and /B will be instancers,
     // with their own set of rprims and instance indices.
     //
-    // The below is essentially a map from (master path, shader binding)
+    // The below is essentially a map from (master path, material binding)
     // to instancer path. The data for this instancer is located in the
     // _InstancerDataMap above.
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash>
-        _ShaderBindingToInstancerMap;
-    typedef TfHashMap<SdfPath, _ShaderBindingToInstancerMap, SdfPath::Hash>
+        _MaterialIdToInstancerMap;
+    typedef TfHashMap<SdfPath, _MaterialIdToInstancerMap, SdfPath::Hash>
         _MasterToInstancerMap;
     _MasterToInstancerMap _masterToInstancerMap;
 };

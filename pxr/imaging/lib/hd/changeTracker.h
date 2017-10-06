@@ -67,7 +67,7 @@ public:
         DirtyRefineLevel            = 1 << 4,
         DirtyPoints                 = 1 << 5,
         DirtyPrimVar                = 1 << 6,
-        DirtySurfaceShader          = 1 << 7,
+        DirtyMaterialId             = 1 << 7,
         DirtyTopology               = 1 << 8,
         DirtyTransform              = 1 << 9,
         DirtyVisibility             = 1 << 10,

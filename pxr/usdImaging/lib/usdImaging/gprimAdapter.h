@@ -168,8 +168,8 @@ private:
     /// inherited purpose. Inherited values are strongest.
     TfToken _GetPurpose(UsdPrim const & prim, UsdTimeCode time);
 
-    /// Returns the surface shader for this prim
-    SdfPath _GetSurfaceShader(UsdPrim const& prim);
+    /// Returns the path to the material use by this prim
+    SdfPath _GetMaterialId(UsdPrim const& prim);
 };
 
 

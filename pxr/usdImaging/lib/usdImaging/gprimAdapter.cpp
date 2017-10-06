@@ -137,7 +137,8 @@ UsdImagingGprimAdapter::_DiscoverPrimvars(
     if (UsdPrim const& shaderPrim =
                         gprim.GetPrim().GetStage()->GetPrimAtPath(shaderPath)) {
         if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
-            _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, s, time, valueCache);
+            _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, 
+                                               s, time, valueCache);
         } else {
             _DiscoverPrimvarsDeprecated(gprim, cachePath, 
                                         shaderPrim, time, valueCache);
@@ -239,7 +240,8 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(
                 }
             } else {
                 // Recursively look for more primvars
-                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, UsdShadeShader(source), time, valueCache);
+                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, 
+                    UsdShadeShader(source), time, valueCache);
             }
         }
     }
@@ -331,20 +333,21 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                         GetColorAndOpacity(prim, &primvar, time);
         _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
 
-        // Collect shader required primvars
-        SdfPath usdShaderPath = GetShaderBinding(prim);
+        // Collect material required primvars
+        SdfPath usdMaterialPath = GetMaterialId(prim);
 
         // If we're processing this gprim on behalf of an instancer,
-        // use the shader binding specified by the instancer if we
-        // aren't able to find a shader binding for this prim itself.
-        if (instancerContext && usdShaderPath.IsEmpty()) {
-            usdShaderPath = instancerContext->instanceSurfaceShaderPath;
+        // use the material binding specified by the instancer if we
+        // aren't able to find a material binding for this prim itself.
+        if (instancerContext && usdMaterialPath.IsEmpty()) {
+            usdMaterialPath = instancerContext->instanceMaterialId;
         }
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Shader for <%s> is <%s>\n",
-                prim.GetPath().GetText(), usdShaderPath.GetText());
+                prim.GetPath().GetText(), usdMaterialPath.GetText());
 
-        if (!usdShaderPath.IsEmpty()) {
-            _DiscoverPrimvars(gprim, cachePath, usdShaderPath, time, valueCache);
+        if (!usdMaterialPath.IsEmpty()) {
+            _DiscoverPrimvars(gprim, cachePath, 
+                              usdMaterialPath, time, valueCache);
         }
     }
 
@@ -361,8 +364,8 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyVisibility)
         valueCache->GetVisible(cachePath) = GetVisible(prim, time);
 
-    if (requestedBits & HdChangeTracker::DirtySurfaceShader)
-        valueCache->GetSurfaceShader(cachePath) = _GetSurfaceShader(prim);
+    if (requestedBits & HdChangeTracker::DirtyMaterialId)
+        valueCache->GetSurfaceShader(cachePath) = _GetMaterialId(prim);
 }
 
 HdDirtyBits
@@ -725,12 +728,12 @@ UsdImagingGprimAdapter::_GetDoubleSided(UsdPrim const& prim)
 }
 
 SdfPath 
-UsdImagingGprimAdapter::_GetSurfaceShader(UsdPrim const& prim)
+UsdImagingGprimAdapter::_GetMaterialId(UsdPrim const& prim)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    return GetShaderBinding(prim);
+    return GetMaterialId(prim);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

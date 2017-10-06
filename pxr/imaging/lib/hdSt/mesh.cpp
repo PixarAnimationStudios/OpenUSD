@@ -1029,7 +1029,7 @@ HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 {
     const HdShader *shader = static_cast<const HdShader *>(
                                   renderIndex.GetSprim(HdPrimTypeTokens->shader,
-                                                       GetSurfaceShaderId()));
+                                                       GetMaterialId()));
     if (shader == nullptr) {
         shader = static_cast<const HdShader *>(
                         renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
@@ -1231,7 +1231,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     // geometry shader out of the code.
     bool hasCustomDisplacementTerminal = false;
     const HdShader *shader = static_cast<const HdShader *>(
-        renderIndex.GetSprim(HdPrimTypeTokens->shader, GetSurfaceShaderId()));
+        renderIndex.GetSprim(HdPrimTypeTokens->shader, GetMaterialId()));
     if (shader) {
         const std::string & displacementShader = 
             shader->GetDisplacementShaderSource(sceneDelegate);
@@ -1406,7 +1406,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided|
-                      HdChangeTracker::DirtySurfaceShader)) {
+                      HdChangeTracker::DirtyMaterialId)) {
         needsSetGeometricShader = true;
     }
 
@@ -1465,7 +1465,7 @@ HdStMesh::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyPrimVar
         | HdChangeTracker::DirtyRefineLevel
         | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTopology
         | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyVisibility

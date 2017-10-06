@@ -400,7 +400,7 @@ UsdImagingIndexProxy::InsertRprim(
     SdfPath const &usdPath = usdPrim.GetPath();
 
     SdfPath const& shader = instancerContext
-                          ? instancerContext->instanceSurfaceShaderPath
+                          ? instancerContext->instanceMaterialId
                           : shaderBinding;
 
     SdfPath instancer;
@@ -2485,7 +2485,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     if (key == HdShaderTokens->surfaceShader) {
         SdfPath pathValue;
         if (!_valueCache.ExtractSurfaceShader(usdPath, &pathValue)) {
-            _UpdateSingleValue(usdPath, HdChangeTracker::DirtySurfaceShader);
+            _UpdateSingleValue(usdPath, HdChangeTracker::DirtyMaterialId);
             TF_VERIFY(_valueCache.ExtractSurfaceShader(usdPath, &pathValue));
         }
         value = VtValue(GetPathForIndex(pathValue));

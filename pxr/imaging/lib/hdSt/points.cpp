@@ -247,7 +247,7 @@ HdStPoints::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyPrimVar
         | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyWidths

@@ -109,13 +109,13 @@ public:
 
     /// Returns the identifier of the instancer (if any) for this Rprim. If this
     /// Rprim is not instanced, an empty SdfPath will be returned.
-    SdfPath const& GetInstancerId() const { return _instancerID; }
+    SdfPath const& GetInstancerId() const { return _instancerId; }
 
-    /// Returns the ID of the SurfaceShader to which this Rprim is bound. The
-    /// SurfaceShader object itself can be fetched from the RenderIndex using
+    /// Returns the path of the material to which this Rprim is bound. The
+    /// material object itself can be fetched from the RenderIndex using
     /// this identifier.
-    SdfPath const& GetSurfaceShaderId() const {
-        return _surfaceShaderID;
+    SdfPath const& GetMaterialId() const {
+        return _materialId;
     }
 
     /// Returns true if any dirty flags are set for this rprim.
@@ -266,15 +266,15 @@ protected:
 
 private:
     SdfPath _id;
-    SdfPath _instancerID;
-    SdfPath _surfaceShaderID;
+    SdfPath _instancerId;
+    SdfPath _materialId;
 
     // Used for id renders.
     int32_t _primId;
 
-    /// Sets a new surface shader id to be used by this rprim
-    void _SetSurfaceShaderId(HdChangeTracker &changeTracker,
-                             SdfPath const& surfaceShaderId);
+    /// Sets a new material binding to be used by this rprim
+    void _SetMaterialId(HdChangeTracker &changeTracker,
+                        SdfPath const& materialId);
 
 protected:
     // shared data across reprs: bufferArrayRanges, bounds, visibility

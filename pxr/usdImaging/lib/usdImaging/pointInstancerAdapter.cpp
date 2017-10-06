@@ -276,7 +276,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 UsdImagingInstancerContext ctx = {
                     instancerContext->instancerId,
                     instancerContext->childName,
-                    instancerContext->instanceSurfaceShaderPath,
+                    instancerContext->instanceMaterialId,
                     UsdImagingPrimAdapterSharedPtr() };
                 protoPath = adapter->Populate(*iter, index, &ctx);
                 iter.PruneChildren();
@@ -286,11 +286,11 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                         "proto%d_%s_id%d", protoIndex,
                         iter->GetPath().GetName().c_str(), protoID++));
 
-                SdfPath const& shader = GetShaderBinding(*iter);
+                SdfPath const& materialId = GetMaterialId(*iter);
                 UsdImagingInstancerContext ctx = {
                     instancerPath,
                     /*childName=*/protoName,
-                    shader,
+                    materialId,
                     instancerContext->instancerAdapter };
                 protoPath = instancerPath.AppendProperty(protoName);
                 adapter->Populate(*iter, index, &ctx);

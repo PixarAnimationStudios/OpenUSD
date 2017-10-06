@@ -81,7 +81,7 @@ public:
     }
 
     HD_API
-    HdShaderCodeSharedPtr GetSurfaceShader() const;
+    HdShaderCodeSharedPtr GetMaterial() const;
 
     GfBBox3d const & GetBounds() const { return _sharedData->bounds; }
 

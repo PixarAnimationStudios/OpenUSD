@@ -386,7 +386,7 @@ Hd_IndirectDrawBatch::_CompileBatch(
         // shader parameter
         //
         HdBufferArrayRangeSharedPtr const &
-            shaderBar_ = drawItem->GetSurfaceShader()->GetShaderData();
+            shaderBar_ = drawItem->GetMaterial()->GetShaderData();
         HdBufferArrayRangeGLSharedPtr shaderBar =
             boost::static_pointer_cast<HdBufferArrayRangeGL>(shaderBar_);
 
