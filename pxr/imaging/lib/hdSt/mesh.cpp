@@ -791,7 +791,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         // already have a valid range, but the new repr may have
         // added additional items (smooth normals) or we may be transitioning
         // to unpacked normals
-        bool isNew = (*dirtyBits & DirtyNewRepr) ||
+        bool isNew = (*dirtyBits & NewRepr) ||
                      (usePackedNormals != _packedNormals);
 
         HdBufferArrayRangeSharedPtr range = bar;
@@ -1141,7 +1141,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     /* VERTEX PRIMVARS */
-    if ((*dirtyBits & DirtyNewRepr) ||
+    if ((*dirtyBits & NewRepr) ||
         (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id))) {
         _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits,
                                 requireSmoothNormals);
@@ -1319,7 +1319,7 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
 
         // set dirty bit to say we need to sync a new repr (buffer array
         // ranges may change)
-        *dirtyBits |= DirtyNewRepr;
+        *dirtyBits |= NewRepr;
 
         _MeshReprConfig::DescArray descs = _GetReprDesc(reprName);
 
@@ -1444,7 +1444,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    *dirtyBits &= ~DirtyNewRepr;
+    *dirtyBits &= ~NewRepr;
 
 
     return it->second;
@@ -1454,6 +1454,7 @@ HdDirtyBits
 HdStMesh::_GetInitialDirtyBits() const
 {
     HdDirtyBits mask = HdChangeTracker::Clean
+        | HdChangeTracker::InitRepr
         | HdChangeTracker::DirtyCullStyle
         | HdChangeTracker::DirtyDoubleSided
         | HdChangeTracker::DirtyExtent

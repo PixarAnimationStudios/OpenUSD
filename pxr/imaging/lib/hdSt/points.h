@@ -82,7 +82,7 @@ private:
     };
 
     enum DirtyBits : HdDirtyBits {
-        DirtyNewRepr    = HdChangeTracker::CustomBitsBegin
+        NewRepr    = HdChangeTracker::CustomBitsBegin
     };
 
 

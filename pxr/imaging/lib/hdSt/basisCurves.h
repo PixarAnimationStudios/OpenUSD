@@ -99,7 +99,7 @@ private:
     enum DirtyBits : HdDirtyBits {
         DirtyIndices        = HdChangeTracker::CustomBitsBegin,
         DirtyHullIndices    = (DirtyIndices       << 1),
-        DirtyNewRepr        = (DirtyHullIndices   << 1),
+        NewRepr             = (DirtyHullIndices   << 1),
     };
 
     /// We only support drawing smooth curves for a small subset of all the

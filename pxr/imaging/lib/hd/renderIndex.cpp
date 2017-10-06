@@ -785,14 +785,30 @@ namespace {
             // for the first time.  Therefore, inform the Rprim of the new repr
             // and give it the opportunity to modify the dirty bits in the
             // request before providing them to the scene delegate.
-            TF_FOR_ALL(it, reprs) {
-                if (reprsMask & 1) {
-                    rprim->InitRepr(sceneDelegate,
-                                    it->reprName,
-                                    it->forcedRepr,
-                                    &dirtyBits);
+            //
+            // The InitRepr bit is set when a collection changes and we need
+            // to re-evalutate the repr state of a prim to ensure the repr
+            // was initalised.
+            //
+            // The DirtyRepr bit on the otherhand is set when the scene
+            // delegate's prim repr state changes and thus the prim must
+            // fetch it again from the scene delgate.
+            //
+            // In both cases, if the repr is new for the prim, this leaves the
+            // NewRepr dirty bit on the prim (otherwise NewRepr is clean).
+            if ((dirtyBits &
+                     (HdChangeTracker::InitRepr | HdChangeTracker::DirtyRepr))
+                  != 0) {
+                TF_FOR_ALL(it, reprs) {
+                    if (reprsMask & 1) {
+                        rprim->InitRepr(sceneDelegate,
+                                        it->reprName,
+                                        it->forcedRepr,
+                                        &dirtyBits);
+                    }
+                    reprsMask >>= 1;
                 }
-                reprsMask >>= 1;
+                dirtyBits &= ~HdChangeTracker::InitRepr;
             }
 
             // A render delegate may require additional information
@@ -810,12 +826,46 @@ namespace {
                           _RprimSyncRequestVector *syncReq,
                           _ReprList const &reprs)
     {
-        WorkParallelForN(syncReq->rprims.size(),
+        size_t numPrims = syncReq->rprims.size();
+        WorkParallelForN(numPrims,
                      boost::bind(&_PreSyncRPrims,
                                  sceneDelegate, syncReq, boost::cref(reprs),
                                  _1, _2));
-    }
 
+        // Pre-sync may have completely cleaned prims, so as an optimization
+        // remove them from the sync request list.
+        size_t primIdx = 0;
+        while (primIdx < numPrims)
+        {
+            if (HdChangeTracker::IsClean(syncReq->request.dirtyBits[primIdx])) {
+                if (numPrims == 1) {
+                    syncReq->rprims.clear();
+                    syncReq->reprsMasks.clear();
+                    syncReq->request.IDs.clear();
+                    syncReq->request.dirtyBits.clear();
+                    ++primIdx;
+                } else {
+
+                    std::swap(syncReq->rprims[primIdx],
+                              syncReq->rprims[numPrims -1]);
+                    std::swap(syncReq->reprsMasks[primIdx],
+                              syncReq->reprsMasks[numPrims -1]);
+                    std::swap(syncReq->request.IDs[primIdx],
+                              syncReq->request.IDs[numPrims -1]);
+                    std::swap(syncReq->request.dirtyBits[primIdx],
+                              syncReq->request.dirtyBits[numPrims -1]);
+
+                    syncReq->rprims.pop_back();
+                    syncReq->reprsMasks.pop_back();
+                    syncReq->request.IDs.pop_back();
+                    syncReq->request.dirtyBits.pop_back();
+                    --numPrims;
+                }
+            } else {
+                ++primIdx;
+            }
+        }
+    }
 };
 
 void
@@ -1005,7 +1055,6 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
         }
         dirtyBitDispatcher.Wait();
     }
-
 
     {
         HF_TRACE_FUNCTION_SCOPE("Delegate Sync");
