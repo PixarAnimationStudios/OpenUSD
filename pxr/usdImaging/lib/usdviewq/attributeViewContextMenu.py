@@ -21,12 +21,14 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+import sys
 from qt import QtGui, QtWidgets, QtCore
 from pxr import Sdf
 from usdviewContextMenuItem import UsdviewContextMenuItem
 from common import (INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL,
                     ATTR_PLAIN_TYPE_ROLE, REL_PLAIN_TYPE_ROLE, ATTR_WITH_CONN_TYPE_ROLE,
-                    REL_WITH_TARGET_TYPE_ROLE, CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE)
+                    REL_WITH_TARGET_TYPE_ROLE, CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE,
+                    PrimNotFoundException)
 
 #
 # Specialized context menu for running commands in the attribute viewer.
@@ -165,8 +167,13 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
         return "Select Target Path"
 
     def RunCommand(self):
-        self._mainWindow.jumpToTargetPaths([s.text(INDEX_PROPNAME) \
-                                            for s in self.GetSelectedOfType()])
+        paths = [s.text(INDEX_PROPNAME) for s in self.GetSelectedOfType()]
+        try:
+            self._mainWindow.jumpToTargetPaths(paths)
+        except PrimNotFoundException as ex:
+            # jumpToTargetPaths couldn't find one of the prims
+            sys.stderr.write("ERROR: %s\n" % ex.message)
+            return
 
 # --------------------------------------------------------------------
 # Target owning property selection menus
@@ -196,8 +203,13 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
 
         # Deselect the parent and jump to all of its children
         self._item.setSelected(False)
-        self._mainWindow.jumpToTargetPaths([self._item.child(i).text(INDEX_PROPNAME) \
-                                             for i in range(0, self._item.childCount())])
+        paths = [self._item.child(i).text(INDEX_PROPNAME) for i in range(0, self._item.childCount())]
+        try:
+            self._mainWindow.jumpToTargetPaths(paths)
+        except PrimNotFoundException as ex:
+            # jumpToTargetPaths couldn't find one of the prims
+            sys.stderr.write("ERROR: %s\n" % ex.message)
+            return
 
 # 
 # Copy all target paths under the currently selected relationship to the clipboard

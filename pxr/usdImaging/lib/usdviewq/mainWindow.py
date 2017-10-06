@@ -60,7 +60,7 @@ from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor, Va
                     REL_WITH_TARGET_TYPE_ICON, TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON,            
                     ATTR_PLAIN_TYPE_ROLE, REL_PLAIN_TYPE_ROLE, ATTR_WITH_CONN_TYPE_ROLE,
                     REL_WITH_TARGET_TYPE_ROLE, CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE,
-                    PropTreeWidgetTypeIsRel)
+                    PropTreeWidgetTypeIsRel, PrimNotFoundException)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -2823,20 +2823,13 @@ class MainWindow(QtWidgets.QMainWindow):
         pathList = re.split(", ?", newPaths)
         pathList = filter(lambda path: len(path) != 0, pathList)
 
-        itemList = []
-        for primPath in pathList:
-            try:
-                treeItem = self._getItemAtPath(str(primPath))
-            except Exception, err:  
-                # prim not found
-                sys.stderr.write('ERROR: %s\n' % str(err))
-                self._itemSelectionChanged()
-                return
-
-            itemList.append(treeItem)
-
-        primList = [item.node for item in itemList]
-        self._setSelectionFromPrimList(primList)
+        try:
+            self.jumpToTargetPaths(pathList)
+        except PrimNotFoundException as ex:
+            # jumpToTargetPaths couldn't find one of the prims
+            sys.stderr.write("ERROR: %s\n" % ex.message)
+            self._itemSelectionChanged()
+            return
 
     def _setSelectionFromPrimList(self, primsToSelect):
         """Replaces current selection with the prims in 'primsToSelect'.
@@ -3861,9 +3854,16 @@ class MainWindow(QtWidgets.QMainWindow):
         return self._stage.GetPrimAtPath(p.split('.')[0])
 
     def jumpToTargetPaths(self, paths):
-        self._setSelectionFromPrimList([self._stage.GetPrimAtPath(Sdf.Path(p).GetPrimPath()) for p in paths])                     
-                                                                                 
-        if len(paths) == 1:                                                      
+        prims = []
+        for path in paths:
+            prim = self._stage.GetPrimAtPath(Sdf.Path(str(path)).GetPrimPath())
+            if not prim:
+                raise PrimNotFoundException(path)
+            prims.append(prim)
+
+        self._setSelectionFromPrimList(prims)
+
+        if len(paths) == 1:
             path = Sdf.Path(paths[0])
 
             # If there is no property component
@@ -3873,17 +3873,17 @@ class MainWindow(QtWidgets.QMainWindow):
             primName = path.GetPrimPath()
             propName = path.name
 
-            lookup = self._ui.propertyView.findItems(                            
-                propName,                                                        
-                QtCore.Qt.MatchRegExp | QtCore.Qt.MatchRecursive,                
-                INDEX_PROPNAME)                                                  
+            lookup = self._ui.propertyView.findItems(
+                propName,
+                QtCore.Qt.MatchRegExp | QtCore.Qt.MatchRecursive,
+                INDEX_PROPNAME)
 
-            if not lookup:                                                       
-                return                                                           
-                                                                                 
-            item = lookup[0]                                                     
-            item.setSelected(True)                                               
-            self._ui.propertyView.setCurrentItem(item)                           
+            if not lookup:
+                return
+
+            item = lookup[0]
+            item.setSelected(True)
+            self._ui.propertyView.setCurrentItem(item)
 
     def jumpToEnclosingModelSelectedPrims(self):
         from common import GetEnclosingModelPrim

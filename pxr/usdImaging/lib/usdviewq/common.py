@@ -529,3 +529,9 @@ def Drange(start, stop, step):
         r += step
     return lst
 
+class PrimNotFoundException(Exception):
+    """Raised when a prim does not exist at a valid path."""
+    def __init__(self, path):
+        super(PrimNotFoundException, self).__init__(
+            "Prim not found at path in stage: %s" % str(path))
+
