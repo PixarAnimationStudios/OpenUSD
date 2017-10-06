@@ -71,8 +71,7 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
 typedef std::unordered_map<TfToken,
                            VtValue,
-                           TfToken::HashFunctor,
-                           TfToken::TokensEqualFunctor> HdTaskContext;
+                           TfToken::HashFunctor> HdTaskContext;
 
 /// \class HdRenderIndex
 ///
