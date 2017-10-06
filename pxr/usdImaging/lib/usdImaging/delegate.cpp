@@ -2481,8 +2481,17 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
 
     SdfPath usdPath = GetPathForUsd(id);
     VtValue value;
-    
-    if (!_valueCache.ExtractPrimvar(usdPath, key, &value)) {
+
+    if (key == HdShaderTokens->surfaceShader) {
+        SdfPath pathValue;
+        if (!_valueCache.ExtractSurfaceShader(usdPath, &pathValue)) {
+            _UpdateSingleValue(usdPath, HdChangeTracker::DirtySurfaceShader);
+            TF_VERIFY(_valueCache.ExtractSurfaceShader(usdPath, &pathValue));
+        }
+        value = VtValue(GetPathForIndex(pathValue));
+    }
+
+    else if (!_valueCache.ExtractPrimvar(usdPath, key, &value)) {
         if (key == HdTokens->points) {
             _UpdateSingleValue(usdPath,HdChangeTracker::DirtyPoints);
             if (!TF_VERIFY(_valueCache.ExtractPoints(usdPath, &value))) {
@@ -2504,11 +2513,6 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
                 vec.push_back(1.0f);
                 value = VtValue(vec);
             }
-        } else if (key == HdShaderTokens->surfaceShader) {
-            _UpdateSingleValue(usdPath,HdChangeTracker::DirtySurfaceShader);
-            SdfPath pathValue;
-            TF_VERIFY(_valueCache.ExtractSurfaceShader(usdPath, &pathValue));
-            value = VtValue(GetPathForIndex(pathValue));
         } else if (key == HdTokens->transform) {
             GfMatrix4d xform(1.);
             bool resetsXformStack=false;
@@ -2534,15 +2538,10 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             TF_VERIFY(_GetPrim(usdPath).GetAttribute(key).Get(&value, _time),
                   "%s, %s\n", id.GetText(), key.GetText());
         }
+    }
 
-        if (value.IsEmpty()) {
-            TF_WARN("Empty VtValue: <%s> %s\n", id.GetText(), key.GetText());
-        }
-    } else {
-        if (value.IsEmpty()) {
-            TF_WARN("Empty VtValue (cached): <%s> %s\n", id.GetText(),
-                    key.GetText());
-        }
+    if (value.IsEmpty()) {
+        TF_WARN("Empty VtValue: <%s> %s\n", id.GetText(), key.GetText());
     }
 
     // We generally don't want Vec2d arrays, convert to vec2f.
