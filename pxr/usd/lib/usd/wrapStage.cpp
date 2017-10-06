@@ -46,6 +46,17 @@ using std::string;
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+class Usd_PcpCacheAccess
+{
+public:
+    static const PcpCache* GetPcpCache(const UsdStage& stage)
+    { return stage._GetPcpCache(); }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -496,6 +507,9 @@ void wrapUsdStage()
 
         .def("GetMasters", &UsdStage::GetMasters,
              return_value_policy<TfPySequenceToList>())
+
+        .def("_GetPcpCache", &Usd_PcpCacheAccess::GetPcpCache,
+             return_internal_reference<>())
         ;
 }
 

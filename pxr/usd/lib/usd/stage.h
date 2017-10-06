@@ -2046,7 +2046,7 @@ private:
     UsdStagePopulationMask _populationMask;
     
     bool _isClosingStage;
-    
+
     friend class UsdAttribute;
     friend class UsdAttributeQuery;
     friend class UsdEditTarget;
@@ -2059,6 +2059,7 @@ private:
     friend class UsdSpecializes;
     friend class UsdVariantSet;
     friend class UsdVariantSets;
+    friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;
 };

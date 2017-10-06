@@ -3363,6 +3363,7 @@ UsdStage::_HandleLayersDidChange(
     // Keep track of paths to USD objects that need to be recomposed or
     // have otherwise changed.
     SdfPathSet pathsToRecompose, otherResyncPaths, otherChangedPaths;
+    SdfPathSet changedActivePaths;
 
     // Add dependent paths for any PrimSpecs whose fields have changed that may
     // affect cached prim information.
@@ -3387,15 +3388,24 @@ UsdStage::_HandleLayersDidChange(
             if (path == SdfPath::AbsoluteRootPath() ||
                 path.IsPrimOrPrimVariantSelectionPath()) {
 
-                if (entry.flags.didReorderChildren) {
+                bool didChangeActive = false;
+                for (const auto& info : entry.infoChanged) {
+                    if (info.first == SdfFieldKeys->Active) {
+                        TF_DEBUG(USD_CHANGES).Msg(
+                            "Changed field: %s\n", info.first.GetText());
+                        didChangeActive = true;
+                        break;
+                    }
+                }
+
+                if (didChangeActive || entry.flags.didReorderChildren) {
                     willRecompose = true;
                 } else {
                     for (const auto& info : entry.infoChanged) {
-                        const auto infoKey = info.first;
-                        if ((infoKey == SdfFieldKeys->Active)    ||
-                            (infoKey == SdfFieldKeys->Kind)      ||
-                            (infoKey == SdfFieldKeys->TypeName)  ||
-                            (infoKey == SdfFieldKeys->Specifier) ||
+                        const auto& infoKey = info.first;
+                        if (infoKey == SdfFieldKeys->Kind ||
+                            infoKey == SdfFieldKeys->TypeName ||
+                            infoKey == SdfFieldKeys->Specifier ||
                             
                             // XXX: Could be more specific when recomposing due
                             //      to clip changes. E.g., only update the clip
@@ -3403,8 +3413,7 @@ UsdStage::_HandleLayersDidChange(
                             UsdIsClipRelatedField(infoKey)) {
 
                             TF_DEBUG(USD_CHANGES).Msg(
-                                "Changed field: %s\n",
-                                infoKey.GetText());
+                                "Changed field: %s\n", infoKey.GetText());
 
                             willRecompose = true;
                             break;
@@ -3415,7 +3424,11 @@ UsdStage::_HandleLayersDidChange(
                 if (willRecompose) {
                     _AddDependentPaths(layerAndChangelist.first, path, 
                                        *_cache, &pathsToRecompose);
-            }
+                }
+                if (didChangeActive) {
+                    _AddDependentPaths(layerAndChangelist.first, path, 
+                                       *_cache, &changedActivePaths);
+                }
             }
             else {
                 if (path.IsPropertyPath()) {
@@ -3455,6 +3468,16 @@ UsdStage::_HandleLayersDidChange(
     PcpChanges changes;
     changes.DidChange(std::vector<PcpCache*>(1, _cache.get()),
                       n.GetChangeListMap());
+
+    // Pcp does not consider activation changes to be significant since
+    // it doesn't look at activation during composition. However, UsdStage
+    // needs to do so, since it elides children of deactivated prims.
+    // This ensures that prim indexes for these prims are ejected from
+    // the PcpCache.
+    for (const SdfPath& p : changedActivePaths) {
+        changes.DidChangeSignificantly(_cache.get(), p);
+    }
+
     _Recompose(changes, &pathsToRecompose);
 
     // Add in all other paths that are marked as resynced here so
