@@ -3856,7 +3856,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def jumpToTargetPaths(self, paths):
         prims = []
         for path in paths:
-            prim = self._stage.GetPrimAtPath(Sdf.Path(str(path)).GetPrimPath())
+            prim = self._stage.GetPrimAtPath(
+                Sdf.Path(str(path)).GetAbsoluteRootOrPrimPath())
+
             if not prim:
                 raise PrimNotFoundException(path)
             prims.append(prim)
