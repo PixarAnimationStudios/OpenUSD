@@ -281,7 +281,7 @@ HdCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
     if (!mtCullingDisabled) {
         WorkParallelForN(_drawItemInstances.size(), 
                          boost::bind(&_Worker::cull, &_drawItemInstances, 
-                         viewProjMatrix, _1, _2));
+                         boost::cref(viewProjMatrix), _1, _2));
     } else {
         _Worker::cull(&_drawItemInstances, 
                       viewProjMatrix, 

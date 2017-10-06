@@ -592,10 +592,10 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     WorkParallelForN(rprimIds.size(),
                          std::bind(&HdRenderIndex::_AppendDrawItems,
                                    this,
-                                   rprimIds,
+                                   std::cref(rprimIds),
                                    std::placeholders::_1,     // begin
                                    std::placeholders::_2,     // end
-                                   collection,
+                                   std::cref(collection),
                                    &concurrentDrawItems));
 
 
@@ -759,7 +759,7 @@ namespace {
     static void
     _PreSyncRPrims(HdSceneDelegate *sceneDelegate,
                    _RprimSyncRequestVector *syncReq,
-                   _ReprList reprs,
+                   _ReprList const& reprs,
                    size_t begin,
                    size_t end)
     {
@@ -808,11 +808,12 @@ namespace {
     static void
     _PreSyncRequestVector(HdSceneDelegate *sceneDelegate,
                           _RprimSyncRequestVector *syncReq,
-                          _ReprList reprs)
+                          _ReprList const &reprs)
     {
         WorkParallelForN(syncReq->rprims.size(),
                      boost::bind(&_PreSyncRPrims,
-                                 sceneDelegate, syncReq, reprs, _1, _2));
+                                 sceneDelegate, syncReq, boost::cref(reprs),
+                                 _1, _2));
     }
 
 };
@@ -997,7 +998,9 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             _RprimSyncRequestVector *r = &dlgIt->second;
             dirtyBitDispatcher.Run(
                                    boost::bind(&_PreSyncRequestVector,
-                                               sceneDelegate, r, reprs));
+                                               sceneDelegate,
+                                               r,
+                                               boost::cref(reprs)));
 
         }
         dirtyBitDispatcher.Wait();
@@ -1009,7 +1012,8 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
         // Dispatch synchronization work to each delegate.
         _Worker worker(&syncMap);
         WorkParallelForN(syncMap.size(),
-                         boost::bind(&_Worker::Process, worker, _1, _2));
+                         boost::bind(&_Worker::Process,
+                                     boost::ref(worker), _1, _2));
     }
 
     // Collect results and synchronize.
@@ -1024,6 +1028,10 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
                   sceneDelegate->IsEnabled(HdOptionTokens->parallelRprimSync)) {
                 TRACE_SCOPE("Parallel Rprim Sync");
+                // In the lambda below, we capture workerState by value and 
+                // incur a copy in the boost::bind because the lambda execution 
+                // may be delayed (until we call Wait), resulting in
+                // workerState going out of scope.
                 dispatcher.Run([&r, workerState]() {
                     WorkParallelForN(r.rprims.size(),
                         boost::bind(&_SyncRPrims::Sync, workerState, _1, _2));
