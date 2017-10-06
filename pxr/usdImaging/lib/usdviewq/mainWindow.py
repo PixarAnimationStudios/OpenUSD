@@ -52,7 +52,8 @@ from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor, Va
                     DefaultTextColor, HeaderColor, RedColor, BoldFont, ItalicFont,
                     GetAttributeColor, GetAttributeTextFont, HasArcsColor, 
                     InstanceColor, NormalColor, MasterColor, Timer, Drange,
-                    BusyContext, DumpMallocTags, GetShortString, GetInstanceIdForIndex, 
+                    BusyContext, DumpMallocTags, GetShortString,
+                    GetInstanceIdForIndex, GetTfErrorExceptionReason,
                     ItalicizeLabelText, BoldenLabelText, ColorizeLabelText,
                     INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL,
                     ATTR_PLAIN_TYPE_ICON, ATTR_WITH_CONN_TYPE_ICON, REL_PLAIN_TYPE_ICON, 
@@ -852,10 +853,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._pathResolverContext = \
                 Ar.GetResolver().CreateDefaultContextForAsset(usdFilePath) 
 
+        err = (lambda e, r: ("Error: %s '%s'.\nReason:%s.\nExiting.\n") %
+                (e, usdFilePath, r))
+        openErr = lambda r: err("Unable to open layer", r)
+
         if not os.path.isfile(usdFilePath):
-            print >> sys.stderr, "Error: File not found '" + usdFilePath + \
-                        "'. Stage was not opened."
-            return None
+            sys.stderr.write(openErr(' File not found'))
+            sys.exit(1)
 
         if self._mallocTags != 'none':
             Tf.MallocTag.Initialize()
@@ -864,14 +868,22 @@ class MainWindow(QtWidgets.QMainWindow):
             loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
             popMask = (None if populationMaskPaths is None else
                        Usd.StagePopulationMask())
+
+            # Open as a layer first to make sure its a valid file format
+            try:
+                layer = Sdf.Layer.FindOrOpen(usdFilePath)
+            except Tf.ErrorException as e: 
+                sys.stderr.write(openErr(GetTfErrorExceptionReason(e)))
+                sys.exit(1)
+
             if popMask:
                 for p in populationMaskPaths:
                     popMask.Add(p)
                 stage = Usd.Stage.OpenMasked(
-                    usdFilePath, self._pathResolverContext, popMask, loadSet)
+                    layer, self._pathResolverContext, popMask, loadSet)
             else:
                 stage = Usd.Stage.Open(
-                    usdFilePath, self._pathResolverContext, loadSet)
+                    layer, self._pathResolverContext, loadSet)
 
             # no point in optimizing for editing if we're not redrawing
             if stage and not self._noRender:
@@ -898,11 +910,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     for mpp in modelPaths:
                         parent = sl.GetPrimAtPath(mpp.GetParentPath())
                         Sdf.PrimSpec(parent, mpp.name, Sdf.SpecifierOver)
-        if not stage:
-            print >> sys.stderr, "Error opening stage '" + usdFilePath + "'"
-        else:
-            if self._printTiming:
-                t.PrintTime('open stage "%s"' % usdFilePath)
+            if not stage:
+                sys.stderr.write("Error: Unable to open stage '" + usdFilePath + "'.\n")
+            else:
+                if self._printTiming:
+                    t.PrintTime('open stage "%s"' % usdFilePath)
             stage.SetEditTarget(stage.GetSessionLayer())
 
         if self._mallocTags == 'stage':
