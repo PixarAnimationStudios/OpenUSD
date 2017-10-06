@@ -66,11 +66,16 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
     //
     instancerAttrMap.toInterface(interface);
 
+    // Tell UsdIn to skip all children; we'll create them ourselves below.
+    //
+    interface.setAttr("__UsdIn.skipAllChildren", FnKat::IntAttribute(1));
+
     // Early exit if any errors were encountered.
     //
-    if (FnKat::StringAttribute(interface.getOutputAttr("type")
-            ).getValue("", false) == "error")
-    {
+    if (FnKat::StringAttribute(interface.getOutputAttr("errorMessage"))
+            .isValid() or
+        FnKat::StringAttribute(interface.getOutputAttr("warningMessage"))
+            .isValid()) {
         return;
     }
 
@@ -82,10 +87,6 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
     {
         return;
     }
-
-    // Tell UsdIn to skip all children; we'll create them ourselves below.
-    //
-    interface.setAttr("__UsdIn.skipAllChildren", FnKat::IntAttribute(1));
 
     // Create "instance source" children using BuildIntermediate.
     //

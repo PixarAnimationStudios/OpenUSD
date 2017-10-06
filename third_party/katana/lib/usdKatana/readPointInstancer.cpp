@@ -54,7 +54,7 @@ namespace
     typedef std::map<TfToken, GfRange3d, TfTokenFastArbitraryLessThan>
         _PurposeToRangeMap;
 
-    // Log an error and set attrs to create a Katana error location.
+    // Log an error and set attrs to show an error message in the Scene Graph.
     //
     void
     _LogAndSetError(
@@ -62,10 +62,21 @@ namespace
         const std::string message)
     {
         FnLogError(message);
-        attrs.set("type", FnKat::StringAttribute("error"));
         attrs.set("errorMessage",
                   FnKat::StringAttribute(
                       "[ERROR PxrUsdKatanaReadPointInstancer]: " + message));
+    }
+
+    // Log a warning and set attrs to show a warning message in the Scene Graph.
+    void
+    _LogAndSetWarning(
+        PxrUsdKatanaAttrMap &attrs,
+        const std::string message)
+    {
+        FnLogWarn(message);
+        attrs.set("warningMessage",
+                  FnKat::StringAttribute(
+                      "[WARNING PxrUsdKatanaReadPointInstancer]: " + message));
     }
 
     // XXX This is based on
@@ -387,13 +398,15 @@ PxrUsdKatanaReadPointInstancer(
     VtIntArray protoIndices;
     if (!instancer.GetProtoIndicesAttr().Get(&protoIndices, currentTime))
     {
-        _LogAndSetError(instancerAttrMap, "Instancer has no prototype indices");
+        _LogAndSetWarning(instancerAttrMap,
+                          "Instancer has no prototype indices");
         return;
     }
     const size_t numInstances = protoIndices.size();
     if (numInstances == 0)
     {
-        _LogAndSetError(instancerAttrMap, "Instancer has no prototype indices");
+        _LogAndSetWarning(instancerAttrMap,
+                          "Instancer has no prototype indices");
         return;
     }
     for (auto protoIndex : protoIndices)
