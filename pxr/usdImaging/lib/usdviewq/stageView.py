@@ -34,7 +34,6 @@ from qt import QtCore, QtGui, QtWidgets, QtOpenGL
 from pxr import Tf
 from pxr import Gf
 from pxr import Glf
-from pxr import Plug
 from pxr import Sdf, Usd, UsdGeom
 from pxr import UsdImagingGL
 from pxr import CameraUtil
@@ -1542,14 +1541,16 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             return []
 
-    def GetRendererPluginDisplayName(self, pluginType):
-        return Plug.Registry().GetStringFromPluginMetaData(
-            pluginType, 'displayName')
-
-    def SetRendererPlugin(self, name):
+    def GetRendererPluginDisplayName(self, plugId):
         if self._renderer:
-            self._rendererPluginName = self.GetRendererPluginDisplayName(name)
-            self._renderer.SetRendererPlugin(name)
+            return self._renderer.GetRendererPluginDesc(plugId)
+        else:
+            return ""
+
+    def SetRendererPlugin(self, plugId):
+        if self._renderer:
+            self._rendererPluginName = self.GetRendererPluginDisplayName(plugId)
+            self._renderer.SetRendererPlugin(plugId)
 
     def GetStage(self):
         return self._stage

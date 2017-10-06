@@ -174,10 +174,13 @@ public:
     virtual bool IsConverged() const;
 
     USDIMAGINGGL_API
-    virtual std::vector<TfType> GetRendererPlugins();
+    virtual TfTokenVector GetRendererPlugins() const;
 
     USDIMAGINGGL_API
-    virtual bool SetRendererPlugin(TfType const &type);
+    virtual std::string GetRendererPluginDesc(TfToken const &id) const;
+
+    USDIMAGINGGL_API
+    virtual bool SetRendererPlugin(TfToken const &id);
 
     USDIMAGINGGL_API
     virtual bool TestIntersection(
