@@ -65,6 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (faceColors)                                \
     (geometry)                                  \
     (guide)                                     \
+    (hermite)                                   \
     (hidden)                                    \
     (hull)                                      \
     (hullIndices)                               \
@@ -90,6 +91,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (periodic)                                  \
     (points)                                    \
     (pointsIndices)                             \
+    (power)                                     \
     (primVar)                                   \
     (primID)                                    \
     (primitiveParam)                            \

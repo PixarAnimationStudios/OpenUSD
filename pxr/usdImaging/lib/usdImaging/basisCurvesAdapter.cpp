@@ -192,6 +192,12 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
     else if(curveBasis == UsdGeomTokens->catmullRom) {
         topoCurveBasis = HdTokens->catmullRom;
     }
+    else if(curveBasis == UsdGeomTokens->hermite) {
+        topoCurveBasis = HdTokens->hermite;
+    }
+    else if(curveBasis == UsdGeomTokens->power) {
+        topoCurveBasis = HdTokens->power;
+    }
     else {
         topoCurveBasis = HdTokens->bezier;
         TF_WARN("Unknown curve basis '%s', using '%s'", 
