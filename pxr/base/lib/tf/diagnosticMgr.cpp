@@ -213,9 +213,7 @@ TfDiagnosticMgr::PostError(const TfDiagnosticBase& diagnostic)
 void
 TfDiagnosticMgr::_ReportError(const TfError &err)
 {
-    const bool isMainThread = ArchIsMainThread();
-
-    if (isMainThread && _delegate) {
+    if (_delegate) {
         _delegate->IssueError(err);
     } else if (!err.GetQuiet()) {
         _PrintDiagnostic(stderr,
@@ -225,8 +223,9 @@ TfDiagnosticMgr::_ReportError(const TfError &err)
                          err._data->_info);
     }
 
-    if (isMainThread)
+    if (ArchIsMainThread()) {
         TfDiagnosticNotice::IssuedError(err).Send(TfCreateWeakPtr(this));
+    }
 }
 
 void
@@ -237,11 +236,6 @@ TfDiagnosticMgr::PostWarning(
 {
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_WARNING))
         ArchDebuggerTrap();
-
-    if (!ArchIsMainThread()) {
-        _PrintDiagnostic(stderr, warningCode, context, commentary, info);
-        return;
-    }
 
     quiet |= _quiet;
 
@@ -270,11 +264,6 @@ void TfDiagnosticMgr::PostStatus(
     TfCallContext const &context, std::string const &commentary,
     TfDiagnosticInfo info, bool quiet) const
 {
-    if (!ArchIsMainThread()) {
-        _PrintDiagnostic(stdout, statusCode, context, commentary, info);
-        return;
-    }
-
     quiet |= _quiet;
 
     TfStatus status(statusCode, statusCodeString, context, commentary, info,
@@ -316,7 +305,7 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
         fe.Send(TfCreateWeakPtr(this));
     }
 
-    if (isMainThread && _delegate) {
+    if (_delegate) {
         _delegate->IssueFatalError(context, msg);
     } else {
         if (statusCode == TF_DIAGNOSTIC_CODING_ERROR_TYPE) {
