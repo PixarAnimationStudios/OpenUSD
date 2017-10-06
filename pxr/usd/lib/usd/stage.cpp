@@ -6104,11 +6104,10 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
     const GfInterval& interval,
     std::vector<double>* times) const
 {
-    if ((interval.IsMinFinite() && interval.IsMinOpen())
-        || (interval.IsMaxFinite() && interval.IsMaxOpen())) {
-        TF_CODING_ERROR("Finite endpoints in the specified interval (%s)"
-                        "must be closed.", TfStringify(interval).c_str());
-        return false;
+    // An empty requested interval would result in in empty times
+    // vector so avoid computing any of the contained samples
+    if (interval.IsEmpty()) {
+        return true;
     }
 
     // This is the lowest-level site for guaranteeing that all GetTimeSample
@@ -6118,11 +6117,29 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                                           vector<double>* target, 
                                           const GfInterval& interval) 
     {
-        const auto sampleRangeBegin = std::lower_bound(samples.begin(),
-            samples.end(), interval.GetMin());
-        const auto sampleRangeEnd = std::upper_bound(sampleRangeBegin,
-            samples.end(), interval.GetMax());
-        target->insert(target->end(), sampleRangeBegin, sampleRangeEnd);
+        std::set<double>::iterator samplesBegin, samplesEnd; 
+
+        if (interval.IsMinOpen()) {
+            samplesBegin = std::upper_bound(samples.begin(), 
+                                            samples.end(), 
+                                            interval.GetMin()); 
+        } else {
+            samplesBegin = std::lower_bound(samples.begin(), 
+                                            samples.end(), 
+                                            interval.GetMin());
+        }
+
+        if (interval.IsMaxOpen()) {
+            samplesEnd = std::lower_bound(samplesBegin,
+                                          samples.end(), 
+                                          interval.GetMax());
+        } else {
+            samplesEnd = std::upper_bound(samplesBegin,
+                                          samples.end(),
+                                          interval.GetMax());
+        }
+
+        target->insert(target->end(), samplesBegin, samplesEnd);
     };
 
     if (info._source == UsdResolveInfoSourceTimeSamples) {
@@ -6207,7 +6224,6 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                     std::unique(
                         timesFromAllClips.begin(), timesFromAllClips.end()),
                     timesFromAllClips.end());
-
                 times->swap(timesFromAllClips);
                 return true;
             }

@@ -124,19 +124,21 @@ class TestUsdTimeSamples(unittest.TestCase):
             self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0,0)), []) 
             self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(1.0, 2.0)), [1.0, 2.0])  
 
-            # ensure that open, finite endpoints are disallowed
-            with self.assertRaises(Tf.ErrorException):
-                # IsClosed() will be True by default in the Interval ctor
-                bothClosed = Gf.Interval(1.0, 2.0, False, False)
-                attr.GetTimeSamplesInInterval(bothClosed)
+            bothOpen = Gf.Interval(1.0, 2.0, False, False)
+            self.assertEqual([], attr.GetTimeSamplesInInterval(bothOpen))
              
-            with self.assertRaises(Tf.ErrorException):
-                finiteMinClosed = Gf.Interval(1.0, 2.0, True, False)
-                attr.GetTimeSamplesInInterval(finiteMinClosed)
+            finiteMinClosed = Gf.Interval(1.0, 2.0, True, False)
+            self.assertEqual([1.0], attr.GetTimeSamplesInInterval(finiteMinClosed))
             
-            with self.assertRaises(Tf.ErrorException):
-                finiteMaxClosed = Gf.Interval(1.0, 2.0, False, True)
-                attr.GetTimeSamplesInInterval(finiteMaxClosed)
+            finiteMaxClosed = Gf.Interval(1.0, 2.0, False, True)
+            self.assertEqual([2.0], attr.GetTimeSamplesInInterval(finiteMaxClosed))
+
+            # Ensure that an empty interval returns nothing
+            emptyInterval = Gf.Interval()
+            self.assertEqual([], attr.GetTimeSamplesInInterval(emptyInterval))
+
+            emptyInterval2 = Gf.Interval(50,1)
+            self.assertEqual([], attr.GetTimeSamplesInInterval(emptyInterval2))
 
             self.assertEqual(attr.GetBracketingTimeSamples(1.5), (1.0,2.0))
             self.assertEqual(attr.GetBracketingTimeSamples(1.0), (1.0,1.0))
