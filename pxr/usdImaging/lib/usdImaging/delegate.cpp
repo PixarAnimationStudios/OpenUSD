@@ -2484,9 +2484,9 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
 
     if (key == HdShaderTokens->surfaceShader) {
         SdfPath pathValue;
-        if (!_valueCache.ExtractSurfaceShader(usdPath, &pathValue)) {
+        if (!_valueCache.ExtractMaterialId(usdPath, &pathValue)) {
             _UpdateSingleValue(usdPath, HdChangeTracker::DirtyMaterialId);
-            TF_VERIFY(_valueCache.ExtractSurfaceShader(usdPath, &pathValue));
+            TF_VERIFY(_valueCache.ExtractMaterialId(usdPath, &pathValue));
         }
         value = VtValue(GetPathForIndex(pathValue));
     }

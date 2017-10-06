@@ -365,7 +365,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         valueCache->GetVisible(cachePath) = GetVisible(prim, time);
 
     if (requestedBits & HdChangeTracker::DirtyMaterialId)
-        valueCache->GetSurfaceShader(cachePath) = _GetMaterialId(prim);
+        valueCache->GetMaterialId(cachePath) = _GetMaterialId(prim);
 }
 
 HdDirtyBits

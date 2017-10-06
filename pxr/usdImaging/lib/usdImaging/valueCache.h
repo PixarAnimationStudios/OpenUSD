@@ -147,8 +147,8 @@ public:
             static TfToken attr("normals");
             return Key(path, attr);
         }
-        static Key SurfaceShader(SdfPath const& path) {
-            static TfToken attr("surfaceShader");
+        static Key MaterialId(SdfPath const& path) {
+            static TfToken attr("materialId");
             return Key(path, attr);
         }
     };
@@ -284,7 +284,7 @@ public:
         _Erase<VtValue>(Key::Points(path));
         _Erase<VtValue>(Key::Widths(path));
         _Erase<VtValue>(Key::Normals(path));
-        _Erase<VtValue>(Key::SurfaceShader(path));
+        _Erase<VtValue>(Key::MaterialId(path));
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
         // access the map directly, if we need to for performance reasons.
@@ -342,8 +342,8 @@ public:
     VtValue& GetPrimvar(SdfPath const& path, TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
     }
-    SdfPath& GetSurfaceShader(SdfPath const& path) const {
-        return _Get<SdfPath>(Key::SurfaceShader(path));
+    SdfPath& GetMaterialId(SdfPath const& path) const {
+        return _Get<SdfPath>(Key::MaterialId(path));
     }
 
     bool FindPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) const {
@@ -391,8 +391,8 @@ public:
     bool FindNormals(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Normals(path), value);
     }
-    bool FindSurfaceShader(SdfPath const& path, SdfPath* value) const {
-        return _Find(Key::SurfaceShader(path), value);
+    bool FindMaterialId(SdfPath const& path, SdfPath* value) const {
+        return _Find(Key::MaterialId(path), value);
     }
 
     bool ExtractColor(SdfPath const& path, VtValue* value) {
@@ -437,8 +437,8 @@ public:
     bool ExtractNormals(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Normals(path), value);
     }
-    bool ExtractSurfaceShader(SdfPath const& path, SdfPath* value) {
-        return _Extract(Key::SurfaceShader(path), value);
+    bool ExtractMaterialId(SdfPath const& path, SdfPath* value) {
+        return _Extract(Key::MaterialId(path), value);
     }
     bool ExtractPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);

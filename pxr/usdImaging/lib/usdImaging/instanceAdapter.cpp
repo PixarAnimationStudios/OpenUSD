@@ -838,7 +838,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             if (p.IsEmpty()) {
                 p = GetMaterialId(_GetPrim(rproto.path));
             }
-            valueCache->GetSurfaceShader(cachePath) = p;
+            valueCache->GetMaterialId(cachePath) = p;
         }
 
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
