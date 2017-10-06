@@ -2790,16 +2790,12 @@ UsdImagingDelegate::GetSurfaceShaderParams(SdfPath const &shaderId)
     return params;
 }
 
-/*virtual*/
 SdfPathVector
 UsdImagingDelegate::GetSurfaceShaderTextures(SdfPath const &shaderId)
 {
     if (_ShaderAdapterSharedPtr adapter = _ShaderAdapterLookup(shaderId)) {
         return adapter->GetSurfaceShaderTextures(GetPathForUsd(shaderId));
     }
-
-    // PERFORMANCE: We should schedule this to be updated during Sync, rather
-    // than pulling values on demand.
 
     TF_CODING_ERROR("Unable to find a shader adapter.");
     SdfPathVector textureIDs;

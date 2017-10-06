@@ -275,10 +275,6 @@ public:
     HD_API
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const& shaderId);
 
-    /// Returns a vector of texture IDs for the given surface shader ID.
-    HD_API
-    virtual SdfPathVector GetSurfaceShaderTextures(SdfPath const &shaderId);
-
     // -----------------------------------------------------------------------//
     /// \name Texture Aspects
     // -----------------------------------------------------------------------//

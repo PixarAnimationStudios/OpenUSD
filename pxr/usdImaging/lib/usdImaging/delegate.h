@@ -258,6 +258,10 @@ public:
     void SetDisplayGuides(bool displayGuides);
     bool GetDisplayGuides() const { return _displayGuides; }
 
+    /// Texture population helper
+    USDIMAGING_API
+    SdfPathVector GetSurfaceShaderTextures(SdfPath const &shaderId);
+
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
@@ -332,8 +336,6 @@ public:
                                   TfToken const &paramName);
     USDIMAGING_API
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &id);
-    USDIMAGING_API
-    virtual SdfPathVector GetSurfaceShaderTextures(SdfPath const &shaderId);
 
     // Texture Support
     USDIMAGING_API
