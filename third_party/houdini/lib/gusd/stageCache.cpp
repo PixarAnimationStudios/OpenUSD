@@ -653,7 +653,7 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
     // XXX: empty paths and invalid prim paths should be caught earlier.
     UT_ASSERT_P(path);
     UT_ASSERT_P(primPath.IsAbsolutePath());
-    UT_ASSERT_P(primPath.IsPrimPath());
+    UT_ASSERT_P(primPath.IsAbsoluteRootOrPrimPath());
 
     if(primPath == SdfPath::AbsoluteRootPath()) {
         // Take the cheap path!
@@ -798,7 +798,7 @@ UsdStageRefPtr
 _MaskedStageCache::FindStage(const SdfPath& primPath)
 {
     UT_ASSERT_P(primPath.IsAbsolutePath());
-    UT_ASSERT_P(primPath.IsPrimPath());
+    UT_ASSERT_P(primPath.IsAbsoluteRootOrPrimPath());
 
     _StageMap::const_accessor ancestorAcc; 
     if(_map.find(ancestorAcc, primPath))
