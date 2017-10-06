@@ -1119,11 +1119,10 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         // and prototype relationships.
         filter.appendPattern(GT_OWNER_POINT,
                 "^__* ^orient ^rot ^scale ^instancepath ^usdinstancepath \
-                 ^usdprototypespath ^trans ^up ^usdactive");
-        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^usdvisible ^usdactive");
-        filter.appendPattern(GT_OWNER_CONSTANT, "^usdvisible ^usdprimpath \
-                 ^instancepath ^usdinstancepath ^usdprototypespath \
-                 ^usdactive");
+                 ^usdprototypespath ^trans ^up");
+        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v");
+        filter.appendPattern(GT_OWNER_CONSTANT, "^usdprimpath \
+                 ^instancepath ^usdinstancepath ^usdprototypespath");
         if(const GT_AttributeListHandle pointAttrs = sourcePrim->getPointAttributes()) {
 
             GusdGT_AttrFilter::OwnerArgs owners;

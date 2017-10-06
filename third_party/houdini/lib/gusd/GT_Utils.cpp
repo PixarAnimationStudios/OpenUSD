@@ -844,7 +844,9 @@ GusdGT_AttrFilter(const std::string& pattern)
         " ^__primitive_id"
         " ^__topology"
         " ^__primitivelist"
-        " ^usdMeta_*";
+        " ^usdMeta_*"
+        " ^usdvisible"
+        " ^usdactive";
 
     setPattern(GT_OWNER_POINT, pattern);
     setPattern(GT_OWNER_VERTEX, pattern);
@@ -862,7 +864,9 @@ GusdGT_AttrFilter(const GusdGT_AttrFilter &rhs)
         " ^__vertex_id"
         " ^__primitive_id"
         " ^__topology"
-        " ^usdMeta_*";
+        " ^usdMeta_*"
+        " ^usdvisible"
+        " ^usdactive";
 }
 
 void GusdGT_AttrFilter::
