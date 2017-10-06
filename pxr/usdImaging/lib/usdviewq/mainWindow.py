@@ -866,6 +866,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         with Timer() as t:
             loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
+            preloadSet = loadSet if self._noRender else Usd.Stage.LoadNone
+
             popMask = (None if populationMaskPaths is None else
                        Usd.StagePopulationMask())
 
@@ -880,10 +882,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 for p in populationMaskPaths:
                     popMask.Add(p)
                 stage = Usd.Stage.OpenMasked(
-                    layer, self._pathResolverContext, popMask, loadSet)
+                    layer, self._pathResolverContext, popMask, preloadSet)
             else:
                 stage = Usd.Stage.Open(
-                    layer, self._pathResolverContext, loadSet)
+                    layer, self._pathResolverContext, preloadSet)
 
             # no point in optimizing for editing if we're not redrawing
             if stage and not self._noRender:
@@ -900,21 +902,46 @@ class MainWindow(QtWidgets.QMainWindow):
                 # model by pre-populating the session layer with overs for
                 # the interior of the model hierarchy, before the renderer
                 # starts listening for changes. 
-                sl = stage.GetSessionLayer()
+                #
+                # When bug #99309 is fixed, we can eliminate the "preloadSet"
+                # and double-stage load. It turns out to be typically
+                # enormously expensive to recompose the whole stage (which is
+                # what happens if we add the overs directly to stage's session
+                # layer).  So we "preload" the stage above in an unloaded state
+                # and add the overs to a detached layer that we will then use
+                # to open the stage a second time with the desired load-state,
+                # while still holding the preload-stage open.  This turns out
+                # to be much, much cheaper for scenes that are properly 
+                # payloaded for scalability.
+                sl = Sdf.Layer.CreateAnonymous("usdview-session")
+
                 # We can only safely do Sdf-level ops inside an Sdf.ChangeBlock,
-                # so gather all the paths from the UsdStage first
+                # so gather all the paths from the UsdStage first.
+                # We don't technically need the ChangeBlock since no-one is
+                # listening to this detached layer, but good batch-editing
+                # practice.
                 modelPaths = [p.GetPath() for p in \
                                   Usd.PrimRange.Stage(stage, 
-                                                         Usd.PrimIsGroup) ]
+                                                      Usd.PrimIsModel) ]
                 with Sdf.ChangeBlock():
                     for mpp in modelPaths:
                         parent = sl.GetPrimAtPath(mpp.GetParentPath())
                         Sdf.PrimSpec(parent, mpp.name, Sdf.SpecifierOver)
-            if not stage:
-                sys.stderr.write("Error: Unable to open stage '" + usdFilePath + "'.\n")
-            else:
-                if self._printTiming:
-                    t.PrintTime('open stage "%s"' % usdFilePath)
+            
+                if popMask:
+                    stage2 = Usd.Stage.OpenMasked(
+                        layer, sl, self._pathResolverContext, 
+                        popMask, loadSet)
+                else:
+                    stage2 = Usd.Stage.Open(
+                        layer, sl, self._pathResolverContext, loadSet)
+                stage = stage2
+
+        if not stage:
+            sys.stderr.write("Error: Unable to open stage '" + usdFilePath + "'.\n")
+        else:
+            if self._printTiming:
+                t.PrintTime('open stage "%s"' % usdFilePath)
             stage.SetEditTarget(stage.GetSessionLayer())
 
         if self._mallocTags == 'stage':
