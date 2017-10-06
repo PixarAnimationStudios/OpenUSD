@@ -85,10 +85,6 @@ class UsdImagingDelegate : public HdSceneDelegate, public TfWeakBase {
 public:
 
     typedef TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> RigidXformOverridesMap;
-    typedef boost::container::flat_map<SdfPath, int /*purposeMask*/>
-        CollectionMembershipMap;
-    typedef TfHashMap<TfToken, CollectionMembershipMap, TfToken::HashFunctor>
-        CollectionMap;
 
     USDIMAGING_API
     UsdImagingDelegate(HdRenderIndex *parentIndex,
@@ -652,9 +648,6 @@ private:
     UsdImaging_XformCache _xformCache;
     UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_VisCache _visCache;
-
-    // Collection
-    CollectionMap _collectionMap;
 
     // Pickability
     PickabilityMap _pickablesMap;
