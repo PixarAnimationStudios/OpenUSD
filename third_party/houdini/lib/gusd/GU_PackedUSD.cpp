@@ -794,7 +794,7 @@ GusdGU_PackedUSD::getUsdPrim(GusdUT_ErrorContext* err) const
 GusdStageEditPtr
 GusdGU_PackedUSD::getStageEdit() const
 {
-    if(not m_primPath.ContainsPrimVariantSelection())
+    if(!m_primPath.ContainsPrimVariantSelection())
         return GusdStageEditPtr();
 
     auto* edit = new GusdStageBasicEdit;

@@ -422,7 +422,7 @@ bool
 isClose( const GfMatrix4d &m1, const GfMatrix4d &m2, double tol = 1e-10 ) {
 
     for(int i = 0; i < 16; ++i) {
-        if(not GfIsClose(m1.GetArray()[i], m2.GetArray()[i], tol))
+        if(!GfIsClose(m1.GetArray()[i], m2.GetArray()[i], tol))
             return false;
     }
     return true;
