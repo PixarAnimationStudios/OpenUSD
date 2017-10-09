@@ -157,6 +157,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self._deprecatedStatusFileName = '.usdviewrc'
             self._mallocTags  = parserData.mallocTagStats
             self._bboxCache = None
+            self._complexity = parserData.complexity
+            self._clearColor = None
+            self._renderMode = None
+            self._pickMode = None
 
             MainWindow._renderer = parserData.renderer
             if MainWindow._renderer == 'simple':
@@ -289,12 +293,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._nodeViewUpdateTimer = QtCore.QTimer(self)
             self._nodeViewUpdateTimer.setInterval(0)
             self._nodeViewUpdateTimer.timeout.connect(self._updateNodeView)
-
+            
             # This creates the _stageView and restores state from settings file
             self._resetSettings()
-            
-            if self._stageView:
-                self._stageView.complexity = parserData.complexity
 
             # This is for validating frame values input on the "Frame" line edit
             validator = QtGui.QDoubleValidator(self)
@@ -327,8 +328,8 @@ class MainWindow(QtWidgets.QMainWindow):
                            self._ui.actionGrey_Dark,
                            self._ui.actionGrey_Light,
                            self._ui.actionWhite):
+                action.setChecked(self._colorsDict[str(action.text())] == self._clearColor)
                 self._ui.colorGroup.addAction(action)
-                action.setChecked(str(action.text()) == self._stageView.clearColor)
             self._ui.colorGroup.setExclusive(True)
             
             for action in (self._ui.actionKey, 
@@ -348,13 +349,13 @@ class MainWindow(QtWidgets.QMainWindow):
                            self._ui.actionGeom_Flat,
                            self._ui.actionHidden_Surface_Wireframe):
                 self._ui.renderModeActionGroup.addAction(action)
-                action.setChecked(str(action.text()) == self._stageView.renderMode)
+                action.setChecked(str(action.text()) == self._renderMode)
             self._ui.renderModeActionGroup.setExclusive(True)
-            if self._stageView.renderMode not in \
+            if self._renderMode not in \
                                 [str(a.text()) for a in
                                         self._ui.renderModeActionGroup.actions()]:
                 print "Warning: Unknown render mode '%s', falling back to '%s'" % (
-                            self._stageView.renderMode,
+                            self._renderMode,
                             str(self._ui.renderModeActionGroup.actions()[0].text()))
 
                 self._ui.renderModeActionGroup.actions()[0].setChecked(True)
@@ -365,13 +366,13 @@ class MainWindow(QtWidgets.QMainWindow):
                            self._ui.actionPick_Models,
                            self._ui.actionPick_Instances):
                 self._ui.pickModeActionGroup.addAction(action)
-                action.setChecked(str(action.text()) == self._stageView.pickMode)
+                action.setChecked(str(action.text()) == self._pickMode)
             self._ui.pickModeActionGroup.setExclusive(True)
-            if self._stageView.pickMode not in \
+            if self._pickMode not in \
                                 [str(a.text()) for a in
                                         self._ui.pickModeActionGroup.actions()]:
                 print "Warning: Unknown pick mode '%s', falling back to '%s'" % (
-                            self._stageView.pickMode,
+                            self._pickMode,
                             str(self._ui.pickModeActionGroup.actions()[0].text()))
 
                 self._ui.pickModeActionGroup.actions()[0].setChecked(True)
@@ -1074,7 +1075,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # Render plugin support
     def _rendererPluginChanged(self, plugin):
-        self._stageView.SetRendererPlugin(plugin)
+        if self._stageView:
+            self._stageView.SetRendererPlugin(plugin)
 
     def _configureRendererPlugins(self):
         if self._stageView:
@@ -1166,9 +1168,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self._attrSearchString = ""
         self._lastNodeSearched = self._currentNodes[0]
 
-        self._stageView.setFocus(QtCore.Qt.TabFocusReason)
-        self._stageView.rolloverPicking = \
-            self._settings.get("actionRollover_Prim_Info", False)
+        if self._stageView:
+            self._stageView.setFocus(QtCore.Qt.TabFocusReason)
+            self._stageView.rolloverPicking = \
+                self._settings.get("actionRollover_Prim_Info", False)
 
     # This appears to be "reasonably" performant in normal sized pose caches.
     # If it turns out to be too slow, or if we want to do a better job of
@@ -1236,33 +1239,37 @@ class MainWindow(QtWidgets.QMainWindow):
     # Option windows ==========================================================
 
     def _incrementComplexity(self):
-        self._stageView.complexity += .1
-        if self._stageView.complexity > 1.999:
-            self._stageView.complexity = 2.0
-        self._stageView.update()
+        self._complexity += .1
+        if self._complexity > 1.999:
+            self._complexity = 2.0
+        if self._stageView:
+            self._stageView.update()
 
     def _decrementComplexity(self):
-        self._stageView.complexity -= .1
-        if self._stageView.complexity < 1.001:
-            self._stageView.complexity = 1.0
-        self._stageView.update()
+        self._complexity -= .1
+        if self._complexity < 1.001:
+            self._complexity = 1.0
+        if self._stageView:
+            self._stageView.update()
 
     def _adjustComplexity(self):
         complexity= QtWidgets.QInputDialog.getDouble(self, 
             "Adjust complexity", "Enter a value between 1 and 2.\n\n" 
             "You can also use ctrl+ or ctrl- to adjust the\n"
             "complexity without invoking this dialog.\n", 
-            self._stageView.complexity, 1.0,2.0,2)
+            self._complexity, 1.0,2.0,2)
         if complexity[1]:
-            self._stageView.complexity = complexity[0]
-            self._stageView.update()
+            self._complexity = complexity[0]
+            if self._stageView:
+                self._stageView.update()
 
     def _adjustFOV(self):
         fov = QtWidgets.QInputDialog.getDouble(self, "Adjust FOV", 
-            "Enter a value between 0 and 180", self._stageView.freeCamera.fov, 0, 180)
+            "Enter a value between 0 and 180", self._freeCamera.fov, 0, 180)
         if (fov[1]):
-            self._stageView.freeCamera.fov = fov[0]
-            self._stageView.update()
+            self._freeCamera.fov = fov[0]
+            if self._stageView:
+                self._stageView.update()
 
     def _adjustClippingPlanes(self, checked):
         if (checked):
@@ -1322,6 +1329,34 @@ class MainWindow(QtWidgets.QMainWindow):
             self._defaultMaterialSpecular = value
             self._settings.setAndSave(DefaultMaterialSpecular=value)
             self.signalDefaultMaterialChanged.emit()
+
+    @property
+    def complexity(self):
+        return self._complexity
+
+    @property
+    def clearColor(self):
+        return self._clearColor
+
+    @property
+    def renderMode(self):
+        return self._renderMode
+
+    @property
+    def pickMode(self):
+        return self._pickMode
+
+    @property
+    def freeCamera(self):
+        return self._freeCamera
+
+    @freeCamera.setter
+    def freeCamera(self, value):
+        self._freeCamera = value
+
+    @property
+    def playing(self):
+        return self._ui.playButton.isChecked()
 
     def ResetDefaultMaterialSettings(self, store=True):
         self._defaultMaterialAmbient = .2
@@ -1477,7 +1512,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self._timer.start()
             # For performance, don't update the node tree view while playing.
             self._nodeViewUpdateTimer.stop()
-            self._stageView.playing = True
             self._playbackIndex = 0
         else:
             # Stop playback.
@@ -1488,7 +1522,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self._fpsHUDInfo[PLAYBACK]  = "N/A"
             self._timer.stop()
             self._nodeViewUpdateTimer.start()
-            self._stageView.playing = False
             self._updateOnFrameChange(refreshUI=True) 
 
     def _advanceFrameForPlayback(self):
@@ -1706,17 +1739,22 @@ class MainWindow(QtWidgets.QMainWindow):
         return lastView
 
     def _frameSelection(self):
-        # Save all the pertinent attribute values (for _toggleFramedView)
-        self._storeAndReturnViewState() # ignore return val - we're stomping it
-        self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame,
-                                 True, True) # compute bbox on frame selection
+        if self._stageView:
+            # Save all the pertinent attribute values (for _toggleFramedView)
+            self._storeAndReturnViewState() # ignore return val - we're stomping it
+            self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame,
+                                     True, True) # compute bbox on frame selection
 
     def _toggleFramedView(self):
-        self._stageView.restoreViewState(self._storeAndReturnViewState())
+        if self._stageView:
+            self._stageView.restoreViewState(self._storeAndReturnViewState())
 
     def _resetSettings(self):
         """Reloads the UI and Sets up the initial settings for the 
         _stageView object created in _reloadVaryingUI"""
+        self._clearColor = self._colorsDict[self._settings.get("ClearColor", "Grey (Dark)")]
+        self._renderMode = self._settings.get("RenderMode", "Smooth Shaded")
+        self._pickMode = self._settings.get("PickMode", "Prims")
         
         self._ui.actionShow_Inactive_Nodes.setChecked(\
                         self._settings.get("actionShow_Inactive_Nodes", True))
@@ -1859,11 +1897,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._stageView.update()
 
-        self._stageView.clearColor = self._colorsDict[self._settings.get("ClearColor", "Grey (Dark)")]
-        self._stageView.renderMode = self._settings.get("RenderMode",
-                                                        "Smooth Shaded")
-        self._stageView.pickMode = self._settings.get("PickMode",
-                                                      "Prims")
         self._highlightColorName = str(self._settings.get("HighlightColor", "Yellow"))
         self._stageView.highlightColor = self._colorsDict[self._highlightColorName]
         self._selHighlightMode = self._settings.get("SelHighlightMode",
@@ -1871,11 +1904,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self._stageView.drawSelHighlights = ( self._selHighlightMode != "Never")
         
         # lighting is not activated until a shaded mode is selected
-        self._ui.menuLights.setEnabled(self._stageView.renderMode in ('Smooth Shaded',
-                                                                      'Flat Shaded',
-                                                                      'WireframeOnSurface',
-                                                                      'Geom Flat',
-                                                                      'Geom Smooth'))
+        self._ui.menuLights.setEnabled(self._renderMode in ('Smooth Shaded',
+                                                            'Flat Shaded',
+                                                            'WireframeOnSurface',
+                                                            'Geom Flat',
+                                                            'Geom Smooth'))
 
         self._ui.actionFreeCam._node = None
         self._ui.actionFreeCam.triggered.connect(
@@ -1984,13 +2017,13 @@ class MainWindow(QtWidgets.QMainWindow):
                                      self._currentFrame)
 
     def _changeRenderMode(self, mode):
-        self._stageView.renderMode = str(mode.text())
-        self._settings.setAndSave(RenderMode=self._stageView.renderMode)
-        if (self._stageView.renderMode in ('Smooth Shaded',
-                                           'Flat Shaded',
-                                           'WireframeOnSurface',
-                                           'Geom Smooth',
-                                           'Geom Flat')):
+        self._renderMode = str(mode.text())
+        self._settings.setAndSave(RenderMode=self._renderMode)
+        if (self._renderMode in ('Smooth Shaded',
+                                 'Flat Shaded',
+                                 'WireframeOnSurface',
+                                 'Geom Smooth',
+                                 'Geom Flat')):
             self._ui.menuLights.setEnabled(True)
         else:
             self._ui.menuLights.setEnabled(False)
@@ -2072,9 +2105,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self._settings.setAndSave(BackLightEnabled=checked)
 
     def _changeBgColor(self, mode):
-        self._stageView.clearColor = self._colorsDict[str(mode.text())]
-        self._settings.setAndSave(ClearColor=str(mode.text()))
-        self._stageView.update()
+        colorText = str(mode.text())
+        self._clearColor = self._colorsDict[colorText]
+        self._settings.setAndSave(ClearColor=colorText)
+        if self._stageView:
+            self._stageView.update()
 
     def _showBBoxPlayback(self, state):
         """Called when the menu item for showing BBoxes
@@ -2547,7 +2582,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # scroll, we can do it ahead of time.  But don't do it
                 # if we're currently playing to maximize playback
                 # performance.
-                if not self._stageView or not self._stageView.playing:
+                if not self._ui.playButton.isChecked():
                     self._nodeViewUpdateTimer.start()
 
         if self._printTiming and not suppressTiming:

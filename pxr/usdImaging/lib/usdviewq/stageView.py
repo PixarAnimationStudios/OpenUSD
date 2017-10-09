@@ -1093,6 +1093,8 @@ class StageView(QtOpenGL.QGLWidget):
             self._defaultMaterialAmbient = 0.2
             self._defaultMaterialSpecular = 0.1
 
+            self._defaultFreeCamera = FreeCamera(True)
+
         @property
         def bboxCache(self):
             return self._bboxCache
@@ -1112,6 +1114,30 @@ class StageView(QtOpenGL.QGLWidget):
         @property
         def cameraReticlesColor(self):
             return (0.0, 0.7, 1.0, 1.0)
+
+        @property
+        def complexity(self):
+            return 1.0
+
+        @property
+        def clearColor(self):
+            return (0.3, 0.3, 0.3, 0.0) # Grey (Dark)
+
+        @property
+        def renderMode(self):
+            return "Smooth Shaded"
+
+        @property
+        def freeCamera(self):
+            return self._defaultFreeCamera
+
+        @freeCamera.setter
+        def freeCamera(self, value):
+            self._defaultFreeCamera = value
+
+        @property
+        def playing(self):
+            return False
 
     ###########
     # Signals #
@@ -1136,21 +1162,9 @@ class StageView(QtOpenGL.QGLWidget):
     signalFrustumChanged = QtCore.Signal()
 
     @property
-    def complexity(self):
-        return self._complexity
-        
-    @complexity.setter
-    def complexity(self, value):
-        self._complexity = value
-        
-    @property
     def currentFrame(self):
         return self._currentFrame
         
-    @property
-    def freeCamera(self):
-        return self._freeCamera
-    
     @property
     def renderParams(self):
         return self._renderParams
@@ -1229,22 +1243,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._backLightEnabled = enabled
         
     @property
-    def clearColor(self):
-        return self._clearColor
-        
-    @clearColor.setter
-    def clearColor(self, clearColor):
-        self._clearColor = clearColor
-        
-    @property
-    def renderMode(self):
-        return self._renderMode
-        
-    @renderMode.setter
-    def renderMode(self, mode):
-        self._renderMode = mode
-        
-    @property
     def cameraPrim(self):
         return self._cameraPrim
         
@@ -1267,14 +1265,6 @@ class StageView(QtOpenGL.QGLWidget):
     @showOBBox.setter
     def showOBBox(self, state):
         self._showOBBox = state
-        
-    @property
-    def playing(self):
-        return self._playing
-        
-    @playing.setter
-    def playing(self, playing):
-        self._playing = playing
         
     @property
     def rolloverPicking(self):
@@ -1355,7 +1345,7 @@ class StageView(QtOpenGL.QGLWidget):
         active."""
         self._overrideNear = value
         self.switchToFreeCamera()
-        self._freeCamera.overrideNear = value
+        self._dataModel.freeCamera.overrideNear = value
         self.updateGL()
 
     @property
@@ -1368,7 +1358,7 @@ class StageView(QtOpenGL.QGLWidget):
         active."""
         self._overrideFar = value
         self.switchToFreeCamera()
-        self._freeCamera.overrideFar = value
+        self._dataModel.freeCamera.overrideFar = value
         self.updateGL()
        
     @property
@@ -1406,10 +1396,8 @@ class StageView(QtOpenGL.QGLWidget):
         # glFormat.setProfile(QtOpenGL.QGLFormat.CoreProfile)
         super(StageView, self).__init__(glFormat, parent)
 
-        self._freeCamera = FreeCamera(True)
+        self._dataModel.freeCamera = FreeCamera(True)
         self._lastComputedGfCamera = None
-
-        self._complexity = 1.0
 
         # prep Mask regions
         self._mask = Mask()
@@ -1444,7 +1432,6 @@ class StageView(QtOpenGL.QGLWidget):
                               "Geom Flat":UsdImagingGL.GL.DrawMode.DRAW_GEOM_FLAT,
                               "Hidden Surface Wireframe":UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME}
 
-        self._renderMode = "Smooth Shaded"
         self._renderParams = UsdImagingGL.GL.RenderParams()
         self._defaultFov = 60
         self._dist = 50
@@ -1472,14 +1459,12 @@ class StageView(QtOpenGL.QGLWidget):
         self._selectedInstances = dict()
         
         self._forceRefresh = False
-        self._playing = False
         self._renderTime = 0
         self._noRender = False
         self._showBBoxes = True # Variable to show/hide all BBoxes
         self._showAABBox = True	# Show axis-aligned BBox
         self._showOBBox = False	# Show oriented BBox
         
-        self._clearColor = (0.0, 0.0, 0.0, 0.0)
         self._highlightColor = (1.0, 1.0, 0.0, 0.8)
         self._drawSelHighlights = True
         self._allSceneCameras = None
@@ -1564,7 +1549,7 @@ class StageView(QtOpenGL.QGLWidget):
             self.allSceneCameras = None
         else:
             self.ReloadStage(stage)
-            self._freeCamera = FreeCamera(self._stageIsZup)
+            self._dataModel.freeCamera = FreeCamera(self._stageIsZup)
 
     def ReloadStage(self, stage):
         self._stage = stage
@@ -1648,7 +1633,7 @@ class StageView(QtOpenGL.QGLWidget):
 
     def DrawBBox(self, viewProjectionMatrix):
         from OpenGL import GL
-        col = self._clearColor
+        col = self._dataModel.clearColor
         color = Gf.Vec3f(col[0]-.5 if col[0]>0.5 else col[0]+.5,
                          col[1]-.5 if col[1]>0.5 else col[1]+.5,
                          col[2]-.5 if col[2]>0.5 else col[2]+.5)
@@ -1847,7 +1832,7 @@ class StageView(QtOpenGL.QGLWidget):
             self._selectionBrange.GetMax() != self._selectionBrange.GetMin())
         if resetCam and validFrameRange:
             self.switchToFreeCamera()
-            self._freeCamera.frameSelection(self._selectionBBox, frameFit)
+            self._dataModel.freeCamera.frameSelection(self._selectionBBox, frameFit)
             self.computeAndSetClosestDistance()
             
         self.updateGL()
@@ -1897,7 +1882,7 @@ class StageView(QtOpenGL.QGLWidget):
             return
 
         if cameraPrim.IsA(UsdGeom.Camera):
-            self._freeCamera = None
+            self._dataModel.freeCamera = None
             self._cameraPrim = cameraPrim
         else:
             from common import PrintWarning
@@ -1911,7 +1896,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         # update rendering parameters
         self._renderParams.frame = self._currentFrame
-        self._renderParams.complexity = self.complexity
+        self._renderParams.complexity = self._dataModel.complexity
         self._renderParams.drawMode = renderMode
         self._renderParams.showGuides = self._displayGuide
         self._renderParams.showProxy = self._displayProxy
@@ -1947,12 +1932,12 @@ class StageView(QtOpenGL.QGLWidget):
         """We override this virtual so that we can make it a no-op during 
         playback.  The client driving playback at a particular rate should
         instead call updateForPlayback() to image the next frame."""
-        if not self.playing:
+        if not self._dataModel.playing:
             super(StageView, self).updateGL()
 
     def updateForPlayback(self, currentTime, showHighlights):
-        """If self.playing, update the GL canvas.  Otherwise a no-op"""
-        if self.playing:
+        """If playing, update the GL canvas.  Otherwise a no-op"""
+        if self._dataModel.playing:
             self._currentFrame = currentTime
             drawHighlights = self.drawSelHighlights
             self.drawSelHighlights = showHighlights
@@ -1984,7 +1969,7 @@ class StageView(QtOpenGL.QGLWidget):
         if not camera:
             # If 'camera' is None, make sure we have a valid freeCamera
             self.switchToFreeCamera()
-            camera = self._freeCamera.computeGfCamera(self._bbox)
+            camera = self._dataModel.freeCamera.computeGfCamera(self._bbox)
         elif self._fitCameraInViewport:
             if targetAspect < camera.aspectRatio:
                 windowPolicy = CameraUtil.MatchHorizontally
@@ -2020,7 +2005,7 @@ class StageView(QtOpenGL.QGLWidget):
             viewState[attr] = getattr(self, attr)
         # Since FreeCamera is a compound/class object, we must copy
         # it more deeply
-        viewState["_freeCamera"] = self._freeCamera.clone() if self._freeCamera else None
+        viewState["_freeCamera"] = self._dataModel.freeCamera.clone() if self._dataModel.freeCamera else None
         return viewState
 
     def restoreViewState(self, viewState):
@@ -2029,8 +2014,8 @@ class StageView(QtOpenGL.QGLWidget):
             setattr(self, key, val)
         # Detach our freeCamera from the given viewState, to
         # insulate against changes to viewState by caller
-        if viewState.has_key("_freeCamera") and self._freeCamera:
-            self._freeCamera = self._freeCamera.clone()
+        if viewState.has_key("_freeCamera") and self._dataModel.freeCamera:
+            self._dataModel.freeCamera = self._dataModel.freeCamera.clone()
         self.update()
 
     def drawWireframeCube(self, col, mvpMatrix):
@@ -2108,7 +2093,7 @@ class StageView(QtOpenGL.QGLWidget):
         from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
         GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
 
-        GL.glClearColor(*(Gf.ConvertDisplayToLinear(Gf.Vec4f(self._clearColor))))
+        GL.glClearColor(*(Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.clearColor))))
 
         GL.glEnable(GL.GL_DEPTH_TEST)
         GL.glDepthFunc(GL.GL_LESS)
@@ -2156,11 +2141,11 @@ class StageView(QtOpenGL.QGLWidget):
             material = Glf.SimpleMaterial()
             lights = []
             # for renderModes that need lights 
-            if self.renderMode in ("Flat Shaded",
-                                   "Smooth Shaded",
-                                   "WireframeOnSurface",
-                                   "Geom Smooth",
-                                   "Geom Flat"):
+            if self._dataModel.renderMode in ("Flat Shaded",
+                                              "Smooth Shaded",
+                                              "WireframeOnSurface",
+                                              "Geom Smooth",
+                                              "Geom Flat"):
 
                 stagePos = Gf.Vec3d(self._bbcenter[0], self._bbcenter[1],
                                     self._bbcenter[2])
@@ -2227,7 +2212,7 @@ class StageView(QtOpenGL.QGLWidget):
             # modes that want no lighting simply leave lights as an empty list
             self._renderer.SetLightingState(lights, material, sceneAmbient)
 
-            if self.renderMode == "Hidden Surface Wireframe":
+            if self._dataModel.renderMode == "Hidden Surface Wireframe":
                 GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
                 GL.glPolygonOffset( 1.0, 1.0 )
                 GL.glPolygonMode( GL.GL_FRONT_AND_BACK, GL.GL_FILL )
@@ -2239,7 +2224,7 @@ class StageView(QtOpenGL.QGLWidget):
                 GL.glDepthFunc(GL.GL_LEQUAL)
                 GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
-            self.renderSinglePass(self._renderModeDict[self.renderMode],
+            self.renderSinglePass(self._renderModeDict[self._dataModel.renderMode],
                                   self.drawSelHighlights)
 
             self.DrawAxis(viewProjectionMatrix)
@@ -2293,7 +2278,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
 
-        if (not self.playing) & (not self._renderer.IsConverged()):
+        if (not self._dataModel.playing) & (not self._renderer.IsConverged()):
             QtCore.QTimer.singleShot(5, self.update)
 
     def drawHUD(self):
@@ -2309,7 +2294,7 @@ class StageView(QtOpenGL.QGLWidget):
         col = Gf.ConvertDisplayToLinear(Gf.Vec3f(.733,.604,.333))
 
         # the subtree info does not update while animating, grey it out
-        if not self.playing:
+        if not self._dataModel.playing:
             subtreeCol = col
         else:
             subtreeCol = Gf.ConvertDisplayToLinear(Gf.Vec3f(.6,.6,.6))
@@ -2329,7 +2314,7 @@ class StageView(QtOpenGL.QGLWidget):
             if self._cameraPrim:
                 camName = self._cameraPrim.GetName()
 
-            toPrint = {"Complexity" : self.complexity,
+            toPrint = {"Complexity" : self._dataModel.complexity,
                        "Camera" : camName}
             self._hud.updateGroup("BottomRight",
                                   self.width()-200, self.height()-self._hud._HUDLineSpacing*2,
@@ -2395,14 +2380,14 @@ class StageView(QtOpenGL.QGLWidget):
             # _cameraPrim may no longer be valid, so use the last-computed
             # gf camera
             if self._lastComputedGfCamera:
-                self._freeCamera = FreeCamera.FromGfCamera(self._lastComputedGfCamera, self._stageIsZup)
+                self._dataModel.freeCamera = FreeCamera.FromGfCamera(self._lastComputedGfCamera, self._stageIsZup)
             else:
-                self._freeCamera = FreeCamera(self._stageIsZup)
+                self._dataModel.freeCamera = FreeCamera(self._stageIsZup)
             # override clipping plane state is managed by StageView,
             # so that it can be persistent.  Therefore we must restore it
             # now
-            self._freeCamera.overrideNear = self._overrideNear
-            self._freeCamera.overrideFar = self._overrideFar
+            self._dataModel.freeCamera.overrideNear = self._overrideNear
+            self._dataModel.freeCamera.overrideFar = self._overrideFar
             self._cameraPrim = None
             if computeAndSetClosestDistance:
                 self.computeAndSetClosestDistance()
@@ -2452,16 +2437,16 @@ class StageView(QtOpenGL.QGLWidget):
             if dx == 0 and dy == 0:
                 return
             if self._cameraMode == "tumble":
-                self._freeCamera.rotTheta += 0.25 * dx
-                self._freeCamera.rotPhi += 0.25 * dy
+                self._dataModel.freeCamera.rotTheta += 0.25 * dx
+                self._dataModel.freeCamera.rotPhi += 0.25 * dy
 
             elif self._cameraMode == "zoom":
                 zoomDelta = -.002 * (dx + dy)
-                self._freeCamera.adjustDist(1 + zoomDelta)
+                self._dataModel.freeCamera.adjustDist(1 + zoomDelta)
 
             elif self._cameraMode == "truck":
                 height = float(self.size().height())
-                self._freeCamera.Truck(dx, dy, height)
+                self._dataModel.freeCamera.Truck(dx, dy, height)
 
             self._lastX = event.x()
             self._lastY = event.y()
@@ -2479,14 +2464,14 @@ class StageView(QtOpenGL.QGLWidget):
     def wheelEvent(self, event):
         distBefore = self._dist
         self.switchToFreeCamera()
-        self._freeCamera.adjustDist(1-max(-0.5,min(0.5,(event.angleDelta().y()/1000.))))
+        self._dataModel.freeCamera.adjustDist(1-max(-0.5,min(0.5,(event.angleDelta().y()/1000.))))
         self.updateGL()
 
     def detachAndReClipFromCurrentCamera(self):
         """If we are currently rendering from a prim camera, switch to the
         FreeCamera.  Then reset the near/far clipping planes based on
         distance to closest geometry."""
-        if not self._freeCamera:
+        if not self._dataModel.freeCamera:
             self.switchToFreeCamera()
         else:
             self.computeAndSetClosestDistance()
@@ -2504,12 +2489,12 @@ class StageView(QtOpenGL.QGLWidget):
         # two picks, with the first pick() using a small near and far, and the
         # second pick() using a near that keeps far within the safe precision
         # range.  We don't expect the worst-case to happen often.
-        if not self._freeCamera:
+        if not self._dataModel.freeCamera:
             return
         cameraFrustum = self.computeGfCameraAndViewport()[0].frustum
         trueFar = cameraFrustum.nearFar.max
         smallNear = min(FreeCamera.defaultNear, 
-                        self._freeCamera._selSize / 10.0)
+                        self._dataModel.freeCamera._selSize / 10.0)
         cameraFrustum.nearFar = \
             Gf.Range1d(smallNear, smallNear*FreeCamera.maxSafeZResolution)
         scrSz = self.size()
@@ -2522,7 +2507,7 @@ class StageView(QtOpenGL.QGLWidget):
                 print "computeAndSetClosestDistance: Needed to call pick() a second time"
 
         if pickResults[0] is not None and pickResults[1] != Sdf.Path.emptyPath:
-            self._freeCamera.setClosestVisibleDistFromPoint(pickResults[0])
+            self._dataModel.freeCamera.setClosestVisibleDistFromPoint(pickResults[0])
             self.updateGL()
 
     def pick(self, pickFrustum):
@@ -2542,8 +2527,8 @@ class StageView(QtOpenGL.QGLWidget):
 
         # update rendering parameters
         self._renderParams.frame = self._currentFrame
-        self._renderParams.complexity = self.complexity
-        self._renderParams.drawMode = self._renderModeDict[self.renderMode]
+        self._renderParams.complexity = self._dataModel.complexity
+        self._renderParams.drawMode = self._renderModeDict[self._dataModel.renderMode]
         self._renderParams.showGuides = self._displayGuide
         self._renderParams.showProxy = self._displayProxy
         self._renderParams.showRender = self._displayRender
@@ -2656,7 +2641,7 @@ class StageView(QtOpenGL.QGLWidget):
         currently defined. If it is not active (i.e. we are viewing through
         a stage camera), raise a ValueError.
         '''
-        if not self.freeCamera:
+        if not self._dataModel.freeCamera:
             raise ValueError("StageView's Free Camera is not defined, so cannot"
                              " be exported")
 
@@ -2666,7 +2651,7 @@ class StageView(QtOpenGL.QGLWidget):
         defcam = UsdGeom.Camera.Define(stage, '/'+defcamName)
 
         # Map free camera params to usd camera.
-        gfCamera = self.freeCamera.computeGfCamera(self._bbox)
+        gfCamera = self._dataModel.freeCamera.computeGfCamera(self._bbox)
 
         targetAspect = float(imgWidth) / max(1.0, imgHeight)
         CameraUtil.ConformWindow(
