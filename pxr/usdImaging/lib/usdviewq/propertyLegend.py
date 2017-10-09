@@ -21,16 +21,21 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtWidgets
+""" This module provides the help dialog(also known as the property legend)
+    in Usdview's MainWindow. This provides a key describing the items displayed
+    in the property browser.
+"""
+
+from qt import QtWidgets
 
 from propertyLegendUI import Ui_PropertyLegend
 
-from common import (HasArcsColor, NormalColor, MasterColor, InstanceColor, DefaultTextColor,
-                    TimeSampleTextColor, NoValueTextColor, ValueClipsTextColor, RedColor,
-                    FallbackTextColor, ColorizeLabelText, BoldenLabelText, ItalicizeLabelText,
-                    ATTR_PLAIN_TYPE_ICON, ATTR_WITH_CONN_TYPE_ICON, REL_PLAIN_TYPE_ICON, 
-                    REL_WITH_TARGET_TYPE_ICON, TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON)
-
+from common import (DefaultTextColor, TimeSampleTextColor,
+                    NoValueTextColor, ValueClipsTextColor,
+                    RedColor, FallbackTextColor, ItalicizeLabelText,
+                    ATTR_PLAIN_TYPE_ICON, ATTR_WITH_CONN_TYPE_ICON,
+                    REL_PLAIN_TYPE_ICON, REL_WITH_TARGET_TYPE_ICON,
+                    TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON)
 
 class PropertyLegend(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -39,7 +44,7 @@ class PropertyLegend(QtWidgets.QWidget):
         self._ui.setupUi(self)
 
         self._isMinimized = True
-        self._iconDisplaySize = (16,16)
+        self._iconDisplaySize = (16, 16)
 
         graphicsScene = QtWidgets.QGraphicsScene()
 
@@ -49,35 +54,47 @@ class PropertyLegend(QtWidgets.QWidget):
         self._ui.propertyLegendColorNoValue.setScene(graphicsScene)
         self._ui.propertyLegendColorValueClips.setScene(graphicsScene)
         self._ui.propertyLegendColorCustom.setScene(graphicsScene)
-        
+
         # set color of attribute viewer legend boxes
-        self._ui.propertyLegendColorFallback.setForegroundBrush(FallbackTextColor)
-        self._ui.propertyLegendColorDefault.setForegroundBrush(DefaultTextColor)
-        self._ui.propertyLegendColorTimeSample.setForegroundBrush(TimeSampleTextColor)
-        self._ui.propertyLegendColorNoValue.setForegroundBrush(NoValueTextColor)
-        self._ui.propertyLegendColorValueClips.setForegroundBrush(ValueClipsTextColor)
-        self._ui.propertyLegendColorCustom.setForegroundBrush(RedColor)
+        self._ui.propertyLegendColorFallback.setForegroundBrush(
+            FallbackTextColor)
+        self._ui.propertyLegendColorDefault.setForegroundBrush(
+            DefaultTextColor)
+        self._ui.propertyLegendColorTimeSample.setForegroundBrush(
+            TimeSampleTextColor)
+        self._ui.propertyLegendColorNoValue.setForegroundBrush(
+            NoValueTextColor)
+        self._ui.propertyLegendColorValueClips.setForegroundBrush(
+            ValueClipsTextColor)
+        self._ui.propertyLegendColorCustom.setForegroundBrush(
+            RedColor)
 
         # set color of attribute viewer text items
-        legendTextUpdate = lambda t, c: (('<font color=\"%s\">' % c.color().name())
-                                         + t.text() + '</font>') 
+        legendTextUpdate = lambda t, c: (
+            ('<font color=\"%s\">' % c.color().name()) + t.text() + '</font>')
         timeSampleLegend = self._ui.propertyLegendLabelTimeSample
-        timeSampleLegend.setText(legendTextUpdate(timeSampleLegend, TimeSampleTextColor))
-        
+        timeSampleLegend.setText(
+            legendTextUpdate(timeSampleLegend, TimeSampleTextColor))
+
         fallbackLegend = self._ui.propertyLegendLabelFallback
-        fallbackLegend.setText(legendTextUpdate(fallbackLegend, FallbackTextColor))
+        fallbackLegend.setText(
+            legendTextUpdate(fallbackLegend, FallbackTextColor))
 
         valueClipLegend = self._ui.propertyLegendLabelValueClips
-        valueClipLegend.setText(legendTextUpdate(valueClipLegend, ValueClipsTextColor))
+        valueClipLegend.setText(
+            legendTextUpdate(valueClipLegend, ValueClipsTextColor))
 
         noValueLegend = self._ui.propertyLegendLabelNoValue
-        noValueLegend.setText(legendTextUpdate(noValueLegend, NoValueTextColor))
+        noValueLegend.setText(
+            legendTextUpdate(noValueLegend, NoValueTextColor))
 
         defaultLegend = self._ui.propertyLegendLabelDefault
-        defaultLegend.setText(legendTextUpdate(defaultLegend, DefaultTextColor))
+        defaultLegend.setText(
+            legendTextUpdate(defaultLegend, DefaultTextColor))
 
-        customLegend = self._ui.propertyLegendLabelCustom 
-        customLegend.setText(legendTextUpdate(customLegend, RedColor))
+        customLegend = self._ui.propertyLegendLabelCustom
+        customLegend.setText(
+            legendTextUpdate(customLegend, RedColor))
 
         interpolatedStr = 'Interpolated'
         tsLabel = self._ui.propertyLegendLabelTimeSample
@@ -88,7 +105,7 @@ class PropertyLegend(QtWidgets.QWidget):
 
         # Load up and set the icons for the property legend
         self._ui.propertyLegendTargetIcon.setPixmap(
-            TARGET_TYPE_ICON().pixmap(*self._iconDisplaySize)) 
+            TARGET_TYPE_ICON().pixmap(*self._iconDisplaySize))
         self._ui.propertyLegendConnIcon.setPixmap(
             CONN_TYPE_ICON().pixmap(*self._iconDisplaySize))
         self._ui.propertyLegendAttrPlainIcon.setPixmap(
@@ -101,7 +118,7 @@ class PropertyLegend(QtWidgets.QWidget):
             REL_WITH_TARGET_TYPE_ICON().pixmap(*self._iconDisplaySize))
         self._ui.propertyLegendCompIcon.setPixmap(
             CMP_TYPE_ICON().pixmap(*self._iconDisplaySize))
-    
+
     def IsMinimized(self):
         return self._isMinimized
 
@@ -114,4 +131,4 @@ class PropertyLegend(QtWidgets.QWidget):
     def GetResetHeight(self):
         # This predefined height is determined by the elements that exist in
         # the propertyLegend. For more information see propertyLegendUI.ui
-        return 120 
+        return 120

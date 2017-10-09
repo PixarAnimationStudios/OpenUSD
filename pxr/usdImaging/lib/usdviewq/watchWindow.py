@@ -86,14 +86,14 @@ class WatchWindow(QtWidgets.QDialog):
         self._boxWithFocus = self._ui.unvaryingEdit
 
     def _find(self):
-        searchString = QtWidgets.QInputDialog.getText(self, "Find", 
+        searchString = QtWidgets.QInputDialog.getText(self, "Find",
             "Enter search string\nUse Ctrl+G to \"Find Next\"\n" + \
             "Use Ctrl+Shift+G to \"Find Previous\"")
         if searchString[1]:
             self._searchString = searchString[0]
             if (not self._boxWithFocus.find(self._searchString)):
                 self._boxWithFocus.moveCursor(QtGui.QTextCursor.Start)
-                self._boxWithFocus.find(self._searchString) 
+                self._boxWithFocus.find(self._searchString)
 
     def _findNext(self):
         if (self._searchString == ""):
@@ -108,7 +108,7 @@ class WatchWindow(QtWidgets.QDialog):
         if (not self._boxWithFocus.find(self._searchString,
             QtGui.QTextDocument.FindBackward)):
             self._boxWithFocus.moveCursor(QtGui.QTextCursor.End)
-            self._boxWithFocus.find(self._searchString, 
+            self._boxWithFocus.find(self._searchString,
                                       QtGui.QTextDocument.FindBackward)
 
     def _diff(self):
@@ -121,7 +121,7 @@ class WatchWindow(QtWidgets.QDialog):
         varFile.flush()
 
         os.system("xxdiff %s %s" % (unvarFile.name, varFile.name))
-                          
+
         unvarFile.close()
         varFile.close()
 
@@ -151,7 +151,7 @@ class WatchWindow(QtWidgets.QDialog):
         self._ui.unvaryingEdit.append(s)
 
         self._ui.dualScroller.setMaximum(max(
-            self._ui.unvaryingEdit.verticalScrollBar().maximum(), 
+            self._ui.unvaryingEdit.verticalScrollBar().maximum(),
             self._ui.varyingEdit.verticalScrollBar().maximum()))
         self._ui.dualScroller.setPageStep(min(
             self._ui.unvaryingEdit.verticalScrollBar().pageStep(),

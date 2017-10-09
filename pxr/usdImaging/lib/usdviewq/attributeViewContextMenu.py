@@ -95,7 +95,7 @@ class CopyAttributeNameMenuItem(AttributeViewContextMenuItem):
 
     def RunCommand(self):
         if self._name == "":
-            return 
+            return
 
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(self._name, QtGui.QClipboard.Selection)
@@ -115,7 +115,7 @@ class CopyAttributeValueMenuItem(AttributeViewContextMenuItem):
         if self._value == "":
             return
 
-        # We display relationships targets as: 
+        # We display relationships targets as:
         #    /f, /g/a ...
         # But when we ask to copy the value, we'd like to get back:
         #    [Sdf.Path('/f'), Sdf.Path('/g/a')]
@@ -179,7 +179,7 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
 # Target owning property selection menus
 # --------------------------------------------------------------------
 
-# 
+#
 # Jump to all target paths under the selected attribute
 #
 class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
@@ -188,7 +188,7 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
 
     def IsEnabled(self):
         if not self._item:
-            return False 
+            return False
 
         # Disable the menu if there are no targets
         # for this rel/attribute connection
@@ -211,7 +211,7 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
             sys.stderr.write("ERROR: %s\n" % ex.message)
             return
 
-# 
+#
 # Copy all target paths under the currently selected relationship to the clipboard
 #
 class CopyAllTargetPathsMenuItem(SelectAllTargetPathsMenuItem):
@@ -223,7 +223,7 @@ class CopyAllTargetPathsMenuItem(SelectAllTargetPathsMenuItem):
             return
 
         value = ", ".join([self._item.child(i).text(INDEX_PROPNAME) \
-                            for i in range(0, self._item.childCount())]) 
+                            for i in range(0, self._item.childCount())])
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(value, QtGui.QClipboard.Selection)
         cb.setText(value, QtGui.QClipboard.Clipboard)

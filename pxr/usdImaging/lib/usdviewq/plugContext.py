@@ -84,7 +84,7 @@ class PlugContext(object):
         ''' Returns the config dir, typically ~/.usdview/. '''
 
         return self._mainWindow._outputBaseDirectory()
-        
+
     def GetInputFilePath(self):
         ''' Returns the file that usdview was called on. '''
 

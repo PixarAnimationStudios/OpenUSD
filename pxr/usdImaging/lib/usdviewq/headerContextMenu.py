@@ -38,7 +38,7 @@ class HeaderContextMenu(QtWidgets.QMenu):
             if menuItem.isValid():
                 # create menu actions
                 action = self.addAction(menuItem.GetText(), menuItem.RunCommand)
-                
+
                 # set the proper checkmarks
                 action.setCheckable(True)
                 action.setChecked(menuItem.IsChecked())
@@ -58,7 +58,7 @@ class HeaderContextMenuItem(UsdviewContextMenuItem):
     def __init__(self, parent, column):
         self._parent = parent
         self._column = column
-        
+
         if parent.__class__ == QtWidgets.QTreeWidget:
             self._text = parent.headerItem().text(column)
         else:

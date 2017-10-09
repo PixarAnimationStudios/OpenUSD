@@ -41,7 +41,7 @@ class PythonExpressionPrompt(QtWidgets.QDialog):
         self._mainWindow = parent._mainWindow     # get mainWindow instance
         self._val = val         # this is the object that is currently authored
         self._oldValID = -1     # this is the ID of the current object at "_"
-        
+
         self._setupConsole()    # get or create a python console widget
 
         # if a exception was passed as an argument, raise it so it prints.
@@ -54,7 +54,7 @@ class PythonExpressionPrompt(QtWidgets.QDialog):
         # get or create an instance of Myconsole
         if Myconsole.instance is None:
             Myconsole.instance = Myconsole(self)
-        
+
         # setting the parent places the Myconsole widget inside this one
         Myconsole.instance.setParent(self)
 
@@ -98,7 +98,7 @@ class PythonExpressionPrompt(QtWidgets.QDialog):
         # stdout, and make exec_ return the last value of "_"
         QtWidgets.QDialog.exec_(self)
         return self._val
-    
+
     def __del__(self):
         # we have to remove the parent from the "Myconsole" instance
         # because the parent (self) is about to be deleted.

@@ -29,7 +29,7 @@ from common import Timer
 class Launcher(object):
     '''
     Base class for argument parsing and validation for UsdView
-    
+
     Subclasses can choose to override
       -- GetHelpDescription()
       -- RegisterOptions()
@@ -43,7 +43,7 @@ class Launcher(object):
         '''
         the main entry point to launch a process using UsdView.
         '''
-        
+
         parser = argparse.ArgumentParser(prog=sys.argv[0],
                                          description=self.GetHelpDescription())
 
@@ -59,17 +59,17 @@ class Launcher(object):
             totalTimer.PrintTime('open and close usdview')
 
     def GetHelpDescription(self):
-        '''return the help description'''       
+        '''return the help description'''
         return 'View a usd file'
-        
+
     def RegisterPositionals(self, parser):
         '''
         register positional arguments on the ArgParser
         '''
         parser.add_argument('usdFile', action='store',
-                            type=str, 
+                            type=str,
                             help='The file to view')
-        
+
     def RegisterOptions(self, parser):
         '''
         register optional arguments on the ArgParser
@@ -99,31 +99,31 @@ class Launcher(object):
                             'multiple paths, either use commas with no spaces '
                             'or quote the argument and separate paths by '
                             'commas and/or spaces.')
-        
-        parser.add_argument('--clearsettings', action='store_true', 
-                            dest='clearSettings', 
+
+        parser.add_argument('--clearsettings', action='store_true',
+                            dest='clearSettings',
                             help='Restores usdview settings to default')
-        
+
         parser.add_argument('--norender', action='store_true',
                             dest='noRender',
                             help='Display only hierarchy browser')
 
         parser.add_argument('--unloaded', action='store_true',
-                            dest='unloaded', 
+                            dest='unloaded',
                             help='Do not load payloads')
 
         parser.add_argument('--timing', action='store_true',
-                            dest='timing', 
+                            dest='timing',
                             help='echo timing stats to console. NOTE: timings will be unreliable when the --mallocTagStats option is also in use')
 
         parser.add_argument('--memstats', action='store', default='none',
                             dest='mallocTagStats', type=str,
                             choices=['none', 'stage', 'stageAndImaging'],
                             help='Use the Pxr MallocTags memory accounting system to profile USD, saving results to a tmp file, with a summary to the console.  Will have no effect if MallocTags are not supported in the USD installation.')
-        
-        parser.add_argument('--numThreads', action='store', 
+
+        parser.add_argument('--numThreads', action='store',
                             type=int, default=0,
-                            help='Number of threads used for processing' 
+                            help='Number of threads used for processing'
                                  '(0 is max, negative numbers imply max - N)')
 
         parser.add_argument('--ff', action='store',
@@ -139,18 +139,18 @@ class Launcher(object):
                             dest='quitAfterStartup',
                             help='quit immediately after start up')
 
-    
+
     def ParseOptions(self, parser):
         '''
         runs the parser on the arguments
         '''
         return parser.parse_args()
-    
+
     def ValidateOptions(self, arg_parse_result):
         '''
         Validate and potentially modifies the parsed arguments return True
         if the UsdView Process can launch.  If a child has overridden
-        ParseOptions, ValidateOptions is an opportunity to move 
+        ParseOptions, ValidateOptions is an opportunity to move
         '''
         if arg_parse_result.complexity < 1.0 or arg_parse_result.complexity > 2.0:
             newComplexity = max(min(2.0, arg_parse_result.complexity), 1.0)
@@ -195,7 +195,7 @@ class Launcher(object):
                     camPath = camPath.MakeAbsolutePath(Sdf.Path.absoluteRootPath)
                 arg_parse_result.camera = camPath
         return True
-            
+
     def __LaunchProcess(self, arg_parse_result):
         '''
         after the arguments have been parsed, launch the UI in a forked process
@@ -217,7 +217,7 @@ class Launcher(object):
 
         # Apply the style sheet to it
         sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')
-        
+
         # Qt style sheet accepts only forward slashes as path separators
         sheetString = sheet.read().replace('RESOURCE_DIR',
                                            resourceDir.replace("\\", "/"))
@@ -231,7 +231,7 @@ class Launcher(object):
             # we'd want).
             app.processEvents()
             mainWindow._cleanAndClose()
-            return 
+            return
 
         app.exec_()
 

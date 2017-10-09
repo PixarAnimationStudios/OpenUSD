@@ -25,12 +25,13 @@
 from qt import QtCore, QtGui, QtWidgets
 
 # Stdlib components
-import re, sys, os
+import re, sys, os, cProfile, pstats, traceback
+from itertools import groupby
 from time import time, sleep
 from collections import deque, OrderedDict
 
 # Usd Library Components
-from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL, Glf, Sdf, Tf
+from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
 
 # UI Components
 from ._usdviewq import Utils
@@ -40,27 +41,30 @@ from nodeContextMenu import NodeContextMenu
 from headerContextMenu import HeaderContextMenu
 from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
-from customAttributes import (_GetCustomAttributes, BoundingBoxAttribute, 
-                              LocalToWorldXformAttribute, RelationshipAttribute)
+from customAttributes import (_GetCustomAttributes, BoundingBoxAttribute,
+                              LocalToWorldXformAttribute)
 from nodeViewItem import NodeViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
 import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, settings
 
 # Common Utilities
-from common import (FallbackTextColor, NoValueTextColor, TimeSampleTextColor, ValueClipsTextColor, 
-                    DefaultTextColor, HeaderColor, RedColor, BoldFont, ItalicFont,
-                    GetAttributeColor, GetAttributeTextFont, HasArcsColor, 
-                    InstanceColor, NormalColor, MasterColor, Timer, Drange,
-                    BusyContext, DumpMallocTags, GetShortString,
+from common import (NoValueTextColor, TimeSampleTextColor,
+                    DefaultTextColor, RedColor, BoldFont,
+                    GetAttributeColor, GetAttributeTextFont,
+                    Timer, Drange, BusyContext, DumpMallocTags, GetShortString,
                     GetInstanceIdForIndex, GetTfErrorExceptionReason,
-                    ItalicizeLabelText, BoldenLabelText, ColorizeLabelText,
+                    ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
                     INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL,
-                    ATTR_PLAIN_TYPE_ICON, ATTR_WITH_CONN_TYPE_ICON, REL_PLAIN_TYPE_ICON, 
-                    REL_WITH_TARGET_TYPE_ICON, TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON,            
-                    ATTR_PLAIN_TYPE_ROLE, REL_PLAIN_TYPE_ROLE, ATTR_WITH_CONN_TYPE_ROLE,
-                    REL_WITH_TARGET_TYPE_ROLE, CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE,
-                    PropTreeWidgetTypeIsRel, PrimNotFoundException)
+                    ATTR_PLAIN_TYPE_ICON, ATTR_WITH_CONN_TYPE_ICON,
+                    ATTR_PLAIN_TYPE_ROLE, ATTR_WITH_CONN_TYPE_ROLE,
+                    REL_PLAIN_TYPE_ICON, REL_WITH_TARGET_TYPE_ICON,
+                    REL_PLAIN_TYPE_ROLE, REL_WITH_TARGET_TYPE_ROLE,
+                    TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON,
+                    CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE,
+                    PropTreeWidgetTypeIsRel, PrimNotFoundException,
+                    GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
+                    GetPrimsLoadability, GetClosestBoundMaterial)
 
 # Upper HUD entries (declared in variables for abstraction)
 PRIM = "Prims"
@@ -112,7 +116,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _configurePlugins(self):
         pluginsLoaded = False
-        
+
         from plugContext import PlugContext
         plugCtx = PlugContext(self)
         with Timer() as t:
@@ -120,14 +124,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 from pixar import UsdviewPlug
                 UsdviewPlug.ConfigureView(plugCtx)
                 pluginsLoaded = True
-        
+
             except ImportError:
                 pass
 
         if self._printTiming and pluginsLoaded:
             t.PrintTime("configure and load plugins.")
 
-        
+
     def __del__(self):
         # This is needed to free Qt items before exit; Qt hits failed GTK
         # assertions without it.
@@ -149,13 +153,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self._unloaded = parserData.unloaded
             self._currentFrame = Usd.TimeCode.Default()
             self._updateBlock = 0
-            import os
             self._debug = os.getenv('USDVIEW_DEBUG', False)
             self._printTiming = parserData.timing or self._debug
             self._lastViewContext = {}
             self._statusFileName = 'state'
             self._deprecatedStatusFileName = '.usdviewrc'
-            self._mallocTags  = parserData.mallocTagStats
+            self._mallocTags = parserData.mallocTagStats
             self._bboxCache = None
             self._complexity = parserData.complexity
             self._clearColor = None
@@ -204,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
             settingsPathDir = self._outputBaseDirectory()
             if settingsPathDir is None:
                 # Create an ephemeral settings object with a non existent filepath
-                self._settings = settings.Settings('', seq=None, ephemeral=True) 
+                self._settings = settings.Settings('', seq=None, ephemeral=True)
             else:
                 settingsPath = os.path.join(settingsPathDir, self._statusFileName)
                 deprecatedSettingsPath = \
@@ -247,12 +250,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self._timer.setInterval(0)
             self._lastFrameTime = time()
 
-            self._colorsDict = {'Black':(0.0,0.0,0.0,0.0),
-                                'Grey (Dark)':(0.3,0.3,0.3,0.0),
-                                'Grey (Light)':(0.7,0.7,0.7,0.0),
-                                'White':(1.0,1.0,1.0,0.0),
-                                'Yellow':(1.0,1.0,0.0,0.0),
-                                'Cyan':(0.0,1.0,1.0,0.0)}
+            self._colorsDict = {'Black': (0.0, 0.0, 0.0, 0.0),
+                                'Grey (Dark)': (0.3, 0.3, 0.3, 0.0),
+                                'Grey (Light)': (0.7, 0.7, 0.7, 0.0),
+                                'White': (1.0, 1.0, 1.0, 0.0),
+                                'Yellow': (1.0, 1.0, 0.0, 0.0),
+                                'Cyan': (0.0, 1.0, 1.0, 0.0)}
 
             # We need to store the trinary selHighlightMode state here,
             # because the stageView only deals in True/False (because it
@@ -280,11 +283,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self._fpsHUDInfo = dict(zip(self._fpsHUDKeys,
                                         ["N/A", "N/A"]))
             self._startTime = self._endTime = time()
-            
+
             # Create action groups
             self._ui.threePointLights = QtWidgets.QActionGroup(self)
             self._ui.colorGroup = QtWidgets.QActionGroup(self)
-            
+
             self._nodeViewResetTimer = QtCore.QTimer(self)
             self._nodeViewResetTimer.setInterval(250)
             self._nodeViewResetTimer.timeout.connect(self._resetNodeView)
@@ -293,7 +296,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._nodeViewUpdateTimer = QtCore.QTimer(self)
             self._nodeViewUpdateTimer.setInterval(0)
             self._nodeViewUpdateTimer.timeout.connect(self._updateNodeView)
-            
+
             # This creates the _stageView and restores state from settings file
             self._resetSettings()
 
@@ -323,7 +326,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QAbstractItemView.ScrollPerPixel)
 
             self._ui.frameSlider.setTracking(self._ui.redrawOnScrub.isChecked())
-            
+
             for action in (self._ui.actionBlack,
                            self._ui.actionGrey_Dark,
                            self._ui.actionGrey_Light,
@@ -331,9 +334,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 action.setChecked(self._colorsDict[str(action.text())] == self._clearColor)
                 self._ui.colorGroup.addAction(action)
             self._ui.colorGroup.setExclusive(True)
-            
-            for action in (self._ui.actionKey, 
-                           self._ui.actionFill, 
+
+            for action in (self._ui.actionKey,
+                           self._ui.actionFill,
                            self._ui.actionBack):
                 self._ui.threePointLights.addAction(action)
             self._ui.threePointLights.setExclusive(False)
@@ -343,9 +346,9 @@ class MainWindow(QtWidgets.QMainWindow):
                            self._ui.actionWireframeOnSurface,
                            self._ui.actionSmooth_Shaded,
                            self._ui.actionFlat_Shaded,
-                           self._ui.actionPoints, 
+                           self._ui.actionPoints,
                            self._ui.actionGeom_Only,
-                           self._ui.actionGeom_Smooth, 
+                           self._ui.actionGeom_Smooth,
                            self._ui.actionGeom_Flat,
                            self._ui.actionHidden_Surface_Wireframe):
                 self._ui.renderModeActionGroup.addAction(action)
@@ -388,7 +391,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.selHighlightModeActionGroup.addAction(action)
                 action.setChecked(str(action.text()) == self._selHighlightMode)
             self._ui.selHighlightModeActionGroup.setExclusive(True)
-                
+
             self._ui.highlightColorActionGroup = QtWidgets.QActionGroup(self)
             for action in (self._ui.actionSelYellow,
                            self._ui.actionSelCyan,
@@ -396,7 +399,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.highlightColorActionGroup.addAction(action)
                 action.setChecked(str(action.text()) == self._highlightColorName)
             self._ui.highlightColorActionGroup.setExclusive(True)
-                
+
             self._ui.interpolationActionGroup = QtWidgets.QActionGroup(self)
             self._ui.interpolationActionGroup.setExclusive(True)
             for interpolationType in Usd.InterpolationType.allValues:
@@ -406,13 +409,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.interpolationActionGroup.addAction(action)
 
             self._ui.nodeViewDepthGroup = QtWidgets.QActionGroup(self)
-            for i in range(1,9):
-                action = getattr(self._ui,"actionLevel_" + str(i))
+            for i in range(1, 9):
+                action = getattr(self._ui, "actionLevel_" + str(i))
                 self._ui.nodeViewDepthGroup.addAction(action)
 
-            # needed to set color of boxes
-            graphicsScene = QtWidgets.QGraphicsScene()
-            
             # setup animation objects for the primView and propertyView
             self._propertyLegendAnim = QtCore.QPropertyAnimation(
                 self._ui.propertyLegendContainer, "maximumHeight")
@@ -420,7 +420,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.nodeLegendContainer, "maximumHeight")
 
             # set the context menu policy for the node browser and attribute
-            # inspector headers. This is so we can have a context menu on the 
+            # inspector headers. This is so we can have a context menu on the
             # headers that allows you to select which columns are visible.
             self._ui.propertyView.header()\
                     .setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -452,12 +452,12 @@ class MainWindow(QtWidgets.QMainWindow):
             nvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
             nvh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
 
-            pvh = self._ui.propertyView.header()             
+            pvh = self._ui.propertyView.header()
             pvh.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
             pvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
             pvh.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
 
-            # XXX: 
+            # XXX:
             # To avoid QTBUG-12850 (https://bugreports.qt.io/browse/QTBUG-12850),
             # we force the horizontal scrollbar to always be visible for all
             # QTableWidget widgets in use.
@@ -528,7 +528,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
             self._ui.actionWatch_Window.toggled.connect(self._watchWindowToggled)
-            
+
             self._ui.actionRecompute_Clipping_Planes.triggered.connect(
                 self._stageView.detachAndReClipFromCurrentCamera)
 
@@ -559,7 +559,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.actionAdjust_FOV.triggered.connect(self._adjustFOV)
 
             self._ui.actionComplexity.triggered.connect(self._adjustComplexity)
-            
+
             self._ui.actionDisplay_Guide.toggled.connect(self._toggleDisplayGuide)
 
             self._ui.actionDisplay_Proxy.toggled.connect(self._toggleDisplayProxy)
@@ -673,13 +673,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._ui.actionCameraMask_Partial.triggered.connect(
                 self._updateCameraMaskMenu)
-            
+
             self._ui.actionCameraMask_None.triggered.connect(
                 self._updateCameraMaskMenu)
 
             self._ui.actionCameraMask_Outline.triggered.connect(
                 self._updateCameraMaskMenu)
-            
+
             self._ui.actionCameraMask_Color.triggered.connect(
                 self._pickCameraMaskColor)
 
@@ -756,8 +756,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._setupDebugMenu()
 
-            
-            # configure plugins 
+
+            # configure plugins
             self._configurePlugins()
 
             # save splitter states
@@ -810,10 +810,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # configure render plugins after stageView initialized its renderer.
         self._configureRendererPlugins()
-        
+
         if self._mallocTags == 'stageAndImaging':
             DumpMallocTags(self._stage, "stage-loading and imaging")
-        
+
     def eventFilter(self, widget, event):
         if event.type() == QtCore.QEvent.KeyPress:
             key = event.key()
@@ -832,8 +832,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.statusMessage(msg, 12)
         with Timer() as t:
-            self._stageView.setNodes(self._prunedCurrentNodes, 
-                                     self._currentFrame, 
+            self._stageView.setNodes(self._prunedCurrentNodes,
+                                     self._currentFrame,
                                      resetCam=False, forceComputeBBox=True)
             self._refreshVars()
         if self._printTiming:
@@ -849,10 +849,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 UsdviewPlug.ConfigureAssetResolution(usdFilePath)
 
         except ImportError:
-            from pxr import Ar
             Ar.GetResolver().ConfigureResolverForAsset(usdFilePath)
             self._pathResolverContext = \
-                Ar.GetResolver().CreateDefaultContextForAsset(usdFilePath) 
+                Ar.GetResolver().CreateDefaultContextForAsset(usdFilePath)
 
         err = (lambda e, r: ("Error: %s '%s'.\nReason:%s.\nExiting.\n") %
                 (e, usdFilePath, r))
@@ -875,7 +874,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Open as a layer first to make sure its a valid file format
             try:
                 layer = Sdf.Layer.FindOrOpen(usdFilePath)
-            except Tf.ErrorException as e: 
+            except Tf.ErrorException as e:
                 sys.stderr.write(openErr(GetTfErrorExceptionReason(e)))
                 sys.exit(1)
 
@@ -902,7 +901,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # invalidation due to creation of new overs to the enclosing
                 # model by pre-populating the session layer with overs for
                 # the interior of the model hierarchy, before the renderer
-                # starts listening for changes. 
+                # starts listening for changes.
                 #
                 # When bug #99309 is fixed, we can eliminate the "preloadSet"
                 # and double-stage load. It turns out to be typically
@@ -912,7 +911,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # and add the overs to a detached layer that we will then use
                 # to open the stage a second time with the desired load-state,
                 # while still holding the preload-stage open.  This turns out
-                # to be much, much cheaper for scenes that are properly 
+                # to be much, much cheaper for scenes that are properly
                 # payloaded for scalability.
                 sl = Sdf.Layer.CreateAnonymous("usdview-session")
 
@@ -922,16 +921,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 # listening to this detached layer, but good batch-editing
                 # practice.
                 modelPaths = [p.GetPath() for p in \
-                                  Usd.PrimRange.Stage(stage, 
+                                  Usd.PrimRange.Stage(stage,
                                                       Usd.PrimIsModel) ]
                 with Sdf.ChangeBlock():
                     for mpp in modelPaths:
                         parent = sl.GetPrimAtPath(mpp.GetParentPath())
                         Sdf.PrimSpec(parent, mpp.name, Sdf.SpecifierOver)
-            
+
                 if popMask:
                     stage2 = Usd.Stage.OpenMasked(
-                        layer, sl, self._pathResolverContext, 
+                        layer, sl, self._pathResolverContext,
                         popMask, loadSet)
                 else:
                     stage2 = Usd.Stage.Open(
@@ -972,11 +971,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # If animation is playing, stop it.
         if self._ui.playButton.isChecked():
             self._ui.playButton.click()
-       
+
         # frame range supplied by user
         ff = self._parserData.firstframe
         lf = self._parserData.lastframe
-        
+
         # frame range supplied by stage
         stageStartTimeCode = self._stage.GetStartTimeCode()
         stageEndTimeCode = self._stage.GetEndTimeCode()
@@ -992,7 +991,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.stepSize.setText(str(self.step))
 
         # if one option is provided(lastframe or firstframe), we utilize it
-        if ff is not None and lf is not None: 
+        if ff is not None and lf is not None:
             self.realStartTimeCode = ff
             self.realEndTimeCode = lf
         elif ff is not None:
@@ -1013,12 +1012,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def _UpdateTimeSamples(self, resetStageDataOnly=False):
         if self.realStartTimeCode is not None and self.realEndTimeCode is not None:
             if self.realStartTimeCode > self.realEndTimeCode:
-                sys.stderr.write('Warning: Invalid frame range (%s, %s)\n'  
+                sys.stderr.write('Warning: Invalid frame range (%s, %s)\n'
                 % (self.realStartTimeCode, self.realEndTimeCode))
                 self._timeSamples = []
             else:
-                self._timeSamples = Drange(self.realStartTimeCode, 
-                                           self.realEndTimeCode, 
+                self._timeSamples = Drange(self.realStartTimeCode,
+                                           self.realEndTimeCode,
                                            self.step)
         else:
             self._timeSamples = []
@@ -1030,7 +1029,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._hasTimeSamples:
             self._ui.rangeBegin.setText(str(self._timeSamples[0]))
             self._ui.rangeEnd.setText(str(self._timeSamples[-1]))
-        
+
         if not resetStageDataOnly:
             self._currentFrame = self._timeSamples[0] if self._hasTimeSamples else 0.0
             self._ui.frameField.setText(str(self._currentFrame))
@@ -1054,14 +1053,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._bboxCache and self._bboxCache.GetUseExtentsHint() == useExtentsHint:
             self._bboxCache.Clear()
         else:
-            self._bboxCache = UsdGeom.BBoxCache(self._currentFrame, 
-                                                StageView.DefaultDataModel.BBOXPURPOSES, 
+            self._bboxCache = UsdGeom.BBoxCache(self._currentFrame,
+                                                StageView.DefaultDataModel.BBOXPURPOSES,
                                                 useExtentsHint)
 
     def _clearCaches(self, preserveCamera=False):
         """Clears value and computation caches maintained by the controller.
         Does NOT initiate any GUI updates"""
-        
+
         self._valueCache = dict()
         self._geomCounts = dict()
 
@@ -1091,7 +1090,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 action.pluginType = pluginType
                 self._ui.rendererPluginActionGroup.addAction(action)
 
-                action.triggered.connect(lambda pluginType = pluginType:
+                action.triggered.connect(lambda pluginType=pluginType:
                         self._rendererPluginChanged(pluginType))
 
             # If any plugins exist, the first render plugin is the default one.
@@ -1115,7 +1114,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._stageView:
             self._stageView.ReloadStage(self._stage)
 
-        # The difference between these two is related to multi-selection: 
+        # The difference between these two is related to multi-selection:
         # - currentNodes contains all nodes selected
         # - prunedCurrentNodes contains all nodes selected, excluding nodes that
         #   already have a parent selected (used to avoid double-rendering)
@@ -1123,7 +1122,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._prunedCurrentNodes = self._currentNodes
 
         if self._debug:
-            import cProfile, pstats
             cProfile.runctx('self._resetNodeView(restoreSelection=False)', globals(), locals(), 'resetNodeView')
             p = pstats.Stats('resetNodeView')
             p.strip_dirs().sort_stats(-1).print_stats()
@@ -1139,12 +1137,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._stageView.fpsHUDInfo = self._fpsHUDInfo
             self._stageView.fpsHUDKeys = self._fpsHUDKeys
-            
+
             self._stageView.signalPrimSelected.connect(self.onPrimSelected)
             self._stageView.signalPrimRollover.connect(self.onRollover)
             self._stageView.signalMouseDrag.connect(self.onStageViewMouseDrag)
             self._stageView.signalErrorMessage.connect(self.statusMessage)
-            
+
             # The second child is self._ui.glFrame, which disappears if
             # its size is set to zero.
             if self._noRender:
@@ -1175,7 +1173,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # This appears to be "reasonably" performant in normal sized pose caches.
     # If it turns out to be too slow, or if we want to do a better job of
-    # preserving the view the user currently has, we could look into ways of 
+    # preserving the view the user currently has, we could look into ways of
     # reconstructing just the prim tree under the "changed" prim(s).  The
     # (far and away) faster solution would be to implement our own TreeView
     # and model in C++.
@@ -1204,7 +1202,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def UpdateNodeViewContents(self):
         """Will schedule a full refresh/resync of the Prim Browser's contents.
-        Prefer this to calling _resetNodeView() directly, since it will 
+        Prefer this to calling _resetNodeView() directly, since it will
         coalesce multiple calls to this method in to a single refresh"""
         self._nodeViewResetTimer.stop()
         self._nodeViewResetTimer.start(250)
@@ -1253,10 +1251,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.update()
 
     def _adjustComplexity(self):
-        complexity= QtWidgets.QInputDialog.getDouble(self, 
-            "Adjust complexity", "Enter a value between 1 and 2.\n\n" 
+        complexity= QtWidgets.QInputDialog.getDouble(self,
+            "Adjust complexity", "Enter a value between 1 and 2.\n\n"
             "You can also use ctrl+ or ctrl- to adjust the\n"
-            "complexity without invoking this dialog.\n", 
+            "complexity without invoking this dialog.\n",
             self._complexity, 1.0,2.0,2)
         if complexity[1]:
             self._complexity = complexity[0]
@@ -1264,7 +1262,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._stageView.update()
 
     def _adjustFOV(self):
-        fov = QtWidgets.QInputDialog.getDouble(self, "Adjust FOV", 
+        fov = QtWidgets.QInputDialog.getDouble(self, "Adjust FOV",
             "Enter a value between 0 and 180", self._freeCamera.fov, 0, 180)
         if (fov[1]):
             self._freeCamera.fov = fov[0]
@@ -1273,7 +1271,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _adjustClippingPlanes(self, checked):
         if (checked):
-            self._adjustClippingDlg = adjustClipping.AdjustClipping(self, 
+            self._adjustClippingDlg = adjustClipping.AdjustClipping(self,
                                                                  self._stageView)
             self._adjustClippingDlg.finished.connect(
                 lambda status : self._ui.actionAdjust_Clipping.setChecked(False))
@@ -1298,7 +1296,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def cameraMaskColor(self, color):
         self._cameraMaskColor = color
         self._settings.setAndSave(cameraMaskColor=color)
-    
+
     @property
     def cameraReticlesColor(self):
         return self._cameraReticlesColor
@@ -1307,7 +1305,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def cameraReticlesColor(self, color):
         self._cameraReticlesColor = color
         self._settings.setAndSave(cameraReticlesColor=color)
-    
+
     @property
     def defaultMaterialAmbient(self):
         return self._defaultMaterialAmbient
@@ -1365,11 +1363,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self._settings.setAndSave(DefaultMaterialAmbient=self._defaultMaterialAmbient)
             self._settings.setAndSave(DefaultMaterialSpecular=self._defaultMaterialSpecular)
         self.signalDefaultMaterialChanged.emit()
-        
+
     def _adjustDefaultMaterial(self, checked):
         if (checked):
             self._adjustDefaultMaterialDlg = adjustDefaultMaterial.AdjustDefaultMaterial(self, self)
-            self._adjustDefaultMaterialDlg.finished.connect(lambda status : 
+            self._adjustDefaultMaterialDlg.finished.connect(lambda status :
                 self._ui.actionAdjust_Default_Material.setChecked(False))
 
             self._adjustDefaultMaterialDlg.show()
@@ -1405,12 +1403,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
             for i in self._ui.propertyView.selectedItems():
                 if i.column() == 0:        # make sure first column is selected
-                
+
                     attrName = str(i.text())
                     # index [0] is the the type, which can be:
                        # attribType.UNVARYING, AUTHORED OR INTERPOLATED
                     type = self._nodeDict[attrName][0]
-                        
+
                     # # # # # # # # # # # # # #
                     # populate UNVARYING side #
                     dictKey = self._currentNodes[0].GetPath() + \
@@ -1420,7 +1418,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     if (dictKey not in self._valueCache or
                         self._valueCache[dictKey][0].find(
                             "Pretty-printing canceled") != -1):
-                            
+
                         # unvarying data is in self._nodeDict[attrName][2],
                         # so this checks if there is unvarying data
                         if len(self._nodeDict[attrName]) > 2:
@@ -1444,10 +1442,10 @@ class MainWindow(QtWidgets.QMainWindow):
                               str(self._currentFrame) + \
                               attrName + '_VARYING'
 
-                    if (dictKey not in self._valueCache or 
+                    if (dictKey not in self._valueCache or
                         self._valueCache[dictKey][0].find(
                             "Pretty-printing canceled") != -1):
-                                
+
                         # varying data is stored at index [1],
                         # in self._nodeDict[attrName][1]
                         if type == attribType.AUTHORED:
@@ -1500,7 +1498,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.stageEnd.setEnabled(isEnabled)
         self._ui.redrawOnScrub.setEnabled(isEnabled)
 
-  
+
     def _playClicked(self):
         if self._ui.playButton.isChecked():
             # Start playback.
@@ -1522,17 +1520,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self._fpsHUDInfo[PLAYBACK]  = "N/A"
             self._timer.stop()
             self._nodeViewUpdateTimer.start()
-            self._updateOnFrameChange(refreshUI=True) 
+            self._updateOnFrameChange(refreshUI=True)
 
     def _advanceFrameForPlayback(self):
         sleep(max(0, 1. / self.framesPerSecond - (time() - self._lastFrameTime)))
         self._lastFrameTime = time()
-        if self._playbackIndex == 0: 
+        if self._playbackIndex == 0:
             self._startTime = time()
         if self._playbackIndex == 4:
             self._endTime = time()
             delta = (self._endTime - self._startTime)/4.
-            ms = delta * 1000. 
+            ms = delta * 1000.
             fps = 1. / delta
             self._fpsHUDInfo[PLAYBACK] = "%.2f ms (%.2f FPS)" % (ms, fps)
 
@@ -1561,9 +1559,9 @@ class MainWindow(QtWidgets.QMainWindow):
             frameString += "0"
 
         field.setText(frameString)
-        
+
         # Find the index of the closest valid frame
-        dist = None 
+        dist = None
         closestIndex = Usd.TimeCode.Default()
 
         for i in range(len(self._timeSamples)):
@@ -1581,7 +1579,7 @@ class MainWindow(QtWidgets.QMainWindow):
         stepStr = self._ui.stepSize.text()
         self.step = float(stepStr)
         self._UpdateTimeSamples(resetStageDataOnly=True)
-    
+
     def _rangeEndChanged(self):
         self.realEndTimeCode = float(self._ui.rangeEnd.text())
         self._UpdateTimeSamples(resetStageDataOnly=True)
@@ -1616,7 +1614,7 @@ class MainWindow(QtWidgets.QMainWindow):
             isMatch = lambda x: pattern in x.lower()
 
         matches = [prim.GetPath() for prim
-                   in Usd.PrimRange.Stage(self._stage, 
+                   in Usd.PrimRange.Stage(self._stage,
                                              self._displayPredicate)
                    if isMatch(prim.GetName())]
 
@@ -1626,7 +1624,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 matches += [prim.GetPath() for prim
                             in Usd.PrimRange(master, self._displayPredicate)
                             if isMatch(prim.GetName())]
-        
+
         return matches
 
     def _nodeViewFindNext(self):
@@ -1651,15 +1649,15 @@ class MainWindow(QtWidgets.QMainWindow):
             with Timer() as t:
                 self._nodeSearchString = self._ui.nodeViewLineEdit.text()
                 self._nodeSearchResults = self._findNodes(str(self._ui.nodeViewLineEdit.text()))
-                
+
                 self._nodeSearchResults = deque(self._nodeSearchResults)
                 self._lastNodeSearched = self._currentNodes[0]
-                
+
                 if (len(self._nodeSearchResults) > 0):
                     self._nodeViewFindNext()
             if self._printTiming:
-                t.PrintTime("match '%s' (%d matches)" % 
-                            (self._nodeSearchString, 
+                t.PrintTime("match '%s' (%d matches)" %
+                            (self._nodeSearchString,
                              len(self._nodeSearchResults)))
 
     def _nodeLegendToggleCollapse(self):
@@ -1677,7 +1675,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if (self._attrSearchString == self._ui.attrViewLineEdit.text() and
             len(self._attrSearchResults) > 0 and
             self._lastNodeSearched == self._currentNodes[0]):
-            
+
             # Go to the next result of the currently ongoing search
             nextResult = self._attrSearchResults.popleft()
 
@@ -1700,7 +1698,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Now just search for the string itself
             otherSearch = self._ui.propertyView.findItems(
-                self._ui.attrViewLineEdit.text(), 
+                self._ui.attrViewLineEdit.text(),
                 QtCore.Qt.MatchContains,
                 INDEX_PROPNAME)
 
@@ -1717,8 +1715,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @classmethod
     def _outputBaseDirectory(cls):
-        import os, sys
-
         baseDir = os.path.join(os.path.expanduser('~'), '.usdview')
 
         try:
@@ -1729,8 +1725,8 @@ class MainWindow(QtWidgets.QMainWindow):
         except OSError:
             sys.stderr.write('ERROR: Unable to create base directory '
                              'for settings file, settings will not be saved.\n')
-            return None 
-                   
+            return None
+
     # View adjustment functionality ===========================================
 
     def _storeAndReturnViewState(self):
@@ -1750,12 +1746,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.restoreViewState(self._storeAndReturnViewState())
 
     def _resetSettings(self):
-        """Reloads the UI and Sets up the initial settings for the 
+        """Reloads the UI and Sets up the initial settings for the
         _stageView object created in _reloadVaryingUI"""
         self._clearColor = self._colorsDict[self._settings.get("ClearColor", "Grey (Dark)")]
         self._renderMode = self._settings.get("RenderMode", "Smooth Shaded")
         self._pickMode = self._settings.get("PickMode", "Prims")
-        
+
         self._ui.actionShow_Inactive_Nodes.setChecked(\
                         self._settings.get("actionShow_Inactive_Nodes", True))
         self._ui.actionShow_All_Master_Prims.setChecked(\
@@ -1791,9 +1787,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.nodeView.setColumnHidden(i, b)
 
         self._ui.attributeInspector.\
-            setCurrentIndex(self._settings.get("AttributeInspectorCurrentTab", 
+            setCurrentIndex(self._settings.get("AttributeInspectorCurrentTab",
                                                INDEX_VALUE))
-            
+
         propertyViewHeaderSettings = self._settings.get('propertyViewHeader', [])
         for i,b in enumerate(propertyViewHeaderSettings):
             self._ui.propertyView.setColumnHidden(i, b)
@@ -1804,7 +1800,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.showOBBox.setChecked(self._stageView.showOBBox)
         self._ui.showBBoxPlayback.setChecked(
                                 self._settings.get("ShowBBoxPlayback", False))
-        self._stageView.showBBoxes = self._settings.get("ShowBBoxes", True) 
+        self._stageView.showBBoxes = self._settings.get("ShowBBoxes", True)
         self._ui.showBBoxes.setChecked(self._stageView.showBBoxes)
 
         displayGuide = self._settings.get("DisplayGuide", False)
@@ -1838,7 +1834,7 @@ class MainWindow(QtWidgets.QMainWindow):
         showMask = self._settings.get("actionCameraMask", "none")
         showMask_Outline = self._settings.get("actionCameraMask_Outline", False)
         self._cameraMaskColor = self._settings.get("cameraMaskColor",
-                (0.1, 0.1, 0.1, 1.0)) 
+                (0.1, 0.1, 0.1, 1.0))
         self._ui.actionCameraMask_Full.setChecked(showMask == "full")
         self._ui.actionCameraMask_Partial.setChecked(showMask == "partial")
         self._ui.actionCameraMask_None.setChecked(showMask == "none")
@@ -1846,7 +1842,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._stageView.showMask = (showMask != "none")
         self._stageView.showMask_Opaque = (showMask == "full")
         self._stageView.showMask_Outline = showMask_Outline
-        
+
         showReticles_Inside = self._settings.get("actionCameraReticles_Inside", False)
         showReticles_Outside = self._settings.get("actionCameraReticles_Outside", False)
         self._cameraReticlesColor = self._settings.get("cameraReticlesColor",
@@ -1876,13 +1872,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._settings.get("actionHUD_GPUstats", False)
         self._ui.actionHUD_GPUstats.setChecked(
             self._stageView.showHUD_GPUstats)
-            
+
         # Three point lights are disabled by default. They turn on when the
         #  "Ambient Only" mode is unchecked
         ambOnly = self._settings.get("AmbientOnly", True)
         self._ui.actionAmbient_Only.setChecked(ambOnly)
         self._ui.threePointLights.setEnabled(not ambOnly)
-        
+
         key = self._settings.get("KeyLightEnabled", False)
         fill = self._settings.get("FillLightEnabled", False)
         back = self._settings.get("BackLightEnabled", False)
@@ -1902,7 +1898,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._selHighlightMode = self._settings.get("SelHighlightMode",
                                                  "Only when paused")
         self._stageView.drawSelHighlights = ( self._selHighlightMode != "Never")
-        
+
         # lighting is not activated until a shaded mode is selected
         self._ui.menuLights.setEnabled(self._renderMode in ('Smooth Shaded',
                                                             'Flat Shaded',
@@ -1925,7 +1921,7 @@ class MainWindow(QtWidgets.QMainWindow):
         what actually changed, but we should be able to preserve camera and
         playback positions (unless viewing through a stage camera that no
         longer exists"""
-        
+
         self._clearCaches(preserveCamera=True)
 
         # Update the UIs (it gets all of them) and StageView on a timer
@@ -1997,7 +1993,7 @@ class MainWindow(QtWidgets.QMainWindow):
         item = self._getItemAtPath(selectNode.GetPath())
         # Our response to selection-change includes redrawing.  We do NOT
         # want that to happen here, since we are subsequently going to
-        # change the camera framing (and redraw, again), which can cause 
+        # change the camera framing (and redraw, again), which can cause
         # flickering.  So make sure we don't redraw!
         suppressRendering = self._noRender
         self._noRender = True
@@ -2013,7 +2009,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._frameSelection()
         else:
             self._stageView.setCameraPrim(self._startingPrimCamera)
-            self._stageView.setNodes(self._prunedCurrentNodes, 
+            self._stageView.setNodes(self._prunedCurrentNodes,
                                      self._currentFrame)
 
     def _changeRenderMode(self, mode):
@@ -2085,22 +2081,22 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.backLightEnabled = \
                 not checked or self._lightsChecked[2]
             self._stageView.update()
-        
+
     def _onKeyLightClicked(self, checked=None):
         if self._stageView and checked is not None:
             self._stageView.keyLightEnabled = checked
             self._stageView.update()
             self._settings.setAndSave(KeyLightEnabled=checked)
-            
+
     def _onFillLightClicked(self, checked=None):
         if self._stageView and checked is not None:
             self._stageView.fillLightEnabled = checked
             self._stageView.update()
             self._settings.setAndSave(FillLightEnabled=checked)
-            
+
     def _onBackLightClicked(self, checked=None):
         if self._stageView and checked is not None:
-            self._stageView.backLightEnabled = checked    
+            self._stageView.backLightEnabled = checked
             self._stageView.update()
             self._settings.setAndSave(BackLightEnabled=checked)
 
@@ -2199,7 +2195,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _showInterpreter(self):
         from pythonExpressionPrompt import Myconsole
-            
+
         if self._interpreter is None:
             self._interpreter = QtWidgets.QDialog(self)
             self._console = Myconsole(self._interpreter)
@@ -2211,15 +2207,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self._interpreter.move(self.x() + self.frameGeometry().width(),
                                self.y())
         self._interpreter.resize(600, self.size().height()/2)
-        
+
         self._updateInterpreter()
-        self._interpreter.show() 
-        self._interpreter.activateWindow() 
-        self._console.setFocus() 
+        self._interpreter.show()
+        self._interpreter.activateWindow()
+        self._console.setFocus()
 
     def _updateInterpreter(self):
         from pythonExpressionPrompt import Myconsole
-            
+
         if self._console is None:
             return
 
@@ -2230,9 +2226,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def GrabWindowShot(self):
         '''Returns a QImage of the full usdview window '''
         # generate an image of the window. Due to how Qt's rendering
-        # works, this will not pick up the GL Widget(_stageView)'s 
+        # works, this will not pick up the GL Widget(_stageView)'s
         # contents, and we'll need to compose it separately.
-        windowShot = QtGui.QImage(self.size(), 
+        windowShot = QtGui.QImage(self.size(),
                                   QtGui.QImage.Format_ARGB32_Premultiplied)
         painter = QtGui.QPainter(windowShot)
         self.render(painter, QtCore.QPoint())
@@ -2241,13 +2237,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # we offset by a single point here because of Qt.Pos funkyness
         offset = QtCore.QPoint(0,1)
         pos = self._stageView.mapTo(self, self._stageView.pos()) - offset
-        painter.drawImage(pos, self.GrabViewportShot())    
-        return windowShot 
+        painter.drawImage(pos, self.GrabViewportShot())
+        return windowShot
 
     def GrabViewportShot(self):
         '''Returns a QImage of the current stage view in usdview.'''
-        return self._stageView.grabFrameBuffer() 
-        
+        return self._stageView.grabFrameBuffer()
+
     # File handling functionality =============================================
 
     def _cleanAndClose(self):
@@ -2262,9 +2258,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # If the current path widget is focused when closing usdview, it can
         # trigger an "editingFinished()" signal, which will look for a prim in
         # the scene (which is already deleted). This prevents that.
-        
+
         # XXX:
-        # This method is reentrant and calling disconnect twice on a signal 
+        # This method is reentrant and calling disconnect twice on a signal
         # causes an exception to be thrown.
         try:
             self._ui.currentPathWidget.editingFinished.disconnect(
@@ -2276,8 +2272,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._nodeViewUpdateTimer.stop()
         self._nodeViewResetTimer.stop()
 
-        # If the timer is currently active, stop it from being invoked while 
-        # the USD stage is being torn down. 
+        # If the timer is currently active, stop it from being invoked while
+        # the USD stage is being torn down.
         if self._timer.isActive():
             self._timer.stop()
 
@@ -2311,14 +2307,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if (saveName.rsplit('.')[-1] != 'usd'):
             saveName += '.usd'
-            
+
         if self._stage:
-            # In the future, we may allow usdview to be brought up with no file, 
-            # in which case it would create an in-memory root layer, to which 
-            # all edits will be targeted.  In order to future proof 
-            # this, first fetch the root layer, and if it is anonymous, just 
-            # export it to the given filename. If it isn't anonmyous (i.e., it 
-            # is a regular usd file on disk), export the session layer and add 
+            # In the future, we may allow usdview to be brought up with no file,
+            # in which case it would create an in-memory root layer, to which
+            # all edits will be targeted.  In order to future proof
+            # this, first fetch the root layer, and if it is anonymous, just
+            # export it to the given filename. If it isn't anonmyous (i.e., it
+            # is a regular usd file on disk), export the session layer and add
             # the stage root file as a sublayer.
             rootLayer = self._stage.GetRootLayer()
             if not rootLayer.anonymous:
@@ -2327,7 +2323,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 UsdUtils.CopyLayerMetadata(rootLayer, targetLayer,
                                            skipSublayers=True)
 
-                # We don't ever store self.realStartTimeCode or 
+                # We don't ever store self.realStartTimeCode or
                 # self.realEndTimeCode in a layer, so we need to author them
                 # here explicitly.
                 if self.realStartTimeCode:
@@ -2370,7 +2366,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stepSizeChanged()
         except Exception as err:
             self.statusMessage('Error occurred reopening Stage: %s' % err)
-            import traceback
             traceback.print_exc()
         finally:
             QtWidgets.QApplication.restoreOverrideCursor()
@@ -2459,7 +2454,7 @@ class MainWindow(QtWidgets.QMainWindow):
             action.setData(camera.GetPath())
             action.setToolTip(str(camera.GetPath()))
             action.setCheckable(True)
-            
+
             action.triggered.connect(
                 lambda camera = camera: self._cameraSelectionChanged(camera))
             action.setChecked(action.data() == currCameraPath)
@@ -2468,7 +2463,7 @@ class MainWindow(QtWidgets.QMainWindow):
     # ==================== Attribute Inspector ==========================
     def _populateAttributeInspector(self, currentItem = None, previtem = None):
         # We define data 'roles' in the property viewer to distinguish between things
-        # like attributes and attributes with connections, relationships and relationships 
+        # like attributes and attributes with connections, relationships and relationships
         # with targets etc etc.
         self._currentProp = self._getSelectedObject(currentItem)
 
@@ -2477,7 +2472,7 @@ class MainWindow(QtWidgets.QMainWindow):
             role = currentItem.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
             if role == CONN_TYPE_ROLE or role == TARGET_TYPE_ROLE:
                 parent = currentItem.parent()
-                self._currentProp = self._getSelectedObject(parent) 
+                self._currentProp = self._getSelectedObject(parent)
 
         if isinstance(self._currentProp, Usd.Prim):
             self._currentProp = None
@@ -2595,12 +2590,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.nodeView.resizeColumnToContents(0)
 
     def _toggleShowInactiveNodes(self):
-        self._settings.setAndSave(actionShow_Inactive_Nodes = 
+        self._settings.setAndSave(actionShow_Inactive_Nodes =
                 self._ui.actionShow_Inactive_Nodes.isChecked())
         self._resetNodeView()
 
     def _toggleShowMasterPrims(self):
-        self._settings.setAndSave(actionShow_All_Master_Prims = 
+        self._settings.setAndSave(actionShow_All_Master_Prims =
                 self._ui.actionShow_All_Master_Prims.isChecked())
         self._resetNodeView()
 
@@ -2626,7 +2621,7 @@ class MainWindow(QtWidgets.QMainWindow):
             typeString = prim.GetTypeName()
             return NOTYPE if not typeString else typeString
 
-        childTypeDict = {} 
+        childTypeDict = {}
         primCount = 0
 
         for child in Usd.PrimRange(prim):
@@ -2681,7 +2676,7 @@ class MainWindow(QtWidgets.QMainWindow):
         showUndefined = self._ui.actionShow_Undefined_Prims.isChecked()
         showAbstract = self._ui.actionShow_Abstract_Prims.isChecked()
         showMasters = self._ui.actionShow_All_Master_Prims.isChecked()
-        
+
         return ((prim.IsActive() or showInactive) and
                 (prim.IsDefined() or showUndefined) and
                 (not prim.IsAbstract() or showAbstract) and
@@ -2728,7 +2723,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else self._displayPredicate & ~Usd.PrimIsAbstract
         if self._displayPredicate is None:
             self._displayPredicate = Usd._PrimFlagsPredicate.Tautology()
-            
+
         # Unless user experience indicates otherwise, we think we always
         # want to show instance proxies
         self._displayPredicate = Usd.TraverseInstanceProxies(self._displayPredicate)
@@ -2750,9 +2745,9 @@ class MainWindow(QtWidgets.QMainWindow):
             while parent != pseudoRoot \
                         and not parent in self._nodeToItemMap:
                 childList.append(parent)
-                parent = parent.GetParent() 
+                parent = parent.GetParent()
 
-            # go one step further, since the first item found could be hidden 
+            # go one step further, since the first item found could be hidden
             # under a norgie and we would want to populate its siblings as well
             if parent != pseudoRoot:
                 childList.append(parent)
@@ -2770,7 +2765,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def resetSelectionToPseudoroot(self):
         self.selectNodeByPath("/", UsdImagingGL.GL.ALL_INSTANCES, "replace")
 
-    def selectNodeByPath(self, path, instanceIndex, updateMode, 
+    def selectNodeByPath(self, path, instanceIndex, updateMode,
                          applyPickMode=False):
         """Modifies selection by a stage prim based on a prim path,
         which can be empty.
@@ -2784,7 +2779,7 @@ class MainWindow(QtWidgets.QMainWindow):
                           False (the default), we will select the path given.
           If path is empty and updateMode is "replace", we reset the entire
           selection to the pseudoRoot.
-          
+
           Returns newly (un)selected item
         """
         if not path or path == Sdf.Path.emptyPath:
@@ -2792,12 +2787,10 @@ class MainWindow(QtWidgets.QMainWindow):
             if updateMode != "replace":
                 return None
             path = self._stage.GetPseudoRoot().GetPath()
-        
+
         # If model picking on, find model and select instead, IFF we are
         # requested to apply picking modes
         if applyPickMode and self._ui.actionPick_Models.isChecked():
-            from common import GetEnclosingModelPrim
-            
             prim = self._stage.GetPrimAtPath(str(path))
             model = prim if prim.IsModel() else GetEnclosingModelPrim(prim)
             if model:
@@ -2841,8 +2834,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def _getCommonNodes(self, pathsList):
-        import os
-
         commonPrefix = os.path.commonprefix(pathsList)
         ### To prevent /Canopies/TwigA and /Canopies/TwigB
         ### from registering /Canopies/Twig as prefix
@@ -2853,7 +2844,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _currentPathChanged(self):
         """Called when the currentPathWidget text is changed"""
-        import re
         newPaths = self._ui.currentPathWidget.text()
         pathList = re.split(", ?", newPaths)
         pathList = filter(lambda path: len(path) != 0, pathList)
@@ -2888,11 +2878,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     # one of its ancestor's noorgies.  This will ensure all
                     # selected items are visible.
                     self._ui.nodeView.scrollToItem(item)
-        # Now resync _currentNodes et al to the new PrimView 
+        # Now resync _currentNodes et al to the new PrimView
         # selection state
         self._itemSelectionChanged()
 
-    
+
     class UpdateBlocker:
 
         def __init__(self, appModel):
@@ -2922,7 +2912,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._currentNodes = [self._stage.GetPrimAtPath(pth) for pth in paths]
 
         self._ui.currentPathWidget.setText(', '.join([str(p) for p in paths]))
-                         
+
         if not self._noRender:
             # update the entire upper HUD with fresh information
             # this includes geom counts (slow)
@@ -2930,7 +2920,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._updateHUDGeomCounts()
             # recompute bbox on node change
             self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame,
-                                     resetCam=False, forceComputeBBox=True) 
+                                     resetCam=False, forceComputeBBox=True)
 
         # Clear out any attribute and prim searches when the selected prim changes
         # We can't hold onto the resulting Qt Widgets, as they are ephemeral.
@@ -2962,7 +2952,7 @@ class MainWindow(QtWidgets.QMainWindow):
             item.setSelected(True)
 
         currIndex = self._ui.attributeInspector.currentIndex()
-        
+
         # The INDEX_VALUE tab is updated through a separate callback.
         if currIndex != INDEX_VALUE:
             self._updateAttributeInspector(index=currIndex,
@@ -2984,7 +2974,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(allPaths) > 1:
             allPaths = [p for p in allPaths if p != Sdf.Path.absoluteRootPath]
         return Sdf.Path.RemoveDescendentPaths(allPaths)
-        
+
     def _nodeViewContextMenu(self, point):
         item = self._ui.nodeView.itemAt(point)
         self._showNodeContextMenu(item)
@@ -2992,8 +2982,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def _showNodeContextMenu(self, item):
         self.contextMenu = NodeContextMenu(self, item)
         self.contextMenu.exec_(QtGui.QCursor.pos())
-    
-    def setFrame(self, frameIndex, forceUpdate=False):        
+
+    def setFrame(self, frameIndex, forceUpdate=False):
         frameAtStart = self._currentFrame
         self._playbackFrameIndex = frameIndex
 
@@ -3014,13 +3004,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # XXX Why do we *always* update the widget, but only
         # conditionally update?  All this function should do, after
-        # computing a new frame number, is emit a signal that the 
+        # computing a new frame number, is emit a signal that the
         # time has changed.  Future work.
         self._ui.frameField.setText(str(round(self._currentFrame,2)))
 
         if self._currentFrame != frameAtStart or forceUpdate:
             # do not update HUD/BBOX if scrubbing or playing
-            updateUI = forceUpdate or not (self._ui.playButton.isChecked() or 
+            updateUI = forceUpdate or not (self._ui.playButton.isChecked() or
                                           self._ui.frameSlider.isSliderDown())
             self._updateOnFrameChange(updateUI)
 
@@ -3029,8 +3019,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # set the xformCache and bboxCache's time to the new time
         self._xformCache.SetTime(self._currentFrame)
         self._bboxCache.SetTime(self._currentFrame)
-        
-        playing = self._ui.playButton.isChecked() 
+
+        playing = self._ui.playButton.isChecked()
 
         # grey out the HUD when playing at interactive rates (its disabled)
         self._stageView.showBBoxes = \
@@ -3110,11 +3100,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         currRow = 0
         for key, attribute in self._attributeDict.iteritems():
-            targets = None 
+            targets = None
 
-            if (isinstance(attribute, BoundingBoxAttribute) or 
+            if (isinstance(attribute, BoundingBoxAttribute) or
                 isinstance(attribute, LocalToWorldXformAttribute)):
-                typeContent = CMP_TYPE_ICON() 
+                typeContent = CMP_TYPE_ICON()
                 typeRole = CMP_TYPE_ROLE
             elif type(attribute) == Usd.Attribute:
                 if attribute.HasAuthoredConnections():
@@ -3126,7 +3116,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     typeRole = ATTR_PLAIN_TYPE_ROLE
             else:
                 # Otherwise we have a RelationshipAttribute
-                targets = attribute._relationship.GetTargets() 
+                targets = attribute._relationship.GetTargets()
 
                 if targets:
                     typeContent = REL_WITH_TARGET_TYPE_ICON()
@@ -3149,11 +3139,11 @@ class MainWindow(QtWidgets.QMainWindow):
             if (key in prevSelectedAttributeNames):
                 currItem.setSelected(True)
                 treeWidget.setCurrentItem(currItem)
-            
+
             valTextFont = GetAttributeTextFont(attribute, frame)
             if valTextFont:
                 currItem.setFont(INDEX_PROPVAL, valTextFont)
-                currItem.setFont(INDEX_PROPNAME, valTextFont) 
+                currItem.setFont(INDEX_PROPNAME, valTextFont)
             else:
                 currItem.setFont(INDEX_PROPNAME, BoldFont)
 
@@ -3173,13 +3163,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     if typeRole == REL_WITH_TARGET_TYPE_ROLE:
                         child.setIcon(INDEX_PROPTYPE, TARGET_TYPE_ICON())
-                        child.setData(INDEX_PROPTYPE, 
-                                      QtCore.Qt.ItemDataRole.WhatsThisRole, 
+                        child.setData(INDEX_PROPTYPE,
+                                      QtCore.Qt.ItemDataRole.WhatsThisRole,
                                       TARGET_TYPE_ROLE)
                     else:
                         child.setIcon(INDEX_PROPTYPE, CONN_TYPE_ICON())
-                        child.setData(INDEX_PROPTYPE, 
-                                      QtCore.Qt.ItemDataRole.WhatsThisRole, 
+                        child.setData(INDEX_PROPTYPE,
+                                      QtCore.Qt.ItemDataRole.WhatsThisRole,
                                       CONN_TYPE_ROLE)
 
                     childRow += 1
@@ -3236,23 +3226,23 @@ class MainWindow(QtWidgets.QMainWindow):
     def _trimWidth(self, s, isList=False):
         # We special-case the display offset because list
         # items will have </li> tags embedded in them.
-        offset = 10 if isList else 5 
+        offset = 10 if isList else 5
 
         if len(s) >= self._maxToolTipWidth():
             # For strings, well do special ellipsis behavior
-            # which displays the last 5 chars with an ellipsis 
-            # in between. For other values, we simply display a 
+            # which displays the last 5 chars with an ellipsis
+            # in between. For other values, we simply display a
             # trailing ellipsis to indicate more data.
             if s[0] == '\'' and s[-1] == '\'':
-                return (s[:self._maxToolTipWidth() - offset] 
-                        + '...' 
+                return (s[:self._maxToolTipWidth() - offset]
+                        + '...'
                         + s[len(s) - offset:])
             else:
                 return s[:self._maxToolTipWidth()] + '...'
         return s
 
     def _limitToolTipSize(self, s, isList=False):
-        ttStr = '' 
+        ttStr = ''
 
         lines = s.split('<br>')
         for index, line in enumerate(lines):
@@ -3260,7 +3250,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
             ttStr += self._trimWidth(line, isList)
             if not isList and index != len(lines)-1:
-                ttStr += '<br>' 
+                ttStr += '<br>'
 
         if (len(lines) > self._maxToolTipHeight()):
             ellipsis = ' '*self._findIndentPos(line) + '...'
@@ -3277,7 +3267,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _addRichTextIndicators(self, s):
         # - We'll need to use html-style spaces to ensure they are respected
         # in the toolTip which uses richtext formatting.
-        # - We wrap the tooltip as a paragraph to ensure &nbsp; 's are 
+        # - We wrap the tooltip as a paragraph to ensure &nbsp; 's are
         # respected by Qt's rendering engine.
         return '<p>' + s.replace(' ', '&nbsp;') + '</p>'
 
@@ -3286,7 +3276,6 @@ class MainWindow(QtWidgets.QMainWindow):
         return s[:maxValueChars]
 
     def _cleanStr(self, s, repl):
-        from itertools import groupby
         # Remove redundant char seqs and strip newlines.
         replaced = str(s).replace('\n', repl)
         filtered = [u for (u, _) in groupby(replaced.split())]
@@ -3299,16 +3288,16 @@ class MainWindow(QtWidgets.QMainWindow):
         ttStr  = ''
         isList = False
 
-        # For iterable things, like VtArrays and lists, we want to print 
+        # For iterable things, like VtArrays and lists, we want to print
         # a nice numbered list.
-        if isinstance(val, list) or getattr(val, "_isVtArray", False): 
+        if isinstance(val, list) or getattr(val, "_isVtArray", False):
             isList = True
 
             # We manually supply the index for our list elements
             # because Qt's richtext processor starts the <ol> numbering at 1.
-            for index, value in enumerate(val): 
+            for index, value in enumerate(val):
                 last = len(val) - 1
-                trimmed = self._cleanStr(value, ' ')                 
+                trimmed = self._cleanStr(value, ' ')
                 ttStr += ("<li>" + str(index) + ":  " + trimmed + "</li><br>")
 
         elif isinstance(val, dict):
@@ -3319,7 +3308,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # the end user trying to examine their data.
             for k, v in val.items():
                 val[k] = str(v)
-            
+
             # We'll need to strip the quotes generated by the str' operation above
             stripQuotes = lambda s: s.replace('\'', '').replace('\"', "")
 
@@ -3328,10 +3317,10 @@ class MainWindow(QtWidgets.QMainWindow):
             formattedDict = pformat(val)
             formattedDictLines = formattedDict.split('\n')
             for index, line in enumerate(formattedDictLines):
-                ttStr += (stripQuotes(line) 
+                ttStr += (stripQuotes(line)
                     + ('' if index == len(formattedDictLines) - 1 else '<br>'))
         else:
-            ttStr = self._cleanStr(val, '<br>') 
+            ttStr = self._cleanStr(val, '<br>')
 
         valStr = self._limitValueDisplaySize(valStr)
         ttStr = self._addRichTextIndicators(
@@ -3366,18 +3355,18 @@ class MainWindow(QtWidgets.QMainWindow):
         # this.
         compKeys = [# composition related metadata
                     "references", "inheritPaths", "specializes",
-                    "payload", "subLayers", 
+                    "payload", "subLayers",
 
                     # non-template clip metadata
                     "clipAssetPaths", "clipTimes", "clipManifestAssetPath",
                     "clipActive", "clipPrimPath",
-                   
+
                     # template clip metadata
                     "clipTemplateAssetPath",
                     "clipTemplateStartTime", "clipTemplateEndTime",
                     "clipTemplateStride"]
-        
-        
+
+
         for k in compKeys:
             v = obj.GetMetadata(k)
             if not v is None:
@@ -3397,7 +3386,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 variantNames = variantSet.GetVariantNames()
                 variantSelection = variantSet.GetVariantSelection()
                 combo = VariantComboBox(None, obj, variantSetName, self)
-                # First index is always empty to indicate no (or invalid) 
+                # First index is always empty to indicate no (or invalid)
                 # variant selection.
                 combo.addItem('')
                 for variantName in variantNames:
@@ -3418,7 +3407,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 val = m[key]
 
-            valStr, ttStr = self._formatMetadataValueView(val) 
+            valStr, ttStr = self._formatMetadataValueView(val)
             attrVal = QtWidgets.QTableWidgetItem(valStr)
             attrVal.setToolTip(ttStr)
 
@@ -3432,7 +3421,7 @@ class MainWindow(QtWidgets.QMainWindow):
             combo.currentIndexChanged.connect(
                 lambda i, combo=combo: combo.updateVariantSelection(
                     i, self._updateForStageChanges, self._printTiming))
-            rowIndex += 1 
+            rowIndex += 1
 
         tableWidget.resizeColumnToContents(0)
 
@@ -3478,7 +3467,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 item.layerPath = layer.realPath
             if spec:
                 item.path = node.path
-            
+
             item.setExpanded(True)
             item.setToolTip(0, layer.identifier)
             if not spec:
@@ -3508,7 +3497,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def _updateLayerStackView(self, obj=None):
         """ Sets the contents of the layer stack viewer"""
 
-        from pxr import Sdf
         tableWidget = self._ui.layerStackView
 
         # Setup table widget
@@ -3526,13 +3514,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # The pseudoroot is different enough from prims and properties that
         # it makes more sense to process it separately
         if path == Sdf.Path.absoluteRootPath:
-            from common import GetRootLayerStackInfo
             layers = GetRootLayerStackInfo(self._stage.GetRootLayer())
             tableWidget.setColumnCount(2)
             tableWidget.horizontalHeaderItem(1).setText('Layer Offset')
-            
+
             tableWidget.setRowCount(len(layers))
-            
+
             for i, layer in enumerate(layers):
                 layerItem = QtWidgets.QTableWidgetItem(layer.GetHierarchicalDisplayString())
                 layerItem.layerPath = layer.layer.realPath
@@ -3546,10 +3533,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 offsetItem = QtWidgets.QTableWidgetItem(layer.GetOffsetString())
                 offsetItem.layerPath = layer.layer.realPath
                 offsetItem.identifier = layer.layer.identifier
-                toolTip = self._limitToolTipSize(str(layer.offset)) 
+                toolTip = self._limitToolTipSize(str(layer.offset))
                 offsetItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 1, offsetItem)
-                
+
             tableWidget.resizeColumnToContents(0)
         else:
             specs = []
@@ -3562,10 +3549,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if path.IsPropertyPath():
                 prop = obj.GetPrim().GetProperty(path.name)
-                frameTime = (self._currentFrame if self._currentFrame 
+                frameTime = (self._currentFrame if self._currentFrame
                                                 else Usd.TimeCode.Default())
                 specs = prop.GetPropertyStack(frameTime)
-                c3 = "Value" if (len(specs) == 0 or 
+                c3 = "Value" if (len(specs) == 0 or
                                  isinstance(specs[0], Sdf.AttributeSpec)) else "Target Paths"
                 tableWidget.setHorizontalHeaderItem(2,
                                                     QtWidgets.QTableWidgetItem(c3))
@@ -3591,7 +3578,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     valueItem = QtWidgets.QTableWidgetItem(valStr)
                     sampleBased = (spec.HasInfo('timeSamples') and
                         spec.layer.GetNumTimeSamplesForPath(path) != -1)
-                    valueItemColor = (TimeSampleTextColor if 
+                    valueItemColor = (TimeSampleTextColor if
                         sampleBased else DefaultTextColor)
                     valueItem.setForeground(valueItemColor)
                     valueItem.setToolTip(ttStr)
@@ -3618,7 +3605,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Checks if the upper HUD is visible by looking at the global HUD
         visibility menu as well as the 'Subtree Info' menu"""
         return self._ui.actionHUD.isChecked() and self._ui.actionHUD_Info.isChecked()
-        
+
     def _updateCameraMaskMenu(self):
         self._CameraMaskMenuChanged()
 
@@ -3703,7 +3690,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                         self._ui.actionHUD_Performance.isChecked())
         self._settings.setAndSave(actionHUD_GPUstats=\
                                         self._ui.actionHUD_GPUstats.isChecked())
-        
+
     def _getHUDStatKeys(self):
         ''' returns the keys of the HUD with PRIM and NOTYPE and the top and
          CV, VERT, and FACE at the bottom.'''
@@ -3723,14 +3710,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 # no entry for Node counts? initilize it
                 if not self._upperHUDInfo.has_key(PRIM):
                     self._upperHUDInfo[PRIM] = 0
-                self._upperHUDInfo[PRIM] += count 
-                
+                self._upperHUDInfo[PRIM] += count
+
                 for type in types.iterkeys():
                     # no entry for this prim type? initilize it
                     if not self._upperHUDInfo.has_key(type):
                         self._upperHUDInfo[type] = 0
                     self._upperHUDInfo[type] += types[type]
-            
+
             if self._stageView:
                 self._stageView.upperHUDInfo = self._upperHUDInfo
                 self._stageView.HUDStatKeys = self._getHUDStatKeys()
@@ -3744,12 +3731,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # we get multiple geom dicts, if we have multiple prims selected
         geomDicts = [self._getGeomCounts(n, self._currentFrame)
                      for n in self._prunedCurrentNodes]
-        
+
         for key in (CV, VERT, FACE):
             self._upperHUDInfo[key] = 0
             for gDict in geomDicts:
                 self._upperHUDInfo[key] += gDict[key]
-                
+
         if self._stageView:
             self._stageView.upperHUDInfo = self._upperHUDInfo
             self._stageView.HUDStatKeys = self._getHUDStatKeys()
@@ -3763,14 +3750,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 entriesToRemove.append((p, frame))
         for entry in entriesToRemove:
             del self._geomCounts[entry]
-        
+
     def _getGeomCounts( self, prim, frame ):
         """returns cached geom counts if available, or calls _calculateGeomCounts()"""
         if not self._geomCounts.has_key((prim,frame)):
             self._calculateGeomCounts( prim, frame )
-        
+
         return self._geomCounts[(prim,frame)]
-        
+
     def _accountForFlattening(self,shape):
         """Helper function for computing geomCounts"""
         if len(shape) == 1:
@@ -3782,7 +3769,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Computes the number of CVs, Verts, and Faces for each prim and each
         frame in the stage (for use by the HUD)"""
 
-        # This is expensive enough that we should give the user feedback 
+        # This is expensive enough that we should give the user feedback
         # that something is happening...
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
         try:
@@ -3801,7 +3788,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 faceVertexIndices = mesh.GetFaceVertexIndicesAttr().Get(frame)
                 if faceVertexCount is not None and faceVertexIndices is not None:
                     uniqueVerts = set(faceVertexIndices)
-                    
+
                     thisDict[VERT] += len(uniqueVerts)
                     thisDict[FACE] += len(faceVertexCount)
 
@@ -3809,7 +3796,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             for child in prim.GetChildren():
                 childResult = self._getGeomCounts(child, frame)
-            
+
                 for key in (CV, VERT, FACE):
                     self._geomCounts[(prim,frame)][key] += childResult[key]
         except Exception as err:
@@ -3843,9 +3830,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _updateEditNodeMenu(self):
         """Make the Edit Prim menu items enabled or disabled depending on the
         selected prim."""
-        from common import HasSessionVis, GetEnclosingModelPrim, \
-            GetPrimsLoadability, GetClosestBoundMaterial
-
+        
         # Use the descendent-pruned selection set to avoid redundant
         # traversal of the stage to answer isLoaded...
         anyLoadable, unused = GetPrimsLoadability(self._prunedCurrentNodes)
@@ -3923,7 +3908,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.propertyView.setCurrentItem(item)
 
     def jumpToEnclosingModelSelectedPrims(self):
-        from common import GetEnclosingModelPrim
         newSel = []
         added = set()
         # We don't expect this to take long, so no BusyContext
@@ -3936,7 +3920,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._setSelectionFromPrimList(newSel)
 
     def jumpToBoundMaterialSelectedPrims(self):
-        from common import GetClosestBoundMaterial
         newSel = []
         added = set()
         # We don't expect this to take long, so no BusyContext
@@ -3958,7 +3941,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def visOnlySelectedPrims(self):
         with BusyContext():
-            from common import ResetSessionVisibility, InvisRootPrims
             ResetSessionVisibility(self._stage)
             InvisRootPrims(self._stage)
             for item in self.getSelectedItems():
@@ -3985,7 +3967,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def resetSessionVisibility(self):
         with BusyContext():
-            from common import ResetSessionVisibility
             ResetSessionVisibility(self._stage)
             self.editComplete('Removed ALL session visibility opinions.')
             # QTreeWidget does not honor setUpdatesEnabled, and updating
@@ -4027,7 +4008,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def onCurrentFrameChanged(self, currentFrame):
         self._ui.frameField.setText(str(currentFrame))
-        
+
     def onStageViewMouseDrag(self):
         return
 
@@ -4045,14 +4026,14 @@ class MainWindow(QtWidgets.QMainWindow):
             # Expected context-menu behavior is that even with no
             # modifiers, if we are activating on something already selected,
             # do not change the selection
-            doContext = (button == QtCore.Qt.RightButton and path 
+            doContext = (button == QtCore.Qt.RightButton and path
                          and path != Sdf.Path.emptyPath)
             doSelection = True
             item = None
             if doContext:
                 for selPrim in self._currentNodes:
                     selPath = selPrim.GetPath()
-                    if (selPath != Sdf.Path.absoluteRootPath and 
+                    if (selPath != Sdf.Path.absoluteRootPath and
                         path.HasPrefix(selPath)):
                         doSelection = False
                         break
@@ -4075,14 +4056,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 # mode properly
                 mrEvent = QtGui.QMouseEvent(QtCore.QEvent.MouseButtonRelease,
                                             QtGui.QCursor.pos(),
-                                            QtCore.Qt.RightButton, 
+                                            QtCore.Qt.RightButton,
                                             QtCore.Qt.MouseButtons(QtCore.Qt.RightButton),
                                             QtCore.Qt.KeyboardModifiers())
                 QtWidgets.QApplication.sendEvent(self._stageView, mrEvent)
 
     def onRollover(self, path, instanceIndex, modifiers):
-        from common import GetEnclosingModelPrim, GetClosestBoundMaterial
-        
         prim = self._stage.GetPrimAtPath(path)
         if prim:
             headerStr = ""
@@ -4092,7 +4071,7 @@ class MainWindow(QtWidgets.QMainWindow):
             vsStr = ""
             model = GetEnclosingModelPrim(prim)
 
-            def _MakeModelRelativePath(path, model, 
+            def _MakeModelRelativePath(path, model,
                                        boldPrim=True, boldModel=False):
                 makeRelative = model and path.HasPrefix(model.GetPath())
                 if makeRelative:
@@ -4103,7 +4082,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if boldPrim:
                     pathParts[-1] = "<b>%s</b>" % pathParts[-1]
                 return '/'.join(pathParts)
-    
+
             def _HTMLEscape(s):
                 return s.replace('&', '&amp;'). \
                          replace('<', '&lt;'). \
@@ -4117,15 +4096,14 @@ class MainWindow(QtWidgets.QMainWindow):
                                                        model, True, True)
                 headerStr = "%s<br><nobr><small>in group:</small> %s</nobr>" % \
                     (str(primModelPath),str(groupPath))
-                
+
                 # asset info, including computed creation date
                 mAPI = Usd.ModelAPI(model)
                 assetInfo = mAPI.GetAssetInfo()
                 aiStr = "<hr><b>assetInfo</b> for %s:" % model.GetName()
                 if assetInfo and len(assetInfo) > 0:
-                    from common import GetAssetCreationTime
                     specs = model.GetPrimStack()
-                    name, time, owner = GetAssetCreationTime(specs, 
+                    name, time, owner = GetAssetCreationTime(specs,
                                                    mAPI.GetAssetIdentifier())
                     for key, value in assetInfo.iteritems():
                         aiStr += "<br> -- <em>%s</em> : %s" % (key, _HTMLEscape(str(value)))
@@ -4133,7 +4111,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         (_HTMLEscape(name), time, _HTMLEscape(owner))
                 else:
                     aiStr += "<br><small><em>No assetInfo!</em></small>"
-                
+
                 # variantSets are by no means required/expected, so if there
                 # are none, don't bother to declare so.
                 mVarSets = model.GetVariantSets()
@@ -4143,9 +4121,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     for name in setNames:
                         sel = mVarSets.GetVariantSelection(name)
                         vsStr += "<br> -- <em>%s</em> = %s" % (name, sel)
-                    
+
             else:
-                headerStr = _MakeModelRelativePath(path, None) 
+                headerStr = _MakeModelRelativePath(path, None)
 
             # Property info: advise about rare visibility and purpose conditions
             img = UsdGeom.Imageable(prim)
@@ -4193,7 +4171,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         if currProtoPath.HasPrefix(path):
                             currProtoPath = currProtoPath.MakeRelativePath(path)
                         propertyStr += "<br> -- <em>instance of prototype &lt;%s&gt;</em>" % str(currProtoPath)
-    
+
             # Material info - this IS expected
             materialStr = "<hr><b>Material assignment:</b><br>"
             material, bound = GetClosestBoundMaterial(prim)
@@ -4201,7 +4179,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 materialPath = material.GetPath()
                 # if the material is in the same model, make path model-relative
                 materialStr += _MakeModelRelativePath(materialPath, model)
-                
+
                 if bound != prim:
                     boundPath = _MakeModelRelativePath(bound.GetPath(),
                                                        model)
@@ -4225,7 +4203,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Then put it all together
             tip = headerStr + propertyStr + materialStr + instanceStr + aiStr + vsStr
-            
+
         else:
             tip = ""
         QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), tip, self._stageView)
