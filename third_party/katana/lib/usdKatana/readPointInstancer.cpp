@@ -635,6 +635,14 @@ PxrUsdKatanaReadPointInstancer(
                         commonPrefixes.push_back(commonPrefix);
                     }
                 }
+                
+                // Fail-safe in case the relationships present via 
+                // materialBindingsRel don't resolve into anything (i.e. 
+                // relationship exists but GetForwardedTargets is empty.)
+                if (commonPrefixes.empty())
+                {
+                    commonPrefixes.push_back(protoPath);
+                }
             }
 
             // XXX Unhandled case.
