@@ -683,9 +683,10 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
                 // Use the context's usdinstancepath as default if no attributes
                 string usdInstancePath = ctxt.usdInstancePath;
                 if (instancePathAttr.isValid()) {
-                    string instancePathAttrVal = instancePathAttr.get(offsetIt.getOffset());
-                    if (!instancePathAttrVal.empty()) {
-                        usdInstancePath = instancePathAttrVal;
+                    UT_StringHolder instancePathAttrVal =
+			    instancePathAttr.get(offsetIt.getOffset());
+                    if (instancePathAttrVal.length() > 0) {
+                        usdInstancePath = instancePathAttrVal.toStdString();
                     }
                 }
                 if (!usdInstancePath.empty()) {

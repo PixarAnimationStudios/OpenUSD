@@ -76,7 +76,7 @@ void _GenUsdPrimMenu(void* data, PRM_Name* names, int size,
         if(auto stage = cache.FindOrOpen(UT_StringHolder(file),
                                          GusdStageOpts::LoadNone()))
         {
-            GusdPurposeSet purposes;
+            GusdPurposeSet purposes = GUSD_PURPOSE_NONE;
             UT_Array<UsdPrim> prims;
             // Only list components (keep the list size small)
             GusdUSD_StdTraverse::GetRecursiveModelTraversal().FindPrims(

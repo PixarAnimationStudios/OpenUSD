@@ -85,7 +85,7 @@ containsBoundable( const UsdPrim& p, GusdPurposeSet purposes )
     // Used when unpacking so we don't create empty GU prims.
 
     UsdGeomImageable ip( p );
-    if(not ip)
+    if(!ip)
         return false;
 
     TfToken purpose;
