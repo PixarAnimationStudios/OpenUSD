@@ -510,7 +510,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     sources.reserve(primVarNames.size());
     HdComputationVector computations;
 
-    int numPoints = _topology ? _topology->ComputeNumPoints() : 0;
+    int numPoints = _topology ? _topology->GetNumPoints() : 0;
     int refineLevel = _topology ? _topology->GetRefineLevel() : 0;
 
     bool cpuSmoothNormals =
