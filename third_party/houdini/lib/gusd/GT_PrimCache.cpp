@@ -120,8 +120,11 @@ namespace {
 
         GT_PrimitiveHandle prim;
     };
+
+#if HDK_API_VERSION < 16050000
     static inline void intrusive_ptr_add_ref(const CacheEntry *o) { const_cast<CacheEntry *>(o)->incref(); }
     static inline void intrusive_ptr_release(const CacheEntry *o) { const_cast<CacheEntry *>(o)->decref(); }
+#endif
 
     struct CreateEntryFn {
 

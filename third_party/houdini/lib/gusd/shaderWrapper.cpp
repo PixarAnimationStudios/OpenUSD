@@ -106,7 +106,8 @@ _buildCustomOslNode(const VOP_Node* vopNode,
     string oslcCmd = houRoot + "/bin/hrmanshader -e " + houErr +
                      " -cc oslc -I" + houInclude + " -o " +
                      shaderName.toStdString() + " " + shaderNameOsl;
-    std::shared_ptr<FILE> pipe(popen(oslcCmd.c_str(), "r"), pclose);
+    std::shared_ptr<FILE> pipe(popen(oslcCmd.c_str(), "r"),
+			       [](FILE *f){ pclose(f); });
     if (!pipe) {
         TF_CODING_ERROR("Failed to run command '%s'", oslcCmd.c_str());
         return false;

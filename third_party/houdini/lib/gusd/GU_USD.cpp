@@ -1281,7 +1281,11 @@ GusdGU_USD::GetPackedPrimViewportLODAndPurposes(
         if (const GusdGU_PackedUSD* prim =
             dynamic_cast<const GusdGU_PackedUSD*>(pp->implementation())) {
 
+#if HDK_API_VERSION < 16050000
             viewportLOD(i) = prim->intrinsicViewportLOD();
+#else
+            viewportLOD(i) = prim->intrinsicViewportLOD(pp);
+#endif
             purposes(i) = prim->getPurposes();
         }
     }

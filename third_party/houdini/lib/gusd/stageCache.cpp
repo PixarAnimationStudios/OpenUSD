@@ -1092,14 +1092,18 @@ GusdStageCacheReader::GetPrims(
 
     std::atomic_bool workerInterrupt(false);
 
+#if HDK_API_VERSION < 16050000
     UTparallelForHeavyItems(
-        UT_BlockedRange<size_t>(0, count),
-        [&](const UT_BlockedRange<size_t>& r)
+	    UT_BlockedRange<exint>(0, count),
+	    [&](const UT_BlockedRange<exint>& r)
+#else
+    UTparallelForEachNumber(count, [&](const UT_BlockedRange<exint>& r)
+#endif
     {
         auto* boss = UTgetInterrupt();
-        char bcnt;
+        char bcnt = 0;
 
-        for(size_t i = r.begin(); i < r.end(); ++i) {
+        for(exint i = r.begin(); i < r.end(); ++i) {
             if(BOOST_UNLIKELY(!++bcnt && (boss->opInterrupt() || 
                                           workerInterrupt))) {
                 return;
