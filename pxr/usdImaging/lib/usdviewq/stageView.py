@@ -1095,6 +1095,8 @@ class StageView(QtOpenGL.QGLWidget):
 
             self._defaultFreeCamera = FreeCamera(True)
 
+            self._defaultComplexity = 1.0
+
         @property
         def bboxCache(self):
             return self._bboxCache
@@ -1117,11 +1119,15 @@ class StageView(QtOpenGL.QGLWidget):
 
         @property
         def complexity(self):
-            return 1.0
+            return self._defaultComplexity
+
+        @complexity.setter
+        def complexity(self, value):
+            self._defaultComplexity = value
 
         @property
         def clearColor(self):
-            return (0.3, 0.3, 0.3, 0.0) # Grey (Dark)
+            return (0.0, 0.0, 0.0, 0.0)
 
         @property
         def renderMode(self):

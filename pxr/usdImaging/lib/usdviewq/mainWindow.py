@@ -1332,6 +1332,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def complexity(self):
         return self._complexity
 
+    @complexity.setter
+    def complexity(self, value):
+        self._complexity = value
+
     @property
     def clearColor(self):
         return self._clearColor
