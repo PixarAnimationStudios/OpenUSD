@@ -331,6 +331,8 @@ PxrUsdMayaTranslatorModelAssembly::Read(
         return false;
     }
 
+    usdStage->SetEditTarget(usdStage->GetSessionLayer());
+
     UsdPrim modelPrim;
     if (!assetPrimPath.IsEmpty()) {
         modelPrim = usdStage->GetPrimAtPath(assetPrimPath);

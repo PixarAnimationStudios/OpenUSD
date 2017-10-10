@@ -119,6 +119,8 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
         return false;
     }
 
+    stage->SetEditTarget(stage->GetSessionLayer());
+
     // If readAnimData is true, we expand the Min/Max time sliders to include
     // the stage's range if necessary.
     if (mArgs.readAnimData) {
@@ -166,15 +168,9 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
         return false;
     }
 
-    SdfPrimSpecHandle usdRootPrimSpec =
-        SdfCreatePrimInLayer(sessionLayer, usdRootPrim.GetPrimPath());
-    if (!usdRootPrimSpec) {
-        return false;
-    }
-
     // Set the variants on the usdRootPrim
     for (std::map<std::string, std::string>::iterator it=mVariants.begin(); it!=mVariants.end(); ++it) {
-        usdRootPrimSpec->SetVariantSelection(it->first, it->second);
+        usdRootPrim.GetVariantSet(it->first).SetVariantSelection(it->second);
     }
 
     bool isSceneAssembly = mMayaRootDagPath.node().hasFn(MFn::kAssembly);

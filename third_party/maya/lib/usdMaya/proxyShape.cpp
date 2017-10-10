@@ -461,6 +461,8 @@ MStatus UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
                 usdStage = UsdStage::Open(rootLayer,
                         ArGetResolver().GetCurrentContext());
             }
+
+            usdStage->SetEditTarget(usdStage->GetSessionLayer());
         }
 
         if (usdStage) {
