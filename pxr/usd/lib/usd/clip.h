@@ -52,6 +52,10 @@ class Usd_InterpolatorBase;
 bool
 UsdIsClipRelatedField(const TfToken& fieldName);
 
+/// Returns list of all field names associated with value clip functionality.
+std::vector<TfToken>
+UsdGetClipRelatedFields();
+
 /// \class Usd_ResolvedClipInfo
 ///
 /// Object containing resolved clip metadata for a prim in a LayerStack.
