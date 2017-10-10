@@ -28,7 +28,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TfRefBase::UniqueChangedListener TfRefBase::_uniqueChangedListener;
+TfRefBase::UniqueChangedListener &
+TfRefBase::_GetUniqueChangedListener() {
+    static TfRefBase::UniqueChangedListener listener;
+    return listener;
+}
 
 TfRefBase::~TfRefBase()
 {
