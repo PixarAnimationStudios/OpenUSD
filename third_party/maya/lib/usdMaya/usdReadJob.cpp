@@ -183,6 +183,14 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
     }
 
     UsdPrimRange range(usdRootPrim);
+    if (range.empty()) {
+        // XXX: This shouldn't really be possible, but it currently is because
+        // combinations of nested assembly nodes with variant set selections
+        // made in Maya are not being handled correctly. usdRootPrim can end up
+        // being an "over" prim spec created by the parent assembly with no
+        // scene description underneath, which results in an empty range.
+        return false;
+    }
 
     // We maintain a registry mapping SdfPaths to MObjects as we create Maya
     // nodes, so prime the registry with the root Maya node and the
