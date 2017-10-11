@@ -472,10 +472,6 @@ private:
     // individual properties at the given path (prim or property).
     void _RefreshObject(SdfPath const& path, UsdImagingIndexProxy* proxy);
 
-    // Heavy-weight invalidation of a single property (the property was added or
-    // removed).
-    void _ResyncProperty(SdfPath const& path, UsdImagingIndexProxy* proxy);
-
     // Heavy-weight invalidation of an entire prim subtree. All cached data is
     // reconstructed for all prims below \p rootPath.
     void _ResyncPrim(SdfPath const& rootPath, UsdImagingIndexProxy* proxy);

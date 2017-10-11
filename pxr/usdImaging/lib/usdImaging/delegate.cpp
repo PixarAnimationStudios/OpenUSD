@@ -1057,12 +1057,12 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         TF_FOR_ALL(pathIt, pathsToResync) {
             SdfPath path = *pathIt;
             if (path.IsPropertyPath()) {
-                _ResyncProperty(path, &indexProxy);
+                _RefreshObject(path, &indexProxy);
             } else if (path.IsTargetPath()) {
                 // TargetPaths are their own path type, when they change, resync
                 // the relationship at which they're rooted; i.e. per-target
                 // invalidation is not supported.
-                _ResyncProperty(path.GetParentPath(), &indexProxy);
+                _RefreshObject(path.GetParentPath(), &indexProxy);
             } else if (path.IsAbsoluteRootOrPrimPath()) {
                 _ResyncPrim(path, &indexProxy);
             } else {
@@ -1526,15 +1526,6 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
             }
         }
     }
-}
-
-void 
-UsdImagingDelegate::_ResyncProperty(SdfPath const& path, 
-                                    UsdImagingIndexProxy* proxy) 
-{
-    // XXX: Continue to do full prim invalidation until buffer source work
-    // lands.
-    _ResyncPrim(path.GetPrimPath(), proxy);
 }
 
 void 
