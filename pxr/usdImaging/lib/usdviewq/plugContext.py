@@ -69,6 +69,16 @@ class PlugContext(object):
 
         return models
 
+    def GetSelectedPrimsOfType(self, schemaType):
+        ''' Returns selected prims of the provided schemaType (TfType).'''
+        prims = []
+        items = self._mainWindow.getSelectedItems()
+        for item in items:
+            if item.node.IsA(schemaType):
+                prims.append(item.node)
+
+        return prims
+
     def GetCurrentNodes(self):
         ''' Returns the current nodes. '''
 
