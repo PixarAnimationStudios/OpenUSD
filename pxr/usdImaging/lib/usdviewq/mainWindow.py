@@ -165,6 +165,43 @@ class MainWindow(QtWidgets.QMainWindow):
             self._renderMode = None
             self._pickMode = None
 
+            self._playing = False
+
+            self._showAABBox = True
+            self._showOBBox = False
+            self._showBBoxes = True
+
+            self._displayGuide = False
+            self._displayProxy = True
+            self._displayRender = False
+            self._displayCameraOracles = False
+            self._displayPrimId = False
+            self._enableHardwareShading = True
+            self._cullBackfaces = False
+
+            self._showMask = False
+            self._showMask_Opaque = False
+            self._showMask_Outline = False
+
+            self._showReticles_Inside = False
+            self._showReticles_Outside = False
+
+            self._showHUD = True
+            self._showHUD_Info = False
+            self._showHUD_Complexity = True
+            self._showHUD_Performance = True
+            self._showHUD_GPUstats = False
+
+            self._ambientLightOnly = True
+            self._keyLightEnabled = False
+            self._fillLightEnabled = False
+            self._backLightEnabled = False
+
+            self._highlightColorName = "Yellow"
+            self._highlightColor = (1.0,1.0,0.0,0.0)
+            self._selHighlightMode = "Only when paused"
+            self._drawSelHighlights = True
+
             MainWindow._renderer = parserData.renderer
             if MainWindow._renderer == 'simple':
                 os.environ['HD_ENABLED'] = '0'
@@ -296,7 +333,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._nodeViewUpdateTimer = QtCore.QTimer(self)
             self._nodeViewUpdateTimer.setInterval(0)
             self._nodeViewUpdateTimer.timeout.connect(self._updateNodeView)
-
+            
             # This creates the _stageView and restores state from settings file
             self._resetSettings()
 
@@ -513,13 +550,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.actionToggle_Viewer_Mode.triggered.connect(
                 self._toggleViewerMode)
 
-            self._ui.showBBoxes.toggled.connect(self._showBBoxes)
+            self._ui.showBBoxes.toggled.connect(self._toggleShowBBoxes)
 
-            self._ui.showAABBox.toggled.connect(self._showAABBox)
+            self._ui.showAABBox.toggled.connect(self._toggleShowAABBox)
 
-            self._ui.showOBBox.toggled.connect(self._showOBBox)
+            self._ui.showOBBox.toggled.connect(self._toggleShowOBBox)
 
-            self._ui.showBBoxPlayback.toggled.connect(self._showBBoxPlayback)
+            self._ui.showBBoxPlayback.toggled.connect(self._toggleShowBBoxPlayback)
 
             self._ui.useExtentsHint.toggled.connect(self._setUseExtentsHint)
 
@@ -969,7 +1006,7 @@ class MainWindow(QtWidgets.QMainWindow):
     # Non-topology dependent UI changes
     def _reloadFixedUI(self, resetStageDataOnly=False):
         # If animation is playing, stop it.
-        if self._ui.playButton.isChecked():
+        if self._playing:
             self._ui.playButton.click()
 
         # frame range supplied by user
@@ -1358,7 +1395,131 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @property
     def playing(self):
-        return self._ui.playButton.isChecked()
+        return self._playing
+
+    @property
+    def showAABBox(self):
+        return self._showAABBox
+
+    @property
+    def showOBBox(self):
+        return self._showOBBox
+
+    @property
+    def showBBoxes(self):
+        return self._showBBoxes
+
+    @showBBoxes.setter
+    def showBBoxes(self, value):
+        self._showBBoxes = value
+
+    @property
+    def displayGuide(self):
+        return self._displayGuide
+
+    @property
+    def displayProxy(self):
+        return self._displayProxy
+
+    @property
+    def displayRender(self):
+        return self._displayRender
+
+    @property
+    def displayCameraOracles(self):
+        return self._displayCameraOracles
+
+    @property
+    def displayPrimId(self):
+        return self._displayPrimId
+
+    @property
+    def enableHardwareShading(self):
+        return self._enableHardwareShading
+
+    @property
+    def cullBackfaces(self):
+        return self._cullBackfaces
+
+    @property
+    def showMask(self):
+        return self._showMask
+
+    @property
+    def showMask_Opaque(self):
+        return self._showMask_Opaque
+
+    @property
+    def showMask_Outline(self):
+        return self._showMask_Outline
+
+    @property
+    def showReticles_Inside(self):
+        return self._showReticles_Inside
+
+    @property
+    def showReticles_Outside(self):
+        return self._showReticles_Outside
+
+    @property
+    def showHUD(self):
+        return self._showHUD
+
+    @property
+    def showHUD_Info(self):
+        return self._showHUD_Info
+
+    @property
+    def showHUD_Complexity(self):
+        return self._showHUD_Complexity
+
+    @property
+    def showHUD_Performance(self):
+        return self._showHUD_Performance
+
+    @property
+    def showHUD_GPUstats(self):
+        return self._showHUD_GPUstats
+
+    @property
+    def ambientLightOnly(self):
+        return self._ambientLightOnly
+
+    @property
+    def keyLightEnabled(self):
+        return self._keyLightEnabled
+
+    @property
+    def fillLightEnabled(self):
+        return self._fillLightEnabled
+
+    @property
+    def backLightEnabled(self):
+        return self._backLightEnabled
+
+    @property
+    def highlightColorName(self):
+        return self._highlightColorName
+
+    @property
+    def highlightColor(self):
+        return self._highlightColor
+
+    @property
+    def selHighlightMode(self):
+        return self._selHighlightMode
+
+    @selHighlightMode.setter
+    def selHighlightMode(self, value):
+        self._selHighlightMode = value
+
+    @property
+    def drawSelHighlights(self):
+        return self._drawSelHighlights
+
+    @drawSelHighlights.setter
+    def drawSelHighlights(self, value):
+        self._drawSelHighlights = value
 
     def ResetDefaultMaterialSettings(self, store=True):
         self._defaultMaterialAmbient = .2
@@ -1487,7 +1648,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._playbackAvailable = isEnabled
 
         #If playback is disabled, but the animation is playing...
-        if not isEnabled and self._ui.playButton.isChecked():
+        if not isEnabled and self._playing:
             self._ui.playButton.click()
 
         self._ui.playButton.setEnabled(isEnabled)
@@ -1506,6 +1667,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _playClicked(self):
         if self._ui.playButton.isChecked():
             # Start playback.
+            self._playing = True
             self._ui.playButton.setText("Stop")
             # setText() causes the shortcut to be reset to whatever
             # Qt thinks it should be based on the text.  We know better.
@@ -1517,6 +1679,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._playbackIndex = 0
         else:
             # Stop playback.
+            self._playing = False
             self._ui.playButton.setText("Play")
             # setText() causes the shortcut to be reset to whatever
             # Qt thinks it should be based on the text.  We know better.
@@ -1798,110 +1961,103 @@ class MainWindow(QtWidgets.QMainWindow):
         for i,b in enumerate(propertyViewHeaderSettings):
             self._ui.propertyView.setColumnHidden(i, b)
 
-        self._stageView.showAABBox = self._settings.get("ShowAABBox", True)
-        self._ui.showAABBox.setChecked(self._stageView.showAABBox)
-        self._stageView.showOBBox = self._settings.get("ShowOBBox", False)
-        self._ui.showOBBox.setChecked(self._stageView.showOBBox)
+        self._showAABBox = self._settings.get("ShowAABBox", True)
+        self._ui.showAABBox.setChecked(self._showAABBox)
+        self._showOBBox = self._settings.get("ShowOBBox", False)
+        self._ui.showOBBox.setChecked(self._showOBBox)
         self._ui.showBBoxPlayback.setChecked(
                                 self._settings.get("ShowBBoxPlayback", False))
-        self._stageView.showBBoxes = self._settings.get("ShowBBoxes", True)
-        self._ui.showBBoxes.setChecked(self._stageView.showBBoxes)
+        self._showBBoxes = self._settings.get("ShowBBoxes", True)
+        self._ui.showBBoxes.setChecked(self._showBBoxes)
 
-        displayGuide = self._settings.get("DisplayGuide", False)
-        self._ui.actionDisplay_Guide.setChecked(displayGuide)
-        self._stageView.setDisplayGuide(displayGuide)
+        self._displayGuide = self._settings.get("DisplayGuide", False)
+        self._ui.actionDisplay_Guide.setChecked(self._displayGuide)
 
-        displayProxy = self._settings.get("DisplayProxy", True)
-        self._ui.actionDisplay_Proxy.setChecked(displayProxy)
-        self._stageView.setDisplayProxy(displayProxy)
+        self._displayProxy = self._settings.get("DisplayProxy", True)
+        self._ui.actionDisplay_Proxy.setChecked(self._displayProxy)
 
-        displayRender = self._settings.get("DisplayRender", False)
-        self._ui.actionDisplay_Render.setChecked(displayRender)
-        self._stageView.setDisplayRender(displayRender)
+        self._displayRender = self._settings.get("DisplayRender", False)
+        self._ui.actionDisplay_Render.setChecked(self._displayRender)
 
-        displayCameraOracles = self._settings.get("DisplayCameraOracles", False)
-        self._ui.actionDisplay_Camera_Oracles.setChecked(displayCameraOracles)
-        self._stageView.setDisplayCameraOracles(displayCameraOracles)
+        if self._stageView:
+            # Called after displayGuide/displayProxy/displayRender are updated.
+            self._stageView.updateBboxPurposes()
 
-        displayPrimId = self._settings.get("DisplayPrimId", False)
-        self._ui.actionDisplay_PrimId.setChecked(displayPrimId)
-        self._stageView.setDisplayPrimId(displayPrimId)
+        self._displayCameraOracles = self._settings.get("DisplayCameraOracles", False)
+        self._ui.actionDisplay_Camera_Oracles.setChecked(self._displayCameraOracles)
 
-        enableHardwareShading = self._settings.get("EnableHardwareShading", True)
-        self._ui.actionEnable_Hardware_Shading.setChecked(enableHardwareShading)
-        self._stageView.setEnableHardwareShading(enableHardwareShading)
+        self._displayPrimId = self._settings.get("DisplayPrimId", False)
+        self._ui.actionDisplay_PrimId.setChecked(self._displayPrimId)
 
-        cullBackfaces = self._settings.get("CullBackfaces", False)
-        self._ui.actionCull_Backfaces.setChecked(cullBackfaces)
-        self._stageView.setCullBackfaces(cullBackfaces)
+        self._enableHardwareShading = self._settings.get("EnableHardwareShading", True)
+        self._ui.actionEnable_Hardware_Shading.setChecked(self._enableHardwareShading)
 
-        showMask = self._settings.get("actionCameraMask", "none")
-        showMask_Outline = self._settings.get("actionCameraMask_Outline", False)
+        self._cullBackfaces = self._settings.get("CullBackfaces", False)
+        self._ui.actionCull_Backfaces.setChecked(self._cullBackfaces)
+
+        showMaskSetting = self._settings.get("actionCameraMask", "none")
+        self._showMask = (showMaskSetting != "none")
+        self._showMask_Opaque = (showMaskSetting == "full")
+        self._showMask_Outline = self._settings.get("actionCameraMask_Outline", False)
         self._cameraMaskColor = self._settings.get("cameraMaskColor",
                 (0.1, 0.1, 0.1, 1.0))
-        self._ui.actionCameraMask_Full.setChecked(showMask == "full")
-        self._ui.actionCameraMask_Partial.setChecked(showMask == "partial")
-        self._ui.actionCameraMask_None.setChecked(showMask == "none")
-        self._ui.actionCameraMask_Outline.setChecked(showMask_Outline)
-        self._stageView.showMask = (showMask != "none")
-        self._stageView.showMask_Opaque = (showMask == "full")
-        self._stageView.showMask_Outline = showMask_Outline
+        self._ui.actionCameraMask_Full.setChecked(showMaskSetting == "full")
+        self._ui.actionCameraMask_Partial.setChecked(showMaskSetting == "partial")
+        self._ui.actionCameraMask_None.setChecked(showMaskSetting == "none")
+        self._ui.actionCameraMask_Outline.setChecked(self._showMask_Outline)
 
-        showReticles_Inside = self._settings.get("actionCameraReticles_Inside", False)
-        showReticles_Outside = self._settings.get("actionCameraReticles_Outside", False)
+        self._showReticles_Inside = self._settings.get("actionCameraReticles_Inside", False)
+        self._showReticles_Outside = self._settings.get("actionCameraReticles_Outside", False)
         self._cameraReticlesColor = self._settings.get("cameraReticlesColor",
                 (0.0, 0.7, 1.0, 1.0))
-        self._ui.actionCameraReticles_Inside.setChecked(showReticles_Inside)
-        self._ui.actionCameraReticles_Outside.setChecked(showReticles_Outside)
-        self._stageView.showReticles_Inside = showReticles_Inside
-        self._stageView.showReticles_Outside = showReticles_Outside
+        self._ui.actionCameraReticles_Inside.setChecked(self._showReticles_Inside)
+        self._ui.actionCameraReticles_Outside.setChecked(self._showReticles_Outside)
 
-        self._stageView.showHUD = self._settings.get("actionHUD", True)
-        self._ui.actionHUD.setChecked(self._stageView.showHUD)
+        self._showHUD = self._settings.get("actionHUD", True)
+        self._ui.actionHUD.setChecked(self._showHUD)
         # XXX Until we can make the "Subtree Info" stats-gathering faster,
         # we do not want the setting to persist from session to session.
-        # self._stageView.showHUD_Info = \
+        # self._showHUD_Info = \
         #     self._settings.get("actionHUD_Info", False)
-        self._stageView.showHUD_Info = False
-        self._ui.actionHUD_Info.setChecked(self._stageView.showHUD_Info)
-        self._stageView.showHUD_Complexity = \
+        self._showHUD_Info = False
+        self._ui.actionHUD_Info.setChecked(self._showHUD_Info)
+        self._showHUD_Complexity = \
             self._settings.get("actionHUD_Complexity", True)
         self._ui.actionHUD_Complexity.setChecked(
-            self._stageView.showHUD_Complexity)
-        self._stageView.showHUD_Performance = \
+            self._showHUD_Complexity)
+        self._showHUD_Performance = \
             self._settings.get("actionHUD_Performance", True)
         self._ui.actionHUD_Performance.setChecked(
-            self._stageView.showHUD_Performance)
-        self._stageView.showHUD_GPUstats = \
+            self._showHUD_Performance)
+        self._showHUD_GPUstats = \
             self._settings.get("actionHUD_GPUstats", False)
         self._ui.actionHUD_GPUstats.setChecked(
-            self._stageView.showHUD_GPUstats)
+            self._showHUD_GPUstats)
 
         # Three point lights are disabled by default. They turn on when the
         #  "Ambient Only" mode is unchecked
-        ambOnly = self._settings.get("AmbientOnly", True)
-        self._ui.actionAmbient_Only.setChecked(ambOnly)
-        self._ui.threePointLights.setEnabled(not ambOnly)
+        self._ambientLightOnly = self._settings.get("AmbientOnly", True)
+        self._ui.actionAmbient_Only.setChecked(self._ambientLightOnly)
+        self._ui.threePointLights.setEnabled(not self._ambientLightOnly)
 
-        key = self._settings.get("KeyLightEnabled", False)
-        fill = self._settings.get("FillLightEnabled", False)
-        back = self._settings.get("BackLightEnabled", False)
-        self._lightsChecked = [key, fill, back]
-        self._ui.actionKey.setChecked(key)
-        self._ui.actionFill.setChecked(fill)
-        self._ui.actionBack.setChecked(back)
-        self._stageView.ambientLightOnly = ambOnly
-        self._stageView.keyLightEnabled = key
-        self._stageView.fillLightEnabled = fill
-        self._stageView.backLightEnabled = back
+        self._keyLightEnabled = self._settings.get("KeyLightEnabled", False)
+        self._fillLightEnabled = self._settings.get("FillLightEnabled", False)
+        self._backLightEnabled = self._settings.get("BackLightEnabled", False)
+        self._lightsChecked = [
+            self._keyLightEnabled,
+            self._fillLightEnabled,
+            self._backLightEnabled]
+        self._ui.actionKey.setChecked(self._keyLightEnabled)
+        self._ui.actionFill.setChecked(self._fillLightEnabled)
+        self._ui.actionBack.setChecked(self._backLightEnabled)
 
         self._stageView.update()
 
         self._highlightColorName = str(self._settings.get("HighlightColor", "Yellow"))
-        self._stageView.highlightColor = self._colorsDict[self._highlightColorName]
+        self._highlightColor = self._colorsDict[self._highlightColorName]
         self._selHighlightMode = self._settings.get("SelHighlightMode",
                                                  "Only when paused")
-        self._stageView.drawSelHighlights = ( self._selHighlightMode != "Never")
+        self._drawSelHighlights = ( self._selHighlightMode != "Never")
 
         # lighting is not activated until a shaded mode is selected
         self._ui.menuLights.setEnabled(self._renderMode in ('Smooth Shaded',
@@ -2035,14 +2191,14 @@ class MainWindow(QtWidgets.QMainWindow):
     def _changeSelHighlightMode(self, mode):
         self._settings.setAndSave(SelHighlightMode=str(mode.text()))
         self._selHighlightMode = str(mode.text())
-        self._stageView.drawSelHighlights = (self._selHighlightMode != "Never")
+        self._drawSelHighlights = (self._selHighlightMode != "Never")
         self._stageView.update()
 
     def _changeHighlightColor(self, color):
         self._settings.setAndSave(HighlightColor=str(color.text()))
         color = str(color.text())
         self._highlightColorName = color
-        self._stageView.highlightColor = self._colorsDict[color]
+        self._highlightColor = self._colorsDict[color]
         self._stageView.update()
 
     def _changeInterpolationType(self, interpolationType):
@@ -2077,30 +2233,30 @@ class MainWindow(QtWidgets.QMainWindow):
                                       FillLightEnabled=self._lightsChecked[1],
                                       BackLightEnabled=self._lightsChecked[2])
         if self._stageView:
-            self._stageView.ambientLightOnly = checked
-            self._stageView.keyLightEnabled = \
+            self._ambientLightOnly = checked
+            self._keyLightEnabled = \
                 not checked or self._lightsChecked[0]
-            self._stageView.fillLightEnabled = \
+            self._fillLightEnabled = \
                 not checked or self._lightsChecked[1]
-            self._stageView.backLightEnabled = \
+            self._backLightEnabled = \
                 not checked or self._lightsChecked[2]
             self._stageView.update()
 
     def _onKeyLightClicked(self, checked=None):
         if self._stageView and checked is not None:
-            self._stageView.keyLightEnabled = checked
+            self._keyLightEnabled = checked
             self._stageView.update()
             self._settings.setAndSave(KeyLightEnabled=checked)
 
     def _onFillLightClicked(self, checked=None):
         if self._stageView and checked is not None:
-            self._stageView.fillLightEnabled = checked
+            self._fillLightEnabled = checked
             self._stageView.update()
             self._settings.setAndSave(FillLightEnabled=checked)
 
     def _onBackLightClicked(self, checked=None):
         if self._stageView and checked is not None:
-            self._stageView.backLightEnabled = checked
+            self._backLightEnabled = checked
             self._stageView.update()
             self._settings.setAndSave(BackLightEnabled=checked)
 
@@ -2111,7 +2267,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._stageView:
             self._stageView.update()
 
-    def _showBBoxPlayback(self, state):
+    def _toggleShowBBoxPlayback(self, state):
         """Called when the menu item for showing BBoxes
         during playback is activated or deactivated."""
         self._settings.setAndSave(ShowBBoxPlayback=state)
@@ -2124,27 +2280,27 @@ class MainWindow(QtWidgets.QMainWindow):
         #recompute and display bbox
         self._refreshBBox()
 
-    def _showBBoxes(self, state):
+    def _toggleShowBBoxes(self, state):
         """Called when the menu item for showing BBoxes
         is activated."""
         self._settings.setAndSave(ShowBBoxes=state)
-        self._stageView.showBBoxes = state
+        self._showBBoxes = state
         #recompute and display bbox
         self._refreshBBox()
 
-    def _showAABBox(self, state):
+    def _toggleShowAABBox(self, state):
         """Called when Axis-Aligned bounding boxes
         are activated/deactivated via menu item"""
         self._settings.setAndSave(ShowAABBox=state)
-        self._stageView.showAABBox = state
+        self._showAABBox = state
         # recompute and display bbox
         self._refreshBBox()
 
-    def _showOBBox(self, state):
+    def _toggleShowOBBox(self, state):
         """Called when Oriented bounding boxes
         are activated/deactivated via menu item"""
         self._settings.setAndSave(ShowOBBox=state)
-        self._stageView.showOBBox = state
+        self._showOBBox = state
         # recompute and display bbox
         self._refreshBBox()
 
@@ -2158,43 +2314,46 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _toggleDisplayGuide(self, checked):
         self._settings.setAndSave(DisplayGuide=checked)
-        self._stageView.setDisplayGuide(checked)
+        self._displayGuide = checked
+        self._stageView.updateBboxPurposes()
         self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
         self._stageView.update()
 
     def _toggleDisplayProxy(self, checked):
         self._settings.setAndSave(DisplayProxy=checked)
-        self._stageView.setDisplayProxy(checked)
+        self._displayProxy = checked
+        self._stageView.updateBboxPurposes()
         self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
         self._stageView.update()
 
     def _toggleDisplayRender(self, checked):
         self._settings.setAndSave(DisplayRender=checked)
-        self._stageView.setDisplayRender(checked)
+        self._displayRender = checked
+        self._stageView.updateBboxPurposes()
         self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
         self._stageView.update()
 
     def _toggleDisplayCameraOracles(self, checked):
         self._settings.setAndSave(DisplayCameraGuides=checked)
-        self._stageView.setDisplayCameraOracles(checked)
+        self._displayCameraOracles = checked
         self._stageView.update()
 
     def _toggleDisplayPrimId(self, checked):
         self._settings.setAndSave(DisplayPrimId=checked)
-        self._stageView.setDisplayPrimId(checked)
+        self._displayPrimId = checked
         self._stageView.update()
 
     def _toggleEnableHardwareShading(self, checked):
         self._settings.setAndSave(EnableHardwareShading=checked)
-        self._stageView.setEnableHardwareShading(checked)
+        self._enableHardwareShading = checked
         self._stageView.update()
 
     def _toggleCullBackfaces(self, checked):
         self._settings.setAndSave(CullBackfaces=checked)
-        self._stageView.setCullBackfaces(checked)
+        self._cullBackfaces = checked
         self._stageView.update()
 
     def _showInterpreter(self):
@@ -2581,7 +2740,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # scroll, we can do it ahead of time.  But don't do it
                 # if we're currently playing to maximize playback
                 # performance.
-                if not self._ui.playButton.isChecked():
+                if not self._playing:
                     self._nodeViewUpdateTimer.start()
 
         if self._printTiming and not suppressTiming:
@@ -3014,7 +3173,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self._currentFrame != frameAtStart or forceUpdate:
             # do not update HUD/BBOX if scrubbing or playing
-            updateUI = forceUpdate or not (self._ui.playButton.isChecked() or
+            updateUI = forceUpdate or not (self._playing or
                                           self._ui.frameSlider.isSliderDown())
             self._updateOnFrameChange(updateUI)
 
@@ -3024,12 +3183,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self._xformCache.SetTime(self._currentFrame)
         self._bboxCache.SetTime(self._currentFrame)
 
-        playing = self._ui.playButton.isChecked()
-
         # grey out the HUD when playing at interactive rates (its disabled)
-        self._stageView.showBBoxes = \
+        self._showBBoxes = \
                          self._ui.showBBoxes.isChecked() and \
-                        (not playing or self._ui.showBBoxPlayback.isChecked())
+                        (not self._playing or self._ui.showBBoxPlayback.isChecked())
 
         if refreshUI: # slow stuff that we do only when not playing
             # topology might have changed, recalculate
@@ -3046,7 +3203,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._resetNodeViewVis(selItemsOnly=False, authoredVisHasChanged=False)
 
         # this is the part that renders
-        if playing:
+        if self._playing:
             self._stageView.updateForPlayback(self._currentFrame,
                                              self._selHighlightMode == "Always")
         else:
@@ -3627,19 +3784,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self._stageView.updateGL()
 
     def _CameraMaskMenuChanged(self):
-        showMask = "none"
         if self._ui.actionCameraMask_Full.isChecked():
-            showMask = "full"
-        if self._ui.actionCameraMask_Partial.isChecked():
-            showMask = "partial"
-        self._stageView.showMask = (showMask != "none")
-        self._stageView.showMask_Opaque = (showMask == "full")
-        self._stageView.showMask_Outline = self._ui.actionCameraMask_Outline.isChecked()
+            showMaskSetting = "full"
+            self._showMask = True
+            self._showMask_Opaque = True
+        elif self._ui.actionCameraMask_Partial.isChecked():
+            showMaskSetting = "partial"
+            self._showMask = True
+            self._showMask_Opaque = False
+        else:
+            showMaskSetting = "none"
+            self._showMask = False
+            self._showMask_Opaque = False
+        self._showMask_Outline = self._ui.actionCameraMask_Outline.isChecked()
 
         self._stageView.updateGL()
 
-        self._settings.setAndSave(actionCameraMask=showMask)
-        self._settings.setAndSave(actionCameraMask_Outline=self._ui.actionCameraMask_Outline.isChecked())
+        self._settings.setAndSave(actionCameraMask=showMaskSetting)
+        self._settings.setAndSave(actionCameraMask_Outline=self._showMask_Outline)
 
     def _updateCameraReticlesMenu(self):
         self._CameraReticlesMenuChanged()
@@ -3658,12 +3820,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._stageView.updateGL()
 
     def _CameraReticlesMenuChanged(self):
-        self._stageView.showReticles_Inside = self._ui.actionCameraReticles_Inside.isChecked()
-        self._stageView.showReticles_Outside = self._ui.actionCameraReticles_Outside.isChecked()
+        self._showReticles_Inside = self._ui.actionCameraReticles_Inside.isChecked()
+        self._showReticles_Outside = self._ui.actionCameraReticles_Outside.isChecked()
         self._stageView.updateGL()
 
-        self._settings.setAndSave(actionCameraReticles_Inside=self._ui.actionCameraReticles_Inside.isChecked())
-        self._settings.setAndSave(actionCameraReticles_Outside=self._ui.actionCameraReticles_Outside.isChecked())
+        self._settings.setAndSave(actionCameraReticles_Inside=self._showReticles_Inside)
+        self._settings.setAndSave(actionCameraReticles_Outside=self._showReticles_Outside)
 
     def _updateHUDMenu(self):
         """updates the upper HUD with both prim info and geom counts
@@ -3676,13 +3838,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _HUDMenuChanged(self):
         """called when a HUD menu item has changed that does not require info refresh"""
-        self._stageView.showHUD = self._ui.actionHUD.isChecked()
-        self._stageView.showHUD_Info = self._ui.actionHUD_Info.isChecked()
-        self._stageView.showHUD_Complexity = \
+        self._showHUD = self._ui.actionHUD.isChecked()
+        self._showHUD_Info = self._ui.actionHUD_Info.isChecked()
+        self._showHUD_Complexity = \
             self._ui.actionHUD_Complexity.isChecked()
-        self._stageView.showHUD_Performance = \
+        self._showHUD_Performance = \
             self._ui.actionHUD_Performance.isChecked()
-        self._stageView.showHUD_GPUstats = \
+        self._showHUD_GPUstats = \
             self._ui.actionHUD_GPUstats.isChecked()
         self._stageView.updateGL()
 
