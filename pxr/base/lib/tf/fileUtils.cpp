@@ -203,11 +203,18 @@ TfIsLink(string const& path)
 bool
 TfIsWritable(string const& path)
 {
+#if defined(ARCH_OS_LINUX)
+    // faccessat accounts for mount read-only status. For maintaining legacy
+    // behavior, use faccessat instead of access so we can use the effective
+    // UID instead of the real UID. 
+    return faccessat(AT_FDCWD, path.c_str(), W_OK, AT_EACCESS) == 0;
+#else
     ArchStatType st;
     if (Tf_Stat(path, /* resolveSymlinks */ true, &st)) {
         return ArchStatIsWritable(&st);
     }
     return false;
+#endif
 }
 
 bool
