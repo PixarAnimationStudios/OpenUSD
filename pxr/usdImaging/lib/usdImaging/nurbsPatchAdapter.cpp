@@ -51,9 +51,10 @@ UsdImagingNurbsPatchAdapter::~UsdImagingNurbsPatchAdapter()
 }
 
 bool
-UsdImagingNurbsPatchAdapter::IsSupported(HdRenderIndex* renderIndex)
+UsdImagingNurbsPatchAdapter::IsSupported(
+        UsdImagingIndexProxy const* index) const
 {
-    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+    return index->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
 }
 
 SdfPath
@@ -61,13 +62,8 @@ UsdImagingNurbsPatchAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertRprim(HdPrimTypeTokens->mesh,
-                       prim,
-                       GetMaterialId(prim),
-                       instancerContext);
-    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-
-    return prim.GetPath();
+    return _AddRprim(HdPrimTypeTokens->mesh,
+                     prim, index, GetMaterialId(prim), instancerContext);
 }
 
 void 

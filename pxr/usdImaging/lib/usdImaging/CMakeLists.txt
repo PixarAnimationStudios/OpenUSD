@@ -35,29 +35,29 @@ pxr_library(usdImaging
         adapterRegistry
         debugCodes
         delegate
-        domeLightAdapter
         inheritedCache
         instancerContext
-        shaderAdapter
         tokens
+        unitTestHelper
         valueCache
         basisCurvesAdapter
         capsuleAdapter
         coneAdapter
         cubeAdapter
         cylinderAdapter
+        domeLightAdapter
         gprimAdapter
         instanceAdapter
         lightAdapter
         meshAdapter
+        nurbsPatchAdapter
         pointsAdapter
         pointInstancerAdapter
         primAdapter
         rectLightAdapter
+        shaderAdapter
         sphereAdapter
         sphereLightAdapter
-        nurbsPatchAdapter
-        unitTestHelper
 
     PUBLIC_HEADERS
         api.h

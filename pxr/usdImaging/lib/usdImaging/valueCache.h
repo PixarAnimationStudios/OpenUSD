@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/shaderParam.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -149,6 +150,19 @@ public:
         }
         static Key MaterialId(SdfPath const& path) {
             static TfToken attr("materialId");
+            return Key(path, attr);
+        }
+        // XXX: Shader API will be deprecated soon.
+        static Key SurfaceShaderSource(SdfPath const& path) {
+            static TfToken attr("surfaceShaderSource");
+            return Key(path, attr);
+        }
+        static Key DisplacementShaderSource(SdfPath const& path) {
+            static TfToken attr("displacementShaderSource");
+            return Key(path, attr);
+        }
+        static Key SurfaceShaderParams(SdfPath const& path) {
+            static TfToken attr("surfaceShaderParams");
             return Key(path, attr);
         }
     };
@@ -295,6 +309,17 @@ public:
             }
             _Erase<PrimvarInfoVector>(Key::Primvars(path));
         }
+
+        // XXX: Shader API will be deprecated soon.
+        _Erase<std::string>(Key::SurfaceShaderSource(path));
+        _Erase<std::string>(Key::DisplacementShaderSource(path));
+        HdShaderParamVector shaderVars;
+        if (FindSurfaceShaderParams(path, &shaderVars)) {
+            TF_FOR_ALL(pvIt, shaderVars) {
+                _Erase<VtValue>(Key(path, pvIt->GetName()));
+            }
+            _Erase<HdShaderParamVector>(Key::SurfaceShaderParams(path));
+        }
     }
 
     VtValue& GetColor(SdfPath const& path) const {
@@ -345,6 +370,19 @@ public:
     SdfPath& GetMaterialId(SdfPath const& path) const {
         return _Get<SdfPath>(Key::MaterialId(path));
     }
+    // XXX: Shader API will be deprecated soon
+    std::string& GetSurfaceShaderSource(SdfPath const& path) const {
+        return _Get<std::string>(Key::SurfaceShaderSource(path));
+    }
+    std::string& GetDisplacementShaderSource(SdfPath const& path) const {
+        return _Get<std::string>(Key::DisplacementShaderSource(path));
+    }
+    HdShaderParamVector& GetSurfaceShaderParams(SdfPath const& path) const {
+        return _Get<HdShaderParamVector>(Key::SurfaceShaderParams(path));
+    }
+    VtValue& GetSurfaceShaderParam(SdfPath const& path, TfToken const& name) const {
+        return _Get<VtValue>(Key(path, name));
+    }
 
     bool FindPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) const {
         return _Find(Key(path, name), value);
@@ -393,6 +431,19 @@ public:
     }
     bool FindMaterialId(SdfPath const& path, SdfPath* value) const {
         return _Find(Key::MaterialId(path), value);
+    }
+    // XXX: Shader API will be deprecated soon
+    bool FindSurfaceShaderSource(SdfPath const& path, std::string* value) const {
+        return _Find(Key::SurfaceShaderSource(path), value);
+    }
+    bool FindDisplacementShaderSource(SdfPath const& path, std::string* value) const {
+        return _Find(Key::DisplacementShaderSource(path), value);
+    }
+    bool FindSurfaceShaderParams(SdfPath const& path, HdShaderParamVector* value) const {
+        return _Find(Key::SurfaceShaderParams(path), value);
+    }
+    bool FindSurfaceShaderParam(SdfPath const& path, TfToken const& name, VtValue* value) const {
+        return _Find(Key(path, name), value);
     }
 
     bool ExtractColor(SdfPath const& path, VtValue* value) {
@@ -443,6 +494,19 @@ public:
     bool ExtractPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);
     }
+    // XXX: Shader API will be deprecated soon
+    bool ExtractSurfaceShaderSource(SdfPath const& path, std::string* value) {
+        return _Extract(Key::SurfaceShaderSource(path), value);
+    }
+    bool ExtractDisplacementShaderSource(SdfPath const& path, std::string* value) {
+        return _Extract(Key::DisplacementShaderSource(path), value);
+    }
+    bool ExtractSurfaceShaderParams(SdfPath const& path, HdShaderParamVector* value) {
+        return _Extract(Key::SurfaceShaderParams(path), value);
+    }
+    bool ExtractSurfaceShaderParam(SdfPath const& path, TfToken const& name, VtValue* value) {
+        return _Extract(Key(path, name), value);
+    }
 
     /// Remove any items from the cache that are marked for defered deletion.
     void GarbageCollect()
@@ -456,6 +520,9 @@ public:
         _GarbageCollect(_pviCache);
         _GarbageCollect(_subdivTagsCache);
         _GarbageCollect(_sdfPathCache);
+        // XXX: shader type caches, shader API will be deprecated soon
+        _GarbageCollect(_stringCache);
+        _GarbageCollect(_shaderParamCache);
     }
 
 private:
@@ -495,6 +562,13 @@ private:
     typedef _TypedCache<SubdivTags> _SubdivTagsCache;
     mutable _SubdivTagsCache _subdivTagsCache;
 
+    // XXX: shader type caches, shader API will be deprecated soon
+    typedef _TypedCache<std::string> _StringCache;
+    mutable _StringCache _stringCache;
+
+    typedef _TypedCache<HdShaderParamVector> _ShaderParamCache;
+    mutable _ShaderParamCache _shaderParamCache;
+
     void _GetCache(_BoolCache **cache) const {
         *cache = &_boolCache;
     }
@@ -521,6 +595,13 @@ private:
     }
     void _GetCache(_SdfPathCache **cache) const {
         *cache = &_sdfPathCache;
+    }
+    // XXX: shader type caches, shader API will be deprecated soon
+    void _GetCache(_StringCache **cache) const {
+        *cache = &_stringCache;
+    }
+    void _GetCache(_ShaderParamCache **cache) const {
+        *cache = &_shaderParamCache;
     }
 };
 

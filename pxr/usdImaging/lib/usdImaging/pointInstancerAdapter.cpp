@@ -170,8 +170,10 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     // Need to use GetAbsoluteRootOrPrimPath() on instancerPath to drop
     // {instancer=X} from the path, so usd can find the prim.
     index->InsertInstancer(instancerPath,
-                           _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath()),
-                           instancerContext);
+            instancerContext ? instancerContext->instancerId : SdfPath(),
+            _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath()),
+            instancerContext ? instancerContext->instancerAdapter
+                             : UsdImagingPrimAdapterSharedPtr());
 
     // ---------------------------------------------------------------------- //
     // Main Prototype allocation loop.

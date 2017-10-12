@@ -219,8 +219,9 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
         }
         if (primCount > 0) {
             index->InsertInstancer(instancerPath,
+                                   /*parentPath=*/ctx.instancerId,
                                    _GetPrim(instancerPath),
-                                   &ctx);
+                                   ctx.instancerAdapter);
         } else if (nestedInstances.empty()) {
             // if this instance path ends up to have no prims in subtree
             // and not an instance itself , we don't need to track this path
@@ -448,8 +449,8 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         // If any of the instances varies over time, we should flag the 
         // DirtyInstancer bits on the Rprim on every frame, to be sure the 
         // instancer data associated with the Rprim gets updated.
-        int instancerBits = _UpdateDirtyBits(prim.GetStage()->
-                                 GetPrimAtPath(instancerContext.instancerId));
+        int instancerBits = _UpdateDirtyBits(
+                _GetPrim(instancerContext.instancerId));
         *timeVaryingBits |=  (instancerBits & HdChangeTracker::DirtyInstancer);
         *timeVaryingBits |= HdChangeTracker::DirtyVisibility;
 

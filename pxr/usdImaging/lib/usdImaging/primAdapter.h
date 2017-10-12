@@ -270,8 +270,10 @@ public:
     /// \name Render Index Compatibility
     // ---------------------------------------------------------------------- //
 
-    /// Returns whether the adapter can be populated into the target render index.
-    virtual bool IsSupported(HdRenderIndex* renderIndex) { return true; }
+    /// Returns true if the adapter can be populated into the target index.
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const {
+        return true;
+    }
 
 protected:
     typedef std::vector<UsdImagingValueCache::PrimvarInfo> PrimvarInfoVector;
@@ -285,7 +287,8 @@ protected:
     }
 
     template <typename T>
-    void _GetPtr(UsdPrim const& prim, TfToken const& key, UsdTimeCode time, T* out) {
+    void _GetPtr(UsdPrim const& prim, TfToken const& key, UsdTimeCode time,
+                 T* out) {
         prim.GetAttribute(key).Get<T>(out, time);
     }
 

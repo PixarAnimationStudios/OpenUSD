@@ -28,7 +28,6 @@
 
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderIndex.h"
 
 #include "pxr/usd/usdGeom/basisCurves.h"
 #include "pxr/usd/usdGeom/xformCache.h"
@@ -50,9 +49,10 @@ UsdImagingBasisCurvesAdapter::~UsdImagingBasisCurvesAdapter()
 }
 
 bool
-UsdImagingBasisCurvesAdapter::IsSupported(HdRenderIndex* renderIndex)
+UsdImagingBasisCurvesAdapter::IsSupported(
+        UsdImagingIndexProxy const* index) const
 {
-    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
+    return index->IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
 }
 
 SdfPath
@@ -60,13 +60,8 @@ UsdImagingBasisCurvesAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertRprim(HdPrimTypeTokens->basisCurves,
-                       prim,
-                       GetMaterialId(prim),
-                       instancerContext);
-    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-
-    return prim.GetPath();
+    return _AddRprim(HdPrimTypeTokens->basisCurves,
+                     prim, index, GetMaterialId(prim), instancerContext);
 }
 
 void 

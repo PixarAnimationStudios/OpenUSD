@@ -29,7 +29,6 @@
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
-#include "pxr/usdImaging/usdImaging/shaderAdapter.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/surfaceShader.h"
@@ -73,7 +72,6 @@ class UsdImagingDefaultShaderAdapter;
 
 typedef boost::container::flat_map<SdfPath, bool> PickabilityMap;
 typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
-typedef boost::shared_ptr<UsdImagingShaderAdapter> UsdImagingShaderAdapterSharedPtr;
 
 /// \class UsdImagingDelegate
 ///
@@ -254,10 +252,6 @@ public:
     void SetDisplayGuides(bool displayGuides);
     bool GetDisplayGuides() const { return _displayGuides; }
 
-    /// Texture population helper
-    USDIMAGING_API
-    SdfPathVector GetSurfaceShaderTextures(SdfPath const &shaderId);
-
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
@@ -322,14 +316,12 @@ public:
 
     // Shader Support
     USDIMAGING_API
-    virtual bool GetSurfaceShaderIsTimeVarying(SdfPath const& id);
-    USDIMAGING_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &id);
     USDIMAGING_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &id);
     USDIMAGING_API
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &id, 
-                                  TfToken const &paramName);
+                                               TfToken const &paramName);
     USDIMAGING_API
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &id);
 
@@ -447,10 +439,6 @@ private:
     class _Worker;
     friend class UsdImagingIndexProxy;
     friend class UsdImagingPrimAdapter;
-
-    // UsdImagingShaderAdapter needs access to _GetPrim.  We should
-    // consider making it public.
-    friend class UsdImagingShaderAdapter;
 
     bool _ValidateRefineLevel(int level) {
         if (!(0 <= level && level <= 8)) {
@@ -575,28 +563,12 @@ private:
     // Obtain the prim tracking data for the given cache path.
     _PrimInfo *GetPrimInfo(const SdfPath &cachePath);
 
-
-    typedef UsdImagingShaderAdapterSharedPtr _ShaderAdapterSharedPtr;
-
-    // This method looks up a shader adapter based on the \p shaderId.
-    // Currently, it's hard coded to return _shaderAdapter but could be
-    // extended.
-    //
-    // This will never return a nullptr.  
-    _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
-
     // XXX: These maps could be store as individual member paths on the Rprim
     // itself, which seems like a much nicer way of maintaining the mapping.
     tbb::spin_rw_mutex _indexToUsdPathMapMutex;
     _PathToPathMap _indexToUsdPathMap;
     tbb::spin_rw_mutex _usdToIndexPathMapMutex;
     _PathToPathMap _usdToIndexPathMap;
-
-    typedef TfHashMap<SdfPath, bool, SdfPath::Hash> _ShaderMap;
-    _ShaderMap _shaderMap;
-
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _TextureSet;
-    _TextureSet _texturePaths;
 
     typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
     _InstancerSet _instancerPrimPaths;
@@ -648,7 +620,7 @@ private:
     // Pickability
     PickabilityMap _pickablesMap;
 
-    UsdImagingShaderAdapterSharedPtr _shaderAdapter;
+    UsdImagingPrimAdapterSharedPtr _shaderAdapter;
 
     // Display guides rendering
     bool _displayGuides;
@@ -681,31 +653,40 @@ public:
     /// twice without causing an error.  However, the UsdPrim and Adpater have
     /// to be the same as what is already inserted in the tracking.
     USDIMAGING_API
-    void AddPrimInfo(SdfPath const &cachePath,
+    void AddPrimInfo(SdfPath const& cachePath,
                      UsdPrim const& usdPrim,
                      UsdImagingPrimAdapterSharedPtr const& adapter);
 
-
     USDIMAGING_API
     void InsertRprim(TfToken const& primType,
+                     SdfPath const& cachePath,
+                     SdfPath const& parentPath,
                      UsdPrim const& usdPrim,
-                     SdfPath const& shaderBinding,
-                     UsdImagingInstancerContext const* instancerContext);
+                     UsdImagingPrimAdapterSharedPtr adapter =
+                        UsdImagingPrimAdapterSharedPtr());
 
     USDIMAGING_API
     void InsertSprim(TfToken const& primType,
-                     UsdPrim const& usdPrim);
+                     SdfPath const& cachePath,
+                     UsdPrim const& usdPrim,
+                     UsdImagingPrimAdapterSharedPtr adapter =
+                        UsdImagingPrimAdapterSharedPtr());
 
     USDIMAGING_API
     void InsertBprim(TfToken const& primType,
-                     UsdPrim const& usdPrim);
+                     SdfPath const& cachePath,
+                     UsdPrim const& usdPrim,
+                     UsdImagingPrimAdapterSharedPtr adapter =
+                        UsdImagingPrimAdapterSharedPtr());
 
     // Inserts an instancer into the HdRenderIndex and schedules it for updates
     // from the delegate.
     USDIMAGING_API
     void InsertInstancer(SdfPath const& cachePath,
+                         SdfPath const& parentPath,
                          UsdPrim const& usdPrim,
-                         UsdImagingInstancerContext const* instancerContext);
+                         UsdImagingPrimAdapterSharedPtr adapter =
+                            UsdImagingPrimAdapterSharedPtr());
 
     // Refresh the prim at the specified render index path.
     USDIMAGING_API
@@ -753,10 +734,20 @@ public:
     void MarkBprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
     void MarkInstancerDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
 
+    bool IsRprimTypeSupported(TfToken const& typeId) const;
+    bool IsSprimTypeSupported(TfToken const& typeId) const;
+    bool IsBprimTypeSupported(TfToken const& typeId) const;
+
+    // Check if the given path has been populated yet.
+    USDIMAGING_API
+    bool IsPopulated(SdfPath const& cachePath) const;
 
     // Recursively repopulate the specified usdPath into the render index.
     USDIMAGING_API
     void Repopulate(SdfPath const& usdPath);
+
+    // XXX: transitional code!
+    UsdImagingPrimAdapterSharedPtr GetShaderAdapter();
 
 private:
     friend class UsdImagingDelegate;

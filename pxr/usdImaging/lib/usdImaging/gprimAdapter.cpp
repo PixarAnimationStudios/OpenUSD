@@ -58,6 +58,61 @@ UsdImagingGprimAdapter::~UsdImagingGprimAdapter()
 {
 }
 
+/* static */
+SdfPath
+UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
+                                  UsdPrim const& usdPrim,
+                                  UsdImagingIndexProxy* index,
+                                  SdfPath const& materialId,
+                                  UsdImagingInstancerContext const*
+                                      instancerContext)
+{
+    SdfPath cachePath = usdPrim.GetPath(), instancer;
+    UsdPrim cachePrim = usdPrim;
+
+    // For non-instanced prims, cachePath and usdPath will be the same, however
+    // for instanced prims, cachePath will be something like:
+    //
+    // usdPath: /__Master_1/cube
+    // cachePath: /Models/cube_0.proto_cube_id0
+    //
+    // The name-mangling is so that multiple instancers/adapters can track the
+    // same underlying UsdPrim.
+    if (instancerContext != nullptr) {
+        instancer = instancerContext->instancerId;
+        TfToken const& childName = instancerContext->childName;
+
+        if (!instancer.IsEmpty() || !childName.IsEmpty()) {
+            if (!instancer.IsEmpty()) {
+                cachePath = instancer;
+            }
+            if (!childName.IsEmpty()) {
+                cachePath = cachePath.AppendProperty(childName);
+            }
+            cachePrim = usdPrim.GetStage()->GetPrimAtPath(
+                cachePath.GetAbsoluteRootOrPrimPath());
+        }
+    }
+
+    index->InsertRprim(primType, cachePath, instancer, cachePrim,
+        instancerContext ? instancerContext->instancerAdapter
+            : UsdImagingPrimAdapterSharedPtr());
+    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+
+    // Populate shaders by reference from rprims.
+    SdfPath shaderPath = instancerContext ?
+        instancerContext->instanceMaterialId : materialId;
+    UsdPrim shaderPrim = usdPrim.GetStage()->GetPrimAtPath(shaderPath);
+    // XXX: transitional code! this should be _GetPrimAdapter.
+    UsdImagingPrimAdapterSharedPtr shaderAdapter = index->GetShaderAdapter();
+
+    if (shaderPrim && shaderAdapter) {
+        shaderAdapter->Populate(shaderPrim, index, nullptr);
+    }
+
+    return cachePath;
+}
+
 void 
 UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                                          SdfPath const& cachePath,
@@ -134,8 +189,7 @@ UsdImagingGprimAdapter::_DiscoverPrimvars(
     // Check if each parameter/input is bound to a texture or primvar, if so,
     // collect that primvar from this gprim.
     // XXX: Should move this into ShaderAdapter
-    if (UsdPrim const& shaderPrim =
-                        gprim.GetPrim().GetStage()->GetPrimAtPath(shaderPath)) {
+    if (UsdPrim const& shaderPrim = _GetPrim(shaderPath)) {
         if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
             _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, 
                                                s, time, valueCache);
@@ -461,6 +515,7 @@ UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time)
     }
 }
 
+/* static */
 VtValue
 UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                         UsdImagingValueCache::PrimvarInfo* primvarInfo,
