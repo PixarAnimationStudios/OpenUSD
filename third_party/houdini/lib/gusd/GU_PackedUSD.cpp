@@ -151,7 +151,13 @@ GusdGU_PackedUSD::Build(
     impl->m_frame = frame;
     impl->m_usdPrim = prim;
     if( lod )
+    {
+#if HDK_API_VERSION < 16050000
         impl->intrinsicSetViewportLOD( lod );
+#else
+        impl->intrinsicSetViewportLOD( packedPrim, lod );
+#endif
+    }
     impl->setPurposes( purposes );
 
     // It seems that Houdini may reuse memory for packed implementations with
@@ -183,7 +189,13 @@ GusdGU_PackedUSD::Build(
     impl->m_frame = frame;
     impl->m_usdPrim = prim;
     if( lod )
+    {
+#if HDK_API_VERSION < 16050000
         impl->intrinsicSetViewportLOD( lod );
+#else
+        impl->intrinsicSetViewportLOD( packedPrim, lod );
+#endif
+    }
     impl->setPurposes( purposes );
 
     // It seems that Houdini may reuse memory for packed implementations with
@@ -626,7 +638,11 @@ GusdGU_PackedUSD::unpackPrim(
             primPath,
             xform,
             intrinsicFrame(),
-            intrinsicViewportLOD(),
+#if HDK_API_VERSION < 16050000
+	    intrinsicViewportLOD(),
+#else
+	    intrinsicViewportLOD( getPrim() ),
+#endif
             m_purposes )) {
 
         // If the wrapper prim does not do the unpack, do it here.
@@ -794,7 +810,7 @@ GusdGU_PackedUSD::getUsdPrim(GusdUT_ErrorContext* err) const
 GusdStageEditPtr
 GusdGU_PackedUSD::getStageEdit() const
 {
-    if(not m_primPath.ContainsPrimVariantSelection())
+    if(!m_primPath.ContainsPrimVariantSelection())
         return GusdStageEditPtr();
 
     auto* edit = new GusdStageBasicEdit;
