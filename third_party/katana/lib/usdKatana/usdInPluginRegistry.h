@@ -151,7 +151,34 @@ public:
     
     
     
+    typedef void (*OpDirectExecFnc)(
+            const PxrUsdKatanaUsdInPrivateData& privateData,
+            FnKat::GroupAttribute opArgs,
+            FnKat::GeolibCookInterface& interface);
     
+    /// \brief Makes an PxrUsdIn kind./type op's cook function available for
+    ///        to invoke directly without execOp. This is to allow for
+    ///        privateData to be locally overriden in a way that's not directly
+    ///        possible via execOp in katana 2.x. While possible in katana 3.x,
+    ///        this technique has slightly less overhead and remains compatible
+    ///        between versions
+    ///        NOTE: This is normally not necessary to call directly as it's
+    ///              handled as part of the USD_OP_REGISTER_PLUGIN used to
+    ///              define the op.
+    static void RegisterOpDirectExecFnc(
+           const std::string& opName,
+           OpDirectExecFnc fnc);
+    
+    /// \brief Directly invoke the cook method of a PxrUsdIn extension op
+    ///        Ops called in this manner should retrieve op arguments and
+    ///        and private data not from the interface but from their function
+    ///        parameters. This is to allow either to be locally overriden
+    ///        without the overhead or limitations (in 2.x) of execOp
+    static void ExecuteOpDirectExecFnc(
+            const std::string& opName,
+            const PxrUsdKatanaUsdInPrivateData& privateData,
+            FnKat::GroupAttribute opArgs,
+            FnKat::GeolibCookInterface& interface);
     
     
     
@@ -175,48 +202,64 @@ private:
 /// \def PXRUSDKATANA_USDIN_PLUGIN_DECLARE(T)
 /// \brief Declares a plugin of opType T.
 #define PXRUSDKATANA_USDIN_PLUGIN_DECLARE(T) \
+PXR_NAMESPACE_USING_DIRECTIVE \
 class T : public FnKat::GeolibOp\
 {\
 public:\
     static void setup(FnKat::GeolibSetupInterface& interface);\
     static void cook(FnKat::GeolibCookInterface& interface);\
+    static void directExec(const PxrUsdKatanaUsdInPrivateData& privateData, \
+            FnKat::GroupAttribute opArgs, \
+            Foundry::Katana::GeolibCookInterface &interface);\
 };\
 
 /// \def PXRUSDKATANA_USDIN_PLUGIN_DEFINE(T, argsName, interfaceName) 
 /// \brief Defines a plugin of opType T.  
-#define PXRUSDKATANA_USDIN_PLUGIN_DEFINE(T, argsName, interfaceName) \
+#define PXRUSDKATANA_USDIN_PLUGIN_DEFINE(T, argsName, opArgsName, interfaceName) \
 void T::setup(FnKat::GeolibSetupInterface& interface) {\
     interface.setThreading(FnKat::GeolibSetupInterface::ThreadModeConcurrent);\
 }\
 void _PxrUsdKatana_PrimReaderFn_##T(\
         const PxrUsdKatanaUsdInPrivateData&,\
+        FnKat::GroupAttribute, \
         Foundry::Katana::GeolibCookInterface &);\
 void T::cook(FnKat::GeolibCookInterface& interface) \
 {\
     if (PxrUsdKatanaUsdInPrivateData* args \
-            = static_cast<PxrUsdKatanaUsdInPrivateData*>(interface.getPrivateData())) {\
-        _PxrUsdKatana_PrimReaderFn_##T(*args, interface);\
+            = PxrUsdKatanaUsdInPrivateData::GetPrivateData(interface)) {\
+        _PxrUsdKatana_PrimReaderFn_##T(*args, interface.getOpArg(), interface);\
     }\
+}\
+void T::directExec(const PxrUsdKatanaUsdInPrivateData& privateData, \
+            FnKat::GroupAttribute opArgs, \
+            Foundry::Katana::GeolibCookInterface &interface)\
+{\
+    _PxrUsdKatana_PrimReaderFn_##T(privateData, opArgs, interface);\
 }\
 void _PxrUsdKatana_PrimReaderFn_##T(\
         const PxrUsdKatanaUsdInPrivateData& argsName,\
+        FnKat::GroupAttribute opArgsName,\
         Foundry::Katana::GeolibCookInterface &interfaceName )\
 
 
 /// \def PXRUSDKATANA_USDIN_PLUGIN_DECLARE_WITH_FLUSH(T)
 /// \brief Declares a plugin of opType which also includes a flush function T.
 #define PXRUSDKATANA_USDIN_PLUGIN_DECLARE_WITH_FLUSH(T) \
+PXR_NAMESPACE_USING_DIRECTIVE \
 class T : public FnKat::GeolibOp\
 {\
 public:\
     static void setup(FnKat::GeolibSetupInterface& interface);\
     static void cook(FnKat::GeolibCookInterface& interface);\
     static void flush();\
+    static void directExec(const PxrUsdKatanaUsdInPrivateData& privateData, \
+            FnKat::GroupAttribute opArgs, \
+            Foundry::Katana::GeolibCookInterface &interface);\
 };\
 
 /// \def PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(T, argsName, interfaceName) 
 /// \brief Defines a plugin of opType T with inclusion of a flush function.  
-#define PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(T, argsName, interfaceName, flushFnc) \
+#define PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(T, argsName, opArgsName, interfaceName, flushFnc) \
 void T::setup(FnKat::GeolibSetupInterface& interface) {\
     interface.setThreading(FnKat::GeolibSetupInterface::ThreadModeConcurrent);\
 }\
@@ -225,17 +268,31 @@ void T::flush() {\
 }\
 void _PxrUsdKatana_PrimReaderFn_##T(\
         const PxrUsdKatanaUsdInPrivateData&,\
+        FnKat::GroupAttribute, \
         Foundry::Katana::GeolibCookInterface &);\
 void T::cook(FnKat::GeolibCookInterface& interface) \
 {\
     if (PxrUsdKatanaUsdInPrivateData* args \
-            = static_cast<PxrUsdKatanaUsdInPrivateData*>(interface.getPrivateData())) {\
-        _PxrUsdKatana_PrimReaderFn_##T(*args, interface);\
+            = PxrUsdKatanaUsdInPrivateData::GetPrivateData(interface)) {\
+        _PxrUsdKatana_PrimReaderFn_##T(*args, interface.getOpArg(), interface);\
     }\
+}\
+void T::directExec(const PxrUsdKatanaUsdInPrivateData& privateData, \
+            FnKat::GroupAttribute opArgs,\
+            Foundry::Katana::GeolibCookInterface &interface)\
+{\
+    _PxrUsdKatana_PrimReaderFn_##T(privateData, opArgs, interface);\
 }\
 void _PxrUsdKatana_PrimReaderFn_##T(\
         const PxrUsdKatanaUsdInPrivateData& argsName,\
+        FnKat::GroupAttribute opArgsName, \
         Foundry::Katana::GeolibCookInterface &interfaceName )\
+
+/// \brief Equivalent of the standard REGISTER_PLUGIN with additional
+///        registration in service direct execution.
+#define USD_OP_REGISTER_PLUGIN(PLUGIN_CLASS, PLUGIN_NAME, PLUGIN_MAJOR_VERSION, PLUGIN_MINOR_VERSION) \
+    REGISTER_PLUGIN(PLUGIN_CLASS, PLUGIN_NAME, PLUGIN_MAJOR_VERSION, PLUGIN_MINOR_VERSION) \
+    PxrUsdKatanaUsdInPluginRegistry::RegisterOpDirectExecFnc(PLUGIN_NAME, PLUGIN_CLASS::directExec);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

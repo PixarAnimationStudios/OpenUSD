@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, interface)
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, opArgs, interface)
 {
     UsdGeomPointInstancer instancer =
         UsdGeomPointInstancer(privateData.GetUsdPrim());
@@ -47,7 +47,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
 
     // Pass along PxrUsdIn op args.
     //
-    inputAttrMap.set("opArgs", interface.getOpArg());
+    inputAttrMap.set("opArgs", opArgs);
 
     // Generate output attr maps.
     //
@@ -98,7 +98,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
             childAttrs.getChildName(i),
             "PxrUsdIn.BuildIntermediate",
             FnKat::GroupBuilder()
-                .update(interface.getOpArg())
+                .update(opArgs)
                 .set("staticScene", childAttrs.getChildByIndex(i))
                 .build(),
             FnKat::GeolibCookInterface::ResetRootFalse,

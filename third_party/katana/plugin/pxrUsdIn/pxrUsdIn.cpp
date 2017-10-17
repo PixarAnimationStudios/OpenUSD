@@ -51,6 +51,8 @@
 #include <stdio.h>
 
 #include <sstream>
+#include <memory>
+
 
 FnLogSetup("PxrUsdIn")
 
@@ -126,6 +128,12 @@ public:
             static_cast<PxrUsdKatanaUsdInPrivateData*>(
                 interface.getPrivateData());
 
+        // We may be constructing the private data locally -- in which case
+        // it will not be destroyed by the Geolib runtime.
+        // This won't be used directly but rather just filled if the private
+        // needs to be locally built.
+        std::unique_ptr<PxrUsdKatanaUsdInPrivateData> localPrivateData;
+
         FnKat::GroupAttribute opArgs = interface.getOpArg();
         
         // Get usdInArgs.
@@ -139,6 +147,19 @@ public:
                 .update(opArgs)
                 .deepUpdate(additionalOpArgs)
                 .build();
+            
+            // Construct local private data if none was provided by the parent.
+            // This is a legitmate case for the root of the scene -- most
+            // relevant with the isolatePath pointing at a deeper scope which
+            // may have meaningful type/kind ops.
+            
+            if (usdInArgs->GetStage())
+            {
+                localPrivateData.reset(new PxrUsdKatanaUsdInPrivateData(
+                                   usdInArgs->GetRootPrim(),
+                                   usdInArgs, privateData));
+                privateData = localPrivateData.get();
+            }
         }
         // Validate usdInArgs.
         if (!usdInArgs) {
@@ -154,10 +175,10 @@ public:
 
         UsdStagePtr stage = usdInArgs->GetStage();
 
-        // Get usd prim.
-        UsdPrim prim = interface.atRoot()
-            ? usdInArgs->GetRootPrim()
-            : privateData->GetUsdPrim();
+        UsdPrim prim = privateData
+            ? privateData->GetUsdPrim()
+            : usdInArgs->GetRootPrim();
+        
         // Validate usd prim.
         if (!prim) {
             ERROR("No prim at %s",
@@ -345,10 +366,14 @@ public:
                 if (PxrUsdKatanaUsdInPluginRegistry::FindUsdType(
                         prim.GetTypeName(), &opName)) {
                     if (!opName.empty()) {
-                        interface.execOp(opName, opArgs);
                         
                         if (privateData)
                         {
+                            // roughly equivalent to execOp except that we can
+                            // locally override privateData
+                            PxrUsdKatanaUsdInPluginRegistry::ExecuteOpDirectExecFnc(
+                                    opName, *privateData, opArgs, interface);
+
                             opArgs = privateData->updateExtensionOpArgs(opArgs);
                         }
                         
@@ -365,10 +390,12 @@ public:
                 if (PxrUsdKatanaUsdInPluginRegistry::FindUsdTypeForSite(
                         prim.GetTypeName(), &opName)) {
                     if (!opName.empty()) {
-                        interface.execOp(opName, opArgs);
-                        
                         if (privateData)
                         {
+                            // roughly equivalent to execOp except that we can
+                            // locally override privateData
+                            PxrUsdKatanaUsdInPluginRegistry::ExecuteOpDirectExecFnc(
+                                    opName, *privateData, opArgs, interface);
                             opArgs = privateData->updateExtensionOpArgs(opArgs);
                         }
                     }
@@ -389,10 +416,13 @@ public:
                     std::string opName;
                     if (PxrUsdKatanaUsdInPluginRegistry::FindKind(kind, &opName)) {
                         if (!opName.empty()) {
-                            interface.execOp(opName, opArgs);
-                            
                             if (privateData)
                             {
+                                // roughly equivalent to execOp except that we can
+                                // locally override privateData
+                                PxrUsdKatanaUsdInPluginRegistry::ExecuteOpDirectExecFnc(
+                                        opName, *privateData, opArgs, interface);
+                                
                                 opArgs = privateData->updateExtensionOpArgs(opArgs);
                             }
                         }
@@ -412,10 +442,10 @@ public:
                     if (PxrUsdKatanaUsdInPluginRegistry::FindKindForSite(
                             kind, &opName)) {
                         if (!opName.empty()) {
-                            interface.execOp(opName, opArgs);
-                            
                             if (privateData)
                             {
+                                PxrUsdKatanaUsdInPluginRegistry::ExecuteOpDirectExecFnc(
+                                        opName, *privateData, opArgs, interface);
                                 opArgs = privateData->updateExtensionOpArgs(opArgs);
                             }
                         }

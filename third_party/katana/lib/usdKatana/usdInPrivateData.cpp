@@ -443,8 +443,14 @@ PxrUsdKatanaUsdInPrivateData::updateExtensionOpArgs(
         .deepUpdate(_extGb->build())
         .build();
 }
-    
-    
+
+PxrUsdKatanaUsdInPrivateData *
+PxrUsdKatanaUsdInPrivateData::GetPrivateData(
+        const FnKat::GeolibCookInterface& interface)
+{
+    return static_cast<PxrUsdKatanaUsdInPrivateData*>(
+            interface.getPrivateData());
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

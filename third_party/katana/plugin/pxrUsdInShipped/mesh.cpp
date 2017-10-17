@@ -45,7 +45,7 @@ _CreateFaceSetsFromFaceSetAPI(
         const PxrUsdKatanaUsdInPrivateData &data,
         FnKat::GeolibCookInterface& interface);
 
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, interface)
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, opArgs, interface)
 {
     PxrUsdKatanaAttrMap attrs;
 

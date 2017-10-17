@@ -197,6 +197,33 @@ PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
 }
 
 
+typedef std::map<std::string, PxrUsdKatanaUsdInPluginRegistry::OpDirectExecFnc>
+        _OpDirectExecFncTable;
+
+static _OpDirectExecFncTable _opDirectExecFncTable;
+
+void PxrUsdKatanaUsdInPluginRegistry::RegisterOpDirectExecFnc(
+       const std::string& opName,
+       OpDirectExecFnc fnc)
+{
+    _opDirectExecFncTable[opName] = fnc;
+}
+    
+void PxrUsdKatanaUsdInPluginRegistry::ExecuteOpDirectExecFnc(
+        const std::string& opName,
+        const PxrUsdKatanaUsdInPrivateData& privateData,
+        FnKat::GroupAttribute opArgs,
+        FnKat::GeolibCookInterface& interface)
+{
+    _OpDirectExecFncTable::iterator I = _opDirectExecFncTable.find(opName);
+    
+    if (I != _opDirectExecFncTable.end())
+    {
+        (*((*I).second))(privateData, opArgs, interface);
+    }
+}
+
+
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -132,7 +132,7 @@ FnKat::Hash _GetCacheKey(const PxrUsdKatanaUsdInPrivateData& privateData) {
 
 
 PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(
-    PxrUsdInCore_LooksGroupOp, privateData, interface, FlushMaterialGroupCache)
+    PxrUsdInCore_LooksGroupOp, privateData, opArgs, interface, FlushMaterialGroupCache)
 {
     // leave for debugging purposes
     // TfStopwatch timer_loadUsdMaterialGroup;
