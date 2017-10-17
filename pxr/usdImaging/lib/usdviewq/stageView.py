@@ -1097,6 +1097,8 @@ class StageView(QtOpenGL.QGLWidget):
             self._defaultComplexity = 1.0
             self._defaultDrawSelHighlights = True
             self._defaultShowBBoxes = True
+            self._defaultRenderMode = "Smooth Shaded"
+            self._defaultShowHUD = True
 
         @property
         def bboxCache(self):
@@ -1132,7 +1134,11 @@ class StageView(QtOpenGL.QGLWidget):
 
         @property
         def renderMode(self):
-            return "Smooth Shaded"
+            return self._defaultRenderMode
+
+        @renderMode.setter
+        def renderMode(self, value):
+            self._defaultRenderMode = value
 
         @property
         def freeCamera(self):
@@ -1212,7 +1218,11 @@ class StageView(QtOpenGL.QGLWidget):
 
         @property
         def showHUD(self):
-            return True
+            return self._defaultShowHUD
+
+        @showHUD.setter
+        def showHUD(self, value):
+            self._defaultShowHUD = value
 
         @property
         def showHUD_Info(self):
@@ -1232,19 +1242,19 @@ class StageView(QtOpenGL.QGLWidget):
 
         @property
         def ambientLightOnly(self):
-            return True
+            return False
 
         @property
         def keyLightEnabled(self):
-            return False
+            return True
 
         @property
         def fillLightEnabled(self):
-            return False
+            return True
 
         @property
         def backLightEnabled(self):
-            return False
+            return True
 
         @property
         def highlightColor(self):

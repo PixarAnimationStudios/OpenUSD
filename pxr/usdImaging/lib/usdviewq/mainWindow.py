@@ -1381,6 +1381,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def renderMode(self):
         return self._renderMode
 
+    @renderMode.setter
+    def renderMode(self, value):
+        self._renderMode = value
+
     @property
     def pickMode(self):
         return self._pickMode
@@ -1464,6 +1468,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @property
     def showHUD(self):
         return self._showHUD
+
+    @showHUD.setter
+    def showHUD(self, value):
+        self._showHUD = value
 
     @property
     def showHUD_Info(self):
