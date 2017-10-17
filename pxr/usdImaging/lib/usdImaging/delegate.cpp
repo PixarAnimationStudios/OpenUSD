@@ -63,6 +63,7 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
+#include <functional>
 #include <limits>
 #include <string>
 
@@ -897,8 +898,8 @@ UsdImagingDelegate::_ExecuteWorkForVariabilityUpdate(_Worker* worker)
         TF_PY_ALLOW_THREADS_IN_SCOPE();
         WorkParallelForN(
             worker->GetTaskCount(), 
-            boost::bind(&UsdImagingDelegate::_Worker::UpdateVariability, 
-                        worker, _1, _2));
+            std::bind(&UsdImagingDelegate::_Worker::UpdateVariability, 
+                      worker, std::placeholders::_1, std::placeholders::_2));
     }
     worker->EnableValueCacheMutations();
 }
@@ -982,8 +983,10 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         pathsToResync.reserve(_pathsToResync.size());
         std::sort(_pathsToResync.begin(), _pathsToResync.end());
         std::unique_copy(_pathsToResync.begin(), _pathsToResync.end(),
-                        std::back_inserter(pathsToResync),
-                        boost::bind(&SdfPath::HasPrefix, _2, _1));
+                         std::back_inserter(pathsToResync),
+                         [](SdfPath const &l, SdfPath const &r) {
+                             return r.HasPrefix(l);
+                         });
         _pathsToResync.clear();
 
         TF_FOR_ALL(pathIt, pathsToResync) {
@@ -1082,8 +1085,8 @@ UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
         TF_PY_ALLOW_THREADS_IN_SCOPE();
         WorkParallelForN(
             worker->GetTaskCount(), 
-            boost::bind(&UsdImagingDelegate::_Worker::UpdateForTime, 
-                        worker, _1, _2));
+            std::bind(&UsdImagingDelegate::_Worker::UpdateForTime, 
+                      worker, std::placeholders::_1, std::placeholders::_2));
     }
     worker->EnableValueCacheMutations();
 }

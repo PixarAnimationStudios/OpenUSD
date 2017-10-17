@@ -112,10 +112,8 @@ _ComputeSmoothNormals(int numPoints, SrcVec3Type const * pointsPtr,
 
     WorkParallelForN(
         numPoints,
-        boost::bind(&_SmoothNormalsWorker<SrcVec3Type, DstType>::Compute,
-                   boost::ref(workerState), _1, _2));
-
-
+        std::bind(&_SmoothNormalsWorker<SrcVec3Type, DstType>::Compute,
+                  std::ref(workerState), std::placeholders::_1, std::placeholders::_2));
 
     return normals;
 }

@@ -828,9 +828,10 @@ namespace {
     {
         size_t numPrims = syncReq->rprims.size();
         WorkParallelForN(numPrims,
-                     boost::bind(&_PreSyncRPrims,
-                                 sceneDelegate, syncReq, boost::cref(reprs),
-                                 _1, _2));
+                         std::bind(&_PreSyncRPrims,
+                                   sceneDelegate, syncReq, std::cref(reprs),
+                                   std::placeholders::_1,
+                                   std::placeholders::_2));
 
         // Pre-sync may have completely cleaned prims, so as an optimization
         // remove them from the sync request list.
@@ -1047,10 +1048,10 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             HdSceneDelegate *sceneDelegate = dlgIt->first;
             _RprimSyncRequestVector *r = &dlgIt->second;
             dirtyBitDispatcher.Run(
-                                   boost::bind(&_PreSyncRequestVector,
-                                               sceneDelegate,
-                                               r,
-                                               boost::cref(reprs)));
+                                   std::bind(&_PreSyncRequestVector,
+                                             sceneDelegate,
+                                             r,
+                                             std::cref(reprs)));
 
         }
         dirtyBitDispatcher.Wait();
@@ -1061,8 +1062,10 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
         // Dispatch synchronization work to each delegate.
         _Worker worker(&syncMap);
         WorkParallelForN(syncMap.size(),
-                         boost::bind(&_Worker::Process,
-                                     boost::ref(worker), _1, _2));
+                         std::bind(&_Worker::Process,
+                                   std::ref(worker),
+                                   std::placeholders::_1,
+                                   std::placeholders::_2));
     }
 
     // Collect results and synchronize.
@@ -1083,7 +1086,9 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
                 // workerState going out of scope.
                 dispatcher.Run([&r, workerState]() {
                     WorkParallelForN(r.rprims.size(),
-                        boost::bind(&_SyncRPrims::Sync, workerState, _1, _2));
+                        std::bind(&_SyncRPrims::Sync, workerState,
+                                  std::placeholders::_1,
+                                  std::placeholders::_2));
                 });
             } else {
                 TRACE_SCOPE("Serial Rprim Sync");

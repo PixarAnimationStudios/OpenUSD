@@ -42,9 +42,9 @@
 
 #include "pxr/base/work/loops.h"
 
-#include <boost/bind.hpp>
 #include <boost/functional/hash.hpp>
-#include <boost/make_shared.hpp>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -280,8 +280,10 @@ HdCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
 
     if (!mtCullingDisabled) {
         WorkParallelForN(_drawItemInstances.size(), 
-                         boost::bind(&_Worker::cull, &_drawItemInstances, 
-                         boost::cref(viewProjMatrix), _1, _2));
+                         std::bind(&_Worker::cull, &_drawItemInstances, 
+                                   std::cref(viewProjMatrix),
+                                   std::placeholders::_1,
+                                   std::placeholders::_2));
     } else {
         _Worker::cull(&_drawItemInstances, 
                       viewProjMatrix, 

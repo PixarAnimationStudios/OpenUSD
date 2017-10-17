@@ -44,9 +44,8 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/work/loops.h"
 
-#include <boost/bind.hpp>
- 
 #include <algorithm>
+#include <functional>
 #include <iostream>
 #include <set>
 
@@ -896,7 +895,8 @@ HdResourceRegistry::GarbageCollectDispatchBuffers()
     _dispatchBufferRegistry.erase(
         std::remove_if(
             _dispatchBufferRegistry.begin(), _dispatchBufferRegistry.end(),
-            boost::bind(&HdDispatchBufferSharedPtr::unique, _1)),
+            std::bind(&HdDispatchBufferSharedPtr::unique,
+                      std::placeholders::_1)),
         _dispatchBufferRegistry.end());
 }
 
@@ -921,7 +921,8 @@ HdResourceRegistry::GarbageCollectPersistentBuffers()
     _persistentBufferRegistry.erase(
         std::remove_if(
             _persistentBufferRegistry.begin(), _persistentBufferRegistry.end(),
-            boost::bind(&HdPersistentBufferSharedPtr::unique, _1)),
+            std::bind(&HdPersistentBufferSharedPtr::unique,
+                      std::placeholders::_1)),
         _persistentBufferRegistry.end());
 }
 
