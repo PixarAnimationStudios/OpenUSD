@@ -104,6 +104,10 @@ class Launcher(object):
                             dest='clearSettings',
                             help='Restores usdview settings to default')
 
+        parser.add_argument('--defaultsettings', action='store_true',
+                            dest='defaultSettings',
+                            help='Launch usdview with default settings')
+
         parser.add_argument('--norender', action='store_true',
                             dest='noRender',
                             help='Display only hierarchy browser')
@@ -194,6 +198,11 @@ class Launcher(object):
                                           str(Sdf.Path.absoluteRootPath))
                     camPath = camPath.MakeAbsolutePath(Sdf.Path.absoluteRootPath)
                 arg_parse_result.camera = camPath
+
+        if arg_parse_result.clearSettings and arg_parse_result.defaultSettings:
+            print >> sys.stderr, "ERROR: cannot supply both --clearsettings " \
+                                 "and --defaultSettings."
+            return False
         return True
 
     def LaunchPreamble(self, arg_parse_result):

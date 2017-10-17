@@ -246,17 +246,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setStatusBar(self._statusBar)
 
             settingsPathDir = self._outputBaseDirectory()
-            if settingsPathDir is None:
+            if settingsPathDir is None or parserData.defaultSettings:
                 # Create an ephemeral settings object with a non existent filepath
                 self._settings = settings.Settings('', seq=None, ephemeral=True)
             else:
-                settingsPath = os.path.join(settingsPathDir, self._statusFileName)
-                deprecatedSettingsPath = \
-                    os.path.join(settingsPathDir, self._deprecatedStatusFileName)
+                settingsPath = os.path.join(settingsPathDir, 
+                                            self._statusFileName)
+                deprecatedSettingsPath = os.path.join(settingsPathDir, 
+                                                      self._deprecatedStatusFileName)
                 if (os.path.isfile(deprecatedSettingsPath) and
                     not os.path.isfile(settingsPath)):
                     warning = ('\nWARNING: The settings file at: '
-                               + str(deprecatedSettingsPath) + ' is deprecated.\n'
+                               + str(deprecatedSettingsPath) 
+                               + ' is deprecated.\n'
                                + 'These settings are not being used, the new '
                                + 'settings file will be located at: '
                                + str(settingsPath) + '.\n')

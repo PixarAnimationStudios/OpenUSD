@@ -90,6 +90,11 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewPrimSearch
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewDefaultSettings
+        DEST testusdviewDefaultSettings
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -187,6 +192,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewPrimSearch
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimSearch.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewDefaultSettings
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewDefaultSettings.py --defaultsettings test.usda"
         EXPECTED_RETURN_CODE 0
     )
 endif()
