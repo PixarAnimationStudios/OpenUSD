@@ -37,12 +37,9 @@
 
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/tf/declarePtrs.h"
-
-#include <boost/noncopyable.hpp>
-#include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include "pxr/base/tf/hashset.h"
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -92,8 +89,9 @@ SDF_DECLARE_HANDLES(SdfSpec);
 /// computing a prim index or prim stack, and computing a property index.
 ///
 class PcpCache
-    : public boost::noncopyable
 {
+    PcpCache(PcpCache const &) = delete;
+    PcpCache &operator=(PcpCache const &) = delete;
 public:
     /// Construct a PcpCache to compose results for the layer stack identified
     /// by \a layerStackIdentifier. 
@@ -694,7 +692,7 @@ private:
     _LayerStackCache _layerStackCache;
     _PrimIndexCache  _primIndexCache;
     _PropertyIndexCache  _propertyIndexCache;
-    boost::scoped_ptr<Pcp_Dependencies> _primDependencies;
+    std::unique_ptr<Pcp_Dependencies> _primDependencies;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

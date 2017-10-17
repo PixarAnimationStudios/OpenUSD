@@ -34,9 +34,7 @@
 
 #include "pxr/base/tf/enum.h"
 
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -77,7 +75,7 @@ enum PcpErrorType {
 
 // Forward declarations:
 class PcpErrorBase;
-typedef boost::shared_ptr<PcpErrorBase> PcpErrorBasePtr;
+typedef std::shared_ptr<PcpErrorBase> PcpErrorBasePtr;
 typedef std::vector<PcpErrorBasePtr> PcpErrorVector;
 
 /// \class PcpErrorBase
@@ -109,7 +107,7 @@ protected:
 
 // Forward declarations:
 class PcpErrorArcCycle;
-typedef boost::shared_ptr<PcpErrorArcCycle> PcpErrorArcCyclePtr;
+typedef std::shared_ptr<PcpErrorArcCycle> PcpErrorArcCyclePtr;
 
 /// \class PcpErrorArcCycle
 ///
@@ -135,7 +133,7 @@ private:
 
 // Forward declarations:
 class PcpErrorArcPermissionDenied;
-typedef boost::shared_ptr<PcpErrorArcPermissionDenied> 
+typedef std::shared_ptr<PcpErrorArcPermissionDenied> 
     PcpErrorArcPermissionDeniedPtr;
 
 /// \class PcpErrorArcPermissionDenied
@@ -190,7 +188,7 @@ protected:
 
 // Forward declarations:
 class PcpErrorInconsistentPropertyType;
-typedef boost::shared_ptr<PcpErrorInconsistentPropertyType> 
+typedef std::shared_ptr<PcpErrorInconsistentPropertyType> 
     PcpErrorInconsistentPropertyTypePtr;
 
 /// \class PcpErrorInconsistentPropertyType
@@ -221,7 +219,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInconsistentAttributeType;
-typedef boost::shared_ptr<PcpErrorInconsistentAttributeType> 
+typedef std::shared_ptr<PcpErrorInconsistentAttributeType> 
     PcpErrorInconsistentAttributeTypePtr;
 
 /// \class PcpErrorInconsistentAttributeType
@@ -252,7 +250,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInconsistentAttributeVariability;
-typedef boost::shared_ptr<PcpErrorInconsistentAttributeVariability> 
+typedef std::shared_ptr<PcpErrorInconsistentAttributeVariability> 
     PcpErrorInconsistentAttributeVariabilityPtr;
 
 /// \class PcpErrorInconsistentAttributeVariability
@@ -283,7 +281,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInternalAssetPath;
-typedef boost::shared_ptr<PcpErrorInternalAssetPath>
+typedef std::shared_ptr<PcpErrorInternalAssetPath>
     PcpErrorInternalAssetPathPtr;
 
 /// \class PcpErrorInternalAssetPath
@@ -315,7 +313,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInvalidPrimPath;
-typedef boost::shared_ptr<PcpErrorInvalidPrimPath>
+typedef std::shared_ptr<PcpErrorInvalidPrimPath>
     PcpErrorInvalidPrimPathPtr;
 
 /// \class PcpErrorInvalidPrimPath
@@ -345,7 +343,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInvalidAssetPathBase;
-typedef boost::shared_ptr<PcpErrorInvalidAssetPathBase>
+typedef std::shared_ptr<PcpErrorInvalidAssetPathBase>
     PcpErrorInvalidAssetPathBasePtr;
 
 class PcpErrorInvalidAssetPathBase : public PcpErrorBase {
@@ -371,7 +369,7 @@ protected:
 
 // Forward declarations:
 class PcpErrorInvalidAssetPath;
-typedef boost::shared_ptr<PcpErrorInvalidAssetPath>
+typedef std::shared_ptr<PcpErrorInvalidAssetPath>
     PcpErrorInvalidAssetPathPtr;
 
 /// \class PcpErrorInvalidAssetPath
@@ -396,7 +394,7 @@ private:
 
 // Forward declarations:
 class PcpErrorMutedAssetPath;
-typedef boost::shared_ptr<PcpErrorMutedAssetPath>
+typedef std::shared_ptr<PcpErrorMutedAssetPath>
     PcpErrorMutedAssetPathPtr;
 
 /// \class PcpErrorMutedAssetPath
@@ -421,7 +419,7 @@ private:
 
 // Forward declarations:
 class PcpErrorTargetPathBase;
-typedef boost::shared_ptr<PcpErrorTargetPathBase>
+typedef std::shared_ptr<PcpErrorTargetPathBase>
     PcpErrorTargetPathBasePtr;
 
 /// \class PcpErrorTargetPathBase
@@ -456,7 +454,7 @@ protected:
 
 // Forward declarations:
 class PcpErrorInvalidInstanceTargetPath;
-typedef boost::shared_ptr<PcpErrorInvalidInstanceTargetPath>
+typedef std::shared_ptr<PcpErrorInvalidInstanceTargetPath>
     PcpErrorInvalidInstanceTargetPathPtr;
 
 /// \class PcpErrorInvalidInstanceTargetPath
@@ -482,7 +480,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInvalidExternalTargetPath;
-typedef boost::shared_ptr<PcpErrorInvalidExternalTargetPath>
+typedef std::shared_ptr<PcpErrorInvalidExternalTargetPath>
     PcpErrorInvalidExternalTargetPathPtr;
 
 /// \class PcpErrorInvalidExternalTargetPath
@@ -511,7 +509,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInvalidTargetPath;
-typedef boost::shared_ptr<PcpErrorInvalidTargetPath>
+typedef std::shared_ptr<PcpErrorInvalidTargetPath>
     PcpErrorInvalidTargetPathPtr;
 
 /// \class PcpErrorInvalidTargetPath
@@ -536,7 +534,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInvalidSublayerOffset;
-typedef boost::shared_ptr<PcpErrorInvalidSublayerOffset>
+typedef std::shared_ptr<PcpErrorInvalidSublayerOffset>
     PcpErrorInvalidSublayerOffsetPtr;
 
 /// \class PcpErrorInvalidSublayerOffset
@@ -565,7 +563,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInvalidReferenceOffset;
-typedef boost::shared_ptr<PcpErrorInvalidReferenceOffset>
+typedef std::shared_ptr<PcpErrorInvalidReferenceOffset>
     PcpErrorInvalidReferenceOffsetPtr;
 
 /// \class PcpErrorInvalidReferenceOffset
@@ -596,7 +594,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInvalidSublayerOwnership;
-typedef boost::shared_ptr<PcpErrorInvalidSublayerOwnership>
+typedef std::shared_ptr<PcpErrorInvalidSublayerOwnership>
     PcpErrorInvalidSublayerOwnershipPtr;
 
 /// \class PcpErrorInvalidSublayerOwnership
@@ -625,7 +623,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInvalidSublayerPath;
-typedef boost::shared_ptr<PcpErrorInvalidSublayerPath>
+typedef std::shared_ptr<PcpErrorInvalidSublayerPath>
     PcpErrorInvalidSublayerPathPtr;
 
 /// \class PcpErrorInvalidSublayerPath
@@ -654,7 +652,7 @@ private:
 
 // Forward declarations:
 class PcpErrorInvalidVariantSelection;
-typedef boost::shared_ptr<PcpErrorInvalidVariantSelection>
+typedef std::shared_ptr<PcpErrorInvalidVariantSelection>
     PcpErrorInvalidVariantSelectionPtr;
 
 /// \class PcpErrorInvalidVariantSelection
@@ -683,7 +681,7 @@ private:
 
 // Forward declarations:
 class PcpErrorOpinionAtRelocationSource;
-typedef boost::shared_ptr<PcpErrorOpinionAtRelocationSource>
+typedef std::shared_ptr<PcpErrorOpinionAtRelocationSource>
     PcpErrorOpinionAtRelocationSourcePtr;
 
 /// \class PcpErrorOpinionAtRelocationSource
@@ -711,7 +709,7 @@ private:
 
 // Forward declarations:
 class PcpErrorPrimPermissionDenied;
-typedef boost::shared_ptr<PcpErrorPrimPermissionDenied>
+typedef std::shared_ptr<PcpErrorPrimPermissionDenied>
     PcpErrorPrimPermissionDeniedPtr;
 
 /// \class PcpErrorPrimPermissionDenied
@@ -741,7 +739,7 @@ private:
 
 // Forward declarations:
 class PcpErrorPropertyPermissionDenied;
-typedef boost::shared_ptr<PcpErrorPropertyPermissionDenied>
+typedef std::shared_ptr<PcpErrorPropertyPermissionDenied>
     PcpErrorPropertyPermissionDeniedPtr;
 
 /// \class PcpErrorPropertyPermissionDenied
@@ -770,7 +768,7 @@ private:
 
 // Forward declarations:
 class PcpErrorSublayerCycle;
-typedef boost::shared_ptr<PcpErrorSublayerCycle> PcpErrorSublayerCyclePtr;
+typedef std::shared_ptr<PcpErrorSublayerCycle> PcpErrorSublayerCyclePtr;
 
 /// \class PcpErrorSublayerCycle
 ///
@@ -797,7 +795,7 @@ private:
 
 // Forward declarations:
 class PcpErrorTargetPermissionDenied;
-typedef boost::shared_ptr<PcpErrorTargetPermissionDenied>
+typedef std::shared_ptr<PcpErrorTargetPermissionDenied>
     PcpErrorTargetPermissionDeniedPtr;
 
 /// \class PcpErrorTargetPermissionDenied
@@ -822,7 +820,7 @@ private:
 
 // Forward declarations:
 class PcpErrorUnresolvedPrimPath;
-typedef boost::shared_ptr<PcpErrorUnresolvedPrimPath>
+typedef std::shared_ptr<PcpErrorUnresolvedPrimPath>
     PcpErrorUnresolvedPrimPathPtr;
 
 /// \class PcpErrorUnresolvedPrimPath

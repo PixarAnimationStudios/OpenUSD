@@ -38,6 +38,7 @@
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
 
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -395,7 +396,7 @@ private:
     // Container of graph data. PcpPrimIndex_Graph implements a 
     // copy-on-write scheme, so this data may be shared among multiple graph
     // instances.
-    boost::shared_ptr<_SharedData> _data;
+    std::shared_ptr<_SharedData> _data;
 
     // The following data is not included in the shared data object above
     // because they will typically differ between graph instances. Including

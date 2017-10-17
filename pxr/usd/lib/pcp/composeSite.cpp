@@ -30,6 +30,8 @@
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/primSpec.h"
 
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Implementation notes:
@@ -93,9 +95,10 @@ PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
             const SdfLayerOffset* layerOffset =
                 layerStack->GetLayerOffsetForLayer(i);
             curListOp.ApplyOperations(result,
-                boost::bind( &_ResolveReference, boost::ref(layer),
+                  std::bind( &_ResolveReference, std::ref(layer),
                              layerOffset ? *layerOffset : SdfLayerOffset(),
-                             &infoMap, _1, _2));
+                             &infoMap,
+                             std::placeholders::_1, std::placeholders::_2));
         }
     }
 
