@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 from qt import QtCore, QtGui, QtWidgets
-import os, time, sys, platform, pwd
+import os, time, sys, platform
 from pxr import Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
 from customAttributes import CustomAttribute, RelationshipAttribute
 
@@ -431,6 +431,7 @@ def GetFileOwner(path):
             name, domain, use = w32.LookupAccountSid(None, sdo)
             return "%s\\%s" % (domain, name)
         else:
+            import pwd
             return pwd.getpwuid(os.stat(path).st_uid).pw_name
     except:
         return "<unknown>"
